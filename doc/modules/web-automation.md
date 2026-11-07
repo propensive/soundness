@@ -64,9 +64,22 @@ values — but every operation on one needs the session in scope, so they are in
 
 ### Finding and using elements
 
-Elements are located by typed criteria — a CSS selector list, a validated DOM id, a class list, or
-an HTML tag — with `\` returning every match and `element` exactly one. Elements found within
-elements descend the tree:
+Elements are located by typed criteria, with `\` returning every match and `element` exactly
+one:
+
+```tabular
+column  Locator
+column  Written as
+column  Matches by
+row  an HTML tag  `H1`, `Button`  tag name
+row  a CSS selector list  `SelectorList.parse(t"nav li")`  CSS selector
+row  a validated DOM id  `Name[DomId](t"query")`  CSS selector, the id prefixed with `#`
+row  a class list  `ClassList["checkbox"]()`  CSS selector, each class prefixed with `.`
+row  an XPath  `xp"//li"`  XPath
+row  a `Text`  `t"Sign in"`  link text
+```
+
+Elements found within elements descend the tree, and each offers the operations a test needs:
 
 ```scala fuel
 typecheck
@@ -88,6 +101,24 @@ supervise:
     button.screenshot()                        // a Raster in Png of the element
 ```
 
+The operations on an element, all needing the session in scope:
+
+```tabular
+column  Operation
+column  Does
+row  `click()`, `clear()`  clicks the element, or clears an input
+row  `value(text)`  types into an input
+row  `innerText()`  reads the rendered text
+row  `attribute(name)`, `property(name)`  reads an attribute of the markup, or a live DOM property, as an `Optional`
+row  `cssValue(name)`  reads a computed CSS value
+row  `tagName()`, `role()`, `label()`  read the element's tag, accessible role and accessible label
+row  `enabled()`, `selected()`, `displayed()`  report the element's state
+row  `rect()`  reads the element's position and size
+row  `screenshot()`, `screenshotData()`  capture the element as a `Raster in Png`, or as PNG bytes
+row  `element(locator)`, `\`  find elements within it
+row  `shadowRoot()`  reaches its open shadow root
+```
+
 Anything a locator cannot express is reached with `execute`, which runs JavaScript in the page
 and returns its result as `Json`. Modifiers, chords, hovers and drags go through `perform` and
 the typed actions API; a failure of any kind arrives as a `WebDriver.Error` carrying the W3C
@@ -107,8 +138,16 @@ supervise:
 ```
 
 Nothing else has a server-side notion of waiting. For a button that becomes enabled, or a heading
-whose text changes, `awaitElement`, `awaitElements` and `awaitUntil` poll under the retry policy
-in scope:
+whose text changes, three methods poll under the retry policy in scope:
+
+```tabular
+column  Method
+column  Waits until
+column  Returns
+row  `awaitElement(locator)`  an element matches  the first match
+row  `awaitElements(locator)`  any element matches  every match
+row  `awaitUntil(condition)`  a condition holds  nothing
+```
 
 ```scala fuel
 typecheck

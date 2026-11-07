@@ -16,6 +16,23 @@ documentation — infrastructure that fluence and LIRA's API-derived versioning 
 It ends with the strongest learnability test there is: an agent, given only the documentation,
 builds and deploys a working application.
 
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  doc-1  every error type has a code and a page  near
+row  doc-2  the messages standard is written  near
+row  doc-3  the legacy documentation systems retire  near
+row  doc-4  every module is covered by a topic  mid
+row  doc-5  API documentation is generated and published  mid
+row  doc-6  the website derives from `doc/`  mid
+row  doc-7  novel ideas are one hop away  long
+row  doc-8  the walkthrough  long  tool-2, tool-4
+```
+
 ## doc-1: every error type has a code and a page
 
 Horizon: near

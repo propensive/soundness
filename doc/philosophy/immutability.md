@@ -56,7 +56,19 @@ sub-structure between two values would be a bug.
 ## Where mutation survives, and why
 
 Immutability is a property of values, not a prohibition on the machine. Four places in
-Soundness are deliberately mutable. Three of them are confined:
+Soundness are deliberately mutable:
+
+```tabular
+column  Place
+column  Mutates
+column  Kept safe by
+row  a builder  a buffer it exclusively owns  nothing observing the intermediate states
+row  the streaming kernel  a window into a buffer  capture and separation checking
+row  a `Canvas`  pixels, in place  the `open` block's scope and the `Write` grant
+row  an atomic cell  one shared machine word  indivisible operations
+```
+
+The first three are confined.
 
 A **builder** mutates a buffer it exclusively owns and yields an immutable value at the
 end. Nothing observes the intermediate states, so nothing depends on them.

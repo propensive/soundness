@@ -113,7 +113,14 @@ directory.open[Git.Worktree](): worktree ?=>
 ```
 
 Objects are immutable and named by their content, so a read keyed by a hash is a plain value:
-`commitAt`, `treeAt`, `blobAt` and `show` need no `Stale`.
+
+```tabular
+column  A read of
+column  Such as
+column  Returns
+row  a ref, HEAD, the index or the working files  `head`, `ref`, `resolve`, `branches`, `tags`, `log`, `note`, `remotes`, `stashes`, `diff`  a `Stale` value
+row  an object, by its hash  `show`, `commitAt`, `treeAt`, `blobAt`, `diffBetween`  a plain value
+```
 
 ### Branches and tags
 
@@ -152,9 +159,19 @@ target.open[Git.Worktree](): cloned ?=>
 
 ### Choosing a backend
 
+The two backends differ in how they do the work, and so in what each is for:
+
+```tabular
+column  Backend
+column  Works by
+column  Reaches remotes
+column  The choice for
+row  `gitBackends.commandlineGit`  running the `git` command  as `git` does  git's own behaviour in full: hooks, filters, credential helpers, submodules
+row  `gitBackends.soundnessGit`  reading and writing git's formats directly  through a transport: `SmartHttp`, `SshCommand`  no dependency on `git`
+```
+
 `gitBackends.commandlineGit` runs the `git` command found by `gitCommands.searchpathGitCommand`,
-in the working directory and environment in scope, logging each invocation. It is the choice when
-git's own behaviour is wanted in full: hooks, filters, credential helpers, submodules.
+in the working directory and environment in scope, logging each invocation.
 
 `gitBackends.soundnessGit` is the native backend: objects (loose and packed), refs, the index,
 configuration, notes, linked worktrees, merging, rebasing and the stash are all read and written
@@ -174,9 +191,18 @@ given Git.Backend = Native(List(SmartHttp(), SshCommand()))
 ```
 
 Signing is independent of the backend. A `Git.Signer` makes the signature a commit or tag
-carries, and a `Git.Verifier` checks one: `SshKeygen.Signer(key)` and `SshKeygen.Verifier(
-allowedSigners)` drive `ssh-keygen -Y` as `gpg.format = ssh` has git do, and `Gpg.Signer()` and
-`Gpg.Verifier()` drive `gpg`. A tag signed through either is one `git tag -v` accepts.
+carries, and a `Git.Verifier` checks one:
+
+```tabular
+column  Scheme
+column  Signer
+column  Verifier
+column  Drives
+row  SSH  `SshKeygen.Signer(key)`  `SshKeygen.Verifier(allowedSigners)`  `ssh-keygen -Y`, as `gpg.format = ssh` has git do
+row  OpenPGP  `Gpg.Signer()`  `Gpg.Verifier()`  `gpg`
+```
+
+A tag signed through either is one `git tag -v` accepts.
 
 Whichever backend is chosen, `Exclusive` arbitrates only between handles in this JVM. Another
 process is never waited for, which is why every ref-moving operation is a compare-and-swap on the
@@ -184,13 +210,21 @@ process is never waited for, which is why every ref-moving operation is a compar
 
 ### References
 
-A `Git.Branch`, `Git.Tag` and `Git.Hash` name the three kinds of reference, and a `Git.Revision` is
-any of them or a relative expression such as `Git.Revision.head(1)` for `HEAD~1`. Because each is
-its own type, an operation that expects a branch will not accept a tag, and a hash carries the
-guarantee that it is a well-formed forty-character identifier.
+Each kind of reference is its own type:
 
-A `Git.Ref` is a fully-qualified reference path, `refs/heads/main`, modelled as a path on the
-`Git.Refs` plane. Reference names follow Git's own rules — no leading dot, no `..`, no trailing
+```tabular
+column  Type
+column  Names
+row  `Git.Branch`  a branch
+row  `Git.Tag`  a tag
+row  `Git.Hash`  a commit, by a well-formed forty-character identifier
+row  `Git.Revision`  any of these, or a relative expression: `Git.Revision.head(1)` is `HEAD~1`
+row  `Git.Ref`  a fully-qualified reference path, such as `refs/heads/main`
+```
+
+So an operation that expects a branch will not accept a tag.
+
+A `Git.Ref` is modelled as a path on the `Git.Refs` plane. Reference names follow Git's own rules — no leading dot, no `..`, no trailing
 `*.lock`, and the rest — which are checked when a name is parsed from text, with `Git.Branch.parse`,
 `Git.Tag.parse` or `Git.Refs.heads`, and reported as a `Git.RefError`.
 
@@ -207,14 +241,33 @@ directory.open[Git.Worktree](Read & Write): worktree ?=>
   files.head.let(_.changeKind)   // ChangeKind.Modified
 ```
 
-`diffStaged` compares the index with HEAD, `diffAgainst` the working files with a revision, and
-`diffBetween` two commits. The same parser, `Patch.parse`, reads a patch from anywhere.
+Each diff method compares two sides:
+
+```tabular
+column  Method
+column  Left
+column  Right
+row  `diff()`  the index  the working files
+row  `diffStaged()`  HEAD  the index
+row  `diffAgainst(revision)`  the revision  the working files
+row  `diffBetween(left, right)`  a commit  a commit
+```
+
+The same parser, `Patch.parse`, reads a patch from anywhere.
 
 ### Merging, cherry-picking, reverting and rebasing
 
 `merge` takes the revision to merge, the reading of HEAD, and a fast-forward policy, so whether a
 merge commit is created is stated rather than inherited from configuration. Its outcome is a value:
-`FastForwarded`, `Merged`, `UpToDate`, or `Stopped`.
+
+```tabular
+column  Outcome
+column  Meaning
+row  `FastForwarded(head)`  the branch moved forward to `head`, with no merge commit
+row  `Merged(head)`  a merge commit, `head`, was created
+row  `UpToDate`  there was nothing to merge
+row  `Stopped(operation)`  the merge stopped on a conflict
+```
 
 ```scala
 directory.open[Git.Worktree](Read & Write): worktree ?=>

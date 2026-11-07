@@ -77,6 +77,18 @@ number of minor units in a major one:
 given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
 ```
 
+Each part of the type has its place:
+
+```tabular
+column  Position
+column  Gives
+column  Here
+row  before `is`  the ISO code  `"NOK"`
+row  after `of`  the name  `"Norwegian Krone"`
+row  after `in`  the symbol  `"kr"`
+row  after `over`  the minor units in a major one  `100`
+```
+
 ### Splitting
 
 `share` divides an amount into a number of parts that sum exactly to the whole, distributing any
@@ -88,8 +100,17 @@ Eur(3.01).share(3)   // three shares, together exactly €3.01
 
 ### Prices and tax
 
-Three parties look at the same price and see different numbers: the seller cares about the amount
-excluding tax, the buyer about the amount including it, and the tax authority about the difference.
+Three parties look at the same price and see different numbers:
+
+```tabular
+column  Party
+column  Cares about
+column  Member of a `Price`
+row  the seller  the amount excluding tax  `principal`
+row  the buyer  the amount including tax  `inclusive`
+row  the tax authority  the difference  `tax`
+```
+
 Hold all three in one type and it is easy to add tax to a figure that already had it, or to report
 the wrong one — a mistake that arithmetic cannot catch, because every one of those numbers is a
 valid amount of money.
@@ -138,9 +159,17 @@ isin"GB00BH4HKS3"           // does not compile: wrong length
 Luhn.check(17893729974L)    // true
 ```
 
-An `Isin.Error` says which rule was broken — the length, the country prefix, the permitted
-characters, or the Luhn check on the final digit — so a rejected identifier can be reported
-precisely rather than as "invalid".
+An `Isin.Error` says which rule was broken, so a rejected identifier can be reported precisely
+rather than as "invalid":
+
+```tabular
+column  Reason
+column  Rule
+row  `WrongLength`  an ISIN is 12 characters long
+row  `BadCountryCode`  it begins with a valid country code
+row  `InvalidCharacter`  every character is a digit or an uppercase letter
+row  `LuhnCheck`  its last digit passes the Luhn check
+```
 
 An `Isin` is an opaque type over a `Long`, so a validated identifier costs nothing to hold or
 compare, and cannot be confused with an unvalidated string.

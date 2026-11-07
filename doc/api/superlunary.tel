@@ -184,11 +184,19 @@ entry .Rig   an environment quoted code can be compiled for and run in, with `di
         of the cases of `Rig.Error.Reason`.
     entry #reason   why the remote operation failed
     entry .Reason   why a remote operation failed: serialization, deserialization, staging or invocation
-        An enum, each with a number which completes the error code. `Serialization` (1): _the
-        output could not be serialized_. `Deserialization` (2): _the input could not be
-        deserialized_. `Unknown` (3): _of an unknown reason_, raised when a result fails to
-        decode. `Staging` (4): _the staged code could not be built or deployed_. `Invocation`
-        (5): _the staged code could not be invoked_, as when the `Jvm` rig's subprocess fails.
+        An enum, each with a number which completes the error code:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Serialization`  1  _the output could not be serialized_
+        row  `Deserialization`  2  _the input could not be deserialized_
+        row  `Unknown`  3  _of an unknown reason_  raised when a result fails to decode
+        row  `Staging`  4  _the staged code could not be built or deployed_
+        row  `Invocation`  5  _the staged code could not be invoked_  as when the `Jvm` rig's subprocess fails
+        ```
 
 entry .Jvm   the rig which runs dispatched code in a fresh JVM subprocess
     A `Rig` whose `Target` is a `LocalClasspath` and whose values cross as JSON text: the

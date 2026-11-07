@@ -25,11 +25,17 @@ val task = supervise(async(compute()))
 task.await() // without capture checking: awaits under a completed supervisor
 ```
 
-Under capture checking, each of these is a compile error: the stream captures the open
-handle, the closure captures the `Tactic`, the task captures the `Monitor`, and none of
-those capabilities may outlive its scope. The fix the compiler forces is the right one —
-consume the stream inside the block, run the fallible code where its handler lives,
-await the task under its supervisor.
+Under capture checking, each of these is a compile error, because each value captures a
+capability that may not outlive its scope. The fix the compiler forces is the right one:
+
+```tabular
+column  Escaping value
+column  Captures
+column  The fix
+row  the lazy stream  the open handle  consume the stream inside the block
+row  the closure  the `Tactic`  run the fallible code where its handler lives
+row  the task  the `Monitor`  await the task under its supervisor
+```
 
 The guarantee runs deeper than discipline could: laziness, closures and concurrency are
 exactly the features that defeat by-eye reasoning about lifetimes, because they detach

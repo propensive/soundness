@@ -94,9 +94,19 @@ diagram.tiles    // the tiles of each line
 diagram.map { tiles => node => t"${tiles.size} ${node.name}" }
 ```
 
-A `TreeTile` is one of four things: a branch, a last branch, an extender carrying a line down past
-a node, or a space. A style says what each becomes, and a `TextualTreeStyle` says it as four short
-pieces of text, which is all a new style needs:
+A `TreeTile` is one of four things, and a style says what each becomes. A `TextualTreeStyle` says
+it as four short pieces of text, which is all a new style needs:
+
+```tabular
+column  Tile
+column  Is
+column  Argument
+column  In `myStyle`
+row  `Space`  a space  `space`  two spaces
+row  `Last`  a last branch  `last`  `└─`
+row  `Branch`  a branch  `branch`  `├─`
+row  `Extender`  a line carried down past a node  `extender`  `│` and a space
+```
 
 ```scala
 val myStyle = TextualTreeStyle[Text](t"  ", t"└─", t"├─", t"│ ")
@@ -109,7 +119,7 @@ labels in another, and the widths still computed correctly.
 ### Supplying the tree
 
 A tree can be given in two ways. `TreeDiagram.by` takes a function from node to children, which
-suits a structure that is already in hand:
+suits a structure that is already in hand.
 
 `TreeDiagram.apply` instead takes roots and finds children through an `Expandable` instance on the
 node type, which suits a node type whose children are what it means by children — a filesystem
@@ -139,14 +149,19 @@ reaches them in its natural order, so an infinite tree still draws.
 
 ### Choosing a graph layout
 
-The three graph diagrams answer different questions. `DagDiagram` is dense: every edge is drawn,
-in a grid of connecting tiles, which is what a small graph with complicated edges needs.
-`LaneDagDiagram` puts each node on a vertical lane, as version-control history is drawn, which
-suits a long graph with few concurrent branches. `LayeredDagDiagram` arranges nodes into levels
-by depth, ordered within each level so that as few connecting lines cross as possible, which
-suits showing what depends on what rather than what happened in what order. The levels come
-from the graph's `layered` arrangement, so `import rankings.balancedRanking` changes the
-drawing as it changes the layering.
+The three graph diagrams answer different questions:
+
+```tabular
+column  Diagram
+column  Draws
+column  Suits
+row  `DagDiagram`  every edge, in a grid of connecting tiles  a small graph with complicated edges
+row  `LaneDagDiagram`  each node on a vertical lane, as version-control history is drawn  a long graph with few concurrent branches
+row  `LayeredDagDiagram`  nodes in levels by depth, ordered within each level so that as few connecting lines cross as possible  showing what depends on what, rather than what happened in what order
+```
+
+The levels of a `LayeredDagDiagram` come from the graph's `layered` arrangement, so
+`import rankings.balancedRanking` changes the drawing as it changes the layering.
 
 All three take any graph with a topological order — a `Dag`, a frozen `Topology` or a `Hasse` —
 and so cannot fail: a `Digraph`, which may hold a cycle, has no drawing until `acyclic` has

@@ -41,8 +41,18 @@ object Tests extends Suite(m"Parser tests"):
       . assert(_ == 42)
 ```
 
-`check` is `assert` returning the value, for chaining further work on it; `matches` asserts that a
-value fits a pattern. A test that *should* pass but is known not to yet is written like any other,
+A test ends in one of three assertions:
+
+```tabular
+column  Assertion
+column  Asserts
+column  Returns
+row  `assert`  a predicate holds of the value  nothing
+row  `check`  a predicate holds of the value  the value, for chaining further work on it
+row  `matches`  the value fits a pattern  nothing
+```
+
+A test that *should* pass but is known not to yet is written like any other,
 inside an `aspirationally` block: every assertion within it is recorded as an aspiration, neither
 failing the build nor forgotten, and reported distinctly once it starts to pass.
 
@@ -232,9 +242,19 @@ compiles more slowly than its size suggests.
 
 ### Measuring, not just asserting
 
-A test need not end in a verdict. Three further kinds record measurements, and all four land in
-the same report: a name, its axes, and a sparse map of cells whose figures come from one closed
-set, so every kind renders the same way and charts the same way.
+A test need not end in a verdict. Three further kinds record measurements:
+
+```tabular
+column  Kind
+column  Records
+row  `test`  a verdict
+row  `Bench`  speed
+row  `Stress`  allocation per operation, peak heap, and the live set under sustained concurrency
+row  `Profile`  the hottest methods by self time, from JFR execution samples
+```
+
+All four land in the same report: a name, its axes, and a sparse map of cells whose figures come
+from one closed set, so every kind renders the same way and charts the same way.
 
 Every measurement is compiled and run on a `BenchmarkDevice`, here the local machine, and so needs
 a system, a temporary directory to stage in, and an embedding for the values it carries in
@@ -261,8 +281,7 @@ bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
   '{ Benchmarks.decodeUsersDirect() }
 ```
 
-A `Stress` measures what a throughput figure hides: allocation per operation, peak heap, and the
-live set retained under sustained concurrency. It runs for a wall-clock target at a stated
+A `Stress` measures what a throughput figure hides. It runs for a wall-clock target at a stated
 concurrency, and may be given a constrained heap or a CPU limit, so a design can be shown to hold
 up where it matters:
 
@@ -278,8 +297,8 @@ stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
   '{ Benchmarks.handOff() }
 ```
 
-A `Profile` answers where the time went, rendering a histogram of the hottest methods by self
-time from JFR execution samples, colored by package:
+A `Profile` answers where the time went, rendering a histogram of the hottest methods, colored by
+package:
 
 ```scala fuel
 typecheck
@@ -306,9 +325,20 @@ any test failed — all a build needs to gate on. A project names its classpath 
 `.pyrocosm/fume/config.tel`, so a bare `fume run` runs everything. `fume list`, and the completion of test
 names in a shell, read the index of tests, and so run nothing.
 
-fume also accepts selection terms, so a subset can be run without editing the code. Hashes,
-monikers and name globs identify tests and union with each other; the `--test`, `--bench`,
-`--stress` and `--profile` switches and axis constraints intersect with that union:
+fume also accepts selection terms, so a subset can be run without editing the code:
+
+```tabular
+column  Term
+column  Selects
+column  Combines by
+row  a hash  the test with that hash  union
+row  a moniker, such as `square`  the test with that moniker  union
+row  a name glob, such as `'parser*'`  the tests whose names match  union
+row  `--test`, `--bench`, `--stress`, `--profile`  the tests of that kind  intersection
+row  an axis constraint, such as `parser=jacinta` or `'N<32'`  the cells matching it  intersection
+```
+
+Identifying terms union with each other, and the rest intersect with that union:
 
 ```sh
 fume run square 'parser*'         # by moniker, then by name glob
@@ -322,9 +352,17 @@ costs only what it runs.
 
 A suite is not a main class, but a plain-`java` entry point — for CI, or for a host too old to
 read the jar's event schema — is one line: `Suite.main(arguments, Tests)` runs the suites named,
-printing a line per completed test, its details and a summary, and exits with their status: `0`
-passed, `1` failures, `2` a suite threw. `Suite.run` is the same without exiting, for a host of
-its own.
+printing a line per completed test, its details and a summary, and exits with their status:
+
+```tabular
+column  Status
+column  Means
+row  `0`  every test passed
+row  `1`  a test failed
+row  `2`  a suite threw
+```
+
+`Suite.run` is the same without exiting, for a host of its own.
 
 <!-- doccheck: skip -->
 ```scala

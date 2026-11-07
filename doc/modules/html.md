@@ -43,10 +43,20 @@ import strategies.throwUnsafely
 import attributives.textAttributive
 ```
 
-An HTML value has the general type `Html`. Its nodes are elements, comments, text, a doctype,
-or a fragment — a sequence of several nodes — whose types live in the `Html` companion:
-`Html.Element`, `Html.Comment`, `Html.Text`, `Html.Doctype` and `Html.Fragment`. Every node is
-immutable, so transforming one yields a new value rather than altering the old.
+An HTML value has the general type `Html`, and its kinds of node have types in the `Html`
+companion:
+
+```tabular
+column  Type
+column  Node
+row  `Html.Element`  an element, with its attributes and children
+row  `Html.Text`  text
+row  `Html.Comment`  a comment
+row  `Html.Doctype`  a doctype
+row  `Html.Fragment`  a sequence of several nodes
+```
+
+Every node is immutable, so transforming one yields a new value rather than altering the old.
 
 ### Constructing elements
 
@@ -109,9 +119,18 @@ h"<img src=$location>"      // an attribute-value substitution
 h"<!--$content-->"          // a comment substitution
 ```
 
-Body content must be HTML acceptable as a child of the enclosing element; an
-attribute value must suit the attribute — `src` takes a URL, so a `Text` in its place would be
-rejected — and a comment must be showable.
+Each position asks something different of the value substituted into it:
+
+```tabular
+column  Substitution
+column  Must be
+row  body content  HTML acceptable as a child of the enclosing element
+row  attribute value  a value the attribute accepts
+row  comment  showable
+```
+
+`src` takes a URL, for instance, so without a `Text` attributive in scope a `Text` in its place
+would be rejected.
 
 ### Attributes
 
@@ -175,9 +194,20 @@ h"<ol>$items</ol>"
 
 ### Transforming
 
-Two values join with `+`, producing a fragment. A value statically known to be an
-`Html.Element` accepts a new child at its start with `^+` or its end with `+^` — the caret
-marks which end — and an attribute is added, or replaced, by assignment:
+Values are combined and amended with operators; the caret in `^+` and `+^` marks which end the
+child joins:
+
+```tabular
+column  Operation
+column  Applies to
+column  Gives
+row  `a + b`  any two `Html` values  a fragment of both
+row  `element ^+ child`  an `Html.Element`, statically known  the element with a new first child
+row  `element +^ child`  an `Html.Element`, statically known  the element with a new last child
+row  `element.name = value`  an `Html.Element`  the element with the attribute added or replaced
+```
+
+Here an attribute is added by assignment:
 
 ```scala
 val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg")
@@ -286,26 +316,53 @@ html match
   case _                  => Unset
 ```
 
-Attributes, comments, and elements can be captured too: `h"<img src=$source>"` binds
-an attribute value, `h"<img $attributes>"` binds the attribute map, and `h"<$element>"`
-matches any element but no other kind of node.
+Attributes, comments, and elements can be captured too:
+
+```tabular
+column  Pattern
+column  Matches
+row  `h"<li>$value</li>"`  an `<li>`, binding its body as `Html`
+row  `h"<img src=$source>"`  an `<img>`, binding the value of `src`
+row  `h"<img $attributes>"`  an `<img>`, binding its attribute map
+row  `h"<$element>"`  any element, but no other kind of node
+```
 
 ### Precise types
 
 A runtime HTML value conforms to `Html` and to one of its subtypes, and its static
-type can say far more. The tag name is recorded with the `of` alias, so `<br>` is an
-`Html of "br"`; a union names a choice, so `Html of "ul" | "ol"` is either list. The
-content models of the specification are unions ready to use — `Flow`, `Phrasing`,
-`Interactive`, and the rest — so `Html of Flow` is any flow content, the level of
-precision most code wants:
+type can say far more, through three refinements:
+
+```tabular
+column  Refinement
+column  Records
+column  Example
+row  `of`  the tag name, or a union of names  `Html of "br"`, `Html of "ul" | "ol"`
+row  `over`  what the element may contain  `Html.Element of "ul" over "li"`
+row  `in`  the specification in force  `Html in Whatwg`
+```
+
+The content models of the specification are unions of tag names, ready to use:
+
+```tabular
+column  Content model
+column  Includes, for example
+row  `Flow`  `div`, `p`, `ul`, `table`, and all phrasing, heading and sectioning content
+row  `Phrasing`  `em`, `span`, `a`, `img`, `br`, and text
+row  `Interactive`  `a`, `button`, `input`, `select`, `details`
+row  `Embedded`  `img`, `video`, `iframe`, `svg`, `math`
+row  `Heading`  `h1` to `h6`, `hgroup`
+row  `Sectioning`  `article`, `aside`, `nav`, `section`
+row  `Metadata`  `title`, `meta`, `link`, `style`, `script`
+row  `ScriptSupporting`  `script`, `template`
+```
+
+`Html of Flow` is any flow content, the level of precision most code wants:
 
 ```scala
 val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
 ```
 
-What an element may contain is recorded with `over`, so a `<ul>` is an
-`Html.Element of "ul" over "li"`, and the specification in force is recorded with `in`, so
-ordinary values are `Html in Whatwg`. These combine into types as exact as
+The refinements combine into types as exact as
 `Container of "em" | "i" | "b" over Phrasing in Whatwg`. The library uses this
 precision internally; applications rarely need more than `Html of Flow`.
 

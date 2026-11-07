@@ -3,12 +3,19 @@
 ### About
 
 Soundness's compiletime machinery rests on a set of tools for writing and debugging macros, and
-they are available to any project doing the same. `Every` collects *all* the given instances of a
-type visible at a call site — the mechanism behind pluggable configuration throughout Soundness.
-Type-level collections reify into runtime values for macros parameterized by static data. Types
-render back to source text exactly as they would be written under the caller's imports. Macro
-expansions display as inspectable trees. And compiled bytecode can be read back from a quoted
-expression, for the rare work that must see what the compiler produced.
+they are available to any project doing the same:
+
+```tabular
+column  Tool
+column  Does
+row  `every`  collects *all* the given instances of a type visible at a call site
+row  `reify`  turns a type-level collection into a runtime value
+row  `Syntax.name`  renders a type as it would be written under the caller's imports
+row  `Introspect`  displays a macro expansion as an inspectable tree
+row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
+```
+
+Collecting every given is the mechanism behind pluggable configuration throughout Soundness.
 
 ### On metaprogramming
 
@@ -61,9 +68,18 @@ reify[TypeList[("one", "two", "three")]]   // List("one", "two", "three")
 reify[TypeSet["yes" | "no" | "maybe"]]     // the members of the union
 ```
 
-Singleton types of `Int`, `String`, `Double` and `Boolean` map to and from their values directly;
-a `List` becomes a `Tuple` under `TypeList`, a `Set` a union under `TypeSet`, and a `Map` a tuple
-of pairs under `TypeMap`. `reify` also has a form taking a `Type` rather than a static type
+Each runtime value has a type-level form:
+
+```tabular
+column  Value
+column  Type-level form
+row  an `Int`, `String`, `Double` or `Boolean`  its singleton type
+row  a `List`  a `Tuple`, under `TypeList`
+row  a `Set`  a union, under `TypeSet`
+row  a `Map`  a tuple of pairs, under `TypeMap`
+```
+
+`reify` also has a form taking a `Type` rather than a static type
 parameter, for use from inside a macro implementation where the type is only known abstractly, and
 `reifyAs` fixes the result type where inference needs the help.
 

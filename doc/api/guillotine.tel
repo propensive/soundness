@@ -612,20 +612,23 @@ entry .Computable   how a process's output becomes a result of type `T`: the typ
       parameter, so the type named *is* the interpretation. The instances in the companion,
       found with no import:
 
-      - `Text`, `String`: the whole of standard output, when the process closes it.
-      - `List[Text]`: the lines of standard output, when it ends.
-      - `Chain[Text]`: the lines as a lazy, memoizing chain, pulled as the process writes
-        them, so the call returns at once; needs a `Buffering`. (An exclusive `Iterator`
-        cannot be the result of the erased `Intelligible` evidence, which is why the
-        line-at-a-time type is a `Chain`.)
-      - `Data`: the whole of standard output as bytes, memoized; needs a `Buffering`. For the
-        bytes lazily, use `Subprocess#stdout()` on a forked `Job`.
-      - `Exit`: the exit status, `Exit.Ok` or `Exit.Fail(code)`; non-zero is an answer, not an
-        error.
-      - `Unit`: waits for the exit and discards everything.
-      - `Stderr`: standard error, as `Stderr(text)` (the given is in `Stderr`'s companion).
-      - any path type `Instantiable across Paths from Text`: standard output, trimmed, decoded
-        as the path — `sh"which git".exec[Path on Linux]()`.
+      ```tabular
+      column  Result type
+      column  Reads
+      column  Needs
+      row  `Text`, `String`  the whole of standard output, when the process closes it
+      row  `List[Text]`  the lines of standard output, when it ends
+      row  `Chain[Text]`  the lines as a lazy, memoizing chain, pulled as the process writes them, so the call returns at once  a `Buffering`
+      row  `Data`  the whole of standard output as bytes, memoized  a `Buffering`
+      row  `Exit`  the exit status, `Exit.Ok` or `Exit.Fail(code)`; non-zero is an answer, not an error
+      row  `Unit`  nothing: waits for the exit and discards everything
+      row  `Stderr`  standard error, as `Stderr(text)`; the given is in `Stderr`'s companion
+      row  any path type `Instantiable across Paths from Text`  standard output, trimmed, decoded as the path: `sh"which git".exec[Path on Linux]()`
+      ```
+
+      The line-at-a-time type is a `Chain` because an exclusive `Iterator` cannot be the result
+      of the erased `Intelligible` evidence. For the bytes lazily, use `Subprocess#stdout()` on a
+      forked `Job`.
 
       A type not covered gains an instance by mapping one (`Computable` is a functor) or
       through the `.apply` factory, taking the `Subprocess` and the `Tactic[Truncation.Error]`

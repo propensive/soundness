@@ -66,8 +66,20 @@ val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petst
 ```
 
 What is about to be sent is a value too: `request` on any navigated `Api` or `Api.Response` is an
-`Api.Request` holding the method, the base `HttpUrl`, the path template and its substitutions, the
-`Query`, the `Http.Header`s, the body with its `MediaType`, and the `accept` media type.
+`Api.Request`, whose fields are:
+
+```tabular
+column  Field
+column  Holds
+row  `method`  the `Http.Method`
+row  `base`  the base `HttpUrl`
+row  `path`  the path template
+row  `substitutions`  the values for the template's variables
+row  `query`  the `Query`
+row  `headers`  the `Http.Header`s
+row  `body`  the body, with its `MediaType`
+row  `accept`  the media type asked for
+```
 
 ### Calling
 
@@ -114,22 +126,50 @@ petstore.pet(42L).get.call()             // `api_key: …` sent as the spec dict
 petstore.pet(42L).delete(api_key = t"…") // a header parameter, sent as a header
 ```
 
-An API key is a `Credential to Text`, sent in the header, query parameter or cookie the scheme
-names; HTTP authentication a `Credential to Auth`, sent in the `Authorization` header; an OAuth 2
-or OpenID Connect scheme a `Credential to Authorization` (or an `Auth`, for a token obtained
-elsewhere), sent as a `Bearer` authorization and checked, before the request goes, against the
-scopes the requirement names — a token lacking one raises `OAuth.Error`. Where an operation
+Each kind of scheme takes its own credential, and sends it its own way:
+
+```tabular
+column  Scheme
+column  Credential
+column  Sent
+row  API key  `Credential to Text`  in the header, query parameter or cookie the scheme names
+row  HTTP authentication  `Credential to Auth`  in the `Authorization` header
+row  OAuth 2, OpenID Connect  `Credential to Authorization`, or `Credential to Auth` for a token obtained elsewhere  as a `Bearer` authorization
+row  mutual TLS  not supported
+```
+
+An OAuth 2 or OpenID Connect token is checked, before the request goes, against the scopes the
+requirement names, and a token lacking one raises `OAuth.Error`. Where an operation
 offers alternative requirements, the first every scheme of which has a credential in scope is
-used; an operation whose `security` is empty needs none. Mutual TLS is not supported.
+used; an operation whose `security` is empty needs none.
 
 ### Errors
 
 Every response an operation declares outside the success range has its own error type, named for
-its status: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`, one for each status
-telekinesis names, with `Api.ClientError` and `Api.ServerError` for the `4XX` and `5XX` ranges
-and `Api.OtherError` for `default`. Each carries the error body construed as the type the
-specification declares for it: a record typed by the error schema for a JSON object, else the
-media type's carrier, else `Text`, or `Unit` where no body is declared. The operation's
+its status:
+
+```tabular
+column  Declared response
+column  Error type
+row  a status telekinesis names, such as `404`, `400` or `429`  one named for it: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`
+row  the `4XX` range  `Api.ClientError`
+row  the `5XX` range  `Api.ServerError`
+row  `default`  `Api.OtherError`
+```
+
+Each carries the error body construed as the type the specification declares for it, the first
+of these that applies:
+
+```tabular
+column  The error body is
+column  Construed as
+row  a JSON object  a record typed by the error schema
+row  of a media type with a carrier  the media type's carrier
+row  anything else  `Text`
+row  not declared  `Unit`
+```
+
+The operation's
 `Api.Response` records the union of them as its `Failure`, so `attempt` yields an `Attempt` over
 exactly the declared errors, and a `match` over it is checked for exhaustiveness by the compiler:
 
@@ -180,9 +220,36 @@ val ticket: Raster in Png = museum.tickets(t"a1").qr.get.call()
 val inventory: Json = petstore.store.inventory.get.call()
 ```
 
-A `Construable` is provided for JSON, XML (`application/xml` and `text/xml`), YAML, HTML, CSS,
-SVG, Markdown, TEL, CSV, plain text, octet streams, form-encoded queries and the raster image
-formats. A structured-syntax suffix falls back to the type it names, so `application/problem+json`
+These are the `Construable`s provided:
+
+```tabular
+column  Media type
+column  Carrier
+column  Given
+row  `application/json`  `Json`  `construables.jsonConstruable`
+row  `application/xml`  `Xml`  `construables.xmlConstruable`
+row  `text/xml`  `Xml`  `construables.textXmlConstruable`
+row  `application/yaml`  `Yaml`  `construables.yamlConstruable`
+row  `application/vnd.tel`  `Tel`  `construables.telConstruable`
+row  `application/cbor`  `Cbor`  `construables.cborConstruable`
+row  `application/protobuf`  `Protobuf`  `construables.protobufConstruable`
+row  `text/html`  `Document[Html]`  `construables.htmlConstruable`
+row  `text/css`  `Css`  `construables.cssConstruable`
+row  `image/svg+xml`  `Svg`  `construables.svgConstruable`
+row  `text/markdown`  `Markdown of Layout`  `construables.markdownConstruable`
+row  `text/csv`  `Sheet`  `construables.csvConstruable`
+row  `text/tab-separated-values`  `Sheet`  `construables.tsvConstruable`
+row  `text/plain`  `Text`  `construables.plainTextConstruable`
+row  `application/octet-stream`  `Data`  `construables.octetStreamConstruable`
+row  `application/x-www-form-urlencoded`  `Query`  `construables.formConstruable`
+row  `image/png`  `Raster in Png`  `construables.pngConstruable`
+row  `image/jpeg`  `Raster in Jpeg`  `construables.jpegConstruable`
+row  `image/gif`  `Raster in Gif`  `construables.gifConstruable`
+row  `image/bmp`  `Raster in Bmp`  `construables.bmpConstruable`
+row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
+```
+
+A structured-syntax suffix falls back to the type it names, so `application/problem+json`
 is construed by the JSON mapping. Where an operation offers several media types, the first with a
 mapping in scope is chosen, `application/json` first.
 
@@ -192,6 +259,17 @@ which already *is* the carrier — a `Query` for `application/x-www-form-urlenco
 `application/octet-stream` — is sent as it is.
 
 ### Records from a response
+
+A response is read in one of four ways:
+
+```tabular
+column  Method
+column  Reads the response as
+row  `call[T]()`  a `T`, raising the declared errors
+row  `attempt[T]()`  an `Attempt` over a `T` and the declared errors
+row  `record()`  a record typed by the response schema
+row  `tuple()`  a named tuple typed by the response schema, read eagerly
+```
 
 A JSON response can be read without a mirror class at all: `record()` yields a
 [record](records.md) typed by the response schema, with one member per property at the type the

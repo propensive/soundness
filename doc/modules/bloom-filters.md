@@ -122,3 +122,18 @@ bits each, so a frozen filter grows into another frozen filter without the origi
 Building one from a large collection with `++` is a single pass and a single copy, rather than
 the sequence of copies that repeated `+` would suggest — and filling an exclusive filter with
 `addAll` before freezing it is no copy at all.
+
+The operations on a filter, side by side:
+
+```tabular
+column  Operation
+column  Applies to
+column  Yields
+column  Copies the bits
+row  `filter + element`  any filter  a new frozen filter  once
+row  `filter ++ elements`  any filter  a new frozen filter  once
+row  `filter.add(element)`  an exclusive filter  nothing; fills it in place  never
+row  `filter.addAll(elements)`  an exclusive filter  nothing; fills it in place  never
+row  `BloomFilter.freeze(filter)`  an exclusive filter, consumed  the frozen filter  never
+row  `filter.hits(element)`  any filter  `false` if absent, `true` if probably present  never
+```

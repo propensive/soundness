@@ -44,9 +44,7 @@ A handler that states what it needs and what it may fail with is an [honest sign
 ### A server
 
 `SocketServer` listens on a port and runs the handler for each request; the returned service stops
-the server when canceled:
-
-The port is bound when `handle` is called, and the service runs on tasks of the enclosing
+the server when canceled. The port is bound when `handle` is called, and the service runs on tasks of the enclosing
 `supervise`, so the block lasts as long as the server does. Within the handler, `request` is the
 current request — its method, target, headers, cookies and body — so routing is a `match`:
 
@@ -82,6 +80,26 @@ Http.Response(Http.Ok, cacheControl = t"no-cache")(t"""{"status": "ok"}""".read[
 Http.Response(Http.Found, location = t"/elsewhere")()
 ```
 
+The `Content-Type` each kind of body is served with:
+
+```tabular
+column  Body
+column  `Content-Type`
+row  `Text`  `text/plain`
+row  `Data`  `application/octet-stream`
+row  `Document[Html]`  `text/html; charset=UTF-8`
+row  `Json`  `application/json; charset=UTF-8`
+row  `Xml`  `application/xml; charset=UTF-8`
+row  `Yaml`  `application/yaml; charset=UTF-8`
+row  `Tel`  `application/vnd.tel`
+row  `Cbor`  `application/cbor`
+row  `Protobuf`  `application/protobuf`
+row  `Chain[Sse]`  `text/event-stream`
+row  any other type with a `Media` instance  the media type it declares
+```
+
+The format types' instances are in the `servables` package.
+
 `Redirect`, `NotFound` and `NoCache` wrap content in the common response shapes. A request body
 reads as a typed value with `as` — a [multipart](media-types.md) upload, a form
 [submission](forms.md) — and `basicAuth` guards a response behind credentials.
@@ -101,10 +119,20 @@ def pinger(): Unit = supervise:
       Control.Reply(Ping(ping.value + 1).over[Json], ())
 ```
 
-A handler answers with `Control.Reply` to send a message and carry on, `Control.Continue` to
-carry on silently, `Control.Conclude` to send a final message and close, or
-`Control.Terminate` to close at once. The handler's state, here `()`, is threaded from one
-message to the next.
+A handler answers each message with a `Control`:
+
+```tabular
+column  Answer
+column  Sends a message
+column  Then
+row  `Control.Reply(message, state)`  yes  carries on
+row  `Control.Continue(state)`  no  carries on
+row  `Control.Conclude(message, state)`  yes  closes
+row  `Control.Terminate`  no  closes at once
+```
+
+The handler's state, here `()`, is threaded from one message to the next; where a state is
+optional and left out, the previous one carries over.
 
 The implementation handles the protocol's sharp edges — masking, fragmentation, ping–pong,
 UTF-8 validation, close codes — and conforms to the
@@ -120,9 +148,19 @@ its response memoizes it explicitly.
 
 ### HTTP/2
 
-A TLS listening socket offers `h2` then `http/1.1` by ALPN, and a connection that negotiates
-`h2` is driven by the HTTP/2 engine instead of the HTTP/1.1 keep-alive loop. The handler
-contract is unchanged, so an existing application serves HTTP/2 with no alteration:
+A TLS listening socket offers `h2` then `http/1.1` by ALPN, and the protocol a connection
+speaks follows from how it arrives:
+
+```tabular
+column  Connection
+column  Protocol
+row  cleartext, to a `SocketServer`  HTTP/1.1
+row  TLS, negotiating `h2`  HTTP/2
+row  TLS, negotiating `http/1.1` or nothing  HTTP/1.1
+row  cleartext h2c with prior knowledge, over an `Http2.Endpoint`  HTTP/2
+```
+
+The handler contract is unchanged, so an existing application serves HTTP/2 with no alteration:
 
 ```scala
 def secure(context: javax.net.ssl.SSLContext): Unit = supervise:
@@ -143,11 +181,19 @@ Cleartext h2c with prior knowledge — the flavor used between services — is s
 ### Front-ends
 
 Cleartext HTTP/1.1 connections are served by one of two front-ends, selected by a `Frontend`
-given in scope when `handle` is called. The default, `frontends.threadPerConnectionFrontend`,
-runs each connection on its own virtual thread: a handler may block — on a database, a file,
-another service — and only its own connection waits. The alternative,
-`frontends.reactiveFrontend`, is an event loop: a fixed fleet of selector threads, each
-serving a batch of ready connections per wake-up, with the handler run inline on the loop:
+given in scope when `handle` is called:
+
+```tabular
+column  Front-end
+column  Runs a handler
+column  A blocking handler stalls
+row  `frontends.threadPerConnectionFrontend`, the default  on its connection's virtual thread  only its own connection
+row  `frontends.reactiveFrontend`  inline on one of a fixed fleet of selector threads  every connection on that loop
+```
+
+On the default, a handler may block — on a database, a file, another service. The reactive
+front-end is an event loop, each selector thread serving a batch of ready connections per
+wake-up:
 
 ```scala
 import frontends.reactiveFrontend

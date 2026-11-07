@@ -857,37 +857,31 @@ entry .Link   the namespace of `Link.Error`, the failure of linking, path search
           case Link.Error.Reason.Failed(trace)                  => trace.show
           case other                                            => other.communicate.text
         ```
-    entry .Reason   why linking failed: fifteen numbered cases, each with its message
+    entry .Reason   why linking failed: fourteen numbered cases, each with its message
       detail
           Each case carries its number as `#number`, which is the detail part of the error's
           code (`443.5` for `NoPath`):
 
-          - `Failed(trace)` (1): _the linker terminated abnormally_ — a tool threw; the
-            `StackTrace` is kept.
-          - `NoEntryPoint` (3): _a native executable requires exactly one entry point_ — also
-            raised by the APK tool, which needs its launcher activity.
-          - `ManyEntryPoints` (4): _an executable JAR permits at most one entry point_.
-          - `NoPath(source, target)` (5): _the toolchain has no path from `source` to
-            `target`_.
-          - `AmbiguousPath(source, target)` (6): _the toolchain has several shortest paths
-            from `source` to `target`, so an intermediate format must be produced
-            explicitly_.
-          - `InapplicableSetting` (7): _a setting applies to no format produced on the path_.
-          - `DuplicateEdge(source, target)` (8): _the toolchain declares more than one edge
-            from `source` to `target`_.
-          - `CyclicToolchain` (9): _the toolchain's edges form a cycle_.
-          - `UnexpectedInput(format)` (10): _the tool producing `format` cannot consume the
-            content it was given_ — a `Deliverable` of the wrong variant reached a tool.
-          - `CompilationFailed(notices)` (11): _compilation failed with N errors_, where N
-            counts the notices whose importance is `Error`; the list holds every diagnostic.
-          - `MissingSetting(name)` (12): _the setting `name` is required but unspecified_.
-          - `Packaging(detail)` (13): _packaging failed: `detail`_ — a zip, path, I/O or
-            filename fault while bundling a JAR, dexing or packaging an APK, with the
-            underlying error's message.
-          - `CompilerCrash` (14): _the compiler crashed_ — a compile edge's compiler threw.
-          - `CompilerUnusable(detail)` (15): _the compiler could not be run: `detail`_ — a
-            compile edge could not configure or await its compiler (`scalac`, `javac`,
-            `kotlinc`).
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Failed(trace)`  1  _the linker terminated abnormally_  a tool threw; the `StackTrace` is kept
+          row  `NoEntryPoint`  3  _a native executable requires exactly one entry point_  also raised by the APK tool, which needs its launcher activity
+          row  `ManyEntryPoints`  4  _an executable JAR permits at most one entry point_
+          row  `NoPath(source, target)`  5  _the toolchain has no path from `source` to `target`_
+          row  `AmbiguousPath(source, target)`  6  _the toolchain has several shortest paths from `source` to `target`, so an intermediate format must be produced explicitly_
+          row  `InapplicableSetting`  7  _a setting applies to no format produced on the path_
+          row  `DuplicateEdge(source, target)`  8  _the toolchain declares more than one edge from `source` to `target`_
+          row  `CyclicToolchain`  9  _the toolchain's edges form a cycle_
+          row  `UnexpectedInput(format)`  10  _the tool producing `format` cannot consume the content it was given_  a `Deliverable` of the wrong variant reached a tool
+          row  `CompilationFailed(notices)`  11  _compilation failed with N errors_  N counts the notices whose importance is `Error`; the list holds every diagnostic
+          row  `MissingSetting(name)`  12  _the setting `name` is required but unspecified_
+          row  `Packaging(detail)`  13  _packaging failed: `detail`_  a zip, path, I/O or filename fault while bundling a JAR, dexing or packaging an APK, with the underlying error's message
+          row  `CompilerCrash`  14  _the compiler crashed_  a compile edge's compiler threw
+          row  `CompilerUnusable(detail)`  15  _the compiler could not be run: `detail`_  a compile edge could not configure or await its compiler (`scalac`, `javac`, `kotlinc`)
+          ```
       entry #number   the reason's number, the detail part of the error code
     entry .communicable   renders each reason as the message listed under `Link.Error.Reason`
     entry #reason   why linking failed

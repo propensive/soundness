@@ -42,11 +42,22 @@ import strategies.throwUnsafely
 
 There is deliberately no default `Cloak`: constructing any secret value — a password, a
 symmetric key, a private key — needs one in scope, so the storage decision is always written
-down. `heapCloak` keeps the material in a private byte array; `offHeapCloak` moves it out of
-the Java heap, so it does not appear in a heap dump; `veiledHeapCloak` and `veiledOffHeapCloak`
-additionally keep it encrypted under an ephemeral key between uses. No cloak defends against a
-debugger in the same process; what the stronger ones shrink is the window during which
-cleartext is reachable from a heap dump or core file.
+down. The `cloaks` package offers four, which differ in where the material rests between uses
+and whether it rests encrypted:
+
+```tabular
+column  Cloak
+column  At rest, the secret is
+column  Ephemeral key
+row  `heapCloak`  cleartext, in a private byte array on the heap
+row  `offHeapCloak`  cleartext, outside the Java heap
+row  `veiledHeapCloak`  ciphertext, on the heap  off the heap
+row  `veiledOffHeapCloak`  ciphertext, outside the Java heap  on the heap
+```
+
+Only `heapCloak` is available on Scala.js and Scala Native. No cloak defends against a debugger
+in the same process; what the stronger ones shrink is the window during which cleartext is
+reachable from a heap dump or core file.
 
 ### Symmetric encryption
 
@@ -165,9 +176,19 @@ is skipped, and a source with no blocks at all reads as an empty sequence rather
 ### Reading keys
 
 A key that already exists — in `~/.ssh`, or written by `openssl` — reads into a `PrivateKey` of
-the cipher you name, from any of the forms a key file takes: PKCS#8 (`PRIVATE KEY`), PKCS#1 (`RSA
-PRIVATE KEY`), SEC1 (`EC PRIVATE KEY`) or OpenSSH's own container (`OPENSSH PRIVATE KEY`). A
-`Cloak` must be in scope, as for any secret:
+the cipher you name, from any of the forms a key file takes:
+
+```tabular
+column  Form
+column  PEM label
+column  Label value
+row  PKCS#8  `PRIVATE KEY`  `Pem.Label.PrivateKey`
+row  PKCS#1  `RSA PRIVATE KEY`  `Pem.Label.RsaPrivateKey`
+row  SEC1  `EC PRIVATE KEY`  `Pem.Label.EcPrivateKey`
+row  OpenSSH's own container  `OPENSSH PRIVATE KEY`  `Pem.Label.OpensshPrivateKey`
+```
+
+A `Cloak` must be in scope, as for any secret:
 
 ```scala
 val keyText = t"""-----BEGIN OPENSSH PRIVATE KEY-----
@@ -241,9 +262,18 @@ bytes.as[Asn1]                   // the same value again
 ```
 
 DER is canonical, so a document has exactly one valid encoding, and the codec enforces that in
-both directions: an overlong length, a non-minimal integer, an unsorted `SET`, an indefinite
-length, or trailing bytes all raise an `Asn1.Error` whose reason names the fault and the byte
-offset at which it was found.
+both directions. Each departure from it raises an `Asn1.Error` whose reason names the fault and
+the byte offset at which it was found; among them:
+
+```tabular
+column  Fault
+column  Reason
+row  an overlong length  `NonMinimalLength`
+row  a non-minimal integer  `NonMinimalInteger`
+row  an unsorted `SET`  `UnsortedSet`
+row  an indefinite length  `IndefiniteLength`
+row  trailing bytes  `Trailing`
+```
 
 Decoding is total. A tag this layer does not model — `T61String`, `BMPString`, `ENUMERATED`, an
 implicitly tagged value — decodes to `Asn1.Unknown`, carrying its content octets verbatim, so
@@ -326,4 +356,32 @@ would say which of the two went wrong to someone guessing.
 Encrypting with DES, RC2, 1024-bit RSA, ECB mode or any unauthenticated block cipher requires a
 permission from the `cryptoPermits` package in scope — the same [permit machinery](hashing.md)
 that gates MD5 and SHA-1 — so accepting legacy cryptography is an explicit, auditable decision
-rather than a default.
+rather than a default. The permits nest, and `permitDisallowedCrypto` includes every other:
+
+```tabular
+column  Algorithm
+column  Permitted by
+row  any block cipher, which is unauthenticated  `permitUnauthenticatedCrypto`
+row  Triple-DES  `permitDeprecatedCrypto`; to decrypt or verify only, `permitLegacyCrypto`
+row  DSA  `permitDisallowedCrypto`; to verify only, `permitLegacyCrypto`
+row  DES, RC2, Blowfish  `permitDisallowedCrypto`
+row  1024-bit RSA  `permitDisallowedCrypto`
+row  ECB mode  `permitDisallowedCrypto`
+```
+
+Across the algorithms, the operations each supports and the permit it needs are:
+
+```tabular
+column  Algorithm
+column  Operations
+column  Permit
+row  `Aes[128 | 192 | 256]`  encrypt, decrypt  `permitUnauthenticatedCrypto`
+row  `TripleDes[112 | 168]`  encrypt, decrypt  `permitDeprecatedCrypto`
+row  `Des`, `Rc2[40 | 64 | 128]`, `Blowfish[128 | 256 | 448]`  encrypt, decrypt  `permitDisallowedCrypto`
+row  `AesGcm[128 | 256]`, `ChaCha20Poly1305`  seal, unseal
+row  `Rsa[2048 | 3072 | 4096]`  encrypt, decrypt, sign, verify
+row  `Rsa[1024]`  encrypt, decrypt, sign, verify  `permitDisallowedCrypto`
+row  `Dsa[512 | 1024 | 2048 | 3072]`  sign, verify  `permitDisallowedCrypto`
+row  `Ecdsa[256 | 384 | 521]`, `Ed25519`, `MlDsa[44 | 65 | 87]`  sign, verify
+row  `X25519`, `Ecdh[256 | 384 | 521]`  agree
+```

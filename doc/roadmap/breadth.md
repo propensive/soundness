@@ -15,13 +15,17 @@ production-readiness gate; the rest lie beyond it. A row is complete
 when its module ships with tests, error pages and a topic guide — the same bar as every other
 module, because a battery that is undocumented or partial is not included, merely present.
 
-| Item | Standard | Horizon | In the gate |
-|------|----------|---------|-------------|
-| brd-1 | JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519) | near | yes |
-| brd-2 | TOML | near | yes |
-| brd-3 | WebAuthn | mid | yes |
-| brd-4 | QUIC and HTTP/3 (RFC 9000, RFC 9114) | long | no |
-| brd-5 | IMAP (RFC 9051) | long | no |
+```tabular
+column  Item
+column  Standard
+column  Horizon
+column  In the gate
+row  brd-1  JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519)  near  yes
+row  brd-2  TOML  near  yes
+row  brd-3  WebAuthn  mid  yes
+row  brd-4  QUIC and HTTP/3 (RFC 9000, RFC 9114)  long  no
+row  brd-5  IMAP (RFC 9051)  long  no
+```
 
 ## brd-1: JOSE
 

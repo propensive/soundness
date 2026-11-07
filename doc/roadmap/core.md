@@ -17,6 +17,21 @@ drain loop was deprecate → fix call sites → delete; the compat file is now g
 is invisible — in signatures, in stack traces, in rendered values — everywhere but inside
 proscenium itself.
 
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  core-1  sorted and ordered collections have Soundness equivalents  near
+row  core-2  `proscenium.compat` is empty  near → mid  core-1
+row  core-3  no direct `scala.collection` imports  near → mid  core-1
+row  core-4  indexed access is total by construction  mid
+row  core-5  nothing Java-shaped at debug time  mid → long
+row  core-6  the totality audit  long
+```
+
 ## core-1: sorted and ordered collections have Soundness equivalents
 
 Horizon: near

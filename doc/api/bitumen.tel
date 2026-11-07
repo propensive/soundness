@@ -268,23 +268,24 @@ entry .Tar   the tar format: a marker type, the plane of entry names, and the ho
         the structural ones (`path`, `linkpath`, `uname` and `gname`, which are folded into
         the fields they override), such as `atime`, `ctime` or a sub-second `mtime`.
 
-        - `File(path, mode, user, group, mtime, data, pax)` — a regular file, its contents an
-          `Archive.Body`.
-        - `Directory(path, mode, user, group, mtime, pax)` — a directory; its name serializes
-          with a trailing `/`.
-        - `Link(…, target, pax)` — a hard link to `target`, a text naming another entry.
-        - `Symlink(…, target, pax)` — a symbolic link to `target`.
-        - `CharSpecial(…, device, pax)` and `BlockSpecial(…, device, pax)` — a character or
-          block device, `device` its `(major, minor)` numbers as `U32`s.
-        - `Fifo(path, mode, user, group, mtime, pax)` — a named pipe.
-        - `Sparse(…, realSize, segments, data, pax)` — a GNU sparse file: `realSize` is its
-          apparent length, `segments` the `SparseSegment`s which hold data, and `data` the
-          concatenation of those segments' bytes.
-        - `Pax(records)` and `GnuLong(typeFlag, content)` — the metadata pseudo-entries which
-          precede a real entry in the stream, carrying a pax extended header or a GNU long
-          name or link target. `Tarfile` writes these itself from an entry's fields, and the
-          reader folds them into the entry which follows, so a program never sees one from
-          `Tarfile.read`.
+        ```tabular
+        column  Case
+        column  Entry
+        row  `File(path, mode, user, group, mtime, data, pax)`  a regular file, its contents an `Archive.Body`
+        row  `Directory(path, mode, user, group, mtime, pax)`  a directory; its name serializes with a trailing `/`
+        row  `Link(…, target, pax)`  a hard link to `target`, a text naming another entry
+        row  `Symlink(…, target, pax)`  a symbolic link to `target`
+        row  `CharSpecial(…, device, pax)`  a character device, `device` its `(major, minor)` numbers as `U32`s
+        row  `BlockSpecial(…, device, pax)`  a block device, `device` its `(major, minor)` numbers as `U32`s
+        row  `Fifo(path, mode, user, group, mtime, pax)`  a named pipe
+        row  `Sparse(…, realSize, segments, data, pax)`  a GNU sparse file: `realSize` is its apparent length, `segments` the `SparseSegment`s which hold data, and `data` the concatenation of their bytes
+        row  `Pax(records)`  a pax extended header, preceding a real entry
+        row  `GnuLong(typeFlag, content)`  a GNU long name or link target, preceding a real entry
+        ```
+
+        `Pax` and `GnuLong` are metadata pseudo-entries. `Tarfile` writes them itself from an
+        entry's fields, and the reader folds them into the entry which follows, so a program never
+        sees one from `Tarfile.read`.
 
         The companion's `apply` and `at` build the common case, a file, with defaults; the
         case classes take everything explicitly, which is how a mode, an owner or a fixed
@@ -399,32 +400,25 @@ entry .Tar   the tar format: a marker type, the plane of entry names, and the ho
         Error 284: _the TAR archive could not be read or written because `reason`_. Its
         `#reason` is a `Tar.Error.Reason`, each with its own number and message:
 
-        - `NameTooLong(field, length, maximum)` (1) — _the `field` field is `length` bytes,
-          exceeding the USTAR limit of `maximum` bytes_.
-        - `BadMagic(actual)` (2) — _the USTAR magic bytes are not valid_.
-        - `BadChecksum(expected, actual)` (3) — _the header checksum did not match_; the
-          reader stops at the corrupt block rather than parse on from untrusted bytes.
-        - `UnknownTypeFlag(byte)` (4) — _the entry type flag `code` is not recognised_. The
-          error is raised and the entry degrades to a regular file, POSIX's prescribed
-          treatment, never to a directory, which would corrupt the archive's tree.
-        - `TruncatedStream(needed, got)` (5) — _the archive stream ended unexpectedly_: a
-          partial header, a body shorter than its header said, or an archive with no
-          terminating zero blocks.
-        - `BadOctal(field, data)` (6) — _the `field` field did not contain a valid octal
-          value_.
-        - `BadPaxRecord(data)` (7) — _a PAX extended-header record could not be parsed_.
-        - `BadName(text)` (8) — _the entry name `text` is not a valid POSIX relative path_:
-          an absolute name, or one with a `.` or `..` segment.
-        - `BadSparseMap(text)` (9) — _the GNU sparse map `text` could not be parsed_.
-        - `DeviceCreationUnsupported(path)` (10) — _the special device entry at `path` could
-          not be created on this filesystem_: `extractTo` met a FIFO or device, or
-          `archive[Tar]` met a descendant tar cannot store.
-        - `WriteUnsupported` (11) — _TAR archives cannot yet be opened for writing_: an
-          `open[Tar]` with a `Write` mode. Writing is `create[Tar]` or writing a `Tarfile`.
-        - `AlreadyExists` (12) — _an archive already exists at this path_: `create[Tar]`
-          without `CreateFlag.Replace`.
-        - `CannotWrite(detail)` (13) — _the archive could not be written: `detail`_: an I/O
-          failure during `create[Tar]`.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `NameTooLong(field, length, maximum)`  1  _the `field` field is `length` bytes, exceeding the USTAR limit of `maximum` bytes_
+        row  `BadMagic(actual)`  2  _the USTAR magic bytes are not valid_
+        row  `BadChecksum(expected, actual)`  3  _the header checksum did not match_  the reader stops at the corrupt block rather than parse on from untrusted bytes
+        row  `UnknownTypeFlag(byte)`  4  _the entry type flag `code` is not recognised_  the entry degrades to a regular file, as POSIX prescribes, never to a directory
+        row  `TruncatedStream(needed, got)`  5  _the archive stream ended unexpectedly_  a partial header, a short body, or no terminating zero blocks
+        row  `BadOctal(field, data)`  6  _the `field` field did not contain a valid octal value_
+        row  `BadPaxRecord(data)`  7  _a PAX extended-header record could not be parsed_
+        row  `BadName(text)`  8  _the entry name `text` is not a valid POSIX relative path_  an absolute name, or one with a `.` or `..` segment
+        row  `BadSparseMap(text)`  9  _the GNU sparse map `text` could not be parsed_
+        row  `DeviceCreationUnsupported(path)`  10  _the special device entry at `path` could not be created on this filesystem_  `extractTo` met a FIFO or device, or `archive[Tar]` met a descendant tar cannot store
+        row  `WriteUnsupported`  11  _TAR archives cannot yet be opened for writing_  an `open[Tar]` with a `Write` mode; write with `create[Tar]` or by writing a `Tarfile`
+        row  `AlreadyExists`  12  _an archive already exists at this path_  `create[Tar]` without `CreateFlag.Replace`
+        row  `CannotWrite(detail)`  13  _the archive could not be written: `detail`_  an I/O failure during `create[Tar]`
+        ```
 
         Every reading API needs a `Tactic[Tar.Error]` in scope; `strategies.throwUnsafely`
         throws it, and `safely` or `mitigate` handles it. A read which can recover — a bad
@@ -878,26 +872,21 @@ entry .Ar   the ar format: a marker type and the home of `Ar.Entry`, `Ar.Error`,
         Error 286: _the ar archive could not be read or written because `reason`_. Its
         `#reason` is an `Ar.Error.Reason`, each with its own number and message:
 
-        - `BadMagic(actual)` (1) — _the archive does not begin with the ar magic bytes_.
-        - `BadTerminator(actual)` (2) — _the header is not terminated by the two magic
-          bytes_: the cursor is no longer on a header boundary, which is the only structural
-          check a header offers.
-        - `BadDecimal(field, data)` (3) — _the `field` field did not contain a valid decimal
-          value_.
-        - `BadOctal(field, data)` (4) — _the `field` field did not contain a valid octal
-          value_ (the `mode` field is octal; every other numeric field is decimal).
-        - `TruncatedStream(needed, got)` (5) — _the archive stream ended unexpectedly_: a
-          short header, or a body shorter than its header said.
-        - `BadLongNameRef(reference)` (6) — _the long-name reference `reference` does not
-          resolve in the archive's name table_: a `/`-prefixed name with no `//` member
-          before it, or an offset outside the table.
-        - `UnsupportedNameFormat(name)` (7) — _the member name `name` uses the BSD
-          length-prefixed form, which is not supported_: BSD `ar` puts a long name in the
-          payload as `#1/<length>`, a form which does not occur in Debian archives.
-        - `WriteUnsupported` (8) — _ar archives cannot yet be opened for writing_: an
-          `open[Ar]` with a `Write` mode. Writing is writing an `Arfile`.
-        - `Unrepresentable(name)` (9) — _the entry `name` is neither a regular file nor a
-          directory, which ar cannot store_: `archive[Ar]` met a FIFO or device.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `BadMagic(actual)`  1  _the archive does not begin with the ar magic bytes_
+        row  `BadTerminator(actual)`  2  _the header is not terminated by the two magic bytes_  the cursor is no longer on a header boundary, the only structural check a header offers
+        row  `BadDecimal(field, data)`  3  _the `field` field did not contain a valid decimal value_
+        row  `BadOctal(field, data)`  4  _the `field` field did not contain a valid octal value_  the `mode` field is octal; every other numeric field is decimal
+        row  `TruncatedStream(needed, got)`  5  _the archive stream ended unexpectedly_  a short header, or a body shorter than its header said
+        row  `BadLongNameRef(reference)`  6  _the long-name reference `reference` does not resolve in the archive's name table_  a `/`-prefixed name with no `//` member before it, or an offset outside the table
+        row  `UnsupportedNameFormat(name)`  7  _the member name `name` uses the BSD length-prefixed form, which is not supported_  BSD `ar`'s `#1/<length>` form, which does not occur in Debian archives
+        row  `WriteUnsupported`  8  _ar archives cannot yet be opened for writing_  an `open[Ar]` with a `Write` mode; write by writing an `Arfile`
+        row  `Unrepresentable(name)`  9  _the entry `name` is neither a regular file nor a directory, which ar cannot store_  `archive[Ar]` met a FIFO or device
+        ```
 
         Every reading API needs a `Tactic[Ar.Error]` in scope. Because the format has no
         checksum and no end marker, a short header cannot be parsed best-effort: the

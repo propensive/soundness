@@ -117,7 +117,23 @@ Keypress.Shift(Keypress.Enter)
 The wrappers accept only what can meaningfully be modified, so `Shift(CharKey('a'))` does not
 typecheck — a shifted `a` is `CharKey('A')`, and the shift has already been applied. A keypress
 renders with a Unicode symbol in brackets for each special key, joined to what it modifies with
-`+`: `[⇧]+[↵]`, `[⌃]+C`, `[⌥]+[→]`.
+`+`, as in `[⇧]+[↵]`, `[⌃]+[C]` or `[⌥]+[→]`:
+
+```tabular
+column  Keypress
+column  Renders as
+row  `CharKey('a')`  `[a]`
+row  `CharKey(' ')`  `[␣]`
+row  `FunctionKey(5)`  `[F5]`
+row  `Tab`, `Enter`  `[⇥]`, `[↵]`
+row  `Backspace`, `Delete`, `Insert`  `[⌫]`, `[⌦]`, `[⎀]`
+row  `Escape`  `[⎋]`
+row  `Up`, `Down`, `Left`, `Right`  `[↑]`, `[↓]`, `[←]`, `[→]`
+row  `Home`, `End`  `[↖]`, `[↘]`
+row  `PageUp`, `PageDown`  `[⇞]`, `[⇟]`
+row  `EscapeSeq(id, …)`  `[⎋id]`
+row  `Shift(…)`, `Ctrl(…)`, `Alt(…)`, `Meta(…)`  `[⇧]+…`, `[⌃]+…`, `[⌥]+…`, `[⌘]+…`
+```
 
 The vocabulary is deliberately separate from anything that produces or consumes it: the terminal
 decodes escape sequences into these values, and [web automation](web-automation.md) renders them
@@ -143,9 +159,19 @@ supervise:
 
 ### Layout
 
-Interfaces larger than a line compose from panes: `panel` for content, `editor` and `menu` for the
-interactive widgets, `strip` and `stack` to arrange them in columns and rows, and `border` to frame
-them. `conduct` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
+Interfaces larger than a line compose from panes:
+
+```tabular
+column  Combinator
+column  Makes
+row  `panel`  a pane of content
+row  `editor`, `menu`  an interactive widget: a `LineEditor` or a menu of options
+row  `strip`  panes side by side, as columns
+row  `stack`  panes one above another, as rows
+row  `border`  a frame around a pane
+```
+
+`conduct` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
 block at the cursor that leaves scrollback intact:
 
 ```scala fuel

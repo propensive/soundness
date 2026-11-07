@@ -324,20 +324,19 @@ entry .Layout   the block-level nodes of a document: headings, paragraphs, lists
       tool can report the position of a block it objects to. Where a block holds inline
       content, it holds it as `Prose` nodes; where it holds other blocks, as `Layout`s.
 
-      - `BlockQuote(line, layout*)` — a `>` quote, holding blocks.
-      - `OrderedList(line, start, tight, delimiter, items*)` — a numbered list: `start` is
-        the first item's number, `tight` whether the items are rendered without paragraph
-        wrappers (a list with no blank line between its items), `delimiter` the `.` or `)`
-        after each number, and each item is a `List[Layout]` of blocks.
-      - `BulletList(line, tight, items*)` — a `-`, `*` or `+` list, with items as above.
-      - `CodeBlock(line, info, content)` — a fenced or indented code block: `info` is the
-        fence's info string cut at whitespace (so ` ```scala ` gives `List(t"scala")`, and an
-        indented block gives `Nil`), and `content` the raw code, with a trailing newline.
-      - `Paragraph(line, prose*)` — a paragraph of inline content.
-      - `Heading(line, level, prose*)` — an ATX or setext heading; `level` is typed as
-        `1 | 2 | 3 | 4 | 5 | 6`.
-      - `ThematicBreak(line)` — a `---`, `***` or `___` rule.
-      - `HtmlBlock(line, html)` — a block of raw HTML, kept as written.
+      ```tabular
+      column  Case
+      column  Block
+      column  Notes
+      row  `BlockQuote(line, layout*)`  a `>` quote  holds blocks
+      row  `OrderedList(line, start, tight, delimiter, items*)`  a numbered list  `start` is the first item's number; `tight` is whether the items render without paragraph wrappers (no blank line between them); `delimiter` is the `.` or `)` after each number; each item is a `List[Layout]` of blocks
+      row  `BulletList(line, tight, items*)`  a `-`, `*` or `+` list  items as for `OrderedList`
+      row  `CodeBlock(line, info, content)`  a fenced or indented code block  `info` is the fence's info string cut at whitespace (`List(t"scala")` for a `scala` fence, `Nil` for an indented block); `content` is the raw code, with a trailing newline
+      row  `Paragraph(line, prose*)`  a paragraph of inline content
+      row  `Heading(line, level, prose*)`  an ATX or setext heading  `level` is typed as `1 | 2 | 3 | 4 | 5 | 6`
+      row  `ThematicBreak(line)`  a `---`, `***` or `___` rule
+      row  `HtmlBlock(line, html)`  a block of raw HTML  kept as written
+      ```
 
       ```scala
       import soundness.*
@@ -365,20 +364,20 @@ entry .Prose   the inline nodes of Markdown: text, emphasis, code spans, links, 
       The enumeration of CommonMark's inline structure, which a `Layout.Paragraph` or
       `Layout.Heading` holds and a `Markdown of Prose` lists. Its cases are:
 
-      - `Textual(text)` — plain text, with escapes and entity references already decoded,
-        so `\*` is `*` and `&amp;` is `&`.
-      - `Softbreak` — a line ending inside a paragraph, which renders as a newline in HTML
-        and as a space in a terminal.
-      - `Linebreak` — a hard break (two trailing spaces or a backslash before the line end),
-        which renders as `br`.
-      - `Code(code)` — a backtick code span.
-      - `Emphasis(prose*)` — `*text*` or `_text_`.
-      - `Strong(prose*)` — `**text**` or `__text__`.
-      - `Link(destination, title, prose*)` — an inline, reference or automatic link, with
-        the reference already resolved to its destination and optional title.
-      - `Image(destination, title, prose*)` — `![alt](src "title")`, whose content is the
-        alternative text.
-      - `HtmlInline(html)` — a raw inline HTML tag, kept as written.
+      ```tabular
+      column  Case
+      column  Inline
+      column  Notes
+      row  `Textual(text)`  plain text  escapes and entity references already decoded, so `\*` is `*` and `&amp;` is `&`
+      row  `Softbreak`  a line ending inside a paragraph  renders as a newline in HTML and as a space in a terminal
+      row  `Linebreak`  a hard break: two trailing spaces, or a backslash before the line end  renders as `br`
+      row  `Code(code)`  a backtick code span
+      row  `Emphasis(prose*)`  `*text*` or `_text_`
+      row  `Strong(prose*)`  `**text**` or `__text__`
+      row  `Link(destination, title, prose*)`  an inline, reference or automatic link  the reference already resolved to its destination and optional title
+      row  `Image(destination, title, prose*)`  `![alt](src "title")`  its content is the alternative text
+      row  `HtmlInline(html)`  a raw inline HTML tag  kept as written
+      ```
 
       ```scala
       import soundness.*
@@ -588,13 +587,24 @@ entry .markdownPrintable   prints a document to a terminal at the width its `Ter
 entry .MarkdownPalette   the colours the terminal renderer uses, as a case class with a default
   detail
       Seven 24-bit `Chroma` colours, each a field with a default chosen to read on both light
-      and dark backgrounds in a true-colour terminal: `#heading` for heading text and the
-      rules under level-1 and level-2 headings, `#link` for link text, `#code` and `#codeBg`
-      for a code span's foreground and background, `#quoteBar` for the `▎` beside a block
-      quote, `#rule` for a thematic break, and `#subdued` for list markers, heading prefixes,
-      image labels, inline and block HTML and unhighlighted code blocks. The companion's
-      `.default` given is in implicit scope, so `terminal` needs no palette import; another
-      is bound as a local given, usually by copying the default with one field changed.
+      and dark backgrounds in a true-colour terminal:
+
+      ```tabular
+      column  Field
+      column  Colours
+      column  Default
+      row  `#heading`  heading text, and the rules under level-1 and level-2 headings  `Chroma(0x82, 0xaa, 0xff)`
+      row  `#link`  link text  `Chroma(0x80, 0xcb, 0xc4)`
+      row  `#code`  a code span's foreground  `Chroma(0xff, 0xcb, 0x6b)`
+      row  `#codeBg`  a code span's background  `Chroma(0x2a, 0x2a, 0x2a)`
+      row  `#quoteBar`  the `▎` beside a block quote  `Chroma(0x82, 0xaa, 0xff)`
+      row  `#rule`  a thematic break  `Chroma(0x60, 0x60, 0x60)`
+      row  `#subdued`  list markers, heading prefixes, image labels, inline and block HTML, and unhighlighted code blocks  `Chroma(0x80, 0x80, 0x80)`
+      ```
+
+      The companion's `.default` given is in implicit scope, so `terminal` needs no palette
+      import; another is bound as a local given, usually by copying the default with one field
+      changed.
 
       ```scala
       import soundness.*

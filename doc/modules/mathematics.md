@@ -115,9 +115,24 @@ m1*10   // Matrix[2, 3]((10, 20, 30), (40, 50, 60))
 -m1     // Matrix[2, 3]((-1, -2, -3), (-4, -5, -6))
 ```
 
-A product whose dimensions do not agree is a compile error, not a runtime shape check. Square
-matrices add `determinant`, `trace`, `inverse` — an `Optional`, absent for a singular matrix — and
-`solve` for a linear system:
+A product whose dimensions do not agree is a compile error, not a runtime shape check. Beyond its
+arithmetic, a matrix has these operations, and those of a square matrix exist only for one:
+
+```tabular
+column  Method
+column  Of
+column  Gives
+row  `transpose`  any matrix  the transpose
+row  `rank`  any matrix  the rank
+row  `frobeniusNorm`  any matrix  the square root of the sum of the squares of its entries
+row  `determinant`  a square matrix  the determinant
+row  `trace`  a square matrix  the sum of the diagonal
+row  `inverse`  a square matrix  the inverse, or `Unset` for a singular matrix
+row  `solve`  a square matrix  the solution of a linear system, as an `Optional` vector
+row  `adjugate`  a square matrix  the transpose of the cofactor matrix
+row  `eigenvalues`  a square matrix of `Double`s  the eigenvalues, as an `Optional` vector
+row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+```
 
 ```scala
 Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant   // 49
@@ -125,17 +140,15 @@ Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse
 // Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))
 ```
 
-The `adjugate` — the transpose of the cofactor matrix — is available in its own right, since it is
-defined over any ring and not only where division is possible, so an integer matrix has an
+The `adjugate` is available in its own right, since it is defined over any ring and not only where division is possible, so an integer matrix has an
 adjugate where it has no inverse:
 
 ```scala
 Matrix[2, 2]((1, 2), (3, 4)).adjugate   // Matrix[2, 2]((4, -2), (-3, 1))
 ```
 
-`frobeniusNorm` gives the matrix's magnitude — the square root of the sum of the squares of its
-entries — and `eigenvalues` computes the values for which the matrix has an eigenvector, as an
-`Optional` since not every matrix has real eigenvalues:
+`frobeniusNorm` gives the matrix's magnitude, and `eigenvalues` the values for which it has an
+eigenvector — an `Optional`, since not every matrix has real eigenvalues:
 
 ```scala
 Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm   // 5.0

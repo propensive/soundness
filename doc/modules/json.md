@@ -85,11 +85,23 @@ t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
 ```
 
 The `in[Json]` method encodes any value for which an encoder is derived, and `show`
-renders the result. (`in` is the general codec vocabulary: `value.in[Format]` encodes
-and `value.as[Type]` decodes, whatever the format.) Nested case classes and
-collections of them derive in turn, so a
-whole structure converts in one step. Decoding straight from text to a type combines
-the two:
+renders the result. `in` and `as` are the general codec vocabulary, the same whatever the
+format, and with `read` they give every route between text, `Json` and a Scala type:
+
+```tabular
+column  Expression
+column  Does
+column  Yields
+row  `value.in[Json]`  encodes a value  `Json`
+row  `json.as[Type]`  decodes a `Json` value  `Type`
+row  `text.read[Json]`  parses text  `Json`
+row  `text.read[Type in Json]`  parses and decodes in one step  `Type`
+row  `value.in[Text over Json]`  encodes and renders  `Text`
+row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
+```
+
+Nested case classes and collections of them derive in turn, so a whole structure converts in
+one step. Decoding straight from text to a type combines the two:
 
 ```scala
 case class Crew(rowers: List[Person], cox: Person, reserve: Option[Person])
@@ -100,7 +112,7 @@ t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
 ```
 
 Writing has the mirror form: `in[Text over Json]` encodes a value straight to its JSON text, in
-the `Json.Formatting` in scope, as `show` renders it:
+the `Json.Formatting` in scope, as `show` renders it.
 
 `in[Data over Json]` writes the same text as bytes, encoded in the `Codepage` in scope. A type
 with a `Json.Printable` is written directly, with no `Json` tree built, wherever the formatting
@@ -127,11 +139,20 @@ frame
 
 `Json.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
 A record can generate both instances once, into its companion, with `derives Json.Direct`, and a
-single import selects the path for every record in scope: `import codecs.direct` for a generated
-parser and printer wherever a type is a record, `import codecs.derived` for the derived codecs
-even where a direct instance exists, or `import codecs.strict` for the generated codecs with a
-compile error, naming the type, wherever `read[Foo in Json]` or `in[Text over Json]` would
-otherwise fall back to the tree. The modes are alternatives; import one at a time.
+single import selects the path for every record in scope:
+
+```tabular
+column  Import
+column  For a record
+column  For any other type
+row  `codecs.direct`  a generated parser and printer  its own direct instance, else the tree
+row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs, even over a direct instance
+row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
+```
+
+Under `codecs.strict` the error is reported wherever `read[Foo in Json]` or `in[Text over Json]`
+would otherwise fall back to the tree. With none imported, a type takes the direct path exactly
+when it has a direct instance of its own. The modes are alternatives; import one at a time.
 
 This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
 read *directly* from the source: the parser is composed for that type as the code compiles, and
@@ -169,12 +190,21 @@ t"""{"name": "Eve"}""".read[Json].as[Account]   // Account(t"Eve", 18)
 
 #### Controlling optionality
 
-An `Optional` field answers three questions, each with a default that the `optionalityOptions`
-package can override: an *absent* key reads as `Unset` (`strictJsonAbsence` raises `Absent`
-instead); an explicit `null` reads as `Unset` (`strictJsonNulls` hands it to the inner decoder,
-which rejects it as it would for any other field); and a value the inner decoder *rejects* is
-an error (`lenientJsonFaults` reads it as `Unset`, under the ambient tactic's `tolerate`, so
-nothing accrues). Each is a separate given, so one can be varied alone:
+An `Optional` field answers three questions, each with a default that a given from the
+`optionalityOptions` package can override:
+
+```tabular
+column  A key which is
+column  Reads as
+column  Unless
+row  omitted from the document  `Unset`  `strictJsonAbsence` makes it an error
+row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
+row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
+```
+
+A strict absence raises `Absent`; a strict null is rejected by the inner decoder as it would be
+for any other field; and a lenient fault is read under the ambient tactic's `tolerate`, so
+nothing accrues. Each is a separate given, so one can be varied alone:
 
 ```scala
 val strict =
@@ -323,6 +353,18 @@ t"""[1, 2, 3, 4]""".read[Json] match
 // (1, List(2, 3, 4))
 ```
 
+Each kind of hole has a meaning in both roles:
+
+```tabular
+column  Hole
+column  In an expression
+column  In a pattern
+row  `$x` in a value's place  the value, encoded as `Json`  binds the value there, as `Json`
+row  `$xs*` at the end of an array  splices a collection's elements  binds the remaining elements, as an array
+row  `$rest` in a field's place  merges a `Map[Text, Json]` of fields  binds the other fields, as an object
+row  `$x` inside a string  the value, encoded as `Text`  not supported
+```
+
 ### Navigating
 
 A field or an array element is reached by applying the `Json` value to a key or an
@@ -358,8 +400,17 @@ person(t"missing").as[Optional[Int]]   // Unset
 
 The import grants the permission, `Json is Dynamical`, to the rest of its scope. The same
 permission can be confined to a single block with `dynamically`, which names the formats it
-covers: `dynamically[Json]` for JSON alone, a union such as `dynamically[Json | Yaml]` for
-several, or no type argument at all for every format with dynamic access:
+covers:
+
+```tabular
+column  Form
+column  Grants dynamic access to
+row  `dynamically[Json]`  JSON alone
+row  `dynamically[Json | Yaml]`  each format in the union
+row  `dynamically`  every format with dynamic access
+```
+
+For JSON alone:
 
 ```scala
 val config = t"""{"server": {"port": 8080}}""".read[Json]
@@ -408,10 +459,24 @@ import formatting.indentedJsonFormatting
 (List(1, 2, 3): List[Int]).in[Json].show   // pretty-printed across several lines
 ```
 
-`show` renders the whole document into one `Text`. A large document need not be held in memory
-before it is sent. The push form of `Json.emit` serializes on the caller's thread and hands each
-block to a function as it fills — as text with `emit[Text]`, or as UTF-8 bytes with `emit[Data]`,
-encoded straight from the serializer — which is the shape for writing to a file, a socket or an
+`show` renders the whole document into one `Text`, but a large document need not be held in
+memory before it is sent. The forms of output differ in where the serializing happens and in what
+they hand out:
+
+```tabular
+column  Form
+column  Serializes on
+column  Hands out
+row  `json.show`  the caller's thread  one `Text` of the whole document
+row  `Json.emit[Text](json, deliver)`  the caller's thread  each block as `Text`, to a function
+row  `Json.emit[Data](json, deliver)`  the caller's thread  each block as UTF-8 `Data`, to a function
+row  `Json.lend(json)`  the caller's thread  the writer's own buffer, lent block by block
+row  `Json.emit(json)`  a fiber  an iterator of `Text`
+row  `Json` as `Streamable` by `Text`  a fiber  a stream of `Text`
+```
+
+The push form of `Json.emit` hands each block over as it fills, the UTF-8 bytes of `emit[Data]`
+encoded straight from the serializer, which is the shape for writing to a file, a socket or an
 `OutputStream`:
 
 ```scala fuel
@@ -448,8 +513,17 @@ supervise:
 ### Errors
 
 A conversion that cannot be made raises a `Json.Error` whose reason says what went
-wrong: a value of the wrong type, a required field that is absent, or a number
-outside the target's range. The reason can be inspected:
+wrong:
+
+```tabular
+column  Reason
+column  Raised for
+row  `NotType(found, primitive)`  a value of the wrong type
+row  `Absent`  a required field that is absent
+row  `OutOfRange`  a number outside the target's range
+```
+
+The reason can be inspected:
 
 ```scala
 capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason
@@ -509,10 +583,22 @@ Json.unseal(t"42".read[Json]).isLong          // true
 Json.unseal(t""""x"""".read[Json]).primitive  // Json.Primitive.String
 ```
 
-The predicates are finer than the primitives: `isLong` and `isDouble` distinguish the two
-numeric representations, and `isNumber` covers both, so code that cares about the difference can
-ask, and code that does not need not. `isString`, `isBoolean`, `isNull`, `isObject` and `isArray`
-complete the set.
+The predicates are finer than the primitives, so code that cares about the difference between
+numeric representations can ask, and code that does not need not:
+
+```tabular
+column  Predicate
+column  Primitive
+column  True for
+row  `isLong`  `Number`  a number held as a `Long`
+row  `isDouble`  `Number`  a number held as a `Double`
+row  `isNumber`  `Number`  any number
+row  `isString`  `String`  a string
+row  `isBoolean`  `Boolean`  `true` or `false`
+row  `isNull`  `Null`  `null`
+row  `isObject`  `Object`  an object
+row  `isArray`  `Array`  an array
+```
 
 ### Numbers and precision
 
@@ -524,17 +610,19 @@ fifteen digits — while everything shorter is decoded identically whatever the 
 import numberModes.fullNumberMode
 ```
 
-`fullNumberMode` keeps every digit, accumulating them as a binary-coded decimal at the cost of an
-allocation for that number. It is the default, because losing digits silently is the wrong thing
-to do by default.
+```tabular
+column  Mode
+column  With a number too long for the fast path
+row  `fullNumberMode`  keeps every digit as a binary-coded decimal, at the cost of an allocation
+row  `doubleNumberMode`  drops the overflow and computes a `Double` from the leading digits
+row  `bcdNumberMode`  drops the overflow and yields the raw packed accumulator, with no allocation
+```
 
-`doubleNumberMode` drops the overflow and computes a `Double` from the leading digits — matching
-what Jawn, Circe, Jsoniter and Jackson do — which is the mode to choose for a like-for-like
-throughput comparison, or where the data is known to be within a double's range.
-
-`bcdNumberMode` also drops the overflow but emits the raw packed accumulator with no allocation
-at all. The `Long` it yields carries BCD nibbles rather than the number's value, so it is
-throughput at the price of treating those numbers as opaque.
+`fullNumberMode` is the default, because losing digits silently is the wrong thing to do by
+default. `doubleNumberMode` matches what Jawn, Circe, Jsoniter and Jackson do, so it is the mode
+to choose for a like-for-like throughput comparison, or where the data is known to be within a
+double's range. The `Long` that `bcdNumberMode` yields carries BCD nibbles rather than the
+number's value, so it is throughput at the price of treating those numbers as opaque.
 
 ### NDJSON
 
@@ -656,7 +744,7 @@ posting.verify[Posting].workplace.city.as[Text]   // t"Tallinn"
 squad.verify[Squad].members(1).name.as[Text]      // t"Bob"
 ```
 
-Verified navigation needs no `dynamicJsonAccess` import — the schema, not a blanket enabler, is
+Verified navigation needs no `dynamicAccess.dynamicJson` import — the schema, not a blanket enabler, is
 what licenses it. Reaching a field of an *unverified* document still requires the enabler, and
 the error says so, so the two kinds of access cannot be confused.
 
@@ -742,31 +830,47 @@ resource is bound directly, `object Catalogue extends Json.Provider(cp"/schemas/
 (with a `Classloader` in scope, such as `classloaders.threadContextClassloader`), and read as
 the code compiles.
 
-A property named in the schema's `required` list reads at its type, and fails with a
-`Json.Provider.Error` when the document omits it; any other property, or one whose type admits
-`null`, reads as an `Optional`, `Unset` where the document omits it or gives `null`. An
-`array` property reads as a `List` of its `items` schema's type, an `object` property with
-`properties` as a nested record, and a property named with a hyphen or a keyword through a
-backticked name, `record.\`content-type\``.
+Each construct in the schema has a reading in Scala:
 
-The provider follows the schema's own structure. A `$ref` into the same document —
-`#/definitions/…`, `#/$defs/…`, or any JSON pointer — reads the definition it names, and an
-`allOf` of objects merges their properties. A string's `enum` (or `const`), `pattern`,
-`minLength` and `maxLength`, and a number's `minimum`, `maximum`, `exclusiveMinimum` and
-`exclusiveMaximum` (in draft 4's boolean form or the later numeric one) are checked as the
-field is read, raising a `Json.Provider.Error`, as is a value of the wrong JSON type. Every
-error is raised through the `Tactic` of the code reading the field, so `validate`, with a
-`venture` per field, collects every problem in a document. An `enum` without a `type` is read at the
-type of its values, and a `oneOf` or `anyOf` whose alternatives are all strings reads as one
-string — an `enum` of all their values, where each alternative is one.
+```tabular
+column  Schema construct
+column  Reads as
+row  `"type": "string"`  `Text`
+row  `"type": "integer"`  `Int`, or `Long` with `"format": "int64"`
+row  `"type": "number"`  `Double`
+row  `"type": "boolean"`  `Boolean`
+row  a property in the `required` list  its type, with a `Json.Provider.Error` where the document omits it
+row  any other property, or one whose type admits `null`  an `Optional`, `Unset` where omitted or `null`
+row  an `array` with an `items` schema  a `List` of the items' type
+row  an `object` with `properties`  a nested record
+row  `additionalProperties`, or `patternProperties` all of one type  a `Map[Text, T]`, empty where absent
+row  a `$ref` into the same document  the definition it names
+row  an `allOf` of objects  one record with all their properties
+row  an `enum` (or `const`) without a `type`  the type of its values
+row  a `oneOf` or `anyOf` whose alternatives are all strings  `Text`, an `enum` of all their values where each alternative is one
+row  a property admitting several types  the union of their readings, chosen by the kind of value found
+```
 
-Where a property admits several types, the field has the union of them, read by the kind of
-the value found: `anyOf`/`oneOf` alternatives and a `type` naming several, so `"exec":
-string | object` reads as `Text | Record { … }` and `"ignore": string | array` as
-`Text | List[Text]`, and each alternative keeps its own checks. An object whose values a single
-schema describes — `additionalProperties`, or `patternProperties` all of one type — reads as a
-`Map[Text, T]`, empty where absent, and nests freely: a dictionary of lists, a list of
-dictionaries, an array of arrays.
+A `$ref` may take any JSON pointer, `#/definitions/…` and `#/$defs/…` alike. A union arises
+from `anyOf`/`oneOf` alternatives and from a `type` naming several, so `"exec": string | object`
+reads as `Text | Record { … }` and `"ignore": string | array` as `Text | List[Text]`, and each
+alternative keeps its own checks. A dictionary nests freely: a dictionary of lists, a list of
+dictionaries, an array of arrays. A property named with a hyphen or a keyword is reached
+through a backticked name, `record.\`content-type\``.
+
+The schema's constraints are checked as the field is read, as is the value's JSON type:
+
+```tabular
+column  Applies to
+column  Keywords checked
+row  a string  `enum` (or `const`), `pattern`, `minLength`, `maxLength`
+row  a number  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
+```
+
+The exclusive bounds are accepted in draft 4's boolean form or the later numeric one. A failed
+check raises a `Json.Provider.Error`, and every error is raised through the `Tactic` of the code
+reading the field, so `validate`, with a `venture` per field, collects every problem in a
+document.
 
 What remains raw `Json`, to be read by hand: alternatives the value's kind cannot tell apart
 (two object shapes in a `oneOf`, or an alternative typed as anything), a `not` or `if`, an
@@ -780,10 +884,23 @@ method of every JVM object (`notify`, `wait`, `toString`, `hashCode`, …) canno
 name and is read through `record.selectDynamic("notify")`, whose result is the field's reading:
 cast it to `Record.Field[T, Json.Provider.Error]`, and it is applied to the `Tactic` in scope.
 
-A format naming a network or identity type — `email`, `hostname`, `ipv4`, `ipv6`, `uri`,
-`uuid` — reads as whichever type represents that domain at the call site, chosen by importing
-its interface: `emailAddressInterfaces.soundnessEmailAddress` makes `record.email` an
-`EmailAddress`, and `uuidInterfaces.soundnessUuid` makes a `uuid` field a `Uuid`.
+A format naming a network or identity type reads as whichever type represents that domain at
+the call site, chosen by importing its interface:
+
+```tabular
+column  Format
+column  Interface
+column  Reads as
+row  `email`, `idn-email`  `emailAddressInterfaces.soundnessEmailAddress`  `EmailAddress`
+row  `hostname`  `hostnameInterfaces.soundnessHostname`  `Hostname`
+row  `ipv4`  `ipAddressInterfaces.soundnessIpv4`  `Ipv4`
+row  `ipv6`  `ipAddressInterfaces.soundnessIpv6`  `Ipv6`
+row  `uri`, `iri`  `urlInterfaces.soundnessUrl`  `HttpUrl`
+row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
+```
+
+So with `emailAddressInterfaces.soundnessEmailAddress` imported, `record.email` is an
+`EmailAddress`.
 
 A provider can equally produce a named tuple, `(name: Text, children: List[(weight:
 Double)])`, whose elements are all read when it is built, by declaring a `tuple` method

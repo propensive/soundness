@@ -37,12 +37,19 @@ import strategies.throwUnsafely
 
 ### Products, sums and typeclasses
 
-Two words carry most of the weight. A *product* is a type composed of a fixed sequence of values
-of other types — a case class, an enumeration case, a tuple, a singleton — and those values are
-its *fields*, which have fixed types, a canonical order and labels. A *sum* is a type
-representing a single choice from a fixed set of disjoint types — an enumeration, a sealed trait
-— and each of those types is a *variant*. Products and sums are category-theoretic duals, and so,
-correspondingly, are fields and variants.
+Two words carry most of the weight, *product* and *sum*:
+
+```tabular
+column  Kind
+column  A type which is
+column  For example
+column  Made of
+row  product  a fixed sequence of values of other types  a case class, an enumeration case, a tuple, a singleton  *fields*
+row  sum  a single choice from a fixed set of disjoint types  an enumeration, a sealed trait  *variants*
+```
+
+A product's fields have fixed types, a canonical order and labels. Products and sums are
+category-theoretic duals, and so, correspondingly, are fields and variants.
 
 ```scala
 sealed trait Temporal
@@ -109,6 +116,27 @@ extension [value](value: value)
 `contextual` instance of the typeclass for its type; `variant` dispatches on a coproduct's actual
 case. That is the whole cost of derivation for a typeclass.
 
+`fields` and `variant` are two of a small set of primitives, which the sections below introduce
+in turn:
+
+```tabular
+column  Primitive
+column  Used in
+column  Does
+row  `fields(value)`  `conjunction`  folds over a product's fields, with their values
+row  `contexts[derivation]()`  `conjunction`  folds over a product's fields, with no value in hand
+row  `build[derivation]`  `conjunction`  constructs a product from a value for each field
+row  `construct`  `conjunction`  constructs a product inside a type constructor, given its `pure` and `bind`
+row  `dereference`  a `contexts` lambda  extracts the current field from a product
+row  `variant(value)`  `disjunction`  dispatches on the variant of a value
+row  `delegate[derivation](label)`  `disjunction`  dispatches to the variant a label names
+row  `complement(other)`  a `variant` lambda  narrows another value to the same variant, as an `Optional`
+row  `choice[derivation]`  `disjunction`  says, as the code compiles, whether every variant is a singleton
+row  `choices[derivation]`  `disjunction`  folds over every variant, with no value in hand
+row  `singleton[derivation](label)`  `disjunction`  yields the singleton a label names
+row  `variantLabels[derivation]`  `disjunction`  lists the labels of the variants
+```
+
 The `[field] => field => …` syntax is a *polymorphic lambda*, and it is worth a moment because it
 is the one unfamiliar piece. It stands to a polymorphic method exactly as an ordinary lambda
 stands to an ordinary one: where the lambda for `def transform(field: Field): Text` is `Field =>
@@ -140,11 +168,25 @@ Nested structures derive recursively: a case class of case classes needs nothing
 
 ### What a derivation can see
 
-Inside `conjunction`, each field carries more than its value. `label` is the field's name as
-written, `index` its position, `typeName` the enclosing type's name, and `contextual` the instance
-of the typeclass being derived for that field's type. A derivation can therefore produce something
-that mentions the structure, not only something that folds over it — here, the labels of a
-product's fields, with no value in hand, through `contexts`. Since derivation composes the
+Inside `conjunction`, each field carries more than its value, and the type being derived for
+can be described too:
+
+```tabular
+column  Value
+column  Available in
+column  Gives
+row  `label`  the lambda of any primitive that visits fields or variants  the field's or variant's name as written
+row  `index`  the lambda of any primitive that visits fields or variants  its position
+row  `contextual`  the lambda of any primitive that visits fields or variants  the instance of the typeclass for its type
+row  `default`  the lambdas of `fields`, `contexts`, `build` and `construct`  the field's declared default, or `Unset`
+row  `typeName[derivation]`  a derivation  the name of the type being derived for
+row  `tuple[derivation]`  a derivation  whether that type is a tuple
+row  `singleton[derivation]`  a derivation  whether that type is a singleton
+```
+
+A derivation can therefore produce something that mentions the structure, not only something
+that folds over it — here, the labels of a product's fields, with no value in hand, through
+`contexts`. Since derivation composes the
 instances of a product's fields, every field type needs one, even where — as for the labels of a
 `Text` or an `Int`, which have none — it is trivial:
 
@@ -364,12 +406,16 @@ compile error naming the mismatch rather than a runtime surprise. A type with no
 an ordinary trait, a class that is not a case class — likewise fails at the point of derivation,
 where the message can say what is missing.
 
-Three failures are common enough to name. A long message ending "given instance derived in trait
-Derivation does not match type…" almost always means a polymorphic lambda's type variable is
-missing its upper bound: it must be `[variant <: derivation]`, not `[variant]`. A type mismatch
-against `Product` means `conjunction`'s type parameter is missing its `<: Product` constraint. And
-an instance that is simply not found for a type whose fields look fine is usually one of *those*
-fields lacking an instance — compiling an explicit call to `derived` at the call site says which.
+Three failures are common enough to name:
+
+```tabular
+column  Symptom
+column  Usual cause
+column  Fix
+row  a long message ending "given instance derived in trait Derivation does not match type…"  a polymorphic lambda's type variable has no upper bound  write `[variant <: derivation]`, not `[variant]`
+row  a type mismatch against `Product`  `conjunction`'s type parameter lacks its bound  add `<: Product`
+row  no instance found for a type whose fields look fine  one of *those* fields lacks an instance  compile an explicit call to `derived`, which says which
+```
 
 A recursive type is a special case: it cannot be derived in place, because the derivation would
 have to summon itself part-way through. Defining the instance on the type's companion, with a

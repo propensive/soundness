@@ -47,11 +47,22 @@ val water = H[2]*O
 water.show   // t"H₂O"
 ```
 
-An ion carries its charge, and a molecule can note its physical state — solid, liquid, gas or
-aqueous — for rendering:
+An ion carries its charge, and a molecule can note its physical state for rendering:
 
 ```scala
 water.inState(PhysicalState.Aqueous)   // shows as H₂O(aq)
+```
+
+There are four states, each rendered as a suffix:
+
+```tabular
+column  State
+column  Case
+column  Renders as
+row  solid  `PhysicalState.Solid`  `(s)`
+row  liquid  `PhysicalState.Liquid`  `(l)`
+row  gas  `PhysicalState.Gas`  `(g)`
+row  aqueous  `PhysicalState.Aqueous`  `(aq)`
 ```
 
 ### Formulas and equations
@@ -78,9 +89,19 @@ computing a molar mass or checking a proposed reaction needs.
 ### The reaction arrows
 
 Five arrows are available, and they mean different things rather than being stylistic variants:
-`-->` for a net forward reaction, `<->` for a reversible one, `<=>` for a reaction proceeding in
-both directions, `<~>` for one at equilibrium, and `===` for a statement of equality between two
-formulas. Which arrow a chemist writes carries information, and the equation keeps it.
+
+```tabular
+column  Arrow
+column  Reaction
+column  Renders as
+row  `-->`  `Reaction.NetForward`, a net forward reaction  `→`
+row  `<=>`  `Reaction.BothDirections`, a reaction proceeding in both directions  `⇄`
+row  `<~>`  `Reaction.Equilibrium`, a reaction at equilibrium  `⇋`
+row  `<->`  `Reaction.Resonance`  `=`
+row  `===`  `Reaction.Stoichiometric`  `↔`
+```
+
+Which arrow a chemist writes carries information, and the equation keeps it.
 
 ### Charge and state
 
@@ -112,8 +133,22 @@ discarded by it, and a state must be applied to the finished species.
 
 ### Building blocks
 
-`Molecular` and `Formulable` are the two typeclasses the operators are defined over: anything
-molecular can be bonded with `*` and multiplied by a coefficient, and anything formulable can be
-added with `+` and joined into an equation. An element is molecular, a molecule is molecular, and
+`Molecular` and `Formulable` are the two typeclasses the operators are defined over:
+
+```tabular
+column  Operation
+column  Defined on
+column  Yields
+row  `a*b`  `Molecular`  a molecule bonding the atoms of both
+row  `a*n`  `Molecular`  a formula term with coefficient `n`
+row  `a**n`  `Molecular`  a molecule with every atom and the charge multiplied by `n`
+row  `+a`, `-a`  `Molecular`  the molecule with its charge raised or lowered by one
+row  `a.ion(n)`  `Molecular`  the molecule with charge `n`
+row  `a.inState(state)`  `Molecular`  the molecule in a physical state
+row  `a + b`  `Formulable`  a formula holding both
+row  `a --> b`, and the other arrows  `Formulable`  an equation
+```
+
+An element is molecular, a molecule is molecular, and
 both are formulable, which is why an element, a molecule and a full formula can all appear on
 either side of an equation without conversion.

@@ -8,12 +8,35 @@ meaning. An exported surface that violates these rules taxes every user on every
 taxes agents hardest, because agents generalise aggressively from patterns.
 
 The surface has already been measured: `doc/api-reduction-candidates.md` inventories every
-identifier the `soundness` package exports, and classifies the reduction candidates — multi-word
-names that should nest inside the types that prefix them (C1), non-established abbreviations
-(C2), typeclass-backing entities that need not be exported at all (C3), and the homonym and
-synonym tables (C4), where one name means two things or two names mean one. That inventory is
-scaffolding, not documentation: this track applies it category by category, and ends by
-deleting it. The file's absence is the completion signal.
+identifier the `soundness` package exports, and classifies the reduction candidates:
+
+```tabular
+column  Category
+column  Candidates
+column  Item
+row  C1  multi-word names that should nest inside the types that prefix them  api-1
+row  C2  non-established abbreviations  api-3
+row  C3  typeclass-backing entities that need not be exported at all  api-3
+row  C4  the homonym and synonym tables, where one name means two things or two names mean one  api-2
+```
+
+That inventory is scaffolding, not documentation: this track applies it category by category,
+and ends by deleting it. The file's absence is the completion signal.
+
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  api-1  multi-word names nest  near
+row  api-2  homonyms and synonyms resolve  near
+row  api-3  the backing entities demote  mid
+row  api-4  naming conformance is checked  mid
+row  api-5  the inventory is deleted  long  api-1, api-2, api-3
+row  api-6  surface changes flow through the migration convention  long  dist-2
+```
 
 ## api-1: multi-word names nest
 

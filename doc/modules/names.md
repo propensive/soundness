@@ -77,9 +77,15 @@ The error's precision matters: a user told *which* rule their input broke can fi
 
 ### Built-in planes
 
-Some namespaces come already defined. `DomId` and `CssClass` validate the identifiers of
-[HTML](html.md) and [CSS](css.md); `Required` means only "not empty", for the common case where
-that is the whole rule:
+Some namespaces come already defined:
+
+```tabular
+column  Plane
+column  A name must be
+row  `DomId`  a valid [HTML](html.md) id
+row  `CssClass`  a valid [CSS](css.md) identifier
+row  `Required`  not empty, for the common case where that is the whole rule
+```
 
 ```scala
 Name[CssClass](t"main-nav")   // a valid CSS identifier
@@ -93,11 +99,26 @@ is how a path element containing a slash fails where it is written.
 
 ### The rules
 
-`MustContain`, `MustNotContain`, `MustStart`, `MustNotStart`, `MustEnd`, `MustNotEnd`,
-`MustEqual`'s negation `MustNotEqual`, and the regular-expression pair `MustMatch` and
-`MustNotMatch` cover most namespaces, and each knows how to describe itself — which is where the
-error messages, and the compile errors, get their words. A namespace with a rule none of these
-express defines its own, as `DomId` does, by pairing a predicate with its description.
+These rules cover most namespaces, and each knows how to describe itself — which is where the
+error messages, and the compile errors, get their words:
+
+```tabular
+column  Rule
+column  Parameter
+column  Description
+row  `MustContain`  text  must contain it
+row  `MustNotContain`  text  must not contain it
+row  `MustStart`  text  must start with it
+row  `MustNotStart`  text  must not start with it
+row  `MustEnd`  text  must end with it
+row  `MustNotEnd`  text  must not end with it
+row  `MustNotEqual`  text  must not equal it; `MustNotEqual[""]` reads "must not be empty"
+row  `MustMatch`  a regular expression  must match it
+row  `MustNotMatch`  a regular expression  must not match it
+row  `JavaIdentifier`  a description  must be *the description*; checks for a Java identifier
+```
+
+A namespace with a rule none of these express defines its own, as `DomId` does, by pairing a predicate with its description.
 
 A rule is therefore two things: a check, and a phrase describing what it demands. Writing one is
 supplying both:

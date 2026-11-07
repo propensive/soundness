@@ -43,18 +43,21 @@ import threads.virtualThreads
 
 What a gauge displays is a value of a specific type, and that type is what selects the design:
 
-Status                | Displays                                    | Default design
-----------------------|---------------------------------------------|-------------------
-`Fraction`            | a proportion in `[0, 1]`, clamped           | smooth block bar
-`Reckoning`           | `done` against a total that may be unknown  | `17/120`
-`Standing`            | how one unit of work turned out             | `✓ ✗ ‑`
-`Duration`            | time spent                                  | `2m41s`
-`Countdown`           | time left, clamped at zero                  | `2m41s`
-`Captioned`           | any status, with a label                    | derived
-`Transfer`            | bytes moved, with rate and estimate         | *none*
-`Meter`               | a reading on a bounded scale                | *none*
-`Sequence[Double]`    | samples over time                           | *none*
-`Sequence[Step]`      | an ordered run of steps                     | *none*
+```tabular
+column  Status
+column  Displays
+column  Default design
+row  `Fraction`  a proportion in `[0, 1]`, clamped  smooth block bar
+row  `Reckoning`  `done` against a total that may be unknown  `17/120`
+row  `Standing`  how one unit of work turned out  `✓ ✗ ‑`
+row  `Duration`  time spent  `2m41s`
+row  `Countdown`  time left, clamped at zero  `2m41s`
+row  `Captioned`  any status, with a label  derived
+row  `Transfer`  bytes moved, with rate and estimate  *none*
+row  `Meter`  a reading on a bounded scale  *none*
+row  `Sequence[Double]`  samples over time  *none*
+row  `Sequence[Step]`  an ordered run of steps  *none*
+```
 
 Most of these are types you already have. Only where a type has to be *distinct* — because it is
 the key the design is looked up by — is a new one introduced: a proportion cannot be a plain
@@ -108,18 +111,42 @@ import bars.arrowheadBar
 A spinner and a bar are two designs for the same status, so only one of them can be imported at
 a time; `spinners.moonPhaseSpinner` in place of the bar above would animate moon phases instead.
 
-The families are `spinners`, `bars`, `meters`, `sparklines`, `counters`, `standings`,
-`processions` and `timers`. There are around forty spinners, from single-cell braille and block
-animations to bouncing bars and emoji moon phases; eighteen bars, from the smooth eighth-block
-default through segmented pips and gradient fills to `[###---]`; six meters (battery, thermometer,
-needle, bullet, column and ASCII); four sparklines; nine counters; five status markers; and five
-step indicators.
+Designs are grouped into eight families, each a package to import from:
+
+```tabular
+column  Family
+column  For
+column  Designs
+column  Range
+row  `spinners`  `Fraction`  42  single-cell braille and block animations to bouncing bars and emoji moon phases
+row  `bars`  `Fraction`  18  the smooth eighth-block default through segmented pips and gradient fills to `[###---]`
+row  `meters`  `Meter`  6  battery, thermometer, needle, bullet, column and ASCII
+row  `sparklines`  `Sequence[Double]`  4  block, tall, dot and ASCII
+row  `counters`  `Reckoning`, `Transfer`  9  plain, padded, worded, scaled and percentage counts; transfer reports
+row  `standings`  `Standing`  5  ASCII, tick, heavy, square and word markers
+row  `processions`  `Sequence[Step]`  5  checklist, breadcrumb, beads, numbered and ribbon
+row  `timers`  `Duration`, `Countdown`  5  compact and digital elapsed times; compact, digital and urgent countdowns
+```
 
 ### Colors and glyphs
 
-Color is an independent axis. A `GaugePalette` names its colors by *role* — `fill`, `track`,
-`leadingEdge`, `caption`, `muted`, `success`, `warning`, `danger` — so one design renders under any
-palette:
+Color is an independent axis. A `GaugePalette` names its colors by *role*, so one design renders
+under any palette:
+
+```tabular
+column  Role
+column  Colors
+row  `fill`  the filled part of a bar
+row  `track`  the unfilled part of a bar, hollow pips, the arc a dial's needle sweeps
+row  `leadingEdge`  the boundary cell of a bar and the head of a marker
+row  `caption`  labels and captions
+row  `muted`  completed steps, elapsed times, units
+row  `success`  a succeeded step; the low end of a severity scale
+row  `warning`  a warned step; the middle of a severity scale
+row  `danger`  a failed step; the top of a severity scale
+```
+
+A palette is chosen by import:
 
 ```scala
 import palettes.solarizedDarkGaugePalette
@@ -227,8 +254,20 @@ uses, so it is not a style choice and needs no import:
 val captioned = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
 ```
 
-A `Sequence[Step]` renders as a checklist, a breadcrumb, a chain of beads, a numbered position or a
-powerline ribbon:
+A `Sequence[Step]` has five designs, which differ in height:
+
+```tabular
+column  Import
+column  Draws
+column  Height
+row  `processions.checklistProcession`  a checklist  one row per step
+row  `processions.breadcrumbProcession`  a breadcrumb  one row
+row  `processions.beadProcession`  a chain of beads  one row
+row  `processions.numberedProcession`  a numbered position  one row
+row  `processions.ribbonProcession`  a powerline ribbon  one row
+```
+
+A checklist, for example:
 
 ```scala fuel
 typecheck

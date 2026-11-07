@@ -105,9 +105,16 @@ val artifact =
 ```
 
 The manifest, index and archive are the ordinary ones, so the same registries and tools carry
-it. Only two things differ: the config blob is typed `application/vnd.wasm.config.v0+json`
-and describes a component rather than a filesystem, and the single layer is the component
-itself — `application/wasm`, stored uncompressed, so its `diffId` and `digest` coincide.
+it. Only two things differ:
+
+```tabular
+column  Part
+column  Container image
+column  Wasm artifact
+row  config  a filesystem's run configuration  `application/vnd.wasm.config.v0+json`, describing a component
+row  layers  compressed tars, one or more  the component itself, `application/wasm`
+row  layer digests  `diffId` and `digest` differ  `diffId` and `digest` coincide, since it is stored uncompressed
+```
 
 ```scala
 artifact.wasmConfig.let(_.os)            // wasip2 — the WASI generation
@@ -151,9 +158,19 @@ archive.open[Image](): handle ?=>
   handle.manifest.layers.head.let(handle.verified(_))  // a layer, digest-checked
 ```
 
-Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes
-untouched, `layer` decompresses them as a stream, and `verified` decompresses and checks the
-content against the digest the manifest declares, raising an `Oci.Error` if they disagree.
+Reaching a layer three ways makes the cost explicit:
+
+```tabular
+column  Method
+column  Yields
+column  Checks the digest
+row  `compressed`  the stored bytes, untouched, as a stream  no
+row  `layer`  the uncompressed tar, as a stream  no
+row  `verified`  the stored bytes, gathered eagerly  yes, and the size
+```
+
+`verified` raises an `Oci.Error` if the bytes disagree with the digest or size the manifest
+declares; checking a stream would mean draining it, which is why it gathers the bytes first.
 
 A reader that does not already know which kind of artifact it has opened asks for `config`,
 which dispatches on the config descriptor's media type — so telling a component from a
@@ -200,8 +217,29 @@ def inspect(client: Containerd)(using Monitor): Unit =
   client.namespaces()  // the namespaces on the daemon
 ```
 
-`createContainer`, `deleteContainer`, `createNamespace` and their counterparts make the
-corresponding changes.
+The methods for each kind of resource:
+
+```tabular
+column  Resource
+column  List
+column  Inspect
+column  Create
+column  Delete
+row  container  `containers()`  `container(id)`  `createContainer(container)`  `deleteContainer(id)`
+row
+  cell  namespace
+  cell  `namespaces()`
+  cell
+  cell  `createNamespace(namespace)`
+  cell  `deleteNamespace(name)`
+row
+  cell  image
+  cell  `images()`
+  cell  `image(name)`
+  cell
+  cell  `deleteImage(name)`
+row  task  `tasks()`  `task(id)`  `createTask(id, rootfs)`  `deleteTask(id)`
+```
 
 ### Tasks
 

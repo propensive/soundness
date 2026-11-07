@@ -1182,17 +1182,25 @@ entry .Font   a face paired with the provision for its typeface in a medium: wha
         ```
     entry .Reason   why: a missing or unreadable table, or a face the provision cannot set
       detail
-          `MissingTable(tag)` (1), _the table `name` was not found_; `UnknownFormat(format)`
-          (2), _the table contains data in unknown format n_, for a `cmap` subtable format
-          the library does not read; `MagicNumber` (3), _the font did not contain expected
-          check data_, for a `head` table with the wrong constant; `MissingEncoding` (4),
-          _the font contains no usable character encoding_. Then the coverage reasons, each
-          naming the typeface: `UncoveredWeight(typeface, weight)` (5), _Inter is not
-          provided at weight 300_; `UncoveredSlant(typeface, slant)` (6), _Inter is not
-          provided in an italic face_; `UncoveredStretch(typeface, stretch)` (7);
-          `UnknownAxis(typeface, axis)` (8), _Inter has no variation axis opsz_;
-          `AxisOutOfRange(typeface, axis, value)` (9); and `MissingFeature(typeface,
-          feature)` (10), _Inter does not implement the layout feature onum_.
+          Cases 1 to 4 are faults in the font; 5 to 10 are coverage reasons, each naming the
+          typeface:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `MissingTable(tag)`  1  _the table `tag` was not found_
+          row  `UnknownFormat(format)`  2  _the table contains data in unknown format `format`_  a `cmap` subtable format the library does not read
+          row  `MagicNumber`  3  _the font did not contain expected check data_  a `head` table with the wrong constant
+          row  `MissingEncoding`  4  _the font contains no usable character encoding_
+          row  `UncoveredWeight(typeface, weight)`  5  _`typeface` is not provided at weight `weight`_  _Inter is not provided at weight 300_
+          row  `UncoveredSlant(typeface, slant)`  6  _`typeface` is not provided in an `slant` face_  _Inter is not provided in an italic face_
+          row  `UncoveredStretch(typeface, stretch)`  7  _`typeface` is not provided at a stretch of `stretch`_
+          row  `UnknownAxis(typeface, axis)`  8  _`typeface` has no variation axis `axis`_  _Inter has no variation axis opsz_
+          row  `AxisOutOfRange(typeface, axis, value)`  9  _`typeface` does not admit `value` on its `axis` axis_
+          row  `MissingFeature(typeface, feature)`  10  _`typeface` does not implement the layout feature `feature`_  _Inter does not implement the layout feature onum_
+          ```
       entry #number   the reason's number, 1 to 10, which is the error's subcode
     entry .communicable   renders each reason as its message
     entry #reason   the reason

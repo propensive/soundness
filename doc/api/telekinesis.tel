@@ -358,15 +358,19 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
     entry .Error   raised when a request cannot be parsed
       detail
           Error 367: _could not parse HTTP request because `reason`_, raised by `.parse` and
-          `.parseHead`. The reasons are `Expectation(expected, found)` (367.1, _`found` was
-          found when `expected` was expected_, a malformed line end), `Version(value)`
-          (367.2), `Host(value)` (367.3, _the host `value` was missing or invalid_),
-          `UriTooLong` (367.4, the request line exceeded `maxRequestLine`, the condition a
-          server answers with `414`) and `HeadersTooLarge` (367.5, the header block exceeded
-          `maxHeaders`, answered with `431`).
+          `.parseHead`. The reasons, numbered `367.1` to `367.5`, are tabulated under `Reason`.
       entry .Reason   why the request could not be parsed
-          An enum: `Expectation(expected: Char, found: Char)`, `Version(value: Text)`,
-          `Host(value: Text)`, `UriTooLong`, `HeadersTooLarge`, numbered 1 to 5.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Expectation(expected, found)`  1  _`found` was found when `expected` was expected_  a malformed line end; both are `Char`s
+          row  `Version(value)`  2  _the HTTP version `value` was invalid_
+          row  `Host(value)`  3  _the host `value` was missing or invalid_
+          row  `UriTooLong`  4  _the request line exceeded the maximum length_  `maxRequestLine`; a server answers it with `414`
+          row  `HeadersTooLarge`  5  _the request headers exceeded the maximum size_  `maxHeaders`; a server answers it with `431`
+          ```
       entry .communicable   renders each reason as a message
       entry #reason   the `Http.Request.Error.Reason`
     entry #method   the method
@@ -810,10 +814,8 @@ entry .Connect   the namespace of `Connect.Error`: a server which could not be r
     detail
         Error 999: _the TCP connection failed because `reason`_, raised by every
         `Http.Backend` and `Http.Client`, so a `fetch` or `submit` needs a
-        `Tactic[Connect.Error]` in scope. The reasons are `Dns` (999.1, _the server address
-        could not be resolved by DNS_), `Refused` (999.2), `Ssl(reason)` (999.3, _the SSL/TLS
-        layer could not be established because `reason`_), `Timeout` (999.4) and `Unknown`
-        (999.5). A TLS failure is distinguished from a network one, and its own
+        `Tactic[Connect.Error]` in scope. The reasons, numbered `999.1` to `999.5`, are
+        tabulated under `Reason`. A TLS failure is distinguished from a network one, and its own
         `Connect.Error.Reason.Ssl.Reason` says at which stage it failed; an expired
         certificate, one for the wrong host, a revoked one or a broken cipher suite are each
         refused at the handshake rather than accepted with a warning. Where a connection must
@@ -838,16 +840,32 @@ entry .Connect   the namespace of `Connect.Error`: a server which could not be r
         (`Http.Response.Error`) as `Unknown`; `javaNetHttp` classifies the JDK's exceptions.
     entry .Reason   why the connection failed: `Dns`, `Refused`, `Ssl(reason)`, `Timeout` or `Unknown`
       detail
-          An enum numbered 1 to 5. `Ssl` carries a `Connect.Error.Reason.Ssl.Reason` saying
-          where the TLS layer failed.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Dns`  1  _the server address could not be resolved by DNS_
+          row  `Refused`  2  _the connection was refused_
+          row  `Ssl(reason)`  3  _the SSL/TLS layer could not be established because `reason`_  a `Connect.Error.Reason.Ssl.Reason`, saying where the TLS layer failed
+          row  `Timeout`  4  _the server did not respond within the time limit_
+          row  `Unknown`  5  _an unrecognized error occurred_
+          ```
       entry .Ssl   the namespace of the TLS failure reasons
         detail
-            `Connect.Error.Reason.Ssl.Reason` is the enum of TLS failures: `Handshake` (_the
-            local and remote peer could not negotiate the desired level of security_, which
-            is what every certificate problem and cipher-suite mismatch reports), `Key` (_the
-            SSL key was bad_), `Peer` (_the remote peer's identity could not be verified_)
-            and `Protocol` (_the local or remote implementation of the SSL protocol did not
-            behave as expected_). The socket-backed clients report every TLS failure as
+            `Connect.Error.Reason.Ssl.Reason` is the unnumbered enum of TLS failures:
+
+            ```tabular
+            column  Case
+            column  Message
+            column  Note
+            row  `Handshake`  _the local and remote peer could not negotiate the desired level of security_  what every certificate problem and cipher-suite mismatch reports
+            row  `Key`  _the SSL key was bad_
+            row  `Peer`  _the remote peer's identity could not be verified_
+            row  `Protocol`  _the local or remote implementation of the SSL protocol did not behave as expected_
+            ```
+
+            The socket-backed clients report every TLS failure as
             `Handshake`; `javaNetHttp` distinguishes the four from the JDK's exceptions.
         entry .Reason   `Handshake`, `Key`, `Peer` or `Protocol`
           entry .communicable   renders each TLS reason as a message
@@ -2151,20 +2169,19 @@ entry .Http2   the HTTP/2 engine: frames, HPACK-coded headers, and the client an
         31-bit stream id, and a payload whose shape the type decides. `Frame` is an enum of the
         types the engine models, each case holding its decoded fields rather than raw flags:
 
-        - `Headers(streamId, headerBlock, endStream, endHeaders)` — an HPACK block, with
-          padding and any `PRIORITY` prefix already stripped;
-        - `Continuation(streamId, headerBlock, endHeaders)` — the rest of a block too large for
-          one `HEADERS` frame;
-        - `Data(streamId, payload, endStream)` — body bytes, padding stripped;
-        - `RstStream(streamId, errorCode)` — the peer abandoning a stream;
-        - `Settings(settings, ack)` — a list of `Setting`s, or an empty acknowledgement;
-        - `Ping(opaque, ack)` — eight opaque bytes, echoed back with `ack`;
-        - `GoAway(lastStreamId, errorCode, debug)` — the peer closing the connection;
-        - `WindowUpdate(streamId, increment)` — flow-control credit, for the connection on
-          stream `0`;
-        - `Ignored(typeId, streamId)` — an inbound frame of a type the engine does not model
-          (`PRIORITY`, `PUSH_PROMISE`, an extension), decoded only to be discarded, as the
-          protocol requires; it can never be serialised.
+        ```tabular
+        column  Case
+        column  Frame
+        row  `Headers(streamId, headerBlock, endStream, endHeaders)`  an HPACK block, with padding and any `PRIORITY` prefix already stripped
+        row  `Continuation(streamId, headerBlock, endHeaders)`  the rest of a block too large for one `HEADERS` frame
+        row  `Data(streamId, payload, endStream)`  body bytes, padding stripped
+        row  `RstStream(streamId, errorCode)`  the peer abandoning a stream
+        row  `Settings(settings, ack)`  a list of `Setting`s, or an empty acknowledgement
+        row  `Ping(opaque, ack)`  eight opaque bytes, echoed back with `ack`
+        row  `GoAway(lastStreamId, errorCode, debug)`  the peer closing the connection
+        row  `WindowUpdate(streamId, increment)`  flow-control credit, for the connection on stream `0`
+        row  `Ignored(typeId, streamId)`  an inbound frame of a type the engine does not model (`PRIORITY`, `PUSH_PROMISE`, an extension), decoded only to be discarded, as the protocol requires; it can never be serialised
+        ```
 
         ```scala
         import soundness.*
@@ -2257,20 +2274,23 @@ entry .Http2   the HTTP/2 engine: frames, HPACK-coded headers, and the client an
         session reports it as a `Connect.Error`.
     entry .Reason   why an HTTP/2 operation failed
       detail
-          - `Truncated` — _the HTTP/2 data ended unexpectedly_: a frame, header block or
-            integer cut short;
-          - `BadPreface` — _the connection preface was not valid_;
-          - `BadHuffman` — _the Huffman-coded string was not valid_: a code longer than 30
-            bits, or padding which is not all ones;
-          - `BadInteger` — _an HPACK integer was malformed or too large_;
-          - `BadIndex(index)` — _the HPACK table index `index` was out of range_;
-          - `BadFrameType(id)` — _the frame type `id` was not recognized_;
-          - `FrameTooLarge` — _a frame exceeded the maximum permitted size_;
-          - `FlowControl` — _a flow-control window was exceeded_;
-          - `Protocol(message)` — _a protocol error occurred: `message`_: a bad connection
-            preface, bad padding, a bad `SETTINGS` length, or a header block missing
-            `:status`, `:method`, `:path` or `:authority`;
-          - `GoAway(code)` — _the peer closed the connection with error code `code`_.
+          Each case renders as its message:
+
+          ```tabular
+          column  Case
+          column  Message
+          column  Note
+          row  `Truncated`  _the HTTP/2 data ended unexpectedly_  a frame, header block or integer cut short
+          row  `BadPreface`  _the connection preface was not valid_
+          row  `BadHuffman`  _the Huffman-coded string was not valid_  a code longer than 30 bits, or padding which is not all ones
+          row  `BadInteger`  _an HPACK integer was malformed or too large_
+          row  `BadIndex(index)`  _the HPACK table index `index` was out of range_
+          row  `BadFrameType(id)`  _the frame type `id` was not recognized_
+          row  `FrameTooLarge`  _a frame exceeded the maximum permitted size_
+          row  `FlowControl`  _a flow-control window was exceeded_
+          row  `Protocol(message)`  _a protocol error occurred: `message`_  a bad connection preface, bad padding, a bad `SETTINGS` length, or a header block missing `:status`, `:method`, `:path` or `:authority`
+          row  `GoAway(code)`  _the peer closed the connection with error code `code`_
+          ```
       entry .communicable   renders each reason as its message
     entry #reason   the reason, an `Http2.Error.Reason`
   entry .Event   what a connection logs: a request sent, and a `GOAWAY` received

@@ -16,10 +16,20 @@ syntax and significant whitespace defeat pattern-based grammars, and editor high
 chase the language release by release. The one program that always tokenizes Scala correctly is
 the compiler — so the reliable highlighter is the compiler, asked politely.
 
-Soundness drives it at three depths: *tokenized*, which classifies tokens with no classpath at
-all; *typechecked*, which runs the frontend to attach types and collect diagnostics; and
-*compiled*, which runs later phases for the diagnostics only they can produce. Everything comes
-from the `soundness` package:
+Soundness drives it at three depths, each chosen by a given in the `highlighting` package:
+
+```tabular
+column  Depth
+column  Given
+column  Needs
+column  Gives
+row  tokenized  `tokenizedScala`, the default  the text alone  classified tokens
+row  typechecked  `typecheckedScala`  a compiler and a classpath  types and diagnostics, from the frontend
+row  typechecked  `sessionScala`  a warm compiler session  the same, within the session
+row  compiled  `compiledScala`  a compiler and a classpath  the diagnostics only later phases produce
+```
+
+Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
@@ -36,10 +46,19 @@ strings, modifiers — ready to render:
 val code = Scala.highlight(t"val xs = List(1, 2, 3)")
 ```
 
-The accents are the categories a palette assigns colors to: `Keyword` and `Modifier` distinguish
-modifier keywords from the rest, `Term` and `Typal` mark definitions, `Symbol` and `Parens` cover
-operators and brackets, `Number` and `String` the literals (including interpolated ones), and
-`Error` and `Unparsed` the tokens that did not come out cleanly.
+The accents are the categories a palette assigns colors to:
+
+```tabular
+column  Accent
+column  Marks
+row  `Keyword`  keywords, other than modifiers
+row  `Modifier`  modifier keywords
+row  `Term`, `Typal`  definitions
+row  `Symbol`  operators
+row  `Parens`  brackets
+row  `Number`, `String`  literals, including interpolated ones
+row  `Error`, `Unparsed`  tokens that did not come out cleanly
+```
 
 The default depth is tokenized, which needs nothing but the text; `Java.highlight` does the same
 for Java source. A palette given maps the accents to [colors](colors.md), and the ANSI renderers —

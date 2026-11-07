@@ -84,11 +84,29 @@ document.getElementById(42)           // does not compile: elementId is a string
 ### Values that cross the boundary
 
 A Scala value passes as an argument only where an `Interoperable` instance says which foreign type
-it corresponds to. `Text` crosses as a WebIDL string, `Boolean` as a boolean, and the sized numbers
-of Soundness — `S8` to `S64`, `U8` to `U64`, `F32` and `F64` — as the WebIDL integer and
-floating-point types of the same width, so a parameter declared `long` takes an `S32` and not an
-unsized `Int`. A `List` of interoperable values corresponds to a WebIDL `sequence`, and an
-`Optional` to a nullable `T?`, with `Unset` crossing as `null`:
+it corresponds to:
+
+```tabular
+column  Scala type
+column  WebIDL type
+row  `Text`  `DOMString`, `USVString`, `ByteString`, `CSSOMString`
+row  `Boolean`  `boolean`
+row  `S8`  `byte`
+row  `U8`  `octet`
+row  `S16`  `short`
+row  `U16`  `unsigned short`
+row  `S32`  `long`
+row  `U32`  `unsigned long`
+row  `S64`  `long long`
+row  `U64`  `unsigned long long`
+row  `F32`  `float`, `unrestricted float`
+row  `F64`  `double`, `unrestricted double`
+row  `List[T]`  `sequence<T>`, `FrozenArray<T>`
+row  `Map[K, V]`  `record<K, V>`
+row  `Optional[T]`  `T?`, with `Unset` as `null`
+```
+
+The numbers are sized, so a parameter declared `long` takes an `S32` and not an unsized `Int`:
 
 ```scala
 val left: S32 = 0
@@ -103,9 +121,21 @@ provides one.
 
 ### Serializing to JavaScript
 
-A foreign value's `expr` is its expression — a `Foreign.Expression`, a small tree of references,
-member selections, applications, index accesses and literals — and `Javascript.serialize` renders
-that tree as JavaScript source text:
+A foreign value's `expr` is its expression, a `Foreign.Expression`: a small tree of these
+nodes.
+
+```tabular
+column  Node
+column  Stands for
+column  Renders as
+row  `Reference(name)`  a global  `document`
+row  `Select(target, member, owner)`  a member of a value  `target.member`
+row  `Apply(target, arguments)`  a call  `target(arguments)`
+row  `Index(target, index)`  an index access  `target[index]`
+row  `Literal(value)`  a constant  `'text'`, `42`
+```
+
+`Javascript.serialize` renders the tree as JavaScript source text:
 
 ```scala
 Javascript.serialize(heading.focus().expr)

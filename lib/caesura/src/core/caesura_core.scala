@@ -63,8 +63,8 @@ package dsvFormats:
 
 package dsvRedesignations:
   given unchangedRedesignation: Dsv.Redesignation = identity(_)
-  given lowerDottedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
-  given lowerSlashedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
+  given lowerDottedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t".")
+  given lowerSlashedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t"/")
   given capitalizedWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.capitalize).join(t" ")
   given lowerWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
 

@@ -35,8 +35,21 @@ import soundness.*
 ### Loading an interface
 
 An `Interface` binds an ecosystem to a definition file on the classpath, read as the code
-compiles, so the file must be on the compiler's classpath. Each supported grammar — TypeScript
-declarations, C headers, WebIDL, WIT — is a `Dialect` the ecosystem names:
+compiles, so the file must be on the compiler's classpath. Each supported grammar is a `Dialect`
+the ecosystem names:
+
+```tabular
+column  Definitions
+column  Ecosystem
+column  Dialect
+row  TypeScript declarations  `Typescript`  `TypescriptDialect`
+row  C headers  `Native`  `CHeader.Dialect`
+row  WebIDL  `WebIdl`  `WebIdlDialect`
+row  WIT  `Wit`  `WitDialect`
+row  Kotlin `@Metadata` in classfiles  `Kotlin`  `KotlinDialect`
+```
+
+A TypeScript interface, for example:
 
 ```scala fuel
 typecheck
@@ -85,8 +98,17 @@ val regex = make[kotlin.text.Regex](t"[0-9]+")
 regex.matches(t"123")                          // true
 ```
 
-`make` constructs a value, `companion` reaches a companion object's members, and `singleton`
-reaches an object's. Types substitute through, so `pair.first` is a `Text` and not an `Any`, and
+Three methods enter a Kotlin type:
+
+```tabular
+column  Method
+column  Reaches
+row  `make[T](…)`  a new instance of `T`, through its constructor
+row  `companion[T]`  the members of `T`'s companion object
+row  `singleton[T]`  the members of the object `T`
+```
+
+Types substitute through, so `pair.first` is a `Text` and not an `Any`, and
 `Text` passes wherever a `CharSequence` is expected. Kotlin's nullability is honored: a nullable
 result is an `Optional`, absent where Kotlin would return null.
 
@@ -118,10 +140,23 @@ it has been verified against the foreign world's own definitions.
 The JVM's standard library has types for the things Soundness has its own types for — paths,
 URLs, instants, durations — and code that meets both worlds needs to cross between them without
 copying values by hand. Rather than converting, each Java type is made a *representation* of the
-Soundness concept: `java.io.File` stands as a path, `java.net.URL` as a URL, and
-`java.time.Instant`, `java.util.Date` or a bare `Long` of milliseconds as an instant, so any
-operation that asks for its result "as a path" or "as an instant" can produce the Java type
-directly. Which representation is meant is a choice, made by import:
+Soundness concept, so any operation that asks for its result "as a path" or "as an instant" can
+produce the Java type directly. Which representation is meant is a choice, made by import:
+
+```tabular
+column  Java type
+column  Stands as
+column  Import
+row  `java.nio.file.Path`  a path  `pathInterfaces.javaNioPath`
+row  `java.io.File`  a path  `pathInterfaces.javaIoFile`
+row  `java.net.URL`  a URL  `urlInterfaces.javaNetUrl`
+row  `java.time.Instant`  an instant  `instantInterfaces.javaTimeInstant`
+row  `java.util.Date`  an instant  `instantInterfaces.javaUtilDate`
+row  `Long`, milliseconds since the epoch  an instant  `instantInterfaces.javaLongInstant`
+row  `Long`, nanoseconds  a duration  `durationInterfaces.javaLongDuration`
+```
+
+For example:
 
 ```scala
 import instantInterfaces.javaTimeInstant
@@ -129,5 +164,5 @@ import durationInterfaces.javaLongDuration
 ```
 
 With those in scope, a [time](time.md) read from a file or a clock arrives as a
-`java.time.Instant`, and a duration as a `Long` of milliseconds, ready to hand to a Java API
+`java.time.Instant`, and a duration as a `Long` of nanoseconds, ready to hand to a Java API
 that expects them, while the rest of the program keeps Soundness's own types.

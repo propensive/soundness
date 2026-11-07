@@ -65,11 +65,19 @@ An address that is not valid does not compile:
 ip"192.168.0.0.0.1"   // does not compile: too many groups
 ```
 
-The `ip"…"` interpolator serves both address families, taking its type from what it is given, and
-the checks are the full ones for each. For IPv4: exactly four groups, each a number in the range
-0–255, with nothing but digits and dots. For IPv6: at most eight colon-separated groups, at most
-one `::`, and one to four hexadecimal characters in each group. A subnet prefix is checked against
-its family's range too — 0–32 or 0–128 — so an impossible mask is caught with the address.
+The `ip"…"` interpolator serves both address families, taking its type, `Ipv4` or `Ipv6`, from what
+it is given, and the checks are the full ones for each. A subnet prefix is checked against its
+family's range too, so an impossible mask is caught with the address:
+
+```tabular
+column  Rule
+column  IPv4
+column  IPv6
+row  groups  exactly four, separated by dots  at most eight, separated by colons
+row  each group  a number in the range 0–255  one to four hexadecimal characters
+row  abbreviation  none; nothing but digits and dots  at most one `::`
+row  subnet prefix  0–32  0–128
+```
 
 ### Email addresses
 
@@ -170,6 +178,20 @@ messages with a nameserver is `coaxial.dns`'s job; `Dns.resolve` reaches the pla
 ### Parsing at runtime
 
 Every identifier that has a literal form also decodes from text with `as`, naming the target type.
-A value that does not conform raises a typed error — an `Hostname.Error`, an `IpAddress.Error`, an
-`EmailAddress.Error` — that names precisely what was wrong, so a program validating user input can
-report the fault rather than merely rejecting the value.
+A value that does not conform raises a typed error that names precisely what was wrong, so a
+program validating user input can report the fault rather than merely rejecting the value:
+
+```tabular
+column  Identifier
+column  Literal
+column  Type
+column  Error
+row  URL  `url"…"`  `Url`, or `HttpUrl` for HTTP  `Url.Error`
+row  hostname  `host"…"`  `Hostname`  `Hostname.Error`
+row  IP address  `ip"…"`  `Ipv4` or `Ipv6`  `IpAddress.Error`
+row  subnet  `subnet"…"`  `Ipv4Subnet` or `Ipv6Subnet`  `IpAddress.Error`
+row  email address  `email"…"`  `EmailAddress`  `EmailAddress.Error`
+row  port  `tcp"…"`, `udp"…"`  `Port`  `Port.Error`
+row  MAC address  `mac"…"`  `MacAddress`  `MacAddress.Error`
+row  DNS name  `dns"…"`  `Dns.Name`  `Dns.Error`
+```

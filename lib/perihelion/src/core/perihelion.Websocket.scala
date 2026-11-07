@@ -271,6 +271,7 @@ object Websocket:
       case Reason.BadClose          => m"the close frame had a malformed payload or invalid code"
       case Reason.Masked            => m"the server sent a masked frame"
       case Reason.Handshake(detail) => m"the WebSocket handshake failed because $detail"
+      case Reason.Truncated         => m"the connection closed before the frame was complete"
 
   case class Error(reason: Websocket.Error.Reason)(using Diagnostics)
   extends fulminate.Error(368, reason.number)

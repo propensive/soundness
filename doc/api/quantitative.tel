@@ -614,6 +614,46 @@ entry .MetricPrefix   a metric prefix, applied to a `MetricUnit` to scale it: `K
       `Kilo(5*Metre)` does not compile. A `Prefixes` list of them lets `show` choose one for
       display.
 
+      The prefixes, with their symbols and the factors they denote:
+
+      ```tabular
+      column  Prefix
+      column  Symbol
+      column  Factor
+      row  `Quetta`  `Q`  10³⁰
+      row  `Ronna`  `R`  10²⁷
+      row  `Yotta`  `Y`  10²⁴
+      row  `Zetta`  `Z`  10²¹
+      row  `Exa`  `E`  10¹⁸
+      row  `Peta`  `P`  10¹⁵
+      row  `Tera`  `T`  10¹²
+      row  `Giga`  `G`  10⁹
+      row  `Mega`  `M`  10⁶
+      row  `Kilo`  `k`  10³
+      row  `Hecto`  `h`  10²
+      row  `Deka`  `da`  10¹
+      row  `Deci`  `d`  10⁻¹
+      row  `Centi`  `c`  10⁻²
+      row  `Milli`  `m`  10⁻³
+      row  `Micro`  `µ`  10⁻⁶
+      row  `Nano`  `n`  10⁻⁹
+      row  `Pico`  `p`  10⁻¹²
+      row  `Femto`  `f`  10⁻¹⁵
+      row  `Atto`  `a`  10⁻¹⁸
+      row  `Zepto`  `z`  10⁻²¹
+      row  `Yocto`  `y`  10⁻²⁴
+      row  `Ronto`  `r`  10⁻²⁷
+      row  `Quecto`  `q`  10⁻³⁰
+      row  `Kibi`  `Ki`  2¹⁰
+      row  `Mebi`  `Mi`  2²⁰
+      row  `Gibi`  `Gi`  2³⁰
+      row  `Tebi`  `Ti`  2⁴⁰
+      row  `Pebi`  `Pi`  2⁵⁰
+      row  `Exbi`  `Ei`  2⁶⁰
+      row  `Zebi`  `Zi`  2⁷⁰
+      row  `Yobi`  `Yi`  2⁸⁰
+      ```
+
       ```scala
       import soundness.*
 

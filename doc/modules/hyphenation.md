@@ -21,7 +21,18 @@ hyphenation dictionaries, and it remains the standard because it is accurate, fa
 pattern files exist for many languages.
 
 Soundness implements that algorithm against the standard pattern files, and exposes it as three
-operations on text, with the language supplied as a given. Everything comes from the `soundness`
+operations on text, with the language supplied as a given:
+
+```tabular
+column  Operation
+column  Returns
+column  For
+row  `hyphenate`  the `Text` with a hyphen character at each permissible break  text to be set in lines
+row  `syllables`  a `Sequence[Text]` of syllables and runs of non-letters  analysis of a word's parts
+row  `breakPoints`  an `Array[Int]` of break positions  code that places the breaks itself
+```
+
+Everything comes from the `soundness`
 package, with the English patterns in scope:
 
 ```scala

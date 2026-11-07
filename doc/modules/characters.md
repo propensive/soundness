@@ -58,8 +58,17 @@ enc"ABCDEF"   // does not compile: no such encoding
 ### Bad input
 
 A decoder consults the `TextSanitizer` in scope when it meets bytes that are not valid in its
-encoding. The strict sanitizer raises a `Charset.Error` naming the position of the fault; the
-skip sanitizer drops the bad bytes; and the substitute sanitizer replaces them with `?`:
+encoding. Three sanitizers decide between failing, dropping and replacing; on the truncated
+sequence below they give:
+
+```tabular
+column  Sanitizer
+column  On bad bytes
+column  Result on `badUtf8`
+row  `strictSanitizer`  raises a `Charset.Error` naming the position of the fault  `Charset.Error(1, enc"UTF-8")`
+row  `skipSanitizer`  drops them  `t"-10"`
+row  `substituteSanitizer`  replaces them with `?`  `t"-?10"`
+```
 
 ```scala
 import strategies.throwUnsafely
@@ -112,10 +121,23 @@ where it was wrong, rather than a choice between the two.
 
 ### Encodings
 
-`codepages` and `charsets` provide the encodings a program is likely to need — `utf8`,
-`utf16` with its explicit little- and big-endian forms, `ascii` and `iso88591` — each as a named
+`codepages` and `charsets` provide the encodings a program is likely to need, each as a named
 given, so the encoding a piece of code uses is stated at its import rather than defaulted from the
-platform. An encoding named at runtime is looked up with the `enc"…"` interpolator, which checks
+platform:
+
+```tabular
+column  Encoding
+column  Codepage, for encoding
+column  Charset, for decoding
+row  UTF-8  `utf8Codepage`  `utf8Charset`
+row  UTF-16  `utf16Codepage`  `utf16Charset`
+row  UTF-16, little-endian  `utf16LeCodepage`  `utf16LeCharset`
+row  UTF-16, big-endian  `utf16BeCodepage`  `utf16BeCharset`
+row  ASCII  `asciiCodepage`  `asciiCharset`
+row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`, which always skips bad bytes
+```
+
+Every other charset takes the sanitizer in scope. An encoding named at runtime is looked up with the `enc"…"` interpolator, which checks
 the name as the code compiles:
 
 ```scala
@@ -131,8 +153,18 @@ a surrogate pair split between chunks, which is where naive implementations lose
 ### Character widths
 
 A character's width in a monospaced display is not always one column. The `metrics` extension
-measures a character or a text through the `Measurable` metric in scope: `uniformMetric` counts
-every character as one, while `eastAsianScriptsMetric` gives wide characters two columns:
+measures a character or a text through the `Measurable` metric in scope, one of three in
+`textMetrics`:
+
+```tabular
+column  Metric
+column  Two columns
+column  No columns
+column  One column
+row  `uniformMetric`  none  none  every character
+row  `eastAsianScriptsMetric`  wide and full-width characters  none  every other character
+row  `wideCharacterWidthMetric`  wide and full-width characters  control characters, combining and enclosing marks, format characters  every other character
+```
 
 ```scala
 import textMetrics.eastAsianScriptsMetric
@@ -151,9 +183,21 @@ hold nothing wide, the uniform metric gives the same answer for nothing.
 
 ### Unicode properties
 
-A character answers questions about itself — whether it is whitespace, a control character, or
-printable — and reports its Unicode name; superscript and subscript forms are available where
-Unicode defines them:
+A character answers questions about itself, reports its Unicode name, and gives its superscript
+and subscript forms where Unicode defines them:
+
+```tabular
+column  Member
+column  Returns
+row  `whitespace`  whether it is whitespace
+row  `control`  whether it is an ISO control character
+row  `printable`  whether it is neither whitespace nor a control character
+row  `letter`, `digit`, `alphanumeric`  whether it is a letter, a digit, or either
+row  `majuscular`, `minuscular`  whether it is upper-case or lower-case
+row  `majuscule`, `minuscule`  its upper-case or lower-case form
+row  `description`, `designation`  its Unicode name, an `Optional[Text]`
+row  `superscript`, `subscript`  its superscript or subscript form, an `Optional[Char]`
+```
 
 ```scala
 'é'.description     // t"Latin Small Letter E With Acute", an Optional

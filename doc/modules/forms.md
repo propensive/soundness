@@ -18,8 +18,7 @@ from the data it claims to collect.
 Deriving a form and its decoder from one type keeps them in agreement, which is [correctness](../philosophy/correctness.md) through a single source of truth.
 
 Deriving both halves from one type removes the duplication. The type says what fields exist and
-what each accepts; the widgets follow from the field types — a `Boolean` is a checkbox, an
-enumeration a selection, text a field; and decoding a submission applies the same validated types
+what each accepts; the widgets follow from the field types; and decoding a submission applies the same validated types
 that govern the rest of the program, so a malformed email address fails at the form boundary with
 a message pointing at the email field. Everything comes from the `soundness` package:
 
@@ -43,6 +42,19 @@ elicit[Organization](validation = Validation(), submit = t"Save")
 
 Each field appears with a label derived from its name — `leader` becomes "Leader" — and a nested
 case class becomes a `<fieldset>` with a legend, so the form's structure explains itself.
+
+The widget for each field is chosen by its type:
+
+```tabular
+column  Field type
+column  Widget
+column  Rendered as
+row  `Boolean`  `Checkbox`  a checkbox
+row  an enumeration  `Combobox`  a text input with a `<datalist>` of the cases
+row  `Reference[entity]`  `Dropdown`  a `<select>` of the listed entities
+row  any other type encodable as `Text`  `Field`  a text input
+row  a case class  none  a `<fieldset>` of its fields
+```
 
 ### Submissions
 

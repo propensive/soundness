@@ -6,10 +6,18 @@ A [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
 with dependencies and no cycles — is the shape of build systems, task schedules, type hierarchies
 and package dependencies. Soundness represents one as a `Dag`, an immutable value with the
 operations such graphs need: topological ordering, reachability, transitive closure and reduction,
-and editing that keeps the graph acyclic. Beside it sit a `Digraph`, the general directed graph
-that may contain a cycle, and a `Topology`, a mutable graph edited in place that keeps a
-topological order live as edges arrive — which, frozen, is also the form for graphs built once
-and queried often.
+and editing that keeps the graph acyclic. Beside it sit two other graph types:
+
+```tabular
+column  Type
+column  Cycles
+column  Editing
+column  Suited to
+row  `Dag`  never  returns a new value  dependency structures as values
+row  `Digraph`  allowed  returns a new value  graphs that may hold a cycle
+row  `Topology[node]^`  never  in place  graphs built up edge by edge
+row  `Topology[node]^{}`  never  none: frozen  graphs built once and queried often
+```
 
 All of these, and anything else graph-shaped — a `Hasse` diagram, a `Map` from nodes to their
 successors — share one vocabulary through the `Nodal` typeclass, so the same operations apply to
@@ -77,9 +85,24 @@ dag.descendants(8)     // the sub-graph beneath 8
 dag.invert             // the graph with every edge reversed
 ```
 
-`sources` are the nodes depending on nothing, where a build or an installation starts, and
-`sinks` the nodes nothing depends on. `successors` are a node's dependencies, and `predecessors`
-its dependants.
+The queries a graph answers, and what each costs on a `Dag`:
+
+```tabular
+column  Query
+column  Answers
+column  On a `Dag`
+row  `sources`  the nodes depending on nothing, where a build starts
+row  `sinks`  the nodes nothing depends on
+row  `successors(n)`  the dependencies of `n`
+row  `predecessors(n)`  the dependants of `n`  needs `linearScan`
+row  `reachable(n)`  `n` and everything it depends on, transitively
+row  `descendants(n)`  the sub-graph beneath `n`
+row  `ancestors(n)`  the sub-graph that depends on `n`  needs `linearScan`
+row  `lineage(n)`  ancestors and descendants together  needs `linearScan`
+row  `linearized`  a topological order
+row  `invert`  the graph with every edge reversed
+row  `reaches(a, b)`  whether `a` depends on `b`, transitively  frozen `Topology` only
+```
 
 As a collection, a graph is its nodes — in topological order, for a `Dag` — so the collection
 vocabulary applies to it through the usual typeclasses: `dag.has(4)`, `dag.size`,
@@ -166,10 +189,27 @@ dag + (2 -> 8)             // a Digraph: this edge closes a cycle
 dag.map(_.toString)        // a Digraph of the same shape, since two nodes might merge
 ```
 
+The edits, what each returns, and the acknowledgement each needs:
+
+```tabular
+column  Edit
+column  Returns
+column  Acknowledgement
+row  `add(a, b)`  a `Dag`, or raises `Dag.Error`
+row  `remove(a, b)`  a `Dag`
+row  `- n`  a `Dag`  `linearScan`
+row  `bypass(n)`  a `Dag`  `linearScan`
+row  `bypassAll(nodes)`  a `Dag`  `linearScan`
+row  `subgraph(nodes)`  a `Dag`  `linearSize`
+row  `+ (a -> b)`  a `Digraph`
+row  `++ other`  a `Digraph`
+row  `map(f)`  a `Digraph`
+```
+
 `bypass` drops a node while rerouting each of its dependants to each of its dependencies, so
 every path through it survives; `bypassAll` does the same for a set of nodes, one after another.
-`subgraph` keeps only the edges among the chosen nodes, and asks for the `linearSize`
-acknowledgement, since a bounded choice of nodes rebuilds the whole map.
+`subgraph` keeps only the edges among the chosen nodes; a bounded choice of nodes rebuilds the
+whole map, which is the `linearSize` cost.
 
 ### Editing in place
 

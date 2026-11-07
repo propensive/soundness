@@ -6,14 +6,21 @@ import soundness
 info   fixed-width integers, bit patterns, floats, rationals and decimals, with opt-in checked arithmetic
 detail
     _Hypotenuse_ replaces the JVM's grab-bag of numbers with a regular set of types, each of
-    which says in its name how wide it is and how its bits are to be read. `U8`, `U16`,
-    `U32` and `U64` are unsigned integers; `S8`, `S16`, `S32` and `S64` are two's-complement
-    signed integers; `F32` and `F64` are IEEE floating-point numbers; and `B8`, `B16`, `B32`
-    and `B64` are raw bit patterns, with shifts, rotations and masks but no arithmetic at all.
-    Beyond the machine word, `Decimal` is an arbitrary-precision decimal, and `Q64` and `Q32`
-    are exact rationals packed into a single `Long` or `Int`. Every one is an opaque type
-    over a JVM primitive (or, for `Decimal`, a frozen array), so none of the distinctions
-    survives to runtime.
+    which says in its name how wide it is and how its bits are to be read:
+
+    ```tabular
+    column  Types
+    column  Values
+    row  `U8`, `U16`, `U32`, `U64`  unsigned integers
+    row  `S8`, `S16`, `S32`, `S64`  two's-complement signed integers
+    row  `F32`, `F64`  IEEE floating-point numbers
+    row  `B8`, `B16`, `B32`, `B64`  raw bit patterns, with shifts, rotations and masks but no arithmetic at all
+    row  `Decimal`  an arbitrary-precision decimal
+    row  `Q64`, `Q32`  exact rationals packed into a single `Long` or `Int`
+    ```
+
+    Every one is an opaque type over a JVM primitive (or, for `Decimal`, a frozen array), so
+    none of the distinctions survives to runtime.
 
     The arithmetic operators are not methods of these types: `+`, `-`, `*`, `/` and prefix
     `-` are symbolism's generic operators, resolved through `Addable`, `Subtractable`,

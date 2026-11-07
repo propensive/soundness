@@ -45,10 +45,19 @@ object PathBenchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
         '{ (% / "foo" / "bar").conjunction(% / "foo" / "baz") }
 ```
 
-`target` is how long the measured phase runs. The rig first runs the body untimed so
-that the JIT can reach a steady state, then runs `warmups` calibration batches to settle
-how many operations fit in one batch, then times `iterations` batches which together
-last about `target`. Choose a target large enough for a stable figure.
+The rig first runs the body untimed so that the JIT can reach a steady state, then
+calibrates and times it in batches, as these parameters say:
+
+```tabular
+column  Parameter
+column  Default
+column  Meaning
+row  `target`  none; required  how long the measured phase runs, all timed batches together
+row  `warmups`  the value of `iterations`  calibration batches, which settle how many operations fit in one batch
+row  `iterations`  `5`  timed batches
+```
+
+Choose a target large enough for a stable figure.
 
 ## 3. Measure a result, not a side effect
 

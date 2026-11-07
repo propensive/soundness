@@ -58,18 +58,33 @@ fed one measurement at a time needs. Several series are any collection of them �
 
 ### Chart kinds
 
-A chart kind is a value: `Bars`, `StackedBars`, `Lines`, `Scatter`, `Pie`, `Histogram`,
-`Boxes` or `Doughnut`. The `chart` method pairs data with a kind, and compiles only where the kind can draw the
+A chart kind is a value, and each draws data of its own shape:
+
+```tabular
+column  Kind
+column  Draws
+column  Abscissa
+column  Ordinate
+column  Style
+row  `Bars()`  a series, or a collection of series  categorical  continuous  `Bars.Style`
+row  `StackedBars()`  a collection of series  categorical  continuous  `StackedBars.Style`
+row  `Lines()`  a series, or a collection of series  continuous  continuous  `Lines.Style`
+row  `Scatter()`  a series, or a collection of series  continuous  continuous  `Scatter.Style`
+row  `Pie()`  exactly one series  categorical  continuous  `Pie.Style`
+row  `Histogram()`  `Samples`, or a collection of them  continuous  counts  `Histogram.Style`
+row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous  `Boxes.Style`
+row  `Doughnut()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Doughnut.Style`
+```
+
+The `chart` method pairs data with a kind, and compiles only where the kind can draw the
 data's shape:
 
 ```scala
 val sales = List(north, south).chart(Bars())
 ```
 
-Bars and pies want a categorical abscissa; lines and scatter plots want both axes continuous; a
-pie takes exactly one series; a histogram and a box plot take `Samples` — raw measurements —
-rather than points. A pairing that makes no sense is a compile error rather than a runtime
-surprise:
+A histogram and a box plot take `Samples` — raw measurements — rather than points. A pairing
+that makes no sense is a compile error rather than a runtime surprise:
 
 ```scala
 north.chart(Lines())       // does not compile: a categorical series has no numeric abscissa
@@ -103,8 +118,19 @@ A calibration can also be passed to a chart kind for one axis, when both axes sh
 val scaled = sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration))
 ```
 
-The adaptive calibration goes logarithmic when the range spans three orders of magnitude, which
-is what benchmark timings over input sizes usually want. The `Scale` a fit produces is plain
+The calibrations are givens in the `calibrations` package:
+
+```tabular
+column  Calibration
+column  Positions
+column  Range
+row  `linearCalibration`  linear  padded outward to whole gradations; the default
+row  `logarithmicCalibration`  logarithmic, or linear when the data reaches zero  whole decades
+row  `adaptiveCalibration`  logarithmic when the range spans three orders of magnitude, else linear  padded
+row  `tightCalibration`  linear  exactly the extent of the data
+```
+
+The adaptive calibration is what benchmark timings over input sizes usually want. The `Scale` a fit produces is plain
 data: its bounds, its transform and its gradations, which are spaced at multiples of one, two and
 five for numbers, and at clock steps — seconds, half-minutes, hours — for durations and instants.
 
@@ -131,12 +157,33 @@ given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units
     List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
 ```
 
-The hooks cover the details a chart is usually judged on: where a label sits relative to its
-tick and whether it is rotated (`tickLabel`, with `labelRoom` telling the layout how much space
-that takes), the stroke of each axis (`axisLine`), a break mark where a linear axis starts away
-from zero (`axisBreak`), arrowheads (`arrowhead`), the thickness of series lines (`line`), the
-size and colour of text (`fontStyle`, or `lettering` for every run of text), and the labelling of
-points that carry a note (`pointLabel`, for a `Noted` value).
+The hooks cover the details a chart is usually judged on:
+
+```tabular
+column  Hook
+column  Draws
+column  Defined on
+row  `fontStyle`, `lettering`  the size and colour of text; every run of text  `Chart.Style`
+row  `backdrop`  the canvas behind the chart  `Chart.Style`
+row  `swatch`, `legendLabel`  a legend entry  `Chart.Style`
+row  `leader`  the line from a moved label back to its point  `Chart.Style`
+row  `axisLine`  the stroke of each axis  `Chart.Cartesian`
+row  `axisBreak`  a break mark where a linear axis starts away from zero  `Chart.Cartesian`
+row  `arrowhead`  the end of an axis  `Chart.Cartesian`
+row  `tick`, `gridLine`  a gradation and its grid line  `Chart.Cartesian`
+row  `tickLabel`  a tick's label, where it sits and whether it is rotated  `Chart.Cartesian`
+row  `axisTitle`  an axis's title  `Chart.Cartesian`
+row  `marker`, `errorBar`  a point and its interval  `Chart.Cartesian`
+row  `pointLabel`  the note of a `Noted` point  `Chart.Cartesian`
+row  `bar`  a bar  `Bars.Style`
+row  `line`, `band`  a series line and an estimate's band  `Lines.Style`
+row  `box`, `whisker`, `median`  a box plot's parts  `Boxes.Style`
+row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
+row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Doughnut.Style`
+```
+
+`labelRoom` tells the layout how much space the tick labels take, so a style that rotates them
+overrides it alongside `tickLabel`.
 
 Colors are a `ChartPalette`, named by role — the series ramp, the axes, the grid, the
 lettering — so that one style renders under any palette; a palette is chosen by importing one:
@@ -211,8 +258,21 @@ val drawing = sales.in[Svg]
 drawing.in[Xml].show.keep(70)   // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 800.0 …
 ```
 
-Every part of the drawing is a group with a stable identifier — `grid`, `abscissa`, `ordinate`,
-`legend` and `series-0`, `series-1`, … — which is what makes the chart revisable.
+Every part of the drawing is a group with a stable identifier, which is what makes the chart
+revisable:
+
+```tabular
+column  Identifier
+column  Holds
+column  In
+row  `backdrop`  the canvas, in the palette's background colour  every chart
+row  `grid`  the grid lines  cartesian charts
+row  `abscissa`, `ordinate`  each axis, its gradations and its title  cartesian charts
+row  `legend`  the legend  charts with a legend
+row  `series-0`, `series-1`, …  each series  cartesian charts
+row  `wedges`  every wedge and its label  `Pie`
+row  `rank-0`, `rank-1`, …  each band  `Doughnut`
+```
 
 ### Revision
 

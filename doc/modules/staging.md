@@ -119,9 +119,17 @@ Isolation.dispatch:
 ```
 
 A new execution environment plugs in by implementing `Rig`: how the compiled code is *staged* to
-its destination and how it is *invoked* there. Soundness's own tooling supplies two more examples —
-the test enclave that packages a dispatched block as a standalone executable, and the
-[benchmark](../standards/benchmarking.md) rig that measures staged code in a controlled JVM.
+its destination and how it is *invoked* there. Soundness's own tooling supplies more examples:
+
+```tabular
+column  Rig
+column  Runs the block
+column  A dispatch returns
+row  `Jvm`  in a fresh JVM subprocess  the output
+row  `Isolation`  in the same process, under an isolated classloader  the output
+row  `Enclave`  packaged as a standalone executable, for tests  an `Enclave.Launcher`
+row  `Bench`, `Stress`, `Profile`  in a controlled JVM, measured as a [benchmark](../standards/benchmarking.md)  the output
+```
 
 ### Writing a rig
 
@@ -130,9 +138,22 @@ running classloader, compiles the quoted code if it is not already compiled, cap
 inputs, and encodes them into a single transportable value. What is left for the rig is one
 narrow job — run some code somewhere, given that value, and bring back the value it produced.
 
-A rig therefore declares what its `Result` type is (the bare output, an `Optional`, a `Task` —
-whatever suits the environment), which compiler to stage with, how compiled output is *staged* to
-its destination, and how to *invoke* it. The `Jvm` rig is the whole of it:
+A rig therefore declares a handful of members:
+
+```tabular
+column  Member
+column  Declares
+column  In `Jvm`
+row  `Result[output]`  what a dispatch returns: the bare output, an `Optional`, a `Task`…  `output`
+row  `Form`  the encoded form of the input and output  `Text`
+row  `Target`  what staging produces  `LocalClasspath`
+row  `Transport`  the form spliced values travel in  `Json`
+row  `scalac`  the compiler to stage with  `Scalac[3.6]`
+row  `stage`  how compiled output is *staged* to its destination  the classpath of the output
+row  `invoke`  how it is *invoked* there  a `java` subprocess
+```
+
+The `Jvm` rig is the whole of it:
 
 ```scala
 object Jvm extends Rig:

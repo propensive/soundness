@@ -199,10 +199,17 @@ entry .Checksummable   how a value's underlying content is fed into a digest, fo
   entry #checksum   appends the content behind a value to an exclusive `Digestion`
 
 entry .HashWeakness   the `Concession` an algorithm carries: what permit `digest[algorithm]` needs
-    A match type from an `Algorithm` to the concession a caller must hold a `Permit` for: `Md5`
-    to `Concession.Md5`, `Sha1` to `Concession.Sha1`, and `Crc32`, `Crc64`, `Adler32` and
-    `Murmur3` to `Concession.NonCryptographic`; every other algorithm — the SHA-2 family and
-    BLAKE3 — to `Concession.Acceptable`, whose permit `Permit.acceptable` is always in scope.
+    A match type from an `Algorithm` to the concession a caller must hold a `Permit` for:
+
+    ```tabular
+    column  Algorithm
+    column  Concession
+    row  `Md5`  `Concession.Md5`
+    row  `Sha1`  `Concession.Sha1`
+    row  `Crc32`, `Crc64`, `Adler32`, `Murmur3`  `Concession.NonCryptographic`
+    row  any other: the SHA-2 family, BLAKE3  `Concession.Acceptable`, whose permit `Permit.acceptable` is always in scope
+    ```
+
     `digest`, `checksum` and enigmatic's `hmac` all require an erased
     `Permit[HashWeakness[algorithm]]`, which is how a weak hash fails to compile until a
     `cryptoPermits` given is imported by name.
@@ -892,14 +899,28 @@ entry .cryptoPermits   the crypto permits, each a given to import by name: what 
 entry .Multicodec   the multiformats code of a hash algorithm, for enveloping its digest as a `Multihash`
   detail
       A typeclass which *is* the mapping from an `Algorithm` to its registered code and name in
-      the multiformats table: `Sha1` is `0x11`, `Sha2[256]` is `0x12`, `Sha2[512]` is `0x13`,
-      `Sha2[384]` is `0x20`, `Sha2[224]` is `0x1013`, `Blake3` is `0x1e` and `Md5` is `0xd5`;
-      `Sha384` and `Sha512` share the codes of their `Sha2` forms. It is deliberately partial:
-      an algorithm with no instance cannot be enveloped, and `Multihash(digest)` does not
-      compile for it. The checksums have none — Adler-32 is unregistered, and CRC-32 and CRC-64
-      are registered as `hash`, not `multihash`, since the specification reserves multihash
-      for cryptographic functions suited to content addressing; a caller who wants a checksum
-      enveloped anyway can build the `Multihash(code, bytes)` directly from its code.
+      the multiformats table:
+
+      ```tabular
+      column  Algorithm
+      column  Code
+      column  Name
+      row  `Sha1`  `0x11`  `sha1`
+      row  `Sha2[256]`  `0x12`  `sha2-256`
+      row  `Sha2[512]`, `Sha512`  `0x13`  `sha2-512`
+      row  `Sha2[384]`, `Sha384`  `0x20`  `sha2-384`
+      row  `Sha2[224]`  `0x1013`  `sha2-224`
+      row  `Blake3`  `0x1e`  `blake3`
+      row  `Md5`  `0xd5`  `md5`
+      ```
+
+      `Blake3` and `Md5` are draft entries in the table, but unambiguous and widely
+      implemented. The typeclass is deliberately partial: an algorithm with no instance cannot
+      be enveloped, and `Multihash(digest)` does not compile for it. The checksums have none
+      — Adler-32 is unregistered, and CRC-32 and CRC-64 are registered as `hash`, not
+      `multihash`, since the specification reserves multihash for cryptographic functions
+      suited to content addressing; a caller who wants a checksum enveloped anyway can build
+      the `Multihash(code, bytes)` directly from its code.
 
       Lives in `gastronomy.multihash`. `.name(code)` gives the registered name of a code this
       library knows, for describing a decoded envelope whose algorithm is not recoverable as a

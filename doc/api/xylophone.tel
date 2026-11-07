@@ -445,14 +445,21 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
     refer xylophone.Xml.Focus
     entry .Reason   why the XML could not be read, each with its number
         The cases, each extending `Reason(n)` so the error reads as `SN-149.n`:
-        `Malformed(text, expected)` (1), text which is not a valid value of the expected
-        type; `Untextual(expected)` (2), an element with no single text run to read as the
-        type; `Absent(expected)` (3), no element or attribute supplied a required primitive;
-        `AbsentProduct(product)` (4) and `AbsentVariant(sum)` (5), a required nested record or
-        enumeration with no element and no default; `UnknownVariant(discriminant, sum)` (6),
-        an element label naming no variant of the enumeration; `Empty` (7), an element with
-        no text where the text bridge needed some; and `Missing` (8), a field with no element
-        or attribute, where the type cannot be named at the raise site.
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Malformed(text, expected)`  1  _the text `text` is not a valid `expected`_
+        row  `Untextual(expected)`  2  _the element has no text to read as `expected`_  no single text run
+        row  `Absent(expected)`  3  _no element or attribute supplied the required `expected`_  a required primitive
+        row  `AbsentProduct(product)`  4  _no element supplied the required `product`, which has no default_  a nested record
+        row  `AbsentVariant(sum)`  5  _no element supplied the required `sum`, which has no default_  an enumeration
+        row  `UnknownVariant(discriminant, sum)`  6  _`discriminant` does not name a variant of `sum`_  an element label
+        row  `Empty`  7  _the element has no text_  where the text bridge needed some
+        row  `Missing`  8  _the element or attribute was not present_  where the type cannot be named at the raise site
+        ```
     entry .communicable   renders each reason as a message
     entry #reason   the `Xml.Error.Reason`
   entry .Issue   what the parser or the `x"…"` macro found wrong with XML text
@@ -1549,12 +1556,21 @@ entry .Xml4   the lowest layer of `Xml`'s companion, holding `Xml.Provider`
           a `venture` per field gathers every violation — with a reason from
           `Xml.Provider.Error.Reason`.
       entry .Reason   why a field did not conform, each with its number
-          `OutOfRange(value, minimum, maximum)` (1), a bound facet or an integer type's
-          implied bound; `LengthOutOfRange(value, minimum, maximum)` (2);
-          `PatternMismatch(value, pattern)` (3); `NotPermitted(value, permitted)` (4), an
-          enumeration facet; `TooManyDigits(value, total, fraction)` (5); `Absent(name)` (6),
-          a required element or attribute; and `Malformed(value, expected)` (7), a value its
-          type cannot read, where `value` is `Unset` for an element with no text.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `OutOfRange(value, minimum, maximum)`  1  _the value `value` is outside the range `minimum` to `maximum`_  a bound facet, or an integer type's implied bound
+          row  `LengthOutOfRange(value, minimum, maximum)`  2  _the length of `value` is outside the range `minimum` to `maximum`_
+          row  `PatternMismatch(value, pattern)`  3  _the value `value` does not match the pattern `pattern`_
+          row  `NotPermitted(value, permitted)`  4  _the value `value` is not one of `permitted`_  an enumeration facet
+          row  `TooManyDigits(value, total, fraction)`  5  _the value `value` has more digits than the `total` total or `fraction` fraction digits permitted_
+          row  `Absent(name)`  6  _the element or attribute `name` is required_  a required element or attribute
+          row  `Malformed(value, expected)`  7  _the text `value` is not a valid `expected`_, or _the value has no text to read as `expected`_  a value its type cannot read; `value` is `Unset` for an element with no text
+          ```
+
+          An unset bound renders as _…_.
       entry .communicable   renders each reason as a message
       entry #reason   the `Xml.Provider.Error.Reason`
     entry #Origin   `Xml`: what a record is read from
@@ -1779,12 +1795,21 @@ entry .XPath   an XPath 1.0 expression as a value: parsed, built with typed cons
         a step on the `Namespace` axis raises `XPath.Error` with `Reason.Unsupported`.
     entry #keyword   the axis's spelling in `axis::test` syntax, such as `descendant-or-self`
   entry .NodeTest   what a step matches: a name, a wildcard, or a node kind
-      `Name(prefix, local)` matches an element (or, on the attribute axis, an attribute) by
-      name, `Wildcard` is `*`, `PrefixWildcard(prefix)` is `prefix:*`, `Node` is `node()`,
-      `Textual` is `text()` (named so as not to shadow `Text`), `Comment` is `comment()`, and
-      `Instruction(target)` is `processing-instruction('target')`, or
-      `processing-instruction()` when the target is `Unset`. A name test's principal node
-      type follows the axis: attributes on the attribute axis, elements on every other.
+      ```tabular
+      column  Node test
+      column  XPath
+      column  Matches
+      row  `Name(prefix, local)`  `local` or `prefix:local`  an element, or on the attribute axis an attribute, by name
+      row  `Wildcard`  `*`  any element, or any attribute on the attribute axis
+      row  `PrefixWildcard(prefix)`  `prefix:*`  any element or attribute in the prefix's namespace
+      row  `Node`  `node()`  any node
+      row  `Textual`  `text()`  a text node; named so as not to shadow `Text`
+      row  `Comment`  `comment()`  a comment
+      row  `Instruction(target)`  `processing-instruction('target')`, or `processing-instruction()` when the target is `Unset`  a processing instruction
+      ```
+
+      A name test's principal node type follows the axis: attributes on the attribute axis,
+      elements on every other.
   entry .Step   one location step: an axis, a node test and its predicates
     detail
         Steps are held root-first, in source order, with the abbreviations desugared: `//`
@@ -1947,9 +1972,18 @@ entry .XPath   an XPath 1.0 expression as a value: parsed, built with typed cons
         safely(doc.evaluate(xp"frobnicate()"))   // Unset: an unknown function
         ```
     entry .Reason   why evaluation failed, with the number which distinguishes it
-        `UnknownFunction(name)` (1), `BadArity(name)` (2), `UnboundVariable(name)` (3),
-        `NotNodeSet` (4), raised by `select` when the expression's value is not a node-set,
-        `Unsupported(feature)` (5) and `Unresolved` (6).
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `UnknownFunction(name)`  1  _the function `name` is not an XPath 1.0 core function_
+        row  `BadArity(name)`  2  _the function `name` was applied to the wrong number of arguments_
+        row  `UnboundVariable(name)`  3  _the variable $`name` has no binding_
+        row  `NotNodeSet`  4  _a node-set was expected_  raised by `select` when the expression's value is not a node-set
+        row  `Unsupported(feature)`  5  _`feature` is not supported_
+        row  `Unresolved`  6  _the expression contains an unresolved substitution_
+        ```
     entry .communicable   renders each reason as a message
     entry #reason   the `XPath.Error.Reason` which stopped evaluation
   entry .interpolable   the given behind `xp"…"`: parses and checks the literal as the code compiles
@@ -2140,13 +2174,19 @@ entry .Xsd   an XML Schema (XSD 1.0) as an immutable model of its declarations
         // Xsd.Error.Reason.NotSchema(Xml.Name(t"root"))
         ```
     entry .Reason   why the schema could not be read
-        `NotSchema(found)` (1), when the document element is not `xs:schema`;
-        `Unexpected(element, within)` (2), an element the grammar does not allow there;
-        `MissingAttribute(element, attribute)` (3); `BadOccurs(value)` (4), a `minOccurs` or
-        `maxOccurs` which is neither a number nor `unbounded`; `UnknownPrefix(prefix)` (5), a
-        QName-valued attribute whose prefix the document does not bind; `BadFacet(facet,
-        value)` (6), a facet whose value is not a number; and `Duplicate(kind, name)` (7), a
-        global declaration made twice.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `NotSchema(found)`  1  _the document element is `found`, not an XML Schema_  the document element is not `xs:schema`
+        row  `Unexpected(element, within)`  2  _`element` may not appear in `within`_  an element the grammar does not allow there
+        row  `MissingAttribute(element, attribute)`  3  _the `element` has no `attribute` attribute_
+        row  `BadOccurs(value)`  4  _`value` is not a valid number of occurrences_  a `minOccurs` or `maxOccurs` which is neither a number nor `unbounded`
+        row  `UnknownPrefix(prefix)`  5  _the prefix `prefix` is not bound to a namespace_  in a QName-valued attribute
+        row  `BadFacet(facet, value)`  6  _`value` is not a valid value for the `facet` facet_  a facet whose value is not a number
+        row  `Duplicate(kind, name)`  7  _the `kind` `name` is declared more than once_  a global declaration made twice
+        ```
     entry .communicable   renders each reason as a message
     entry #reason   the `Xsd.Error.Reason`
   entry .parse   reads a schema from an `Xml` document, or from its text

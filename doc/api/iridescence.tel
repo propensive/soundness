@@ -481,15 +481,36 @@ entry .Colorimetry   the reference white a perceptual conversion assumes: an ill
 
 entry .colorimetry   the standard illuminants, each a `Colorimetry` given to import by name
   detail
-      The CIE standard illuminants and the common fluorescent lamps, by name:
-      `daylightColorimetry` is D65, the illuminant sRGB and most screen work assume, and
-      suits almost every program. The others model incandescent light (A), direct sunlight
-      (B), old daylight (C), the printing profile connection space (D50), mid-morning
-      daylight (D55), north-sky daylight (D75), the equal-energy illuminant (E), and the
-      fluorescent series F1 to F12. Several are aliases of another: `srgbColorimetry` and
-      `adobeRgbColorimetry` are D65; `d65SimulatorColorimetry` is F7; `d50SimulatorColorimetry`
-      is F8 (`sylvaniaF40Colorimetry`); `ultralume50Colorimetry`, `ultralume40Colorimetry` and
-      `ultralume30Colorimetry` are F10, F11 and F12.
+      The CIE standard illuminants and the common fluorescent lamps, by name.
+      `daylightColorimetry` is D65, the illuminant sRGB and most screen work assume, and suits
+      almost every program. Several givens are aliases of another:
+
+      ```tabular
+      column  Illuminant
+      column  Given
+      column  Light
+      column  Aliases
+      row  A  `incandescentTungstenColorimetry`  incandescent tungsten
+      row  B  `oldDirectSunlightAtNoonColorimetry`  direct sunlight at noon, obsolete
+      row  C  `oldDaylightColorimetry`  average north-sky daylight, obsolete
+      row  D50  `iccProfilePcsColorimetry`  the ICC profile connection space
+      row  D55  `midMorningDaylightColorimetry`  mid-morning or mid-afternoon daylight
+      row  D65  `daylightColorimetry`  noon daylight, the usual choice  `srgbColorimetry`, `adobeRgbColorimetry`
+      row  D75  `northSkyDaylightColorimetry`  north-sky daylight
+      row  E  `equalEnergyColorimetry`  equal energy at every wavelength
+      row  F1  `daylightFluorescentF1Colorimetry`  daylight fluorescent
+      row  F2  `coolFluorescentColorimetry`  cool white fluorescent
+      row  F3  `whiteFluorescentColorimetry`  white fluorescent
+      row  F4  `warmWhiteFluorescentColorimetry`  warm white fluorescent
+      row  F5  `daylightFluorescentF5Colorimetry`  daylight fluorescent
+      row  F6  `liteWhiteFluorescentColorimetry`  light white fluorescent
+      row  F7  `daylightFluorescentF7Colorimetry`  a D65 simulator  `d65SimulatorColorimetry`
+      row  F8  `sylvaniaF40Colorimetry`  Sylvania F40, a D50 simulator  `d50SimulatorColorimetry`
+      row  F9  `coolWhiteFluorescentColorimetry`  cool white deluxe fluorescent
+      row  F10  `philipsTl85Colorimetry`  Philips TL85  `ultralume50Colorimetry`
+      row  F11  `philipsTl84Colorimetry`  Philips TL84  `ultralume40Colorimetry`
+      row  F12  `philipsTl83Colorimetry`  Philips TL83  `ultralume30Colorimetry`
+      ```
 
       ```scala
       import soundness.*

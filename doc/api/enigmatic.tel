@@ -237,15 +237,18 @@ entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API
         ```
     entry .communicable   renders each reason as a message
     entry .Reason   why the operation failed
-        `BadPadding` (1): _the ciphertext was corrupted or the key was wrong_. `IllegalBlockSize`
-        (2): _the input length was not valid for the cipher_, which is what `NoPadding` raises
-        for input that is not a multiple of the block size in a block-aligned mode. `InvalidKey`
-        (3): _the key was not valid for the cipher_, such as key material of the wrong length
-        adopted with `SymmetricKey(bytes)`. `InvalidAlgorithm` (4): _the algorithm was not
-        available_. `IoFailure` (5): _data could not be read or written_, the mapping of any
-        other `java.security.GeneralSecurityException`. `BadTag` (6): _the authentication tag
-        did not verify_, from `unseal`: a forgery, a wrong key, or a nonce or associated data
-        which differ from the sealing ones.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `BadPadding`  1  _the ciphertext was corrupted or the key was wrong_
+        row  `IllegalBlockSize`  2  _the input length was not valid for the cipher_  what `NoPadding` raises for input that is not a multiple of the block size in a block-aligned mode
+        row  `InvalidKey`  3  _the key was not valid for the cipher_  such as key material of the wrong length adopted with `SymmetricKey(bytes)`
+        row  `InvalidAlgorithm`  4  _the algorithm was not available_
+        row  `IoFailure`  5  _data could not be read or written_  the mapping of any other `java.security.GeneralSecurityException`
+        row  `BadTag`  6  _the authentication tag did not verify_  from `unseal`: a forgery, a wrong key, or a nonce or associated data which differ from the sealing ones
+        ```
     entry #reason   which failure it was
     entry #detail   the provider's own message, if it gave one
   entry #random   the provider's random source, from which `InitializationVector.random` draws
@@ -580,10 +583,21 @@ entry .Permits   evidence that a block-cipher mode may be combined with a paddin
 
 entry .Weakness   the concession a cipher type needs a permit for, as a match type
     `Weakness[cipher]` maps a (possibly `over`/`against`-refined) cipher type to the
-    gastronomy `Concession` its use requires: `Des` to `Concession.Des`, `TripleDes[?]` to
-    `TripleDes`, `Rc2[?]` to `Rc2`, `Blowfish[?]` to `Blowfish`, `Rsa[1024]` to `SmallRsa`,
-    `Dsa[?]` to `Dsa`, and anything else — AES, RSA-2048 and above, ECDSA, Ed25519, ML-DSA —
-    to `Acceptable`, which needs no permit. `encrypt` and `sign` demand a
+    gastronomy `Concession` its use requires:
+
+    ```tabular
+    column  Cipher
+    column  Concession
+    row  `Des`  `Concession.Des`
+    row  `TripleDes[?]`  `Concession.TripleDes`
+    row  `Rc2[?]`  `Concession.Rc2`
+    row  `Blowfish[?]`  `Concession.Blowfish`
+    row  `Rsa[1024]`  `Concession.SmallRsa`
+    row  `Dsa[?]`  `Concession.Dsa`
+    row  anything else: AES, RSA-2048 and above, ECDSA, Ed25519, ML-DSA  `Concession.Acceptable`, which needs no permit
+    ```
+
+    `encrypt` and `sign` demand a
     `Permit[Weakness[cipher]]`; `decrypt` and `verify` the weaker `ProcessingPermit`, so
     `cryptoPermits.permitLegacyCrypto` allows reading old data without writing more of it.
 
@@ -747,16 +761,17 @@ entry .PrivateKey   a private key held by a `Cloak`: signs, decrypts, agrees, an
         `.pemDecodable`, `.derDecodable`, `Pkcs8` and `OpenSsh.privateKey`.
     entry .communicable   renders each reason as a message
     entry .Reason   why the document was refused
-        `Malformed(detail)` (1): _the key document was malformed: `detail`_ — not DER, not a
-        `PrivateKeyInfo`, not an `RSAPrivateKey`, a truncated OpenSSH container.
-        `Mismatch(expected, found)` (2): _a `expected` key was expected but `found` was found_,
-        where the names are the `KeyAlgorithm`'s, such as `RSA-4096` and `RSA-2048`, `ECDSA
-        P-384` and `ECDSA P-256`, or `private` and `a public key block`. `Encrypted` (3): _the
-        key is protected by a passphrase_. `Unsupported(detail)` (4): _the key uses an
-        unsupported `detail`_, such as an OpenSSH container holding several keys or a key type
-        OpenSSH names but this library does not. `PublicKeyAbsent` (5): _the key does not carry
-        its public key_, for an EC, Ed25519 or ML-DSA document without its optional public-key
-        field, which no provider can recompute.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  not DER, not a `PrivateKeyInfo`, not an `RSAPrivateKey`, a truncated OpenSSH container
+        row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  the names are the `KeyAlgorithm`'s, such as `RSA-4096` and `RSA-2048`, `ECDSA P-384` and `ECDSA P-256`, or `private` and `a public key block`
+        row  `Encrypted`  3  _the key is protected by a passphrase_
+        row  `Unsupported(detail)`  4  _the key uses an unsupported `detail`_  such as an OpenSSH container holding several keys, or a key type OpenSSH names but this library does not
+        row  `PublicKeyAbsent`  5  _the key does not carry its public key_  an EC, Ed25519 or ML-DSA document without its optional public-key field, which no provider can recompute
+        ```
     entry #reason   why the document was refused
   entry #public   the key's public half, as a `PublicKey[cipher]`
       Computed from the private material through the cipher's `privateToPublic`: derived
@@ -830,12 +845,15 @@ entry .PublicKey   the public half of a key pair: verifies signatures, encrypts 
         `.pemDecodable`, `.derDecodable`, `Spki` and `OpenSsh.publicKey`.
     entry .communicable   renders each reason as a message
     entry .Reason   why the document was refused
-        `Malformed(detail)` (1): _the key document was malformed: `detail`_ — not a
-        `SubjectPublicKeyInfo`, not an `RSAPublicKey`, a line which is not base64 or not a
-        public key. `Mismatch(expected, found)` (2): _a `expected` key was expected but `found`
-        was found_, with the `KeyAlgorithm` names, such as `ECDSA P-256` and `Ed25519`.
-        `Unsupported(detail)` (3): _the key uses an unsupported `detail`_, such as an OpenSSH
-        key type or curve this library has no name for.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  not a `SubjectPublicKeyInfo`, not an `RSAPublicKey`, a line which is not base64 or not a public key
+        row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  with the `KeyAlgorithm` names, such as `ECDSA P-256` and `Ed25519`
+        row  `Unsupported(detail)`  3  _the key uses an unsupported `detail`_  such as an OpenSSH key type or curve this library has no name for
+        ```
     entry #reason   why the document was refused
   entry #bytes   the X.509 `SubjectPublicKeyInfo`, DER-encoded
   entry #verify   whether a signature is valid over a value, for a `Signing` cipher
@@ -1960,27 +1978,29 @@ entry .Asn1   an ASN.1 value, in the universal types PKIX uses, with a strict DE
       der.as[Asn1] == value
       ```
 
-      The cases are the universal types, each a case class whose fields are the value:
+      The cases are the universal types, each a case class whose fields are the value, with
+      the universal tag number each is written with:
 
-      - `Boolean(value: scala.Boolean)` and `Integer(value: BigInt)`, which encodes minimally
-        with two's-complement sign extension;
-      - `BitString(bytes: Data, unusedBits: Int)`, with the count of unused trailing bits
-        (`0` for a signature or a public key), and `OctetString(bytes: Data)`;
-      - `Null`;
-      - `ObjectId(arcs: List[Int])`, an object identifier as its arcs, so
-        `sha256WithRSAEncryption` is `Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11))`;
-      - `Utf8String`, `PrintableString` and `Ia5String`, each over a `Text`;
-      - `UtcTime(timestamp: Long)` and `GeneralizedTime(timestamp: Long)`, both in seconds
-        since the Unix epoch, written and read only in DER's one permitted form
-        (`YYMMDDHHMMSSZ` and `YYYYMMDDHHMMSSZ`, no fractions, no offset), with a `UTCTime`
-        year read as 1950–2049;
-      - `Sequence(elements: List[Asn1])` and `Set(elements: List[Asn1])`, whose members DER
-        sorts by their encodings when writing (and requires sorted when reading);
-      - `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`, a context-class tag: an
-        explicit tag wraps the whole inner value, and an implicit one replaces the inner
-        value's tag; and
-      - `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`, any
-        other value, with its content octets verbatim.
+      ```tabular
+      column  Case
+      column  Tag
+      column  Notes
+      row  `Boolean(value: scala.Boolean)`  1
+      row  `Integer(value: BigInt)`  2  encoded minimally, with two's-complement sign extension
+      row  `BitString(bytes: Data, unusedBits: Int)`  3  with the count of unused trailing bits: `0` for a signature or a public key
+      row  `OctetString(bytes: Data)`  4
+      row  `Null`  5
+      row  `ObjectId(arcs: List[Int])`  6  an object identifier as its arcs: `sha256WithRSAEncryption` is `Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11))`
+      row  `Utf8String(text: Text)`  12
+      row  `PrintableString(text: Text)`  19
+      row  `Ia5String(text: Text)`  22
+      row  `UtcTime(timestamp: Long)`  23  seconds since the Unix epoch, only in DER's form `YYMMDDHHMMSSZ`, with no fractions and no offset; the year is read as 1950–2049
+      row  `GeneralizedTime(timestamp: Long)`  24  seconds since the Unix epoch, only in DER's form `YYYYMMDDHHMMSSZ`, with no fractions and no offset
+      row  `Sequence(elements: List[Asn1])`  16
+      row  `Set(elements: List[Asn1])`  17  members sorted by their encodings when written, and required sorted when read
+      row  `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`  `tag`  a context-class tag: an explicit one wraps the whole inner value, and an implicit one replaces the inner value's tag
+      row  `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`  `tag`  any other value, with its content octets verbatim
+      ```
 
       Decoding is **total**: a tag not modelled here — `T61String`, `BMPString`,
       `ENUMERATED`, an application or private tag — decodes to `Unknown`, and a constructed
@@ -2074,15 +2094,34 @@ entry .Asn1   an ASN.1 value, in the universal types PKIX uses, with a strict DE
         ```
     entry .Reason   what was wrong with the bytes, and at which offset
       detail
-          An enum of nineteen cases, each carrying the byte `offset` of the fault, and
-          numbered as the error's sub-number: `Truncated` (1), `IndefiniteLength` (2),
-          `NonMinimalLength` (3), `NonMinimalTag` (4), `NonMinimalInteger` (5),
-          `EmptyInteger` (6), `Overflow` (7, a length or tag too large), `Trailing` (8),
-          `InvalidUtf8` (9), `ReservedTag` (10), `BadOid` (11), `OidArcOverflow` (12),
-          `UnsortedSet` (13), `BadTime` (14), `BadBoolean(offset, byte)` (15),
-          `BadLength(offset, tag, length)` (16), `BadUnusedBits(offset, count)` (17),
-          `NotPrimitive(offset, tag)` (18) and `NotConstructed(offset, tag)` (19). Each
-          case's `number` is its sub-number.
+          An enum of nineteen cases, each carrying the byte `offset` of the fault, and numbered as
+          the error's sub-number:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_
+          row  `IndefiniteLength(offset)`  2  _an indefinite length was found at byte `offset`_
+          row  `NonMinimalLength(offset)`  3  _an overlong length was found at byte `offset`_
+          row  `NonMinimalTag(offset)`  4  _an overlong tag number was found at byte `offset`_
+          row  `NonMinimalInteger(offset)`  5  _an overlong integer was found at byte `offset`_
+          row  `EmptyInteger(offset)`  6  _an integer with no content was found at byte `offset`_
+          row  `Overflow(offset)`  7  _an unrepresentable length was found at byte `offset`_  a length or a tag too large
+          row  `Trailing(offset)`  8  _unexpected trailing bytes were found from byte `offset`_
+          row  `InvalidUtf8(offset)`  9  _invalid UTF-8 was found at byte `offset`_
+          row  `ReservedTag(offset)`  10  _the reserved tag number 0 was found at byte `offset`_
+          row  `BadOid(offset)`  11  _a malformed object identifier was found at byte `offset`_
+          row  `OidArcOverflow(offset)`  12  _an arc too large for Int was found at byte `offset`_
+          row  `UnsortedSet(offset)`  13  _the set at byte `offset` was not in ascending order_
+          row  `BadTime(offset)`  14  _a malformed time value was found at byte `offset`_
+          row  `BadBoolean(offset, byte)`  15  _a boolean with the content byte `byte` was found at byte `offset`_
+          row  `BadLength(offset, tag, length)`  16  _the tag `tag` had the invalid length `length` at byte `offset`_
+          row  `BadUnusedBits(offset, count)`  17  _a bit string declaring `count` unused bits was found at byte `offset`_
+          row  `NotPrimitive(offset, tag)`  18  _the tag `tag` was encoded in constructed form at byte `offset`_
+          row  `NotConstructed(offset, tag)`  19  _the tag `tag` was encoded in primitive form at byte `offset`_
+          ```
       entry .communicable   renders each reason as a message naming the fault and its byte offset
     entry #reason   the `Asn1.Error.Reason` for the failure
 
@@ -2208,11 +2247,18 @@ entry .Pem   a PEM block: a label and the bytes its base64 armor carries
   entry .Error   raised when text is not a PEM block
     detail
         Error 389: _could not parse PEM content because `reason`_. Raised by `Pem.aggregable`,
-        `Pem.aggregableAll` and the `read[X in Pem]` liftings when the first non-blank line
-        is not a `BEGIN` boundary (`BeginMissing`, 1), the input ends before an `END`
-        boundary (`EndMissing`, 2), or the body is not base64 (`BadBase64`, 3). The reason
-        `EmptyFile` (4) is declared but not raised by the current parser, which reports an
-        empty input as `BeginMissing`.
+        `Pem.aggregableAll` and the `read[X in Pem]` liftings:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `BeginMissing`  1  _the BEGIN line could not be found_  the first non-blank line is not a `BEGIN` boundary; also an empty input
+        row  `EndMissing`  2  _the END line could not be found_  the input ends before an `END` boundary
+        row  `BadBase64`  3  _could not parse the BASE-64 PEM message_  the body is not base64
+        row  `EmptyFile`  4  _the file was empty_  declared, but not raised by the current parser
+        ```
     entry .communicable   renders each reason as a message
     entry .Reason   `BeginMissing`, `EndMissing`, `BadBase64` or `EmptyFile`, numbered 1 to 4
     entry #reason   the `Pem.Error.Reason` for the failure
@@ -2451,12 +2497,23 @@ entry .Cose   a COSE message (RFC 9052): a payload signed or MACed under a key, 
         raised through the `Tactic[Cbor.Error]` the same calls take.
     entry .Reason   why the message was rejected
       detail
-          `MalformedStructure` (1), `UnknownTag(tag)` (2), `UnsupportedAlgorithm(id)` (3),
-          `AlgorithmMismatch(expected, actual)` (4), `VariantMismatch(expected, actual)` (5,
-          the two context strings as `Text`), `VerificationFailed` (6), `CborParseError` (7)
-          and `DetachedPayloadRequired` (8). Of these, the current code raises
-          `MalformedStructure`, `UnknownTag` and `VariantMismatch`; a failed check is
-          reported as `false` from `verifyWith`, not as `VerificationFailed`.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `MalformedStructure`  1  _the COSE structure was not well-formed_
+          row  `UnknownTag(tag)`  2  _the CBOR tag `tag` is not a COSE message tag_
+          row  `UnsupportedAlgorithm(id)`  3  _the COSE algorithm identifier `id` is not supported_
+          row  `AlgorithmMismatch(expected, actual)`  4  _expected COSE algorithm `expected` but found `actual`_
+          row  `VariantMismatch(expected, actual)`  5  _expected a `expected` COSE message but found a `actual`_  the two context strings, as `Text`
+          row  `VerificationFailed`  6  _the COSE signature or MAC did not verify_  a failed check is reported as `false` from `verifyWith`, not as this
+          row  `CborParseError`  7  _the COSE message contained malformed CBOR_
+          row  `DetachedPayloadRequired`  8  _the COSE message has a detached payload_
+          ```
+
+          Of these, the current code raises only `MalformedStructure`, `UnknownTag` and
+          `VariantMismatch`.
       entry .communicable   renders each reason as a message
     entry #reason   the `Cose.Error.Reason` for the failure
   entry .Recipient   one signature or MAC on a message: its own headers and the authentication bytes
@@ -2823,13 +2880,19 @@ entry .Certificate   an X.509 certificate, held as the ASN.1 value it is
   entry .Error   raised when a certificate cannot be built
     detail
         Error 524: _could not build the certificate because `reason`_. Raised by
-        `Certificate.selfSigned` and `Certificate.issued`: `UnknownAlgorithm(digest)` (1)
-        when the cipher and the `Signature.Digest` in scope have no object identifier
-        between them (RSA or ECDSA with a digest other than SHA-256/384/512);
-        `BadPublicKey` (2) when a key's bytes are not a `SubjectPublicKeyInfo`;
-        `BadSerialNumber` (3) for a serial of zero or less; and `BadValidity` (4) for a
-        period which ends at or before its start. Reading and verifying never raise it:
-        `#verify` is `false` for a malformed certificate.
+        `Certificate.selfSigned` and `Certificate.issued`. Reading and verifying never raise it:
+        `#verify` is `false` for a malformed certificate. The reasons:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `UnknownAlgorithm(digest)`  1  _no signature algorithm is assigned to `digest`_  the cipher and the `Signature.Digest` in scope have no object identifier between them: RSA or ECDSA with a digest other than SHA-256/384/512
+        row  `BadPublicKey`  2  _the public key was not a SubjectPublicKeyInfo_  a key's bytes are not a `SubjectPublicKeyInfo`
+        row  `BadSerialNumber`  3  _the serial number was negative or zero_
+        row  `BadValidity`  4  _the validity period ended before it began_  a period which ends at or before its start
+        ```
     entry .communicable   renders each reason as a message
     entry .Reason   `UnknownAlgorithm(digest)`, `BadPublicKey`, `BadSerialNumber` or `BadValidity`, numbered 1 to 4
     entry #reason   the `Certificate.Error.Reason` for the failure

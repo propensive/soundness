@@ -70,12 +70,20 @@ given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
 (Status.Active(2020): Status).in[Cbor].as[Status]   // Status.Active(2020)
 ```
 
-An `Optional` field is omitted from the map when it is unset and supplied as `Unset` when the map
-lacks it, and a field with a default takes that default — so a message may gain fields without
-breaking readers that predate them. A CBOR `null` reads as `Unset` too (`undefined` is `Unset`
-on the wire already), and a value the inner decoder rejects is an error. The
-`optionalityOptions` package varies each answer separately — `strictCborAbsence`,
-`strictCborNulls` and `lenientCborFaults` — as [decoding](decoding.md) describes:
+An `Optional` field is omitted from the map when it is unset, and a field with a default takes
+that default when the map lacks it — so a message may gain fields without breaking readers that
+predate them. Reading an `Optional` field follows the policies [decoding](decoding.md) describes,
+each varied separately by a given in the `optionalityOptions` package:
+
+```tabular
+column  A field which is
+column  Reads as
+column  Unless
+row  omitted from the map, or `undefined`  `Unset`  `strictCborAbsence` makes it an error
+row  a CBOR `null`  `Unset`  `strictCborNulls` hands it to the inner decoder
+row  present but rejected by the inner decoder  an error  `lenientCborFaults` reads it as `Unset`
+```
+
 
 ```scala
 case class Reading(sensor: Text, value: Optional[Int])
@@ -134,10 +142,19 @@ import codecs.derived    // the derived codecs, even where a direct instance is 
 import codecs.strict     // generated codecs, and a compile error where there is none
 ```
 
-Under `codecs.direct`, a type that is not a record — a generic case class, a sealed hierarchy —
-keeps the derived path unless it has an instance of its own. Under `codecs.strict`, it is a
-compile error naming the type instead: `read[Foo in Cbor]` and `in[Data over Cbor]` then never
-fall back to the tree. The modes are alternatives; import one at a time.
+A type that is not a record is a generic case class or a sealed hierarchy:
+
+```tabular
+column  Import
+column  For a record
+column  For any other type
+row  `codecs.direct`  a generated parser and printer  the derived codecs, unless it has a direct instance of its own
+row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs
+row  `codecs.strict`  a generated parser and printer  a compile error naming the type, unless it has a direct instance
+```
+
+Under `codecs.strict`, `read[Foo in Cbor]` and `in[Data over Cbor]` never fall back to the tree.
+The modes are alternatives; import one at a time.
 
 ### Tags
 
@@ -196,9 +213,24 @@ Cbor.make(name = t"Anna".in[Cbor], age = 30.in[Cbor]).as[Person]   // Person(t"A
 
 ### Errors
 
-A malformed document or a failed conversion raises a `Cbor.Error` whose reason is specific —
-truncated input, an integer overflow, a wrong type, an absent field — so a protocol failure is
-diagnosed from the error rather than from a hex dump.
+A malformed document or a failed conversion raises a `Cbor.Error` whose reason is specific, so a
+protocol failure is diagnosed from the error rather than from a hex dump:
+
+```tabular
+column  Reason
+column  Raised when
+row  `Truncated(offset)`  the input stops mid-value
+row  `Reserved(offset, byte)`  a head byte is one CBOR reserves
+row  `BadSimpleValue(offset, value)`  a simple value is invalid
+row  `InvalidUtf8(offset)`  a text string is not valid UTF-8
+row  `Overflow(offset)`  an integer is too large for a `Long`
+row  `UnexpectedBreak(offset)`  a break stop code is unexpected
+row  `Trailing(offset)`  bytes follow the end of the value
+row  `OutOfRange`  an array index is out of range
+row  `NotType(found, expected)`  a value has the wrong type
+row  `NonStringKey`  a map key is not a string
+row  `Absent`  a value is not present
+```
 
 Parse failures carry the byte offset at which they occurred, which for a binary format is the
 whole of the diagnosis: input that stops mid-value names the offset of the byte that should have

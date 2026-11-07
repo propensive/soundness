@@ -110,12 +110,19 @@ entry .Hostname   a DNS hostname: dot-separated labels, each held to the rules f
         the whole text which was decoded and the `#reason` says what was wrong with it.
     entry .Reason   why a hostname was rejected
       detail
-          An enum with five cases: `LongDnsLabel(label)` for a label of more than 63 characters;
-          `LongHostname` for a name of more than 253; `InvalidChar(char)` for a character other
-          than a letter, digit, `-` or `.`; `EmptyDnsLabel(n)` for an empty label (a leading,
-          trailing or doubled dot), where `n` is how many labels preceded it; and
-          `InitialDash(label)` for a label beginning with `-`. Each has a message through
-          `Reason.communicable`.
+          An enum of five numbered cases, each with a message through `Reason.communicable`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `LongDnsLabel(label)`  1  _the DNS label `label` is longer than 63 characters_
+          row  `LongHostname`  2  _the hostname is longer than 253 characters_
+          row  `InvalidChar(char)`  3  _the character `char` is not allowed in a hostname_  anything but a letter, digit, `-` or `.`
+          row  `EmptyDnsLabel(n)`  4  _a DNS label cannot be empty_  a leading, trailing or doubled dot; `n` is how many labels preceded it
+          row  `InitialDash(label)`  5  _the DNS label `label` begins with a dash which is not allowed_
+          ```
       entry .communicable   renders each reason as a message
     entry #text   the text which was decoded
     entry #reason   why it was rejected
@@ -269,15 +276,28 @@ entry .IpAddress   the home of `IpAddress.Error`, raised for an IP address or su
         `EmailAddress.Error` or `Url.Error` whose address part is bad.
     entry .Reason   why an address or subnet was rejected
       detail
-          An enum of fourteen cases, each with a message through `Reason.communicable`. For an
-          IPv4 address: `Ipv4ByteOutOfRange(byte)`, `Ipv4ByteNotNumeric(byte)`,
-          `Ipv4WrongNumberOfGroups(count)`, `Ipv4WrongNumberOfBytes(count)`. For an IPv6
-          address: `Ipv6GroupWrongLength(group)`, `Ipv6GroupNotHex(group)`,
-          `Ipv6TooManyNonzeroGroups(count)`, `Ipv6WrongNumberOfGroups(count)`,
-          `Ipv6MultipleDoubleColons`, `Ipv6WrongNumberOfBytes(count)`. For a subnet:
-          `Ipv4SubnetPrefixOutOfRange(prefix)` (0–32), `Ipv6SubnetPrefixOutOfRange(prefix)`
-          (0–128), `SubnetPrefixNotNumeric(prefix)` and `SubnetWrongFormat(count)` for text
-          without exactly one `/`.
+          An enum of fourteen numbered cases, each with a message through `Reason.communicable`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Ipv4ByteOutOfRange(byte)`  1  _the number `byte` is not in the range 0-255_
+          row  `Ipv4ByteNotNumeric(byte)`  2  _the part `byte` is not a number_
+          row  `Ipv4WrongNumberOfGroups(count)`  3  _the address contains `count` period-separated groups instead of 4_
+          row  `Ipv6GroupWrongLength(group)`  4  _the group is more than 4 hexadecimal characters long_
+          row  `Ipv6GroupNotHex(group)`  5  _the group '`group`' is not a hexadecimal number_
+          row  `Ipv6TooManyNonzeroGroups(count)`  6  _the address has `count` non-zero groups, which is more than is permitted_
+          row  `Ipv6WrongNumberOfGroups(count)`  7  _the address has `count` groups, but should have 8_
+          row  `Ipv6MultipleDoubleColons`  8  _:: appears more than once_
+          row  `Ipv4SubnetPrefixOutOfRange(prefix)`  9  _the prefix length `prefix` is not in the range 0-32_
+          row  `Ipv6SubnetPrefixOutOfRange(prefix)`  10  _the prefix length `prefix` is not in the range 0-128_
+          row  `SubnetPrefixNotNumeric(prefix)`  11  _the prefix length `prefix` is not a number_
+          row  `SubnetWrongFormat(count)`  12  _the subnet contains `count` slash-separated parts instead of 2_  text without exactly one `/`
+          row  `Ipv4WrongNumberOfBytes(count)`  13  _the address is `count` bytes long instead of 4_
+          row  `Ipv6WrongNumberOfBytes(count)`  14  _the address is `count` bytes long instead of 16_
+          ```
       entry .communicable   renders each reason as a message
     entry #reason   why the address was rejected
 
@@ -592,14 +612,26 @@ entry .EmailAddress   an email address: a local part, a domain, and optionally a
         `as[EmailAddress]` and, as a compile error, by `email"…"`.
     entry .Reason   why an email address was rejected
       detail
-          An enum of twelve cases, each with a message through `Reason.communicable`:
-          `Empty`; `InvalidDomain(error)`, wrapping the `IpAddress.Error` or `Hostname.Error`
-          of the domain; `LongLocalPart` (over 64 characters); `TerminalPeriod`,
-          `SuccessivePeriods` and `InitialPeriod` for periods where an unquoted local part
-          may not have them; `UnescapedQuote` and `UnclosedQuote` for a quoted local part;
-          `MissingDomain`; `MissingAtSymbol`; `UnclosedIpAddress` for a domain beginning with
-          `[` and not ending with `]`; and `InvalidChar(char)` for a character the local
-          part may not hold.
+          An enum of twelve numbered cases, each with a message through `Reason.communicable`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Empty`  1  _it is empty_
+          row  `InvalidDomain(error)`  2  _the domain is not a valid IP address: …_ or _the domain is not a valid hostname: …_  wraps the domain's `IpAddress.Error` or `Hostname.Error`, whose message follows the colon
+          row  `LongLocalPart`  3  _the local part is more than 64 characters long_
+          row  `TerminalPeriod`  4  _the local part ends in a period, which is not allowed_  in an unquoted local part
+          row  `SuccessivePeriods`  5  _the local part contains two adjacent periods_  in an unquoted local part
+          row  `InitialPeriod`  6  _the local part starts with a period, which is not allowed_  in an unquoted local part
+          row  `UnescapedQuote`  7  _the local part contains a quote character which is not escaped_  in a quoted local part
+          row  `UnclosedQuote`  8  _the quoted local part has no closing quote_
+          row  `MissingDomain`  9  _the domain is missing_
+          row  `MissingAtSymbol`  10  _the at-symbol is missing_
+          row  `UnclosedIpAddress`  11  _the domain begins with `[` but does not end with `]`_
+          row  `InvalidChar(char)`  12  _the local part contains the character `char` which is not allowed_
+          ```
       entry .communicable   renders each reason as a message
     entry #reason   why the address was rejected
   entry #displayName   the display name, or `Unset`
@@ -1331,13 +1363,27 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
         as a compile error by `dns"…"`.
     entry .Reason   why a name, message or lookup failed
       detail
-          `Truncated(offset)`, `BadPointer(offset)`, `BadLabel(offset, kind)`, `BadRdata(rtype,
-          offset)` and `Trailing(offset)` for a malformed message; `LongLabel(label)`,
-          `LongName(name)`, `EmptyLabel(text)` and `BadEscape(text)` for a name; `LongString
-          (length)` for a TXT string over 255 octets; `Unresolved(name)` from `Dns.resolve`;
-          and `Timeout` and `Mismatch(id)`, which a transport such as `coaxial.dns` raises when
-          no response arrives or one arrives with the wrong ID. Each has a message through
-          `Reason.communicable`.
+          Each has a message through `Reason.communicable`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Truncated(offset)`  1  _the message ends at offset `offset`, inside a field_  a malformed message
+          row  `BadPointer(offset)`  2  _the name pointer at offset `offset` points forward_  a malformed message
+          row  `BadLabel(offset, kind)`  3  _the label at offset `offset` has unsupported type `kind`_  a malformed message
+          row  `LongLabel(label)`  4  _the label `label` is longer than 63 octets_  a bad name
+          row  `LongName(name)`  5  _the name `name` is longer than 255 octets_  a bad name
+          row  `EmptyLabel(text)`  6  _the name `text` contains an empty label_  a bad name
+          row  `BadEscape(text)`  7  _the name `text` contains a malformed escape sequence_  a bad name
+          row  `BadRdata(rtype, offset)`  8  _the `rtype` record data at offset `offset` is malformed_  a malformed message
+          row  `LongString(length)`  9  _a character-string of `length` octets exceeds 255_  a TXT string
+          row  `Trailing(offset)`  10  _the message has trailing bytes from offset `offset`_  a malformed message
+          row  `Unresolved(name)`  11  _the name `name` could not be resolved_  from `Dns.resolve`
+          row  `Timeout`  12  _no response arrived before the timeout_  raised by a transport such as `coaxial.dns`
+          row  `Mismatch(id)`  13  _the response with ID `id` does not answer the query_  raised by a transport, for a response with the wrong ID
+          ```
       entry .communicable   renders each reason as a message
     entry #reason   why it failed
 

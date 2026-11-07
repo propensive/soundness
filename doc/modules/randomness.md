@@ -49,9 +49,21 @@ which is what replaying a failing property test requires.
 
 ### Distributions
 
-A random `Double` needs a shape, supplied as a `Distribution` in scope. `Gaussian` draws from a
-[normal distribution](https://en.wikipedia.org/wiki/Normal_distribution), `UniformDistribution`
-from a flat range, and `Gamma` from a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution):
+A random `Double` needs a shape, supplied as a `Distribution` in scope:
+
+```tabular
+column  Distribution
+column  Parameters
+column  Draws from
+row  `Gaussian`  `mean`, defaulting to `0.0`, and `std`, to `1.0`  a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution)
+row  `UniformDistribution`  `start` and `end`  a flat range
+row  `Gamma`  `shape` and `scale`  a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution)
+```
+
+Common choices are also givens to import from `randomDistributions`: `gaussianDistribution`, the
+standard normal; `uniformUnitIntervalDistribution`, over 0 to 1;
+`uniformSymmetricUnitIntervalDistribution`, over -1 to 1; and `binaryDistribution`, a random
+`Long` converted to a `Double`.
 
 ```scala
 stochastic:
@@ -64,11 +76,26 @@ were normal; a `Double` cannot be generated until the code says what kind of `Do
 
 ### Sources
 
-The generator behind a scope is chosen by import. `seededRandomization` is reproducible from its
-`Seed`; `unseededRandomization` varies run to run; and `secureUnseededRandomization` draws from the
-operating system's [cryptographically secure](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
-source, for values an adversary must not predict. Simulation and secret-generation thereby cannot
-be confused: the difference is written at the import.
+The generator behind a scope is chosen by import from `randomization`. The secure ones draw from
+the JDK's [cryptographically secure](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
+source, for values an adversary must not predict:
+
+```tabular
+column  Import
+column  Generator
+column  Reproducible
+row  `seededRandomization`  ordinary, from the `Seed` in scope  yes
+row  `unseededRandomization`  ordinary  no, it varies run to run
+row  `secureUnseededRandomization`  secure  no
+row  `stronglySecureRandomization`  the platform's strongest secure source  no
+row
+  cell  `secureSeededRandomization`
+  cell  secure, seeded from the `Seed` in scope
+  cell
+```
+
+Simulation and secret-generation thereby cannot be confused: the difference is written at the
+import.
 
 ### Collections and custom types
 

@@ -595,12 +595,18 @@ entry .Moniker   a small integer with a memorable two-word name, `brilliant-leop
     entry #reason   why: `Unreadable`, `OutOfRange`, `Malformed` or `UnknownWord`
     entry .Reason   the four reasons a moniker is invalid, each with its own error sub-number
       detail
-          `Unreadable` (1) is _the vocabulary could not be read_; `OutOfRange(value)` (2) is
-          _the number `value` is outside the representable range_, for an ordinal below zero or
-          at or above the vocabulary's `size`; `Malformed(moniker)` (3) is _`moniker` is not of
-          the form <adjective>-<animal>_, for text which does not split into exactly two words
-          on `-`; and `UnknownWord(word)` (4) is _the word `word` does not appear in the
-          vocabulary_, for a word missing from the adjective or animal list.
+          Each case has its own error sub-number:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Unreadable`  1  _the vocabulary could not be read_
+          row  `OutOfRange(value)`  2  _the number `value` is outside the representable range_  an ordinal below zero, or at or above the vocabulary's `size`
+          row  `Malformed(moniker)`  3  _`moniker` is not of the form `<adjective>-<animal>`_  text which does not split into exactly two words on `-`
+          row  `UnknownWord(word)`  4  _the word `word` does not appear in the vocabulary_  a word missing from the adjective or animal list
+          ```
       entry #number   the reason's sub-number, which `Moniker.Error` reports alongside error 80
     entry .communicable   renders each reason of a `Moniker.Error` as its message
 

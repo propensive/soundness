@@ -167,9 +167,19 @@ t"foo!?#bar" match
 // List('!', '?', '#')
 ```
 
-The binding's type — `Char`, `Text`, `List`, or `Optional` — is read directly from
-the pattern, so the way a capture is used and the way it was written can never
-drift apart.
+The binding's type is read directly from the pattern, so the way a capture is used
+and the way it was written can never drift apart:
+
+```tabular
+column  A capture of
+column  Such as
+column  Binds
+row  a group  `$first(hello)`  `Text`
+row  a character class, or `\d`, `\w`, `\s` or `.`  `$vowel[aeiou]`  `Char`
+row  an element repeated with `+` or `*`  `$digits\d+`  `List`, empty when nothing matches
+row  an element repeated a bounded number of times  `$chars.{2,4}`  `List`
+row  an optional element, with `?`  `$digit\d?`  `Optional`, `Unset` when absent
+```
 
 ### Patterns that always match
 
@@ -248,19 +258,43 @@ t"" match { case r"hello${space}world" => () }   // does not compile: nothing fo
 ```
 
 The same scanner is available at runtime for patterns built from dynamic text,
-where it reports a `Regex.Error` naming the position and the reason — a bad
-repetition such as `{2,1}`, an unclosed group, or a capture inside a repeating
-group, which cannot bind a fixed set of variables and so is forbidden.
+where it reports a `Regex.Error` naming the position and the reason. A capture
+inside a repeating group cannot bind a fixed set of variables, and so is forbidden.
+
+```tabular
+column  Reason
+column  The pattern is rejected because
+row  `UnclosedGroup`  a capturing group was not closed
+row  `NotInGroup`  a closing parenthesis has no opening one
+row  `ExpectedGroup`  an extractor is not followed immediately by a capturing group
+row  `Uncapturable`  a capturing group is inside a repeating group
+row  `BadRepetition`  a repetition's maximum is less than its minimum, as in `{2,1}`
+row  `ZeroMaximum`  a repetition's maximum is zero
+row  `IncompleteRepetition`  a repetition range is not closed
+row  `UnexpectedChar`  a repetition range contains an unexpected character
+row  `UnclosedEscape`  nothing follows the escape character
+row  `EmptyCharClass`  a character class is empty
+row  `InvalidPattern`  the pattern is otherwise invalid
+```
 
 ### Choosing an engine
 
-The default engine is the JVM's own, whose backtracking accepts every construct of its syntax
-but can take exponential time on a pathological pattern and input — the
+The default engine is the JVM's own, whose backtracking can take exponential time on a
+pathological pattern and input — the
 [catastrophic backtracking](https://en.wikipedia.org/wiki/ReDoS) that turns a regular expression
 applied to untrusted input into a denial of service. `re2` is a pure-Scala automaton engine that
-guarantees linear time in the length of the input, at the cost of the constructs an automaton
-cannot express — backreferences and lookaround. The engine is a given, so a program chooses it
-with an import and the patterns are unchanged:
+avoids it, at the cost of the constructs an automaton cannot express:
+
+```tabular
+column  Engine
+column  Given
+column  Time
+column  Constructs
+row  the JVM's  `regexBackends.javaBaseRegex`, the default  exponential, at worst  every construct of its syntax
+row  re2  `regexBackends.re2`  linear in the length of the input  all but backreferences and lookaround
+```
+
+The engine is a given, so a program chooses it with an import and the patterns are unchanged:
 
 ```scala
 import regexBackends.re2
@@ -275,8 +309,19 @@ the pattern is a literal, rather than at the first match.
 ### Globs
 
 A glob is the wildcard syntax of file paths, and the `g"…"` interpolator matches
-one. A `$name` captures a path segment, `*` matches anything within a segment,
-`**` matches across segments, and `?` matches a single character:
+one:
+
+```tabular
+column  Glob
+column  Matches
+column  As a regular expression
+row  `$name`  a path segment, captured as `name`
+row  `*`  anything within a segment  `[^/\\]*`
+row  `**`  anything, across segments  `.*`
+row  `?`  a single character within a segment  `[^/\\]`
+row  `[a-z]`, `[abc]`  one character of a range or a set  `[a-z]`, `[abc]`
+row  `[!a-z]`, `[!abc]`  one character outside a range or a set  `[^a-z]`, `[^abc]`
+```
 
 ```scala
 t"/home/work/docs" match

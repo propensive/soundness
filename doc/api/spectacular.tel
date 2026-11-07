@@ -33,10 +33,25 @@ detail
     soundness.*` does not import givens, and there is deliberately no default.
 
     `Inspectable`'s renderings follow one notation across every Soundness type, so that two
-    types never render alike: `[a, b]` for a `List`, `{a, b}` for a `Set`, `{k → v}` for a
-    `Map`, `⟦k → v⟧` for a `Ledger`, `⟨ a b ⟩` for a `Sequence`, `Name(field:value ╱ …)` for a
-    product, `｢value｣` and `○` for a present and an absent `Optional`, `t"…"` and `'x'` for text
-    and characters, and superscript suffixes for sized numbers (`42ᵘ⁸`) and ordinals (`1ˢᵗ`).
+    types never render alike:
+
+    ```tabular
+    column  Value
+    column  Rendering
+    row  a `List`  `[a, b]`
+    row  a `Set`  `{a, b}`
+    row  a `Map`  `{k → v}`
+    row  a `Ledger`  `⟦k → v⟧`
+    row  a `Sequence`  `⟨ a b ⟩`
+    row  a product  `Name(field:value ╱ …)`
+    row  a present `Optional`  `｢value｣`
+    row  an absent `Optional`  `○`
+    row  text  `t"…"`
+    row  a character  `'x'`
+    row  a sized number  a superscript suffix, `42ᵘ⁸`
+    row  an ordinal  a superscript suffix, `1ˢᵗ`
+    ```
+
     A rendering which was *not* native carries a marker: `“…”` for a `toString`, `⸢…⸣` for a
     borrowed `Showable` form and `⸤…⸥` for a borrowed `Encodable in Text` form, which
     `Inspectable.fallbacks` finds.

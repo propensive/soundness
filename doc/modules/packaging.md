@@ -5,13 +5,19 @@
 An application built with Soundness is a JAR, and a JAR that carries every dependency it
 needs is large: a command-line tool of a few hundred lines ships tens of megabytes of
 library code, most of it already published somewhere public. Burdock makes that JAR *slim*
-without making it fragile. At compiletime, `externalize` records which dependencies the
-application was built against, as content hashes rather than coordinates. After the build, the
-`repackage` command rewrites the JAR: every dependency with a public home is replaced by a
-reference to it, and anything without one is kept. At runtime, a small bootstrap loader
-fetches the referenced dependencies, verifies each against its hash, caches it, and starts the
-application — so the first launch downloads, every later launch is instant, and a dependency
-that has changed since the build cannot be loaded.
+without making it fragile, in three steps:
+
+```tabular
+column  When
+column  Step
+column  Does
+row  at compiletime  `externalize`  records which dependencies the application was built against, as content hashes rather than coordinates
+row  after the build  `repackage`  rewrites the JAR, replacing every dependency with a public home by a reference to it, and keeping anything without one
+row  at runtime  the bootstrap loader  fetches the referenced dependencies, verifies each against its hash, caches it, and starts the application
+```
+
+So the first launch downloads, every later launch is instant, and a dependency that has changed
+since the build cannot be loaded.
 
 ### On content hashes
 
@@ -63,16 +69,28 @@ Each `--github owner/repo` hint (repeatable, or comma-separated) names a reposit
 release assets are a download source. GitHub keeps no global index by hash, so the hints are
 indexed up front — a few requests per repository, honoring a `GITHUB_TOKEN` environment
 variable if one is set — and consulted before deps.dev, since a repository the user named
-takes precedence over the global index. The rewritten JAR keeps the application's own classes,
-drops the classes of every dependency it could resolve, inlines the classes of those it could
-not, and carries exactly one extra class: `burdock.Bootstrap`, the runtime loader. The
-manifest records the arrangement in three attributes:
+takes precedence over the global index. In the rewritten JAR, each class meets one of three
+fates:
 
-- `Main-Class` becomes `burdock.Bootstrap`, and `Burdock-Main` records the application's own
-  entry point, which the bootstrap starts once the classpath is assembled;
-- `Burdock-Require` lists each externalized dependency as `<sha256>:<url>`, in classpath
-  order;
-- `Burdock-Verbosity` controls what the bootstrap prints while it fetches.
+```tabular
+column  Classes of
+column  Are
+row  the application  kept
+row  a dependency it could resolve  dropped, and referenced instead
+row  a dependency it could not resolve  inlined
+```
+
+It carries exactly one extra class: `burdock.Bootstrap`, the runtime loader. The manifest
+records the arrangement:
+
+```tabular
+column  Attribute
+column  Holds
+row  `Main-Class`  `burdock.Bootstrap`
+row  `Burdock-Main`  the application's own entry point, which the bootstrap starts once the classpath is assembled
+row  `Burdock-Require`  each externalized dependency as `<sha256>:<url>`, in classpath order
+row  `Burdock-Verbosity`  what the bootstrap prints while it fetches: `silent`, as the repackager writes it, or `error`, `info` or `debug`
+```
 
 The command prints a summary — entries read and written, classes kept, inlined and stripped,
 and each externalized requirement — and a progress bar while it resolves, drawn only on a real
@@ -99,10 +117,16 @@ file simply falls back to its fixed deadline.
 
 ### Errors
 
-Repackaging reports its failures as `Repackager.UserError` — the JAR was not built with
-Burdock, is a directory rather than a file, or an argument is malformed — and
-`Repackager.RepackageError` for a JAR that cannot be rewritten: no manifest, no `Main-Class`,
-or a dependency that is neither published nor cached. A deps.dev lookup that finds nothing
-raises `DepsDev.Unresolved`, which the repackager treats as "not published" rather than as a
-failure. Resolution is logged through `DepsEvent`, one event per hash resolved, so a run can be
-audited afterwards.
+Repackaging reports its failures with two errors, and a lookup that finds nothing with a
+third:
+
+```tabular
+column  Error
+column  Raised when
+row  `Repackager.UserError`  the JAR was not built with Burdock, is a directory rather than a file, an argument is malformed, or a GitHub repository's releases cannot be listed
+row  `Repackager.RepackageError`  the JAR cannot be rewritten: it has no manifest or no `Main-Class`, or a dependency is neither published nor cached
+row  `DepsDev.Unresolved`  a deps.dev lookup finds nothing, which the repackager treats as "not published" rather than as a failure
+```
+
+Resolution is logged through `DepsEvent`, one event per hash resolved, so a run can be audited
+afterwards.

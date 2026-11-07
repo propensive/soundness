@@ -35,10 +35,20 @@ import codepages.utf8Codepage
 
 ### Writing a media type
 
-The `media"…"` interpolator checks its literal at compiletime. A registered type passes; an
-unregistered one in the standard tree fails, with a nearby registered name suggested; vendor
-(`vnd.`), personal (`prs.`) and `x-` subtypes are accepted without registry lookup, as the
-standard prescribes:
+The `media"…"` interpolator checks its literal at compiletime. A registered type passes, and an
+unregistered one in the standard tree fails, with a nearby registered name suggested. The other
+trees are accepted without registry lookup, as the standard prescribes:
+
+```tabular
+column  Tree
+column  Subtype written
+column  As a `Media.Subtype`
+column  Checked against the registry
+row  standard  `json`  `Standard`  yes
+row  vendor  `vnd.…`  `Vendor`  no
+row  personal  `prs.…`  `Personal`  no
+row  experimental  `x-…`  `X`  no
+```
 
 ```scala
 media"application/json"
@@ -60,13 +70,21 @@ mediaType.at(t"charset")   // t"UTF-8"
 media"text/html"(charset = t"UTF-8")
 ```
 
-The four parts are those [RFC 2046](https://www.iana.org/go/rfc2046) defines. The *group* is one of
-exactly ten values — `application`, `audio`, `image`, `message`, `multipart`, `text`, `video`,
-`font`, `example` and `model` — and is called `group` rather than `type` only because `type` is a
-Scala keyword. The *subtype* is registered, vendor, personal or experimental, and which of those
-four it is, is part of the value rather than a matter of reading its prefix. There may be zero or
-more *suffixes*, of which `+xml`, `+json` and `+gzip` are the familiar ones. And *parameters* are
-key–value pairs, `charset` being much the most common.
+The four parts are those [RFC 2046](https://www.iana.org/go/rfc2046) defines:
+
+```tabular
+column  Part
+column  Field
+column  Is
+row  group  `group`  one of eleven `Media.Group` values: `application`, `audio`, `image`, `message`, `multipart`, `text`, `video`, `font`, `example`, `model` and `haptics`
+row  subtype  `subtype`  registered, vendor, personal or experimental
+row  suffixes  `suffixes`  zero or more, such as `+xml`, `+json` and `+gzip`
+row  parameters  `parameters`  key–value pairs, `charset` being much the most common
+```
+
+The group is called `group` rather than `type` only because `type` is a Scala keyword. Which of
+the four trees a subtype belongs to is part of the value rather than a matter of reading its
+prefix.
 
 Registration is checked against a copy of IANA's published list carried on the classpath, so the
 check needs no network and no service. A newer or site-specific list placed earlier on the

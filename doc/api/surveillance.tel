@@ -208,8 +208,18 @@ entry .Watch   a registration of watched paths, its events, and the `open[Watch]
         ```
     entry .Reason   why a path could not be watched: a limit, a missing path, a non-directory or a permission
       detail
-          One of `LimitExceeded`, `Nonexistent`, `NotDirectory` and `PermissionDenied`, each with
-          its sub-number of error 545 as `#number`.
+          Each case's sub-number of error 545 is its `#number`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `LimitExceeded`  1  _the operating system's limit on watched paths has been exceeded_
+          row  `Nonexistent`  2  _the path does not exist_
+          row  `NotDirectory`  3  _the path is not a directory_
+          row  `PermissionDenied`  4  _the user does not have permission to watch the path_
+          ```
       entry #number   the reason's sub-number of error 545
     entry .communicable   renders each reason as the phrase completing _the path could not be watched because …_
     entry #reason   why the path could not be watched

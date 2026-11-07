@@ -88,12 +88,18 @@ are fine — and should follow on from one another: a term with a given name mea
 same thing throughout a document, and a single identifier is never assigned more than
 once.
 
-Every sample is checked mechanically, twice over. `make fuelcheck` compiles each tutorial
-with fuel against `main`'s own test assembly (`.pyrocosm/fuel/config.tel`), every fence
-following the ones before it as one session; `make doccheck` evaluates each fence, in order,
-through the flame REPL (`etc/doccheck.py`) against the latest release, so it runs the samples
-too, and checks the names they use against the source (`etc/doccheck-names.py`); `make
-doccheck DOC=json` checks one tutorial. A few conventions make that possible:
+Every sample is checked mechanically, twice over, and both checkers follow the fences in
+order as one session:
+
+```tabular
+column  Command
+column  Checks
+row  `make fuelcheck`  compiles each tutorial with fuel against `main`'s own test assembly (`.pyrocosm/fuel/config.tel`)
+row  `make doccheck`  evaluates each fence through the flame REPL (`etc/doccheck.py`) against the latest release, and checks the names used against the source (`etc/doccheck-names.py`)
+row  `make doccheck DOC=json`  the same, for one tutorial
+```
+
+A few conventions make that possible:
 
 - A sample must introduce every name it uses, in a fence of the same tutorial, so the fences
   form one continuous session. Where a tutorial needs a value it cannot sensibly construct
@@ -103,13 +109,55 @@ doccheck DOC=json` checks one tutorial. A few conventions make that possible:
   an optional explanation after a colon). Both checkers compile it on its own and report it
   if it compiles after all; fuel shows its error as a note on the line.
 - A fence that says more than its code does so in a TEL preamble: it opens with
-  ` ```scala fuel `, and the preamble ends at a line holding `##`. A fence that cannot run in
-  a REPL session — one that opens a browser, binds a socket, reads a terminal, dispatches a
-  JVM — says `typecheck`: fuel compiles it, and the REPL checker leaves it alone. A fence
-  whose point is its error says `errors show`, and the error is rendered beneath it. A sketch
-  that is not meant to compile at all says `parse`. A tutorial whose samples need a language
-  feature says `feature experimental.captureChecking` on the first fence that needs it, and
-  `restart` begins the session afresh at a fence. An animation is a fence of `frame`s, each
-  with its `code` (and perhaps a `label`), of which the last is what later fences follow;
-  use one only where watching the code change from one frame to the next teaches something
-  that two fences side by side would not.
+  ` ```scala fuel `, and the preamble ends at a line holding `##`. Its directives are below.
+
+The preamble directives:
+
+```tabular
+column  Directive
+column  Use it for
+column  Meaning
+row  `typecheck`  a fence that cannot run in a REPL session: one that opens a browser, binds a socket, reads a terminal, dispatches a JVM  fuel compiles it, and the REPL checker leaves it alone
+row  `errors show`  a fence whose point is its error  the error is rendered beneath it
+row  `parse`  a sketch that is not meant to compile at all  it is only parsed
+row  `feature experimental.captureChecking`  the first fence that needs a language feature  the feature is enabled from there on
+row  `restart`  a fence that must not follow the ones before it  the session begins afresh
+row  `frame`  an animation  each `frame` has its `code` (and perhaps a `label`); later fences follow the last
+```
+
+Use an animation only where watching the code change from one frame to the next teaches
+something that two fences side by side would not.
+
+## Tables
+
+Fuel does not support Markdown pipe tables. A table is a fence marked `tabular`, written in
+TEL: a `column` line per column (with an indented `title` and `align` where needed), a
+`row` line per row, and an optional `caption`. Fields are separated by two spaces, so a
+cell may hold single spaces but never two in a row. A row with an empty cell takes the long
+form, `row` alone with an indented `cell` line per cell, a bare `cell` for the empty one.
+Cells are Markdown phrasing, and code containing a backtick needs a double-backtick span.
+
+```tabular
+column  Glyph
+column  Meaning
+column  Example
+row  `↗`  superscript  `x↗2` is *x²*
+row  `↘`
+  cell  subscript
+  cell
+```
+
+Use a table when the items share attributes: an enumeration, a mapping, a comparison, the
+reasons an error can carry, the choices made by an import. Explanation — why, trade-offs,
+caveats — stays in prose. Introduce a table with a sentence, as a sample is introduced, and
+keep each cell to a phrase. `fuel compile` validates every table.
+
+The format pages share three layouts, so that every format reads the same:
+
+```tabular
+column  Layout
+column  Columns
+row  Optional-field policies  *A field which is* · *Reads as* · *Unless*
+row  Codec modes  *Import* · *For a record* · *For any other type*
+row  Output forms  *Form* · *Serializes on* · *Hands out*
+```

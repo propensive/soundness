@@ -45,6 +45,22 @@ val work = temporaryDirectory[Path on Linux] / "archives" / Uuid().show
 work.create[Directory](CreateFlag.Parents)
 ```
 
+Each format has its own archive and entry types, its own handle when opened, and its own error:
+
+```tabular
+column  Format
+column  Archive
+column  Entry
+column  Open as
+column  Handle
+column  Open flags
+column  Error
+row  ZIP  `Zipfile`  `Zip.Entry`  `Zip`  `zipfile`  none  `Zip.Error`
+row  JAR  `Zipfile`  `Zip.Entry`  `Jar`  `zipfile`, with `manifest`  none  `Zip.Error`
+row  tar  `Tarfile`  `Tar.Entry`  `Tar`  `tar`  `Tar.Flag.Gzip`, `Zlib`, `Deflate`  `Tar.Error`
+row  ar  `Arfile`  `Ar.Entry`  `Ar`  `ar`  none  `Ar.Error`
+```
+
 ### ZIP
 
 A ZIP archive is a `Zipfile` of entries — each an archive-relative path and a content source —
@@ -69,10 +85,23 @@ hello.entries.map(_.ref.encode)                  // List(t"hello.txt")
 hello.entry(t"hello.txt".as[Path on Zip]).read[Text]   // t"Hello world"
 ```
 
-An entry read from an archive carries the header metadata around its content as well — the
-general-purpose flags, the "version made by" and the two "version needed" fields, the internal
-and external attributes (where a Unix mode lives), and any extra field — so writing it back
-reproduces the original archive byte for byte, the ZIP64 records excepted, which are rebuilt.
+An entry read from an archive carries the header metadata around its content as well, so writing
+it back reproduces the original archive byte for byte, the ZIP64 records excepted, which are
+rebuilt:
+
+```tabular
+column  Field
+column  Holds
+row  `flags`  the general-purpose flags
+row  `versionMadeBy`  the "version made by"
+row  `localVersion`  the "version needed" of the local header
+row  `centralVersion`  the "version needed" of the central directory
+row  `internalAttributes`  the internal attributes
+row  `externalAttributes`  the external attributes, where a Unix mode lives
+row  `localExtra`  the local header's extra field
+row  `centralExtra`  the central directory's extra field
+```
+
 Every one of those fields defaults to `Unset` on a new entry, meaning the value zeppelin would
 choose itself. Bit 3 of `flags` marks an entry as *streamed*: its CRC and sizes are repeated in a
 data descriptor after the payload, which is how an archive is written to a sink that cannot seek.
@@ -193,14 +222,24 @@ unpacked.archive[Ar]()
 The result is the in-memory archive — a `Tarfile`, `Zipfile` or `Arfile` — to stream, compress
 or write wherever it is wanted. Every descendant is visited in a fixed order, each directory's
 children sorted, so the same tree always produces the same bytes. Tar records each entry as its
-own kind, with the mode, owner and timestamp the filesystem reports; whether a symbolic link is
-stored as a link or as the file it points at follows the `filesystemOptions` symlink policy in
-scope. ZIP and `ar` cannot store a link, so they always follow one; and since `ar` has no
-directories, it flattens the tree, naming each file by its slash-joined relative path.
+own kind, with the mode, owner and timestamp the filesystem reports. The formats differ in what
+they can store:
+
+```tabular
+column  Format
+column  Result
+column  Symbolic links
+column  Directories
+column  Flags
+row  `Tar`  `Tarfile`  stored or followed, by the `filesystemOptions` symlink policy  stored as entries  `Archive.Flag`, `LongNameFormat`
+row  `Zip`  `Zipfile`  followed  stored as entries  `Zip.Compression`
+row  `Ar`  `Arfile`  followed  flattened, each file named by its slash-joined relative path  `Archive.Flag`
+```
 
 Flags tune the archiving. `Archive.Flag.Owner` and `Archive.Flag.Mtime` replace the owner and
 timestamp of every entry — `tar --owner`, `--group` and `--mtime`, the knobs of a reproducible
-build — and a `LongNameFormat` chooses the long-name convention; a ZIP takes a `Zip.Compression`:
+build — and a `LongNameFormat` chooses tar's long-name convention; a ZIP takes a
+`Zip.Compression` instead:
 
 ```scala
 unpacked.archive[Tar](LongNameFormat.Gnu, Archive.Flag.Owner(UnixUser(0), UnixGroup(0)))

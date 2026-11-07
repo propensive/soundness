@@ -15,11 +15,20 @@ represented at all.
 
 ### On absence
 
-Three ways to say "no value" are in common use, and each has a flaw. A `null` is invisible
-in the type and blows up only when it is dereferenced. An `Option` is visible and safe, but
-it boxes every present value in a `Some`, and it nests: `Option[Option[T]]` has two distinct
-empties, and code must thread through both layers. Neither is comfortable for the frequent
-case where a value is simply present.
+Three ways to say "no value" are in common use, and each has a flaw:
+
+```tabular
+column  Absence as
+column  Visible in the type
+column  A present value is
+column  Nests
+row  `null`  no, so it blows up only when dereferenced  itself  no
+row  `Option`  yes  boxed in a `Some`  yes: `Option[Option[T]]` has two distinct empties
+row  `Optional`  yes  itself  no
+```
+
+A nested `Option` makes code thread through both layers. Neither `null` nor `Option` is
+comfortable for the frequent case where a value is simply present.
 
 An `Optional` keeps the safety of `Option` — absence is in the type, and the compiler makes
 sure it is handled — while behaving like the value itself when present. It rests on Scala's
@@ -40,6 +49,27 @@ absent one is `Unset`:
 ```scala
 val name: Optional[Text] = t"Ada"
 val nickname: Optional[Text] = Unset
+```
+
+The operations on optional values, each described below, are:
+
+```tabular
+column  Operation
+column  Gives
+row  `or`  the value, or a fallback evaluated only when needed
+row  `let`  a function's result for a present value, with `Unset` passed through
+row  `lay`  a fallback for absence, or a function's result for presence, as a plain value
+row  `present`, `absent`  which case a value is in
+row  `mask`  `Unset` in place of a present value that satisfies a predicate
+row  `assume`  the value, or an `Optional.Error` thrown
+row  `presume`  the value, or the type's `Default`
+row  `compact`  the present values of a collection
+row  `unless`  `Unset` in place of any value that satisfies a predicate
+row  `puncture`  `Unset` in place of one particular value
+row  `only`  a partial function's result, or `Unset` where it is not defined
+row  `option`  an `Option`
+row  `optional`  an `Optional`, from an `Option`
+row  `default[T]`  the `Default` value of the type `T`
 ```
 
 ### Supplying a fallback
@@ -75,7 +105,7 @@ name.lay(0)(_.length)   // the length when present, 0 when absent
 ### Testing presence
 
 `present` and `absent` report which case a value is in, and `mask` discards a present value
-that fails a predicate:
+that satisfies a predicate:
 
 ```scala
 name.present               // true
@@ -151,10 +181,16 @@ made optional unambiguously is rejected where it is written.
 
 Three type-level facts support that check, and are occasionally useful directly.
 
-`Concrete` witnesses that a type is a definite type rather than an abstract one, which matters
-because an abstract type might later be instantiated to something already optional. `Distinct`
-witnesses that a type is not a member of a given union — the check that keeps `Unset` out of the
-value type. `Mandatable` strips the optionality from a type, giving the type a present value has.
+```tabular
+column  Typeclass
+column  Witnesses
+row  `Concrete`  that a type is a definite type rather than an abstract one
+row  `Distinct`  that a type is not a member of a given union
+row  `Mandatable`  the type with its optionality stripped: the type a present value has
+```
+
+`Concrete` matters because an abstract type might later be instantiated to something already
+optional; `Distinct` is the check that keeps `Unset` out of the value type.
 
 A generic method that takes an `Optional[value]` for an abstract `value` therefore demands
 evidence that `value` is concrete, and the demand appears in its signature rather than as a

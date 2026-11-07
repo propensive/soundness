@@ -18,7 +18,19 @@ stampede of recomputation from no coordination, stale data from no expiry.
 A cache that names its expiry in its type is a [declarative context](../philosophy/declarative-context.md): the policy is stated where the cache is, not at each read.
 
 Soundness makes the decisions the type: an `LruCache` is the bounded, evicting kind, and a `Cache`
-is the expiring, coordinated kind, its computation guarded so concurrent callers share one result.
+is the expiring, coordinated kind, its computation guarded so concurrent callers share one result:
+
+```tabular
+column  Aspect
+column  `LruCache`
+column  `Cache`
+row  Holds  keyed entries, up to a capacity  one value
+row  Created with  `LruCache[Key, Value](capacity)`  `Cache(lifetime)`, or `Cache[Value]()`
+row  Read with  `cache(key)(computation)`  `cache.establish(computation)`
+row  Discards  the least recently used entry  the value, once its lifetime has passed
+row  Concurrent misses  each caller computes  one caller computes, the rest share its result
+```
+
 Everything comes from the `soundness` package:
 
 ```scala

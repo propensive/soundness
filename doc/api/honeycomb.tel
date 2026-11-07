@@ -2389,11 +2389,22 @@ entry .Attributive   how a value becomes an attribute's text, for an attribute's
       `disabled`), or `Unset`, which omits the attribute.
 
       The companion holds the givens for the standard pairs, all in implicit scope:
-      `Text`/`String` for `Textual`, `Boolean` for `Presence`, `Switch` and `Truth`, `Int`
-      for `Integral` and `PositiveInt`, `Double` for `Decimal`, `Name[DomId]` for `Id`,
-      `Name[CssClass]`, `List[Name[CssClass]]` and `ClassList` for `CssClassList`,
-      `List[Name[DomId]]` for `Ids`, any typed URL for `Url`, and `Text` for `Css`. Other
-      libraries add their own: graffiti's `urlText` lets a `Text` stand as a `Url`, and
+
+      ```tabular
+      column  Marker
+      column  Value types
+      row  `Whatwg.Textual`  `Text`, `String`
+      row  `Whatwg.Presence`, `Whatwg.Switch`, `Whatwg.Truth`  `Boolean`
+      row  `Whatwg.Integral`, `Whatwg.PositiveInt`  `Int`
+      row  `Whatwg.Decimal`  `Double`
+      row  `Whatwg.Id`  `Name[DomId]`
+      row  `Whatwg.CssClassList`  `Name[CssClass]`, `List[Name[CssClass]]`, `ClassList`
+      row  `Whatwg.Ids`  `List[Name[DomId]]`
+      row  `Whatwg.Url`  any typed URL
+      row  `Whatwg.Css`  `Text`
+      ```
+
+      Other libraries add their own: graffiti's `urlText` lets a `Text` stand as a `Url`, and
       querencia's `scripting` lets a foreign DOM expression stand as an event handler.
 
       The set is not yet complete — many markers (`Target`, `Method`, `Sandbox`, `Rel`, …)

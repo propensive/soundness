@@ -371,9 +371,18 @@ entry .internal   the opaque types `Money` and `Isin`, their companions and exte
           compile error by `isin"…"`.
       entry .Reason   which rule an invalid ISIN broke
         detail
-            An enumeration of `InvalidCharacter(index, char)`, `BadCountryCode(code)`,
-            `WrongLength(length)` and `LuhnCheck`, numbered 1 to 4 as the error's
-            subnumber (`SN-515.3` for the wrong length).
+            Numbered as the error's subnumber (`SN-515.3` for the wrong length):
+
+            ```tabular
+            column  Case
+            column  Code
+            column  Message
+            column  Note
+            row  `InvalidCharacter(index, char)`  1  _the character `char` at position `index` is not a digit or uppercase letter_
+            row  `BadCountryCode(code)`  2  _its country code `code` was not valid_
+            row  `WrongLength(length)`  3  _it had length `length`, but it should be 12 characters long_
+            row  `LuhnCheck`  4  _its last digit failed the Luhn check_
+            ```
         entry #number   the reason's number, the error's subnumber
       entry .communicable   describes a reason as the clause which completes the error's message
       entry .InvalidCharacter   the reason for a character which is not a digit or uppercase letter, at an index

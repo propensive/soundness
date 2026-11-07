@@ -8,16 +8,49 @@ fluence for finding APIs, the exegesis LSP server inside any editor, a debugger 
 Soundness rather than Java, and the synesthesia MCP server giving agents the same access
 programmatically.
 
-The pieces are in different states, and the roadmap is honest about which. exegesis,
-synesthesia and vivisection are working modules in this repository. flame, fume and fury are
-separate projects with their own repositories and roadmaps: this track records only what
-Soundness owes each of them, never their own progress. flame and fume are pinned as tools in
-`etc/tools` (0.8.0 and 0.8.3) and configured under `.pyrocosm/`; fume runs this repository's
-suites as a front-end and runner over the probably framework, which remains the library.
-fluence is not started. TEL — the configuration language the whole toolchain standardises on —
-is specified and implemented, with stratiform as its reference implementation. The bootstrap
-test for the entire track is Soundness being buildable by fury, attestation-equal to the Mill
-build.
+The pieces are in different states, and the roadmap is honest about which. Of the tools
+that live elsewhere, this track records only what Soundness owes each of them, never their own
+progress:
+
+```tabular
+column  Tool
+column  Role
+column  Where
+column  State
+row  flame  exploration (the REPL)  its own repository  pinned in `etc/tools` (0.8.0), configured under `.pyrocosm/`
+row  fury  building  its own repository  cannot yet build this repository
+row  fume  testing  its own repository  pinned in `etc/tools` (0.8.3), configured under `.pyrocosm/`; runs this repository's suites
+row  fluence  finding APIs  its own repository  not started
+row  exegesis  the LSP server  this repository  working
+row  vivisection  the debugger  this repository  working
+row  synesthesia  the MCP server  this repository  working
+```
+
+fume is a front-end and runner over the probably framework, which remains the library. TEL —
+the configuration language the whole toolchain standardises on — is specified and implemented,
+with stratiform as its reference implementation. The bootstrap test for the entire track is
+Soundness being buildable by fury, attestation-equal to the Mill build.
+
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  tool-1  flame tracks current releases  near
+row  tool-2  fume runs the suites  near → mid
+row  tool-3  the LSP server serves a real session  near → mid
+row  tool-4  Soundness builds with fury  mid
+row  tool-5  agents reach everything over MCP  mid
+row  tool-6  the property-testing question is settled  mid
+row  tool-7  fluence searches the APIs  long  doc-5
+row  tool-8  fume reports live to the web  long
+row  tool-9  TEL everywhere  long
+row  tool-10  a debugger that speaks Soundness  near → mid
+row  tool-11  coverage is tracked  mid  tool-2
+row  tool-12  benchmarks on every commit  mid  tool-2
+```
 
 ## tool-1: flame tracks current releases
 
@@ -69,12 +102,21 @@ The bootstrap is the criterion: `fury build` produces the same artifacts as the 
 verified by the same attestation input-digest discipline, on this repository — the hardest
 Scala build it will ever face. fury itself is an [external gate](index.md#dependencies); what
 this item tracks is Soundness's side of the bootstrap — the things a build tool needs from this
-repository's own libraries, each filed as an issue: a compiler-version accessor (#2026),
-the diagnostics `ScalacEdges` drops (#2027), retained compiler sessions for a daemon (#2028),
-TASTy UUIDs against LIRA §17 determinism (#2029), the `Materializer` cache against the store's
-derivative tier (#2025), the manifest `source` record (#2022), section-scoped `Tool` records
-and `Setting` (#2023), the closed `Lira.Hash.Domain` (#2024) and `Tel.Provider` records over
-custom validators (#2030; nested and repeatable compounds are done).
+repository's own libraries, each filed as an issue:
+
+```tabular
+column  Need
+column  Issue
+row  the manifest `source` record  #2022
+row  section-scoped `Tool` records and `Setting`  #2023
+row  the closed `Lira.Hash.Domain`  #2024
+row  the `Materializer` cache against the store's derivative tier  #2025
+row  a compiler-version accessor  #2026
+row  the diagnostics `ScalacEdges` drops  #2027
+row  retained compiler sessions for a daemon  #2028
+row  TASTy UUIDs against LIRA §17 determinism  #2029
+row  `Tel.Provider` records over custom validators (nested and repeatable compounds are done)  #2030
+```
 
 Done when: `fury build` builds Soundness from a clean checkout, attestation-equal to the Mill
 build.

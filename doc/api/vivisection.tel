@@ -224,16 +224,40 @@ entry .Debugger   an attach target: a JVM already listening for a JDWP connectio
     entry #detail   which command or step failed, as text
     entry .Reason   the JDWP error codes, by their published names, plus `Disconnected` and `Other`
       detail
-          Each case carries its JDWP `number`: `InvalidThread` (10), `InvalidThreadGroup` (11),
-          `ThreadNotSuspended` (13), `ThreadSuspended` (14), `InvalidObject` (20),
-          `InvalidClass` (21), `ClassNotPrepared` (22), `InvalidMethod` (23),
-          `InvalidLocation` (24), `InvalidField` (25), `InvalidFrame` (30), `NoMoreFrames`
-          (31), `OpaqueFrame` (32), `TypeMismatch` (34), `InvalidSlot` (35), `NotFound` (41),
-          `NotImplemented` (99), `NullPointer` (100), `AbsentInformation` (101),
-          `InvalidEventType` (102), `IllegalArgument` (103), `VmDead` (112), `Internal` (113)
-          and `AlreadyInvoking` (502). `Disconnected` (−1) originates in this library, not the
-          VM, for a lost connection or a launch which never came up; `Other(code)` keeps any
-          number the VM sent which is not named here, so decoding never loses it.
+          Each case carries its JDWP error code as its `number`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `InvalidThread`  10  _the thread identifier was invalid_
+          row  `InvalidThreadGroup`  11  _the thread-group identifier was invalid_
+          row  `ThreadNotSuspended`  13  _the thread was not suspended_
+          row  `ThreadSuspended`  14  _the thread was already suspended_
+          row  `InvalidObject`  20  _the object identifier was invalid_
+          row  `InvalidClass`  21  _the class identifier was invalid_
+          row  `ClassNotPrepared`  22  _the class had not been prepared_
+          row  `InvalidMethod`  23  _the method identifier was invalid_
+          row  `InvalidLocation`  24  _the location was invalid_
+          row  `InvalidField`  25  _the field identifier was invalid_
+          row  `InvalidFrame`  30  _the frame identifier was invalid_
+          row  `NoMoreFrames`  31  _there were no more frames on the stack_
+          row  `OpaqueFrame`  32  _the frame was opaque (native)_
+          row  `TypeMismatch`  34  _the value did not match the expected type_
+          row  `InvalidSlot`  35  _the local-variable slot was invalid_
+          row  `NotFound`  41  _the requested item was not found_
+          row  `NotImplemented`  99  _the VM does not implement this command_
+          row  `NullPointer`  100  _a null pointer was encountered_
+          row  `AbsentInformation`  101  _the debug information was absent_
+          row  `InvalidEventType`  102  _the event type was invalid_
+          row  `IllegalArgument`  103  _an argument was illegal_
+          row  `VmDead`  112  _the virtual machine had died_
+          row  `Internal`  113  _the virtual machine reported an internal error_
+          row  `AlreadyInvoking`  502  _a method was already being invoked on the thread_
+          row  `Disconnected`  −1  _the connection to the debuggee was lost_  raised by this library, not the VM: a lost connection, or a launch which never came up
+          row  `Other(code)`  `code`  _the VM reported error code `code`_  any number the VM sent which is not named here, so decoding never loses it
+          ```
       entry #number   the JDWP error code, or −1 for `Disconnected`
       entry .apply   `Reason(code)`: the reason for a JDWP error code, `Other(code)` for an unrecognised one
     entry .communicable   renders each reason as a message, _the thread was not suspended_ and the like

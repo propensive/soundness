@@ -38,9 +38,27 @@ value is Streamable by Data over Credit
 Html.Element of "ul" over "li" in Whatwg
 ```
 
-The set is small and fixed — `in`, `on`, `of`, `by`, `to`, `from`, `over`, `across`,
-`onto`, `against`, `under`, `at` — and each keeps its meaning everywhere. `over` is
+The set is small and fixed, and each preposition keeps its meaning everywhere: `over` is
 always the transport, `by` is always the operand, `on` is always the plane.
+
+```tabular
+column  Preposition
+column  Refines
+column  Names the
+column  Example
+row  `in`  `Form`  form or format  `Text is Decodable in Json`
+row  `on`  `Plane`  plane  `Path on Linux`
+row  `of`  `Topic`  topic  `Html of "br"`
+row  `by`  `Operand`  operand  `Quantity is Multiplicable by Duration`
+row  `to`  `Result`  result  `Text is Extractable to Int`
+row  `from`  `Origin`  origin  `Ordinal is Optical from Yaml`
+row  `over`  `Transport`  transport  `value is Streamable by Data over Credit`
+row  `across`  `Domain`  domain  `Xml is Instantiable across HttpRequests`
+row  `onto`  `Target`  target  `Http.Client onto Origin["http"]`
+row  `against`  `Contrast`  contrast  `Aes[256] over Cbc against Pkcs7`
+row  `under`  `Limit`  limit  `Tar is Nominative under Rules`
+row  `at`  `Locus`  locus  `value is Decodable in Json at Json.Focus`
+```
 
 ## What the alternative costs
 

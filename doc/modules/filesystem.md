@@ -137,6 +137,18 @@ reader's counterpart: any number of shared holders may coexist, and an exclusive
 them, or fails at once if the lock is requested without blocking. A lock may also cover a byte
 range rather than the whole file, for the record-oriented layouts databases use.
 
+The four grants, side by side:
+
+```tabular
+column  Grant
+column  Permits
+column  Conflicts with
+row  `Read`  reading, and is the default mode  an overlapping `Exclusive` open
+row  `Write`  writing  an overlapping `Exclusive` open
+row  `Exclusive`  no other overlapping open in the program, and for a file an OS lock  any overlapping open, as `Busy`
+row  `Shared`  for a file, a shared OS lock, held alongside any number of others  an `Exclusive` open, which waits for it
+```
+
 ### Creating as a scope
 
 `create` is the counterpart of `open`: where opening acts on something that exists, creating
@@ -204,6 +216,19 @@ instance; where it has several, the ambiguity is reported with the alternatives 
 the pattern are the typeclasses `Openable`, `Creatable` and `Sessional`, for `open`, `create` and
 `session`, and the mode the first two take is a combination of `Grant`s.
 
+The forms this page describes are:
+
+```tabular
+column  Form
+column  The handle gives
+row  `File`  the file's contents, to read or write as the grants allow
+row  `Directory`  paths confined beneath the directory, on a fresh plane
+row  `Scratch`  a directory removed when the scope ends
+row  `Scratch.File`  a file removed when the scope ends, and its `path`
+row  `Ram`  positional reads and writes over a memory-mapped file
+row  `Watch`  a stream of the changes beneath a directory
+```
+
 Three things follow uniformly. The *mode* — `Read`, `Write`, `Exclusive`, `Shared` and their
 combinations — is carried in the handle's type, so the grants requested are the operations
 permitted. Flags after the mode belong to the instance, so they are specific to the kind of thing
@@ -247,7 +272,21 @@ realized the question needed answering is told that it does.
 The choice also changes what must be handled. With `failOnPreexisting` in scope a collision is a
 failure to deal with; with `overwritePreexisting` it cannot arise, and the obligation goes away
 with it. Being contextual values, the policies can be imported for a file or narrowed to a single
-block.
+block. Each answers one question, and comes in a pair from `filesystemOptions`:
+
+```tabular
+column  Question
+column  Yes
+column  No
+row  Replace what is already at the destination?  `overwritePreexisting`  `failOnPreexisting`
+row  Empty a directory before deleting it?  `deleteRecursively`  `deleteOnlyEmpty`
+row  Create missing parent directories?  `createNonexistentParents`  `requireParents`
+row  Follow symbolic links?  `dereferenceSymlinks`  `preserveSymlinks`
+row  Move atomically?  `moveAtomically`  `moveNonAtomically`
+```
+
+Replacing an existing entry deletes it first, so `overwritePreexisting` needs one of the deletion
+policies in scope as well.
 
 ```scala
 file.copyTo(directory / "backup.txt")
@@ -255,9 +294,24 @@ file.moveTo(directory / "renamed.txt")
 (directory / "backup.txt").delete()
 ```
 
-`copyInto` and `moveInto` place a path *inside* a destination directory, keeping its name;
-`delete` removes a single entry, while `wipe` removes a directory and everything beneath it,
-which is why recursive deletion is a policy that must be enabled deliberately.
+Each operation consults the policies that bear on it:
+
+```tabular
+column  Operation
+column  Acts on
+column  Policies consulted
+row  `copyTo(path)`  the path given  replacing, parents, symbolic links
+row  `copyInto(directory)`  a child of the directory, keeping the name  replacing, symbolic links
+row  `moveTo(path)`  the path given  replacing, parents, symbolic links, atomicity
+row  `moveInto(directory)`  a child of the directory, keeping the name  replacing, symbolic links, atomicity
+row  `symlinkTo(path)`  a new link at the path given, pointing here  replacing, parents
+row  `symlinkInto(directory)`  a new link in the directory, keeping the name  replacing
+row  `delete()`, `wipe()`  the path itself  deletion
+```
+
+The `…Into` forms create any missing parents themselves. Deleting a directory with children is
+an `Io.Error` whose reason is `DirectoryNotEmpty` unless `deleteRecursively` is in scope, which is
+why recursive deletion is a policy that must be enabled deliberately.
 
 ### Content-addressed storage
 
@@ -275,11 +329,21 @@ store(digest)                       // the bytes, or Unset
 store.has(digest)                   // true
 ```
 
-`store() = data` stores the data under its own digest, which it returns, and does nothing if
-the blob is already there; `store(digest) = data` does the same after checking that the data
-really has that digest, raising a `Cas.Error` if it does not. `missing` reports which of a list
-of digests are not yet stored, `digests` lists what is, and `prune` deletes every blob not in
-the set it is given, so a cache can be trimmed to what is still referenced:
+A store has these operations:
+
+```tabular
+column  Expression
+column  Does
+row  `store() = data`  stores the data under its own digest, and returns it; nothing if the blob is already there
+row  `store(digest) = data`  the same, after checking that the data has that digest, raising a `Cas.Error` if not
+row  `store(digest)`  the bytes, or `Unset`
+row  `store.has(digest)`  whether the blob is stored
+row  `store.missing(digests)`  those of a list of digests not yet stored
+row  `store.digests`  every digest stored
+row  `store.prune(digests)`  deletes every blob not in the set, and returns how many it deleted
+```
+
+`prune` is how a cache is trimmed to what is still referenced:
 
 ```scala
 store.missing(List(digest))         // Nil
@@ -350,12 +414,60 @@ Base.Usr.Share[Path on Linux]()   // /usr/share
 Each object is named for the directory it stands for, capitalized, with any leading `.` dropped —
 `.` being the separator between members — so `$HOME/.local/bin` is `Home.Local.Bin` and `/var/lib`
 is `Base.Var.Lib`. Writing a standard location this way rather than as text means a
-mistyped directory is a compile error.
+mistyped directory is a compile error. The layouts, and which of them `readOnly` marks as not
+meant to be written to, are:
 
-The resolution honors the environment where the [specification](environment.md) says it should:
-`Home.Config` is normally `$HOME/.config`, but resolves to `$XDG_CONFIG_HOME` where the user has
-set it. Applying a layout constructs a value of whichever directory type is asked for, so the same
-names serve a `Path on Linux` and any other representation.
+```tabular
+column  Layout
+column  Directory
+column  Read-only
+row  `Home`  `~`  no
+row  `Home.Cache`  `~/.cache`  no
+row  `Home.Config`  `~/.config`  no
+row  `Home.Local`  `~/.local`  no
+row  `Home.Local.Bin`  `~/.local/bin`  no
+row  `Home.Local.Lib`  `~/.local/lib`  no
+row  `Home.Local.Share`  `~/.local/share`  no
+row  `Home.Local.State`  `~/.local/state`  no
+row  `Base`  `/`  no
+row  `Base.Boot`  `/boot`  yes
+row  `Base.Dev`  `/dev`  no
+row  `Base.Dev.Shm`  `/dev/shm`  no
+row  `Base.Efi`  `/efi`  yes
+row  `Base.Etc`  `/etc`  no
+row  `Base.Home`  `/home`  no
+row  `Base.Proc`  `/proc`  no
+row  `Base.Proc(pid)`  `/proc/<pid>`  yes
+row  `Base.Proc.Sys`  `/proc/sys`  yes
+row  `Base.Root`  `/root`  no
+row  `Base.Run`  `/run`  no
+row  `Base.Run.Log`  `/run/log`  no
+row  `Base.Run.User`  `/run/user`  no
+row  `Base.Srv`  `/srv`  no
+row  `Base.Sys`  `/sys`  yes
+row  `Base.Tmp`  `/tmp`  no
+row  `Base.Usr`  `/usr`  yes
+row  `Base.Usr.Bin`  `/usr/bin`  yes
+row  `Base.Usr.Include`  `/usr/include`  yes
+row  `Base.Usr.Lib`  `/usr/lib`  yes
+row  `Base.Usr.Share`  `/usr/share`  yes
+row  `Base.Usr.Share.Doc`  `/usr/share/doc`  yes
+row  `Base.Usr.Share.Factory`  `/usr/share/factory`  yes
+row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  yes
+row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  yes
+row  `Base.Var`  `/var`  no
+row  `Base.Var.Cache`  `/var/cache`  no
+row  `Base.Var.Lib`  `/var/lib`  no
+row  `Base.Var.Log`  `/var/log`  no
+row  `Base.Var.Spool`  `/var/spool`  no
+row  `Base.Var.Tmp`  `/var/tmp`  no
+```
+
+A layout is a fixed place: `Home.Config` is always `$HOME/.config`, and only `$HOME` is read from
+the environment. The locations the [XDG specification](environment.md#standard-directories) lets
+the user move, such as `$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout
+constructs a value of whichever directory type is asked for, so the same names serve a
+`Path on Linux` and any other representation.
 
 ### Search paths
 

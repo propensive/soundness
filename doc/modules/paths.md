@@ -34,6 +34,20 @@ import strategies.throwUnsafely
 
 ### Building a path
 
+A path is written with a handful of symbols, each described below:
+
+```tabular
+column  Symbol
+column  Means
+row  `%`  the POSIX filesystem root
+row  `Drive('C')`  the root of a Windows drive
+row  `/`  a step down, to a named child
+row  `?`  the current location, from which a relative path starts
+row  `^`  a step up
+row  `+`  a relative path applied to an absolute one
+row  `/:`  in a pattern, a name peeled from the front
+```
+
 An absolute path descends from a root with `/`. The root `%` is the POSIX filesystem root; a
 Windows path descends from a `Drive`:
 
@@ -138,5 +152,4 @@ A relative path carries its platform too, so a `Relative on Linux` cannot be app
 path. It also carries how far up it reaches, in its `Relation`, so a relative path that ascends
 above a root can be rejected where it is written rather than resolving to nowhere at runtime.
 
-`^` ascends one level and `?` marks the current location, so `? / ^ / "more"` reads as "up one,
-then into `more`" — the form `toward` produces.
+So `? / ^ / "more"` reads as "up one, then into `more`" — the form `toward` produces.

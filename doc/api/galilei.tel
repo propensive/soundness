@@ -551,15 +551,46 @@ entry .filesystemBackends   the filesystem backends, each a given to import by n
       ```
   entry .javaBaseFilesystem   the `java.nio.file` backend, in `galilei.jvm`
       The backend of an ordinary JVM program. `java.nio`'s exceptions are mapped onto
-      `Io.Error.Reason` by type (`NoSuchFileException` to `Nonexistent`,
-      `FileAlreadyExistsException` to `AlreadyExists`, `AccessDeniedException` to
-      `PermissionDenied`, `FileSystemLoopException` to `Cycle`, `AtomicMoveNotSupportedException`
-      to `Unsupported`, an `InterruptedIOException` to `Interrupted`, any other `IOException`
-      to `Physical`) and, for a bare `FileSystemException`, by its reason text (`cross-device`
-      to `NotSameVolume`, `no space` to `StorageFull`, `read-only` to `ReadOnly`, `quota` to
-      `QuotaExceeded`, …). Permission bits are requested at creation and then set exactly, so
-      an entry never exists more permissive than asked; on a filesystem without the POSIX
-      view (Windows) a requested mode is ignored. FIFOs are made through `mkfifo`, locks
+      `Io.Error.Reason` by type:
+
+      ```tabular
+      column  Exception
+      column  Reason
+      row  `NoSuchFileException`  `Nonexistent`
+      row  `FileAlreadyExistsException`  `AlreadyExists`
+      row  `DirectoryNotEmptyException`  `DirectoryNotEmpty`
+      row  `AccessDeniedException`, `SecurityException`  `PermissionDenied`
+      row  `NotDirectoryException`  `IsNotDirectory`
+      row  `AtomicMoveNotSupportedException`  `Unsupported`
+      row  `FileSystemLoopException`  `Cycle`
+      row  an `InterruptedIOException`  `Interrupted`
+      row  a bare `FileSystemException`  by its reason text, below
+      row  any other `IOException`  `Physical`
+      row  anything else  `Unsupported`
+      ```
+
+      A bare `FileSystemException` is mapped by its reason text, lowercased, the first match
+      winning:
+
+      ```tabular
+      column  Reason text contains
+      column  Reason
+      row  `not a directory`  `IsNotDirectory`
+      row  `is a directory`  `IsDirectory`
+      row  `cross-device` or `different disk`  `NotSameVolume`
+      row  `too many links`  `TooManyLinks`
+      row  `name too long`  `NameTooLong`
+      row  `quota`  `QuotaExceeded`
+      row  `no space`  `StorageFull`
+      row  `read-only`  `ReadOnly`
+      row  `busy`  `Busy`
+      row  `operation not permitted`  `PermissionDenied`
+      row  anything else  `Unsupported`
+      ```
+
+      Permission bits are requested at creation and then set exactly, so an entry never exists
+      more permissive than asked; on a filesystem without the POSIX view (Windows) a requested
+      mode is ignored. FIFOs are made through `mkfifo`, locks
       through `FileChannel.lock`, and extended attributes through the
       `UserDefinedFileAttributeView`, which is `Unsupported` where the volume lacks one.
   entry .wasiFilesystem   the `wasi:filesystem` backend for Wasm components, in `galilei.wasi`
@@ -1792,18 +1823,21 @@ entry .OpenFlag   the platform-neutral options for opening a file's content
       `Eof(path)`, and the rest may be passed after the mode: `path.open[File](Write,
       OpenFlag.Create, OpenFlag.Truncate)`. All are interpreted by the `FilesystemBackend`.
 
-      - `Create`: create the file if it does not exist (under the `Umask` in scope);
-        without it, opening a missing file raises `Nonexistent`.
-      - `Exclusive`: with `Create`, fail with `AlreadyExists` if the file exists (`O_EXCL`).
-      - `Truncate`: empty the file on opening.
-      - `Sync`, `Dsync`: synchronous writes, of data and metadata or of data alone.
-      - `NoFollow`: refuse to open through a symbolic link.
-      - `Lock`, `LockShared`: hold an OS advisory lock for the duration of the open,
-        exclusive or shared. Added by `FileOpenable` when the mode grants `Exclusive` or
-        `Shared`; backends which cannot lock (WASI) refuse the open as `Unsupported` rather
-        than silently not locking.
-      - `Await`: block until the lock and the in-process registration can be acquired,
-        rather than failing at once with `Busy`.
+      ```tabular
+      column  Flag
+      column  Effect
+      row  `Create`  create the file if it does not exist, under the `Umask` in scope; without it, opening a missing file raises `Nonexistent`
+      row  `Exclusive`  with `Create`, fail with `AlreadyExists` if the file exists (`O_EXCL`)
+      row  `Truncate`  empty the file on opening
+      row  `Sync`, `Dsync`  synchronous writes, of data and metadata or of data alone
+      row  `NoFollow`  refuse to open through a symbolic link
+      row  `Lock`, `LockShared`  hold an OS advisory lock, exclusive or shared, for the duration of the open
+      row  `Await`  block until the lock and the in-process registration can be acquired, rather than failing at once with `Busy`
+      ```
+
+      `FileOpenable` adds `Lock` or `LockShared` when the mode grants `Exclusive` or `Shared`;
+      backends which cannot lock (WASI) refuse the open as `Unsupported` rather than silently
+      not locking.
 
       `Read` and `Append` cannot be combined on a JVM `FileChannel`.
   refer galilei.FileOpenable

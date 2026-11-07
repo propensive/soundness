@@ -16,16 +16,61 @@ independently pass `make attest`, and keep the benchmarks compiling (`make build
 document was produced by a full audit of the codebase (2026-08); file and line references are
 snapshots from that audit and must be re-verified at implementation time.
 
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  mod-1  dead edges and dead code  near
+row  mod-2  one-given integration submodules  near
+row  mod-3  module splits  near → mid
+row  mod-4  per-codec and per-format splits  mid
+row  mod-5  algorithm deduplication  mid  mod-4
+row  mod-6  the staged-derivation kernel  mid → long
+row  mod-7  stretch goals  long
+row  mod-8  dead edges, round two — and the misdeclarations they hide  near
+row  mod-9  the critical-path head  near
+row  mod-10  the spine givens  near
+```
+
 ## The measured baseline (2026-08)
 
-- Critical path, 19 modules deep: exegesis → obligatory.json → jacinta.schema →
-  telekinesis.jvm → telekinesis.core → legerdemain → honeycomb → urticose.url → escapade →
-  escritoire → polysyllabic → gossamer → hypotenuse → cardinality → fulminate →
-  anticipation.http → anticipation.codec → anticipation.text → symbolism.
-- Highest fan-in: gossamer (31 dependents), hypotenuse (12), contingency (11), jacinta (10),
-  fulminate (10), hellenism (10), xenophile.wit (10).
-- Largest modules: stratiform 16.7k lines/14 deps, xenophile 11.8k, jacinta 11.1k,
-  pneumatic 10.9k, hallucination 9.9k, xylophone 8.3k, aviation 7.6k, ypsiloid 7.5k/15 deps.
+The critical path is 19 modules deep: exegesis → obligatory.json → jacinta.schema →
+telekinesis.jvm → telekinesis.core → legerdemain → honeycomb → urticose.url → escapade →
+escritoire → polysyllabic → gossamer → hypotenuse → cardinality → fulminate →
+anticipation.http → anticipation.codec → anticipation.text → symbolism.
+
+The modules with the highest fan-in:
+
+```tabular
+column  Module
+column  Dependents
+row  gossamer  31
+row  hypotenuse  12
+row  contingency  11
+row  jacinta  10
+row  fulminate  10
+row  hellenism  10
+row  xenophile.wit  10
+```
+
+The largest modules:
+
+```tabular
+column  Module
+column  Lines
+column  Dependencies
+row  stratiform  16.7k  14
+row  xenophile  11.8k
+row  jacinta  11.1k
+row  pneumatic  10.9k
+row  hallucination  9.9k
+row  xylophone  8.3k
+row  aviation  7.6k
+row  ypsiloid  7.5k  15
+```
 
 ## Mechanics that apply to every leg
 
@@ -315,22 +360,23 @@ Horizon: near–mid
   than a matter of effort: each proposed home sits *above* a module that already uses the code.
   Approved for doing, attempted, and found blocked:
 
-  - **`Loop` to parasite** — a cycle. `fulminate.internal` and `wisteria.internal` both use
-    `loop`, and parasite depends on each of them transitively (parasite → digression →
-    spectacular → wisteria; fulminate likewise).
-  - **`Exit` to imperial or ambience** — a cycle. `contingency.Fatal` uses `Exit`, and imperial
-    depends on contingency, not the reverse.
-  - **`DecimalConverter` to gossamer** — a cycle. `spectacular.Showable` uses it, and gossamer
-    depends on spectacular.
-  - **`Mutex` to parasite** — possible, but harmful. `turbulence.Out` and `turbulence.Err` use
-    it, and `turbulence.stdio` is the deliberately minimal component this track created, with 16
-    modules on its classpath. parasite's closure is 37. Moving `Mutex` there would take the
-    standard-streams module from 16 modules to at least 37, undoing most of what splitting it
-    off achieved.
-  - **`Counter` to parasite** — **resolved by deletion.** It had no users at all, inside
-    rudiments or out: the only other `Counter` in the tree is `ultimatum.Reckoning.Counter`, an
-    unrelated nested enum. `rudiments.Atomic` supersedes what it did (`Atomic[Int]` with
-    `ere(_ + 1)` is `getAndIncrement`), so it was removed rather than re-homed.
+  ```tabular
+  column  Utility
+  column  Proposed home
+  column  Outcome
+  column  Because
+  row  `Loop`  parasite  a cycle  `fulminate.internal` and `wisteria.internal` use `loop`, and parasite depends on both transitively (parasite → digression → spectacular → wisteria; fulminate likewise)
+  row  `Exit`  imperial or ambience  a cycle  `contingency.Fatal` uses `Exit`, and imperial depends on contingency
+  row  `DecimalConverter`  gossamer  a cycle  `spectacular.Showable` uses it, and gossamer depends on spectacular
+  row  `Mutex`  parasite  possible, but harmful  `turbulence.Out` and `turbulence.Err` use it, so `turbulence.stdio` would grow from 16 modules to at least 37
+  row  `Counter`  parasite  deleted  it had no users, and `rudiments.Atomic` supersedes it
+  ```
+
+  `turbulence.stdio` is the deliberately minimal component this track created, and parasite's
+  closure is 37 modules, so moving `Mutex` would undo most of what splitting the standard
+  streams off achieved. `Counter` had no users inside rudiments or out — the only other
+  `Counter` in the tree is `ultimatum.Reckoning.Counter`, an unrelated nested enum — and
+  `Atomic[Int]` with `ere(_ + 1)` is `getAndIncrement`, so it was removed rather than re-homed.
 
   So rudiments holds these utilities precisely *because* they are used from below the topics
   they belong to. Re-homing them by subject means first moving their low-level consumers, which
@@ -341,11 +387,25 @@ Horizon: near–mid
 - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
   with nomenclature.lexicon first.
 
-Progress (2026-09-25): landed — legerdemain.query, the hypotenuse.Bcd de-jacinta,
-jacinta.optics, stratiform.optics, turbulence.stdio, concordance and gossamer.lexicon. Not
-landed — ethereal.dist, ypsiloid.pointer and stratiform.schema (blocked, as recorded above),
-jacinta.url (`JsonPointer` is still keyed by `HttpUrl`), stratiform.editing, and the
-stratiform.base256 move to monotonous.
+Progress on 2026-09-25, leg by leg:
+
+```tabular
+column  Leg
+column  State
+row  legerdemain.query  landed
+row  the hypotenuse.Bcd de-jacinta  landed
+row  jacinta.optics  landed
+row  stratiform.optics  landed
+row  turbulence.stdio  landed
+row  concordance  landed
+row  gossamer.lexicon  landed
+row  ethereal.dist  blocked, as recorded above
+row  ypsiloid.pointer  blocked, as recorded above
+row  stratiform.schema  blocked, as recorded above
+row  jacinta.url  not landed: `JsonPointer` is still keyed by `HttpUrl`
+row  stratiform.editing  not landed
+row  the stratiform.base256 move to monotonous  not landed
+```
 
 Done when: each split module is bundled and its parent's dependency list contains only edges
 its remaining code uses.
@@ -378,9 +438,20 @@ Done: #1748, #1756 (2026-08-09) — the facsimile legs recorded below as blocked
   component. The central `RasterBackend` is gone.
 
   Each format now chooses its own implementation per platform, using the `-jvm`/`-native`
-  source-directory pattern: PNG, JPEG, GIF and BMP decode through `javax.imageio` on the JVM and
-  through their pure codec on Scala.js and WASI, while WebP uses its pure codec everywhere,
-  because no standard JRE ships a WebP reader. That dissolves what looked like a core policy —
+  source-directory pattern:
+
+  ```tabular
+  column  Format
+  column  Decodes on the JVM through
+  column  On Scala.js and WASI through
+  row  PNG  `javax.imageio`  its pure codec
+  row  JPEG  `javax.imageio`  its pure codec
+  row  GIF  `javax.imageio`  its pure codec
+  row  BMP  `javax.imageio`  its pure codec
+  row  WebP  its pure codec  its pure codec
+  ```
+
+  WebP uses its pure codec everywhere because no standard JRE ships a WebP reader. That dissolves what looked like a core policy —
   it was only a policy because core was making the choice. The pure codecs stay in each
   component's shared directory, so they are still compiled and still differentially tested
   against ImageIO on the JVM.
@@ -391,8 +462,21 @@ Done: #1748, #1756 (2026-08-09) — the facsimile legs recorded below as blocked
   Supplying an alternative codec, or adding a new format, is now an ordinary given in a new
   component; nothing in core changes.
 
-  Resulting sizes: core 1,055 lines (including `Quantization`, which GIF's palette encoder shares
-  with JPEG and which therefore stayed), webp 4,817, jpeg 2,767, gif 607, png 525, bmp 327.
+  The resulting sizes:
+
+  ```tabular
+  column  Component
+  column  Lines
+  row  core  1,055
+  row  webp  4,817
+  row  jpeg  2,767
+  row  gif  607
+  row  png  525
+  row  bmp  327
+  ```
+
+  Core includes `Quantization`, which GIF's palette encoder shares with JPEG and which therefore
+  stayed.
   tarantula's screenshot decoder now sees `hallucination.core` and `hallucination.png` only.
 - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
   row filters, duplicating PngCodec logic) to the png component or pneumatic;
@@ -401,9 +485,17 @@ Done: #1748, #1756 (2026-08-09) — the facsimile legs recorded below as blocked
   `scalaJs = false`); `facsimile.fonts` takes the ~900-line phoenicia-facing font
   machinery. aviation stays with PdfInfo or rides with the file component.
 
-  Mapping each heavy dependency to the files that import it gives: enigmatic → Guard, Pdf,
-  PdfFile; gastronomy → FontEmbedder, Guard; galilei and ambience → PdfFile alone; phoenicia →
-  FontEmbedder, PdfFont, facsimile_editing; aviation → PdfInfo.
+  Mapping each heavy dependency to the files that import it gives:
+
+  ```tabular
+  column  Dependency
+  column  Imported by
+  row  enigmatic  Guard, Pdf, PdfFile
+  row  gastronomy  FontEmbedder, Guard
+  row  galilei and ambience  PdfFile alone
+  row  phoenicia  FontEmbedder, PdfFont, facsimile_editing
+  row  aviation  PdfInfo
+  ```
 
   **`facsimile.file` is done**, and takes galilei and ambience with it: facsimile.core's compile
   classpath drops from 67 modules to 62. `PdfFile` appeared in `Pdf` only as three `Openable`
@@ -442,14 +534,19 @@ Horizon: mid — after mod-4, so nothing moves twice.
   **The varints are not shareable as the roadmap assumes.** `stratiform.Varint.decode` and
   locomotion's `ProtobufParser` are not the same function with cosmetic differences:
 
-  - stratiform aborts when `shift >= 64`; locomotion tolerates `shift` up to 70 and *discards*
-    bits above 63 (`if shift < 64 then result |= …`), which is protobuf's rule for non-canonical
-    encodings. Unifying them changes one or the other's behaviour on malformed input.
-  - stratiform returns an allocated `Decoded(value, offset)`; locomotion mutates the parser's
-    `pos` field and allocates nothing. A shared decoder either allocates in protobuf's hot loop
-    or needs a cursor-style API that no donor currently has.
-  - the error types differ (`VarintError` versus `ProtobufError` carrying a position), and the
-    positions are part of protobuf's diagnostics.
+  ```tabular
+  column  Aspect
+  column  stratiform
+  column  locomotion
+  row  a long encoding  aborts when `shift >= 64`  tolerates `shift` up to 70 and *discards* bits above 63 (`if shift < 64 then result |= …`)
+  row  the result  an allocated `Decoded(value, offset)`  mutates the parser's `pos` field, allocating nothing
+  row  errors  `VarintError`  `ProtobufError`, carrying a position
+  ```
+
+  Discarding the high bits is protobuf's rule for non-canonical encodings, so unifying the two
+  changes one or the other's behaviour on malformed input; a shared decoder either allocates in
+  protobuf's hot loop or needs a cursor-style API that no donor currently has; and the positions
+  are part of protobuf's diagnostics.
 
   The *encoders* are closer, and `size`/`write` may still be worth sharing. What is genuinely
   duplicated is **inside locomotion**: `ProtobufParser` has the same decode loop twice,
@@ -459,11 +556,16 @@ Horizon: mid — after mod-4, so nothing moves twice.
 - **Checksums into ~~gastronomy~~ `corpuscular`**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32
   API. **Done** (2026-10-21): `corpuscular_core.scala` holds the only `Crc32`, `Crc64` and
   `Adler32` table generation in `lib/`, and every former donor reads them from there; zeppelin
-  keeps `java.util.zip.CRC32`, as decided below. The Huffman builders (five decode-side in
-  pneumatic's Inflater and Brotli, hallucination's WebP and JPEG, telekinesis's HPACK; four
-  encode-side) and the varint loops (stratiform, locomotion's three, rudiments' `Scribe`,
-  degustation, ethereal's launcher, gastronomy's multihash, pneumatic's XZ container,
-  octogenarian's packfiles) are all still in their donors, and corpuscular has neither.
+  keeps `java.util.zip.CRC32`, as decided below. The Huffman builders and the varint loops are
+  all still in their donors, and corpuscular has neither:
+
+  ```tabular
+  column  Algorithm
+  column  Still held by
+  row  Huffman builders, decode side (five)  pneumatic's Inflater and Brotli, hallucination's WebP and JPEG, telekinesis's HPACK
+  row  Huffman builders, encode side  four
+  row  varint loops  stratiform, locomotion's three, rudiments' `Scribe`, degustation, ethereal's launcher, gastronomy's multihash, pneumatic's XZ container, octogenarian's packfiles
+  ```
 
   Not gastronomy: `gastronomy.core` sits on 45 modules where `pneumatic.core` sits on 24, and
   neither pneumatic nor hallucination depends on gastronomy, so putting fast checksums there
@@ -471,10 +573,21 @@ Horizon: mid — after mod-4, so nothing moves twice.
   on `anticipation.codec` alone.
 
   The count of "four hand-rolled CRC-32s" needs correcting in both directions. There are five
-  implementations of three algorithms — pneumatic's streaming `Crc32` and `Adler32` (JZlib
-  ports), pneumatic's `Crc64` in the XZ layer, hallucination's one-shot `Crc32`, and zeppelin's
-  `crc32` — but **two of them should not be deduplicated at all**: zeppelin's delegates to
-  `java.util.zip.CRC32`, and gastronomy's `Digestion` CRC-32 likewise goes through
+  implementations of three algorithms:
+
+  ```tabular
+  column  Implementation
+  column  Algorithm
+  column  Form
+  row  pneumatic's `Crc32`  CRC-32  streaming, a JZlib port
+  row  pneumatic's `Adler32`  Adler-32  streaming, a JZlib port
+  row  pneumatic's `Crc64`  CRC-64  in the XZ layer
+  row  hallucination's `Crc32`  CRC-32  one-shot
+  row  zeppelin's `crc32`  CRC-32  delegates to `java.util.zip.CRC32`
+  ```
+
+  But **two CRC-32s should not be deduplicated at all**: zeppelin's, which delegates to
+  `java.util.zip.CRC32`, and gastronomy's `Digestion` CRC-32, which likewise goes through
   `JavaBaseHashing`. Both are JVM intrinsics; replacing them with a table-driven Scala loop
   would be a performance regression for no benefit. The same is true of pneumatic on the JVM,
   whose `FlateBackend` uses `JavaCrc32`; its pure `Crc32` is the JS/native path only.
@@ -503,15 +616,24 @@ Horizon: mid — after mod-4, so nothing moves twice.
   satisfy the stricter ruleset" was stale: `settings.sep` applies both, and had been applied to
   this module all along. It is corrected.
 - **Consumer migration** onto the binary-primitives library, split by consumer:
-  (a) pneumatic and hallucination codecs; (b) telekinesis.http2's Hpack and FrameReader;
-  (c) stratiform, locomotion (which has two internal varint copies), mandible,
-  breviloquence, phoenicia, anthology and zeppelin.
+
+  ```tabular
+  column  Batch
+  column  Consumers
+  row  (a)  pneumatic and hallucination codecs
+  row  (b)  telekinesis.http2's Hpack and FrameReader
+  row  (c)  stratiform, locomotion (which has two internal varint copies), mandible, breviloquence, phoenicia, anthology and zeppelin
+  ```
 - **Remaining dedups**: the JSON string-escaping routine (jacinta.Json.scala:1247–1279,
   copied verbatim into ypsiloid) becomes a gossamer-level helper; a CSI tokenizer in
   escapade.csi replaces yossarian.Pty's and profanity.Keyboard's private escape-sequence
-  state machines (yossarian's tests are the gate);
+  state machines (yossarian's tests are the gate); a `SecureEntropy` capability in
+  capricious replaces the direct `SecureRandom`/`UUID.randomUUID` uses in perihelion,
+  enigmatic and inimitable (restoring wasi parity) — **needs a decision; see below**; telekinesis
+  exports its byte-level header-block scanner for obligatory.ContentLength and scintillate
+  (correction 3 applies).
 
-  **Both of these premises fail on inspection.**
+  **The first two of these premises fail on inspection.**
 
   The string escaper is *not* verbatim. jacinta names seven escapes (quote, backslash,
   backspace, formfeed, newline, return, tab); ypsiloid names five, omitting backspace and
@@ -530,10 +652,7 @@ Horizon: mid — after mod-4, so nothing moves twice.
   entangled with timing -- its `Lookahead` exists to decide whether a bare ESC is the Escape key
   or the start of a sequence split across a packet boundary -- and it degrades to
   `Keypress.Escape` rather than failing, because a user may type anything. A shared tokenizer
-  would have to abstract over both the input model and the error policy. a `SecureEntropy` capability in
-  capricious replaces the direct `SecureRandom`/`UUID.randomUUID` uses in perihelion,
-  enigmatic and inimitable (restoring wasi parity) — **needs a decision; see below**; telekinesis exports its byte-level
-  header-block scanner for obligatory.ContentLength and scintillate (correction 3 applies).
+  would have to abstract over both the input model and the error policy.
 
 **SecureEntropy.** The list of sites needs correcting before this is attempted. enigmatic's
 `SecureRandom` uses are all in `core-jvm`, its JVM backend, alongside a `core-native` twin and an
@@ -567,7 +686,7 @@ signature patterns (CRC tables, Huffman builders, varint loops).
 
 ## mod-6: the staged-derivation kernel
 
-Horizon: mid–far
+Horizon: mid–long
 
 The six staged-derivation engines (jacinta, breviloquence, locomotion, xylophone,
 stratiform.staged, stratiform.binaryStaged — ~7,400 lines) share a verbatim-identical
@@ -598,7 +717,7 @@ benchmark corpus shows performance parity per format.
 
 ## mod-7: stretch goals
 
-Horizon: far — each requires explicit approval before starting, because each crosses the
+Horizon: long — each requires explicit approval before starting, because each crosses the
 no-semantic-change line or carries real regression risk.
 
 - **Full staged-engine unification** (beyond the mod-6 kernel): requires unsealing
@@ -638,10 +757,17 @@ anticipation.check + chiaroscuro; legerdemain.query; ethereal.dist; the ypsiloid
 chain; the stratiform splits; turbulence.stdio → rudiments; the pneumatic → hallucination →
 facsimile → dedup chain; and the staged kernel. mod-7 stays out until separately approved.
 
-Expected outcomes: the critical path shortens at three choke points (legerdemain.query,
-urticose.ansi, the escapade slimming); the test framework leaves the closure of ~40
-modules; ~2,500 lines of duplicated algorithms disappear in mod-5 and ~1,700 in mod-6;
-and rudiments and turbulence — the two modules the issue singles out — get crisp,
+Expected outcomes:
+
+```tabular
+column  Outcome
+column  Measure
+row  the critical path shortens  at three choke points: legerdemain.query, urticose.ansi, the escapade slimming
+row  the test framework leaves the closure of  ~40 modules
+row  duplicated algorithms disappear  ~2,500 lines in mod-5, ~1,700 in mod-6
+```
+
+Rudiments and turbulence — the two modules the issue singles out — also get crisp,
 one-sentence purposes: "extension-method utilities on core types" and "the pull-streaming
 algebra", with the standard streams, concurrency primitives, process exit and confined
 indexing each living where they belong.
@@ -662,20 +788,57 @@ without the edge.
 
 ## The re-measured baseline
 
-- Critical path, 27 components deep: exegesis.core → obligatory.json → hyperbole.core →
-  harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core →
-  turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core →
-  digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core →
-  rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core →
-  anticipation.log → anticipation.text → symbolism.core → prepositional.core.
-- Highest fan-in: gossamer.core (44), turbulence.core (31), hypotenuse.core (23),
-  hellenism.core and zephyrine.core (18), prepositional.core and contingency.core (16).
-- Largest closures: exegesis.core (99 components), anthology.xeq (94), burdock.core (90),
-  ziggurat.packager (89), ethereal.core (87).
-- Simulating every leg below applied at once: critical path 27 → 23, exegesis.core's closure
-  99 → 59, gossamer.core's closure → 23, pneumatic.core's → 21. The residual spine is
-  anthology → hellenism.jvm → galilei → turbulence → parasite → nomenclature → gossamer →
-  the foundations, whose one hard link is recorded at the end.
+The critical path is 27 components deep: exegesis.core → obligatory.json → hyperbole.core →
+harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core →
+turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core →
+digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core →
+rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core →
+anticipation.log → anticipation.text → symbolism.core → prepositional.core.
+
+The components with the highest fan-in, and those with the largest closures:
+
+```tabular
+column  Component
+column  Fan-in
+row  gossamer.core  44
+row  turbulence.core  31
+row  hypotenuse.core  23
+row  hellenism.core  18
+row  zephyrine.core  18
+row  prepositional.core  16
+row  contingency.core  16
+```
+
+```tabular
+column  Component
+column  Closure (components)
+row  exegesis.core  99
+row  anthology.xeq  94
+row  burdock.core  90
+row  ziggurat.packager  89
+row  ethereal.core  87
+```
+
+Simulating every leg below applied at once gives:
+
+```tabular
+column  Measure
+column  Measured
+column  Simulated
+row  critical path  27  23
+row  exegesis.core's closure  99  59
+row
+  cell  gossamer.core's closure
+  cell
+  cell  23
+row
+  cell  pneumatic.core's closure
+  cell
+  cell  21
+```
+
+The residual spine is anthology → hellenism.jvm → galilei → turbulence → parasite →
+nomenclature → gossamer → the foundations, whose one hard link is recorded at the end.
 
 Both ends of the measured path turned out to be soft: the head (exegesis/obligatory down to
 harlequin) is held together largely by dead edges, and the tail below gossamer hangs on a
@@ -704,34 +867,57 @@ classpath reorder from a build break) and go first, in the same PR:
 imports. These are misdeclared dependency lists, not cuttable edges: declare what is really
 used, and then decide per case whether the conduit drops:
 
-- breviloquence.core → urticose.url (really needs gossamer.core; its sources import
-  gossamer, spectacular, distillate and wisteria, none declared).
-- revolution.core → serpentine.core (sole path to gossamer.core).
-- serpentine.core → ambience.core (sole path to anticipation.path and anticipation.print;
-  the `textPath` given in anticipation_serpentine_core.scala needs `Paths`).
-- profanity.core → eucalyptus.core (sole path to turbulence.core and parasite.core) and
-  → frontier.core (sole path to escapade.core; profanity's declared escapade.csi does not
-  contain `Teletype`).
-- honeycomb.core → xylophone.core (sole supplier of typonym.core, adversaria.core and
-  wisteria.core, all imported by honeycomb).
+```tabular
+column  Conduit edge
+column  Sole supplier of
+column  Note
+row  breviloquence.core → urticose.url  gossamer.core  its sources import gossamer, spectacular, distillate and wisteria, none declared
+row  revolution.core → serpentine.core  gossamer.core
+row  serpentine.core → ambience.core  anticipation.path and anticipation.print  the `textPath` given in anticipation_serpentine_core.scala needs `Paths`
+row  profanity.core → eucalyptus.core  turbulence.core and parasite.core
+row  profanity.core → frontier.core  escapade.core  profanity's declared escapade.csi does not contain `Teletype`
+row  honeycomb.core → xylophone.core  typonym.core, adversaria.core and wisteria.core  all imported by honeycomb
+```
 
 **Confirmed dead** (no exported name used, no implicit-scope route, closure re-supplied by
-other declared deps): hypotenuse.core → cardinality.core; iridescence.core →
-contextual.core; zephyrine.core → hypotenuse.core (verify anticipation.opaque still
-arrives); pneumatic.core → contingency.core; enigmatic.asn1 → gossamer.core;
-facsimile.core → eucalyptus.core; probably.core → eucalyptus.core; profanity.core →
-diuretic.core; tarantula.core → diuretic.core and → gastronomy.core; burdock.core →
-gastronomy.core; apoplexy.core → legerdemain.core (it reaches legerdemain.query through
-telekinesis.core, which is all it needs); denominative.core → fulminate.core;
-contextual.core → rudiments.core; degustation.core → rudiments.core; polyvinyl.core →
-rudiments.core; coaxial.core → frontier.core; punctuation.core → frontier.core;
-austronesian.core → hellenism.core; locomotion.core → spectacular.core; typonym.core →
-anticipation.text; vexillology.core → hypotenuse.core; yossarian.core → iridescence.core;
-xenophile.js → gossamer.core; ziggurat.core → gastronomy.core; ziggurat.packager →
-guillotine.core; telekinesis.http2 → hypotenuse.core; legerdemain.query → anamnesis.core;
-stratiform.base256 → gossamer.core and → vacuous.core; embarcadero.containerd →
-coaxial.core (redundant: re-supplied via telekinesis.http2 → coaxial.jvm);
-surveillance.core → eucalyptus.core; prescience.core → fulminate.core and → gossamer.core.
+other declared deps):
+
+```tabular
+column  Component
+column  Dead edge to
+column  Note
+row  hypotenuse.core  cardinality.core
+row  iridescence.core  contextual.core
+row  zephyrine.core  hypotenuse.core  verify anticipation.opaque still arrives
+row  pneumatic.core  contingency.core
+row  enigmatic.asn1  gossamer.core
+row  facsimile.core  eucalyptus.core
+row  probably.core  eucalyptus.core
+row  profanity.core  diuretic.core
+row  tarantula.core  diuretic.core, gastronomy.core
+row  burdock.core  gastronomy.core
+row  apoplexy.core  legerdemain.core  it reaches legerdemain.query through telekinesis.core, which is all it needs
+row  denominative.core  fulminate.core
+row  contextual.core  rudiments.core
+row  degustation.core  rudiments.core
+row  polyvinyl.core  rudiments.core
+row  coaxial.core  frontier.core
+row  punctuation.core  frontier.core
+row  austronesian.core  hellenism.core
+row  locomotion.core  spectacular.core
+row  typonym.core  anticipation.text
+row  vexillology.core  hypotenuse.core
+row  yossarian.core  iridescence.core
+row  xenophile.js  gossamer.core
+row  ziggurat.core  gastronomy.core
+row  ziggurat.packager  guillotine.core
+row  telekinesis.http2  hypotenuse.core
+row  legerdemain.query  anamnesis.core
+row  stratiform.base256  gossamer.core, vacuous.core
+row  embarcadero.containerd  coaxial.core  redundant: re-supplied via telekinesis.http2 → coaxial.jvm
+row  surveillance.core  eucalyptus.core
+row  prescience.core  fulminate.core, gossamer.core
+```
 
 Two scan traps, recorded so the next sweep does not repeat them: telekinesis.http2's
 sources used to live in `package cordillera`, so a package-name grep called the edge dead
@@ -803,7 +989,21 @@ tree — and what sits below it hangs on single-digit numbers of givens. These a
 integration-submodule moves, with the same traps mod-2 recorded: a given moved out of a
 companion (or out of the package's toplevel) leaves implicit scope, so each move needs a
 downstream import sweep, a `soundness`-toplevel export, and where a silent generic fallback
-exists, a test pinning the resolved instance.
+exists, a test pinning the resolved instance. The legs, each detailed below:
+
+```tabular
+column  Edge
+column  Held by
+column  Remedy
+row  gossamer.core → distillate.core  `textDecodable` and the four `enumIdentification` givens  a `gossamer.codec`-style submodule
+row  distillate.core → digression.core  the `fqcn` Decodable  inverted into a digression-side component
+row  distillate.core → inimitable.core  the `uuid` Decodable  the same inversion
+row  distillate.core → wisteria.core  `VariantError`  the error class relocated where both can see it
+row  digression.core → iridescence.core  `StackTrace.Palette`, `hex` and `defaultPalette`  moved to digression.ansi
+row  digression.core → spectacular.core  the `showable` given and one `show` call  a `digression.show`, ranked last
+row  parasite.core → mercator.core  `Monad[Task]`  a `parasite.monad` component
+row  turbulence.core → capricious.core  the deferred `shred` item  mod-3's open decision on its home
+```
 
 - **gossamer.core → distillate.core** rests on five givens in one file: `textDecodable`
   (gossamer_core.scala:124) and the four `enumIdentification` case-style `Identifiable`
@@ -840,17 +1040,17 @@ exists, a test pinning the resolved instance.
   item (turbulence_core.scala:319–324) and nothing else; mod-3's open decision on `shred`'s
   home is unchanged, only now it is the whole of the edge.
 
-**Acquitted in the second audit, so they are not re-litigated:** gossamer.core →
-kaleidoscope.core (`Scanner` is inside the interpolator macro expansion,
-gossamer.internal.scala:239–292, and kaleidoscope's own closure is contingency alone);
-digression.core → contingency.core (`raises` is in `Fqcn.apply`'s signature);
-parasite.core → anticipation.time (~17 signature sites, and the dep is depth-2 with no text
-stack — free); iridescence.core → geodesy.angle (`Angle` is in `Hsl`/`Hsv`'s public fields,
-and iridescence already depends on hypotenuse directly, so the edge adds one shallow node);
-turbulence.core → anticipation.http (three sites, but the `import zephyrine.{stream as _, *}`
-shadowing arrangement in turbulence.Streamable.scala:48–50 depends on `HttpStreams.Body.stream`
-being a same-module sibling, and the dep is depth-3 and off the spine — not worth the
-friction).
+**Acquitted in the second audit, so they are not re-litigated:**
+
+```tabular
+column  Edge
+column  Kept because
+row  gossamer.core → kaleidoscope.core  `Scanner` is inside the interpolator macro expansion (gossamer.internal.scala:239–292), and kaleidoscope's own closure is contingency alone
+row  digression.core → contingency.core  `raises` is in `Fqcn.apply`'s signature
+row  parasite.core → anticipation.time  ~17 signature sites, and the dep is depth-2 with no text stack — free
+row  iridescence.core → geodesy.angle  `Angle` is in `Hsl`/`Hsv`'s public fields, and iridescence already depends on hypotenuse directly, so the edge adds one shallow node
+row  turbulence.core → anticipation.http  three sites, but the `import zephyrine.{stream as _, *}` shadowing arrangement in turbulence.Streamable.scala:48–50 depends on `HttpStreams.Body.stream` being a same-module sibling, and the dep is depth-3 and off the spine — not worth the friction
+```
 
 **The one hard edge: parasite.core → nomenclature.core → gossamer.core.** `Name[Async]` is
 in the public signatures of `task` (parasite_core.scala:150), `Task.apply`, `Monitor` and
@@ -875,7 +1075,6 @@ wisteria, kaleidoscope and spectacular are all still in it.
 Three PRs: mod-8 (misdeclarations first, then the dead edges), mod-9 (the critical-path
 head, including the cheap retargets; harlequin.scala stays out until its design is
 approved), mod-10 (the spine givens, one integration submodule per leg, each with its
-import sweep and pinning tests). Expected outcomes, by simulation: critical path 27 → 23
-components; exegesis.core's closure 99 → 59; gossamer.core's closure → 23; and the
-remaining depth concentrated in the one genuinely open question, parasite's validated task
-names.
+import sweep and pinning tests). The expected outcomes are the simulated figures in [the
+re-measured baseline](#the-re-measured-baseline), with the remaining depth concentrated in the
+one genuinely open question, parasite's validated task names.

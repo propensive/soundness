@@ -65,12 +65,19 @@ Person(t"Alice", 30).in[Text over Tel].read[Person in Tel]   // Person(t"Alice",
 
 `in[Data over Tel]` writes the same text as bytes, encoded in the `Codepage` in scope.
 
-An `Optional` field reads as `Unset` when its keyword is missing, or present with neither an atom
-nor a child — TEL's two spellings of absence — and a value the inner decoder rejects is an error.
-The `optionalityOptions` package varies each: `strictTelAbsence` makes absence an error
-(`Tel.Error.Reason.Absent`) and marks the field required in the derived schema, and
-`lenientTelFaults` reads a rejected value as `Unset`. The direct parser polices absence only,
-since a fault surfaces mid-entry.
+An `Optional` field has two policies, from the `optionalityOptions` package:
+
+```tabular
+column  A field whose keyword is
+column  Reads as
+column  Unless
+row  missing, or present with neither an atom nor a child  `Unset`  `strictTelAbsence` makes it an error
+row  present but rejected by the inner decoder  an error  `lenientTelFaults` reads it as `Unset`
+```
+
+A missing keyword and an empty one are TEL's two spellings of absence. Under `strictTelAbsence`,
+absence is a `Tel.Error.Reason.Absent`, and the field is marked required in the derived schema.
+The direct parser polices absence only, since a fault surfaces mid-entry.
 
 ```scala
 case class Flags(active: Boolean, verbose: Optional[Boolean])
@@ -81,12 +88,23 @@ val tolerant =
 ```
 
 Encoding runs the other way: `in[Tel]` produces a `Tel` from a value, a compound per field, ready
-to render or to embed in a larger document. `show` renders a `Tel` into one `Text`; a large
-document need not be held in memory before it is sent. The push form of `Tel.emit` serializes on
-the caller's thread and hands each block to a function as it fills — as text with `emit[Text]`,
-or as UTF-8 bytes with `emit[Data]` — which is the shape for writing to a file, a socket or an
-`OutputStream`; where a consumer pulls instead, `Tel.emit(document)` serializes on a fiber and
-hands out the text through an iterator, and a `Tel` is `Streamable` by `Text` on the same terms:
+to render or to embed in a larger document. `show` renders a `Tel` into one `Text`, but a large
+document need not be held in memory before it is sent:
+
+```tabular
+column  Form
+column  Serializes on
+column  Hands out
+row  `show`  the caller's thread  one `Text`
+row  `Tel.emit[Text](document, f)`  the caller's thread  each block of text to `f`, as it fills
+row  `Tel.emit[Data](document, f)`  the caller's thread  each block as UTF-8 bytes to `f`, as it fills
+row  `Tel.lend(document)`  the caller's thread  each block lent to a function, not copied
+row  `Tel.emit(document)`  a fiber  the text, through an iterator
+row  `Streamable` by `Text`  a fiber  the text, as a stream
+```
+
+The push forms are the shape for writing to a file, a socket or an `OutputStream`; the pull forms
+suit a consumer that asks for each block:
 
 ```scala fuel
 typecheck
@@ -261,18 +279,37 @@ source.read[List[Tel]]
 ### Typed records from a schema
 
 Where the schema is authoritative, a `Tel.Provider` — an object declared in a file of its own,
-holding the schema — reads it at compiletime and produces typed
-records from matching documents. Each field reads at the type the schema declares, an optional
-field is absent where the document omits it, a required one fails with a `Tel.Provider.Error`
-when it is missing, through the `Tactic` of the code reading it, a repeatable field reads every
-occurrence as a `List`, a field declared as a struct or
-referring to a record definition reads as a nested record, a select member reads as one optional
-field per variant, and a *flag* field — a keyword with no value — reads as a boolean, `true`
-where present and `false` where not. A scalar's validator names the type it reads as: the
-built-in `String`, `Identifier`, `TypeName` and `Sigil` (failing on an atom of more than one
-character) are provided, and a custom validator
-reads through a given of the same label in scope where `record` is called, such as
-`given ("handle" is Intensional in Tel.Provider from Tel to Handle) = Intensional(…)`:
+holding the schema — reads it at compiletime and produces typed records from matching documents.
+Each field reads as its schema declares it:
+
+```tabular
+column  The schema declares
+column  The field reads as
+row  a scalar  the type its validator names
+row  an optional field  an `Optional`, absent where the document omits it
+row  a required field  its value, failing with a `Tel.Provider.Error` when it is missing
+row  a repeatable field  a `List` of every occurrence
+row  a struct, or a reference to a record definition  a nested record
+row  a select  one optional field per variant
+row  a *flag*, a keyword with no value  a `Boolean`: `true` where present, `false` where not
+```
+
+A missing required field fails through the `Tactic` of the code reading it. The built-in scalars
+are provided:
+
+```tabular
+column  Scalar
+column  Validator
+column  Reads as
+row  `String`  `string`  `Text`
+row  `Identifier`  `identifier`  `Text`
+row  `TypeName`  `type-name`  `Text`
+row  `Sigil`  `sigil`  `Char`, failing on an atom of more than one character
+```
+
+A custom validator reads through a given of the same label in scope where `record` is called,
+such as `given ("handle" is Intensional in Tel.Provider from Tel to Handle) = Intensional(…)`.
+A provider, in a file of its own, and a record read through it:
 
 ```scala fuel
 typecheck
@@ -330,8 +367,19 @@ When two peers hold different schema libraries, a reader tells a writer what it 
 an *acceptance*: a small TEL document listing, in order of preference, the compositions it
 accepts — each as a schema signature — with the further layers or atoms it can resolve and would
 like included if the writer holds them, named by a prefix of their hash. The message is itself
-TEL, so it travels as text, as BinTEL (framed, or the bare document root for an embedding that
-already knows what it is carrying), or as a single BASE-256 word:
+TEL, so it travels in three forms:
+
+```tabular
+column  Form
+column  Written by
+column  Read back by
+row  TEL text  `acceptance.encode`  `as[Tel.Acceptance]` on the text
+row  framed BinTEL  `acceptance.framed`  `Tel.Acceptance(framed)`
+row  one BASE-256 word  `acceptance.text`  `Tel.Acceptance(text)`
+```
+
+The BinTEL form may also be the bare document root, for an embedding that already knows what it
+is carrying. In full:
 
 ```scala fuel
 typecheck
@@ -366,10 +414,18 @@ served.let: served =>
   Tel.Acceptance.receive(acceptance, library, served.document)                  // the reader
 ```
 
-Compatibility is the subtype relation on composed schemas — records are subtyped by extension,
-selects by narrowing, scalars by tightening — decided by `Tels.Subtyping.subtype`, with `check`
-reporting the first premise that fails; `Tels.Projection` restricts a document to what a
-supertype can address.
+Compatibility is the subtype relation on composed schemas:
+
+```tabular
+column  Definition
+column  A subtype
+row  record  extends it
+row  select  narrows it
+row  scalar  tightens it
+```
+
+It is decided by `Tels.Subtyping.subtype`, with `check` reporting the first premise that fails;
+`Tels.Projection` restricts a document to what a supertype can address.
 
 Where the formats are Scala types, the acceptance and its reading are derived. Each type's
 required fields form the base a reader requires; its optional fields are offered as atoms, so two
@@ -422,6 +478,12 @@ names.
 Numbers in BinTEL are varint-encoded and values are typed by the schema rather than tagged in the
 stream, which is where the compactness comes from. Every framed document also declares its own
 length immediately after the magic number, so a reader can delimit, skip or forward documents
-without holding their schema, and several documents may share one stream: `Bintel.decodeStream`
-yields them in order, `Bintel.decodeDocument` reads one and reports where its continuation begins,
-and `Bintel.decodeWholeDocument` insists that nothing follows.
+without holding their schema, and several documents may share one stream:
+
+```tabular
+column  Method
+column  Reads
+row  `Bintel.decodeStream`  every document, in order
+row  `Bintel.decodeDocument`  one document, reporting where its continuation begins
+row  `Bintel.decodeWholeDocument`  one document, insisting that nothing follows
+```

@@ -117,13 +117,19 @@ entry .MediaType   a media type as a value: its group, subtype, suffixes and par
         ```
     entry .Reason   why text was not a media type
       detail
-          `NotOneSlash` (1): _a media type should always contain exactly one '/' character_;
-          `MissingParam` (2): _a terminal ';' suggests that a parameter is missing_, also for a
-          parameter with no `=`; `InvalidGroup` (3): _the type must be one of: application,
-          audio, … or haptics_; `InvalidChar(char)` (4): _the character 'c' is not allowed_ —
-          whitespace, a control character, or one of the `tspecials`; and
-          `InvalidSuffix(suffix)` (5): _the suffix 's' is not recognized_ — not one of
-          `Media.Suffix`'s cases. Each has a `number` and a `message`.
+          Each has a `number` and a `message`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `NotOneSlash`  1  _a media type should always contain exactly one '/' character_
+          row  `MissingParam`  2  _a terminal ';' suggests that a parameter is missing_  also for a parameter with no `=`
+          row  `InvalidGroup`  3  _the type must be one of: application, audio, … or haptics_
+          row  `InvalidChar(char)`  4  _the character '`char`' is not allowed_  whitespace, a control character, or one of the `tspecials`
+          row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  not one of `Media.Suffix`'s cases
+          ```
       entry #number   the reason's number, `1` to `5`, which is the error's sub-number
       entry #message   the reason as a sentence
     entry #value   the text which was not a media type
@@ -423,15 +429,18 @@ entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent
         call. The `.Reason`'s number is the error's sub-number (937.1 to 937.6).
     entry .Reason   why a multipart body could not be read
       detail
-          `Expected(char)` (1): _the character 'c' was expected_ — a boundary without its
-          `--`, a header line or a boundary line without its `\r\n`, a header without `: `;
-          `StreamContinues` (2): _the stream continues beyond the last part_;
-          `BadBoundaryEnding` (3): _unexpected content followed the boundary_; `MediaType`
-          (4): _the media type is invalid_ — raised by scintillate's `Acceptable.multipart`
-          for a request whose `Content-Type` is not `multipart/form-data` with a `boundary`;
-          `BadDisposition` (5): _the `Content-Disposition` header has the wrong format_; and
-          `Truncated` (6): _the body ended before its closing boundary_, which
-          `Acceptable.multipart` raises for a request body cut short.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Expected(char)`  1  _the character '`char`' was expected_  a boundary without its `--`, a header line or a boundary line without its `\r\n`, a header without `: `
+          row  `StreamContinues`  2  _the stream continues beyond the last part_
+          row  `BadBoundaryEnding`  3  _unexpected content followed the boundary_
+          row  `MediaType`  4  _the media type is invalid_  raised by scintillate's `Acceptable.multipart` for a request whose `Content-Type` is not `multipart/form-data` with a `boundary`
+          row  `BadDisposition`  5  _the `Content-Disposition` header has the wrong format_
+          row  `Truncated`  6  _the body ended before its closing boundary_  which `Acceptable.multipart` raises for a request body cut short
+          ```
       entry #number   the reason's number, `1` to `6`, which is the error's sub-number
     entry .communicable   renders each reason as its message
     entry #reason   why the body could not be read

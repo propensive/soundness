@@ -112,9 +112,16 @@ url"https://example.com".session: session ?=>
 ```
 
 The protocol is fixed for the session's lifetime. For `https`, ALPN chooses it during the TLS
-handshake: a *multiplexed* HTTP/2 session, on which fetches interleave over one connection, or a
-*sequential* HTTP/1.1 one. Plaintext `http` is always sequential, with keep-alive pinning one
-connection across the scope's fetches.
+handshake:
+
+```tabular
+column  Scheme
+column  Negotiated
+column  Session
+row  `https`  `h2`  *multiplexed* HTTP/2: fetches interleave over one connection
+row  `https`  `http/1.1`  *sequential* HTTP/1.1
+row  `http`  nothing  *sequential* HTTP/1.1, keep-alive pinning one connection
+```
 
 The scope is enforced, not merely conventional. The result type is quantified outside the block,
 so a value still borrowing the live connection — a response body streaming from it — cannot
@@ -151,8 +158,17 @@ import httpRedirections.doNotFollowRedirects
 
 ### Errors
 
-A response outside the success range raises an `Http.Error`, which carries the status and headers so
-the caller can react to what went wrong:
+Two kinds of failure are told apart:
+
+```tabular
+column  Error
+column  Raised when
+column  Carries
+row  `Http.Error`  a response is outside the success range  the status and headers
+row  `Connect.Error`  no connection can be made: an unresolvable host, a refused connection, a TLS failure  the reason
+```
+
+An `Http.Error` carries enough for the caller to react to what went wrong:
 
 ```scala fuel
 typecheck
@@ -160,8 +176,7 @@ typecheck
 capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
 ```
 
-A request that cannot connect at all — an unresolvable host, a refused connection, a TLS failure —
-raises a `Connect.Error` naming the reason:
+A `Connect.Error` names its reason:
 
 ```scala fuel
 typecheck

@@ -22,6 +22,25 @@ interim channel until LIRA is live. Each released jar embeds its POM and ivy.xml
 components by version with no repository configuration. The gate requires attested LIRA
 publishing to be live.
 
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  dist-1  releases are changelogged  near
+row  dist-2  the migration convention  near
+row  dist-3  LIRA exists  near → mid
+row  dist-4  API-derived versioning  mid  doc-5
+row  dist-5  fury publishes LIRA  mid  tool-4
+row  dist-6  the trust infrastructure  mid → long
+row  dist-7  LIRA publishing, attested  mid  dist-3
+row  dist-8  Maven Central retired  long  dist-5, dist-6, dist-7
+row  dist-9  trust is verifiable by outsiders  long
+row  dist-10  LIRA's implementation leaves this repository  near
+```
+
 ## dist-1: releases are changelogged
 
 Horizon: near

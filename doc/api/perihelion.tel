@@ -253,17 +253,25 @@ entry .Websocket   the server-side WebSocket: the handshake response, its channe
         `Tactic[Websocket.Error]`.
     entry .Reason   why the protocol was violated, each with its RFC 6455 close code
       detail
-          `Unmasked` (1, code 1002): a client sent an unmasked frame. `BadOpcode(code)` (2,
-          1002): a reserved opcode. `BadControl` (3, 1002): a control frame was fragmented
-          or exceeded 125 bytes. `BadFragmentation` (4, 1002): a data frame arrived while a
-          fragmented message was open, or a continuation had nothing to continue.
-          `TooLarge(size)` (5, 1009): a frame payload over 16 MiB. `InvalidText` (6, 1007):
-          a text frame or close reason held invalid UTF-8. `ReservedBits` (7, 1002): RSV1, 2
-          or 3 was set, and no extension was negotiated. `BadClose` (8, 1002): a one-byte
-          close payload or an invalid close code. `Masked` (9, 1002): a server sent a masked
-          frame. `Handshake(detail)` (10, 1002): the client's handshake failed — the URL had
-          no host, the server did not answer `101`, or its `Sec-WebSocket-Accept` was wrong.
-          `Truncated` (11, 1006): the connection's bytes ended mid-frame.
+          Each case carries the RFC 6455 close code to send:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Unmasked`  1  _the client sent an unmasked frame_  close code 1002
+          row  `BadOpcode(code)`  2  _the frame used the reserved opcode `code`_  close code 1002
+          row  `BadControl`  3  _a control frame was fragmented or exceeded 125 bytes_  close code 1002
+          row  `BadFragmentation`  4  _the message fragmentation was invalid_  close code 1002: a data frame arrived while a fragmented message was open, or a continuation had nothing to continue
+          row  `TooLarge(size)`  5  _the frame payload of `size` bytes exceeded the limit_  close code 1009: a payload over 16 MiB
+          row  `InvalidText`  6  _a text frame contained invalid UTF-8_  close code 1007: also an invalid close reason
+          row  `ReservedBits`  7  _a reserved header bit (RSV1/2/3) was set_  close code 1002: no extension was negotiated
+          row  `BadClose`  8  _the close frame had a malformed payload or invalid code_  close code 1002: a one-byte close payload, or an invalid close code
+          row  `Masked`  9  _the server sent a masked frame_  close code 1002
+          row  `Handshake(detail)`  10  _the WebSocket handshake failed because `detail`_  close code 1002: the URL had no host, the server did not answer `101`, or its `Sec-WebSocket-Accept` was wrong
+          row  `Truncated`  11  _the connection closed before the frame was complete_  close code 1006: the connection's bytes ended mid-frame
+          ```
       entry #number   the reason's number, which is the error's detail number
       entry #closeCode   the RFC 6455 close code sent to the peer before closing
     entry .communicable   renders each reason as a message

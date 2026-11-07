@@ -1944,12 +1944,20 @@ entry .Pane   a terminal pane running a shell for a test: keys are typed at it a
     entry #resize   resizes the display and the pseudo-terminal
   entry .Error   error 271: the terminal could not be driven
     detail
-        _can't drive the terminal: `reason`_. The reasons: `ShellNotInstalled(shell)` (1),
-        `SessionDied` (2) when the session ended unexpectedly, `ExecFailed` (3) when it
-        could not start, `Unrendered(problem)` (4) when yossarian could not render a
-        sequence, `NotReady(shell)` (5) when the shell did not show a prompt and echo the
-        rig's marker in time, and `Unconfigured(problem)` (6) when a configuration file
-        could not be written into the scratch home.
+        _can't drive the terminal: `reason`_. The reasons:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `ShellNotInstalled(shell)`  1  _the shell binary `shell` is not installed_
+        row  `SessionDied`  2  _the terminal session terminated unexpectedly_
+        row  `ExecFailed`  3  _could not start the terminal session_
+        row  `Unrendered(problem)`  4  _the terminal could not render its output: `problem`_  yossarian could not render a sequence
+        row  `NotReady(shell)`  5  _the shell `shell` did not become ready_  the shell did not show a prompt and echo the rig's marker in time
+        row  `Unconfigured(problem)`  6  _the shell could not be configured: `problem`_  a configuration file could not be written into the scratch home
+        ```
     entry .Reason   why the terminal could not be driven
       detail
           An enum with a `number` (1 to 6) and a `Communicable` given.

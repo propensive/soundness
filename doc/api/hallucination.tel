@@ -237,13 +237,20 @@ entry .Raster   an immutable raster image: pixels in a known layout, with its fo
         on Scala.js and WASI (and WebP everywhere) say why in `#reason`. Constructing one
         needs a `Diagnostics` in scope, such as `errorDiagnostics.stackTracesDiagnostics`.
     entry .Reason   why a pure codec rejected its input
-        An enum of the failures the pure-Scala codecs distinguish: `BadSignature` (the opening
-        bytes are not the format's magic), `BadCrc` (a PNG chunk's checksum does not match),
-        `Truncated` (the data ended before the image did, or a read ran past its end),
-        `UnsupportedVariant` (a form the codec does not implement: a run-length-encoded BMP,
-        an arithmetic-coded JPEG, a GIF extension block it does not know), `Bitstream` and
-        `Huffman` (a malformed entropy-coded stream, in a JPEG or WebP) and
-        `InvalidTransform` (a WebP lossless transform the decoder cannot apply).
+        An unnumbered enum of the failures the pure-Scala codecs distinguish, with no message of
+        its own:
+
+        ```tabular
+        column  Case
+        column  Meaning
+        row  `BadSignature`  the opening bytes are not the format's magic
+        row  `BadCrc`  a PNG chunk's checksum does not match
+        row  `Truncated`  the data ended before the image did, or a read ran past its end
+        row  `UnsupportedVariant`  a form the codec does not implement: a run-length-encoded BMP, an arithmetic-coded JPEG, a GIF extension block it does not know
+        row  `Bitstream`  a malformed entropy-coded stream, in a JPEG or WebP
+        row  `Huffman`  a malformed entropy-coded stream, in a JPEG or WebP
+        row  `InvalidTransform`  a WebP lossless transform the decoder cannot apply
+        ```
     entry #rasterizable   the format whose codec failed, or `Unset` when no format was recognised
     entry #reason   the `Raster.Error.Reason` from a pure codec, or `Unset` from a `javax.imageio` backend
   entry .Formats   the formats `Raster(data)` will try, in order, when the format was not named

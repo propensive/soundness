@@ -223,11 +223,16 @@ entry .Path   an absolute path: a root and a descent of names, typed by plane, n
         Error `SN-831`: _the path `path` was invalid because `reason`_, where the path is
         named if known. The `#reason` is a `Path.Error.Reason`:
 
-        - `RootParent` (1) — _the root has no parent_;
-        - `InvalidRoot` (2) — _the root is not valid_: text which does not begin as the
-          plane's root does, such as `C:` on Linux;
-        - `DifferentRoots` (3) — _it does not have the same root as the source_;
-        - `InvalidName` (4) — _the name is not valid_.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `RootParent`  1  _the root has no parent_
+        row  `InvalidRoot`  2  _the root is not valid_  text which does not begin as the plane's root does, such as `C:` on Linux
+        row  `DifferentRoots`  3  _it does not have the same root as the source_
+        row  `InvalidName`  4  _the name is not valid_
+        ```
 
         It is raised by a plane's `Eradicable` when text is decoded as a path, and by
         `Path#resolve`. A name which breaks a plane's rules when it is *added* to a path is a

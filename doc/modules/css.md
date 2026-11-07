@@ -54,8 +54,8 @@ Css.Style(color = red, width = 4.0*Px).text   // t"color: #ff0000; width: 4px"
 
 ### Units
 
-CSS's units are typed quantities — `Px`, `Rem`, `Vw`, `Pct`, `Deg`, `Fr` and the rest — so a length
-is a length and cannot be confused with a number or an angle:
+CSS's units are typed quantities, so a length is a length and cannot be confused with a number or
+an angle:
 
 ```scala
 2.0*Rem
@@ -63,8 +63,24 @@ is a length and cannot be confused with a number or an angle:
 90.0*Deg
 ```
 
-The physical units CSS shares with the real world — centimeters, points, seconds — are the same
-quantities used everywhere else in Soundness.
+Each unit is one of a dimension, and only units of the same dimension add or convert:
+
+```tabular
+column  Units
+column  Measure
+column  Converts to
+row  `Px`  pixels  nothing else
+row  `Rem`, `Ex`, `Ch`  the root font size, the x-height, the character width  nothing else
+row  `Vw`, `Vh`, `Vmin`, `Vmax`  fractions of the viewport  nothing else
+row  `Pct`  a percentage  nothing else
+row  `Cm`, `Mm`, `Pt`, `Pc`  physical length  one another, and every other length in Soundness
+row  `S`, `Ms`  time  every other time in Soundness
+row  `Deg`, `Rad`, `Turn`  angle  nothing else, not even one another
+row  `Fr`  a share of a grid's free space  nothing else
+```
+
+The physical units CSS shares with the real world are the same quantities used everywhere else in
+Soundness.
 
 ### Parsing
 
@@ -118,9 +134,21 @@ t"a:hover { color: red }".read[Css]      // a type selector with a pseudo-class
 t"p::before { color: red }".read[Css]    // a pseudo-element
 ```
 
-Attribute selectors carry their matcher — presence, exact, prefix, suffix, substring, dash-match
-and whitespace-match — and the case-sensitivity modifier where one is given, so `[href^="https" i]`
-is understood rather than merely preserved.
+Attribute selectors carry their matcher and the case-sensitivity modifier where one is given, so
+`[href^="https" i]` is understood rather than merely preserved:
+
+```tabular
+column  Syntax
+column  Matcher
+column  Matches an attribute whose value
+row  `[a]`  none: presence  is anything
+row  `[a=v]`  `AttributeMatcher.Exact`  is exactly `v`
+row  `[a~=v]`  `AttributeMatcher.Includes`  has `v` among its whitespace-separated words
+row  `[a|=v]`  `AttributeMatcher.DashMatch`  is `v`, or begins with `v-`
+row  `[a^=v]`  `AttributeMatcher.Prefix`  begins with `v`
+row  `[a$=v]`  `AttributeMatcher.Suffix`  ends with `v`
+row  `[a*=v]`  `AttributeMatcher.Substring`  contains `v`
+```
 
 `An+B` arguments to `:nth-child` and its siblings parse to their coefficients, with `odd` and
 `even` normalized to `2n+1` and `2n`, and an `of` clause kept alongside. `:is`, `:not` and `:has`

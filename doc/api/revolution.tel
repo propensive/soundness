@@ -105,8 +105,18 @@ entry .Semver   a semantic version: major, minor and patch numbers, with prerele
         reports the same problems as a compile error instead.
     entry .Reason   why text is not a semantic version: bad format, an empty identifier, a leading zero or a bad character
       detail
-          One of `BadFormat`, `EmptyIdentifier`, `LeadingZero` and `InvalidCharacter`, each
-          with its sub-number of error 250 as `#number`.
+          Each case's sub-number of error 250 is its `#number`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `BadFormat`  1  _the string did not match the SemVer 2.0 grammar_
+          row  `EmptyIdentifier`  2  _a prerelease or build identifier was empty_
+          row  `LeadingZero`  3  _a numeric identifier had a leading zero_
+          row  `InvalidCharacter`  4  _an identifier contained a character outside `[0-9A-Za-z-]`_
+          ```
       entry #number   the reason's sub-number of error 250
     entry .communicable   renders each reason as the phrase completing _… is not a valid semantic version because …_
     entry #version   the text which failed to parse

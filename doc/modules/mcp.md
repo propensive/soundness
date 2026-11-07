@@ -62,7 +62,20 @@ object AssistantTools extends Mcp.Server():
 ```
 
 The tool's input schema — a `name` of type string — and its result schema are derived from the
-signature; `@about` supplies the description the model reads when deciding to call it.
+signature; `@about` supplies the description the model reads when deciding to call it. These
+are the annotations a server's methods may carry:
+
+```tabular
+column  Annotation
+column  On
+column  Makes it
+row  `@tool`  a method  a callable tool
+row  `@resource(uri)`  a method  content served at the URI
+row  `@prompt`  a method  a conversation template
+row  `@about(text)`  a method or a parameter  described, for the model
+row  `@title(text)`  a method  titled, for display
+row  `@ui(uri)`  a tool  a tool whose user interface is the resource at the URI
+```
 
 ### Talking back to the client
 
@@ -99,16 +112,29 @@ def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit
   Nil
 ```
 
-A tool that throws answers the client with a result marked `isError`, carrying the exception's
-message, which the model can read and act on; calling an unknown tool, or omitting a required
-parameter, is a JSON-RPC error.
+A failure inside a tool is something the model can read and act on; a malformed call is not:
+
+```tabular
+column  When
+column  The client receives
+row  a tool throws  a result marked `isError`, carrying the exception's message
+row  an unknown tool is called  a JSON-RPC error
+row  a required parameter is omitted  a JSON-RPC error
+```
 
 ### Resources and prompts
 
 `@resource` serves content at a URI — anything streamable as text or bytes — and `@prompt` returns
 a conversation written with the `human` and `agent` interpolators. A resource's MIME type may be
-given with the annotation, and is otherwise `text/plain` or `application/octet-stream` (or
-`text/html;profile=mcp-app` for a resource a tool's `@ui` names):
+given with the annotation's `mimeType`, and is otherwise chosen for it:
+
+```tabular
+column  A resource
+column  Has the MIME type
+row  named by a tool's `@ui`  `text/html;profile=mcp-app`
+row  streamable as text  `text/plain`
+row  streamable only as bytes  `application/octet-stream`
+```
 
 ```scala
 object Documentation extends Mcp.Server():

@@ -15,11 +15,14 @@ receives the events; with no logger in scope, logging is silent and free, so a
 A method should log if, and only if, it performs an **observable side effect with
 latency or a failure mode**:
 
-- **Network** — connect, bind, listen, accept, send, receive, close, upgrade.
-- **Filesystem** — open, read, write, create, delete, move, symlink, watch.
-- **Process** — spawn, kill, wait, signal.
-- **External services** — HTTP requests, daemon protocols, Docker, package
-  registries, downloads and uploads.
+```tabular
+column  Category
+column  Operations
+row  Network  connect, bind, listen, accept, send, receive, close, upgrade
+row  Filesystem  open, read, write, create, delete, move, symlink, watch
+row  Process  spawn, kill, wait, signal
+row  External services  HTTP requests, daemon protocols, Docker, package registries, downloads and uploads
+```
 
 Pure, CPU-bound, or in-memory work **must not** log: hashing, encryption, parsing,
 codecs, serialization, arithmetic, and data-structure manipulation produce no
@@ -47,19 +50,20 @@ user-level operation, not per internal dispatch).
 
 `Level` has four values, chosen by **frequency and severity** together:
 
-- **`Fine`** — high-frequency, per-unit detail useful only while debugging: each
-  frame, packet, file open, request received, cache hit. Assume it is normally
-  switched off; be verbose. A per-packet send is `Fine` even though it is
-  "normal".
-- **`Info`** — one line per significant logical operation or lifecycle milestone:
-  a connection established, a server now listening, a request sent, a process
-  started, an archive opened, a download finished. A one-per-connection bind is
-  `Info`.
-- **`Warn`** — a recoverable or unexpected-but-handled condition: a forced kill, a
-  connection reset or retry, a broken stream, an idle timeout, a gracefully
-  handled protocol violation, a fallback taken.
-- **`Fail`** — an operation that failed unrecoverably; emitted alongside the
-  `Error` being raised. Used sparingly.
+```tabular
+column  Level
+column  For
+column  Examples
+row  `Fine`  high-frequency, per-unit detail useful only while debugging  each frame, packet, file open, request received, cache hit
+row  `Info`  one line per significant logical operation or lifecycle milestone  a connection established, a server now listening, a request sent, a process started, an archive opened, a download finished
+row  `Warn`  a recoverable or unexpected-but-handled condition  a forced kill, a connection reset or retry, a broken stream, an idle timeout, a gracefully handled protocol violation, a fallback taken
+row  `Fail`
+  cell  an operation that failed unrecoverably, emitted alongside the `Error` being raised; used sparingly
+  cell
+```
+
+Assume `Fine` is normally switched off, and be verbose at it: a per-packet send
+is `Fine` even though it is "normal", while a one-per-connection bind is `Info`.
 
 ## 3. What to log
 
