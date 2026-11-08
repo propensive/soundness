@@ -257,25 +257,37 @@ entry .StackTrace   a captured stack trace as a value: exception class, message,
       `———` and a missing line `Unset`. The cause is captured in turn. The extension
       `stackTrace` is the usual way in.
   entry .rewrite   demangles a JVM class or method name toward its Scala form, with compact glyphs for synthetic parts
-      Operators get their symbols back (`$plus$plus` is `++`), and the compiler's synthetic
-      markers become glyphs, listed in `.legend`: `λ` a lambda, `Λ` an adapted lambda, `α` an
-      anonymous class, `ⲛ` a constructor, `ι` an initializer, `↑` a super reference, `⊢` an
-      extension method, `δ` a default argument, `ℓ` a lazy initializer, `Σ` a specialized
-      method, with any following number in subscript. A module class `pkg.Foo$` becomes
-      `pkg.ΞFoo` and a package object's class is bracketed with `⁅…⁆`. With `method = true`,
-      the result ends `()` and `$` separates as `.`.
+      Operators get their symbols back (`$plus$plus` is `++`), `$uXXXX` escapes become their
+      characters, and the compiler's synthetic markers, `.Marker.all`, become glyphs, listed in
+      `.legend`: `λ` a lambda, `Λ` an adapted lambda, `α` an anonymous class, `ⲛ` a
+      constructor, `ι` an initializer, `ℓ` a lazy value, `↑` a super accessor, `⇢` another
+      accessor, `≔` a trait setter, `⊢` an extension method, `∂` a direct method, `δ` a default
+      argument, `⊡` a retained inline body, `⊙` an outer reference, `Σ` a specialized method
+      with its signature, with any following number in subscript. A module class `pkg.Foo$`
+      becomes `pkg.ΞFoo` and a package object's class is bracketed with `⁅…⁆`. With
+      `method = true`, the result ends `()` and `$` separates as `.`.
 
       ```scala
       import soundness.*
 
       StackTrace.rewrite("$plus$plus", method = true)       // t"++()"
       StackTrace.rewrite("Foo$$anonfun$3", method = true)   // t"Foo.λ₃()"
+      StackTrace.rewrite("apply$mcJII$sp", method = true)   // t"applyΣ((Int, Int) -> Long)()"
       StackTrace.rewrite("pkg.Foo$")                        // t"pkg.ΞFoo"
       ```
+  entry .Marker   a name the compiler mints after a program's own names are fixed, and its glyph
+      Each `Marker` has the `jvm` text the compiler writes (`$anonfun`, `<init>`, `$lzyINIT`),
+      the `glyph` it is shown as, its `meaning` for the legend, and the `Frame.Kind` a method
+      name carrying it is known to be, where the marker settles that. `Marker.all` lists them
+      in the order `.rewrite` tries them, as the compiler's `NameKinds` and `StdNames` define
+      them; `Marker.operators` pairs each operator character with its encoding. `.rewrite`
+      reads the table, `.legend` is derived from it, and hyperbole's `StackResolver.hint`
+      classifies frames by it, so the three cannot disagree.
   entry .legend   what each glyph in a demangled name means, glyph to description, for rendering alongside a trace
-      A `Map[Text, Text]` from each marker `.rewrite` uses (with `ₙ` standing for its
-      subscript number) to a short description: `λₙ` is _lambda_, `ⲛ` _class initializer_,
-      `δ` _default_, `⁅⁆` _package file_, and so on.
+      A `Map[Text, Text]` from each glyph `.rewrite` produces to a short description, derived
+      from `.Marker.all`: `λ` is _lambda_, `ⲛ` _constructor_, `δ` _default argument_, `⁅⁆`
+      _package file_, and so on. A number following a glyph is the compiler's own numbering, in
+      subscript.
   entry .showable   renders a trace as plain text: the exception, then one aligned `at` line per frame, then its causes
       Each frame line has the class and method, padded so that they align, then the file and
       line; a resolved frame's quoted source line follows it, and each level of inlining a

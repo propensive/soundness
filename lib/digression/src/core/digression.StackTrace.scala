@@ -152,250 +152,232 @@ object StackTrace:
 
     stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
 
+  // A name the compiler mints after the program's own names are fixed, as `NameKinds` and
+  // `StdNames` in the Scala compiler define them, and the glyph it is shown as. The table is the
+  // one description of the encoding: `rewrite` reads it, `legend` is derived from it, and
+  // hyperbole's `StackResolver.hint` classifies a frame by it. `kind` is what a method name
+  // carrying the marker is known to be, for the markers which settle that.
+  case class Marker(jvm: Text, glyph: Text, meaning: Text, kind: Optional[Frame.Kind] = Unset)
+
+  object Marker:
+    val adapted: Marker = Marker("$adapted".tt, "Λ".tt, "adapted lambda".tt, Frame.Kind.Bridge)
+    val lambda: Marker = Marker("$anonfun".tt, "λ".tt, "lambda".tt, Frame.Kind.Lambda)
+    val anonymous: Marker = Marker("$anon".tt, "α".tt, "anonymous class".tt)
+    val constructor: Marker =
+      Marker("<init>".tt, "ⲛ".tt, "constructor".tt, Frame.Kind.Constructor)
+
+
+    val staticInitializer: Marker =
+      Marker("<clinit>".tt, "ι".tt, "initializer".tt, Frame.Kind.Initializer)
+
+    val traitInitializer: Marker =
+      Marker("$init$".tt, "ι".tt, "initializer".tt, Frame.Kind.Initializer)
+
+    val lazyInitializer: Marker =
+      Marker("$lzyINIT".tt, "ℓ".tt, "lazy value".tt, Frame.Kind.Initializer)
+
+    val lazyHandle: Marker = Marker("$lzyHandle".tt, "ℓ".tt, "lazy value".tt)
+    val lazyField: Marker = Marker("$lzy".tt, "ℓ".tt, "lazy value".tt)
+
+    val superAccessor: Marker =
+      Marker("super$".tt, "↑".tt, "super accessor".tt, Frame.Kind.Forwarder)
+
+    val protectedAccessor: Marker =
+      Marker("protected$".tt, "⇢".tt, "accessor".tt, Frame.Kind.Forwarder)
+
+    val inlineAccessor: Marker = Marker("inline$".tt, "⇢".tt, "accessor".tt, Frame.Kind.Forwarder)
+
+    val parameterAccessor: Marker =
+      Marker("$accessor".tt, "⇢".tt, "accessor".tt, Frame.Kind.Forwarder)
+
+    val setter: Marker = Marker("$_setter_$".tt, "≔".tt, "trait setter".tt, Frame.Kind.Synthetic)
+    val extension: Marker =
+      Marker("$extension".tt, "⊢".tt, "extension method".tt, Frame.Kind.Extension)
+
+    val direct: Marker = Marker("$direct".tt, "∂".tt, "direct method".tt)
+    val default: Marker = Marker("$default".tt, "δ".tt, "default argument".tt, Frame.Kind.Default)
+
+    val retained: Marker =
+      Marker("$retainedBody".tt, "⊡".tt, "retained inline body".tt, Frame.Kind.Synthetic)
+
+    val outer: Marker = Marker("$outer".tt, "⊙".tt, "outer reference".tt)
+    val packageFile: Marker = Marker("$package".tt, "⁆".tt, "package file".tt)
+
+    val specialized: Marker =
+      Marker("$mc".tt, "Σ".tt, "specialized method, with its signature".tt, Frame.Kind.Specialized)
+
+    // The JVM's own class for a lambda, `Outer$$Lambda/0x…`, is not the compiler's work but is
+    // shown as a lambda all the same.
+    val hiddenLambda: Marker = Marker("$$Lambda".tt, "λ".tt, "lambda".tt)
+
+    // A module class, `Foo$`, is shown as `ΞFoo`; the glyph is applied by `rewrite` after the
+    // name is rewritten, so the marker here is only for the legend.
+    val module: Marker = Marker("$".tt, "Ξ".tt, "object".tt)
+
+    // In the order `rewrite` tries them, so a marker precedes any other it begins with, and
+    // `hint` reads them, so `$adapted` is seen before the `$anonfun` it always follows.
+    val all: List[Marker] =
+      List
+        ( adapted, lambda, anonymous, constructor, staticInitializer, traitInitializer,
+          lazyInitializer, lazyHandle, lazyField, superAccessor, protectedAccessor,
+          inlineAccessor, parameterAccessor, setter, extension, direct, default, retained,
+          outer, packageFile, specialized, hiddenLambda, module )
+
+    // The operator characters and their encodings, as `scala.reflect.NameTransformer` has them.
+    val operators: List[(Text, Char)] =
+      List
+        ( ("$tilde".tt, '~'), ("$eq".tt, '='), ("$less".tt, '<'), ("$greater".tt, '>'),
+          ("$bang".tt, '!'), ("$hash".tt, '#'), ("$percent".tt, '%'), ("$up".tt, '^'),
+          ("$amp".tt, '&'), ("$bar".tt, '|'), ("$times".tt, '*'), ("$div".tt, '/'),
+          ("$plus".tt, '+'), ("$minus".tt, '-'), ("$colon".tt, ':'), ("$bslash".tt, '\\'),
+          ("$qmark".tt, '?'), ("$at".tt, '@') )
+
+  // Each glyph `rewrite` produces, with what it means; a number following a glyph is the
+  // compiler's own numbering, in subscript, and `⁅…⁆` brackets a package file's name.
   val legend: Map[Text, Text] =
-    Map
-      ( "Λₙ".tt -> "adapted lambda",
-        "λₙ".tt -> "lambda".tt,
-        "αₙ".tt -> "anonymous class".tt,
-        "ι ".tt  -> "initialization".tt,
-        "↑ ".tt  -> "super reference".tt,
-        "⊢ ".tt  -> "extension method".tt,
-        "∂ ".tt  -> "direct".tt,
-        "δ ".tt  -> "default".tt,
-        "⁅⁆".tt -> "package file".tt,
-        "ⲛ ".tt  -> "class initializer".tt,
-        "ℓ ".tt  -> "lazy initializer".tt,
-        "Σ ".tt  -> "specialized method".tt )
+    Marker.all.fold(Map[Text, Text]()): (map, marker) =>
+      if map.at(marker.glyph).present then map else map.define(marker.glyph, marker.meaning)
+    . define("⁅⁆".tt, "package file".tt)
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
+    val separator: String = if method then "." else "#"
 
-    inline def char(index: Int): Optional[Char] =
-      if index < 0 || index >= name.length then Unset else name.charAt(index)
+    def char(index: Int): Char = name.charAt(index)
 
     def primitive(char: Char) = char match
       case 'Z' => "Boolean"
+      case 'B' => "Byte"
+      case 'S' => "Short"
+      case 'C' => "Char"
       case 'I' => "Int"
       case 'J' => "Long"
-      case 'V' => "Unit"
-      case 'S' => "Short"
       case 'F' => "Float"
-      case 'C' => "Char"
       case 'D' => "Double"
-      case 'L' => "Any"
+      case 'V' => "Unit"
       case _   => "?"
 
+    def subscript(char: Char): Char = (char - '0' + '₀').toChar
+
+    def at(index: Int, string: Text): Boolean = name.startsWith(string.s, index)
+
+    // A marker beginning with a letter starts a name, so matches only where a name can start.
+    def marker(index: Int): Optional[Marker] =
+      val startable = index == 0 || !Character.isLetterOrDigit(char(index - 1))
+
+      Marker.all.seek: marker =>
+        marker != Marker.module && at(index, marker.jvm)
+        && (startable || marker.jvm.s.startsWith("$") || marker.jvm.s.startsWith("<"))
+
+    // The signature a specialized name encodes: `$mcII$sp` is a method whose type arguments,
+    // in the order the compiler sorts them, are `Int` and `Int`. For the function classes
+    // which are all the compiler specializes, the first is the result and the rest the
+    // parameters.
+    def specialized(index: Int): Optional[(String, Int)] =
+      val end = name.indexOf("$sp", index + 3)
+      val tags = if end < 0 then "" else name.substring(index + 3, end).nn
+
+      if end < 0 || tags.isEmpty || tags.exists(primitive(_) == "?") then Unset else
+        val result = primitive(char(index + 3))
+        val params = tags.drop(1).map(primitive(_))
+
+        val rendered = params.length match
+          case 0 => s"Σ(() -> $result)"
+          case 1 => s"Σ(${params.head} -> $result)"
+          case _ => s"Σ((${params.mkString(", ")}) -> $result)"
+
+        (rendered, end + 3)
+
+    // A `$uXXXX` escape, as `NameTransformer` encodes a character the JVM disallows.
+    def unicode(index: Int): Optional[Char] =
+      if name.length < index + 6 || char(index + 1) != 'u' then Unset else
+        val hex = name.substring(index + 2, index + 6).nn
+        if hex.forall { char => Character.digit(char, 16) >= 0 }
+        then Integer.parseInt(hex, 16).toChar
+        else Unset
+
     @tailrec
-    def recur(index: Int, digits: Boolean = false): Text =
-      inline def token(index: Int, string: String, text: String, digits: Boolean = false): Text =
-        if
-          (0 until string.length).all: offset => char(index + offset) == string.charAt(offset)
-        then buffer.append(text) yet recur(index + string.length, digits)
-        else buffer.append('#') yet recur(index + 1, digits)
+    def digits(index: Int): Int =
+      if index < name.length && char(index).isDigit then
+        buffer.append(subscript(char(index)))
+        digits(index + 1)
+      else index
 
-      inline def skip(): Text = token(index, "$", if method then "." else "#")
+    def glyph(marker: Marker): Unit = marker match
+      case Marker.adapted =>
+        // The bridge the compiler adapts a lambda's method with: the lambda it adapts is
+        // marked rather than the name lengthened.
+        val lambda = buffer.lastIndexOf("λ")
+        if lambda < 0 then buffer.append("Λ") else buffer.setCharAt(lambda, 'Λ')
 
-      if index >= name.length then Text(buffer.toString+(if method then "()" else ""))
-      else if digits then char(index) match
-        case '0' => token(index, "0", "₀", true)
-        case '1' => token(index, "1", "₁", true)
-        case '2' => token(index, "2", "₂", true)
-        case '3' => token(index, "3", "₃", true)
-        case '4' => token(index, "4", "₄", true)
-        case '5' => token(index, "5", "₅", true)
-        case '6' => token(index, "6", "₆", true)
-        case '7' => token(index, "7", "₇", true)
-        case '8' => token(index, "8", "₈", true)
-        case '9' => token(index, "9", "₉", true)
-        case _   => recur(index, false)
-      else char(index) match
-        case '<' =>
-          if
-            (0 until 6).all: offset => char(index + offset) == "<init>".charAt(offset)
-          then
-            buffer.append("ⲛ")
-            recur(index + 6)
-          else
-            buffer.append("<")
-            recur(index + 1)
+      case Marker.hiddenLambda => buffer.append(separator).append("λ")
+      case other               => buffer.append(other.glyph.s)
 
-        case 'i' =>
-          if
-            (0 until 8).all: offset => char(index + offset) == "initial$".charAt(offset)
-          then
-            buffer.append("ι")
-            recur(index + 8)
-          else
-            buffer.append("i")
-            recur(index + 1)
+    @tailrec
+    def recur(index: Int): Unit = if index < name.length then
+      marker(index) match
+        case Marker.specialized => specialized(index) match
+          case (rendered: String, next: Int) => buffer.append(rendered) yet recur(digits(next))
+          case _                             => buffer.append(separator) yet recur(index + 1)
 
-        case 'l' =>
-          if
-            (0 until 7).all: offset => char(index + offset) == "lzyINIT".charAt(offset)
-          then
-            buffer.append("ℓ")
-            recur(index + 7, true)
-          else
-            buffer.append("l")
-            recur(index + 1)
+        case marker: Marker => glyph(marker) yet recur(digits(index + marker.jvm.s.length))
 
-        case 's' =>
-          if
-            (0 until 6).all: offset => char(index + offset) == "super$".charAt(offset)
-          then
-            buffer.append("↑")
-            recur(index + 6)
-          else
-            buffer.append("s")
-            recur(index + 1)
+        case _ => char(index) match
+          case '$' =>
+            Marker.operators.seek { (code, _) => at(index, code) } match
+              case (code: Text, operator: Char) =>
+                buffer.append(operator) yet recur(index + code.s.length)
 
-        case '$' =>
-          char(index + 1) match
-            case '_' => token(index, "$_avoid_name_clash_$", "′")
+              case _ => unicode(index) match
+                case char: Char => buffer.append(char) yet recur(index + 6)
 
-            case 'a' => char(index + 2) match
-              case 'm' => token(index, "$amp", "&")
+                // The compiler's numbering, `$1`, is shown in subscript with no separator.
+                case _ if index + 1 < name.length && char(index + 1).isDigit =>
+                  recur(digits(index + 1))
 
-              case 'n' => char(index + 9) match
-                case 'a' => token(index, "$anonfun$adapted", "Λ")
+                case _ =>
+                  // An expanded name joins its owner and member with `$$`: one separator,
+                  // unless a marker follows the second `$`.
+                  val expanded = at(index + 1, "$".tt) && marker(index + 1).absent
+                  buffer.append(separator)
+                  recur(if expanded then index + 2 else index + 1)
 
-                case _ => char(index + 5) match
-                  case 'f' => token(index, "$anonfun", "λ")
-                  case _   => token(index, "$anon", "α")
+          case other => buffer.append(other) yet recur(index + 1)
 
-              case 't' => token(index, "$at", "@")
-              case _   => skip()
+    recur(0)
+    val rewritten: String = buffer.toString+(if method then "()" else "")
 
-            case 'b' => char(index + 2) match
-              case 'a' => char(index + 3) match
-                case 'n' => token(index, "$bang", "!")
-                case 'r' => token(index, "$bar", "|")
-                case _   => skip()
+    // The JVM's specialized function interfaces read better as the function types they stand
+    // for: `scala.runtime.java8.JFunction1$mcII$sp` is `(Int => Int)`.
+    if name.startsWith("scala.runtime.java8.JFunction") && name.endsWith("$sp") then
+      specialized(name.indexOf("$mc")) match
+        case (rendered: String, _) =>
+          rendered.drop(1).replace(" -> ", " => ").nn.tt
 
-              case 's' => token(index, "$bslash", "\\")
-              case _   => skip()
+        case _ => rewritten.tt
 
-            case 'c' => token(index, "$colon", ":")
-
-            case 'd' => char(index + 2) match
-              case 'e' => token(index, "$default", "δ")
-
-              case 'i' => char(index + 3) match
-                case 'r' => token(index, "$direct", "∂")
-                case 'v' => token(index, "$div", "/")
-                case _   => skip()
-
-              case _   => skip()
-
-            case 'e' => char(index + 2) match
-              case 'q' => token(index, "$eq", "=")
-              case 'x' => token(index, "$extension", "⊢")
-              case _   => skip()
-
-            case 'g' => token(index, "$greater", ">")
-            case 'h' => token(index, "$hash", "#")
-            case 'l' => token(index, "$less", "<")
-
-            case 'm' => char(index + 2) match
-              case 'c' =>
-                var index2: Int = index + 3
-                var arguments: List[Text] = Nil
-                var current = char(index2)
-
-                while current != '$' do
-                  arguments = primitive(current.or('?')) :: arguments
-                  index2 += 1
-                  current = char(index2)
-
-                // Companion primitives and an `Iterator`-level `mkString`: `join` lives in
-                // `gossamer`, above this module.
-                val head = List.head(arguments)
-
-                val types = List.iterator(List.tail(arguments)).mkString("Σ((", ", ", ")")
-
-                val name2 =
-                  if arguments.size == 2 then "Σ("+List.last(arguments)+" -> "+head+")"
-                  else types+" -> "+head+")"
-
-                val mc = name.substring(index, index + 3).nn
-                token(index, mc, name2)
-
-              case 'i' => token(index, "$minus", "-")
-              case _   => skip()
-
-            case 'p' => char(index + 2) match
-              case 'a' => token(index, "$package", "⁆")
-              case 'e' => token(index, "$percent", "%")
-              case 'l' => token(index, "$plus", "+")
-              case _   => skip()
-
-            case 'q' => token(index, "$qmark", "?")
-
-            case 's' => char(index + 2) match
-              case 'p' => token(index, "$sp", "ζ")
-              case _   => skip()
-
-            case 't' => char(index + 2) match
-              case 'i' => char(index + 3) match
-                case 'l' => token(index, "$tilde", "~")
-                case 'm' => token(index, "$times", "*")
-                case _   => skip()
-
-              case _  => skip()
-
-            case 'u' =>
-              token(index, "$up", "^")
-
-            case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-              recur(index + 1, true)
-
-            case _ =>
-              skip()
-
-        case ch =>
-          buffer.append(ch.toString)
-          recur(index + 1)
-
-    val rewritten = recur(0)
-
-    if rewritten.s.startsWith("scala.runtime.java8.JFunction") && rewritten.s.endsWith("#sp") then
-      val types: String = rewritten.s.drop(29).dropRight(3)
-
-      types.indexOf("#mc") match
-        case -1 | 0 => rewritten
-
-        case index =>
-          Text:
-            val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
-
-            if types2.size <= 2 then List.iterator(types2).mkString("(", " => ", ")")
-            else
-              List.iterator(List.lead(types2))
-              . mkString("((", ", ", s") => ${List.last(types2)})")
-
-    else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
-    then
-      val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
+    else if name.startsWith("scala.runtime.function.JProcedure") then
+      val n = try name.drop(33).toInt catch case error: Exception => 0
 
       val args =
         if n < 2 then s"Any" else List.iterator(List.fill(n)("Any")).mkString("(", ", ", ")")
 
-      "("+args+" => Unit)"
+      "("+args+" => Unit)".tt
 
-    else if rewritten.s.endsWith("#") then
-      val pivot = rewritten.s.lastIndexOf(".")
+    else if rewritten.endsWith("#") then
+      val pivot = rewritten.lastIndexOf(".")
 
       // With no `.` to split on (`pivot == -1`), `substring(0, pivot)` would throw, so leave the
       // name unchanged rather than out-of-bounds.
-      if pivot < 0 then rewritten
+      if pivot < 0 then rewritten.tt
       else
-        val sub = if rewritten.s.endsWith("⁆#") then "⁅" else "Ξ"
-        val head = rewritten.s.substring(0, pivot).nn
-        val tail = rewritten.s.substring(pivot + 1).nn.dropRight(1)
+        val sub = if rewritten.endsWith("⁆#") then "⁅" else "Ξ"
+        val head = rewritten.substring(0, pivot).nn
+        val tail = rewritten.substring(pivot + 1).nn.dropRight(1)
 
         (head+"."+sub+tail).tt
     else
-      rewritten
+      rewritten.tt
 
   def apply(exception: Throwable)(using resolver: Resolver): StackTrace =
     val frames = exception.getStackTrace.nn.iterator.map(_.nn).to(List).map: frame =>

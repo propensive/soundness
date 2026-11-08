@@ -396,11 +396,12 @@ entry .StackResolver   recovers the source definition behind each frame of a sta
   refer hyperbole.Tasty
   entry .hint   what kind of definition a compiled method name betrays, if any
       `StackResolver.hint(method)` reads the markers the compiler mints after TASTy is
-      written: `<init>` is a `Constructor`; `<clinit>`, `$init$`, `lzyINIT` and `$lzy` an
-      `Initializer`; `$anonfun` a `Lambda` (and `$anonfun$adapted` or `$adapted` a `Bridge`);
-      `$extension` an `Extension`; `$default$` a `Default`; `$mc…$sp` a `Specialized`. A name
-      with no marker gives `Unset`, and the definition the frame resolves to speaks for
-      itself.
+      written, as digression's `StackTrace.Marker.all` lists them with their kinds: `<init>`
+      is a `Constructor`; `<clinit>`, `$init$` and `$lzyINIT` an `Initializer`; `$anonfun` a
+      `Lambda` and `$adapted` a `Bridge`; `super$`, `protected$`, `inline$` and `$accessor` a
+      `Forwarder`; `$_setter_$` and `$retainedBody` `Synthetic`; `$extension` an `Extension`;
+      `$default` a `Default`; `$mc…$sp` a `Specialized`. A name with no marker gives `Unset`,
+      and the definition the frame resolves to speaks for itself.
   entry .matches   whether a definition is the one a frame's compiled name and kind hint describe
       With a `Constructor` hint the definition must be `<init>`; with a `Lambda` hint its
       kind must be `Lambda`; otherwise its source name must equal the compiled method name,

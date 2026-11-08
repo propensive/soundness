@@ -49,7 +49,7 @@ lib/denominative/src/core/denominative.Terminable.scala	0	2	1
 lib/denominative/src/core/denominative.internal.scala	2	0	0
 lib/denominative/src/core/denominative_core.scala	12	0	0
 lib/digression/src/core/digression.Smap.scala	1	0	1
-lib/digression/src/core/digression.StackTrace.scala	1	0	6
+lib/digression/src/core/digression.StackTrace.scala	0	0	1
 lib/dissonance/src/core/dissonance.Redraft.scala	3	5	0
 lib/dissonance/src/core/dissonance_core.scala	0	6	0
 lib/distillate/src/core/distillate.Decodable.scala	0	0	1
