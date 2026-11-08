@@ -39,7 +39,8 @@ import scala.compiletime.*
 import anticipation.*
 import fulminate.*
 import errorDiagnostics.stackTracesDiagnostics
-import murmuration.Iterator
+import murmuration.{Iterator, Reshapable, Traversable}
+import prepositional.*
 
 inline def default[value](using default: Default[value]): value = default()
 
@@ -61,15 +62,34 @@ transparent inline def invite[entity]: Optional[entity] = summonFrom:
   case value: `entity` => value
   case _               => Unset
 
-extension [value](iterable: Iterable[Optional[value]])
-  transparent inline def compact: Iterable[value] =
-    iterable.filter(!_.absent).map(_.or(panic(m"the absent elements were filtered out")))
+// Over any `Traversable` of `Optional` values, rebuilt in the source's own shape through
+// `Reshapable`: a `List[Optional[Text]]` compacts to a `List[Text]`, a `Set` to a `Set`.
+extension [self](self: self)(using traversable: self is Traversable)
+  def compact[value, result]
+    ( using operand:    traversable.Operand <:< Optional[value],
+            reshapable: self is Reshapable by value to result )
+  :   result =
 
-  // All-or-nothing: the whole list if every element is present, or `Unset` if any is
+    val elements: Iterator[traversable.Operand]^ = traversable.traverse(self)
+
+    reshapable.reshape:
+      elements.map(operand(_)).filter(!_.absent).map:
+        _.or(panic(m"the absent elements were filtered out"))
+
+  // All-or-nothing: the whole collection if every element is present, or `Unset` if any is
   // absent. One presence sweep, recorded by the result's type.
-  def entire: Optional[List[value]] =
-    if iterable.exists(_.absent) then Unset
-    else (iterable.map(_.or(panic(m"absence was excluded by the sweep above")))).to(List)
+  def entire[value, result]
+    ( using operand:    traversable.Operand <:< Optional[value],
+            reshapable: self is Reshapable by value to result )
+  :   Optional[result] =
+
+    val sweep: Iterator[traversable.Operand]^ = traversable.traverse(self)
+
+    if sweep.exists(operand(_).absent) then Unset else
+      val elements: Iterator[traversable.Operand]^ = traversable.traverse(self)
+
+      reshapable.reshape:
+        elements.map(operand(_).or(panic(m"absence was excluded by the sweep above")))
 
 // As `compact` for a streaming source: absent elements are dropped as the iterator advances.
 extension [value](consume iterator: Iterator[Optional[value]]^)

@@ -64,7 +64,7 @@ object Cookie:
   // which is set. `Optional` fields are rendered only when present, and the two flags appear
   // as bare words, so the rendering says exactly which attributes the template carries.
   given inspectable: [cookie <: Cookie[?]] => cookie is Inspectable = cookie =>
-    Iterable
+    List[Optional[Text]]
       ( cookie.name.inspect,
         cookie.domain.let { domain => t"domain:${domain.inspect}" },
         cookie.path.let { path => t"path:${path.inspect}" },
@@ -76,7 +76,7 @@ object Cookie:
 
   object Value:
     given showable: Value is Showable = cookie =>
-      Iterable
+      List[Optional[Text]]
         ( t"${cookie.name}=${cookie.value}",
           cookie.expiry.let { expiry => t"Max-Age=$expiry" },
           cookie.domain.let { domain => t"Domain=$domain" },

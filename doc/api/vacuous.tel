@@ -333,21 +333,22 @@ entry .per   applies a function to a value only if an optional second argument i
     a builder, `element.per(start)(_.start = _)`.
 
 entry .compact   the present elements of a collection or iterator of `Optional`s
-    `iterable.compact` drops every `Unset` and yields the present values, as an
-    `Iterable[value]` (a stdlib `Iterable`, so a Soundness `List` goes through
-    `List.stdlib`); the overload on a `murmuration` `Iterator[Optional[value]]^`
+    `collection.compact` drops every `Unset` and yields the present values, rebuilt in the
+    collection's own shape: a `List[Optional[Text]]` compacts to a `List[Text]`, a `Set` to a
+    `Set`. It works on any `Traversable` collection; the overload on a `murmuration`
+    `Iterator[Optional[value]]^`
     consumes the iterator and yields an `Iterator[value]^` which drops absent elements as
     it advances. The result is typed as the element type with the optionality removed.
 
     ```scala
     import soundness.*
 
-    List[Optional[Text]](t"a", Unset, t"c").stdlib.compact   // t"a", t"c" (see #2427)
+    List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
     ```
 
 entry .entire   the whole collection if every element is present, or `Unset`
-    `iterable.entire` is all-or-nothing: an `Optional[List[value]]` which is the list of
-    every element when none is `Unset`, and `Unset` if any is. One presence sweep, with the
+    `collection.entire` is all-or-nothing: an `Optional` of the collection, in its own shape,
+    of every element when none is `Unset`, and `Unset` if any is. One presence sweep, with the
     answer recorded in the result's type, where `compact` would silently drop the gaps.
 
 entry .default   the `Default` value of a type, summoned: `default[Text]` is `t""`

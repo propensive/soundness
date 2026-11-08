@@ -73,7 +73,7 @@ object Semver:
             raise(Semver.Error(text, Semver.Error.Reason.EmptyIdentifier))
 
           for
-            extra   <- List(prerelease2, build2).stdlib.compact
+            extra   <- List(prerelease2, build2)
             element <- extra
           do element match
             case r"0[0-9]+"       => raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))

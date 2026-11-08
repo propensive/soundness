@@ -129,11 +129,10 @@ nickname.presume   // t"": the default Text
 ### Absence from collections
 
 A collection of optional values compacts to the values that are present, dropping every
-`Unset`. `compact` is defined on the standard library's `Iterable`, so a Soundness `List`
-crosses to it through `stdlib`:
+`Unset`, in a collection of the same kind:
 
 ```scala
-List[Optional[Text]](t"a", Unset, t"c").stdlib.compact   // t"a" and t"c"
+List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
 ```
 
 ### Building an optional

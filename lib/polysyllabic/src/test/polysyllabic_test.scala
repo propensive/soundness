@@ -166,7 +166,7 @@ object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
         // English contains `4nop`, which forces an even (no-break) score 4 at
         // the gap before `nop`. A user-supplied pattern with an odd score of
         // 9 wins via the max-merge and reinstates the break.
-        val extended = englishHyphenation.extending(patterns = Seq(t"klm9nop"))
+        val extended = englishHyphenation.extending(patterns = List(t"klm9nop"))
 
         given Hyphenation = extended
         t"klmnop".hyphenate(hyphen = '-')
@@ -174,7 +174,7 @@ object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
       . assert(_ == t"klm-nop")
 
       test(m"user-supplied exception overrides default behaviour"):
-        val extended = englishHyphenation.extending(exceptions = Seq(t"hy-phenation"))
+        val extended = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
 
         given Hyphenation = extended
         t"hyphenation".hyphenate(hyphen = '-')

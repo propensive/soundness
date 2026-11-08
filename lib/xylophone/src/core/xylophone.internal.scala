@@ -1114,7 +1114,7 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(Attributes.from(Map.from(${Expr.ofList(attributes)}.compact)))}.asExprOf[result]
+    '{$tag.node(Attributes.from(proscenium.List.from(${Expr.ofList(attributes)}).compact.to[Map]))}.asExprOf[result]
 
   // The frozen `Array[String]^{}` itself: pure under `-Zfrozen-pure`, which classifies an
   // opaque alias over a frozen array as deriving from no capability class.

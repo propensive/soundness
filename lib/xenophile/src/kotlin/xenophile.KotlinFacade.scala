@@ -1363,7 +1363,7 @@ object KotlinFacade:
       assign(pairs, 0, Map())
 
     // All-or-nothing: `entire` is present exactly when every position was provided.
-    (0 until member.arity).map(provided(_)).entire.lay:
+    proscenium.List.range(0, member.arity).map(provided(_)).entire.lay:
       val absent =
         ((0 until member.arity).filter(!provided.defines(_)).toList).to(proscenium.List)
 

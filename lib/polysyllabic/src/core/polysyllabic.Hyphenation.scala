@@ -328,20 +328,22 @@ trait Hyphenation:
   def rightMin: Int
 
   def extending
-    ( patterns:   Iterable[Text] = Iterable(),
-      exceptions: Iterable[Text] = Iterable(),
-      leftMin:    Optional[Int]  = Unset,
-      rightMin:   Optional[Int]  = Unset )
+    ( patterns:   List[Text]    = List(),
+      exceptions: List[Text]    = List(),
+      leftMin:    Optional[Int] = Unset,
+      rightMin:   Optional[Int] = Unset )
   :   Hyphenation =
 
-    val newPatternPairs = patterns.map(TexPatterns.parsePattern).toSeq
-    val newExceptionPairs = exceptions.map(TexPatterns.parseException).toSeq
+    // `Dictionary` is built from the pairs as varargs, so the existing entries seed the
+    // sequence and the new ones are appended to it.
+    val patternPairs = patterns.fold(this.patterns.entries.toSeq): (pairs, pattern) =>
+      pairs :+ TexPatterns.parsePattern(pattern)
 
-    val newPatterns =
-      Dictionary.aho[Array[Byte]^{}]
-        ( Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)* )
+    val exceptionPairs = exceptions.fold(this.exceptions.entries.toSeq): (pairs, exception) =>
+      pairs :+ TexPatterns.parseException(exception)
 
-    val newExceptions = this.exceptions ++ newExceptionPairs
+    val newPatterns = Dictionary.aho[Array[Byte]^{}](Hyphenation.alphabet, patternPairs*)
+    val newExceptions = Dictionary[Array[Int]^{}](exceptionPairs*)
     val effectiveLeft = leftMin.or(this.leftMin)
     val effectiveRight = rightMin.or(this.rightMin)
     Hyphenation.make(newPatterns, newExceptions, effectiveLeft, effectiveRight)

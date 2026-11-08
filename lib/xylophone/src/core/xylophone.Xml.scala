@@ -2749,7 +2749,7 @@ object Xml extends Tag.Container
   trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, List.from(children.compact).nodes):
+        new Element(node.label, node.attributes, children.to(List).compact.nodes):
           type Topic = node.Topic
 
   import Issue.*
