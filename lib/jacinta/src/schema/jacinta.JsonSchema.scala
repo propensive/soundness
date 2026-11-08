@@ -415,12 +415,13 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
         .pipe: iarr => iarr.stdlib.to(Map)
 
-      val required: List[Text] =
+      // Typed as the macro declares it: left to inference at the call site, the array's capture
+      // set is widened to `any.rd`, which no `Traversable` instance then matches.
+      val labels: proscenium.Array[Optional[Text]]^{} =
         contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . to[proscenium.List]
-        . compact
+      val required: List[Text] = labels.to[proscenium.List].compact
 
       Object(properties = map, required = required)
 
