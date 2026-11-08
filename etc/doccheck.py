@@ -185,27 +185,48 @@ def split_fuel(buffer, start):
         return [], [(start, buffer)], False, False
     skip = any(MODE.match(l.strip()) or ERRORS_SHOWN.match(l.strip()) for l in preamble)
     restart = any(l.strip() == 'restart' for l in preamble)
-    # Each `frame`'s `code` child: the lines indented beneath `  code`, dedented by six.
+    # A fence with `alternative`s joins the session only through its first, as fuel's does: that
+    # alternative's own `code`, or the code of its frames.
+    if any(l.startswith('alternative') for l in preamble):
+        first = next(i for i, l in enumerate(preamble) if l.startswith('alternative'))
+        end = next((i for i in range(first + 1, len(preamble))
+                    if preamble[i].strip() and not preamble[i].startswith(' ')), len(preamble))
+        own, offset = preamble[first + 1:end], start + first + 1
+        if any(l.strip() == 'frame' for l in own):
+            return preamble, frames_of(own, offset, 2), skip, restart
+        return preamble, code_of(own, offset, 2), skip, restart
+    pieces = frames_of(preamble, start, 0)
+    pieces += [(start + len(preamble) + 1, code)] if any(l.strip() for l in code) else []
+    return preamble, pieces, skip, restart
+
+def code_of(lines, start, base):
+    """The first `code` child indented by `base` among `lines`: its text on its line, or the lines
+    indented four further beneath it, dedented."""
+    for k, line in enumerate(lines):
+        if line[:base].strip() or line[base:].split(' ')[0] != 'code':
+            continue
+        inline = line.strip()[5:].strip()
+        body = [inline] if inline else []
+        m = k + 1
+        while m < len(lines) and (lines[m].startswith(' ' * (base + 4)) or not lines[m].strip()):
+            body.append(lines[m][base + 4:]); m += 1
+        while body and not body[-1].strip(): body.pop()
+        return [(start + k + 1, body)]
+    return []
+
+def frames_of(lines, start, base):
+    """The `code` of each `frame` indented by `base` among `lines`."""
     frames, j = [], 0
-    while j < len(preamble):
-        if preamble[j].strip() == 'frame':
+    while j < len(lines):
+        if lines[j][:base].strip() == '' and lines[j][base:].rstrip() == 'frame':
             k = j + 1
-            while k < len(preamble) and preamble[k].startswith('  ') and preamble[k].strip() != 'frame':
-                if preamble[k].strip() == 'code' or preamble[k].startswith('  code '):
-                    inline = preamble[k].strip()[5:]
-                    body = [inline] if inline else []
-                    m = k + 1
-                    while m < len(preamble) and (preamble[m].startswith('      ') or not preamble[m].strip()):
-                        body.append(preamble[m][6:]); m += 1
-                    while body and not body[-1].strip(): body.pop()
-                    frames.append((start + k + 1, body))
-                    k = m; continue
+            while k < len(lines) and (lines[k].startswith(' ' * (base + 2)) or not lines[k].strip()):
                 k += 1
+            frames += code_of(lines[j + 1:k], start + j + 1, base + 2)
             j = k
         else:
             j += 1
-    pieces = frames + ([(start + len(preamble) + 1, code)] if any(l.strip() for l in code) else [])
-    return preamble, pieces, skip, restart
+    return frames
 
 def fences(path):
     """The ```scala fences of a tutorial, in order, with `// does not compile` lines split out."""
