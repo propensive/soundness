@@ -104,26 +104,22 @@ entry .Environment   the environment variables, as a contextual value read by ty
       in a narrower scope wins:
 
       ```scala fuel
-      frame
-        label The JVM's own environment
+      alternative The JVM
         code
             locally:
               import environments.javaBaseEnvironment
               safely(Environment.editor[Text])   // whatever EDITOR is in the shell which started the JVM
-      frame
-        label The empty environment: nothing is defined
+      alternative Empty
         code
             locally:
               import environments.emptyEnvironment
               safely(Environment.editor[Text])   // Unset
-      frame
-        label An environment built for a test
+      alternative For a test
         code
             locally:
               given Environment = name => if name == t"EDITOR" then t"vim" else Unset
               safely(Environment.editor[Text])   // t"vim"
-      frame
-        label One variable laid over the environment in scope
+      alternative Overlaid
         code
             locally:
               import environments.javaBaseEnvironment

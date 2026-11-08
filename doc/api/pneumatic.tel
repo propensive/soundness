@@ -141,7 +141,9 @@ entry .Compression   the typeclass a compression format implements: a compressor
             Deflate.compression.decompressor()
       ```
 
-      The same bytes, under each format in turn:
+      The same bytes, under each format: raw DEFLATE is the fastest, gzip adds the framing a
+      `.gz` file carries, Brotli is smaller at a similar speed, and XZ is the smallest at the
+      highest cost:
 
       ```scala
       import soundness.*
@@ -151,20 +153,16 @@ entry .Compression   the typeclass a compression format implements: a compressor
       ```
 
       ```scala fuel
-      frame
-        label The fastest: raw DEFLATE
+      alternative DEFLATE
         code
             payload.compress[Deflate].length
-      frame
-        label In the gzip framing a `.gz` file carries
+      alternative Gzip
         code
             payload.compress[Gzip].length   // ten bytes of header and eight of trailer more
-      frame
-        label Brotli: smaller, at a similar speed
+      alternative Brotli
         code
             payload.compress[Brotli].length
-      frame
-        label XZ: the smallest, at the highest cost
+      alternative XZ
         code
             payload.compress[Xz].length
       ##

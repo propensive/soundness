@@ -55,26 +55,22 @@ entry .serialize   renders bytes, or a stream of bytes, as text in a base encodi
     argument: `Base64`, `Base32`, `Hex`, `Octal`, `Quaternary` or `Binary`.
 
     ```scala fuel
-    frame
-      label The standard Base64 alphabet, padded with `=`
+    alternative Base64
       code
           locally:
             import alphabets.base64Standard
             Data(-5, -1).serialize[Base64]   // t"+/8="
-    frame
-      label The URL-safe alphabet: `-` and `_` for `+` and `/`, and no padding
+    alternative URL-safe Base64
       code
           locally:
             import alphabets.base64Url
             Data(-5, -1).serialize[Base64]   // t"-_8"
-    frame
-      label Lower-case hexadecimal
+    alternative Hex
       code
           locally:
             import alphabets.hexLowerCase
             Data(-5, -1).serialize[Hex]      // t"fbff"
-    frame
-      label Binary
+    alternative Binary
       code
           locally:
             import alphabets.binaryStandard
@@ -82,8 +78,10 @@ entry .serialize   renders bytes, or a stream of bytes, as text in a base encodi
     ##
     ```
 
-    An alphabet with padding pads the output to a whole group (four characters for Base64,
-    eight for Base32); one without stops at the last character that carries data.
+    The URL-safe Base64 alphabet writes `-` and `_` for `+` and `/`. An alphabet with padding
+    pads the output to a whole group (four characters for Base64, eight for Base32), as the
+    standard Base64 alphabet does with `=`; one without, such as the URL-safe one, stops at
+    the last character that carries data.
 
     The same name is an extension on a `Stream[Data] over Credit`, which serializes the stream
     as it flows into a `Stream[Text] over Credit`, using the `Alphabet` in scope as a stream
@@ -95,18 +93,17 @@ entry .deserialize   reads text, or a stream of text, back to bytes in a base en
     given, which draws on the `Alphabet[Base64]` in scope. Each character is checked against
     the alphabet, including its tolerated alternatives, and the first which is not in it is
     raised as a `Serialization.Error` with its position; trailing padding is ignored. It needs
-    a `Tactic[Serialization.Error]`.
+    a `Tactic[Serialization.Error]`. A tolerant alphabet accepts either case, and a strict one
+    only its own characters:
 
     ```scala fuel
-    frame
-      label A tolerant alphabet accepts either case
+    alternative Tolerant
       code
           locally:
             import alphabets.hexLowerCase
             import strategies.throwUnsafely
             t"FBFF".deserialize[Hex]   // the two bytes 0xfb, 0xff
-    frame
-      label A strict alphabet accepts only its own characters
+    alternative Strict
       code
           locally:
             import alphabets.hexStrictLowerCase

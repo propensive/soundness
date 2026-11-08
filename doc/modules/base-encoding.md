@@ -67,20 +67,17 @@ The alphabet in scope decides the exact characters. `base64Standard` and `base64
 choices — the URL-safe form avoids `+` and `/`, which have meaning in a URL:
 
 ```scala fuel
-frame
-  label The standard alphabet
+alternative Standard
   code
       locally:
         import alphabets.base64Standard
         bytes.serialize[Base64]   // t"SGVsbG8="
-frame
-  label The URL-safe alphabet
+alternative URL-safe
   code
       locally:
         import alphabets.base64Url
         bytes.serialize[Base64]   // t"SGVsbG8", unpadded, with `-` and `_` where the standard has `+` and `/`
-frame
-  label Hexadecimal
+alternative Hex
   code
       locally:
         import alphabets.hexLowerCase

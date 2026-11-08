@@ -21,7 +21,9 @@ detail
     whole message as text, and `teletype` as styled terminal output with every code sample
     and type syntax-highlighted by harlequin.
 
-    ```scala
+    ```scala fuel
+    substitute ???  ...
+    ##
     import soundness.*
 
     val notice: Notice = ???   // from a Scalac process run with scalacOptions.semanticDiagnostics
@@ -76,7 +78,9 @@ entry .SemanticMessage   a compiler message parsed into its markup tree
       `Markup.Typed` nodes it mentions, and `render` and `teletype` (with a `Reifier`) its
       renderings with every type reified.
 
-      ```scala
+      ```scala fuel
+      substitute ???  ...
+      ##
       import soundness.*
 
       val notice: Notice = ???
@@ -231,6 +235,7 @@ entry .Reifier   unpickles the TASTy types in semantic diagnostics back into ste
 
       ```scala fuel
       typecheck
+      substitute ???  ...
       ##
       val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       val reifier: Reifier = Reifier(classpath)
@@ -299,14 +304,12 @@ entry .render   a semantic message as text, with every type re-rendered through 
     the compiler-printed text, so the result is never worse than `SemanticMessage#plain`.
 
     ```scala fuel
-    frame
-      label The compiler's own text, markers stripped
+    alternative Plain
       code
           val message = SemanticMessage.parse(markedText)
           message.plain
           // Found: List[Double]  Required: List[String]
-    frame
-      label Reified against the classpath, with no imports: fully qualified
+    alternative Fully qualified
       code
           val message = SemanticMessage.parse(markedText)
           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
@@ -314,8 +317,7 @@ entry .render   a semantic message as text, with every type re-rendered through 
             given Imports = Imports.empty
             message.render(reifier)
             // Found: scala.collection.immutable.List[scala.Double]  Required: scala.collection.immutable.List[java.lang.String]
-    frame
-      label Abbreviated against the user's imports
+    alternative Abbreviated
       code
           val message = SemanticMessage.parse(markedText)
           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
@@ -339,6 +341,7 @@ entry .teletype   a semantic message as styled terminal text, with code and type
 
     ```scala fuel
     typecheck
+    substitute ???  ...
     ##
     given palette: ScalaSyntaxPalette = new Palette:
       type Form = Srgb

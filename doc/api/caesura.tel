@@ -473,23 +473,22 @@ entry .Sheet   delimited data held in memory: every row, with the format and col
       sheet.rows(Prim).let(_[Text](t"name")) // t"Alice"
       ```
 
-      The format decides how the same rows are written out:
+      The format decides how the same rows are written out, quoting a cell which holds its
+      delimiter: in CSV the comma needs quoting, in TSV nothing does, and space-separated
+      values quote the space:
 
       ```scala fuel
-      frame
-        label As CSV
+      alternative CSV
         code
             locally:
               import dsvFormats.csvFormat
               Sheet(Array(Dsv(t"Ada", t"Lovelace, Countess"))).show   // t"Ada,\"Lovelace, Countess\""
-      frame
-        label As TSV: the comma no longer needs quoting
+      alternative TSV
         code
             locally:
               import dsvFormats.tsvFormat
               Sheet(Array(Dsv(t"Ada", t"Lovelace, Countess"))).show   // t"Ada\tLovelace, Countess"
-      frame
-        label Space-separated: now the space does
+      alternative Space-separated
         code
             locally:
               import dsvFormats.ssvFormat
@@ -671,15 +670,13 @@ entry .dsvFormats   the standard delimited formats — CSV, TSV and space-separa
       Each quotes with `"` and escapes a quote by doubling it.
 
       ```scala fuel
-      frame
-        label Positional CSV: the header is just another row
+      alternative Positional
         code
             locally:
               import dsvFormats.csvFormat
               import strategies.throwUnsafely
-              t"last,first\nLovelace,Ada".read[Sheet].rows.length   // 2
-      frame
-        label CSV with a header: the first row names the columns
+              t"last,first\nLovelace,Ada".read[Sheet].rows.length   // 2: the header is just another row
+      alternative With a header
         code
             locally:
               import dsvFormats.csvWithHeaderFormat
@@ -705,20 +702,17 @@ entry .dsvRedesignations   the mappings from camel-case member names to header n
       given.
 
       ```scala fuel
-      frame
-        label The name as written
+      alternative Unchanged
         code
             locally:
               import dsvRedesignations.unchangedRedesignation
               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"targetPerson"
-      frame
-        label Capitalized words
+      alternative Capitalized words
         code
             locally:
               import dsvRedesignations.capitalizedWordsRedesignation
               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"Target Person"
-      frame
-        label Lower-case words
+      alternative Lower-case words
         code
             locally:
               import dsvRedesignations.lowerWordsRedesignation
@@ -764,15 +758,13 @@ entry .optionalityOptions   the policies for an `Optional` field's missing or ma
       present value, not an absent one.
 
       ```scala fuel
-      frame
-        label By default, a malformed cell is an error
+      alternative Default
         code
             locally:
               import dsvFormats.csvFormat
               case class Tally(name: Text, count: Optional[Int])
               safely(t"hello,many".read[Tally in Dsv])   // Unset: the whole read failed
-      frame
-        label With lenient faults, it is `Unset`
+      alternative Lenient faults
         code
             locally:
               import dsvFormats.csvFormat

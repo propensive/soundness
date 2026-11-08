@@ -105,11 +105,10 @@ A given id is also a *type*: within the body of `Suite("parser", m"Parser tests"
 contextual value which `test` and `suite` take is a `Testable of "parser"`, and each `suite`
 block passes the same topic on. So the compiler knows, of every test it compiles, which suite it
 is declared for, and it refuses a `test` which is declared for none. Tests written in a method
-of their own name the suite, by its id, in the method's signature:
+of their own name the suite, by its id, in the method's signature, as the second version shows:
 
 ```scala fuel
-frame
-  label The test declared inline, in `run`
+alternative Inline
   code
       object Tests extends Suite(m"Parser tests"):
         def run(): Unit =
@@ -117,8 +116,7 @@ frame
             test(m"a decimal integer parses"):
               t"42".as[Int]
             . assert(_ == 42)
-frame
-  label The suite named by its id, and the test in a method declared for it
+alternative In a method
   code
       object Tests extends Suite("parser", m"Parser tests"):
         def run(): Unit =

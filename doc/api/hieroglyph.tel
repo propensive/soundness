@@ -273,36 +273,31 @@ entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of
       becomes bytes resolve.
 
       ```scala fuel
-      frame
-        label UTF-8: one byte for `c`, `a` and `f`, two for `é`
+      alternative UTF-8
         code
             locally:
               import codepages.utf8Codepage
-              t"café".in[Data].length   // 5
-      frame
-        label UTF-16: a byte-order mark, then two bytes per character
+              t"café".in[Data].length   // 5: one byte each for `c`, `a` and `f`, two for `é`
+      alternative UTF-16
         code
             locally:
               import codepages.utf16Codepage
-              t"café".in[Data].length   // 10
-      frame
-        label UTF-16LE: the byte order is fixed, so no mark
+              t"café".in[Data].length   // 10: a byte-order mark, then two bytes per character
+      alternative UTF-16LE
         code
             locally:
               import codepages.utf16LeCodepage
-              t"café".in[Data].length   // 8
-      frame
-        label ISO-8859-1: one byte per character, `é` included
+              t"café".in[Data].length   // 8: the byte order is fixed, so no mark
+      alternative ISO-8859-1
         code
             locally:
               import hieroglyph.codepages.iso88591Codepage
-              t"café".in[Data].length   // 4
-      frame
-        label ASCII: one byte per character, but `é` becomes `?`
+              t"café".in[Data].length   // 4: one byte per character, `é` included
+      alternative ASCII
         code
             locally:
               import codepages.asciiCodepage
-              t"café".in[Data].length   // 4
+              t"café".in[Data].length   // 4: one byte per character, but `é` becomes `?`
       ##
       ```
 
@@ -855,27 +850,26 @@ entry .textSanitizers   the policies for undecodable bytes, each a `TextSanitize
       absolutely; tolerance suits text recovered from a lossy source; accrual gives both the
       text and a list of where it was wrong.
 
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val badUtf8 = Data(45, -62, 49, 48)
+      ```
+
       ```scala fuel
-      frame
-        label Skipping: the bad bytes vanish
+      alternative Skip
         code
-            import soundness.*
-            import strategies.throwUnsafely
-            import errorDiagnostics.stackTracesDiagnostics
-
-            val badUtf8 = Data(45, -62, 49, 48)
-
             locally:
               import textSanitizers.skipSanitizer
               charsets.utf8Charset.decoded(badUtf8)   // t"-10"
-      frame
-        label Substituting: a `?` marks each fault
+      alternative Substitute
         code
             locally:
               import textSanitizers.substituteSanitizer
               charsets.utf8Charset.decoded(badUtf8)   // t"-?10"
-      frame
-        label Strict: the first fault is an error naming its position
+      alternative Strict
         code
             locally:
               import textSanitizers.strictSanitizer

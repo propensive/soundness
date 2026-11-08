@@ -142,16 +142,14 @@ entry .Currency   a currency: its ISO code, name, symbol and number of minor uni
         package has two, imported by name:
 
         ```scala fuel
-        frame
-          label The local style
+        alternative Local
           code
               import soundness.*
               import currencies.Eur
               import currencyStyles.localCurrencyStyle
 
               t"Received ${Eur(3.01)}"   // t"Received €3.01"
-        frame
-          label The generic style
+        alternative Generic
           code
               import soundness.*
               import currencies.Eur

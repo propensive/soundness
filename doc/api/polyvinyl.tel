@@ -327,24 +327,19 @@ entry .Member   one field of a specification's schema: a scalar, a nested record
       `#keyed`.
 
       ```scala fuel
-      frame
-        label A single text field
+      alternative One
         code
             t"tags" -> Member.Value(t"text")   // record.tags: Text
-      frame
-        label An optional one
+      alternative Optional
         code
             t"tags" -> Member.Value(t"text").optional   // record.tags: Optional[Text]
-      frame
-        label Any number
+      alternative Many
         code
             t"tags" -> Member.Value(t"text").many   // record.tags: List[Text]
-      frame
-        label Any number, each under a name
+      alternative Keyed
         code
             t"tags" -> Member.Value(t"text").keyed   // record.tags: Map[Text, Text]
-      frame
-        label Either one or many, by the value's kind
+      alternative Union
         code
             t"tags" -> Member.Union(List(
               t"leaf"  -> Member.Value(t"text"),

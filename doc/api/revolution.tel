@@ -154,20 +154,16 @@ entry .Semver   a semantic version: major, minor and patch numbers, with prerele
       the minor; `Internal` and `Unchanged` both bump the patch.
 
       ```scala fuel
-      frame
-        label An internal fix bumps the patch number
+      alternative Internal
         code
             v"1.4.2".next(Compatibility.Internal)    // v"1.4.3"
-      frame
-        label Additions bump the minor number and reset the patch
+      alternative Additions
         code
             v"1.4.2".next(Compatibility.Additions)   // v"1.5.0"
-      frame
-        label A breaking change bumps the major number and resets the rest
+      alternative Breaking
         code
             v"1.4.2".next(Compatibility.Breaking)    // v"2.0.0"
-      frame
-        label During initial development, a breaking change bumps only the minor
+      alternative Initial development
         code
             v"0.4.2".next(Compatibility.Breaking)    // v"0.5.0"
       ##

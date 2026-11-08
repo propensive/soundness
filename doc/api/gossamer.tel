@@ -909,22 +909,19 @@ entry .caseSensitivity   the case-matching policies, each a `CaseSensitivity` gi
       `Proximity` is used, since every measure asks it whether two characters are the same.
 
       ```scala fuel
-      frame
-        label Case-sensitive: `H` and `h` differ
+      alternative Case-sensitive
         code
             locally:
               import proximities.levenshteinProximity
               import caseSensitivity.caseSensitive
-              t"Hello".proximity(t"hello")   // 1
-      frame
-        label Case-insensitive: they are the same
+              t"Hello".proximity(t"hello")   // 1: `H` and `h` differ
+      alternative Case-insensitive
         code
             locally:
               import proximities.levenshteinProximity
               import caseSensitivity.caseInsensitive
-              t"Hello".proximity(t"hello")   // 0
-      frame
-        label Smart case: a lowercase letter matches either case, an uppercase one only itself
+              t"Hello".proximity(t"hello")   // 0: they are the same
+      alternative Smart case
         code
             locally:
               import proximities.levenshteinProximity
@@ -989,15 +986,13 @@ entry .collations   the sort orders for text, each a `Collation` given to import
       The two orders differ on case, accents and characters outside the basic plane:
 
       ```scala fuel
-      frame
-        label Dictionary order: lowercase before uppercase, accents as secondary differences
+      alternative Unicode
         code
             locally:
               import collations.unicodeCollation
               import sortingAlgorithms.timsort
               List(t"B", t"a", t"café", t"cafe").sort   // List(t"a", t"B", t"cafe", t"café")
-      frame
-        label Codepoint order: every capital before every lowercase letter
+      alternative Codepoint
         code
             locally:
               import collations.codepointCollation
@@ -1128,7 +1123,9 @@ entry .reversibleTextual   a `Reversible` instance for any textual type, for a c
     where implicit search would find it, since `Reversible`'s companion is in `rudiments`,
     below gossamer. So each textual type publishes the instance in its own companion:
 
-    ```scala
+    ```scala fuel
+    substitute ???  ...
+    ##
     import soundness.*
 
     case class Styled(text: Text)

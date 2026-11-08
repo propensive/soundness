@@ -1163,28 +1163,24 @@ entry .calibrations   the standard calibrations, each a given to import by name,
       companion default `Calibration.linear` applies until one is imported.
 
       ```scala fuel
-      frame
-        label The default: linear, padded to whole steps
+      alternative Default
         code
             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
             val fit = growth.chart(Lines()).fit
             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 100.0)
-      frame
-        label Tight: exactly the data's extent
+      alternative Tight
         code
             import calibrations.tightCalibration
             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
             val fit = growth.chart(Lines()).fit
             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 97.0)
-      frame
-        label Logarithmic: whole decades, where the range allows
+      alternative Logarithmic
         code
             import calibrations.logarithmicCalibration
             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
             val fit = growth.chart(Lines()).fit
             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Logarithmic, 10000.0)
-      frame
-        label Adaptive: logarithmic only over a thousandfold range
+      alternative Adaptive
         code
             import calibrations.adaptiveCalibration
             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))

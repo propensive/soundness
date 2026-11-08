@@ -381,15 +381,13 @@ code must supply. Clamping lands on the last valid day; overflowing spills into 
 next month:
 
 ```scala fuel
-frame
-  label Clamping to the last valid day
+alternative Clamping
   code
       locally:
         import monthEnds.clampMonthEnd
         2024-Jan-31 + 1*Month   // 2024-Feb-29
         2024-Feb-29 + 1*Year    // 2025-Feb-28
-frame
-  label Overflowing into the next month
+alternative Overflowing
   code
       locally:
         import monthEnds.overflowMonthEnd
@@ -867,12 +865,10 @@ val date = 2025-Apr-7
 ```
 
 ```scala fuel
-frame
-  label ISO 8601
+alternative ISO 8601
   code
       val shown = { import dateFormats.iso8601DateFormat; date.show }   // 2025-04-07
-frame
-  label The American convention
+alternative American
   code
       val shown = { import dateFormats.americanDateFormat; date.show }   // 04/07/2025
 ##
@@ -885,12 +881,10 @@ val time = Clockface(14, 30, 59)
 ```
 
 ```scala fuel
-frame
-  label Twenty-four hours
+alternative Twenty-four hours
   code
       val clock = { import timeFormats.militaryTimeFormat; time.show }   // 1430
-frame
-  label Twelve hours
+alternative Twelve hours
   code
       val clock = { import timeFormats.civilianTimeFormat; time.show }   // 02:30 PM
 ##

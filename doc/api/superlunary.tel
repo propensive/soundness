@@ -39,22 +39,19 @@ detail
     Moving a computation elsewhere changes where it runs, not how it is called:
 
     ```scala fuel
-    frame
-      label An ordinary local function
+    alternative Local
       code
           def process(job: Job): Job =
             val name = job.name
             Job(t"Processed: $name", job.size*2)
-    frame
-      label The same body, quoted, run under an isolated classloader
+    alternative Isolated classloader
       code
           def process(job: Job): Job = Isolation.dispatch:
             '{
                 val name = ${job.name}
                 Job(t"Processed: $name", ${job.size}*2)
               }
-    frame
-      label The same quote, run in a fresh JVM
+    alternative Fresh JVM
       code
           def process(job: Job): Job = Jvm.dispatch:
             '{
@@ -105,6 +102,7 @@ entry .Rig   an environment quoted code can be compiled for and run in, with `di
 
       ```scala fuel
       typecheck
+      substitute ???  ...
       ##
       import soundness.*
 

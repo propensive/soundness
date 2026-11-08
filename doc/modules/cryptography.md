@@ -190,7 +190,9 @@ row  OpenSSH's own container  `OPENSSH PRIVATE KEY`  `Pem.Label.OpensshPrivateKe
 
 A `Cloak` must be in scope, as for any secret:
 
-```scala
+```scala fuel
+substitute b3Blbn..bXBsZQE=  ...
+##
 val keyText = t"""-----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
 QyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUgAAAJB+g2KdfoNi
@@ -218,7 +220,9 @@ A passphrase-protected key is reported as `Encrypted`; reading one is not yet su
 keys read the same way from `PUBLIC KEY` blocks, and from the single-line form OpenSSH keeps in
 `id_*.pub`, `authorized_keys` and `known_hosts`, which `OpenSsh.line` writes back:
 
-```scala
+```scala fuel
+substitute AAAAC3..v+xS  ...
+##
 val line = t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
 val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
 OpenSsh.line(sshPublicKey, t"test@example") == line   // true

@@ -39,6 +39,7 @@ true:
 
 ```scala fuel
 parse
+substitute ???  ...
 ##
 given (Tactic[CryptoError]) => PrivateKey is Showable = ???
 ```

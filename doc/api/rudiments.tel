@@ -1472,15 +1472,13 @@ entry .Scribe   a write handle over a fresh array, whose every index is proven i
       `soundness` umbrella: `import rudiments.*` or `import rudiments.{Scribe, scribe}`.
 
       ```scala fuel
-      frame
-        label Building bytes through a JDK stream
+      alternative JDK stream
         code
             val out = java.io.ByteArrayOutputStream()
             out.write(1)
             out.write(2)
             val bytes: Data = out.toByteArray.nn.asInstanceOf[Data]   // a copy
-      frame
-        label Building bytes through an unsized scribe
+      alternative Unsized scribe
         code
             import rudiments.collect
 
@@ -1488,8 +1486,7 @@ entry .Scribe   a write handle over a fresh array, whose every index is proven i
               scribe.append(1.toByte)
               scribe.append(2.toByte)
             // exactly what was written, frozen without a copy when the buffer was filled
-      frame
-        label Filling a known size through branded indices
+      alternative Sized scribe
         code
             import rudiments.scribe
 

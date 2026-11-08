@@ -59,23 +59,21 @@ that code from the import line alone.
 
 ## Type parameters as words
 
-The convention is easiest to judge by comparison, on one signature written first in the
-conventional style and then in the Soundness style:
+The convention is easiest to judge by comparison, on one signature written in the
+conventional style and in the Soundness style:
 
 ```scala fuel
 parse
-frame
-  label The conventional style
+alternative Conventional
   code
       def read[T](using R: Readable[S, T]): T
-frame
-  label The Soundness style
+alternative Soundness
   code
       def read[result](using readable: value is Readable to result): result
 ##
 ```
 
-The second says what the pieces *are*: `result` is what is produced, `value` what it is
+The Soundness version says what the pieces *are*: `result` is what is produced, `value` what it is
 read from, and the constraint clause reads as a claim about them. No key is needed to
 decode the letters, and there is no room for the mental slip where `T` in one signature
 means something different from `T` in the next.

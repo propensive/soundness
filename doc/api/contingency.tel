@@ -33,35 +33,30 @@ detail
     text which is not a number, which raises `Number.Error` — under each:
 
     ```scala fuel
-    frame
-      label Thrown, under the ambient strategy
+    alternative `throwUnsafely`
       code
           import errorDiagnostics.stackTracesDiagnostics
 
           locally:
             import strategies.throwUnsafely
             t"abc".as[Int]                          // throws Number.Error
-    frame
-      label Absent, under `safely`
+    alternative `safely`
       code
           import errorDiagnostics.stackTracesDiagnostics
 
           safely(t"abc".as[Int])                    // Unset
-    frame
-      label A value either way, under `attempt`
+    alternative `attempt`
       code
           import errorDiagnostics.stackTracesDiagnostics
 
           attempt[Number.Error](t"abc".as[Int])     // Attempt.Failure(Number.Error(…))
-    frame
-      label The error itself, under `capture`
+    alternative `capture`
       code
           import errorDiagnostics.stackTracesDiagnostics
           import strategies.throwUnsafely
 
           capture[Number.Error](t"abc".as[Int])     // Number.Error(t"abc", Int, Unparseable)
-    frame
-      label Replaced, under `recover`
+    alternative `recover`
       code
           import errorDiagnostics.stackTracesDiagnostics
 

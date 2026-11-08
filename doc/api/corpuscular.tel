@@ -40,20 +40,17 @@ detail
     under each:
 
     ```scala fuel
-    frame
-      label CRC-32
+    alternative CRC-32
       code
           locally:
             import providers.soundnessProvider
             t"123456789".digest[Crc32].serialize[Hex]     // t"cbf43926"
-    frame
-      label Adler-32
+    alternative Adler-32
       code
           locally:
             import providers.soundnessProvider
             t"123456789".digest[Adler32].serialize[Hex]   // t"091e01de"
-    frame
-      label CRC-64
+    alternative CRC-64
       code
           locally:
             import providers.soundnessProvider

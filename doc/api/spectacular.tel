@@ -372,29 +372,25 @@ entry .affirmations   the standard ways to show a `Boolean`, each a given to imp
       givens, and one is imported by name.
 
       ```scala fuel
-      frame
-        label Yes and no
+      alternative Yes and no
         code
             import soundness.*
             import affirmations.yesNoAffirmation
 
             t"${true} ${false}"   // t"yes no"
-      frame
-        label On and off
+      alternative On and off
         code
             import soundness.*
             import affirmations.onOffAffirmation
 
             t"${true} ${false}"   // t"on off"
-      frame
-        label True and false
+      alternative True and false
         code
             import soundness.*
             import affirmations.trueFalseAffirmation
 
             t"${true} ${false}"   // t"true false"
-      frame
-        label One and zero
+      alternative One and zero
         code
             import soundness.*
             import affirmations.oneZeroAffirmation

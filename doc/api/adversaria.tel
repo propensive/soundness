@@ -299,17 +299,18 @@ entry .relabelling   the serialized names of a type's fields for one format, fro
     Fields without a `@name` are absent, and keep their own names. Each Soundness format's
     derivation reads it, so one annotation serves JSON, XML, YAML and the rest alike.
 
+    ```scala
+    case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+    ```
+
+    Under JSON the JSON-specific rename and the bare one both apply; under XML, only the bare
+    one:
+
     ```scala fuel
-    frame
-      label The field names in Scala
-      code
-          case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
-    frame
-      label As JSON: the JSON-specific rename and the bare one both apply
+    alternative JSON
       code
           relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
-    frame
-      label As XML: only the bare rename applies
+    alternative XML
       code
           relabelling[Record, Xml]    // Map(t"year" -> t"yob")
     ##

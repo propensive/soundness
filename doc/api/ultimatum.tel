@@ -334,27 +334,23 @@ entry .border   wraps a pane in a box-drawing border, on whichever sides are ask
     which the solver adds to the child's minimum size.
 
     ```scala fuel
-    frame
-      label A full border
+    alternative Full
       code
           val boxed: Pane = ultimatum.border()(panel()(Out.print(t"hi")))
           // ┌──┐
           // │hi│
           // └──┘
-    frame
-      label Rounded corners
+    alternative Rounded
       code
           val boxed: Pane = ultimatum.border(BorderStyle.rounded)(panel()(Out.print(t"hi")))
           // ╭──╮
           // │hi│
           // ╰──╯
-    frame
-      label Only the sides
+    alternative Sides only
       code
           val boxed: Pane = ultimatum.border(top = false, bottom = false)(panel()(Out.print(t"hi")))
           // │hi│
-    frame
-      label A rule beneath a heading
+    alternative Rule beneath
       code
           val boxed: Pane =
             ultimatum.border(top = false, left = false, right = false)(panel()(Out.print(t"hi")))
@@ -841,16 +837,14 @@ entry .InlineAnchoring   where an inline block lives on screen, and what it does
       freed rows below.
 
       ```scala fuel
-      frame
-        label The default: bottom-docked, then top-anchored after a resize
+      alternative Default
         code
             locally:
               given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
               val root = InlineRoot(3, 4)
               root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
               // rows 3–4 of the 4-row terminal
-      frame
-        label Pinned to the top from the first frame
+      alternative Top-anchored
         code
             locally:
               import inlineAnchoring.topAnchoring
@@ -858,8 +852,7 @@ entry .InlineAnchoring   where an inline block lives on screen, and what it does
               val root = InlineRoot(3, 4)
               root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
               // rows 1–2
-      frame
-        label Never leaving the bottom
+      alternative Bottom-docked
         code
             locally:
               import inlineAnchoring.bottomDockedAnchoring
@@ -867,8 +860,7 @@ entry .InlineAnchoring   where an inline block lives on screen, and what it does
               val root = InlineRoot(3, 4)
               root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
               // rows 3–4, and still rows 3–4 after a resize
-      frame
-        label The alternate screen
+      alternative Fullscreen
         code
             locally:
               import inlineAnchoring.fullscreenAnchoring
@@ -1235,8 +1227,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
     a different style is a different pane:
 
     ```scala fuel
-    frame
-      label Thick outer rules, the escritoire default
+    alternative Thick
       code
           locally:
             import tableStyles.thickTableStyle
@@ -1250,8 +1241,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
             // ┃ alpha │     1 ┃
             // ┃ beta  │    22 ┃
             // ┗━━━━━━━┷━━━━━━━┛
-    frame
-      label Rounded corners
+    alternative Thin rounded
       code
           locally:
             import tableStyles.thinRoundedTableStyle
@@ -1265,8 +1255,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
             // │ alpha │     1 │
             // │ beta  │    22 │
             // ╰───────┴───────╯
-    frame
-      label Only a rule beneath the titles
+    alternative Minimal
       code
           locally:
             import tableStyles.minimalTableStyle
@@ -2381,40 +2370,34 @@ entry .bars   eighteen determinate progress bars for `Fraction`, each a given to
       by all of them.
 
       ```scala fuel
-      frame
-        label The default, with no import: the smooth eighth-block bar
+      alternative Smooth
         code
             import soundness.*
             import textMetrics.uniformMetric
             import palettes.emberGaugePalette
 
             gaugeLine(Fraction(0.55), 10).plain   // t"█████▌    "
-      frame
-        label A block bar draws its track as a glyph
+      alternative Block
         code
             locally:
               import bars.blockBar
               gaugeLine(Fraction(0.55), 10).plain   // t"█████░░░░░"
-      frame
-        label The classic arrowhead, with its caps
+      alternative Arrowhead
         code
             locally:
               import bars.arrowheadBar
               gaugeLine(Fraction(0.55), 10).plain   // t"[====>   ]"
-      frame
-        label Discrete pips, countable at a glance
+      alternative Segmented
         code
             locally:
               import bars.segmentedBar
               gaugeLine(Fraction(0.55), 10).plain   // t"▰▰▰▰▰▱▱▱▱▱"
-      frame
-        label A marker shows a position, with nothing filled behind it
+      alternative Marker
         code
             locally:
               import bars.markerBar
               gaugeLine(Fraction(0.55), 10).plain   // t"────◆─────"
-      frame
-        label The figure alone, which every other bar degrades into
+      alternative Percentage
         code
             locally:
               import bars.percentageBar
@@ -2786,8 +2769,7 @@ entry .palettes   ten colour palettes for gauges, each a given to import by name
       must be distinct across the whole of `soundness`.
 
       ```scala fuel
-      frame
-        label The house palette: orange on deep brown
+      alternative Ember
         code
             import soundness.*
             import textMetrics.uniformMetric
@@ -2795,14 +2777,12 @@ entry .palettes   ten colour palettes for gauges, each a given to import by name
             locally:
               import palettes.emberGaugePalette
               gaugeLine(Fraction(0.6), 20)
-      frame
-        label Solarized's own values
+      alternative Solarized dark
         code
             locally:
               import palettes.solarizedDarkGaugePalette
               gaugeLine(Fraction(0.6), 20)
-      frame
-        label Hue-free, for a monochrome terminal or output read as text
+      alternative Monochrome
         code
             locally:
               import palettes.monochromeGaugePalette
@@ -2890,8 +2870,7 @@ entry .gaugeGlyphs   which characters the designs may use, each a given to impor
       `Unicode`.
 
       ```scala fuel
-      frame
-        label The default repertoire: box-drawing and block glyphs
+      alternative Unicode
         code
             import soundness.*
             import textMetrics.uniformMetric
@@ -2900,8 +2879,7 @@ entry .gaugeGlyphs   which characters the designs may use, each a given to impor
 
             gaugeLine(Fraction.indeterminate, 1).plain   // t"⠋"
             gaugeLine(Standing.Succeeded, 1).plain       // t"✓"
-      frame
-        label Seven-bit output only, for a log capture or a CI transcript
+      alternative ASCII
         code
             locally:
               import gaugeGlyphs.asciiGlyphs

@@ -42,16 +42,7 @@ detail
     and a Markdown document has no notion of a syntax error.
 
     ```scala fuel
-    frame
-      label A document, parsed
-      code
-          import soundness.*
-          import strategies.throwUnsafely
-
-          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
-          val document = Parser.parse(source)
-    frame
-      label Its syntax tree, as inspected
+    alternative Syntax tree
       code
           import soundness.*
           import strategies.throwUnsafely
@@ -64,8 +55,7 @@ detail
           //   Paragraph(3ʳᵈ ╱ [Textual(t"A "), Emphasis([Textual(t"word")]), Textual(t" and a "),
           //   Link(t"https://example.org/" ╱ ○ ╱ [Textual(t"link")]), Textual(t".")]),
           //   BulletList(5ᵗʰ ╱ true ╱ [[Paragraph(5ᵗʰ ╱ [Textual(t"one")])], [Paragraph(6ᵗʰ ╱ [Textual(t"two")])]])])
-    frame
-      label Rendered to HTML
+    alternative HTML
       code
           import soundness.*
           import strategies.throwUnsafely
@@ -80,8 +70,7 @@ detail
           // <li>one</li>
           // <li>two</li>
           // </ul>
-    frame
-      label Rendered for a terminal
+    alternative Terminal
       code
           import soundness.*
           import strategies.throwUnsafely

@@ -51,25 +51,22 @@ detail
     `Distinct` and `Mandatable` are the other two type-level facts: that a type is not a
     member of a union, and the non-optional type a present value has.
 
+    With `Option`, every step wraps, and the result may be a `Some(None)`; with `Optional`, a
+    present value is itself, `let` never nests, and a fallback closes the question where it
+    was asked:
+
     ```scala fuel
-    frame
-      label With `Option`: every step wraps, and the result may be a `Some(None)`
+    alternative `Option`
       code
           val users: Map[Text, Option[Text]] = Map(t"ada" -> Some(t"Ada"))
           def email(name: Text): Option[Text] = if name == t"Ada" then Some(t"ada@example.com") else None
           val result: Option[Option[Text]] = users.stdlib.get(t"ada").map(_.flatMap(email))
-    frame
-      label With `Optional`: a present value is itself, and `let` never nests
+    alternative `Optional`
       code
           val users: Map[Text, Optional[Text]] = Map(t"ada" -> t"Ada")
           def email(name: Text): Optional[Text] = if name == t"Ada" then t"ada@example.com" else Unset
           val result: Optional[Text] = users.at(t"ada").let(email)
-    frame
-      label And a fallback closes the question where it was asked
-      code
-          val users: Map[Text, Optional[Text]] = Map(t"ada" -> t"Ada")
-          def email(name: Text): Optional[Text] = if name == t"Ada" then t"ada@example.com" else Unset
-          val address: Text = users.at(t"ada").let(email).or(t"nobody@example.com")
+          val address: Text = result.or(t"nobody@example.com")
     ##
     ```
 

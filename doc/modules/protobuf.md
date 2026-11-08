@@ -194,10 +194,17 @@ case class Person(name: Text, age: Int) derives Protobuf.Direct
 and a single import selects the path for every message and oneof in scope, without any
 declaration:
 
-```scala
-import codecs.direct     // a generated parser and printer wherever a type is a message or oneof
-import codecs.derived    // the derived codecs, even where a direct instance is in scope
-import codecs.strict     // generated codecs, and a compile error where there is none
+```scala fuel
+alternative Direct
+  code
+      import codecs.direct     // a generated parser and printer wherever a type is a message or oneof
+alternative Derived
+  code
+      import codecs.derived    // the derived codecs, even where a direct instance is in scope
+alternative Strict
+  code
+      import codecs.strict     // generated codecs, and a compile error where there is none
+##
 ```
 
 The modes are alternatives; import one at a time. A generic case class or a collection is neither

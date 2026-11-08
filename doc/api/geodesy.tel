@@ -458,8 +458,7 @@ entry .compassBearings   the conventions a bearing may be resolved on, each a `D
       The same bearing, from London to Paris, under each:
 
       ```scala fuel
-      frame
-        label Four points
+      alternative Four points
         code
             import soundness.*
             import compassBearings.fourPointCompassBearing
@@ -468,8 +467,7 @@ entry .compassBearings   the conventions a bearing may be resolved on, each a `D
             val paris = Location(48.8566.deg, 2.3522.deg)
 
             london.bearing[Compass[4]](paris)   // South
-      frame
-        label Eight points
+      alternative Eight points
         code
             import soundness.*
             import compassBearings.eightPointCompassBearing
@@ -478,8 +476,7 @@ entry .compassBearings   the conventions a bearing may be resolved on, each a `D
             val paris = Location(48.8566.deg, 2.3522.deg)
 
             london.bearing[Compass[8]](paris)   // Southeast
-      frame
-        label Sixteen points
+      alternative Sixteen points
         code
             import soundness.*
             import compassBearings.sixteenPointCompassBearing
@@ -488,8 +485,7 @@ entry .compassBearings   the conventions a bearing may be resolved on, each a `D
             val paris = Location(48.8566.deg, 2.3522.deg)
 
             london.bearing[Compass[16]](paris)   // SouthSoutheast
-      frame
-        label An angle from north
+      alternative From north
         code
             import soundness.*
             import soundness.angleShowable
@@ -499,8 +495,7 @@ entry .compassBearings   the conventions a bearing may be resolved on, each a `D
             val paris = Location(48.8566.deg, 2.3522.deg)
 
             london.bearing[Angle](paris).show   // t"148.1°"
-      frame
-        label An angle from east
+      alternative From east
         code
             import soundness.*
             import soundness.angleShowable

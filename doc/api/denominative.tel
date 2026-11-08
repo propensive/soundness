@@ -639,26 +639,22 @@ entry .ordinalTextualizables   the renderings of an `Ordinal` as text, each a gi
       bring givens into scope.
 
       ```scala fuel
-      frame
-        label English
+      alternative English
         code
             locally:
               import ordinalTextualizables.englishOrdinal
               Ter.textual   // t"3rd"
-      frame
-        label By name
+      alternative Nominal
         code
             locally:
               import ordinalTextualizables.nominalOrdinal
               Ter.textual   // t"ter"
-      frame
-        label As a zero-based index
+      alternative Zero-based
         code
             locally:
               import ordinalTextualizables.zeraryOrdinal
               Ter.textual   // t"2♯"
-      frame
-        label Both indexes, for debugging
+      alternative Both indexes
         code
             locally:
               import ordinalTextualizables.intermediateOrdinal

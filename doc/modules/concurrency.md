@@ -150,16 +150,14 @@ cannot be canceled at all, and must run to completion. The two kinds of cancella
 work:
 
 ```scala fuel
-frame
-  label Interrupted where it pauses
+alternative `snooze`
   code
       supervise:
         val task = async:
           snooze(10.0*Second)
           expensiveComputation()
         task.cancel()   // the snoozing task is interrupted
-frame
-  label Stopped where it relents
+alternative `relent`
   code
       supervise:
         val task = async:
@@ -172,9 +170,9 @@ frame
 ##
 ```
 
-Cancelled at the `relent()`, this task never reaches the increment on the next line. It does
-still wait out the pause first, because `sleep` is uninterruptible — which is the distinction
-the next section is about.
+Cancelled at the `relent()`, the task in the `relent` version never reaches the increment on the
+next line. It does still wait out the pause first, because `sleep` is uninterruptible — which is
+the distinction the next section is about.
 
 ### Pausing
 

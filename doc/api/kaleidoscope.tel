@@ -213,28 +213,30 @@ entry .regexBackends   the two matching engines, each a given to import by name
       the `subsumes` and `intersects` analyses on a `Regex in Re2`. The import is scoped like
       any other, so one block of a file can use RE2 while the rest keeps the default.
 
+      The same literal gives the same answer under either engine, and has a different type:
+
       ```scala fuel
-      frame
-        label Under the default engine, `java.util.regex`
+      alternative `java.util.regex`
         code
             val regex = r"(a|b)*c"
             // regex: Regex in JavaBaseRegex
             regex.matches(t"ababc")   // true
-      frame
-        label The same literal under RE2: the same answer, and a different type
+      alternative RE2
         code
             locally:
               import regexBackends.re2
               val regex = r"(a|b)*c"
               // regex: Regex in Re2
               regex.matches(t"ababc")   // true
-      frame
-        label A construct RE2 cannot express is a compile error, not a runtime surprise
-        code
-            locally:
-              import regexBackends.re2
-              r"(a)\1"   // does not compile: backreferences are not part of RE2 syntax
       ##
+      ```
+
+      A construct RE2 cannot express is a compile error, not a runtime surprise:
+
+      ```scala
+      locally:
+        import regexBackends.re2
+        r"(a)\1"   // does not compile: backreferences are not part of RE2 syntax
       ```
   entry .javaBaseRegex   the platform's `java.util.regex` engine: the default, so the import is rarely needed
       `RegexBackend[JavaBaseRegex]`, the engine a literal compiles for when nothing is imported.

@@ -123,24 +123,21 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
       the diff's target.
 
       ```scala fuel
-      frame
-        label Minimal context: only what is needed to place the change
+      alternative Minimal
         code
             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
 
             diff(source, target).redraft().serialize
             // t"- c", t"+ C"
-      frame
-        label Fixed context: one line either side of the change
+      alternative Fixed
         code
             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
 
             diff(source, target).redraft(Redraft.Context.Fixed(1)).serialize
             // t"b", t"- c", t"+ C", t"d"
-      frame
-        label Full context: every line of the original
+      alternative Full
         code
             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
             val target = Sequence(t"a", t"b", t"C", t"d", t"e")

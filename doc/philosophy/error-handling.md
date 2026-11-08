@@ -25,34 +25,27 @@ response, because the body never mentioned one:
 
 ```scala fuel
 parse
+alternative Throw
+  code
+      import strategies.throwUnsafely       // throw: fine while prototyping
+alternative Fall back
+  code
+      safely(loadConfiguration(path)).or(Configuration.default)   // fall back
+alternative Handle
+  code
+      recover:
+        case Io.Error(path, _, _) => Configuration.default
+        case error: JsonError    => abort(StartupError(error))
+      . protect(loadConfiguration(path))                          // handle each case
+alternative Accrue
+  code
+      accrue(Invalid(Nil))((all, error) => all.add(error)):
+        case error => ()
+      . protect(validateEverything(form))                         // collect them all
 ##
-import strategies.throwUnsafely       // throw: fine while prototyping
 ```
 
-```scala fuel
-parse
-##
-safely(loadConfiguration(path)).or(Configuration.default)   // fall back
-```
-
-```scala fuel
-parse
-##
-recover:
-  case Io.Error(path, _, _) => Configuration.default
-  case error: JsonError    => abort(StartupError(error))
-. protect(loadConfiguration(path))                          // handle each case
-```
-
-```scala fuel
-parse
-##
-accrue(Invalid(Nil))((all, error) => all.add(error)):
-  case error => ()
-. protect(validateEverything(form))                         // collect them all
-```
-
-Nothing in `loadConfiguration` changes between these. That is the property the whole
+Nothing in `loadConfiguration` changes from one version to another. That is the property the whole
 design exists for.
 
 ## Why not the alternatives

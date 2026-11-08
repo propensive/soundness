@@ -77,8 +77,7 @@ detail
     Which backend is in scope changes nothing about the code which uses it:
 
     ```scala fuel
-    frame
-      label Under the command-line backend
+    alternative Command line
       code
           locally:
             import gitBackends.commandlineGit
@@ -90,8 +89,7 @@ detail
             clone.open[Git.Worktree](Read & Write): worktree ?=>
               worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
               worktree.branches().value.keys   // Set(Branch(main), Branch(feature))
-    frame
-      label Under the native backend, which needs no `git`
+    alternative Native
       code
           locally:
             import gitBackends.soundnessGit
@@ -2151,18 +2149,15 @@ entry .Native   the `Git.Backend` which reads and writes a repository's files it
       `Git.Error(Unsupported(the transport for <url>))`.
 
       ```scala fuel
-      frame
-        label Local repositories only
+      alternative Local only
         code
             given Git.Backend = Native()
-      frame
-        label Smart HTTP added
+      alternative Smart HTTP
         code
             import httpBackends.javaNetHttp
 
             given Git.Backend = Native(List(SmartHttp()))
-      frame
-        label Smart HTTP and a spawned ssh
+      alternative Smart HTTP and ssh
         code
             import httpBackends.javaNetHttp
             import workingDirectories.javaBaseWorkingDirectory

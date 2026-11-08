@@ -931,7 +931,9 @@ entry .KnownHosts   OpenSSH's `known_hosts` file: the key each host has presente
       type and the key the server presented, whether it is `Known`, `Changed` (the warning
       every SSH user has read in capitals), `Unknown` or `Revoked`.
 
-      ```scala
+      ```scala fuel
+      substitute AAAAB3..JdW+sCyH  ...
+      ##
       import soundness.*
       import providers.javaBaseProvider
       import alphabets.base64Standard

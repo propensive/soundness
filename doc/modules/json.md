@@ -120,14 +120,12 @@ is compact; indented formatting still renders through the tree. The printer is d
 compiletime as the parser is, and writes the same text:
 
 ```scala fuel
-frame
-  label Through a `Json` tree
+alternative Tree
   code
       import formatting.compactJsonFormatting
 
       Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}"""
-frame
-  label Written directly, by a derived printer
+alternative Direct
   code
       import formatting.compactJsonFormatting
 
@@ -269,20 +267,17 @@ encoding puts the whole variant inside a single-key object named for the case, a
 *envelope* encoding names the tag field and the payload field:
 
 ```scala fuel
-frame
-  label A discriminator field beside the case's own
+alternative Discriminator field
   code
       (Shape.Circle(1.0): Shape).in[Json].show
       // t"""{"radius":1.0,"kind":"Circle"}"""
-frame
-  label A wrapper: the variant inside an object named for the case
+alternative Wrapper
   code
       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
 
       (Shape.Circle(1.0): Shape).in[Json].show
       // t"""{"Circle":{"radius":1.0}}"""
-frame
-  label An envelope: a tag field and a payload field
+alternative Envelope
   code
       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
 

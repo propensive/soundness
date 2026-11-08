@@ -791,8 +791,7 @@ entry .formatting   how a streamed `Document[Html]` is laid out, each an `Html.F
       given, outranks the companion's default. Neither affects `show`, which is always compact.
 
       ```scala fuel
-      frame
-        label The document
+      alternative Indented
         code
             import soundness.*
             import htmlDoms.whatwg
@@ -800,34 +799,39 @@ entry .formatting   how a streamed `Document[Html]` is laid out, each an `Html.F
             import probates.cancelProbate
             import supervisors.globalSupervisor
             import threads.virtualThreads
+            import formatting.indentedHtmlFormatting
 
             val page = Html(Head(Title("Hi")), Body(Ul(Li("one"), Li("two"))))
             val document = Document(page, Html.Provenance(whatwg))
-      frame
-        label Indented, the default
+
+            document.stream[Text]
+            // <!DOCTYPE html>
+            // <html>
+            //   <head>
+            //     <title>Hi</title>
+            //   </head>
+            //   <body>
+            //     <ul>
+            //       <li>one</li>
+            //       <li>two</li>
+            //     </ul>
+            //   </body>
+            // </html>
+      alternative Compact
         code
-            locally:
-              import formatting.indentedHtmlFormatting
-              document.stream[Text]
-              // <!DOCTYPE html>
-              // <html>
-              //   <head>
-              //     <title>Hi</title>
-              //   </head>
-              //   <body>
-              //     <ul>
-              //       <li>one</li>
-              //       <li>two</li>
-              //     </ul>
-              //   </body>
-              // </html>
-      frame
-        label Compact
-        code
-            locally:
-              import formatting.compactHtmlFormatting
-              document.stream[Text]
-              // <!DOCTYPE html><html><head><title>Hi</title></head><body><ul><li>one</li><li>two</li></ul></body></html>
+            import soundness.*
+            import htmlDoms.whatwg
+            import htmlDoms.whatwg.*
+            import probates.cancelProbate
+            import supervisors.globalSupervisor
+            import threads.virtualThreads
+            import formatting.compactHtmlFormatting
+
+            val page = Html(Head(Title("Hi")), Body(Ul(Li("one"), Li("two"))))
+            val document = Document(page, Html.Provenance(whatwg))
+
+            document.stream[Text]
+            // <!DOCTYPE html><html><head><title>Hi</title></head><body><ul><li>one</li><li>two</li></ul></body></html>
       ##
       ```
 

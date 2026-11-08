@@ -974,27 +974,23 @@ entry .BlockCipher   the base of every block cipher: a mode, a padding, and the 
       ```
 
       ```scala fuel
-      frame
-        label CBC with PKCS#7 padding, named in the type
+      alternative CBC, PKCS#7
         code
             locally:
               val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
               key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 32: an IV block and a padded block
-      frame
-        label The same, with the mode and padding imported instead
+      alternative Imported
         code
             locally:
               import blockCipherModes.cbc, blockCipherPaddings.pkcs7
               val key = SymmetricKey.generate[Aes[256]]()
               key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 32
-      frame
-        label A counter mode needs no padding, and takes none
+      alternative CTR
         code
             locally:
               val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
               key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 27: an IV block and eleven bytes
-      frame
-        label CBC with no padding insists on whole blocks
+      alternative CBC, no padding
         code
             locally:
               val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
@@ -1832,27 +1828,23 @@ entry .cloaks   where secrets are stored, each a given to import by name
       ```
 
       ```scala fuel
-      frame
-        label On the heap: pure, portable, visible in a heap dump
+      alternative `heapCloak`
         code
             locally:
               import cloaks.heapCloak
               val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
                 SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-      frame
-        label Off the heap: the same key, now a capability
+      alternative `offHeapCloak`
         code
             locally:
               import cloaks.offHeapCloak
               val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()   // SymmetricKey[…]^{offHeapCloak}
-      frame
-        label Encrypted on the heap under an off-heap key
+      alternative `veiledHeapCloak`
         code
             locally:
               import cloaks.veiledHeapCloak
               val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-      frame
-        label Encrypted off the heap under a heap-resident key
+      alternative `veiledOffHeapCloak`
         code
             locally:
               import cloaks.veiledOffHeapCloak

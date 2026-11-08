@@ -105,19 +105,19 @@ entry .digest   the digest of any `Digestible` value, in the algorithm named as 
       Block(payload.digest, payload)
       ```
 
-      The same bytes digested under successive algorithms, each with the import it needs:
+      The same bytes digested under each algorithm, with the imports it needs: SHA-256 needs
+      only a provider; SHA-1 is deprecated, so it needs a permit; MD5 is disallowed, so it needs
+      the wider permit; and BLAKE3 needs the Soundness provider, which the JDK lacks:
 
       ```scala fuel
-      frame
-        label SHA-256 needs only a provider
+      alternative SHA-256
         code
             import providers.javaBaseProvider
             import alphabets.hexLowerCase
 
             t"Hello world".digest[Sha2[256]].serialize[Hex]
             // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
-      frame
-        label SHA-1 is deprecated, so it needs a permit
+      alternative SHA-1
         code
             import providers.javaBaseProvider
             import alphabets.hexLowerCase
@@ -125,8 +125,7 @@ entry .digest   the digest of any `Digestible` value, in the algorithm named as 
 
             t"Hello world".digest[Sha1].serialize[Hex]
             // t"7b502c3a1f48c8609ae212cdfb639dee39673f5e"
-      frame
-        label MD5 is disallowed, so it needs the wider permit
+      alternative MD5
         code
             import providers.javaBaseProvider
             import alphabets.hexLowerCase
@@ -134,8 +133,7 @@ entry .digest   the digest of any `Digestible` value, in the algorithm named as 
 
             t"Hello world".digest[Md5].serialize[Hex]
             // t"3e25960a79dbc69b674cd4ec67a72c62"
-      frame
-        label BLAKE3 needs the Soundness provider, which the JDK lacks
+      alternative BLAKE3
         code
             import providers.soundnessProvider
             import alphabets.hexLowerCase
@@ -223,27 +221,24 @@ entry .Digest   the bytes a hash produced, typed by its algorithm as `Digest in 
       exists for a digest which must describe itself across a boundary.
 
       A digest renders through the base encodings, under an `alphabets` import, since it is
-      `Encodable in Data`:
+      `Encodable in Data`; Base64 is also what `show` renders:
 
       ```scala fuel
-      frame
-        label Lowercase hexadecimal
+      alternative Lowercase hex
         code
             import providers.javaBaseProvider
             locally:
               import alphabets.hexLowerCase
               t"Hello world".digest[Sha2[256]].serialize[Hex]
               // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
-      frame
-        label Uppercase hexadecimal
+      alternative Uppercase hex
         code
             import providers.javaBaseProvider
             locally:
               import alphabets.hexUpperCase
               t"Hello world".digest[Sha2[256]].serialize[Hex]
               // t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C"
-      frame
-        label Base64, which is also what `show` renders
+      alternative Base64
         code
             import providers.javaBaseProvider
             locally:

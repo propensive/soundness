@@ -123,10 +123,24 @@ row  `parse`  a sketch that is not meant to compile at all  it is only parsed
 row  `feature experimental.captureChecking`  the first fence that needs a language feature  the feature is enabled from there on
 row  `restart`  a fence that must not follow the ones before it  the session begins afresh
 row  `frame`  an animation  each `frame` has its `code` (and perhaps a `label`); later fences follow the last
+row  `alternative`  versions of the same code, one under each tab  each has its `code` (or its `frame`s); later fences follow the first
+row  `substitute`  code that must be there to compile but is noise to the reader  the range is shown as `...`, or the text given
+row  `focus`  one region of a long fragment, or of one frame, that the prose is about  everything else in the block fades
+row  `path`  a fence holding the contents of a file  the file's name is shown above it, and a `run` fence can read it
 ```
 
 Use an animation only where watching the code change from one frame to the next teaches
-something that two fences side by side would not.
+something that two fences side by side would not: each frame builds on the last. Where the
+versions are instead choices made at the same point — the same program under another policy
+import, backend or calendar, or the same thing written two ways — make them alternatives, with
+a tab title of a word or two (`Julian`, `RE2`, `Imported`). Only the first alternative joins
+the session, so put first the one the rest of the tutorial uses, and nothing after a `##` in
+such a fence. `etc/doccheck.py` runs the first alternative too.
+
+A `substitute` names its range as a mark does — a literal, or `start..end`, refined by `line`
+and `occurrence` — and is for a `???` that stands for something supplied, a long key or literal
+whose content is not the point, or setup repeated in every frame. Don't substitute code the
+prose discusses.
 
 ## Tables
 

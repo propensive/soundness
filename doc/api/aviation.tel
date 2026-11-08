@@ -426,15 +426,13 @@ entry .now   the current instant, read from the `Clock` in scope
     `given Clock = Clock.fixed(Instant(99999L))` so that `now()` is the same every time.
 
     ```scala fuel
-    frame
-      label The system clock, through `Clock.current`
+    alternative System clock
       code
           locally:
             import chronometries.unixChronometry
             now()           // whatever the wall clock reads, as an Instant over Unix
             now() == now()  // false, once a millisecond has passed
-    frame
-      label A fixed clock, bound as a given
+    alternative Fixed clock
       code
           locally:
             import chronometries.unixChronometry
@@ -622,29 +620,25 @@ entry .calendars   the calendars, each a given to import by name
       name, most often `import calendars.gregorianCalendar`.
 
       ```scala fuel
-      frame
-        label The Gregorian calendar, the civil default
+      alternative Gregorian
         code
             val date: Date = { import calendars.gregorianCalendar; 2000-Jan-1 }
             locally:
               import calendars.gregorianCalendar
               (date.year(), date.month, date.day())   // (2000, Jan, 1)
-      frame
-        label The same day in the Julian calendar
+      alternative Julian
         code
             val date: Date = { import calendars.gregorianCalendar; 2000-Jan-1 }
             locally:
               import calendars.julianCalendar
               (date.year(), date.month, date.day())   // (1999, Dec, 19)
-      frame
-        label The same day in the Coptic calendar
+      alternative Coptic
         code
             val date: Date = { import calendars.gregorianCalendar; 2000-Jan-1 }
             locally:
               import calendars.copticCalendar
               (date.year(), date.month, date.day())   // (1716, CopticMonth.Koiak, 22)
-      frame
-        label The same day in the Islamic calendar
+      alternative Islamic
         code
             val date: Date = { import calendars.gregorianCalendar; 2000-Jan-1 }
             locally:
@@ -730,16 +724,14 @@ entry .monthEnds   what adding months or years to a date means when the day over
       none, since those never overflow.
 
       ```scala fuel
-      frame
-        label Clamping to the last day of the month
+      alternative Clamping
         code
             locally:
               import calendars.gregorianCalendar
               import monthEnds.clampMonthEnd
               2024-Jan-31 + 1*Month   // 2024-Feb-29
               2024-Feb-29 + 1*Year    // 2025-Feb-28
-      frame
-        label Overflowing into the next month
+      alternative Overflowing
         code
             locally:
               import calendars.gregorianCalendar
@@ -834,36 +826,31 @@ entry .dateFormats   how a `Date` shows, as a whole convention, a given to impor
       calendar whatever calendar is in scope.
 
       ```scala fuel
-      frame
-        label ISO 8601
+      alternative ISO 8601
         code
             val date: Date = { import calendars.gregorianCalendar; 2025-Apr-7 }
             locally:
               import dateFormats.iso8601DateFormat
               date.show   // 2025-04-07
-      frame
-        label The European convention
+      alternative European
         code
             val date: Date = { import calendars.gregorianCalendar; 2025-Apr-7 }
             locally:
               import dateFormats.europeanDateFormat
               date.show   // 07.04.2025
-      frame
-        label The American convention
+      alternative American
         code
             val date: Date = { import calendars.gregorianCalendar; 2025-Apr-7 }
             locally:
               import dateFormats.americanDateFormat
               date.show   // 04/07/2025
-      frame
-        label The British convention
+      alternative British
         code
             val date: Date = { import calendars.gregorianCalendar; 2025-Apr-7 }
             locally:
               import dateFormats.unitedKingdomDateFormat
               date.show   // 07/04/2025
-      frame
-        label Composed from its parts
+      alternative Composed
         code
             val date: Date = { import calendars.gregorianCalendar; 2025-Apr-7 }
             locally:
@@ -950,29 +937,25 @@ entry .timeFormats   how a `Clockface` shows, as a whole convention, a given to 
       `Clockface.showable` assembles the format.
 
       ```scala fuel
-      frame
-        label Twenty-four hours, no separator
+      alternative Military
         code
             val time = Clockface(14, 30, 59)
             locally:
               import timeFormats.militaryTimeFormat
               time.show   // 1430
-      frame
-        label Twelve hours and a meridiem
+      alternative Civilian
         code
             val time = Clockface(14, 30, 59)
             locally:
               import timeFormats.civilianTimeFormat
               time.show   // 02:30 PM
-      frame
-        label The Associated Press style
+      alternative Associated Press
         code
             val time = Clockface(14, 30, 59)
             locally:
               import timeFormats.associatedPressTimeFormat
               time.show   // 2:30 p.m.
-      frame
-        label ISO 8601, with seconds
+      alternative ISO 8601
         code
             val time = Clockface(14, 30, 59)
             locally:
@@ -2113,16 +2096,14 @@ entry .Moment   a wall-clock reading in a timezone: a date, a time, a zone and h
       to the second that follows it.
 
       ```scala fuel
-      frame
-        label The default policy pushes a reading in the gap forward
+      alternative Forward
         code
             import soundness.*
             import calendars.gregorianCalendar
 
             val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London")
             spring.instant   // 01:30 UTC, which London reads as 02:30 BST
-      frame
-        label Pushing backward keeps the pre-transition offset
+      alternative Backward
         code
             import soundness.*
             import calendars.gregorianCalendar
@@ -2130,8 +2111,7 @@ entry .Moment   a wall-clock reading in a timezone: a date, a time, a zone and h
 
             val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London")
             spring.instant   // 00:30 UTC, which London reads as 00:30 GMT
-      frame
-        label Rejecting makes the gap an error
+      alternative Rejected
         code
             import soundness.*
             import calendars.gregorianCalendar
@@ -3065,26 +3045,28 @@ entry .Timespan   a calendar quantity of time: years, months, weeks, days, hours
       twenty-four hours do not, and a day which lands in a spring-forward gap is resolved by
       the `GapPolicy` in scope.
 
-      ```scala fuel
-      frame
-        label A day keeps the wall-clock time; twenty-four hours keep the elapsed time
-        code
-            import soundness.*
-            import calendars.gregorianCalendar
+      ```scala
+      import soundness.*
+      import calendars.gregorianCalendar
 
-            val saturday = Moment(2024-Mar-30, Clockface(12, 0, 0), tz"Europe/London")
-            (saturday + 1*Day).time     // Clockface(12, 0, 0), on Sunday in BST
-            (saturday + 24*Hour).time   // Clockface(13, 0, 0)
-      frame
-        label A day which lands in the gap is pushed forward by default
+      val saturday = Moment(2024-Mar-30, Clockface(12, 0, 0), tz"Europe/London")
+      (saturday + 1*Day).time     // Clockface(12, 0, 0), on Sunday in BST
+      (saturday + 24*Hour).time   // Clockface(13, 0, 0)
+      ```
+
+      A day which lands in the gap is pushed forward by default, held back with the
+      pre-transition offset under `gapPolicies.pushBackwardGapPolicy`, or rejected under
+      `gapPolicies.rejectGapPolicy`:
+
+      ```scala fuel
+      alternative Forward
         code
             import soundness.*
             import calendars.gregorianCalendar
 
             val night = Moment(2024-Mar-30, Clockface(1, 30, 0), tz"Europe/London")
             (night + 1*Day).time   // Clockface(2, 30, 0): 01:30 on 31 March never happened
-      frame
-        label Or held back, with the pre-transition offset
+      alternative Backward
         code
             import soundness.*
             import calendars.gregorianCalendar
@@ -3092,8 +3074,7 @@ entry .Timespan   a calendar quantity of time: years, months, weeks, days, hours
 
             val night = Moment(2024-Mar-30, Clockface(1, 30, 0), tz"Europe/London")
             (night + 1*Day).time   // Clockface(0, 30, 0)
-      frame
-        label Or rejected
+      alternative Rejected
         code
             import soundness.*
             import calendars.gregorianCalendar
