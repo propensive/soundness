@@ -776,32 +776,30 @@ entry .Decimal   an arbitrary-precision decimal number: sign, magnitude and scal
       `compareTo`. `+`, `-`, `*` and prefix `-` are symbolism's operators through the givens
       in this companion, exact and needing no policy. Division cannot always be exact, so it
       is not `/`: `.divide` takes the result's scale and a `Rounding`, and raises
-      `Arithmetic.Error` on a zero divisor.
+      `Arithmetic.Error` on a zero divisor. An eighth, to two places, is a tie: `HalfUp` sends
+      it up and `HalfEven` to the even digit, and with ten places no rounding is needed, and
+      the trailing zeros are never kept:
 
       ```scala fuel
-      frame
-        label An eighth, to two places, rounded down
+      alternative `Down`
         code
             import soundness.*
             import strategies.throwUnsafely
 
             Decimal(1).divide(Decimal(8), 2, Decimal.Rounding.Down).text       // t"0.12"
-      frame
-        label The same quotient, rounded half up: the tie goes up
+      alternative `HalfUp`
         code
             import soundness.*
             import strategies.throwUnsafely
 
             Decimal(1).divide(Decimal(8), 2, Decimal.Rounding.HalfUp).text     // t"0.13"
-      frame
-        label Half even: the tie goes to the even digit
+      alternative `HalfEven`
         code
             import soundness.*
             import strategies.throwUnsafely
 
             Decimal(1).divide(Decimal(8), 2, Decimal.Rounding.HalfEven).text   // t"0.12"
-      frame
-        label More scale: no rounding is needed, and the trailing zeros are never kept
+      alternative Ten places
         code
             import soundness.*
             import strategies.throwUnsafely

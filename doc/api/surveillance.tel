@@ -329,13 +329,11 @@ entry .watchers   the `Watcher` backends, as a given to import by name or a valu
       and `polling`, a method which makes a polling backend for an interval.
 
       ```scala fuel
-      frame
-        label The default: the operating system's notification service
+      alternative Default
         code
             directory.open[Watch]():
               watch.stream.head
-      frame
-        label Polling every half second, for a filesystem without notifications
+      alternative Polling
         code
             given Watcher = watchers.polling(0.5*Second)
 

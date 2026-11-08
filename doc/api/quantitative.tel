@@ -790,26 +790,22 @@ entry .temperatureScales   the scale a `Temperature` shows on, each a given to i
       conversion written by hand:
 
       ```scala fuel
-      frame
-        label On the Celsius scale
+      alternative Celsius
         code
             locally:
               import temperatureScales.celsiusScale
               Fahrenheit(100).show   // t"37.8 °C"
-      frame
-        label On the Fahrenheit scale
+      alternative Fahrenheit
         code
             locally:
               import temperatureScales.fahrenheitScale
               Fahrenheit(100).show   // t"100 °F"
-      frame
-        label On the kelvin scale
+      alternative Kelvin
         code
             locally:
               import temperatureScales.kelvinScale
               Fahrenheit(100).show   // t"311 K"
-      frame
-        label On the Rankine scale
+      alternative Rankine
         code
             locally:
               import temperatureScales.rankineScale

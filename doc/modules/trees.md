@@ -126,12 +126,10 @@ node type, which suits a node type whose children are what it means by children 
 path, a dependency, a syntax node:
 
 ```scala fuel
-frame
-  label The children named at the call
+alternative `TreeDiagram.by`
   code
       TreeDiagram.by[Taxon](_.children)(animalia)
-frame
-  label The children known to the node type
+alternative `Expandable`
   code
       given Taxon is Expandable = _.children
 

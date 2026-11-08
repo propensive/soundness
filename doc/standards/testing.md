@@ -10,7 +10,9 @@ complements `syntax.md` (whitespace and formatting) and `benchmarking.md`
 Tests live in a module's `src/test` directory. The test object extends `Suite`
 and implements `run()`:
 
-```scala
+```scala fuel
+substitute ???  ...
+##
 object Tests extends Suite("logging", m"Eucalyptus tests"):
   def run(): Unit = ???
 ```

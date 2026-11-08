@@ -312,9 +312,12 @@ entry .StackResolver   recovers the source definition behind each frame of a sta
       when the file can be read. A frame whose class has no TASTy, or whose file has no line
       for it, is returned as it was.
 
+      Without a resolver, a trace has only the compiled names, demangled but anonymous; with
+      one imported, every trace captured in its scope names its definitions; and a trace
+      already in hand is resolved explicitly:
+
       ```scala fuel
-      frame
-        label A raw trace: the compiled names, demangled but anonymous
+      alternative Raw
         code
             import soundness.*
 
@@ -331,8 +334,7 @@ entry .StackResolver   recovers the source definition behind each frame of a sta
             val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
             frame.let(_.displayMethod)   // t"λ₁": a lambda ran, but which?
             frame.let(_.source)          // Unset
-      frame
-        label With the resolver imported, every trace captured in scope names its definitions
+      alternative Imported
         code
             import soundness.*
             import stackResolutions.tastyStackResolution
@@ -354,8 +356,7 @@ entry .StackResolver   recovers the source definition behind each frame of a sta
             frame.let(_.displayMethod)             // t"λ"
             frame.let(_.source.let(_.kind))        // Kind.Lambda
             frame.let(_.source.let(_.code))        // t"throw Exception(\"boom\")"
-      frame
-        label A trace already in hand is resolved explicitly
+      alternative Explicit
         code
             import soundness.*
             import classloaders.threadContextClassloader

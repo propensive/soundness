@@ -32,19 +32,12 @@ detail
       `[target: Instantiable across Paths from Text]`.
 
     So a value of one library's type is converted to another's by abstracting it and
-    instantiating the result, with neither library knowing of the other:
+    instantiating the result, with neither library knowing of the other. A galilei path's
+    generic form is its text, `t"/home/work"`, and that text becomes a `java.nio.file.Path` or
+    a `java.io.File` according to the path interface imported:
 
     ```scala fuel
-    frame
-      label A galilei path, abstracted to its generic text
-      code
-          import soundness.*
-          import strategies.throwUnsafely
-
-          val path: Path on Linux = t"/home/work".as[Path on Linux]
-          path.generic   // t"/home/work"
-    frame
-      label The same text instantiated as a `java.nio.file.Path`
+    alternative `java.nio.file.Path`
       code
           import soundness.*
           import strategies.throwUnsafely
@@ -56,8 +49,7 @@ detail
 
           val path: Path on Linux = t"/home/work".as[Path on Linux]
           val nio: java.nio.file.Path = relocate[java.nio.file.Path](path)
-    frame
-      label Or as a `java.io.File`, by importing a different interface
+    alternative `java.io.File`
       code
           import soundness.*
           import strategies.throwUnsafely

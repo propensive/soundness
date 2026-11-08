@@ -90,8 +90,7 @@ entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `Tree
       node to label and the `TreeStyle` in scope.
 
       ```scala fuel
-      frame
-        label The square style: right-angled corners
+      alternative Square
         code
             locally:
               import treeStyles.squareTreeStyle
@@ -100,8 +99,7 @@ entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `Tree
               // ├─chordata
               // │ └─mammalia
               // └─arthropoda
-      frame
-        label The rounded style: the last branch curves
+      alternative Rounded
         code
             locally:
               import treeStyles.roundedTreeStyle
@@ -110,8 +108,7 @@ entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `Tree
               // ├─chordata
               // │ ╰─mammalia
               // ╰─arthropoda
-      frame
-        label The ASCII style, for the plainest terminals
+      alternative ASCII
         code
             locally:
               import treeStyles.asciiTreeStyle

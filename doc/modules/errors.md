@@ -105,15 +105,13 @@ The `throwUnsafely` strategy raises an exception, so with it in scope `connect(8
 instead, and `capture` returns the error itself, for testing that the right failure is produced:
 
 ```scala fuel
-frame
-  label Thrown, under `throwUnsafely`
+alternative `throwUnsafely`
   code
       import strategies.throwUnsafely
 
       connect(8080)   // Connection(8080)
       connect(80)     // throws PortError
-frame
-  label Absent under `safely`, or captured
+alternative `safely` and `capture`
   code
       import strategies.throwUnsafely
 

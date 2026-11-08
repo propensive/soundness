@@ -51,13 +51,11 @@ actually breaks there; passing a visible character shows the break points. `left
 last, so a break never strands one or two letters:
 
 ```scala fuel
-frame
-  label Every permissible break
+alternative Every break
   code
       t"hyphenation".hyphenate(hyphen = '-')    // t"hy-phen-ation"
       t"presentation".hyphenate(hyphen = '-')   // t"pre-sen-ta-tion"
-frame
-  label At least four characters before the first
+alternative `leftMin = 4`
   code
       t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
       t"presentation".hyphenate(hyphen = '-', leftMin = 4)  // t"presen-ta-tion"

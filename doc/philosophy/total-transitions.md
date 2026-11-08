@@ -103,6 +103,7 @@ accidental cases along with the deliberate one, so the assertion is marked inste
 
 ```scala fuel
 parse
+substitute ???  ...
 ##
 expr.absolve match
   case '{ $value: Int } => ???

@@ -526,26 +526,22 @@ entry .LineSeparation   a line-ending policy: which of CR, LF, CRLF and LFCR end
       imported by name, and the same text splits differently under each.
 
       ```scala fuel
-      frame
-        label Adaptive: any of CR, LF, CRLF or LFCR ends a line
+      alternative Adaptive
         code
             locally:
               import lineSeparation.adaptiveLinefeedLineSeparation
               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"c", t"d")
-      frame
-        label Linefeeds: LF ends a line and a bare CR is dropped
+      alternative Linefeed
         code
             locally:
               import lineSeparation.linefeedLineSeparation
               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc", t"d")
-      frame
-        label Carriage returns: CR ends a line and a bare LF is dropped
+      alternative Carriage return
         code
             locally:
               import lineSeparation.carriageReturnLineSeparation
               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"cd")
-      frame
-        label CRLF only: a bare CR is dropped and a bare LF stays in the text
+      alternative CRLF
         code
             locally:
               import lineSeparation.carriageReturnLinefeedLineSeparation

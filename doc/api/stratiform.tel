@@ -420,8 +420,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       to the same value.
 
       ```scala fuel
-      frame
-        label The wire form every field a child
+      alternative Wire form
         code
             import soundness.*
 
@@ -430,8 +429,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
             Delivery(t"Acme", Address(t"1 Acme Way", t"Town")).in[Tel].show
             // t"name Acme\naddress\n  street 1 Acme Way\n  city Town\n"
-      frame
-        label The canonical form, nested records on one line
+      alternative Canonical
         code
             import soundness.*
 

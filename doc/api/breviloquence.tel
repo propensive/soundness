@@ -939,8 +939,7 @@ entry .Cbor2   the trait which holds the derived-path givens of `object Cbor`, a
       inner decoder.
 
       ```scala fuel
-      frame
-        label The defaults: absent and null are lenient, a fault is strict
+      alternative Defaults
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -954,18 +953,30 @@ entry .Cbor2   the trait which holds the derived-path givens of `object Cbor`, a
 
             Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading]           // Reading(t"a", Unset)
             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
-      frame
-        label Strict nulls: a null reaches the inner decoder and fails
+      alternative Strict nulls
         code
-            locally:
-              import optionalityOptions.strictCborNulls
-              safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
-      frame
-        label Lenient faults: a mistyped value reads as Unset
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictCborNulls
+
+            case class Reading(sensor: Text, value: Optional[Int])
+
+            // {"sensor": "a", "value": null}
+            val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+
+            safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+      alternative Lenient faults
         code
-            locally:
-              import optionalityOptions.lenientCborFaults
-              Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.lenientCborFaults
+
+            case class Reading(sensor: Text, value: Optional[Int])
+
+            // {"sensor": "a", "value": "x"}
+            val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
+
+            Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
       ##
       ```
   entry #optionalEncodable   encodes an `Optional[T]`: the value's encoding, or `undefined` when unset
@@ -1280,8 +1291,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads absence, `
       import.
 
       ```scala fuel
-      frame
-        label The defaults
+      alternative Defaults
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -1295,24 +1305,39 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads absence, `
             Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading]             // Reading(t"a", Unset)
             Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading]           // Reading(t"a", Unset)
             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: NotType(TextString, Integer)
-      frame
-        label Strict absence: a missing key is an error
+      alternative Strict absence
         code
-            locally:
-              import optionalityOptions.strictCborAbsence
-              safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
-      frame
-        label Strict nulls: a null reaches the inner decoder
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictCborAbsence
+
+            case class Reading(sensor: Text, value: Optional[Int])
+
+            val noValue: Data = hex"a1 6673656e736f72 6161"                     // {"sensor": "a"}
+
+            safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+      alternative Strict nulls
         code
-            locally:
-              import optionalityOptions.strictCborNulls
-              safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
-      frame
-        label Lenient faults: a mistyped value is tolerated
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictCborNulls
+
+            case class Reading(sensor: Text, value: Optional[Int])
+
+            val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+
+            safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+      alternative Lenient faults
         code
-            locally:
-              import optionalityOptions.lenientCborFaults
-              Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.lenientCborFaults
+
+            case class Reading(sensor: Text, value: Optional[Int])
+
+            val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
+
+            Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
       ##
       ```
 

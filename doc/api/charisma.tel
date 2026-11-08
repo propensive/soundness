@@ -110,22 +110,19 @@ entry .Chemical   a namespace for the chemistry vocabulary: elements, formulas a
         `-->`, `<->`, `<=>`, `<~>` or `===`, each giving a different `Reaction`.
 
         ```scala fuel
-        frame
-          label A net forward reaction
+        alternative Forward
           code
               import soundness.*
               import PeriodicTable.{H, O}
 
               (H[2]*2 + O[2] --> (H[2]*O)*2).show   // t"2H₂ + O₂ → 2H₂O"
-        frame
-          label Proceeding in both directions
+        alternative Both directions
           code
               import soundness.*
               import PeriodicTable.{H, O}
 
               (H[2]*2 + O[2] <=> (H[2]*O)*2).show   // t"2H₂ + O₂ ⇄ 2H₂O"
-        frame
-          label At equilibrium
+        alternative Equilibrium
           code
               import soundness.*
               import PeriodicTable.{H, O}

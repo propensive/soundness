@@ -259,8 +259,7 @@ entry .logFormats   the standard log formats, each a given to import by name
       logFormats.*` does not import givens.
 
       ```scala fuel
-      frame
-        label Timestamped text
+      alternative Timestamped
         code
             import soundness.*
             import logFormats.timestampedLogFormat
@@ -268,8 +267,7 @@ entry .logFormats   the standard log formats, each a given to import by name
             val format = summon[Message is Inscribable in Text]
             format.formatter(m"server listening on 8080", Level.Info, System.currentTimeMillis)
             // t"2026-Nov-04 09:30:00.250 [INFO] server listening on 8080\n"
-      frame
-        label Untimestamped text
+      alternative Untimestamped
         code
             import soundness.*
             import logFormats.untimestampedLogFormat
@@ -277,8 +275,7 @@ entry .logFormats   the standard log formats, each a given to import by name
             val format = summon[Message is Inscribable in Text]
             format.formatter(m"server listening on 8080", Level.Info, System.currentTimeMillis)
             // t"[INFO] server listening on 8080\n"
-      frame
-        label Google Cloud JSON
+      alternative Google Cloud
         code
             import soundness.*
             import logFormats.googleCloudPlatformLogFormat

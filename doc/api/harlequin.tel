@@ -316,19 +316,19 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       The `ProgrammingLanguage` for Scala 3. `Scala.highlight(text)` tokenizes the text with
       the compiler's own scanner and parser; with a compiler in scope (`highlighting.
       typecheckedScala` or `compiledScala`, needing a `Scalac` and a `LocalClasspath`, or
-      `sessionScala`, needing a `Scalac.Session.Frontend`) it runs the frontend too.
+      `sessionScala`, needing a `Scalac.Session.Frontend`) it runs the frontend too, so each
+      identifier knows its type, and `compiledScala` runs the later phases as well, for the
+      diagnostics only they produce.
 
       ```scala fuel
-      frame
-        label Tokenized: accents and roles from the scanner and parser alone
+      alternative Tokenized
         code
             locally:
               import highlighting.tokenizedScala
               val code = Scala.highlight(t"val xs = List(1, 2, 3)")
               code.lines.to[List].flat.seek(_.text == t"xs").let(_.meta)   // Unset
               code.diagnostics                                            // Nil
-      frame
-        label Typechecked: the frontend runs, so each identifier knows its type
+      alternative Typechecked
         code
             locally:
               given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -337,8 +337,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
               val code = Scala.highlight(t"val xs = List(1, 2, 3)")
               code.lines.to[List].flat.seek(_.text == t"xs").let(_.meta).let(_.tpe.qualified)
               // scala.collection.immutable.List[scala.Int]
-      frame
-        label Compiled: the later phases run too, for the diagnostics only they produce
+      alternative Compiled
         code
             locally:
               given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -755,8 +754,7 @@ entry .syntaxHighlighting   the terminal renderers of highlighted source, each a
       renders a single `Token`, and is what the other two use for each token.
 
       ```scala fuel
-      frame
-        label Without line numbers: each line's tokens, coloured by accent
+      alternative Unnumbered
         code
             locally:
               import syntaxHighlighting.unnumberedTeletypeable
@@ -764,8 +762,7 @@ entry .syntaxHighlighting   the terminal renderers of highlighted source, each a
               code.teletype
               // def twice(n: Int): Int =
               //   n * 2
-      frame
-        label With line numbers: a margin of numbers and a divider before each line
+      alternative Numbered
         code
             locally:
               import syntaxHighlighting.numberedTeletypeable

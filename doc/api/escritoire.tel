@@ -883,17 +883,18 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
       implicit: `import soundness.*` brings none of these in, and one is imported by name. The
       same table under the six styles:
 
+      ```scala
+      import soundness.*
+      import textMetrics.uniformMetric
+      import columnAttenuation.ignoreAttenuation
+
+      case class Person(name: Text, age: Int)
+      val people = List(Person(t"Alice", 30), Person(t"Bob", 5))
+      ```
+
       ```scala fuel
-      frame
-        label Heavy outer rules with thin inner ones
+      alternative Thick
         code
-            import soundness.*
-            import textMetrics.uniformMetric
-            import columnAttenuation.ignoreAttenuation
-
-            case class Person(name: Text, age: Int)
-            val people = List(Person(t"Alice", 30), Person(t"Bob", 5))
-
             locally:
               import tableStyles.thickTableStyle
               people.tabulation.grid(40).render.to[List]
@@ -903,8 +904,7 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               // ┃ Alice │  30 ┃
               // ┃ Bob   │   5 ┃
               // ┗━━━━━━━┷━━━━━┛
-      frame
-        label Light rules throughout, with rounded corners
+      alternative Thin rounded
         code
             locally:
               import tableStyles.thinRoundedTableStyle
@@ -915,8 +915,7 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               // │ Alice │  30 │
               // │ Bob   │   5 │
               // ╰───────┴─────╯
-      frame
-        label Horizontal rules only
+      alternative Horizontal
         code
             locally:
               import tableStyles.horizontalTableStyle
@@ -927,20 +926,17 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               //   Alice    30
               //   Bob       5
               // ╶─────────────╴
-      frame
-        label Vertical rules only
+      alternative Vertical
         code
             locally:
               import tableStyles.verticalTableStyle
               people.tabulation.grid(40).render.to[List]
-      frame
-        label A rule beneath the titles, with blank lines where the outer rules would be
+      alternative Mid only
         code
             locally:
               import tableStyles.midOnlyTableStyle
               people.tabulation.grid(40).render.to[List]
-      frame
-        label A rule beneath the titles and nothing else
+      alternative Minimal
         code
             locally:
               import tableStyles.minimalTableStyle

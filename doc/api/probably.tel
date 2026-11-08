@@ -410,6 +410,7 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
             val probe: Test[Person] = test(m"the oldest person")(Person(t"Jo", 49))
       frame
         label An assertion records a verdict and returns nothing
+        substitute given..Runner()  ...
         code
             import soundness.*
 
@@ -421,6 +422,7 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
             test(m"the oldest person")(Person(t"Jo", 49)).assert(_.age > 40)
       frame
         label A check returns the value for a later test to build on
+        substitute given..Runner()  ...
         code
             import soundness.*
 
@@ -433,6 +435,7 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
             test(m"the oldest person is named")(oldest.name).assert(_ == t"Jo")
       frame
         label A failed equality is reported as a contrast, field by field
+        substitute given..Runner()  ...
         code
             import soundness.*
 

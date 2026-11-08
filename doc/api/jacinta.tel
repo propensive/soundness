@@ -1463,24 +1463,20 @@ entry .NumberMode   what becomes of a JSON number too long for the parser's fast
       those numbers must be treated as opaque.
 
       ```scala fuel
-      frame
-        label Every digit kept, as a `Bcd`
+      alternative `Full`
         code
-            locally:
-              import soundness.*
-              import strategies.throwUnsafely
-              import numberModes.fullNumberMode
+            import soundness.*
+            import strategies.throwUnsafely
+            import numberModes.fullNumberMode
 
-              Json.unseal(t"12345678901234567890".read[Json]).isBcd   // true
-      frame
-        label The leading digits, as a `Double`
+            Json.unseal(t"12345678901234567890".read[Json]).isBcd   // true
+      alternative `Double`
         code
-            locally:
-              import soundness.*
-              import strategies.throwUnsafely
-              import numberModes.doubleNumberMode
+            import soundness.*
+            import strategies.throwUnsafely
+            import numberModes.doubleNumberMode
 
-              Json.unseal(t"12345678901234567890".read[Json]).isDouble   // true
+            Json.unseal(t"12345678901234567890".read[Json]).isDouble   // true
       ##
       ```
   refer jacinta.numberModes
@@ -1536,22 +1532,18 @@ entry .formatting   the two standard `Json.Formatting`s, each a given to import 
       `Json.Formatting(indent, trailingNewline)`.
 
       ```scala fuel
-      frame
-        label Compact: no whitespace at all
+      alternative Compact
         code
-            locally:
-              import soundness.*
-              import formatting.compactJsonFormatting
+            import soundness.*
+            import formatting.compactJsonFormatting
 
-              Json.make(a = 1.in[Json], b = List(2, 3).in[Json]).show   // t"""{"a":1,"b":[2,3]}"""
-      frame
-        label Indented: two spaces per level
+            Json.make(a = 1.in[Json], b = List(2, 3).in[Json]).show   // t"""{"a":1,"b":[2,3]}"""
+      alternative Indented
         code
-            locally:
-              import soundness.*
-              import formatting.indentedJsonFormatting
+            import soundness.*
+            import formatting.indentedJsonFormatting
 
-              Json.make(a = 1.in[Json], b = List(2, 3).in[Json]).show   // across six lines
+            Json.make(a = 1.in[Json], b = List(2, 3).in[Json]).show   // across six lines
       ##
       ```
   entry .compactJsonFormatting   no whitespace, no trailing newline: `{"a":1}`
@@ -1580,8 +1572,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads an absent 
       indistinguishable from no default, so it does not satisfy a strict absence.
 
       ```scala fuel
-      frame
-        label The defaults: an absent key and a null are `Unset`, a wrong value raises
+      alternative Defaults
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -1591,29 +1582,35 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads an absent 
             t"""{"name": "Eve"}""".read[Json].as[Profile].age                   // Unset
             t"""{"name": "Eve", "age": null}""".read[Json].as[Profile].age      // Unset
             capture[Json.Error](t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile])
-      frame
-        label Strict absence: the key must be present
+      alternative Strict absence
         code
-            locally:
-              import optionalityOptions.strictJsonAbsence
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictJsonAbsence
 
-              capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
-              // Json.Error.Reason.Absent
-      frame
-        label Strict nulls: a null is rejected like any other wrong value
+            case class Profile(name: Text, age: Optional[Int])
+
+            capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
+            // Json.Error.Reason.Absent
+      alternative Strict nulls
         code
-            locally:
-              import optionalityOptions.strictJsonNulls
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictJsonNulls
 
-              capture[Json.Error](t"""{"name": "Eve", "age": null}""".read[Json].as[Profile]).reason
-              // Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number)
-      frame
-        label Lenient faults: a wrong value is `Unset`
+            case class Profile(name: Text, age: Optional[Int])
+
+            capture[Json.Error](t"""{"name": "Eve", "age": null}""".read[Json].as[Profile]).reason
+            // Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number)
+      alternative Lenient faults
         code
-            locally:
-              import optionalityOptions.lenientJsonFaults
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.lenientJsonFaults
 
-              t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age   // Unset
+            case class Profile(name: Text, age: Optional[Int])
+
+            t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age   // Unset
       ##
       ```
   entry .strictJsonAbsence   an absent key raises `Json.Error(Absent)` rather than reading as `Unset`

@@ -491,14 +491,16 @@ row  Celsius  freezing point of water  `Celsius(…)`  none  `temperatureScales.
 row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
 ```
 
-```scala
-import temperatureScales.celsiusScale
-Celsius(30).show   // t"30.0 °C"
-```
-
-```scala
-import temperatureScales.fahrenheitScale
-Fahrenheit(30).show   // t"30.0 °F"
+```scala fuel
+alternative Celsius
+  code
+      import temperatureScales.celsiusScale
+      Celsius(30).show   // t"30.0 °C"
+alternative Fahrenheit
+  code
+      import temperatureScales.fahrenheitScale
+      Fahrenheit(30).show   // t"30.0 °F"
+##
 ```
 
 A `Temperature` adds and subtracts Kelvin (or Rankine) _quantities_ to give another

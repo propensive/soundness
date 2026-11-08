@@ -602,7 +602,9 @@ entry .Edge   one edge of a toolchain: a tool producing the `target` format from
       `Toolchain(…)` assembles any number of such lists; an edge for a new format is written
       directly, with a `Tool` of its own.
 
-      ```scala
+      ```scala fuel
+      substitute ???  ...
+      ##
       import soundness.*
 
       val proto = Artifact.source(t"proto")

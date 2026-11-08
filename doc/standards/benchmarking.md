@@ -11,7 +11,9 @@ Benchmarks live in a module's `src/bench` directory, in a file named
 `<module>.Benchmarks.scala`. The object extends `Suite` and is conventionally
 named `Benchmarks`:
 
-```scala
+```scala fuel
+substitute ???  ...
+##
 object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
   def run(): Unit = ???
 ```

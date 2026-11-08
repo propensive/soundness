@@ -208,13 +208,11 @@ compiletime, for a record with no `@name` or `@attribute` annotations and no nam
 writes the same text:
 
 ```scala fuel
-frame
-  label Through an XML tree
+alternative Through a tree
   code
       Worker(t"Alice", 30).in[Text over Xml]
       // t"<Worker><name>Alice</name><age>30</age></Worker>"
-frame
-  label Written directly, by a derived printer
+alternative Direct
   code
       val direct =
         given Worker is Xml.Printable = Xml.Direct.derived[Worker].printable

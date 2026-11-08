@@ -30,13 +30,17 @@ log output, however expensive.
 
 A method opts in by naming its event type in the return type:
 
-```scala
+```scala fuel
+substitute ???  ...
+##
 def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
 ```
 
 A method may log more than one event type by chaining:
 
-```scala
+```scala fuel
+substitute ???  ...
+##
 def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
 ```
 

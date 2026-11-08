@@ -1285,8 +1285,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
       `optionalityOptions`, so the names carry `Yaml` to stay distinct.
 
       ```scala fuel
-      frame
-        label The defaults: a null reads as Unset, a wrong-typed value is an error
+      alternative Defaults
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -1297,8 +1296,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
             t"name: Eve".read[Yaml].as[Member]                   // Member(t"Eve", Unset)
             capture[Yaml.Error](t"name: Eve\nage: abc".read[Yaml].as[Member]).reason
             // Yaml.Error.Reason.NotType(Yaml.Primitive.Str, Yaml.Primitive.Integer)
-      frame
-        label Strict nulls: a null is handed to the inner decoder, which rejects it
+      alternative Strict nulls
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -1308,8 +1306,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
 
             capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
             // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
-      frame
-        label Strict absence: the key must be present, even if null
+      alternative Strict absence
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -1319,8 +1316,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
 
             capture[Yaml.Error](t"name: Eve".read[Yaml].as[Member]).reason
             // Yaml.Error.Reason.Absent
-      frame
-        label Lenient faults: a value the inner decoder rejects reads as Unset
+      alternative Lenient faults
         code
             import soundness.*
             import strategies.throwUnsafely

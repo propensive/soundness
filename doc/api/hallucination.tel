@@ -988,17 +988,11 @@ entry .Webp   the WebP format: `Raster in Webp`, read in its lossy, lossless and
       for a VP8 inter-frame, a non-zero VP8L version, an unknown alpha compression, or an
       extended file with none of the chunks the decoder knows.
 
-      ```scala fuel
-      frame
-        label An RGBA raster
-        code
-            import soundness.*
-            import strategies.throwUnsafely
+      Written as a lossless WebP, an RGBA raster keeps every pixel; written as a JPEG, it loses
+      its alpha channel and some precision:
 
-            val source = Raster[Rgba](8, 8): (x, y) =>
-              Pixel.make[Rgba](x.toLong*30 << 24 | y.toLong*30 << 16 | 128L << 8 | (x*9 + y*9))
-      frame
-        label Written as a lossless WebP, every pixel survives
+      ```scala fuel
+      alternative WebP
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -1008,8 +1002,7 @@ entry .Webp   the WebP format: `Raster in Webp`, read in its lossy, lossless and
 
             val webp = source.to[Webp].read[Data]
             webp.read[Raster in Webp].descriptor.hasAlpha   // true
-      frame
-        label Written as a JPEG, the alpha channel and some precision do not
+      alternative JPEG
         code
             import soundness.*
             import strategies.throwUnsafely

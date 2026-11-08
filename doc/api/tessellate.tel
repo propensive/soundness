@@ -82,18 +82,17 @@ entry .Flow   wraps, fits, truncates, chops and measures textual content within 
         Where a soft break is needed, the latest hyphenation point of the overflowing word which
         still fits with `hyphen` (by default `t"-"`) appended is preferred; failing that, the line
         breaks at its last space; failing that, the over-long word runs on beyond the width. A
-        width below 1 returns the content as a single line.
+        width below 1 returns the content as a single line. With no hyphenation in scope, the
+        companion's fallback is used; English hyphenation is imported by name:
 
         ```scala fuel
-        frame
-          label No hyphenation in scope: the companion's fallback
+        alternative No hyphenation
           code
               import soundness.*
               import textMetrics.uniformMetric
 
               Flow.wrap(t"a hyphenation", 9)   // t"a", t"hyphenation"
-        frame
-          label English hyphenation imported by name
+        alternative English
           code
               import soundness.*
               import hyphenations.englishHyphenation
@@ -166,29 +165,25 @@ entry .Alignment   horizontal placement of a line within a wider extent: left, r
       wider than the width is returned as it is (`Flow.fit` truncates first).
 
       ```scala fuel
-      frame
-        label Left: padded on the right
+      alternative Left
         code
             import soundness.*
             import textMetrics.uniformMetric
 
             Alignment.Left.pad(t"a b c", 9)   // t"a b c    "
-      frame
-        label Right: padded on the left
+      alternative Right
         code
             import soundness.*
             import textMetrics.uniformMetric
 
             Alignment.Right.pad(t"a b c", 9)   // t"    a b c"
-      frame
-        label Center: odd space on the right
+      alternative Center
         code
             import soundness.*
             import textMetrics.uniformMetric
 
             Alignment.Center.pad(t"a b c", 9)   // t"  a b c  "
-      frame
-        label Justify: word gaps stretched, except on a paragraph's last line
+      alternative Justify
         code
             import soundness.*
             import textMetrics.uniformMetric

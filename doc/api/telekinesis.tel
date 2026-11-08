@@ -1534,8 +1534,7 @@ entry .httpBackends   the HTTP transports, each an `Http.Backend` given to impor
 
       ```scala fuel
       typecheck
-      frame
-        label The JDK's client
+      alternative `javaNetHttp`
         code
             import soundness.*
             import internetAccess.online
@@ -1545,8 +1544,7 @@ entry .httpBackends   the HTTP transports, each an `Http.Backend` given to impor
             locally:
               import httpBackends.javaNetHttp
               url"https://example.com/".fetch().status   // Http.Ok
-      frame
-        label Soundness's own wire codec over a socket
+      alternative `soundnessHttp`
         code
             import soundness.*
             import internetAccess.online
@@ -1557,8 +1555,7 @@ entry .httpBackends   the HTTP transports, each an `Http.Backend` given to impor
             locally:
               import httpBackends.soundnessHttp
               url"https://example.com/".fetch().status   // Http.Ok
-      frame
-        label The same fetch, with redirects left unfollowed
+      alternative No redirects
         code
             import soundness.*
             import internetAccess.online

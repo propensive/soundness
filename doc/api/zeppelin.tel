@@ -162,15 +162,13 @@ entry .Zip   the ZIP form and plane: entries, compression, errors and the scoped
         `Deflate(0)` stores, as zlib's level 0 would, and every other level deflates alike.
 
         ```scala fuel
-        frame
-          label The default policy deflates
+        alternative Default
           code
               import charsets.utf8Charset
 
               Zip.Entry(t"log.txt".as[Path on Zip], (t"tick "*1000).in[Data]).method
               // Zip.Method.Deflate
-        frame
-          label A stored policy keeps the bytes as they are
+        alternative Stored
           code
               import charsets.utf8Charset
 
@@ -178,8 +176,7 @@ entry .Zip   the ZIP form and plane: entries, compression, errors and the scoped
                 given Zip.Compression = Zip.Compression.Stored
                 Zip.Entry(t"log.txt".as[Path on Zip], (t"tick "*1000).in[Data]).method
                 // Zip.Method.Stored
-        frame
-          label Deflating at level 0 stores too, as zlib's level 0 would
+        alternative `Deflate(0)`
           code
               import charsets.utf8Charset
 

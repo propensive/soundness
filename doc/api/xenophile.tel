@@ -522,29 +522,36 @@ entry .Native   the C ecosystem: a header's declarations as foreign types, calle
       Every top-level prototype in a header is a member of the synthetic foreign type
       `library`; a `struct` or `union` is a foreign type whose members are its fields; an
       `enum` is an `int`; a `typedef` resolves to what it names. One source, with the header
-      on the compile classpath, serves both platforms:
+      on the compile classpath, serves both platforms. The header, on the compile classpath as
+      `/xenophile/library.h`:
+
+      ```c fuel
+      path xenophile/library.h
+      ##
+      int abs(int n);
+      size_t strlen(const char* s);
+      const char* version(void);
+      typedef struct Point { int x; int y; } Point;
+      ```
+
+      The Scala source, written once:
+
+      ```scala
+      import soundness.*
+
+      given (Interface in Native at "/xenophile/library.h") =
+        Interface[Native]("/xenophile/library.h")
+
+      val library: Foreign of "library" from Native = Foreign["library", Native]
+      val five: Int = library.abs(-5).call[Int]()
+      val twelve: Long = library.strlen(t"hello, world").call[Long]()
+      ```
+
+      What `call` becomes on the JVM, with `xenophile.native` on the classpath, and on Scala
+      Native, with `xenophile.scalanative`:
 
       ```scala fuel
-      frame
-        label The header, on the compile classpath as /xenophile/library.h
-        code
-            // int abs(int n);
-            // size_t strlen(const char* s);
-            // const char* version(void);
-            // typedef struct Point { int x; int y; } Point;
-      frame
-        label The Scala source, written once
-        code
-            import soundness.*
-
-            given (Interface in Native at "/xenophile/library.h") =
-              Interface[Native]("/xenophile/library.h")
-
-            val library: Foreign of "library" from Native = Foreign["library", Native]
-            val five: Int = library.abs(-5).call[Int]()
-            val twelve: Long = library.strlen(t"hello, world").call[Long]()
-      frame
-        label What `call` becomes on the JVM, with xenophile.native on the classpath
+      alternative JVM
         code
             import soundness.*
             import java.lang.foreign.*
@@ -559,8 +566,7 @@ entry .Native   the C ecosystem: a header's declarations as foreign types, calle
                 ForeignLibrary.downcall(t"strlen", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS))
                 . invokeWithArguments(java.util.List.of(arena.allocateFrom("hello, world"))).asInstanceOf[Long]
               finally arena.close()
-      frame
-        label What `call` becomes on Scala Native, with xenophile.scalanative on the classpath
+      alternative Scala Native
         code
             import soundness.*
             import scala.scalanative.unsafe.*

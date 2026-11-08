@@ -70,6 +70,7 @@ block says so in its signature:
 
 ```scala fuel
 parse
+substitute ???  ...
 ##
 def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = ???
 ```

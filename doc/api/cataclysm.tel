@@ -527,8 +527,7 @@ entry .formatting   the two standard renderings of a stylesheet, each a given to
       `Css.Formatting(newlines, spaces)` as a local given.
 
       ```scala fuel
-      frame
-        label Indented, for reading
+      alternative Indented
         code
             import soundness.*
             import strategies.throwUnsafely
@@ -539,8 +538,7 @@ entry .formatting   the two standard renderings of a stylesheet, each a given to
             locally:
               import formatting.indentedCssFormatting
               css.show        // t"a {\n  color: red;\n  width: 4px;\n}\n"
-      frame
-        label Compact, for serving
+      alternative Compact
         code
             import soundness.*
             import strategies.throwUnsafely

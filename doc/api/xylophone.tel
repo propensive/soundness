@@ -1226,23 +1226,20 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         instances, `Inlinable.printable[T]`, `derives Xml.Direct` and `import codecs.direct`.
 
         ```scala fuel
-        frame
-          label Through an XML tree
+        alternative Through a tree
           code
               case class Worker(name: Text, age: Int)
 
               Worker(t"Alice", 30).in[Text over Xml]
               // t"<Worker><name>Alice</name><age>30</age></Worker>"
-        frame
-          label Written directly, by a derived printer
+        alternative Direct
           code
               case class Worker(name: Text, age: Int)
               given Worker is Xml.Printable = Inlinable.printable[Worker]
 
               Worker(t"Alice", 30).in[Text over Xml]
               // the same text, written with no tree built
-        frame
-          label Or in blocks, as it is printed
+        alternative In blocks
           code
               case class Worker(name: Text, age: Int)
               given Worker is Xml.Printable = Inlinable.printable[Worker]

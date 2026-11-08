@@ -1368,6 +1368,7 @@ entry .Tls   the configuration of a TLS connection: trust and keys, verification
 
       ```scala fuel
       typecheck
+      substitute ???  ...
       ##
       import soundness.*
       import strategies.throwUnsafely
@@ -1443,6 +1444,9 @@ entry .TlsAcceptance   which peer configurations a TLS connection accepts: stric
 
       ```scala fuel
       typecheck
+      substitute ???  ...
+      substitute ???  ...
+        occurrence 2
       ##
       import soundness.*
       import strategies.throwUnsafely
@@ -1479,6 +1483,7 @@ entry .TlsAcceptance   which peer configurations a TLS connection accepts: stric
 
       ```scala fuel
       typecheck
+      substitute ???  ...
       ##
       import soundness.*
       import strategies.throwUnsafely
@@ -1529,8 +1534,7 @@ entry .SecureEndpoint   a `host:port` reached over TLS: the connectable counterp
       `Socket.Error(Handshake)`.
 
       ```scala fuel
-      frame
-        label A plaintext TCP connection
+      alternative TCP
         code
             locally:
               import strategies.throwUnsafely
@@ -1540,8 +1544,7 @@ entry .SecureEndpoint   a `host:port` reached over TLS: the connectable counterp
 
               Endpoint(ip"93.184.215.14", tcp"https").duplex: duplex =>
                 duplex.alpnProtocol   // Unset: no TLS, so no ALPN
-      frame
-        label The same host over TLS, under the default `Tls`
+      alternative TLS
         code
             locally:
               import strategies.throwUnsafely
@@ -1551,8 +1554,7 @@ entry .SecureEndpoint   a `host:port` reached over TLS: the connectable counterp
 
               SecureEndpoint(t"example.com", 443).duplex: duplex =>
                 duplex.alpnProtocol   // Unset: the default configuration offers no ALPN
-      frame
-        label Offering ALPN protocols, and reading the peer's choice
+      alternative TLS with ALPN
         code
             locally:
               import strategies.throwUnsafely
@@ -1601,6 +1603,7 @@ entry .SecurePort   a TLS-secured listening TCP port: the server-side counterpar
 
       ```scala fuel
       typecheck
+      substitute ???  ...
       ##
       import soundness.*
       import strategies.throwUnsafely
@@ -1701,6 +1704,7 @@ entry .streamsDuplex   a `Duplex` over a blocking `InputStream`/`OutputStream` p
 
     ```scala fuel
     typecheck
+    substitute ???  ...
     ##
     import soundness.*
 

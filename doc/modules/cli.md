@@ -47,19 +47,17 @@ The `application` method wraps a program's entry point, giving its body the prog
 and expecting an `Exit` status in return. It takes the arguments as a list of text, which is
 what an `Application` — an abstract class whose `main` method converts the JVM's arguments and
 whose `invoke` method is the body — hands it, so a complete program is one object extending
-`Application`; the examples here spell the call out, and the same program is an object
-extending `Application` — which supplies the `main` method and asks only for an `invoke` —
-just as well:
+`Application`. The examples here spell the call out, but the same program is just as well
+an object extending `Application`, which supplies the `main` method and asks only for an
+`invoke`:
 
 ```scala fuel
-frame
-  label As a function which spells out the call
+alternative Function
   code
       def mytool(args: List[Text]): Unit = application(args):
         Out.println(t"Hello, world!")
         Exit.Ok
-frame
-  label As an object extending `Application`
+alternative `Application`
   code
       object MyTool extends Application:
         def invoke(using Cli): Exit =

@@ -905,12 +905,12 @@ entry .filesystemTraversal   the order a directory tree is walked in, each a giv
   detail
       `descendants` yields a directory's whole subtree, and the `TraversalOrder` in scope
       says whether each directory comes before or after what it contains. Neither is a
-      default: a program which walks a tree imports one by name. The same tree, walked
-      both ways:
+      default: a program which walks a tree imports one by name. Pre-order puts each
+      directory before its contents, as printing or copying a tree needs; post-order puts it
+      after them, as deleting or summing one does. The same tree, walked both ways:
 
       ```scala fuel
-      frame
-        label Pre-order: each directory before its contents, for printing or copying a tree
+      alternative Pre-order
         code
             import soundness.*
             import filesystemBackends.javaBaseFilesystem
@@ -920,8 +920,7 @@ entry .filesystemTraversal   the order a directory tree is walked in, each a giv
 
             val root: Path on Linux = (% / "tmp" / "walk").on[Linux]
             root.descendants.map(_.name).to[List]   // List(t"sub", t"inner.txt", t"top.txt")
-      frame
-        label Post-order: each directory after its contents, for deleting or summing a tree
+      alternative Post-order
         code
             import soundness.*
             import filesystemBackends.javaBaseFilesystem

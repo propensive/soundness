@@ -340,23 +340,20 @@ entry .randomization   the standard sources of randomness, each a given to impor
       import. `import soundness.*` does not import givens, so each is imported by name.
 
       ```scala fuel
-      frame
-        label Reproducible: the same seed draws the same values
+      alternative Seeded
         code
             import soundness.*
             import randomization.seededRandomization
 
             given Seed = Seed(42L)
             stochastic(arbitrary[Long]())   // the same Long on every run
-      frame
-        label Unseeded: different on each run
+      alternative Unseeded
         code
             import soundness.*
             import randomization.unseededRandomization
 
             stochastic(arbitrary[Long]())   // a different Long on every run
-      frame
-        label Secure: unpredictable, for keys and tokens
+      alternative Secure
         code
             import soundness.*
             import randomization.secureUnseededRandomization
