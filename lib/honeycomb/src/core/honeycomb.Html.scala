@@ -471,7 +471,7 @@ object Html extends Tag.Container
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.to(List).nodes, node.foreign):
+        new Element(node.label, node.attributes, children.to(List).compact.nodes, node.foreign):
           type Topic = node.Topic
           type Form = node.Form
 
@@ -481,7 +481,7 @@ object Html extends Tag.Container
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
       :   Element of labels in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.to(List).nodes, node.foreign):
+        new Element(node.label, node.attributes, children.to(List).compact.nodes, node.foreign):
           type Topic = labels
           type Form = node.Form
 

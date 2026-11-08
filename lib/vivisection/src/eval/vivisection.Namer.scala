@@ -80,11 +80,7 @@ class Namer(classpath: LocalClasspath):
         case -1 | 0 => Unset
         case index  => fetch(name.substring(0, index).nn)
 
-  // As `hyperbole.StackResolver.display`: drop a module class's trailing `$`, mark an
-  // initializer, and demangle compiler-derived names so resolved and raw frames read alike.
+  // As `hyperbole.StackResolver.display`: drop a module class's trailing `$` and demangle
+  // compiler-derived names, so resolved and raw frames read alike.
   private def display(name: Text): Text =
-    val stripped = if name.s.endsWith("$") then name.s.dropRight(1).nn else name.s
-
-    if stripped == "<init>" then t"ⲛ"
-    else if stripped.contains("$") then StackTrace.rewrite(stripped)
-    else stripped.tt
+    StackTrace.rewrite(if name.s.endsWith("$") then name.s.dropRight(1).nn else name.s)

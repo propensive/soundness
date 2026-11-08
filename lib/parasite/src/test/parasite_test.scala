@@ -675,16 +675,16 @@ object Tests extends Suite("threads", m"Parasite tests"):
 
       suite(m"Combinators"):
         test(m"Sequence collects results in order"):
-          Seq(async(1), async(2), async(3), async(4)).sequence.await()
-        . assert(_ == Seq(1, 2, 3, 4))
+          List(async(1), async(2), async(3), async(4)).sequence.await()
+        . assert(_ == List(1, 2, 3, 4))
 
         test(m"Sequence runs tasks in parallel"):
           val barrier = juc.CyclicBarrier(3)
-          val tasks = Seq(
+          val tasks = List(
             async { barrier.await(); 10 },
             async { barrier.await(); 20 },
             async { barrier.await(); 30 } )
-          tasks.sequence.await().sum
+          tasks.sequence.await().fold(0)(_ + _)
         . assert(_ == 60)
 
         test(m"Race returns first completed result"):
@@ -1217,13 +1217,13 @@ object Tests extends Suite("threads", m"Parasite tests"):
         . assert(_ == true)
 
       suite(m"Combinator edge cases"):
-        test(m"Empty sequence returns empty Seq"):
-          Seq[Task[Int]]().sequence.await()
-        . assert(_ == Seq[Int]())
+        test(m"Empty sequence returns an empty list"):
+          List[Task[Int]]().sequence.await()
+        . assert(_ == List[Int]())
 
         test(m"Single element sequence"):
-          Seq(async(42)).sequence.await()
-        . assert(_ == Seq(42))
+          List(async(42)).sequence.await()
+        . assert(_ == List(42))
 
         test(m"Race with one already-complete task picks it"):
           val ready = async(99)
@@ -1452,9 +1452,9 @@ object Tests extends Suite("threads", m"Parasite tests"):
         test(m"tasks fork in order and gather their results"):
           supervise:
             val order = juca.AtomicInteger(0)
-            val tasks = Seq(async(order.incrementAndGet()), async(order.incrementAndGet()))
+            val tasks = List(async(order.incrementAndGet()), async(order.incrementAndGet()))
             tasks.sequence.await()
-        . assert(_ == Seq(1, 2))
+        . assert(_ == List(1, 2))
 
         test(m"a task's failure is contained as on other supervisors"):
           supervise:
@@ -1739,7 +1739,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
             snooze(1.0*Second)
             2
           bad.cancel()
-          val seq = Seq(good, bad).sequence
+          val seq = List(good, bad).sequence
           val result = capture[Async.Error](seq.await())
           result.reason
         . assert(_ == Async.Error.Reason.Cancelled)

@@ -110,7 +110,7 @@ object internal:
 
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
-        annotations.filter(_.tpe <:< operand).map(rebuild(_)).compact.map(_.asExprOf[operand])
+        annotations.filter(_.tpe <:< operand).flatMap(rebuild(_).option).map(_.asExprOf[operand])
         . reverse
 
     if limit =:= TypeRepr.of[Any] then

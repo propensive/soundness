@@ -131,20 +131,32 @@ object Tests extends Suite("monads", m"Mercator tests"):
     . assert(_ == scala.util.Success(2))
 
     test(m"Sequence on List/Try"):
-      scala.collection.immutable.List(Try(1), Try(2), Try(3)).sequence
-    . assert(_ == Success(scala.collection.immutable.List(1, 2, 3)))
+      proscenium.List(Try(1), Try(2), Try(3)).sequence
+    . assert(_ == Success(proscenium.List(1, 2, 3)))
 
-    // test(m"Sequence on Vector/Try"):
-    //   Vector(Try(1), Try(2), Try(3)).sequence
-    // .assert(_ == Success(Vector(1, 2, 3)))
+    test(m"Sequence on Sequence/Try"):
+      proscenium.Sequence(Try(1), Try(2), Try(3)).sequence
+    . assert(_ == Success(proscenium.Sequence(1, 2, 3)))
+
+    test(m"Sequence on List/Try with a failure"):
+      proscenium.List(Try(1), scala.util.Failure[Int](Exception("two")), Try(3)).sequence.isFailure
+    . assert(_ == true)
 
     test(m"Sequence on List/Set"):
-      scala.collection.immutable.List
+      proscenium.List
         ( scala.collection.immutable.Set(1),
           scala.collection.immutable.Set(2),
           scala.collection.immutable.Set(3) )
       . sequence
-    . assert(_ == scala.collection.immutable.Set(scala.collection.immutable.List(1, 2, 3)))
+    . assert(_ == scala.collection.immutable.Set(proscenium.List(1, 2, 3)))
+
+    test(m"Traverse on List/Try"):
+      proscenium.List(1, 2, 3).traverse { value => Try(value*2) }
+    . assert(_ == Success(proscenium.List(2, 4, 6)))
+
+    test(m"Traverse on Set/Try"):
+      proscenium.Set(1, 2, 3).traverse { value => Try(value*2) }
+    . assert(_ == Success(proscenium.Set(2, 4, 6)))
 
     // test(m"Monad for Either"):
     //   val monad = summon[Monad[[T] =>> Either[Any, T]]]

@@ -87,7 +87,7 @@ A domain word that the standard patterns break wrongly, or not at all, is taught
 pattern in TeX's notation, layered over the existing set:
 
 ```scala
-given Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop").stdlib)
+given Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop"))
 
 t"klmnop".hyphenate(hyphen = '-')   // t"klm-nop"
 ```
@@ -100,7 +100,7 @@ Some words no pattern gets right. An *exception* states a word's breaks outright
 precedence over the algorithm:
 
 ```scala
-given Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation").stdlib)
+given Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
 ```
 
 The standard English set already carries the exception list TeX ships, so `associate` breaks as

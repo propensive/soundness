@@ -231,16 +231,8 @@ transparent inline def validate[focus](using erased void: Void)[accrual](accrual
   ${contingency.internal.validate[accrual, focus]('accrual, 'block)}
 
 
-extension [element](sequence: Iterable[element])
-  transparent inline def survive[result](using erased void: Void)[error <: Hazard]
-    ( lambda
-    : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
-  :   Iterable[result] =
-
-    sequence.map { element => safely(lambda(element)) }.compact
-
-// The `Traversable`-receiver twin: a native collection is not an `Iterable`, so the traversal
-// is materialised and the survivors returned as a native list.
+// Over any `Traversable`, the stdlib's collections included: the traversal is materialised and
+// the survivors returned as a native list.
 extension [self, element](self: self)(using traversable: self is murmuration.Traversable by element)
   transparent inline def survive[result](using erased void: Void)[error <: Hazard]
     ( lambda

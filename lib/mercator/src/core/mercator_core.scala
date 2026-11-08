@@ -32,9 +32,9 @@
                                                                                                   */
 package mercator
 
-import scala.collection.BuildFrom
-
 import anticipation.*
+import murmuration.{Iterator, Reshapable, Traversable}
+import prepositional.*
 
 extension [value, functor[_]](using functor: Functor[functor])(value: functor[value])
   def map[value2](lambda: value => value2): functor[value2] =
@@ -52,43 +52,27 @@ extension (text: Text)
 
     builder.toString.tt
 
-extension [monad[_], collection[element] <: Iterable[element],
-  element](elems: collection[monad[element]])
-  (using monad: Monad[monad])
+// Over any `Traversable`, rebuilt in the source's own shape through `Reshapable`: a `List` of
+// `Try`s sequences to a `Try` of a `List`, a `Set` to a `Try` of a `Set`. The elements are
+// gathered, reversed, as a `List` inside the monad, and reshaped once at the end.
+extension [self](self: self)(using traversable: self is Traversable)
+  def sequence[monad[_], element, result]
+    ( using operand:    traversable.Operand <:< monad[element],
+            monad:      Monad[monad],
+            reshapable: self is Reshapable by element to result )
+  :   monad[result] =
 
-  def sequence
-    ( using buildFrom:
-              BuildFrom[scala.collection.immutable.List[element], element, collection[element]] )
-  :   monad[collection[element]] =
-
-
-    def recur
-      ( todo:        Iterable[monad[element]],
-        accumulator: monad[scala.collection.immutable.List[element]] )
-    :   monad[scala.collection.immutable.List[element]] =
-
-      if todo.isEmpty then accumulator
-      else recur(todo.tail, accumulator.flatMap { xs => todo.head.map{ x => x :: xs } })
+    traversable.traverse(self)
+    . fold(monad.point(List.empty[element])): (accumulator, next) =>
+        accumulator.flatMap { elements => operand(next).map(_ :: elements) }
+    . map { elements => reshapable.reshape(Iterator.from(List.iterator(List.invert(elements)))) }
 
 
-    recur(elems, monad.point(scala.collection.immutable.List()))
-    . map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))
+  def traverse[element2, monad[_], result](lambda: traversable.Operand => monad[element2])
+    ( using monad: Monad[monad], reshapable: self is Reshapable by element2 to result )
+  :   monad[result] =
 
-
-extension [collection[element] <: Iterable[element], element](elems: collection[element])
-  def traverse[element2, monad[_]](lambda: element => monad[element2])
-    ( using monad:     Monad[monad],
-            buildFrom: BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]] )
-  :   monad[collection[element2]] =
-
-
-    def recur
-      ( todo: Iterable[element], accumulator: monad[scala.collection.immutable.List[element2]] )
-    :   monad[scala.collection.immutable.List[element2]] =
-
-      if todo.isEmpty then accumulator
-      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map{ x => x :: xs } })
-
-
-    recur(elems, monad.point(scala.collection.immutable.List()))
-    . map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))
+    traversable.traverse(self)
+    . fold(monad.point(List.empty[element2])): (accumulator, next) =>
+        accumulator.flatMap { elements => lambda(next).map(_ :: elements) }
+    . map { elements => reshapable.reshape(Iterator.from(List.iterator(List.invert(elements)))) }

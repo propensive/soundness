@@ -51,22 +51,30 @@ legend, `StackTrace.legend`, available for rendering alongside:
 column  Glyph
 column  JVM marker
 column  Meaning
-row  `λ`  `$anonfun`  lambda
-row  `Λ`  `$anonfun$adapted`  adapted lambda
+row  `λ`  `$anonfun`, `$$Lambda`  lambda
+row  `Λ`  `$adapted`  adapted lambda: the bridge a lambda's method is called through
 row  `α`  `$anon`  anonymous class
 row  `ⲛ`  `<init>`  constructor
-row  `ι`  `initial$`  initialization
-row  `ℓ`  `lzyINIT`  lazy initializer
-row  `↑`  `super$`  super reference
+row  `ι`  `<clinit>`, `$init$`  initializer, of a class's statics or of a trait
+row  `ℓ`  `$lzyINIT`, `$lzy`, `$lzyHandle`  lazy value: its initializer, field or handle
+row  `↑`  `super$`  super accessor
+row  `⇢`  `protected$`, `inline$`, `$accessor`  accessor: protected, inline or parameter
+row  `≔`  `$_setter_$`  trait setter
 row  `⊢`  `$extension`  extension method
-row  `∂`  `$direct`  direct
-row  `δ`  `$default`  default
+row  `∂`  `$direct`  direct method, the erased form of a context function
+row  `δ`  `$default`  default argument
+row  `⊡`  `$retainedBody`  retained inline body
+row  `⊙`  `$outer`  outer reference
 row  `⁅⁆`  `$package`  package file
+row  `Ξ`  trailing `$`  object
 row  `Σ`  `$mc…$sp`  specialized method, with its signature
 ```
 
-A number after a `$` becomes a subscript, so `$anonfun$3` reads `λ₃`. The result is a trace
-that reads as the program was written, not as it was compiled.
+A number after a `$` becomes a subscript, so `$anonfun$3` reads `λ₃`; a `$uXXXX` escape becomes
+the character it encodes; and the `$$` joining a private member to the class it was expanded into
+becomes one separator. The markers are the ones the Scala compiler's `NameKinds` defines, held in
+`StackTrace.Marker.all`, from which the legend is derived. The result is a trace that reads as
+the program was written, not as it was compiled.
 
 Whether Soundness's own errors capture traces at all is the `Diagnostics` choice described in
 [error handling](errors.md) — traces for debugging, omitted where errors are expected and handled.

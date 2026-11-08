@@ -1252,15 +1252,15 @@ entry .dare   `optional.dare(block)`: applies a fallible block to a present valu
     ```
 
 entry .survive   the results of a fallible lambda over a collection, with the failures dropped
-    An extension on any `Iterable[element]`, and on any receiver which is `Traversable by
-    element`: `collection.survive[error](element => …)` applies the lambda to each element
-    under `safely`, and keeps only the results which did not raise. The `Iterable` form
-    returns an `Iterable[result]`; the `Traversable` form materialises a `List[result]`.
+    An extension on any receiver which is `Traversable by element`:
+    `collection.survive[error](element => …)` applies the lambda to each element under
+    `safely`, keeps only the results which did not raise, and returns them as a
+    `List[result]`.
 
     ```scala
     import soundness.*
 
-    List(t"1", t"x", t"3").survive[Number.Error](_.as[Int])   // List(1, 3)
+    List(t"1", t"x", t"3").survive[Int][Number.Error](_.as[Int])   // List(1, 3)
     ```
 
 entry .internal   the macro implementations behind `recover`, `mitigate`, `accrue`, `handle`, `track` and `validate`

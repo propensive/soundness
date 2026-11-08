@@ -103,14 +103,15 @@ Two operations follow immediately, and are the reason it is worth having:
 ```scala
 def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
 
-List[Option[Int]](Some(1), Some(2), Some(3)).stdlib.sequence   // Some(List(1, 2, 3))
-List(t"1", t"2", t"x").stdlib.traverse(parseNumber)  // None: the failure, not a list of failures
+List[Option[Int]](Some(1), Some(2), Some(3)).sequence   // Some(List(1, 2, 3))
+List(t"1", t"2", t"x").traverse(parseNumber)  // None: the failure, not a list of failures
 ```
 
 `sequence` turns a collection of containers inside out, and `traverse` maps a fallible function
 over a collection and gathers the results in one container rather than a collection of them —
-which is the shape of "parse all of these, and fail if any of them fails". Both range over the
-standard library's collections, so a Soundness `List` crosses to one with `stdlib` first.
+which is the shape of "parse all of these, and fail if any of them fails". Both work on any
+collection, and the result has the collection's own shape: a `List` of `Option`s sequences to an
+`Option` of a `List`, and a `Set` to an `Option` of a `Set`.
 
 ### Types as source text
 

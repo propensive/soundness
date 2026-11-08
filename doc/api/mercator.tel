@@ -190,25 +190,23 @@ entry .bind   monadic bind over any container with a `Monad`, and character-wise
     ```
 
 entry .sequence   turns a collection of containers inside out: `List[Try[Int]]` to `Try[List[Int]]`
-    An extension on any standard-library `Iterable` collection of `F[element]`, with a `Monad[F]`
-    in scope, which combines the containers in order and rebuilds a collection of the same
-    kind inside one container: `Success` of every value if all succeed, the first `Failure`
+    An extension on any collection of `F[element]`, with a `Monad[F]` in scope, which combines
+    the containers in order and rebuilds a collection of the same kind inside one container: `Success` of every value if all succeed, the first `Failure`
     otherwise; for `Option`, `None` if any is `None`; for collections, every combination.
 
     ```scala
     import soundness.*
     import scala.util.Try
 
-    scala.collection.immutable.List(Try(1), Try(2), Try(3)).sequence   // Success(List(1, 2, 3))
+    List(Try(1), Try(2), Try(3)).sequence   // Success(List(1, 2, 3))
     ```
 
-    It needs a `BuildFrom` for the collection type, so it works on the standard library's
-    collections; Soundness's opaque `List`, `Set` and `Vector` are not `Iterable`s, and must
-    cross with `.stdlib` first.
+    The collection is rebuilt through its `Reshapable` instance, so a `List` sequences to a
+    `List` and a `Set` to a `Set`.
 
 entry .traverse   maps a container-returning function over a collection and gathers the results in one container
     `elements.traverse(lambda)` is `elements.map(lambda).sequence` in a single pass: an
-    extension on any standard-library `Iterable`, for a function `element => F[element2]` with
+    extension on any collection, for a function `element => F[element2]` with
     a `Monad[F]` in scope. It is the shape of "parse all of these, and fail if any fails".
 
     ```scala
@@ -216,11 +214,11 @@ entry .traverse   maps a container-returning function over a collection and gath
 
     def parse(text: String): Option[Int] = text.toIntOption
 
-    scala.collection.immutable.List("1", "2", "3").traverse(parse)   // Some(List(1, 2, 3))
-    scala.collection.immutable.List("1", "x").traverse(parse)        // None
+    List("1", "2", "3").traverse(parse)   // Some(List(1, 2, 3))
+    List("1", "x").traverse(parse)        // None
     ```
 
-    As with `sequence`, Soundness's opaque collections must cross with `.stdlib` first.
+    As with `sequence`, the result has the collection's own shape.
 
 entry .internal   the macros which derive `Identity`, `Functor` and `Monad` instances
   hidden

@@ -674,7 +674,7 @@ object internal:
     // The presets are widened to the attribute map's value type so that the concatenation's
     // two operands agree; it is right-biased, so a supplied attribute overrides a preset.
     val presets2 = '{$presets: Map[Text, Optional[Text]]}
-    val supplied = '{${Expr.ofList(attributes)}.compact.to(Map)}
+    val supplied = '{proscenium.List.from(${Expr.ofList(attributes)}).compact.to[Map]}
     val attrsExpr = '{Attributes.from($presets2 + $supplied)}
     '{$tag.node($attrsExpr)}.asExprOf[result]
 

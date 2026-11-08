@@ -56,20 +56,96 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
 
       . assert(_ == t"defaultedδ₁")
 
-      test(m"A constructor is marked as an initializer"):
+      test(m"A constructor is marked"):
         StackTrace.rewrite("<init>", method = true)
 
       . assert(_ == t"ⲛ()")
+
+      test(m"A static initializer and a trait initializer are marked as initializers"):
+        (StackTrace.rewrite("<clinit>"), StackTrace.rewrite("$init$"))
+
+      . assert(_ == (t"ι", t"ι"))
+
+      test(m"A lambda's method is marked with its number"):
+        StackTrace.rewrite("lam$$anonfun$1", method = true)
+
+      . assert(_ == t"lam.λ₁()")
+
+      test(m"An adapted lambda's bridge marks the lambda"):
+        StackTrace.rewrite("lam$$anonfun$1$adapted", method = true)
+
+      . assert(_ == t"lam.Λ₁()")
+
+      test(m"An anonymous class is marked"):
+        StackTrace.rewrite("Outer$$anon$3")
+
+      . assert(_ == t"Outer#α₃")
+
+      test(m"A lazy value's initializer is marked"):
+        StackTrace.rewrite("lazily$lzyINIT1", method = true)
+
+      . assert(_ == t"lazilyℓ₁()")
+
+      test(m"Accessors are marked"):
+        List("super$foo", "protected$foo", "inline$foo", "foo$accessor").map:
+          StackTrace.rewrite(_)
+
+      . assert(_ == List(t"↑foo", t"⇢foo", t"⇢foo", t"foo⇢"))
+
+      test(m"A specialized method shows its signature, result last"):
+        StackTrace.rewrite("apply$mcJII$sp", method = true)
+
+      . assert(_ == t"applyΣ((Int, Int) -> Long)()")
+
+      test(m"A specialized function interface reads as a function type"):
+        StackTrace.rewrite("scala.runtime.java8.JFunction2$mcJII$sp")
+
+      . assert(_ == t"((Int, Int) => Long)")
+
+      test(m"A trait setter is marked"):
+        StackTrace.rewrite("pkg$Base$_setter_$field_$eq", method = true)
+
+      . assert(_ == t"pkg.Base≔field_=()")
+
+      test(m"An expanded private name joins its owner with one separator"):
+        StackTrace.rewrite("Foo$$hidden", method = true)
+
+      . assert(_ == t"Foo.hidden()")
+
+      test(m"A unicode escape is decoded"):
+        StackTrace.rewrite("x$u002Ey")
+
+      . assert(_ == t"x.y")
+
+      test(m"The JVM's lambda class is marked as a lambda"):
+        StackTrace.rewrite("pkg.Thing$$Lambda/0x000001")
+
+      . assert(_ == t"pkg.Thing#λ/0x000001")
 
       test(m"A module class keeps its marker"):
         StackTrace.rewrite("pkg.Foo$")
 
       . assert(_ == t"pkg.ΞFoo")
 
+      test(m"A package file is bracketed"):
+        StackTrace.rewrite("pkg.Foo$package$")
+
+      . assert(_ == t"pkg.⁅Foo⁆")
+
       test(m"A name with no `.` to split on is left alone"):
         StackTrace.rewrite("Foo$")
 
       . assert(_ == t"Foo#")
+
+      test(m"Every glyph the markers produce is in the legend"):
+        StackTrace.Marker.all.filter { marker => StackTrace.legend.at(marker.glyph).absent }
+
+      . assert(_ == Nil)
+
+      test(m"The legend describes a constructor as such"):
+        StackTrace.legend.at(t"ⲛ")
+
+      . assert(_ == t"constructor")
 
     suite(m"Capturing a stack trace"):
       test(m"A captured frame keeps the compiled names it was built from"):

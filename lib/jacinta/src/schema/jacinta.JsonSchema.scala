@@ -397,6 +397,13 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
       safely(json.selectField("type").root.string).let(_.capitalize)
 
 
+  // The labels of the fields a derived schema requires. Deliberately not inline: when this
+  // conversion is elaborated at an inline expansion site, the array's type variable is widened
+  // to `^{any.rd}`, which no `Traversable` instance satisfies; and public, since the inline
+  // accessor of a private helper reintroduces the same fresh root.
+  def requiredLabels(labels: proscenium.Array[Optional[Text]]^{}): List[Text] =
+    labels.to[proscenium.List].compact
+
   inline def conjunction[derivation <: Product: ProductReflection]
   :   derivation is Schematic over JsonSchema =
 
@@ -415,14 +422,11 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
         .pipe: iarr => iarr.stdlib.to(Map)
 
-      val required: List[Text] =
+      val labels: proscenium.Array[Optional[Text]]^{} =
         contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . stdlib.compact
-        . to(proscenium.List)
-
-      Object(properties = map, required = required)
+      Object(properties = map, required = requiredLabels(labels))
 
 
   inline def disjunction[derivation: SumReflection]: derivation is Schematic over JsonSchema =

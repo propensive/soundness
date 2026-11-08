@@ -58,22 +58,16 @@ import textSanitizers.skipSanitizer
 
 object StackResolver:
   // The compiled name cannot say which definition a frame came from, but it can say what kind of
-  // thing it is: each of these markers is minted after TASTy is written, by a phase which erases,
-  // specializes, lifts or bridges, and each is a reliable sign of that phase's work. A name with
-  // no marker says nothing, and the definition the frame resolves to speaks for itself.
+  // thing it is: each marker in `StackTrace.Marker.all` is minted after TASTy is written, by a
+  // phase which erases, specializes, lifts or bridges, and each is a reliable sign of that
+  // phase's work. A name with no marker says nothing, and the definition the frame resolves to
+  // speaks for itself.
   def hint(method: Text): Optional[Kind] =
-    val name = method.s
+    StackTrace.Marker.all.seek: marker =>
+      marker.kind.present && method.s.contains(marker.jvm.s)
+      && (marker != StackTrace.Marker.specialized || method.s.endsWith("$sp"))
 
-    if name == "<init>" then Kind.Constructor
-    else if name == "<clinit>" || name == "$init$" then Kind.Initializer
-    else if name.contains("$anonfun$adapted") then Kind.Bridge
-    else if name.contains("$anonfun") then Kind.Lambda
-    else if name.endsWith("$extension") then Kind.Extension
-    else if name.contains("$default$") then Kind.Default
-    else if name.contains("$adapted") then Kind.Bridge
-    else if name.contains("lzyINIT") || name.contains("$lzy") then Kind.Initializer
-    else if name.contains("$mc") && name.endsWith("$sp") then Kind.Specialized
-    else Unset
+    . let(_.kind)
 
   // Which of the definitions on a line the frame belongs to. Position alone cannot tell a
   // constructor from the first member declared beside it, or a lambda from its enclosing method,
@@ -89,13 +83,9 @@ object StackResolver:
   // compiler derived before pickling—anonymous functions, default getters, package files—and
   // those are exactly what `rewrite` already renders, so a resolved frame reads in the same
   // vocabulary as an unresolved one. A module class's trailing `$` is dropped first: it says
-  // nothing the frame does not say already, and it is not a derivation `rewrite` knows.
+  // nothing the frame does not say already.
   def display(name: Text): Text =
-    val stripped = if name.s.endsWith("$") then name.s.dropRight(1).nn else name.s
-
-    if stripped == "<init>" then t"ⲛ"
-    else if stripped.contains("$") then StackTrace.rewrite(stripped)
-    else stripped.tt
+    StackTrace.rewrite(if name.s.endsWith("$") then name.s.dropRight(1).nn else name.s)
 
 // Recovers the source definition behind each frame of a stack trace by reading the TASTy the
 // compiler wrote beside the classfile. TASTy records source names, not compiled ones, so the two

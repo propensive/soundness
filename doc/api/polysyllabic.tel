@@ -51,7 +51,7 @@ entry .Hyphenation   a language's hyphenation patterns and exceptions, with its 
       import soundness.*
       import hyphenations.englishHyphenation
 
-      given Hyphenation = englishHyphenation.extending(patterns = Seq(t"klm9nop"))
+      given Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop"))
 
       t"klmnop".hyphenate(hyphen = '-')   // t"klm-nop"
       ```
@@ -140,7 +140,7 @@ entry .Hyphenation   a language's hyphenation patterns and exceptions, with its 
       import soundness.*
       import hyphenations.englishHyphenation
 
-      given Hyphenation = englishHyphenation.extending(exceptions = Seq(t"hy-phenation"))
+      given Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
 
       t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phenation"
       ```
