@@ -2,68 +2,80 @@
 
 ### About
 
-[CSS](https://en.wikipedia.org/wiki/CSS) is parsed, validated and generated as typed values. A
-stylesheet parses into a `Css` tree of rules and declarations, with every property checked against
-its real grammar — the value-definition syntax of the
-[MDN data](https://github.com/mdn/data) for over six hundred properties — so a misspelled property
-or a malformed value is a structured error, not a style that silently fails in the browser. The
-`css"…"` interpolator performs the same validation as the code compiles.
+[CSS](https://en.wikipedia.org/wiki/CSS) is parsed, validated and generated as typed values.
+A stylesheet parses into a `Css` tree of rules and declarations. Every property is checked
+against its real grammar, which is the value-definition syntax of the
+[MDN data](https://github.com/mdn/data), for more than six hundred properties. A misspelled
+property, or a malformed value, is therefore a structured error, not a style which silently
+fails in the browser. The `css"…"` [interpolator] writes a stylesheet in source code, with
+typed values substituted into it.
 
-Selectors parse to the full [Selectors Level 4](https://www.w3.org/TR/selectors-4/) grammar,
-lengths and angles are typed [quantities](quantities.md), and [colors](colors.md) substitute
-directly, rendered to hex.
+Selectors parse to the full grammar of
+[Selectors Level 4](https://www.w3.org/TR/selectors-4/). Lengths and angles are typed
+[quantities](quantities.md), and [colors](colors.md) are substituted directly, written as
+hex.
 
 ### On CSS
 
-CSS is unusual among languages in that its consumers never reject it: a browser ignores what it
-does not understand, so a typo in a property name or an invalid value fails by *doing nothing*,
-discovered visually or not at all. Tooling has grown up around linting CSS text after the fact;
-type systems can do better, by checking styles where they are written.
+CSS is unusual among languages, in that its consumers never reject it. A browser ignores
+what it does not understand. A typo in the name of a property, or an invalid value, fails by
+*doing nothing*, and is discovered by eye, or not at all. Tools have grown up around
+checking the text of CSS after the fact. A type system can do better, by checking styles
+where they are written.
 
-Soundness checks CSS the way it checks any other embedded language: literals at compiletime,
-runtime input on arrival, both against the genuine grammar of each property. Everything comes from
-the `soundness` package, with a formatting choice in scope for rendering:
+Here CSS is checked against the real grammar of each property, as it is parsed. That is
+[safety by construction](../philosophy/safety-by-construction.md), applied to a language
+which is usually validated in a browser.
+
+Everything comes from the `soundness` package. A choice of formatting is in scope, for
+writing CSS out, and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
 import formatting.indentedCssFormatting
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
-
-Properties checked as the code compiles are [safety by construction](../philosophy/safety-by-construction.md) applied to a language usually validated in a browser.
 
 ### Writing CSS
 
-The `css"…"` interpolator writes a stylesheet, checked as the code compiles, and substitutes typed
-values — a color renders as hex, a length with its unit:
+The `css"…"` interpolator writes a stylesheet. Typed values are substituted into it: a
+color is written as hex, and a length with its unit.
 
 ```scala
 val red = Srgb(1.0, 0.0, 0.0)
 val width = 4.0*Px
 
-css"a { color: $red; width: $width }"
+val sheet = css"a { color: $red; width: $width }"
 ```
 
-An unknown property, or a value that does not satisfy the property's grammar, is a compile error.
-Bare declarations, without a selector, form a `Css.Style` for use as an inline `style` attribute,
-and can equally be built from named arguments:
+```scala fuel
+run
+##
+Out.println(sheet.show)
+```
 
-```scala
-Css.Style(color = red, width = 4.0*Px).text   // t"color: #ff0000; width: 4px"
+Bare declarations, with no selector, form a `Css.Style`, for use as an inline `style`
+attribute. One can equally be built from named arguments:
+
+```scala fuel
+run
+##
+Out.println(Css.Style(color = red, width = 4.0*Px).text)
 ```
 
 ### Units
 
-CSS's units are typed quantities, so a length is a length and cannot be confused with a number or
-an angle:
+The units of CSS are typed quantities, so a length is a length, and cannot be confused with
+a number or an angle:
 
 ```scala
-2.0*Rem
-50.0*Pct
-90.0*Deg
+val margin = 2.0*Rem
+val half = 50.0*Pct
+val quarterTurn = 90.0*Deg
 ```
 
-Each unit is one of a dimension, and only units of the same dimension add or convert:
+Each unit belongs to a dimension, and only units of the same dimension add or convert:
 
 ```tabular
 column  Units
@@ -79,63 +91,80 @@ row  `Deg`, `Rad`, `Turn`  angle  nothing else, not even one another
 row  `Fr`  a share of a grid's free space  nothing else
 ```
 
-The physical units CSS shares with the real world are the same quantities used everywhere else in
-Soundness.
+The physical units which CSS shares with the real world are the same
+[quantities](quantities.md#mixing-units) which are used everywhere else.
 
 ### Parsing
 
-CSS text parses with `read`, validating every declaration and accumulating *all* the problems
-rather than stopping at the first — the shape a linter or a build step needs:
+CSS text is parsed with `read`:
 
 ```scala
 import errorDiagnostics.stackTracesDiagnostics
 
-t"a { color: red }".read[Css]
-
-capture[Css.Errors](t"a { colour: red }".read[Css]).errors.head.let(_.reason)
-// Css.Error.Reason.UnknownProperty(t"colour")
+val parsed = t"a { color: red }".read[Css]
 ```
 
-Each `Css.Error` carries its line, column and reason — an unknown property, a bad value, a malformed
-selector — so a stylesheet's faults are reported precisely.
+Every declaration is validated, and *all* the problems are collected, instead of stopping at
+the first, which is what a linter, or a step of a build, needs. The error type is plural,
+`Css.Errors`, because reporting one fault at a time, from a document which has several, is
+the wrong shape for the job:
+
+```scala fuel
+run
+##
+val faults = capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors
+
+faults.each: fault =>
+  Out.println(fault.reason.inspect)
+```
+
+Each `Css.Error` has its line, its column and its reason, such as an unknown property, a bad
+value or a malformed selector, so the faults of a stylesheet are reported precisely.
+[Errors](errors.md#accumulating-failures) describes accumulating errors in general.
 
 ### Rendering
 
-A `Css` renders back to text through the formatting in scope — standard formatting indents for
-reading, compact strips every inessential character for serving:
+A `Css` is written back to text through the formatting in scope. The standard formatting
+indents, for reading. The compact formatting strips every inessential character, for
+serving:
 
-```scala
-t"a { color: red }".read[Css].show
-// a {
-//   color: red;
-// }
+```scala fuel
+run
+##
+Out.println(parsed.show)
 
 locally:
   import formatting.compactCssFormatting
-  t"a { color: red }".read[Css].show   // t"a{color:red;}"
+  Out.println(parsed.show)
 ```
 
-Stylesheets concatenate with `+`, and a stylesheet reports the classes and ids it defines — the
-hook by which [HTML](html.md) class attributes are checked against the styles that exist.
+Stylesheets are joined with `+`. A stylesheet reports the classes and the ids which it
+defines, which is how the class attributes of [HTML](html.md#attributes) are checked against
+the styles which exist.
 
 ### Selectors
 
-Selectors are structural values covering the full modern grammar — combinators including the column
-`||`, attribute tests, `:is`, `:not`, `:has`, `An+B` expressions and nesting `&` — so a selector can
-be built, inspected and rendered rather than spliced together as text.
+Selectors are structural values, which cover the full modern grammar: combinators,
+including the column combinator `||`, tests on attributes, `:is`, `:not`, `:has`, `An+B`
+expressions, and the nesting selector `&`. A selector can therefore be built, inspected and
+written out, and need not be spliced together as text.
 
-A parsed selector is a tree, not a string: a compound selector holds its simple parts, a complex
-selector holds compounds joined by combinators, and a selector list holds alternatives. Each part
-is a typed case, so a program can ask what a selector actually matches:
+A parsed selector is a tree, not a string. A compound selector holds its simple parts, a
+complex selector holds compounds joined by combinators, and a selector list holds
+alternatives. Each part is a typed case, so a program can ask what a selector actually
+matches:
 
 ```scala
-t"a > b { color: red }".read[Css]        // a child combinator between two type selectors
-t"a:hover { color: red }".read[Css]      // a type selector with a pseudo-class
-t"p::before { color: red }".read[Css]    // a pseudo-element
+val child = t"a > b { color: red }".read[Css]
+val hover = t"a:hover { color: red }".read[Css]
+val before = t"p::before { color: red }".read[Css]
 ```
 
-Attribute selectors carry their matcher and the case-sensitivity modifier where one is given, so
-`[href^="https" i]` is understood rather than merely preserved:
+The three are a child combinator between two type selectors, a type selector with a
+pseudo-class, and a pseudo-element.
+
+Attribute selectors have their matcher, and the modifier for case-sensitivity where one is
+given, so `[href^="https" i]` is understood, and not merely preserved:
 
 ```tabular
 column  Syntax
@@ -150,43 +179,38 @@ row  `[a$=v]`  `AttributeMatcher.Suffix`  ends with `v`
 row  `[a*=v]`  `AttributeMatcher.Substring`  contains `v`
 ```
 
-`An+B` arguments to `:nth-child` and its siblings parse to their coefficients, with `odd` and
-`even` normalized to `2n+1` and `2n`, and an `of` clause kept alongside. `:is`, `:not` and `:has`
-carry selector lists as their arguments, so their contents are themselves inspectable.
+`An+B` arguments, to `:nth-child` and its siblings, are parsed to their coefficients. `odd`
+and `even` are normalized to `2n+1` and `2n`, and an `of` clause is kept beside them. `:is`,
+`:not` and `:has` have selector lists as their arguments, so their contents can themselves
+be inspected.
 
-Namespaced type selectors — `svg|rect`, `*|a` and the default-namespace `|a` — keep their prefix
-distinctly, since the three mean different things.
-
-### Property validation
-
-Parsing checks property names against the known set, so a misspelling is an error rather than a
-declaration that silently does nothing:
-
-```scala
-capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors.map(_.reason)
-// List(Css.Error.Reason.UnknownProperty(t"colour"), Css.Error.Reason.BadValue(…))
-```
-
-Errors accumulate: a rule with several bad declarations reports all of them, so a stylesheet is
-corrected in one pass. The error type is plural — `Css.Errors` — because reporting one fault at a
-time from a document that has several is the wrong shape for the job.
+Type selectors with a namespace, which are `svg|rect`, `*|a`, and `|a` for the default
+namespace, keep their prefix distinctly, since the three mean different things.
 
 ### Checking class names against a stylesheet
 
-The point of knowing which classes and ids a stylesheet defines is to check the markup that uses
-them. Binding a stylesheet resource makes its names available at compiletime, and an
-[HTML](html.md) attribute referring to a name resolves to `class` or `id` according to which the
-stylesheet declares — so a misspelled class name in a template is a compile error, and the right
-attribute is used without saying which:
+The point of knowing which classes and ids a stylesheet defines is to check the markup which
+uses them. Binding a stylesheet resource makes its names available at compiletime. An HTML
+attribute which refers to a name then resolves to `class` or to `id`, according to which the
+stylesheet declares. A misspelled class name in a template is therefore a compile error, and
+the right attribute is used without saying which:
 
 ```scala fuel
 typecheck
 ##
 import classloaders.threadContextClassloader
 
-given (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
+given styles: (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
 import cssBindings.checkedBinding
 ```
 
 The resource is read as the code compiles, so the stylesheet must be on the compiler's
-classpath, and the binding's type names the resource it was read from.
+[classpath](classpath.md), and the type of the binding names the resource which it was read
+from.
+
+### Related
+
+- [HTML](html.md) builds the elements which a stylesheet styles.
+- [Colors](colors.md) and [Quantities](quantities.md) supply the typed values of properties.
+- [Pages](pages.md) gathers the styles of a page's parts into one stylesheet.
+- [Names](names.md#built-in-planes) describes the rules for a class name.

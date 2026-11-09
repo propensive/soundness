@@ -2,89 +2,110 @@
 
 ### About
 
-A web page is a tree of live objects — the document, its elements, the window around them — with
-an interface the browser publishes in [WebIDL](https://en.wikipedia.org/wiki/Web_IDL): which
-members `Document` has, what `getElementById` takes, what it returns. Soundness reads those
-definitions as the code compiles, so an expression over the page — find an element, give it
-focus, scroll the window — is written in Scala, checked member by member against the browser's
-own declarations, and rendered to JavaScript for the page to run.
+A web page is a tree of live objects: the document, its elements, and the window around
+them. The browser publishes their interface in
+[WebIDL](https://en.wikipedia.org/wiki/Web_IDL), which says which members `Document` has,
+what `getElementById` takes, and what it returns.
 
-The page's globals, `document` and `window`, are foreign values of the `Browser` ecosystem. They
-navigate as though the DOM's interfaces were Scala types, every step producing another foreign
-value of the declared type, and the resulting expression can be serialized to JavaScript text or
-placed directly in an [HTML](html.md) event-handler attribute such as `onclick`.
+Those definitions are read at [compiletime]. An expression over the page, which finds an
+element, gives it focus, or scrolls the window, is written in Scala. It is checked, member
+by member, against the browser's own declarations, and is written out as JavaScript for the
+page to run.
+
+The page's globals, `document` and `window`, are foreign values of the `Browser`
+*ecosystem*. They are navigated as though the DOM's interfaces were Scala types, and every
+step gives another foreign value, of the declared type. The resulting expression can be
+serialized to JavaScript text, or placed directly in an event-handler attribute of an
+[HTML](html.md) element, such as `onclick`.
 
 ### On scripting the browser from Scala
 
-A Scala program that generates a page runs on the JVM, but the behavior it attaches to the page
-runs in a browser, and the usual way to bridge the gap is a string: `onclick="…"` holding
-JavaScript the compiler never sees. A misspelled method, a wrong argument type, a call on something
-that is not an element — each survives compilation and fails, silently or loudly, in someone else's
-browser.
+A Scala program which generates a page runs on the JVM, but the behavior which it attaches
+to the page runs in a browser. The usual way to bridge the gap is a string: `onclick="…"`,
+holding JavaScript which the compiler never sees. A misspelled method, an argument of the
+wrong type, or a call on something which is not an element, each survives compilation, and
+fails, silently or loudly, in someone else's browser.
 
-Nothing here runs the DOM on the JVM. A navigation over `document` builds an *expression* — a typed
-tree of references, selections and applications — and performs nothing itself; the expression is
-serialized to JavaScript and handed to the page. What the compiler checks is the construction: a
-member must exist on the foreign type, and an argument must be a Scala value with a known foreign
-counterpart. The mechanism is the general one for
-[foreign interfaces](foreign-interop.md), with the browser as its ecosystem and the DOM's WebIDL as
-its definition file. Everything comes from the `soundness` package:
+Nothing here runs the DOM on the JVM. A navigation over `document` builds an *expression*: a
+typed tree of references, selections and applications. It performs nothing itself. The
+expression is serialized to JavaScript, and handed to the page.
+
+What the compiler checks is the construction. A member must exist on the foreign type, and
+an argument must be a Scala value with a known foreign counterpart. The mechanism is the
+general one for [foreign interfaces](foreign-interop.md), with the browser as its ecosystem,
+and the DOM's WebIDL as its definition file.
+
+Everything comes from the `soundness` package. The second import lets the samples print
+their results:
 
 ```scala
 import soundness.*
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### The page's globals
 
-`document` and `window` are values of type `Foreign of "Document" from Browser` and
-`Foreign of "Window" from Browser`: foreign values whose *topic* is a WebIDL interface name and
-whose *origin* is the `Browser` ecosystem. Each stands for the JavaScript global of the same name,
-and nothing more: a reference, to be resolved when the page runs.
+`document` and `window` are values of the types `Foreign of "Document" from Browser` and
+`Foreign of "Window" from Browser`. Each is a foreign value, whose *topic* is the name of a
+WebIDL interface, and whose *origin* is the `Browser` ecosystem. Each stands for the
+JavaScript global of the same name, and nothing more: a reference, to be resolved when the
+page runs.
 
 ```scala
 val page: Foreign of "Document" from Browser = document
 val frame: Foreign of "Window" from Browser = window
 ```
 
-The `Browser` ecosystem carries its own interface definitions, so no further import is needed to
-navigate from either value.
+The `Browser` ecosystem has its own interface definitions, so no further import is needed
+to navigate from either value.
 
 ### Navigating the DOM
 
-A foreign value's members are the members its WebIDL interface declares, and selecting one yields
-a foreign value of the declared result type. `Document` declares `getElementById` returning an
-`HTMLElement`, so the result navigates onward to the members of `HTMLElement`, such as `focus`,
-`click` and `blur`. Inheritance is flattened, so an `HTMLElement` also offers everything `Element`
-and `Node` declare:
+The members of a foreign value are the members which its WebIDL interface declares, and
+selecting one gives a foreign value of the declared result type. `Document` declares
+`getElementById`, which returns an `HTMLElement`. The result is therefore navigated onward,
+to the members of `HTMLElement`, such as `focus`, `click` and `blur`. Inheritance is
+flattened, so an `HTMLElement` also offers everything which `Element` and `Node` declare:
 
 ```scala
 val heading: Foreign of "HTMLElement" from Browser = document.getElementById(t"heading")
-heading.focus()
-heading.setAttribute(t"hidden", t"true")
+val focused = heading.focus()
+val hidden = heading.setAttribute(t"hidden", t"true")
 ```
 
-`querySelectorAll` returns a sequence, and a sequence indexes with an integer to give an element
-of its declared type. `Window` declares a `document` attribute, so the same page is reachable by
-either route:
+`querySelectorAll` returns a sequence, and a sequence is indexed with an integer, to give an
+element of its declared type. `Window` declares a `document` attribute, so the same page can
+be reached by either route:
 
 ```scala
 val first: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".btn")(0)
-window.document.getElementById(t"x").focus()
+val viaWindow = window.document.getElementById(t"x").focus()
 ```
 
-A member the interface does not declare, or an argument with no counterpart in the foreign type
-system, is a compile error — the mistake a browser would otherwise report as `undefined is not a
-function`, caught where the expression is written:
+A member which the interface does not declare is a compile error. It is the mistake which a
+browser would otherwise report as `undefined is not a function`, caught where the expression
+is written:
 
-```scala
-document.getElementByld(t"heading")   // does not compile: Document declares no such member
-document.getElementById(42)           // does not compile: elementId is a string
+```scala fuel
+compile
+errors show
+##
+document.getElementByld(t"heading")
+```
+
+So is an argument of the wrong type:
+
+```scala fuel
+compile
+errors show
+##
+document.getElementById(42)
 ```
 
 ### Values that cross the boundary
 
-A Scala value passes as an argument only where an `Interoperable` instance says which foreign type
-it corresponds to:
+A Scala value is passed as an argument only where an `Interoperable` instance says which
+foreign type it corresponds to:
 
 ```tabular
 column  Scala type
@@ -106,23 +127,24 @@ row  `Map[K, V]`  `record<K, V>`
 row  `Optional[T]`  `T?`, with `Unset` as `null`
 ```
 
-The numbers are sized, so a parameter declared `long` takes an `S32` and not an unsized `Int`:
+The numbers are [sized](numbers.md#numeric-types), so a parameter which is declared `long`
+takes an `S32`, and not an unsized `Int`:
 
 ```scala
 val left: S32 = 0
 val top: S32 = 480
 
-window.scrollTo(left, top)
+val scrolled = window.scrollTo(left, top)
 ```
 
-Each argument is checked against the declared parameter type, in the foreign type system's own
-terms: `scrollTo` wants two values of foreign type `s32`, and an `S32` is the Scala value that
-provides one.
+Each argument is checked against the declared type of its parameter, in the foreign type
+system's own terms. `scrollTo` wants two values of the foreign type `s32`, and an `S32` is
+the Scala value which provides one.
 
 ### Serializing to JavaScript
 
-A foreign value's `expr` is its expression, a `Foreign.Expression`: a small tree of these
-nodes.
+A foreign value's `expr` is its expression, a `Foreign.Expression`, which is a small tree of
+these nodes:
 
 ```tabular
 column  Node
@@ -135,50 +157,67 @@ row  `Index(target, index)`  an index access  `target[index]`
 row  `Literal(value)`  a constant  `'text'`, `42`
 ```
 
-`Javascript.serialize` renders the tree as JavaScript source text:
+`Javascript.serialize` writes the tree as JavaScript source text:
 
-```scala
-Javascript.serialize(heading.focus().expr)
-// t"document.getElementById('heading').focus()"
-
-Javascript.serialize(first.click().expr)
-// t"document.querySelectorAll('.btn')[0].click()"
+```scala fuel
+run
+##
+Out.println(Javascript.serialize(focused.expr))
+Out.println(Javascript.serialize(first.click().expr))
+Out.println(Javascript.serialize(scrolled.expr))
 ```
 
-String literals render single-quoted, so the output nests cleanly inside an HTML attribute's double
-quotes, and a backslash, a quote or a line break in the text is escaped:
+String literals are written with single quotes, so the output nests cleanly inside the
+double quotes of an HTML attribute. A backslash, a quote or a line break in the text is
+escaped:
 
-```scala
-Javascript.serialize(window.alert(t"it's done").expr)
-// t"window.alert('it\\'s done')"
+```scala fuel
+run
+##
+Out.println(Javascript.serialize(window.alert(t"it's done").expr))
 ```
 
-The expression itself is plain data, and can be inspected or matched on. The first sample above
-is an `Apply` of a `Select` of the `Reference` named `document`, with a single `Literal`
-argument, and tests of generated scripts can assert on exactly that structure.
+The expression itself is plain data, and can be inspected, or matched on. The first sample
+above is an `Apply` of a `Select` of the `Reference` named `document`, with a single
+`Literal` argument, and [tests](testing.md) of generated scripts can assert on exactly that
+structure.
 
 ### Scripts in HTML attributes
 
-An event-handler attribute of an [HTML](html.md) element — `onclick`, `onchange` and the rest —
-expects a *script*, a distinct attribute type that ordinary text does not satisfy. A foreign DOM
-expression does satisfy it, and is serialized to JavaScript when the page is shown:
+An event-handler attribute of an HTML element, such as `onclick` or `onchange`, expects a
+*script*. That is a distinct type of attribute, which ordinary text does not satisfy. A
+foreign DOM expression does satisfy it, and is serialized to JavaScript when the page is
+shown:
 
 ```scala
 import htmlDoms.html4Transitional
 import html4Transitional.*
-
-Button(onclick = heading.focus()).show
-// <button onclick="document.getElementById('heading').focus()"></button>
 ```
 
-A string in the same position is rejected, which is the point of the distinction: the JavaScript
-that reaches the page was constructed by navigating the DOM's own definitions, and no unchecked
-text can take its place:
-
-```scala
-Button(onclick = t"document.getElementById('heading').focus()")   // does not compile: a script, not text
+```scala fuel
+run
+##
+Out.println(Button(onclick = heading.focus()).show)
 ```
 
-Only a foreign value from the `Browser` ecosystem is accepted. A foreign expression from another
-ecosystem — a TypeScript declaration, a WebAssembly interface — has the same shape but no way to
-run in a page, so it cannot be an event handler, however well typed it is.
+A string in the same position is rejected, which is the point of the distinction. The
+JavaScript which reaches the page was constructed by navigating the DOM's own definitions,
+and no unchecked text can take its place:
+
+```scala fuel
+compile
+errors show
+##
+Button(onclick = t"document.getElementById('heading').focus()")
+```
+
+Only a foreign value from the `Browser` ecosystem is accepted. A foreign expression from
+another ecosystem, such as a TypeScript declaration or a WebAssembly interface, has the same
+shape, but no way to run in a page. It cannot be an event handler, however well typed it is.
+
+### Related
+
+- [HTML](html.md#attributes) builds the elements which scripts are attached to.
+- [Foreign interfaces](foreign-interop.md) describes the general mechanism, for other
+  ecosystems.
+- [Web automation](web-automation.md) drives a real browser from outside the page.
