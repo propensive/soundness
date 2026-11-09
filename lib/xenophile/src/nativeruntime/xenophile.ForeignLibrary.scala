@@ -71,7 +71,7 @@ object ForeignLibrary:
         if handle == null then attempt(rest) else handle
 
       case Nil =>
-        val tried = paths.map(_.s).mkString(", ").tt
+        val tried = paths.join(t", ")
         panic(m"xenophile: no native library could be loaded from $tried")
 
     handles = attempt(paths) :: handles
