@@ -2,49 +2,52 @@
 
 ### About
 
-Soundness represents and manipulates time: dates on a calendar, times on a
-clock, absolute instants on a physical timeline, the spans between them, the time
-zones that connect human and physical time, and the rules by which events recur.
-Wherever a value can be known when the code is written, Soundness checks it as
-the code compiles, so a date that cannot exist, or a time zone that was never
-defined, is a compile error rather than a runtime surprise. That is
-[safety by construction](../philosophy/safety-by-construction.md) applied to a domain
-where almost every value has a rule.
+Time is represented and manipulated in all its forms: dates on a calendar, times on a clock,
+absolute instants on a physical timeline, the spans between them, the time zones which connect
+human time to physical time, and the rules by which events recur.
+
+Wherever a value can be known when the code is written, it is checked at [compiletime]. A date
+which cannot exist, or a time zone which was never defined, is a compile error, not a surprise
+at [runtime]. That is [safety by construction](../philosophy/safety-by-construction.md),
+applied to a domain in which almost every value has a rule.
 
 ### On time
 
-Time looks simple and is not. A physical instant — the striking of a bell, the
-arrival of a photon — can be ordered before or after another and measured against
-a regular reference, and that much is unambiguous, *provided the two happen in the
-same place*. Even that qualification is real rather than pedantic: events at a
-distance are only [partially ordered](https://en.wikipedia.org/wiki/Special_relativity),
-related to one another through the speed of light rather than by a universal clock.
+Time looks simple, and is not.
 
-Everything humans build on top of it is less certain still. Calendars divide the
-year into months of unequal length, weeks that ignore months entirely, and days
-that are themselves divided in
-[non-decimal](https://en.wikipedia.org/wiki/12-hour_clock) and
-[historically negotiable](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September)
-ways — the twelves and sixties being
-[highly composite numbers](https://en.wikipedia.org/wiki/Highly_composite_number),
-chosen because they divide well, long before anything needed to divide decimally.
+A physical instant, such as the striking of a bell or the arrival of a photon, can be ordered
+before or after another, and measured against a regular reference. That much is unambiguous,
+*provided that the two happen in the same place*. Events at a distance are only
+[partially ordered](https://en.wikipedia.org/wiki/Special_relativity), related to one another
+through the speed of light, and not by a universal clock.
 
-The relationship between physical and civil time is worse still. The length of a
-day drifts as the Earth's rotation changes, so civil time is corrected with
-[leap seconds](https://en.wikipedia.org/wiki/Leap_second) that cannot be predicted
-years ahead. A single wall-clock reading can name two distinct instants, or none
-at all, when [daylight-saving time](https://en.wikipedia.org/wiki/Daylight_saving_time)
-shifts the clocks. The same moment carries different labels in different places,
-and which labels apply has depended, at times, on the outcome of wars.
+Everything which people build on top of it is less certain still. Calendars divide the year
+into months of unequal length, weeks which ignore months entirely, and days which are
+themselves divided in ways which are
+[not decimal](https://en.wikipedia.org/wiki/12-hour_clock), and were
+[negotiated over history](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September). The
+twelves and sixties are
+[highly composite numbers](https://en.wikipedia.org/wiki/Highly_composite_number), chosen
+because they divide well, long before anything needed to be divided by ten.
 
-Soundness systematizes as much of this as can be systematized, and it does so by
-encoding the distinctions in types. Dates know which calendar they belong to;
-instants know which timeline they measure; moments know their zone and how to
-ground themselves against it; and the awkward cases — a 31st that some months
-lack, a 29th of February that most years lack, a clock reading that falls in a
-daylight-saving gap — are resolved by policies chosen in context rather than left
-to chance. The sections below begin with the everyday types and build toward the
-rare ones:
+The relationship between physical time and civil time is worse again:
+
+- The length of a day drifts as the Earth's rotation changes, so civil time is corrected with
+  [leap seconds](https://en.wikipedia.org/wiki/Leap_second), which cannot be predicted years
+  ahead.
+- A single reading of a wall clock can name two distinct instants, or none at all, when
+  [daylight-saving time](https://en.wikipedia.org/wiki/Daylight_saving_time) shifts the
+  clocks.
+- The same moment has different labels in different places, and which labels apply has
+  depended, at times, on the outcome of wars.
+
+As much of this as can be made systematic is made systematic, by encoding the distinctions in
+types. A date knows which calendar it belongs to. An instant knows which timeline it is
+measured on. A moment knows its zone. And the awkward cases are resolved by policies which are
+chosen in context, and are not left to chance: a 31st which some months lack, a 29th of
+February which most years lack, and a clock reading which falls in a daylight-saving gap.
+
+The sections below begin with the everyday types, and build toward the rare ones:
 
 ```tabular
 column  Type
@@ -66,86 +69,112 @@ row  `Recurrence`  an event repeating at a fixed interval
 row  `Rrule`  an event repeating by a calendar pattern
 ```
 
-Every name used here comes from the `soundness` package:
+Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
 ```
 
-Operations that can fail — parsing text, constructing a date from runtime
-integers — need an error-handling strategy in scope. The `throwUnsafely` strategy
-raises an exception on failure. Reading the current time needs a *chronometry* — a
-source of instants — and the Unix clock is the ordinary choice:
+Several further choices are made by import:
 
 ```scala
 import strategies.throwUnsafely
 import chronometries.unixChronometry
 import soundness.{tsInterpolator, recInterpolator}
+import calendars.gregorianCalendar
+import dateFormats.iso8601DateFormat
+import timeFormats.iso8601TimeFormat
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+```
+
+```tabular
+column  Import
+column  Decides
+row  `strategies.throwUnsafely`  that an error, such as text which is not a date, is thrown as an exception; [Errors](errors.md#choosing-a-strategy) has the other strategies
+row  `chronometries.unixChronometry`  that the current time is read from the Unix clock
+row  `calendars.gregorianCalendar`  the calendar which a date literal, and date arithmetic, are read in; [Calendars](#calendars) has the others
+row  `dateFormats`, `timeFormats`  how a date and a time are written out; [Formatting dates and times](#formatting-dates-and-times) has the others
+row  `stdios`, `termcapDefinitions`  where the samples print their results
 ```
 
 ### Dates
 
-A date is written as a year, an abbreviated month, and a day, joined by hyphens:
+A date is written as a year, an abbreviated month and a day, joined by hyphens:
 
 ```scala
 val date = 2024-Jan-15
 ```
 
-This is not a string to be parsed at runtime; it is a literal the compiler
-understands. An impossible date does not compile. The thirtieth of February, the
-thirty-first of April, and the twenty-ninth of February in a common year are all
-rejected before the program runs:
+This is not a string to be parsed at runtime. It is a literal which the compiler understands,
+and an impossible date does not compile. The thirtieth of February, the thirty-first of April,
+and the twenty-ninth of February in a year which is not a leap year, are all rejected before
+the program runs:
 
 ```scala fuel
 compile
 errors show
 ##
 2012-Feb-30
+```
+
+```scala fuel
+compile
+errors show
+##
 2012-Apr-31
+```
+
+```scala fuel
+compile
+errors show
+##
 2011-Feb-29
-2012-Feb-29   // compiles: 2012 is a leap year
 ```
 
-Catching these mistakes at compiletime, rather than trusting a date to be valid
-because it parsed, is the recurring habit that shapes the whole design.
+Catching these mistakes at compiletime, instead of trusting a date to be valid because it
+parsed, is the recurring habit which shapes the whole design.
 
-The [Gregorian calendar](https://en.wikipedia.org/wiki/Gregorian_calendar) is the
-default. Date arithmetic and field access read it from context, so most code
-brings it into scope explicitly:
+A date is read from text with [`as`](decoding.md#decoding-a-value). The `ts` [interpolator]
+does the same for a literal which is known at compiletime, and validates its digits just as
+the hyphenated form does:
 
 ```scala
-import calendars.gregorianCalendar
+val parsed = t"2011-12-13".as[Date]
+val literal = ts"2024-12-31"
 ```
 
-A date read from text uses `as`. The `ts` interpolator does the same for a
-literal known at compiletime, where it validates the digits just as the
-hyphenated form does:
-
-```scala
-val parsed = t"2011-12-13".as[Date]   // 2011-Dec-13
-val literal = ts"2024-12-31"              // 2024-Dec-31
+```scala fuel
+run
+##
+Out.println(date.show)
+Out.println(parsed.show)
 ```
 
-The fields of a date read back as a year, a month and a day:
+Text which is not a date raises an error:
 
-```scala
-val date = 2016-Jul-11
-val fields = (date.year, date.month, date.day)   // (2016, Jul, 11)
+```scala fuel
+run
+errors show
+##
+t"2011-02-30".as[Date]
 ```
 
-A date also knows its weekday and its position in the year, and dates compare and
-shift by whole days:
+The fields of a date are read back as a year, a month and a day. A date also knows its day of
+the week, and its position in the year. Dates compare, and shift by whole days:
 
-```scala
-(2024-Jan-1).weekday          // Mon
-(2024-Dec-31).yearDay         // 366
-(2024-Jan-1) < (2024-Jan-2)   // true
-(2024-Jan-1).addDays(31)      // 2024-Feb-1
+```scala fuel
+run
+##
+Out.println((2016-Jul-11).year.inspect)
+Out.println((2016-Jul-11).month.inspect)
+Out.println((2024-Jan-1).weekday.inspect)
+Out.println((2024-Dec-31).yearDay.show)
+Out.println(((2024-Jan-1) < (2024-Jan-2)).inspect)
+Out.println((2024-Jan-1).addDays(31).show)
 ```
 
-A `Date` is the day-precision case of a more general `Timestamp`, distinguished by
-a type parameter rather than by a separate class, so a date may be used wherever a
-timestamp is expected.
+A `Date` is a `Timestamp` with a precision of one day. The two are distinguished by a type
+parameter, not by a separate class, so a date may be used wherever a timestamp is expected.
 
 ### Times of day
 
@@ -155,122 +184,153 @@ A time of day is a `Clockface`, given as hours, minutes and seconds:
 val time = Clockface(14, 30, 59)
 ```
 
-For the common case of an exact minute, a time can be written as a number with its
-meridiem attached. The minutes always take two digits:
+For the common case of an exact minute, a time can be written as a number, with `am` or `pm`
+attached. The minutes always take two digits:
 
-```scala
-2.01.am    // Clockface(2, 1, 0)
-7.25.pm    // Clockface(19, 25, 0)
-12.00.pm   // Clockface(12, 0, 0)  — noon
-12.00.am   // Clockface(0, 0, 0)   — midnight
+```scala fuel
+run
+##
+Out.println(time.show)
+Out.println(2.01.am.show)
+Out.println(7.25.pm.show)
+Out.println(12.00.pm.show)
+Out.println(12.00.am.show)
 ```
 
-These literals are checked too. An hour above twelve, or minutes that do not fit
-in two digits, will not compile:
+These literals are checked too. An hour above twelve does not compile:
 
 ```scala fuel
 compile
 errors show
 ##
 13.00.am
-7.88.am
 ```
 
 ### Timestamps
 
-A `Timestamp` pairs a date with a time of day. The `on` operator joins the two,
-reading naturally from clock to calendar:
+A `Timestamp` pairs a date with a time of day. The `on` operator joins the two, and reads
+naturally, from clock to calendar:
 
 ```scala
 val appointment = 5.25.pm on 2018-Aug-11
 ```
 
-A timestamp can also be built directly, parsed from text, or written as a `ts`
-literal:
+A timestamp can also be built directly, parsed from text, or written as a `ts` literal:
 
 ```scala
 val built = Timestamp(2023-May-28, Clockface(14, 30, 59))
-val parsed = t"2024-01-15T14:30:59".as[Timestamp]
-val literal = ts"2023-05-28T14:30:59"
+val decoded = t"2024-01-15T14:30:59".as[Timestamp]
+val written = ts"2023-05-28T14:30:59"
 ```
 
-Its fields read back individually:
-
-```scala
-val ts = Timestamp(2024-Mar-15, Clockface(14, 30, 59))
-(ts.year, ts.month, ts.day())      // (Year(2024), Mar, 15)
-(ts.hour, ts.minute, ts.second)    // (14, 30, 59)
+```scala fuel
+run
+##
+Out.println(appointment.inspect)
+Out.println(decoded.inspect)
 ```
 
-Subtracting one timestamp from another gives the span between them, decomposed
-into days, hours, minutes and seconds:
+Its fields are read back individually:
+
+```scala fuel
+run
+##
+Out.println(built.month.inspect)
+Out.println(built.hour.show)
+Out.println(built.minute.show)
+Out.println(built.second.show)
+```
+
+Subtracting one timestamp from another gives the span between them, broken down into days,
+hours, minutes and seconds:
 
 ```scala
 val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
 val b = Timestamp(2024-Jan-12, Clockface(11, 30, 15))
-val span = b - a
-(span.days, span.hours, span.minutes, span.seconds.value)   // (2, 3, 30, 15.0)
+val elapsed = b - a
+```
+
+```scala fuel
+run
+##
+Out.println(elapsed.days.show)
+Out.println(elapsed.hours.show)
+Out.println(elapsed.minutes.show)
 ```
 
 ### Months, years and anniversaries
 
-Months are an enumeration, `Jan` through `Dec`. A month converts to and from its
-text and its number, and the whole set is available as a list:
+The months are an enumeration, from `Jan` to `Dec`. A month converts to and from its text and
+its number, and the whole set is available as a list:
 
-```scala
-Month(t"Jan")    // Jan
-Month(7)         // Jul
-Dec.numerical    // 12
-Month.all.length // 12
+```scala fuel
+run
+##
+Out.println(Month(t"Jan").inspect)
+Out.println(Month(7).inspect)
+Out.println(Dec.numerical.show)
 ```
 
-A `Year` wraps a calendar year. Years add and subtract whole counts, order against
-each other, and parse from text:
+A `Year` wraps a calendar year. Years add and subtract whole numbers, compare with each other,
+and are parsed from text:
 
-```scala
-Year(2024) + 5           // Year(2029)
-Year(1999) < Year(2000)  // true
-t"2024".as[Year]     // Year(2024)
+```scala fuel
+run
+##
+Out.println((Year(2024) + 5).inspect)
+Out.println((Year(1999) < Year(2000)).inspect)
+Out.println(t"2024".as[Year].inspect)
 ```
 
-A year and a month together form a `Monthstamp`, written with `-`. Subtracting a
-day yields a date; adding months and years moves it through the calendar, rolling
-across year boundaries as needed:
+A year and a month together form a `Monthstamp`, written with `-`. Subtracting a day from one
+gives a date. Adding months and years moves it through the calendar, and rolls across the
+boundaries of years as needed:
 
 ```scala
 val month = 2024 - Jan
-(2024 - Feb) - 29          // 2024-Feb-29
-((2024 - Nov) + 3*Month)   // 2025 - Feb
-((2024 - Jun) + 1*Year)    // 2025 - Jun
 ```
 
-A month and a day, with no year, form an `Anniversary` — a birthday or a holiday
-that recurs every year. Applying it to a year produces that year's date:
+```scala fuel
+run
+##
+Out.println(((2024 - Feb) - 29).show)
+Out.println(((2024 - Nov) + 3*Month).inspect)
+Out.println(((2024 - Jun) + 1*Year).inspect)
+```
+
+A month and a day, with no year, form an `Anniversary`: a birthday, or a holiday, which recurs
+every year. Applying it to a year gives that year's date:
 
 ```scala
 val birthday = Mar - 14
 ```
 
-The twenty-ninth of February has no counterpart in a common year, so applying such
-an anniversary needs a strategy for the missing day. That strategy is a given,
-selected by what is in scope rather than passed at each call: rounding down lands
-on the twenty-eighth, and rounding up lands on the first of March:
+The twenty-ninth of February has no counterpart in most years, so applying such an anniversary
+needs a policy for the missing day. The policy is a [given], selected by what is in scope, and
+is not passed at each call. Rounding down lands on the twenty-eighth, and rounding up lands on
+the first of March:
 
-```scala
-given Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
-(Feb - 29)(Year(2023))   // 2023-Feb-28
-(Feb - 29)(Year(2024))   // 2024-Feb-29  — a leap year is unaffected
+```scala fuel
+run
+##
+locally:
+  given leapDay: Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
+
+  Out.println((Feb - 29)(Year(2023)).show)
+  Out.println((Feb - 29)(Year(2024)).show)
 ```
+
+A leap year is unaffected.
 
 ### Durations and timespans
 
-Soundness draws a firm line between two kinds of elapsed time, and the distinction
-is deliberate. A `Duration` is a physical quantity of seconds, the same everywhere
-and always. A `Timespan` is a calendar quantity — years, months, weeks, days,
-hours, minutes — whose meaning depends on where it is anchored, because a month is
-not a fixed number of seconds and a calendar day is not always twenty-four hours.
-Keeping the two apart at the type level stops a count of months from ever being
-mistaken for a count of seconds:
+A firm line is drawn between two kinds of elapsed time, and the distinction is deliberate.
+
+A `Duration` is a physical quantity of seconds, the same everywhere and always. A `Timespan`
+is a quantity on the calendar, of years, months, weeks, days, hours and minutes. Its meaning
+depends on where it is anchored, because a month is not a fixed number of seconds, and a
+calendar day is not always twenty-four hours. Keeping the two apart in the types stops a
+number of months from ever being mistaken for a number of seconds:
 
 ```tabular
 column  Aspect
@@ -282,37 +342,53 @@ row  Written  `Duration(1000L)`, from milliseconds  `2*Year + 3*Month`
 row  As text  a compact form such as `1h 0m 5s`, with `compactDurationFormat`  an ISO 8601 duration such as `P1Y2M3DT4H5M6S`
 ```
 
-A duration is a quantity of seconds. Constructed from milliseconds, it reports its
-length in seconds:
+A duration is a [quantity](quantities.md) of seconds. One which is constructed from
+milliseconds reports its length in seconds:
 
-```scala
-Duration(1000L).value   // 1.0
+```scala fuel
+run
+##
+Out.println(Duration(1000L).value.inspect)
 ```
 
-A timespan is built by multiplying a count by a unit, and several units combine
-into one span. Its components read back by name:
+A timespan is built by multiplying a number by a unit, and several units combine into one
+span. Its components are read back by name:
 
 ```scala
 val span = 2*Year + 3*Month + 14*Day
-(span.years, span.months, span.days)   // (2, 3, 14)
 ```
 
-A timespan encodes as an
-[ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) and parses
-back from one. The `dur` interpolator writes such a duration as a checked literal:
+```scala fuel
+run
+##
+Out.println(span.years.show)
+Out.println(span.months.show)
+Out.println(span.days.show)
+```
+
+A timespan is encoded as an
+[ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations), and is parsed back
+from one. The `dur` interpolator writes such a duration as a checked literal:
 
 ```scala
-val span = Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
+val precise = Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
     seconds = Quantity(6.0))
 
-span.encode                        // P1Y2M3DT4H5M6S
-t"P1Y2M3DT4H5M6S".as[Timespan] // the same span
-dur"P1Y2M3DT4H5M6S"                // checked at compiletime
+val fromText = t"P1Y2M3DT4H5M6S".as[Timespan]
+val fromLiteral = dur"P1Y2M3DT4H5M6S"
 ```
 
-A tool reads a duration from a flag and shows one in a report, and both have a compact form.
-With `durationDecodables.compactDurationDecodable` in scope, a number followed by a unit decodes
-to a `Duration`:
+```scala fuel
+run
+##
+Out.println(precise.encode)
+```
+
+#### Compact durations
+
+A tool reads a duration from a [flag](cli.md), and shows one in a report, and both have a
+compact form. With `durationDecodables.compactDurationDecodable` in scope, a number followed by
+a unit is decoded to a `Duration`:
 
 ```tabular
 column  Suffix
@@ -326,114 +402,117 @@ row  `d`  days  `2d`
 row  none  seconds  `90`
 ```
 
-Anything else — a negative, a word — raises a `Duration.Error`. With
-`durationFormats.compactDurationFormat`, a duration shows as its coarsest unit followed by every
-unit down to seconds, so a column of them lines up, or as milliseconds alone below a second:
+Anything else, such as a negative number or a word, raises a `Duration.Error`. With
+`durationFormats.compactDurationFormat`, a duration is shown as its coarsest unit, followed by
+every unit down to seconds, so that a column of them lines up. Below a second, it is shown as
+milliseconds alone:
 
 ```scala
 import durationDecodables.compactDurationDecodable
 import durationFormats.compactDurationFormat
-
-t"1.5h".as[Duration].value   // 5400.0
-Duration(3605000L).show      // 1h 0m 5s
-Duration(420L).show          // 420ms
 ```
 
-### Periods
-
-Two points of the same kind bound a `Period` with `~`, which is a half-open interval: the start is
-included, the finish is not, so consecutive periods tile a timeline without overlapping at their
-boundaries.
-
-`by` walks a period at a step, yielding each point:
-
-```scala
-(Instant(0L) ~ Instant(3_600_000L)).by(15*Minute)   // four instants
-Period(2024-Jan-1, 2024-Jan-5).by(1*Day)            // four dates
+```scala fuel
+run
+##
+Out.println(t"1.5h".as[Duration].value.inspect)
+Out.println(Duration(3605000L).show)
+Out.println(Duration(420L).show)
 ```
 
-`segments` divides it into sub-periods rather than points, which is what a calendar view or a
-bucketed report needs. A step that does not divide the period evenly drops the remainder by
-default, or keeps it as a short final segment on request:
-
-```scala
-(Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute)                 // four segments
-(Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true) // three, the last short
+```scala fuel
+run
+errors show
+##
+t"soon".as[Duration]
 ```
-
-Because a period is generic in its point type, the same operations serve instants, dates and
-timestamps, with the step expressed in whatever units that kind of point moves by.
 
 ### Arithmetic on dates
 
-Adding a span to a date moves it forward. Days and weeks are regular — they need
-no policy, because a week is always seven days:
-
-```scala
-2024-Jan-1 + 3*Day    // 2024-Jan-4
-2024-Jan-1 + 2*Week   // 2024-Jan-15
-```
-
-Months and years are irregular. Adding a month to the thirty-first of January asks
-for a thirty-first of February, which does not exist, so the result depends on a
-policy. Soundness does not pick one silently; the policy is a given the calling
-code must supply. Clamping lands on the last valid day; overflowing spills into the
-next month:
+Adding a span to a date moves it forward. Days and weeks are regular. They need no policy,
+because a week is always seven days:
 
 ```scala fuel
-alternative Clamping
-  code
-      locally:
-        import monthEnds.clampMonthEnd
-        2024-Jan-31 + 1*Month   // 2024-Feb-29
-        2024-Feb-29 + 1*Year    // 2025-Feb-28
-alternative Overflowing
-  code
-      locally:
-        import monthEnds.overflowMonthEnd
-        2024-Jan-31 + 1*Month   // 2024-Mar-2
-        2024-Feb-29 + 1*Year    // 2025-Mar-1
+run
 ##
+Out.println((2024-Jan-1 + 3*Day).show)
+Out.println((2024-Jan-1 + 2*Week).show)
+```
+
+Months and years are irregular. Adding a month to the thirty-first of January asks for a
+thirty-first of February, which does not exist, so the result depends on a policy. No policy
+is picked silently. Without one in scope, the addition does not compile:
+
+```scala fuel
+compile
+errors show
+##
+2024-Jan-31 + 1*Month
+```
+
+The policy is a given, which the calling code must supply. *Clamping* lands on the last valid
+day, and *overflowing* spills into the next month:
+
+```scala fuel
+run
+##
+locally:
+  import monthEnds.clampMonthEnd
+
+  Out.println((2024-Jan-31 + 1*Month).show)
+  Out.println((2024-Feb-29 + 1*Year).show)
+
+locally:
+  import monthEnds.overflowMonthEnd
+
+  Out.println((2024-Jan-31 + 1*Month).show)
+  Out.println((2024-Feb-29 + 1*Year).show)
 ```
 
 Subtracting one date from another counts the days between them:
 
 ```scala
-2018-Nov-19 - (2017-Sep-1)   // 444 days
+val gap = 2018-Nov-19 - (2017-Sep-1)
 ```
 
-Weekdays can be counted across a range, which answers questions like how many
+The days of the week can be counted across a range, which answers questions such as how many
 Saturdays fall in a month:
 
-```scala
-Weekday.count(2025-Mar-1, 2025-Apr-1, Sat)   // 5
+```scala fuel
+run
+##
+Out.println(Weekday.count(2025-Mar-1, 2025-Apr-1, Sat).show)
 ```
 
-Working-day arithmetic skips weekends and holidays. It needs to know which days
-form the week — a `Hebdomad` — and which dates are holidays, both supplied from
-context:
+Arithmetic in working days skips weekends and holidays. It needs to know which days form the
+week, which is a `Hebdomad`, and which dates are holidays. Both are supplied from context:
 
-```scala
-import hebdomads.europeanHebdomad
+```scala fuel
+run
+##
+locally:
+  import hebdomads.europeanHebdomad
 
-given Holidays = Holidays(List
-  ( Holiday(2025-Dec-25, t"Christmas Day"),
-    Holiday(2025-Dec-26, t"Boxing Day") ))
+  given holidays: Holidays = Holidays(List
+    ( Holiday(2025-Dec-25, t"Christmas Day"),
+      Holiday(2025-Dec-26, t"Boxing Day") ))
 
-2025-Aug-11 + WorkingDays(5)   // 2025-Aug-18, skipping the weekend
-2025-Dec-24 + WorkingDays(1)   // 2025-Dec-29, skipping the holidays and weekend
+  Out.println((2025-Aug-11 + WorkingDays(5)).show)
+  Out.println((2025-Dec-24 + WorkingDays(1)).show)
 ```
+
+The first skips a weekend, and the second skips the two holidays and the weekend which
+follows them.
 
 ### Instants
 
-An instant is a moment in physical time, with no reference to any calendar or
-clock. An `Instant` is measured along a timeline, and the timeline is part of its
-type. The `Unix` timeline — POSIX time — counts milliseconds from the
-[Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
+An instant is a moment in physical time, with no reference to any calendar or clock. An
+`Instant` is measured along a timeline, and the timeline is part of its type. The `Unix`
+timeline, which is POSIX time, counts milliseconds from the
+[Unix epoch](https://en.wikipedia.org/wiki/Unix_time), the start of 1970:
 
 ```scala
-
-val epoch = Instant(0L)   // 1970-01-01T00:00:00Z
+val epoch = Instant(0L)
 ```
 
 The current instant comes from a clock in scope:
@@ -447,84 +526,132 @@ row  `today()`  the current date  a `Clock`, a calendar and a `Timezone`
 row  `monotonic()`  a high-resolution elapsed-time counter, as an `Instant over Monotonic`  a `MonotonicClock`
 ```
 
-The clock is itself a given, so supplying a fixed one makes time deterministic,
-which is what tests want:
+The clock is itself a given. Supplying a fixed one makes time deterministic, which is what
+[tests](testing.md) want:
 
-```scala
-given Clock = Clock.fixed(Instant(99999L))
-now()   // Instant(99999L)
+```scala fuel
+run
+##
+locally:
+  given clock: Clock = Clock.fixed(Instant(99999L))
+
+  Out.println(now().inspect)
 ```
 
-Instants move by physical quantities and subtract to a duration:
+Instants move by physical quantities, and one subtracted from another gives a duration, in
+seconds:
 
-```scala
-Instant(0L) + 1*Hour            // Instant(3600000L)
-Instant(3600000L) - Instant(0L) // 3600 seconds
+```scala fuel
+run
+##
+Out.println((Instant(0L) + 1*Hour).inspect)
+Out.println((Instant(3600000L) - Instant(0L)).inspect)
 ```
 
-Two instants bound a `Period`, a half-open interval that includes its start but
-not its finish. Periods report their duration, test membership, intersect, and
-unite:
+### Periods
+
+Two points of the same kind bound a `Period`, written with `~`. A period is a half-open
+interval: its start is included, and its finish is not. Consecutive periods therefore tile a
+timeline, without overlapping where they meet.
+
+A period reports its duration, and tests whether a point lies within it:
 
 ```scala
 val period = Instant(0L) ~ Instant(3_600_000L)
-period.duration.value            // 3600.0
-period.has(Instant(0L))          // true
-period.has(Instant(3_600_000L))  // false — the finish is excluded
 ```
 
-A period divides into equal segments, and its points can be sampled at a step. The
-sampling is lazy, so a range spanning years costs nothing until its values are
-demanded:
+```scala fuel
+run
+##
+Out.println(period.duration.value.inspect)
+Out.println(period.has(Instant(0L)).inspect)
+Out.println(period.has(Instant(3_600_000L)).inspect)
+```
+
+Periods also intersect and unite.
+
+`by` walks a period at a step, and gives each point. `segments` divides it into sub-periods
+instead of points, which is what a view of a calendar needs, or a report divided into
+buckets. A step which does not divide the period evenly drops the remainder by default, or
+keeps it as a short final segment on request:
 
 ```scala
-import calendars.gregorianCalendar
 import dysasymptotics.linearSize
-
-(Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).size   // 4
-Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3)
-// Chain(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
 ```
+
+```scala fuel
+run
+##
+Out.println(period.by(15*Minute).to[List].size.show)
+Out.println(period.segments(15*Minute).size.show)
+Out.println(period.segments(25*Minute, partial = true).size.show)
+Out.println(Period(2024-Jan-1, 2024-Jan-5).by(1*Day).map(_.show).to[List].join(t", "))
+```
+
+The sampling is lazy, so a range which spans years costs nothing until its values are
+demanded:
+
+```scala fuel
+run
+##
+Out.println(Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3).map(_.show).to[List].join(t", "))
+```
+
+A period is generic in the type of its points. The same operations serve instants, dates and
+timestamps, with the step given in whatever units that kind of point moves by.
 
 ### Time zones and moments
 
-A time zone names a place's rules for civil time. The `tz` interpolator checks
-that the name exists in the
-[time-zone database](https://en.wikipedia.org/wiki/Tz_database) when the code
-compiles, so a misspelled zone never reaches a running program:
+A time zone names a place's rules for civil time. The `tz` interpolator checks, at
+compiletime, that the name exists in the
+[time-zone database](https://en.wikipedia.org/wiki/Tz_database). A misspelled zone therefore
+never reaches a running program:
+
+```scala
+val london = tz"Europe/London"
+```
 
 ```scala fuel
 compile
 errors show
 ##
-val london = tz"Europe/London"
 tz"NotARealZone"
 ```
 
-A `Moment` is a timestamp anchored to a zone — a wall-clock reading somewhere in
-particular. Grounding it with `instant` resolves it to physical time, and any
-instant places itself into a zone with `in`:
+A `Moment` is a timestamp anchored to a zone: a reading of a wall clock, somewhere in
+particular. `instant` resolves it to physical time, and `in` places any instant into a zone:
 
 ```scala
-import calendars.gregorianCalendar
-
 val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
-moment.instant                        // the corresponding Instant
-Instant(0L).in(tz"UTC").date          // 1970-Jan-1
 ```
 
-A zone's offset changes with the season. The same instant reads as one hour later
-in London in summer than in winter, because British Summer Time is in force:
+```scala fuel
+run
+##
+Out.println(moment.instant.inspect)
+Out.println(Instant(0L).in(tz"UTC").date.show)
+```
+
+A zone's offset changes with the season. The same instant reads as one hour later in London
+in summer than in winter, because British Summer Time is in force:
 
 ```scala
 import instantDecodables.iso8601InstantDecodable
 
 val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
-summer.in(tz"Europe/London").time.hour   // 13
 ```
 
-Daylight-saving transitions make some wall-clock readings ambiguous and others
-impossible, and Soundness refuses to paper over either case:
+```scala fuel
+run
+##
+Out.println(summer.in(london).time.show)
+Out.println(summer.in(tz"UTC").time.show)
+```
+
+#### Daylight-saving transitions
+
+Daylight-saving transitions make some readings of a wall clock ambiguous, and others
+impossible. Neither case is papered over:
 
 ```tabular
 column  Transition
@@ -535,79 +662,99 @@ row  clocks spring forward  falls in a *gap*, and never happens  is pushed forwa
 row  clocks fall back  falls in an *overlap*, and names two instants  is the first occurrence  `Occurrence.Second` names the later one
 ```
 
-A moment in the gap is pushed forward by default:
+A moment in the gap is pushed forward by default. On 31 March 2024, London's clocks went from
+01:00 straight to 02:00, so 01:30 never happened:
 
 ```scala
-val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London")
-spring.instant   // pushed forward to 01:30 UTC by default
+val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
 ```
 
-```scala
-import errorDiagnostics.stackTracesDiagnostics
+```scala fuel
+run
+##
+Out.println(spring.instant.in(london).time.show)
+```
 
-val rejected =
+With the rejecting policy, the same reading is an error:
+
+```scala fuel
+run
+errors show
+##
+locally:
   import gapPolicies.rejectGapPolicy
 
-  capture[Moment.Error]:
-    Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-// a Moment.Error: the local time never happens
+  Moment(2024-Mar-31, Clockface(1, 30, 0), london).instant
 ```
 
-When the clocks fall back, an hour repeats, and the two instants a reading in the
-overlap names are an hour apart:
+When the clocks go back, an hour repeats. The two instants which a reading in the overlap
+names are an hour apart:
 
 ```scala
 val clock = Clockface(1, 30, 0)
-val earlier = Moment(2024-Oct-27, clock, tz"Europe/London")
-val later = Moment(2024-Oct-27, clock, tz"Europe/London", Occurrence.Second)
-later.instant.long - earlier.instant.long   // 3600000
+val earlier = Moment(2024-Oct-27, clock, london)
+val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
+```
+
+```scala fuel
+run
+##
+Out.println((later.instant.long - earlier.instant.long).show)
 ```
 
 ### The zone database
 
-The rules behind all of this come from the [tz database](https://www.iana.org/time-zones), and its
-source files are parsed directly rather than reached through a platform API. The parser
-understands the format's own vocabulary — `Rule` lines with their `Sun>=8`-style day
-specifications, `Zone` lines with their offsets and formats, and `Link` aliases — so a database
-newer than the platform's own can be loaded, which matters when a government changes its rules at
-short notice:
+The rules behind all of this come from the [tz database](https://www.iana.org/time-zones). Its
+source files are parsed directly, and are not reached through a platform's API. The parser
+understands the format's own vocabulary: `Rule` lines, with day specifications such as
+`Sun>=8`, `Zone` lines, with their offsets and formats, and `Link` aliases. A database which
+is newer than the platform's own can therefore be loaded, which matters when a government
+changes its rules at short notice:
 
 ```scala
 val lines = Chain(t"Zone\tAmerica/Nowhere\t-5:00\t-\tEST")
-
-Tzdb.parse(t"northamerica", lines)
+val zones = Tzdb.parse(t"northamerica", lines)
 ```
 
-A file that does not exist, or a line the format does not permit, raises a `Tzdb.Error` naming the
-fault rather than silently producing a zone with the wrong rules.
+A file which does not exist, or a line which the format does not permit, raises a
+`Tzdb.Error` which names the fault. It never silently produces a zone with the wrong rules.
 
 ### Calendars
 
-Dates so far have been Gregorian, the modern civil default. Soundness supports many
-other calendars, and a date literal is interpreted by whichever calendar is in
-scope. The same written date can name a different day under a different calendar,
-which shows up in its
+The dates so far have been Gregorian, which is the modern civil default. Many other calendars
+are supported, and a date literal is interpreted by whichever calendar is in scope. The same
+written date can name a different day under a different calendar, which shows in its
 [Julian day number](https://en.wikipedia.org/wiki/Julian_day):
 
 ```scala
 val gregorian = { import calendars.gregorianCalendar; (1900-Mar-10).jdn }
 val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
-gregorian == julian   // false
 ```
 
-A calendar reads the year, month and day of a date in its own terms. Converting a
-Gregorian date into the [Coptic](https://en.wikipedia.org/wiki/Coptic_calendar),
-Islamic or Hebrew calendar reveals an entirely different year and month:
+```scala fuel
+run
+##
+Out.println((gregorian == julian).inspect)
+```
+
+A calendar reads the year, month and day of a date in its own terms. Converting a Gregorian
+date into the [Coptic](https://en.wikipedia.org/wiki/Coptic_calendar) calendar reveals an
+entirely different year and month:
 
 ```scala
-import calendars.copticCalendar
-
-val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
-(copticCalendar.annual(date)(), copticCalendar.mensual(date), copticCalendar.diurnal(date)())
-// (1716, CopticMonth.Koiak, 22)
+val millennium = 2000-Jan-1
+val coptic = calendars.copticCalendar
 ```
 
-Other calendars follow the same shape. Each is a given in the `calendars` package:
+```scala fuel
+run
+##
+Out.println(coptic.annual(millennium)().show)
+Out.println(coptic.mensual(millennium).inspect)
+Out.println(coptic.diurnal(millennium)().show)
+```
+
+The other calendars follow the same shape. Each is a given in the package `calendars`:
 
 ```tabular
 column  Calendar
@@ -627,87 +774,95 @@ row  Minguo  `minguoCalendar`  Gregorian, with years offset by -1911
 row  Ordinal  `ordinalCalendar`  none: a year and a day of the year
 ```
 
-A calendar formats a date with its own month names:
-
-```scala
-import calendars.islamicCalendar
-islamicCalendar.format(Date(Year(1445), IslamicMonth.Ramadan, Day(15)))
-// "15 Ramadan 1445"
-```
-
-When one calendar replaced another, the changeover left a gap of dates that never
-occurred. A `Regime` models such a cutover, applying the old calendar before the
-switch and the new one after, and rejecting dates that fall in the gap — at compile
-time when the date is a literal. The `calendars` package provides the papal and the
-British cutovers from the Julian to the Gregorian calendar, as `papalCutover` and
-`britishCutover`:
+A calendar formats a date with its own names for the months:
 
 ```scala fuel
-compile
-errors show
+run
 ##
-given Regime = calendars.papalCutover
-(1582-Oct-4).jdn    // last Julian day
-(1582-Oct-15).jdn   // first Gregorian day — the very next day
-1582-Oct-10   // a date in the gap
+locally:
+  import calendars.islamicCalendar
+
+  Out.println(islamicCalendar.format(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
 ```
 
-Dates also have an ordinal form — the day's number within its year — and an
-[ISO week-date](https://en.wikipedia.org/wiki/ISO_week_date) form, where a date
-belongs to a week-numbered year that need not match its calendar year:
+When one calendar replaced another, the change left a gap of dates which never occurred. A
+`Regime` models such a change. It applies the old calendar before the switch, and the new one
+after it, and rejects dates which fall in the gap, at compiletime when the date is a literal.
+The package `calendars` provides the papal and the British changes from the Julian calendar to
+the Gregorian, as `papalCutover` and `britishCutover`. Under the papal one, 4 October 1582 was
+followed directly by 15 October, and the days between do not exist:
 
 ```scala
-import calendars.gregorianCalendar
-(WeekDate.weekYear(2000-Jan-1)(), WeekDate.weekOfYear(2000-Jan-1))   // (1999, 52)
+val cutover: Regime = calendars.papalCutover
+```
+
+Dates also have an ordinal form, which is the number of the day within its year, and an
+[ISO week-date](https://en.wikipedia.org/wiki/ISO_week_date) form, in which a date belongs to
+a year numbered by weeks, which need not match its calendar year. The first day of 2000 falls
+in the last week of 1999:
+
+```scala fuel
+run
+##
+locally:
+  import calendars.gregorianCalendar
+
+  Out.println(WeekDate.weekYear(2000-Jan-1)().show)
+  Out.println(WeekDate.weekOfYear(2000-Jan-1).show)
 ```
 
 ### Recurrences
 
-A recurrence describes an event that repeats at a fixed interval. In its
-[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Repeating_intervals) form it is a
-start, a period, and an optional number of repetitions. Its occurrences form a lazy
-sequence:
+A recurrence describes an event which repeats at a fixed interval. In its
+[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Repeating_intervals) form it is a start, a
+period, and an optional number of repetitions. Its occurrences form a lazy
+[chain](collections.md#lazy-chains):
 
 ```scala
-import calendars.gregorianCalendar
-
-Recurrence(2024-Jan-1, 1*Day, 3).occurrences
-// Chain(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
+def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
 ```
 
-A recurrence with no repetition count runs forever, so it is consumed with a
-bound — every occurrence up to a date, or those falling within a window:
-
-```scala
-Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22)
-// Chain(2024-Jan-1, 2024-Jan-8, 2024-Jan-15)
-
-Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20))
-// Chain(2024-Jan-8, 2024-Jan-15)
+```scala fuel
+run
+##
+Out.println(dates(Recurrence(2024-Jan-1, 1*Day, 3).occurrences))
 ```
 
-A recurrence encodes to and decodes from its ISO 8601 form, and the `rec`
-interpolator writes one as a checked literal:
+A recurrence with no number of repetitions runs forever, so it is consumed with a bound:
+every occurrence up to a date, or those which fall within a window:
+
+```scala fuel
+run
+##
+Out.println(dates(Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22)))
+Out.println(dates(Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20))))
+```
+
+A recurrence is encoded to its ISO 8601 form, and decoded from it, and the `rec` interpolator
+writes one as a checked literal:
 
 ```scala
-Recurrence(2024-Jan-1, 1*Day, 5).encode   // R5/2024-01-01/P1D
-
 val monthly =
   import monthEnds.clampMonthEnd
 
   val recurrence: Recurrence of Date by (Timespan of Month.type) = rec"R3/2024-01-01/P1M"
   recurrence.occurrences
-// Chain(2024-Jan-1, 2024-Feb-1, 2024-Mar-1)
+```
+
+```scala fuel
+run
+##
+Out.println(Recurrence(2024-Jan-1, 1*Day, 5).encode)
+Out.println(dates(monthly))
 ```
 
 ### Recurrence rules
 
-The calendar pattern most software needs — "the third Monday of every month", "the
-last Friday", "the fourth Thursday of November" — does not fit a fixed interval.
-These are described by a recurrence rule, modeled on the
-[RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10) `RRULE`
-from iCalendar. A rule has a start, a frequency, and optional fields that select
-within each period:
+The patterns on the calendar which most software needs do not fit a fixed interval: "the
+third Monday of every month", "the last Friday", "the fourth Thursday of November". These are
+described by a recurrence rule, modeled on the `RRULE` of
+[RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10), from iCalendar. A
+rule has a start, a frequency, and optional fields which select within each period:
 
 ```tabular
 column  Field
@@ -729,214 +884,222 @@ row  `bySetPos`  `List[Int]`  `Nil`  positions within each period's expansion
 row  `weekStart`  `Weekday`  `Mon`  the first day of the week
 ```
 
-The simplest rule repeats at its frequency, taking the date from its start:
+The simplest rule repeats at its frequency, and takes the day from its start:
 
-```scala
-import calendars.gregorianCalendar
-
-Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences
-// Chain(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15)
+```scala fuel
+run
+##
+Out.println(dates(Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences))
 ```
 
-The `byDay` field selects weekdays, optionally by ordinal. The third Monday of a
-month is `WeekdayOrdinal(Mon, 3)`; the last Friday counts back from the end with
-`-1`:
+The field `byDay` selects days of the week, optionally by their position in the period. The
+third Monday of a month is `WeekdayOrdinal(Mon, 3)`. The last Friday counts back from the end,
+with `-1`:
 
-```scala
-Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2)
-    .occurrences
-// Chain(2024-Jan-15, 2024-Feb-19)
-
-Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2)
-    .occurrences
-// Chain(2024-Jan-26, 2024-Feb-23)
+```scala fuel
+run
+##
+Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2).occurrences))
+Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2).occurrences))
 ```
 
-Fields combine. The fourth Thursday of November is a yearly rule narrowed to one
-month and one weekday:
+Fields combine. The fourth Thursday of November is a yearly rule, narrowed to one month and
+one day of the week:
 
-```scala
-Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
-    byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences
-// Chain(2024-Nov-28, 2025-Nov-27)
+```scala fuel
+run
+##
+Out.println(dates(Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+    byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences))
 ```
 
-A frequency can carry an interval — every second week, every third day — and a rule
-can run weekly across several weekdays:
+A frequency can have an interval, such as every second week, or every third day. A rule can
+also run weekly across several days of the week:
 
-```scala
-Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences
-// Chain(2024-Jan-1, 2024-Jan-15, 2024-Jan-29)
+```scala fuel
+run
+##
+Out.println(dates(Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences))
 
-Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon),
-    WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences
-// Chain(2024-Jan-1, 2024-Jan-3, 2024-Jan-5, 2024-Jan-8)
+Out.println(dates(Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon),
+    WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences))
 ```
 
-The `bySetPos` field picks from each period's expansion by position, which
-expresses "the last weekday of the month" as the last of the five weekday
-candidates:
+The field `bySetPos` picks by position from the dates which each period expands to. "The last
+working day of the month" is the last of the candidates from Monday to Friday:
 
-```scala
-Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon),
+```scala fuel
+run
+##
+Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon),
     WeekdayOrdinal(Tue), WeekdayOrdinal(Wed), WeekdayOrdinal(Thu),
-    WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences
-// Chain(2024-Jan-31, 2024-Feb-29)
+    WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences))
 ```
 
-Frequencies below a day apply to timestamps, where `byHour` and `byMinute` expand
-within each day:
+Frequencies below a day apply to timestamps, in which `byHour` and `byMinute` expand within
+each day. This rule gives nine o'clock and five o'clock each day:
 
 ```scala
-Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily,
+val shifts = Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily,
     byHour = List(9, 17), count = 3).occurrences
-// the 9th and 17th hours of each day
 ```
 
-A rule renders as an RFC 5545 string and parses back from one:
+A rule is written as an RFC 5545 string, and is parsed back from one:
 
 ```scala
-Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
-    byDay = List(WeekdayOrdinal(Mon, 3))).encode
-// FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO
-
 val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
-lastFridays.keep(2)   // Chain(2024-Jan-26, 2024-Feb-23)
 ```
 
-Several rules and individual dates combine into a `RecurrenceSet`, which merges its
-sources into one ascending stream, adds explicit dates, and removes exceptions:
+```scala fuel
+run
+##
+Out.println(Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
+    byDay = List(WeekdayOrdinal(Mon, 3))).encode)
+
+Out.println(dates(lastFridays.keep(2)))
+```
+
+Several rules, and individual dates, combine into a `RecurrenceSet`. It merges its sources
+into one ascending sequence, adds explicit dates, and removes exceptions:
 
 ```scala
 val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
-RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
-    exdates = List(2024-Jan-15)).occurrences
-// Chain(2024-Jan-1, 2024-Jan-8, 2024-Jan-10, 2024-Jan-22)
+```
+
+```scala fuel
+run
+##
+Out.println(dates(RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
+    exdates = List(2024-Jan-15)).occurrences))
 ```
 
 ### Describing recurrences
 
-A rule, a recurrence or a timespan describes itself in words. The description is
-localized, and the language is enforced by the types: it needs a `Locale` and the
-month and weekday names for that language in scope, or it will not compile:
+A rule, a recurrence or a timespan describes itself in words. The description is localized,
+and the language is enforced by the types. It needs a `Locale` in scope, and the names of the
+months and of the days of the week for that language, or it does not compile:
 
 ```scala
 val english =
   import monthFormats.englishMonths
   import weekdays.englishWeekdays
-  given Locale[en] = Locale(en)
+  given locale: Locale[en] = Locale(en)
 
   Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
       byDay = List(WeekdayOrdinal(Thu, 4))).show
-// "every year on the 4th Thursday of November"
 ```
 
-Another language follows from a different locale and its names:
+Another language follows from a different locale, and its names:
 
 ```scala
 val french =
   import monthFormats.frenchMonths
   import weekdays.frenchWeekdays
-  given Locale[fr] = Locale(fr)
+  given locale: Locale[fr] = Locale(fr)
 
   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
-// "tous les mois le 3e lundi"
-```
-
-A timespan describes itself relative to now, reading forward or backward depending
-on its sign:
-
-```scala
-import timespanFormats.englishRelativeTimespan
-given Locale[en] = Locale(en)
-
-Timespan(minutes = 18).show    // "in 18 minutes"
-Timespan(minutes = -8).show    // "8 minutes ago"
-Timespan().show                // "just now"
-```
-
-### Formatting dates and times
-
-A date or time displays through a chosen format. Importing one of the named formats
-fixes the convention for the whole scope:
-
-```scala
-val date = 2025-Apr-7
 ```
 
 ```scala fuel
-alternative ISO 8601
-  code
-      val shown = { import dateFormats.iso8601DateFormat; date.show }   // 2025-04-07
-alternative American
-  code
-      val shown = { import dateFormats.americanDateFormat; date.show }   // 04/07/2025
+run
 ##
+Out.println(english)
+Out.println(french)
+```
+
+A timespan describes itself relative to now, and reads forward or backward according to its
+sign:
+
+```scala fuel
+run
+##
+locally:
+  import timespanFormats.englishRelativeTimespan
+  given locale: Locale[en] = Locale(en)
+
+  Out.println(Timespan(minutes = 18).show)
+  Out.println(Timespan(minutes = -8).show)
+  Out.println(Timespan().show)
+```
+
+[Internationalization](internationalization.md) describes locales.
+
+### Formatting dates and times
+
+A date or a time is displayed through a chosen format. Importing one of the named formats
+fixes the convention for a whole scope:
+
+```scala
+val april = 2025-Apr-7
+val afternoon = Clockface(14, 30, 59)
+```
+
+```scala fuel
+run
+##
+Out.println({ import dateFormats.iso8601DateFormat; april.show })
+Out.println({ import dateFormats.americanDateFormat; april.show })
+Out.println({ import dateFormats.europeanDateFormat; april.show })
 ```
 
 Times offer the same range, from the twenty-four-hour form to the twelve-hour form:
 
-```scala
-val time = Clockface(14, 30, 59)
-```
-
 ```scala fuel
-alternative Twenty-four hours
-  code
-      val clock = { import timeFormats.militaryTimeFormat; time.show }   // 1430
-alternative Twelve hours
-  code
-      val clock = { import timeFormats.civilianTimeFormat; time.show }   // 02:30 PM
+run
 ##
+Out.println({ import timeFormats.militaryTimeFormat; afternoon.show })
+Out.println({ import timeFormats.civilianTimeFormat; afternoon.show })
+Out.println({ import timeFormats.railwayTimeFormat; afternoon.show })
 ```
 
-For finer control, a format is composed from independent choices — the order of the
-fields, the separator between them, the width of each number, and the length of the
-year — each brought in on its own. Assembling a format from orthogonal pieces,
-rather than choosing from a fixed menu, lets unusual conventions be expressed
-without a bespoke formatter:
+For finer control, a format is composed from independent choices, each brought in on its own:
+the order of the fields, the separator between them, the width of each number, and the length
+of the year. Assembling a format from independent pieces, instead of choosing from a fixed
+menu, lets an unusual convention be expressed without a formatter written for it:
 
 ```scala
 import dateEndianness.bigEndian
 import dateNumerics.variableWidthDateNumerics
 import dateSeparators.hyphenDateSeparator
 import yearFormats.fullYears
-
-(2025-Apr-7).show   // 2025-4-7
 ```
+
+Together these four give a date with the year first, hyphens between the fields, numbers
+without leading zeros, and all four digits of the year. A named format in scope, such as
+`iso8601DateFormat`, takes precedence over a composed one.
 
 ### Leap seconds and atomic time
 
-Civil time and physical time disagree by a whole number of seconds, and the number
-grows. Since 1972, [leap seconds](https://en.wikipedia.org/wiki/Leap_second) have
-been inserted into [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time)
-to keep clocks aligned with the Earth's slowing rotation. A `Unix` instant ignores
-them, so the elapsed seconds between two `Unix` instants can be short by the leap
-seconds that fell between them.
+Civil time and physical time disagree by a whole number of seconds, and the number grows.
+Since 1972, [leap seconds](https://en.wikipedia.org/wiki/Leap_second) have been inserted into
+[UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time), to keep clocks aligned with
+the Earth's slowing rotation. A `Unix` instant ignores them, so the elapsed seconds between
+two `Unix` instants can be short by the leap seconds which fell between them.
 
-Each insertion is a correction, decided from observations of the small variations in
-the Earth's rotation over the preceding months, and made to preserve one invariant:
-that solar noon at the Greenwich Meridian — the sun's greatest elevation — stays
-within a second of the moment a clock reads 12:00:00. That is the whole reason the
-discontinuities exist, and why they cannot be predicted years in advance.
+Each insertion is a correction. It is decided from observations of the small variations in
+the Earth's rotation over the preceding months, and is made to preserve one invariant: that
+solar noon at the Greenwich Meridian, when the sun is highest, stays within a second of the
+moment when a clock reads 12:00:00. That is the whole reason the discontinuities exist, and
+why they cannot be predicted years in advance.
 
-[International Atomic Time](https://en.wikipedia.org/wiki/International_Atomic_Time)
-(TAI) has no such discontinuities. Converting a `Unix` instant to the TAI timeline
-adds the leap seconds that have accumulated by that instant — thirty-seven of them
-by 2017 — and the conversion round-trips exactly:
+[International Atomic Time](https://en.wikipedia.org/wiki/International_Atomic_Time) (TAI) has
+no such discontinuities. `over[Tai]` converts a `Unix` instant to the TAI timeline, which
+accounts for the leap seconds which had accumulated by that instant. Converting back gives the
+original instant exactly:
 
 ```scala
-import calendars.gregorianCalendar
-import instantDecodables.iso8601InstantDecodable
-
 val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
-instant.over[Tai].long - instant.long    // 37000
-instant.over[Tai].over[Unix] == instant // true
 ```
 
-Because the timelines are distinct types, subtracting an instant on one from an
-instant on the other is a compile error. A whole class of off-by-leap-seconds bugs
-simply cannot be written:
+```scala fuel
+run
+##
+Out.println((instant.over[Tai].over[Unix] == instant).inspect)
+```
+
+The timelines are distinct types, so subtracting an instant on one from an instant on the
+other is a compile error. A whole class of bugs, which are wrong by the leap seconds, simply
+cannot be written:
 
 ```scala fuel
 compile
@@ -945,23 +1108,41 @@ errors show
 Instant(0L).over[Tai] - Instant(0L)
 ```
 
-By default, arithmetic on moments is lenient: it works in civil time and steps over
-leap seconds as if they were not there. Choosing the exact mode counts them, so
-adding two hours across the leap second at the end of 2016 lands one second short
-of the lenient answer:
+By default, arithmetic on moments is lenient. It works in civil time, and steps over leap
+seconds as though they were not there. Choosing the exact mode counts them. Adding two hours
+across the leap second at the end of 2016 then lands one second short of the lenient answer:
 
-```scala
-import leapModes.exactLeapMode
+```scala fuel
+run
+##
 val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
-(start + 2*Hour).instant
-// 2017-01-01T00:59:59Z — one second behind the lenient result
+val lenient = (start + 2*Hour).instant
+
+val exact =
+  import leapModes.exactLeapMode
+  (start + 2*Hour).instant
+
+Out.println((lenient.long - exact.long).show)
 ```
 
-A leap second itself is the rare reading `23:59:60`. A zoned `ts` literal accepts
-it, flags the moment as carrying an inserted second, and grounds it to the second
-that follows:
+A leap second itself is the rare reading `23:59:60`. A `ts` literal with a zone accepts it,
+marks the moment as having an inserted second, and resolves it to the second which follows:
 
 ```scala
-val moment = ts"2016-12-31T23:59:60Z"
-moment.leap   // Leap.Inserted
+val inserted = ts"2016-12-31T23:59:60Z"
 ```
+
+```scala fuel
+run
+##
+Out.println(inserted.leap.inspect)
+```
+
+### Related
+
+- [Quantities](quantities.md) describes the physical units which a `Duration` is measured in.
+- [JSON](json.md#dates-and-times) encodes instants and durations.
+- [Decoding](decoding.md) reads a date from a command-line argument or a configuration file.
+- [Concurrency](concurrency.md) waits for a duration, and sets timeouts.
+- [Internationalization](internationalization.md) covers the locales used to describe
+  recurrences.
