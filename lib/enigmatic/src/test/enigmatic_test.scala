@@ -1106,7 +1106,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         val nonce: Data = Array.fill[Byte](12)(3)
 
         def join(parts: Data*): Data =
-          Array.unsafeFrozen(parts.map(Array.unsafeJvm(_)).reduce(_ ++ _))
+          Array.unsafeFrozen(parts.fold(scala.Array.empty[Byte])(_ ++ Array.unsafeJvm(_)))
 
         def pad(data: Data): Data =
           if data.length % 16 == 0 then data else join(data, Array.fill[Byte](16 - data.length % 16)(0))

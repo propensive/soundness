@@ -43,7 +43,7 @@ import decimalConverters.javaDecimalConverter
 
 object Transform:
   private def form(name: Text, parts: Text*): Text =
-    parts.map(_.s).mkString(s"${name.s}(", " ╱ ", ")").tt
+    parts.join(t"$name(", t" ╱ ", t")")
 
   // Written out case by case, rather than left to structural derivation, because `Angle`'s
   // instance is a top-level given in geodesy (its companion sits below the text stack) and so is

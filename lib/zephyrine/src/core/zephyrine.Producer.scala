@@ -338,13 +338,16 @@ object Producer:
     // The table replacing each character in `entities`, which must be ASCII, with its entity.
     def escapes(entities: (Char, String)*): Escapes =
       val codes = new scala.Array[Byte](128)
-      val offsets = new scala.Array[Int](entities.length + 1)
+      val offsets = new scala.Array[Int](List.size(entities) + 1)
       val data = java.io.ByteArrayOutputStream()
 
-      entities.zipWithIndex.foreach: (entity, index) =>
+      var index = 0
+
+      List.iterator(entities).foreach: entity =>
         codes(entity(0)) = (index + 1).toByte
         data.write(entity(1).getBytes(java.nio.charset.StandardCharsets.US_ASCII).nn)
         offsets(index + 1) = data.size
+        index += 1
 
       // [construction-fresh] the three tables are filled above and never written again
       Escapes

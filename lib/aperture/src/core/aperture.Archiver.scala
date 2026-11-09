@@ -38,4 +38,4 @@ package aperture
 final class Archiver(tracked val archivable: Archivable^, val value: archivable.Self):
 
   def apply(flags: archivable.Operand*): archivable.Result =
-    archivable.archive(value, flags.to(List))
+    archivable.archive(value, flags)

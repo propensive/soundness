@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import symbolism.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
@@ -49,7 +50,7 @@ object Regime:
   case class Segment(from: Date, calendar: RomanCalendar)
 
   def apply(name: Text, segments: Segment*): Regime =
-    new Regime(name, segments.toList.sortBy(_.from.jdn).to(List))
+    new Regime(name, segments.order(_.from.jdn))
 
 class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(name):
   import Regime.Segment

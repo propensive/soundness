@@ -45,15 +45,15 @@ object TestFont:
     def ++ (right: Data): Data = left + right
 
   def u16(values: Int*): Data =
-    Array.from(values.flatMap { value => scala.Seq((value >> 8).toByte, value.toByte) })
+    values.flatMap { value => List((value >> 8).toByte, value.toByte) }.to[Array]
 
   def u32(values: Long*): Data =
-    Array.from:
-      values.flatMap: value =>
-        scala.Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+    values.flatMap: value =>
+      List((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+    . to[Array]
 
   def sfnt(tables: (Text, Data)*): Truetype =
-    val count = tables.length
+    val count = tables.size
     val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
     val searchRange = (1 << entrySelector)*16
     val header = u32(0x00010000L) ++ u16(count, searchRange, entrySelector, count*16 - searchRange)

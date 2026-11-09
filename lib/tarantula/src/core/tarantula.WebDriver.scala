@@ -224,7 +224,7 @@ object WebDriver:
 
     def on(port: Int): Local = copy(port = port)
     def headless: Local = copy(arguments = arguments + driver.headless)
-    def arguing(more: Text*): Local = copy(arguments = arguments + more.to(List))
+    def arguing(more: Text*): Local = copy(arguments = arguments + more)
 
     // Replaces the generated capabilities wholesale, for the cases this type does not model:
     // proxies, timeouts, mobile emulation, a Selenium grid's own extensions.
@@ -966,7 +966,7 @@ object WebDriver:
     // way to fill a field with plain text — it is one request rather than four actions per
     // character — and this is for the chords and named keys that text entry cannot express.
     def press(keypresses: Keypress*): Unit =
-      val steps = keypresses.to(List).bind(Session.Action.steps(_))
+      val steps = keypresses.bind(Session.Action.steps(_))
       perform(Session.Action.Source.Key, steps)
 
     // Releases every key and button an earlier `perform` left held, and clears the input state.

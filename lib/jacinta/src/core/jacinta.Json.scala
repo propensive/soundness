@@ -3252,10 +3252,10 @@ object Json extends Json1, Dynamic:
     text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
-    val keys: Array[String]^{} = Array.from(elements.map(_(0))).asInstanceOf[Array[String]^{}]
+    val keys: Array[String]^{} = elements.map(_(0)).to[Array].asInstanceOf[Array[String]^{}]
 
     val values: Array[Json.Ast]^{} =
-      Array.from(elements.map(_(1).root)).asInstanceOf[Array[Json.Ast]^{}]
+      elements.map(_(1).root).to[Array].asInstanceOf[Array[Json.Ast]^{}]
 
     Json(Json.Ast.obj(keys, values.asInstanceOf[Array[Any]^{}]))
 

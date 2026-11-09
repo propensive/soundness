@@ -35,6 +35,7 @@ package escapade
 import anticipation.*
 import gossamer.*
 import kaleidoscope.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 

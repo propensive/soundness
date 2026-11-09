@@ -118,7 +118,7 @@ private[tasseomancy] object Framing:
     t"#${channel(srgb.red)}${channel(srgb.green)}${channel(srgb.blue)}"
 
   def px(value: Double): Text = t"${value.toString}px"
-  def css(pairs: (Text, Text)*): Css.Style = Css.Style.of(List.from(pairs))
+  def css(pairs: (Text, Text)*): Css.Style = Css.Style.of(pairs)
 
   def filled(color: Color in Srgb, opacity: Optional[Double] = Unset): Css.Style =
     val base = List(t"fill" -> hexOf(color), t"stroke" -> t"none")

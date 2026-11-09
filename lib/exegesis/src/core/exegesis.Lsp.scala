@@ -1253,7 +1253,7 @@ object Lsp:
 
   def complete(triggers: Text*)(handler: CompleteHandler)(using registry: Lsp.Registry^): Unit =
     registry.complete0 = Lsp.Registry.Slot[CompleteHandler](handler)
-    registry.completeTriggers0 = triggers.to(List)
+    registry.completeTriggers0 = triggers
 
   def definition(handler: DefinitionHandler)(using registry: Lsp.Registry^): Unit =
     registry.definition0 = Lsp.Registry.Slot[DefinitionHandler](handler)
@@ -1278,7 +1278,7 @@ object Lsp:
   :   Unit =
 
     registry.signatureHelp0 = Lsp.Registry.Slot[SignatureHelpHandler](handler)
-    registry.signatureHelpTriggers0 = triggers.to(List)
+    registry.signatureHelpTriggers0 = triggers
 
   def declaration(handler: DeclarationHandler)(using registry: Lsp.Registry^): Unit =
     registry.declaration0 = Lsp.Registry.Slot[DeclarationHandler](handler)
@@ -1319,7 +1319,7 @@ object Lsp:
 
     registry.formatOnType0 = Lsp.Registry.Slot[FormatOnTypeHandler](handler)
     registry.formatOnTypeFirst0 = first
-    registry.formatOnTypeMore0 = more.to(List)
+    registry.formatOnTypeMore0 = more
 
   def prepareRename(handler: PrepareRenameHandler)(using registry: Lsp.Registry^): Unit =
     registry.prepareRename0 = Lsp.Registry.Slot[PrepareRenameHandler](handler)

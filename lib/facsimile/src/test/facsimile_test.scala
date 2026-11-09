@@ -80,7 +80,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
     def bytesOf(cos: Cos): List[Int] =
       cos.chars.let(v => (v.to[List]: List[Byte]).map(_.toInt & 0xff)).or(List())
 
-    def data(values: Int*): Data = Array.from(values.map(_.toByte))
+    def data(values: Int*): Data = values.map(_.toByte).to[Array]
 
     def deflate(bytes: Data): Data =
       val deflater = juz.Deflater()
@@ -104,17 +104,20 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
       var out: Data = t"%PDF-1.7\n".in[Data]
       val offsets = scala.collection.immutable.List.newBuilder[Long]
 
-      bodies.zipWithIndex.each: (body, index) =>
+      var index = 0
+
+      bodies.each: body =>
         offsets += out.length.toLong
         out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ t"\nendobj\n".in[Data]
+        index += 1
 
       val xrefOffset = out.length
-      out = out ++ t"xref\n0 ${bodies.length + 1}\n0000000000 65535 f \n".in[Data]
+      out = out ++ t"xref\n0 ${bodies.size + 1}\n0000000000 65535 f \n".in[Data]
 
       offsets.result().each: offset =>
         out = out ++ t"${pad10(offset)} 00000 n \n".in[Data]
 
-      out ++ t"trailer\n<< /Size ${bodies.length + 1} /Root 1 0 R $trailerExtra >>\nstartxref\n$xrefOffset\n%%EOF".in[Data]
+      out ++ t"trailer\n<< /Size ${bodies.size + 1} /Root 1 0 R $trailerExtra >>\nstartxref\n$xrefOffset\n%%EOF".in[Data]
 
     val catalog: Data = t"<< /Type /Catalog >>".in[Data]
 
@@ -132,14 +135,12 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
     // Big-endian byte assembly for the font fixture below.
     def big16(values: Int*): Data =
-      Array.from:
-        values.flatMap: value =>
-          Seq((value >> 8).toByte, value.toByte)
+      values.flatMap { value => List((value >> 8).toByte, value.toByte) }.to[Array]
 
     def big32(values: Long*): Data =
-      Array.from:
-        values.flatMap: value =>
-          Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+      values.flatMap: value =>
+        List((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+      . to[Array]
 
     def utf16(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-16BE").nn)
 
@@ -1517,11 +1518,14 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         var out: Data = t"%PDF-1.6\n".in[Data]
         val offsets = scala.collection.immutable.List.newBuilder[Long]
 
-        bodies.zipWithIndex.each: (body, index) =>
+        var index = 0
+
+        bodies.each: body =>
           offsets += out.length.toLong
           out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ t"\nendobj\n".in[Data]
+          index += 1
 
-        val encryptNumber = bodies.length + 1
+        val encryptNumber = bodies.size + 1
         offsets += out.length.toLong
         out = out ++ t"$encryptNumber 0 obj\n".in[Data] ++ encrypt.in[Data] ++ t"\nendobj\n".in[Data]
 
@@ -1823,7 +1827,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
             t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
             t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
-        document(List.concat(standard, List.from(objects))*)
+        document(List.concat(standard, objects)*)
 
       test(m"a named destination resolves through the name tree"):
         val doc = navigable

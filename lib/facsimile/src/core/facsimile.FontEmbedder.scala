@@ -149,4 +149,4 @@ private[facsimile] object FontEmbedder:
 
     String(letters.toArray).tt
 
-  private def integers(values: Long*): Cos = Cos.Sequence(values.to(List).map(Cos.Integral(_)))
+  private def integers(values: Long*): Cos = Cos.Sequence(values.map(Cos.Integral(_)))

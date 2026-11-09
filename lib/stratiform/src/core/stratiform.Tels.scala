@@ -218,15 +218,15 @@ object Tels extends Tels2:
     private inline def record(name: String, description: String, members: Member*)
     :   RecordDefinition =
 
-      RecordDefinition(name.tt, Array.from(members), Array.empty, description.tt)
+      RecordDefinition(name.tt, members.to[Array], Array.empty, description.tt)
 
     private inline def scalar(name: String, validators: String*): ScalarDefinition =
-      ScalarDefinition(name.tt, Array.from(validators.map(_.tt)))
+      ScalarDefinition(name.tt, validators.map(_.tt).to[Array])
 
     private inline def select(name: String, description: String, variants: Variant*)
     :   SelectDefinition =
 
-      SelectDefinition(name.tt, Array.from(variants), Array.empty, description.tt)
+      SelectDefinition(name.tt, variants.to[Array], Array.empty, description.tt)
 
     // Built-in scalar types referenced from member declarations.
     private val identifierRef: Type = Reference(t"Identifier")

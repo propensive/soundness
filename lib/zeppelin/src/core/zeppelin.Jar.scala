@@ -124,7 +124,7 @@ object Jar:
   // The `META-INF/MANIFEST.MF` entry for the given attributes, with values wrapped at 72 bytes
   // per the JAR specification. Put it first in the `Zipfile`, as convention prefers.
   def manifest(attributes: (Text, Text)*)(using Zip.Compression): Zip.Entry =
-    val lines = attributes.to(List).map: (key, value) => wrap(t"$key: $value")
+    val lines = attributes.map: (key, value) => wrap(t"$key: $value")
     val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
     Zip.Entry(manifestRef, text)
 

@@ -1336,7 +1336,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
           t"55d18c247b88db8fc6af7a197c56ee2b680084d1800afe8947a2f613c70492e563"
 
         def hex(data: Data): Text = data.to[List].map(b => f"${b & 0xff}%02x".tt).join
-        def bytes(values: Int*): Data = Array.unsafeFrozen(values.map(_.toByte).toArray)
+        def bytes(values: Int*): Data = values.map(_.toByte).to[Array]
 
         test(m"the schema signature is pinned"):
           hex(Launcher.signature)

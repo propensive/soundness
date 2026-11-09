@@ -86,7 +86,7 @@ object Suite:
     val passes: Atomic[Int] = Atomic(0)
     val failures: Atomic[Int] = Atomic(0)
 
-    val statuses: List[Int] = List.from(suites).map: suite =>
+    val statuses: List[Int] = suites.map: suite =>
       suite.invoke(arguments, event => event match
         case TestEvent.TestCompleted(test, _, _, outcome, _, _) =>
           val passed: Boolean = outcome.outcome == t"pass" || outcome.outcome == t"aspire-pass"

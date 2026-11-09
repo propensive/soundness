@@ -167,7 +167,7 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
 
     . assert(_ == numbers.skip(1).keep(3).to[Sequence])
 
-    def bytes(values: Int*): Data = Array.from(values.map(_.toByte))
+    def bytes(values: Int*): Data = values.map(_.toByte).to[Array]
 
     val shelf = Bibliography:
       proscenium.List(bytes(0x80, 1), bytes(0x10, 2), bytes(0x80, 0), bytes(0x7f, 9), bytes(0x81))

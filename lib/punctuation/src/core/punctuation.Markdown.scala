@@ -309,14 +309,14 @@ object Markdown:
     type Topic = Layout
 
     val linkRefs: List[Markdown.LinkRef] = linkRefs0
-    val children: List[Layout] = layout.to(List)
+    val children: List[Layout] = layout
 
   @targetName("applyProse")
   def apply(prose: Prose*): Markdown of Prose = new Markdown:
     type Topic = Prose
 
     val linkRefs: List[Markdown.LinkRef] = Nil
-    val children: List[Prose] = prose.to(List)
+    val children: List[Prose] = prose
 
   extension (markdown: Markdown of Layout)
     def sections: List[Markdown of Layout] =

@@ -48,7 +48,7 @@ object Err:
   :   Unit =
 
     mutex:
-      lines.foreach: line =>
+      List.iterator(lines).foreach: line =>
         stdio.printErr(printable.print(line(using stdio.termcap), stdio.termcap))
         stdio.printErr("\n".tt)
 

@@ -194,7 +194,7 @@ object Apk extends Artifact.Application:
       Array.range(0, 8).remap: i => ((value >> (i*8)) & 0xff).toByte
 
     private def concat(parts: Data*): Data =
-      val total = parts.map(_.length).sum
+      val total = parts.fold(0)(_ + _.length)
       val buffer = Array.allocate[Byte](total)
       var offset = 0
 

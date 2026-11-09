@@ -715,12 +715,12 @@ object internal:
       builder.append('}').toString.tt
 
     def apply(pairs: (Text, Optional[Text])*): Attributes =
-      if pairs.isEmpty then empty else
-        val n = pairs.length
+      if proscenium.List.nil(pairs) then empty else
+        val n = proscenium.List.size(pairs)
         val buffer = Array.allocate[String | Null](n*2)
         var i = 0
 
-        pairs.foreach: pair =>
+        proscenium.List.iterator(pairs).foreach: pair =>
           buffer(i*2) = pair._1.s
           buffer(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1

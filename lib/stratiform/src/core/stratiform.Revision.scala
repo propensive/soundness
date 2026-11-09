@@ -60,7 +60,7 @@ object Revision:
   def compound(keyword: Text, atomTexts: Text*): Tel.Compound =
     // Explicit element types: the frozen `Array` is invariant, so the atoms must be
     // built at `Tel.Atom` rather than upcast from `Tel.Atom.Inline`.
-    val atoms = Array.from[Tel.Atom](atomTexts.map(Tel.Atom.Inline(_, 1)))
+    val atoms = atomTexts.map[Tel.Atom](Tel.Atom.Inline(_, 1)).to[Array]
     Tel.Compound(keyword, atoms, Unset, Array.empty[Tel.Block])
 
   // A cursor binds a pointer to the upcoming operation. Each operation
@@ -125,7 +125,7 @@ object Revision:
     // `plannedRows` about to be inserted.
     def resizeTabulation(blockIndex: Int, plannedRows: Tel.Compound*): Revision =
       Revision.single
-        ( Mutation.Op.ResizeTabulation(pointer, blockIndex, Array.from(plannedRows)) )
+        ( Mutation.Op.ResizeTabulation(pointer, blockIndex, plannedRows.to[Array]) )
 
   // §22.2 `construct` — build a fresh compound from a keyword and a
   // sequence of scalar atom texts, picking inline / source / literal

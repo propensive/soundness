@@ -38,4 +38,4 @@ export burdock.{DepsDev, DepsEvent, externalize, GitHub, ProgressBar, Repackager
 // launched as `java -cp app.jar soundness.repackage` (house style requires every file to
 // declare a package, so it cannot live in the default package).
 @main
-def repackage(arguments: Text*): Unit = burdock.repackage(arguments.to(List))
+def repackage(arguments: Text*): Unit = burdock.repackage(arguments)

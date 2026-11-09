@@ -74,7 +74,7 @@ object ForeignLibrary:
         val tried = paths.map(_.s).mkString(", ").tt
         panic(m"xenophile: no native library could be loaded from $tried")
 
-    handles = attempt(paths.to(List)) :: handles
+    handles = attempt(paths) :: handles
 
   // Resolves a C symbol from the registered handles, then the default lookup; panics if unbound —
   // a symbol whose library was neither `register`ed nor statically linked (the failure that a

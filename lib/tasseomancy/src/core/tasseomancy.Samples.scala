@@ -33,11 +33,12 @@
 package tasseomancy
 
 import anticipation.*
+import rudiments.*
 import spectacular.*
 
 object Samples:
   def apply[name: Showable, y](name: name)(values: y*): Samples[y] =
-    Samples(name.show, Sequence.from(values))
+    Samples(name.show, values.to[Sequence])
 
 // Raw measurements under one name, before any summary: what a histogram bins and a box plot
 // summarizes.

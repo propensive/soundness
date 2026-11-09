@@ -347,11 +347,11 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
   def tr(lambda: Char => Char): textual = textual.map(text)(lambda)
 
   def erase(chars: Char*): textual =
-    val set = chars.toSet
+    val set = chars.to[Set]
 
     textual.builder().build:
       textual.map(text): char =>
-        if !set.contains(char) then append(char)
+        if !set.has(char) then append(char)
         char
 
   // The predicate form of `count` now comes from the generic collections operation, which

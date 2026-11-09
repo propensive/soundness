@@ -1753,7 +1753,7 @@ object Git:
       extension (worktree: (Git.Worktree.Handle & Granting[Grant.Write])^)
         def add(paths: Path on worktree.Plane*)(using Tactic[Git.Error]): Unit =
           worktree.backend.add
-            ( worktree.gitDir, worktree.root, paths.to(List).map(Operations.relative(_)), false )
+            ( worktree.gitDir, worktree.root, paths.map(Operations.relative(_)), false )
 
         def addAll()(using Tactic[Git.Error]): Unit =
           worktree.backend.add(worktree.gitDir, worktree.root, Nil, true)
@@ -1765,7 +1765,7 @@ object Git:
           worktree.backend.remove
             ( worktree.gitDir,
               worktree.root,
-              paths.to(List).map(Operations.relative(_)),
+              paths.map(Operations.relative(_)),
               cached,
               force )
 
@@ -1780,7 +1780,7 @@ object Git:
           worktree.backend.restore
             ( worktree.gitDir,
               worktree.root,
-              paths.to(List).map(Operations.relative(_)),
+              paths.map(Operations.relative(_)),
               Unset,
               true,
               false )
@@ -1793,7 +1793,7 @@ object Git:
           worktree.backend.restore
             ( worktree.gitDir,
               worktree.root,
-              paths.to(List).map(Operations.relative(_)),
+              paths.map(Operations.relative(_)),
               source.let(_.text),
               staged,
               !staged )

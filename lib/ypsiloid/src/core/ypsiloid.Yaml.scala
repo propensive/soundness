@@ -1331,12 +1331,12 @@ object Yaml extends Yaml1, Dynamic:
   // desugars to `applyDynamicNamed("make")(("name", …), ("age", …))`.
   // Mirrors `Json.applyDynamicNamed`.
   def applyDynamicNamed(methodName: "make")(elements: (String, Yaml)*): Yaml =
-    val arr = Array.allocate[Any](elements.length*2)
+    val arr = Array.allocate[Any](elements.size*2)
     var i = 0
 
-    while i < elements.length do
-      arr(i*2)     = Yaml.Ast.Str(elements(i)(0).tt).asInstanceOf[Any]
-      arr(i*2 + 1) = elements(i)(1).root.asInstanceOf[Any]
+    elements.each: element =>
+      arr(i*2)     = Yaml.Ast.Str(element(0).tt).asInstanceOf[Any]
+      arr(i*2 + 1) = element(1).root.asInstanceOf[Any]
       i += 1
 
     Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))

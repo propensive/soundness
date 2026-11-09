@@ -197,5 +197,5 @@ enum Dot:
   def serialize: Text = Dot.serialize(Dot.tokenize(this))
 
   def add(additions: Dot.Statement*): Dot = this match
-    case Dot.Graph(id, strict, statements*)   => Dot.Graph(id, strict, (statements ++ additions)*)
-    case Dot.Digraph(id, strict, statements*) => Dot.Digraph(id, strict, (statements ++ additions)*)
+    case Dot.Graph(id, strict, statements*)   => Dot.Graph(id, strict, statements*, additions*)
+    case Dot.Digraph(id, strict, statements*) => Dot.Digraph(id, strict, statements*, additions*)

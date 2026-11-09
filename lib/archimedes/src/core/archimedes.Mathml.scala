@@ -90,7 +90,7 @@ object Mathml:
 
   // The varargs constructor shared by every element whose children are a plain list.
   trait Container[node](make: List[Mathml] -> node):
-    def apply(children: Mathml*): node = make(children.to(List))
+    def apply(children: Mathml*): node = make(children)
 
   // Token (leaf) elements: the elements whose content is character data rather
   // than child elements. `Mspace` and `Mglyph` carry no text at all (they are

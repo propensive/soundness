@@ -42,7 +42,7 @@ object Tests extends Suite("layout", m"Tessellate tests"):
   def run(): Unit =
     suite(m"Flex.solve"):
       def widths(tracks: Flex*)(available: Int, gap: Int = 0): List[Optional[Int]] =
-        Flex.solve(Sequence.from(tracks.toVector), available, gap).to[List]
+        Flex.solve(tracks.to[Sequence], available, gap).to[List]
 
       test(m"equal weights split space equally"):
         widths(Flex(Metrics(0)), Flex(Metrics(0)), Flex(Metrics(0)))(9)
@@ -174,7 +174,7 @@ object Tests extends Suite("layout", m"Tessellate tests"):
       // Unbreakable spans (#1992): a verbatim run amid prose wraps as one word. The spans are
       // char offsets into the plain content, as `Flow` positions always are.
       def protecting(content: Text, width: Int, spans: Interval*): List[Text] =
-        Flow.wrap(content, width, unbreakable = List.from(spans)).to[List]
+        Flow.wrap(content, width, unbreakable = spans).to[List]
 
       test(m"an unbreakable span moves whole to the next line rather than breaking inside"):
         protecting(t"see foo bar baz here", 12, 4.z thru 14.u)

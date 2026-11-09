@@ -129,8 +129,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, List.from(children))
-      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, List.from(children))
+      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, children)
+      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, children)
 
       test(m"fractions divide the arrangement proportionally"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
@@ -181,7 +181,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
 
       def grid(columns: Int, gap: Int = 0)(children: Frame*): Frame =
-        Frame.Split(Sizing(), ultimatum.Arrangement.Grid(columns, gap), List.from(children))
+        Frame.Split(Sizing(), ultimatum.Arrangement.Grid(columns, gap), children)
 
       test(m"cells flow row-major into columns with content-sized rows"):
         val frame = grid(2)

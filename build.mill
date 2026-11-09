@@ -54,7 +54,7 @@ object settings:
   // below like the tools, and resolved from its GitHub release by crux, which also forces every
   // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
   // the fork stays TASTy-compatible across its patch releases.
-  val scalaVersion = "3.10.0-pro-1.0.7"
+  val scalaVersion = "3.10.0-pro-1.1.0"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
@@ -80,7 +80,9 @@ object settings:
     // The fork's opt-in behaviours, enabled by name (`-Z<name>`; a bare `-Z` lists
     // them). Soundness relies on every capture-checking repair the fork carries, on
     // spreadable varargs (proscenium's `multiSpreads` splices), on given-prefix
-    // sealing (top-level givens over opaque types), on diagnostic givens, and on
+    // sealing (top-level givens over opaque types), on diagnostic givens, on gatherable
+    // varargs (a repeated parameter is a `List` in its method's body, through proscenium's
+    // `listGatherable`, never a stdlib `Seq`), and on
     // JSR-45 source maps (formerly `-Xjsr45`; hyperbole's stack-trace resolver).
     // Not enabled: `-Zliterate-literals` (the literal-conversion trial, which needs
     // `scala.Literate` instances that main does not define) and
@@ -93,6 +95,7 @@ object settings:
     "-Zopaque-mutability",
     "-Zpure-iarrays",
     "-Zfrozen-pure",
+    "-Zgatherable-varargs",
     "-Zretains-bounds",
     "-Zretains-skolems",
     "-Zspreadable-varargs",
@@ -540,6 +543,11 @@ extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
   override def moduleDeps = dependencies
   def jsModuleDeps = jsDeps(moduleDeps)
   def nativeModuleDeps = nativeDeps(moduleDeps)
+
+  // A bare component sits beneath proscenium, so it has no `Gatherable` instance to receive
+  // its repeated parameters with: they stay the stdlib `Seq` the language gives them.
+  override def scalacOptions = Task:
+    settings.scalaOptions.filterNot(_ == "-Zgatherable-varargs")
 
 trait Component(dependencies: PublishModule*)
 extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
@@ -2922,8 +2930,11 @@ object prepositional extends Library:
 object proscenium extends Library:
   object core extends Component:
     override def moduleDeps = Seq(beneficence.core)
+    // Without `-Zgatherable-varargs`: proscenium is the boundary with the stdlib, and its
+    // variadic constructors (`Sequence(a, b)`, `Map(k -> v)`) build straight from the `Seq` the
+    // language passes. Gathering that into a `List` first would copy every literal twice.
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() :+ "-Yno-predef")
+      settings.sep(super.scalacOptions().filterNot(_ == "-Zgatherable-varargs") :+ "-Yno-predef")
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())

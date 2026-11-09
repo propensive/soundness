@@ -165,7 +165,7 @@ object Discovery:
         if string(key, value).in[Data](using codepages.utf8Codepage).length > 255
         then abort(Discovery.Error(InvalidTxt(key)))
 
-      new Txt(List.from(entries))
+      new Txt(entries)
 
     // From the strings of a received TXT record: `key=value`, or `key` alone for a key without
     // a value (`Unset`); an empty string, the placeholder of an empty record, is skipped.

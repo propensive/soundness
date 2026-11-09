@@ -50,6 +50,6 @@ object Out:
   :   Unit =
 
     mutex:
-      lines.foreach: line =>
+      List.iterator(lines).foreach: line =>
         stdio.print(printable.print(line(using stdio.termcap), stdio.termcap))
         stdio.print("\n".tt)

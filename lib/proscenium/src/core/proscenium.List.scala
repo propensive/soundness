@@ -208,6 +208,16 @@ object List extends scala.caps.Pure:
     list.slice(from, until)
   def iterator[element](list: List[element]): Iterator[element] = list.iterator
 
+// The type a repeated parameter is received as, under proscala's `-Zgatherable-varargs`: the
+// body of `def f(xs: T*)` sees `xs` as a `List[T]`, converted once on entry, where the language
+// would hand it a stdlib `Seq`. `Gatherable[element]` has no subject to anchor to — its type
+// argument is whatever the elements are — so the instance is top-level, where `-Yimports` puts
+// it in the scope of every module. Callers are unaffected: a method's signature is still `T*`.
+given listGatherable: [element] => (Gatherable[element] { type Out = List[element] }) =
+  new Gatherable[element]:
+    type Out = List[element]
+    def gather(elements: sci.Seq[element]): List[element] = elements.toList
+
 val Nil: List[Nothing] = List.of(sci.Nil)
 
 // The cons constructor. The extension is *declared* in usage order — the receiver is the

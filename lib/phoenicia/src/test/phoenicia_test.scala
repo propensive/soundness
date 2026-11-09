@@ -33,11 +33,11 @@
 package phoenicia
 
 import scala.annotation.targetName
-import scala.collection.immutable.Seq
 
 import soundness.*
 
 import strategies.throwUnsafely
+import denominative.dysasymptotics.linearSize // the fixtures count small table lists
 
 // These fixtures assemble SFNT/TrueType tables from many small pieces. A `Concatenable`
 // result is fresh, so joining two `Data` values means freezing once at the join; the operator
@@ -50,12 +50,12 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
 
   // Big-endian byte assembly for hand-built font fixtures.
   def u16(values: Int*): Data =
-    Array.from(values.flatMap { value => Seq((value >> 8).toByte, value.toByte) })
+    values.flatMap { value => List((value >> 8).toByte, value.toByte) }.to[Array]
 
   def u32(values: Long*): Data =
-    Array.from:
-      values.flatMap: value =>
-        Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+    values.flatMap: value =>
+      List((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+    . to[Array]
 
   def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
   def utf16(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-16BE").nn)
@@ -63,7 +63,7 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
   // Assembles tables into an sfnt container: the header, a table directory, then the tables
   // themselves, four-byte aligned. Checksums are left zero: the parser does not verify them.
   def sfnt(tables: (Text, Data)*): Truetype =
-    val count = tables.length
+    val count = tables.size
     val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
     val searchRange = (1 << entrySelector)*16
     val header = u32(0x00010000L) ++ u16(count, searchRange, entrySelector, count*16 - searchRange)
@@ -184,7 +184,7 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
         t"hmtx" -> hmtxTable, t"maxp" -> maxpTable, t"post" -> postTable, t"OS/2" -> os2Table,
         t"name" -> nameTable, t"loca" -> locaTable, t"glyf" -> glyfTable)
 
-    sfnt(List.concat(base, List.from(extra))*)
+    sfnt(List.concat(base, extra)*)
 
   def run(): Unit =
     suite(m"Character mapping"):

@@ -99,7 +99,7 @@ object Axis:
       most:   Optional[Double] = Unset )
 
   def apply[value: Axable](label: Text)(values: value*): Axis[value] =
-    new Axis(label, values.to(List))
+    new Axis(label, values)
 
   // An axis from an enum's companion object: the axis is labelled with the lowercased enum
   // name and its values are the enum's cases. `Enumerable.name` is the fully-shown type

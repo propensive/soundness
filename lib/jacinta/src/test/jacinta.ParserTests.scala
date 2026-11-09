@@ -199,7 +199,7 @@ object ParserTests extends Suite("json-parser", m"Jacinta JSON parser tests"):
         val bytes = text.s.getBytes("UTF-8").nn
         var offset = 0
 
-        Iterator.from(sizes.iterator).flatMap: size =>
+        sizes.iterator.flatMap: size =>
           if offset >= bytes.length then List() else
             val end = math.min(offset + size, bytes.length)
             val slice: Data = Array.unsafeFrozen(bytes.slice(offset, end))

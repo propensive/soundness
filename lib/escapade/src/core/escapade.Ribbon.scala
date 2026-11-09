@@ -43,7 +43,7 @@ object Ribbon:
 case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
     if colors.isEmpty then parts.join(e" ") else
-      val array = Array.from(colors.zip(parts))
+      val array = colors.to(List).zip(parts).to[Array]
 
       array.extent.tabulate: index =>
         val (background, text) = array(index)

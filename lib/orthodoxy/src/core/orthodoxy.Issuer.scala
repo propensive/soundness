@@ -110,7 +110,7 @@ class Issuer
     ( using Tactic[OAuth.Error] )
   :   Authorization =
 
-    val scope = if scopes.isEmpty then Query() else Query(List(t"scope" -> scopes.join(t" ")))
+    val scope = if scopes.nil then Query() else Query(List(t"scope" -> scopes.join(t" ")))
     grant(Query(List(t"grant_type" -> t"client_credentials")) ++ scope)
 
   // A refresh (RFC 6749 §6): a new authorization from a refresh token
