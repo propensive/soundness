@@ -2,42 +2,66 @@
 
 ### About
 
-A [media type](https://en.wikipedia.org/wiki/Media_type) — `application/json`,
-`text/html; charset=UTF-8` — names what a stream of bytes means, and Soundness represents one
-structurally: its group, its subtype, its `+suffix`es and its parameters, each a typed part rather
-than a substring. The `media"…"` interpolator checks a literal against the
-[IANA registry](https://www.iana.org/assignments/media-types/media-types.xhtml) as the code
-compiles, so a misspelled media type — the kind browsers silently mishandle — is a compile error,
-with a suggestion for what was probably meant.
+A [media type](https://en.wikipedia.org/wiki/Media_type), such as `application/json` or
+`text/html; charset=UTF-8`, names what a stream of bytes means. It is represented
+structurally: its group, its subtype, its `+suffix`es and its parameters are each a typed
+part, not a substring.
 
-The `Media` typeclass lets any type declare its own media type, which is how HTTP responses,
-served files and email attachments label themselves; and multipart bodies — the format of file
-uploads — parse into their typed parts.
+The `media"…"` [interpolator] checks a literal against the
+[IANA registry](https://www.iana.org/assignments/media-types/media-types.xhtml) at
+[compiletime]. A misspelled media type, of the kind which browsers silently mishandle, is a
+compile error, with a suggestion of what was probably meant.
+
+The `Media` [typeclass] lets any type declare its own media type. That is how HTTP responses,
+served files and email attachments label themselves. Multipart bodies, the format of file
+uploads, are parsed into their typed parts.
 
 ### On media types
 
-Media types look like free text and are not: the grammar distinguishes registered types from
-vendor trees, suffixes carry meaning (`svg+xml` *is* XML), and parameters like `charset` change
-interpretation. Because they are usually handled as strings, a typo produces a syntactically
-plausible type that no consumer recognizes — and since receivers tend to fall back rather than
-fail, the mistake shows up as subtly wrong behavior far away.
+Media types look like free text, and are not. The grammar distinguishes registered types from
+vendor trees. Suffixes carry meaning: `svg+xml` *is* XML. Parameters such as `charset` change
+how the bytes are interpreted.
 
-Checking a media type as the code compiles is [safety by construction](../philosophy/safety-by-construction.md) applied to a string that is otherwise trusted.
+Media types are usually handled as strings, so a typo produces a type which looks plausible,
+and which no consumer recognizes. Receivers tend to fall back instead of failing, so the
+mistake shows up as subtly wrong behavior, far away.
 
-Soundness parses them fully, validates literals against the registry itself, and types the value.
-Everything comes from the `soundness` package:
+Here media types are parsed fully, a literal is validated against the registry itself, and the
+value is typed. Checking a media type as the code compiles is
+[safety by construction](../philosophy/safety-by-construction.md), applied to a string which
+is otherwise trusted.
+
+Everything comes from the `soundness` package. The samples throw any error as an exception,
+and the last import lets them print their results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
 import codepages.utf8Codepage
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Writing a media type
 
-The `media"…"` interpolator checks its literal at compiletime. A registered type passes, and an
-unregistered one in the standard tree fails, with a nearby registered name suggested. The other
-trees are accepted without registry lookup, as the standard prescribes:
+The `media"…"` interpolator checks its literal at compiletime. A registered type passes:
+
+```scala
+val json = media"application/json"
+val epub = media"application/epub+zip"
+```
+
+An unregistered type in the standard tree fails, and a registered name close to it is
+suggested:
+
+```scala fuel
+compile
+errors show
+##
+media"application/jsom"
+```
+
+The other trees are accepted without being looked up in the registry, as the standard
+prescribes:
 
 ```tabular
 column  Tree
@@ -50,27 +74,31 @@ row  personal  `prs.…`  `Personal`  no
 row  experimental  `x-…`  `X`  no
 ```
 
-```scala
-media"application/json"
-media"application/epub+zip"
-media"application/jsom"   // does not compile: did you mean application/json?
-```
-
 ### Structure
 
-A parsed `MediaType` exposes its parts, and parameters are added as named arguments:
+A parsed `MediaType` exposes its parts:
 
 ```scala
 val mediaType = t"application/json; charset=UTF-8".as[MediaType]
-
-mediaType.group      // Media.Group.Application
-mediaType.basic      // t"application/json" — without parameters
-mediaType.at(t"charset")   // t"UTF-8"
-
-media"text/html"(charset = t"UTF-8")
 ```
 
-The four parts are those [RFC 2046](https://www.iana.org/go/rfc2046) defines:
+```scala fuel
+run
+##
+Out.println(mediaType.group.inspect)
+Out.println(mediaType.basic)
+Out.println(mediaType.at(t"charset").inspect)
+```
+
+`basic` is the media type without its parameters. Parameters are added as named arguments:
+
+```scala fuel
+run
+##
+Out.println(media"text/html"(charset = t"UTF-8").show)
+```
+
+The four parts are those which [RFC 2046](https://www.iana.org/go/rfc2046) defines:
 
 ```tabular
 column  Part
@@ -82,40 +110,48 @@ row  suffixes  `suffixes`  zero or more, such as `+xml`, `+json` and `+gzip`
 row  parameters  `parameters`  key–value pairs, `charset` being much the most common
 ```
 
-The group is called `group` rather than `type` only because `type` is a Scala keyword. Which of
-the four trees a subtype belongs to is part of the value rather than a matter of reading its
+The group is called `group`, not `type`, only because `type` is a keyword in Scala. Which of
+the four trees a subtype belongs to is part of the value, and is not a matter of reading its
 prefix.
 
-Registration is checked against a copy of IANA's published list carried on the classpath, so the
-check needs no network and no service. A newer or site-specific list placed earlier on the
-classpath supersedes it — the file is a newline-delimited list of media types with suffixes but
-without parameters.
+Registration is checked against a copy of IANA's published list, carried on the classpath, so
+the check needs no network and no service. A newer list, or a list specific to a site, which
+is placed earlier on the classpath, supersedes it. The file is a list of media types, one on
+each line, with suffixes but without parameters.
 
-Text that is not a media type raises a `MediaType.Error` naming the reason — a missing slash, an
-invalid character, an unknown suffix.
+Text which is not a media type raises a `MediaType.Error`, which names the reason: a missing
+slash, an invalid character, or an unknown suffix.
+
+```scala fuel
+run
+errors show
+##
+t"application".as[MediaType]
+```
 
 ### Types that know their media type
 
-The `Media` typeclass gives a type its media type, so a value can be served or attached without
-anyone re-stating what it is: text is `text/plain`, and anything with a filename guesses from its
-extension. `ascribe` pairs any byte source with an explicit media type where none is intrinsic:
+The `Media` typeclass gives a type its media type, so a value can be served, or attached,
+without anyone stating again what it is. Text is `text/plain`, and anything with a filename
+guesses from its extension. `ascribe` pairs any source of bytes with an explicit media type,
+where none is intrinsic. The result is a `Content`: bytes, together with their type.
 
 ```scala
 val data = t"raw bytes".in[Data]
-
-data.ascribe(media"application/octet-stream")   // a Content: bytes plus their type
+val content = data.ascribe(media"application/octet-stream")
 ```
 
-This typeclass is what lets an [HTTP](http-server.md) handler return a value and have the
-`Content-Type` header follow automatically.
+This typeclass is what lets an [HTTP server](http-server.md#responses) return a value, and
+have the `Content-Type` header follow automatically. The [HTTP client](http-client.md#headers)
+takes a media type as the value of its `accept` header, and [email](email.md#composing)
+attachments carry one.
 
 ### Multipart
 
-The `multipart/form-data` format of file uploads parses into a `Multipart` of typed `Part`s, each
-with its disposition, name, optional filename, headers and body stream — parsed incrementally, so
-a large upload streams rather than accumulating. A part's body is lent from the input, zero-copy:
-read it (`part.read[Data]`, or `part.body()` for the stream) before moving on to the next part,
-after which whatever remained of it has been skipped and it reads as empty:
+`multipart/form-data` is the format of file uploads. It is parsed into a `Multipart` of typed
+`Part`s. Each part has its disposition, its name, an optional filename, its headers, and a
+stream for its body. It is parsed incrementally, so a large upload streams, and does not
+accumulate:
 
 ```scala
 val body =
@@ -126,5 +162,14 @@ val body =
   t"--xyz--\r\n"
 
 val upload = Multipart.parse(Chain(body.in[Data]))
-upload.at(t"avatar").let(_.filename)   // t"me.png"
 ```
+
+```scala fuel
+run
+##
+Out.println(upload.at(t"avatar").let(_.filename).inspect)
+```
+
+A part's body is lent from the input, without copying. It must be read, with
+`part.read[Data]`, or with `part.body()` for the stream, before moving on to the next part.
+After that, whatever remained of it has been skipped, and it reads as empty.
