@@ -33,6 +33,7 @@
 package gesticulate
 
 import scala.collection.immutable.Seq
+import scala.compiletime.asMatchable
 import scala.quoted.*
 
 import anticipation.*
@@ -120,6 +121,50 @@ object internal:
             // so this `let` always fires — and its `Optional` result is the branch's type.
             systemMediaTypes.minimize(_.proximity(canonical)).let: suggestion =>
               m"$canonical is not a registered media type; did you mean $suggestion?"
+
+  // Checks the literal of a `Media["…"]` pattern as the `media"…"` interpolator checks its own.
+  inline def check[label <: Label]: Unit = ${checkLabel[label]}
+
+  def checkLabel[label <: Label: Type]: Macro[Unit] =
+    import quotes.reflect.*
+
+    validateLiteral(labelName[label]).let(halt(_))
+    '{()}
+
+  private def labelName[label <: Label: Type](using Quotes): Text =
+    import quotes.reflect.*
+
+    // Capture checking can wrap a singleton string type in an `@caps.internal.inferred`
+    // `AnnotatedType`; strip any such annotations before reading the constant.
+    def strip(repr: TypeRepr): TypeRepr = repr.asMatchable match
+      case AnnotatedType(underlying, _) => strip(underlying)
+      case other                        => other
+
+    strip(TypeRepr.of[label].dealias).asMatchable match
+      case ConstantType(StringConstant(value)) => value.tt
+      case _                                   => halt(m"the media type must be a string literal")
+
+  // Typed as an `Option`, not as `Nothing`, and not transparent: a pattern's `unapply` must have
+  // an extractor's result type for the typer to accept it, and the error is then reported when
+  // this is expanded.
+  inline def undetectable[label <: Label, floor, access]: Option[Nothing] =
+    ${undetectableMacro[label, floor, access]}
+
+  def undetectableMacro[label <: Label: Type, floor: Type, access: Type]: Macro[Option[Nothing]] =
+    import quotes.reflect.*
+
+    val name: Text = labelName[label]
+    val floor: Text = TypeRepr.of[floor].typeSymbol.name.tt
+
+    val content: Text =
+      if TypeRepr.of[access].typeSymbol.name == "Probe" then t"a stream"
+      else t"random-access content"
+
+    halt:
+      m"""
+        $name cannot be detected in $content here: no `Detectable` for it which establishes at
+        least $floor is in scope
+      """
 
   def mediaInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[MediaType] =
     import quotes.reflect.*
