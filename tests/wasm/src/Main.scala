@@ -62,7 +62,11 @@ object Main extends Run:
 
     val backend: FilesystemBackend on Linux = galilei.filesystemBackends.wasiFilesystem[Linux]
 
-    def path(parts: Text*): Path on Linux = Path[Linux, Text, Tuple](t"/", proscenium.List(parts.reverse*))
+    // This app is compiled without the `proscenium` root import, so the instance its repeated
+    // parameter is received through is named here.
+    import proscenium.listGatherable
+
+    def path(parts: Text*): Path on Linux = Path[Linux, Text, Tuple](t"/", parts.reverse)
 
     backend.createDirectory(path(t"work", t"sub"), Unset)
     val file = path(t"work", t"sub", t"probe.txt")
