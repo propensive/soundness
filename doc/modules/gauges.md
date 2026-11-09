@@ -2,32 +2,31 @@
 
 ### About
 
-A long-running program has something to say while it works: how far through it is, that it is
-still alive, how fast bytes are moving, which step of a pipeline is running. Soundness renders
-these as *gauges* — spinners, progress bars, meters, sparklines, counters and step indicators —
-either embedded in a terminal layout or drawn on their own at the cursor.
+A long-running program has something to say while it works: how far through it is, that it
+is still alive, how fast bytes are moving, and which step of a pipeline is running. These
+are shown as *gauges*: spinners, progress bars, meters, sparklines, counters and step
+indicators. A gauge is either embedded in a [terminal layout](terminal.md#layout), or drawn
+on its own at the cursor.
 
-A gauge is chosen by the *type* of the thing it displays. What it looks like, what colors it uses
-and which characters it may draw with are three separate decisions, each made by one import, and
-none of them disturbs the other two.
+A gauge is chosen by the *type* of the thing which it displays. What it looks like, what
+colors it uses, and which characters it may draw with are three separate decisions. Each is
+made by one import, and none of them disturbs the other two.
 
 ### On progress display
 
-Progress display is usually written twice: once as the drawing, and again as the arithmetic that
-decides what fits. The two are kept consistent by hand, and the result is a bar that is correct at
-eighty columns and corrupt at thirty — a row that overruns, a label that pushes the bar off the
-edge, or a percentage that disagrees with the bar beside it.
+A display of progress is usually written twice: once as the drawing, and again as the
+arithmetic which decides what fits. The two are kept consistent by hand. The result is a bar
+which is correct at eighty columns and corrupt at thirty, with a row which overruns, a label
+which pushes the bar off the edge, or a percentage which disagrees with the bar beside it.
 
-A gauge design chosen by import, independent of the status it draws, is [decoupling](../philosophy/decoupling.md) between meaning and rendering.
+Separating the two removes the duplication. A design says how to draw a status at whatever
+width it is given, and how narrow it can usefully go. The layout says how much room there
+is. Neither needs to know what the other decided. A bar which is handed six cells is drawn
+in six. Handed three, it becomes a percentage, and handed one, it becomes a single shade. A
+design which is chosen by import, independently of the status it draws, is
+[decoupling](../philosophy/decoupling.md) between meaning and appearance.
 
-Separating the two removes the duplication. A design says how to draw a status at whatever width it
-is given, and how narrow it can usefully go; the layout says how much room there is. Neither needs
-to know what the other decided. A bar handed six cells re-quantizes to six; handed three it becomes
-a percentage; handed one it becomes a single shade. Everything comes from the `soundness` package,
-with a text metric in scope, since a gauge is laid out by the width of what it draws, a palette
-(without one, an adaptive palette is chosen from what the terminal reports, which needs the
-terminal's capabilities in scope), standard output for the examples that print, and the
-concurrency context in which an animated gauge redraws itself:
+Everything comes from the `soundness` package, and several choices are in scope:
 
 ```scala
 import soundness.*
@@ -35,13 +34,23 @@ import textMetrics.uniformMetric
 import palettes.solarizedDarkGaugePalette
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
-import termcapDefinitions.basicTermcap
+import termcapDefinitions.xtermTrueColorTermcap
 import threads.virtualThreads
+```
+
+```tabular
+column  Import
+column  Decides
+row  `textMetrics.uniformMetric`  how the width of text is measured, since a gauge is laid out by the width of what it draws
+row  `palettes.solarizedDarkGaugePalette`  the colors; with none, a palette is chosen from what the terminal reports
+row  `stdios`, `termcapDefinitions`  where the samples print, and what the terminal can display
+row  `threads`, `probates`  the [concurrency](concurrency.md) context in which an animated gauge redraws itself
 ```
 
 ### Statuses
 
-What a gauge displays is a value of a specific type, and that type is what selects the design:
+What a gauge displays is a value of a specific type, and that type is what selects the
+design:
 
 ```tabular
 column  Status
@@ -59,22 +68,58 @@ row  `Sequence[Double]`  samples over time  *none*
 row  `Sequence[Step]`  an ordered run of steps  *none*
 ```
 
-Most of these are types you already have. Only where a type has to be *distinct* — because it is
-the key the design is looked up by — is a new one introduced: a proportion cannot be a plain
-`Double` without claiming every `Double` in the program for progress bars. Elapsed time is an
-`aviation.Duration`, samples are a `Sequence[Double]`, and a run of steps is a `Sequence[Step]`.
-`Countdown` keeps its own type only so that it can sit beside an elapsed time with a different
-design.
+Most of these are types which a program already has. A new type is introduced only where it
+has to be *distinct*, because it is the key by which the design is looked up. A proportion
+cannot be a plain `Double` without claiming every `Double` in the program for progress bars.
+Elapsed time is a [`Duration`](time.md#durations-and-timespans), samples are a
+`Sequence[Double]`, and a run of steps is a `Sequence[Step]`. `Countdown` has a type of its
+own only so that it can sit beside an elapsed time, with a different design.
 
-Any status may be `Optional`, and every design lifts to that automatically: `Optional[Fraction]` is
-progress that may not be known yet, so a job that starts out unmeasurable and later learns its total
-does not change type half way through. A design says how to draw when there is no value — a bar
-sweeps, because an empty bar claims "no progress" where the truth is "not measured", and a spinner
-draws its frames. Nothing has to be written twice for the optional case.
+Any status may be [`Optional`](optional-values.md), and every design is lifted to that
+automatically. `Optional[Fraction]` is progress which may not be known yet, so a job which
+starts out unmeasurable, and later learns its total, does not change type half way through.
+A design says how to draw when there is no value. A bar sweeps, because an empty bar claims
+"no progress" where the truth is "not measured", and a spinner draws its frames. Nothing has
+to be written twice for the optional case.
 
-A spinner is what you import when the figure is not worth showing, or is not known; it keys on
-`Fraction` like a bar does, and ignores the value. Two designs for one status conflict, as two bars
-always have, so a layout wanting both takes one from a locally-scoped `given`:
+The four statuses with no default are deliberate. A default exists only where every candidate
+design is the same height, and says the same thing. A battery, a thermometer and a dial are
+not interchangeable. Block and braille sparklines differ in vertical resolution, and so in
+what the data shows. A checklist is one row for each step, where a breadcrumb is one row
+altogether. And whether a transfer counts in `MB` or `MiB` is an editorial decision. Choosing
+silently in those cases would be choosing how much of the caller's layout to occupy, or what
+their numbers mean.
+
+### Choosing a design
+
+With no design imported, the defaults apply. `gaugeLine` draws one frame, at a width which
+the caller chooses:
+
+```scala fuel
+run
+##
+Out.println(gaugeLine(Fraction(0.42), 40))
+Out.println(gaugeLine(Reckoning(17, 120), 7))
+Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
+```
+
+A gauge always needs a width. There is no drawing of a bar which does not know how wide it
+is, so a status cannot be printed on its own.
+
+Importing a design by name replaces the default, and nothing else changes:
+
+```scala fuel
+run
+##
+locally:
+  import bars.arrowheadBar
+  Out.println(gaugeLine(Fraction(0.42), 40))
+```
+
+A spinner is what to import when the figure is not worth showing, or is not known. It is
+keyed on `Fraction`, as a bar is, and ignores the value. A spinner and a bar are therefore
+two designs for the same status, and only one of them can be imported at a time. A layout
+which wants both takes one from a [given] in a local scope:
 
 ```scala
 val resolving =
@@ -82,36 +127,7 @@ val resolving =
   gauge(Reading(Fraction.indeterminate))
 ```
 
-The four with no default are deliberate. A default exists only where every candidate design is the
-same height and says the same thing; a battery, a thermometer and a dial are not interchangeable,
-block and braille sparklines differ in vertical resolution and so in what the data shows, a
-checklist is one row per step where a breadcrumb is one row altogether, and whether a transfer
-counts in `MB` or `MiB` is an editorial decision. Choosing silently in those cases would be
-choosing how much of the caller's layout to occupy, or what their numbers mean.
-
-### Choosing a design
-
-With nothing imported, the defaults apply:
-
-```scala
-Out.println(gaugeLine(Fraction(0.42), 40))
-Out.println(gaugeLine(Reckoning(17, 120), 7))
-Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
-```
-
-`gaugeLine` renders one frame at a width you choose. A gauge always needs a width — there is no
-rendering of a bar that does not know how wide it is — so a status has no `Teletypeable` of its own.
-
-Importing a design by name replaces it, and nothing else changes:
-
-```scala
-import bars.arrowheadBar
-```
-
-A spinner and a bar are two designs for the same status, so only one of them can be imported at
-a time; `spinners.moonPhaseSpinner` in place of the bar above would animate moon phases instead.
-
-Designs are grouped into eight families, each a package to import from:
+The designs are grouped into eight families, each of which is a package to import from:
 
 ```tabular
 column  Family
@@ -130,8 +146,8 @@ row  `timers`  `Duration`, `Countdown`  5  compact and digital elapsed times; co
 
 ### Colors and glyphs
 
-Color is an independent axis. A `GaugePalette` names its colors by *role*, so one design renders
-under any palette:
+Color is an independent choice. A `GaugePalette` names its colors by *role*, so one design
+is drawn under any palette:
 
 ```tabular
 column  Role
@@ -146,32 +162,66 @@ row  `warning`  a warned step; the middle of a severity scale
 row  `danger`  a failed step; the top of a severity scale
 ```
 
-A palette is chosen by import:
+A palette is chosen by import, as `palettes.solarizedDarkGaugePalette` was above. Ten
+palettes are provided. They include `monochromeGaugePalette`, which has no hues, and
+`ansiSixteenGaugePalette`, whose colors are the canonical values which a sixteen-color
+terminal actually has. With no import, an adaptive palette picks by what the terminal
+reports. [Colors](colors.md#themes-and-palettes) describes palettes generally.
 
-```scala
-import palettes.solarizedDarkGaugePalette
+The repertoire of characters is a third choice, and it degrades every design at once:
+
+```scala fuel
+run
+##
+locally:
+  import gaugeGlyphs.asciiGlyphs
+
+  Out.println(gaugeLine(Fraction(0.42), 40))
+  Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
 ```
 
-Ten palettes ship, including a hue-free `monochromeGaugePalette` and an `ansiSixteenGaugePalette`
-whose colors are the canonical values a sixteen-color terminal actually has. With no import, an
-adaptive palette picks by what the terminal reports.
+Every design has an ASCII form, and every design which prefers exotic glyphs declares what
+to fall back to. Emoji designs become their plainer siblings where the terminal cannot show
+them, and under `asciiGlyphs` everything emits seven-bit output. No design carries its
+meaning in color alone, so a gauge which is written to a file, or read by someone who cannot
+tell red from green, still says what it means.
 
-The character repertoire is a third axis, and degrades the whole catalog at once:
+### Degradation
 
-```scala
-import gaugeGlyphs.asciiGlyphs
+Every design is drawn at exactly the width which it is given, at every width, and says less
+as it narrows, instead of overrunning. A bar drops its end caps below eight cells, becomes a
+percentage at four, and becomes a single shade at one:
+
+```scala fuel
+run
+##
+List(40, 20, 8, 4, 1).each: width =>
+  Out.println(gaugeLine(Fraction(0.42), width))
 ```
 
-Every design has an ASCII rendering, and every design that prefers exotic glyphs declares what to
-fall back to — so emoji designs become their BMP siblings where the terminal cannot show them, and
-under `asciiGlyphs` everything emits seven-bit output. No design carries its meaning in color
-alone, so a gauge written to a file or read by someone who cannot distinguish red from green still
-says what it means.
+A row which is composed of several parts sheds them in a declared order. A transfer which
+reads
+
+```
+14.2 MiB/512 MiB · 3.1 MiB/s · 2m41s left
+```
+
+at eighty cells keeps only the figures at thirty. A caption is shortened before it squeezes
+the gauge which it labels, and is allowed at most half the row before it begins to cost the
+gauge cells.
+
+A sparkline's scale is a choice of design, not part of the data.
+`Sparkline.Blocks.scaled(0, 100)` fixes it, so that a steady signal does not look erratic as
+the bounds move under it. A sparkline which is narrower than its series is *decimated*: each
+cell shows the maximum of the samples which it covers. It is not truncated. A truncated
+sparkline would show only the oldest samples, while looking like the whole series, which is
+worse than showing less.
 
 ### In a layout
 
-`gauge` builds a pane, taking a `Reading` — a mutable cell holding the current status. Assigning to
-the cell publishes the value and repaints, so a gauge driven from a background task updates itself:
+`gauge` builds a pane. It takes a `Reading`, which is a mutable cell that holds the current
+status. Assigning to the cell publishes the value, and repaints, so a gauge which is driven
+from a background task updates itself. An application's [`Cli`](cli.md) provides the console:
 
 ```scala fuel
 typecheck
@@ -180,7 +230,7 @@ import dysasymptotics.linearSize
 import environments.javaBaseEnvironment
 import strategies.throwUnsafely
 
-given Console = Console(summon[Stdio])   // an application's `Cli` provides this
+given console: Console = Console(summon[Stdio])
 
 val progress = Reading(Fraction(0.0))
 val work = List(1, 2, 3, 4, 5)
@@ -195,19 +245,21 @@ supervise:
     conduct(Occupancy.Inline)(stack(gauge(progress)))
 ```
 
-A gauge reports its design's intrinsic size on every solve, so it takes part in the layout rather
-than assuming a width: an elastic design fills what it is given, an inelastic one (a spinner, a
-status glyph) is held to its own width, and a multi-row design like a checklist grows the layout to
-its step count. A gauge accepts no input, so Tab skips over it.
+A gauge reports the intrinsic size of its design each time the layout is solved, so it takes
+part in the layout, and does not assume a width. An elastic design fills what it is given.
+An inelastic one, such as a spinner or a status glyph, is held to its own width. A design of
+several rows, such as a checklist, grows the layout to the number of its steps. A gauge
+accepts no input, so Tab skips over it.
 
-A design that animates declares how often it wants redrawing; the conducted layout takes the
-shortest period over the gauges on screen and runs one timer for all of them, and none at all
-when nothing is animating.
+A design which animates declares how often it wants to be redrawn. The layout takes the
+shortest period among the gauges on screen, and runs one timer for all of them, and none at
+all when nothing is animating.
 
 ### Standalone
 
-Outside a layout, `whilst` shows a gauge at the cursor for the duration of a block and erases it
-afterwards. Its animation runs as a background task, so it is called under `supervise`:
+Outside a layout, `whilst` shows a gauge at the cursor for the duration of a block, and
+erases it afterwards. Its animation runs as a background task, so it is called under
+`supervise`:
 
 ```scala fuel
 typecheck
@@ -217,41 +269,23 @@ supervise:
     snooze(2.0*Second)
 ```
 
-`gaugeLine` renders a single frame for a caller doing its own drawing — the shape to use when the
-redrawing is already handled:
+`gaugeLine` draws a single frame, for a caller which does its own drawing. It is the form to
+use when the redrawing is already handled:
 
 ```scala
 def frame(done: Int, total: Int)(using Stdio): Unit =
   Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
 ```
 
-### Degradation
-
-Every design renders exactly the width it is given, at every width, and says so as it narrows
-rather than overrunning. A bar drops its end caps below eight cells, falls through to a percentage
-at four, and to a single shade glyph at one. A composite row sheds its parts in a declared order,
-so a transfer that reads
-
-```
-14.2 MiB/512 MiB · 3.1 MiB/s · 2m41s left
-```
-
-at eighty cells keeps only the figures at thirty. A caption is elided rather than squeezing the
-gauge it labels, and is allowed at most half the row before it begins costing the gauge cells.
-
-A sparkline's scale is a design choice rather than part of the data — `Sparkline.Blocks.scaled(0, 100)`
-fixes it, so a steady signal does not look erratic as the bounds move under it. A sparkline narrower
-than its series is *decimated* — each output cell shows the maximum of the
-samples it covers — rather than truncated. A truncated sparkline would show only the oldest samples
-while looking like the whole series, which is worse than showing less.
-
 ### Composing
 
-`Captioned` labels any status, and derives its design from whatever the underlying status already
-uses, so it is not a style choice and needs no import:
+`Captioned` labels any status. It derives its design from whichever design the underlying
+status already uses, so it is not a choice of style, and needs no import:
 
-```scala
-val captioned = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
+```scala fuel
+run
+##
+Out.println(gaugeLine(Captioned(Fraction(0.42), t"resolving dependencies"), 60))
 ```
 
 A `Sequence[Step]` has five designs, which differ in height:
@@ -267,7 +301,7 @@ row  `processions.numberedProcession`  a numbered position  one row
 row  `processions.ribbonProcession`  a powerline ribbon  one row
 ```
 
-A checklist, for example:
+A checklist, for example, is drawn in three rows for three steps:
 
 ```scala fuel
 typecheck
@@ -283,13 +317,19 @@ val steps: Sequence[Step] =
 val checklist = gauge(Reading(steps))
 ```
 
-drawing, at three rows:
-
 ```
 ✓ resolve
 ⠋ compile
 · publish
 ```
 
-The running step animates, and each step's marker comes from the same `Standing` vocabulary a
-one-cell status glyph uses.
+The running step animates, and each step's marker comes from the same `Standing` vocabulary
+which a status glyph of one cell uses.
+
+### Related
+
+- [Terminal](terminal.md#layout) arranges gauges with other panes, and handles input.
+- [Colors](colors.md) describes the colors which a palette names.
+- [Concurrency](concurrency.md) runs the work which a gauge reports on.
+- [Charts](charts.md) draws data which is already complete, where a gauge draws work in
+  progress.
