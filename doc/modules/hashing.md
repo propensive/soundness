@@ -2,35 +2,39 @@
 
 ### About
 
-A [hash](https://en.wikipedia.org/wiki/Hash_function) reduces data of any size to a short,
-fixed-length fingerprint. Soundness computes the digest of any value — a case class, a collection,
-a stream of bytes — with the algorithm named as a type: `Sha2[256]`, `Sha1`, `Md5` or `Blake3`.
-The non-cryptographic checksums `Crc32`, `Crc64` and `Adler32` live in Corpuscular, and digest
-through exactly the same API — behind a permit, since a checksum detects accidental corruption
-and nothing more. The digest is a value whose bytes render to hexadecimal or Base64 through the same
-[base encoding](base-encoding.md) used everywhere else.
+A [hash](https://en.wikipedia.org/wiki/Hash_function) reduces data of any size to a short
+fingerprint of fixed length. The digest of any value can be computed, whether a case class, a
+collection or a stream of bytes, with the algorithm named as a type: `Sha2[256]`, `Sha1`, `Md5`
+or `Blake3`.
 
-Anything that describes how to feed its bytes into a hash can be digested, and a case class does so
-automatically, derived from its fields — so hashing a structured value needs no manual
-serialization. The algorithms known to be weak, MD5 and SHA-1, can be used only where their use is
-explicitly permitted, as are the checksums — which are not weak hashes but not hashes at all.
+Anything which describes how to feed its bytes into a hash can be digested. A case class does
+so automatically, [derived][derivation] from its fields, so hashing a structured value needs no
+manual serialization. A digest is a value, and its bytes are written in hexadecimal or Base64
+through the same [base encoding](base-encoding.md) used everywhere else.
+
+The checksums `Crc32`, `Crc64` and `Adler32` are computed through exactly the same API. The
+algorithms which are known to be weak, MD5 and SHA-1, can be used only where their use is
+explicitly permitted. So can the checksums, which are not weak hashes but not hashes at all: a
+checksum detects accidental corruption, and nothing more.
 
 ### On hashing
 
-The usual hashing API takes a byte array and an algorithm named by a string, and hands back another
-byte array. The algorithm is unchecked, so a typo is a runtime failure; the input must be serialized
-to bytes by hand before hashing; the output must be rendered to text by hand after; and nothing
-discourages reaching for a broken algorithm.
+The usual hashing API takes a byte array, and an algorithm named by a string, and hands back
+another byte array:
 
-Naming the algorithm as a type rather than a string is [safety by construction](../philosophy/safety-by-construction.md): a digest of one algorithm cannot be confused with another's.
+- The algorithm is unchecked, so a typo is a failure at [runtime].
+- The input must be serialized to bytes by hand before it is hashed.
+- The output must be written as text by hand afterwards.
+- Nothing discourages reaching for a broken algorithm.
 
-Soundness fixes each of these. The algorithm is a type, checked at the call site. Any value with a
-`Digestible` instance is hashed directly, and case classes and collections derive theirs, so the
-value's own structure is what gets hashed. The result renders through the base encodings. And a weak
-algorithm is gated behind a capability that a program must opt into, so `digest[Md5]` does not
-compile without a deliberate permission — nor does `digest[Crc32]`, which concedes something
-different: not that the hash is broken, but that no adversary is in the threat model. Everything comes from the `soundness` package, with a
-hashing provider and an alphabet in scope:
+Here each of these is fixed. The algorithm is a type, checked where it is used, so a digest of
+one algorithm cannot be confused with another's, which is
+[safety by construction](../philosophy/safety-by-construction.md). Any value with a
+`Digestible` instance is hashed directly. The result is written through the base encodings. And
+a weak algorithm sits behind a permission which a program must opt into.
+
+Everything comes from the `soundness` package. A provider of hash algorithms and an alphabet
+are in scope, and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
@@ -39,19 +43,21 @@ import alphabets.hexLowerCase
 import codepages.utf8Codepage
 import providers.javaBaseProvider
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Hashing a value
 
-`digest` computes the digest of a value in a named algorithm, and `serialize` renders it:
+`digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
 
-```scala
-t"Hello world".digest[Sha2[256]].serialize[Hex]
-// t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
+```scala fuel
+run
+##
+Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
 ```
 
-The provider in scope supplies the algorithms. Each algorithm, the permit it needs, and the
-providers that offer it on the JVM:
+The provider in scope supplies the algorithms. These are the algorithms, the permit each
+needs, and the providers which offer each on the JVM:
 
 ```tabular
 column  Algorithm
@@ -69,66 +75,100 @@ row  `Crc64`  checksum  `permitNonCryptographicHashes`  `soundnessProvider`  64
 row  `Adler32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
 ```
 
-The permits are imported from `cryptoPermits`.
+The permits are imported from the package `cryptoPermits`.
 
-The algorithm need not be named where the expected type already says it. A digest carries its
-algorithm in its type — `Digest in Sha2[256]` — so a field declared that way fixes what `digest`
-computes without the call restating it:
+`javaBaseProvider` uses the JDK's `MessageDigest` where there is one. Off the JVM there is
+not, and the same import then selects pure-Scala implementations of MD5, SHA-1, SHA-2 and
+CRC-32, which are validated byte for byte against the JDK's. Code which hashes therefore reads
+the same, and produces the same digests, on the JVM, in a browser and inside a WebAssembly
+component.
+
+### The algorithm in the type
+
+A digest has its algorithm in its type, as in `Digest in Sha2[256]`. Where the expected type
+already says which algorithm is wanted, `digest` need not name it. A field declared with the
+type fixes what `digest` computes:
 
 ```scala
 case class Block(digest: Digest in Sha2[256], payload: Text)
 
 val payload = t"""{"amount": 100}"""
-Block(payload.digest, payload)
+val block = Block(payload.digest, payload)
 ```
 
-That is the pattern throughout: digests, HMACs, keys and signatures are all bytes parameterized by
-the algorithm that produced them, so a value from one algorithm cannot be passed where another is
-expected, and the algorithm rarely has to be written twice.
+```scala fuel
+run
+##
+Out.println(block.digest.serialize[Hex])
+```
 
-`javaBaseProvider` names the JDK's `MessageDigest` where there is one. Off the JVM there is
-not, so the same import selects pure-Scala implementations of MD5, SHA-1, SHA-2 and CRC-32,
-validated byte for byte against the JDK's. Code that hashes therefore reads the same, and
-produces the same digests, on the JVM, in a browser and inside a WebAssembly component.
+That is the pattern throughout. Digests, HMACs, keys and signatures are all bytes with a type
+parameter for the algorithm which produced them. A value from one algorithm cannot be passed
+where another is expected, and the algorithm rarely has to be written twice:
+
+```scala fuel
+compile
+errors show
+##
+Block(payload.digest[Sha2[512]], payload)
+```
+
+[Cryptography](cryptography.md) covers HMACs, keys and signatures.
 
 ### Hashing your own types
 
-Any value that can be reduced to bytes is digestible, and a case class derives that automatically
-from its fields, so a structured value is hashed as one:
+Any value which can be reduced to bytes is digestible. A case class derives that from its
+fields, so a structured value is hashed as one:
 
 ```scala
 case class Person(name: Text, age: Int)
-
-Person(t"Alice", 30).digest[Sha2[256]]
 ```
 
-A digest is itself digestible, so a hash can be combined into a larger structure and hashed again.
+```scala fuel
+run
+##
+Out.println(Person(t"Alice", 30).digest[Sha2[256]].serialize[Hex])
+Out.println(Person(t"Alice", 31).digest[Sha2[256]].serialize[Hex])
+```
+
+A digest is itself digestible, so a hash can be combined into a larger structure, and hashed
+again.
 
 ### Hashing a stream
 
-Data too large to hold is hashed as it passes. The digest accumulates over successive windows,
-carrying partial blocks across the boundaries between them, so the result is identical whatever
-sizes the chunks happen to arrive in — including chunks of one byte, and windows that begin part
-way into a buffer:
+Data which is too large to hold is hashed as it passes. The digest accumulates over successive
+chunks, and carries partial blocks across the boundaries between them. The result is therefore
+identical whatever sizes the chunks happen to arrive in, and is the digest of the whole text
+above:
 
 ```scala
 val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
-chunks.checksum[Sha2[256]].serialize[Hex]
-// t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c", as for the whole text
 ```
 
-This is what makes a digest computable over a [stream](streams.md) with bounded memory, and it is
-why hashing composes with [compression](compression.md) and [encryption](cryptography.md) in one
-pipeline rather than requiring the data to be materialized between them.
+```scala fuel
+run
+##
+Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
+```
 
-`checksum` digests what is *behind* a value: a stream's bytes, and, for a
-[filesystem](filesystem.md) path, a file's content or a directory's. A directory's checksum
-covers its regular files in the order of their paths relative to it, each contributing its
-relative path and its content, so a rename, a move or an edit changes it, two directories
-holding the same files have the same checksum wherever they are, and an empty directory has one
-too — the identity a build keys its caches by:
+This is what makes a digest computable over a [stream](streams.md) with bounded memory. It is
+why hashing composes with [compression](compression.md) and
+[encryption](cryptography.md) in one pipeline, without the data being held between them.
 
-```scala
+`checksum` digests what is *behind* a value: a stream's bytes and, for a
+[filesystem](filesystem.md) path, the content of a file or of a directory. A directory's
+checksum covers its regular files, in the order of their paths relative to it, and each
+contributes its relative path and its content. So:
+
+- a rename, a move or an edit changes the checksum;
+- two directories which hold the same files have the same checksum, wherever they are;
+- an empty directory has a checksum too.
+
+That is the identity a build keys its caches by:
+
+```scala fuel
+typecheck
+##
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import pathInterfaces.pathOnLinux
@@ -137,12 +177,103 @@ import temporaryDirectories.javaBaseTemporaryDirectory
 val directory = temporaryDirectory[Path on Linux] / "hashing"
 directory.create[Directory](CreateFlag.Replace)
 
-directory.checksum[Sha2[256]]   // Digest in Sha2[256]
+val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
+```
+
+### Rendering a digest
+
+A digest's bytes are written in any base encoding: hexadecimal for display, or Base64 where
+they must be compact:
+
+```scala fuel
+run
+##
+locally:
+  import alphabets.base64Standard
+  Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
+```
+
+### Self-describing digests
+
+A digest's bytes say nothing about the algorithm which produced them. A digest which is stored
+or sent alone can be checked only by something which already knows how it was made. A
+[Multihash](https://multiformats.io/multihash/) prefixes the digest with a code for its
+algorithm and its length, so it describes itself. Content-addressed storage, and the
+distributed protocols built on it, exchange multihashes:
+
+```scala fuel
+run
+##
+Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
+```
+
+The two bytes `12` and `20` say that a SHA-256 digest of thirty-two bytes follows. The
+algorithm's code comes from the digest's type, so a multihash cannot claim an algorithm other
+than the one which computed it.
+
+### Weak algorithms
+
+MD5 and SHA-1 are broken for the purposes of security, and remain only for compatibility.
+Without a permission in scope, neither compiles:
+
+```scala fuel
+compile
+errors show
+##
+t"Hello world".digest[Md5]
+```
+
+Importing the permission makes the choice visible and deliberate:
+
+```scala fuel
+run
+##
+locally:
+  import cryptoPermits.permitDisallowedCrypto
+  Out.println(t"Hello world".digest[Md5].serialize[Hex])
+```
+
+The strong algorithms need no permission.
+
+### Checksums
+
+`Crc32`, `Crc64` and `Adler32` are not hashes but checksums. They detect accidental
+corruption, and defend against nothing. They sit behind a permit of their own, which concedes
+only that no adversary is being defended against:
+
+```scala
+import cryptoPermits.permitNonCryptographicHashes
+```
+
+```scala fuel
+run
+##
+Out.println(t"123456789".digest[Crc32].serialize[Hex])
+```
+
+A source of bytes, such as a file or a download, is checksummed without being held in memory,
+by digesting its stream as it flows, exactly as `checksum` did above.
+
+### Fast hashing
+
+`Murmur3` is MurmurHash3 in its 128-bit form. It is not a checksum, but it is not
+cryptographic either. It is a hash made for hash tables, [Bloom filters](bloom-filters.md) and
+sharding, where the input is not adversarial, and the rounds of a cryptographic digest would
+be several times the work for no benefit. It sits behind the same permit as the checksums, and
+its output is byte for byte what Guava's `murmur3_128()` produces:
+
+```scala fuel
+run
+##
+locally:
+  import providers.soundnessProvider
+  Out.println(t"hello".digest[Murmur3].serialize[Hex])
 ```
 
 ### BLAKE3
 
-`Blake3` is the pure-Scala implementation, and it offers the algorithm's three modes:
+`Blake3` is implemented in pure Scala, by `soundnessProvider`, and offers the algorithm's three
+modes:
 
 ```tabular
 column  Mode
@@ -153,80 +284,8 @@ row  keyed hash  a key and the data  message authentication
 row  key derivation  a context string and key material  deriving keys
 ```
 
-All three are checked against the official test vectors, at every input length the vectors cover, so
-the implementation is verified rather than merely tested for self-consistency.
+All three are checked against the official test data, at every input length which that data
+covers, so the implementation is verified, and not merely tested for consistency with itself.
 
-Its output is extendable: a BLAKE3 digest may be taken at any length, not only at 256 bits, which
-is what makes it usable as a key-derivation function as well as a hash.
-
-### Rendering a digest
-
-A digest's bytes render in any base encoding — hexadecimal for display, Base64 where it must be
-compact — and a digest shows as Base64 by default:
-
-```scala
-import alphabets.base64Standard
-
-t"Hello world".digest[Sha2[256]].serialize[Base64]
-```
-
-### Self-describing digests
-
-A digest's bytes say nothing about the algorithm that produced them, so a digest stored or sent
-alone can be checked only by something that already knows how it was made. A
-[Multihash](https://multiformats.io/multihash/) prefixes the digest with a code for its algorithm
-and its length, so it describes itself, which is what content-addressed storage and the
-distributed protocols built on it exchange:
-
-```scala
-Multihash(t"Hello world".digest[Sha2[256]]).serialize
-// 0x12, 0x20, then the thirty-two bytes of the SHA-256 digest
-```
-
-The algorithm code comes from the digest's type, so a multihash cannot claim an algorithm other
-than the one that computed it.
-
-### Weak algorithms
-
-MD5 and SHA-1 are broken for security purposes, and remain only for compatibility. Digesting with
-one requires a permission in scope, so the choice is visible and deliberate:
-
-```scala
-import cryptoPermits.permitDisallowedCrypto
-
-t"Hello world".digest[Md5].serialize[Hex]   // t"3e25960a79dbc69b674cd4ec67a72c62"
-```
-
-Without such an import, `digest[Md5]` and `digest[Sha1]` do not compile; the strong algorithms need
-no permission.
-
-### Checksums
-
-`Crc32`, `Crc64` and `Adler32` are not hashes but checksums: they detect accidental corruption
-and defend against nothing, so they sit behind a permit of their own, which concedes only that no
-adversary is in the threat model:
-
-```scala
-import cryptoPermits.permitNonCryptographicHashes
-
-t"123456789".digest[Crc32].serialize[Hex]   // t"cbf43926"
-```
-
-### Fast hashing
-
-`Murmur3` is MurmurHash3 in its 128-bit form: not a checksum, but not cryptographic either — a
-hash made for hash tables, [Bloom filters](bloom-filters.md) and sharding, where the input is not
-adversarial and a cryptographic digest's rounds would be several times the work for no benefit. It
-sits behind the same permit as the checksums, and its output is byte-for-byte what Guava's
-`murmur3_128()` produces:
-
-```scala
-import cryptoPermits.permitNonCryptographicHashes
-import providers.soundnessProvider
-
-t"hello".digest[Murmur3].serialize[Hex]   // t"029bbd41b3a7d8cb191dae486a901e5b"
-```
-
-A source of bytes — a file, a download — is checksummed without holding it all in memory, by
-digesting its stream as it flows, exactly as `checksum` did above, and a digest of any algorithm
-is a value: comparable, showable, and usable as a key.
+Its output is extendable. A BLAKE3 digest may be taken at any length, not only at 256 bits,
+which is what makes it usable for deriving keys as well as for hashing.
