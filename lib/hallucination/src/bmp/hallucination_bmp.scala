@@ -37,3 +37,8 @@ import prepositional.*
 
 package construables:
   given bmpConstruable: ("image/bmp" is Construable to (Raster in Bmp)) = Construable()
+
+package detectables:
+  // "BM", the whole of the signature which the format reserves.
+  given bmpDetectable: ("image/bmp" is Detectable under Likely over Probe to (Raster in Bmp)) =
+    Detectable.signature(0x42, 0x4d)

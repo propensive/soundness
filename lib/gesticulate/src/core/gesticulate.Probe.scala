@@ -101,6 +101,13 @@ final class Probe private (cursor: Cursor[Data, {}]^) extends scala.caps.Mutable
       advance(count, 0)
       cursor.grab(start, cursor.mark)
 
+  // Passes over a UTF-8 byte-order mark, if the content starts with one, and any ASCII
+  // whitespace: what may precede the first significant byte of a textual format.
+  update def skipWhitespace(): Unit =
+    check()
+    if offset == 0 && cursor.more && cursor.peek.asInt == 0xef then advance(3, 0)
+    whitespace()
+
   // Whether the next bytes are exactly `signature`, which is read past if so.
   update def expect(signature: Data): Boolean =
     val found: Data = take(signature.length)
@@ -115,6 +122,15 @@ final class Probe private (cursor: Cursor[Data, {}]^) extends scala.caps.Mutable
       advance(count, done + 1)
     else
       done
+
+  @tailrec
+  private update def whitespace(): Unit =
+    if cursor.more then
+      val byte = cursor.peek.asInt
+
+      if byte == 0x20 || byte == 0x09 || byte == 0x0a || byte == 0x0d then
+        cursor.advance()
+        whitespace()
 
   private[gesticulate] update def attempt(detect: Probe^ => Boolean): Boolean =
     val outcome: Boolean | Throwable = cursor.hold:

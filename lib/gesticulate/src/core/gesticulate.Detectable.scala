@@ -84,8 +84,27 @@ object Detectable:
 
     Positional[media, limit, result](lambda)
 
+  // A detector for a format which reserves `bytes` at its start.
+  def signature[media <: Label, limit <: Plausible, result](bytes: Data)
+  :   Sequential[media, limit, result] =
+
+    signatureAt[media, limit, result](0, bytes)
+
+  // The same, with the bytes written out: `Detectable.signature(0x1f, 0x8b)`.
+  def signature[media <: Label, limit <: Plausible, result](bytes: Int*)
+  :   Sequential[media, limit, result] =
+
+    signatureAt[media, limit, result](0, bytes.map(_.toByte).to[Array])
+
+  // A detector for a format which reserves the bytes written out at `offset`:
+  // `Detectable.signatureAt(257)(0x75, 0x73, 0x74, 0x61, 0x72)`.
+  def signatureAt[media <: Label, limit <: Plausible, result](offset: Int)(bytes: Int*)
+  :   Sequential[media, limit, result] =
+
+    signatureAt[media, limit, result](offset, bytes.map(_.toByte).to[Array])
+
   // A detector for a format which reserves `bytes` at `offset`.
-  def signature[media <: Label, limit <: Plausible, result](bytes: Data, offset: Int = 0)
+  def signatureAt[media <: Label, limit <: Plausible, result](offset: Int, bytes: Data)
   :   Sequential[media, limit, result] =
 
     Sequential[media, limit, result]: probe => probe.skip(offset) == offset && probe.expect(bytes)
@@ -170,8 +189,12 @@ object Detectable:
     then Some(Detection.Bound[label, limit, result](scala.compiletime.constValue[label].tt))
     else None
 
-  // Data in memory, as content with random access.
-  private[gesticulate] final class Memory(data: Data) extends Expanse:
+  // Data in memory, as content with random access. Public, because the inlined `unapply` calls
+  // it wherever it is expanded, and an accessor synthesized for a private method cannot take
+  // frozen `Data`.
+  def memory(data: Data): Expanse = Memory(data)
+
+  private final class Memory(data: Data) extends Expanse:
     def size: Long = data.length.toLong
 
     def read(offset: Long, length: Int): Data =

@@ -74,3 +74,14 @@ package recoveries:
 
 package construables:
   given htmlConstruable: ("text/html" is Construable to Document[Html]) = Construable()
+
+package detectables:
+  // A document type declaration or an `html` element, in any case; neither is required, and
+  // XHTML may open with an XML declaration instead.
+  given htmlDetectable
+  :   ("text/html" is Detectable under Plausible over Probe to Document[Html]) =
+
+    Detectable: probe =>
+      probe.skipWhitespace()
+      val opening = probe.take(14).ascii.lower
+      opening == t"<!doctype html" || opening.starts(t"<html")

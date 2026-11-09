@@ -52,3 +52,9 @@ package servables:
 
 package construables:
   given cborConstruable: ("application/cbor" is Construable to Cbor) = Construable()
+
+package detectables:
+  // The self-described CBOR tag, 55799, which RFC 8949 reserves as the format's magic number.
+  // It is optional, so CBOR without it is not recognised.
+  given cborDetectable: ("application/cbor" is Detectable under Likely over Probe to Cbor) =
+    Detectable.signature(0xd9, 0xd9, 0xf7)

@@ -40,3 +40,6 @@ package postables:
 
 package servables:
   export xylophone.servables.xmlServable
+
+package detectables:
+  export xylophone.detectables.{xmlDetectable, textXmlDetectable}

@@ -36,3 +36,6 @@ export hallucination.Gif
 
 package construables:
   export hallucination.construables.gifConstruable
+
+package detectables:
+  export hallucination.detectables.gifDetectable

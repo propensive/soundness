@@ -37,3 +37,8 @@ import prepositional.*
 
 package construables:
   given webpConstruable: ("image/webp" is Construable to (Raster in Webp)) = Construable()
+
+package detectables:
+  // The RIFF container signature: "RIFF", a size, then "WEBP".
+  given webpDetectable: ("image/webp" is Detectable under Likely over Probe to (Raster in Webp)) =
+    Detectable { probe => WebpCodec.isWebp(probe.take(12)) }

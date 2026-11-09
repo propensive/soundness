@@ -40,3 +40,6 @@ package servables:
 
 package construables:
   export breviloquence.construables.cborConstruable
+
+package detectables:
+  export breviloquence.detectables.cborDetectable

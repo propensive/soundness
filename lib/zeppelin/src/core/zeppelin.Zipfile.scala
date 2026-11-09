@@ -157,6 +157,9 @@ object Zipfile:
 
     (window, i, windowStart + i)
 
+  // Whether `source` has the end-of-central-directory record by which an archive is identified.
+  private[zeppelin] def indexed(source: Expanse): Boolean = safely(findEocd(source)).present
+
   private[zeppelin] def parse(source: Expanse): Zipfile raises Zip.Error =
     val size = source.size
     val (window, i, eocdOffset) = findEocd(source)

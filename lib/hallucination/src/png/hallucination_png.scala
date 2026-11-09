@@ -37,3 +37,8 @@ import prepositional.*
 
 package construables:
   given pngConstruable: ("image/png" is Construable to (Raster in Png)) = Construable()
+
+package detectables:
+  // The eight-byte PNG signature.
+  given pngDetectable: ("image/png" is Detectable under Likely over Probe to (Raster in Png)) =
+    Detectable.signature(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)

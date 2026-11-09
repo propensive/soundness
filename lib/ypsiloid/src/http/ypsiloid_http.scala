@@ -34,6 +34,7 @@ package ypsiloid
 
 import anticipation.*
 import gesticulate.*
+import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import spectacular.*
@@ -54,3 +55,11 @@ package servables:
 
 package construables:
   given yamlConstruable: ("application/yaml" is Construable to Yaml) = Construable()
+
+package detectables:
+  // A `%YAML` directive or a document-start marker; both are optional.
+  given yamlDetectable: ("application/yaml" is Detectable under Plausible over Probe to Yaml) =
+    Detectable: probe =>
+      probe.skipWhitespace()
+      val opening = probe.take(5).ascii
+      opening == t"%YAML" || opening.starts(t"---")

@@ -36,3 +36,6 @@ export hallucination.Bmp
 
 package construables:
   export hallucination.construables.bmpConstruable
+
+package detectables:
+  export hallucination.detectables.bmpDetectable

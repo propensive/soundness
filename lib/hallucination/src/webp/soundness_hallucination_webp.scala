@@ -36,3 +36,6 @@ export hallucination.Webp
 
 package construables:
   export hallucination.construables.webpConstruable
+
+package detectables:
+  export hallucination.detectables.webpDetectable

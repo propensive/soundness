@@ -73,12 +73,12 @@ object Media:
     Detectable.expanse[label, floor](scrutinee)
 
   transparent inline def unapply[label <: Label](scrutinee: Data): Option[Any] =
-    Detectable.expanse[label, Plausible](Detectable.Memory(scrutinee))
+    Detectable.expanse[label, Plausible](Detectable.memory(scrutinee))
 
   transparent inline def unapply[label <: Label, floor <: Plausible](scrutinee: Data)
   :   Option[Any] =
 
-    Detectable.expanse[label, floor](Detectable.Memory(scrutinee))
+    Detectable.expanse[label, floor](Detectable.memory(scrutinee))
 
   private val plain: MediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
 
