@@ -2,26 +2,32 @@
 
 ### About
 
-The [Agent Client Protocol](https://agentclientprotocol.com/) is how an editor — or any program —
-drives a coding agent: Claude Code, Gemini CLI, and a growing set of others speak it over the
-agent's standard input and output. The client half of the protocol, version 1, is implemented for
-programmatic use: spawn an agent, open a session, send a prompt, and watch its work stream back —
-messages, thoughts, tool calls, plans — while answering the requests it makes of you: permission
-to act, file access, terminals.
+The [Agent Client Protocol](https://agentclientprotocol.com/) is how an editor, or any program,
+drives a coding agent. Claude Code, Gemini CLI and a growing set of others speak it over the
+agent's standard input and output.
+
+The client half of the protocol, version 1, is implemented here for use from a program. It
+spawns an agent, opens a session, sends a prompt, and watches the agent's work stream back as
+messages, thoughts, tool calls and plans. Meanwhile it answers the requests which the agent
+makes of it: permission to act, access to files, and terminals.
 
 ### On ACP
 
-The protocol is JSON-RPC both ways at once. The client calls the agent — `initialize`,
-`session/new`, `session/prompt` — and the agent calls back, mid-turn: a `session/update`
-notification for every chunk of progress, and requests that block its work until the client
-answers. A prompt is therefore not a function call but a *turn*: one long-lived request whose
-response arrives only after everything the agent did inside it.
+The protocol is JSON-RPC in both directions at once. The client calls the agent, with
+`initialize`, `session/new` and `session/prompt`. The agent calls back in the middle of a turn,
+with a `session/update` notification for every chunk of progress, and with requests which block
+its work until the client answers. A prompt is therefore not a function call but a *turn*: one
+long-lived request whose response arrives only after everything the agent did inside it.
 
 The turn is modeled directly. `prompt` blocks until the agent reports why the turn ended, while
-the updates stream concurrently to handlers registered before connecting; the capabilities the
-client advertises are derived from those registrations, so the declaration can never disagree
-with the implementation. A connection needs a few capabilities of its own: a way to run the reader
-and writer tasks, an error strategy, a working directory for the agent, and somewhere to print:
+the updates stream concurrently to handlers which were registered before connecting. The
+capabilities which the client advertises are derived from those registrations, so the
+declaration can never disagree with the implementation. Every request and notification is a
+typed value, not a JSON document, in the spirit of
+[honest signatures](../philosophy/honest-signatures.md).
+
+A connection needs a few [capabilities][capability] of its own: a way to run the reader and
+writer tasks, an error [strategy], a working directory for the agent, and somewhere to print:
 
 ```scala fuel
 feature experimental.captureChecking
@@ -38,13 +44,13 @@ import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 ```
 
-Every request and notification is a typed value rather than a JSON document, in the spirit of [honest signatures](../philosophy/honest-signatures.md).
+The samples on this page drive an agent in another process, so they are compiled but not run.
 
 ### Connecting
 
 `Acp.connect` spawns the agent, exchanges `initialize`, and lends a connection for the duration
-of a block. The first block registers handlers; the second holds the live connection, reached
-through `Acp.connection`. Because the exchange runs as concurrent tasks, the whole thing sits
+of a block. The first block registers handlers. The second holds the live connection, which is
+reached through `Acp.connection`. The exchange runs as concurrent tasks, so the whole thing sits
 inside a `supervise` block:
 
 ```scala
@@ -64,14 +70,15 @@ supervise:
       Acp.connection.prompt(session.sessionId, t"Fix the failing test")
 ```
 
-The value of the second block is the value of `connect`; here it is the turn's stop reason. When
-the block returns, the exchange is torn down and a subprocess agent is killed, so nothing outlives
-the agent it speaks to. An agent that is already running — behind a socket, or a fixture in a
-test — connects through `Acp.Agent.streams(input, output)` instead of a command.
+The value of the second block is the value of `connect`. Here it is the stop reason of the turn.
+When the block returns, the exchange is torn down, and a subprocess agent is killed, so nothing
+outlives the agent it speaks to. An agent which is already running, behind a socket or as a
+fixture in a test, connects through `Acp.Agent.streams(input, output)` instead of a command.
 
-An unregistered capability is never advertised: a client that registers no `readFile` handler
-reports no filesystem support, and a conformant agent will not ask. `Acp.capabilities` adjusts the
-derived declaration as a last resort, applied at initialization.
+A capability which is not registered is never advertised. A client which registers no
+`readFile` handler reports no filesystem support, and a conformant agent will not ask.
+`Acp.capabilities` adjusts the derived declaration as a last resort, and is applied at
+initialization.
 
 ### Updates
 
@@ -89,7 +96,7 @@ row  `Acp.writeFile`  `Acp.path`, `Acp.content`  nothing
 row  `Acp.terminals`  the arguments of each operation  one `Acp.Terminals` bundle
 ```
 
-An update is one of the protocol's `SessionUpdate` cases:
+An update is one of the `SessionUpdate` cases of the protocol:
 
 ```scala
 def register(using Acp.Registry): Unit = Acp.updated:
@@ -106,8 +113,8 @@ def register(using Acp.Registry): Unit = Acp.updated:
 
 ### Permissions
 
-An agent about to act asks for permission, offering a list of options. The handler chooses one
-with `Acp.Selected`, or answers `Acp.Cancelled`. Each option has one of four kinds of
+An agent which is about to act asks for permission, and offers a list of options. The handler
+chooses one with `Acp.Selected`, or answers `Acp.Cancelled`. Each option has one of four kinds of
 `Acp.PermissionOptionKind`:
 
 ```tabular
@@ -118,7 +125,7 @@ row  Allow  `AllowOnce`  `AllowAlways`
 row  Reject  `RejectOnce`  `RejectAlways`
 ```
 
-so a policy is a filter over them:
+A policy is therefore a filter over them:
 
 ```scala
 def allowAlways(using Acp.Registry): Unit = Acp.permission:
@@ -128,10 +135,10 @@ def allowAlways(using Acp.Registry): Unit = Acp.permission:
 
 ### Filesystem and terminals
 
-The agent works with *your* view of the world if you offer one. `Acp.readFile` serves the agent's
-requests to read a file — including unsaved editor state, if you have any — and `Acp.writeFile`
-its requests to write one. A read handler sees the `path`, and optionally a starting `line` and a
-`limit` on the number of lines; a write handler sees the `path` and the `content`:
+The agent works with *your* view of the world, if you offer one. `Acp.readFile` serves the
+agent's requests to read a file, which can include the unsaved state of an editor. `Acp.writeFile`
+serves its requests to write one. A read handler sees the `path`, and optionally a starting
+`line` and a `limit` on the number of lines. A write handler sees the `path` and the `content`:
 
 ```scala
 import codepages.utf8Codepage
@@ -149,8 +156,8 @@ def files(using Acp.Registry): Unit =
       handle.write(Acp.content)
 ```
 
-Terminals are advertised as a single capability, so the five operations — create a terminal,
-read its output, wait for it to exit, kill it, and release it — are supplied together as one
+Terminals are advertised as a single capability. The five operations, which create a terminal,
+read its output, wait for it to exit, kill it and release it, are supplied together as one
 `Acp.Terminals` bundle to `Acp.terminals`.
 
 ### Sessions
@@ -167,7 +174,7 @@ row  `setMode`  a session id and a mode id  switches between the modes reported 
 row  `authenticate`  the id of a method advertised at `initialize`  authenticates with the agent
 ```
 
-An agent that requires authentication says so with an `Acp.Error` whose reason is
+An agent which requires authentication says so with an `Acp.Error` whose reason is
 `AuthRequired`, and `authenticate` answers it.
 
 ### Stop reasons
@@ -187,14 +194,14 @@ row  `Cancelled`  the client canceled the turn
 ### Cancellation
 
 `Acp.connection.cancel(sessionId)` notifies the agent, and the turn completes with the
-`Cancelled` stop reason. Permission requests pending at that moment — or arriving before the next
-turn — are answered `Cancelled` automatically, as the protocol requires; opening a new turn resets
-the session.
+`Cancelled` stop reason. A permission request which is pending at that moment, or which arrives
+before the next turn, is answered `Cancelled` automatically, as the protocol requires. Opening a
+new turn resets the session.
 
 ### Errors
 
-Every fault the agent reports, and every fault in the exchange, is an `Acp.Error`, whose reason
-is one of these:
+Every fault which the agent reports, and every fault in the exchange, is an `Acp.Error`, whose
+reason is one of these:
 
 ```tabular
 column  Reason
@@ -212,13 +219,22 @@ row
   cell  the agent answers `initialize` with a protocol version other than 1
 ```
 
-A fault raised inside a handler is converted into an error response
-carrying the reason's wire code, so a client bug is reported to the agent rather than hanging the
-turn. `connect` takes an optional `Acp.Observer`, which sees every message in both directions as
-it crosses the transport, for logging or a protocol trace.
+A fault raised inside a handler is converted into an error response which carries the wire code
+of the reason, so a bug in the client is reported to the agent, and does not hang the turn.
+`connect` takes an optional `Acp.Observer`, which sees every message in both directions as it
+crosses the transport, for logging or a protocol trace.
 
 ### Content
 
-ACP adopts MCP's content vocabulary — `TextContent`, `ImageContent`, `AudioContent`,
-`ResourceLink`, `EmbeddedResource` — and the types are shared with [MCP](mcp.md), so content
+ACP adopts the content vocabulary of MCP: `TextContent`, `ImageContent`, `AudioContent`,
+`ResourceLink` and `EmbeddedResource`. The types are shared with [MCP](mcp.md), so content
 crosses between the two protocols without translation.
+
+### Related
+
+- [MCP](mcp.md) is the sibling protocol, through which an agent reaches tools.
+- [LLM](llm.md) speaks to language models directly, without an agent in between.
+- [Processes](processes.md) describes the `sh"…"` command which spawns an agent.
+- [Concurrency](concurrency.md) describes `supervise`, which the exchange runs inside.
+- [Filesystem](filesystem.md) describes the file operations which the handlers use.
+- [RPC](rpc.md) describes the JSON-RPC which the protocol is built on.
