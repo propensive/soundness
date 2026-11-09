@@ -56,7 +56,7 @@ run
 ##
 Out.println(payload.length.show)
 Out.println(compressed.length.show)
-Out.println((compressed.decompress[Gzip] == payload).inspect)
+Out.println(compressed.decompress[Gzip].utf8.keep(43))
 ```
 
 ### Compressing a stream
