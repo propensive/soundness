@@ -2,110 +2,168 @@
 
 ### About
 
-Soundness reads and writes [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), its
-tab-separated cousin TSV, and other delimited formats. Text parses into a `Sheet` — a stream of
-rows — and each row, a `Dsv`, decodes into a case class whose fields take the columns in turn.
-A case class encodes back to a row the same way, with the encoder and decoder derived from the
-type, so there is nothing to write by hand.
+[CSV](https://en.wikipedia.org/wiki/Comma-separated_values), its tab-separated cousin TSV, and
+other delimited formats are read and written in one way. Text parses into a `Sheet`, which is a
+series of rows. Each row, a `Dsv`, decodes into a case class whose fields take the columns in
+turn. A case class encodes back to a row in the same way. The encoder and decoder are
+[derived][derivation] from the type, so there is nothing to write by hand.
 
-The delimiter, quoting and header conventions are fixed by a format value chosen in scope, so
-the same data reads as CSV or TSV by a change of import. Nested case classes flatten across
-several columns, optional fields are supported, and columns can be addressed by header name
-rather than position.
+The delimiter, the quoting and the presence of a header row are fixed by a format, chosen in
+scope, so the same data reads as CSV or TSV by a change of import. Nested case classes spread
+across several columns, optional fields are supported, and a column can be addressed by its
+header instead of its position.
 
 ### On delimited data
 
-CSV looks trivial and is not. A field may contain the delimiter if it is quoted, a quote inside
-a quoted field is doubled, a file may or may not begin with a header row, and a "CSV" file is as
-likely to be separated by tabs or semicolons. Code that splits on commas handles none of this,
-and the mapping from columns to a program's own types is usually written out by hand and kept in
-step by discipline.
+CSV looks trivial, and is not:
 
-Rows decode to case classes through the same derivation as every other format, so the shape of the data is checked once, as [correctness](../philosophy/correctness.md) prefers.
+- A field may contain the delimiter, if it is quoted.
+- A quote inside a quoted field is doubled.
+- A file may or may not begin with a header row.
+- A "CSV" file is as likely to be separated by tabs or semicolons as by commas.
 
-Soundness derives that mapping from the case class the data should become. Parsing respects
-quoting and escaping; the format — delimiter, quote character, whether a header is present — is an
-explicit value rather than a guess; and decoding a row to a type, or a type to a row, is a single
-derived operation. Everything comes from the `soundness` package, with a format and an error
-strategy in scope:
+Code which splits on commas handles none of this. And the mapping from columns to a program's
+own types is usually written out by hand, and kept in step by discipline.
+
+Here that mapping is derived from the case class which the data should become. Parsing respects
+quoting and escaping. The format is an explicit value, not a guess. Decoding a row to a type, or
+a type to a row, is a single derived operation, through the same derivation as every other
+format, so the shape of the data is checked once, as
+[correctness](../philosophy/correctness.md) prefers.
+
+Everything comes from the `soundness` package. A format and an error [strategy] are in scope,
+and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
 import dsvFormats.csvFormat
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Reading rows
 
-Text reads as a `Sheet`, whose `rows` are `Dsv` values — one per line, split into cells according
-to the format:
+`read[Sheet]` parses text into a `Sheet`. Its `rows` are `Dsv` values, one for each line, split
+into cells according to the format:
 
-```scala
-t"hello,world".read[Sheet].rows(Prim)   // Dsv(t"hello", t"world")
+```scala fuel
+run
+##
+Out.println(t"hello,world".read[Sheet].rows(Prim).inspect)
 ```
 
-A `Sheet` is materialized: its rows are an array, replayable, indexable and cheap to compare. A
-file too large to hold needs no sheet at all — `rows` on a character [stream](streams.md) yields
-the rows one at a time, parsed by the same reader, so a quoted cell spanning chunk and line
-boundaries is handled exactly as it is in a materialized sheet:
+The delimiter inside a quoted cell is part of the cell, so this row has three cells, not four:
+
+```scala fuel
+run
+##
+Out.println(t"1,\"Lovelace, Ada\",36".read[Sheet].rows(Prim).inspect)
+```
+
+A `Sheet` holds all its rows in memory, in an array, so they can be replayed, indexed and
+compared cheaply. A file too large to hold needs no sheet at all. `rows` on a
+[stream](streams.md) of characters gives the rows one at a time, parsed by the same reader, so
+a quoted cell which spans the boundary between chunks, or between lines, is handled exactly as
+it is in a sheet:
 
 ```scala
-t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
-// List(t"name", t"alpha", t"beta")
+val names =
+  t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
 ```
 
 ### Decoding to a case class
 
-A row decodes into a case class with `as`, taking the cells in order; a nested case class simply
+`as` decodes a row into a case class, taking the cells in order. A nested case class simply
 consumes as many columns as it has fields:
 
 ```scala
 case class FullName(first: Text, last: Text)
 case class Person(id: Int, name: FullName, age: Int)
 
-t"1,Ada,Lovelace,36".read[Sheet].rows(Prim).let(_.as[Person])
-// Person(1, FullName(t"Ada", t"Lovelace"), 36)
+val ada = t"1,Ada,Lovelace,36".read[Sheet].rows(Prim).let(_.as[Person])
 ```
 
-Reading straight to a type combines the two steps, decoding a single record from text:
-
-```scala
-t"hello,world".read[FullName in Dsv]   // FullName(t"hello", t"world")
+```scala fuel
+run
+##
+Out.println(ada.inspect)
 ```
 
-and `in[Text over Dsv]` combines them on the way out, encoding a value as a single record:
+`rows(Prim)` gives an [optional](optional-values.md) row, since the sheet may be empty, so `let`
+decodes the row if there is one.
 
-```scala
-FullName(t"hello", t"world").in[Text over Dsv]   // t"hello,world"
+Reading straight to a type combines the two steps, and decodes a single record from text:
+
+```scala fuel
+run
+##
+Out.println(t"hello,world".read[FullName in Dsv].inspect)
 ```
 
-`in[Data over Dsv]` writes the same text as bytes, encoded in the `Codepage` in scope.
+A cell which cannot be decoded as its field's type is an error:
 
-### Headers
-
-When the data begins with a header row, the header-bearing format matches each column to the
-field of the same name, so the order of the columns need not match the order of the fields:
-
-```scala
-locally:
-  import dsvFormats.csvWithHeaderFormat
-  t"last,first\nLovelace,Ada".read[FullName in Dsv]   // FullName(t"Ada", t"Lovelace")
+```scala fuel
+run
+errors show
+##
+t"one,Ada,Lovelace,36".read[Person in Dsv]
 ```
 
 ### Encoding
 
-A case class encodes to a row with `dsv`, and a sequence of them to a `Sheet`; rendering the
-result with `show` produces the delimited text:
+`dsv` encodes a case class as a row, and a sequence of them as a `Sheet`. `show` writes the
+result as delimited text:
+
+```scala fuel
+run
+##
+Out.println(FullName(t"Ada", t"Lovelace").dsv.inspect)
+Out.println(List(FullName(t"Ada", t"Lovelace"), FullName(t"Grace", t"Hopper")).dsv.show)
+```
+
+`in[Text over Dsv]` encodes a value as a single record in one step, and `in[Data over Dsv]`
+writes the same text as bytes, in the `Codepage` in scope:
 
 ```scala
-FullName(t"Ada", t"Lovelace").dsv               // Dsv(t"Ada", t"Lovelace")
-List(FullName(t"Ada", t"Lovelace")).dsv.show    // t"Ada,Lovelace"
+val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
+```
+
+```scala fuel
+run
+##
+Out.println(record)
+```
+
+A cell is quoted only when it contains the delimiter, a quote or a line break, and a quote
+within a cell is doubled:
+
+```scala
+val quoted: Text = FullName(t"Ada", t"Lovelace, Countess").in[Text over Dsv]
+```
+
+```scala fuel
+run
+##
+Out.println(quoted)
+```
+
+### Headers
+
+Data often begins with a header row. A format which expects one matches each column to the
+field of the same name, so the order of the columns need not match the order of the fields:
+
+```scala fuel
+run
+##
+locally:
+  import dsvFormats.csvWithHeaderFormat
+  Out.println(t"last,first\nLovelace,Ada".read[FullName in Dsv].inspect)
 ```
 
 ### Formats
 
-The format in scope decides the delimiter and quoting. Each delimiter has a plain format and a
-header-bearing variant, in the `dsvFormats` package, and all of them quote with `"`:
+The format in scope decides the delimiter and the quoting. Each delimiter has a plain format
+and a variant with a header, in the package `dsvFormats`, and all of them quote with `"`:
 
 ```tabular
 column  Format
@@ -118,45 +176,51 @@ row  `ssvFormat`  `ssvWithHeaderFormat`  space
 
 Importing another format in an inner scope changes the delimiter:
 
-```scala
+```scala fuel
+run
+##
 locally:
   import dsvFormats.tsvFormat
-  List(FullName(t"Ada", t"Lovelace")).dsv.show   // t"Ada\tLovelace"
+  Out.println(List(FullName(t"Ada", t"Lovelace")).dsv.show.inspect)
 ```
-
-A cell is quoted only when it contains the delimiter, a quote, or a line break, and a quote
-within a cell is doubled — the conventions the format prescribes, applied on the way out and
-understood on the way in.
 
 ### Column spans
 
-A nested case class occupies as many columns as it has fields, and that count is computed from
-the type rather than discovered while parsing. Each field's *span* says how many columns it
-consumes, so a decoder knows where one field ends and the next begins even when several are
-nested:
+A nested case class occupies as many columns as it has fields. That number is computed from the
+type, not discovered while parsing. Each field's *span* says how many columns it consumes, so a
+decoder knows where one field ends and the next begins, even when several are nested. `Person`
+spans four columns in all:
 
-```scala
-Spannable.derived[Person].spans()   // Array(1, 2, 1): four columns in total
+```scala fuel
+run
+##
+Out.println(Spannable.derived[Person].spans().to[List].inspect)
 ```
 
-Positional decoding is inherently brittle, and worth being clear-eyed about: adding a field to a
-nested case class shifts every column after it, and nothing in the file says so. That is the
-nature of positional delimited data rather than a shortcoming of the decoder — which is why a
-format with headers is worth using where there is a choice, and why the header machinery below
-exists.
+Decoding by position is brittle by nature. Adding a field to a nested case class shifts every
+column after it, and nothing in the file says so. That is how positional data behaves, and no
+decoder can change it. It is why a format with headers is worth using where there is a choice,
+and why cells can be [addressed by name](#addressing-cells-by-name).
 
-An `Optional` field spans one column, and a row that stops short of it decodes it as `Unset`
-rather than failing — which is what a trailing optional column in a real spreadsheet means:
+### Optional columns
+
+An `Optional` field spans one column. A row which stops short of it decodes it as `Unset`,
+which is what a trailing optional column in a real spreadsheet means:
 
 ```scala
 case class Greeting(word: Text, name: Optional[Text])
-
-t"hello,world".read[Greeting in Dsv]   // Greeting(t"hello", t"world")
-t"hello".read[Greeting in Dsv]         // Greeting(t"hello", Unset)
 ```
 
-Reading an `Optional` field follows the policies [decoding](decoding.md) describes, each varied
-by a given in the `optionalityOptions` package; delimited text has no null:
+```scala fuel
+run
+##
+Out.println(t"hello,world".read[Greeting in Dsv].inspect)
+Out.println(t"hello".read[Greeting in Dsv].inspect)
+```
+
+Reading an `Optional` field follows the policies which
+[Decoding](decoding.md#policies-for-optional-fields) describes, each varied by a given in the
+package `optionalityOptions`. Delimited text has no null:
 
 ```tabular
 column  A field which is
@@ -166,29 +230,59 @@ row  in a column the row lacks  `Unset`  `strictDsvAbsence` makes it an error
 row  present but rejected by the inner decoder  an error  `lenientDsvFaults` reads it as `Unset`
 ```
 
-A column the row lacks is one past the end of a short row, or a header column the row does not
-have, and the error it raises under `strictDsvAbsence` has the reason `Dsv.Error.Reason.Absent`.
-An empty cell is a present value, not a null:
+A column the row lacks is one beyond the end of a short row, or a header column the row does
+not have. The error raised for it under `strictDsvAbsence` has the reason
+`Dsv.Error.Reason.Absent`. An empty cell is a present value, not a null.
 
 ```scala
 case class Tally(name: Text, count: Optional[Int])
 
 val tolerant =
   import optionalityOptions.lenientDsvFaults
-  t"hello,many".read[Tally in Dsv]   // Tally(t"hello", Unset)
+  t"hello,many".read[Tally in Dsv]
 ```
 
-### Header names
+```scala fuel
+run
+##
+Out.println(tolerant.inspect)
+```
 
-Where a format carries a header, the column names in the file rarely match Scala's field names.
-A *redesignation* in scope maps between them, so a header of `Target Person` matches a field
-named `targetPerson` with no per-field annotation:
+### Addressing cells by name
+
+With dynamic access enabled, a cell of a row which has a header is read as a named member, and
+decoded to the type asked for. A *redesignation* in scope says how a member's name becomes a
+header. `unchangedRedesignation` uses the name as it is:
 
 ```scala
-import dsvRedesignations.capitalizedWordsRedesignation
+import dynamicAccess.dynamicDsv
+
+val number =
+  import dsvFormats.csvWithHeaderFormat
+  import dsvRedesignations.unchangedRedesignation
+
+  t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
 ```
 
-Each redesignation in the `dsvRedesignations` package gives a field named `targetPerson` this
+The column names in a file rarely look like Scala's names. Another redesignation maps between
+the two conventions, so the member `targetPerson` reads the column headed `Target Person`:
+
+```scala
+val target =
+  import dsvFormats.csvWithHeaderFormat
+  import dsvRedesignations.capitalizedWordsRedesignation
+
+  t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
+```
+
+```scala fuel
+run
+##
+Out.println(number.inspect)
+Out.println(target.inspect)
+```
+
+Each redesignation in the package `dsvRedesignations` gives the member `targetPerson` this
 header:
 
 ```tabular
@@ -201,73 +295,31 @@ row  `lowerDottedRedesignation`  `target.person`
 row  `lowerSlashedRedesignation`  `target/person`
 ```
 
-A single field that does not follow the convention is renamed with `@name`.
+Without a redesignation in scope, a cell cannot be read by name:
 
-### Parsing directly to a type
-
-Building a `Dsv` for every row, only to decode it and throw it away, is wasted work. A type that
-opts in with a `Dsv.Parsable` instance is parsed straight from the source, its cells addressed in
-place in the parser's row buffer, with no row value built at all:
-
-```scala
-case class Stat(name: Text, count: Int, note: Optional[Text])
-
-given Stat is Dsv.Parsable = Dsv.Parsable.derived
-
-t"z,9,note".read[Stat in Dsv]           // Stat(t"z", 9, t"note")
-t"a,1\nb,2".read[List[Stat] in Dsv]     // both records
+```scala fuel
+compile
+errors show
+##
+t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
 ```
 
-A stream yields records the same way, through `rowsOf`:
-
-```scala
-t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to[List]   // List(1, 2)
-```
-
-Fields are matched by header name where the format has a header and positionally where it does
-not, and an `Optional` field that the row does not reach is `Unset` rather than an error.
-
-The same `codecs` import that selects the path for every other format selects it for DSV:
-
-```tabular
-column  Import
-column  For a product
-column  For any other type
-row  `codecs.direct`  parsed directly, with no instance declared  the row decoder, unless it has a `Dsv.Parsable`
-row  `codecs.derived`  the row decoder, even where a `Dsv.Parsable` is in scope  the row decoder
-row  `codecs.strict`  parsed directly, with no instance declared  a compile error naming the type, unless it has a `Dsv.Parsable`
-```
-
-The modes are alternatives; import one at a time. A `List[Foo] in Dsv` read is direct in every
-mode, since the row decoder has no sheet-level counterpart. Each field of a directly-parsed
-product reads one cell through its `Decodable in Text` (or is a product of such fields), so a
-field with only a `Decodable in Dsv` instance keeps the type on the row decoder, by declaring
-no `Dsv.Parsable` for it and importing no mode.
-
-### Addressing cells by name
-
-With dynamic access enabled, a cell of a header-bearing row reads as a named member, decoded to
-the type asked for:
-
-```scala
-import dynamicAccess.dynamicDsv
-
-val row = t"greeting,number\nhello,23".read[Sheet].rows(Prim)
-row.let(_.number[Int])   // 23
-```
-
-The import grants `Dsv is Dynamical` to the rest of its scope; `dynamically[Dsv]:` grants
-it to a single block instead, as described in the JSON tutorial.
+The import of `dynamicDsv` grants the permission `Dsv is Dynamical` to the rest of its scope.
+`dynamically[Dsv]:` grants it to a single block instead, as
+[JSON](json.md#fields-as-members) describes. A field of a case class whose name differs from
+its header is renamed with [`@name`](json.md#renaming-fields).
 
 ### Reporting every bad cell
 
-A spreadsheet exported from elsewhere is rarely wrong in only one place, and a decoder that stops
-at the first bad cell makes fixing it a series of guesses. Under an accruing strategy, every cell
-that fails is reported — missing cells and unparseable ones together — each identified by its
-column, so one pass over a file yields the whole list of what to correct. The accumulation is a
-value of the caller's choosing, here an [error](errors.md) collecting each fault with the column
-it was found in, and `Validate` says how each fault joins it, focused on the `CellRef` the
-decoder was reading:
+A spreadsheet exported from elsewhere is rarely wrong in only one place, and a decoder which
+stops at the first bad cell makes fixing it a series of guesses. Under a strategy which
+[accumulates failures](errors.md#accumulating-failures), every cell which fails is reported,
+missing cells and unparseable ones together. Each is identified by its column, so one pass over
+a file gives the whole list of what to correct.
+
+The accumulation is a value of the caller's choosing, here an error which collects each fault
+with the column it was found in. `Validate` says how each fault joins it, and is focused on the
+`CellRef` which the decoder was reading:
 
 ```scala
 import dysasymptotics.linearSize
@@ -279,11 +331,79 @@ extends Error(m"${items.size} decoding issues"):
 
 case class Measurement(name: Text, age: Int, height: Int)
 
-val damaged = t"name,age,height\nAlice,thirty,tall".read[Sheet].rows(Prim)
+val damaged =
+  import dsvFormats.csvWithHeaderFormat
+  t"name,age,height\nAlice,thirty,tall".read[Sheet].rows(Prim)
 
-Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
-  ( Issues(),
-    { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
-. protect(damaged.let(_.as[Measurement]))
-. items.map(_(0))   // List(t"age", t"height")
+val problems =
+  Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
+    ( Issues(),
+      { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
+  . protect(damaged.let(_.as[Measurement]))
+  . items
 ```
+
+```scala fuel
+run
+##
+problems.each: (column, error) =>
+  Out.println(t"$column: ${error.message}")
+```
+
+### Parsing directly to a type
+
+Building a `Dsv` for every row, only to decode it and throw it away, is wasted work. A type
+with a `Dsv.Parsable` instance is parsed straight from the source. Its cells are read in place,
+from the parser's buffer, and no row value is built at all:
+
+```scala
+case class Stat(name: Text, count: Int, note: Optional[Text])
+
+given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
+```
+
+```scala fuel
+run
+##
+Out.println(t"z,9,note".read[Stat in Dsv].inspect)
+Out.println(t"a,1\nb,2".read[List[Stat] in Dsv].map(_.name).inspect)
+```
+
+A stream gives records in the same way, through `rowsOf`:
+
+```scala fuel
+run
+##
+Out.println(t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to[List].inspect)
+```
+
+Fields are matched by header name where the format has a header, and by position where it does
+not. An `Optional` field which the row does not reach is `Unset`, not an error.
+
+The `codecs` import which selects the route for every other format selects it for delimited
+text too:
+
+```tabular
+column  Import
+column  For a product
+column  For any other type
+row  `codecs.direct`  parsed directly, with no instance declared  the row decoder, unless it has a `Dsv.Parsable`
+row  `codecs.derived`  the row decoder, even where a `Dsv.Parsable` is in scope  the row decoder
+row  `codecs.strict`  parsed directly, with no instance declared  a compile error naming the type, unless it has a `Dsv.Parsable`
+```
+
+The modes are alternatives, so import one at a time. Reading a `List[Foo] in Dsv` is direct in
+every mode, since the row decoder has no counterpart for a whole sheet.
+
+Each field of a directly parsed product reads one cell through its `Decodable in Text`
+instance, or is itself a product of such fields. A field which has only a `Decodable in Dsv`
+instance keeps its type on the row decoder: declare no `Dsv.Parsable` for the type, and import
+no mode.
+
+### Related
+
+- [Tables](tables.md) lays out rows of data for display in a terminal.
+- [Decoding](decoding.md) describes the `Decodable in Text` instances which read each cell.
+- [JSON](json.md) and [YAML](yaml.md) decode nested documents with the same derivation.
+- [Streams](streams.md) covers the sources which `rows` and `rowsOf` read from.
+- [Derivation](derivation.md) explains how a row is decoded to a case class without an instance written by hand.

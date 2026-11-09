@@ -2,51 +2,63 @@
 
 ### About
 
-Data that arrives or departs over time — a file too large to hold in memory, a network
-connection, the output of a process — is handled as a stream. One set of polymorphic operations
-moves data between sources and sinks: `read` pulls a source in as a chosen type, `writeTo` sends
-a value to a destination, and `stream` exposes a value as a stream of pieces.
+Some data arrives or departs over time: a file too large to hold in memory, a network
+connection, the output of a process. It is handled as a stream. One set of operations moves
+data between sources and sinks:
 
-What can be read, and what can be written, is decided by typeclasses. A type that describes how
-it becomes a stream can be read; a type that describes how it consumes one can be written to; so
-a new source or sink joins the same `read` and `writeTo` as everything else, with no bespoke
-plumbing. One verb per operation, ranging over every type that supports it, is the
-[small-APIs](../philosophy/small-apis.md) discipline.
+```tabular
+column  Operation
+column  Does
+row  `read`  pulls a source in, as a chosen type
+row  `writeTo`  sends a value to a destination
+row  `stream`  exposes a value as a stream of pieces
+```
 
-Underneath those operations is a streaming *kernel* whose central type is a `Stream`: not a lazy
-sequence of chunks, but a pull endpoint over a buffer whose readable window is handed to exactly
-one consumer, without copying. Backpressure is intrinsic to it, and the compiler enforces the
-single ownership its zero-copy window depends on.
+What can be read, and what can be written, is decided by [typeclasses][typeclass]. A type
+which describes how it becomes a stream can be read. A type which describes how it consumes
+one can be written to. A new source or sink therefore joins the same `read` and `writeTo` as
+everything else, with no plumbing of its own. One verb for each operation, ranging over every
+type which supports it, is the [small APIs](../philosophy/small-apis.md) discipline.
+
+Underneath those operations is a streaming *kernel*, whose central type is a `Stream`. It is
+not a lazy sequence of chunks. It is an endpoint which is pulled from, over a buffer whose
+readable window is handed to exactly one consumer, without copying.
 
 ### On streaming
 
-The JVM's streaming is a pair of mutable objects — an `InputStream` and an `OutputStream` — that
-are read and written by side effect, one imperative call at a time, with the reader responsible
-for buffering, decoding, and closing. Nothing in a method's type says whether it streams, what
-element it streams, or how the bytes become text.
+The JVM's streaming is a pair of mutable objects, an `InputStream` and an `OutputStream`. They
+are read and written by side effect, one imperative call at a time, and the reader is
+responsible for buffering, decoding and closing. Nothing in a method's type says whether it
+streams, what kind of element it streams, or how the bytes become text.
 
-The obvious functional answer — a lazy list of chunks — fixes the typing and loses the
-performance: every chunk is an allocation, every stage copies, and the memoization that makes a
-lazy list replayable is exactly what keeps a large source alive in memory when nothing wanted it
-kept.
+The obvious functional answer is a lazy list of chunks. That fixes the typing, and loses the
+performance. Every chunk is an allocation, and every stage copies. The memoization which makes
+a lazy list replayable is exactly what keeps a large source alive in memory when nothing
+wanted it kept.
 
-Soundness takes a third route. A `Stream` is a *pull endpoint*: a consumer calls `refill` with
-the amount it is prepared to take, and gets back a window into a buffer, which it reads and then
-skips past. Nothing is copied and nothing is retained. A consumer that does not pull demands
-nothing, so backpressure is not a mechanism bolted on but the absence of a call. Stages compose
-as nested calls on the consumer's thread, with no queues and no synchronization, until a stage
-explicitly crosses a thread boundary.
+Here a third route is taken. A `Stream` is a *pull endpoint*. A consumer calls `refill` with
+the amount it is prepared to take, and gets back a window into a buffer, which it reads and
+then skips past. Nothing is copied, and nothing is retained.
 
-That design has one requirement: a window belongs to one consumer, and a stream must not be read
-twice or shared. This is checked, not merely documented. Streams are exclusive capabilities, and
-the streaming modules compile with [capture and separation checking](../philosophy/capture-checking.md)
-enabled, so aliasing a stream, or letting one escape the scope that owns its source, is a
-compile error. Where replay really is wanted, `memoize` drains the stream once into an immutable
-value which may then be shared freely — the explicit, bounded replacement for a lazy list's
-implicit caching.
+Two properties follow from that design:
 
-Everything comes from the `soundness` package, with a character encoding and decoding in scope
-for the text/byte boundary:
+- **Backpressure needs no mechanism.** A consumer which does not pull demands nothing, so
+  backpressure is simply the absence of a call.
+- **Stages compose without queues.** They run as nested calls on the consumer's thread, with
+  no synchronization, until a stage explicitly crosses to another thread.
+
+The design has one requirement. A window belongs to one consumer, so a stream must not be read
+twice, or shared. This is checked, and not merely documented. A stream is an exclusive
+[capability], and the streaming libraries are compiled with
+[capture and separation checking](../philosophy/capture-checking.md) enabled. Aliasing a
+stream, or letting one escape the scope which owns its source, is a compile error. Where
+replay really is wanted, `memoize` drains the stream once into an [immutable] value, which may
+then be shared freely. That is the explicit, bounded replacement for a lazy list's implicit
+caching.
+
+Everything comes from the `soundness` package. An encoding and a decoding of characters are in
+scope, for the boundary between text and bytes, and the last two imports let the samples print
+their results:
 
 ```scala
 import soundness.*
@@ -62,22 +74,29 @@ import termcapDefinitions.basicTermcap
 
 ### Reading a source
 
-`read` pulls a source in as the type named. A source that yields bytes reads equally as `Text`,
-as raw `Data`, or as a stream of either — the encoding in scope bridges bytes and text:
+`read` pulls a source in, as the type named. A source of bytes reads equally as `Text`, as raw
+`Data`, or as a stream of either, and the [encoding](characters.md) in scope bridges bytes and
+text:
 
 ```scala
 val source = t"The quick brown fox"
-
-source.read[Text]            // t"The quick brown fox"
-source.read[Data]            // the UTF-8 bytes
 ```
 
-The same `read` works on any source with a `Readable` instance — a file, a network socket, a
-process's output — so reading a URL as text and reading a file as bytes are the one operation.
+```scala fuel
+run
+##
+Out.println(source.read[Text])
+Out.println(source.read[Data].length.show)
+```
+
+The same `read` works on any source with a `Readable` instance, such as a
+[file](filesystem.md#reading-and-writing), a [network socket](sockets.md) or the output of a
+[process](processes.md). Reading a [URL](http-client.md) as text, and reading a file as bytes,
+are the one operation.
 
 ### Writing to a sink
 
-`writeTo` sends a value to a destination that knows how to consume it. The source may be text,
+`writeTo` sends a value to a destination which knows how to consume it. The value may be text,
 bytes, or a stream of either, and the destination's `Writable` instance receives it:
 
 ```scala fuel
@@ -91,32 +110,41 @@ source.writeTo(destination)
 ### Making a value readable or writable
 
 A type becomes a source by describing how it turns into a stream, and a sink by describing how
-it consumes one. Each is a single-method typeclass:
+it consumes one. Each is a typeclass with a single method:
 
 ```scala
 case class Row(name: Text, count: Int)
 
-given Row is Streamable by Text over Credit = row => Stream(t"${row.name},${row.count}")
+given rowStreamable: (Row is Streamable by Text over Credit) =
+  row => Stream(t"${row.name},${row.count}")
 ```
 
-With that instance in scope a `Row` can be `read`, `writeTo` a destination, or `stream`ed,
-without any further definitions.
+With that instance in scope, a `Row` can be `read`, sent with `writeTo`, or exposed with
+`stream`, without any further definitions:
+
+```scala fuel
+run
+##
+Out.println(Row(t"apples", 3).read[Text])
+```
 
 ### Streaming a value
 
-`stream` turns a value into a pull endpoint, and `source` does the same through a `Streamable`
-instance, naming the element type:
+`stream` turns a value into a pull endpoint. `source` does the same through a `Streamable`
+instance, and names the type of element:
 
 ```scala
-val bytes = t"The quick brown fox".in[Data].stream   // Stream[Data]
-val text = Row(t"apples", 3).source[Text]            // Stream[Text]
+val bytes = t"The quick brown fox".in[Data].stream
+val text = Row(t"apples", 3).source[Text]
 ```
+
+The first is a `Stream[Data]`, and the second a `Stream[Text]`.
 
 ### Composing a pipeline
 
-A stage transforms a stream into a differently-typed stream. `via` attaches one on the pull
-side, and the whole chain runs on the consumer's thread as nested refills — no threads, no
-queues, no intermediate collections. Each stage takes what the last one produced, which is
+A stage transforms a stream into a stream of a different type. `via` attaches one on the pull
+side. The whole chain runs on the consumer's thread, as nested refills, with no threads, no
+queues and no intermediate collections. Each stage takes what the last one produced, which is
 [composability](../philosophy/composability.md) in its most literal form:
 
 ```scala fuel
@@ -131,9 +159,10 @@ val decoder = summon[Charset]
 compressed.stream.viaDuct(decompressor).via(decoder)
 ```
 
-A `Duct` — the kernel's transformation type, which is what a compression format's
-`decompressor()` returns — attaches with `viaDuct`; any other descriptor value with a `Ductile`
-instance, such as a character coding, attaches with `via`.
+A `Duct` is the kernel's type for a transformation, and is what the `decompressor()` of a
+[compression format](compression.md) returns. It is attached with `viaDuct`. Any other value
+which describes a transformation, and has a `Ductile` instance, such as a character encoding
+or a [base encoding](base-encoding.md#encoding-a-stream), is attached with `via`.
 
 A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
 
@@ -142,19 +171,21 @@ typecheck
 ##
 var count = 0
 
-compressed.stream.memoize                         // drain into one immutable value
-compressed.stream.drain: region =>                // drain, seeing each raw window
+compressed.stream.memoize
+compressed.stream.drain: region =>
   window => count += (window: Interval).size
 ```
 
-`drain` — and `gather`, its accumulating counterpart — expose the raw window rather than boxed
-elements, so a byte-level reduction runs over the array with no per-element cost. `truncate` and
-`discard` bound a stream without draining it, releasing the remainder of the upstream unread; they
-count bytes or records, not collection elements, which is why they do not borrow the names `take`
-and `drop`.
+`memoize` drains the stream into one immutable value. `drain` hands each raw window to a
+function, and `gather` is its accumulating counterpart. Both expose the raw window, not boxed
+elements, so a reduction over bytes runs over the array with no cost for each element.
 
-Where a pipeline ends in a *push* chain rather than a value, `pump` is the single point at which
-data crosses from the pull side to the push side:
+`truncate` and `discard` bound a stream without draining it, and release the rest of the
+upstream unread. They count bytes or records, not the elements of a collection, which is why
+they do not borrow the names `take` and `drop`.
+
+Where a pipeline ends in a chain which is *pushed* to, instead of in a value, `pump` is the
+single point at which data crosses from the pull side to the push side:
 
 ```scala fuel
 typecheck
@@ -179,11 +210,11 @@ row  `discard`  no  everything after the first records or bytes
 
 ### Parsing with a cursor
 
-A parser does not consume a stream in bulk but one element at a time, looking at the next
-element before deciding what to do with it. A `Cursor` is that view: a position over a
-sequence of `Text` or `Data` blocks — built from an iterator, a `Chain` or a `Stream` — which
-refills from its source as the position advances, so the parser sees one contiguous run of
-characters or bytes however the source was chunked:
+A parser does not consume a stream in bulk. It takes one element at a time, and looks at the
+next element before deciding what to do with it. A `Cursor` is that view: a position over a
+sequence of `Text` or `Data` blocks, built from an iterator, a `Chain` or a `Stream`. It
+refills from its source as the position advances, so the parser sees one continuous run of
+characters or bytes, however the source was divided into chunks:
 
 ```tabular
 column  Method
@@ -198,77 +229,102 @@ A `Datum` compares directly with a `Char`, and is `Datum.End` once the source is
 
 ```scala
 val cursor = Cursor(Iterator(t"hello", t"world"))
-
-cursor.peek == 'h'   // true
-cursor.advance()
-cursor.position      // Sec: the second character
 ```
 
-A `mark` records a point to return to or to copy from, and `grab` materializes everything
-between two marks as one value, even where it straddles the blocks the source was supplied in.
-Marks may be taken only within `hold`, which keeps the marked region in the buffer until the
-block ends; outside it, the cursor is free to discard what it has already passed:
+```scala fuel
+run
+##
+Out.println((cursor.peek == 'h').inspect)
+cursor.advance()
+Out.println(cursor.position.inspect)
+```
 
-```scala
-cursor.hold:
+A `mark` records a point to return to, or to copy from. `grab` gives everything between two
+marks as one value, even where it straddles the blocks which the source was supplied in. A
+mark may be taken only within `hold`, which keeps the marked region in the buffer until the
+block ends. Outside `hold`, the cursor is free to discard what it has already passed:
+
+```scala fuel
+run
+##
+val grabbed = cursor.hold:
   val start = cursor.mark
   for i <- 1 to 5 do cursor.next()
-  cursor.grab(start, cursor.mark)   // t"ellow"
+  cursor.grab(start, cursor.mark)
+
+Out.println(grabbed)
 ```
+
+The grabbed text runs from the end of the first block into the second. The parsers for
+[JSON](json.md), [XML](xml.md) and the other formats are built on cursors, which is how they
+read a document from a stream without holding it whole.
 
 ### Records
 
-Between raw windows and materialized collections sits record-granularity streaming: rows,
-events, frames, messages. A `Records[record]` is a stream whose windows are chunks of records,
-so credit counts records rather than bytes. `delineate` splits a character source into lines,
-and `records` iterates the parsed records of such a stream:
+Between raw windows and whole collections sits streaming by the record: rows, events, frames,
+messages. A `Records[record]` is a stream whose windows are chunks of records, so its credit
+counts records, not bytes. `delineate` splits a source of characters into lines, and `records`
+iterates the parsed records of such a stream:
 
 ```scala
 import lineSeparation.adaptiveLinefeedLineSeparation
 
-t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]   // List(1, 2, 3)
+val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
 ```
 
-Records are immutable values, so — unlike windows — they cross stage and thread boundaries by
-reference.
+```scala fuel
+run
+##
+Out.println(numbers.inspect)
+```
+
+Records are immutable values, so, unlike windows, they cross between stages and between
+threads by reference. [CSV](csv.md#reading-rows) reads rows in this way, and
+[JSON](json.md#ndjson) reads newline-delimited documents.
 
 ### Standard streams
 
-Standard output and error are reached through `Out` and `Err`, which print through the `Stdio`
-capability in scope. Because standard output is a capability rather than a global, a test or a
-daemon can redirect it:
+Standard output and standard error are reached through `Out` and `Err`, which print through
+the `Stdio` capability in scope. Standard output is a capability, not a global, so a test or a
+[daemon](daemons.md) can redirect it:
 
-```scala
+```scala fuel
+run
+##
 Out.println(t"started")
 Err.println(t"a warning")
 ```
 
 ### Producing a stream over time
 
-Where the elements of a stream are produced by one part of a program and consumed by another, a
-`Relay` bridges the two: any number of producers `put` records into it as they arise, one of
-them eventually calls `stop`, and a single reader owns the resulting stream:
+Sometimes the elements of a stream are produced by one part of a program, and consumed by
+another. A `Relay` bridges the two. Any number of producers `put` records into it as they
+arise, one of them eventually calls `stop`, and a single reader owns the resulting stream:
 
 ```scala
 val relay = Relay[Text]()
 relay.put(t"first")
 relay.put(t"second")
 relay.stop()
-relay.stream
+val relayed = relay.stream
 ```
 
-A relay's refill blocks for the first record and then drains whatever else has already arrived
-into the same window, so records batch across the thread boundary instead of paying a hand-off
-each. For byte and character traffic between two threads, a `Conduit` is the strictly
-single-producer, single-consumer, block-structured counterpart: data crosses in blocks through a
-bounded queue, so a writer that outpaces its reader parks — cross-thread backpressure — and the
-free capacity is exactly the credit the reader reports as demand.
+A relay's refill blocks for the first record. It then drains whatever else has already arrived
+into the same window, so records are batched across the boundary between threads, and do not
+each pay for a hand-off.
+
+For traffic in bytes or characters between two threads, a `Conduit` is the counterpart which
+has strictly one producer and one consumer, and is structured in blocks. Data crosses in
+blocks, through a bounded queue. A writer which outpaces its reader therefore parks, which is
+backpressure across threads, and the free capacity is exactly the credit which the reader
+reports as demand.
 
 ### Combining and replicating streams
 
-`Confluence` merges several streams into one, in arrival order, running one pump per input; a
-slow consumer backpressures every input, and the merged stream ends when all of them have. Both
-draw on concurrency, so they run inside a supervised scope:
+`Confluence` merges several streams into one, in order of arrival, with one pump running for
+each input. A slow consumer applies backpressure to every input, and the merged stream ends
+when all of them have. It draws on [concurrency](concurrency.md), so it runs inside a
+supervised scope:
 
 ```scala
 import threads.platformThreads
@@ -278,16 +334,17 @@ val first = Stream(t"one")
 val second = Stream(t"two")
 val third = Stream(t"three")
 
-supervise(Confluence(first, second, third).memoize)
+val merged = supervise(Confluence(first, second, third).memoize)
 ```
 
-`Divergence` is the opposite: one source is delivered to several subscribers, each chunk
-materialized once and shared immutably between them. A full subscriber queue parks the pump, so
-the slowest subscriber gates the source — the correct behavior for replication.
+`Divergence` is the opposite. One source is delivered to several subscribers, and each chunk
+is materialized once, and shared immutably between them. A subscriber whose queue is full
+parks the pump, so the slowest subscriber sets the pace of the source, which is the correct
+behavior for replication.
 
 ### Tuning backpressure
 
-Every stage that allocates a buffer consults the `Buffering` policy in scope, so one given
+Every stage which allocates a buffer consults the `Buffering` policy in scope, so one given
 tunes a whole pipeline. Its members are:
 
 ```tabular
@@ -300,13 +357,16 @@ row  `depth`  the transfer blocks of headroom a `Conduit` holds between writer a
 row  `recycle`  whether drained transfer blocks return to the writer for reuse  on
 ```
 
-Staging blocks want to stay cache-resident. Every transfer block costs a synchronized hand-off,
-so boundary blocks want to be much larger than staging blocks. A conduit's in-flight data is
-bounded by `(depth + 1)` transfer blocks; hand-off throughput collapses at very shallow depths (a
-depth of 2 reaches less than a tenth of the default's throughput in the benchmark sweep) and
-plateaus around the default for a producer and consumer in lockstep, but bursty pipelines still
-gain from a depth covering their burst size in transfer blocks. Recycled blocks go to a shared,
-size-capped pool, which amortizes block allocation across conduit instances.
+The sizes are chosen for two reasons. Staging blocks want to stay in the processor's cache.
+And every transfer block costs a synchronized hand-off, so the blocks which cross a boundary
+want to be much larger than staging blocks.
+
+The data in flight in a conduit is bounded by `(depth + 1)` transfer blocks. The throughput of
+hand-offs collapses at very shallow depths: a depth of 2 reaches less than a tenth of the
+default's throughput in the benchmarks. It levels off around the default, for a producer and
+consumer in step with each other. A pipeline which works in bursts still gains from a depth
+which covers the size of its bursts, in transfer blocks. Recycled blocks go to a shared pool
+of capped size, which spreads the cost of allocating blocks across conduits.
 
 Backpressure applies wherever data crosses between threads:
 
@@ -321,19 +381,22 @@ row  HTTP/2  a body, in both directions  the peer waits for credit: the receive 
 row  `Relay`  records, from many producers to one reader  producers never block
 ```
 
-HTTP/2's advertised receive window is 1 MiB by default, tunable per connection, and bounds how far
-a peer can run ahead of a consumer that has stopped reading.
+The receive window which HTTP/2 advertises is 1 MiB by default, and can be tuned for each
+connection. It bounds how far a peer can run ahead of a consumer which has stopped reading.
+[HTTP server](http-server.md#http2) describes it.
 
-One structure deliberately opts out: `Relay` is the many-producer record bus, and its contract
-is that producers never block. HTTP/2's outbound frame multiplexer depends on that — a blocking
-`put` there would risk distributed deadlock between streams — so a relay's discipline is its
-single consumer, not a bound.
+One structure deliberately opts out. `Relay` is the bus for records from many producers, and
+its contract is that producers never block. HTTP/2's multiplexer for outbound frames depends
+on that, since a blocking `put` there would risk a deadlock between streams. A relay's
+discipline is therefore its single consumer, and not a bound.
 
 ### Compression
 
-A byte stream compresses and decompresses with a named scheme, as a stage in a pipeline or over
-a whole value; see [compression](compression.md) for the formats available:
+A stream of bytes is compressed and decompressed with a named scheme, as a stage of a pipeline
+or over a whole value. [Compression](compression.md) describes the formats:
 
-```scala
-Data(1, 2, 3, 5, 8).compress[Gzip].decompress[Gzip]   // the original bytes
+```scala fuel
+run
+##
+Out.println(t"The quick brown fox".in[Data].compress[Gzip].decompress[Gzip].utf8)
 ```

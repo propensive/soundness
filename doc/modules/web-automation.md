@@ -2,28 +2,31 @@
 
 ### About
 
-Driving a browser and scripting a page are two sides of web automation, and Soundness covers both.
-A browser is driven from Scala through the [WebDriver](https://www.w3.org/TR/webdriver2/) protocol:
-Chrome or Firefox is launched, a session opened, pages navigated, and elements found, clicked and
-typed into — the machinery of end-to-end testing. And browser-side behavior is written as *typed*
-JavaScript: DOM expressions checked against the browser's own
-[WebIDL](https://en.wikipedia.org/wiki/Web_IDL) interface definitions as the code compiles,
-rendered to JavaScript for a page's event handlers.
+Driving a browser and scripting a page are the two sides of web automation, and both are covered
+here. A browser is driven through the [WebDriver](https://www.w3.org/TR/webdriver2/) protocol.
+Chrome or Firefox is launched, a [session] is opened, pages are navigated, and elements are
+found, clicked and typed into, which is the machinery of end-to-end testing.
+
+Behavior on the browser's side is written as *typed* JavaScript. DOM expressions are checked
+against the browser's own [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) interface definitions
+as the code compiles, and rendered to JavaScript for the event handlers of a page.
 
 ### On automating the web
 
-Browser automation scripts are stringly typed twice over: elements are located by selector strings,
-and injected behavior is JavaScript in string literals, unchecked until the browser runs it. A
-misspelled DOM method — `getElementByld` — is exactly the kind of mistake a compiler exists to
-catch, and exactly the kind these strings hide.
+Browser automation scripts are stringly typed twice over. Elements are located by selector
+strings, and injected behavior is JavaScript in string literals, unchecked until the browser
+runs it. A misspelled DOM method, such as `getElementByld`, is exactly the kind of mistake which
+a compiler exists to catch, and exactly the kind which these strings hide.
 
-A session confined to its block, and typed page scripts checked against the DOM's own definitions, follow [delimited scopes](../philosophy/delimited-scopes.md) and [safety by construction](../philosophy/safety-by-construction.md).
+Here both layers are typed. Elements are located through the same typed selectors and validated
+identifiers which [CSS](css.md) and [HTML](html.md) use. DOM scripting is checked against the
+actual interface definitions of the DOM, so only methods which exist, with arguments of the
+right types, can be written. A session confined to its block, and page scripts checked against
+the DOM's own definitions, follow [delimited scopes](../philosophy/delimited-scopes.md) and
+[safety by construction](../philosophy/safety-by-construction.md).
 
-Soundness types both layers: element location goes through the same typed selectors and validated
-identifiers used by [CSS](css.md) and [HTML](html.md), and DOM scripting is checked against the
-actual interface definitions of the DOM, so only methods that exist, with arguments of the right
-types, can be written. Everything comes from the `soundness` package, with internet access, an
-HTTP client to speak to the driver, and concurrency for the driver's process in scope:
+Everything comes from the `soundness` package, with internet access, an HTTP client to speak to
+the driver, and concurrency for the driver's process in scope:
 
 ```scala
 import soundness.*
@@ -39,9 +42,11 @@ import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 ```
 
+The samples which drive a browser are compiled but not run.
+
 ### Driving a browser
 
-A browser session launches the driver, opens a session, and closes both when the block ends —
+A browser session launches the driver, opens a session, and closes both when the block ends,
 whether it returns or throws. Within it, the session navigates and queries:
 
 ```scala fuel
@@ -50,22 +55,22 @@ typecheck
 supervise:
   WebDriver.Chrome.headless.session:
     browser.navigateTo(url"https://example.com/")
-    browser.title()
+    val title: Text = browser.title()
 ```
 
-`WebDriver.Firefox`, `WebDriver.Safari` and `WebDriver.Edge` work identically; each drives its
-standard driver executable. `WebDriver(url"http://localhost:4444", capabilities)` drives a driver
-that is already running, including a remote grid, through the same interface.
+`WebDriver.Firefox`, `WebDriver.Safari` and `WebDriver.Edge` work identically, and each drives
+its standard driver executable. `WebDriver(url"http://localhost:4444", capabilities)` drives a
+driver which is already running, including a remote grid, through the same interface.
 
-The session handle is a capability, confined by capture checking to the block that owns it:
-returning it, or anything that captures it, is a compile error, since a session which has been
-closed is not something a program should be able to hold. Element handles, by contrast, are pure
-values — but every operation on one needs the session in scope, so they are inert outside it.
+The session handle is a [capability], confined by capture checking to the block which owns it.
+Returning it, or anything which captures it, is a compile error, since a session which has been
+closed is not something a program should be able to hold. Element handles, by contrast, are
+pure values. But every operation on one needs the session in scope, so they are inert outside
+it.
 
 ### Finding and using elements
 
-Elements are located by typed criteria, with `\` returning every match and `element` exactly
-one:
+Elements are located by typed criteria. `\` returns every match, and `element` exactly one:
 
 ```tabular
 column  Locator
@@ -79,7 +84,8 @@ row  an XPath  `xp"//li"`  XPath
 row  a `Text`  `t"Sign in"`  link text
 ```
 
-Elements found within elements descend the tree, and each offers the operations a test needs:
+Elements found within elements descend the tree, and each offers the operations which a test
+needs:
 
 ```scala fuel
 typecheck
@@ -89,19 +95,20 @@ import whatwg.*
 
 supervise:
   WebDriver.Chrome.headless.session:
-    val heading = browser.element(H1)                    // by tag
-    val items = browser \ SelectorList.parse(t"nav li")  // by CSS selector
-    val field = browser.element(Name[DomId](t"query"))   // by id
+    val heading = browser.element(H1)
+    val items = browser \ SelectorList.parse(t"nav li")
+    val field = browser.element(Name[DomId](t"query"))
     val button = browser.element(Button)
 
     heading.click()
-    heading.innerText()                        // the rendered text
-    field.value(t"search terms")               // type into an input
-    field.property(t"value")                   // the live DOM property, not the markup
-    button.screenshot()                        // a Raster in Png of the element
+    val text: Text = heading.innerText()
+    field.value(t"search terms")
+    val live: Optional[Text] = field.property(t"value")
+    val picture: Raster in Png = button.screenshot()
 ```
 
-The operations on an element, all needing the session in scope:
+`property` reads the live DOM property, and not the markup. These are the operations on an
+element, and all of them need the session in scope:
 
 ```tabular
 column  Operation
@@ -119,10 +126,11 @@ row  `element(locator)`, `\`  find elements within it
 row  `shadowRoot()`  reaches its open shadow root
 ```
 
-Anything a locator cannot express is reached with `execute`, which runs JavaScript in the page
-and returns its result as `Json`. Modifiers, chords, hovers and drags go through `perform` and
-the typed actions API; a failure of any kind arrives as a `WebDriver.Error` carrying the W3C
-error code the driver reported, its message and the browser-side stack trace.
+Anything which a locator cannot express is reached with `execute`, which runs JavaScript in the
+page and returns its result as `Json`. Modifiers, chords, hovers and drags go through `perform`
+and the typed actions API. A failure of any kind arrives as a `WebDriver.Error`, which carries
+the W3C error code the driver reported, its message, and the stack trace from the browser's
+side.
 
 ### Waiting
 
@@ -137,8 +145,8 @@ supervise:
     browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
 ```
 
-Nothing else has a server-side notion of waiting. For a button that becomes enabled, or a heading
-whose text changes, three methods poll under the retry policy in scope:
+Nothing else has a server-side notion of waiting. For a button which becomes enabled, or a
+heading whose text changes, three methods poll under the retry policy in scope:
 
 ```tabular
 column  Method
@@ -160,34 +168,55 @@ supervise:
     browser.awaitUntil(browser.title() == t"Done")
 ```
 
-The policy is a `Tenacity` — the same [retry schedules](concurrency.md#retrying) used elsewhere —
-so the interval and the number of attempts belong to the caller,
-and exhausting them raises a `Tenacity.Error`. These poll the plural endpoint, which reports absence
-as an empty list rather than as an error, and that is deliberate: a session's error strategy is
-fixed when it opens, so a failure raised inside the polled block could not be caught here to drive
+The policy is a `Tenacity`, which is the same [retry schedule](concurrency.md#retrying) used
+elsewhere, so the interval and the number of attempts belong to the caller. Exhausting them
+raises a `Tenacity.Error`. These methods poll the plural endpoint, which reports absence as an
+empty list and not as an error. That is deliberate. The error [strategy] of a session is fixed
+when it opens, so a failure raised inside the polled block could not be caught here to drive
 the next attempt.
 
 ### Typed page scripting
 
-Behavior attached to a page — an `onclick`, an `onchange` — is written as a typed DOM expression
-rather than a JavaScript string. The `document` and `window` values navigate the DOM's real
-interfaces, checked against WebIDL, and render to JavaScript where an [HTML](html.md) attribute
-expects a script:
+Behavior attached to a page, such as an `onclick` or an `onchange`, is written as a typed DOM
+expression, and not as a JavaScript string. The `document` and `window` values navigate the real
+interfaces of the DOM, checked against WebIDL, and render to JavaScript where an
+[HTML](html.md) attribute expects a script:
 
-```scala
+```scala fuel
+run
+##
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 import htmlDoms.html4Transitional
-import html4Transitional.*
 
-Button(onclick = document.getElementById(t"foo").focus())
-// renders onclick="document.getElementById('foo').focus()"
+Out.println(html4Transitional.Button(onclick = document.getElementById(t"foo").focus()).show)
 ```
 
-A method the DOM does not define, or an argument of the wrong type, is a compile error — the
-JavaScript that reaches the page is known to be well-formed against the interfaces it calls.
+A method which the DOM does not define, or an argument of the wrong type, is a compile error:
+
+```scala fuel
+compile
+errors show
+##
+document.getElementByld(t"foo")
+```
+
+The JavaScript which reaches the page is known to be well-formed against the interfaces it
+calls.
 
 ### Where each fits
 
-The two halves meet in testing: a page whose handlers were generated from checked expressions is
-exercised by a driver whose locators are checked selectors, so the whole round trip — generate,
-serve, drive, assert — stays inside the type system, with the browser as the only unchecked
-component.
+The two halves meet in testing. A page whose handlers were generated from checked expressions is
+exercised by a driver whose locators are checked selectors. The whole round trip, which is to
+generate, serve, drive and assert, stays inside the type system, with the browser as the only
+unchecked component.
+
+### Related
+
+- [HTML](html.md) and [CSS](css.md) describe the typed documents, selectors and identifiers
+  which locators and handlers share.
+- [Browser DOM](dom.md) describes scripting which runs in the browser itself, under Scala.js.
+- [Foreign interoperability](foreign-interop.md) explains how the WebIDL definitions are read.
+- [Testing](testing.md) hosts the end-to-end tests which drive a browser.
+- [Concurrency](concurrency.md#retrying) describes the `Tenacity` which governs waiting.
+- [Images](images.md) describes the `Raster in Png` which a screenshot gives.
+- [Filesystem](filesystem.md), [terminal](terminal.md) and [XML](xml.md) describe the handles, key presses and XPath locators which a browser session uses.

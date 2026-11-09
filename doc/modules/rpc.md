@@ -2,37 +2,39 @@
 
 ### About
 
-A remote procedure call pretends a method call crosses the network, and Soundness makes the
-pretense typed at both ends. An RPC interface is an ordinary trait whose methods are marked
-`@rpc`; from that one definition, a *server* dispatches incoming calls to an implementation and a
-*client* stub turns method calls into wire messages — for
+A remote procedure call pretends that a method call crosses the network. Here the pretense is
+typed at both ends. An RPC interface is an ordinary trait whose methods are marked `@rpc`. From
+that one definition, a *server* dispatches incoming calls to an implementation, and a *client*
+stub turns method calls into wire messages. This works for
 [JSON-RPC 2.0](https://www.jsonrpc.org/specification) over HTTP, and for
 [gRPC](https://grpc.io/) over HTTP/2 with [Protocol Buffers](protobuf.md).
 
-Beneath the protocols sits the shared plumbing of message streams:
-[server-sent events](https://en.wikipedia.org/wiki/Server-sent_events), and *framing* — carving a
-byte or text stream into its messages by length prefixes, `Content-Length` headers, or line
-endings.
+Beneath the protocols is the shared plumbing of message streams:
+[server-sent events](https://en.wikipedia.org/wiki/Server-sent_events), and *framing*, which
+carves a stream of bytes or text into its messages by length prefixes, `Content-Length` headers
+or line endings.
 
 ### On remote calls
 
 The wire format of an RPC protocol is mechanical: method names, parameter encodings, id
-correlation, error envelopes. Writing it by hand for each interface invites the usual drift —
-client and server disagreeing about a parameter name — and code generators reintroduce the build
-machinery that in-language derivation avoids.
+correlation, error envelopes. Writing it by hand for each interface invites the usual drift, with
+the client and server disagreeing about the name of a parameter. A code generator avoids the
+drift, but brings back the build machinery which [derivation] in the language avoids.
 
-Deriving both ends of a protocol from one trait is [correctness](../philosophy/correctness.md) by construction: client and server cannot disagree about a method they share.
+Here both sides are derived from the trait. The trait is the single source of truth. A macro
+reads its `@rpc` methods, their parameter names and their types, and produces dispatch and stub
+code whose encodings agree by construction. Client and server cannot disagree about a method
+they share, which is [correctness](../philosophy/correctness.md) by construction.
 
-Soundness derives both sides from the trait. The trait is the single source of truth; the macro
-reads its `@rpc` methods, their parameter names and types, and produces dispatch and stub code
-whose encodings agree by construction. Everything comes from the `soundness` package, with an
-encoding for the bytes that cross the wire:
+Everything comes from the `soundness` package, with an encoding for the bytes which cross the
+wire, and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 import charsets.utf8Charset
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### An interface
@@ -47,8 +49,8 @@ trait Echo:
   @rpc def call(request: Ping): Pong
 ```
 
-A method returning `Unit` is a *notification* — fire-and-forget, with no response expected — as
-the JSON-RPC specification distinguishes.
+A method which returns `Unit` is a *notification*. It is fire-and-forget, with no response
+expected, as the JSON-RPC specification distinguishes.
 
 ### JSON-RPC
 
@@ -62,23 +64,34 @@ object EchoService extends Echo:
 val dispatch = JsonRpc.serve[Echo](EchoService)
 ```
 
-The dispatcher is a function from a request `Json` document to an optional response — a
-notification produces none — and is called from a route handler with the request body. On the
-calling side, `remote` manufactures a client from the same trait, which sends each call as a
+The dispatcher is a function from a request `Json` document to an [optional] response. A
+notification produces none. A route handler calls it with the body of the request:
+
+```scala fuel
+run
+##
+import formatting.compactJsonFormatting
+
+val request = t"""{"jsonrpc": "2.0", "id": 1, "method": "call", "params": {"request": {"message": "hello"}}}""".read[Json]
+Out.println(dispatch(request).let(_.show).inspect)
+```
+
+On the calling side, `remote` manufactures a client from the same trait. It sends each call as a
 request to the URL:
 
 ```scala fuel
 typecheck
 ##
 val echo = remote[Echo](url"https://api.example.com/rpc")
-echo.call(Ping(t"hello"))   // a JSON-RPC request over HTTP
+val pong: Pong = echo.call(Ping(t"hello"))
 ```
 
 ### gRPC
 
-The same trait shape serves gRPC. A `Grpc.Channel` opens over an [HTTP/2](http-server.md)
-connection, and `Grpc.remote` derives the stub — a method returning a value makes a unary call,
-one returning a `Stream` a server-streaming call — with payloads as Protocol Buffers messages:
+The same shape of trait serves gRPC. A `Grpc.Channel` opens over an [HTTP/2](http-server.md)
+connection, and `Grpc.remote` derives the stub. A method which returns a value makes a unary
+call, and one which returns a `Stream` makes a server-streaming call. The payloads are Protocol
+Buffers messages:
 
 ```scala fuel
 typecheck
@@ -93,28 +106,33 @@ supervise:
   val channel = Grpc.Channel(Http2.Endpoint(endpoint, t"localhost"))
   val echo = Grpc.remote[Echo](channel, t"echo.Echo")
 
-  echo.call(Ping(t"ping"))   // a unary gRPC call
+  val pong: Pong = echo.call(Ping(t"ping"))
 ```
 
-A non-OK response raises a `Grpc.Error` carrying the canonical status code — `NotFound`,
-`Unauthenticated` and the rest — as a typed value.
+A response which is not OK raises a `Grpc.Error`, which carries the canonical status code, such
+as `NotFound` or `Unauthenticated`, as a typed value.
 
 ### Server-sent events
 
 An `Sse` value is one event of an SSE stream, with its event name, data lines, id and retry
-interval; a stream of them serves as `text/event-stream`, and an `Sse.Source` buffers events with
-replay from a client's last-seen id — the reconnection behavior the protocol calls for:
+interval. A stream of them serves as `text/event-stream`. An `Sse.Source` buffers events, and
+replays them from the last id a client saw, which is the reconnection behavior the protocol
+calls for. A client which last saw the event with id `0` receives the next:
 
-```scala
+```scala fuel
+run
+##
 val source = Sse.Source(capacity = 128)
 source.put(t"first update")
 source.put(t"second update")
-source.stream(start = 1)   // the events from id 1 onward, then those that follow
+
+Out.println(source.stream(start = 0).head.let(_.data).inspect)
 ```
 
 ### Framing
 
-Message boundaries in a raw stream are recovered with `frames`, naming the convention:
+The boundaries of messages in a raw stream are recovered with `frames`, which names the
+convention:
 
 ```tabular
 column  Convention
@@ -132,24 +150,27 @@ row  `Grpc.Framing`  `Data`  a flag byte and a four-byte length, then that many 
 val prefixed = Chain(Data(0, 0, 0, 2, 104, 105))
 val headed = Chain(t"Content-Length: 2\r\n\r\nhi".in[Data])
 val lines = Chain(t"one\r\ntwo\r\n")
+```
 
-prefixed.iterator.frames[LengthPrefix]     // length-prefixed messages: "hi"
-headed.iterator.frames[ContentLength]      // header-framed messages, byte-counted: "hi"
-lines.iterator.frames[CrLf]                // CRLF-separated lines: "one", "two"
-lines.iterator.frames[Linefeed]            // or bare linefeeds, or CR alone
+```scala fuel
+run
+##
+prefixed.iterator.frames[LengthPrefix].each(frame => Out.println(frame.utf8))
+headed.iterator.frames[ContentLength].each(frame => Out.println(frame.utf8))
+lines.iterator.frames[CrLf].each(Out.println(_))
 ```
 
 gRPC's own framing, `Grpc.Framing`, is used the same way.
 
-A `Duplex` carrying BinTEL messages — a daemon's protocol over TLS, or over a UNIX domain socket
-to a local tool — is `framed` by naming what it reads and what it sends. Each `send` writes one
-length-prefixed record whose body is the value's BinTEL encoding, `messages` reads the peer's
-records back as values, and the schemas are derived from the two types once, when the connection
-is framed, not per message. One end's `Framed from Reply to Request` meets the other's
-`Framed from Request to Reply`:
+A `Duplex` which carries BinTEL messages, such as the protocol of a daemon over TLS, or over a
+UNIX domain socket to a local tool, is `framed` by naming what it reads and what it sends. Each
+`send` writes one length-prefixed record whose body is the BinTEL encoding of the value.
+`messages` reads the records of the peer back as values. The schemas are derived from the two
+types once, when the connection is framed, and not for each message. One end's
+`Framed from Reply to Request` meets the other's `Framed from Request to Reply`:
 
 ```scala fuel
-typecheck
+run
 ##
 case class Request(id: Int, text: Text)
 case class Reply(id: Int, length: Int)
@@ -159,41 +180,57 @@ val client: Framed from Reply to Request = near.framed[Reply, Request]
 val server: Framed from Request to Reply = far.framed[Request, Reply]
 
 client.send(Request(1, t"hello"))
+
 server.messages.next() match
   case request: Request   => server.send(Reply(request.id, request.text.length))
-  case Iterator.Exhausted => ()
+  case _                  => ()
 
-client.messages.next()                          // Reply(1, 5)
+Out.println(client.messages.next().inspect)
 ```
 
-A truncated record raises `Framing.Error`, and a body that is not the expected message raises
+A truncated record raises `Framing.Error`, and a body which is not the expected message raises
 `Bintel.Error`, each as the record is read.
 
-Framing is independent of how the bytes arrive. A message split across three chunks, two messages
-in one chunk, and a final message with no terminator are all handled, because the framer keeps its
-own position rather than assuming chunk boundaries mean anything:
+Framing is independent of how the bytes arrive. A message split across three chunks, two
+messages in one chunk, and a final message with no terminator are all handled, because the
+framer keeps its own position, and assumes nothing about the boundaries of chunks:
 
-```scala
-Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to[List]
-// List("one", "two", "three")
+```scala fuel
+run
+##
+Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].each(Out.println(_))
 ```
 
-A truncated or malformed frame raises a `Framing.Error` naming what was wrong, so a protocol failure
-is a diagnosis rather than a hang.
+A truncated or malformed frame raises a `Framing.Error` which names what was wrong, so a
+protocol failure is a diagnosis and not a hang.
 
 ### Verifying a wire format
 
-A protocol implementation that only round-trips against itself proves nothing: two matching bugs
-look exactly like correctness. The HTTP/2 and gRPC codecs are therefore checked against *golden
-bytes* — the exact octets each frame must serialize to, written out in the tests — as well as
-round-tripped. A gRPC message's framing is one flag byte and a four-byte length, and the encoder
-is checked to produce exactly that:
+A protocol implementation which only round-trips against itself proves nothing. Two matching
+bugs look exactly like correctness. The HTTP/2 and gRPC codecs are therefore checked against
+*golden bytes*, the exact octets which each frame must serialize to, written out in the tests,
+as well as round-tripped. The framing of a gRPC message is one flag byte and a four-byte length,
+and the encoder is checked to produce exactly that:
 
-```scala
-Grpc.Framing.encode(t"hello".in[Data])   // 00 00 00 00 05, then the five bytes
+```scala fuel
+run
+##
+import alphabets.hexLowerCase
+
+Out.println(Grpc.Framing.encode(t"hello".in[Data]).serialize[Hex])
 ```
 
-HPACK's header compression is verified against every example in
-[RFC 7541](https://datatracker.ietf.org/doc/html/rfc7541)'s appendices, with and without Huffman
-coding, and the `Huffman` codec against the strings the specification tabulates. Where a
-specification publishes vectors, they are what the implementation is measured against.
+HPACK's header compression is verified against every example in the appendices of
+[RFC 7541](https://datatracker.ietf.org/doc/html/rfc7541), with and without Huffman coding, and
+the `Huffman` codec against the strings which the specification tabulates. Where a specification
+publishes vectors, they are what the implementation is measured against.
+
+### Related
+
+- [HTTP server](http-server.md) hosts a JSON-RPC dispatcher, and the HTTP/2 which gRPC runs on.
+- [HTTP client](http-client.md) carries the requests of a JSON-RPC stub.
+- [JSON](json.md) and [Protobuf](protobuf.md) encode the payloads.
+- [TEL](tel.md) describes BinTEL, which a framed `Duplex` carries.
+- [Sockets](sockets.md) describes `Duplex` and `Endpoint`.
+- [MCP](mcp.md), [ACP](acp.md) and [LSP](lsp.md) are protocols built on JSON-RPC.
+- [Containers](docker.md) speaks gRPC to a containerd daemon.

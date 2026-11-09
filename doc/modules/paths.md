@@ -2,34 +2,44 @@
 
 ### About
 
-A path is a sequence of names leading through a hierarchy, and Soundness keeps the facts about
-it in its type. An absolute path is a `Path`, rooted on some value; a relative path is a
-`Relative`, a number of steps up followed by a descent; and both are typed by the *platform* they
-belong to, so a `Path on Linux` and a `Path on Windows` are distinct. The `on` clause is one of the
-[infix types](../philosophy/infix-types.md) used throughout. The elements of a path
-built in source are known to the compiler, so path arithmetic — descending, ascending, finding the
-route from one to another — is checked as the code compiles.
+A path is a sequence of names which leads through a hierarchy, and the facts about a path are
+kept in its type:
 
-These are abstract paths, about the *shape* of a path rather than a file on disk. The same
-machinery underlies filesystem paths, URLs, and any other hierarchy; reading and writing actual
-files is the business of the [filesystem](filesystem.md).
+- An absolute path is a `Path`, rooted on some value.
+- A relative path is a `Relative`: a number of steps up, followed by a descent.
+- Both are typed by the *platform* they belong to, so a `Path on Linux` and a `Path on Windows`
+  are distinct types. The `on` clause is one of the
+  [infix types](../philosophy/infix-types.md) used throughout.
+
+The elements of a path which is built in source code are known to the compiler. Arithmetic on
+paths, such as descending, ascending, and finding the route from one path to another, is
+therefore checked at [compiletime].
+
+These are abstract paths. They are about the *shape* of a path, not about a file on a disk.
+The same machinery underlies filesystem paths, URLs and any other hierarchy. Reading and
+writing actual files is the business of the [filesystem](filesystem.md).
 
 ### On paths
 
-"Absolute or relative", "which platform", "does this `..` climb above the root" are the questions
-a path raises, and in most libraries none of them is in the type. A path is a string, or a class
-that erases the distinctions, and a mistake — joining two absolute paths, taking the parent of a
-root, mixing a Windows path into a POSIX one — is found, if at all, at runtime.
+A path raises three questions: is it absolute or relative, which platform is it for, and does
+this `..` climb above the root? In most libraries, none of the answers is in the type. A path
+is a string, or a class which erases the distinctions. A mistake, such as joining two absolute
+paths, taking the parent of a root, or mixing a Windows path into a POSIX one, is found at
+[runtime], if at all.
 
-Soundness records each distinction in the type. Absolute and relative are different types, so one
-cannot be mistaken for the other; the platform is a type parameter, so its separators and rules
-travel with the path; and where a path's elements are known, they are known to the compiler,
-which computes the result of a join or a relativisation statically. Everything comes from the
-`soundness` package:
+Here each distinction is recorded in the type. Absolute and relative paths are different
+types, so one cannot be mistaken for the other. The platform is a type parameter, so its
+separators and rules travel with the path. And where a path's elements are known, they are
+known to the compiler, which computes the result of joining two paths, or of finding the route
+between them, statically.
+
+Everything comes from the `soundness` package. The samples throw any error as an exception,
+and the last import lets them print their results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Building a path
@@ -48,108 +58,162 @@ row  `+`  a relative path applied to an absolute one
 row  `/:`  in a pattern, a name peeled from the front
 ```
 
-An absolute path descends from a root with `/`. The root `%` is the POSIX filesystem root; a
-Windows path descends from a `Drive`:
+An absolute path descends from a root with `/`. The root `%` is the root of a POSIX
+filesystem, and a Windows path descends from a `Drive`:
 
 ```scala
-% / "home" / "work"      // an absolute path
-Drive('C') / "Windows"   // a Windows path
+val work = % / "home" / "work"
+val windows = Drive('C') / "Windows"
 ```
 
-The `p"…"` interpolator writes a path literally and checks it as the code compiles, resolving it
-as a POSIX or Windows path by its shape:
+```scala fuel
+run
+##
+Out.println(work.inspect)
+Out.println(windows.inspect)
+```
+
+The `p"…"` [interpolator] writes a path literally, and checks it at compiletime. It resolves
+the literal as a POSIX or a Windows path, by its shape:
 
 ```scala
-p"/home/user/data.csv"                    // Path of ("data.csv", "user", "home") on Posix
-p"""C:\Windows\System32\file.txt"""       // Path of ("file.txt", "System32", "Windows") on Windows
+val data = p"/home/user/data.csv"
+val system = p"""C:\Windows\System32\file.txt"""
 ```
 
-The literal's elements are its type, leaf first, just as a path built with `/` carries each
-element it was given.
+The elements of a literal are part of its type, with the last element first:
+`data` is a `Path of ("data.csv", "user", "home") on Posix`. A path built with `/` likewise
+carries each element it was given.
 
 ### Relative paths
 
-A relative path is built from `?`, the current location, and `^`, a step upward, then a descent.
-Adding a relative path to an absolute one applies the ascent and descent to give a new absolute
-path:
+A relative path is built from `?`, the current location, and `^`, a step upward, followed by a
+descent. Adding a relative path to an absolute one applies the ascent, and then the descent,
+to give a new absolute path:
 
 ```scala
-val up = ? / ^ / "sibling"          // up one, then down into "sibling"
-(% / "home" / "work") + up          // % / "home" / "sibling"
+val up = ? / ^ / "sibling"
+```
+
+```scala fuel
+run
+##
+Out.println((work + up).inspect)
 ```
 
 ### Platforms
 
-A path built with `/` is at first platform-neutral. `on` binds it to a platform, checking each
-element against that platform's rules — a name containing a slash, or a reserved name, is rejected:
+A path built with `/` is at first neutral between platforms. `on` binds it to a platform, and
+checks each element against that platform's rules, which reject a name containing a slash, or
+a reserved name:
 
 ```scala
-(% / "home" / "work").on[Linux]   // Path on Linux
+val linux: Path on Linux = (% / "home" / "work").on[Linux]
 ```
 
-`Linux`, `Posix`, `MacOs` and `Windows` are the platforms, and `Local` is whichever the running
-machine uses.
+`Linux`, `Posix`, `MacOs` and `Windows` are the platforms, and `Local` is whichever of them the
+running machine uses. [Names](names.md) describes how each platform's rules for an element
+are stated and checked.
 
 ### Between two paths
 
-`toward` computes the relative path from one location to another, and `conjunction` finds their
-closest common ancestor:
+`toward` computes the relative path from one location to another, and `conjunction` finds
+their closest common ancestor:
 
 ```scala
 val a = % / "home" / "work" / "data"
 val b = % / "home" / "work" / "more"
+```
 
-a.toward(b)        // ? / ^ / "more"
-a.conjunction(b)   // % / "home" / "work"
+```scala fuel
+run
+##
+Out.println(a.toward(b).inspect)
+Out.println(a.conjunction(b).inspect)
 ```
 
 ### Text and paths
 
-A path renders to text with `encode`, and text parses to a path with `as`, naming the platform
-whose rules should apply. A path that breaks those rules fails to decode:
+`encode` writes a path as text. `as` parses text to a path, naming the platform whose rules
+apply:
 
-```scala
-(Drive('D') / "Foo").encode          // t"D:\\Foo"
-t"/home/work".as[Path on Linux]  // % / "home" / "work"
+```scala fuel
+run
+##
+Out.println((Drive('D') / "Foo").encode)
+Out.println(t"/home/work".as[Path on Linux].encode)
+```
+
+Text which breaks the platform's rules is not a path, and does not
+[decode](decoding.md#decoding-a-value):
+
+```scala fuel
+run
+errors show
+##
+t"home/work".as[Path on Linux]
 ```
 
 ### Deconstructing
 
-A path matches in a pattern with the `/:` extractor, peeling names from the front, so a path can
-be taken apart as readily as it is built:
+A path is matched in a pattern with the extractor `/:`, which peels names from the front. A
+path can therefore be taken apart as readily as it is built:
 
 ```scala
 val path = t"/home/work".as[Path on Linux under %.type]
 
-path match
-  case root /: t"home" /: rest => rest   // t"work"
+val remainder = path match
+  case root /: t"home" /: rest => rest
   case _                       => path.relative
 ```
 
-The root is matched too, which matters where a platform has more than one — a Windows drive
-letter, a UNC share — since the root is part of what a path *is* rather than a prefix of its text.
+```scala fuel
+run
+##
+Out.println(remainder.inspect)
+```
+
+The root is matched too. That matters where a platform has more than one root, such as a
+Windows drive letter or a UNC share, since the root is part of what a path *is*, and not a
+prefix of its text.
 
 ### Paths in the type
 
-A path's element names may be carried in its type, so that a path known at compiletime is known
-precisely:
+A path's element names may be carried in its type, so that a path which is known at
+compiletime is known precisely:
 
 ```scala
-val path: Path of ("bar", "foo") = % / "foo" / "bar"
+val exact: Path of ("bar", "foo") = % / "foo" / "bar"
 ```
 
-The names appear innermost-first, matching how the path is constructed. A path built entirely from
-literals therefore has a type describing exactly where it points, which is what lets a
-[classpath](classpath.md) resource or a project-relative file be checked as the code compiles.
+The names appear innermost first, which matches how the path is constructed. A path which is
+built entirely from literals therefore has a type which describes exactly where it points.
+That is what lets a [classpath](classpath.md) resource, or a file relative to a project, be
+checked as the code compiles. A path whose elements do not match the type it is given does
+not compile:
 
-Where the elements are not known — a path built from runtime text, or one read from a
-[filesystem](filesystem.md) listing — the type simply says `Path on Linux`, and the operations are
-the same.
+```scala fuel
+compile
+errors show
+##
+val wrong: Path of ("bar", "foo") = % / "foo" / "baz"
+```
+
+Where the elements are not known, as for a path built from text at runtime, or one read from
+a [filesystem](filesystem.md) listing, the type simply says `Path on Linux`, and the operations
+are the same.
 
 ### What a relative path knows
 
-A relative path carries its platform too, so a `Relative on Linux` cannot be applied to a Windows
-path. It also carries how far up it reaches, in its `Relation`, so a relative path that ascends
-above a root can be rejected where it is written rather than resolving to nowhere at runtime.
+A relative path carries its platform too, so a `Relative on Linux` cannot be applied to a
+Windows path. It also carries how far up it reaches, in its `Relation`. A relative path which
+would ascend above a root can therefore be rejected where it is written, instead of resolving
+to nowhere at runtime.
 
-So `? / ^ / "more"` reads as "up one, then into `more`" — the form `toward` produces.
+### Related
+
+- [Filesystem](filesystem.md) reads, writes and lists the files which paths name.
+- [Network addresses](network-addresses.md#urls) describes URLs, which have paths of their
+  own.
+- [Classpath](classpath.md) names resources by path.
+- [Names](names.md) checks the elements of a path against a platform's rules.

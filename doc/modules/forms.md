@@ -2,46 +2,56 @@
 
 ### About
 
-An HTML form is a user interface to a data type, and Soundness generates one from the type
-itself. A case class produces a form — a labeled input per field, the widget chosen by the
-field's type — and a submission decodes back into the case class, with validation failures
-attached to the fields that caused them. Nested case classes become nested fieldsets, so the form
-mirrors the data's structure.
+An HTML form is a user interface to a data type, and here one is generated from the type
+itself. A case class produces a form, with a labeled input for each field, and a widget
+chosen by the field's type. A submission is decoded back into the case class, and any
+failures of validation are attached to the fields which caused them. Nested case classes
+become nested fieldsets, so the form mirrors the structure of the data.
 
 ### On forms
 
-Forms are written twice in most web applications: once as HTML inputs, and again as the parsing
-and validation of what comes back. The two halves are kept consistent by hand, and every change to
-the data — a new field, a renamed one, a stricter type — must be made in both, or the form drifts
-from the data it claims to collect.
+Forms are written twice in most web applications: once as HTML inputs, and again as the
+parsing and validation of what comes back. The two halves are kept consistent by hand. Every
+change to the data, such as a new field, a renamed one or a stricter type, must be made in
+both, or the form drifts from the data it claims to collect.
 
-Deriving a form and its decoder from one type keeps them in agreement, which is [correctness](../philosophy/correctness.md) through a single source of truth.
+[Deriving][derivation] both halves from one type removes the duplication. The type says what
+fields exist, and what each accepts. The widgets follow from the types of the fields.
+Decoding a submission applies the same validated types which govern the rest of the program,
+so a malformed email address fails at the form, with a message which points at the email
+field. That is [correctness](../philosophy/correctness.md) through a single source of truth.
 
-Deriving both halves from one type removes the duplication. The type says what fields exist and
-what each accepts; the widgets follow from the field types; and decoding a submission applies the same validated types
-that govern the rest of the program, so a malformed email address fails at the form boundary with
-a message pointing at the email field. Everything comes from the `soundness` package:
+Everything comes from the `soundness` package. The last import lets the samples print their
+results:
 
 ```scala
 import soundness.*
 import formulations.postFormulation
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Rendering a form
 
-`elicit` renders the form for a type as [HTML](html.md), ready to serve; `edit` renders it
-pre-filled from an existing value:
+`elicit` renders the form for a type as [HTML](html.md), ready to serve. `edit` renders it
+filled in from an existing value:
 
 ```scala
 case class Person(name: Text, email: EmailAddress)
 case class Organization(leader: Person, name: Text)
 
-elicit[Organization](validation = Validation(), submit = t"Save")
+val form = elicit[Organization](validation = Validation(), submit = t"Save")
 ```
 
-Each field appears with a label derived from its name — `leader` becomes "Leader" — and a nested
-case class becomes a `<fieldset>` with a legend, so the form's structure explains itself.
+```scala fuel
+run
+##
+Out.println(form.show)
+```
+
+Each field appears with a label derived from its name, so `leader` becomes "Leader". A nested
+case class becomes a `<fieldset>` with a legend, so the structure of the form explains
+itself.
 
 The widget for each field is chosen by its type:
 
@@ -58,29 +68,48 @@ row  a case class  none  a `<fieldset>` of its fields
 
 ### Submissions
 
-A submission arrives as a `Query` — the key–value pairs of a form post, with nested fields dotted
-as `leader.name`. It decodes to the type with `as`, and a failure carries a pointer to the field at
-fault:
+A submission arrives as a `Query`: the pairs of keys and values of a form post, in which
+nested fields are dotted, as in `leader.name`. `as` decodes it to the type:
 
 ```scala
 val query = t"leader.name=Ada&leader.email=ada%40example.com&name=Acme".as[Query]
-
-query.as[Organization]   // Organization(Person(t"Ada", email"ada@example.com"), t"Acme")
 ```
 
-Because the fields decode through the same types used everywhere — an `EmailAddress` must parse, a
-`Name` must satisfy its rules — form validation is not a separate rule set but the type system
-doing its usual work at the boundary.
+```scala fuel
+run
+##
+Out.println(query.as[Organization].inspect)
+```
+
+The fields are decoded through the same types which are used everywhere. An
+[`EmailAddress`](network-addresses.md#email-addresses) must parse, and a
+[`Name`](names.md) must satisfy its rules. The validation of a form is therefore not a
+separate set of rules. It is the type system doing its usual work at the boundary, and a
+failure carries a pointer to the field at fault:
+
+```scala fuel
+run
+errors show
+##
+t"leader.name=Ada&leader.email=nobody&name=Acme".as[Query].as[Organization]
+```
+
+[Decoding](decoding.md#requiring-a-value) explains how a field's type decides whether the
+field is required.
 
 ### The form cycle
 
-A form is a loop: render, submit, re-render with errors, until the value is complete. `elicit`
-takes the submitted `Query` and the validation state, so the re-rendered form shows what was
-entered with the faults attached to their fields; a [server](http-server.md) handler runs the
-loop by decoding on success and re-rendering on failure, and so deals in values, not requests.
+A form is a loop: render, submit, and render again with errors, until the value is complete.
+`elicit` takes the submitted `Query` and the state of validation, so the form which is
+rendered again shows what was entered, with the faults attached to their fields.
+
+A [server](http-server.md#responses) handler runs the loop, by decoding on success and
+rendering again on failure. It therefore deals in values, not in requests. The
+[HTTP client](http-client.md#posting-a-body) posts a `Query` as a form submission.
 
 ### Customizing appearance
 
-How a form and its rows render is a `Formulation` — the frame around the widgets, the placement of
-labels and error messages. `postFormulation` gives a plain, unstyled rendering; an application
-supplies its own to match its design, without touching how fields are derived.
+How a form and its rows are rendered is a `Formulation`: the frame around the widgets, and
+the placement of labels and error messages. `postFormulation` gives a plain, unstyled
+rendering. An application supplies its own, to match its design, without touching how fields
+are derived. [CSS](css.md) styles the result.

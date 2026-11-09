@@ -2,81 +2,110 @@
 
 ### About
 
-Interactive terminal programs need three things the raw console does not give: styled output,
-keyboard input as events, and a way to lay out and refresh regions of the screen. Soundness
-provides all three. The `e"…"` interpolator writes ANSI-styled text as a value; an `interactive`
-block puts the terminal in raw mode and turns keystrokes into a typed event stream; and a layout
-layer composes panels, editors and menus into full-screen or inline interfaces that redraw without
-flicker.
+An interactive program in a terminal needs three things which the raw console does not give:
+styled output, input from the keyboard as events, and a way to lay out and refresh regions of
+the screen. All three are provided:
+
+- The `e"…"` [interpolator] writes text with ANSI styles, as a value.
+- An `interactive` block puts the terminal in raw mode, and turns keystrokes into a typed
+  stream of events.
+- A layout layer composes panels, editors and menus into interfaces, full-screen or inline,
+  which redraw without flicker.
 
 ### On terminals
 
-The terminal is an in-band protocol: styling, cursor movement and keyboard reports all travel as
-escape sequences mixed into the text. Programs that print escape codes directly tie themselves to
-one terminal's dialect and corrupt output that ends up in a file; programs that read stdin byte by
-byte must decode multi-byte key sequences themselves, and raw mode left enabled on a crash wrecks
-the user's shell.
+The terminal is a protocol in which control travels in the same channel as content. Styling,
+movement of the cursor and reports from the keyboard all travel as escape sequences, mixed
+into the text.
 
-Soundness keeps the protocol at the edges. Styled text is a `Teletype` — a value carrying its
-styles, rendered to the *actual* terminal's capabilities at output, and to plain text where there
-is no terminal. Input arrives as typed events, decoded from the sequences. And the raw-mode
-session is a scoped block that restores the terminal however it exits. Everything comes from the
-`soundness` package:
+A program which prints escape codes directly ties itself to one terminal's dialect, and
+corrupts output which ends up in a file. A program which reads its input a byte at a time
+must decode the sequences of several bytes which keys send. And raw mode which is left
+enabled after a crash wrecks the user's shell.
+
+Here the protocol is kept at the edges:
+
+- Styled text is a `Teletype`: a value which carries its styles. It is rendered to the
+  capabilities of the *actual* terminal when it is output, and to plain text where there is
+  no terminal.
+- Input arrives as typed events, decoded from the sequences.
+- The raw-mode session is a scoped block, which restores the terminal however it exits. That
+  is [delimited scopes](../philosophy/delimited-scopes.md), applied to the terminal.
+
+Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
 import stdios.javaLangSystemStdio
-import termcapDefinitions.basicTermcap
+import termcapDefinitions.xtermTrueColorTermcap
 ```
 
-A raw-mode session as a scoped block that restores the terminal however it exits is [delimited scopes](../philosophy/delimited-scopes.md) applied to the terminal.
+The second import says where output goes, and the third says what the terminal can display:
+here, full 24-bit color.
 
 ### Styled text
 
-The `e"…"` interpolator styles the spans it marks, with the styles as values and
-[colors](colors.md) from the color modules:
+The `e"…"` interpolator styles the spans which it marks. The styles are values, and the
+[colors](colors.md) are colors:
 
 ```scala
 val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+```
+
+```scala fuel
+run
+##
 Out.println(message)
 ```
 
-`Bold`, `Italic`, `Underline` and their siblings mark spans; `Fg` and `Bg` color them.
+`Bold`, `Italic`, `Underline` and their siblings mark spans, and `Fg` and `Bg` color them.
 
-Colors nest, which raw ANSI does not allow. An escape code sets a color; it cannot restore the one
-that was there before, only reset to the default — so a colored region inside another colored
-region ends by clearing both. A `Teletype` tracks the style as a stack instead, so the enclosing
-color is restored where the inner region ends:
+Colors nest, which raw ANSI does not allow. An escape code sets a color. It cannot restore
+the color which was there before, and can only reset to the default, so a colored region
+inside another colored region ends by clearing both. A `Teletype` tracks the style as a
+stack instead, so the enclosing color is restored where the inner region ends:
 
-```scala
+```scala fuel
+run
+##
 import WebColors.{Gold, Indigo, HotPink, White}
 
-e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)"
+Out.println(e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)")
 ```
 
-Each substitution is a *transformation* of the prevailing style rather than an absolute setting,
-which is what makes that work — and it means a substitution can depend on what it is modifying. A
-type becomes usable as one by giving it a `Stylize` instance:
+Each substitution is a *transformation* of the prevailing style, not an absolute setting,
+which is what makes that work. It means that a substitution can depend on what it modifies.
+A type becomes usable as one by being given a `Stylize` instance:
 
 ```scala
 case object Toggle
 
-given Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
 ```
 
-`$Toggle(…)` then emboldens plain text and unemboldens bold text, deciding from the style it
-finds rather than imposing a fixed one.
+```scala fuel
+run
+##
+Out.println(e"plain, $Toggle(bold, $Toggle(plain again), bold), plain")
+```
 
-A `Teletype` behaves as [text](text.md) — it cuts, joins and pads, styles preserved — and renders
-per terminal: full 24-bit color on a capable terminal, the nearest palette color on an older one,
-and plain text when output is not a terminal at all, so logs never fill with escape codes.
+`$Toggle(…)` makes plain text bold, and bold text plain. It decides from the style which it
+finds, and does not impose a fixed one.
+
+A `Teletype` behaves as [text](text.md#any-textual-type). It is cut, joined and padded, with
+its styles preserved. It is rendered for each terminal: in full 24-bit color on a capable
+terminal, in the nearest color of the palette on an older one, and as plain text when the
+output is not a terminal at all, so that logs never fill with escape codes.
+[Environment](environment.md#the-machine) describes how the capabilities of the real terminal
+are detected.
 
 ### Keyboard input
 
-`interactive` opens a raw-mode session, within which the terminal's events — keypresses, window
-resizes, focus changes, pastes — arrive as typed values. The session runs under
-[supervision](concurrency.md) and takes the console and the environment from context; an
-application's `Cli` provides the console:
+`interactive` opens a raw-mode session. Within it, the terminal's events arrive as typed
+values: keypresses, resizes of the window, changes of focus, and pastes. The session runs
+under [supervision](concurrency.md), and takes the console and the
+[environment](environment.md) from context. An application's
+[`Cli`](cli.md) provides the console:
 
 ```scala fuel
 typecheck
@@ -86,7 +115,7 @@ import probates.awaitProbate
 import strategies.throwUnsafely
 import threads.virtualThreads
 
-given Console = Console(summon[Stdio])
+given console: Console = Console(summon[Stdio])
 
 def handle(char: Char): Unit = ()
 def finish(): Unit = ()
@@ -101,23 +130,25 @@ supervise:
       case _                       => ()
 ```
 
-The decoding covers modifier combinations, function keys, the kitty keyboard protocol and
-bracketed paste, so `Ctrl(Alt(Left))` is a value to match, not a byte sequence to recognize.
+The decoding covers combinations of modifiers, function keys, the kitty keyboard protocol
+and bracketed paste. `Ctrl(Alt(Left))` is therefore a value to match, not a sequence of bytes
+to recognize.
 
-A `Keypress` is an ordinary `CharKey`, a `FunctionKey`, one of the named editing keys — `Tab`,
-`Enter`, `Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` and the
-arrows — or an `EscapeSeq` for a sequence with no other name. Each may be wrapped in the modifiers
-held with it, nesting outwards:
+A `Keypress` is an ordinary `CharKey`, a `FunctionKey`, one of the named editing keys, or an
+`EscapeSeq` for a sequence with no other name. The named keys are `Tab`, `Enter`,
+`Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` and the
+arrows. Each may be wrapped in the modifiers which were held with it, nesting outwards:
 
 ```scala
-Keypress.Ctrl('A')
-Keypress.Shift(Keypress.Enter)
+val selectAll = Keypress.Ctrl('A')
+val newLine = Keypress.Shift(Keypress.Enter)
 ```
 
-The wrappers accept only what can meaningfully be modified, so `Shift(CharKey('a'))` does not
-typecheck — a shifted `a` is `CharKey('A')`, and the shift has already been applied. A keypress
-renders with a Unicode symbol in brackets for each special key, joined to what it modifies with
-`+`, as in `[⇧]+[↵]`, `[⌃]+[C]` or `[⌥]+[→]`:
+The wrappers accept only what can meaningfully be modified. `Shift(CharKey('a'))` does not
+typecheck: a shifted `a` is `CharKey('A')`, and the shift has already been applied.
+
+A keypress is displayed with a Unicode symbol in brackets for each special key, joined with
+`+` to what it modifies, as in `[⇧]+[↵]`, `[⌃]+[C]` or `[⌥]+[→]`:
 
 ```tabular
 column  Keypress
@@ -135,18 +166,20 @@ row  `EscapeSeq(id, …)`  `[⎋id]`
 row  `Shift(…)`, `Ctrl(…)`, `Alt(…)`, `Meta(…)`  `[⇧]+…`, `[⌃]+…`, `[⌥]+…`, `[⌘]+…`
 ```
 
-The vocabulary is deliberately separate from anything that produces or consumes it: the terminal
-decodes escape sequences into these values, and [web automation](web-automation.md) renders them
-as the actions a browser understands, without either needing to know about the other.
-Optional capabilities — mouse tracking, focus reporting, the alternate screen — switch on by
-importing the corresponding `terminalFeatures` given, and are switched off again when the session
-ends.
+The vocabulary is deliberately separate from anything which produces or consumes it. The
+terminal decodes escape sequences into these values, and
+[web automation](web-automation.md) turns them into the actions which a browser understands,
+without either needing to know about the other.
+
+Optional capabilities, such as tracking of the mouse, reporting of focus and the alternate
+screen, are switched on by importing the corresponding given from `terminalFeatures`, and
+are switched off again when the session ends.
 
 ### Line editing and menus
 
-A line of input, with cursor movement and editing keys handled, is a `LineEditor`; a choice among
-options is a `SelectMenu`. Each is a pure state machine — an event in, a new state out — asked for
-its result in one call:
+A line of input, with movement of the cursor and the editing keys handled, is a
+`LineEditor`. A choice among options is a `SelectMenu`. Each is a pure state machine, which
+takes an event and gives a new state, and is asked for its result in one call:
 
 ```scala fuel
 typecheck
@@ -159,7 +192,7 @@ supervise:
 
 ### Layout
 
-Interfaces larger than a line compose from panes:
+Interfaces which are larger than a line are composed from panes:
 
 ```tabular
 column  Combinator
@@ -171,8 +204,8 @@ row  `stack`  panes one above another, as rows
 row  `border`  a frame around a pane
 ```
 
-`conduct` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
-block at the cursor that leaves scrollback intact:
+`conduct` runs the arrangement. It runs full-screen, on the alternate buffer, or *inline*, as
+a live block at the cursor, which leaves the scrollback intact:
 
 ```scala fuel
 typecheck
@@ -188,19 +221,28 @@ supervise:
     conduct(Occupancy.Inline)(strip(sidebar, body))
 ```
 
-Sizes solve as fractions with minima and maxima, and focus moves between widgets with Tab. Live
-status — progress bars, spinners, meters and step indicators — embeds the same way; see
-[gauges](gauges.md).
+Sizes are solved as fractions, with minima and maxima, and focus moves between widgets with
+Tab. Live status is embedded in the same way: progress bars, spinners, meters and step
+indicators. [Gauges](gauges.md) describes them.
 
 ### Redrawing without flicker
 
-Rendering keeps a model of what is actually on the screen, and each frame is diffed against it,
-so a repaint overprints only the runs that changed and an identical frame emits nothing at all.
-Full-screen output is buffered and flushed as one write rather than as a stream of small ones. A
-geometry change or a resize takes the full redraw path, because nothing about the previous
-contents can then be relied upon.
+Rendering keeps a model of what is actually on the screen, and each frame is compared with
+it. A repaint therefore overprints only the runs which changed, and an identical frame emits
+nothing at all. Full-screen output is buffered, and flushed as one write, not as a stream of
+small ones. A change of geometry, or a resize, takes the path of a full redraw, because
+nothing about the previous contents can then be relied upon.
 
-An inline block — one that leaves scrollback intact — has a further problem: the terminal may
-reflow its lines when the window narrows, moving the block out from under the cursor. Rather than
-redrawing in the wrong place, an inline block re-establishes where it is after a resize, so a
-running interface survives a reflow instead of scribbling over the scrollback above it.
+An inline block, which leaves the scrollback intact, has a further problem. The terminal may
+reflow its lines when the window narrows, moving the block out from under the cursor. An
+inline block therefore works out again where it is after a resize, so that a running
+interface survives a reflow, and does not scribble over the scrollback above it.
+
+### Related
+
+- [Colors](colors.md) describes the colors which `Fg` and `Bg` take.
+- [Tables](tables.md) and [Gauges](gauges.md) draw structured output in a terminal.
+- [Command-line interfaces](cli.md) reads a program's arguments and completes them.
+- [Terminal emulator](terminal-emulator.md) is the other side: it interprets the escape
+  sequences which a program writes.
+- [Processes](processes.md#on-a-terminal) runs another program on a pseudo-terminal.

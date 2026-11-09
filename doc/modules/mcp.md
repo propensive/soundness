@@ -3,25 +3,27 @@
 ### About
 
 The [Model Context Protocol](https://modelcontextprotocol.io/) is how an AI assistant reaches
-outside itself — calling tools, reading resources, using prompts that a server provides. A
-Soundness MCP server is an object with annotated methods: a method marked `@tool` becomes a
-callable tool, its parameters and result described to the client by
-[JSON schemas](json.md) derived from their types; `@resource` exposes content at a URI; `@prompt`
-supplies conversation templates. The protocol — JSON-RPC over streamable HTTP, sessions, listings —
-is generated from those definitions.
+outside itself, by calling tools, reading resources and using prompts which a server provides.
+
+An MCP server here is an object with annotated methods. A method marked `@tool` becomes a
+callable tool, and its parameters and result are described to the client by
+[JSON schemas](json.md#schemas) derived from their types. `@resource` exposes content at a URI.
+`@prompt` supplies a conversation template. The protocol itself, which is JSON-RPC over
+streamable HTTP, with sessions and listings, is generated from those definitions.
 
 ### On MCP
 
-An MCP server describes itself: tools are advertised with their names, descriptions and input
-schemas, and the client — a language model's harness — decides what to call from those
-descriptions. Writing that self-description by hand duplicates the code it describes, and the two
-drift; the schema says one thing, the implementation another, and the model's tool calls fail in
-ways it cannot see.
+An MCP server describes itself. Tools are advertised with their names, descriptions and input
+schemas, and the client, which is the harness of a language model, decides what to call from
+those descriptions. Writing that self-description by hand duplicates the code it describes, and
+the two drift. The schema says one thing and the implementation another, and the model's tool
+calls fail in ways it cannot see.
 
-Tools declared as typed methods, with their schemas derived, are [correctness](../philosophy/correctness.md) by construction: the schema cannot disagree with the code.
+Deriving the description from the implementation removes the gap. The method *is* the tool. Its
+name, its parameter types and its result type generate the listing, and dispatch goes straight to
+it. The schema cannot disagree with the code, which is
+[correctness](../philosophy/correctness.md) by construction.
 
-Deriving the description from the implementation removes the gap. The method *is* the tool: its
-name, its parameter types, its result type generate the listing, and dispatch goes straight to it.
 Everything comes from the `soundness` package:
 
 ```scala
@@ -38,11 +40,13 @@ import threads.virtualThreads
 import webserverErrorPages.minimalErrorPage
 ```
 
+The samples on this page serve a protocol over HTTP, so they are compiled but not run.
+
 ### A server
 
 A server extends `Mcp.Server`, names itself, and defines its capabilities as annotated methods.
 Each connected client gets a `Session`, created by `initialize`, in which the server may keep
-per-client state:
+state for that client:
 
 ```scala
 val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
@@ -61,9 +65,9 @@ object AssistantTools extends Mcp.Server():
   def color(name: Text): Text = colors.at(name).or(t"unknown")
 ```
 
-The tool's input schema — a `name` of type string — and its result schema are derived from the
-signature; `@about` supplies the description the model reads when deciding to call it. These
-are the annotations a server's methods may carry:
+The input schema of the tool, a `name` of type string, and its result schema are derived from
+the signature. `@about` supplies the description which the model reads when it decides whether
+to call the tool. These are the annotations which the methods of a server may carry:
 
 ```tabular
 column  Annotation
@@ -79,9 +83,9 @@ row  `@ui(uri)`  a tool  a tool whose user interface is the resource at the URI
 
 ### Talking back to the client
 
-A tool that takes a `using Mcp.Client` can speak to the client while it runs: `log` streams progress
-notifications, and `elicit` asks the user for structured input mid-call, its form described by a
-derived schema:
+A tool which takes a `using Mcp.Client` can speak to the client while it runs. `log` streams
+progress notifications. `elicit` asks the user for structured input in the middle of a call,
+with its form described by a derived schema:
 
 ```scala
 object Deployer extends Mcp.Server():
@@ -100,9 +104,9 @@ object Deployer extends Mcp.Server():
     t"deployed to $target"
 ```
 
-A parameter is required unless its type is an `Optional` or it has a default argument; a client
-may omit those, and the tool sees `Unset` or the default. An `@about` on a parameter describes it
-in the tool's input schema:
+A parameter is required unless its type is an [`Optional`](optional-values.md), or it has a
+default argument. A client may omit those, and the tool sees `Unset` or the default. An `@about`
+on a parameter describes it in the input schema of the tool:
 
 ```scala
 @tool
@@ -112,7 +116,7 @@ def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit
   Nil
 ```
 
-A failure inside a tool is something the model can read and act on; a malformed call is not:
+A failure inside a tool is something the model can read and act on. A malformed call is not:
 
 ```tabular
 column  When
@@ -124,9 +128,10 @@ row  a required parameter is omitted  a JSON-RPC error
 
 ### Resources and prompts
 
-`@resource` serves content at a URI — anything streamable as text or bytes — and `@prompt` returns
-a conversation written with the `human` and `agent` interpolators. A resource's MIME type may be
-given with the annotation's `mimeType`, and is otherwise chosen for it:
+`@resource` serves content at a URI. The content is anything which is streamable as text or
+bytes. `@prompt` returns a conversation, written with the `human` and `agent` interpolators which
+[LLM](llm.md) describes. The MIME type of a resource may be given with the annotation's
+`mimeType`, and is otherwise chosen for it:
 
 ```tabular
 column  A resource
@@ -156,9 +161,9 @@ object Documentation extends Mcp.Server():
 
 ### Serving
 
-The server speaks MCP's streamable HTTP transport — JSON-RPC requests by POST, an event stream by
-GET, sessions tracked by header — and mounts inside an ordinary [HTTP server](http-server.md)
-handler:
+The server speaks the streamable HTTP transport of MCP: JSON-RPC requests by POST, an event
+stream by GET, and sessions tracked by a header. It mounts inside an ordinary
+[HTTP server](http-server.md) handler:
 
 ```scala
 def serve(): Unit = supervise:
@@ -168,5 +173,15 @@ def serve(): Unit = supervise:
       case _           => Http.Response(Http.NotFound)(t"Not found")
 ```
 
-A client configured with that endpoint discovers the tools, resources and prompts, and everything
-it sees was derived from the methods it will call.
+A client configured with that endpoint discovers the tools, resources and prompts. Everything it
+sees was derived from the methods it will call.
+
+### Related
+
+- [ACP](acp.md) is the sibling protocol, for an editor to drive an agent.
+- [LLM](llm.md) describes the `human` and `agent` interpolators, and the models which call
+  these tools.
+- [RPC](rpc.md) describes the JSON-RPC and server-sent events which the transport uses.
+- [HTTP server](http-server.md) hosts the endpoint.
+- [JSON](json.md#schemas) describes the schemas which describe each tool.
+- [Annotations](annotations.md) describes how annotations are read at compiletime.

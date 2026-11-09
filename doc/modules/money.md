@@ -2,76 +2,97 @@
 
 ### About
 
-Money is a fixed-point amount of a particular currency, and Soundness keeps the currency in the
-type: a `Money in "EUR"` and a `Money in "GBP"` cannot be added together, because adding euros to
-pounds is not a sum but a mistake. Parameterizing by the currency is how an
-[impossible state](../philosophy/impossible-states.md) is ruled out by the type.
+Money is a fixed-point amount of a particular currency, and the currency is part of its type. A
+`Money in "EUR"` and a `Money in "GBP"` cannot be added together, because adding euros to
+pounds is not a sum but a mistake. Making the currency a type parameter is how that
+[impossible state](../philosophy/impossible-states.md) is ruled out.
 
-Within a currency, amounts add, subtract, scale, divide and compare; an amount splits into
-equal shares without losing a penny; and a price carries its tax alongside its principal.
+Within one currency, amounts add, subtract, scale, divide and compare. An amount splits into
+equal shares without losing a penny, and a price carries its tax beside its principal.
 
-Thirty-seven currencies come defined, each a value that constructs amounts, and rendering an
-amount uses either its symbol or its ISO code, chosen by a style in scope.
+Thirty-seven currencies are defined, each as a value which constructs amounts. An amount is
+written with either its symbol or its ISO code, as a style in scope decides.
 
 ### On money
 
-The two classic mistakes with money are representation and confusion. Representing an amount as a
-floating-point number invites rounding errors — `0.1 + 0.2` is not `0.3` in binary floating point —
-so money belongs in fixed-point integers of the currency's smallest unit. And an amount without
-its currency is a number pretending to be money: a program that adds a dollar figure to a euro
-figure produces a plausible-looking result that means nothing.
+The two classic mistakes with money are of representation and of confusion.
 
-Soundness stores an amount as an integer count of minor units, and makes the currency part of the
-type, so a cross-currency operation does not compile. Division and allocation are handled the way
-accounting requires — a split produces shares that differ by at most a minor unit and sum exactly
-to the original. Everything comes from the `soundness` package, with the currencies used imported
-by name:
+Representing an amount as a floating-point number invites rounding errors: `0.1 + 0.2` is not
+`0.3` in binary floating point. Money belongs in whole numbers of the currency's smallest unit.
+
+An amount without its currency is a number pretending to be money. A program which adds a
+figure in dollars to a figure in euros produces a result which looks plausible, and means
+nothing.
+
+Here an amount is stored as a whole number of *minor units*, such as cents or pence, and the
+currency is part of the type, so an operation across currencies does not compile. Division and
+allocation are done as accounting requires: a split produces shares which differ by at most one
+minor unit, and which sum exactly to the original.
+
+Everything comes from the `soundness` package. The currencies in use are imported by name, and
+the last import lets the samples print their results:
 
 ```scala
 import soundness.*
 import scala.language.experimental.into
 import currencies.{Eur, Gbp}
 import currencyStyles.localCurrencyStyle
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Amounts
 
-A currency constructs an amount from a decimal number, rounding to the nearest minor unit; the
+A currency constructs an amount from a decimal number, rounding to the nearest minor unit. The
 type records the currency:
 
 ```scala
 val price: Money in "EUR" = Eur(3.01)
 ```
 
+```scala fuel
+run
+##
+Out.println(price.show)
+```
+
 ### Arithmetic
 
-Amounts of one currency combine with the usual operators. Multiplying and dividing by a number
-scales an amount, and dividing one amount by another yields their ratio:
+Amounts of one currency combine with the usual operators. Multiplying or dividing by a number
+scales an amount:
 
-```scala
-Eur(3.01) + Eur(0.02)   // Eur(3.03)
-Eur(3.01)*3.0           // Eur(9.03)
-Eur(3.01)/3             // Eur(1.00)
--Eur(1.99)              // Eur(-1.99)
-
-Eur(1.01) >= Eur(1.01)  // true
+```scala fuel
+run
+##
+Out.println((Eur(3.01) + Eur(0.02)).show)
+Out.println((Eur(3.01)*3.0).show)
+Out.println((Eur(3.01)/3).show)
+Out.println((-Eur(1.99)).show)
+Out.println((Eur(1.01) >= Eur(1.01)).inspect)
 ```
 
 Mixing currencies does not compile:
 
-```scala
-Eur(1.00) + Gbp(1.00)   // does not compile: different currencies
+```scala fuel
+compile
+errors show
+##
+Eur(1.00) + Gbp(1.00)
 ```
 
-There is no built-in exchange rate — converting between currencies is a business decision with a
-time and a source, not an arithmetic identity, so it is left to the program to define.
+There is no built-in exchange rate. Converting between currencies is a business decision, with
+a time and a source, and not an arithmetic identity, so it is left to the program to define.
 
-An amount is a `Long` of minor units underneath, which means its `toString` is a `Long`'s: the raw
-count, with no currency and no decimal point. Rendering goes through `show` and the currency style,
-as below.
+Underneath, an amount is a `Long` of minor units, so its `toString` is a `Long`'s: the raw
+count, with no currency and no decimal point. An amount is written out with `show` and the
+[currency style](#rendering).
 
-A currency that is not among those provided is one line, giving its ISO code, name, symbol and the
-number of minor units in a major one:
+The operators come from the [typeclasses](numbers.md#overloading-the-operators) which make `+`
+and `*` available to any type.
+
+### Other currencies
+
+A currency which is not among those provided is defined in one line, which gives its ISO code,
+its name, its symbol and the number of minor units in a major one:
 
 ```scala
 given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
@@ -91,16 +112,19 @@ row  after `over`  the minor units in a major one  `100`
 
 ### Splitting
 
-`share` divides an amount into a number of parts that sum exactly to the whole, distributing any
-remainder one minor unit at a time — the allocation problem that naive division gets wrong:
+`share` divides an amount into a number of parts which sum exactly to the whole. Any remainder
+is distributed one minor unit at a time. This is the allocation problem which naive division
+gets wrong: three equal shares of €3.01 would lose a cent.
 
-```scala
-Eur(3.01).share(3)   // three shares, together exactly €3.01
+```scala fuel
+run
+##
+Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
 ```
 
 ### Prices and tax
 
-Three parties look at the same price and see different numbers:
+Three parties look at the same price, and see different numbers:
 
 ```tabular
 column  Party
@@ -111,56 +135,77 @@ row  the buyer  the amount including tax  `inclusive`
 row  the tax authority  the difference  `tax`
 ```
 
-Hold all three in one type and it is easy to add tax to a figure that already had it, or to report
-the wrong one — a mistake that arithmetic cannot catch, because every one of those numbers is a
-valid amount of money.
+Hold all three in one type, and it is easy to add tax to a figure which already had it, or to
+report the wrong one. Arithmetic cannot catch that mistake, because every one of those numbers
+is a valid amount of money.
 
-A `Price` is therefore a principal amount and the tax on it, kept apart so that either is available
-exactly rather than reconstructed by division. `tax` builds one from a rate, and `inclusive` gives
-the total:
+A `Price` is therefore a principal amount, and the tax on it, kept apart, so that either is
+available exactly and need not be reconstructed by division. `tax` builds a price from a rate,
+and `inclusive` gives the total:
 
 ```scala
-val priced = Gbp(2.30).tax(0.2)   // Price(Gbp(2.30), Gbp(0.46))
-priced.inclusive                  // Gbp(2.76)
+val priced = Gbp(2.30).tax(0.2)
 ```
 
-Tax rounds *up* to the minor unit, which is what tax authorities require and what a naive
-rounding gets wrong in exactly the cases that matter: twenty per cent of £2.94 is £0.588, charged
-as £0.59 rather than £0.58.
+```scala fuel
+run
+##
+Out.println(priced.principal.show)
+Out.println(priced.tax.show)
+Out.println(priced.inclusive.show)
+```
 
-A `Price` deliberately has no `show`: whether to display the inclusive or exclusive amount is a
+Tax is rounded *up* to the minor unit. That is what tax authorities require, and what naive
+rounding gets wrong in exactly the cases which matter. Twenty per cent of £2.94 is £0.588,
+which is charged as £0.59:
+
+```scala fuel
+run
+##
+Out.println(Gbp(2.94).tax(0.2).tax.show)
+```
+
+A `Price` deliberately has no `show`. Whether to display the amount with or without tax is a
 decision the application must make explicitly, by showing the member it means.
 
 ### Rendering
 
-An amount shows through the currency style in scope: the local style uses the currency's symbol,
-and the generic style its ISO code, for contexts where `€3.01` and `3.01 EUR` are each
-appropriate:
+An amount is shown through the currency style in scope. The local style uses the currency's
+symbol, and the generic style its ISO code:
 
-```scala
-t"Received ${Eur(3.01)}"   // t"Received €3.01"
+```scala fuel
+run
+##
+Out.println(t"Received ${Eur(3.01)}")
 
 locally:
   import currencyStyles.genericCurrencyStyle
-  t"Received ${Eur(3.01)}"   // t"Received 3.01 EUR"
+  Out.println(t"Received ${Eur(3.01)}")
 ```
+
+[Internationalization](internationalization.md) covers the wider question of presenting values
+for a particular locale.
 
 ### Identifiers
 
-Alongside amounts, the module checks the identifying numbers of finance. An
-[ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) — the
-international identifier of a security — validates at compiletime with the `isin"…"` interpolator
-and at runtime with `Isin(…)`, including its checksum; and `Luhn` checks the
-[Luhn digit](https://en.wikipedia.org/wiki/Luhn_algorithm) used by card numbers:
+The identifying numbers of finance are checked here too. An
+[ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) is the
+international identifier of a security. The `isin"…"` [interpolator] validates one at
+[compiletime], including its checksum, and `Isin(…)` does the same at runtime:
 
 ```scala
-isin"GB00BH4HKS39"          // a valid ISIN
-isin"GB00BH4HKS3"           // does not compile: wrong length
-Luhn.check(17893729974L)    // true
+val security = isin"GB00BH4HKS39"
 ```
 
-An `Isin.Error` says which rule was broken, so a rejected identifier can be reported precisely
-rather than as "invalid":
+```scala fuel
+compile
+errors show
+##
+isin"GB00BH4HKS3"
+```
+
+An `Isin.Error` says which rule was broken, so a rejected identifier can be reported
+precisely, and not merely as "invalid":
 
 ```tabular
 column  Reason
@@ -171,5 +216,19 @@ row  `InvalidCharacter`  every character is a digit or an uppercase letter
 row  `LuhnCheck`  its last digit passes the Luhn check
 ```
 
-An `Isin` is an opaque type over a `Long`, so a validated identifier costs nothing to hold or
+An `Isin` is an [opaque type] over a `Long`. A validated identifier costs nothing to hold or
 compare, and cannot be confused with an unvalidated string.
+
+`Luhn` checks the [Luhn digit](https://en.wikipedia.org/wiki/Luhn_algorithm) which card
+numbers use:
+
+```scala fuel
+run
+##
+Out.println(Luhn.check(17893729974L).inspect)
+Out.println(Luhn.check(17893729975L).inspect)
+```
+
+### Related
+
+- [Quantities](quantities.md) treats a currency as a unit, and [testing](testing.md) checks that an invalid currency literal fails to compile.

@@ -2,38 +2,40 @@
 
 ### About
 
-Soundness reads and writes [JSON](https://en.wikipedia.org/wiki/JSON). Text parses
-into a `Json` value; a `Json` value converts to and from ordinary Scala types
-without boilerplate; and the conversion is checked as it happens, so asking a
-number for a string, or a document for a field it lacks, produces a typed error
-rather than a wrong answer. Additionally, a document can be validated against a JSON schema
-derived from a Scala type, and its fields can be navigated with the compiler checking each step.
+[JSON](https://en.wikipedia.org/wiki/JSON) text parses into a `Json` value, and a `Json` value
+converts to and from ordinary Scala types. A case class needs no annotation and no hand-written
+codec: its encoder and decoder are [derived][derivation] from its fields.
+
+Every conversion is checked. Asking a number for a string, or a document for a field it lacks,
+raises a typed error which says what was wrong and where. It never yields a `null`, a default,
+or a wrong answer.
+
+A document can also be validated against a schema derived from a Scala type. Once it is
+validated, its fields can be navigated with the compiler checking each step.
 
 ### On JSON
 
-JSON is everywhere, and most libraries treat it loosely: a parsed document is an
-untyped tree, fields are fished out by string keys, and a mismatch between what the
-code expects and what the data holds surfaces as a `null`, a cast failure, or a
-silent default, often far from where it began.
+Most libraries treat JSON loosely. A parsed document is an untyped tree, and fields are fished
+out of it by string keys. When the data does not hold what the code expects, the mismatch
+surfaces as a `null`, a failed cast or a silent default, often far from where it began.
 
-Soundness keeps the structure and the types together. Parsing yields a `Json` value
-that remembers what it is. Converting a `Json` to a Scala value, or a Scala value to
-`Json`, is done by an encoder or decoder that the compiler derives from the type's
-own shape — a case class becomes an object, an enumeration becomes a tagged union —
-so there is nothing to write and nothing to keep in step by hand. When a conversion
-cannot be made, it raises a `Json.Error` that names the reason and, where it can, the
-position in the source.
+Here the structure and the types stay together:
 
-The same derivation produces a schema, and from a schema two further guarantees
-follow: a document can be checked against the shape a type expects, and the fields
-of a verified document can be read with the compiler rejecting any path the schema
-does not allow. The sections below start with parsing and the everyday conversions,
-then build toward schemas, validation, and the integrations with other types.
+- Parsing gives a `Json` value, which is [immutable]: every operation on it returns a new value,
+  in keeping with [immutability](../philosophy/immutability.md).
+- Converting between `Json` and a Scala type is done by an encoder or decoder which the compiler
+  derives from the type's shape. A case class becomes an object, and an enumeration becomes a
+  tagged union, so there is nothing to write and nothing to keep in step by hand.
+- A conversion that cannot be made raises a `Json.Error`. The error names its reason and, where
+  it can, the position in the document.
+- The same derivation produces a schema. A document checked against the schema can then be read
+  with the compiler rejecting any path the schema does not allow.
 
-A JSON value is immutable and every operation on it returns a new one, in keeping with [immutability](../philosophy/immutability.md).
+The sections below begin with the everyday work of parsing, decoding and encoding. Schemas,
+validation, streaming and the faster direct codecs come later, and each can be read on its own.
 
-These examples assume a few imports — the package, an error strategy, a text
-encoding, and a choice of output formatting:
+Everything comes from the `soundness` package. Working with JSON also depends on a few choices,
+each made by importing a [given] from a [choice package]:
 
 ```scala
 import soundness.*
@@ -42,51 +44,116 @@ import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+```
+
+```tabular
+column  Import
+column  Decides
+row  `codepages.utf8Codepage`  how JSON text is written as bytes
+row  `errorDiagnostics.stackTracesDiagnostics`  that an error records a stack trace
+row  `formatting.compactJsonFormatting`  that JSON is written without whitespace; [Formatting](#formatting) has the alternative
+row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
+row  `stdios.javaLangSystemStdio`  where the samples print their results
 ```
 
 ### Parsing
 
-Any textual source can become a `Json` value with `read`:
+`read[Json]` parses any source of text into a `Json` value:
 
 ```scala
 val document = t"""{"name": "Alice", "age": 30}""".read[Json]
 ```
 
-Parsing can fail on malformed input, so it draws on the error strategy in scope; for now, the
-`throwUnsafely` strategy raises an exception on failure.
+`show` writes a `Json` value back out as text, in the formatting in scope:
+
+```scala fuel
+run
+##
+Out.println(document.show)
+```
+
+Parsing fails on malformed input, and the failure goes to the [strategy] in scope. Under
+`throwUnsafely`, that means an exception which says what the parser found and where:
+
+```scala fuel
+run
+errors show
+##
+t"""{"name": "Alice", "age": }""".read[Json]
+```
 
 ### Reading values
 
-A `Json` value converts to a Scala type with `as`. The primitive types, collections,
-and `null` all read directly:
+`as` converts a `Json` value to a Scala type. Primitive types, collections and maps are all read
+directly:
 
-```scala
-t"42".read[Json].as[Int]            // 42
-t"3.14".read[Json].as[Double]       // 3.14
-t""""hello"""".read[Json].as[Text]  // t"hello"
-t"true".read[Json].as[Boolean]      // true
-t"null".read[Json].as[Unit]         // ()
-t"[1, 2, 3]".read[Json].as[List[Int]]              // List(1, 2, 3)
-t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]]  // Map(t"a" -> 1, t"b" -> 2)
+```scala fuel
+run
+##
+Out.println(t"42".read[Json].as[Int].show)
+Out.println(t"3.14".read[Json].as[Double].inspect)
+Out.println(t""""hello"""".read[Json].as[Text])
+Out.println(t"true".read[Json].as[Boolean].inspect)
+Out.println(t"[1, 2, 3]".read[Json].as[List[Int]].inspect)
+Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
+```
+
+JSON's `null` reads as `Unit`, and as the absent value of an [optional] type.
+
+Asking for the wrong type is an error, not a conversion. A string is never quietly turned into a
+number:
+
+```scala fuel
+run
+errors show
+##
+t""""hello"""".read[Json].as[Int]
 ```
 
 ### Case classes and enumerations
 
-A case class needs no annotation to take part in JSON. Soundness derives its encoder
-and decoder from the fields, so a value converts to an object and back:
+A case class takes part in JSON as it stands. Its decoder is derived from its fields, so an
+object reads into a value:
 
 ```scala
 case class Person(name: Text, age: Int)
 
-Person(t"Alice", 30).in[Json].show   // t"""{"name":"Alice","age":30}"""
-
-t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
-// Person(t"Bob", 40)
+val bob = t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
 ```
 
-The `in[Json]` method encodes any value for which an encoder is derived, and `show`
-renders the result. `in` and `as` are the general codec vocabulary, the same whatever the
-format, and with `read` they give every route between text, `Json` and a Scala type:
+```scala fuel
+run
+##
+Out.println(bob.inspect)
+```
+
+Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+
+```scala fuel
+run
+##
+Out.println(Person(t"Alice", 30).in[Json].show)
+```
+
+Nested case classes, and collections of them, derive in turn, so a whole structure converts in
+one step:
+
+```scala
+case class Crew(rowers: List[Person], cox: Person, reserve: Option[Person])
+
+val crew =
+  t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}""".read[Crew in Json]
+```
+
+```scala fuel
+run
+##
+Out.println(crew.inspect)
+```
+
+`read[Crew in Json]` parses and decodes together. `in`, `as` and `read` are the same vocabulary
+for every format, and between them they give each route between text, `Json` and a Scala type:
 
 ```tabular
 column  Expression
@@ -100,96 +167,68 @@ row  `value.in[Text over Json]`  encodes and renders  `Text`
 row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
 ```
 
-Nested case classes and collections of them derive in turn, so a whole structure converts in
-one step. Decoding straight from text to a type combines the two:
+`in[Text over Json]` writes in the `Json.Formatting` in scope, exactly as `show` does, and
+`in[Data over Json]` writes the same text as bytes in the `Codepage` in scope:
 
 ```scala
-case class Crew(rowers: List[Person], cox: Person, reserve: Option[Person])
-
-t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
-. read[Crew in Json]
-// Crew(List(Person(t"Bob", 40)), Person(t"Carol", 25), None)
+val written: Text = Person(t"Bob", 40).in[Text over Json]
 ```
-
-Writing has the mirror form: `in[Text over Json]` encodes a value straight to its JSON text, in
-the `Json.Formatting` in scope, as `show` renders it.
-
-`in[Data over Json]` writes the same text as bytes, encoded in the `Codepage` in scope. A type
-with a `Json.Printable` is written directly, with no `Json` tree built, wherever the formatting
-is compact; indented formatting still renders through the tree. The printer is derived at
-compiletime as the parser is, and writes the same text:
 
 ```scala fuel
-alternative Tree
-  code
-      import formatting.compactJsonFormatting
-
-      Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}"""
-alternative Direct
-  code
-      import formatting.compactJsonFormatting
-
-      val direct =
-        given Person is Json.Printable = Json.Direct.derived[Person].printable
-        Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}""", written directly
+run
 ##
+Out.println(written)
 ```
 
-`Json.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
-A record can generate both instances once, into its companion, with `derives Json.Direct`, and a
-single import selects the path for every record in scope:
-
-```tabular
-column  Import
-column  For a record
-column  For any other type
-row  `codecs.direct`  a generated parser and printer  its own direct instance, else the tree
-row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs, even over a direct instance
-row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
-```
-
-Under `codecs.strict` the error is reported wherever `read[Foo in Json]` or `in[Text over Json]`
-would otherwise fall back to the tree. With none imported, a type takes the direct path exactly
-when it has a direct instance of its own. The modes are alternatives; import one at a time.
-
-This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
-read *directly* from the source: the parser is composed for that type as the code compiles, and
-fields are taken from the token stream as they arrive, so no `Json` tree is ever built. What is
-saved is the whole intermediate structure — allocation, boxing, and a second traversal:
-
-```scala
-given Person is Json.Parsable = Json.Parsable.derived
-```
-
-The instance belongs in the type's companion object in ordinary code, where it is found without
-an import.
-
-The tree route remains for documents whose shape is not known in advance, or where the tree is
-itself the point.
+[Derivation](derivation.md#when-derivation-fails) explains what happens when a field's type has
+no decoder, and
+[Decoding](decoding.md) describes the decoders that turn a single text value, such as a JSON
+string, into a type of one's own.
 
 ### Optional fields and defaults
 
-A field typed as `Optional` (or `Option`) is omitted from the output when it is
-absent, and supplied as `Unset` (or `None`) when missing on the way in:
+A field typed as `Optional` is left out of the output when it is absent, and reads as `Unset`
+when the document omits it. `Option` behaves the same way, with `None`:
 
 ```scala
 case class Profile(name: Text, age: Optional[Int])
-
-Profile(t"Eve", Unset).in[Json].show   // t"""{"name":"Eve"}"""
 ```
 
-A field with a default takes that default when the document omits it:
+```scala fuel
+run
+##
+Out.println(Profile(t"Eve", Unset).in[Json].show)
+Out.println(t"""{"name": "Eve"}""".read[Json].as[Profile].inspect)
+```
+
+A field with a default value takes that default when the document omits it:
 
 ```scala
 case class Account(name: Text, age: Int = 18)
-
-t"""{"name": "Eve"}""".read[Json].as[Account]   // Account(t"Eve", 18)
 ```
+
+```scala fuel
+run
+##
+Out.println(t"""{"name": "Eve"}""".read[Json].as[Account].inspect)
+```
+
+A field which is neither optional nor defaulted is required. A document without it does not
+decode:
+
+```scala fuel
+run
+errors show
+##
+t"""{"age": 40}""".read[Json].as[Person]
+```
+
+[Optional values](optional-values.md) describes `Optional` and `Unset` in full.
 
 #### Controlling optionality
 
-An `Optional` field answers three questions, each with a default that a given from the
-`optionalityOptions` package can override:
+An `Optional` field answers three questions. Each answer has a default, which a given from the
+`optionalityOptions` package overrides:
 
 ```tabular
 column  A key which is
@@ -200,45 +239,56 @@ row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
 row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
 ```
 
-A strict absence raises `Absent`; a strict null is rejected by the inner decoder as it would be
-for any other field; and a lenient fault is read under the ambient tactic's `tolerate`, so
-nothing accrues. Each is a separate given, so one can be varied alone:
+A strict absence raises the reason `Absent`. A strict null is rejected by the inner decoder, as
+it would be for any other field. A lenient fault is read as `Unset` and reports nothing. Each is
+a separate given, so one can be varied alone:
 
 ```scala
 val strict =
   import optionalityOptions.strictJsonAbsence
   capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
-  // Json.Error.Reason.Absent
 
 val lenient =
   import optionalityOptions.lenientJsonFaults
-  t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age   // Unset
+  t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age
 ```
 
-`Option` fields follow the same three policies, yielding `None`. The direct and staged parsers
-honour them too, with one limit: a lenient fault is tolerated only when the value on the wire is
-of the wrong *kind* — a string where a number was expected — which the parser sees before reading
-it and skips whole. A value of the right kind that fails within it, such as a number too large
-for an `Int`, has already been partly consumed, so it still raises. A declared default of
-`Unset` is indistinguishable from no default, so it does not satisfy a strict absence.
+```scala fuel
+run
+##
+Out.println(strict.inspect)
+Out.println(lenient.inspect)
+```
+
+`Option` fields follow the same three policies, and give `None`. A declared default of `Unset`
+cannot be told apart from no default, so it does not satisfy a strict absence.
+
+The [direct parsers](#skipping-the-tree) honor the policies too, with one limit. They tolerate
+a lenient fault only when the value in the document is of the wrong *kind*, such as a string
+where a number was expected, because the parser sees the kind before reading the value and can
+skip it whole. A value of the right kind which fails part-way, such as a number too large for an
+`Int`, has already been partly consumed, so it still raises.
 
 ### Renaming fields
 
-A field name in Scala need not match the key in JSON. The `@name` annotation gives
-the key to use; `@name[Json]` confines the rename to JSON, where another format might
-want a different one:
+A field's name in Scala need not match its key in JSON. The `@name` annotation gives the key to
+use. `@name[Json]` confines the rename to JSON, where another format may want a different key:
 
 ```scala
 case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+```
 
-Record(t"Ann", 1984).in[Json].show   // t"""{"first_name":"Ann","yob":1984}"""
+```scala fuel
+run
+##
+Out.println(Record(t"Ann", 1984).in[Json].show)
 ```
 
 ### Tagged unions
 
-An enumeration or sealed hierarchy encodes as an object with a discriminator field
-naming the case. Which key holds the discriminator is chosen by importing a strategy
-— `kind` or `type`:
+An enumeration or sealed hierarchy encodes as an object with an extra *discriminator* field,
+which names the case. The key that holds the discriminator is chosen by import, and is `kind`
+here:
 
 ```scala
 import discriminables.jsonByKindDiscriminable
@@ -247,111 +297,135 @@ enum Shape:
   case Circle(radius: Double)
   case Square(side: Double)
 
-(Shape.Circle(1.0): Shape).in[Json].show
-// t"""{"radius":1.0,"kind":"Circle"}"""
+val circle: Shape = Shape.Circle(1.0)
 ```
 
-Decoding reads the discriminator and reconstructs the right case, either as the whole
-enumeration or as a known case:
-
-```scala
-t"""{"radius":1.0,"kind":"Circle"}""".read[Json].as[Shape]   // Shape.Circle(1.0)
+```scala fuel
+run
+##
+Out.println(circle.in[Json].show)
 ```
 
-`@name` renames a case's discriminator value just as it renames a field, so the wire
-form and the Scala name can differ.
+Decoding reads the discriminator and builds the right case:
 
-A discriminator field alongside the case's own fields is only one of the conventions in use, and
-the others are chosen by a `Discriminable` given rather than by writing a codec. A *wrapper*
-encoding puts the whole variant inside a single-key object named for the case, and an
-*envelope* encoding names the tag field and the payload field:
+```scala fuel
+run
+##
+Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
+```
+
+`@name` renames a case's discriminator value just as it renames a field, so the name in the
+document and the name in Scala can differ.
+
+A discriminator beside the case's own fields is only one convention in use. The others are also
+chosen by a `Discriminable` given, not by writing a codec. A *wrapper* puts the whole variant
+inside an object with a single key, named for the case. An *envelope* names one field for the
+tag and another for the payload:
 
 ```scala fuel
 alternative Discriminator field
   code
-      (Shape.Circle(1.0): Shape).in[Json].show
-      // t"""{"radius":1.0,"kind":"Circle"}"""
+      circle.in[Json].show
 alternative Wrapper
   code
       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
 
-      (Shape.Circle(1.0): Shape).in[Json].show
-      // t"""{"Circle":{"radius":1.0}}"""
+      circle.in[Json].show
 alternative Envelope
   code
       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
 
-      (Shape.Circle(1.0): Shape).in[Json].show
-      // t"""{"type":"Circle","value":{"radius":1.0}}"""
+      circle.in[Json].show
 ##
 ```
 
-Each works both through the tree and through [direct parsing](#case-classes-and-enumerations),
-and direct parsing does not require the tag to come first: a document whose `type` field trails
-its `value` reads just as one whose tag leads. A wrapper object with more than one key is not a
-valid variant, and raises `Json.Error.Reason.Absent` rather than guessing which key was meant.
+```tabular
+column  Convention
+column  `Shape.Circle(1.0)` is written as
+row  Discriminator field  `{"radius":1.0,"kind":"Circle"}`
+row  Wrapper  `{"Circle":{"radius":1.0}}`
+row  Envelope  `{"type":"Circle","value":{"radius":1.0}}`
+```
 
-Anything more exotic is a `Discriminable` written by hand — three methods saying how to attach a
-tag, how to read one, and how to reach the variant — and codecs derived from it work unchanged.
+Each convention works through the tree and through the [direct parsers](#skipping-the-tree). A
+direct parser does not need the tag to come first: a document whose `type` field follows its
+`value` reads just as well. A wrapper object with more than one key is not a valid variant, and
+raises `Json.Error.Reason.Absent` instead of guessing which key was meant.
+
+Anything more unusual is a `Discriminable` written by hand. It has three methods, which say how
+to attach a tag, how to read one, and how to reach the variant. Codecs derived from it work
+unchanged.
 
 ### Building JSON
 
-Beyond encoding a typed value, a `Json` value can be assembled directly. `Json.make`
-builds an object from named arguments, each itself a `Json`:
+A `Json` value can also be assembled directly, without a case class. `Json.make` builds an
+object from named arguments, each of them a `Json`:
 
-```scala
-Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show
-// t"""{"a":1,"b":"two","c":true}"""
+```scala fuel
+run
+##
+Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
 ```
 
-The `j"…"` interpolator writes JSON literally, and checks the syntax as the code
-compiles. Holes substitute encoded values, splice a collection into an array with
-`*`, or merge a map of fields into an object:
+The `j"…"` [interpolator] writes JSON literally, and its syntax is checked at [compiletime]. A
+substitution in a value's place encodes that value. One followed by `*` splices a collection
+into an array, and one in a field's place merges a map of fields into an object:
 
 ```scala
 val x = 42
-j"""{"a": $x}"""        // an object with a from a value
-
 val xs = List(2, 3, 4)
-j"""[1, $xs*]"""        // [1, 2, 3, 4]
-
 val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
-j"""{"a": 1, $rest}"""  // {"a": 1, "b": 2, "c": 3}
 ```
 
-A malformed literal is rejected where it is written, with the error focused on the
-offending character rather than the whole expression:
+```scala fuel
+run
+##
+Out.println(j"""{"a": $x}""".show)
+Out.println(j"""[1, $xs*]""".show)
+Out.println(j"""{"a": 1, $rest}""".show)
+```
 
-```scala
-j""" {"a": 1, } """   // does not compile: a trailing comma
+A malformed literal is rejected where it is written. The error points at the character at
+fault, not at the whole expression:
+
+```scala fuel
+compile
+errors show
+##
+j""" {"a": 1, } """
 ```
 
 ### Matching JSON
 
-The same `j"…"` interpolator serves as a pattern. In a `match` it deconstructs a
-document, binding holes to the pieces it captures, and declining when the shape does
-not fit:
+The same `j"…"` interpolator is a pattern. In a `match` it takes a document apart, binding each
+substitution to the piece found in its place. A document of another shape falls through to the
+next case:
 
 ```scala
-t"""{"a": 42}""".read[Json] match
+val answer = t"""{"a": 42}""".read[Json] match
   case j"""{"a": $a}""" => a.as[Int]
   case _                => -1
-// 42
 ```
 
-Array patterns match by length, and a trailing `*` captures the rest:
+An array pattern matches by length, and a trailing `*` captures the remaining elements:
 
 ```scala
-t"""[1, 2, 3, 4]""".read[Json] match
+val split = t"""[1, 2, 3, 4]""".read[Json] match
   case j"""[$head, $tail*]""" => (head.as[Int], tail.as[List[Int]])
   case _                      => (0, Nil)
-// (1, List(2, 3, 4))
 ```
 
-Each kind of hole has a meaning in both roles:
+```scala fuel
+run
+##
+Out.println(answer.show)
+Out.println(split.inspect)
+```
+
+Each kind of substitution has a meaning as an expression and as a pattern:
 
 ```tabular
-column  Hole
+column  Substitution
 column  In an expression
 column  In a pattern
 row  `$x` in a value's place  the value, encoded as `Json`  binds the value there, as `Json`
@@ -360,42 +434,72 @@ row  `$rest` in a field's place  merges a `Map[Text, Json]` of fields  binds the
 row  `$x` inside a string  the value, encoded as `Text`  not supported
 ```
 
+[Interpolation](interpolation.md) describes how interpolators like `j"…"` are built.
+
 ### Navigating
 
-A field or an array element is reached by applying the `Json` value to a key or an
-index, and the steps chain:
+Applying a `Json` value to a key reaches a field, and applying it to an index reaches an array
+element. The steps chain:
 
 ```scala
 val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
-data(t"a")(t"b")(t"c").as[Int]   // 42
-
-t"[10, 20, 30]".read[Json](1).as[Int]   // 20
 ```
 
-A `Json` value is dynamically typed, and the compiler knows nothing about what fields it has —
-indeed nothing about whether it is an object, an array or a scalar at all. Often the programmer
-knows more, or is content to proceed as though they did, and the syntax should be allowed to say
-so. But it is a real loss of checking, so it is not on by default: with dynamic access enabled, a
-field reads as though it were a member, and a nonexistent one is discovered at runtime rather than
-where it is written.
+```scala fuel
+run
+##
+Out.println(data(t"a")(t"b")(t"c").as[Int].show)
+Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
+```
+
+Reaching for a field that is not there is not itself an error. It gives an absent `Json`, which
+decodes to `Unset` when an optional type is asked for, and raises only when a value is required:
+
+```scala
+val person = t"""{"name": "Bob"}""".read[Json]
+```
+
+```scala fuel
+run
+##
+Out.println(person(t"missing").as[Optional[Int]].inspect)
+```
+
+```scala fuel
+run
+errors show
+##
+person(t"missing").as[Int]
+```
+
+#### Fields as members
+
+The compiler knows nothing about which fields a `Json` value has, or even whether it is an
+object. Often the programmer knows more, and would like to write `person.name`. That syntax
+gives up checking, since a misspelled field is found only at [runtime], so it is not available
+by default:
+
+```scala fuel
+compile
+errors show
+##
+person.name
+```
+
+Importing `dynamicAccess.dynamicJson` permits it for the rest of the scope:
 
 ```scala
 import dynamicAccess.dynamicJson
-
-val person = t"""{"name": "Bob"}""".read[Json]
-person.name.as[Text]   // t"Bob"
 ```
 
-Reaching for an absent field is not an error; it yields an absent `Json` that decodes
-to `Unset`:
-
-```scala
-person(t"missing").as[Optional[Int]]   // Unset
+```scala fuel
+run
+##
+Out.println(person.name.as[Text])
 ```
 
-The import grants the permission, `Json is Dynamical`, to the rest of its scope. The same
-permission can be confined to a single block with `dynamically`, which names the formats it
-covers:
+The import grants a permission, `Json is Dynamical`. The same permission can be confined to one
+block with `dynamically`, which names the formats it covers:
 
 ```tabular
 column  Form
@@ -405,58 +509,74 @@ row  `dynamically[Json | Yaml]`  each format in the union
 row  `dynamically`  every format with dynamic access
 ```
 
-For JSON alone:
-
 ```scala
 val config = t"""{"server": {"port": 8080}}""".read[Json]
 
-dynamically[Json]:
-  config.server.port.as[Int]   // 8080
+val port = dynamically[Json]:
+  config.server.port.as[Int]
 ```
+
+A document whose shape is known in advance is better [validated](#validation) once. Its fields
+are then members which the compiler does check.
 
 ### Updating
 
-A field assigned through dynamic access produces a new document — JSON values are
-immutable, so an update returns a copy. Assigning a value adds or replaces a field,
-and assigning `Unset` removes one:
+Assigning to a field through dynamic access gives a new document. The original is unchanged,
+since a `Json` value is immutable. Assigning a value adds or replaces a field, and assigning
+`Unset` removes one:
 
 ```scala
-import dynamicAccess.dynamicJson
-
 val base = t"""{"x": 1}""".read[Json]
-(base.y = 2).show        // t"""{"x":1,"y":2}"""
-(base.x = Unset).show    // t"""{}"""
 ```
 
-Deeper updates are written with a lens, which reaches through several levels and may
-carry optics such as `Each` or `Filter` to touch many elements at once:
+```scala fuel
+run
+##
+Out.println((base.y = 2).show)
+Out.println((base.x = Unset).show)
+Out.println(base.show)
+```
+
+A deeper update is written with a [lens](optics.md). A lens reaches through several levels, and
+may carry optics such as `Each` or `Filter` to change many elements at once:
 
 ```scala
-import dynamicAccess.dynamicJson, conversions.encodableToJson
-import optics.jsonLens
-
 case class Role(name: Text)
 case class Entity(name: Text, age: Int, roles: List[Role])
 case class Org(name: Text, leader: Entity)
 
 val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).in[Json]
-org.lens(_.leader.age = 41.in[Json]).as[Org]
-// the leader's age updated to 41
+
+val older =
+  import conversions.encodableToJson
+  import optics.jsonLens
+
+  org.lens(_.leader.age = 41.in[Json])
+```
+
+```scala fuel
+run
+##
+Out.println(older.show)
 ```
 
 ### Formatting
 
-The output format is a given in scope. Compact formatting omits all whitespace;
-indented formatting adds newlines and indentation for reading:
+The output format is a given in scope. Compact formatting leaves out all whitespace, and
+indented formatting adds newlines and indentation for a human reader:
 
-```scala
-import formatting.indentedJsonFormatting
-(List(1, 2, 3): List[Int]).in[Json].show   // pretty-printed across several lines
+```scala fuel
+run
+##
+locally:
+  import formatting.indentedJsonFormatting
+
+  Out.println(crew.in[Json].show)
 ```
 
-`show` renders the whole document into one `Text`, but a large document need not be held in
-memory before it is sent. The forms of output differ in where the serializing happens and in what
-they hand out:
+`show` renders the whole document into one `Text`. A large document need not be held in memory
+before it is sent, and the other forms of output deliver it a block at a time. They differ in
+where the work of serializing happens, and in what they hand out:
 
 ```tabular
 column  Form
@@ -470,9 +590,9 @@ row  `Json.emit(json)`  a fiber  an iterator of `Text`
 row  `Json` as `Streamable` by `Text`  a fiber  a stream of `Text`
 ```
 
-The push form of `Json.emit` hands each block over as it fills, the UTF-8 bytes of `emit[Data]`
-encoded straight from the serializer, which is the shape for writing to a file, a socket or an
-`OutputStream`:
+The push form of `Json.emit` hands each block to a function as it fills. With `emit[Data]` the
+blocks are UTF-8 bytes, encoded straight from the serializer, which suits writing to a file, a
+[socket](sockets.md) or an `OutputStream`:
 
 ```scala fuel
 typecheck
@@ -482,10 +602,10 @@ val json = Person(t"Bob", 40).in[Json]
 Json.emit[Data](json, chunk => socket.write(chunk))
 ```
 
-Where even the copy into each `Data` chunk is unwanted, `Json.lend` lends each filled block
-instead: the consumer sees the writer's own buffer as a `Region`, with a branded interval that
-proves every index in range, valid only for the duration of the call — the same discipline as a
-stream's `lend`:
+`Json.lend` avoids even the copy into each `Data` block. It lends the consumer the writer's own
+buffer as a `Region`, together with an interval which proves that every index in it is in range.
+Both are valid only for the duration of the call, the same rule as a
+[stream's](streams.md) `lend`:
 
 ```scala fuel
 typecheck
@@ -494,21 +614,23 @@ Json.lend(json): region =>
   interval => region.visit(interval)(index => sink.put(region(index)))
 ```
 
-Where a consumer pulls instead, `Json.emit(json)` serializes on a fiber and hands out the text
-through an iterator, and a `Json` is `Streamable` by `Text` on the same terms, under a
-`supervise` block:
+Where the consumer pulls instead, `Json.emit(json)` serializes on a fiber and hands out the text
+through an iterator. A `Json` is `Streamable` by `Text` on the same terms. Both need a
+[`supervise`](concurrency.md) block:
 
 ```scala fuel
 typecheck
 ##
+import threads.virtualThreads
+import probates.cancelProbate
+
 supervise:
   Json.emit(json).each(chunk => out.write(chunk))
 ```
 
 ### Errors
 
-A conversion that cannot be made raises a `Json.Error` whose reason says what went
-wrong:
+A conversion that cannot be made raises a `Json.Error`, whose `reason` says what went wrong:
 
 ```tabular
 column  Reason
@@ -518,25 +640,30 @@ row  `Absent`  a required field that is absent
 row  `OutOfRange`  a number outside the target's range
 ```
 
-The reason can be inspected:
+`capture` runs an expression that is expected to fail, and gives its error, so that the reason
+can be inspected:
 
-```scala
-capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason
-// Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number)
-
-capture[Json.Error](t"""{}""".read[Json].as[Person]).reason
-// Json.Error.Reason.Absent
+```scala fuel
+run
+##
+Out.println(capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason.inspect)
+Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
 ```
 
-When decoding runs under an accruing error strategy, the errors are collected rather
-than thrown at the first, and each is tagged with a [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer)
-to the field that failed — `#/age` and `#/email` for two missing fields — so a whole
-document's problems can be reported at once.
+Throwing at the first error is one [strategy] among several. A method that should not throw
+declares `raises Json.Error` instead, and its caller chooses what a failure does;
+[Errors](errors.md) covers the choices.
 
-The pointer comes from a *focus* the decoder maintains as it descends, and which an accruing
-strategy reads through `prior`. Decoding a contact whose person and address are each wrong in
-two places yields four errors, pointed at `#/person/age`, `#/person/email` and so on — the whole
-tree's faults in one pass, each locatable, rather than the first fault and nothing else:
+#### Collecting every error
+
+Under a strategy that [accumulates failures](errors.md#accumulating-failures), decoding does
+not stop at the first error. Every error is collected, and each is tagged with a
+[JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) to the field that failed, so all of a
+document's problems are reported at once.
+
+The pointer comes from a *focus*, which the decoder maintains as it descends, and which the
+strategy reads through `prior`. This contact has a person and an address which are each wrong in
+two places:
 
 ```scala
 import dysasymptotics.linearSize
@@ -550,36 +677,50 @@ extends Error(m"${items.size} problems"):
 
 val damaged = t"""{"person": {"name": 1}, "address": {"street": 2}}""".read[Json]
 
-Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
-  ( Issues(),
-    { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
-. protect(damaged.as[Contact])
-. items.map(_(0))   // List(t"#/person/name", t"#/person/age", t"#/address/street", t"#/address/postcode")
+val problems =
+  Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
+    ( Issues(),
+      { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+  . protect(damaged.as[Contact])
+  . items
 ```
 
-Missing and wrong-typed fields accrue together, and a field that is absent contributes exactly
-one error rather than one per attempt to read it.
+Decoding yields four errors, one for each fault:
 
-### Inspecting the structure
-
-Two equal documents compare equal regardless of the order of their object keys, and a
-whole number equals the same value written with a decimal point:
-
-```scala
-t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]   // true
-t"5".read[Json] == t"5.0".read[Json]                                       // true
+```scala fuel
+run
+##
+problems.each: (pointer, error) =>
+  Out.println(t"$pointer: ${error.reason.inspect}")
 ```
 
-When the underlying tree is needed directly, `Json.unseal` exposes it, with
-predicates for each kind and a `primitive` naming it:
+Missing fields and fields of the wrong type accumulate together. An absent field contributes
+exactly one error, however many times the decoder tries to read it.
 
-```scala
-Json.unseal(t"42".read[Json]).isLong          // true
-Json.unseal(t""""x"""".read[Json]).primitive  // Json.Primitive.String
+### Equality and structure
+
+Two documents are equal when they mean the same thing. The order of an object's keys does not
+matter, and a whole number equals the same value written with a decimal point:
+
+```scala fuel
+run
+##
+Out.println((t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]).inspect)
+Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
 ```
 
-The predicates are finer than the primitives, so code that cares about the difference between
-numeric representations can ask, and code that does not need not:
+`Json.unseal` exposes the underlying tree where it is needed directly. The tree has a predicate
+for each kind of value, and a `primitive` which names the kind:
+
+```scala fuel
+run
+##
+Out.println(Json.unseal(t"42".read[Json]).isLong.inspect)
+Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
+```
+
+The predicates are finer than the primitives. Code which cares how a number is represented can
+ask, and code which does not need not:
 
 ```tabular
 column  Predicate
@@ -597,9 +738,9 @@ row  `isArray`  `Array`  an array
 
 ### Numbers and precision
 
-JSON numbers have no inherent precision limit, and most parsers quietly impose one. The number
-mode in scope decides what happens to a number too long to hold in the parser's fast path — about
-fifteen digits — while everything shorter is decoded identically whatever the mode:
+A JSON number has no limit on its precision, and most parsers quietly impose one. Here the
+*number mode* in scope decides what happens to a number too long for the parser's fast path,
+which holds about fifteen digits. A shorter number is decoded identically in every mode:
 
 ```scala
 import numberModes.fullNumberMode
@@ -609,123 +750,164 @@ import numberModes.fullNumberMode
 column  Mode
 column  With a number too long for the fast path
 row  `fullNumberMode`  keeps every digit as a binary-coded decimal, at the cost of an allocation
-row  `doubleNumberMode`  drops the overflow and computes a `Double` from the leading digits
-row  `bcdNumberMode`  drops the overflow and yields the raw packed accumulator, with no allocation
+row  `doubleNumberMode`  drops the excess digits and computes a `Double` from the leading ones
+row  `bcdNumberMode`  drops the excess digits and yields the raw packed accumulator, with no allocation
 ```
 
-`fullNumberMode` is the default, because losing digits silently is the wrong thing to do by
-default. `doubleNumberMode` matches what Jawn, Circe, Jsoniter and Jackson do, so it is the mode
-to choose for a like-for-like throughput comparison, or where the data is known to be within a
-double's range. The `Long` that `bcdNumberMode` yields carries BCD nibbles rather than the
-number's value, so it is throughput at the price of treating those numbers as opaque.
+`fullNumberMode` is the default, because losing digits silently is the wrong thing to do
+unasked. `doubleNumberMode` does what Jawn, Circe, Jsoniter and Jackson do. It is the mode for
+a like-for-like comparison of speed, or for data known to fit in a `Double`. The `Long` which
+`bcdNumberMode` yields holds binary-coded decimal digits, not the number's value, so it buys
+speed at the price of treating long numbers as opaque. [Numbers](numbers.md) covers the numeric
+types a value can be decoded to.
 
 ### NDJSON
 
-[Newline-delimited JSON](https://en.wikipedia.org/wiki/JSON_streaming) — a stream of
-independent documents, one per line — needs no type of its own. A source is split into
-records at its line boundaries with `delineate`, and each record is read as `Json`:
+[Newline-delimited JSON](https://en.wikipedia.org/wiki/JSON_streaming) is a stream of
+independent documents, one on each line. It needs no type of its own. `delineate` splits a
+[source](streams.md#records) into records at its line boundaries, and each record is read as
+`Json`:
 
 ```scala
 import lineSeparation.adaptiveLinefeedLineSeparation
 
-t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
-// List(1, 2, 3)
+val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
 ```
 
-Because each line is read independently, the values need not share a shape; a
-heterogeneous log reads just as well as a uniform one.
+```scala fuel
+run
+##
+Out.println(numbers.inspect)
+```
+
+Each line is read independently, so the documents need not share a shape. A log of mixed
+records reads as well as a uniform one.
 
 ### JSON Pointers
 
-A [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) names a location
-within a document. The `jp"…"` interpolator writes one and checks it as the code
-compiles, and a pointer can equally be built segment by segment:
+A [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) names a location within a
+document. The `jp"…"` interpolator writes one, and checks it at compiletime. A pointer can also
+be built a segment at a time:
 
-```scala
-jp"#/foo/bar".encode             // t"#/foo/bar"
-JsonPointer()(t"a")(t"b").encode  // t"#/a/b"
+```scala fuel
+run
+##
+Out.println(jp"#/foo/bar".encode)
+Out.println(JsonPointer()(t"a")(t"b").encode)
 ```
 
-The special characters `~` and `/` within a segment are escaped as `~0` and `~1`, and
-a malformed pointer fails to compile, focused on the character at fault:
+Within a segment, the special characters `~` and `/` are escaped as `~0` and `~1`. A malformed
+pointer does not compile, and the error points at the character at fault:
 
-```scala
-jp"#/foo~2bar"   // does not compile: ~2 is not a valid escape
+```scala fuel
+compile
+errors show
+##
+jp"#/foo~2bar"
 ```
 
 ### Source positions
 
-Ordinary parsing keeps no record of where each value sat in the text, since most
-programs do not need it. When they do — to underline the source of an error, for
-instance — bringing `parsing.trackPositions` into scope makes `read` record positions, and
-`locate` returns the line and column of the value a pointer names:
+Ordinary parsing keeps no record of where each value sat in the text, since most programs never
+ask. A program which does ask, perhaps to underline the source of an error, brings
+`parsing.trackPositions` into scope. `read` then records positions, and `locate` gives the line
+and column of the value a pointer names:
 
 ```scala
 import parsing.trackPositions
 
 val tracked = t"{\n  \"a\": 42\n}".read[Json]
-tracked.locate(JsonPointer()(t"a")).let(_.line)   // 2
 ```
 
-A position covers the whole of the value it names, so a negative number's extent includes its
-minus sign, and an object or array is located as the span from its opening brace to its closing
-one. `locateKey` gives the position of the *key* matching the final segment rather than its
-value, which is what underlining a misspelled field name needs.
+```scala fuel
+run
+##
+Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
+```
 
-A pointer that does not resolve — a key the document lacks, an index past the end of an array —
-returns `Unset` rather than raising, so probing a document for a position is safe. Under ordinary,
-untracked parsing every `locate` returns `Unset`, which is how a program that does not want the
-cost pays none of it.
+A position covers the whole of the value it names. A negative number's extent includes its
+minus sign, and an object or array runs from its opening bracket to its closing one. `locateKey`
+gives the position of the *key* matching the pointer's last segment, not of its value, which is
+what underlining a misspelled field name needs.
+
+A pointer which does not resolve gives `Unset`, whether it names a key the document lacks or an
+index past the end of an array. Probing a document for a position is therefore always safe.
+Under ordinary parsing, without tracking, every `locate` gives `Unset`, and a program which does
+not want positions pays nothing for them.
 
 ### Schemas
 
-A [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) describes the permitted
-shape of a document. Soundness derives a schema from a Scala type, and a schema value
-renders to a standard JSON Schema document:
+A [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) describes the shape a document is
+allowed to have. A schema is derived from a Scala type, and a schema value renders as a standard
+JSON Schema document:
 
-```scala
-(JsonSchema.Integer(): JsonSchema).in[Json].show   // contains "type":"integer"
+```scala fuel
+run
+##
+Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
 ```
 
-A field can carry a description for the generated schema with the `@memo` annotation,
-and string formats such as `date-time` and `email` are represented by
-`JsonSchema.Format`. The derived schema is what the next two features rest on.
+The `@memo` annotation on a field gives it a description in the generated schema. String
+formats such as `date-time` and `email` are represented by `JsonSchema.Format`. The derived
+schema is what [validation](#validation) rests on, and [OpenAPI](openapi.md) uses the same
+schemas to describe a service.
 
 ### Validation
 
-A document is checked against the shape a type expects with `verify`. On success it
-returns the same document, now carrying that type, ready to decode or to navigate; on
-failure it raises a `Json.Error`:
+`verify` checks a document against the shape a type expects. On success it gives the same
+document, now carrying that type:
 
 ```scala
 case class Employee(name: Text, age: Int, email: Text)
 
 val alice = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
-alice.verify[Employee].as[Employee]
-// Employee(t"Alice", 30, t"a@b.c")
+val employee = alice.verify[Employee]
 ```
 
-A document that does not conform fails to verify, which `safely` turns into an absent
-result:
+A document which does not conform raises a `Json.Error`:
 
-```scala
-safely(t"""{"name": "Bob"}""".read[Json].verify[Employee]).absent   // true
+```scala fuel
+run
+errors show
+##
+t"""{"name": "Bob"}""".read[Json].verify[Employee]
 ```
 
-The verified document also carries the schema's structure in its type, so its fields
-can be reached with full checking. Reaching a known field, indexing an array, and
-descending into a nested object all type-check; anything the schema does not permit is
-a compile error:
+The verified document carries the schema's structure in its type, so its fields are reached as
+members, with full checking and without the `dynamicAccess.dynamicJson` import:
 
-```scala
-alice.verify[Employee].name.as[Text]   // t"Alice"
-
-alice.verify[Employee].nope            // does not compile: no such field
-alice.verify[Employee].name(0)         // does not compile: name is not an array
-alice.verify[Employee].name.deeper     // does not compile: a scalar has no fields
+```scala fuel
+run
+##
+Out.println(employee.name.as[Text])
+Out.println(employee.as[Employee].inspect)
 ```
 
-Navigation runs to any depth, through nested objects and into arrays, with each step checked:
+Anything the schema does not permit is a compiletime error. That includes a field which does
+not exist, an index into something which is not an array, and a field of a scalar:
+
+```scala fuel
+compile
+errors show
+##
+employee.nope
+```
+
+```scala fuel
+compile
+errors show
+##
+employee.name(0)
+```
+
+```scala fuel
+compile
+errors show
+##
+employee.name.deeper
+```
+
+Navigation runs to any depth, through nested objects and into arrays, and each step is checked:
 
 ```scala
 case class Workplace(city: Text)
@@ -734,64 +916,130 @@ case class Squad(members: List[Person])
 
 val posting = t"""{"title": "Engineer", "workplace": {"city": "Tallinn"}}""".read[Json]
 val squad = t"""{"members": [{"name": "Ada", "age": 36}, {"name": "Bob", "age": 41}]}""".read[Json]
-
-posting.verify[Posting].workplace.city.as[Text]   // t"Tallinn"
-squad.verify[Squad].members(1).name.as[Text]      // t"Bob"
 ```
 
-Verified navigation needs no `dynamicAccess.dynamicJson` import — the schema, not a blanket enabler, is
-what licenses it. Reaching a field of an *unverified* document still requires the enabler, and
-the error says so, so the two kinds of access cannot be confused.
+```scala fuel
+run
+##
+Out.println(posting.verify[Posting].workplace.city.as[Text])
+Out.println(squad.verify[Squad].members(1).name.as[Text])
+```
 
-This closes the usual gap in working with JSON: a path through a document is checked
-against the type it is supposed to have, before the program runs.
+It is the schema which licenses this access, not a blanket permission. Reaching a field of an
+*unverified* document still needs `dynamicJson`, so the two kinds of access cannot be confused.
+A path through a document is thereby checked against the type the document is supposed to have,
+before the program runs.
 
 ### Overriding one field's encoder
 
-A derived encoder uses, for each field, whatever instance is in scope for that field's type — and
-a given in scope changes every field of that type at once, which is rarely what a single
-awkward field calls for. A `Specific` names the path instead, so an override applies along one
-spine and nowhere else:
+A derived encoder uses, for each field, whichever instance is in scope for that field's type.
+A different given in scope would change every field of that type at once, which is rarely what
+one awkward field calls for. A `Specific` names a path instead, and its override applies along
+that path and nowhere else:
 
 ```scala
 case class Staffer(name: Text, age: Int)
 case class Firm(boss: Staffer, deputy: Staffer)
 
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
-
-given (Firm is Specific over Json.Encodable) =
-  specifically:
-    case root.deputy.name() => shout
-
-Firm(Staffer(t"ann", 30), Staffer(t"bob", 40)).in[Json].show
-// t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}"""
 ```
 
-The boss's name is untouched: only the path named is overridden. A path ending at a collection
-takes an encoder for the collection, so re-deriving it against a local given re-encodes its
-elements — the way to change how the members of one list are written without changing that type
-everywhere:
+With the `Specific` given in scope, only the deputy's name is changed:
+
+```scala fuel
+run
+##
+locally:
+  given (Firm is Specific over Json.Encodable) =
+    specifically:
+      case root.deputy.name() => shout
+
+  Out.println(Firm(Staffer(t"ann", 30), Staffer(t"bob", 40)).in[Json].show)
+```
+
+A path which ends at a collection takes an encoder for the collection. Deriving that encoder
+again, with a local given in scope, changes how the members of that one list are written without
+changing their type's encoding everywhere:
 
 ```scala
 val nameOnly: Person is Json.Encodable =
   Json.Encodable(() => Morphology.Str): person => Json(person.name)
-
-given (Crew is Specific over Json.Encodable) =
-  specifically:
-    case root.rowers() =>
-      given Person is Json.Encodable = nameOnly
-      summon[List[Person] is Json.Encodable]
 ```
+
+```scala fuel
+run
+##
+locally:
+  given (Crew is Specific over Json.Encodable) =
+    specifically:
+      case root.rowers() =>
+        given Person is Json.Encodable = nameOnly
+        summon[List[Person] is Json.Encodable]
+
+  Out.println(crew.in[Json].show)
+```
+
+### Skipping the tree
+
+`read[Person in Json]` ordinarily parses the text into a `Json` tree, and then decodes the tree.
+A type with a `Json.Parsable` instance is instead read *directly* from the source. Its parser is
+composed for that type at compiletime, and takes the fields from the text as they arrive, so no
+tree is built. The saving is the whole intermediate structure: its allocation, its boxing and a
+second traversal.
+
+```scala
+given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
+```
+
+In ordinary code the instance belongs in the type's companion object, where it is found without
+an import.
+
+Writing has a matching instance, `Json.Printable`. A type which has one is written directly,
+with no tree, wherever the formatting is compact. Indented formatting still renders through the
+tree. Both routes write the same text:
+
+```scala fuel
+alternative Tree
+  code
+      Person(t"Bob", 40).in[Text over Json]
+alternative Direct
+  code
+      val direct =
+        given Person is Json.Printable = Json.Direct.derived[Person].printable
+        Person(t"Bob", 40).in[Text over Json]
+##
+```
+
+`Json.Printable.emit` writes the text a block at a time, handing each block to a function as it
+fills.
+
+A record can generate both instances at once, into its companion, with `derives Json.Direct`.
+A single import then selects the route for every record in scope:
+
+```tabular
+column  Import
+column  For a record
+column  For any other type
+row  `codecs.direct`  a generated parser and printer  its own direct instance, else the tree
+row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs, even over a direct instance
+row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
+```
+
+Under `codecs.strict` the error is reported wherever `read[Foo in Json]` or `in[Text over Json]`
+would otherwise fall back to the tree. With none of the three imported, a type takes the direct
+route exactly when it has a direct instance of its own. The modes are alternatives, so import
+one at a time.
+
+The tree remains the right route for a document whose shape is not known in advance, and
+wherever the tree itself is what is wanted.
 
 ### Typed records from a schema
 
-Where a schema is given as a JSON Schema document rather than a Scala type, a
-`Json.Provider` reads it at compiletime and produces typed records from matching
-JSON. A provider object — here `Catalogue` — holds the schema, and its `record`
-method turns a `Json` value into a typed record. Each field reads at the type the
-schema declares — a string as `Text`, a number as `Double`, a `format: "email"` field
-as an email address, a `pattern` field as a checked `Text` — and a field the schema does
-not describe is a compile error:
+Sometimes the schema arrives as a JSON Schema document, not as a Scala type. A `Json.Provider`
+reads such a schema at compiletime, and produces typed records from JSON which matches it. A
+provider object, here `Catalogue`, holds the schema, and its `record` method turns a `Json`
+value into a record. Each field of the record has the type the schema declares, and a field the
+schema does not describe is a compiletime error:
 
 ```scala fuel
 typecheck
@@ -816,14 +1064,14 @@ object Catalogue extends Json.Provider(t"""{
 val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 
 val record = Catalogue.record(input)
-record.name                       // t"Bicycle", a Text per the schema
-record.children.head.let(_.weight)   // 9.5, a Double per the schema
+val name: Text = record.name
+val weight: Optional[Double] = record.children.head.let(_.weight)
 ```
 
-The provider takes its schema as anything readable as JSON, so a schema kept as a classpath
-resource is bound directly, `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`
-(with a `Classloader` in scope, such as `classloaders.threadContextClassloader`), and read as
-the code compiles.
+The provider takes its schema as anything readable as JSON. A schema kept as a
+[classpath](classpath.md) resource is bound directly, as
+`object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`, with a `Classloader` such
+as `classloaders.threadContextClassloader` in scope, and is read as the code compiles.
 
 Each construct in the schema has a reading in Scala:
 
@@ -847,13 +1095,13 @@ row  a property admitting several types  the union of their readings, chosen by 
 ```
 
 A `$ref` may take any JSON pointer, `#/definitions/…` and `#/$defs/…` alike. A union arises
-from `anyOf`/`oneOf` alternatives and from a `type` naming several, so `"exec": string | object`
-reads as `Text | Record { … }` and `"ignore": string | array` as `Text | List[Text]`, and each
-alternative keeps its own checks. A dictionary nests freely: a dictionary of lists, a list of
-dictionaries, an array of arrays. A property named with a hyphen or a keyword is reached
-through a backticked name, `record.\`content-type\``.
+from the alternatives of an `anyOf` or `oneOf`, and from a `type` which names several. So
+`"exec": string | object` reads as `Text | Record { … }`, and `"ignore": string | array` as
+`Text | List[Text]`, and each alternative keeps its own checks. A dictionary nests freely: a
+dictionary of lists, a list of dictionaries, an array of arrays. A property named with a hyphen
+or a keyword is reached through a backticked name, such as ``record.`content-type` ``.
 
-The schema's constraints are checked as the field is read, as is the value's JSON type:
+The schema's constraints are checked as each field is read, as is the value's JSON type:
 
 ```tabular
 column  Applies to
@@ -862,25 +1110,33 @@ row  a string  `enum` (or `const`), `pattern`, `minLength`, `maxLength`
 row  a number  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
 ```
 
-The exclusive bounds are accepted in draft 4's boolean form or the later numeric one. A failed
-check raises a `Json.Provider.Error`, and every error is raised through the `Tactic` of the code
-reading the field, so `validate`, with a `venture` per field, collects every problem in a
-document.
+The exclusive bounds are accepted in draft 4's boolean form and in the later numeric form. A
+failed check raises a `Json.Provider.Error`. Every error is raised through the [tactic] of the
+code which reads the field, so `validate`, with a `venture` for each field,
+[collects every problem](errors.md#ventures-and-guards) in a document.
 
-What remains raw `Json`, to be read by hand: alternatives the value's kind cannot tell apart
-(two object shapes in a `oneOf`, or an alternative typed as anything), a `not` or `if`, an
-object with neither `properties` nor a value schema, an array with no `items` schema or a
-tuple-form `items` list, `patternProperties` of differing types, a reference to another
-document, and a recursive reference at the point of recursion — a record type cannot contain
-itself. A schema whose root is not an object with properties — an array, a bare string, a
-reference to another document — is a compile error; where the root offers alternatives of
-which one is such an object, the provider reads that object form. A property whose name is a
-method of every JVM object (`notify`, `wait`, `toString`, `hashCode`, …) cannot be selected by
-name and is read through `record.selectDynamic("notify")`, whose result is the field's reading:
-cast it to `Record.Field[T, Json.Provider.Error]`, and it is applied to the `Tactic` in scope.
+Some constructs cannot be given a type, and remain raw `Json` to be read by hand:
 
-A format naming a network or identity type reads as whichever type represents that domain at
-the call site, chosen by importing its interface:
+- alternatives which the kind of value cannot tell apart, such as two object shapes in a
+  `oneOf`, or an alternative typed as anything;
+- a `not` or an `if`;
+- an object with neither `properties` nor a value schema;
+- an array with no `items` schema, or with a tuple-form `items` list;
+- `patternProperties` of differing types;
+- a reference to another document;
+- a recursive reference, at the point of recursion, since a record type cannot contain itself.
+
+The schema's root must be an object with properties. A root which is an array, a bare string or
+a reference to another document is a compiletime error. Where the root offers alternatives, and
+one of them is such an object, the provider reads that one.
+
+A property whose name is a method of every JVM object, such as `notify`, `wait`, `toString` or
+`hashCode`, cannot be selected by name. It is read through `record.selectDynamic("notify")`,
+whose result is the field's reading: cast it to `Record.Field[T, Json.Provider.Error]`, and it
+is applied to the `Tactic` in scope.
+
+A format which names a network or identity type reads as whichever type represents that domain
+where the record is used, chosen by importing its interface:
 
 ```tabular
 column  Format
@@ -895,31 +1151,63 @@ row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
 ```
 
 So with `emailAddressInterfaces.soundnessEmailAddress` imported, `record.email` is an
-`EmailAddress`.
+`EmailAddress`. [Network addresses](network-addresses.md) and [UUIDs](uuid.md) describe these
+types.
 
-A provider can equally produce a named tuple, `(name: Text, children: List[(weight:
-Double)])`, whose elements are all read when it is built, by declaring a `tuple` method
-beside `record`; the [records](records.md) tutorial describes both forms and how they
-differ.
+A provider can equally produce a named tuple, `(name: Text, children: List[(weight: Double)])`,
+whose elements are all read when it is built, by declaring a `tuple` method beside `record`.
+[Records](records.md) describes both forms and how they differ.
 
 ### Dates and times
 
-Importing the time integration teaches Soundness to encode and decode the temporal
-types of its date-and-time library. An `Instant` and a `Duration` travel as a whole
-number of milliseconds:
+The temporal types of [Time](time.md) are not encoded in JSON until an import says how. An
+`Instant` and a `Duration` each travel as a whole number of milliseconds:
 
 ```scala
 import chronometries.unixChronometry
 import encodables.instantJsonEncodable
 import decodables.durationJsonDecodable
-
-Instant(1700000000000L).in[Json].show                       // t"1700000000000"
-t"5000".read[Json].as[Duration].value                   // 5.0
 ```
+
+```scala fuel
+run
+##
+Out.println(Instant(1700000000000L).in[Json].show)
+Out.println(t"5000".read[Json].as[Duration].value.inspect)
+```
+
+`encodables` and `decodables` each have an instance for both types, and `parsables` has the
+instances the [direct parsers](#skipping-the-tree) use.
 
 ### JSON over HTTP
 
-The HTTP integration makes a `Json` value a request and a response body, served as
-`application/json`. A `Json` can be posted to a URL and a response parsed back, so a
-JSON API is consumed and offered without any glue between the JSON and HTTP layers —
-the encoders and decoders already described carry the values across.
+A `Json` value is a request body and a response body, sent as `application/json`. The
+[HTTP client](http-client.md#posting-a-body) posts one once `postables.jsonPostable` is
+imported, and the response's text is read back as `Json`:
+
+```scala fuel
+typecheck
+##
+import charsets.utf8Charset
+import httpBackends.javaNetHttp
+import internetAccess.online
+import logging.silentLogging
+import postables.jsonPostable
+
+val reply: Json =
+  url"https://example.com/people".submit(Http.Post)(Person(t"Bob", 40).in[Json]).receive[Text].read[Json]
+```
+
+With `servables.jsonServable` imported, an [HTTP server](http-server.md#responses) answers a
+request with a `Json` value in the same way. No glue is needed between the two layers: the
+encoders and decoders described above carry the values across.
+
+### Related
+
+- [YAML](yaml.md), [XML](xml.md), [CBOR](cbor.md), [TEL](tel.md) and [CSV](csv.md) use the same
+  `read`, `as` and `in` vocabulary, so a case class which works with one works with the others.
+- [Derivation](derivation.md) explains how the codecs for a case class are generated.
+- [Decoding](decoding.md) covers reading a single text value as a type.
+- [Errors](errors.md) covers the strategies that decide what a `Json.Error` does.
+- [Optics](optics.md) covers the lenses used for deep updates.
+- [Records](records.md) covers the typed records a schema provides.

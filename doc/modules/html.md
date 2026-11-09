@@ -2,38 +2,40 @@
 
 ### About
 
-Soundness constructs, parses, transforms, and emits [HTML](https://en.wikipedia.org/wiki/HTML)
-through a representation that the compiler understands. An element is built by
-applying a tag to its attributes and children; the construction is checked against
-the HTML specification as the code compiles, so a `<br>` given children, or an `<li>`
-outside a list, is a compile error rather than malformed output.
+[HTML](https://en.wikipedia.org/wiki/HTML) is constructed, parsed, transformed and written
+out through a representation which the compiler understands. An element is built by applying
+a tag to its attributes and children. The construction is checked against the HTML
+specification at [compiletime], so a `<br>` which is given children, or an `<li>` outside a
+list, is a compile error, not malformed output.
 
-The same representation reads HTML back from text, files, or a URL, matches it with
-patterns, and serializes it — directly or as a stream. Above the level of individual
-tags, whole pages can be assembled from reusable parts: a masthead, a hero, a set of
-panels, each contributing its own markup, styles, and document metadata.
+The same representation reads HTML back from text, from files, or from a URL, matches it
+with patterns, and writes it out, directly or as a stream. Above the level of single tags,
+whole pages are assembled from reusable parts: a masthead, a hero banner and a set of panels,
+each of which contributes its own markup, styles and metadata.
 
 ### On HTML
 
-HTML is a tree of nodes — elements, text, comments — governed by a specification that
-says which elements may contain which others, which attributes each element accepts,
-and how text inside each is treated. Most libraries hold that tree loosely: any
-element may be nested in any other, attributes are arbitrary strings, and a document
-that violates the specification is discovered, if at all, only when a browser renders
-it wrongly.
+HTML is a tree of nodes, which are elements, text and comments. It is governed by a
+specification, which says which elements may contain which others, which attributes each
+element accepts, and how the text inside each is treated. Most libraries hold that tree
+loosely. Any element may be nested in any other, and attributes are arbitrary strings. A
+document which violates the specification is discovered only when a browser displays it
+wrongly, if then.
 
-Soundness encodes the specification in the types, so an invalid document becomes an
-[impossible state](../philosophy/impossible-states.md) rather than something to validate
+Here the specification is encoded in the types, so an invalid document becomes an
+[impossible state](../philosophy/impossible-states.md), not something to validate
 afterwards. Each tag is a value whose type knows its name, what it may contain, and what
 attributes it admits, and the rules of the specification are enforced where the markup is
-written. The vocabulary, the
-containment rules, and the parsing and emitting behavior all come from a contextual
-description of the specification — currently the
-[WHATWG HTML Living Standard](https://html.spec.whatwg.org/), what most people mean by
-"HTML" today — which other specifications could replace.
+written.
 
-Everything comes from the `soundness` package, together with a choice of
-specification and the tag vocabulary it defines:
+The vocabulary, the rules of containment, and the behavior of parsing and writing all come
+from a contextual description of the specification. That is currently the
+[WHATWG HTML Living Standard](https://html.spec.whatwg.org/), which is what most people mean
+by "HTML" today, and which other specifications could replace.
+
+Everything comes from the `soundness` package, together with a choice of specification, and
+the vocabulary of tags which it defines. The last import lets the samples print their
+results:
 
 ```scala
 import soundness.*
@@ -41,6 +43,7 @@ import htmlDoms.whatwg
 import htmlDoms.whatwg.*
 import strategies.throwUnsafely
 import attributives.textAttributive
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 An HTML value has the general type `Html`, and its kinds of node have types in the `Html`
@@ -56,70 +59,110 @@ row  `Html.Doctype`  a doctype
 row  `Html.Fragment`  a sequence of several nodes
 ```
 
-Every node is immutable, so transforming one yields a new value rather than altering the old.
+Every node is [immutable], so transforming one gives a new value, and leaves the old one as
+it was.
 
 ### Constructing elements
 
-A builder object exists for each of the roughly 110 tag names in the specification.
-Applying attributes to one as named arguments sets those attributes, and applying
-`Html` values — or values convertible to HTML, such as `Text` — as further arguments
-adds children:
+A builder object exists for each of the roughly 110 tag names in the specification. Applying
+one to named arguments sets those attributes. Applying it to `Html` values, or to values
+which convert to HTML, such as `Text`, adds children:
 
-```scala
-Br                                  // <br>
-Img(src = t"image.jpg")             // <img src="image.jpg">
-Div(Hr, P("Hello world"))           // <div><hr><p>Hello world</p></div>
-Textarea(name = t"details", rows = 5)("Details go here")
-// <textarea name="details" rows="5">Details go here</textarea>
+```scala fuel
+run
+##
+Out.println(Br.show)
+Out.println(Img(src = t"image.jpg").show)
+Out.println(Div(Hr, P("Hello world")).show)
+Out.println(Textarea(name = t"details", rows = 5)("Details go here").show)
 ```
 
-Attributes and children form separate argument groups. Either may be omitted, neither
+Attributes and children form separate groups of arguments. Either may be omitted, neither
 may appear more than once, and the attributes must come before the children.
 
 ### Compiletime checking
 
-The construction is typechecked against the specification, and a construction that
-does not conform is usually a compile error:
+The construction is typechecked against the specification, and a construction which does
+not conform is usually a compile error. A `<br>` takes no children:
 
-```scala
-Br(Hr)                // does not compile: <br> takes no children
-P(Li)                 // does not compile: <li> belongs only in <ol> or <ul>
-Ul("hello")           // does not compile: <ul> may not contain text directly
+```scala fuel
+compile
+errors show
+##
+Br(Hr)
 ```
 
-What an element may hold and which attributes it accepts follow from the static type
-of its tag. Not every rule of the specification can be captured this way — some are stated in
-terms of more than a simple nesting relationship — and where a rule cannot be encoded, the
-checking is *more permissive* rather than more restrictive. So a construction that compiles may in
-rare cases still be non-conforming, but a construction the specification allows is never
-rejected.
+An `<li>` belongs only in an `<ol>` or a `<ul>`:
+
+```scala fuel
+compile
+errors show
+##
+P(Li)
+```
+
+And a `<ul>` may not contain text directly:
+
+```scala fuel
+compile
+errors show
+##
+Ul("hello")
+```
+
+What an element may hold, and which attributes it accepts, follow from the static type of
+its tag. Not every rule of the specification can be captured in that way, since some are
+stated in terms of more than a simple relationship of nesting. Where a rule cannot be
+encoded, the checking is *more permissive*, not more restrictive. A construction which
+compiles may therefore, in rare cases, still not conform. But a construction which the
+specification allows is never rejected.
 
 ### Writing HTML literally
 
-Markup known as the code is written is better written as itself. The `h"…"`
-interpolator parses HTML at compiletime, reports any error where it is written, and
-instantiates the nodes directly at runtime, so there is no parsing cost and no loss of
+Markup which is known when the code is written is better written as itself. The `h"…"`
+[interpolator] parses HTML at compiletime, and reports any error where it is written. It
+builds the nodes directly at [runtime], so there is no cost of parsing, and no loss of
 checking:
 
 ```scala
-h"<ol><li>Alpha</li><li>Beta</li><li>Gamma</li></ol>"
+val list = h"<ol><li>Alpha</li><li>Beta</li><li>Gamma</li></ol>"
 ```
 
-Standard parsing rules apply inside the literal, so the optional closing tags the
-specification allows may be left out — `h"<ol><li>Alpha<li>Beta<li>Gamma</ol>"` is the
-same value. Substitutions are allowed wherever they fit the surrounding markup, and
-each is checked in its position:
+The standard rules of parsing apply inside the literal, so the closing tags which the
+specification makes optional may be left out, and the result is the same value:
+
+```scala fuel
+run
+##
+Out.println((h"<ol><li>Alpha<li>Beta<li>Gamma</ol>" == list).inspect)
+```
+
+Markup which the specification does not allow is rejected in a literal too:
+
+```scala fuel
+compile
+errors show
+##
+h"<ul><p>Alpha</p></ul>"
+```
+
+Substitutions are allowed wherever they fit the surrounding markup, and each is checked in
+its position:
 
 ```scala
 val content = t"important"
 val location = url"https://example.com/dog.jpg"
-
-h"<p>$content</p>"          // a body-content substitution
-h"<img src=$location>"      // an attribute-value substitution
-h"<!--$content-->"          // a comment substitution
 ```
 
-Each position asks something different of the value substituted into it:
+```scala fuel
+run
+##
+Out.println(h"<p>$content</p>".show)
+Out.println(h"<img src=$location>".show)
+Out.println(h"<!--$content-->".show)
+```
+
+Each position asks something different of the value which is substituted into it:
 
 ```tabular
 column  Substitution
@@ -129,73 +172,94 @@ row  attribute value  a value the attribute accepts
 row  comment  showable
 ```
 
-`src` takes a URL, for instance, so without a `Text` attributive in scope a `Text` in its place
-would be rejected.
+`src` takes a [URL](network-addresses.md#urls), for instance. Without a `Text` attributive
+in scope, a `Text` in its place would be rejected.
 
 ### Attributes
 
-Attribute values are stored as text but supplied from typed values, because the
-specification gives different attributes different value types — some an integer, some
-a member of an enumerated set. Each attribute name carries a type describing what it
-accepts, so `width`, which takes a positive integer, admits an `Int` and rejects a
-`Double`:
+The values of attributes are stored as text, but are supplied from typed values, because the
+specification gives different attributes different types of value. Some take an integer, and
+some a member of a fixed set. Each attribute name has a type which describes what it
+accepts. `width` takes a positive integer, so it admits an `Int`:
 
 ```scala
 val pixels = 64
-Img(width = pixels)   // <img width="64">
 ```
 
-The set of types accepted out of the box is still incomplete. Until it is filled, the
-simplest course is to make `Text` acceptable for every attribute with one import —
-`attributives.textAttributive`, already in scope above, which is what lets `src = "image.jpg"`
-stand where a URL is expected.
+```scala fuel
+run
+##
+Out.println(Img(width = pixels).show)
+```
 
-The `class` attribute is awkward, because `class` is a Scala keyword. Rather than
-write it in backticks, name the class as a method on the tag:
+It rejects a `Double`:
+
+```scala fuel
+compile
+errors show
+##
+Img(width = 64.5)
+```
+
+The set of types which are accepted without an import is still incomplete. Until it is
+filled, the simplest course is to make `Text` acceptable for every attribute, with one
+import. That is `attributives.textAttributive`, which is already in scope above, and is what
+lets `src = t"image.jpg"` stand where a URL is expected.
+
+The `class` attribute is awkward, because `class` is a keyword in Scala. Instead of writing
+it in backticks, name the class as a method on the tag:
 
 ```scala
 import stylesheets.uncheckedClasses
+```
 
-P.info("body text")   // <p class="info">body text</p>
+```scala fuel
+run
+##
+Out.println(P.info("body text").show)
 ```
 
 `uncheckedClasses` permits any class name. Binding a [stylesheet](css.md) instead makes the
-names it defines the only legitimate ones, so a mistyped class is caught as the code compiles,
-and a name the stylesheet declares as an id renders as one.
+names which it defines the only legitimate ones. A mistyped class is then caught as the code
+compiles, and a name which the stylesheet declares as an id is written as one.
+[Names](names.md#built-in-planes) describes the rules for a class name and an id.
 
 ### Fragments
 
-An `Html` value is either an `Html.Node` — exactly one element, comment, or text — or an
-`Html.Fragment`, an arbitrary sequence of nodes. Because HTML is a text format, insisting
-on exactly one node is usually an artificial constraint, so `Html` admits sequences
-everywhere; the `Html.Node` type marks the few places where a single node is genuinely
-required. Fragments behave intuitively: one is unwrapped when supplied as children,
+An `Html` value is either an `Html.Node`, which is exactly one element, comment or text, or
+an `Html.Fragment`, which is an arbitrary sequence of nodes. HTML is a text format, so
+insisting on exactly one node is usually an artificial constraint, and `Html` admits
+sequences everywhere. The type `Html.Node` marks the few places where a single node really
+is required. Fragments behave intuitively. One is unwrapped when it is supplied as children,
 and a fragment of a single node equals that node.
 
 ### Rendering other types as HTML
 
-The `Renderable` typeclass lets a value of any type stand wherever HTML is expected,
-declaring both how it converts and what HTML it produces. A list of text rendered as
-list items declares itself to produce `"li"` content:
+The `Renderable` [typeclass] lets a value of any type stand wherever HTML is expected. An
+instance declares both how the value converts, and what HTML it produces. A list of text
+which is rendered as list items declares that it produces `"li"` content:
 
 ```scala
-given (List[Text] is Renderable in "li") =
+given listRenderable: (List[Text] is Renderable in "li") =
   list => Html.Fragment(list.map(Li(_))*)
-```
 
-With that in scope a `List[Text]` can be rendered directly, placed inside a `<ul>`, or
-substituted into a list — but not into a `<div>`, which cannot hold list items:
-
-```scala
 val items = List(t"one", t"two", t"three")
-Ul(items)          // a <ul> of three <li> children
-h"<ol>$items</ol>"
 ```
+
+With that in scope, a `List[Text]` can be placed inside a `<ul>`:
+
+```scala fuel
+run
+##
+Out.println(Ul(items).show)
+```
+
+It cannot be placed in a `<div>`, which cannot hold list items.
 
 ### Transforming
 
-Values are combined and amended with operators; the caret in `^+` and `+^` marks which end the
-child joins:
+Values are combined and amended with operators. The caret in `^+` and `+^` marks the end at
+which the child joins:
 
 ```tabular
 column  Operation
@@ -212,74 +276,98 @@ Here an attribute is added by assignment:
 ```scala
 val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg")
 val described = image.alt = t"An image of a young dog"
-// <img src="puppy.jpg" alt="An image of a young dog">
 ```
 
-Since values are immutable, `image` is unchanged and `described` is the new value.
+```scala fuel
+run
+##
+Out.println(image.show)
+Out.println(described.show)
+```
+
+Values are immutable, so `image` is unchanged, and `described` is the new value.
 
 ### Parsing
 
-HTML is read from any textual source — a `Text`, a file path, a URL, a classpath
-resource — with `read` or `load`. `load` reads a whole document, returning a
-`Document[Html]` with an `Html.Doctype` header and a root `<html>` node:
+HTML is read from any textual source, such as a `Text`, a
+[file](filesystem.md#reading-and-writing), a URL or a [classpath](classpath.md) resource,
+with `read` or `load`. `load` reads a whole document. It gives a `Document[Html]`, with an
+`Html.Doctype` header and a root `<html>` node:
 
 ```scala
 val document = t"<html><head><title>Hello</title></head><body><p>Hello</p></body></html>".load[Html]
 ```
 
-`read` is for fragments. Called as `read[Html]`, it accepts anything from a single
-node to several, returning whichever of `Html.Element`, `Html.Comment`, `Html.Text`, or
+`read` is for fragments. Called as `read[Html]`, it accepts anything from a single node to
+several, and gives whichever of `Html.Element`, `Html.Comment`, `Html.Text` or
 `Html.Fragment` the source yields:
 
 ```scala
 val text = t"This is some <em>important</em> text"
-text.read[Html]
 ```
 
-Naming the tags expected at the top level makes the result more precise and guides the
-parser. Reading as `Html of "ul"` accepts an unordered list and fails on anything
-else; reading as `Html of "ul" | "ol"` accepts either. The specification's rules for
-inferring omitted tags apply, so reading `<p>Hello world</p>` as a whole document
+```scala fuel
+run
+##
+Out.println(text.read[Html].show)
+```
+
+Naming the tags which are expected at the top level makes the result more precise, and
+guides the parser. Reading as `Html of "ul"` accepts an unordered list, and fails on
+anything else. Reading as `Html of "ul" | "ol"` accepts either. The specification's rules
+for inferring omitted tags apply, so reading `<p>Hello world</p>` as a whole document
 supplies the missing `<html>` and `<body>`.
 
 ### Source positions
 
-Ordinary parsing keeps no record of where each element sat in the text. When a program needs
-that — to underline the element at fault in a linter, say — bringing `parsing.trackPositions`
-into scope makes `load` record positions on the `Document[Html]` it returns, and `locate`
-resolves a path to the line and column of the element it names:
+Ordinary parsing keeps no record of where each element sat in the text. A program which
+needs that, to underline the element at fault in a linter, say, brings
+`parsing.trackPositions` into scope. `load` then records positions on the `Document[Html]`
+which it returns, and `locate` resolves a path to the line and column of the element which
+it names:
 
 ```scala
 import parsing.trackPositions
 
 val tracked = t"<html>\n  <body>\n    <p class=\"x\">Hi</p>\n  </body>\n</html>".load[Html]
 val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
-tracked.locate(paragraph).let(_.line)                   // 3
-tracked.locate(paragraph.attribute(t"class")).let(_.column)  // 8
 ```
 
-A path is root-first: each step names a child element by its label and, for the second and
-later children with that label, its ordinal — `element(t"p", 2)` is the second paragraph —
-and a final `attribute` step names one of the last element's attributes. A position spans
-the whole element, from its start tag to the end of its end tag; an element the parser
-supplied itself, such as the `<html>` around a bare paragraph, starts at the tag that
-prompted it. A path that does not resolve gives `Unset`, as does any lookup on a document
-loaded without `parsing.trackPositions` in scope, which records nothing and costs nothing.
+```scala fuel
+run
+##
+Out.println(tracked.locate(paragraph).let(_.line).inspect)
+Out.println(tracked.locate(paragraph.attribute(t"class")).let(_.column).inspect)
+```
+
+A path begins at the root. Each step names a child element by its label and, for the second
+and later children with that label, its position, so `element(t"p", 2)` is the second
+paragraph. A final `attribute` step names one of the last element's attributes.
+
+A position spans the whole element, from its start tag to the end of its end tag. An
+element which the parser supplied itself, such as the `<html>` around a bare paragraph,
+starts at the tag which prompted it. A path which does not resolve gives `Unset`. So does
+any lookup on a document which was loaded without `parsing.trackPositions` in scope, which
+records nothing, and costs nothing. [JSON](json.md#source-positions) tracks positions in the
+same way.
 
 ### Serializing
 
-An `Html` value converts to text with `show`, which suits most needs:
+`show` converts an `Html` value to text, which suits most needs:
 
-```scala
-Ol(Li("Alpha"), Li("Beta")).show
-// t"<ol><li>Alpha</li><li>Beta</li></ol>"
+```scala fuel
+run
+##
+Out.println(Ol(Li("Alpha"), Li("Beta")).show)
 ```
 
-For large documents or streaming output, a `Document[Html]` produces a chunked
-`Stream[Text]` instead, which runs concurrently and so needs the
-ambient concurrency context:
+For a large document, or for streaming output, a `Document[Html]` gives a
+[`Stream[Text]`](streams.md) in chunks instead. That runs concurrently, so it needs the
+[concurrency](concurrency.md) context in scope:
 
-```scala
+```scala fuel
+parse
+##
 import probates.cancelProbate
 import supervisors.globalSupervisor
 import threads.virtualThreads
@@ -289,34 +377,40 @@ document.stream[Text]
 
 ### Pattern matching
 
-The `h"…"` interpolator is also a pattern. A literal pattern matches an equal node,
-whether the value is that node or a fragment containing only it, and is checked as
-real HTML against the DOM structure rather than the source text — so a pattern written
-with closing tags matches input written without them:
+The `h"…"` interpolator is also a pattern. A literal pattern matches an equal node, whether
+the value is that node, or a fragment which contains only it. It is checked as real HTML,
+against the structure of the nodes, not against the source text, so a pattern which is
+written with closing tags matches input which was written without them:
 
 ```scala
 val html = h"<li>two</li>"
 
-html match
+val matched = html match
   case h"<li>one</li>" => 1
   case h"<li>two</li>" => 2
-  case _               => Unset
-// 2
+  case _               => 0
 ```
 
-Holes bind the pieces a pattern captures. Because an `<li>` may hold text or elements,
-a captured body is itself `Html`, matched in turn:
+Substitutions bind the pieces which a pattern captures. An `<li>` may hold text or
+elements, so a captured body is itself `Html`, which is matched in turn:
 
 ```scala
-html match
+val nested = html match
   case h"<li>$value</li>" => value match
     case Html.Text("one") => 1
     case Html.Text("two") => 2
-    case _                => Unset
-  case _                  => Unset
+    case _                => 0
+  case _                  => 0
 ```
 
-Attributes, comments, and elements can be captured too:
+```scala fuel
+run
+##
+Out.println(matched.show)
+Out.println(nested.show)
+```
+
+Attributes, comments and elements can be captured too:
 
 ```tabular
 column  Pattern
@@ -327,10 +421,13 @@ row  `h"<img $attributes>"`  an `<img>`, binding its attribute map
 row  `h"<$element>"`  any element, but no other kind of node
 ```
 
+[Interpolation](interpolation.md#patterns) explains how one literal serves as both an
+expression and a pattern.
+
 ### Precise types
 
-A runtime HTML value conforms to `Html` and to one of its subtypes, and its static
-type can say far more, through three refinements:
+An HTML value at runtime conforms to `Html`, and to one of its subtypes. Its static type
+can say far more, through three refinements:
 
 ```tabular
 column  Refinement
@@ -356,34 +453,44 @@ row  `Metadata`  `title`, `meta`, `link`, `style`, `script`
 row  `ScriptSupporting`  `script`, `template`
 ```
 
-`Html of Flow` is any flow content, the level of precision most code wants:
+`Html of Flow` is any flow content, which is the level of precision that most code wants:
 
 ```scala
 val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
 ```
 
 The refinements combine into types as exact as
-`Container of "em" | "i" | "b" over Phrasing in Whatwg`. The library uses this
-precision internally; applications rarely need more than `Html of Flow`.
+`Container of "em" | "i" | "b" over Phrasing in Whatwg`. That precision is used internally.
+Applications rarely need more than `Html of Flow`.
 
 ### Whole pages
 
-A complete page is more than a tree of tags: it has a masthead, perhaps a hero banner,
-navigation, side panels, and the document metadata that belongs in the `<head>`.
-Soundness assembles a page from reusable parts. A page is a type extending
-`Archetype`, supplying its central `content`; each feature is a trait mixed in, and
-each trait contributes its own markup, its own styles, and its own head metadata,
-which compose in the order the traits are mixed:
+A complete page is more than a tree of tags. It has a masthead, perhaps a hero banner,
+navigation, side panels, and the metadata which belongs in the `<head>`. A page is assembled
+from reusable parts. It is a type which extends `Archetype`, and supplies its central
+`content`. Each feature is a trait which is mixed in, and each trait contributes its own
+markup, its own styles and its own metadata for the head, which compose in the order in
+which the traits are mixed:
 
 ```scala
 case class HomePage(content: Html of Flow)
 extends Archetype, Masthead, Hero(t"Welcome"), StandardMetadata(t"A home page"):
   override def pageTitle = t"Welcome"
 
-HomePage(P("Hello world")).document
+val page = HomePage(P("Hello world")).document
 ```
 
-The assembled value renders to a `Document[Html]` with a leading doctype and an inline
-stylesheet gathered from every feature, and it serves directly as an HTTP
-`text/html` response, so a handler can return a page with no glue between the HTML and
-the server.
+The assembled value is a `Document[Html]`, with a leading doctype, and an inline stylesheet
+gathered from every feature. It serves directly as a `text/html` response from an
+[HTTP server](http-server.md#responses), so a handler can return a page, with no glue
+between the HTML and the server. [Pages](pages.md) describes the parts in full.
+
+### Related
+
+- [CSS](css.md) writes the stylesheets which pages use, and checks class names.
+- [DOM](dom.md) works with a live document in a browser.
+- [XML](xml.md) and [SVG](svg.md) use the same kinds of node for other vocabularies.
+- [Markdown](markdown.md) converts prose to HTML.
+- [Forms](forms.md) generates an HTML form from a case class.
+- [Web automation](web-automation.md) drives a browser over real pages.
+- [Email](email.md), [mathematical markup](mathematical-markup.md), [syntax highlighting](syntax-highlighting.md) and [errors](errors.md) render into HTML.

@@ -2,26 +2,26 @@
 
 ### About
 
-An [OpenAPI](https://www.openapis.org/) document describes a REST API — its paths, parameters,
-request and response schemas — and Soundness turns that description into a *typed client* as the
-code compiles. Pointing `Api` at a specification yields a value whose navigation mirrors the API's
-paths: each segment, each path parameter, each query or header parameter and each response type is
-checked against the specification, so a call the API does not offer, or a parameter of the wrong
-type, does not compile.
+An [OpenAPI](https://www.openapis.org/) document describes a REST API: its paths, parameters,
+and request and response schemas. Here that description becomes a *typed client* as the code
+compiles. Pointing `Api` at a specification gives a value whose navigation mirrors the paths of
+the API. Each segment, each path parameter, each query or header parameter and each response
+type is checked against the specification. A call which the API does not offer, or a parameter
+of the wrong type, does not compile.
 
 ### On API specifications
 
-An OpenAPI document is a machine-readable contract, and the usual way to honor it is code
-generation: a build step emits a client, which is compiled, versioned and kept in sync by
-tooling. The contract is enforced, but at the price of generated sources and a build pipeline —
-and when the generator is skipped, calls are made against remembered URLs and hoped-for schemas.
+An OpenAPI document is a machine-readable contract. The usual way to honor it is code
+generation: a build step emits a client, which is compiled, versioned and kept in step by
+tooling. The contract is enforced, at the price of generated sources and a build pipeline. When
+the generator is skipped, calls are made against remembered URLs and hoped-for schemas.
 
-A specification derived from the types that serve it cannot fall out of date, which is [correctness](../philosophy/correctness.md) by construction rather than by review.
+Here the specification is read during compilation instead. There is no generated code to
+maintain. The client *is* the specification, interpreted by the compiler, and a drift between
+code and contract is a compile error in the code. That is
+[correctness](../philosophy/correctness.md) by construction, and not by review.
 
-Soundness reads the specification during compilation instead. There is no generated code to
-maintain; the client *is* the specification, interpreted by the compiler, and a drift between
-code and contract is a compile error in the code. Everything comes from the `soundness` package,
-with a few deliberate choices imported by name:
+Everything comes from the `soundness` package, with a few deliberate choices imported by name:
 
 ```scala
 import soundness.*
@@ -31,33 +31,48 @@ import httpBackends.javaNetHttp
 import logging.silentLogging
 import construables.jsonConstruable
 import postables.jsonPostable
+import codepages.utf8Codepage
+import formatting.compactJsonFormatting
+import errorDiagnostics.stackTracesDiagnostics
 ```
+
+The samples on this page call APIs over the network, so they are compiled but not run.
 
 ### A typed client
 
-`Api` reads a specification from the classpath — JSON or YAML, OpenAPI 3.0 or 3.1 — as the code
-compiles, and the resulting value navigates by path:
+`Api` reads a specification from the [classpath](classpath.md) as the code compiles. The
+specification may be JSON or YAML, and OpenAPI 3.0 or 3.1. The resulting value navigates by
+path:
 
 ```scala fuel
 typecheck
 ##
 val api = Api(cp"/openapi/local/petstore.json")
 
-api.pets           // the /pets path
-api.pets(42)       // /pets/{petId}, the parameter typed by the spec
-api.unicorns       // does not compile: no such path
+val pets = api.pets
+val pet = api.pets(42)
 ```
 
-A path parameter of the wrong type — text where the specification says integer — is likewise a
-compile error, caught where the call is written. A parameter of `type: integer` with
-`format: int64` is a `Long` (an `Int` is accepted too); a segment the specification writes with
-characters Scala does not allow in an identifier is written in backticks, as in
+`api.pets` is the `/pets` path, and `api.pets(42)` is `/pets/{petId}`, with the parameter typed
+by the specification. A path which the specification does not have does not compile:
+
+```scala fuel
+compile
+errors show
+##
+api.unicorns
+```
+
+A path parameter of the wrong type, such as text where the specification says integer, is also
+a compile error, caught where the call is written. A parameter of `type: integer` with
+`format: int64` is a `Long`, and an `Int` is accepted too. A segment which the specification
+writes with characters Scala does not allow in an identifier is written in backticks, as in
 `` api.`museum-hours` `` or `` api.users.`@me` ``.
 
-The base URL comes from the specification's first server, with its `{variables}` at their
-defaults, checked as a URL as the code compiles. A specification whose server is relative
-(`/api/v3`), or which declares none, must take its base from the caller, which a relative server
-URL then extends:
+The base URL comes from the first server of the specification, with its `{variables}` at their
+defaults, and is checked as a URL as the code compiles. A specification whose server is
+relative, such as `/api/v3`, or which declares none, must take its base from the caller. A
+relative server URL then extends that base:
 
 ```scala fuel
 typecheck
@@ -65,8 +80,8 @@ typecheck
 val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
 ```
 
-What is about to be sent is a value too: `request` on any navigated `Api` or `Api.Response` is an
-`Api.Request`, whose fields are:
+What is about to be sent is a value too. `request` on any navigated `Api` or `Api.Response` is
+an `Api.Request`, whose fields are:
 
 ```tabular
 column  Field
@@ -83,50 +98,60 @@ row  `accept`  the media type asked for
 
 ### Calling
 
-An endpoint is invoked with its method, its query and header parameters as named arguments, and a
-request body as a value; `call` executes the request and reads the response as the type asked
-for — which must conform to the response schema the specification declares:
+An endpoint is invoked with its method, with its query and header parameters as named arguments,
+and with a request body as a value. `call` executes the request and reads the response as the
+type asked for, which must conform to the response schema the specification declares:
+
+```scala
+case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+case class NewPet(name: Text, tag: Optional[Text] = Unset)
+```
 
 ```scala fuel
 typecheck
 ##
-case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
-case class NewPet(name: Text, tag: Optional[Text] = Unset)
-
-api.pets(42).get.call[Pet]()             // GET /pets/42, decoded per the schema
-api.pets.get(limit = 10).call[List[Pet]]()
-api.pets.post(NewPet(t"Rex")).call[Pet]() // a typed request body
-api.sessions(t"abc").delete.call()       // 204, no body: Unit
+val one: Pet = api.pets(42).get.call[Pet]()
+val some: List[Pet] = api.pets.get(limit = 10).call[List[Pet]]()
+val created: Pet = api.pets.post(NewPet(t"Rex")).call[Pet]()
+val deleted: Unit = api.sessions(t"abc").delete.call()
 ```
 
-Parameters declared on the path item apply to every operation on it, and one written as a
-`$ref` into the document's components is followed, as are `$ref` responses and request bodies.
-Where an operation declares several successful responses, `200` is preferred, then `201`, then
-the lowest. Asking for a type the response schema does not support is a compile error.
+The first is `GET /pets/42`, decoded according to the schema. The third sends a typed request
+body. The last answers `204` with no body, so its result is `Unit`.
+
+A parameter declared on the path item applies to every operation on it. A parameter written as
+a `$ref` into the components of the document is followed, as are `$ref` responses and request
+bodies. Where an operation declares several successful responses, `200` is preferred, then
+`201`, then the lowest. Asking for a type which the response schema does not support is a
+compile error.
 
 ### Security
 
-An API's specification names its security schemes — an API key in a header, query parameter or
-cookie; HTTP authentication; OAuth 2; OpenID Connect — and which of them each operation
-requires. The credentials come from [orthodoxy](oauth.md): a `Credential` is a contextual value
-named for the scheme, holding the value the scheme's kind calls for, and an operation which
-requires credentials nobody has provided does not compile, the error naming the givens which
-would satisfy each alternative:
+The specification of an API names its security schemes, which may be an API key in a header,
+query parameter or cookie, HTTP authentication, OAuth 2 or OpenID Connect, and says which of
+them each operation requires. The credentials come from [OAuth](oauth.md). A `Credential` is a
+[contextual value] named for the scheme, which holds the value the kind of scheme calls for. An
+operation which requires credentials which nobody has provided does not compile, and the error
+names the givens which would satisfy each alternative:
 
-```scala fuel
-typecheck
-##
+```scala
 val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
 
 given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
 given oauth: ("petstore_auth" is Credential to Authorization) =
   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
-
-petstore.pet(42L).get.call()             // `api_key: …` sent as the spec dictates
-petstore.pet(42L).delete(api_key = t"…") // a header parameter, sent as a header
 ```
 
-Each kind of scheme takes its own credential, and sends it its own way:
+```scala fuel
+typecheck
+##
+petstore.pet(42L).get.call()
+petstore.pet(42L).delete(api_key = t"…")
+```
+
+The first call sends `api_key` as the specification dictates. In the second, `api_key` is a
+header parameter, and is sent as a header. Each kind of scheme takes its own credential, and
+sends it its own way:
 
 ```tabular
 column  Scheme
@@ -138,15 +163,15 @@ row  OAuth 2, OpenID Connect  `Credential to Authorization`, or `Credential to A
 row  mutual TLS  not supported
 ```
 
-An OAuth 2 or OpenID Connect token is checked, before the request goes, against the scopes the
-requirement names, and a token lacking one raises `OAuth.Error`. Where an operation
-offers alternative requirements, the first every scheme of which has a credential in scope is
-used; an operation whose `security` is empty needs none.
+An OAuth 2 or OpenID Connect token is checked, before the request goes, against the scopes which
+the requirement names. A token which lacks one raises `OAuth.Error`. Where an operation offers
+alternative requirements, the first of which every scheme has a credential in scope is used. An
+operation whose `security` is empty needs none.
 
 ### Errors
 
-Every response an operation declares outside the success range has its own error type, named for
-its status:
+Every response which an operation declares outside the success range has its own error type,
+named for its status:
 
 ```tabular
 column  Declared response
@@ -157,8 +182,8 @@ row  the `5XX` range  `Api.ServerError`
 row  `default`  `Api.OtherError`
 ```
 
-Each carries the error body construed as the type the specification declares for it, the first
-of these that applies:
+Each carries the error body, construed as the type which the specification declares for it, by
+the first of these which applies:
 
 ```tabular
 column  The error body is
@@ -169,9 +194,9 @@ row  anything else  `Text`
 row  not declared  `Unit`
 ```
 
-The operation's
-`Api.Response` records the union of them as its `Failure`, so `attempt` yields an `Attempt` over
-exactly the declared errors, and a `match` over it is checked for exhaustiveness by the compiler:
+The `Api.Response` of the operation records the union of them as its `Failure`. So `attempt`
+gives an `Attempt` over exactly the declared errors, and the compiler checks a `match` over it
+for exhaustiveness:
 
 ```scala fuel
 typecheck
@@ -186,26 +211,26 @@ val stripe = Api(cp"/openapi/stripe/spec3.json")
 
 stripe.v1.customers(t"cus_1").get.attempt[Json]() match
   case Attempt.Success(customer)                       => customer
-  case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message  // Stripe's `default`
+  case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
 ```
 
-A case for a status the specification does not declare, such as `Api.Conflict` for these
-operations, does not compile. `call()` itself raises the declared errors through contingency, one
-`Tactic` per declared type, which a `recover` or `mitigate` supplies case by case; a handler
-missing one is a compile error naming it.
+A case for a status which the specification does not declare, such as `Api.Conflict` for these
+operations, does not compile. `call()` itself raises the declared errors through
+[contingency](errors.md), with one [tactic] for each declared type, which a `recover` or
+`mitigate` supplies case by case. A handler which misses one is a compile error which names it.
 
 Servers do not always keep to their specifications. A response with an undeclared status raises
-`Api.Violation`, carrying the status and the body's bytes, which every call may meet and which is
-handled apart from the declared errors: the contract's breach, not one of its cases.
+`Api.Violation`, which carries the status and the bytes of the body. Every call may meet it, and
+it is handled apart from the declared errors. It is the breach of the contract, not one of its
+cases.
 
 ### Media types and their carriers
 
-The specification names each body's media type, and a `Construable` names the Soundness type
-which carries that media type: `("application/json" is Construable to Json)`,
-`("image/png" is Construable to (Raster in Png))`. The typeclass carries no operations — the
-carrier's own reader and writer do the work — and every mapping is a contextual value in the
-`construables` family, imported by name, so that nothing is construed without a deliberate
-choice:
+The specification names the media type of each body, and a `Construable` names the type which
+carries that media type: `("application/json" is Construable to Json)`, or
+`("image/png" is Construable to (Raster in Png))`. The [typeclass] carries no operations. The
+reader and writer of the carrier do the work. Every mapping is a contextual value in the
+`construables` family, imported by name, so nothing is construed without a deliberate choice:
 
 ```scala fuel
 typecheck
@@ -249,14 +274,14 @@ row  `image/bmp`  `Raster in Bmp`  `construables.bmpConstruable`
 row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
 ```
 
-A structured-syntax suffix falls back to the type it names, so `application/problem+json`
-is construed by the JSON mapping. Where an operation offers several media types, the first with a
-mapping in scope is chosen, `application/json` first.
+A structured-syntax suffix falls back to the type it names, so `application/problem+json` is
+construed by the JSON mapping. Where an operation offers several media types, the first with a
+mapping in scope is chosen, with `application/json` first.
 
-A request body is encoded to the media type's carrier and written by that carrier's `Postable`,
-which is likewise imported by name (`postables.jsonPostable`, `postables.xmlPostable`); a value
-which already *is* the carrier — a `Query` for `application/x-www-form-urlencoded`, `Data` for
-`application/octet-stream` — is sent as it is.
+A request body is encoded to the carrier of the media type, and written by that carrier's
+`Postable`, which is likewise imported by name, as `postables.jsonPostable` or
+`postables.xmlPostable`. A value which already *is* the carrier, such as a `Query` for
+`application/x-www-form-urlencoded` or `Data` for `application/octet-stream`, is sent as it is.
 
 ### Records from a response
 
@@ -271,42 +296,53 @@ row  `record()`  a record typed by the response schema
 row  `tuple()`  a named tuple typed by the response schema, read eagerly
 ```
 
-A JSON response can be read without a mirror class at all: `record()` yields a
-[record](records.md) typed by the response schema, with one member per property at the type the
-schema declares, nested objects and references to component schemas as nested records, and an
-array of objects as a `List` of them.
+A JSON response can be read without a mirror class at all. `record()` gives a
+[record](records.md) typed by the response schema, with one member for each property, at the
+type the schema declares. Nested objects and references to component schemas are nested
+records, and an array of objects is a `List` of them:
 
 ```scala fuel
 typecheck
 ##
-val pet = petstore.pet(42L).get.record()
-pet.name                                // Text
-pet.photoUrls                           // List[Text]
-petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
+val found = petstore.pet(42L).get.record()
+val name: Text = found.name
+val photos: List[Text] = found.photoUrls
+val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
 ```
 
-`tuple()` reads the same schema as a named tuple, eagerly. Both need a JSON response whose schema
-describes an object or an array of objects; anything else is a compile error suggesting
-`call[T]()`.
+`tuple()` reads the same schema as a named tuple, eagerly. Both need a JSON response whose
+schema describes an object or an array of objects. Anything else is a compile error which
+suggests `call[T]()`.
 
 ### The document model
 
-The specification itself is also a value: `OpenApi` decodes an OpenAPI 3.x document from JSON or
-YAML into typed parts — info, servers (with their variables), paths, operations, parameters,
-request bodies, responses and component schemas, parameters, responses and request bodies — for
-tooling that inspects APIs rather than calling them. A YAML document is translated to JSON and
-read by the same decoder, so the two forms cannot drift. A parameter, response or request body
-written as a `$ref` is kept as an `OpenApi.Ref` and resolved on demand by `apply()`, given the
-document; a schema reference resolves the same way, one hop at a time, so cyclic schemas stay
-finite. A document of an unsupported version, or one that will not parse, raises an
-`OpenApi.Error` naming the fault.
+The specification itself is also a value. `OpenApi` decodes an OpenAPI 3.x document from JSON or
+YAML into typed parts: info, servers with their variables, paths, operations, parameters,
+request bodies, responses, and component schemas, parameters, responses and request bodies.
+This serves tooling which inspects APIs rather than calling them. A YAML document is translated
+to JSON and read by the same decoder, so the two forms cannot drift.
 
-The model and the client are exercised against a corpus of real descriptions — the OpenAPI
-Initiative's examples, Swagger's Petstore, Redocly's Museum, Twilio, Kubernetes, Discord, Box and
-Stripe — checked in under `lib/apoplexy/res/test/openapi` with their provenance.
+A parameter, response or request body written as a `$ref` is kept as an `OpenApi.Ref`, and
+resolved on demand by `apply()`, given the document. A schema reference resolves the same way,
+one hop at a time, so cyclic schemas stay finite. A document of an unsupported version, or one
+which will not parse, raises an `OpenApi.Error` which names the fault.
+
+The model and the client are exercised against a corpus of real descriptions: the examples of
+the OpenAPI Initiative, Swagger's Petstore, Redocly's Museum, Twilio, Kubernetes, Discord, Box
+and Stripe. They are checked in under `lib/apoplexy/res/test/openapi` with their provenance.
 
 ### Limitations
 
 Cookie parameters, `callbacks`, `links`, `security` requirements, `webhooks` and references into
-other documents are read into the model where the model has a place for them but are not acted
-on by the client; a `multipart/form-data` body is not yet construed.
+other documents are read into the model where the model has a place for them, but the client
+does not act on them. A `multipart/form-data` body is not yet construed.
+
+### Related
+
+- [HTTP client](http-client.md) carries the requests, and describes the backends.
+- [OAuth](oauth.md) describes the `Credential` values and the token flows.
+- [Records](records.md) describes the typed records which `record()` gives.
+- [JSON](json.md), [XML](xml.md) and [YAML](yaml.md) describe the carriers of the common media
+  types.
+- [Errors](errors.md) describes `attempt`, `recover` and `mitigate`.
+- [Media types](media-types.md) describes the `MediaType` values which name each body.

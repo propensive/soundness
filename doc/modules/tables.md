@@ -2,27 +2,30 @@
 
 ### About
 
-Tabular data renders to the terminal through a layout engine that takes the hard part seriously:
-fitting columns of uneven content into a fixed width. A table is defined either implicitly — a
-sequence of case classes becomes a table with a column per field — or explicitly, naming each
-column, its alignment, and its *sizing strategy*: wrap as a paragraph, truncate with an ellipsis,
-collapse entirely when space runs short. The result draws with box characters in a style chosen in
-scope.
+Tabular data is drawn in a terminal by a layout engine which takes the hard part seriously:
+fitting columns of uneven content into a fixed width.
+
+A table is defined in one of two ways. Implicitly, a sequence of case classes becomes a
+table with a column for each field. Explicitly, each column is named, with its alignment and
+its *sizing strategy*: wrap as a paragraph, truncate with an ellipsis, or collapse entirely
+when space runs short. The result is drawn with box characters, in a style chosen in scope.
 
 ### On tables
 
-Most terminal tables are format strings: fixed widths guessed at development time, truncating or
-overflowing when the data disagrees. Real layout is negotiation — some columns matter more than
-others, prose columns can wrap where identifiers cannot, and below some width a column is better
-dropped than mangled — and that negotiation is exactly what a layout engine can do and a format
-string cannot.
+Most tables in a terminal are format strings: fixed widths, guessed when the program was
+written, which truncate or overflow when the data disagrees. Real layout is a negotiation.
+Some columns matter more than others. A column of prose can wrap where a column of
+identifiers cannot. Below some width, a column is better dropped than mangled. A layout
+engine can conduct that negotiation, and a format string cannot.
 
-Separating a table's scaffold from its data and its width is [decoupling](../philosophy/decoupling.md), and what lets one definition render at any width.
+Here the layout is computed each time a table is drawn. Each column declares how it may
+shrink, and the engine distributes the width which is available, wrapping with
+[hyphenation](hyphenation.md) where wrapping is allowed. Separating a table's columns from
+its data, and from its width, is [decoupling](../philosophy/decoupling.md), and it is what
+lets one definition be drawn at any width.
 
-Soundness computes the layout per rendering: each column declares how it may shrink, and the
-engine distributes the available width, wrapping with [hyphenation](hyphenation.md) where wrapping
-is allowed. Everything comes from the `soundness` package, with a style, a metric, and an overflow
-policy in scope:
+Everything comes from the `soundness` package. A style, a metric for the width of text, and
+a policy for a table which does not fit are in scope:
 
 ```scala
 import soundness.*
@@ -37,24 +40,33 @@ import strategies.throwUnsafely
 
 ### A table from a case class
 
-A sequence of case classes tabulates directly, a column per field, titled from the field names;
-`grid` lays it out at a width and produces the lines:
+A sequence of case classes is tabulated directly, with a column for each field, titled from
+the names of the fields:
 
 ```scala
 case class Codebase(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 
 val libraries = List
-  ( Codebase(t"gossamer", t"Gossamer", 4200, 2019, t"Statically-checked text operations"),
-    Codebase(t"jacinta", t"Jacinta", 3800, 2020, t"JSON parsing and serialization"),
-    Codebase(t"escritoire", t"Escritoire", 1900, 2018, t"Tabular layout for the terminal") )
+  ( Codebase(t"wisteria", t"Wisteria", 581, 2017,
+        t"Simple, fast and transparent generic derivation for typeclasses"),
+    Codebase(t"quantitative", t"Quantitative", 1271, 2023,
+        t"Statically-checked physical units with seamless syntax"),
+    Codebase(t"turbulence", t"Turbulence", 1047, 2022,
+        t"Simple tools for working with data streams"),
+    Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
 ```
 
-```scala
-libraries.tabulation.grid(80).render.each(Out.println(_))
+`grid` lays the table out at a width, and `render` gives its lines:
+
+```scala fuel
+run
+##
+libraries.tabulation.grid(100).render.each(Out.println(_))
 ```
 
-Numeric columns right-align by default, text left-aligns, and the whole table is `Printable`, so
-printing it at the terminal's own width needs nothing more than `Out.println`.
+Numeric columns are aligned to the right by default, and text to the left. The whole table
+is `Printable`, so printing it at the terminal's own width needs nothing more than
+`Out.println`.
 
 Three types are at work, and knowing which is which explains where each decision is made:
 
@@ -67,14 +79,14 @@ row  `Tabulation`  data arranged by a scaffold: textual values, one per row and 
 row  `Grid`  a tabulation fitted to a particular width, where a column may shrink or vanish  `tabulation.grid(width)`
 ```
 
-`tabulation` above
-derived a scaffold for `Codebase` and applied it in one step; the sections below take the stages
-separately, which is what gives control over both the layout and the width.
+`tabulation`, above, derived a scaffold for `Codebase` and applied it, in one step. The
+sections below take the stages separately, which is what gives control over both the layout
+and the width.
 
 ### Explicit columns
 
-Columns defined by hand choose their titles, content, alignment and sizing. The sizings are in
-the `columnar` package:
+Columns which are defined by hand choose their titles, content, alignment and sizing. The
+sizings are in the package `columnar`:
 
 ```tabular
 column  Sizing
@@ -93,21 +105,22 @@ val table = Scaffold[Codebase]
     Column(t"Year", sizing = columnar.Collapsible(0.5))(_.year),
     Column(t"Description", textAlign = TextAlignment.Justify,
         sizing = columnar.Paragraph)(_.description) )
-
-table.tabulate(libraries).grid(70).render
 ```
 
-Each column is a title and a lambda from the row type to the cell value, and the lambdas here
-return a mixture of `Text` and `Int` without a type annotation between them. That works because
-the *title* fixes the textual type: a `Textual` instance is resolved for the title's type, that
-instance names the typeclass — usually `Show` — that converts other values into it, and each
-lambda's result type is shown through it. The table's own cell type is then the least upper bound
-of its columns'. So `table` above is a `Scaffold[Codebase, Text]`, and writing the titles as
-`e"Name"` instead of `t"Name"` would have made it a `Scaffold[Codebase, Teletype]`, with color and
-style available in every cell.
+Each column is a title, and a function from the type of a row to the value of a cell. The
+functions here return a mixture of `Text` and `Int`, with no type annotation between them.
+That works because the *title* fixes the textual type. A `Textual` instance is found for the
+type of the title. That instance names the [typeclass], usually `Showable`, which converts
+other values into it, and the result of each function is shown through it.
 
-The `Collapsible` thresholds are meaningful only relative to each other. They are compared against
-the *slack* the layout is working at — the number the next section is about:
+The table's own type of cell is then the least upper bound of its columns'. So `table`,
+above, is a `Scaffold[Codebase, Text]`. Writing the titles as `e"Name"` instead of `t"Name"`
+would have made it a `Scaffold[Codebase, Teletype]`, with color and style available in every
+cell, as [Terminal](terminal.md#styled-text) describes.
+
+The thresholds of the `Collapsible` columns are meaningful only relative to each other. They
+are compared against the *slack* at which the layout is working, which is the number the
+[layout algorithm](#the-layout-algorithm) searches for:
 
 ```tabular
 column  Slack
@@ -121,194 +134,124 @@ row  `0.2`  hidden  hidden  hidden
 
 ### Renderings at different widths
 
-The same table, the same data, laid out at five widths. At 120 characters everything fits on one
-line per row:
+Here is the same table, with the same data, laid out at four widths. At 100 characters,
+*Identifier* is already gone. It is the collapsible column whose threshold is closest to
+`1`, so it is the first to go:
 
-```mono
-┏━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name         │ Identifier   │  LoC │ Year │ Description                                                     ┃
-┠──────────────┼──────────────┼──────┼──────┼─────────────────────────────────────────────────────────────────┨
-┃ Wisteria     │ wisteria     │  581 │ 2017 │ Simple, fast and transparant generic derivation for typeclasses ┃
-┃ Quantitative │ quantitative │ 1271 │ 2023 │ Statically-checked physical units with seamless syntax          ┃
-┃ Turbulence   │ turbulence   │ 1047 │ 2022 │ Simple tools for working with data streams                      ┃
-┃ Escritoire   │ escritoire   │  494 │ 2018 │ A library for writing tables                                    ┃
-┗━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```scala fuel
+run
+##
+table.tabulate(libraries).grid(100).render.each(Out.println(_))
 ```
 
-At 100, *Identifier* is gone — it is the collapsible column with the threshold closest to `1`, so
-it is the first to go:
+At 80, no further column need be dropped. The description wraps instead:
 
-```mono
-┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name         │  LoC │ Year │ Description                                                     ┃
-┠──────────────┼──────┼──────┼─────────────────────────────────────────────────────────────────┨
-┃ Wisteria     │  581 │ 2017 │ Simple, fast and transparant generic derivation for typeclasses ┃
-┃ Quantitative │ 1271 │ 2023 │ Statically-checked physical units with seamless syntax          ┃
-┃ Turbulence   │ 1047 │ 2022 │ Simple tools for working with data streams                      ┃
-┃ Escritoire   │  494 │ 2018 │ A library for writing tables                                    ┃
-┗━━━━━━━━━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```scala fuel
+run
+##
+table.tabulate(libraries).grid(80).render.each(Out.println(_))
 ```
 
-At 80 no further column need be dropped; the description wraps instead:
+At 60, *Year* goes, since it has the next-highest threshold, and the justification of the
+description becomes visible, as the lines stretch to the full width:
 
-```mono
-┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name         │  LoC │ Year │ Description                                     ┃
-┠──────────────┼──────┼──────┼─────────────────────────────────────────────────┨
-┃ Wisteria     │  581 │ 2017 │ Simple, fast and transparant generic derivation ┃
-┃              │      │      │ for typeclasses                                 ┃
-┃ Quantitative │ 1271 │ 2023 │ Statically-checked physical units with seamless ┃
-┃              │      │      │ syntax                                          ┃
-┃ Turbulence   │ 1047 │ 2022 │ Simple tools for working with data streams      ┃
-┃ Escritoire   │  494 │ 2018 │ A library for writing tables                    ┃
-┗━━━━━━━━━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```scala fuel
+run
+##
+table.tabulate(libraries).grid(60).render.each(Out.println(_))
 ```
 
-At 60, *Year* — the next-highest threshold — goes, and the justification of the description
-becomes visible as the lines stretch to the full width:
+And at 40, only two columns remain, and a description may run to four lines:
 
-```mono
-┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name         │  LoC │ Description                        ┃
-┠──────────────┼──────┼────────────────────────────────────┨
-┃ Wisteria     │  581 │ Simple,   fast   and   transparant ┃
-┃              │      │ generic derivation for typeclasses ┃
-┃ Quantitative │ 1271 │ Statically-checked physical  units ┃
-┃              │      │ with seamless syntax               ┃
-┃ Turbulence   │ 1047 │ Simple tools for working with data ┃
-┃              │      │ streams                            ┃
-┃ Escritoire   │  494 │ A library for writing tables       ┃
-┗━━━━━━━━━━━━━━┷━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
-And at 40, only two columns remain and a description may run to four lines:
-
-```mono
-┏━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name         │ Description           ┃
-┠──────────────┼───────────────────────┨
-┃ Wisteria     │ Simple,   fast    and ┃
-┃              │ transparant   generic ┃
-┃              │ derivation        for ┃
-┃              │ typeclasses           ┃
-┃ Quantitative │ Statically-checked    ┃
-┃              │ physical  units  with ┃
-┃              │ seamless syntax       ┃
-┃ Turbulence   │ Simple   tools    for ┃
-┃              │ working   with   data ┃
-┃              │ streams               ┃
-┃ Escritoire   │ A library for writing ┃
-┃              │ tables                ┃
-┗━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┛
+```scala fuel
+run
+##
+table.tabulate(libraries).grid(40).render.each(Out.println(_))
 ```
 
 ### The layout algorithm
 
-The scaffold does not decide the widths; it delegates to each column, passing a `Double` between
-`0` and `1` — the *slack* on that column, which is simply the opposite of pressure. Given a slack,
-a column reports the width it would take, and a column under enough pressure may report that it
-will not render at all. A prose column shrinks smoothly as its text reflows; an identifier column
-cannot shrink past its content and either holds its width or disappears.
+The scaffold does not decide the widths. It delegates to each column, passing a `Double`
+between `0` and `1`. That number is the *slack* on the column, which is simply the opposite
+of pressure. Given a slack, a column reports the width which it would take, and a column
+under enough pressure may report that it will not be drawn at all. A column of prose shrinks
+smoothly as its text reflows. A column of identifiers cannot shrink past its content, and
+either holds its width or disappears.
 
-Summing those widths gives the table's width at that slack, and from there it is a search: raise
-the slack where the table fits, lower it where it does not, hunting logarithmically for the
+Adding up those widths gives the table's width at that slack, and from there it is a search.
+The slack is raised where the table fits, and lowered where it does not, hunting for the
 highest slack at which the table still fits the space available.
 
 That maximum usually sits *just after* a column has been hidden, which tends to leave space
-unused — the column that vanished freed more room than the survivors needed. So a second pass
-raises the slack on the remaining columns, without reintroducing the ones already removed, letting
-them spread into what is left. Experimentally this produces markedly better results than stopping
-at the first fit.
+unused: the column which vanished freed more room than the survivors needed. A second pass
+therefore raises the slack on the remaining columns, without bringing back the ones already
+removed, and lets them spread into what is left. In practice this gives markedly better
+results than stopping at the first fit.
 
 The search rests on one requirement, which any custom `Columnar` must honor: a column must
-respond *monotonically* to slack. Decreasing the slack may leave a column the same width, but it
-must never make it wider. `Paragraph`, `Collapsible`, `Fixed` and `Shortened` are simply the
-strategies provided; the concept is open, and a sizing strategy that responds to slack in some
-other way is an ordinary implementation of the same interface.
+respond *monotonically* to slack. Decreasing the slack may leave a column the same width,
+but must never make it wider. `Paragraph`, `Collapsible`, `Fixed` and `Shortened` are simply
+the strategies which are provided. The concept is open, and a sizing strategy which responds
+to slack in some other way is an ordinary implementation of the same interface.
 
 ### Styles
 
-The box drawing is a `TableStyle` given: heavy outer rules with thin inner ones by default,
-rounded corners, horizontal-only rules, or a minimal style with almost no furniture — a change of
-import, not of table code:
+The box drawing is a `TableStyle` given. The style is a change of import, not of the code
+which defines the table. `thinRoundedTableStyle` draws light rules throughout, with rounded
+corners:
 
 ```scala
-val rounded =
+val few = libraries.excerpt(0, 2)
+```
+
+```scala fuel
+run
+##
+locally:
   import tableStyles.thinRoundedTableStyle
-
-  table.tabulate(libraries).grid(50).render
+  table.tabulate(few).grid(50).render.each(Out.println(_))
 ```
 
-`thinRoundedTableStyle` draws light rules throughout, with rounded corners:
+`horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
 
-```mono
-╭──────────────┬──────┬──────────────────────────╮
-│ Name         │  LoC │ Description              │
-├──────────────┼──────┼──────────────────────────┤
-│ Wisteria     │  581 │ Simple,     fast     and │
-│              │      │ transparant      generic │
-│              │      │ derivation           for │
-│              │      │ typeclasses              │
-│ Quantitative │ 1271 │ Statically-checked       │
-│              │      │ physical   units    with │
-│              │      │ seamless syntax          │
-╰──────────────┴──────┴──────────────────────────╯
-```
-
-`horizontalTableStyle` keeps the horizontal rules and drops the verticals:
-
-```mono
-╶────────────────────────────────────────────────╴
-  Name            LoC   Description
-╶────────────────────────────────────────────────╴
-  Wisteria        581   Simple,     fast     and
-                        transparant      generic
-                        derivation           for
-                        typeclasses
-  Quantitative   1271   Statically-checked
-                        physical   units    with
-                        seamless syntax
-╶────────────────────────────────────────────────╴
+```scala fuel
+run
+##
+locally:
+  import tableStyles.horizontalTableStyle
+  table.tabulate(few).grid(50).render.each(Out.println(_))
 ```
 
 `verticalTableStyle` does the opposite:
 
-```mono
-╷              ╷      ╷                          ╷
-│ Name         │  LoC │ Description              │
-│              │      │                          │
-│ Wisteria     │  581 │ Simple,     fast     and │
-│              │      │ transparant      generic │
-│              │      │ derivation           for │
-│              │      │ typeclasses              │
-│ Quantitative │ 1271 │ Statically-checked       │
-│              │      │ physical   units    with │
-│              │      │ seamless syntax          │
-╵              ╵      ╵                          ╵
+```scala fuel
+run
+##
+locally:
+  import tableStyles.verticalTableStyle
+  table.tabulate(few).grid(50).render.each(Out.println(_))
 ```
 
-And `minimalTableStyle` leaves a single rule beneath the titles and nothing else:
+And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
 
-```mono
-  Name            LoC   Description
-╶────────────────────────────────────────────────╴
-  Wisteria        581   Simple,     fast     and
-                        transparant      generic
-                        derivation           for
-                        typeclasses
-  Quantitative   1271   Statically-checked
-                        physical   units    with
-                        seamless syntax
+```scala fuel
+run
+##
+locally:
+  import tableStyles.minimalTableStyle
+  table.tabulate(few).grid(50).render.each(Out.println(_))
 ```
 
-`midOnlyTableStyle` is the same, but reserves blank lines above and below where the outer rules
-would be, so the table keeps its vertical spacing without drawing them. Styled
-[terminal text](terminal.md) works as cell content in every style, so a table of
-highlighted or colored values lays out by its visible width, not the length of its escape codes.
+`midOnlyTableStyle` is the same, but reserves blank lines above and below, where the outer
+rules would be, so the table keeps its vertical spacing without drawing them.
+
+Styled terminal text works as the content of a cell in every style. A table of highlighted
+or colored values is laid out by its visible width, not by the length of its escape codes.
 
 ### Alignment
 
-Each column states how its content sits within the width it is given, as a `TextAlignment`:
+Each column states how its content sits within the width which it is given, as a
+`TextAlignment`:
 
 ```tabular
 column  Alignment
@@ -319,31 +262,34 @@ row  `Center`  on both sides, putting the odd column on the right where it canno
 row  `Justify`  between words, so that every line but the last reaches the full width
 ```
 
-`Justify` is the newspaper setting, which suits a prose column and nothing else.
+`Justify` is the setting of a newspaper, which suits a column of prose and nothing else.
 
-Vertical alignment matters as soon as one cell wraps: a wrapped cell makes its whole row taller,
-and the other cells in that row sit at the top, middle or bottom of the extra height according to
-their `VerticalAlignment`: `Top`, `Middle` or `Bottom`.
+Vertical alignment matters as soon as one cell wraps. A wrapped cell makes its whole row
+taller, and the other cells in that row sit at the top, the middle or the bottom of the extra
+height, according to their `VerticalAlignment`: `Top`, `Middle` or `Bottom`.
 
 ### Titles
 
-A derived table titles its columns from the field names, capitalized — `linesOfCode` becomes
-`Lines Of Code`. Where that is not the wanted title, a `TableRelabelling` overrides it by name,
-so the Scala field keeps its name and the table gets its own:
+A derived table titles its columns from the names of the fields, capitalized, so
+`linesOfCode` becomes `Lines of code`. Where that is not the title which is wanted, a
+`TableRelabelling` overrides it by name. The Scala field keeps its name, and the table gets
+its own:
 
 ```scala
-given TableRelabelling[Codebase]:
+given relabelling: TableRelabelling[Codebase]:
   def relabelling() = Map(t"linesOfCode" -> t"LoC")
 ```
 
-An explicitly-defined column names itself, and `retitle` renames one after the fact, which is
-useful where a table definition is shared and one caller wants a different heading.
+A column which is defined explicitly names itself. `retitle` renames one after the fact,
+which is useful where a table's definition is shared, and one caller wants a different
+heading.
 
 ### Reusing a column definition
 
-A `Column` is parameterized by the row type it reads from, which would make a column defined for
-one type useless for another. `contramap` adapts it, so a column defined once — with its
-alignment, sizing and title — serves every type that can produce the value it displays:
+A `Column` has a type parameter for the type of row which it reads from, which would make a
+column defined for one type useless for another. `contramap` adapts it. A column which is
+defined once, with its alignment, sizing and title, then serves every type which can produce
+the value it displays:
 
 ```scala
 val nameColumn = Column[Text, Text, Text](t"Name")(identity)
@@ -352,33 +298,30 @@ val codebaseName = nameColumn.contramap[Codebase](_.name)
 
 ### Tabulating something that is not a case class
 
-A sequence of anything with a `Tabulable` instance tabulates, so a list of plain integers or of
-text renders as a one-column table without a wrapper type. That instance is also the seam for a
-type whose columns are not its fields — a record read from a schema, or a value whose display
-columns are computed.
+A sequence of anything with a `Tabulable` instance is tabulated, so a list of plain integers,
+or of text, is drawn as a table of one column, without a wrapper type. That instance is also
+where a type whose columns are not its fields takes part, such as a
+[record](records.md) read from a schema, or a value whose columns for display are computed.
 
 ### Lists in columns
 
-Not every arrangement of text in columns is a table. A list of short items — file names, the
-entries of a legend — reads best laid out the way `ls` lays out a directory: as many columns as
-the width allows, no titles and no rules. `columnate` does this for a list of textual values,
-returning one line per row:
+Not every arrangement of text in columns is a table. A list of short items, such as file
+names or the entries of a legend, reads best when it is laid out as `ls` lays out a
+directory: in as many columns as the width allows, with no titles and no rules. `columnate`
+does this for a list of textual values, and gives one line for each row:
 
-```scala
-List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24)
+```scala fuel
+run
+##
+List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
 ```
 
-```mono
-apple  fig    kiwi  lime
-pear   plum
-```
-
-The column count is the greatest at which every column's content fits, with `gap` cells between
-neighbours. Columns of equal width — each as wide as the widest item — are preferred, but a layout
-with one more column is admitted when the items which fall into some column happen to be
-narrower, and that column can shrink. Whatever width is then spare is shared back out among the
-shrunk columns, towards equality, without any column growing beyond the widest item. The
-parameters of `columnate` are:
+The number of columns is the greatest at which the content of every column fits, with `gap`
+cells between neighbors. Columns of equal width, each as wide as the widest item, are
+preferred. A layout with one more column is admitted when the items which fall into some
+column happen to be narrower, and that column can shrink. Whatever width is then spare is
+shared back out among the shrunk columns, toward equality, without any column growing beyond
+the widest item. The parameters of `columnate` are:
 
 ```tabular
 column  Parameter
@@ -391,21 +334,27 @@ row  `downward`  `false`  when `true`, reads the items down each column rather t
 row  `align`  `TextAlignment.Left`  how each cell is padded within its column
 ```
 
-A left-aligned row carries no trailing padding after its last item.
+A row which is aligned to the left has no trailing padding after its last item.
 
 ### When the table does not fit
 
-Below some width, no arrangement of columns is satisfactory, and what should happen then is a
-policy rather than a fixed behavior. The `columnAttenuation` given decides: `ignoreAttenuation`
-renders anyway, at whatever quality the width allows, while `failAttenuation` raises a
-`Table.Error` rather than producing something misleading.
+Below some width, no arrangement of columns is satisfactory, and what should happen then is
+a policy, not a fixed behavior. The `columnAttenuation` given decides:
 
-The limit is not abstract. In the table above, the *Description* column can never be narrower
-than the longest single word it contains — `Statically-checked` — so below about 36 characters no
-slack will make it fit, however much the rest collapses.
+```tabular
+column  Import
+column  A table which does not fit
+row  `columnAttenuation.ignoreAttenuation`  is drawn anyway, as well as the width allows
+row  `columnAttenuation.failAttenuation`  raises a `Table.Error`, instead of producing something misleading
+```
 
-`Table.Error` is a checked error like any other, carrying the minimum width the table needed and
-the width it was given, so a handler can say something useful rather than merely failing:
+The limit is not abstract. In the table above, the *Description* column can never be
+narrower than the longest single word which it contains, `Statically-checked`. Below 37
+characters, no slack will make it fit, however much the rest collapses.
+
+`Table.Error` is a checked [error](errors.md#recovering) like any other. It carries the
+minimum width which the table needed, and the width which it was given, so a handler can say
+something useful, and need not merely fail:
 
 ```scala
 def narrow(): Unit =
@@ -418,6 +367,22 @@ def narrow(): Unit =
       Out.println(table.tabulate(libraries).grid(30))
 ```
 
-A report written to a file, where nobody will see that the columns were mangled, wants the
-failure; an interactive display, where the user can widen the window, wants the rendering. And
-because `ignoreAttenuation` cannot fail, choosing it requires no error handling at all.
+```scala fuel
+run
+##
+narrow()
+```
+
+A report which is written to a file, where nobody will see that the columns were mangled,
+wants the failure. An interactive display, where the user can widen the window, wants the
+table drawn. And since `ignoreAttenuation` cannot fail, choosing it requires no error
+handling at all.
+
+### Related
+
+- [Terminal](terminal.md) styles the text in a cell, and draws live interfaces.
+- [CSV](csv.md) reads the rows which a table displays.
+- [Hyphenation](hyphenation.md) breaks the words of a wrapped column.
+- [Text](text.md#padding-and-fitting) pads and fits single values.
+- [Charts](charts.md) draws the same data as a picture.
+- [Catalogs](catalogs.md), [daemons](daemons.md), [display](display.md) and [trees](trees.md) lay out values as text in the same spirit.

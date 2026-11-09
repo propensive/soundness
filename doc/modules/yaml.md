@@ -2,84 +2,120 @@
 
 ### About
 
-[YAML](https://en.wikipedia.org/wiki/YAML) is handled the way Soundness handles [JSON](json.md):
-text parses into a `Yaml` value, a `Yaml` converts to and from case classes with derived codecs,
-and the `y"…"` interpolator writes YAML checked as the code compiles. The parser covers the
-language as it is really used — block and flow styles, quoting, block scalars, tags, anchors and
-aliases, and multi-document streams — and a `Yaml` value renders back to clean block-style text.
+[YAML](https://en.wikipedia.org/wiki/YAML) is handled in the same way as [JSON](json.md). Text
+parses into a `Yaml` value. A `Yaml` value converts to and from case classes with
+[derived][derivation] codecs. The `y"…"` [interpolator] writes YAML which is checked at
+[compiletime].
 
-Navigation, updating through lenses, position tracking for error reporting, and accumulating
-several decoding errors at once all follow the same shapes as their JSON counterparts, so knowing
-one is knowing the other.
+The parser covers the language as it is really used: block and flow styles, quoting, block
+scalars, tags, anchors and aliases, and streams of several documents. A `Yaml` value is written
+back out as clean block-style text.
+
+Navigation, updating through lenses, tracking of source positions, and collecting several
+decoding errors at once all have the same shape as they do for JSON. Knowing one format is
+knowing the other.
 
 ### On YAML
 
 YAML is the configuration language of half the modern toolchain, and it is notoriously easy to
-consume badly. Its indentation is structure, its scalars are typed by guesswork, and its extras —
-anchors, tags, multi-document files — defeat casual parsers. Consumers typically read it into an
-untyped tree and pick values out by string key, discovering mismatches at runtime.
+consume badly. Its indentation is structure. Its scalars are typed by guesswork. Its extras,
+such as anchors, tags and multi-document files, defeat casual parsers. A consumer typically
+reads it into an untyped tree and picks values out by string key, discovering any mismatch at
+[runtime].
 
-Soundness parses the language properly and then leaves untyped trees behind: a document decodes
-into the case class it should be, with a typed error naming what was missing or mis-typed — and,
-with tracking on, the line and column where it sat. Everything comes from the `soundness`
-package:
+Here the language is parsed properly, and the untyped tree is then left behind. A document
+decodes into the case class it should be. If it cannot, a typed error names what was missing or
+of the wrong type and, with tracking on, the line and column where it sat. Decoding straight to
+a typed value, through the same derivation as every other format, is
+[correctness](../philosophy/correctness.md) with one definition of the data.
+
+Everything comes from the `soundness` package. The samples throw any error as an exception, and
+the last import lets them print their results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
-
-Decoding straight to a typed value, through the same derivation as every other format, is [correctness](../philosophy/correctness.md) with one definition of the data.
 
 ### Parsing and decoding
 
-Text reads as a `Yaml` value, and decodes to a Scala type with `as`; reading straight to a type
-combines the steps:
+`read[Yaml]` parses text into a `Yaml` value, and `as` decodes it to a Scala type. Reading
+straight to a type, with `read[Person in Yaml]`, combines the two steps. Flow style and block
+style give the same result:
 
 ```scala
 case class Person(name: Text, age: Int)
 
-t"{name: Alice, age: 30}".read[Yaml].as[Person]   // Person(t"Alice", 30)
-t"name: Alice\nage: 30".read[Person in Yaml]      // block style, same result
+val alice = t"{name: Alice, age: 30}".read[Yaml].as[Person]
+val bob = t"name: Bob\nage: 40".read[Person in Yaml]
 ```
 
-`in[Text over Yaml]` is the mirror, encoding a value straight to YAML text in the
-`Yaml.Formatting` in scope:
+```scala fuel
+run
+##
+Out.println(alice.inspect)
+Out.println(bob.inspect)
+```
+
+A document which lacks a required field, or holds a value of the wrong type, does not decode,
+and the error says why:
+
+```scala fuel
+run
+errors show
+##
+t"name: Carol".read[Person in Yaml]
+```
+
+```scala fuel
+run
+errors show
+##
+t"{name: Dave, age: unknown}".read[Person in Yaml]
+```
+
+A stream of several documents, separated by `---`, reads as a list:
+
+```scala fuel
+run
+##
+Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
+```
+
+A source need not be text held in memory. The parser reads straight from a
+[stream](streams.md) of bytes or characters, refilling as it goes, without first joining the
+input together. A large document is therefore parsed without ever being held whole, and a `---`
+marker which is split across two chunks is still a document boundary.
+
+### Encoding
+
+`in[Yaml]` encodes a value as `Yaml`, and `show` writes it as block-style text, in the
+formatting in scope:
 
 ```scala
 import formatting.blockYamlFormatting
-Person(t"Alice", 30).in[Text over Yaml].read[Person in Yaml]   // Person(t"Alice", 30)
 ```
 
-`in[Data over Yaml]` writes the same text as bytes, encoded in the `Codepage` in scope.
-
-### Choosing the path for every type
-
-Both of those go through the tree: the text is parsed to a `Yaml` and decoded, or the value is
-encoded to a `Yaml` and rendered. A record can instead carry a *direct* parser and printer, derived
-once into its companion with `derives Yaml.Direct`, and a single import selects the path for every
-record in scope, as it does for the other formats:
-
-```tabular
-column  Import
-column  For a record
-column  For any other type
-row  `codecs.direct`  a direct parser and printer  the tree codecs, unless it has a direct instance of its own
-row  `codecs.derived`  the tree codecs, even where a direct instance is in scope  the tree codecs
-row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
+```scala fuel
+run
+##
+Out.println(Person(t"Alice", 30).in[Yaml].show)
 ```
 
-A direct printer writes the record's text straight from its fields, with no tree built; the text
-is the same as `show` renders. A direct parser reads the fields straight off the parsed
-document's nodes, with no `Yaml` built around any of them and no codec dispatched per field — but
-the document is still parsed whole first: YAML's anchors and aliases mean a node may refer back
-to any earlier one, so there is no reading a record before the document is held. A type that is
-not a record is an enumeration or a sealed hierarchy, say. The modes are alternatives; import one
-at a time.
+`in[Text over Yaml]` encodes a value straight to YAML text, in the `Yaml.Formatting` in scope,
+and `in[Data over Yaml]` writes the same text as bytes, in the `Codepage` in scope.
 
-An `Optional` field has three policies, from the `optionalityOptions` package, as
-[decoding](decoding.md) describes:
+The `@name` annotation renames a field in the document, exactly as it does for
+[JSON](json.md#renaming-fields). An enumeration encodes with a discriminator field, chosen by
+importing `yamlByTypeDiscriminable` or `yamlByKindDiscriminable`, as a
+[tagged union](json.md#tagged-unions) does.
+
+### Optional fields
+
+An `Optional` field has three policies, from the package `optionalityOptions`, as
+[Decoding](decoding.md#policies-for-optional-fields) describes:
 
 ```tabular
 column  A key which is
@@ -93,28 +129,23 @@ row  present but rejected by the inner decoder  an error  `lenientYamlFaults` re
 ```scala
 case class Member(name: Text, age: Optional[Int])
 
-t"name: Eve\nage: null".read[Yaml].as[Member]   // Member(t"Eve", Unset)
+val eve = t"name: Eve\nage: null".read[Yaml].as[Member]
 
 val strict =
   import optionalityOptions.strictYamlNulls
   capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
-  // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
 ```
 
-A multi-document stream — documents separated by `---` — reads as a list:
-
-```scala
-t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])   // List(1, 2, 3)
+```scala fuel
+run
+##
+Out.println(eve.inspect)
+Out.println(strict.inspect)
 ```
-
-A source need not be text held in memory. The parser reads straight from a byte or character
-[stream](streams.md), refilling as it goes, rather than concatenating the input first — so a
-large document parses without ever being materialized, and a `---` marker split across two chunks
-is still a document boundary.
 
 ### Scalars, quoting and block styles
 
-YAML's scalars are where most of its surprises live, and each style is handled as specified:
+Most of YAML's surprises live in its scalars. Each style is handled as the specification says:
 
 ```tabular
 column  Scalar
@@ -126,10 +157,17 @@ row  `'…'`, single-quoted  text, taking no escapes; a quote is doubled to incl
 row  `"…"`, double-quoted  text, taking the full escape set
 ```
 
-Quoted scalars are always text, so `"42"` stays a string.
+A quoted scalar is always text, so `"42"` stays a string:
 
-Block scalars carry their own newline handling, with a style indicator and an optional chomping
-indicator for the trailing newline:
+```scala fuel
+run
+errors show
+##
+t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
+```
+
+A block scalar carries its own handling of newlines. It has a style indicator, and an optional
+*chomping* indicator for the trailing newline:
 
 ```tabular
 column  Indicator
@@ -141,20 +179,22 @@ row  `-`  strips the trailing newline
 row  `+`  keeps every trailing newline
 ```
 
-```scala
-t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]   // t"line1\nline2\n"
-t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]   // t"line1 line2\n"
-t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]  // t"line1\nline2"
+```scala fuel
+run
+##
+Out.println(t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+Out.println(t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
 ```
 
-Comments are ignored wherever they may appear — after a scalar, on a line of their own — and
-leading, trailing and line-trailing whitespace is handled as the specification requires rather
-than as it happens to fall.
+Comments are ignored wherever they may appear, whether after a scalar or on a line of their
+own. Leading whitespace, trailing whitespace and whitespace at the end of a line are all
+treated as the specification requires.
 
 ### Tags
 
-A tag overrides the resolution a scalar's content would otherwise get, which is how YAML says
-"this number is a string" and the reverse:
+A tag overrides the type which a scalar's content would otherwise be given. It is how YAML says
+"this number is a string", and the reverse:
 
 ```tabular
 column  Tag
@@ -166,113 +206,150 @@ row  `!!bool`  a boolean, from `true`, `True` or `TRUE`, and likewise `false`
 row  `!!null`  a null
 ```
 
-For example:
-
-```scala
-t"!!str 42".read[Yaml].as[Text]       // t"42"
-t"!!int \"42\"".read[Yaml].as[Int]    // 42
-t"!!float 7".read[Yaml].as[Double]    // 7.0
+```scala fuel
+run
+##
+Out.println(t"!!str 42".read[Yaml].as[Text])
+Out.println(t"!!int \"42\"".read[Yaml].as[Int].show)
+Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
 ```
 
 ### Anchors and aliases
 
-An anchor names a node and an alias refers back to it, so a document need not repeat itself.
-Aliases resolve as the document is read, whatever the anchored node was — a scalar, a flow
-sequence or mapping, or a whole block:
+An anchor names a node, and an alias refers back to it, so a document need not repeat itself.
+Aliases are resolved as the document is read, whatever the anchored node was: a scalar, a flow
+sequence or mapping, or a whole block.
 
 ```scala
 case class Inner(n: Int)
-
-t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]
-// Map(t"a" -> 1, t"b" -> 1)
-
-t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]]
-// Map(t"defaults" -> Inner(7), t"use" -> Inner(7)): both keys hold the same mapping
 ```
 
-This is what makes YAML configuration files terse, and what makes a naive parser get them wrong.
-
-### Numbers
-
-A YAML number, like a JSON one, has no inherent precision limit. Numbers beyond a `Long`'s or a
-`Double`'s range are kept exactly, as binary-coded decimals, so a long identifier or a precise
-decimal read from a configuration file is not silently rounded on the way through.
-
-### Conformance
-
-The parser is checked against the [YAML test suite](https://github.com/yaml/yaml-test-suite), the
-community's shared corpus of cases — including the ones designed to break parsers. Cases outside
-the supported subset are recorded as known gaps rather than quietly skipped, so the coverage is
-stated rather than claimed.
-
-### Encoding
-
-A value encodes to YAML with `in[Yaml]`, and renders as block-style text with `show`, given a
-formatting in scope:
-
-```scala
-import formatting.blockYamlFormatting
-
-Person(t"Alice", 30).in[Yaml].show
-// name: Alice
-// age: 30
+```scala fuel
+run
+##
+Out.println(t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]].inspect)
+Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
 ```
 
-The `@name` annotation renames a field on the wire, exactly as it does for JSON, and an
-enumeration encodes with a discriminator field chosen by importing `yamlByTypeDiscriminable` or
-`yamlByKindDiscriminable`.
+This is what makes YAML configuration files terse, and what makes a naive parser get them
+wrong.
 
 ### Writing YAML literally
 
-The `y"…"` interpolator writes YAML directly, checks it as the code compiles, and substitutes
-values into its holes; the same literal deconstructs a document in a pattern:
+The `y"…"` interpolator writes YAML directly. It is checked at compiletime, and values are
+substituted into it. The same literal takes a document apart in a pattern, as
+[`j"…"`](json.md#matching-json) does:
 
 ```scala
 val name = t"Alice"
+
 val person = y"""
   name: $name
   age: 30
 """.as[Person]
 ```
 
+```scala fuel
+run
+##
+Out.println(person.inspect)
+```
+
 ### Navigating and updating
 
-With dynamic access enabled, fields read as members and updates produce new documents — assigning
-`Unset` removes a field. Deeper changes go through a lens, with optics such as `Each` and `Filter`
-reaching many elements at once:
+With dynamic access enabled, a field is read as a member, and assigning to a field gives a new
+document. Assigning `Unset` removes a field:
 
 ```scala
 import dynamicAccess.dynamicYaml
 
 val doc = t"{name: Alice, age: 30}".read[Yaml]
-doc.name.as[Text]      // t"Alice"
-(doc.age = 31)         // a new document
-doc.lens(_.age = 31.in[Yaml])
 ```
 
-The import grants `Yaml is Dynamical` to the rest of its scope; `dynamically[Yaml]:` grants
-it to a single block instead, as described in the JSON tutorial.
+```scala fuel
+run
+##
+Out.println(doc.name.as[Text])
+Out.println((doc.age = 31).show)
+```
+
+The import grants the permission `Yaml is Dynamical` to the rest of its scope.
+`dynamically[Yaml]:` grants it to a single block instead, as
+[JSON](json.md#fields-as-members) describes.
+
+A deeper change goes through a [lens](optics.md), with optics such as `Each` and `Filter` to
+reach many elements at once:
+
+```scala
+val older = doc.lens(_.age = 31.in[Yaml])
+```
 
 ### Positions and accumulated errors
 
-With tracking switched on — by bringing `parsing.trackPositions` into scope, as for
-[JSON](json.md#source-positions) — every value remembers its line and column, so a decoding
-failure can point into the source file — the difference between "field missing" and "field
-missing at line 12":
+Bringing `parsing.trackPositions` into scope switches on tracking, as it does for
+[JSON](json.md#source-positions). Every value then remembers its line and column, so a decoding
+failure can point into the source file. That is the difference between "field missing" and
+"field missing at line 12".
 
 ```scala
 import parsing.trackPositions
 
 val tracked = t"{a: 1, b: 2}".read[Yaml]
-tracked.locate(YamlPath()(t"a"))   // the position of a
+val position = tracked.locate(YamlPath()(t"a"))
 ```
 
-Under an accruing strategy, decoding collects every fault in a document rather than stopping at
-the first, each tagged with its path — `#/age`, `#/email` — so a whole configuration file's
-problems are reported together.
+Under a strategy which [accumulates failures](errors.md#accumulating-failures), decoding
+collects every fault in a document instead of stopping at the first. Each is tagged with its
+path, such as `#/age` or `#/email`, so the problems of a whole configuration file are reported
+together.
+
+### Numbers
+
+A YAML number, like a JSON one, has no limit on its precision. A number beyond the range of a
+`Long` or a `Double` is kept exactly, as a binary-coded decimal. A long identifier or a precise
+decimal read from a configuration file is therefore never silently rounded on the way through.
+
+### Skipping the tree
+
+The conversions above all go through the tree. Text is parsed to a `Yaml` and decoded, or a
+value is encoded to a `Yaml` and written out. A record can instead carry a *direct* parser and
+printer, derived once into its companion with `derives Yaml.Direct`. A single import then
+selects the route for every record in scope, as it does for
+[JSON](json.md#skipping-the-tree):
+
+```tabular
+column  Import
+column  For a record
+column  For any other type
+row  `codecs.direct`  a direct parser and printer  the tree codecs, unless it has a direct instance of its own
+row  `codecs.derived`  the tree codecs, even where a direct instance is in scope  the tree codecs
+row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
+```
+
+A type which is not a record is an enumeration or a sealed hierarchy. The modes are
+alternatives, so import one at a time.
+
+A direct printer writes a record's text straight from its fields, with no tree built. The text
+is the same as `show` writes.
+
+A direct parser reads the fields straight from the nodes of the parsed document. No `Yaml` is
+built around any of them, and no codec is looked up for each field. The document is still
+parsed whole first, though. Anchors and aliases mean that a node may refer back to any earlier
+one, so a record cannot be read before the whole document is held.
+
+### Conformance
+
+The parser is checked against the [YAML test suite](https://github.com/yaml/yaml-test-suite),
+the community's shared collection of cases, including those designed to break parsers. Cases
+outside the supported subset are recorded as known gaps, not quietly skipped, so the coverage
+is stated and not merely claimed.
 
 ### YAML over HTTP
 
-A `Yaml` value serves as a request or response body with the `application/yaml` media type, and a
-body parses back to `Yaml` on arrival, so a YAML API is consumed and offered with the same code
-as a [JSON](json.md) one — only the format's type differs.
+A `Yaml` value is a request body or a response body, with the media type `application/yaml`,
+and a body is parsed back to `Yaml` on arrival. A YAML API is therefore consumed and offered
+with the same code as a [JSON one](json.md#json-over-http). Only the format's type differs.
+
+### Related
+
+- [Annotations](annotations.md), [CBOR](cbor.md), [CSV](csv.md), [XML](xml.md), [network addresses](network-addresses.md) and [OpenAPI](openapi.md) share YAML's codecs and carry its documents.

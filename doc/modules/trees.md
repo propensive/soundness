@@ -2,24 +2,26 @@
 
 ### About
 
-Hierarchies — file listings, dependency graphs, organizational structures — draw as text with
-box-drawing characters: a `TreeDiagram` renders a tree, and the DAG diagrams render
-[graphs](graphs.md) whose nodes may have several parents, in the dense style or the lane style
-familiar from `git log --graph`. Each diagram is a value producing lines, so the output prints,
-styles or embeds like any other text.
+A hierarchy, such as a file listing or an organization, is drawn as text with box-drawing
+characters. A `TreeDiagram` draws a tree. The DAG diagrams draw [graphs](graphs.md) whose nodes
+may have several parents, in a dense grid or in the lanes familiar from `git log --graph`.
+
+Each diagram is a value which produces lines. Its output is printed, styled or embedded like any
+other text.
 
 ### On drawing hierarchies
 
-The `└─` and `├─` of a directory listing look trivial and are not: each line's prefix depends on
-which of its ancestors have later siblings, so the drawing state threads through the whole
-traversal. Directed acyclic graphs are harder still — a node with two parents cannot be drawn as a
-tree at all, and laying out the connecting lanes is a real algorithm.
+The `└─` and `├─` of a directory listing look trivial, and are not. The prefix of each line
+depends on which of its ancestors have later siblings, so the state of the drawing is threaded
+through the whole traversal. A directed acyclic graph is harder. A node with two parents cannot
+be drawn as a tree at all, and laying out the lanes which connect the nodes is a real algorithm.
 
-A diagram computing tiles, and a style rendering them, is [decoupling](../philosophy/decoupling.md) between structure and appearance.
+Layout and rendering are kept apart. A diagram computes rows of *tiles*, and a style maps each
+tile to characters. The same layout is therefore drawn in Unicode or in ASCII, plain or styled.
+This is [decoupling](../philosophy/decoupling.md) of structure from appearance.
 
-Soundness separates the layout from the rendering: a diagram computes rows of *tiles*, and a style
-maps tiles to characters, so the same layout renders in Unicode or ASCII, plain or styled.
-Everything comes from the `soundness` package:
+Everything comes from the `soundness` package. The other imports choose a style for trees, and
+let the samples print their results:
 
 ```scala
 import soundness.*
@@ -30,8 +32,8 @@ import termcapDefinitions.basicTermcap
 
 ### Trees
 
-A tree is supplied as its roots and a way to reach children — a function, or an `Expandable`
-instance on the node type — and renders through a function from node to label:
+A tree is given as its roots, and a way to reach the children of any node. Here the way is a
+function, `_.children`:
 
 ```scala
 case class Taxon(name: Text, children: List[Taxon] = Nil)
@@ -43,24 +45,41 @@ val animalia = Taxon
 val diagram = TreeDiagram.by[Taxon](_.children)(animalia)
 ```
 
-The diagram renders each node through a function from node to label, giving the lines to print:
+`render` takes a function from a node to its label, and gives the lines to print:
 
-```scala
+```scala fuel
+run
+##
 diagram.render(_.name).each(Out.println(_))
-// animalia
-// ├─chordata
-// │ └─mammalia
-// └─arthropoda
 ```
 
-`roundedTreeStyle` curves the corners and `asciiTreeStyle` uses only ASCII, for output that must
-survive the plainest terminals.
+Another style draws the same diagram differently. `roundedTreeStyle` curves the corners:
+
+```scala fuel
+run
+##
+locally:
+  import treeStyles.roundedTreeStyle
+  diagram.render(_.name).each(Out.println(_))
+```
+
+`asciiTreeStyle` uses only ASCII characters, for output which must survive the plainest
+terminal:
+
+```scala fuel
+run
+##
+locally:
+  import treeStyles.asciiTreeStyle
+  diagram.render(_.name).each(Out.println(_))
+```
 
 ### Graphs
 
-A [Dag](graphs.md) draws in two layouts. `DagDiagram` is the dense form, every edge drawn in a
-grid of connecting tiles; `LaneDagDiagram` is the lane form — nodes as bullets on vertical lanes,
-edges flowing between them — the shape version-control history is drawn in:
+A [`Dag`](graphs.md) is drawn in two layouts. `DagDiagram` is the dense form, with every edge
+drawn in a grid of connecting tiles. `LaneDagDiagram` is the lane form, which is how the history
+of a repository is usually drawn: nodes are bullets on vertical lanes, and edges flow between
+them.
 
 ```scala
 import laneDagStyles.boxDrawingLaneDagStyle
@@ -68,34 +87,56 @@ import textMetrics.uniformMetric
 import strategies.throwUnsafely
 
 val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
-
-LaneDagDiagram(history).render(node => t" $node").each(Out.println(_))
-// ●  A
-// │
-// ●  B
-// │
-// ●  C
 ```
 
-A per-node glyph function marks chosen nodes — the current commit, a failing build — and `compact`
-tightens the layout; `LayeredDagDiagram` arranges nodes in levels instead of lanes.
+```scala fuel
+run
+##
+LaneDagDiagram(history).render(node => t" $node").each(Out.println(_))
+```
+
+A history which branches and merges needs a second lane:
+
+```scala
+val merged = Dag
+  ( t"merge" -> Set(t"feature", t"fix"),
+    t"feature" -> Set(t"base"),
+    t"fix" -> Set(t"base"),
+    t"base" -> Set() )
+```
+
+```scala fuel
+run
+##
+LaneDagDiagram(merged).render(node => t" $node").each(Out.println(_))
+```
+
+A glyph function, given per node, marks chosen nodes such as the current commit or a failing
+build. `compact` tightens the layout. `LayeredDagDiagram` arranges the nodes in levels instead
+of lanes.
 
 ### Structure and style apart
 
-A diagram exposes its rows — the tiles and the node of each line — so a consumer can render lines
-itself: colored labels for one kind of node, annotations appended to another. The box-drawing
-characters stay the style's business, and the meaning stays the caller's.
+A diagram exposes its rows: the tiles of each line, and the node which the line is for. A
+consumer can therefore render the lines itself, coloring the labels of one kind of node or
+adding a note to another. The box-drawing characters remain the business of the style, and the
+meaning remains the caller's.
 
 ```scala
 import dysasymptotics.linearSize
-
-diagram.nodes    // the node of each line, in drawing order
-diagram.tiles    // the tiles of each line
-diagram.map { tiles => node => t"${tiles.size} ${node.name}" }
 ```
 
-A `TreeTile` is one of four things, and a style says what each becomes. A `TextualTreeStyle` says
-it as four short pieces of text, which is all a new style needs:
+```scala fuel
+run
+##
+diagram.map { tiles => node => t"${tiles.size} ${node.name}" }.each(Out.println(_))
+```
+
+`nodes` gives the node of each line, in drawing order, and `tiles` gives the tiles of each line.
+Here each label is preceded by the number of tiles on its line, which is the depth of its node.
+
+A `TreeTile` is one of four things, and a style says what each becomes. A `TextualTreeStyle`
+says it with four short pieces of text, which is all that a new style needs:
 
 ```tabular
 column  Tile
@@ -112,18 +153,18 @@ row  `Extender`  a line carried down past a node  `extender`  `│` and a space
 val myStyle = TextualTreeStyle[Text](t"  ", t"└─", t"├─", t"│ ")
 ```
 
-Because the style is parameterized by the line type rather than fixed to `Text`, a diagram renders
-directly into styled [terminal output](terminal.md), with the tree furniture in one color and the
-labels in another, and the widths still computed correctly.
+A style is parameterized by the type of line, and is not fixed to `Text`. A diagram can
+therefore be rendered directly into styled [terminal output](terminal.md), with the lines of the
+tree in one color and the labels in another, and with the widths still computed correctly.
 
 ### Supplying the tree
 
-A tree can be given in two ways. `TreeDiagram.by` takes a function from node to children, which
-suits a structure that is already in hand.
+A tree is given in one of two ways. `TreeDiagram.by` takes a function from a node to its
+children. This suits a structure which is already in hand.
 
-`TreeDiagram.apply` instead takes roots and finds children through an `Expandable` instance on the
-node type, which suits a node type whose children are what it means by children — a filesystem
-path, a dependency, a syntax node:
+`TreeDiagram.apply` takes only the roots, and finds children through an `Expandable` instance on
+the node type. This suits a node type which has one natural meaning of "children": a filesystem
+path, a dependency, a syntax node.
 
 ```scala fuel
 alternative `TreeDiagram.by`
@@ -137,13 +178,15 @@ alternative `Expandable`
 ##
 ```
 
-The lines are produced lazily, so a large or deep tree is drawn as far as it is consumed rather
-than all at once. Not entirely lazily, though, and the exception is inherent to the drawing rather
-than an implementation shortcut: rendering a line requires knowing how many children each of the
-current node's *ancestors* has. A node whose grandparent has later siblings needs a vertical line
-running down the grandparent's column; one whose grandparent was the last of its siblings needs
-that column blank. Nothing about the descendants of *later* nodes is needed until the traversal
-reaches them in its natural order, so an infinite tree still draws.
+The lines are produced lazily. A large or deep tree is drawn as far as it is consumed, and no
+further.
+
+The laziness has one limit, which belongs to the drawing itself. To render a line, the diagram
+must know how many children each *ancestor* of the current node has. A node whose grandparent
+has later siblings needs a vertical line running down the grandparent's column. A node whose
+grandparent was the last of its siblings needs that column blank. Nothing about the descendants
+of *later* nodes is needed until the traversal reaches them, so an infinite tree can still be
+drawn.
 
 ### Choosing a graph layout
 
@@ -158,9 +201,18 @@ row  `LaneDagDiagram`  each node on a vertical lane, as version-control history 
 row  `LayeredDagDiagram`  nodes in levels by depth, ordered within each level so that as few connecting lines cross as possible  showing what depends on what, rather than what happened in what order
 ```
 
-The levels of a `LayeredDagDiagram` come from the graph's `layered` arrangement, so
-`import rankings.balancedRanking` changes the drawing as it changes the layering.
+The levels of a `LayeredDagDiagram` come from the `layered` arrangement of the graph. So
+`import rankings.balancedRanking` changes the drawing, as it changes the
+[layering](graphs.md).
 
-All three take any graph with a topological order — a `Dag`, a frozen `Topology` or a `Hasse` —
-and so cannot fail: a `Digraph`, which may hold a cycle, has no drawing until `acyclic` has
-converted it.
+All three take any graph which has a topological order: a `Dag`, a frozen `Topology` or a
+`Hasse`. Drawing one cannot fail. A `Digraph` may hold a cycle, and has no drawing until
+`acyclic` has converted it.
+
+### Related
+
+- [Graphs](graphs.md) describes `Dag`, `Digraph` and the layering which these diagrams draw.
+- [Terminal](terminal.md) describes the styled text which a diagram can be rendered into.
+- [Filesystem](filesystem.md) and [paths](paths.md) describe a common source of trees.
+- [Git](git.md) reads the commit history which a lane diagram suits.
+- [Tables](tables.md) lays out tabular data as text, in the same spirit.

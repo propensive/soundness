@@ -2,30 +2,34 @@
 
 ### About
 
-A conversation with a large language model is typed at every step: the provider and model are
-values, a conversation is a *session* that accumulates its history and token usage, a reply is a
-value that says why the model stopped, streamed output is pulled off the live connection, tools
-are ordinary Scala methods the model may call, and a structured answer is decoded to a case
-class against a schema derived from it. One vocabulary serves Anthropic's Messages API, OpenAI's
-Chat Completions and Responses APIs — and any server compatible with the former, such as vLLM,
-Ollama or Groq — and Google's Gemini.
+A conversation with a large language model is typed at every step. The provider and the model
+are values. A conversation is a [session] which accumulates its history and its usage of tokens.
+A reply is a value which says why the model stopped. Streamed output is pulled off the live
+connection. Tools are ordinary Scala methods which the model may call. A structured answer is
+decoded to a case class, against a schema derived from it.
+
+One vocabulary serves Anthropic's Messages API, OpenAI's Chat Completions and Responses APIs,
+any server compatible with the former, such as vLLM, Ollama or Groq, and Google's Gemini.
 
 ### On language models
 
-Each provider's API is a JSON dialect: a request with the model, the messages so far and a
+The API of each provider is a JSON dialect: a request with the model, the messages so far and a
 handful of tuning knobs; a reply with content blocks, a stop reason and token counts; a streaming
-variant that sends deltas; and a tool-calling protocol that returns arguments as JSON for the
-program to act on and report back. The dialects differ in every detail and agree in every
+variant which sends deltas; and a protocol for tool calls, which returns arguments as JSON for
+the program to act on and report back. The dialects differ in every detail and agree in every
 concept, and the concepts are what a program cares about.
 
-Soundness models the concepts once — messages, replies, usage, tools, stop reasons — and
-translates them onto each wire in a per-provider *dialect*. A conversation is a session
-confined to a block by [capture checking](../philosophy/capture-checking.md): the pure values it
-produces leave freely, while the session itself and any stream in flight cannot, so a connection
-cannot be held open by accident. Everything comes from the `soundness` package, with the HTTP
-backend, network access and logging a client needs:
+The concepts are modeled once here, as messages, replies, usage, tools and stop reasons, and
+translated onto each wire by a *dialect* for each provider. A conversation is a session which
+lives in a block. The pure values it produces leave freely, while the session itself, and any
+stream in flight, belong to the block, so a connection is not held open by accident.
 
-```scala
+Everything comes from the `soundness` package, with the HTTP backend, network access and logging
+which a client needs:
+
+```scala fuel
+feature experimental.captureChecking
+##
 import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import stdios.javaLangSystemStdio
@@ -37,11 +41,13 @@ import strategies.throwUnsafely
 import codepages.utf8Codepage
 ```
 
+The samples on this page call a provider over the network, so they are compiled but not run.
+
 ### Providers and models
 
-A provider value names the model and carries the API key, and its tuning is applied by methods
-that each return a new value, so a configured model is a plain immutable value that can be
-shared and reused:
+A provider value names the model and carries the API key. Its tuning is applied by methods which
+each return a new value, so a configured model is a plain [immutable] value which can be shared
+and reused:
 
 ```scala
 val key = t"sk-ant-…"
@@ -67,15 +73,14 @@ row  `primed`  a history to start from
 row  `on`  an alternative base URL
 ```
 
-A knob left unset is omitted from the request rather than sent as a default, so the provider's
-own defaults apply. An
-OpenAI-compatible server takes an optional key, and OpenAI's Responses API is reached from an
-`OpenAI` value with `responses`.
+A knob left unset is omitted from the request, and is not sent as a default, so the provider's
+own defaults apply. An OpenAI-compatible server takes an optional key. OpenAI's Responses API is
+reached from an `OpenAI` value with `responses`.
 
 ### A conversation
 
 A session is opened on a provider with `session`, and inside the block the `llm` accessor reaches
-it. `ask` sends a message and returns the model's `Reply`; the session records both, so a second
+it. `ask` sends a message and returns the model's `Reply`. The session records both, so a second
 `ask` continues the conversation:
 
 ```scala fuel
@@ -85,24 +90,27 @@ val reply: Llm.Reply = claude.session:
   llm.ask(t"What is the tallest mountain in Estonia?")
   llm.ask(t"And how tall is it?")
 
-reply.text    // the assistant's answer, as text
-reply.stop    // Llm.Stop.Ended, or why the model stopped
-reply.usage   // Llm.Usage(input, output, …): the tokens the last turn cost
+val answer: Text = reply.text
+val stop: Llm.Stop = reply.stop
+val usage: Llm.Usage = reply.usage
 ```
 
-A `Reply` is pure data — its message, its stop reason, its usage, and the model and identifier
-the provider reported — so it may leave the block, as may a snapshot of `llm.history` or the
-folded `llm.usage`. The session itself may not: returning it, or anything that captures it, is a
-compile error, which is what makes it impossible to use a session after its block has closed
-the connection.
+`text` is the assistant's answer. `stop` is `Llm.Stop.Ended`, or the reason the model stopped
+early. `usage` holds the tokens which the last turn cost.
+
+A `Reply` is pure data: its message, its stop reason, its usage, and the model and identifier
+which the provider reported. It may therefore leave the block, as may a snapshot of
+`llm.history` or the folded `llm.usage`. The session itself belongs to the block. The connection
+closes when the block ends, so the session must not be kept beyond it.
 
 ### Streaming
 
-`stream` sends a message and returns a `Response` whose `text` is an iterator of fragments,
-pulled synchronously off the connection as they arrive, and whose `events` are the finer-grained
-deltas. When the stream has been consumed, `reply()` assembles the complete reply — even after
-partial consumption, since the remainder is read on demand — and commits the turn to the
-history. A stream that is abandoned commits nothing, so a failed turn is simply retried:
+`stream` sends a message and returns a `Response`. Its `text` is an [iterator](collections.md)
+of fragments, pulled synchronously off the connection as they arrive, and its `events` are the
+finer-grained deltas. When the stream has been consumed, `reply()` assembles the complete reply
+and commits the turn to the history. It does so even after partial consumption, since the
+remainder is read on demand. A stream which is abandoned commits nothing, so a failed turn is
+simply retried:
 
 ```scala fuel
 typecheck
@@ -117,10 +125,11 @@ The response, like the session, is confined to the block.
 
 ### Tools
 
-A tool is a method annotated `@ability`, described with `@about`, on an object that a `Toolkit`
-is built from. The JSON schema for each tool's parameters is derived from the method's parameter
-types, so the model is told exactly what the method accepts, and a contextual parameter the
-method needs is summoned where the toolkit is constructed rather than exposed to the model:
+A tool is a method annotated `@ability` and described with `@about`, on an object which a
+`Toolkit` is built from. The JSON schema for the parameters of each tool is derived from the
+parameter types of the method, so the model is told exactly what the method accepts. A contextual
+parameter which the method needs is summoned where the toolkit is constructed, and is not
+exposed to the model:
 
 ```scala
 object Broker:
@@ -131,37 +140,42 @@ object Broker:
   def price(ticker: Text): Double = quotes.at(ticker).or(0.0)
 
 val broker = Toolkit(Broker)
-broker.specs.map(_.name)   // List(t"price")
 ```
 
-With a `Toolkit` given in scope, `ask` runs the whole loop: it offers the tools to the model, runs
-the tool the model calls, reports the result, and continues until the model answers in text or
-the iteration limit is reached. A tool that fails, or a call with malformed arguments, is
-reported to the model as an error result it can recover from, rather than aborting the
-conversation:
+```scala fuel
+run
+##
+broker.specs.each(spec => Out.println(spec.name))
+```
+
+With a `Toolkit` given in scope, `ask` runs the whole loop. It offers the tools to the model,
+runs the tool which the model calls, reports the result, and continues until the model answers
+in text or the iteration limit is reached. A tool which fails, or a call with malformed
+arguments, is reported to the model as an error result which it can recover from, and does not
+abort the conversation:
 
 ```scala fuel
 typecheck
 ##
 claude.session:
   given Toolkit = broker
-  llm.ask(t"Compare AAPL and MSFT.")   // calls price twice, then answers
+  llm.ask(t"Compare AAPL and MSFT.")
 ```
 
-Every turn the loop makes is committed to the history, so the record shows the calls the model
-made and what it was told. A loop that does not converge raises `Llm.Error` with the reason
-`ToolLoopExceeded`, at the limit set by `iterating`. The `@about` annotation is shared with the
-[MCP](mcp.md) integration, so one description serves a method exposed both as an MCP tool and
-as a model ability.
+Here the model would call `price` twice, and then answer. Every turn which the loop makes is
+committed to the history, so the record shows the calls the model made and what it was told. A
+loop which does not converge raises `Llm.Error` with the reason `ToolLoopExceeded`, at the limit
+set by `iterating`. The `@about` annotation is shared with [MCP](mcp.md), so one description
+serves a method exposed both as an MCP tool and as a model ability.
 
 ### Structured answers
 
-`solicit` asks for an answer of a given type. The type's JSON schema is derived, and the document
-the model supplies is decoded to the type — so the result is a value, not text to be parsed. How
-the schema reaches the model is the dialect's business: Anthropic's wire constrains the reply to
-it natively, and elsewhere it is presented as the one tool the model must call. The caller names
-a type and receives a value, on every provider, including local servers that have no
-structured-output mode:
+`solicit` asks for an answer of a given type. The JSON schema of the type is derived, and the
+document which the model supplies is decoded to the type. The result is a value, not text to be
+parsed. How the schema reaches the model is the business of the dialect. Anthropic's wire
+constrains the reply to it natively, and elsewhere it is presented as the one tool which the
+model must call. The caller names a type and receives a value, on every provider, including
+local servers which have no mode for structured output:
 
 ```scala
 case class Verdict(ticker: Text, rating: Text, confidence: Double)
@@ -174,17 +188,17 @@ local.session:
   llm.solicit[Verdict](t"Summarize your recommendation for AAPL.")
 ```
 
-A reply that ignores the forced tool, or a document that does not decode, raises `Llm.Error`
-with the reason `Malformed`, so a malformed answer is an error to handle rather than a value that
-looks right.
+A reply which ignores the forced tool, or a document which does not decode, raises `Llm.Error`
+with the reason `Malformed`. A malformed answer is an error to handle, and not a value which looks
+right.
 
 ### Batches
 
-Many questions that need no answer today go through Anthropic's Message Batches API, which runs
+Many questions which need no answer today go through Anthropic's Message Batches API, which runs
 them asynchronously at half the price. `elicitAll` takes a list of requests, each a prompt with
-an identifier of the caller's choosing — checked by `Llm.Id.request` before anything is sent —
-and returns a batch: a pure record of its identifier, status and counts, whose answers are
-decoded to the named type once it has ended:
+an identifier of the caller's choosing, checked by `Llm.Id.request` before anything is sent. It
+returns a batch: a pure record of its identifier, status and counts, whose answers are decoded to
+the named type once it has ended:
 
 ```scala fuel
 typecheck
@@ -202,19 +216,20 @@ batch.await().outcomes().each: outcome =>
 ```
 
 Outcomes arrive in the provider's order, not the order of submission, which is why each carries
-its request's identifier. A batch survives the process that submitted it: `claude.batch[Verdict](id)`
-finds it again by its identifier, with its current status. Identifiers are typed by what they
-name — an `Llm.Id[Llm.Request]`, an `Llm.Id[Llm.Reply]`, an `Llm.Id[Anthropic.Batch[?]]` — so a
-reply's identifier can never be handed to a method expecting a batch's.
+the identifier of its request. A batch survives the process which submitted it.
+`claude.batch[Verdict](id)` finds it again by its identifier, with its current status.
+Identifiers are typed by what they name, as an `Llm.Id[Llm.Request]`, an `Llm.Id[Llm.Reply]` or
+an `Llm.Id[Anthropic.Batch[?]]`, so the identifier of a reply can never be handed to a method
+which expects a batch's.
 
-A prompt shared by every request in a batch, or by every turn of a long session, is worth
-caching at the provider: `claude.caching` marks the system prompt as a cache breakpoint, and
+A prompt shared by every request in a batch, or by every turn of a long session, is worth caching
+at the provider. `claude.caching` marks the system prompt as a cache breakpoint, and
 `Llm.Usage.cacheRead` reports how much of each request was read from the cache.
 
 ### Messages and content
 
-The vocabulary the dialects share is small. A `Llm.Message` has a `Role` — user or assistant —
-and a list of `Llm.Content`, so nothing is lost in translation:
+The vocabulary which the dialects share is small. An `Llm.Message` has a `Role`, which is user
+or assistant, and a list of `Llm.Content`, so nothing is lost in translation:
 
 ```tabular
 column  Content
@@ -229,8 +244,8 @@ row  `Redacted`  thinking the provider returns only in encrypted form
 row  `Opaque`  any content a provider sends that is not otherwise modeled, verbatim
 ```
 
-An image or a document comes from a `Llm.Content.Source`, either `Inline` bytes with a media type
-or a `Remote` URL:
+An image or a document comes from an `Llm.Content.Source`: `Inline` bytes with a media type, or
+a `Remote` URL:
 
 ```scala
 val question = Llm.Message(Llm.Role.User, t"How many bones are in the human hand?")
@@ -247,10 +262,10 @@ sent.
 
 ### Errors and retries
 
-Every failure is a `Llm.Error` whose reason is one of a fixed set, or `Provider`, carrying a
-code the provider reported that maps to none of them, so the wire's own error is never lost. A
-rate limit or an overload is retried automatically, up to three times and honoring the delay the
-provider asks for, before it is raised:
+Every failure is an `Llm.Error` whose reason is one of a fixed set, or `Provider`, which carries
+a code the provider reported which maps to none of them, so the wire's own error is never lost. A
+rate limit or an overload is retried automatically, up to three times and honoring the delay
+which the provider asks for, before it is raised:
 
 ```tabular
 column  Reason
@@ -284,20 +299,29 @@ recover:
 
 ### Counting tokens
 
-Anthropic reports the token count of a prospective conversation without running it, which is
-how a program decides whether a document fits before sending it:
+Anthropic reports the token count of a prospective conversation without running it, which is how
+a program decides whether a document fits before sending it:
 
 ```scala fuel
 typecheck
 ##
-claude.countTokens(List(question), system = t"Be terse.")   // the input tokens it would cost
+val tokens: Int = claude.countTokens(List(question), system = t"Be terse.")
 ```
 
 ### Testing without a provider
 
-Because every provider is a dialect over an HTTP backend, a program that talks to a model is
-tested by substituting the backend with one that returns scripted responses, and the dialect
-tests in the library do exactly that: seventy-odd offline tests replay recorded replies, streamed
-deltas and error envelopes through each dialect, and prove with compile-time checks that a
-session or a live stream cannot escape its block. A program built on the same vocabulary inherits
-that testability: the model is a value, and a value can be faked.
+Every provider is a dialect over an HTTP backend, so a program which talks to a model is tested
+by substituting a backend which returns scripted responses. The dialect tests in the library do
+exactly that. Seventy-odd offline tests replay recorded replies, streamed deltas and error
+envelopes through each dialect, and prove with compiletime checks that a session or a live
+stream cannot escape its block. A program built on the same vocabulary inherits that
+testability. The model is a value, and a value can be faked.
+
+### Related
+
+- [MCP](mcp.md) exposes the same annotated methods as tools for any assistant.
+- [ACP](acp.md) drives a coding agent, instead of a model directly.
+- [HTTP client](http-client.md) describes the backend which every dialect speaks over.
+- [JSON](json.md#schemas) describes the schemas derived for tools and structured answers.
+- [Errors](errors.md) describes `recover` and the other strategies which meet an `Llm.Error`.
+- [Diffing](diffing.md) describes the redrafts which a model's edits are applied as.

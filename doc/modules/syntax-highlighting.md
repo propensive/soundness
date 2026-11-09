@@ -2,21 +2,25 @@
 
 ### About
 
-Scala source code is highlighted by the Scala compiler itself. Rather than approximating the
-language with regular expressions, Soundness runs the real tokenizer — and, when asked, the whole
-compiler frontend — over the source, so the highlighting is exactly as the compiler reads it. The
-result is a `SourceCode` of accented tokens that renders as styled [terminal](terminal.md) output
-or as [HTML](html.md), and at the deeper levels carries the *types* of its expressions, the
-compiler's diagnostics, and even code completions.
+Scala source code is highlighted by the Scala compiler itself. The language is not
+approximated with regular expressions. The real tokenizer, and, when asked, the whole front
+end of the compiler, is run over the source, so the highlighting is exactly as the compiler
+reads it.
+
+The result is a `SourceCode` of accented tokens, which is displayed as styled
+[terminal](terminal.md#styled-text) output, or as [HTML](html.md). At the deeper levels it
+has the *types* of its expressions, the compiler's diagnostics, and even completions.
 
 ### On highlighting
 
-Scala resists casual highlighting. Its soft keywords are keywords only in position, its given
-syntax and significant whitespace defeat pattern-based grammars, and editor highlighting files
-chase the language release by release. The one program that always tokenizes Scala correctly is
-the compiler — so the reliable highlighter is the compiler, asked politely.
+Scala resists casual highlighting. Its soft keywords are keywords only in certain positions.
+Its syntax for givens, and its significant whitespace, defeat grammars based on patterns.
+The highlighting files of editors chase the language, release by release. The one program
+which always tokenizes Scala correctly is the compiler, so the reliable highlighter is the
+compiler, asked politely.
 
-Soundness drives it at three depths, each chosen by a given in the `highlighting` package:
+It is driven at three depths, each of which is chosen by a given in the package
+`highlighting`:
 
 ```tabular
 column  Depth
@@ -29,24 +33,26 @@ row  typechecked  `sessionScala`  a warm compiler session  the same, within the 
 row  compiled  `compiledScala`  a compiler and a classpath  the diagnostics only later phases produce
 ```
 
+A highlighted token which knows its type is
+[composability](../philosophy/composability.md) between the compiler and whatever displays
+the code.
+
 Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
 ```
 
-A highlighted token that knows its type is [composability](../philosophy/composability.md) between the compiler and the renderer.
-
 ### Highlighting
 
-`Scala.highlight` tokenizes source into lines of accented tokens — keywords, identifiers, numbers,
-strings, modifiers — ready to render:
+`Scala.highlight` tokenizes source into lines of accented tokens, such as keywords,
+identifiers, numbers, strings and modifiers, ready to display:
 
 ```scala
 val code = Scala.highlight(t"val xs = List(1, 2, 3)")
 ```
 
-The accents are the categories a palette assigns colors to:
+The accents are the categories to which a palette assigns colors:
 
 ```tabular
 column  Accent
@@ -60,70 +66,80 @@ row  `Number`, `String`  literals, including interpolated ones
 row  `Error`, `Unparsed`  tokens that did not come out cleanly
 ```
 
-The default depth is tokenized, which needs nothing but the text; `Java.highlight` does the same
-for Java source. A palette given maps the accents to [colors](colors.md), and the ANSI renderers —
-numbered or plain — turn a `SourceCode` into terminal output; the Markdown integration renders
-fenced `scala` and `java` code blocks in [Markdown](markdown.md) documents through the same
-machinery.
+The default depth is tokenized, which needs nothing but the text. `Java.highlight` does the
+same for Java source.
+
+A palette, as a given, maps the accents to [colors](colors.md), and the ANSI renderers,
+numbered or plain, turn a `SourceCode` into terminal output. Fenced `scala` and `java` code
+blocks in a [Markdown](markdown.md) document are displayed through the same machinery.
 
 ### Types and diagnostics
 
-With a compiler and classpath in scope, `typecheckedScala` (from the `harlequin.typed` module, the
-only part of harlequin that depends on the compiler wrapper) runs the frontend, and each
-identifier carries the type the compiler gave it — the difference between coloring `xs` as an
-identifier and knowing it is a `List[Int]`:
+With a [compiler](compiler.md) and a [classpath](classpath.md) in scope, `typecheckedScala`
+runs the front end, and each identifier has the type which the compiler gave it. That is the
+difference between coloring `xs` as an identifier, and knowing that it is a `List[Int]`:
 
 ```scala fuel
 typecheck
 ##
-given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-given LocalClasspath = LocalClasspath()
+given scalac: Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+given classpath: LocalClasspath = LocalClasspath()
 import highlighting.typecheckedScala
 
 val typed = Scala.highlight(t"val xs = List(1, 2, 3)")
-// the token for xs knows its type is List[Int]
 ```
 
-Ill-typed source does not fail to highlight — it highlights *with its errors*, each `Diagnostic`
-carrying its span and message, which is what documentation tooling and editors need:
+`typecheckedScala` comes from the module `harlequin.typed`, which is the only part of the
+highlighter that depends on the compiler.
+
+Source which is ill-typed does not fail to highlight. It is highlighted *with its errors*.
+Each `Diagnostic` has its span and its message, which is what documentation tools and
+editors need:
 
 ```scala
-Scala.highlight(t"""val n: Int = "oops"""").diagnostics   // one type error, located
+val diagnostics = Scala.highlight(t"""val n: Int = "oops"""").diagnostics
 ```
 
 ### Completions
 
-A caret position turns highlighting into completion: the compiler's own interactive engine
+A caret position turns highlighting into completion. The compiler's own interactive engine
 proposes what could follow, with kinds and signatures:
 
 ```scala
 val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
-Scala.highlight(source, caret = source.length.z).completions
-// map, max, mkString, … — the members of List[Int]
+val completions = Scala.highlight(source, caret = source.length.z).completions
 ```
 
-Because the proposals come from the same compiler that will eventually compile the code, they are
-never guesses.
+Under a typechecked depth, the proposals here are `map`, `max`, `mkString` and the other
+members of `List[Int]` which begin with `m`. They come from the same compiler which will
+eventually compile the code, so they are never guesses.
 
-Members after a `.` are the easy case. A bare identifier being typed is harder, because the
-statement containing it does not typecheck — that is precisely its state while it is being
-written — and a batch compilation discards the tree. Completions therefore come from the
-compiler's interactive driver, which keeps error trees, so in-scope terms and types complete
-wherever the caret is, and in a type position the offers are narrowed to types, modules and
-packages.
+Members after a `.` are the easy case. A bare identifier which is being typed is harder,
+because the statement which contains it does not typecheck. That is precisely its state
+while it is being written, and a batch compilation discards the code. Completions therefore
+come from the compiler's interactive driver, which keeps code that has errors. Terms and
+types which are in scope are completed wherever the caret is, and in the position of a type,
+the offers are narrowed to types, modules and packages.
 
 ### Completing keywords and dynamic members
 
-Two kinds of proposal the compiler cannot make are supplied alongside its own.
+Two kinds of proposal which the compiler cannot make are supplied beside its own.
 
-*Keywords* are grammatical, not semantic: what may follow depends on the tokens before the caret,
-not on any symbol table. A trie over reversed token contexts, derived from a corpus of real Scala
-and looking back only as far as remains relevant, answers what keywords could come next and what
-the grammar expects there — so `case ` offers what a case may begin with, and a position that
-must be a type offers no keywords at all.
+*Keywords* are grammatical, not semantic. What may follow depends on the tokens before the
+caret, not on any table of symbols. A trie over reversed contexts of tokens, derived from a
+corpus of real Scala, and looking back only as far as remains relevant, answers which
+keywords could come next, and what the grammar expects there. `case ` therefore offers what
+a case may begin with, and a position which must be a type offers no keywords at all.
 
 *Dynamic* members have no symbols to offer at all. Where the caret sits on a selection whose
-qualifier derives from `scala.Dynamic`, the type's companion is asked which members its
+qualifier derives from `scala.Dynamic`, the companion of the type is asked which members its
 refinement admits, if it implements the interface for saying so. That is how a
-[foreign](foreign-interop.md) value completes with the members its foreign declarations name, and
-how any `Dynamic` type can offer honest completions rather than none.
+[foreign](foreign-interop.md) value is completed with the members which its foreign
+declarations name, and how any `Dynamic` type can offer honest completions, instead of none.
+
+### Related
+
+- [Compiler](compiler.md) describes running the Scala compiler from a program.
+- [LSP](lsp.md) serves completions and diagnostics to an editor.
+- [Markdown](markdown.md) displays highlighted code blocks.
+- [Terminal](terminal.md) and [HTML](html.md) are the two forms of output.

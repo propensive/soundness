@@ -2,216 +2,279 @@
 
 ### About
 
-Concurrency in Soundness is structured. A task is spawned inside a supervised scope that owns it, and
-the scope does not complete until its tasks have. A task runs a computation on a thread and yields a
-result that is awaited; a failure in a task propagates to the scope rather than vanishing; and
-canceling a scope cancels everything beneath it. Whether tasks run on the JVM's platform threads or
-its lightweight virtual threads is a choice made in scope. The reasoning behind this shape
-is set out under [structured concurrency](../philosophy/structured-concurrency.md).
+Concurrency is structured. A task is spawned inside a supervised scope, which owns it, and
+the scope does not complete until its tasks have:
+
+- A task runs a computation on a thread, and gives a result, which is awaited.
+- A failure in a task propagates to the scope. It does not vanish.
+- Canceling a scope cancels everything beneath it.
+
+Whether tasks run on the JVM's platform threads, or on its lightweight virtual threads, is a
+choice which is made in scope.
+[Structured concurrency](../philosophy/structured-concurrency.md) sets out the reasoning
+behind this shape.
 
 ### On concurrency
 
-Unstructured concurrency leaks. A thread started with no owner can outlive the code that started it;
-an exception thrown on it disappears unless someone thought to catch it; and canceling a piece of
-work means tracking down every thread it spawned. The lifetimes of concurrent tasks bear no relation
-to the structure of the code, so reasoning about what is still running, and what happened to it, is
-hard.
+Unstructured concurrency leaks. A thread which is started with no owner can outlive the code
+which started it. An exception which is thrown on it disappears, unless someone thought to
+catch it. Canceling a piece of work means tracking down every thread which it spawned. The
+lifetimes of concurrent tasks bear no relation to the structure of the code, so it is hard
+to reason about what is still running, and what happened to it.
 
-Soundness gives concurrent work the same shape as ordinary blocks. Every task is a child of the scope
-that spawned it, and a scope waits for its children before it finishes, so no task outlives its
-scope. A failure travels up to the scope, and canceling the scope cancels its children. The result
-is that a concurrent program nests, and its structure is visible. Everything comes from the
-`soundness` package, with a thread model and a completion policy in scope:
+Here concurrent work has the same shape as ordinary blocks. Every task is a child of the
+scope which spawned it, and a scope waits for its children before it finishes, so no task
+outlives its scope. A failure travels up to the scope, and canceling the scope cancels its
+children. A concurrent program therefore nests, and its structure is visible.
+
+Everything comes from the `soundness` package. A thread model, and a policy for unfinished
+tasks, are in scope, and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
 import threads.virtualThreads
 import probates.cancelProbate
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### A supervised scope
 
-`supervise` opens a scope that owns the tasks spawned within it. It does not return until those tasks
-have settled, so concurrent work has a clear boundary:
+`supervise` opens a scope, which owns the tasks that are spawned within it. It does not
+return until those tasks have settled, so concurrent work has a clear boundary. Outside one,
+no task can be spawned:
 
-```scala
-supervise:
-  ()  // tasks spawned here are owned by this scope
+```scala fuel
+compile
+errors show
+##
+async(1 + 1)
 ```
 
 ### Spawning a task
 
-`async` spawns a task, which runs concurrently and yields its result from `await`:
+`async` spawns a task, which runs concurrently. `await` waits for the task, and gives its
+result:
 
 ```scala
 def expensiveComputation(): Int = (1 to 1000000).sum
 
-supervise:
+val sum = supervise:
   val task = async(expensiveComputation())
-  task.await()   // 1784293664
+  task.await()
 ```
 
-Because the task belongs to the enclosing scope, the scope accounts for it whether or not it is
+```scala fuel
+run
+##
+Out.println(sum.show)
+```
+
+The task belongs to the enclosing scope, so the scope accounts for it, whether or not it is
 explicitly awaited.
 
-Parenthood travels through a `Monitor`. Both `supervise` and `async` introduce one into their
-bodies, but `async` also *consumes* one, whereas `supervise` does not — which is what makes
-`supervise` the root of a hierarchy and `async` a branch beneath it, and why every `async` must
-ultimately stem from a `supervise`. Where several are in scope, the innermost wins by the ordinary
-rules of implicit specificity, so a task nested three deep is a child of its immediate enclosing
-task rather than of the scope at the top.
+Parenthood travels through a `Monitor`. Both `supervise` and `async` introduce one into
+their bodies, but `async` also *consumes* one, and `supervise` does not. That is what makes
+`supervise` the root of a hierarchy, and `async` a branch beneath it, and it is why every
+`async` must ultimately stem from a `supervise`. Where several monitors are in scope, the
+innermost wins, so a task which is nested three deep is a child of the task which
+immediately encloses it, not of the scope at the top.
 
 ### Why a parent waits
 
-A task may not finish — produce a result or be canceled — until its children have finished, and
-that is what makes a completed task safe to reason about. Consider a parent that returns almost
-immediately while a child goes on logging:
+A task may not finish, whether by producing a result or by being canceled, until its
+children have finished. That is what makes a completed task safe to reason about. Consider a
+parent which returns almost immediately, while a child goes on counting. What becomes of the
+child is decided by the [probate](#cancellation-in-both-directions) in scope, and under
+`awaitProbate` the parent waits for it:
 
 ```scala
 var written = 0
 
-supervise:
-  val parent = async:
-    async:
-      for i <- 0 to 10 do
-        snooze(0.01*Second)
-        written += 1
+def outcome(): Text =
+  import probates.awaitProbate
 
-    t"complete"
+  supervise:
+    val parent = async:
+      async:
+        for i <- 0 to 10 do
+          snooze(0.01*Second)
+          written += 1
 
-  parent.await()   // t"complete"
-  written          // 11
+      t"complete"
+
+    parent.await()
 ```
 
-Nothing stands between the parent and its result, so were `await` to return at once, `written`
-would be read while the child was still counting. Instead `parent.await()` does not return
-until the child has settled — which is the invariant in general: once a task has been awaited, no
-further execution can take place on the resources captured in its body, including any that
-escaped through a child.
+Nothing stands between the parent and its result. Were `await` to return at once, `written`
+would be read while the child was still counting. Instead, `parent.await()` does not return
+until the child has settled. Under `awaitProbate` that means all eleven increments have been
+made. Under `cancelProbate`, the child is canceled instead, and the parent still does not
+finish until that has happened.
+
+That is the invariant in general. Once a task has been awaited, no further execution can
+take place on the resources which were captured in its body, including any which escaped
+through a child.
 
 ### Combining tasks
 
-Tasks compose. A collection of tasks awaits together with `sequence`, the first to finish is taken
-with `race`, and `map` and `bind` derive one task from another:
+Tasks compose. A collection of tasks is awaited together with `sequence`. The first to
+finish is taken with `race`. `map` and `bind` derive one task from another:
 
 ```scala
-supervise:
-  List(async(1), async(2), async(3)).sequence.await()   // List(1, 2, 3)
-  async(3).bind(n => async(n + 4)).await()              // 7
+val together = supervise(List(async(1), async(2), async(3)).sequence.await())
+val chained = supervise(async(3).bind(n => async(n + 4)).await())
 ```
 
-`sequence` runs its tasks in parallel and collects the results *in order*, so the ordering of the
-results says nothing about the order in which they finished. `race` returns the first to finish
-and the rest are canceled, since their results were not wanted.
+```scala fuel
+run
+##
+Out.println(together.inspect)
+Out.println(chained.show)
+```
+
+`sequence` runs its tasks in parallel, and collects the results *in order*, so the order of
+the results says nothing about the order in which the tasks finished. `race` gives the
+result of the first to finish, and the rest are canceled, since their results were not
+wanted.
 
 ### Bounded parallelism
 
-A task is a thread, and starting one costs a few microseconds, so a thousand cheap jobs should
-not become a thousand tasks. `concurrently` runs numbered jobs across a fixed number of tasks,
-each taking the next job from a shared counter, and returns the results in job order once every
-task has finished:
+A task is a thread, and starting one costs a few microseconds, so a thousand cheap jobs
+should not become a thousand tasks. `concurrently` runs numbered jobs across a fixed number
+of tasks. Each task takes the next job from a shared counter, and the results are returned
+in the order of the jobs, once every task has finished:
 
 ```scala
-supervise:
-  concurrently(1000, 8)(i => i*i)   // the squares of 0 to 999, in order, from eight tasks
+val squares = supervise(concurrently(1000, 8)(i => i*i))
 ```
 
-The spawn cost is paid eight times rather than a thousand, and no job runs before an earlier one
-has been claimed, so the load balances itself: a slow job simply holds its task while the others
-continue through the rest. A job's exception fails the task it ran on and is rethrown at the join.
+```scala fuel
+run
+##
+Out.println(squares.to[List].excerpt(0, 5).inspect)
+```
+
+The cost of spawning is paid eight times, not a thousand. No job runs before an earlier one
+has been claimed, so the load balances itself: a slow job simply holds its task, while the
+others continue through the rest. An exception in a job fails the task which it ran on, and
+is thrown again when the tasks are joined.
 
 ### Naming tasks
 
-`task` is `async` with a name, checked as the code compiles against the rules for a task name — no
-path separators, since names compose into a hierarchy mirroring the scope tree. Inside the task,
-`monitor.name` is the task's own name, and `monitor.stack` the full path:
+`task` is `async` with a name. The name is checked at [compiletime] against the rules for a
+task's [name](names.md). It has no path separators, since names compose into a hierarchy
+which mirrors the tree of scopes. Inside the task, `monitor.name` is the task's own name,
+and `monitor.stack` is the full path:
 
 ```scala
 import Async.nominative
 
-supervise:
-  task(n"worker")(monitor.name).await()   // t"worker"
+val worker = supervise(task(n"worker")(monitor.name).await())
 ```
 
-Named tasks make a running program legible: a stack trace, a monitor dump or a debugger shows
-`server/connection-4/reader` rather than an anonymous thread number.
+```scala fuel
+run
+##
+Out.println(worker.inspect)
+```
+
+Named tasks make a running program legible. A [stack trace](stack-traces.md), a dump of the
+monitors or a [debugger](debugging.md) shows `server/connection-4/reader`, not an anonymous
+thread number.
 
 ### Cancellation
 
-A task is canceled with `cancel`, and a cancellable task cooperates by pausing at points where it
-can be interrupted. A `snooze` is such a point, so a task sleeping on one wakes to its cancellation
-rather than running on.
+A task is canceled with `cancel`. A task which can be canceled cooperates, by pausing at
+points where it can be interrupted. A `snooze` is such a point, so a task which is sleeping
+in one wakes to its cancellation, and does not run on:
 
-Work that does not pause has to volunteer its own cancellation points. `relent()` is that
-point: while the task is running normally it does nothing, and if the task has been canceled it
-stops there, without producing a value. A task whose body never calls `relent()` and never pauses
-cannot be canceled at all, and must run to completion. The two kinds of cancellation point at
-work:
+```scala
+val interrupted = supervise:
+  val task = async:
+    snooze(10.0*Second)
+    expensiveComputation()
 
-```scala fuel
-alternative `snooze`
-  code
-      supervise:
-        val task = async:
-          snooze(10.0*Second)
-          expensiveComputation()
-        task.cancel()   // the snoozing task is interrupted
-alternative `relent`
-  code
-      supervise:
-        val task = async:
-          for i <- 0 to 10 do
-            sleep(0.1*Second)
-            relent()
-            written += 1
-        task.cancel()
-      written   // 11
-##
+  task.cancel()
+  t"canceled without waiting ten seconds"
 ```
 
-Cancelled at the `relent()`, the task in the `relent` version never reaches the increment on the
-next line. It does still wait out the pause first, because `sleep` is uninterruptible — which is
-the distinction the next section is about.
+```scala fuel
+run
+##
+Out.println(interrupted)
+```
+
+Work which does not pause has to volunteer its own cancellation points. `relent()` is such a
+point. While the task is running normally, it does nothing. If the task has been canceled,
+it stops there, without producing a value. A task whose body never calls `relent()`, and
+never pauses, cannot be canceled at all, and must run to completion.
+
+```scala fuel
+typecheck
+##
+supervise:
+  val task = async:
+    for i <- 0 to 10 do
+      sleep(0.1*Second)
+      relent()
+      written += 1
+
+  task.cancel()
+```
+
+A task which is canceled at the `relent()` never reaches the increment on the next line. It
+does still wait out the pause first, because `sleep` cannot be interrupted, which is the
+distinction that the next section is about.
 
 ### Pausing
 
-Two methods stop the current strand temporarily, and they differ in one way: whether the pause
-can end early because the task was canceled. A `snooze` is a cancellation point, and a canceled
-task wakes from it at once; a `sleep` is not, and an early wakeup — spurious, or from
-cancellation — re-parks for the time still remaining, so the pause always lasts its full length.
-The names are chosen to be remembered rather than looked up: a *snooze* is the alarm clock's
-button, and can be cut short by a second alarm, while a *sleep* is slept through.
+Two methods stop the current task temporarily. They differ in one way: whether the pause can
+end early, because the task was canceled.
 
-Each takes either a *duration* or an *instant*, and the type of the argument says which is
-meant: a duration pauses for that long, and an instant pauses until it arrives.
-
-```scala
-supervise:
-  snooze(2.0*Second)             // for two seconds, unless canceled
-  snooze(now() + 2.0*Second)     // until two seconds from now, unless canceled
-  sleep(2.0*Second)              // for two seconds, whatever happens
-  sleep(now() + 2.0*Second)      // until two seconds from now, whatever happens
+```tabular
+column  Method
+column  When the task is canceled during the pause
+row  `snooze`  the task wakes at once: it is a cancellation point
+row  `sleep`  the pause continues for the time which remains, so it always lasts its full length
 ```
 
-The bound both share is `Schedulable`, which any `Abstractable across Durations` or
-`Abstractable across Instants` type satisfies, so a `quantitative` quantity of time, an
-`aviation.Timespan` and an `aviation.Instant` are all accepted without conversion.
+The names are chosen to be remembered, not looked up. A *snooze* is the button on an alarm
+clock, and can be cut short by a second alarm, while a *sleep* is slept through.
+
+Each takes either a *duration* or an *instant*, and the type of the argument says which is
+meant. A duration pauses for that long, and an instant pauses until it arrives:
+
+```scala fuel
+typecheck
+##
+supervise:
+  snooze(2.0*Second)
+  snooze(now() + 2.0*Second)
+  sleep(2.0*Second)
+  sleep(now() + 2.0*Second)
+```
+
+The bound which both share is `Schedulable`, which any type that is
+`Abstractable across Durations` or `Abstractable across Instants` satisfies. A
+[quantity](quantities.md) of time, a [`Timespan`](time.md#durations-and-timespans) and an
+[`Instant`](time.md#instants) are therefore all accepted without conversion.
 
 #### Units
 
-Both take a *typed* duration or instant — `0.2*Second`, `10*Minute`, an `aviation.Instant` —
-and a typed value cannot be misread. A bare `Long` can, so no given interprets one until a unit
-is chosen by name:
+Both take a *typed* duration or instant, such as `0.2*Second` or `10*Minute`, and a typed
+value cannot be misread. A bare `Long` can, so nothing interprets one until a unit has been
+chosen by name:
 
-```scala
-import abstractables.millisecondsAbstractable
-
+```scala fuel
+compile
+errors show
+##
 supervise:
-  snooze(200L)  // 200 milliseconds
+  snooze(200L)
 ```
 
-The `abstractables` package has four readings of a `Long`:
+The package `abstractables` has four readings of a `Long`:
 
 ```tabular
 column  Given
@@ -222,32 +285,35 @@ row  `millisecondsAbstractable`  a duration in milliseconds
 row  `epochMillisecondsAbstractable`  an instant, in milliseconds since the epoch
 ```
 
-The three duration readings share a type, so exactly one may be imported into a file. (The
-`instantiables` package mirrors all four for the opposite direction.)
-
-A duration reading and the instant reading may not both be in scope where a bare `Long` is
-passed, because nothing at the call site could then say which was meant, and the two givens
-for `Schedulable` are reported as ambiguous:
-
 ```scala
-import abstractables.epochMillisecondsAbstractable
-
-supervise:
-  ()
-  snooze(200L)  // does not compile: a Long is both a duration and an instant here
+import abstractables.millisecondsAbstractable
 ```
 
-The distinction matters because the underlying representation of a duration is *nanoseconds* —
-an unqualified `snooze(200L)` under the nanosecond given returns almost immediately, and a loop
-around it is a busy-loop with nothing at the call site to say so.
+```scala fuel
+run
+##
+supervise:
+  snooze(200L)
+  Out.println(t"paused for 200 milliseconds")
+```
+
+The three readings as a duration share a type, so exactly one of them may be imported into
+a file. The package `instantiables` mirrors all four, for the opposite direction. A reading
+as a duration and the reading as an instant may not both be in scope where a bare `Long` is
+passed, because nothing at the call could then say which was meant, and the two are reported
+as ambiguous.
+
+The distinction matters, because the underlying representation of a duration is
+*nanoseconds*. An unqualified `snooze(200L)`, read in nanoseconds, returns almost
+immediately, and a loop around it is a busy loop, with nothing at the call to say so.
 
 ### Retrying
 
-Work that fails for a transient reason should be tried again, and the *schedule* on which it is
-retried is a value rather than a loop written at each call site. `retry` runs a block under the
-`Tenacity` in scope, which decides how long to wait before each attempt and when to stop. The
-block is lent two operations: `persevere()` asks for another attempt, and `surrender()` gives up
-at once:
+Work which fails for a transient reason should be tried again. The *schedule* on which it is
+retried is a value, not a loop written at each use. `retry` runs a block under the
+`Tenacity` in scope, which decides how long to wait before each attempt, and when to stop.
+The block is lent two operations: `persevere()` asks for another attempt, and `surrender()`
+gives up at once.
 
 ```scala
 import retryTenacities.exponentialTenTimesTenacity
@@ -258,13 +324,19 @@ def fetchRemoteValue(): Optional[Text] =
   attempts += 1
   if attempts < 3 then Unset else t"payload"
 
-supervise:
+val fetched = supervise:
   retry: (surrender, persevere) ?=>
     fetchRemoteValue().or(persevere())
-// t"payload", on the third attempt
 ```
 
-The provided schedules, in the `retryTenacities` package, cover the usual choices:
+```scala fuel
+run
+##
+Out.println(fetched)
+Out.println(attempts.show)
+```
+
+The schedules which are provided, in the package `retryTenacities`, cover the usual choices:
 
 ```tabular
 column  Given
@@ -278,64 +350,65 @@ row  `fixedNoDelayFiveTimesTenacity`  none  5
 row  `fixedNoDelayTenTimesTenacity`  none  10
 ```
 
-`Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of attempts
-raises a `Tenacity.Error` naming how many were made.
+`Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of
+attempts raises a `Tenacity.Error`, which names how many were made.
 
-A body therefore distinguishes a failure worth retrying from one that never will be, and the
-schedule decides the rest.
+A body therefore tells a failure which is worth retrying from one which never will be, and
+the schedule decides the rest.
 
 ### Promises
 
-A `Promise` is a value that will be supplied later, perhaps by another thread. One side awaits it and
-the other fulfills it, which is how work running elsewhere hands back a result:
+A `Promise` is a value which will be supplied later, perhaps by another thread. One side
+awaits it, and the other fulfills it, which is how work which runs elsewhere hands back a
+result:
 
 ```scala
-supervise:
+val promised = supervise:
   val promise = Promise[Int]()
   daemon(promise.fulfill(7))
-  promise.await()   // 7
+  promise.await()
+```
+
+```scala fuel
+run
+##
+Out.println(promised.show)
 ```
 
 ### Daemons
 
-A `daemon` is fire-and-forget work — a background loop, a listener — that the scope does not wait for
-and cancels when it ends. It runs for the life of its scope and no longer.
+A `daemon` is work which is started and then left: a background loop, or a listener. The
+scope does not wait for it, and cancels it when the scope ends. It runs for the life of its
+scope, and no longer.
 
-A daemon's body is *hygienic*: it cannot capture an error handler from the code that spawned it.
-That is deliberate. The spawning code has already moved on, so a handler there is not in any
-meaningful sense enclosing the daemon, and delivering an error to it would mean resuming a
-computation that has finished. A daemon that fails therefore escalates as a `Fault`, which a
-program intercepts where it handles the unexpected, rather than silently reaching a handler that
-was never intended for it.
+A daemon's body is *hygienic*: it cannot capture an error handler from the code which
+spawned it. That is deliberate. The spawning code has already moved on, so a handler there
+does not, in any meaningful sense, enclose the daemon, and delivering an error to it would
+mean resuming a computation which has finished. A daemon which fails therefore escalates as
+a `Fault`, which a program intercepts where it handles the unexpected. It never silently
+reaches a handler which was not intended for it.
 
-### Intercepting the VM
+A long-lived service is a different thing, which [Daemons](daemons.md) describes.
 
-Some events belong to no scope: the VM shutting down, an exception escaping a thread that nothing
-owns, the collector running. These are intercepted on `Vm`, which stands for the running virtual
-machine, and the action runs each time the event occurs until the returned `Hook` is cancelled:
+### Timeouts
 
-```scala
-val hook = Vm.intercept[Fault]:
-  println("A thread died")
-
-hook.cancel()
-```
-
-`Vm.intercept[Shutdown]` runs its action once, when the VM exits — by `System.exit`, by the last
-non-daemon thread ending, or on a `SIGINT` or `SIGTERM` — which is where a server removes the
-socket file it listened on, so a stale one never greets the next process. Shutdown actions run on
-threads of their own, concurrently and in no particular order, and an exception in one is
-swallowed so that it cannot prevent the others from running:
+An `await` may be given a duration, after which it raises an `Async.Error` instead of
+waiting on. A task which has taken too long is thereby abandoned, at a point which the code
+chooses:
 
 ```scala
-Vm.intercept[Shutdown]:
-  println("Exiting")
+def abandoned(): Optional[Unit] = supervise:
+  val slow = async(sleep(10.0*Second))
+  safely(slow.await(0.1*Second))
 ```
+
+`safely` turns the error into `Unset`, so the caller sees an absent result when the deadline
+passes before the task finishes.
 
 ### Cancellation in both directions
 
-Cancelling a scope cancels its children, and the *probate* decides what happens to a child that is
-still running when its parent's body completes:
+Canceling a scope cancels its children. The *probate* decides what happens to a child which
+is still running when the body of its parent completes:
 
 ```tabular
 column  Probate
@@ -346,21 +419,25 @@ row  `failProbate`  makes the parent's `await` raise a checked `Async.Error`
 row  `panicProbate`  makes the parent's `await` panic
 ```
 
-Which to choose follows from what the children do. Work that mutates state — writing to disk,
-say, where a half-finished write leaves things inconsistent — wants `awaitProbate`, so every
-child runs to its end. Pure work with no side effects can take `cancelProbate` and stop wherever
-it happens to be, since nothing observes the difference. And code whose design is to await every
-task it spawns wants a forgotten `await` to be an error rather than a silent wait, which is what
-`failProbate` and `panicProbate` are for — checked or unchecked according to how the program
-handles the unexpected.
+Which to choose follows from what the children do:
 
-Cancellation also runs upward: a task that fails propagates its failure to the scope that owns it,
-which cancels the scope's other children. Work that has become pointless therefore stops, rather
-than continuing to consume resources on behalf of a computation that has already failed.
+- Work which changes state wants `awaitProbate`, so that every child runs to its end.
+  Writing to a disk is an example, where a write which is half finished leaves things
+  inconsistent.
+- Pure work, with no side effects, can take `cancelProbate`, and stop wherever it happens to
+  be, since nothing observes the difference.
+- Code whose design is to await every task which it spawns wants a forgotten `await` to be
+  an error, not a silent wait. That is what `failProbate` and `panicProbate` are for,
+  checked or unchecked, according to how the program handles the unexpected.
 
-### Threads and completion
+Cancellation also runs upward. A task which fails propagates its failure to the scope which
+owns it, and the scope cancels its other children. Work which has become pointless therefore
+stops, and does not go on consuming resources on behalf of a computation which has already
+failed.
 
-The thread model is chosen by import from the `threads` package:
+### Threads
+
+The thread model is chosen by import, from the package `threads`:
 
 ```tabular
 column  Thread model
@@ -373,53 +450,86 @@ row  `javascriptThreads`  the Scala.js event loop
 ```
 
 Virtual threads are cheap enough to spawn in great numbers. `adaptiveThreads` is what an
-application that cannot dictate its JVM should import, and under `javascriptThreads`, where there
-are no threads at all, the same `supervise`, `async` and `await` code runs unchanged. A separate
-choice, the
-*probate*, decides what a scope does with a child that has not finished when the scope ends —
-`cancelProbate` cancels it, `awaitProbate` waits for it — so the policy for tidying up concurrent work
-is explicit rather than assumed.
+application which cannot dictate its JVM should import. Under `javascriptThreads`, where
+there are no threads at all, the same code, with `supervise`, `async` and `await`, runs
+unchanged.
 
-`pooledThreads` hands each new task to an idle carrier where one is waiting and starts another
-only where none is. A hand-off costs a few hundred nanoseconds where a thread
-start and join cost a few microseconds, so it suits fine-grained fan-out: a task per element, or a
-spawn and join inside a loop. A task that blocks keeps its carrier and the pool grows, so it can
-never starve, and cancellation is delivered to the task rather than to the carrier. The price is
-that a task no longer has a thread of its own: thread-locals persist across the tasks a carrier
-runs, and a thread dump shows carriers where the monitor tree shows tasks.
+`pooledThreads` hands each new task to an idle carrier, where one is waiting, and starts
+another only where none is. Handing a task over costs a few hundred nanoseconds, where
+starting and joining a thread costs a few microseconds, so it suits fine-grained work: a
+task for each element, or a spawn and a join inside a loop. A task which blocks keeps its
+carrier, and the pool grows, so it can never starve, and cancellation is delivered to the
+task, not to the carrier. The price is that a task no longer has a thread of its own.
+Thread-locals persist across the tasks which a carrier runs, and a thread dump shows
+carriers, where the tree of monitors shows tasks.
 
-An `await` may also be given a duration, after which it raises `Async.Error` rather than waiting
-on, so a task that has taken too long is abandoned at a point the code chooses:
+### Intercepting the VM
 
-```scala
-supervise:
-  val slow = async(sleep(10.0*Second))
-  safely(slow.await(0.1*Second))   // Unset: the deadline passed
+Some events belong to no scope: the VM shutting down, an exception escaping from a thread
+which nothing owns, the garbage collector running. These are intercepted on `Vm`, which
+stands for the running virtual machine. The action runs each time the event occurs, until
+the `Hook` which is returned is canceled:
+
+```scala fuel
+typecheck
+##
+val hook = Vm.intercept[Fault]:
+  Out.println(t"A thread died")
+
+hook.cancel()
 ```
+
+`Vm.intercept[Shutdown]` runs its action once, when the VM exits, whether through
+`System.exit`, through the last non-daemon thread ending, or on a `SIGINT` or `SIGTERM`.
+That is where a server removes the socket file which it listened on, so that a stale one
+never greets the next process. Shutdown actions run on threads of their own, concurrently,
+and in no particular order. An exception in one is swallowed, so that it cannot prevent the
+others from running:
+
+```scala fuel
+typecheck
+##
+Vm.intercept[Shutdown]:
+  Out.println(t"Exiting")
+```
+
+[Environment](environment.md#the-machine) describes the other facts about the machine.
 
 ### Suspension as an effect
 
-Waiting is not free, and it is not invisible. Awaiting a task or a promise, sleeping, and yielding
-all *suspend* the running strand, and each demands a `Monitor` capability in scope. A method that
-can block therefore says so in its signature, exactly as a method that can fail says so with
-`raises`.
+Waiting is not free, and it is not invisible. Awaiting a task or a promise, sleeping, and
+yielding all *suspend* the running task, and each demands a `Monitor` [capability] in scope.
+A method which can block therefore says so in its signature, exactly as a method which can
+fail says so with [`raises`][raises].
 
-That suspension is allowed to be *blocking* is itself a design decision worth defending, since
-blocking has a poor reputation. It began as a convenience — if a value is not ready, wait for it,
-rather than failing or writing out both the ready and the unready cases — and the convenience is
-real: code that blocks is code written in terms of values rather than callbacks. What earned it
-its reputation was the cost. A platform thread waiting is a thread not working, and an application
-holding thousands of them spends more of its capacity waiting than computing; the servers are
-provisioned for the waiting.
+That suspension is allowed to be *blocking* is itself a decision of design which is worth
+defending, since blocking has a poor reputation. It began as a convenience: if a value is
+not ready, wait for it, instead of failing, or writing out both the ready case and the
+unready one. The convenience is real. Code which blocks is code written in terms of values,
+not callbacks, which is [direct style](../philosophy/direct-style.md).
 
-Virtual threads change that arithmetic. Orders of magnitude more calls can sit in a blocking state
-at once without meaningful overhead, which means the convenience can be had at the price the
-callback-based alternatives were invented to avoid. Blocking where it reads most clearly, on
-threads cheap enough that blocking does not matter, is the shape of everything here — and of
-[streaming](streams.md), which pulls on the consumer's own thread for the same reason.
+What earned blocking its reputation was the cost. A platform thread which is waiting is a
+thread which is not working, and an application which holds thousands of them spends more of
+its capacity waiting than computing.
 
-Underneath, the unit of execution is a `Strand` rather than a thread: an abstraction with the four
-operations suspension needs — interrupt, join, park and unpark. A supervisor supplies strands, and
-a supervisor is a value, so a scheduler that is not built on threads at all — an event loop over
-WebAssembly's waitable sets, for instance — plugs in as a supervisor without any change to the
-code that spawns and awaits.
+Virtual threads change that arithmetic. Orders of magnitude more calls can sit in a blocking
+state at once, without meaningful overhead. The convenience can therefore be had at the
+price which the alternatives based on callbacks were invented to avoid. Blocking where it
+reads most clearly, on threads which are cheap enough that blocking does not matter, is the
+shape of everything here. It is the shape of [streaming](streams.md) too, which pulls on the
+consumer's own thread for the same reason.
+
+Underneath, the unit of execution is a `Strand`, not a thread. A strand is an abstraction
+with the four operations which suspension needs: interrupt, join, park and unpark. A
+supervisor supplies strands, and a supervisor is a value. A scheduler which is not built on
+threads at all, such as an event loop over WebAssembly's waitable sets, is therefore plugged
+in as a supervisor, without any change to the code which spawns and awaits.
+
+### Related
+
+- [Streams](streams.md#combining-and-replicating-streams) merges and replicates streams
+  across tasks.
+- [HTTP server](http-server.md) handles each connection on a task.
+- [Errors](errors.md) describes how a failure in a task is handled.
+- [Daemons](daemons.md) keeps a program running as a service.
+- [Caching](caching.md#an-expiring-value) computes a value once for many concurrent callers.

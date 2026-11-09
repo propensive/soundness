@@ -2,28 +2,34 @@
 
 ### About
 
-Soundness runs shell commands and subprocesses through the `sh"…"` interpolator. The command is
-parsed as the code compiles, so an unbalanced quote is a compile error; a value substituted into it
-is escaped according to where it sits, so a filename with a space cannot break the command apart;
-and the output is turned into whatever type is asked for — the lines as a list, the whole output as
-text, the raw bytes as a stream, or the exit status. Commands pipe together, and a command runs
-synchronously or forks into a background job.
+Shell commands and subprocesses are run through the `sh"…"` [interpolator]:
+
+- The command is parsed at [compiletime], so an unbalanced quote does not compile.
+- A value which is substituted into it is escaped according to where it sits, so a filename
+  with a space in it cannot break the command apart.
+- The output is turned into whatever type is asked for: its lines as a list, the whole of it
+  as text, the raw bytes as a stream, or the exit status.
+
+Commands pipe together. A command is run and waited for, or is forked into a background job.
 
 ### On subprocesses
 
-Running a subprocess is where injection bugs breed. Build the command as one string and an
-interpolated value can smuggle in extra arguments or a shell metacharacter; build it as an array to
-be safe and the convenience is gone. Either way the output comes back as a raw stream to be decoded,
-buffered and closed by hand, and the exit status is an integer to remember to check.
+Running a subprocess is where injection bugs breed. Build the command as one string, and a
+substituted value can smuggle in extra arguments, or a character which means something to the
+shell. Build it as an array to be safe, and the convenience is gone. Either way, the output
+comes back as a raw stream, to be decoded, buffered and closed by hand, and the exit status is
+an integer which someone must remember to check.
 
-A process whose result type and failure modes are in its signature is an [honest signature](../philosophy/honest-signatures.md) for something usually driven by side effect.
+Here the structure of the command is parsed at compiletime, so quoting is understood before
+the program runs. Each substituted value is escaped for its exact position: a value placed
+where a single argument is expected stays one argument, however it is spelled. The output is
+interpreted by the type requested, so reading lines, bytes or an exit status is a matter of
+naming the type, not of parsing a stream. A process whose result type and ways of failing are
+in its signature has an [honest signature](../philosophy/honest-signatures.md), for something
+which is usually driven by side effect.
 
-Soundness parses the command structure at compiletime, so quoting is understood before the program
-runs, and each substituted value is escaped for its exact position — a value spliced where a single
-argument is expected stays one argument, however it is spelled. The output is interpreted by the
-type requested, so reading lines, bytes or an exit status is a matter of naming the type rather than
-parsing a stream. Everything comes from the `soundness` package, with a working directory and error
-strategy in scope:
+Everything comes from the `soundness` package. A working directory and an error [strategy] are
+in scope, and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
@@ -33,30 +39,46 @@ import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
 import strategies.throwUnsafely
 import workingDirectories.javaBaseWorkingDirectory
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Defining a command
 
-`sh"…"` builds a `Command`, splitting on whitespace and honoring quotes as a shell would:
+`sh"…"` builds a `Command`. It splits the text at whitespace, and honors quotes as a shell
+would:
 
-```scala
-sh"ls -la"   // Command(t"ls", t"-la")
+```scala fuel
+run
+##
+Out.println(sh"ls -la".inspect)
+Out.println(sh"echo 'Hello world'".inspect)
+```
+
+A command whose quotes do not balance does not compile:
+
+```scala fuel
+compile
+errors show
+##
+sh"echo 'Hello world"
 ```
 
 ### Running a command
 
-`exec` runs the command and interprets its output as the type named:
+`exec` runs the command, and interprets its output as the type named:
 
-```scala
-sh"echo hello".exec[Text]().trim              // t"hello"
-sh"printf 'a\nb\nc\n'".exec[List[Text]]()     // List(t"a", t"b", t"c")
-sh"false".exec[Exit]()                        // Exit.Fail(1)
+```scala fuel
+run
+##
+Out.println(sh"echo hello".exec[Text]().trim)
+Out.println(sh"printf 'a\nb\nc\n'".exec[List[Text]]().inspect)
+Out.println(sh"false".exec[Exit]().inspect)
 ```
 
-The type does more than name a conversion; it decides how the result is *interpreted*. Commands
-disagree about which stream carries the important output and about what a nonzero status means —
-for some it is a failure, for others one of several ordinary answers — and the choice of type
-settles both. It also decides *when* the call returns:
+The type does more than name a conversion. It decides how the result is *interpreted*.
+Commands disagree about which stream carries the important output, and about what a nonzero
+status means. For some it is a failure, and for others it is one of several ordinary answers.
+The choice of type settles both. It also decides *when* the call returns:
 
 ```tabular
 column  Type
@@ -72,13 +94,25 @@ row  `Unit`  nothing: the output is discarded  when the process finishes
 row  a path type  the trimmed output, read as a path  when the process finishes
 ```
 
-A `Computable` instance defines each of these, so a type not covered gains one by saying how to
-interpret a finished or running process — often by mapping an existing instance, since
-`Computable` is a functor.
+A `Computable` instance defines each of these. A type which is not covered gains one by saying
+how to interpret a process which has finished, or which is running. That is often done by
+mapping an existing instance, since `Computable` is a functor.
+
+### An implied output type
+
+Many commands have an obvious type of output, and the common ones are known. Applying a
+command directly, without naming a type, uses that default. `echo` gives text, and `ls` gives
+a stream of lines:
+
+```scala fuel
+run
+##
+Out.println(sh"echo hi"().trim)
+```
 
 ### Substitution and escaping
 
-A value substituted into a command is escaped for its position. Spliced where an argument is
+A value which is substituted into a command is escaped for its position. Where an argument is
 expected:
 
 ```tabular
@@ -90,85 +124,126 @@ row  path  one argument, its text
 row  command  one argument, escaped, as described below
 ```
 
+A filename which contains a space stays one argument, and a list becomes several:
+
 ```scala
 val file = t"a file.txt"
-sh"cat $file"   // Command(t"cat", t"a file.txt") — one argument, not two
-
 val flags = List(t"-l", t"-a")
-sh"ls $flags"   // Command(t"ls", t"-l", t"-a")
 ```
 
-Any type that describes how it becomes a command argument can be substituted, so a domain value is
-spliced without first turning it into a string by hand.
+```scala fuel
+run
+##
+Out.println(sh"cat $file".inspect)
+Out.println(sh"ls $flags".inspect)
+```
+
+Any type which describes how it becomes an argument of a command can be substituted, so a
+value from a program's own domain, such as a [path](paths.md), is placed in a command without
+first being turned into a string by hand. [Interpolation](interpolation.md#substitutions)
+describes the mechanism.
 
 ### Piping
 
-Commands pipe with `|`, the output of one becoming the input of the next, and the pipeline is run
-and read exactly as a single command:
+Commands are piped with `|`. The output of one becomes the input of the next, and the pipeline
+is run, and read, exactly as a single command is:
 
-```scala
-(sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim   // t"Hallo world"
+```scala fuel
+run
+##
+Out.println((sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim)
 ```
 
-Pipelines flatten rather than nest, so a three-stage pipeline is one pipeline of three commands
-however it was assembled, and a pipeline piped into a command extends it:
+Pipelines flatten, and do not nest. A pipeline of three stages is one pipeline of three
+commands, however it was assembled, and a pipeline which is piped into a command extends it:
 
-```scala
-(sh"echo a" | sh"cat" | sh"wc").commands.length   // 3
+```scala fuel
+run
+##
+Out.println((sh"echo a" | sh"cat" | sh"wc").commands.length.show)
 ```
 
 ### Commands inside commands
 
-A command substituted into another is escaped as a single argument, which is what invoking a shell
-requires and what hand-built command strings get wrong:
+A command which is substituted into another is escaped as a single argument. That is what
+invoking a shell requires, and what command strings built by hand get wrong:
 
 ```scala
 val inner = sh"echo 'Hello world'"
-sh"sh -c '$inner'".exec[Text]().trim   // t"Hello world"
-
-Command(t"echo", t"a b").escape        // t"'echo' 'a b'"
 ```
 
-An argument containing a space, a quote or a metacharacter is therefore carried through
-untouched — there is no point at which it becomes a string a shell might re-split.
+```scala fuel
+run
+##
+Out.println(sh"sh -c '$inner'".exec[Text]().trim)
+Out.println(Command(t"echo", t"a b").escape)
+```
+
+An argument which contains a space, a quote or a character special to the shell is therefore
+carried through untouched. There is no point at which it becomes a string which a shell might
+split again.
+
+### Failure
+
+A command which cannot be run at all, because its binary is missing, or is a directory, or is
+not executable, raises an `Exec.Error`. The error carries the command which failed, so it
+names what was attempted, instead of reporting an error number from the operating system:
+
+```scala fuel
+run
+##
+Out.println(capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head)
+```
+
+A command which runs, and *fails*, is a different matter. Its exit status is part of its
+result, and what a nonzero status means is the caller's decision. Asking for an `Exit` gives
+the status itself. Asking for a `Text`, or a stream, gives the output, with the status
+available beside it.
 
 ### Forking
 
-`fork` starts the command without waiting, returning a `Job` that can be awaited for its result,
-inspected, or stopped:
+`exec` blocks until the command finishes. `fork` starts the command without waiting, and
+returns a `Job`, which can be awaited for its result, inspected, or stopped:
 
-```scala
+```scala fuel
+run
+##
 val job = sh"sleep 5".fork[Unit]()
-job.alive        // true
-job.abort()      // ask it to stop
-job.kill()       // insist
-job.await()      // block for the result
+
+Out.println(job.alive.inspect)
+job.kill()
 ```
 
-`exec` blocks until the command finishes; `fork` returns as soon as it has started, which is the
-whole difference between the two. A `Job` also exposes the operating-system process behind it —
-its `pid`, and the process object itself — for the occasions where a signal must be sent or a
-process tree inspected:
-
-```scala
-val sleeper = sh"sleep 30".fork[Unit]()
-
-sleeper.pid          // Pid(…), rendered as ↯1234
-sleeper.process      // the underlying OS process
-sleeper.kill()
+```tabular
+column  Member of a `Job`
+column  Does
+row  `alive`  says whether the process is still running
+row  `abort()`  asks the process to stop
+row  `kill()`  insists that it stop
+row  `await()`  blocks for the result
+row  `pid`  gives the process's `Pid`
+row  `process`  gives the operating system's process itself
 ```
 
-A `Pid` is a distinct type rather than a number, so it cannot be confused with an exit code or a
-file descriptor, and it renders and parses in its own form.
+`pid` and `process` are for the occasions where a signal must be sent, or a tree of processes
+inspected. A `Pid` is a distinct type, not a number, so it cannot be confused with an exit
+code or a file descriptor, and it is written and parsed in a form of its own.
 
-A process that should outlive the one that starts it — a server of its own, a daemon — is
-*detached*: `detach` starts it reading the null device and writing nowhere, or appending to a
-log whose parent directories are made, and answers its pid, holding nothing else of it. A
-forked child inherits pipes that nobody drains, and a server writing to them eventually blocks;
-a detached one cannot. Its environment is the `Environment` in scope, so `emptyEnvironment`
-with `variables(…)` gives it exactly the variables named:
+### Detaching
 
-```scala
+A process which should outlive the one that starts it, such as a server or a
+[daemon](daemons.md), is *detached*. `detach` starts it reading from the null device, and
+writing nowhere, or appending to a log whose parent directories are made. It gives the
+process's pid, and holds nothing else of it.
+
+A forked child inherits pipes which nobody drains, and a server which writes to them
+eventually blocks. A detached process cannot. Its environment is the
+[`Environment`](environment.md#overriding-for-a-block) in scope, so `emptyEnvironment` with
+`variables(…)` gives it exactly the variables named:
+
+```scala fuel
+typecheck
+##
 import pathInterfaces.pathOnLinux
 import filesystemBackends.javaBaseFilesystem
 
@@ -176,7 +251,7 @@ val directory: Path on Linux = (% / "var" / "log").on[Linux]
 val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
 ```
 
-So a command starts in one of three ways, or, through `pty`, on a terminal:
+So a command is started in one of three ways or, through `pty`, on a terminal:
 
 ```tabular
 column  Method
@@ -190,78 +265,73 @@ row  `pty`  not at all  a description of the command on a pseudo-terminal, to `e
 
 ### On a terminal
 
-A command's standard streams are normally pipes, and many programs behave differently when they
-notice: a shell prints no prompt, `stty` fails, a line editor never starts. `pty` runs the command
-on a fresh pseudo-terminal of the given size instead, so it finds a terminal on its input, output
-and error, as it would if a person had typed it:
+A command's standard streams are normally pipes, and many programs behave differently when
+they notice. A shell prints no prompt, `stty` fails, and a line editor never starts. `pty`
+runs the command on a fresh pseudo-terminal of the given size instead. The command then finds
+a terminal on its input, output and error, as it would if a person had typed it. Here `stty`
+reports the size which was asked for, as 30 rows and 100 columns:
 
 ```scala fuel
 typecheck
 ##
-sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
+val size: Text = sh"stty size".pty(100, 30).exec[Text]().trim
 ```
 
-For an interactive program, a `session` lends the running command to a block, as a `Job` which can
-also be resized, and ends it when the block does — hanging up on the program if it is still running,
-as closing a real terminal would. Its output is everything the program writes to the terminal,
-standard error included, escape sequences and all — what a terminal emulator would receive — and
-anything streamable can be typed at it with `writeTo`. A terminal has no end of input of its own, so
-a program reading until the end is sent the end-of-file character, `^D`, rather than having its
-input closed:
+For an interactive program, a `session` lends the running command to a block, as a `Job`
+which can also be resized, and ends the command when the block does. If the program is still
+running, it is hung up on, as it would be by closing a real terminal.
+
+The session's output is everything which the program writes to the terminal, standard error
+included, with its escape sequences, which is what a
+[terminal emulator](terminal-emulator.md) would receive. Anything streamable can be typed at
+it, with `writeTo`. A terminal has no end of input of its own, so a program which reads until
+the end is sent the end-of-file character, `^D`, instead of having its input closed:
 
 ```scala fuel
 typecheck
 ##
 sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
-  terminal.resize(132, 50)   // the program receives SIGWINCH
-  t"\r".writeTo(terminal)    // press Return
-  terminal.text().trim       // t"50 132"
+  terminal.resize(132, 50)
+  t"\r".writeTo(terminal)
+  terminal.text().trim
 ```
 
-The value `pty` returns is not itself a terminal: it describes how to run the command, and each
-`session` or `exec` allocates a fresh terminal and releases it again.
+Resizing sends the program the signal `SIGWINCH`, writing `\r` presses Return, and the text
+which comes back is `50 132`.
 
-A terminal's line discipline — whether it echoes what is typed, gathers input a line at a time,
-turns `^C` into a signal, and so on — is a `Termios`, named after the POSIX structure and with a
-switch for each of the flags a program most often changes. `Termios.raw` turns them all off, as a
-full-screen program does before it draws, and `Termios.cooked` turns them all on. A `Termios`
-given to `pty` is set before the command starts, and a running command's terminal can be read
-and changed through its `Job`:
+The value which `pty` returns is not itself a terminal. It describes how to run the command,
+and each `session` or `exec` allocates a fresh terminal, and releases it again.
+
+A terminal's *line discipline* says whether it echoes what is typed, gathers input a line at a
+time, turns `^C` into a signal, and so on. It is a `Termios`, named after the POSIX structure,
+with a switch for each of the flags which a program most often changes. `Termios.raw` turns
+them all off, as a full-screen program does before it draws, and `Termios.cooked` turns them
+all on. A `Termios` given to `pty` is set before the command starts, and the terminal of a
+running command can be read and changed through its `Job`:
 
 ```scala fuel
 typecheck
 ##
 sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
-  t"hi".writeTo(terminal)      // delivered at once, without a newline
-  terminal.mode.canonical      // false
+  t"hi".writeTo(terminal)
+  val canonical: Boolean = terminal.mode.canonical
   terminal.mode = Termios.cooked
-  terminal.text()              // t"hi", unechoed
+  terminal.text()
 ```
 
-Pseudo-terminals are allocated through the JDK's foreign function API, on Linux and macOS, so a
-program using them should be run with `--enable-native-access=ALL-UNNAMED` to keep the JDK from
-warning about it.
+In raw mode the two characters are delivered at once, without a newline, and are not echoed,
+so the text which comes back is just `hi`.
 
-### Failure
+Pseudo-terminals are allocated through the JDK's foreign function API, on Linux and macOS. A
+program which uses them should be run with `--enable-native-access=ALL-UNNAMED`, to keep the
+JDK from warning about it.
 
-A command that cannot be run at all — a missing binary, a directory that is not executable —
-raises an `Exec.Error` carrying the command that failed, so the error names what was attempted
-rather than reporting an operating-system errno:
+### Related
 
-```scala
-capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head
-// t"no-such-binary"
-```
-
-A command that runs and *fails* is a different matter: its exit status is part of its result, and
-what a non-zero status means is the caller's decision. Asking for an `Exit` gives the status
-itself; asking for a `Text` or a stream gives the output, with the status available alongside.
-
-### An implied output type
-
-Many commands have an obvious output type, and Soundness knows the common ones. Applying a command
-directly, without naming a type, uses that default — `echo` yields text, `ls` a stream of lines:
-
-```scala
-sh"echo hi"().trim   // t"hi"
-```
+- [Environment](environment.md) decides which variables a subprocess inherits.
+- [Streams](streams.md) reads a command's output a part at a time.
+- [Git](git.md), [Docker](docker.md) and [SSH](ssh.md) drive particular programs with typed
+  APIs of their own.
+- [Command-line interfaces](cli.md) covers the other side: a program which is itself run from
+  a shell.
+- [ACP](acp.md), [debugging](debugging.md), [logging](logging.md), [LSP](lsp.md), [staging](staging.md) and [terminal](terminal.md) launch and control processes.

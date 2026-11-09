@@ -2,21 +2,19 @@
 
 ### About
 
-`Text` is the string type used throughout Soundness, written with the `t"…"` interpolator.
-It carries a large, coherent surface of operations — splitting and joining, slicing, case
-conversion, trimming, padding, replacing, searching, fuzzy matching — each typed so that a
-mistake is caught as the code compiles rather than surfacing as a wrong answer or an
-exception at runtime.
+`Text` is the string type used throughout Soundness, written with the `t"…"` [interpolator]. It
+has a large and consistent set of operations: splitting and joining, slicing, changing case,
+trimming, padding, replacing, searching and fuzzy matching. Each is typed so that a mistake is
+caught at [compiletime], instead of surfacing as a wrong answer or an exception at [runtime].
 
-`Text` is an [opaque](https://docs.scala-lang.org/scala3/reference/other-new-features/opaques.html)
-alias for the JVM's `String`, so it costs nothing at runtime, and every operation is written
-against a `Textual` abstraction, so the same methods work on `Text` and on other textual
-types alike.
+`Text` is an [opaque type] over the JVM's `String`, so it costs nothing at runtime. Every
+operation is written against the `Textual` [typeclass], so the same methods work on `Text` and
+on other textual types alike.
 
 ### On text
 
-Java's `String` gathered its methods over decades, and they show it, and none of its pitfalls
-is caught by the types; each mistake waits for runtime:
+Java's `String` gathered its methods over decades, and it shows. None of its pitfalls is caught
+by the types, so each mistake waits for runtime:
 
 ```tabular
 column  In Java's `String`
@@ -28,160 +26,225 @@ row  `split`  takes a regular expression where a literal was meant  `cut` takes 
 row  any method returning a string  may return `null`  nothing returns `null`
 ```
 
-`Text` presents the same underlying strings through a deliberately designed surface. Absence
-is an `Optional`, not a magic `-1`; a search returns a position that cannot be confused with
-a length; and the operations read as plain verbs. Three rules hold throughout: nothing returns
-`null`, nothing returns a mutable array, and nothing takes `Any` and quietly calls `toString` on
-it. That last rule is why a value must say how it becomes text before it can be treated as text. Because `Text` is opaque over `String`, the
-safety is free — the two are the same bytes at runtime. Everything comes from the `soundness`
-package, with a text-metrics given in scope for the operations that measure width:
+`Text` presents the same underlying strings through a deliberately designed surface. Three rules
+hold throughout:
+
+- Nothing returns `null`. Absence is an [optional](optional-values.md) value.
+- Nothing returns a mutable array.
+- Nothing takes `Any` and quietly calls `toString` on it. A value must say how it becomes text
+  before it can be treated as text.
+
+Everything comes from the `soundness` package. The operations which measure width need a text
+metric in scope, and the last import lets the samples print their results:
 
 ```scala
 import soundness.*
 import textMetrics.uniformMetric
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
-Text operations that require a collation, an encoding or a metric to be named are [declarative context](../philosophy/declarative-context.md): nothing about text is assumed.
+Wherever an operation depends on a collation, an encoding or a metric, that choice is named by
+an import. Nothing about text is assumed, which is
+[declarative context](../philosophy/declarative-context.md) at work.
 
 ### Writing text
 
-The `t"…"` interpolator builds a `Text`, substituting any value that can be shown. Prose in
-source code wants to be wrapped for the reader, and unwrapped for the output, so the `txt"…"`
-interpolator collapses a wrapped paragraph into a single line, joining its lines with single
-spaces, and strips the indentation the source needed:
+The `t"…"` interpolator builds a `Text`, substituting any value which can be shown:
 
 ```scala
 val name = t"Ada"
-t"Hello, $name!"          // t"Hello, Ada!"
-
-txt"""This message is written
-      across several lines."""   // t"This message is written across several lines."
 ```
 
-A blank line in a `txt"…"` literal is a paragraph break, and becomes a single newline:
+```scala fuel
+run
+##
+Out.println(t"Hello, $name!")
+```
 
-```scala
-txt"""Hello
-      world"""      // t"Hello world"
+A value with no way of being shown cannot be substituted. Where Java would print something like
+`Object@1b6d3586`, this does not compile:
 
-txt"""Hello
+```scala fuel
+compile
+errors show
+##
+t"Hello, ${new Object()}!"
+```
 
-      world"""      // t"Hello\nworld"
+Prose in source code wants to be wrapped for the programmer, and unwrapped for the output. The
+`txt"…"` interpolator joins the lines of a wrapped paragraph with single spaces, and strips the
+indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+
+```scala fuel
+run
+##
+Out.println(txt"""This message is written
+                  across several lines.
+
+                  This is its second paragraph.""")
 ```
 
 ### Splitting and joining
 
-`cut` divides text at a delimiter — a `Text`, a `Char`, or a regular expression — returning
-the pieces; `words` and `lines` are the common cases:
+`cut` divides text at a delimiter, which may be a `Text`, a `Char` or a
+[regular expression](patterns.md). `words` and `lines` are the common cases:
 
-```scala
-t"one,two,three".cut(t",")   // List(t"one", t"two", t"three")
-t"a short sentence".words    // List(t"a", t"short", t"sentence")
+```scala fuel
+run
+##
+Out.println(t"one,two,three".cut(t",").inspect)
+Out.println(t"a short sentence".words.inspect)
 ```
 
-`join` combines a collection of text, optionally with a separator, and optionally with the
-distinct final separator that reads naturally in English:
+`join` combines a collection of text. It takes an optional separator, and an optional final
+separator, for a list which reads naturally in English:
 
-```scala
-List(t"one", t"two", t"three").join(t", ")            // t"one, two, three"
-List(t"one", t"two", t"three").join(t", ", t" and ")  // t"one, two and three"
+```scala fuel
+run
+##
+Out.println(List(t"one", t"two", t"three").join(t", "))
+Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
 ```
 
-`join` is the counterpart of the standard library's `mkString`, and differs in the way that
-matters: `mkString` calls `toString` on every element without saying so, so a collection of
-anything at all produces text of some kind. `join` produces text only from textual elements,
-so a collection whose elements have no meaningful rendering does not render badly: it either
-does not compile or, if the elements are collections themselves, concatenates them, and the
-separator is then one of their elements, interleaved (see the collections tutorial).
+`join` does the job of the standard library's `mkString`, and differs in the way that matters.
+`mkString` calls `toString` on every element without saying so, so a collection of anything at
+all produces text of some kind. `join` produces text only from textual elements. A collection
+whose elements have no meaningful rendering does not compile. If the elements are themselves
+collections, `join` concatenates them, and the separator is then one of *their* elements;
+[Collections](collections.md#reshaping) describes that form.
 
 ### Slicing
 
-`keep` and `skip` take or drop a number of characters, from the left by default or from the
-right with `Rtl`; `snip` splits at a position into a pair:
+`keep` takes a number of characters and `skip` drops them. Both count from the left by default,
+and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
 
-```scala
-t"Hello".skip(1)          // t"ello"
-t"Hello".keep(1, Rtl)     // t"o"
-t"Hello".snip(2)          // (t"He", t"llo")
+```scala fuel
+run
+##
+Out.println(t"Hello".skip(1))
+Out.println(t"Hello".keep(1, Rtl))
+Out.println(t"Hello".snip(2).inspect)
 ```
 
-A range of positions is taken with `segment`, using [ordinals](https://en.wikipedia.org/wiki/Ordinal_number)
-— `Prim`, `Sec`, `Ter` and so on — that count from one, so an off-by-one slip is hard to make:
+`segment` takes a range of positions. The positions are
+[ordinals](https://en.wikipedia.org/wiki/Ordinal_number), `Prim`, `Sec`, `Ter` and so on, which
+count from one. The fifth to the seventh characters are `Quin thru Sept`, so there is no
+zero-based index to get wrong by one:
 
-```scala
-t"Hello world".segment(Quin thru Sept)   // t"o w"
+```scala fuel
+run
+##
+Out.println(t"Hello world".segment(Quin thru Sept).inspect)
 ```
+
+[Collections](collections.md#positions-and-access) uses the same ordinals for positions in a
+list.
 
 ### Transforming
 
-Case conversion, trimming, and replacement each read as a verb. `sub` replaces one piece of
-text with another:
+Trimming, changing case and replacing are each a verb. `sub` replaces one piece of text with
+another:
 
-```scala
-t"  Hello  ".trim           // t"Hello"
-t"hello".capitalize         // t"Hello"
-t"LOUD".lower               // t"loud"
-t"naive".sub(t"i", t"ï")    // t"naïve"
+```scala fuel
+run
+##
+Out.println(t"  Hello  ".trim.inspect)
+Out.println(t"hello".capitalize)
+Out.println(t"LOUD".lower)
+Out.println(t"naive".sub(t"i", t"ï"))
 ```
 
-Character-level filters keep or drop by a predicate:
+`keep` also takes a predicate, and keeps the characters which satisfy it:
 
-```scala
-t"HELLOworld".keep(_.isUpper)   // t"HELLO"
+```scala fuel
+run
+##
+Out.println(t"HELLOworld".keep(_.isUpper))
 ```
+
+[Characters](characters.md) describes what can be asked of a single character.
 
 ### Sorting and comparing text
 
-Text has no natural order: whether `café` sorts before or after `caff` depends on the collation,
-and a program that sorts text without saying which is making a choice it does not know it is
-making. So sorting text, or comparing it with `<`, needs a *collation* in scope, and without one
-the sort does not compile. `unicodeCollation` applies the Unicode Collation Algorithm — dictionary
-order, ranking accents before case — and `codepointCollation` orders by code point, which is fast
-and stable but places supplementary characters after the whole basic plane:
+Text has no natural order. Whether `café` sorts before or after `caff` depends on the
+*collation*, and a program which sorts text without choosing one is making a choice it does not
+know about. So sorting text, or comparing it with `<`, needs a collation in scope. Without one,
+the comparison does not compile:
+
+```scala fuel
+compile
+errors show
+##
+t"apple" < t"banana"
+```
+
+Two collations are provided:
+
+```tabular
+column  Import
+column  Orders text
+row  `collations.unicodeCollation`  by the Unicode Collation Algorithm: dictionary order, ranking accents before case
+row  `collations.codepointCollation`  by code point, which is fast and stable, but places supplementary characters after the whole basic plane
+```
 
 ```scala
 import soundness.collationComparable
 import collations.unicodeCollation
 import sortingAlgorithms.timsort
-
-List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
-t"apple" < t"banana"                    // true
 ```
+
+```scala fuel
+run
+##
+Out.println(List(t"caff", t"café", t"cafe").sort.inspect)
+Out.println((t"apple" < t"banana").inspect)
+```
+
+[Collections](collections.md#sorting) explains `sort` and the choice of sorting algorithm.
 
 ### Case conventions
 
-Text splits into words and rejoins in a naming convention. `uncamel` breaks a camel-case or
-Pascal-case identifier into its words, in lower case — `unkebab` and `unsnake` do the same for the
-other styles — and four methods join words in the corresponding style:
+Text splits into words, and the words rejoin in a naming convention. `uncamel` breaks a
+camel-case or Pascal-case identifier into its words, in lower case. `unkebab` and `unsnake` do
+the same for the other styles. Four methods join words in each style:
 
 ```tabular
 column  Method
 column  Joins words
-column  For `t"oneTwoThree".uncamel`
-row  `kebab`  with hyphens  `t"one-two-three"`
-row  `snake`  with underscores  `t"one_two_three"`
-row  `camel`  capitalizing every word but the first  `t"oneTwoThree"`
-row  `pascal`  capitalizing every word  `t"OneTwoThree"`
+row  `kebab`  with hyphens
+row  `snake`  with underscores
+row  `camel`  capitalizing every word but the first
+row  `pascal`  capitalizing every word
 ```
 
-```scala
-t"oneTwoThree".uncamel.kebab   // t"one-two-three"
+```scala fuel
+run
+##
+Out.println(t"oneTwoThree".uncamel.kebab)
+Out.println(t"oneTwoThree".uncamel.snake)
+Out.println(t"one-two-three".unkebab.camel)
+Out.println(t"one_two_three".unsnake.pascal)
 ```
 
 ### Padding and fitting
 
-`pad` extends text to a width, `center` pads on both sides, and `fit` forces an exact width,
-truncating if need be. Each measures width through the `Text is Measurable` given in scope —
-here `uniformMetric`, which counts every character as one column:
+`pad` extends text to a width, `center` pads it on both sides, and `fit` forces an exact width,
+truncating if need be. Each measures width through the `Text is Measurable` given in scope.
+Here that is `uniformMetric`, which counts every character as one column:
 
-```scala
-t"123".pad(5, Bidi.Rtl)         // t"  123"
-t"123".fit(5, Bidi.Rtl, '.')    // t"..123"
+```scala fuel
+run
+##
+Out.println(t"123".pad(5, Bidi.Rtl).inspect)
+Out.println(t"123".fit(5, Bidi.Rtl, '.').inspect)
+Out.println(t"123456789".fit(5).inspect)
 ```
+
+[Tables](tables.md) uses these to lay out columns of text.
 
 ### Searching
 
-Membership and position are asked with five methods:
+Five methods ask about membership and position:
 
 ```tabular
 column  Method
@@ -190,14 +253,23 @@ row  `contains`  whether the text contains another
 row  `starts`  whether the text starts with another
 row  `ends`  whether the text ends with another
 row  `count`  how many characters satisfy a predicate
-row  `offsetOf`  where another text occurs, searching from the left by default, as an `Optional` position rather than a sentinel
+row  `offsetOf`  where another text occurs, searching from the left by default
 ```
 
-```scala
-t"hello world".contains(t"ello")   // true
-t"hello world".offsetOf(t"o")      // an Optional position, present here
-t"banana".count(_ == 'a')          // 3
+`offsetOf` gives an `Optional` position. Text which is not found gives `Unset`, never a number
+which could be mistaken for a position:
+
+```scala fuel
+run
+##
+Out.println(t"hello world".contains(t"ello").inspect)
+Out.println(t"banana".count(_ == 'a').show)
+Out.println(t"hello world".offsetOf(t"o").inspect)
+Out.println(t"hello world".offsetOf(t"z").inspect)
 ```
+
+[Patterns](patterns.md) matches text against regular expressions and globs, and extracts parts
+of it.
 
 ### Bytes
 
@@ -206,92 +278,123 @@ Text encodes to bytes through the character encoding in scope, and bytes decode 
 ```scala
 import codepages.utf8Codepage
 
-val bytes = t"Adélaïde".in[Data]   // the UTF-8 bytes
-bytes.utf8                     // t"Adélaïde"
+val bytes = t"Adélaïde".in[Data]
 ```
+
+```scala fuel
+run
+##
+Out.println(bytes.length.show)
+Out.println(bytes.utf8)
+```
+
+The eight characters are ten bytes in UTF-8, since each accented letter takes two.
+[Characters](characters.md) covers encodings, and [Base encoding](base-encoding.md) writes bytes
+as hexadecimal or Base64 text.
 
 ### Fuzzy matching
 
-Two pieces of text can be compared for closeness rather than equality, through a `Proximity`
-measure in scope. The [Levenshtein](https://en.wikipedia.org/wiki/Levenshtein_distance)
-distance counts the single-character edits between them:
+Two pieces of text can be compared for closeness, not just equality, through a `Proximity`
+measure in scope. The [Levenshtein](https://en.wikipedia.org/wiki/Levenshtein_distance) distance
+counts the single-character edits between them:
 
 ```scala
 import proximities.levenshteinProximity
 import caseSensitivity.caseSensitive
-
-t"Hello world".proximity(t"Hello orld")   // 1
 ```
 
-Comparing one word against a whole vocabulary that way is quadratic, and a spelling suggestion
-needs it to be fast. A `Lexicon` is a
-[BK-tree](https://en.wikipedia.org/wiki/BK-tree) over the words, which uses the triangle
-inequality the distance metric obeys to prune most of the vocabulary without measuring it:
+```scala fuel
+run
+##
+Out.println(t"Hello world".proximity(t"Hello orld").show)
+```
+
+Comparing one word against a whole vocabulary in this way is slow, and a spelling suggestion
+needs it to be fast. A `Lexicon` is a [BK-tree](https://en.wikipedia.org/wiki/BK-tree) over the
+words. It uses the triangle inequality, which the distance obeys, to rule out most of the
+vocabulary without measuring it:
 
 ```scala
 val words = List(t"book", t"boot", t"cook", t"look", t"bake")
 val lexicon = Lexicon(words)
-
-lexicon.search(t"book", 0)   // exact matches only
-lexicon.search(t"booq", 1)   // everything within one edit
 ```
 
-A search at distance zero is an exact lookup; widening the radius admits progressively more
-distant candidates, which is how a "did you mean" suggestion is produced from a large word list.
+A search at distance zero is an exact lookup. Widening the radius admits more distant
+candidates, which is how a "did you mean" suggestion is produced from a large word list:
+
+```scala fuel
+run
+##
+Out.println(lexicon.search(t"book", 0).inspect)
+Out.println(lexicon.search(t"booq", 1).inspect)
+```
 
 ### Prefix dictionaries
 
-Where lookup is by exact key rather than by proximity, a `Dictionary` maps text to values through
-a trie, so a lookup costs the length of the key rather than a hash of the whole of it, and a
-prefix query costs the length of the prefix:
+Where lookup is by exact key, a `Dictionary` maps text to values through a
+[trie](https://en.wikipedia.org/wiki/Trie). A lookup costs the length of the key, not a hash of
+the whole of it, and a query by prefix costs the length of the prefix:
 
 ```scala
 val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+```
 
-dictionary(t"color")     // 0
-dictionary.size          // 2
+```scala fuel
+run
+##
+Out.println(dictionary(t"colour").inspect)
+Out.println(dictionary.size.show)
 ```
 
 ### Graphemes and width
 
-A character is not a unit of text a person would recognize. `é` may be one code point or two, and
-a family emoji is several joined together, so counting `Char`s answers the wrong question.
-`Writing` gives a text's *grapheme clusters* — what a reader would call characters — and the
-boundaries between them:
+A `Char` is not a unit of text a person would recognize. `é` may be one code point or two, and a
+family emoji is several code points joined together, so counting `Char`s answers the wrong
+question. `Writing` gives a text's *grapheme clusters*, which are what a reader would call
+characters, and the boundaries between them:
 
-```scala
-Writing(t"abc").graphemeCount      // 3
-Writing(t"").boundaries.length     // 1: the single boundary at position 0
+```scala fuel
+run
+##
+Out.println(Writing(t"abc").graphemeCount.show)
 ```
 
-Nor is a grapheme one column wide on a terminal. Under a metric in scope, `metrics` gives the
-display width the terminal will actually use — one for ASCII, one for a letter with a combining
-accent, two for CJK and for most emoji — which is what aligning columns of text requires:
+Nor is a grapheme always one column wide on a terminal. Under a metric in scope, `metrics` gives
+the width the terminal will actually use. That is one column for ASCII, one for a letter with a
+combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
 
-```scala
-import textMetrics.wideCharacterWidthMetric
+```scala fuel
+run
+##
+locally:
+  import textMetrics.wideCharacterWidthMetric
 
-Grapheme("a").metrics    // 1
-Grapheme("é").metrics    // 1 — a base plus a combining mark
-Grapheme("日").metrics   // 2
+  Out.println(Grapheme("a").metrics.show)
+  Out.println(Grapheme("é").metrics.show)
+  Out.println(Grapheme("日").metrics.show)
 ```
+
+Aligning columns of text in a [terminal](terminal.md) depends on this width.
 
 ### Rendering numbers
 
-Turning a number into text involves a choice — how many digits are worth showing — that
-`toString` makes badly. A `Decimalizer` in scope states it as significant figures, and is what
-every `show` of a floating-point number consults:
+Turning a number into text involves a choice, of how many digits are worth showing, which
+`toString` makes badly. A `Decimalizer` states the choice as a number of significant figures,
+and every `show` of a floating-point number consults the one in scope:
 
-```scala
-Decimalizer(3).decimalize(-3.14159)   // t"-3.14"
+```scala fuel
+run
+##
+Out.println(Decimalizer(3).decimalize(-3.14159))
 ```
 
-The same value therefore renders consistently everywhere in a program, and changing the precision
-is one given rather than a search for format strings.
+The same value therefore renders consistently everywhere in a program, and changing the
+precision is a matter of one given, not a search for format strings. [Numbers](numbers.md)
+covers the numeric types themselves.
 
 ### Any textual type
 
 Every operation above is defined over the `Textual` typeclass, not over `Text` alone. A type
-that describes itself as textual — an ANSI-styled string, for instance — gains the same `cut`,
-`join`, `keep`, `pad` and the rest without redefining any of them, so styled and plain text
-are manipulated with one vocabulary.
+which declares itself textual gains the same `cut`, `join`, `keep`, `pad` and the rest, without
+redefining any of them. The styled text of a [terminal](terminal.md) is one such type, so styled
+and plain text are manipulated with one vocabulary.

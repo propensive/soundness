@@ -76,3 +76,7 @@ fixtures doc/fixtures
 # library's members come from its jar and an overlay is checked against those.
 overlay doc/api
 imports soundness
+
+# The words the documents use with a precise meaning: a term in brackets in prose shows its
+# definition when pointed at (doc/standards/style.md, "Glossary").
+glossary doc/glossary.tel

@@ -2,30 +2,36 @@
 
 ### About
 
-Encryption, signing and message authentication are typed operations whose *choices* — algorithm,
-key size, block-cipher mode, padding — are types, checked where the code is written. Encrypting
-with AES-256 in CBC mode with PKCS7 padding names all four decisions; a combination the algorithms
-do not permit, such as a stream mode with a padding, does not compile; and the weak algorithms —
-DES, small RSA keys, unauthenticated modes — require an explicit permission in scope before they
-can be used at all.
+Encryption, signing and message authentication are typed operations. Their *choices* are
+types too: the algorithm, the size of the key, the mode of a block cipher and its padding are
+all checked where the code is written. Encrypting with AES-256, in CBC mode, with PKCS7
+padding, names all four decisions. A combination which the algorithms do not permit, such as a
+stream mode with a padding, does not compile. The weak algorithms, which are DES, small RSA
+keys and unauthenticated modes, need an explicit permission in scope before they can be used
+at all.
 
-Keys are typed by their cipher, and a private key's bytes are reachable only inside an `uncloak`
-block, so where secret material is used is visible in the code's structure. Where that material
-is *stored* while it is not in use is an explicit choice too: a `Cloak` in scope decides between
-the heap, off-heap memory, and encrypted-at-rest variants of both.
+A key is typed by its cipher. The bytes of a private key can be reached only inside an
+`uncloak` block, so the places where secret material is used are visible in the structure of
+the code. Where that material is *stored*, while it is not in use, is an explicit choice as
+well.
 
 ### On cryptography
 
-Cryptographic APIs traditionally take their parameters as strings —
-`Cipher.getInstance("AES/CBC/PKCS5Padding")` — deferring to runtime the discovery that an
-algorithm name is misspelled or a combination unsupported. Worse, they are neutral about
-strength: DES and AES are equally easy to reach, and nothing marks the code that quietly uses a
-broken primitive.
+Cryptographic APIs traditionally take their parameters as strings, as in
+`Cipher.getInstance("AES/CBC/PKCS5Padding")`. A misspelled algorithm, or an unsupported
+combination, is then discovered only at [runtime]. Worse, such an API is neutral about
+strength. DES and AES are equally easy to reach, and nothing marks the code which quietly uses
+a broken primitive.
 
-Soundness types the choices and gates the dangerous ones. Modes and paddings are types with their
-legal combinations encoded; weak algorithms demand a *permit*, so a codebase's acceptance of
-legacy cryptography is one searchable import. Everything comes from the `soundness` package, with
-a provider in scope:
+Here the choices are typed, and the dangerous ones are gated:
+
+- Modes and paddings are types, and only their legal combinations compile.
+- A weak algorithm demands a *permit*, so a codebase's acceptance of legacy cryptography is
+  one import, which can be searched for.
+- Secret material is a [capability], lent to a block.
+
+Everything comes from the `soundness` package. A provider of algorithms is in scope, and the
+last import lets the samples print their results:
 
 ```scala
 import soundness.*
@@ -38,12 +44,16 @@ import cloaks.heapCloak
 import errorDiagnostics.stackTracesDiagnostics
 import providers.javaBaseProvider
 import strategies.throwUnsafely
+import alphabets.hexLowerCase
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
-There is deliberately no default `Cloak`: constructing any secret value — a password, a
-symmetric key, a private key — needs one in scope, so the storage decision is always written
-down. The `cloaks` package offers four, which differ in where the material rests between uses
-and whether it rests encrypted:
+### Where secrets are kept
+
+There is deliberately no default `Cloak`. Constructing any secret value, whether a password, a
+symmetric key or a private key, needs one in scope, so the decision about storage is always
+written down. The package `cloaks` offers four. They differ in where the material rests
+between uses, and in whether it rests encrypted:
 
 ```tabular
 column  Cloak
@@ -55,15 +65,17 @@ row  `veiledHeapCloak`  ciphertext, on the heap  off the heap
 row  `veiledOffHeapCloak`  ciphertext, outside the Java heap  on the heap
 ```
 
-Only `heapCloak` is available on Scala.js and Scala Native. No cloak defends against a debugger
-in the same process; what the stronger ones shrink is the window during which cleartext is
-reachable from a heap dump or core file.
+Only `heapCloak` is available on Scala.js and Scala Native. No cloak defends against a
+debugger in the same process. What the stronger ones shrink is the window during which
+cleartext can be reached from a heap dump or a core file.
 
 ### Symmetric encryption
 
-A symmetric key is generated for its cipher — algorithm, key size, and optionally the mode and
-padding, all in the type — and encryption happens inside the key's `uncloak` block, with the
-[initialization vector](https://en.wikipedia.org/wiki/Initialization_vector) supplied explicitly:
+A symmetric key is generated for its cipher. The algorithm and the size of the key are in the
+type, and so, optionally, are the mode and the padding. Encryption happens inside the key's
+`uncloak` block, and the
+[initialization vector](https://en.wikipedia.org/wiki/Initialization_vector) is supplied
+explicitly:
 
 ```scala
 import blockCipherModes.cbc
@@ -72,57 +84,82 @@ import cryptoPermits.permitUnauthenticatedCrypto
 
 val key = SymmetricKey.generate[Aes[256]]()
 
-key.uncloak:
+val decrypted = key.uncloak:
   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-// t"Hello world"
 ```
 
-`uncloak` is a [delimited scope](../philosophy/delimited-scopes.md): it lends the key to its
-block as an `Encryptor` and `Decryptor` capability, and capture
-checking confines both: neither the capability nor a closure that would use it later can escape
-the block, so the compiler — not a convention — keeps the key's use inside its scope.
+```scala fuel
+run
+##
+Out.println(decrypted)
+```
 
-Streams encrypt chunk by chunk through cipher *ducts*, so large data never assembles in memory,
-and a stream encrypted piecewise decrypts as a whole value, or the reverse:
+`uncloak` is a [delimited scope](../philosophy/delimited-scopes.md). It lends the key to its
+block, as an `Encryptor` and a `Decryptor` capability, and capture checking confines both.
+Neither the capability, nor a closure which would use it later, can escape the block. The
+compiler, not a convention, keeps the use of the key inside its scope. Outside the block there
+is nothing to encrypt with:
+
+```scala fuel
+compile
+errors show
+##
+t"Hello world".encrypt(InitializationVector.random)
+```
+
+A [stream](streams.md) is encrypted a chunk at a time, so large data is never assembled in
+memory. A stream which was encrypted in pieces decrypts as a whole value, and the reverse:
 
 ```scala
-key.uncloak:
+val streamed = key.uncloak:
   t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
 ```
 
-Decrypting with the wrong key raises a `Crypto.Error` naming the failure. AES's mode and padding
-may also be fixed in the key's type — `Aes[256] over Cbc against Pkcs7` — and a pairing the
-specification forbids does not compile.
+Decrypting with the wrong key raises a `Crypto.Error` which names the failure. The mode and
+padding of AES may also be fixed in the key's type, as in `Aes[256] over Cbc against Pkcs7`,
+and a pairing which the specification forbids does not compile.
 
 ### Passwords
 
-A `Password` is a cloaked secret like a key, but with no cipher attached. Its cleartext is
-reachable only inside `uncloak`, as a `Cleartext` capability, and its `show` form never reveals
-it:
+A `Password` is a cloaked secret, like a key, but with no cipher attached. Its cleartext can
+be reached only inside `uncloak`, as a `Cleartext` capability, and its `show` form never
+reveals it:
 
 ```scala
 val password = Password(t"hunter2")
-password.uncloak(String(cleartext.chars).tt)   // t"hunter2"
-password.show                                  // t"Password(•••)"
 ```
 
-### Public-key encryption and signing
+```scala fuel
+run
+##
+Out.println(password.show)
+Out.println(password.uncloak(String(cleartext.chars).tt))
+```
 
-An RSA key pair encrypts toward the public key and decrypts with the private:
+### Public-key encryption
+
+An RSA key pair encrypts toward the public key, and decrypts with the private key:
 
 ```scala
 val privateKey = PrivateKey.generate[Rsa[2048]]()
 
 val message = privateKey.public.uncloak:
   t"secret".encrypt(InitializationVector.random)
-
-privateKey.uncloak(message.decrypt.as[Text])   // t"secret"
 ```
 
-Signing runs the other way: the private key signs, and anyone holding the public key verifies.
-RSA, DSA, ECDSA and ML-DSA — the lattice-based scheme standardized as FIPS 204, for a
-post-quantum signature — all sign the same way; the digest an RSA or ECDSA signature is computed
-over is chosen from the `signatureDigests` package:
+```scala fuel
+run
+##
+Out.println(privateKey.uncloak(message.decrypt.as[Text]))
+```
+
+### Signing
+
+Signing runs the other way. The private key signs, and anyone who holds the public key
+verifies. RSA, DSA, ECDSA and ML-DSA all sign in the same way. ML-DSA is the lattice-based
+scheme standardized as FIPS 204, for a signature which resists quantum computers. The digest
+which an RSA or ECDSA signature is computed over is chosen from the package
+`signatureDigests`:
 
 ```scala
 import signatureDigests.sha256Signature
@@ -131,52 +168,112 @@ val document = t"an important document"
 
 val signer = PrivateKey.generate[Ecdsa[256]]()
 val signature = signer.sign(document)
+```
 
-signer.public.verify(document, signature)             // true
-signer.public.verify(t"a forged document", signature) // false
+```scala fuel
+run
+##
+Out.println(signer.public.verify(document, signature).inspect)
+Out.println(signer.public.verify(t"a forged document", signature).inspect)
 ```
 
 ### HMAC
 
-A message authenticates with `hmac` under a shared secret, over any of the [hash](hashing.md)
-algorithms, rendered through the usual [base encodings](base-encoding.md):
+`hmac` authenticates a message under a shared secret, over any of the
+[hash algorithms](hashing.md#hashing-a-value). The result is written through the usual
+[base encodings](base-encoding.md):
 
 ```scala
-import alphabets.hexLowerCase
-
 val secret = t"shared secret".in[Data]
-document.hmac[Sha2[256]](secret).serialize[Hex]
+```
+
+```scala fuel
+run
+##
+Out.println(document.hmac[Sha2[256]](secret).serialize[Hex])
+```
+
+### Key agreement and authenticated encryption
+
+Two parties who hold each other's public keys can agree on a shared secret, with X25519 or
+ECDH. The secret is lent to a block, and zeroed afterwards, since a protocol only ever hashes
+it into session keys:
+
+```scala
+val alice = PrivateKey.generate[X25519]()
+val bob = PrivateKey.generate[X25519]()
+```
+
+```scala fuel
+run
+##
+Out.println(alice.agree(bob.public) { secret => secret.length }.show)
+```
+
+What the key agreement produces is then used with an authenticated cipher. AES-GCM seals a
+message under a *nonce*, which must never repeat under one key, together with associated data
+which is authenticated but not encrypted. It refuses to open anything which has been tampered
+with:
+
+```scala
+val sessionKey = SymmetricKey.generate[AesGcm[256]]()
+val nonce: Data = Array.fill[Byte](12)(0)
+val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+```
+
+```scala fuel
+run
+##
+Out.println(sessionKey.unseal(nonce, t"header".bytestream, box).read[Text])
+```
+
+```scala fuel
+run
+errors show
+##
+sessionKey.unseal(nonce, t"another header".bytestream, box).read[Text]
 ```
 
 ### PEM
 
 Keys travel in [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) form. A public key
-exports freely; exporting a *private* key demands the `Divulgence` marker — one more place where
-handling secret material is deliberate. A `Pem` value carries its label and its bytes, and
-serializes to the familiar armored text:
+is exported freely. Exporting a *private* key demands the marker `Divulgence`, which is one
+more place where handling secret material is deliberate. A `Pem` value has a label and its
+bytes, and serializes to the familiar armored text:
 
 ```scala
-val pemText = privateKey.public.pem.serialize   // t"-----BEGIN PUBLIC KEY-----…"
-privateKey.pem(Divulgence)
-
-pemText.read[Pem].label   // Pem.Label.PublicKey
+val pemText = privateKey.public.pem.serialize
+val privatePem = privateKey.pem(Divulgence)
 ```
 
-PEM parses incrementally, so a source holding many blocks — a certificate chain, a bundle of
-keys — yields them one at a time, lazily, rather than as one parsed document:
+```scala fuel
+run
+##
+Out.println(pemText.cut(t"\n").head)
+Out.println(pemText.read[Pem].label.inspect)
+```
+
+PEM is parsed incrementally. A source which holds many blocks, such as a certificate chain or
+a bundle of keys, gives them one at a time, lazily, and not as one parsed document:
 
 ```scala
 val chainText = t"$pemText\n$pemText"
-chainText.read[Chain[Pem]].map(_.label).to[List]   // two public-key labels
 ```
 
-Text that is not part of a block — the `subject=…` lines OpenSSL writes between certificates —
-is skipped, and a source with no blocks at all reads as an empty sequence rather than an error.
+```scala fuel
+run
+##
+Out.println(chainText.read[Chain[Pem]].map(_.label).to[List].inspect)
+```
+
+Text which is not part of a block, such as the `subject=…` lines which OpenSSL writes between
+certificates, is skipped. A source with no blocks at all reads as an empty sequence, not as an
+error.
 
 ### Reading keys
 
-A key that already exists — in `~/.ssh`, or written by `openssl` — reads into a `PrivateKey` of
-the cipher you name, from any of the forms a key file takes:
+A key which already exists, in `~/.ssh` or written by `openssl`, is read into a `PrivateKey`
+of the cipher named, from any of the forms a key file takes:
 
 ```tabular
 column  Form
@@ -202,72 +299,71 @@ kiglJKYyOcKlvCJ7v+xSAAAADHRlc3RAZXhhbXBsZQE=
 -----END OPENSSH PRIVATE KEY-----"""
 
 val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
-sshKey.public.verify(t"message", sshKey.sign(t"message"))   // true
 ```
-
-The type is checked against the document, not assumed from it: the algorithm identifier, the
-curve and, for RSA, the modulus size must be those of the cipher named, so a 4096-bit key can
-never be read as a `PrivateKey[Rsa[2048]]`. A key that does not match is a `PrivateKey.Error`
-whose `Mismatch` reason names what was found:
 
 ```scala fuel
-typecheck
+run
 ##
-keyText.read[PrivateKey[Rsa[2048]] in Pem]   // raises PrivateKey.Error: a RSA-2048 key was expected but Ed25519 was found
+Out.println(sshKey.public.verify(t"message", sshKey.sign(t"message")).inspect)
 ```
 
-A passphrase-protected key is reported as `Encrypted`; reading one is not yet supported. Public
-keys read the same way from `PUBLIC KEY` blocks, and from the single-line form OpenSSH keeps in
-`id_*.pub`, `authorized_keys` and `known_hosts`, which `OpenSsh.line` writes back:
+The type is checked against the document, and is not assumed from it. The algorithm's
+identifier, the curve and, for RSA, the size of the modulus must be those of the cipher named,
+so a 4096-bit key can never be read as a `PrivateKey[Rsa[2048]]`. A key which does not match
+is a `PrivateKey.Error`, whose reason, `Mismatch`, names what was found:
+
+```scala fuel
+run
+errors show
+##
+keyText.read[PrivateKey[Rsa[2048]] in Pem]
+```
+
+A key which is protected by a passphrase is reported as `Encrypted`. Reading one is not yet
+supported.
+
+Public keys are read in the same way from `PUBLIC KEY` blocks. They are also read from the
+single-line form which OpenSSH keeps in `id_*.pub`, `authorized_keys` and `known_hosts`, and
+`OpenSsh.line` writes that form back:
 
 ```scala fuel
 substitute AAAAC3..v+xS  ...
 ##
 val line = t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
 val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
-OpenSsh.line(sshPublicKey, t"test@example") == line   // true
 ```
 
-### Key agreement and authenticated encryption
-
-Two parties who hold each other's public keys can agree on a shared secret with X25519 or ECDH;
-the secret is lent to a block and zeroed afterwards, since a protocol only ever hashes it into
-session keys:
-
-```scala
-val alice = PrivateKey.generate[X25519]()
-val bob = PrivateKey.generate[X25519]()
-alice.agree(bob.public) { secret => secret.length }   // 32
+```scala fuel
+run
+##
+Out.println((OpenSsh.line(sshPublicKey, t"test@example") == line).inspect)
 ```
 
-What the key agreement produces is then used with an authenticated cipher. AES-GCM seals a
-message under a nonce, which must never repeat under one key, together with associated data that
-is authenticated but not encrypted, and refuses to open anything that has been tampered with:
-
-```scala
-val sessionKey = SymmetricKey.generate[AesGcm[256]]()
-val nonce: Data = Array.fill[Byte](12)(0)
-val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
-sessionKey.unseal(nonce, t"header".bytestream, box).read[Text]   // t"message"
-```
+[SSH](ssh.md) uses these keys to authenticate a connection.
 
 ### ASN.1 and DER
 
-The structures underneath PKIX — certificates, keys, signatures — are
-[ASN.1](https://en.wikipedia.org/wiki/ASN.1) values carried in
+The structures beneath certificates, keys and signatures are
+[ASN.1](https://en.wikipedia.org/wiki/ASN.1) values, carried in
 [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding). An `Asn1` value models that structure
-directly, as an enumeration of the universal types PKIX uses, and `Der` is the encoded form:
+directly, as an enumeration of the universal types which certificates use, and `Der` is the
+encoded form:
 
 ```scala
 val value = Asn1.Sequence(List(Asn1.Integer(BigInt(1)), Asn1.Utf8String(t"hello")))
 
-val bytes = value.in[Der]        // the DER octets
-bytes.as[Asn1]                   // the same value again
+val bytes = value.in[Der]
+```
+
+```scala fuel
+run
+##
+Out.println((bytes.as[Asn1] == value).inspect)
 ```
 
 DER is canonical, so a document has exactly one valid encoding, and the codec enforces that in
-both directions. Each departure from it raises an `Asn1.Error` whose reason names the fault and
-the byte offset at which it was found; among them:
+both directions. Each departure from it raises an `Asn1.Error`, whose reason names the fault,
+and the offset of the byte at which it was found. Among them:
 
 ```tabular
 column  Fault
@@ -279,19 +375,20 @@ row  an indefinite length  `IndefiniteLength`
 row  trailing bytes  `Trailing`
 ```
 
-Decoding is total. A tag this layer does not model — `T61String`, `BMPString`, `ENUMERATED`, an
-implicitly tagged value — decodes to `Asn1.Unknown`, carrying its content octets verbatim, so
-decoding and re-encoding reproduce the original bytes exactly. That property is what verifying
-a signature over a certificate's `TBSCertificate` depends on: a structure can be taken apart,
-inspected, and put back together without disturbing the bytes the signature covers.
+Decoding never fails for want of a type. A tag which this layer does not model, such as
+`T61String`, `BMPString`, `ENUMERATED` or an implicitly tagged value, decodes to
+`Asn1.Unknown`, which holds its content bytes verbatim. Decoding and encoding again therefore
+reproduce the original bytes exactly. Verifying a signature over a certificate's
+`TBSCertificate` depends on that property: a structure can be taken apart, inspected and put
+back together without disturbing the bytes which the signature covers.
 
 ### Certificates
 
 An [X.509](https://en.wikipedia.org/wiki/X.509) certificate binds a public key to a
-*distinguished name* for a period of validity, signed by its issuer. A self-signed certificate —
-the kind a development server or a private certificate authority needs — is generated from a
-subject, a private key, a validity [period](time.md) and a serial number, with the
-`dNSName` alternatives a TLS client will check:
+*distinguished name*, for a period of validity, and is signed by its issuer. A self-signed
+certificate is the kind which a development server, or a private certificate authority,
+needs. It is generated from a subject, a private key, a [period](time.md) of validity and a
+serial number, with the `dNSName` alternatives which a TLS client will check:
 
 ```scala
 import chronometries.unixChronometry
@@ -301,19 +398,26 @@ val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
 
 val certificate =
   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
-
-certificate.pem.serialize   // t"-----BEGIN CERTIFICATE-----…"
 ```
 
-A certificate is an `Asn1` value underneath, so its fields are readable through the same
-structure, and `authority = true` marks it as one that may sign others. `verify` checks the
-signature against the issuer's public key — the certificate's own, when it is self-signed.
+```scala fuel
+run
+##
+Out.println(certificate.pem.serialize.cut(t"\n").head)
+Out.println(certificate.verify(privateKey.public).inspect)
+```
 
-An ML-DSA key signs a certificate the same way, with the FIPS 204 algorithm identifiers. But a
-TLS stack may not be able to handshake with a post-quantum key — the JDK's cannot — so a service
-whose identity is an ML-DSA key instead has that key *issue* a certificate over a classical key
-it can present, and presents it together with the ML-DSA key's own self-signed certificate. A
-peer that knows the ML-DSA key verifies the leaf against it:
+A certificate is an `Asn1` value underneath, so its fields can be read through the same
+structure. `authority = true` marks a certificate as one which may sign others. `verify`
+checks the signature against the issuer's public key, which for a self-signed certificate is
+its own.
+
+An ML-DSA key signs a certificate in the same way, with the algorithm identifiers of
+FIPS 204. But a TLS implementation may not be able to complete a handshake with a
+post-quantum key, and the JDK's cannot. A service whose identity is an ML-DSA key therefore
+has that key *issue* a certificate over a classical key which it can present. It presents
+that certificate together with the ML-DSA key's own self-signed certificate, and a peer which
+knows the ML-DSA key verifies the leaf against it:
 
 ```scala
 val swarmKey = PrivateKey.generate[MlDsa[65]]()
@@ -324,20 +428,26 @@ val root = Certificate.selfSigned(identity, swarmKey, validity, BigInt(1), autho
 
 val leaf =
   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
-
-leaf.verify(swarmKey.public)   // true
-root.verify(swarmKey.public)   // true
 ```
 
-An issued certificate carries an authority key identifier naming the key that signed it, which
-is how a verifier finds the root in a chain.
+```scala fuel
+run
+##
+Out.println(leaf.verify(swarmKey.public).inspect)
+Out.println(root.verify(swarmKey.public).inspect)
+Out.println(leaf.verify(privateKey.public).inspect)
+```
+
+An issued certificate carries an authority key identifier, which names the key that signed
+it. That is how a verifier finds the root in a chain. An
+[HTTP server](http-server.md) presents such a certificate over TLS.
 
 ### Keystores
 
 A [PKCS#12](https://en.wikipedia.org/wiki/PKCS_12) keystore is opened for the duration of a
-scope, with the password given as a flag — an opaque `Password`, so its cleartext is reached only
-through the scoped `Cleartext` capability, and the character array the platform needs is zeroed
-once the store is loaded. Inside the scope, `keystore` is the open store:
+scope. The password is given as an opaque `Password`, so its cleartext is reached only
+through the scoped `Cleartext` capability, and the character array which the platform needs
+is zeroed once the store is loaded. Inside the scope, `keystore` is the open store:
 
 ```scala
 import pathInterfaces.pathOnLinux
@@ -347,20 +457,21 @@ val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
 
 def readAliases(): List[Text] =
   storePath.open[Keystore](Password(t"sesame")):
-    keystore.certificate(t"server")   // Unset, unless the store holds that alias
+    val server = keystore.certificate(t"server")
     keystore.aliases
 ```
 
-A missing alias is `Unset`. A wrong password and a corrupt store are deliberately
-indistinguishable — both are `Unreadable` in the `Keystore.Error` — since telling them apart
-would say which of the two went wrong to someone guessing.
+An alias which the store does not hold gives `Unset`. A wrong password and a corrupt store
+are deliberately indistinguishable: both are `Unreadable` in the `Keystore.Error`. Telling
+them apart would tell someone who was guessing which of the two had gone wrong.
 
 ### Weak algorithms
 
-Encrypting with DES, RC2, 1024-bit RSA, ECB mode or any unauthenticated block cipher requires a
-permission from the `cryptoPermits` package in scope — the same [permit machinery](hashing.md)
-that gates MD5 and SHA-1 — so accepting legacy cryptography is an explicit, auditable decision
-rather than a default. The permits nest, and `permitDisallowedCrypto` includes every other:
+Encrypting with DES, RC2, 1024-bit RSA, ECB mode, or any unauthenticated block cipher, needs a
+permission from the package `cryptoPermits` in scope. These are the same
+[permits](hashing.md#weak-algorithms) which gate MD5 and SHA-1. Accepting legacy cryptography
+is thus an explicit decision which can be audited, not a default. The permits nest, and
+`permitDisallowedCrypto` includes every other:
 
 ```tabular
 column  Algorithm
@@ -373,7 +484,7 @@ row  1024-bit RSA  `permitDisallowedCrypto`
 row  ECB mode  `permitDisallowedCrypto`
 ```
 
-Across the algorithms, the operations each supports and the permit it needs are:
+Across the algorithms, these are the operations which each supports, and the permit it needs:
 
 ```tabular
 column  Algorithm
@@ -389,3 +500,7 @@ row  `Dsa[512 | 1024 | 2048 | 3072]`  sign, verify  `permitDisallowedCrypto`
 row  `Ecdsa[256 | 384 | 521]`, `Ed25519`, `MlDsa[44 | 65 | 87]`  sign, verify
 row  `X25519`, `Ecdh[256 | 384 | 521]`  agree
 ```
+
+### Related
+
+- [Daemons](daemons.md), [Git](git.md), [OAuth](oauth.md), [PDF](pdf.md), [randomness](randomness.md) and [sockets](sockets.md) sign, encrypt and secure with these keys.
