@@ -2,23 +2,29 @@
 
 ### About
 
-A [cache](https://en.wikipedia.org/wiki/Cache_(computing)) trades memory for time, and Soundness
-provides the two shapes the trade usually takes. An `LruCache` keeps the most recently used entries
-of a keyed lookup, evicting the least recent when it exceeds its capacity. A `Cache` memoizes a
-single value with an optional lifetime, recomputing it when it expires — the shape of a
-configuration reloaded every minute or a token refreshed on schedule.
+A [cache](https://en.wikipedia.org/wiki/Cache_(computing)) trades memory for time, and the
+two shapes which that trade usually takes are provided.
+
+An `LruCache` keeps the most recently used entries of a lookup by key, and evicts the least
+recent when it exceeds its capacity. A `Cache` remembers a single value, with an optional
+lifetime, and computes it again when it expires. That is the shape of a configuration which
+is reloaded every minute, or a token which is refreshed on a schedule.
 
 ### On caching
 
-Every hand-rolled cache is a mutable map plus three decisions made implicitly: when to evict, what
-to do when two threads want the same missing value, and when a cached value is too old to trust.
-The map is easy; the decisions are where the bugs are — unbounded growth from no eviction, a
-stampede of recomputation from no coordination, stale data from no expiry.
+Every cache which is written by hand is a mutable map, together with three decisions which
+are made implicitly: when to evict, what to do when two threads want the same missing value,
+and when a cached value is too old to trust. The map is easy. The decisions are where the
+bugs are:
 
-A cache that names its expiry in its type is a [declarative context](../philosophy/declarative-context.md): the policy is stated where the cache is, not at each read.
+- With no eviction, the cache grows without bound.
+- With no coordination, a missing value is computed many times at once.
+- With no expiry, stale data is served.
 
-Soundness makes the decisions the type: an `LruCache` is the bounded, evicting kind, and a `Cache`
-is the expiring, coordinated kind, its computation guarded so concurrent callers share one result:
+Here the decisions are the type. An `LruCache` is the bounded, evicting kind. A `Cache` is
+the expiring, coordinated kind, whose computation is guarded so that concurrent callers
+share one result. The policy is stated where the cache is, and not at each read, which is
+[declarative context](../philosophy/declarative-context.md).
 
 ```tabular
 column  Aspect
@@ -31,18 +37,22 @@ row  Discards  the least recently used entry  the value, once its lifetime has p
 row  Concurrent misses  each caller computes  one caller computes, the rest share its result
 ```
 
-Everything comes from the `soundness` package:
+Everything comes from the `soundness` package. The second import lets the samples print
+their results:
 
 ```scala
 import soundness.*
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### An LRU cache
 
-An `LruCache` holds up to its capacity of keyed entries. Applying it with a key and a computation
-returns the cached value when the key is present, and otherwise runs the computation, stores the
-result, and evicts the least recently used entry if the cache is now too big. Here the
-computation is a lookup that counts how often it runs:
+An `LruCache` holds keyed entries, up to its capacity. Applying it to a key and a
+computation gives the cached value, when the key is present. Otherwise it runs the
+computation, stores the result, and evicts the least recently used entry if the cache is now
+too big.
+
+Here the computation is a lookup which counts how often it runs:
 
 ```scala
 var lookups = 0
@@ -52,35 +62,53 @@ def expensiveLookup(key: Int): Text =
   t"value $key"
 
 val cache = LruCache[Int, Text](4)
-
-cache(1)(expensiveLookup(1))   // computes and stores
-cache(1)(expensiveLookup(1))   // returns the stored value; no computation
-lookups                        // 1
 ```
 
-Using an entry — reading or writing — marks it as recent, so the entries that survive are the ones
-the program keeps coming back to: after four further keys, key `1` has been evicted, and asking
-for it computes again.
+The first use of a key computes and stores its value. The second gives the stored value,
+with no computation:
 
-`contains` asks whether a key is held without computing anything and without marking it recent,
-and `remove` drops an entry — which is what an invalidation needs when the underlying data has
-changed and the cached value is known to be stale:
-
-```scala
-cache.contains(1)   // true
-cache.remove(1)
-cache.contains(1)   // false
+```scala fuel
+run
+##
+Out.println(cache(1)(expensiveLookup(1)))
+Out.println(cache(1)(expensiveLookup(1)))
+Out.println(lookups.show)
 ```
 
-The computation is passed by name, so nothing is evaluated on a hit. That is the whole point of
-the shape: a cache whose value must be computed before it can be offered saves nothing.
+The computation is passed by name, so nothing is evaluated when the key is present. That is
+the whole point of the shape: a cache whose value must be computed before it can be offered
+saves nothing.
+
+Using an entry, whether by reading or by writing, marks it as recent, so the entries which
+survive are the ones which the program keeps coming back to. After four further keys, key
+`1` has been evicted, and asking for it computes again:
+
+```scala fuel
+run
+##
+List(2, 3, 4, 5).each(key => cache(key)(expensiveLookup(key)))
+
+Out.println(cache.contains(1).inspect)
+Out.println(cache.contains(5).inspect)
+```
+
+`contains` asks whether a key is held, without computing anything, and without marking the
+entry as recent. `remove` drops an entry. That is what invalidation needs, when the
+underlying data has changed, and the cached value is known to be stale:
+
+```scala fuel
+run
+##
+cache.remove(5)
+Out.println(cache.contains(5).inspect)
+```
 
 ### An expiring value
 
-A `Cache` memoizes one value, with a lifetime after which it is recomputed. The lifetime is any
-[duration](time.md) — a quantity of seconds, here, with the interface that lets a `Cache` read it
-imported — and the cached type is stated in the expected type. `establish` returns the current
-value, computing it only when none is held or the held one has expired:
+A `Cache` remembers one value, with a lifetime after which it is computed again. The
+lifetime is any [duration](time.md#durations-and-timespans), here a
+[quantity](quantities.md) of seconds, with the import which lets a `Cache` read it. The type
+of the cached value is stated in the expected type:
 
 ```scala
 import durationInterfaces.aviationDuration
@@ -94,14 +122,31 @@ def loadConfiguration(): Configuration =
   Configuration(8080)
 
 val config: Cache[Configuration] = Cache(300.0*Second)
-
-config.establish(loadConfiguration())   // loads now
-config.establish(loadConfiguration())   // the same value, until five minutes pass
-loads                                   // 1
 ```
 
-The computation runs under a lock, so when the value is missing or expired and several threads ask
-at once, one computes and the rest receive its result — the
-[stampede](https://en.wikipedia.org/wiki/Cache_stampede) a bare lazy value cannot prevent. A
-`Cache` created without a lifetime, `Cache[Configuration]()`, computes its value once and keeps
-it.
+`establish` gives the current value. It computes the value only when none is held, or when
+the one which is held has expired. Here the second call gives the same value, and will until
+five minutes pass:
+
+```scala fuel
+run
+##
+Out.println(config.establish(loadConfiguration()).inspect)
+Out.println(config.establish(loadConfiguration()).inspect)
+Out.println(loads.show)
+```
+
+The computation runs under a lock. When the value is missing or expired, and several threads
+ask at once, one computes, and the rest receive its result. That prevents the
+[stampede](https://en.wikipedia.org/wiki/Cache_stampede) which a bare lazy value cannot.
+[Concurrency](concurrency.md) describes the tasks which might be asking.
+
+A `Cache` which is created without a lifetime, as `Cache[Configuration]()`, computes its
+value once, and keeps it.
+
+### Related
+
+- [Bloom filters](bloom-filters.md) remember only whether something has been seen.
+- [Filesystem](filesystem.md#content-addressed-storage) describes a cache on disk, keyed by
+  the digest of its content.
+- [Time](time.md) describes the durations which a lifetime is given in.

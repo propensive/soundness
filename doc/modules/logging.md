@@ -2,40 +2,44 @@
 
 ### About
 
-Logging is typesafe. A method that logs declares as much in its return type, with the `logs`
-infix type, and emits a value of a typed event rather than a string: instead of returning `Int`
-it returns `Long logs Backup.Event`, for the event type defined below. A logger placed in the caller's scope receives those events and
-writes them somewhere — a terminal, a file, the system log. With no logger in scope, logging is
-silent and costs nothing, so declaring that a method logs imposes no obligation on the code
-that calls it. A `logs` clause is an [honest signature](../philosophy/honest-signatures.md) at
-work: it states what the method actually emits, so a caller knows what there is to route.
+Logging is typed. A method which logs says so in its return type, with the infix type
+`logs`, and emits a value of a typed event, not a string. Instead of returning `Long`, it
+returns `Long logs Backup.Event`.
 
-Because a logger is an ordinary contextual value, several can be in scope at once, and every
-event fans out to each of them. Each logger determines its own severity threshold, its own
-rendering and its own destination. The decision of where logs go, and at what detail, belongs to
-the application, not to the libraries it uses. Choosing that by what is in scope is
+A logger which is placed in the caller's scope receives those events, and writes them
+somewhere: a terminal, a file, or the system log. With no logger in scope, logging is
+silent, and costs nothing, so declaring that a method logs imposes no obligation on the code
+which calls it. A `logs` clause is an
+[honest signature](../philosophy/honest-signatures.md): it states what the method actually
+emits, so a caller knows what there is to route.
+
+A logger is an ordinary [contextual value]. Several can be in scope at once, and every event
+goes to each of them. Each logger has its own threshold of severity, its own format and its
+own destination. The decision of where logs go, and in what detail, belongs to the
+application, not to the libraries which it uses. Choosing that by what is in scope is
 [declarative context](../philosophy/declarative-context.md).
 
 ### On logging
 
-Most logging is typed as strings, and is always on. A log statement formats a message eagerly,
-whether or not anything will read it, and the cost — building the string, evaluating its
-interpolations — is paid even when the level is disabled, so careful code guards every statement
-with a level check. The message itself is an opaque string, so a sink cannot reformat it, filter
-on its contents, or redact a field it did not know was there.
+Most logging is typed as strings, and is always on. A log statement formats its message
+eagerly, whether or not anything will read it. The cost of building the string is paid even
+when the level is disabled, so careful code guards every statement with a check of the
+level. The message itself is an opaque string, so whatever receives it cannot reformat it,
+filter on its contents, or redact a field which it did not know was there.
 
-Soundness separates the three concerns. A method states _that_ it logs, and _what_ it logs, in
-its type; the event it emits carries typed fields, not formatted text; and _where_ the event
-goes, and _how_ it renders, is decided by the loggers in scope. The argument to a log call is
-passed by name and forced only if some sink will record it, so a disabled statement evaluates
-nothing — log calls can be written freely, without guards. When no logger is in scope at all,
-the machinery compiles away to nothing.
+Here the three concerns are separate:
 
-The names come from the `soundness` package. A logging program also needs a rendering format,
-somewhere to write, and the concurrency context a logger writes under. A terminal is written in
-`Teletype`, and its capabilities are described by a `Termcap`, so a logger for standard output uses the ANSI format, `ansiTimestampedLogFormat`,
-which takes its colors from a `LogPalette`, and writes to `Out` through
-`writables.outTeletypeWritable`:
+- A method states *that* it logs, and *what* it logs, in its type.
+- The event which it emits has typed fields, not formatted text.
+- *Where* the event goes, and *how* it is written, is decided by the loggers in scope.
+
+The argument to a log call is passed by name, and is evaluated only if some logger will
+record it. A disabled statement evaluates nothing, so log calls can be written freely,
+without guards. When no logger is in scope at all, the machinery compiles away to nothing.
+
+Everything comes from the `soundness` package. A program which logs also needs a format,
+somewhere to write, and the [concurrency](concurrency.md) context which a logger writes
+under:
 
 ```scala
 import soundness.*
@@ -48,7 +52,7 @@ import termcapDefinitions.xterm256Termcap
 import threads.virtualThreads
 import writables.outTeletypeWritable
 
-given LogPalette = new Palette:
+given palette: LogPalette = new Palette:
   type Form = Srgb
   def background: Color in Srgb  = WebColors.Black
   def foreground: Color in Srgb  = WebColors.White
@@ -58,28 +62,41 @@ given LogPalette = new Palette:
   def subdued: Color in Srgb     = WebColors.DimGray
 ```
 
+```tabular
+column  Import or given
+column  Decides
+row  `logFormats.ansiTimestampedLogFormat`  how an event is written: here, with color, for a terminal
+row  the `LogPalette`  the colors which that format uses
+row  `writables.outTeletypeWritable`  that standard output can be written to as styled text
+row  `stdios`, `termcapDefinitions`  where standard output goes, and what the terminal can display
+row  `threads`, `probates`  how the logger's background task runs
+row  `strategies.throwUnsafely`  that an error is thrown as an exception
+```
+
 ### Setting up a logger
 
-A `Logger` writes events to a destination. Placing one in scope as a given makes it the sink for
-everything logged within that scope. Its two type parameters say which events it accepts — `Any`
-for all of them — and the form they are rendered through. A logger writing to standard output is
-enough to see log output:
+A `Logger` writes events to a destination. Placing one in scope, as a [given], makes it the
+destination for everything which is logged within that scope. Its two type parameters say
+which events it accepts, with `Any` for all of them, and the form in which they are written.
+A logger which writes to standard output is enough to see log output:
 
 ```scala fuel
 typecheck
 ##
 supervise:
-  given Logger[Any, Message] = Logger(Out)
-  Log.info(m"the logger is in scope")   // written to standard output, with a timestamp
+  given logger: Logger[Any, Message] = Logger(Out)
+  Log.info(m"the logger is in scope")
 ```
 
-Narrowing the first parameter filters by kind: a `Logger[Http.Event, Message]` receives HTTP
-events and nothing else, so the events of one library can be routed or silenced independently of
-the rest.
+The message is written to standard output, with a timestamp.
 
-`Logger` runs its writes on a background thread, so it needs the ambient concurrency context that
-`supervise` provides. The format in scope — here `ansiTimestampedLogFormat` — decides how an
-event renders. Each is imported from `logFormats`:
+Narrowing the first parameter filters by kind. A `Logger[Http.Event, Message]` receives HTTP
+events, and nothing else, so the events of one library can be routed, or silenced,
+independently of the rest.
+
+`Logger` runs its writes on a background thread, so it needs the concurrency context which
+`supervise` provides. The format in scope decides how an event is written. Each format is
+imported from the package `logFormats`:
 
 ```tabular
 column  Format
@@ -96,17 +113,18 @@ A threshold drops everything below a chosen level:
 typecheck
 ##
 supervise:
-  given Logger[Any, Message] = Logger(Out, level = Level.Warn)
+  given logger: Logger[Any, Message] = Logger(Out, level = Level.Warn)
   Log.info(m"not written")
   Log.warn(m"written")
 ```
 
 ### Logging a message
 
-The simplest thing to log is a message, written with the `m"…"` interpolator, and this suits
-application code, where the author controls both the logging and the reading. A library should
-instead define a dedicated event type — described below — so its events stay structured and
-filterable. Four methods log a message at a given level:
+The simplest thing to log is a message, written with the
+[`m"…"` interpolator](errors.md#defining-an-error). That suits the code of an application,
+where the author controls both the logging and the reading. A library should instead define
+a dedicated [event type](#event-types), so that its events stay structured, and can be
+filtered. Four methods log a message, each at a level:
 
 ```scala
 def report(remote: Text, path: Text): Unit =
@@ -116,13 +134,13 @@ def report(remote: Text, path: Text): Unit =
   Log.fail(m"could not open $path")
 ```
 
-Without a logger in scope, `report` compiles and logs nothing: a message is `Loggable` by
-default, so a method that logs only messages needs no declaration.
+Without a logger in scope, `report` compiles, and logs nothing. A message is `Loggable` by
+default, so a method which logs only messages needs no declaration.
 
 ### Levels
 
-A level reflects frequency and severity together. `Fine` is normally switched off, so it can be
-verbose; `Fail` is used sparingly.
+A level reflects frequency and severity together. `Fine` is normally switched off, so it can
+be verbose. `Fail` is used sparingly.
 
 ```tabular
 column  Level
@@ -137,9 +155,10 @@ row  `Fail`  `Log.fail`  an operation that failed unrecoverably, emitted alongsi
 
 ### Event types
 
-An event is an enumeration whose cases carry the relevant values as typed fields, paired with a
-`Communicable` instance in its companion that maps each case to a message. Keeping the values
-typed — rather than pre-formatting them — lets each sink render them its own way:
+An event is an [enumeration] whose cases hold the relevant values as typed fields. It is
+paired with a `Communicable` instance in its companion, which maps each case to a message.
+Keeping the values typed, instead of formatting them in advance, lets each logger write them
+in its own way:
 
 ```scala
 object Backup:
@@ -149,7 +168,7 @@ object Backup:
     case Failed(source: Text)
 
   object Event:
-    given Event is Communicable =
+    given communicable: (Event is Communicable) =
       case Started(source)       => m"backing up $source"
       case Copied(source, bytes) => m"copied $source ($bytes bytes)"
       case Failed(source)        => m"could not back up $source"
@@ -157,8 +176,8 @@ object Backup:
 
 ### Declaring that a method logs
 
-A method opts into logging by naming its event type in its return type with `logs`, and then
-logs the event by value, at the point the side effect happens:
+A method opts into logging by naming its event type in its return type, with `logs`. It then
+logs the event by value, at the point where the side effect happens:
 
 ```scala
 def backup(source: Text): Long logs Backup.Event =
@@ -168,13 +187,13 @@ def backup(source: Text): Long logs Backup.Event =
   bytes
 ```
 
-The requirement propagates: a method that calls `backup` must itself admit `Backup.Event`,
-either by declaring it or by having a logger for it in scope. A method that logs more than one
-kind of event chains the declarations, `Unit logs Http.Event logs Exec.Event`.
+The requirement propagates. A method which calls `backup` must itself admit `Backup.Event`,
+either by declaring it, or by having a logger for it in scope. A method which logs more than
+one kind of event chains the declarations, as in `Unit logs Http.Event logs Exec.Event`.
 
-A module that builds on another's work reuses its events rather than duplicating them.
-Transcribing one event into a case of another threads the wrapped event through unchanged — so
-a module that schedules backups reuses the backup events:
+A library which builds on another's work reuses its events, and does not duplicate them.
+*Transcribing* one event into a case of another passes the wrapped event through unchanged.
+So a library which schedules backups reuses the backup events:
 
 ```scala
 enum Schedule:
@@ -182,42 +201,46 @@ enum Schedule:
   case Skipped(reason: Text)
 
 object Schedule:
-  given Schedule is Communicable =
+  given communicable: (Schedule is Communicable) =
     case Ran(event)       => m"scheduled: ${event.communicate}"
     case Skipped(reason)  => m"skipped: $reason"
 
-given (Schedule transcribes Backup.Event) = Schedule.Ran(_)
+given transcription: (Schedule transcribes Backup.Event) = Schedule.Ran(_)
 
 def nightly(): Unit logs Schedule =
   backup(t"/home")
   Log.info(Schedule.Skipped(t"nothing else to do"))
 ```
 
-With the transcription in scope, `backup`'s events are accepted by `nightly`'s declaration,
-wrapped as `Schedule.Ran`, and a logger for `Schedule` sees both.
+With the transcription in scope, the events of `backup` are accepted by the declaration of
+`nightly`, wrapped as `Schedule.Ran`, and a logger for `Schedule` sees both.
 
 ### Cost when disabled
 
 The argument to every `Log` method is taken by name, and the level is checked before the
-argument is forced. When no logger accepts an event at its level — including when no logger is in
-scope at all — the event is never constructed and its fields are never evaluated. A disabled log
-statement therefore costs nothing, and log calls need no guard.
+argument is evaluated. When no logger accepts an event at its level, which includes the case
+where no logger is in scope at all, the event is never constructed, and its fields are never
+evaluated. A disabled log statement therefore costs nothing, and log calls need no guard.
 
-This is why an event should carry its original typed values and leave formatting to its
-`Communicable`: the rendering happens only if the event is actually recorded. The exception is
-a value whose rendering depends on context available only at the call site, which should be
-rendered there, into the event — and the rendering still runs only when the event is logged,
-because the argument is by name.
+This is why an event should hold its original typed values, and leave formatting to its
+`Communicable`: the formatting happens only if the event is actually recorded. The exception
+is a value whose formatting depends on context which is available only where it is logged.
+That should be formatted there, into the event. The formatting still runs only when the
+event is logged, because the argument is passed by name.
 
 ### Routing to several places
 
-Because a logger is just a contextual value, more than one can be in scope, and an event reaches
-every one. Two loggers — one to a file, one to the terminal — both receive each event, and each
-applies its own threshold, so the file can keep `Fine` detail while the terminal shows only
-`Warn` and `Fail`. The file is written as text, so its logger imports the text format,
-which, being nearer, takes precedence over the terminal format imported above:
+A logger is just a contextual value, so more than one can be in scope, and an event reaches
+every one. Two loggers, one to a file and one to the terminal, both receive each event, and
+each applies its own threshold. The file can keep the detail of `Fine`, while the terminal
+shows only `Warn` and `Fail`.
 
-```scala
+The file is written as text, so its logger imports the text format. That import is nearer,
+so it takes precedence over the terminal format which was imported above:
+
+```scala fuel
+typecheck
+##
 import codepages.utf8Codepage
 import filesystemBackends.javaBaseFilesystem
 import pathInterfaces.pathOnLinux
@@ -236,35 +259,43 @@ supervise:
   Log.warn(m"both see this")
 ```
 
+The first message reaches only the file, and the second reaches both.
+[Filesystem](filesystem.md) describes the path which the file logger writes to.
+
 ### Silencing
 
-A single block can be run with a kind of event suppressed, regardless of the loggers in scope,
+A single block can be run with one kind of event suppressed, whatever loggers are in scope,
 with `mute`:
 
-```scala
+```scala fuel
+typecheck
+##
 supervise:
-  given Logger[Any, Message] = Logger(Out)
+  given logger: Logger[Any, Message] = Logger(Out)
 
   mute[Backup.Event]:
-    backup(t"/var")   // its events are dropped here
+    backup(t"/var")
 ```
 
-Importing `logging.silentLogging` suppresses all logging for a whole file, which is useful where
-a dependency logs but the output is unwanted.
+Importing `logging.silentLogging` suppresses all logging for a whole file, which is useful
+where a dependency logs, and its output is not wanted. The tutorials for the
+[HTTP client](http-client.md) and [processes](processes.md) import it for that reason.
 
 ### Writing good logs
 
-Log only observable side effects that have latency or a failure mode — network, filesystem,
-process, and external-service operations. Pure, in-memory work such as hashing, parsing, or
-arithmetic produces no log output, however expensive.
+Log only side effects which can be observed, and which take time or can fail: operations on
+the network, the filesystem, processes and external services. Pure work in memory, such as
+hashing, parsing or arithmetic, produces no log output, however expensive it is.
 
-A message should be specific. Name the resource it concerns — an address and port, a path, a
-process id, a URL — and quantify when it is cheap to do so, with byte counts, elapsed
-milliseconds, or status codes. Never log secrets: credentials, tokens, cookies, key material, or
-whole request and response bodies. Log a redaction, a size, or a short preview instead.
+A message should be specific:
 
-Messages are lowercase, terse, present-tense, and carry no trailing period, interpolating the
-relevant context:
+- Name the resource which it concerns: an address and port, a path, a process id, a URL.
+- Give quantities when that is cheap: counts of bytes, elapsed milliseconds, status codes.
+- Never log secrets: credentials, tokens, cookies, key material, or the whole body of a
+  request or a response. Log a redaction, a size or a short preview instead.
+
+Messages are in lower case, terse, in the present tense, and have no trailing period. They
+substitute the relevant context:
 
 ```scala
 def describe(remote: Text, path: Text, url: Text, size: Long, elapsed: Long): List[Message] = List
@@ -273,5 +304,13 @@ def describe(remote: Text, path: Text, url: Text, size: Long, elapsed: Long): Li
     m"downloaded $url ($size bytes in ${elapsed}ms)" )
 ```
 
-A message that says only that something happened — `m"a failure occurred"` — is not enough; name
-what failed and include the identifier.
+A message which says only that something happened, such as `m"a failure occurred"`, is not
+enough. Name what failed, and include its identifier.
+
+### Related
+
+- [Errors](errors.md#defining-an-error) describes the messages which events are written as.
+- [Terminal](terminal.md#styled-text) describes the styled text which a terminal logger
+  writes.
+- [Concurrency](concurrency.md) describes `supervise`, which a logger runs under.
+- [Stack traces](stack-traces.md) presents the trace of an error which is logged.
