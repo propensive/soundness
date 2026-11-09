@@ -3,69 +3,82 @@
 ### About
 
 The JVM [classpath](https://en.wikipedia.org/wiki/Classpath) and its
-[classloaders](https://en.wikipedia.org/wiki/Java_Classloader) are represented as values. A
-resource bundled on the classpath is read through a reference the compiler checks; a
-classpath is an immutable list of its entries — directories, JAR files, and the Java
-runtime — that can be inspected; and a block of code can be run under a chosen
-classloader.
+[classloaders](https://en.wikipedia.org/wiki/Java_Classloader) are represented as values.
 
-The classpath is how the JVM finds the classes and data files packaged with a program, but
-its standard API is a matter of nullable lookups and mutable global state. Soundness gives a
-resource the same reading interface as any other source, and makes the structure of the
-classpath something a program can examine directly.
+A resource bundled on the classpath is read through a reference which the compiler checks. A
+classpath is an [immutable] list of its entries, which are directories, JAR files and the Java
+runtime, and the list can be inspected. A block of code can be run under a chosen classloader.
 
 ### On the classpath
 
-When a program asks for a bundled data file — a template, a lookup table, an icon — it asks
-the classpath, which searches the directories and archives the program was launched with.
-The Java API for this returns a `null` when a resource is absent, hands back a raw
-`InputStream`, and exposes the classloader hierarchy as mutable state shared across threads.
-None of it is typed, and a missing resource is discovered only when the `null` is
-dereferenced.
+A program which asks for a bundled data file, such as a template, a lookup table or an icon,
+asks the classpath, which searches the directories and archives the program was launched with.
+The Java API for this returns `null` when a resource is absent, hands back a raw `InputStream`,
+and exposes the hierarchy of classloaders as mutable state shared between threads. None of it is
+typed. A missing resource is discovered only when the `null` is dereferenced.
 
-Classpath entries and classloaders as typed values, rather than strings and globals, are [honest signatures](../philosophy/honest-signatures.md) for a part of the JVM that usually has none.
+Here a classpath resource is a [path](paths.md) like any other, and is read with the same
+`read` as a file. A classpath is an immutable value whose entries can be listed. A classloader
+is chosen explicitly, as a [contextual value], and not reached for implicitly. Typed entries and
+classloaders give [honest signatures](../philosophy/honest-signatures.md) to a part of the JVM
+which usually has none.
 
-Soundness treats a classpath resource as a path like any other, read with the same
-polymorphic `read`, and treats a classpath as an immutable value whose entries can be
-listed. A classloader is chosen explicitly, as a contextual value, rather than reached for
-implicitly. Everything comes from the `soundness` package, with a classloader in scope:
+Everything comes from the `soundness` package. The other imports choose a classloader, a
+[strategy](errors.md#choosing-a-strategy) for errors, and access to the system properties, and
+let the samples print their results:
 
 ```scala
 import soundness.*
 import classloaders.threadContextClassloader
 import strategies.throwUnsafely
 import systems.javaBaseSystem
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
+
+Most of the samples on this page depend on the machine which runs them, so they are compiled but
+not run.
 
 ### Reading a resource
 
-The `cp"…"` interpolator names a resource on the classpath and checks the reference as the
-code compiles. The result is a `Resource`, which reads like any other source — as raw bytes,
-as text, or as a parsed value:
+The `cp"…"` [interpolator] names a resource on the classpath, and checks the reference as the
+code compiles. The result is a `Resource`, which is read like any other source: as raw bytes, as
+text, or as a parsed value. The Scala library is on every classpath, so one of its classes makes
+a resource which is always present:
 
 ```scala
-cp"/scala/Option.class".read[Data]
+val option = cp"/scala/Option.class".read[Data]
 ```
 
-Because the resource is resolved against the classloader in scope, reading it needs no
-handle passed by hand; the `given Classloader` supplies the context. A resource path can
-equally be built from text at runtime by decoding it:
+The resource is resolved against the classloader in scope, so the read needs no handle passed by
+hand. A resource path can also be built from text at [runtime], by decoding it:
 
 ```scala
-t"/scala/Option.class".as[Path on Classpath]
+val same = t"/scala/Option.class".as[Path on Classpath]
 ```
 
-A classpath path is _substantiable_, meaning its existence can be tested before it is read,
-so a program can check for an optional resource rather than handle a failure.
+The check at compiletime is against the classpath of the compiler. A reference to a resource
+which is not there is a compile error:
+
+```scala fuel
+compile
+errors show
+##
+cp"/scala/Nothing/Here.txt"
+```
+
+A classpath path is also *substantiable*. Its existence can be tested at runtime before it is
+read, so a program can check for an optional resource rather than handle a failure.
 
 ### Choosing a classloader
 
-A resource reference names a path, not a thing: two classloaders may resolve the same path to
-different resources, or one to nothing at all, which is why the choice cannot be implicit in the
-reference and has to come from the context in which it is read. Which classloader resolves a
-resource is decided by the `given Classloader` in scope, chosen by import:
+A resource reference names a path, not a thing. Two classloaders may resolve the same path to
+different resources, or one may resolve it to nothing at all. The choice cannot be implicit in
+the reference, and comes from the context in which the resource is read. The `given
+Classloader` in scope decides, and is chosen by import:
 
-```scala
+```scala fuel
+typecheck
+##
 import classloaders.systemClassloader
 ```
 
@@ -82,9 +95,9 @@ row  `scalaClassloader`  the classloader that loaded the Scala library
 
 ### Inspecting the classpath
 
-A `LocalClasspath` is the classpath as a list of entries. The running program's classpath is
-the value of the `java.class.path` property, which decodes to one — reading the property needs
-the `System` in scope, imported above:
+A `LocalClasspath` is the classpath as a list of entries. The classpath of the running program
+is the value of the `java.class.path` property, which decodes to one. Reading the property needs
+the `System` in scope, which was imported above:
 
 ```scala
 val classpath = System.properties.java.`class`.path().as[LocalClasspath]
@@ -103,48 +116,50 @@ row  `Url(url)`  a remote location  `Unset`  never
 row  `JavaRuntime`  the JDK's own classes  `Unset`  never
 ```
 
-A *local* classpath's entries are statically known to exclude URLs, so a match over them need
-not handle that case:
+The entries of a *local* classpath are known not to be URLs, so a match over them need not handle
+that case:
 
 ```scala
-classpath.entries.map:
+val descriptions = classpath.entries.map:
   case Classpath.Entry.Directory(path) => t"directory $path"
   case Classpath.Entry.Jar(path)       => t"archive $path"
   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
 ```
 
-An entry is classified by what is on disk, not by its name: `Classpath.Entry.classify(path)`
-makes a nonexistent path a `Directory`, since it may become one, and a file ending with a ZIP
-trailer a `Jar` — which a launcher's shebang-prefixed executable is, though it has no `*.jar`
-suffix — and raises an `Io.Error` for any other file. The classpath the running process was actually loaded from — a `URLClassLoader`'s entries,
-its parents', then `java.class.path`, in order and each once — is `LocalClasspath.running`,
-which a tool that compiles or loads code against itself needs:
+An entry is classified by what is on disk, not by its name. `Classpath.Entry.classify(path)`
+makes a nonexistent path a `Directory`, since it may become one. It makes a file which ends with
+a ZIP trailer a `Jar`, which is what a launcher's executable with a shebang prefix is, though its
+name does not end in `jar`. It raises an `Io.Error` for any other file.
+
+`LocalClasspath.running` is the classpath which the running process was actually loaded from:
+the entries of a `URLClassLoader`, then those of its parents, then `java.class.path`, in order
+and each once. A tool which compiles or loads code against itself needs this:
 
 ```scala
 import filesystemOptions.dereferenceSymlinks
 
 val running = LocalClasspath.running()
-running.entries.map(_.path)
+val paths = running.entries.map(_.path)
 ```
 
 ### Loading services
 
 The JVM's [service-provider](https://en.wikipedia.org/wiki/Service_provider_interface)
-mechanism finds the implementations of an interface declared on the classpath. `services`
-returns them, typed to the service:
+mechanism finds the implementations of an interface which are declared on the classpath.
+`services` returns them, typed to the service:
 
 ```scala
-classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)   // Set("file", "jar", …)
+val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
 ```
 
 ### Building a classloader
 
 A classpath builds a classloader over a chosen parent, which is the platform loader unless
-another is given. The loader's *delegation* says which side wins when it and its parent both
-offer a class of the same name, and is always spelled out: `Deferential` is the JVM's usual
-order, deferring to the parent, which shares the parent's classes with the code being loaded;
-`Preferential` prefers the classpath's own entries, which isolates a plugin's versions of its
-libraries from its host's:
+another is given. The *delegation* of the loader says which side wins when it and its parent
+both offer a class of the same name, and it is always spelled out. `Deferential` is the usual
+order of the JVM, which defers to the parent, and so shares the parent's classes with the code
+being loaded. `Preferential` prefers the entries of the classpath itself, which isolates a
+plugin's versions of its libraries from its host's:
 
 ```scala
 val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
@@ -153,24 +168,36 @@ val shared = contract.classloader(Classloader.Delegation.Deferential)
 val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
 ```
 
-Here a plugin sees the contract it was written against through its parent, while everything
-else it bundles is its own. A resource is read from a loader directly, by its path, as an
-optional value that retains nothing, so the read can sit inside a `safely` block:
+Here the plugin sees the contract it was written against through its parent, while everything
+else it bundles is its own.
+
+A resource is read from a loader directly, by its path. The result is an [optional] value which
+retains nothing, so the read can sit inside a `safely` block:
 
 ```scala
-safely(isolated(t"META-INF/plugin.version"))
+val version = safely(isolated(t"META-INF/plugin.version"))
 ```
 
 ### Running under a classloader
 
-A `Classloader` value runs a block with itself installed as the thread's context
-classloader, restoring the previous one afterward. This scopes a change of classloader to
-exactly the code that needs it — loading a plugin, say — rather than leaving it set:
+A `Classloader` value runs a block with itself installed as the context classloader of the
+thread, and restores the previous one afterward. This confines a change of classloader to
+exactly the code which needs it, such as the loading of a plugin:
 
 ```scala
 classloaders.systemClassloader.use:
-  Classloader[Option[Int]]   // resolved against the system classloader
+  Classloader[Option[Int]]
 ```
 
-`Classloader[T]` finds the classloader that loaded a type, which is how a plugin's own
-classloader is reached from one of its classes.
+`Classloader[T]` finds the classloader which loaded a type. That is how the classloader of a
+plugin is reached from one of its classes.
+
+### Related
+
+- [Paths](paths.md) describes the path types which a classpath resource shares.
+- [Streams](streams.md) describes `read`, and the forms a resource is read as.
+- [Stack traces](stack-traces.md#resolving-frames-to-their-source) resolve frames through a
+  classloader.
+- [Compiler](compiler.md) compiles code against a classpath.
+- [Packaging](packaging.md) builds the JAR files which become classpath entries.
+- [Environment](environment.md) describes the system properties the classpath is read from.
