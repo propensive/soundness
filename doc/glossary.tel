@@ -1,0 +1,134 @@
+tel 1.0
+
+# The words Soundness's documentation uses with a precise meaning. A term in brackets in prose —
+# `[tactic]`, or `[tactics][tactic]` for an inflected form — shows its definition when pointed
+# at, and leads to the page named by its `link`. doc/standards/style.md says when to add one.
+
+define capability
+  link  /doc/philosophy/capture-checking.md
+  definition
+      A value which must be in scope for an operation to be allowed, such as `Online` for a
+      network request. A method that needs one says so in its signature, so what a method may
+      do is visible in its type.
+
+define choice package
+  link  /doc/philosophy/declarative-context.md
+  keyword policy import
+  definition
+      A package of alternative [givens][given] for one decision, such as `strategies`,
+      `alphabets` or `httpBackends`. Importing one member by name makes that choice for
+      everything in scope.
+
+define compiletime
+  definition
+      While the program is being compiled. A check made at compiletime rejects wrong code
+      before it can run; a compiletime error is reported by the compiler.
+
+define contextual value
+  link  /doc/philosophy/declarative-context.md
+  keyword implicit
+  definition
+      A value the compiler finds in scope and passes to a method without it being written as
+      an argument. One is declared with `given` and requested with `using`.
+
+define derivation
+  link  /doc/modules/derivation.md
+  definition
+      Having the compiler construct a [typeclass] instance for a case class or enumeration
+      from the instances for its fields or cases, instead of writing it by hand.
+
+define direct style
+  link  /doc/philosophy/direct-style.md
+  definition
+      Code written as ordinary statements and expressions whose values are used directly,
+      without wrapping results in a monad such as `Either`, `Try` or `Future`.
+
+define enumeration
+  definition
+      A type declared with `enum` whose cases are a fixed list of values, known to the
+      compiler, each with an ordinal giving its position in the declaration.
+
+define given
+  link  /doc/philosophy/declarative-context.md
+  definition
+      A definition marked `given`, which makes a [contextual value] available to any code
+      that has it in scope.
+
+define honest signature
+  link  /doc/philosophy/honest-signatures.md
+  definition
+      A method signature that states everything the method needs and every way it can fail,
+      so that nothing about calling it is left to documentation.
+
+define immutable
+  link  /doc/philosophy/immutability.md
+  definition
+      Never changing after construction. An operation that appears to alter an immutable
+      value returns a new value and leaves the original as it was.
+
+define impossible state
+  link  /doc/philosophy/impossible-states.md
+  definition
+      A value that would be meaningless or invalid, and which the types are designed to make
+      unrepresentable, so that no code needs to check for it.
+
+define interpolator
+  link  /doc/modules/interpolation.md
+  definition
+      A prefix on a string literal, such as `t"…"`, `url"…"` or `media"…"`, which checks the
+      literal's content at [compiletime] and gives a value of a precise type.
+
+define opaque type
+  definition
+      A type that is represented at runtime by another type, such as a `Long`, but which the
+      compiler treats as distinct from it, so only the operations defined for it are allowed.
+
+define optional
+  link  /doc/modules/optional-values.md
+  definition
+      Typed `Optional[T]`: either a value of type `T`, or `Unset`. A present value is not
+      wrapped, so it costs nothing more than the value itself.
+
+define raises
+  link  /doc/modules/errors.md#declaring-that-code-can-fail
+  definition
+      The infix type in a return type, as in `Text raises ParseError`, which declares that a
+      method can fail with that error. It requires a [tactic] for the error from the caller.
+
+define runtime
+  definition
+      While the program is running. A runtime error is one that the compiler could not rule
+      out, and which is reported through a [tactic] when it happens.
+
+define session
+  definition
+      A scope which opens a resource, such as a connection, lends it to the code inside the
+      scope, and closes it when the scope ends.
+
+define singleton type
+  definition
+      The type of exactly one value, such as the type of a particular [enumeration] case. A
+      parameter of singleton type must be given a value the compiler can identify, not one
+      computed at [runtime].
+
+define strategy
+  link  /doc/modules/errors.md#choosing-a-strategy
+  keyword error handling
+  definition
+      A choice, in scope, of what happens when an operation fails: `throwUnsafely` throws an
+      exception, `safely` gives `Unset`, `capture` returns the error. A strategy supplies the
+      [tactic] a fallible method asks for.
+
+define tactic
+  link  /doc/modules/errors.md#declaring-that-code-can-fail
+  definition
+      A [contextual value] of type `Tactic[E]` which a method needs in order to report an
+      error of type `E`. Whoever provides the tactic decides how the failure is handled.
+
+define typeclass
+  link  /doc/modules/derivation.md#products-sums-and-typeclasses
+  definition
+      A trait describing an ability a type may have, such as being shown, encoded or
+      compared, with an instance for each type that has it. An instance is found as a
+      [contextual value], so a type gains an ability without being modified. `Color is
+      Showable` is the instance making `Color` showable.
