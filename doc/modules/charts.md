@@ -2,32 +2,35 @@
 
 ### About
 
-A chart turns a run of numbers into a picture: bars for categories, a line for a trend, wedges for
-the parts of a whole, a histogram for a distribution. Soundness draws charts as
-[SVG](svg.md) from typed data, in four separable layers — the shape of the data, the kind of
-chart, the fit of one to the other, and the style — so that each can be chosen without disturbing
-the rest, and a chart can be revised as new data arrives.
+A chart turns a run of numbers into a picture: bars for categories, a line for a trend, wedges
+for the parts of a whole, a histogram for a distribution. Charts are drawn here as [SVG](svg.md)
+from typed data, in four separable layers: the shape of the data, the kind of chart, the fit of
+one to the other, and the style. Each can be chosen without disturbing the rest, and a chart can
+be revised as new data arrives.
 
 ### On charting
 
-Charting libraries usually take a bag of numbers and a bag of options, and discover at runtime
+Charting libraries usually take a bag of numbers and a bag of options, and discover at [runtime]
 that the two do not go together: a pie chart of three series, a line through category labels, a
-logarithmic axis over a range that includes zero. The decisions that ought to be separate — what
-the data is, how it is drawn, how its axes are chosen, what it looks like — arrive tangled in one
-call.
+logarithmic axis over a range which includes zero. The decisions which ought to be separate,
+which are what the data is, how it is drawn, how its axes are chosen and what it looks like,
+arrive tangled in one call.
 
-Charts whose kind is chosen by the shape of the data, and whose axes and style are chosen apart from it, are [decoupling](../philosophy/decoupling.md) between meaning and rendering.
+Here the four decisions are kept apart. The *shape* of the data is in its types. A series over
+`Text` is categorical, and a series over `Double` or a `Duration` is continuous. A chart *kind*
+is compatible with some shapes and not others, and the compiler checks the pairing. The *fit* of
+the data to the axes, which is linear or logarithmic, padded to round numbers or tight, anchored
+at zero or not, is a calibration chosen for each axis type, or passed explicitly. Everything
+about the *style*, which is size, colors, type and legend, is a separate value. This is
+[decoupling](../philosophy/decoupling.md) of meaning from rendering.
 
-Soundness keeps the four decisions apart. The *shape* of the data is in its types: a series over
-`Text` is categorical, a series over `Double` or a `Duration` is continuous. A chart *kind* is
-compatible with some shapes and not others, and the compiler checks the pairing. The *fit* of the
-data to the axes — linear or logarithmic, padded to round numbers or tight, anchored at zero —
-is a calibration chosen per axis type or passed explicitly. Everything about the *style* — size,
-colors, type, legend — is a separate value. Everything comes from the `soundness` package:
+Everything comes from the `soundness` package. The second import chooses a [strategy] for
+errors, and the third lets the samples print their results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Series
@@ -39,22 +42,26 @@ val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
 val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
 ```
 
-The abscissa type decides the axis. A `Text` (or an enum, or a `Category`) is `Categorical`: its
-values are distinct labels in first-appearance order. A number, a `Duration`, an `Instant` or any
-`Quantity` is `Continuous`: its values have positions on a numeric axis. Either typeclass can be
-given for a type of your own. An `Estimate` is a continuous value with the interval it lies in,
-which a chart draws as an error bar or a band:
+The type of the abscissa decides the axis. A `Text`, an [enumeration] or a `Category` is
+`Categorical`: its values are distinct labels, in the order of their first appearance. A number,
+a `Duration`, an `Instant` or any `Quantity` is `Continuous`: its values have positions on a
+numeric axis. Either [typeclass] can be given for a type of your own.
+
+An `Estimate` is a continuous value with the interval it lies in, which a chart draws as an
+error bar or a band:
 
 ```scala
 val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
 ```
 
-A value may also carry a note — `Noted(3.0, t"Paris")` — which a scatter plot or a line
-chart sets beside the point. A series' name, like a sample set's or a `Category`, is any showable value — text, an enum
-case, a number — rendered once when it is made. A series is immutable, and `add` appends a point
-in constant amortized time, which is what a chart
-fed one measurement at a time needs. Several series are any collection of them — a `List`, a
-`Sequence`, a `Set` — since compatibility is stated for anything traversable by series.
+A value may also carry a note, as `Noted(3.0, t"Paris")`, which a scatter plot or a line chart
+sets beside the point. The name of a series, like that of a sample set or a `Category`, is any
+showable value, such as text, an enumeration case or a number, rendered once when it is made.
+
+A series is [immutable], and `add` appends a point in constant amortized time, which is what a
+chart fed one measurement at a time needs. Several series are any collection of them, such as a
+`List`, a `Sequence` or a `Set`, since compatibility is stated for anything traversable by
+series.
 
 ### Chart kinds
 
@@ -76,40 +83,59 @@ row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous 
 row  `Doughnut()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Doughnut.Style`
 ```
 
-The `chart` method pairs data with a kind, and compiles only where the kind can draw the
-data's shape:
+The `chart` method pairs data with a kind, and compiles only where the kind can draw the shape
+of the data:
 
 ```scala
 val sales = List(north, south).chart(Bars())
 ```
 
-A histogram and a box plot take `Samples` — raw measurements — rather than points. A pairing
-that makes no sense is a compile error rather than a runtime surprise:
+A histogram and a box plot take `Samples`, which are raw measurements, rather than points. A
+pairing which makes no sense is a compile error, not a surprise at runtime. A categorical series
+has no numeric abscissa for a line:
 
-```scala
-north.chart(Lines())       // does not compile: a categorical series has no numeric abscissa
-List(north, south).chart(Pie())  // does not compile: a pie is one series
+```scala fuel
+compile
+errors show
+##
+north.chart(Lines())
 ```
 
-The pairing is a `Plottable` instance, and a new kind of chart is a new value with instances for
-the shapes it can draw; nothing else has to change.
+A pie is one series:
+
+```scala fuel
+compile
+errors show
+##
+List(north, south).chart(Pie())
+```
+
+The pairing is a `Plottable` instance. A new kind of chart is a new value with instances for the
+shapes it can draw, and nothing else has to change.
 
 ### Fitting
 
-Fitting chooses each axis's range and gradations from the data. The chart kind decides what the
-axis must show — a bar chart's ordinate is anchored at zero, a line chart's is not — and a
-`Calibration` decides how: linear or logarithmic positions, padded outward to whole steps or tight
-to the data. The default is linear. A calibration is keyed on the type of the values on the axis,
-so a scoped given changes every axis of that type, and an import changes every axis:
+Fitting chooses the range and gradations of each axis from the data. The chart kind decides what
+the axis must show. The ordinate of a bar chart is anchored at zero, and that of a line chart is
+not. A `Calibration` decides how: linear or logarithmic positions, padded outward to whole steps
+or tight to the data. The default is linear.
+
+A calibration is keyed on the type of the values on the axis, so a scoped given changes every
+axis of that type, and an import changes every axis:
 
 ```scala
 val sizes = Series(t"sort")((100, 1.2), (1000, 14.0), (10000, 160.0), (100000, 1900.0))
+```
 
+```scala fuel
+run
+##
 val logged =
   given Int is Calibration = calibrations.logarithmicCalibration
   sizes.chart(Lines())
 
-logged.fit.abscissa.transform   // Scale.Transform.Logarithmic
+Out.println(logged.fit.abscissa.transform.inspect)
+Out.println(sizes.chart(Lines()).fit.abscissa.transform.inspect)
 ```
 
 A calibration can also be passed to a chart kind for one axis, when both axes share a type:
@@ -130,19 +156,21 @@ row  `adaptiveCalibration`  logarithmic when the range spans three orders of mag
 row  `tightCalibration`  linear  exactly the extent of the data
 ```
 
-The adaptive calibration is what benchmark timings over input sizes usually want. The `Scale` a fit produces is plain
-data: its bounds, its transform and its gradations, which are spaced at multiples of one, two and
-five for numbers, and at clock steps — seconds, half-minutes, hours — for durations and instants.
+The adaptive calibration is what benchmark timings over input sizes usually want. The `Scale`
+which a fit produces is plain data: its bounds, its transform and its gradations. Gradations are
+spaced at multiples of one, two and five for numbers, and at clock steps, such as seconds,
+half-minutes and hours, for durations and instants.
 
 ### Style
 
-Everything about a chart's appearance that is not data is a *style*: a trait with a method for
-each component the chart draws — a tick, a tick label, a bar, a wedge, a legend swatch — taking
-the geometry the chart computed and returning the figures to draw. `Chart.Style` holds what every
-kind shares (the canvas, the typeface, the legend and how text is set), `Chart.Cartesian` adds
-axes, gradations, grid, titles, markers and error bars, and each kind adds its own: `Bars.Style`
-has `bar`, `Lines.Style` has `line` and `band`, `Pie.Style` has `wedge`. A chart asks for the
-style of its kind, so a bar chart compiles against `Bars.Style`.
+Everything about the appearance of a chart which is not data is a *style*: a trait with a method
+for each component the chart draws, such as a tick, a tick label, a bar, a wedge or a legend
+swatch. Each method takes the geometry which the chart computed, and returns the figures to
+draw. `Chart.Style` holds what every kind shares: the canvas, the typeface, the legend and how
+text is set. `Chart.Cartesian` adds axes, gradations, grid, titles, markers and error bars. Each
+kind adds its own: `Bars.Style` has `bar`, `Lines.Style` has `line` and `band`, and `Pie.Style`
+has `wedge`. A chart asks for the style of its kind, so a bar chart compiles against
+`Bars.Style`.
 
 `Chart.Standard` implements all of them. It is a case class, so its parameters are named
 arguments, and any component is an override:
@@ -157,7 +185,7 @@ given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units
     List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
 ```
 
-The hooks cover the details a chart is usually judged on:
+The hooks cover the details on which a chart is usually judged:
 
 ```tabular
 column  Hook
@@ -182,80 +210,88 @@ row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
 row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Doughnut.Style`
 ```
 
-`labelRoom` tells the layout how much space the tick labels take, so a style that rotates them
-overrides it alongside `tickLabel`.
+`labelRoom` tells the layout how much space the tick labels take, so a style which rotates them
+overrides it beside `tickLabel`.
 
-Colors are a `ChartPalette`, named by role — the series ramp, the axes, the grid, the
-lettering — so that one style renders under any palette; a palette is chosen by importing one:
+Colors are a `ChartPalette`, named by role: the series ramp, the axes, the grid, the lettering.
+One style therefore renders under any palette, and a palette is chosen by importing one:
 
 ```scala
 import palettes.solarizedDarkChartPalette
 ```
 
-The style's `font` is a `Font in Web`: a face paired with a provision for its typeface (see
-[fonts](fonts.md)), so a chart can only be set in a typeface its SVG will carry a `@font-face`
-for, or in a generic family, which is the default. A provision is declared once, and the font
-chosen in the style:
+The `font` of a style is a `Font in Web`: a face paired with a provision for its typeface, as
+[fonts](fonts.md#providing-a-typeface) describes. A chart can therefore be set only in a
+typeface which its SVG will carry a `@font-face` for, or in a generic family, which is the
+default. A provision is declared once, and the font is chosen in the style:
 
 ```scala
-given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+given menloProvision: ((Typeface of "Menlo") is Typesettable in Web) = Web.local()
 
 val monospaced = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
 ```
 
-Text is measured to lay out the axis labels and legend. An embedded font's own glyph advances
-are used, so the face measured is the face rendered and the margins fit their labels exactly;
-for a font without a file to hand, an average width per character is assumed. Either can be
-overridden by importing a metric:
+Text is measured to lay out the axis labels and the legend. The glyph advances of an embedded
+font are used, so the face measured is the face rendered, and the margins fit their labels
+exactly. For a font without a file to hand, an average width for each character is assumed.
+Either can be overridden by importing a metric:
 
 ```scala
 import fontMetrics.averageFontMetric
 ```
 
 An axis over a [quantity](quantities.md) is titled by what it measures and its unit, taken from
-the type: a series of `Quantity[Metres[1]]` values has the ordinate title `distance / m`, and one
-of `Metre/Second` values `velocity / m·s¯¹`, with the units rendered as they are everywhere
-else in Soundness. A title given in the style replaces the name but keeps the unit:
+the type. A series of `Quantity[Metres[1]]` values has the ordinate title `distance / m`, and
+one of `Metre/Second` values has `velocity / m·s¯¹`, with the units rendered as they are
+everywhere else. A title given in the style replaces the name but keeps the unit. The style
+given above titles the ordinate `units sold`, so this chart of heights in meters is titled
+`units sold / m`:
 
 ```scala
 val tides = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre))
-tides.chart(Lines()).in[Svg].in[Xml].show.contains(t"distance / m")   // true
 ```
 
-A `Duration` axis is titled `time`, and its gradations carry their own units — `250ms`,
-`1m30s` — since clock steps are not decimal.
+```scala fuel
+run
+##
+tides.chart(Lines()).in[Svg].in[Xml].show.cut(t">").filter(_.contains(t" / ")).each(Out.println(_))
+```
 
+A `Duration` axis is titled `time`, and its gradations carry their own units, such as `250ms`
+and `1m30s`, since clock steps are not decimal.
 
 ### Placing labels
 
-The text on a chart is placed by [cartouche](label-placement.md), so that labels do not collide.
-Tick labels, axis titles and legend entries hold still, and a tick label that would overlap its
-neighbour is left out. The note beside a `Noted` point and the percentage in a pie's wedge
-move: a point's note is set to its right when that side is clear of other notes, markers and
-lines, on another side when it is not, and further off with a leader line back to the point when
-every side is taken. A wedge's percentage sits in its wedge, or is moved outward with a leader
-when a neighbouring wedge's label is in the way.
+The text on a chart is placed by [label placement](label-placement.md), so labels do not
+collide. Tick labels, axis titles and legend entries hold still, and a tick label which would
+overlap its neighbor is left out. The note beside a `Noted` point, and the percentage in the
+wedge of a pie, move. A point's note is set to its right when that side is clear of other
+notes, markers and lines, on another side when it is not, and further off, with a leader line
+back to the point, when every side is taken. A wedge's percentage sits in its wedge, or is moved
+outward with a leader when the label of a neighboring wedge is in the way.
 
-The arrangement is decided by the `Arranger` in scope. The default places each label in turn;
-for a crowded chart, simulated annealing considers the labels together, and is chosen by
-importing it:
+The `Arranger` in scope decides the arrangement. The default places each label in turn. For a
+crowded chart, simulated annealing considers the labels together, and is chosen by importing
+it:
 
 ```scala
 import arrangers.annealingArranger
 ```
 
-A style draws each label where the arrangement put it: `tickLabel`, `pointLabel` and
-`wedgeLabel` take a `Chart.Anchoring`, the point and the alignment that sets the text on the
-right side of it, and `leader` draws the line from a moved label back to its point.
-
+A style draws each label where the arrangement put it. `tickLabel`, `pointLabel` and
+`wedgeLabel` take a `Chart.Anchoring`, which is the point and the alignment which sets the text
+on the right side of it, and `leader` draws the line from a moved label back to its point.
 
 ### Rendering
 
-A chart renders to a savagery `Svg`, which serializes to XML text like any other:
+A chart renders to an `Svg`, which serializes to XML text like any other:
 
-```scala
+```scala fuel
+run
+##
 val drawing = sales.in[Svg]
-drawing.in[Xml].show.keep(70)   // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 800.0 …
+
+Out.println(drawing.in[Xml].show.keep(70))
 ```
 
 Every part of the drawing is a group with a stable identifier, which is what makes the chart
@@ -276,71 +312,103 @@ row  `rank-0`, `rank-1`, …  each band  `Doughnut`
 
 ### Revision
 
-A chart is immutable. Given new data, `revise` yields the next chart and a list of what changed on
-the page. If the fit still accommodates the new data, the axes hold still and only the parts that
-differ are replaced; if a point falls outside them, the whole chart is redrawn:
+A chart is immutable. Given new data, `revise` gives the next chart and a list of what changed
+on the page. If the fit still accommodates the new data, the axes hold still, and only the parts
+which differ are replaced. If a point falls outside them, the whole chart is redrawn:
 
-```scala
+```scala fuel
+run
+##
 import dysasymptotics.linearSize
 
 val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
 val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
-revisions.size   // 1: a Chart.Revision.Replace of `series-0`
+
+Out.println(revisions.size.show)
 ```
 
-A page holding the SVG needs only two operations, replace an element by its identifier and
-replace the whole drawing, so a chart can be kept current over a WebSocket by sending each
-revision as it is produced.
+The one revision is a `Chart.Revision.Replace` of `series-0`. A page which holds the SVG needs
+only two operations, which are to replace an element by its identifier and to replace the whole
+drawing, so a chart can be kept current over a WebSocket by sending each revision as it is
+produced.
 
 ### Distributions
 
-Raw measurements are `Samples`. A `Histogram` cuts their range into equal bins — by Sturges' rule
-unless a bin count is given — and counts the samples in each; `Boxes` summarizes each set of
-samples as a box between its quartiles with whiskers to its extremes:
+Raw measurements are `Samples`. A `Histogram` cuts their range into equal bins, by Sturges' rule
+unless a count of bins is given, and counts the samples in each. `Boxes` summarizes each set of
+samples as a box between its quartiles, with whiskers to its extremes:
 
-```scala
-val runs = List(Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0), Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0))
-runs.chart(Histogram()).fit.edges.size
-runs.chart(Boxes()).fit.summaries.size   // 2
+```scala fuel
+run
+##
+import dysasymptotics.linearSize
+
+val runs = List
+  ( Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0),
+    Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0) )
+
+Out.println(runs.chart(Histogram()).fit.edges.size.show)
+Out.println(runs.chart(Boxes()).fit.summaries.size.show)
 ```
 
 Both accept any collection of sample sets, as the other kinds accept collections of series.
 
 ### Doughnuts
 
-A `Doughnut` draws a dependency graph — a `Dag` from [acyclicity](graphs.md) — as concentric
-bands: the nodes that depend on nothing in the innermost band, each further band the nodes one
-rank further out, so that a build fills in from the centre outwards. Each node is a sector of its
-band, sweeping an angle proportional to its size within the rank, and a band is as thick as its
-rank's share of the total size. A node's size and its progress, from `0.0` to `1.0`, come from
-two typeclasses on the node type, `Weighted` and `Progressive`; the sector fills clockwise as far as
-the node is complete, with the remainder in a subdued tint of the sector's colour, which is the
-palette's first colour shaded by where the sector lies: its hue turning through thirty degrees
-from left to right, and darker below the middle and lighter above it. A doughnut has
-no labels and no legend; each band is a `rank-0`, `rank-1`, … group and each sector a
-`sector-0`, `sector-1`, … path, with the unfinished part of a sector in `sector-0-rest`.
+A `Doughnut` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+which depend on nothing are in the innermost band, and each further band holds the nodes one
+rank further out, so a build fills in from the center outwards. Each node is a sector of its
+band, which sweeps an angle proportional to its size within the rank, and a band is as thick as
+its rank's share of the total size.
 
-A node carries its progress, so a doughnut is revised like any chart, with new data: the fit
+The size of a node and its progress, from `0.0` to `1.0`, come from two typeclasses on the node
+type, `Weighted` and `Progressive`. The sector fills clockwise as far as the node is complete,
+with the remainder in a subdued tint of the sector's color. That color is the first color of the
+palette, shaded by where the sector lies: its hue turns through thirty degrees from left to
+right, and it is darker below the middle and lighter above. A doughnut has no labels and no
+legend. Each band is a `rank-0`, `rank-1`, … group, each sector a `sector-0`, `sector-1`, …
+path, and the unfinished part of a sector is `sector-0-rest`.
+
+A node carries its progress, so a doughnut is revised like any chart, with new data. The fit
 survives any graph of the same shape and sizes, and only the bands whose sectors have filled
 further are replaced:
 
 ```scala
 case class Step(name: Text, size: Double, done: Double)
-given Step is Weighted = _.size
-given Step is Progressive = _.done
+given stepWeighted: (Step is Weighted) = _.size
+given stepProgressive: (Step is Progressive) = _.done
 
 val parse = Step(t"parse", 2.0, 1.0)
 val typecheck = Step(t"typecheck", 3.0, 0.5)
 val emit = Step(t"emit", 1.0, 0.0)
 val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
-doughnut.fit.bands.size                          // 3: one band per rank
-
-val typechecked = typecheck.copy(done = 1.0)
-doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of `rank-1`
 ```
 
-`Chart.Standard(hole = 0.3)` hollows the centre, `sectorGap` and `bandGap` are the widths of the
-grout between sectors and between bands, and `Doughnut.Style` has `shade` for a sector's colour
-from its position and `sector` and `remainder` for its two parts. The
-ranking is acyclicity's: `import rankings.balancedRanking` draws each node as close to its
-dependents as it can be, rather than as close to the centre.
+```scala fuel
+run
+##
+import dysasymptotics.linearSize
+
+Out.println(doughnut.fit.bands.size.show)
+
+val typechecked = typecheck.copy(done = 1.0)
+Out.println(doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+```
+
+There are three bands, one for each rank. Finishing `typecheck` replaces only `rank-1`.
+
+`Chart.Standard(hole = 0.3)` hollows the center. `sectorGap` and `bandGap` are the widths of the
+grout between sectors and between bands. `Doughnut.Style` has `shade` for the color of a sector
+from its position, and `sector` and `remainder` for its two parts. The ranking is the one
+[graphs](graphs.md#layering) describes: `import rankings.balancedRanking` draws each node as
+close to its dependents as it can be, rather than as close to the center.
+
+### Related
+
+- [SVG](svg.md) describes the drawing which a chart renders to.
+- [Label placement](label-placement.md) describes how the labels of a chart avoid each other.
+- [Fonts](fonts.md) describes the typefaces a chart may be set in.
+- [Quantities](quantities.md) describes the units which title an axis.
+- [Graphs](graphs.md) describes the `Dag` which a doughnut draws.
+- [Colors](colors.md) describes the palette's colors.
+- [Time](time.md) describes the durations and instants which a continuous axis may hold.
