@@ -2,34 +2,40 @@
 
 ### About
 
-An in-memory store for typed entities and the relations between them: values are stored once and
-identified by typed references, and the relations a database supports are declared *in its type*,
-so relating two entities the schema does not connect is a compile error. It is the shape of a
-relational database — entities, foreign keys, joins — for the many programs whose working data fits
-in memory and whose schema should be checked by the compiler.
+A `Database` is an in-memory store for typed entities and the relations between them. A value is
+stored once, and identified by a typed reference. The relations which a database supports are
+declared *in its type*, so relating two entities which the schema does not connect is a compile
+error.
+
+It has the shape of a relational database, with entities, foreign keys and joins, for the many
+programs whose working data fits in memory and whose schema should be checked by the compiler.
 
 ### On typed storage
 
 In-memory data models drift toward maps of maps: entities keyed by id, relations as
-`Map[Id, Set[Id]]`, and the schema — which kinds of thing may relate to which — living only in
-convention. The compiler, which knows the types of everything else, knows nothing about which
-relationships are meant to exist, so a box assigned to a person, in a domain where boxes belong to
-shelves, is a runtime surprise or a silent corruption.
+`Map[Id, Set[Id]]`, and the schema, which says which kinds of thing may relate to which, living
+only in convention. The compiler knows the types of everything else, and knows nothing about
+which relationships are meant to exist. So a box assigned to a person, in a domain where boxes
+belong to shelves, is a surprise at [runtime], or a silent corruption.
 
-Soundness declares the relations as a type. A database is created *of* its relation tuple, and
-every assignment, removal and lookup is checked against it. Everything comes from the `soundness`
-package:
+Here the relations are a type. A database is created *of* its tuple of relations, and every
+assignment, removal and lookup is checked against it. An operation which the schema does not
+allow cannot be written, which is
+[safety by construction](../philosophy/safety-by-construction.md) for a data model.
+
+Everything comes from the `soundness` package. The second import chooses a
+[strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+results:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
-
-A query built from typed fragments cannot be assembled into something the database will reject: [safety by construction](../philosophy/safety-by-construction.md) applied to SQL.
 
 ### Declaring a database
 
-The relations form the database's type — `A -< B` reads "an `A` may have `B`s":
+The relations form the type of the database. `A -< B` reads "an `A` may have `B`s":
 
 ```scala
 case class Cabinet(name: Text)
@@ -41,26 +47,29 @@ given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()
 
 ### Storing and referencing
 
-`store` interns a value and returns its typed reference — a `Ref of Box in db.type`, so a
-reference cannot be confused with one from another database or to another type:
+`store` interns a value, and returns its typed reference. The reference is a
+`Ref of Box in db.type`, so it cannot be confused with a reference from another database, or to
+another type:
 
 ```scala
 val shelf = Shelf(t"top").store()
 val box = Box(t"alpha").store()
 ```
 
-A reference dereferences by application, giving back the value:
+A reference is dereferenced by applying it, which gives back the value:
 
-```scala
-box()   // Box(t"alpha")
+```scala fuel
+run
+##
+Out.println(box().inspect)
 ```
 
 ### References by key
 
-A reference need not come from a store at all. Where an entity carries its own key — an email
-address, a product code — a `Reference` to it is that key, typed by what it refers to, and a
-`Resolvable` instance says how a key finds its entity. Built from a set of values, it searches
-them by the field marked `@primary`:
+A reference need not come from a store at all. Where an entity carries its own key, such as an
+email address or a product code, a `Reference` to it is that key, typed by what it refers to. A
+`Resolvable` instance says how a key finds its entity. This one is built from a set of values,
+and searches them by the field marked `@primary`:
 
 ```scala
 case class Person(@primary email: Text, name: Text)
@@ -68,61 +77,101 @@ case class Person(@primary email: Text, name: Text)
 val jack = Person(t"jack@example.com", t"Jack")
 val jill = Person(t"jill@example.com", t"Jill")
 
-given Person is Resolvable by Text = Resolvable(Set(jack, jill))
+given personResolvable: (Person is Resolvable by Text) = Resolvable(Set(jack, jill))
 ```
 
-With that in scope, `ref` takes the reference of a value, which holds nothing but its key, and
-applying a reference resolves it back. A reference built from a key that matches nothing raises
-a `Reference.Error` when it is applied, not when it is built:
+With that in scope, `ref` takes the reference of a value, which holds nothing but its key.
+Applying the reference resolves it back:
 
-```scala
-val jillRef = jill.ref   // Reference to Person
-jillRef.key              // t"jill@example.com"
-jillRef()                // jill
+```scala fuel
+run
+##
+val jillRef = jill.ref
 
-safely(Reference[Person](t"nobody@example.com")())   // Unset
+Out.println(jillRef.key)
+Out.println(jillRef().inspect)
+```
+
+A reference built from a key which matches nothing raises a `Reference.Error` when it is
+applied, and not when it is built:
+
+```scala fuel
+run
+errors show
+##
+Reference[Person](t"nobody@example.com")()
 ```
 
 ### Relating
 
-References relate with `assign`, unrelate with `unassign`, and traverse with `lookup` — each valid
-only for a relation the database's type declares:
+References are related with `assign`, unrelated with `unassign`, and traversed with `lookup`.
+Each is valid only for a relation which the type of the database declares:
 
-```scala
+```scala fuel
+run
+##
 shelf.assign(box)
-shelf.lookup[Box]        // Set(box)
+Out.println(shelf.lookup[Box].map(_()).inspect)
 shelf.unassign(box)
-
-box.assign(shelf)        // does not compile: no Box -< Shelf relation
+Out.println(shelf.lookup[Box].map(_()).inspect)
 ```
 
-The last line is the point: the schema is not documentation but a type, and an operation outside it
-never runs because it never compiles.
+There is no `Box -< Shelf` relation, so a box cannot be assigned a shelf:
 
-`ref` finds the reference for a value already stored, raising a `Database.Error` where it is not —
-which is how a value arriving from elsewhere is matched to what the database already holds,
-rather than stored a second time.
+```scala fuel
+compile
+errors show
+##
+box.assign(shelf)
+```
+
+That is the point. The schema is not documentation but a type, and an operation outside it never
+runs, because it never compiles.
+
+`ref` finds the reference for a value which is already stored, and raises a `Database.Error`
+where it is not. That is how a value which arrives from elsewhere is matched to what the
+database already holds, rather than being stored a second time.
 
 ### Interning
 
-`store` *interns*: storing an equal value twice yields the same reference, so identity in the
-database is by value rather than by allocation. That is what makes a reference safe to compare, to
-use as a key, and to hold in place of the value it names.
+`store` *interns*. Storing an equal value twice gives the same reference, so identity in the
+database is by value, and not by allocation:
 
-A reference is an opaque handle rather than a pointer or an index into a table the caller can see,
-so a reference from one database cannot be dereferenced against another — the type says which
-database it belongs to, and there is no way to construct one that lies.
+```scala fuel
+run
+##
+Out.println((Box(t"alpha").store() == box).inspect)
+```
+
+That is what makes a reference safe to compare, to use as a key, and to hold in place of the
+value it names.
+
+A reference is an opaque handle, not a pointer or an index into a table which the caller can see.
+A reference from one database cannot be dereferenced against another. The type says which
+database it belongs to, and there is no way to construct one which lies.
 
 ### Querying
 
-`lookup` follows one relation, and yields every reference of the type it is asked for, so a
-query that must select rather than traverse is a predicate over those references' values:
+`lookup` follows one relation, and gives every reference of the type it is asked for. A query
+which must select rather than traverse is a predicate over the values of those references:
 
-```scala
+```scala fuel
+run
+##
 shelf.assign(box)
-shelf.lookup[Box].filter(_().name.starts(t"a"))   // Set(box)
+shelf.assign(Box(t"beta").store())
+
+Out.println(shelf.lookup[Box].filter(_().name.starts(t"a")).map(_()).inspect)
 ```
 
-Because the predicate is an ordinary function over the stored type, a query is written in Scala
-rather than in a query language embedded in strings — and is therefore checked by the compiler
-like the rest of the program.
+The predicate is an ordinary function over the stored type, so a query is written in Scala, and
+not in a query language embedded in strings. The compiler checks it like the rest of the
+program.
+
+### Related
+
+- [Annotations](annotations.md#finding-the-annotated-field) describes `@primary`, which marks
+  the key a `Resolvable` searches by.
+- [Collections](collections.md) describes the `Set` operations which a lookup supports.
+- [Errors](errors.md) describes `safely` and the strategies which meet a `Reference.Error`.
+- [Records](records.md) types data whose schema comes from a real database.
