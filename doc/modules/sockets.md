@@ -2,27 +2,31 @@
 
 ### About
 
-Network communication below HTTP — raw
-[TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol),
+Network communication below HTTP is handled through one set of operations, which is generic
+over the transport: raw [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol),
 [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) and
-[Unix domain sockets](https://en.wikipedia.org/wiki/Unix_domain_socket) — is handled through one
-set of operations, generic over the transport. A server *listens* on a socket with a handler per
-connection; a client *transmits* a message and reads the reply, holds a stateful *exchange*, or
-opens a *duplex* connection for full bidirectional traffic. Which transport carries the bytes is
-decided by the type of the socket value, not by a different API.
+[Unix domain sockets](https://en.wikipedia.org/wiki/Unix_domain_socket).
+
+A server *listens* on a socket, with a handler for each connection. A client *transmits* a
+message and reads the reply, holds a stateful *exchange*, or opens a *duplex* connection for
+traffic in both directions. Which transport carries the bytes is decided by the type of the
+socket value, not by a different API.
 
 ### On sockets
 
-Socket programming has a shape that transcends the transport — bind and accept on one side, connect
-and converse on the other — but each transport's API differs in incidentals: TCP has connections
-where UDP has packets, domain sockets have paths where ports have numbers. Code written against one
-rarely moves to another, and all of them expose blocking streams whose lifecycle the caller must
-manage precisely.
+Programming with sockets has a shape which is the same for every transport: bind and accept
+on one side, connect and converse on the other. But each transport's API differs in its
+incidentals. TCP has connections where UDP has packets, and domain sockets have paths where
+ports have numbers. Code written against one rarely moves to another, and all of them expose
+blocking streams whose lifetime the caller must manage precisely.
 
-Soundness abstracts the shape into typeclasses: a value that is *bindable* can serve, one that is
-*connectable* can hold a conversation, and the transports differ only in which instances exist —
-so a protocol written over one socket type runs over another where that makes sense. Everything
-comes from the `soundness` package, with concurrency in scope for the connection handlers:
+Here the shape is abstracted into [typeclasses][typeclass]. A value which is *bindable* can
+serve, and one which is *connectable* can hold a conversation. The transports differ only in
+which instances exist, so a protocol written over one type of socket runs over another, where
+that makes sense.
+
+Everything comes from the `soundness` package. [Concurrency](concurrency.md) is in scope, for
+the handlers of connections:
 
 ```scala
 import soundness.*
@@ -35,6 +39,8 @@ import codepages.utf8Codepage
 import textSanitizers.skipSanitizer
 import socketBackends.javaBaseSockets
 ```
+
+The samples on this page open connections, so they are compiled but not run.
 
 The operations, each covered below:
 
@@ -52,9 +58,9 @@ row  `session`  client  lends a connection to a block and closes it when the blo
 
 ### Serving
 
-`listen` binds a socket and runs a handler for each arrival — a connection for TCP and domain
-sockets, a packet for UDP — each on its own task. The listener runs for the duration of the block
-it is given, and stops when the block ends:
+`listen` binds a socket, and runs a handler for each arrival: a connection for TCP and domain
+sockets, and a packet for UDP. Each handler runs on a task of its own. The listener runs for
+the duration of the block which it is given, and stops when the block ends:
 
 ```scala fuel
 typecheck
@@ -62,20 +68,22 @@ typecheck
 def response(request: Data): Data = request
 
 supervise:
-  val port = Port[Tcp]()   // an unused ephemeral port
+  val port = Port[Tcp]()
 
   port.listen[Data](connection => response(connection.source.memoize)):
-    // the server runs for the duration of this block
     ()
 ```
 
-The endpoint decides the shape of the handler, on both sides. A stateful endpoint hands the
-handler something it can hold a conversation through; a stateless one hands it a payload and
-takes an answer back. So the same `listen` reads correctly for a TCP connection and for a UDP
-datagram without the handler having to state which it is dealing with.
+`Port[Tcp]()` asks the operating system for a
+[port which is not in use](network-addresses.md#ports).
 
-A UDP handler receives a `Packet` — the datagram with its sender — and answers with a reply or
-silence:
+The endpoint decides the shape of the handler, on both sides. A stateful endpoint hands the
+handler something which it can hold a conversation through. A stateless one hands it a
+payload, and takes an answer back. So the same `listen` reads correctly for a TCP connection
+and for a UDP datagram, without the handler having to state which it is dealing with.
+
+A UDP handler receives a `Packet`, which is the datagram with its sender. It answers with a
+reply, or with silence:
 
 ```scala fuel
 typecheck
@@ -96,55 +104,11 @@ row  UDP  a `Port[Udp]`, or an `Endpoint` of one to send to  a `Packet`
 row  Unix domain  a `DomainSocket` path  a connection
 ```
 
-### Multicast
-
-A multicast group is subscribed to rather than listened on: `subscribe` joins the group on every
-interface that is up and multicast-capable, runs the handler for each datagram the group
-delivers, and lends a `Multicast.Subscription` that can also send to the group unprompted — the
-shape of a service announcing itself, as mDNS does. A handler answers to the group, to the one
-sender, or not at all:
-
-```scala fuel
-parse
-##
-import socketOptions.multicastLoopSocketOption   // see our own announcements too
-
-supervise:
-  val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
-
-  group.subscribe(packet => Multicast.Reply.Group(packet.data)):
-    summon[Multicast.Subscription].send(t"hello, group".in[Data])
-```
-
-The group's port is bound with address and port reuse, so several programs on one host — ours
-and the system's own mDNS responder, say — subscribe side by side. A group is one address, so
-a protocol spoken over both IPv4 and IPv6 multicast subscribes to two.
-
-### Datagram exchanges
-
-Some protocols over UDP are one datagram out and one back — a DNS query, an NTP request. The
-backend's `exchangeUdp` does exactly that from an ephemeral port, bounded by a
-`Socket.Option.Timeout` in scope; `coaxial.dns` builds a typed DNS client on it. A nameserver is
-an `Endpoint` of a UDP port, and `query` sends a `Dns.Message` and returns the reply that
-answers it, or, given a name and a record type (`A` by default), asks the common question
-directly and returns the answering records:
-
-```scala fuel
-typecheck
-##
-import coaxial.query
-
-val resolver = ip"9.9.9.9" on udp"domain"
-val addresses = resolver.query(dns"example.com").map(_.rdata)
-```
-
-A reply whose ID or question differ from the query's — a stray datagram — is a
-`Dns.Error(Mismatch)`, and a reply that never comes a `Dns.Error(Timeout)`.
-
 ### Clients
 
-A request–response client sends a message and reads the reply stream with `transmit`; a message is
-anything *transmissible* — bytes, text, or any value that encodes to text:
+A client which makes a request, and expects a response, sends a message and reads the stream
+of the reply with `transmit`. A message is anything *transmissible*: bytes, text, or any value
+which encodes to text.
 
 ```scala fuel
 typecheck
@@ -152,25 +116,24 @@ typecheck
 val reply: Stream[Data] over Credit = DomainSocket(t"/run/service.sock").transmit(t"request")
 ```
 
-`react` holds a conversation: each received message produces a `Control` — continue with new
-state, reply, or conclude — so a client-side protocol is a state machine rather than interleaved
-reads and writes. `duplex` opens a persistent bidirectional connection, sending and receiving
-independently, which is the transport beneath [HTTP/2](http-server.md):
+`duplex` opens a persistent connection in both directions, sending and receiving
+independently. It is the transport beneath [HTTP/2](http-server.md#http2):
 
 ```scala fuel
 typecheck
 ##
 DomainSocket(t"/run/service.sock").duplex: duplex =>
   duplex.send(Stream(t"request".in[Data]))
-  duplex.source   // the read side, a Stream[Data]
+  duplex.source
 ```
+
+`duplex.source` is the read side, a [`Stream[Data]`](streams.md).
 
 ### Sessions
 
-A *session* is the same idea stated as a scope: `session` opens a connection to the target, lends
-it to the block, and closes it when the block ends. The result type is quantified outside the
-block, so a value still borrowing the live connection cannot escape it, while a memoized value
-can:
+A [session] is the same idea, stated as a scope. `session` opens a connection to the target,
+lends it to the block, and closes it when the block ends. A value which still borrows the live
+connection cannot escape the block, while a value which has been read into memory can:
 
 ```scala fuel
 typecheck
@@ -184,44 +147,110 @@ val greeting: Data = endpoint.session: connection ?=>
   connection.source.memoize
 ```
 
-This is what an [HTTP session](http-client.md) is built on, and how concurrent requests multiplex
-on one HTTP/2 connection without a parked daemon: the loan and the scope coincide.
+An [HTTP session](http-client.md#sessions) is built on this. It is how concurrent requests
+share one HTTP/2 connection, without a thread parked to manage it: the loan and the scope
+coincide.
+
+### Conversations as state machines
+
+`react` holds a conversation on the client's side, as a state machine. Each message which is
+received gives a `Control`, which says what happens next. `Continue` carries the new state, or
+none, to leave it unchanged. `Terminate` ends the conversation:
+
+```scala fuel
+typecheck
+##
+val received: Int = endpoint.react(0)[Text]: state ?=> message =>
+  if message == t"bye" then Control.Terminate else Control.Continue(state + 1)
+```
+
+Writing a protocol in this way keeps its states explicit. They are not implied by where
+control happens to be, in a sequence of interleaved reads and writes.
+
+### Messages and their conversions
+
+What a socket sends and receives is not bytes, but values. `Transmissible` says how a value
+becomes bytes on the way out. `Ingressive` says how bytes become a value on the way in. A
+protocol is therefore written in its own vocabulary:
+
+```tabular
+column  Instance
+column  A message is received as
+row  `Ingressive.bytes`  raw `Data`
+row  `Ingressive.text`  text, decoded through the character encoding in scope
+row  `Ingressive.decoder[Port]`  any type with a [`Decodable`](decoding.md) instance, here a `Port`
+```
+
+A `Port` which is received over the wire is therefore a `Port`, validated on arrival, and not
+text to be checked later.
+
+### Multicast
+
+A multicast group is subscribed to, not listened on. `subscribe` joins the group on every
+interface which is up and capable of multicast, and runs the handler for each datagram which
+the group delivers. It lends a `Multicast.Subscription`, which can also send to the group
+unprompted. That is the shape of a service announcing itself, as mDNS does. A handler answers
+to the group, to the one sender, or not at all:
+
+```scala fuel
+parse
+##
+import socketOptions.multicastLoopSocketOption
+
+supervise:
+  val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
+
+  group.subscribe(packet => Multicast.Reply.Group(packet.data)):
+    summon[Multicast.Subscription].send(t"hello, group".in[Data])
+```
+
+The option `multicastLoopSocketOption` lets the program see its own announcements too.
+
+The group's port is bound with reuse of the address and the port, so several programs on one
+host can subscribe side by side, such as this one and the system's own mDNS responder. A
+group is one address, so a protocol which is spoken over both IPv4 and IPv6 multicast
+subscribes to two. [Service discovery](service-discovery.md) is built on this.
+
+### Datagram exchanges
+
+Some protocols over UDP send one datagram out, and get one back: a DNS query, or an NTP
+request. The backend's `exchangeUdp` does exactly that, from an ephemeral port, bounded by a
+`Socket.Option.Timeout` in scope. `coaxial.dns` builds a typed DNS client on it.
+
+A nameserver is an `Endpoint` of a UDP port. `query` sends a
+[`Dns.Message`](network-addresses.md#dns-names-and-messages), and returns the reply which
+answers it. Given a name and a type of record, which is `A` by default, it asks the common
+question directly, and returns the records which answer it:
+
+```scala fuel
+typecheck
+##
+import coaxial.query
+
+val resolver = ip"9.9.9.9" on udp"domain"
+val addresses = resolver.query(dns"example.com").map(_.rdata)
+```
+
+A reply whose ID or question differs from the query's is a stray datagram, and is a
+`Dns.Error(Mismatch)`. A reply which never comes is a `Dns.Error(Timeout)`.
 
 ### TLS
 
-A TLS connection is made through a secure endpoint, with the trust policy a contextual value. The
-handshake may offer [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation)
-protocols, in preference order, and the protocol the peer selected is reported back on the
-connection — the seam an HTTP client uses to choose between an HTTP/2 and an HTTP/1.1 driver over
-one socket. Offering nothing preserves the plain-TLS handshake that `wss` peers expect.
-
-### Choosing a backend
-
-Nothing above names a platform API. The primitive operations each role needs — bind and accept,
-connect and converse, receive and reply, dispatch a datagram — are gathered into a
-`Socket.Backend`, and the loops that compose them stay platform-neutral. Three backends supply
-the same operations, so the same protocol code runs on the JVM, inside a WebAssembly component,
-and in a native binary:
-
-```tabular
-column  Backend
-column  Platform
-column  Over
-column  Unsupported
-row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  nothing
-row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  Unix-domain sockets, UDP, multicast, TLS
-row  `socketBackends.scalaNativeSockets`  Scala Native  Scala Native's sockets  Unix-domain sockets
-```
-
-An operation a backend cannot support raises the appropriate error rather than approximating it.
-Narrowing the platform's surface to a seam this small is
-[decoupling](../philosophy/decoupling.md) applied within a module.
+A TLS connection is made through a secure endpoint, and the trust policy is a
+[contextual value]. The handshake may offer
+[ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) protocols, in
+order of preference, and the protocol which the peer selected is reported back on the
+connection. That is what an HTTP client uses to choose between an HTTP/2 driver and an
+HTTP/1.1 driver over one socket. Offering nothing preserves the plain TLS handshake which
+`wss` peers expect. [Cryptography](cryptography.md#certificates) generates the certificates
+which a server presents.
 
 ### Socket options
 
-The socket options of the underlying platform — `SO_REUSEADDR`, keep-alive, buffer sizes, timeouts —
-are typed values collected from scope, each valid only for the transports that support it, so a
-TCP-only option cannot be applied to a UDP socket. A flag is a given imported by name:
+The socket options of the underlying platform, such as `SO_REUSEADDR`, keep-alive, the sizes
+of buffers and timeouts, are typed values, collected from scope. Each is valid only for the
+transports which support it, so an option for TCP alone cannot be applied to a UDP socket. A
+flag is a given, imported by name:
 
 ```scala
 import socketOptions.reuseAddressSocketOption
@@ -229,8 +258,8 @@ import socketOptions.keepAliveSocketOption
 import socketOptions.broadcastSocketOption
 ```
 
-An option carrying a value is made by a method of the same package, and given at its own type,
-as in `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
+An option which carries a value is made by a method of the same package, and given at its own
+type, as in `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
 
 ```tabular
 column  Option
@@ -256,43 +285,43 @@ row
   cell  the largest datagram received whole: 1472 bytes unless set
 ```
 
-Options are collected from scope as a set rather than passed at each call, so a program's socket
-policy is stated once, and a backend silently skips an option its platform does not support
-rather than failing.
-
-### Messages and their conversions
-
-What a socket sends and receives is not bytes but values. `Transmissible` says how a value becomes
-bytes on the way out, and `Ingressive` how bytes become a value on the way in, so a protocol is
-written in its own vocabulary:
-
-```scala
-Ingressive.bytes         // received as raw Data
-Ingressive.text          // decoded through the character encoding in scope
-Ingressive.decoder[Port] // decoded to any type with a Decodable instance
-```
-
-A `Port` received over the wire is therefore a `Port`, validated on arrival, rather than text to
-be checked later.
-
-### Conversations as state machines
-
-`react` drives a client-side protocol as a state machine: each received message yields a
-`Control` saying what happens next. `Continue` carries the new state — or none, leaving it
-unchanged — and `Terminate` ends the conversation:
-
-```scala fuel
-typecheck
-##
-val received: Int = endpoint.react(0)[Text]: state ?=> message =>
-  if message == t"bye" then Control.Terminate else Control.Continue(state + 1)
-```
-
-Writing a protocol this way keeps its states explicit, rather than implied by where control
-happens to be in a sequence of interleaved reads and writes.
+Options are collected from scope as a set, and are not passed at each call, so a program's
+policy for its sockets is stated once. A backend silently skips an option which its platform
+does not support, and does not fail.
 
 ### Errors
 
-Binding can fail — the port in use, permission denied — as a `Bind.Error`, and an established
-connection can fail during accept, transmission or close as a `Socket.Error`, each naming its
-reason.
+Binding can fail, because the port is in use, or permission is denied. That is a
+`Bind.Error`. An established connection can fail while it is accepted, during transmission,
+or as it is closed. That is a `Socket.Error`. Each names its reason, and is handled like any
+other [error](errors.md).
+
+### Choosing a backend
+
+Nothing above names a platform's API. The primitive operations which each role needs are
+gathered into a `Socket.Backend`: bind and accept, connect and converse, receive and reply,
+and dispatch a datagram. The loops which compose them stay neutral between platforms. Three
+backends supply the same operations, so the same protocol code runs on the JVM, inside a
+WebAssembly component, and in a native binary:
+
+```tabular
+column  Backend
+column  Platform
+column  Over
+column  Unsupported
+row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  nothing
+row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  Unix-domain sockets, UDP, multicast, TLS
+row  `socketBackends.scalaNativeSockets`  Scala Native  Scala Native's sockets  Unix-domain sockets
+```
+
+An operation which a backend cannot support raises the appropriate error. It is never
+approximated. Narrowing the platform's surface to a seam this small is
+[decoupling](../philosophy/decoupling.md) applied within one library.
+
+### Related
+
+- [HTTP client](http-client.md) and [HTTP server](http-server.md) are built on these sockets.
+- [Network addresses](network-addresses.md) describes the ports, IP addresses and DNS names
+  used here.
+- [Streams](streams.md) describes the streams which a connection reads and writes.
+- [RPC](rpc.md) builds typed remote calls over a connection.
