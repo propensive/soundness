@@ -229,6 +229,15 @@ The session has a few rules of its own, which a tutorial's fences must respect:
 a floating-point number has no `show` without a `Decimalizer` in scope, so it is printed with
 `inspect` too. Say what the notation means where a tutorial first shows it.
 
+A `run` fence which touches the world outside the program — the disk, a subprocess — creates
+what it needs within itself, and does not rely on what an earlier `run` fence left behind. Fuel
+runs a fence again only when the fence changes, so on a partial rebuild an earlier fence's
+effects may be absent, or belong to a different temporary directory. Give such a tutorial one
+fixed working location, write to it with flags which replace what is there, and print results,
+never paths: an absolute path in captured output, or in a captured error message, is the path
+on whichever machine built the documentation. For the same reason, do not `run` a fence which
+prints the real environment, user name or host name; give it a fixed environment instead.
+
 A fence that cannot run where the documentation is built — one that needs the network, a
 terminal, a browser or a running service — stays `typecheck`, and the prose says what it would
 do. Never write the output of such a fence by hand as though it had been captured.
