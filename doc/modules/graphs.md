@@ -2,11 +2,13 @@
 
 ### About
 
-A [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) — a set of nodes
-with dependencies and no cycles — is the shape of build systems, task schedules, type hierarchies
-and package dependencies. Soundness represents one as a `Dag`, an immutable value with the
-operations such graphs need: topological ordering, reachability, transitive closure and reduction,
-and editing that keeps the graph acyclic. Beside it sit two other graph types:
+A [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) is a set of
+nodes with dependencies between them, and no cycles. Build systems, task schedules, type
+hierarchies and package dependencies all have this shape.
+
+A `Dag` represents one as an [immutable] value. It has the operations which such graphs need:
+topological ordering, reachability, transitive closure and reduction, and editing which keeps
+the graph acyclic. Two other graph types sit beside it:
 
 ```tabular
 column  Type
@@ -19,73 +21,120 @@ row  `Topology[node]^`  never  in place  graphs built up edge by edge
 row  `Topology[node]^{}`  never  none: frozen  graphs built once and queried often
 ```
 
-All of these, and anything else graph-shaped — a `Hasse` diagram, a `Map` from nodes to their
-successors — share one vocabulary through the `Nodal` typeclass, so the same operations apply to
-each.
+All of these share one vocabulary through the `Nodal` [typeclass], so the same operations apply
+to each. So does anything else with the shape of a graph, such as a `Hasse` diagram, or a `Map`
+from nodes to their successors.
 
 ### On acyclic graphs
 
-Dependency structures accumulate the same needs everywhere they appear: an order in which to
-process the nodes, the set a change can reach, the removal of redundant edges. General-purpose
-graph libraries carry the weight of arbitrary graphs — cycles included — and hand back algorithms
-rather than values; more often, projects hand-roll a topological sort over a `Map` and inherit its
-edge cases.
+Dependency structures have the same needs wherever they appear: an order in which to process the
+nodes, the set which a change can reach, the removal of redundant edges. A general-purpose graph
+library carries the weight of arbitrary graphs, cycles included. More often, a project writes
+its own topological sort over a `Map`, and inherits its edge cases.
 
-A graph that cannot be constructed with a cycle is an [impossible state](../philosophy/impossible-states.md) ruled out at the point of construction.
+A `Dag` cannot be constructed with a cycle. A cyclic dependency graph is an
+[impossible state](../philosophy/impossible-states.md), ruled out where the graph is built, and
+so the topological order of a `Dag` has no way to fail.
 
-A `Dag` is a value: immutable, transformable, and acyclic by construction, so its topological
-order has no failure mode. Everything comes from the `soundness` package:
+Everything comes from the `soundness` package. The other imports choose a
+[strategy](errors.md#choosing-a-strategy) for errors, and let the samples print their results:
 
 ```scala fuel
 feature experimental.captureChecking
 ##
 import soundness.*
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Building a graph
 
-A `Dag` is built from edges, from nodes with their dependency sets, or from a set of nodes and a
-function giving each one's dependencies. An edge `a -> b` means `a` depends on `b`, and both ends
-of every edge become nodes:
+A `Dag` is built from nodes with their sets of dependencies:
 
 ```scala
 val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
-
-Dag(8 -> 4, 8 -> 6, 6 -> 3)   // built from edges alone
 ```
 
-Each of these checks for a cycle and raises a `Dag.Error` if it finds one. A graph that may hold
-a cycle is a `Digraph`, built the same ways without a check, and `acyclic` is the one checked
-conversion:
+An edge `a -> b` means that `a` depends on `b`. A `Dag` is also built from edges alone, and both
+ends of every edge become nodes:
+
+```scala
+val edges = Dag(8 -> 4, 8 -> 6, 6 -> 3)
+```
+
+A third form takes a set of nodes, and a function which gives the dependencies of each.
+
+Each of these checks for a cycle, and raises a `Dag.Error` if it finds one:
+
+```scala fuel
+run
+errors show
+##
+Dag(1 -> 2, 2 -> 3, 3 -> 1)
+```
+
+A graph which may hold a cycle is a `Digraph`. It is built in the same ways, without the check.
+`cycle` finds a cycle, as a list of nodes which ends where it began:
 
 ```scala
 val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
-graph.cycle                  // the cycle, as a list of nodes ending where it began
-Digraph(1 -> 2).acyclic      // a Dag
 ```
 
-Exploring outward from a node through a dependency function materialises a `Digraph`, since
-the function may lead back on itself:
+```scala fuel
+run
+##
+Out.println(graph.cycle.inspect)
+```
+
+`acyclic` is the one checked conversion from a `Digraph` to a `Dag`:
 
 ```scala
-12.explore(n => (1 until n).filter(n % _ == 0)).acyclic   // the divisibility graph beneath 12
+val checked = Digraph(1 -> 2).acyclic
+```
+
+`explore` builds a `Digraph` by following a dependency function outward from one node. The
+result is a `Digraph` because the function may lead back on itself. This is the graph of
+divisors beneath 12:
+
+```scala fuel
+run
+##
+val divisors = 12.explore(n => (1 until n).filter(n % _ == 0)).acyclic
+Out.println(divisors.linearized.inspect)
 ```
 
 ### Ordering and reachability
 
-`linearized` gives a [topological order](https://en.wikipedia.org/wiki/Topological_sorting) —
-every node after its dependencies, and otherwise in the order the nodes were given — and
-reachability queries slice the graph around a node:
+`linearized` gives a [topological order](https://en.wikipedia.org/wiki/Topological_sorting).
+Every node comes after its dependencies, and the nodes are otherwise in the order they were
+given:
 
-```scala
-dag.linearized         // List(2, 4, 3, 6, 8): dependencies before dependents
-dag.reachable(8)       // Set(8, 2, 3, 4, 6): 8 and everything it depends on, transitively
-dag.descendants(8)     // the sub-graph beneath 8
-dag.invert             // the graph with every edge reversed
+```scala fuel
+run
+##
+Out.println(dag.linearized.inspect)
 ```
 
-The queries a graph answers, and what each costs on a `Dag`:
+`reachable` gives a node and everything it depends on, directly or through other nodes:
+
+```scala fuel
+run
+##
+Out.println(dag.reachable(8).inspect)
+Out.println(dag.reachable(4).inspect)
+```
+
+`reachable` raises a `Dag.Error` for a node which the graph does not have. It is defined on a
+`Dag` and a `Digraph` alike, since reachability is well defined whether or not there is a cycle:
+
+```scala fuel
+run
+errors show
+##
+dag.reachable(5)
+```
+
+These are the queries which a graph answers:
 
 ```tabular
 column  Query
@@ -104,92 +153,106 @@ row  `invert`  the graph with every edge reversed
 row  `reaches(a, b)`  whether `a` depends on `b`, transitively  frozen `Topology` only
 ```
 
-As a collection, a graph is its nodes — in topological order, for a `Dag` — so the collection
-vocabulary applies to it through the usual typeclasses: `dag.has(4)`, `dag.size`,
-`dag.each(println(_))`, `dag.map(_.toString)` (which answers a `Digraph`, since two nodes may
-merge into one and close a cycle).
+As a collection, a graph is its nodes, and those of a `Dag` are in topological order. The
+[collection](collections.md) vocabulary applies through the usual typeclasses:
 
-A `Dag` stores only the forward direction, so finding a node's predecessors means scanning every
-edge — a cost out of proportion to the question. The operations that need it (`predecessors`,
-`ancestors`, `lineage`, `bypass` and `-`) therefore ask for an acknowledgement, which an import
-gives:
+```scala fuel
+run
+##
+Out.println(dag.has(4).inspect)
+Out.println(dag.size.show)
+```
+
+`dag.map(_.toString)` gives a `Digraph`, not a `Dag`. Two nodes may map to the same value, and
+merging them could close a cycle.
+
+A `Dag` stores only the forward direction. Finding the predecessors of a node means scanning
+every edge, which is a cost out of proportion to the question. The operations which need it are
+`predecessors`, `ancestors`, `lineage`, `bypass` and `-`. Without an acknowledgement of the
+cost, they do not compile:
+
+```scala fuel
+compile
+errors show
+##
+dag.predecessors(2)
+```
+
+An import gives the acknowledgement:
 
 ```scala
 import dysasymptotics.linearScan
-
-dag.predecessors(2)    // Set(4, 6)
-dag.ancestors(2)       // the sub-graph that depends on 2
-dag.lineage(4)         // both directions together
 ```
 
-`reachable` raises a `Dag.Error` only for a node the graph does not have, on a `Dag` and a
-`Digraph` alike: reachability is well defined whether or not the graph has a cycle.
+```scala fuel
+run
+##
+Out.println(dag.predecessors(2).inspect)
+Out.println(dag.ancestors(2).linearized.inspect)
+Out.println(dag.lineage(4).linearized.inspect)
+```
 
 ### Folding over a graph
 
-A traversal computes a value for every node from the values of the nodes it depends on, in an
-order that guarantees the dependencies are computed first:
+A traversal computes a value for every node from the values of the nodes it depends on. The
+dependencies are always computed first. This traversal gives each node one more than the sum of
+the values beneath it:
 
 ```scala
-dag.traversal[Int]((childValues, node) => childValues.total + 1)   // one more than the sum beneath
+val counts = dag.traversal[Int]((childValues, node) => childValues.total + 1)
 ```
 
-This is the shape of most real work over a dependency graph — computing a build order's costs,
-propagating a version constraint, accumulating a transitive set — expressed once rather than as a
-hand-written recursion with its own visited-set bookkeeping.
+Most real work over a dependency graph has this shape: the cost of a build, a version constraint
+passed along, a transitive set gathered up. A traversal expresses it once, without recursion
+written by hand or a set of visited nodes to keep.
 
 ### Closure and reduction
 
-The transitive `closure` adds an edge wherever a path exists; the transitive `reduction` removes
-every edge already implied by a path, giving the minimal graph with the same reachability — the
-form in which a dependency graph is usually drawn:
+The transitive `closure` adds an edge wherever a path exists. The transitive `reduction` removes
+every edge which a path already implies. The reduction is the smallest graph with the same
+reachability, and is the form in which a dependency graph is usually drawn:
 
 ```scala
-dag.closure     // all implied edges made explicit
-dag.reduction   // only the essential edges
+val closed = dag.closure
+val reduced = dag.reduction
 ```
 
-Both are answered through a frozen topology's reachability matrix, which the next section
-describes; a graph queried this way more than once is best frozen once.
+Both are answered from the reachability matrix of a frozen topology, which the next section
+describes. A graph which is queried this way more than once is best frozen once.
 
 ### Freezing
 
-Mutability is a matter of the capture set, as it is for arrays: a `Topology[node]^` can be
-edited, and a `Topology[node]^{}` — the result of `dag.freeze`, or of `Topology.freeze`, which
-consumes an editable one — cannot, since its editing methods need an exclusive handle. The
-frozen form is the one laid out for querying: both directions of adjacency in dense arrays,
-sources and sinks maintained, and a bit matrix of reachability built on first use, so that
+Whether a `Topology` can be edited is a matter of its capture set, as it is for arrays. A
+`Topology[node]^` can be edited. A `Topology[node]^{}` cannot, since the editing methods need an
+exclusive handle. `dag.freeze` gives the frozen form, as does `Topology.freeze`, which consumes
+an editable topology.
+
+The frozen form is laid out for querying. It holds both directions of adjacency in dense arrays,
+and maintains its sources and sinks. It builds a bit matrix of reachability on first use, so
 whether one node reaches another is a single bit:
 
 ```scala
-val frozen = dag.freeze    // a Topology[Int]^{}
-frozen.reaches(8, 2)      // true
-frozen.predecessors(2)    // Set(4, 6), with no acknowledgement needed
-frozen.snapshot           // back to a Dag
+val frozen = dag.freeze
 ```
 
-A frozen topology's `closure`, `reduction` and `reaches` read the matrix, which is why they are
-offered only on the frozen form: an edit would make it stale. To edit, take an editable copy
-with `Topology(frozen)`, edit, and freeze again.
+```scala fuel
+run
+##
+Out.println(frozen.reaches(8, 2).inspect)
+Out.println(frozen.reaches(2, 8).inspect)
+Out.println(frozen.predecessors(2).inspect)
+```
+
+`predecessors` needs no acknowledgement here. `frozen.snapshot` gives a `Dag` back.
+
+`closure`, `reduction` and `reaches` read the matrix. They are offered only on the frozen form,
+since an edit would make the matrix stale. To edit, take an editable copy with
+`Topology(frozen)`, edit it, and freeze again.
 
 ### Editing
 
-Editing a `Dag` gives a new `Dag` where the edit cannot create a cycle, and a `Digraph` where it
-might:
-
-```scala
-import dysasymptotics.linearSize
-
-dag.add(8, 3)              // a new dependency; raises Dag.Error if it would close a cycle
-dag.remove(8, 4)           // one edge fewer
-dag - 4                    // the node and its edges gone
-dag.bypass(4)              // 4 gone, and 8 now depends directly on 2
-dag.subgraph(Set(8, 4, 2)) // the edges among those nodes
-dag + (2 -> 8)             // a Digraph: this edge closes a cycle
-dag.map(_.toString)        // a Digraph of the same shape, since two nodes might merge
-```
-
-The edits, what each returns, and the acknowledgement each needs:
+An edit to a `Dag` gives a new `Dag` where the edit cannot create a cycle, and a `Digraph` where
+it might:
 
 ```tabular
 column  Edit
@@ -206,91 +269,177 @@ row  `++ other`  a `Digraph`
 row  `map(f)`  a `Digraph`
 ```
 
-`bypass` drops a node while rerouting each of its dependants to each of its dependencies, so
-every path through it survives; `bypassAll` does the same for a set of nodes, one after another.
-`subgraph` keeps only the edges among the chosen nodes; a bounded choice of nodes rebuilds the
-whole map, which is the `linearSize` cost.
+`add` adds a dependency, and `remove` takes one away:
+
+```scala fuel
+run
+##
+Out.println(dag.add(8, 3).reachable(8).inspect)
+Out.println(dag.remove(8, 4).reachable(8).inspect)
+```
+
+`add` refuses an edge which would close a cycle:
+
+```scala fuel
+run
+errors show
+##
+dag.add(2, 8)
+```
+
+`+` adds the same edge without complaint, because its result is a `Digraph`:
+
+```scala fuel
+run
+##
+Out.println((dag + (2 -> 8)).cycle.inspect)
+```
+
+`bypass` drops a node, and reroutes each of its dependants to each of its dependencies. Every
+path through the node survives. `-` drops the node and its edges, and the paths with them:
+
+```scala fuel
+run
+##
+Out.println(dag.bypass(6).reachable(8).inspect)
+Out.println((dag - 6).reachable(8).inspect)
+```
+
+`bypassAll` bypasses a set of nodes, one after another. `subgraph` keeps only the edges among
+the chosen nodes. It rebuilds the whole map, which is the cost that `linearSize` acknowledges:
+
+```scala
+import dysasymptotics.linearSize
+
+val part = dag.subgraph(Set(8, 4, 2))
+```
 
 ### Editing in place
 
-Where a graph is built up or edited incrementally — a build system discovering tasks, a
-scheduler accepting jobs — a `Topology` keeps its topological order valid as edges arrive,
-touching only the nodes between the two ends of a new edge, and refuses an edge that would close
-a cycle. It is a mutable value, exclusively owned, edited through methods rather than by
-producing new values:
+A graph is sometimes built up one edge at a time, as when a build system discovers tasks or a
+scheduler accepts jobs. A `Topology` keeps its topological order valid as edges arrive. A new
+edge disturbs only the nodes between its two ends.
+
+A `Topology` is a mutable value with one exclusive owner. It is edited through its methods,
+which do not produce new values:
 
 ```scala
-val topology = Topology[Text]()   // a Topology[Text]^
+val topology = Topology[Text]()
 topology.add(t"app", t"lib")
 topology.add(t"lib", t"core")
-topology.linearized          // List(core, lib, app)
 ```
 
-An edge that would close a cycle is refused with a `Dag.Error`, and the graph is left as it was:
+```scala fuel
+run
+##
+Out.println(topology.linearized.inspect)
+```
+
+An edge which would close a cycle is refused with a `Dag.Error`, and the graph is left as it
+was:
 
 ```scala fuel
 typecheck
 ##
-topology.add(t"core", t"app")   // raises Dag.Error
+topology.add(t"core", t"app")
 ```
 
-When the editing is done, the topology is given up — `Topology.freeze(topology)` or
-`Dag(topology)` consume it — so that the result can never be edited behind its back. A `Dag`
+When the editing is done, the topology is given up. `Topology.freeze(topology)` and
+`Dag(topology)` both consume it, so the result can never be edited behind its back. A `Dag`
 thaws into a `Topology` with `thaw`, and `snapshot` takes a `Dag` without giving up the handle.
 
 ### Partial orders
 
-A `Hasse` diagram takes a set and an ordering relation and computes the covering structure — for
-each element, the ones immediately above and below, with all implied comparisons dropped. The
-divisors of 12, ordered by divisibility:
+A `Hasse` diagram takes a set and an ordering relation, and computes the covering structure: for
+each element, the elements immediately above and below it, with every implied comparison
+dropped. These are the divisors of 12, ordered by divisibility:
 
 ```scala
 val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
-
-divisors.parents(2)    // Set(4, 6) — the covers of 2
-divisors.children(6)   // Set(2, 3)
-divisors.maxima        // Set(12)
 ```
 
-A `Hasse` diagram is itself a graph, each element pointing at the elements it covers, so it
+```scala fuel
+run
+##
+Out.println(divisors.parents(2).inspect)
+Out.println(divisors.children(6).inspect)
+Out.println(divisors.maxima.inspect)
+```
+
+A `Hasse` diagram is itself a graph, in which each element points at the elements it covers. It
 linearizes from its bottom to its top, and `divisors.dag` is the same relation as a `Dag`.
 
 ### Layering
 
-`layered` arranges a `Dag` for drawing: each node is assigned to a layer, dependencies above
-dependents, and the nodes within each layer are ordered to minimise the number of times the
-lines joining adjacent layers cross — the layered approach of Sugiyama, as Graphviz's `dot` draws
-it. An edge that spans more than one layer passes through a `Layering.Vertex.Virtual` in each
-layer between, so that every link in the result joins adjacent layers:
+`layered` arranges a `Dag` for drawing. Each node is assigned to a layer, with dependencies
+above dependents. The nodes within each layer are ordered so that the lines which join adjacent
+layers cross as rarely as possible. This is the layered approach of Sugiyama, which Graphviz's
+`dot` uses.
 
 ```scala
 val layering = dag.layered
-
-layering.rank(2)          // 0: a node with no dependencies is in the first layer
-layering.rank(8)          // 2: two layers below, one per dependency on the longest path
-layering.layers(1)        // the vertices of the second layer, in their drawn order
-layering.links(0)         // the (upper, lower) positions joined between layers 0 and 1
-layering.crossings        // 0: no link crosses another
 ```
 
+A node with no dependencies is in the first layer. Node `8` is two layers below, one for each
+dependency on its longest path. No link in this graph crosses another:
+
+```scala fuel
+run
+##
+Out.println(layering.rank(2).show)
+Out.println(layering.rank(8).show)
+Out.println(layering.crossings.show)
+```
+
+`layering.layers(1)` gives the vertices of the second layer in their drawn order, and
+`layering.links(0)` gives the positions joined between the first two layers. An edge which spans
+more than one layer passes through a `Layering.Vertex.Virtual` in each layer between, so every
+link joins adjacent layers.
+
 By default a node sits one layer below its deepest dependency, so every node without
-dependencies shares the first layer. Importing `rankings.balancedRanking` pulls each node with
-dependents down to the layer above its shallowest dependent instead, which shortens the long
-edge from a source that only feeds something deep:
+dependencies shares the first layer:
 
 ```scala
-import rankings.balancedRanking
-
 val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+```
 
-deep.layered.rank(5)      // 1: 5 feeds only 3, two layers down, so it sinks to the layer above
+```scala fuel
+run
+##
+Out.println(deep.layered.rank(5).show)
+```
+
+`rankings.balancedRanking` instead pulls each node which has dependents down to the layer above
+its shallowest dependent. That shortens the long edge from a source which feeds only something
+deep. Node `5` feeds only node `3`, two layers down, so it sinks to the layer above:
+
+```scala fuel
+run
+##
+locally:
+  import rankings.balancedRanking
+  Out.println(deep.layered.rank(5).show)
 ```
 
 ### Drawing
 
-A `Dag` of text renders to [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)),
-ready for [Graphviz](https://graphviz.org/):
+[Trees](trees.md#graphs) draws a graph as text, in lanes, in layers or as a dense grid.
 
-```scala
-dag.map(_.show).acyclic.dot.serialize   // a DOT digraph as Text
+A `Dag` of text is also rendered as
+[DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)), ready for
+[Graphviz](https://graphviz.org/):
+
+```scala fuel
+run
+##
+Out.println(dag.map(_.show).acyclic.dot.serialize)
 ```
+
+### Related
+
+- [Trees](trees.md) draws trees and graphs as text.
+- [Collections](collections.md) describes the vocabulary which a graph shares, and the
+  acknowledgements of cost in `dysasymptotics`.
+- [Concurrency](concurrency.md) runs the tasks which a dependency graph orders.
+- [Impossible states](../philosophy/impossible-states.md) explains why a `Dag` cannot hold a
+  cycle.
