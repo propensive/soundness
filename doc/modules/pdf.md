@@ -4,47 +4,50 @@
 
 A [PDF](https://en.wikipedia.org/wiki/PDF) document reads as a typed value: its pages and their
 geometry, the text laid out on them, the fonts they use, its metadata, bookmarks, links and
-attachments. Documents are also edited — content replaced, pages appended or removed, fonts
-embedded, metadata and links set — and an edit appends to the file rather than rewriting it, so
-the original bytes survive untouched.
+attachments. A document is also edited. Content is replaced, pages are appended or removed, fonts
+are embedded, and metadata and links are set. An edit appends to the file rather than rewriting
+it, so the original bytes survive untouched.
 
 Everything is implemented directly against the format: the object syntax, the cross-reference
 tables, the stream filters, the encryption. Nothing is delegated to an external PDF library.
 
 ### On PDF
 
-PDF's outer layer is COS, a small object language of numbers, names, strings, arrays,
+The outer layer of PDF is COS, a small object language of numbers, names, strings, arrays,
 dictionaries and streams, addressed by indirect references and indexed by a cross-reference
 table at the end of the file. Its inner layer is a content stream: a stack machine whose
-operators place glyphs on a page. Neither layer is hard, and both are unforgiving — a
-cross-reference offset that is wrong by one byte, a stream whose declared length disagrees with
-its content, an object that is present in an update and absent in the original.
+operators place glyphs on a page. Neither layer is hard, and both are unforgiving. A
+cross-reference offset may be wrong by one byte. A stream's declared length may disagree with
+its content. An object may be present in an update and absent in the original.
 
-Reading such a format well means never assuming the file is well-formed and never holding more
+Reading such a format well means never assuming the file is well-formed, and never holding more
 of it than is needed. A document is *opened*, which maps the file and reads its cross-reference
-table; pages, metadata and text are read through that scope; and a stream's payload is pulled
-lazily, decoded through its filter chain, rather than materialized on arrival. Where a document
-is damaged past the point its cross-reference table can be trusted, it can be recovered by
-scanning the file for objects directly.
+table. Pages, metadata and text are read through that scope. The payload of a stream is pulled
+lazily, decoded through its chain of filters, and is not materialized on arrival. Where a
+document is damaged past the point at which its cross-reference table can be trusted, it is
+recovered by scanning the file for objects directly. Reading a document lazily through a scope
+which owns the file is the shape described under
+[delimited scopes](../philosophy/delimited-scopes.md).
 
-Reading a document lazily through a scope that owns the file is the shape described under [delimited scopes](../philosophy/delimited-scopes.md).
-
-Everything comes from the `soundness` package, with a text encoding for the content that will
-be written:
+Everything comes from the `soundness` package, with a [strategy] for errors, a text encoding for
+the content which will be written, and the imports which let the samples print their results:
 
 ```scala
 import soundness.*
 import soundness.pdfCreatable
 import strategies.throwUnsafely
 import codepages.utf8Codepage
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+given decimalizer: Decimalizer = Decimalizer(3)
 ```
 
 ### Creating a document
 
-A document is created at a path, and written within the scope of the block: a fresh document has
-a catalog and an empty page tree, and `appendPage` adds a page with the media box it should have.
-Boxes are [quantities](quantities.md) in points, not bare numbers, so an A4 page is 595 by 842
-points:
+A document is created at a path, and written within the scope of the block. A fresh document
+has a catalog and an empty page tree, and `appendPage` adds a page with the media box it should
+have. Boxes are [quantities](quantities.md) in points, not bare numbers, so an A4 page is 595
+by 842 points:
 
 ```scala
 val a4 = Pdf.Rect
@@ -55,34 +58,43 @@ import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
 val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+```
 
+```scala fuel
+run
+##
 path.create[Pdf](CreateFlag.Replace): doc ?=>
   doc.appendPage(a4)
 ```
 
-The file is written whole to a temporary sibling and moved onto the target atomically, so a
-failure part way through leaves nothing behind.
+The file is written whole to a temporary sibling, and moved onto the target atomically, so a
+failure part of the way through leaves nothing behind.
 
 ### Opening a document
 
 A document is opened from a path or from bytes, and read within the scope of the block. The
 `pdf` accessor reaches the contextual document:
 
-```scala
+```scala fuel
+run
+##
 PdfFile(path).open():
-  pdf.version.major   // 1
+  Out.println(pdf.version.major.show)
+  Out.println(pdf.pageCount.show)
 ```
 
-Opening for writing takes the `Read & Write` mode, and yields the document as a handle whose
+Opening for writing takes the `Read & Write` mode, and gives the document as a handle whose
 editing operations are reachable only with the `Write` grant:
 
-```scala
+```scala fuel
+run
+##
 PdfFile(path).open(Read & Write): doc ?=>
   doc.setRotation(doc.page(Prim), Page.Rotation.Quarter)
 ```
 
 An encrypted document is opened by supplying its password, which is checked as the document is
-opened rather than when a string is first decrypted. A password is a secret, so a
+opened, and not when a string is first decrypted. A password is a secret, so a
 [`Cloak`](cryptography.md) must be in scope to say where it is stored:
 
 ```scala fuel
@@ -94,14 +106,14 @@ PdfFile(path).open(Password(t"open sesame")):
   pdf.info.title
 ```
 
-The standard security handler is supported through RC4 and AES-256; a public-key handler raises
-a `Pdf.Error` naming the encryption it cannot use.
+The standard security handler is supported through RC4 and AES-256. A public-key handler raises
+a `Pdf.Error` which names the encryption it cannot use.
 
 ### Pages
 
-The page tree flattens into a sequence, indexed by [ordinal](numbers.md) — `Prim` is the first
-page — with each page's geometry resolved against the inheritance the format allows, so that a
-media box declared on the tree root applies to every page beneath it:
+The page tree flattens into a sequence, indexed by [ordinal](numbers.md), so `Prim` is the first
+page. The geometry of each page is resolved against the inheritance which the format allows, so
+a media box declared on the root of the tree applies to every page beneath it:
 
 ```tabular
 column  Box
@@ -112,21 +124,23 @@ row  `cropBox`  yes  the media box
 row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
 ```
 
-```scala
+```scala fuel
+run
+##
 PdfFile(path).open():
-  pdf.pageCount                     // 1
-  pdf.page(Prim).mediaBox.width     // 595 points, as a Quantity[Points[1]]
-  pdf.page(Prim).rotation           // Page.Rotation.Quarter, after the edit above
-  pdf.page(Prim).width              // 842 points: the axes exchange when quarter-turned
+  Out.println(pdf.page(Prim).mediaBox.width.show)
+  Out.println(pdf.page(Prim).rotation.inspect)
+  Out.println(pdf.page(Prim).width.show)
 ```
 
-A page's `width` and `height` account for its rotation, and a `/UserUnit` scales the boxes, so
-the dimensions read are the ones the page presents.
+The `width` and `height` of a page account for its rotation, which is why the page quarter-turned
+above is now 842 points wide. A `/UserUnit` scales the boxes. The dimensions read are the ones
+which the page presents.
 
 ### Extracting text
 
-A page's `text` runs its content stream and reconstructs the reading order from the positions of
-the glyphs:
+The `text` of a page runs its content stream, and reconstructs the reading order from the
+positions of the glyphs:
 
 ```tabular
 column  Between two shows of text
@@ -136,27 +150,32 @@ row  a change of baseline  a newline
 row  nothing: they are adjacent  nothing, so they run together
 ```
 
-```scala
+```scala fuel
+run
+##
 PdfFile(path).open():
-  pdf.page(Prim).text
+  Out.println(pdf.page(Prim).text.inspect)
 ```
 
-Positioned runs are available too, for a reader that needs coordinates rather than a paragraph.
+The page has no content yet, so its text is empty. Positioned runs are available too, for a
+reader which needs coordinates rather than a paragraph.
 
 ### Metadata, navigation and attachments
 
 The document information dictionary reads as a `Pdf.Info`, with its dates parsed from PDF's `D:`
-format — including its offset, where one is given — and a malformed date reported as absent
-rather than as an error. Named destinations resolve through either the modern name tree or the
-old `/Dests` dictionary, and bookmarks form a tree of `Bookmark` values:
+format, including its offset where one is given. A malformed date is reported as absent, not as
+an error. Named destinations resolve through either the modern name tree or the old `/Dests`
+dictionary, and bookmarks form a tree of `Bookmark` values:
 
-```scala
+```scala fuel
+run
+##
 PdfFile(path).open():
-  pdf.info.title                            // Optional[Text]
-  pdf.destinations.at(t"intro")             // Optional[Destination]
-  pdf.bookmarks                             // List[Bookmark]
-  pdf.attachments.head.let(_.filename)      // the first attachment's name, if any
-  pdf.page(Prim).annotations                // List[Annotation]
+  Out.println(pdf.info.title.inspect)
+  Out.println(pdf.destinations.at(t"intro").inspect)
+  Out.println(pdf.bookmarks.inspect)
+  Out.println(pdf.attachments.head.let(_.filename).inspect)
+  Out.println(pdf.page(Prim).annotations.inspect)
 ```
 
 Each is read from the open document:
@@ -171,17 +190,19 @@ row  `attachments`  the embedded files
 row  `annotations`, on a page  the page's annotations, as a `List[Annotation]`
 ```
 
-An annotation is a typed case — `Annotation.Link` with its rectangle and URI, `Annotation.Note`
-with its contents — rather than a dictionary to be inspected by key.
+An annotation is a typed case, such as `Annotation.Link` with its rectangle and URI, or
+`Annotation.Note` with its contents, and not a dictionary to be inspected by key.
 
 ### Editing
 
-Editing operations run inside a write scope and are committed as an incremental update: the
+Editing operations run inside a write scope, and are committed as an incremental update. The
 original bytes stay where they were, and the changed objects are appended with a fresh
-cross-reference section. A reader that only understands the original file still sees a valid
-document.
+cross-reference section. A reader which only understands the original file still sees a valid
+document:
 
-```scala
+```scala fuel
+run
+##
 PdfFile(path).open(Read & Write): doc ?=>
   val operators = List
     ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
@@ -193,7 +214,22 @@ PdfFile(path).open(Read & Write): doc ?=>
   doc.addLink(doc.page(Prim), a4, uri = t"https://soundness.dev/")
 ```
 
-The editing operations, besides the fonts described below, are:
+The document now has metadata and a link:
+
+```scala fuel
+run
+##
+PdfFile(path).open():
+  Out.println(pdf.info.title.inspect)
+  Out.println(pdf.info.author.inspect)
+  Out.println(pdf.page(Prim).annotations.inspect)
+  Out.println(pdf.page(Prim).text.inspect)
+```
+
+The extracted text is still empty. The content names a font, `F1`, which the page does not yet
+have as a resource, and which the next step adds.
+
+These are the editing operations, besides the fonts described below:
 
 ```tabular
 column  Operation
@@ -214,9 +250,10 @@ row  `set`  replaces an object by reference
 row  `free`  deletes an object
 ```
 
-A [TrueType font](fonts.md) — any `Sfnt`, loaded here from a classpath resource — is embedded
-with `embedFont`, which writes the program as a `FontFile2` and builds the simple WinAnsi font
-dictionary around it; `addResource` names it on a page so content can select it:
+A [TrueType font](fonts.md), which is any `Sfnt`, is embedded with `embedFont`. It writes the
+program as a `FontFile2`, and builds the simple WinAnsi font dictionary around it. `addResource`
+names the font on a page, so content can select it. Here the font is loaded from a classpath
+resource:
 
 ```scala fuel
 typecheck
@@ -230,9 +267,9 @@ PdfFile(path).open(Read & Write): doc ?=>
 
 ### Stream payloads
 
-A PDF stream's payload is read lazily, through whatever chain of filters the stream declares,
-and the PNG and TIFF predictors that often follow them. The image filters are the end of the
-chain: decoding stops before them, and the still-encoded image arrives instead.
+The payload of a PDF stream is read lazily, through whatever chain of filters the stream
+declares, and through the PNG and TIFF predictors which often follow them. The image filters are
+the end of the chain. Decoding stops before them, and the still-encoded image arrives instead:
 
 ```tabular
 column  Filter
@@ -255,9 +292,18 @@ PdfFile(path).open():
 
 ### Recovering a damaged document
 
-Where a cross-reference table is missing or wrong — a truncated download, a file repaired by
-another tool — the table is rebuilt rather than trusted: the whole file is scanned for `N G obj`
-markers, the latest copy of each object winning, and the trailer recovered from a surviving
-`trailer` dictionary or from the catalog itself. Individually shifted offsets are corrected as
-objects resolve. A document that any conformant reader would open, opens here too, and is read
-exactly like any other.
+Where a cross-reference table is missing or wrong, as after a truncated download or a repair by
+another tool, the table is rebuilt rather than trusted. The whole file is scanned for `N G obj`
+markers, with the latest copy of each object winning, and the trailer is recovered from a
+surviving `trailer` dictionary, or from the catalog itself. Individually shifted offsets are
+corrected as objects resolve. A document which any conformant reader would open opens here too,
+and is read exactly like any other.
+
+### Related
+
+- [Fonts](fonts.md) describes the `Sfnt` which is embedded in a document, and its subsetting.
+- [Quantities](quantities.md) describes the points in which boxes are measured.
+- [Filesystem](filesystem.md) describes the paths and the `create` and `open` scopes.
+- [Cryptography](cryptography.md) describes the `Cloak` which holds a password.
+- [Streams](streams.md) describes the lazy streams which payloads arrive as.
+- [Compression](compression.md) describes the Flate and LZW which stream filters decode.
