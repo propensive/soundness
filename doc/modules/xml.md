@@ -732,3 +732,4 @@ with no glue between the XML and [HTTP](http-client.md) layers.
 - [SVG](svg.md) and [mathematical markup](mathematical-markup.md) are XML vocabularies with
   typed builders.
 - [JSON](json.md) and [YAML](yaml.md) share the vocabulary of `read`, `as` and `in`.
+- [Derivation](derivation.md), [interpolation](interpolation.md), [OpenAPI](openapi.md) and [TEL](tel.md) describe how XML codecs are made, checked and carried.

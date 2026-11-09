@@ -591,3 +591,7 @@ enum Message:
 A writer answers from a value with `contact.fulfil(accepting.acceptance)`. It leaves out any
 layer which retracts a case the value uses, so that what it serves is always valid under the
 layers it names.
+
+### Related
+
+- [Daemons](daemons.md) and [RPC](rpc.md) carry BinTEL messages, and [optics](optics.md) updates a TEL document.

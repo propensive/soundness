@@ -295,3 +295,4 @@ it is created, running, stopped or paused.
 - [RPC](rpc.md) describes the gRPC which the client speaks to containerd.
 - [Sockets](sockets.md) describes the Unix socket which the daemon listens on.
 - [Concurrency](concurrency.md) describes `supervise`, which the client lives inside.
+- [Compression](compression.md) describes the gzip which layers are compressed with, and [processes](processes.md) the commands a task runs.

@@ -330,3 +330,4 @@ truncated stream, or a long-name reference which does not resolve.
 - [Packaging](packaging.md) builds the JAR files and launchers which are ZIP archives.
 - [Containers](docker.md) builds image layers from tar archives.
 - [Streams](streams.md) describes the lazy streams which entries are read from.
+- [Versioning](versioning.md) describes the manifests which a JAR carries.

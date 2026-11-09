@@ -284,3 +284,7 @@ Out.println(shuffle.expansion.inspect)
 A permutation leaves alone every position outside its own range. Applying one to a longer
 sequence is therefore not an error: it rearranges the positions it covers, and leaves the rest
 where they were.
+
+### Related
+
+- [Mathematical markup](mathematical-markup.md) typesets what is computed here, and [randomness](randomness.md) samples its distributions.

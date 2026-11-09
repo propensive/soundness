@@ -150,3 +150,4 @@ value once, and keeps it.
 - [Filesystem](filesystem.md#content-addressed-storage) describes a cache on disk, keyed by
   the digest of its content.
 - [Time](time.md) describes the durations which a lifetime is given in.
+- [Stack traces](stack-traces.md) describes the codepoint which keys a cached value to its call site.

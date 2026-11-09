@@ -296,3 +296,4 @@ unchanged. The result is a complete and valid font file, checksums included, rea
 - [Quantities](quantities.md) describes the `em` in which text is measured.
 - [Classpath](classpath.md) describes the resources which a font is loaded from.
 - [Text](text.md) describes the text whose width is measured.
+- [Charts](charts.md) measure their labels with the metrics of a font.

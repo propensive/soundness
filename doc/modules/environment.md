@@ -245,3 +245,4 @@ styled output degrades correctly on a terminal which cannot show it.
 - [Command-line interfaces](cli.md) reads a program's arguments in the same typed way.
 - [Processes](processes.md) starts other programs, which inherit the environment in scope.
 - [Filesystem](filesystem.md) reads and writes the files which these directories hold.
+- [Classpath](classpath.md) reads the classpath from a system property, and [internationalization](internationalization.md) the locale from the environment.

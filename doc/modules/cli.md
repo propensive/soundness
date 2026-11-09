@@ -566,3 +566,4 @@ how it is written.
 - [Decoding](decoding.md) reads the value of a flag as a type.
 - [Terminal](terminal.md) styles output, and reads the keyboard interactively.
 - [Packaging](packaging.md) builds the executable.
+- [Gauges](gauges.md), [LSP](lsp.md), [processes](processes.md), [time](time.md) and [UUIDs](uuid.md) describe what a command-line application shows, runs and parses.

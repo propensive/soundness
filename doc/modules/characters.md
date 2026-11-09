@@ -280,3 +280,7 @@ Out.println(GraphemeBreak.boundaries(t"🇬🇧🇫🇷").to[List].inspect)
 
 Code which truncates or reverses text at these boundaries never splits a character in half.
 [Text](text.md#graphemes-and-width) counts and measures graphemes with `Writing`.
+
+### Related
+
+- [Filesystem](filesystem.md) describes the encodings which file names and contents are read in.

@@ -218,3 +218,7 @@ stochastic: (random: Random) ?=>
   Out.println(random.shuffle(List(1, 2, 3, 4, 5)).inspect)
   Out.println(toss().inspect)
 ```
+
+### Related
+
+- [UUIDs](uuid.md) and [label placement](label-placement.md) draw from a seeded source of randomness.

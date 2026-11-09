@@ -198,3 +198,4 @@ component.
 - [SVG](svg.md) describes vector graphics, which have no pixels until they are rendered.
 - [Media types](media-types.md) names the formats.
 - [Web automation](web-automation.md) captures a screenshot as a `Raster in Png`.
+- [Filesystem](filesystem.md) describes the files which images are read from and written to.

@@ -206,3 +206,4 @@ for performance work which must verify what the optimizer did, and not assume it
 - [Annotations](annotations.md) reads annotations without a macro.
 - [Compiler](compiler.md) runs the Scala compiler as a library.
 - [Classpath](classpath.md) describes the classloaders which a classfile is read through.
+- [Interpolation](interpolation.md) and [records](records.md) are built with these tools.

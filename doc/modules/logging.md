@@ -314,3 +314,4 @@ enough. Name what failed, and include its identifier.
   writes.
 - [Concurrency](concurrency.md) describes `supervise`, which a logger runs under.
 - [Stack traces](stack-traces.md) presents the trace of an error which is logged.
+- [HTTP server](http-server.md), [service discovery](service-discovery.md) and [metaprogramming](metaprogramming.md) log their events through the sinks in scope.

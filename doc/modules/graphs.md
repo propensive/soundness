@@ -443,3 +443,4 @@ Out.println(dag.map(_.show).acyclic.dot.serialize)
 - [Concurrency](concurrency.md) runs the tasks which a dependency graph orders.
 - [Impossible states](../philosophy/impossible-states.md) explains why a `Dag` cannot hold a
   cycle.
+- [Charts](charts.md) draws a graph as a doughnut, and [compiler](compiler.md) builds a toolchain as one.

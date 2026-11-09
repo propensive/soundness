@@ -162,3 +162,7 @@ path, which is `Text` here, or the definition does not compile, and an unknown p
 rejected likewise. [Optics](optics.md) introduces `Specific` beside the lenses which use the
 same syntax for paths, and [JSON](json.md#overriding-one-fields-encoder) shows it overriding
 the encoder of one field.
+
+### Related
+
+- [Internationalization](internationalization.md) keeps its translations in a catalog.

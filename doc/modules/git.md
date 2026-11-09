@@ -359,3 +359,4 @@ reference has pointed, newest first. That record is what makes a mistaken reset 
 - [Processes](processes.md) describes how the command-line backend runs `git`.
 - [SSH](ssh.md) and the [HTTP client](http-client.md) carry the native backend's transports.
 - [Cryptography](cryptography.md) describes the keys which sign commits and tags.
+- [Trees](trees.md) draws a commit history in lanes.

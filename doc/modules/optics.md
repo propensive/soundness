@@ -240,3 +240,4 @@ overridden in the same way.
 - [Derivation](derivation.md) explains how a typeclass instance is generated from a type's
   structure.
 - [Immutability](../philosophy/immutability.md) explains why values are not changed in place.
+- [Annotations](annotations.md) finds an annotated field and offers a lens onto it.

@@ -450,3 +450,4 @@ Out.println(Glob.parse(t"hello[!a-z]world").regex)
 - [Optional values](optional-values.md) describes the `Optional` which an optional element
   binds.
 - [HTTP server](http-server.md) matches the paths of requests.
+- [Decoding](decoding.md) and [TEL](tel.md) match text against patterns while reading it.

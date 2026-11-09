@@ -219,3 +219,4 @@ unchecked component.
 - [Testing](testing.md) hosts the end-to-end tests which drive a browser.
 - [Concurrency](concurrency.md#retrying) describes the `Tenacity` which governs waiting.
 - [Images](images.md) describes the `Raster in Png` which a screenshot gives.
+- [Filesystem](filesystem.md), [terminal](terminal.md) and [XML](xml.md) describe the handles, key presses and XPath locators which a browser session uses.

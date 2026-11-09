@@ -224,3 +224,4 @@ with those sizes rather than assuming them.
 - [Stack traces](stack-traces.md) describes the frames of a stopped program as values.
 - [Capture checking](../philosophy/capture-checking.md) explains how a session handle is
   confined to its block.
+- [Filesystem](filesystem.md) describes the handles whose shape a debugging session shares.

@@ -289,3 +289,4 @@ runs under, and nothing is buffered. The document flows to the client as it is p
 - [Markdown](markdown.md) renders written content into the HTML a page holds.
 - [Internationalization](internationalization.md) describes the writing directions which
   `direction` chooses between.
+- [Hyphenation](hyphenation.md) describes the soft hyphens which a page's text may carry.

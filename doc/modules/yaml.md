@@ -349,3 +349,7 @@ is stated and not merely claimed.
 A `Yaml` value is a request body or a response body, with the media type `application/yaml`,
 and a body is parsed back to `Yaml` on arrival. A YAML API is therefore consumed and offered
 with the same code as a [JSON one](json.md#json-over-http). Only the format's type differs.
+
+### Related
+
+- [Annotations](annotations.md), [CBOR](cbor.md), [CSV](csv.md), [XML](xml.md), [network addresses](network-addresses.md) and [OpenAPI](openapi.md) share YAML's codecs and carry its documents.

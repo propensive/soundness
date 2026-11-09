@@ -203,3 +203,4 @@ unpack[U16]
   width.
 - [CBOR](cbor.md) and [Protocol Buffers](protobuf.md) are binary formats which describe
   themselves.
+- [Audio](audio.md), [images](images.md) and [base encoding](base-encoding.md) read and write their bytes as `Data`.

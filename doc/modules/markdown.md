@@ -157,3 +157,4 @@ Out.println(document.terminal(width = 80))
 - [Syntax highlighting](syntax-highlighting.md) colors the code in a code block.
 - [Errors](errors.md#defining-an-error) describes messages, which can be written as
   Markdown.
+- [Web pages](pages.md) hold rendered Markdown as their content.

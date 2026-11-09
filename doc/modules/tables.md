@@ -385,3 +385,4 @@ handling at all.
 - [Hyphenation](hyphenation.md) breaks the words of a wrapped column.
 - [Text](text.md#padding-and-fitting) pads and fits single values.
 - [Charts](charts.md) draws the same data as a picture.
+- [Catalogs](catalogs.md), [daemons](daemons.md), [display](display.md) and [trees](trees.md) lay out values as text in the same spirit.

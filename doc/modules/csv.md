@@ -406,3 +406,4 @@ no mode.
 - [Decoding](decoding.md) describes the `Decodable in Text` instances which read each cell.
 - [JSON](json.md) and [YAML](yaml.md) decode nested documents with the same derivation.
 - [Streams](streams.md) covers the sources which `rows` and `rowsOf` read from.
+- [Derivation](derivation.md) explains how a row is decoded to a case class without an instance written by hand.

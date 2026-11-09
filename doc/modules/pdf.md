@@ -307,3 +307,4 @@ and is read exactly like any other.
 - [Cryptography](cryptography.md) describes the `Cloak` which holds a password.
 - [Streams](streams.md) describes the lazy streams which payloads arrive as.
 - [Compression](compression.md) describes the Flate and LZW which stream filters decode.
+- [Hyphenation](hyphenation.md) breaks the words which a document sets.

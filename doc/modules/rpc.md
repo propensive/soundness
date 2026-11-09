@@ -233,3 +233,4 @@ publishes vectors, they are what the implementation is measured against.
 - [TEL](tel.md) describes BinTEL, which a framed `Duplex` carries.
 - [Sockets](sockets.md) describes `Duplex` and `Endpoint`.
 - [MCP](mcp.md), [ACP](acp.md) and [LSP](lsp.md) are protocols built on JSON-RPC.
+- [Containers](docker.md) speaks gRPC to a containerd daemon.

@@ -412,3 +412,4 @@ close to its dependents as it can be, rather than as close to the center.
 - [Graphs](graphs.md) describes the `Dag` which a doughnut draws.
 - [Colors](colors.md) describes the palette's colors.
 - [Time](time.md) describes the durations and instants which a continuous axis may hold.
+- [Gauges](gauges.md) and [tables](tables.md) present values in the terminal, and [testing](testing.md) charts benchmark results.

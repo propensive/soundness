@@ -264,3 +264,4 @@ the authoritative schema, and the types which the program is checked against are
 - [Optional values](optional-values.md) describes the type of a field which the schema does not
   require.
 - [Metaprogramming](metaprogramming.md) describes the macros which a provider relies on.
+- [Catalogs](catalogs.md), [databases](database.md) and [tables](tables.md) work with the fields of a record by name.

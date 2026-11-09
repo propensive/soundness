@@ -230,3 +230,4 @@ at least name a class.
 - [Debugging](debugging.md) renders traces and values for inspection.
 - [Logging](logging.md) and [testing](testing.md) use codepoints to say where a message or a
   check came from.
+- [Concurrency](concurrency.md) and [compiler](compiler.md) report their failures with traces as values.

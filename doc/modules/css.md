@@ -214,3 +214,4 @@ from.
 - [Colors](colors.md) and [Quantities](quantities.md) supply the typed values of properties.
 - [Pages](pages.md) gathers the styles of a page's parts into one stylesheet.
 - [Names](names.md#built-in-planes) describes the rules for a class name.
+- [Fonts](fonts.md), [forms](forms.md), [SVG](svg.md) and [web automation](web-automation.md) use stylesheets and selectors.

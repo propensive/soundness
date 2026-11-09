@@ -173,3 +173,7 @@ Out.println(upload.at(t"avatar").let(_.filename).inspect)
 A part's body is lent from the input, without copying. It must be read, with
 `part.read[Data]`, or with `part.body()` for the stream, before moving on to the next part.
 After that, whatever remained of it has been skipped, and it reads as empty.
+
+### Related
+
+- [Audio](audio.md), [images](images.md), [interpolation](interpolation.md) and [OpenAPI](openapi.md) name their formats by media type.

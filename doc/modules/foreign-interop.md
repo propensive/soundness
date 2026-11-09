@@ -194,3 +194,4 @@ which expects them. The rest of the program keeps its own types.
 - [Compiler](compiler.md) compiles Kotlin sources into the classfiles which a facade reads.
 - [Time](time.md) and [paths](paths.md) describe the types which the Java representations stand
   for.
+- [Browser DOM](dom.md) and [syntax highlighting](syntax-highlighting.md) build on foreign interface definitions.

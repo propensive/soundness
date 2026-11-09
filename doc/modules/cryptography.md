@@ -500,3 +500,7 @@ row  `Dsa[512 | 1024 | 2048 | 3072]`  sign, verify  `permitDisallowedCrypto`
 row  `Ecdsa[256 | 384 | 521]`, `Ed25519`, `MlDsa[44 | 65 | 87]`  sign, verify
 row  `X25519`, `Ecdh[256 | 384 | 521]`  agree
 ```
+
+### Related
+
+- [Daemons](daemons.md), [Git](git.md), [OAuth](oauth.md), [PDF](pdf.md), [randomness](randomness.md) and [sockets](sockets.md) sign, encrypt and secure with these keys.

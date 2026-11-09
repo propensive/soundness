@@ -366,3 +366,4 @@ so the launcher stays small.
 - [Debugging](debugging.md) serves the sibling Debug Adapter Protocol.
 - [Concurrency](concurrency.md) describes `supervise`, `async` and `Promise`.
 - [Processes](processes.md) describes the `sh"…"` command which launches a server.
+- [Syntax highlighting](syntax-highlighting.md) and [TEL](tel.md) describe the trees which a server reports on, and [packaging](packaging.md) the thin launcher it ships as.

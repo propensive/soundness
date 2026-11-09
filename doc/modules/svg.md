@@ -324,3 +324,4 @@ a standalone `*.svg` file when it is wrapped in a `Document`.
 - [Colors](colors.md) and [CSS](css.md) supply fills, strokes and styles.
 - [Fonts](fonts.md) describes the typefaces which lettering names.
 - [Images](images.md) covers raster pictures.
+- [Label placement](label-placement.md) decides where the text in a drawing goes.

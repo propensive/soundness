@@ -114,3 +114,7 @@ on one side, sent, and decoded on the far side against the type which the staged
 
 Nothing about the representation is specific to either use. Any boundary which can carry boxed
 primitives, strings and arrays of objects can carry a Scala value.
+
+### Related
+
+- [Derivation](derivation.md) explains the engine which generates the codecs.

@@ -205,3 +205,7 @@ The streaming form and the whole-value form agree byte for byte. That includes t
 where a Base64 group of three bytes, or a Base32 group of five, straddles two chunks. Decoding
 runs in the same way, so a stream may be encoded on one side and decoded on the other, with
 neither side holding the whole of it.
+
+### Related
+
+- [CBOR](cbor.md), [cryptography](cryptography.md), [SSH](ssh.md), [geography](geography.md) and [text](text.md) encode bytes and coordinates in these alphabets.

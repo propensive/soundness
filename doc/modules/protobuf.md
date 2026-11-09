@@ -312,3 +312,7 @@ A `Protobuf` value is a request body or a response body, with the media type
 `application/protobuf`, and a body is parsed back on arrival. A binary API is therefore
 consumed and offered with the same code as a [JSON one](json.md#json-over-http). Only the
 format's type differs. [RPC](rpc.md) builds typed remote calls on such messages.
+
+### Related
+
+- [Binary data](binary-data.md) describes the bytes beneath the wire format.

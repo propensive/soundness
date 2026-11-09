@@ -175,3 +175,4 @@ program.
 - [Collections](collections.md) describes the `Set` operations which a lookup supports.
 - [Errors](errors.md) describes `safely` and the strategies which meet a `Reference.Error`.
 - [Records](records.md) types data whose schema comes from a real database.
+- [HTTP server](http-server.md) serves the data which a database holds.

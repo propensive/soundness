@@ -493,3 +493,4 @@ between the HTML and the server. [Pages](pages.md) describes the parts in full.
 - [Markdown](markdown.md) converts prose to HTML.
 - [Forms](forms.md) generates an HTML form from a case class.
 - [Web automation](web-automation.md) drives a browser over real pages.
+- [Email](email.md), [mathematical markup](mathematical-markup.md), [syntax highlighting](syntax-highlighting.md) and [errors](errors.md) render into HTML.

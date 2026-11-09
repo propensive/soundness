@@ -186,3 +186,4 @@ constructed, not where it is finally written out.
 - [HTML](html.md) and [CSS](css.md) use `Name[DomId]` and `Name[CssClass]` for ids and classes.
 - [Interpolation](interpolation.md#returning-a-precise-type) explains how `n"…"` gives a
   literal the type of the planes it satisfies.
+- [Forms](forms.md) names its fields, and [concurrency](concurrency.md) its tasks, with validated names.

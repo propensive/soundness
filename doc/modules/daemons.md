@@ -387,3 +387,4 @@ accepted too, and may replace either key.
   own environment.
 - [Concurrency](concurrency.md) runs the invocations side by side.
 - [Packaging](packaging.md) builds other kinds of distributable.
+- [HTTP server](http-server.md), [LSP](lsp.md), [processes](processes.md) and [service discovery](service-discovery.md) describe what a daemon serves, launches and advertises.

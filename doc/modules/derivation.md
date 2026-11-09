@@ -545,3 +545,4 @@ supports overrides consults the map at each field it visits, as [JSON](json.md) 
 - [Generic data](generic-data.md) describes a derived codec over structures of any shape.
 - [Small APIs](../philosophy/small-apis.md) explains why two rules are better than an instance
   for each type.
+- [Display](display.md) and [numbers](numbers.md) derive their instances for case classes, and [errors](errors.md) describes the diagnosis when a derivation fails.

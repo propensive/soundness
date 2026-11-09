@@ -312,3 +312,4 @@ which fails at runtime.
   annotations.
 - [Metaprogramming](metaprogramming.md) describes the macros which this typeclass makes
   unnecessary.
+- [CBOR](cbor.md), [Protobuf](protobuf.md), [databases](database.md) and [MCP](mcp.md) read annotations on fields and methods.

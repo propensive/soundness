@@ -108,3 +108,7 @@ to 64 cases fits in one flag set. The cases, their names and their ordinals come
 enumeration's `Enumerable` instance, which is [derived][derivation] from the `enum` declaration;
 [Enumerations by name and position](decoding.md#enumerations-by-name-and-position) shows what
 else that instance provides.
+
+### Related
+
+- [Numbers](numbers.md) and [binary data](binary-data.md) describe the bits beneath a set of flags.

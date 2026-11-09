@@ -251,3 +251,4 @@ row  Error  `Feed.Error`  `Outlet.Error`
 - [Binary data](binary-data.md) describes `hex"…"` and the `Data` which encoded audio is.
 - [Streams](streams.md) describes `read`, which works in both directions here.
 - [Media types](media-types.md) names the formats.
+- [Images](images.md) carry their format in their type in the same way.

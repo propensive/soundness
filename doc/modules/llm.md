@@ -324,3 +324,4 @@ testability. The model is a value, and a value can be faked.
 - [HTTP client](http-client.md) describes the backend which every dialect speaks over.
 - [JSON](json.md#schemas) describes the schemas derived for tools and structured answers.
 - [Errors](errors.md) describes `recover` and the other strategies which meet an `Llm.Error`.
+- [Diffing](diffing.md) describes the redrafts which a model's edits are applied as.

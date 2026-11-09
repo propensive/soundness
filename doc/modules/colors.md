@@ -420,3 +420,4 @@ screen. [Numbers](numbers.md#bit-manipulation) describes the bit patterns beneat
 - [CSS](css.md) and [SVG](svg.md) write them into stylesheets and drawings.
 - [Charts](charts.md) picks series colors from a palette.
 - [Images](images.md) reads and writes rasters of pixels.
+- [Gauges](gauges.md) and [syntax highlighting](syntax-highlighting.md) color their output, and [geography](geography.md) turns hues by its angles.

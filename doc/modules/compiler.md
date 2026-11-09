@@ -372,3 +372,4 @@ from its classfiles, as [foreign interoperability](foreign-interop.md) describes
 - [Foreign interoperability](foreign-interop.md) calls into compiled Kotlin and other
   languages.
 - [Concurrency](concurrency.md) describes `supervise`, which a compilation runs inside.
+- [Containers](docker.md), [metaprogramming](metaprogramming.md) and [syntax highlighting](syntax-highlighting.md) use the compiler's output and model.

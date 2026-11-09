@@ -199,3 +199,4 @@ Interpolators defined this way include those for [text](text.md#writing-text),
 [URLs and other network addresses](network-addresses.md), [paths](paths.md),
 [regular expressions](patterns.md), [shell commands](processes.md),
 [media types](media-types.md) and [error messages](errors.md#defining-an-error).
+- [Names](names.md) checks an identifier with an interpolator.

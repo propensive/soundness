@@ -1146,3 +1146,4 @@ Out.println(inserted.leap.inspect)
 - [Concurrency](concurrency.md) waits for a duration, and sets timeouts.
 - [Internationalization](internationalization.md) covers the locales used to describe
   recurrences.
+- [Caching](caching.md), [charts](charts.md), [cryptography](cryptography.md), [gauges](gauges.md), [numbers](numbers.md) and [foreign interoperability](foreign-interop.md) measure, plot, stamp and convert times.

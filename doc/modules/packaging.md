@@ -143,3 +143,4 @@ audited afterwards.
   as thin JARs.
 - [Hashing](hashing.md) describes the SHA-256 digests which identify each dependency.
 - [Classpath](classpath.md) describes the classpath which the bootstrap assembles.
+- [CLI](cli.md) and [versioning](versioning.md) describe the applications and manifests which are packaged.

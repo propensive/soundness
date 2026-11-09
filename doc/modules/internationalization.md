@@ -112,3 +112,7 @@ convention for currency, or a whole page of content can vary by language through
 mechanism, with the same guarantee that no supported language is missing.
 [Time](time.md#describing-recurrences) uses a locale to describe a recurrence in words, and
 [Catalogs](catalogs.md) keeps translations in files where that is wanted.
+
+### Related
+
+- [Display](display.md), [money](money.md) and [web pages](pages.md) render values for a locale.

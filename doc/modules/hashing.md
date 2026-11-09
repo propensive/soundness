@@ -289,3 +289,7 @@ covers, so the implementation is verified, and not merely tested for consistency
 
 Its output is extendable. A BLAKE3 digest may be taken at any length, not only at 256 bits,
 which is what makes it usable for deriving keys as well as for hashing.
+
+### Related
+
+- [UUIDs](uuid.md), [packaging](packaging.md) and [containers](docker.md) identify values by their digests.

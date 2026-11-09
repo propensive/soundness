@@ -423,3 +423,4 @@ no further wiring. The conversion is named once, and its fallibility lives in it
   with `as`.
 - [Patterns](patterns.md) captures the groups which `As` converts.
 - [Errors](errors.md) covers the strategies which decide what a failed decode does.
+- [Internationalization](internationalization.md), [interpolation](interpolation.md), [paths](paths.md), [sockets](sockets.md), [UUIDs](uuid.md) and [versioning](versioning.md) decode their values from text.

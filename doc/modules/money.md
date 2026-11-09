@@ -228,3 +228,7 @@ run
 Out.println(Luhn.check(17893729974L).inspect)
 Out.println(Luhn.check(17893729975L).inspect)
 ```
+
+### Related
+
+- [Quantities](quantities.md) treats a currency as a unit, and [testing](testing.md) checks that an invalid currency literal fails to compile.

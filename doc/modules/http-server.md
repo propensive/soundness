@@ -257,3 +257,4 @@ therefore works under either front-end.
 - [Forms](forms.md) renders an HTML form and reads its submission.
 - [Sockets](sockets.md) is the layer beneath.
 - [Daemons](daemons.md) keeps a server running as a service.
+- [MCP](mcp.md), [web pages](pages.md), [patterns](patterns.md) and [cryptography](cryptography.md) describe what a server hosts, matches and secures.

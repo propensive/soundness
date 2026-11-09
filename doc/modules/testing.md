@@ -408,3 +408,4 @@ object Tests extends Suite("parser", m"Parser tests"):
 - [Randomness](randomness.md#reproducing-a-run) generates reproducible test data.
 - [Terminal emulation](terminal-emulator.md) tests what a terminal program displays.
 - [Environment](environment.md#overriding-for-a-block) gives a test a fixed environment.
+- [Browser DOM](dom.md), [web automation](web-automation.md), [time](time.md) and [stack traces](stack-traces.md) describe what tests drive, control and report.

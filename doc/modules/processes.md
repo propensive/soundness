@@ -334,3 +334,4 @@ JDK from warning about it.
   APIs of their own.
 - [Command-line interfaces](cli.md) covers the other side: a program which is itself run from
   a shell.
+- [ACP](acp.md), [debugging](debugging.md), [logging](logging.md), [LSP](lsp.md), [staging](staging.md) and [terminal](terminal.md) launch and control processes.

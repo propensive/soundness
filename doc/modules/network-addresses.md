@@ -264,3 +264,7 @@ t"256.1.1.1".as[Ipv4]
 
 A field of one of these types in a case class is decoded in the same way, so a `Hostname` in a
 configuration file is validated as the [JSON](json.md) or [YAML](yaml.md) is read.
+
+### Related
+
+- [Forms](forms.md), [geography](geography.md), [HTML](html.md) and [interpolation](interpolation.md) check and carry URLs and addresses.
