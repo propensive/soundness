@@ -254,7 +254,7 @@ val tides = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre
 ```scala fuel
 run
 ##
-tides.chart(Lines()).in[Svg].in[Xml].show.cut(t">").filter(_.contains(t" / ")).each(Out.println(_))
+Out.println(tides.chart(Lines()).in[Svg].in[Xml].show.contains(t"units sold / m").inspect)
 ```
 
 A `Duration` axis is titled `time`, and its gradations carry their own units, such as `250ms`
