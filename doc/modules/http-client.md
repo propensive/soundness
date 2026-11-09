@@ -2,37 +2,51 @@
 
 ### About
 
-Soundness makes [HTTP](https://en.wikipedia.org/wiki/HTTP) requests and reads their responses as
-typed values. A request is sent to a [URL](network-addresses.md) checked as the code compiles;
-headers are given as named arguments whose values are type-checked against the header they set; a
-request body is posted as a typed value that knows its own media type; and the response body is read
-as whatever type is asked for. A failing status, or a connection that cannot be made, is a typed
-error rather than an exception to guess at.
+An [HTTP](https://en.wikipedia.org/wiki/HTTP) request is one expression: a
+[URL](network-addresses.md#urls), a method such as `fetch`, and the type the response should be
+read as. Each part is typed. The URL is checked at [compiletime], a header's value must suit the
+header it sets, a request body carries its own media type, and the response body is read as
+whichever type is asked for.
 
-Making a request requires a capability, `Online`, to be in scope — so a method that reaches the
-network says so, and one that should not cannot.
+Failure is typed too. A status outside the success range and a connection that cannot be made
+are two distinct errors, and a method which makes requests declares both. A request also needs
+the [capability] `Online` in scope, so a method that reaches the network says so in its
+signature, and one that should not reach it cannot.
 
 ### On HTTP requests
 
-A typical HTTP client takes a URL as a string, headers as a string-to-string map, and a body as
-bytes, and hands back a response whose status must be checked by hand and whose body must be decoded
-by hand. The URL might be malformed, a header name might be misspelled, the body's media type might
-not match its bytes, and none of this is caught until the request runs — if then.
+A typical HTTP client takes a URL as a string, headers as a map from strings to strings, and a
+body as bytes. It hands back a response whose status must be checked by hand and whose body must
+be decoded by hand. The URL may be malformed, a header name may be misspelled, and the body's
+media type may not match its bytes. None of this is discovered until the request runs, if then.
 
-A request that must state its failure modes, and a response decoded to a type, follow [error handling](../philosophy/error-handling.md) as it applies everywhere else.
+Here each of those mistakes is found by the compiler:
 
-Soundness types each part. The URL is validated where it is written; a header argument is checked
-against the header it sets, so `accept` takes a media type and not any string; the body carries its
-media type with it; and the response reads into a chosen type. A non-success status and a
-connection failure are distinct typed errors. That a request touches the network is itself visible,
-as the `Online` capability it demands. Everything comes from the `soundness` package, with a
-transport chosen by import — the JVM's own `java.net.http` here, and the alternatives below:
+```tabular
+column  Part of a request
+column  How it is checked
+row  the URL  a `url"…"` [interpolator] validates it where it is written
+row  a header  a named argument, whose value has the type that header takes
+row  the request body  a typed value which supplies its own `Content-Type`
+row  the response body  read with `receive`, as the type named
+row  a failing status  an `Http.Error`, declared by the method that may raise it
+row  a failed connection  a `Connect.Error`, declared likewise
+row  access to the network  the `Online` capability, required in scope
+```
+
+Reporting failure through the types, and leaving the caller to decide what a failure does, is
+[error handling](../philosophy/error-handling.md) as it works everywhere else.
+
+### What a request needs in scope
+
+Everything comes from the `soundness` package. A request also depends on several decisions that
+are made by importing a [given] from a [choice package], so that none is made silently:
 
 ```scala
 import soundness.*
 
-import codepages.utf8Codepage
 import charsets.utf8Charset
+import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 import httpBackends.javaNetHttp
 import internetAccess.online
@@ -40,29 +54,62 @@ import logging.silentLogging
 import strategies.throwUnsafely
 ```
 
+```tabular
+column  Import
+column  Decides
+row  `charsets.utf8Charset`, `codepages.utf8Codepage`  how bytes become text, and text becomes bytes
+row  `errorDiagnostics.stackTracesDiagnostics`  that an error records a stack trace
+row  `httpBackends.javaNetHttp`  which implementation sends the request: here, the JVM's `java.net.http`
+row  `internetAccess.online`  that this code may use the network
+row  `logging.silentLogging`  that the requests are not logged; [logging](logging.md) has the alternatives
+row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
+```
+
 ### A GET request
 
-`fetch` sends a GET request to a URL, and `receive` reads the response body as the type named:
+`fetch` sends a GET request to a URL. It gives the response, and `receive` reads the response's
+body as the type named:
 
 ```scala fuel
 typecheck
 ##
-url"https://example.com/".fetch().receive[Text]
+val page: Text = url"https://example.com/".fetch().receive[Text]
 ```
 
-The response also reports its status directly, and reading its body as bytes or as a stream is the
-same `receive` with a different type:
+The type passed to `receive` chooses how the body is read. `Text` decodes it with the charset in
+scope, `Data` gives its bytes, and a [stream](streams.md) delivers it a part at a time without
+holding the whole body in memory. A type with a decoder for a format reads the same way, so a
+[JSON](json.md#json-over-http) response is received as `Json`.
+
+The response reports its status without its body being read:
 
 ```scala fuel
 typecheck
 ##
-url"https://example.com/".fetch().status   // Http.Ok
+val status: Http.Status = url"https://example.com/".fetch().status
 ```
+
+For a page that exists this is `Http.Ok`.
+
+The URL is a typed value, not a string, so a malformed one never reaches the network. The
+interpolator rejects it:
+
+```scala fuel
+compile
+errors show
+##
+url"https://example.com:port/"
+```
+
+A URL which is not known until the program runs is
+[parsed at runtime](network-addresses.md#parsing-at-runtime) instead, and the parsing is where a
+bad one is reported.
 
 ### Headers
 
-Headers are named arguments to the request, each checked against the header it names — `accept`
-takes a media type, so a value that is not one does not compile:
+A request header is a named argument to `fetch`. Its name is the header's name in camel case, and
+its type is whatever that header carries: `accept` takes a [media type](media-types.md), not any
+text.
 
 ```scala fuel
 typecheck
@@ -70,11 +117,28 @@ typecheck
 url"https://example.com/".fetch(accept = media"application/json").receive[Text]
 ```
 
+A value of the wrong type for its header does not compile:
+
+```scala fuel
+compile
+errors show
+##
+url"https://example.com/".fetch(accept = t"application/json")
+```
+
+Nor does a header whose name is misspelled, since no header of that name takes any value:
+
+```scala fuel
+compile
+errors show
+##
+url"https://example.com/".fetch(acept = media"application/json")
+```
+
 ### Posting a body
 
-`submit` sends a request with a body, the method given as an argument and the body as the last. The
-body is a typed value whose media type comes with it — text is `text/plain`, a `Query` is a form
-submission — so nothing has to be set by hand to match:
+`submit` sends a request that has a body. Its first parameter list takes the method and any
+headers, and its second takes the body:
 
 ```scala fuel
 typecheck
@@ -82,18 +146,28 @@ typecheck
 url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
 ```
 
-`Http.Put`, `Http.Delete` and the rest name the other methods.
+`Http.Put`, `Http.Delete` and the others name the remaining methods.
+
+The body is a typed value, and its type decides the request's `Content-Type`, so the header can
+never disagree with the bytes that follow it. Text is sent as `text/plain`, a `Query` is sent as
+a [form submission](forms.md#submissions), and a `Json` value is sent as `application/json`.
+[Types that know their media type](media-types.md#types-that-know-their-media-type) describes how
+a type of one's own takes part.
 
 ### Reading the response
 
-`receive` reads the body as any type that knows how to be read from a response — `Text`, raw bytes,
-a stream, or a value parsed from the body. The status is a value to inspect or to receive in its own
-right, so a program decides what a given status means rather than having it decided for it.
+`receive` reads the body as any type that can be read from a response: `Text`, `Data`, a stream,
+or a value parsed from the body. The status is an ordinary value, to inspect or to return, so a
+program decides what a given status means.
+
+By default a response outside the success range is not read at all: `receive` raises an
+`Http.Error`, described under [Errors](#errors).
 
 ### Sessions
 
-A single request opens a connection and closes it. Where several requests go to the same origin,
-a *session* opens one connection and lends it to a scope, so the requests within share it:
+A single `fetch` opens a connection and closes it. Where several requests go to the same origin,
+a [session] opens one connection and lends it to a block, and every request made in the block
+shares it:
 
 ```scala fuel
 typecheck
@@ -111,8 +185,9 @@ url"https://example.com".session: session ?=>
   session.fetch(request).status
 ```
 
-The protocol is fixed for the session's lifetime. For `https`, ALPN chooses it during the TLS
-handshake:
+The protocol is fixed for as long as the session lasts. For `https`, the server and client agree
+on it during the TLS handshake, by
+[ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
 
 ```tabular
 column  Scheme
@@ -123,34 +198,43 @@ row  `https`  `http/1.1`  *sequential* HTTP/1.1
 row  `http`  nothing  *sequential* HTTP/1.1, keep-alive pinning one connection
 ```
 
-The scope is enforced, not merely conventional. The result type is quantified outside the block,
-so a value still borrowing the live connection — a response body streaming from it — cannot
-escape; a value that has been memoized may. Leaving a response unconsumed does not derail the
-session: the next fetch drains what remains of the previous body to reach the response boundary.
+The block's boundary is enforced by the compiler. A response body that is still streaming from
+the live connection cannot be returned from the block, because the connection it reads from
+closes when the block ends. A value that has been read into memory can be returned freely.
+
+A response that is left unread does no harm. The next fetch first discards whatever remains of
+the previous body, so that it starts at the next response.
 
 ### Choosing a transport
 
-The transport is a given. `httpBackends.javaNetHttp` uses the JVM's own `java.net.http`;
-`httpBackends.soundnessHttp` speaks Soundness's wire codecs directly over a socket, with no
-`java.net.http` involved:
+The implementation that sends requests is a [given], chosen by import:
+
+```tabular
+column  Import
+column  Sends requests with
+row  `httpBackends.javaNetHttp`  the JVM's own `java.net.http` client
+row  `httpBackends.soundnessHttp`  Soundness's own HTTP codecs, directly over a [socket](sockets.md)
+```
+
+A `locally` block confines a different choice to a few lines:
 
 ```scala fuel
 typecheck
 ##
 locally:
   import httpBackends.soundnessHttp
-  url"https://example.com/".fetch().status   // Http.Ok
+  url"https://example.com/".fetch().status
 ```
 
-The native backend pools kept-alive HTTP/1.1 connections per origin, and negotiates by ALPN over
-TLS, driving the exchange with the HTTP/2 or HTTP/1.1 driver the peer selected on the same
-socket. A pooled socket the server has since closed is discovered on use and replaced by a single
-retry on a fresh connection. Other platforms supply their own backends the same way.
+The `soundnessHttp` backend keeps HTTP/1.1 connections alive and reuses them for later requests
+to the same origin. Over TLS it negotiates HTTP/2 or HTTP/1.1 by ALPN and speaks whichever the
+server chose. If a kept connection turns out to have been closed by the server, the request is
+retried once on a new connection. Other platforms supply backends of their own in the same way.
 
 ### Redirects
 
-Redirects are followed by default, up to a limit. Importing a stricter policy stops them, after
-which a redirect response is delivered as an `Http.Error` carrying the redirect status:
+A redirect is followed by default, up to a limit. Importing a stricter policy stops that, and a
+redirect response is then an `Http.Error` carrying the redirect's status:
 
 ```scala
 import httpRedirections.doNotFollowRedirects
@@ -158,7 +242,7 @@ import httpRedirections.doNotFollowRedirects
 
 ### Errors
 
-Two kinds of failure are told apart:
+A request fails in one of two ways, and each is an error of its own type:
 
 ```tabular
 column  Error
@@ -168,15 +252,22 @@ row  `Http.Error`  a response is outside the success range  the status and heade
 row  `Connect.Error`  no connection can be made: an unresolvable host, a refused connection, a TLS failure  the reason
 ```
 
-An `Http.Error` carries enough for the caller to react to what went wrong:
+Under the `throwUnsafely` [strategy] imported above, either is thrown as an exception. A method
+that should not throw declares the errors instead, with [`raises`][raises], and its caller chooses
+what to do about them; [Errors](errors.md) covers the choices.
+
+`capture` runs an expression that is expected to fail, and gives the error. An `Http.Error` has
+the status, so the caller can react to what went wrong:
 
 ```scala fuel
 typecheck
 ##
-capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
+capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
 ```
 
-A `Connect.Error` names its reason:
+For a missing page this is `Http.NotFound`.
+
+A `Connect.Error` has a `reason`, which says why no connection was made:
 
 ```scala fuel
 typecheck
@@ -184,14 +275,31 @@ typecheck
 capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
 ```
 
-A TLS failure is distinguished from a network one, and its own reason says at which stage it
-failed. An expired certificate, a certificate for the wrong host, a revoked one, a broken cipher
-suite, an undersized Diffie–Hellman group — each is refused at the handshake rather than accepted
-with a warning nobody reads. The client is tested against the
-[badssl.com](https://badssl.com/) suite of deliberately-broken endpoints, so the refusals are
-verified rather than assumed.
+```tabular
+column  Reason
+column  Means
+row  `Dns`  the host's name could not be resolved
+row  `Refused`  the host refused the connection
+row  `Ssl(reason)`  the TLS layer could not be established; its own reason is `Handshake`, `Key`, `Peer` or `Protocol`
+row  `Timeout`  the server did not respond within the time limit
+row  `Unknown`  the failure was not recognized as one of the others
+```
 
-Where a connection genuinely must be made to a host whose certificate cannot be validated — a
-development server with a self-signed certificate — a relaxed `TlsAcceptance` in scope permits it.
-Making that an explicit, searchable import is the point: accepting an unvalidated certificate is a
-decision, not a default.
+A TLS failure is therefore told apart from a network failure, and its reason says at which stage
+it happened. An expired certificate, a certificate for the wrong host, a revoked certificate, a
+broken cipher suite and an undersized Diffie–Hellman group are each refused during the
+handshake. The client is tested against the [badssl.com](https://badssl.com/) collection of
+deliberately broken endpoints, so each refusal is verified.
+
+Sometimes a connection must be made to a host whose certificate cannot be validated, such as a
+development server with a self-signed certificate. A relaxed `TlsAcceptance` in scope permits it.
+Accepting an unvalidated certificate is then a decision that can be found by searching the code
+for the import.
+
+### Related
+
+- [HTTP Server](http-server.md) answers requests with the same `Http` vocabulary of methods,
+  statuses and headers.
+- [JSON over HTTP](json.md#json-over-http) posts a `Json` value and receives one.
+- [OAuth](oauth.md#credentials-for-a-typed-client) obtains the token an authorized request sends.
+- [Network addresses](network-addresses.md) covers URLs, hostnames and ports.

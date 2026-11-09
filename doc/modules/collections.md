@@ -2,42 +2,55 @@
 
 ### About
 
-Soundness has its own collection types — `List`, `Sequence`, `Set`, `Map` and the lazy `Chain` —
-and one vocabulary of operations over all of them, and over text, which traverses as its
-characters. The types are *opaque*: each is a thin, zero-cost wrapper over the standard library's
-structure, exposing a smaller, total API in which an operation that could fail returns an
-`Optional` rather than throwing, an operation whose cost is not what its name suggests is gated
-behind an explicit acknowledgment, and sorting names the algorithm it uses.
+Soundness has its own collection types: `List`, `Sequence`, `Set`, `Map` and the lazy `Chain`.
+One vocabulary of operations works over all of them, and over [text](text.md), which is
+traversed as its characters.
 
-The operations are typeclass-driven, so a new shape — a byte buffer, a parsed document, a stream
-of records — gains the whole vocabulary by supplying one instance, and the vocabulary reads the
-same whatever it is applied to.
+Each type is an [opaque type] over the standard library's structure, so it costs nothing extra.
+What changes is the API, which is smaller and makes three promises:
+
+- An operation which could fail gives an [optional](optional-values.md) value. It does not
+  throw.
+- An operation which is slower than its name suggests must be acknowledged with an import.
+- Sorting names the algorithm it uses.
+
+The operations are provided through [typeclasses][typeclass]. A new shape, such as a byte
+buffer, a parsed document or a stream of records, gains the whole vocabulary by supplying one
+instance, and the vocabulary reads the same whatever it is applied to.
 
 ### On collections
 
-The standard library's collections are large, partial and quietly expensive. `head` throws on an
-empty list; `apply` on a `List` is linear but looks like an array read; `sorted` picks an
-algorithm for you and requires an `Ordering` that a `String` supplies without asking which
-language's order it means; and every type carries several hundred methods, many of them
-duplicates under other names.
+The standard library's collections are large, partial and quietly expensive:
 
-Soundness keeps the structures and replaces the surface. The wrappers are opaque, so nothing is
-copied and nothing costs more than before — a `List` is still a linked list — but the methods
-are the ones a program needs, each returning a type that says what it can and cannot do. Where a
-method's cost depends on the structure, the program says it knows: counting a linked list is a
-traversal, so a `List`'s `size` is available only where the *linear size* acknowledgment is in
-scope. Everything comes from the `soundness` package, with a sorting algorithm chosen for the
-examples that sort:
+```tabular
+column  In the standard library
+column  The pitfall
+row  `head`  throws on an empty list
+row  `apply` on a `List`  walks the list, but looks like reading an array
+row  `sorted`  picks an algorithm unasked, and orders a `String` without asking in which language
+row  every collection type  carries several hundred methods, many of them duplicates under other names
+```
+
+Soundness keeps the structures and replaces the surface. Nothing is copied, and nothing costs
+more than before: a `List` is still a linked list. But the methods are the ones a program needs,
+and each has a type which says what it can and cannot do.
+
+Where a method's cost depends on the structure, the program must say that it knows. Counting a
+linked list means walking all of it, so a `List`'s `size` is available only where the
+*linear size* acknowledgment has been imported.
+
+Everything comes from the `soundness` package. The samples throw any error as an exception, and
+the last import lets them print their results:
 
 ```scala
 import soundness.*
-import sortingAlgorithms.timsort
 import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### The types
 
-The five types differ in their structure and in what is cheap:
+The five types differ in their structure, and so in what is cheap:
 
 ```tabular
 column  Type
@@ -61,26 +74,38 @@ val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
 val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
 ```
 
-A list built from a known number of elements is typed as *populated*, and its `head`, `last`
-and `tail` are total on that type; on a `List` of unknown length they are not available, and the
-`Optional`-returning accessors are used instead.
+A list built from a known number of elements is typed as *populated*, and on that type `head`,
+`last` and `tail` cannot fail. They are not available on a `List` of unknown length, where the
+accessors which give an `Optional` are used instead.
 
 ### Positions and access
 
-Positions are [ordinals](numbers.md), not integers: `Prim`, `Sec` and `Ter` name the first three,
-and `Ordinal.zerary` converts a zero-based index. Applying a collection to an ordinal reads the
-element there, as an `Optional`, since the position may lie beyond the end, and `prim`, `sec`
-and `ter` read the first few directly:
+A position is an [ordinal](numbers.md), not an integer. `Prim`, `Sec` and `Ter` name the first
+three positions, and `Ordinal.zerary` converts a zero-based index. Applying a collection to an
+ordinal reads the element there, as an `Optional`, since the position may lie beyond the end.
+`inspect` displays a present optional value between corner brackets, and an absent one as `○`:
 
-```scala
-letters(Sec)                  // t"b"
-letters(Ordinal.zerary(7))    // Unset
-numbers.head                  // 3
+```scala fuel
+run
+##
+Out.println(letters(Sec).inspect)
+Out.println(letters(Ordinal.zerary(7)).inspect)
+Out.println(numbers.head.inspect)
 ```
 
-Indexing a `List` by position is a walk from its head, so it, and the accessors that walk more
-than a few elements, are gated behind an acknowledgment, in the same way that `size` is. Each is
-a given in `dysasymptotics`:
+`prim`, `sec` and `ter` read the first few elements directly.
+
+Reading a `List` at a position means walking from its head. Counting one means walking all of
+it. Neither is available until the cost has been acknowledged:
+
+```scala fuel
+compile
+errors show
+##
+numbers.size
+```
+
+Each acknowledgment is a given in the package `dysasymptotics`:
 
 ```tabular
 column  Acknowledgment
@@ -91,139 +116,192 @@ row  `linearAccess`  reading a `List` at an ordinal beyond the first few  it wal
 row  `unboundedSize`  `size` and `last` of a `Chain`  each forces the whole chain, which may be infinite
 ```
 
-A `Sequence` has neither cost and needs no import. The imports are cheap to write and say something true, which is the point: a
-program that indexes into a linked list in a loop has a quadratic algorithm, and should know it.
-
 ```scala
 import dysasymptotics.{linearSize, linearAccess}
-
-numbers.size                  // 3
-numbers(Ter)                  // 2
-numbers.last                  // 2
 ```
+
+```scala fuel
+run
+##
+Out.println(numbers.size.show)
+Out.println(numbers(Ter).inspect)
+Out.println(numbers.last.inspect)
+```
+
+A `Sequence` has neither cost, and needs no import. The imports are cheap to write, and they
+say something true. A program which reads a linked list by position inside a loop has a
+quadratic algorithm, and should know it.
 
 ### Traversing and transforming
 
-`each` visits every element, with the ordinal of each available as a contextual value;
-`map` transforms elements; `filter` keeps those matching a predicate; `bind` — the same operation
-the standard library calls `flatMap`, which is also available under that name so that
-comprehensions work — flattens the results; and `flat` flattens one level of nesting:
+Five operations cover most traversals:
 
-```scala
-numbers.map(_*2)                     // List(6, 2, 4)
-numbers.filter(_ > 1)                // List(3, 2)
-numbers.bind(n => List(n, n))        // List(3, 3, 1, 1, 2, 2)
-List(List(1, 2), List(3)).flat       // List(1, 2, 3)
-
-for
-  n <- numbers
-  m <- List(10, 20)
-yield n + m
+```tabular
+column  Operation
+column  Does
+row  `each`  visits every element, with the element's ordinal available as a contextual value
+row  `map`  transforms each element
+row  `filter`  keeps the elements which match a predicate
+row  `bind`  transforms each element into a collection, and flattens the results
+row  `flat`  flattens one level of nesting
 ```
 
-Every operation returns the shape it was given — mapping a `Set` gives a `Set`, filtering a
-`Chain` gives a lazy `Chain` — except where the result cannot be that shape: mapping a `Map`
-transforms its values and keeps its keys, while `remap` transforms its entries as pairs, and
-gives a `Map` where the results are pairs and a `List` where they are not.
+```scala fuel
+run
+##
+Out.println(numbers.map(_*2).inspect)
+Out.println(numbers.filter(_ > 1).inspect)
+Out.println(numbers.bind(n => List(n, n)).inspect)
+Out.println(List(List(1, 2), List(3)).flat.inspect)
+```
+
+`bind` is the operation the standard library calls `flatMap`. It is available under that name
+too, so that `for` comprehensions work:
 
 ```scala
-ages.map(_ + 1)                          // Map(t"Ada" -> 37, t"Bob" -> 42)
-ages.remap { (name, age) => name }       // List(t"Ada", t"Bob")
+val sums =
+  for
+    n <- numbers
+    m <- List(10, 20)
+  yield n + m
+```
+
+```scala fuel
+run
+##
+Out.println(sums.inspect)
+```
+
+Every operation gives back the shape it was given. Mapping a `Set` gives a `Set`, and filtering
+a `Chain` gives a lazy `Chain`. The exception is where the result cannot be that shape. `map` on
+a `Map` transforms its values and keeps its keys. `remap` transforms its entries as pairs, and
+gives a `Map` where the results are pairs, and a `List` where they are not:
+
+```scala fuel
+run
+##
+Out.println(ages.map(_ + 1).inspect)
+Out.println(ages.remap { (name, age) => name }.inspect)
 ```
 
 ### Searching and measuring
 
-`has` tests membership; `exists` tests a predicate; `count` counts matches; `fold` accumulates
-from an initial state; and `trace` is a `fold` that keeps every intermediate state, initial
-first:
+`has` tests membership, `exists` tests a predicate, and `count` counts the matches. `fold`
+accumulates from an initial state, and `trace` is a `fold` which keeps every intermediate
+state, beginning with the initial one:
 
-```scala
-numbers.has(2)                // true
-numbers.exists(_ > 2)         // true
-numbers.count(_ > 1)          // 2
-numbers.fold(0)(_ + _)        // 6
-numbers.trace(0)(_ + _)       // List(0, 3, 4, 6)
+```scala fuel
+run
+##
+Out.println(numbers.has(2).inspect)
+Out.println(numbers.exists(_ > 2).inspect)
+Out.println(numbers.count(_ > 1).show)
+Out.println(numbers.fold(0)(_ + _).show)
+Out.println(numbers.trace(0)(_ + _).inspect)
 ```
 
-The least and greatest elements are `minimum` and `maximum`, each an `Optional` since the
-collection may be empty, and both defined for any element type with a comparison:
+`minimum` and `maximum` give the least and greatest elements. Each is an `Optional`, since the
+collection may be empty, and both are defined for any element type which can be compared:
 
-```scala
-numbers.minimum   // 1
-numbers.maximum   // 3
+```scala fuel
+run
+##
+Out.println(numbers.minimum.inspect)
+Out.println(numbers.maximum.inspect)
+Out.println(List[Int]().maximum.inspect)
 ```
 
 ### Reshaping
 
-`excerpt` takes a run by position, end-exclusive, and is total: bounds beyond the end clamp
-rather than fail. `zip` pairs elements positionally, stopping at the shorter side; `group` keys
-elements by a function into a `Map` of the source's own shape; `partition` splits by a
-predicate, keeping order on both sides; `span` splits at the first element failing a predicate;
-and `batched` cuts a collection into runs of at most a given size:
+These operations rearrange a collection without changing its elements:
 
-```scala
-numbers.excerpt(1, 3)                   // List(1, 2)
-numbers.excerpt(2, 99)                  // List(2)
-numbers.zip(letters)                    // List((3, t"a"), (1, t"b"), (2, t"c"))
-List(1, 2, 3, 4).group(_%2)             // Map(1 -> List(1, 3), 0 -> List(2, 4))
-List(1, 2, 3, 4).partition(_%2 == 0)    // (List(2, 4), List(1, 3))
-List(1, 2, 3, 4).span(_ < 3)            // (List(1, 2), List(3, 4))
-List(1, 2, 3, 4, 5).batched(2)          // List(List(1, 2), List(3, 4), List(5))
+```tabular
+column  Operation
+column  Gives
+row  `excerpt(from, to)`  a run by position, excluding the end; bounds beyond the end are clamped, so it never fails
+row  `zip(other)`  pairs of elements by position, stopping at the shorter side
+row  `group(f)`  a `Map` from each key to the elements with that key
+row  `partition(p)`  the elements which match, and those which do not, each in order
+row  `span(p)`  the elements before the first which fails a predicate, and the rest
+row  `batched(n)`  runs of at most `n` elements
+```
+
+```scala fuel
+run
+##
+Out.println(numbers.excerpt(1, 3).inspect)
+Out.println(numbers.excerpt(2, 99).inspect)
+Out.println(numbers.zip(letters).inspect)
+Out.println(List(1, 2, 3, 4).group(_%2).inspect)
+Out.println(List(1, 2, 3, 4).partition(_%2 == 0).inspect)
+Out.println(List(1, 2, 3, 4).span(_ < 3).inspect)
+Out.println(List(1, 2, 3, 4, 5).batched(2).inspect)
 ```
 
 `sweep` filters and maps in one pass, through a partial function:
 
-```scala
-numbers.sweep { case n if n > 1 => n*10 }   // List(30, 20)
+```scala fuel
+run
+##
+Out.println(numbers.sweep { case n if n > 1 => n*10 }.inspect)
 ```
 
-`join` is the inverse of `batched`. Elements that are themselves joinable — collections, or
-text — concatenate, with an optional separator of the same type between them; elements that
-are not have the separator, an element, interleaved into a collection of the receiver's own
-shape:
+`join` is the inverse of `batched`. Elements which are themselves joinable, such as collections
+or text, are concatenated, with an optional separator of the same type between them. Elements
+which are not joinable are interleaved with a separator which is itself an element, giving a
+collection of the original shape:
 
-```scala
-List(List(1, 2), List(3), List(4, 5)).join             // List(1, 2, 3, 4, 5)
-List(List(1, 2), List(3), List(4, 5)).join(List(0))    // List(1, 2, 0, 3, 0, 4, 5)
-List(1, 2, 3).join(0)                                  // List(1, 0, 2, 0, 3)
+```scala fuel
+run
+##
+Out.println(List(List(1, 2), List(3), List(4, 5)).join.inspect)
+Out.println(List(List(1, 2), List(3), List(4, 5)).join(List(0)).inspect)
+Out.println(List(1, 2, 3).join(0).inspect)
 ```
 
 ### Duplicates and order
 
-`distinct` drops repeated elements, keeping the first of each; `deduplicate` does the same by a
-key; and `reverse` reverses any reversible shape, text included:
+`distinct` drops repeated elements, keeping the first of each. `deduplicate` does the same by a
+key. `reverse` reverses any shape which has an order, text included:
 
-```scala
-List(1, 2, 1, 3, 2).distinct              // List(1, 2, 3)
-List(10, 43, 22, 71, 52).deduplicate(_%10)   // List(10, 43, 22, 71)
-numbers.reverse                           // List(2, 1, 3)
-t"stressed".reverse                       // t"desserts"
+```scala fuel
+run
+##
+Out.println(List(1, 2, 1, 3, 2).distinct.inspect)
+Out.println(List(10, 43, 22, 71, 52).deduplicate(_%10).inspect)
+Out.println(numbers.reverse.inspect)
+Out.println(t"stressed".reverse)
 ```
 
-A `Set` has no order, so it cannot be sorted, excerpted or deduplicated: those operations are
-simply absent from it, rather than defined to do something arbitrary.
+A `Set` has no order, so it cannot be reversed, sorted, excerpted or deduplicated. Those
+operations are absent from it, instead of being defined to do something arbitrary:
+
+```scala fuel
+compile
+errors show
+##
+primes.reverse
+```
 
 ### Sorting
 
-Sorting has two ingredients, and both are explicit. The *comparison* comes from a `Comparable`
-instance for the element type — the numbers have one; [text](text.md) needs a collation to be
-chosen, since no order of text is natural — and the *algorithm* is a given selected by import
-from `sortingAlgorithms`: Timsort or Powersort for stability and speed on partly-ordered data,
-quicksort or heapsort where memory matters, and the simpler algorithms where the input is tiny.
-`sort` orders by the elements' own comparison and `order` by a key:
+Sorting has two ingredients, and both are explicit.
 
-```scala
-numbers.sort               // List(1, 2, 3)
-numbers.order(-_)          // List(3, 2, 1)
-letters.order(_.length)    // Sequence(t"a", t"b", t"c"): stable, so ties keep their order
+The *comparison* comes from a `Comparable` instance for the element type. The numeric types
+have one. [Text](text.md#sorting-and-comparing-text) needs a collation to be chosen, since no
+order of text is natural.
+
+The *algorithm* is a given, selected by import. With no algorithm in scope, a sort does not
+compile:
+
+```scala fuel
+compile
+errors show
+##
+numbers.sort
 ```
 
-With no algorithm in scope the sort does not compile, and with two in scope it is ambiguous —
-which is the compiler insisting that a choice has been made, since the algorithm decides
-whether equal elements keep their order and how the sort behaves on data that is nearly sorted
-already.
-
-The algorithms are the givens in `sortingAlgorithms`:
+The algorithms are the givens in the package `sortingAlgorithms`:
 
 ```tabular
 column  Given
@@ -236,6 +314,26 @@ row  `heapsort`  no  bounded memory
 row  `insertionSort`  yes  tiny inputs
 row  `bubbleSort`  yes  tiny inputs
 ```
+
+The compiler insists on the choice because the algorithm decides things a program may depend
+on: whether equal elements keep their order, and how the sort behaves on data which is nearly
+sorted already. With two algorithms in scope, a sort is ambiguous, and does not compile either.
+
+```scala
+import sortingAlgorithms.timsort
+```
+
+`sort` orders elements by their own comparison, and `order` orders them by a key:
+
+```scala fuel
+run
+##
+Out.println(numbers.sort.inspect)
+Out.println(numbers.order(-_).inspect)
+Out.println(List(t"ccc", t"a", t"bb", t"d").order(_.length).inspect)
+```
+
+Timsort is stable, so `t"a"` and `t"d"`, which have the same length, keep their original order.
 
 ### The operations at a glance
 
@@ -291,27 +389,37 @@ row  `omit`  `Map`  the map without a key
 row  `keys`, `values`  `Map`  the keys, or the values
 ```
 
-```scala
-primes :+ 11                  // Set(2, 3, 5, 7, 11)
-primes.intersect(Set(2, 4))   // Set(2)
-primes.except(Set(2, 3))      // Set(5, 7)
-
-ages.at(t"Ada")               // 36
-ages.at(t"Cy")                // Unset
-ages.defines(t"Ada")          // true
-ages.define(t"Cy", 29)        // a new map with three entries
-ages.omit(t"Bob")             // Map(t"Ada" -> 36)
-ages.keys                     // Set(t"Ada", t"Bob")
+```scala fuel
+run
+##
+Out.println((primes :+ 11).inspect)
+Out.println(primes.intersect(Set(2, 4)).inspect)
+Out.println(primes.except(Set(2, 3)).inspect)
 ```
 
-Every value is immutable: `define` and `omit` return new maps, and the original is unchanged,
-as [immutability](../philosophy/immutability.md) asks everywhere else.
+Looking up a key which is not in a map gives `Unset`. It does not throw:
+
+```scala fuel
+run
+##
+Out.println(ages.at(t"Ada").inspect)
+Out.println(ages.at(t"Cy").inspect)
+Out.println(ages.defines(t"Ada").inspect)
+Out.println(ages.define(t"Cy", 29).inspect)
+Out.println(ages.omit(t"Bob").inspect)
+Out.println(ages.keys.inspect)
+```
+
+Every collection is [immutable]. `define` and `omit` give new maps, and `ages` is unchanged
+after both, as [immutability](../philosophy/immutability.md) asks everywhere else.
+[Bit flags](flags.md) holds a set of an enumeration's cases in a single word.
 
 ### Lazy chains
 
-A `Chain` computes its elements on demand and remembers them, so it can describe an infinite
-sequence — every natural number, every line a process will print — as long as only a finite
-prefix is ever forced. These build and cut chains without forcing what they leave alone:
+A `Chain` computes its elements on demand, and remembers them. It can therefore describe an
+infinite sequence, such as every natural number, or every line a process will print, provided
+only a finite part of it is ever forced. These operations build and cut chains without forcing
+what they leave alone:
 
 ```tabular
 column  Operation
@@ -325,42 +433,49 @@ row  `skip(n)`  all but the first `n` elements, without forcing the rest
 ```
 
 ```scala
-naturals.keep(5)                   // Chain(0, 1, 2, 3, 4)
-naturals.skip(10).keep(2)          // Chain(10, 11)
-Chain.continually(7).keep(3)       // Chain(7, 7, 7)
-
 def evens: Chain[Int] = naturals.filter(_%2 == 0)
-evens.head                         // 0
 ```
 
-Because a chain may be unbounded, `size` is not defined on it unless the program acknowledges
-that counting may not terminate, with `dysasymptotics.unboundedSize`. A lazily-parsed
-[stream](streams.md) or a recurrence of [dates](time.md) is a `Chain` for exactly this reason:
+```scala fuel
+run
+##
+Out.println(naturals.keep(5).to[List].inspect)
+Out.println(naturals.skip(10).keep(2).to[List].inspect)
+Out.println(Chain.continually(7).keep(3).to[List].inspect)
+Out.println(evens.keep(3).to[List].inspect)
+```
+
+A chain may be unbounded, so `size` is not defined on it unless the program acknowledges, with
+`dysasymptotics.unboundedSize`, that counting may never finish. A lazily parsed
+[stream](streams.md), or a recurrence of [dates](time.md), is a `Chain` for exactly this reason:
 the consumer decides how much is computed.
 
 ### Text as a collection
 
-`Text` traverses as its characters, so the vocabulary above applies to it directly — `has`,
-`count`, `filter`, `reverse`, `subsumes` — and reshaping keeps it text where the result is
-characters:
+`Text` is traversed as its characters, so the same vocabulary applies to it directly. An
+operation whose result is characters gives text back:
 
-```scala
-t"hello".has('e')             // true
-t"hello".count(_ == 'l')      // 2
-t"hello".filter(_ != 'l')     // t"heo"
-t"hello world".subsumes(t"lo wo")   // true
+```scala fuel
+run
+##
+Out.println(t"hello".has('e').inspect)
+Out.println(t"hello".count(_ == 'l').show)
+Out.println(t"hello".filter(_ != 'l'))
+Out.println(t"hello world".subsumes(t"lo wo").inspect)
 ```
+
+[Text](text.md) describes the operations which are particular to text.
 
 ### Crossing to the standard library
 
-Code that must hand a collection to a library written against the standard library crosses at
-the boundary with `stdlib`, which exposes the underlying structure without copying, and comes
-back with the companion's `from`:
+Some code must hand a collection to a library written against the standard library. `stdlib`
+exposes the underlying structure without copying, and the companion's `from` comes back:
 
 ```scala
-numbers.stdlib                              // scala.collection.immutable.List(3, 1, 2)
-List.from(scala.collection.immutable.List(1, 2))   // List(1, 2)
+val standard: scala.collection.immutable.List[Int] = numbers.stdlib
+val returned: List[Int] = List.from(scala.collection.immutable.List(1, 2))
 ```
 
-Keeping the crossing explicit, and greppable, is what lets the rest of a program be written in
-the total vocabulary: the partial, larger API is reachable, but only where the code says so.
+Keeping the crossing explicit, and easy to search for, is what lets the rest of a program be
+written in the smaller vocabulary. The larger, partial API can still be reached, but only where
+the code says so.
