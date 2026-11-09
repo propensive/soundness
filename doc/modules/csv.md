@@ -52,12 +52,12 @@ run
 Out.println(t"hello,world".read[Sheet].rows(Prim).inspect)
 ```
 
-The delimiter inside a quoted cell is part of the cell, and a doubled quote is a quote:
+The delimiter inside a quoted cell is part of the cell, so this row has three cells, not four:
 
 ```scala fuel
 run
 ##
-Out.println(t"""1,"Lovelace, Ada","the ""first"" programmer"""".read[Sheet].rows(Prim).inspect)
+Out.println(t"1,\"Lovelace, Ada\",36".read[Sheet].rows(Prim).inspect)
 ```
 
 A `Sheet` holds all its rows in memory, in an array, so they can be replayed, indexed and
