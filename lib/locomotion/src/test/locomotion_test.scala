@@ -309,7 +309,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       def decode(bytes: Byte*): Sample raises Protobuf.Error =
         // [test-harness] test decode helper over fresh chain
         scala.caps.unsafe.unsafeAssumeSeparate:
-          proscenium.Chain(Array.from(bytes)).read[Sample in Protobuf]
+          proscenium.Chain(bytes.to[Array]).read[Sample in Protobuf]
 
       test(m"a truncated length-delimited payload reports the offset where data ran out"):
         // field 1, wire type Len, length 5, but only one payload byte present.

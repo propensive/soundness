@@ -99,7 +99,7 @@ extends Rig:
             codepoint: Codepoint )
   :   Unit raises Compiler.Error raises Rig.Error =
 
-    val testId = Test.Id(name, suite, codepoint, Unset, tags.to(List))
+    val testId = Test.Id(name, suite, codepoint, Unset, tags)
     val frames0: Optional[Int] = frames
     val frames2: Int = frames0.or(25)
     val inclusive0: Boolean = inclusive

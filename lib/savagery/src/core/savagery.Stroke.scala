@@ -43,7 +43,7 @@ import decimalConverters.javaDecimalConverter
 
 object Stroke:
   private def form(name: Text, parts: Text*): Text =
-    parts.map(_.s).mkString(s"${name.s}(", " ╱ ", ")").tt
+    parts.join(t"$name(", t" ╱ ", t")")
 
   // As with `Transform`, spelt out rather than derived: the arc cases carry an `Angle`, whose
   // instance is a named import rather than a companion given, and the encoded path-data form

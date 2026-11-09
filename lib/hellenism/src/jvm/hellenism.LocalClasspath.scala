@@ -135,7 +135,7 @@ object LocalClasspath:
         (Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type)* )
   :   LocalClasspath =
 
-    new LocalClasspath(entries.toList.to(List), entries.to(Set))
+    new LocalClasspath(entries, entries.to[Set])
 
 
   // The classpath of one entry, by its path: `of`, not `apply`, since a single `Classpath.Entry`

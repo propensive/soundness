@@ -2749,7 +2749,7 @@ object Xml extends Tag.Container
   trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.to(List).compact.nodes):
+        new Element(node.label, node.attributes, children.compact.nodes):
           type Topic = node.Topic
 
   import Issue.*
@@ -5476,7 +5476,7 @@ object Xml extends Tag.Container
   object Fragment:
     @targetName("make")
     def apply[topic <: Label](nodes: Xml of (? <: topic)*): Fragment of topic =
-      new Fragment(List.from(nodes).nodes*).of[topic]
+      new Fragment(nodes.nodes*).of[topic]
 
   case class Fragment(nodes: Node*) extends Xml:
     override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

@@ -527,7 +527,7 @@ extends Rig:
     Bench.Plan
       ( this,
         name,
-        tags.to(List),
+        tags,
         target.generic,
         operationSize,
         iterations2,

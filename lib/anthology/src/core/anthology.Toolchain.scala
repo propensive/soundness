@@ -58,7 +58,7 @@ object Toolchain:
   def apply(edges: List[Edge]*): Toolchain raises Link.Error =
     // Deliberate stdlib opt-out, as noted above: Kahn's algorithm below is stdlib queue-and-map
     // code.
-    val all = edges.toList.flatMap(_.stdlib)
+    val all = List.iterator(edges).flatMap(_.stdlib).toList
 
     all.groupBy { edge => (edge.source, edge.target) }.foreach: (pair, group) =>
       if group.length > 1

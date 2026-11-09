@@ -49,7 +49,14 @@ extension [value](value: value)
     ( lambdas: ((Optic from value onto value) ->{C} value ->{C} value)* )
   :   value =
 
-    lambdas.foldLeft(value): (value, lambda) => lambda(Optic.identity)(value)
+    def recur(value: value, lambdas: List[(Optic from value onto value) ->{C} value ->{C} value])
+    :   value =
+
+      lambdas match
+        case Nil            => value
+        case lambda :: tail => recur(lambda(Optic.identity)(value), tail)
+
+    recur(value, lambdas)
 
 extension [value](left: value)
   def compose[operand, result](right: operand^)

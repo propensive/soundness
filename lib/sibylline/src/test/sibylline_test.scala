@@ -149,9 +149,9 @@ object Tests extends Suite("llm", m"Sibylline tests"):
 
     suite(m"Streaming tests"):
       def script(chunks: Text*): List[Event] =
-        val head = scala.Seq(Event.Started(Llm.Id(t"msg_1"), t"scripted-1"), Event.Opened(0, Content.Textual(t"")))
-        val tail = scala.Seq(Event.Closed(0), Event.Update(Stop.Ended, Usage(2, 9)), Event.Finished)
-        List.from(head ++ chunks.map { chunk => Event.Delta(0, Increment.Textual(chunk)) } ++ tail)
+        val head = List(Event.Started(Llm.Id(t"msg_1"), t"scripted-1"), Event.Opened(0, Content.Textual(t"")))
+        val tail = List(Event.Closed(0), Event.Update(Stop.Ended, Usage(2, 9)), Event.Finished)
+        head + chunks.map { chunk => Event.Delta(0, Increment.Textual(chunk)) } + tail
 
       test(m"text deltas stream in order"):
         val dialect = Scripted(scripts = List(script(t"fjord", t" of ", t"Norway")))

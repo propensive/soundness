@@ -47,17 +47,17 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────
   def decl(key: Text, value: Text): Css.Node = Declaration(key, value)
   def at(name: Text, prelude: Text, body: Css.Node*): Css.Node =
-    At(name, prelude, List.from(body.toList))
+    At(name, prelude, body)
 
   def rule(selector: Text, body: Css.Node*): Css.Node =
-    Rule(SelectorParser.parse(selector), List.from(body.toList))
+    Rule(SelectorParser.parse(selector), body)
 
   // ── selector helpers ────────────────────────────────────────────────────
   def parse(text: Text): SelectorList = SelectorParser.parse(text)
-  def sl(parts: Selector*): SelectorList = SelectorList(List.from(parts.toList))
-  def cx(head: Compound, rest: (Combinator, Compound)*): Selector = Selector(Unset, head, List.from(rest.toList))
+  def sl(parts: Selector*): SelectorList = SelectorList(parts)
+  def cx(head: Compound, rest: (Combinator, Compound)*): Selector = Selector(Unset, head, rest)
   def rel(lead: Combinator, head: Compound): Selector = Selector(lead, head, Nil)
-  def cpd(parts: Simple*): Compound = Compound(List.from(parts.toList))
+  def cpd(parts: Simple*): Compound = Compound(parts)
   def typ(name: Text): Simple = Simple.Type(Unset, name)
   def cls(name: Text): Simple = Simple.Class(Name[CssClass](name))
   def hid(name: Text): Simple = Simple.Id(Name[DomId](name))

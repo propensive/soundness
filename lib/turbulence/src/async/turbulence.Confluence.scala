@@ -70,9 +70,9 @@ object Confluence:
     val block: Int = buffering.transfer(addressable0.substrate)
 
     val queue: juc.ArrayBlockingQueue[AnyRef] =
-      juc.ArrayBlockingQueue(buffering.depth.max(sources.length))
+      juc.ArrayBlockingQueue(buffering.depth.max(List.size(sources)))
 
-    val remaining: Atomic[Int] = Atomic(sources.length)
+    val remaining: Atomic[Int] = Atomic(List.size(sources))
     val error: Atomic.Ref[Throwable | Null] = Atomic(null)
 
     def finish(): Unit = if remaining.since(_ - 1) == 0 then queue.put(End)
@@ -80,14 +80,14 @@ object Confluence:
     // Indexed iteration: capture sets do not ride standard-collection elements, so each
     // source is re-asserted exclusive at its fiber rim — one consuming fiber per source
     // by construction.
-    var index = 0
+    val iterator = List.iterator(sources)
 
     // A while-loop rather than a for-comprehension: the desugared foreach closure would
     // capture the sources' reach capability. Each element crosses to its fiber as a
     // neutral carrier and is re-asserted exclusive inside: one consuming fiber per
     // source by construction.
-    while index < sources.length do
-      val handoff: AnyRef = sources(index).asInstanceOf[AnyRef]
+    while iterator.hasNext do
+      val handoff: AnyRef = iterator.next().asInstanceOf[AnyRef]
 
       async:
         val source = handoff.asInstanceOf[(Stream[medium] over Credit)^]
@@ -135,8 +135,6 @@ object Confluence:
         catch case exception: Exception =>
           error() = exception
           finish()
-
-      index += 1
 
     new Stream[medium](using addressable0):
       type Transport = Credit

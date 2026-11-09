@@ -248,10 +248,10 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
 
       def selected(events: Terminal.Event*): Optional[Text] =
         val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha")
-        noopMenu(Iterator.from(events.iterator), menu)(_(_))
+        noopMenu(events.iterator, menu)(_(_))
 
       def edited(events: Terminal.Event*): Optional[Text] =
-        noopEditor(Iterator.from(events.iterator), LineEditor())(_(_))
+        noopEditor(events.iterator, LineEditor())(_(_))
 
       // A no-op interaction whose submit decision follows the editor's own mode.
       val multilineEditor = new Interaction[Text, LineEditor]:
@@ -262,7 +262,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
           editor.submitsOn(event)
 
       def editedWith(editor: LineEditor)(events: Terminal.Event*): Optional[Text] =
-        multilineEditor(Iterator.from(events.iterator), editor)(_(_))
+        multilineEditor(events.iterator, editor)(_(_))
 
       val shiftSubmit: LineEditor = LineEditor(mode = LineEditor.Mode.Multiline(_ => false))
 

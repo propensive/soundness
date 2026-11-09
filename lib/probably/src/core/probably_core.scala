@@ -70,7 +70,7 @@ def test[topic <: Label](name: Message, tags: Tag*)
   ( using @missingContext(Testable.orphan) suite: Testable of topic, codepoint: Codepoint )
 :   Test.Id =
 
-  Test.Id(name, suite, codepoint, Unset, tags.to(List))
+  Test.Id(name, suite, codepoint, Unset, tags)
 
 // Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
 // its description. The moniker addresses the test in selections and charts, independently
@@ -79,7 +79,7 @@ def test[topic <: Label](name: Name[Probing], description: Message, tags: Tag*)
   ( using @missingContext(Testable.orphan) suite: Testable of topic, codepoint: Codepoint )
 :   Test.Id =
 
-  Test.Id(description, suite, codepoint, name, tags.to(List))
+  Test.Id(description, suite, codepoint, name, tags)
 
 
 def suite[topic <: Label, report](name: Message)

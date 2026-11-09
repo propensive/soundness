@@ -48,7 +48,7 @@ import Pickled.*
 object ClassSource:
   // The first source that has an entry answers for it.
   def apply(sources: ClassSource*): ClassSource = new ClassSource:
-    private val all = sources.to(List)
+    private val all = sources
 
     def read(path: Text): Optional[Data] =
       all.stdlib.view.map(_.read(path)).find(_.present).getOrElse(Unset)

@@ -62,10 +62,10 @@ object Tests extends Suite("xml", m"Xylophone tests"):
     case _                            => elem(t"none")
 
   def elem(label: Text, children: Xml.Node*): Xml.Element =
-    Xml.Element(label, Attributes.empty, Array.from(children))
+    Xml.Element(label, Attributes.empty, children.to[Array])
 
   def elem(label: Text, attrs: Map[Text, Text], children: Xml.Node*): Xml.Element =
-    Xml.Element(label, Attributes.from(attrs), Array.from(children))
+    Xml.Element(label, Attributes.from(attrs), children.to[Array])
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform

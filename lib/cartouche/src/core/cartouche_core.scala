@@ -88,7 +88,7 @@ def position
 
 // Declares things that no label may be set over.
 def avoid(obstacles: Obstacle*)(using pass: Arranger.Pass^): Unit =
-  List.from(obstacles).each(pass.avoid(_))
+  obstacles.each(pass.avoid(_))
 
 // Declares the area labels must stay within; the last declaration in a body wins.
 def canvas(box: Obstacle.Box)(using pass: Arranger.Pass^): Unit = pass.canvas(box)

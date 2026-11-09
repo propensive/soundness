@@ -43,16 +43,16 @@ object SettingTests extends Suite("cli-settings", m"Setting tests"):
   given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")
 
   def fixedEnvironment(entries: (Text, Text)*): Environment =
-    val map = entries.to(Map)
+    val map = entries.to[Map]
     name => map.at(name)
 
   def fixedSystem(entries: (Text, Text)*): System =
-    val map = entries.to(Map)
+    val map = entries.to[Map]
     name => map.at(name)
 
   def invocation(arguments: Text*)(using environment: Environment): Invocation =
     Invocation
-      ( Cli.arguments(List.from(arguments)),
+      ( Cli.arguments(arguments),
         environment,
         summon[WorkingDirectory],
         stdios.muteStdio,

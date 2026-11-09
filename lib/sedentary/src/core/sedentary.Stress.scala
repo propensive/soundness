@@ -430,7 +430,7 @@ extends Rig:
     // Every step lands under the SAME test id: the probed concurrency is a coordinate on
     // the test's emergent `N` axis (supplied by `Strain`'s inclusion), so a sweep's steps
     // accumulate as cells of one entry rather than as separately-named tests.
-    val testId = Test.Id(name, suite, codepoint, Unset, tags.to(List))
+    val testId = Test.Id(name, suite, codepoint, Unset, tags)
 
     // For a listing: the emergent `N` axis, bounded by the starting and maximum worker
     // counts, so a host can offer `N=<lo>..<hi>` constraints before any cell exists. (The

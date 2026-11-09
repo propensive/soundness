@@ -46,7 +46,7 @@ object InterpreterTests extends Suite("cli-interpreter", m"Commandline interpret
   // `CanEqual` against a plain list): `absent` for an unspecified flag, otherwise the
   // operands space-joined in brackets, so a present flag with no operands reads `[]`.
   private def reading(interpreter: Interpreter, flag: Flag, arguments: Text*): Text =
-    val topic = interpreter.interpret(Cli.arguments(List.from(arguments)))
+    val topic = interpreter.interpret(Cli.arguments(arguments))
     interpreter.locate(topic, flag).lay(t"absent"): operands =>
       t"[${operands.map(_()).join(t" ")}]"
 

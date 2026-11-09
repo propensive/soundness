@@ -113,7 +113,7 @@ object Archive:
   object Body:
     // An in-memory body: its chunks are given up front, and nothing pulls lazily.
     def apply(chunks: Data*): Archive.Body =
-      new Archive.Body(chunks.filter(_.length > 0).to(List), () => Unset)
+      new Archive.Body(chunks.filter(_.length > 0), () => Unset)
 
     val empty: Archive.Body = Archive.Body()
 

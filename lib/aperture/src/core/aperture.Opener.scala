@@ -47,11 +47,11 @@ final class Opener(tracked val openable: Openable^, val value: openable.Self):
     ( block: ((openable.Result & Granting[Grant.Read])^) ?=> result )
   :   result =
 
-    openable.open(value, Read, flags.to(List))(block)
+    openable.open(value, Read, flags)(block)
 
   def apply[result]
     ( mode: Mode, flags: openable.Operand* )
     ( block: ((openable.Result & Granting[mode.Grants])^) ?=> result )
   :   result =
 
-    openable.open[mode.Grants, result](value, mode, flags.to(List))(block)
+    openable.open[mode.Grants, result](value, mode, flags)(block)

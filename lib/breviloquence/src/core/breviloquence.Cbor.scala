@@ -1289,8 +1289,8 @@ object Cbor extends Cbor1, Dynamic:
       ast(Ast.map(names, values))
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =
-    val keys: Array[Any]^{} = Array.from(elements.map(_(0): Any))
-    val values: Array[Any]^{} = Array.from(elements.map(_(1).root.asInstanceOf[Any]))
+    val keys: Array[Any]^{} = elements.map(_(0): Any).to[Array]
+    val values: Array[Any]^{} = elements.map(_(1).root.asInstanceOf[Any]).to[Array]
     Cbor(Ast.map(keys, values))
 
   // The map-key-discriminated `Discriminable` shape, as a nameable class so

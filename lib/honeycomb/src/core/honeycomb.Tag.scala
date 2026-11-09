@@ -147,7 +147,7 @@ object Tag:
       ( using attribution: Attribution of (? >: className) )
     :   Html.Element of Topic over Transport in Form =
 
-      val nodes = children.to(List).compact.nodes
+      val nodes = children.compact.nodes
 
       val presets2 =
         if attribution.attribute == t"" then presets
@@ -208,7 +208,7 @@ object Tag:
 
           presets.define(attribution.attribute, value)
 
-      val nodes: Array[Html.Node]^{} = children.to(List).compact.nodes
+      val nodes: Array[Html.Node]^{} = children.compact.nodes
       Html.Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 

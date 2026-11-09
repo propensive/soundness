@@ -34,6 +34,7 @@ package enigmatic
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // The `AlgorithmIdentifier` that names a cipher-and-digest pair in a certificate. It is a property
@@ -70,7 +71,7 @@ object SignatureAlgorithm:
     Asn1.Sequence(List(Asn1.ObjectId(List(2, 16, 840, 1, 101, 3, 4, 3, last))))
 
   private def arc(digest: Signature.Digest, entries: (Text, Int)*): Optional[Int] =
-    entries.find(_(0) == digest.token).map(_(1)).getOrElse(Unset)
+    entries.seek(_(0) == digest.token).let(_(1))
 
 trait SignatureAlgorithm:
   type Self

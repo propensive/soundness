@@ -1996,7 +1996,7 @@ object Tel extends Tel2:
 
   object Acceptance:
     def apply(first: Alternative, rest: Alternative*): Acceptance =
-      Acceptance(first :: List.from(rest))
+      Acceptance(first :: rest)
 
     // The pinned coordinate of the built-in schema, and its 33-byte
     // signature: the BASE-256 palimpsest of the value hash of the canonical
@@ -2587,7 +2587,7 @@ object Tel extends Tel2:
     val Empty: Pointer = Pointer(Array.empty)
 
     def of(keywords: Text*): Pointer =
-      Pointer(Array.from(keywords.map(Step(_, Unset))))
+      Pointer(keywords.map(Step(_, Unset)).to[Array])
 
   // Logical address into a Tel document. A pointer is an ordered
   // sequence of `Step`s; each step selects a child compound from the
@@ -7992,7 +7992,7 @@ object Tel extends Tel2:
       :   Unit =
 
         handle.mutate0
-          ( Mutation.Op.ResizeTabulation(pointer, blockIndex, Array.from(plannedRows)) )
+          ( Mutation.Op.ResizeTabulation(pointer, blockIndex, plannedRows.to[Array]) )
 
   // The scoped handle to a TEL document under edit. Public `*0` members
   // rather than private: the grant-gated operations are transparent-inline

@@ -46,7 +46,7 @@ row  frozen `Array[element]^{}`, `Data`  yes
 row  `Sequence`, `Text`, `IndexedSeq`, `Map`, `Set`  yes
 row  `List`, `Chain`  behind a dysasymptotic acknowledgement
 row  mutable `scala.Array`  no  no `Countable` or `Applicable` instance
-row  varargs `Seq`  no  no `Countable` or `Applicable` instance
+row  varargs `Seq` (a class parameter; a method's repeated parameter is a `List`)  no  no `Countable` or `Applicable` instance
 row  `IndexedSeq` whose elements carry capabilities  no  the `Countable` instance is capture-free, and a capability cannot flow into it
 ```
 

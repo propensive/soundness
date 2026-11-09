@@ -40,7 +40,7 @@ object Series:
   // A name is anything showable — a `Text`, an enum case, a number — shown once, at
   // construction.
   def apply[name: Showable, x, y](name: name)(points: (x, y)*): Series[x, y] =
-    Series(name.show, Sequence.from(points))
+    Series(name.show, points.to[Sequence])
 
 // One named run of points: the unit of data a chart kind is compatible with. A series is
 // immutable; `add` appends in amortized constant time, which is what a chart fed one point at a

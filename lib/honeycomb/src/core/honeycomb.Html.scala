@@ -471,7 +471,7 @@ object Html extends Tag.Container
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =
 
-        new Element(node.label, node.attributes, children.to(List).compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
           type Topic = node.Topic
           type Form = node.Form
 
@@ -481,7 +481,7 @@ object Html extends Tag.Container
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
       :   Element of labels in node.Form =
 
-        new Element(node.label, node.attributes, children.to(List).compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
           type Topic = labels
           type Form = node.Form
 
@@ -2217,7 +2217,7 @@ object Html extends Tag.Container
     def foreign(label: BaseText, attributes: Attributes, children: Html of "#foreign"*)
     :   Element of "#foreign" =
 
-      Element(label, attributes, children.to(List).nodes, true).of["#foreign"]
+      Element(label, attributes, children.nodes, true).of["#foreign"]
 
     // Convenience for callers that still hold a Map.
     def foreign
@@ -2226,7 +2226,7 @@ object Html extends Tag.Container
         children:   Html of "#foreign"* )
     :   Element of "#foreign" =
 
-      Element(label, Attributes.from(attributes), children.to(List).nodes, true).of["#foreign"]
+      Element(label, Attributes.from(attributes), children.nodes, true).of["#foreign"]
 
   case class Element
     ( label:      BaseText,
@@ -2349,7 +2349,7 @@ object Html extends Tag.Container
   object Fragment:
     @targetName("make")
     def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
-      new Fragment(nodes.to(List).nodes*).of[topic]
+      new Fragment(nodes.nodes*).of[topic]
 
   case class Fragment(nodes: Node*) extends Html:
     override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

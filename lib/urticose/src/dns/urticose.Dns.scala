@@ -74,7 +74,7 @@ object Dns:
     // Labels are taken verbatim: a DNS-SD instance label may contain dots, spaces and any UTF-8
     // (RFC 6763 §4.1.1), so only `parse` splits on dots. The limits — 63 octets to a label, 255
     // to the name — hold from construction, so that encoding a name is total.
-    def apply(labels: Text*): Name raises Dns.Error = checked(List.from(labels))
+    def apply(labels: Text*): Name raises Dns.Error = checked(labels)
 
     // A hostname's labels already satisfy the limits.
     def apply(hostname: Hostname): Name = new Name(List.from(hostname.dnsLabels.map(_.text)))
@@ -325,7 +325,7 @@ object Dns:
     extends Rdata
 
     object Txt:
-      def apply(strings: Text*): Txt raises Dns.Error = Txt(List.from(strings.map(utf8(_))))
+      def apply(strings: Text*): Txt raises Dns.Error = Txt(strings.map(utf8(_)))
 
       // The limit holds from construction, so that encoding is total.
       def apply(strings: List[Data]): Txt raises Dns.Error =

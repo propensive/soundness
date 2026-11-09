@@ -65,7 +65,7 @@ object Typesettable:
   // files — regular, bold, italic — make one provision whose coverage is their union; a variable
   // font's axes are read from its `fvar` table.
   def embedded[family <: Label](sfnts: Sfnt*): Typeface of family is Typesettable in Medium =
-    Embedding[family](List.from(sfnts))
+    Embedding[family](sfnts)
 
   // A provision from a font file at a known location — a classpath resource, `cp"/fonts/x.ttf"`
   // — whose path becomes the provision's `Locus`. A font made from it is then checked against the

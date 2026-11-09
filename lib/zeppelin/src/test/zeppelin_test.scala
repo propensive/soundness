@@ -65,7 +65,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
     def writeZip(name: Text, entries: Zip.Entry*): Path on Linux =
       val path = workDir/name
-      path.write(Zipfile(List.from(entries)))
+      path.write(Zipfile(entries))
       path
 
     def bytesOf(path: Path on Linux): Data = path.read[Data]

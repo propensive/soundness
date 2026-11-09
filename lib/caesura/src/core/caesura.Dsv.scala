@@ -157,7 +157,7 @@ object Dsv extends Dsv1:
 
     Dsv(Array.from(builder.result()))
 
-  def apply(text: Text*): Dsv = new Dsv(Array.from(text))
+  def apply(text: Text*): Dsv = new Dsv(text.to[Array])
 
   // An absent cell (a short positional row, or a header column missing from the row) decodes
   // to `Unset`; a present cell — even an empty one — decodes its inner value. The product

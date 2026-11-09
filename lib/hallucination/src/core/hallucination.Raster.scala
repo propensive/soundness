@@ -191,7 +191,7 @@ object Raster:
 
   object Formats:
     def apply(formats: Rasterizable*): Raster.Formats =
-      Raster.Formats(formats.to(List))
+      Raster.Formats(formats)
 
   // RasterFormats → Raster.Formats
   // The formats `Raster` will try when asked to decode data whose format it was not told. Because

@@ -1162,12 +1162,12 @@ object internal:
       def access(attrs: Attributes, key: Text): Text = attrs(key)
 
     def apply(pairs: (Text, Text)*): Attributes =
-      if pairs.isEmpty then empty else
-        val n = pairs.length
+      if proscenium.List.nil(pairs) then empty else
+        val n = proscenium.List.size(pairs)
         val buffer = Array.allocate[String](n*2)
         var i = 0
 
-        pairs.foreach: pair =>
+        proscenium.List.iterator(pairs).foreach: pair =>
           buffer(i*2) = pair._1.s
           buffer(i*2 + 1) = pair._2.s
           i += 1
@@ -1544,12 +1544,14 @@ object internal:
       builder.append('}').toString.tt
 
     def apply(bindings: (Text, Text)*): Scope =
-      if bindings.isEmpty then empty else
-        val buffer = Array.allocate[String](bindings.length*2)
+      if proscenium.List.nil(bindings) then empty else
+        val buffer = Array.allocate[String](proscenium.List.size(bindings)*2)
+        var index = 0
 
-        bindings.zipWithIndex.foreach: (binding, index) =>
+        proscenium.List.iterator(bindings).foreach: binding =>
           buffer(index*2) = binding(0).s
           buffer(index*2 + 1) = binding(1).s
+          index += 1
 
         Array.freeze(buffer)
 

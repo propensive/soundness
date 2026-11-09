@@ -36,6 +36,7 @@ import java.util.concurrent.atomic as juca
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // A failure raised by the pure-Scala provider: the counterpart of the `javax.crypto` exceptions
@@ -114,19 +115,20 @@ private[enigmatic] object SoundnessBlockCipher:
 
   // The concatenation of the parts, as one fresh frozen array.
   private[enigmatic] def join(parts: Data*): Data =
-    val length = parts.foldLeft(0)(_ + _.length)
+    val length = parts.fold(0)(_ + _.length)
     val result = Array.allocate[Byte](length)
-    concatenate(result, parts, 0, 0)
+    concatenate(result, parts, 0)
     Array.freeze(result)
 
   private def concatenate
-    ( result: Array[Byte]^, parts: scala.collection.immutable.Seq[Data], index: Int, offset: Int )
+    ( result: Array[Byte]^, parts: List[Data], offset: Int )
   :   Unit =
 
-    if index < parts.length then
-      val part = parts(index)
-      result.place(part, 0, offset, part.length)
-      concatenate(result, parts, index + 1, offset + part.length)
+    parts match
+      case Nil          => ()
+      case part :: tail =>
+        result.place(part, 0, offset, part.length)
+        concatenate(result, tail, offset + part.length)
 
   // The whole-value form of a session: everything through `update`, then `finish`.
   private def run(session: Cipher.Session, data: Data): Data =

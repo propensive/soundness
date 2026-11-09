@@ -88,7 +88,7 @@ object Crc32:
   def checksum(segments: Data*): Int =
     var crc = 0xffffffff
 
-    segments.foreach: segment =>
+    List.iterator(segments).foreach: segment =>
       var index = 0
 
       while index < segment.length do

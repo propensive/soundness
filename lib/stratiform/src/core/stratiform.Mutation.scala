@@ -44,6 +44,7 @@ import Mutation.Error.Reason
 import denominative.dysasymptotics.linearSize
 import rudiments.`:+`
 import rudiments.each
+import rudiments.to
 import rudiments.{after, all, at, before, define, head, keep, omit, segment, skip, upto}
 
 // Primitive presentation-preserving mutations per §22.2. Each op is a
@@ -987,7 +988,7 @@ object Mutation:
   // empty values are dropped. The canonical sigil is `#`.
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     val atomNodes =
-      Array.from(atoms.collect { case value if !value.nil => chooseAtomForm(value, '#') })
+      atoms.filter(!_.nil).map(chooseAtomForm(_, '#')).to[Array]
 
     Tel.Compound(keyword, atomNodes, Unset, Array.empty)
 

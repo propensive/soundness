@@ -456,7 +456,7 @@ object Iterator:
     protected[murmuration] update def advance(): Boolean = false
     protected[murmuration] def current: element = throw new NoSuchElementException()
 
-  def apply[element](elements: element*): Iterator[element]^ = from(elements.iterator)
+  def apply[element](elements: element*): Iterator[element]^ = from(List.iterator(elements))
 
   def range(start: Int, end: Int): Iterator[Int]^ = new Iterator[Int]:
     private var upcoming: Int = start

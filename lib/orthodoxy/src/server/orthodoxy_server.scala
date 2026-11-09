@@ -40,6 +40,7 @@ import gossamer.*
 import inimitable.*
 import legerdemain.*
 import prepositional.*
+import rudiments.*
 import scintillate.*
 import serpentine.*
 import spectacular.*
@@ -107,5 +108,5 @@ extension (issuer: Issuer)
     store(session).let(_.access).let(_.of[scope]).letGiven(lambda).or:
       val state = Authorizations.State(request.path)
       store(session) = state
-      val names = scopes.flatMap(_.names).distinct.to(List)
+      val names = scopes.flatMap(_.names).distinct
       Redirect(issuer.authorizationUrl(names, state.uuid.show))

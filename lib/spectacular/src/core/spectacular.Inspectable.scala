@@ -363,7 +363,7 @@ object Inspectable extends Inspectable2:
   //     . assert(_ == Nil)
   //
   def fallbacks(renderings: Text*): List[Text] =
-    renderings.filter { rendering => rendering.s.exists(marker(_)) }.to(List)
+    renderings.filter { rendering => rendering.s.exists(marker(_)) }
 
   def marker(char: Char): Boolean = char == '“' || char == '⸢' || char == '⸤'
 

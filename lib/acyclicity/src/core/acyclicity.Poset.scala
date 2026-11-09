@@ -33,10 +33,11 @@
 package acyclicity
 
 import scala.collection.immutable as sci
+import rudiments.*
 
 object Poset:
   def apply[element: PartiallyOrdered](elements: element*): Poset[element] =
-    new Poset(Set.from(elements))
+    new Poset(elements.to[Set])
 
 case class Poset[element: PartiallyOrdered](elements: Set[element]):
   // The covering relation, each element pointing at those immediately above it: the Hasse

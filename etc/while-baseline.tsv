@@ -250,7 +250,7 @@ lib/xylophone/src/core/xylophone.inlining.scala	1	0	1
 lib/xylophone/src/core/xylophone.internal.scala	21	22	2
 lib/yossarian/src/core/yossarian.Pty.scala	14	2	0
 lib/yossarian/src/core/yossarian.internal.scala	3	0	0
-lib/ypsiloid/src/core/ypsiloid.Yaml.scala	127	21	18
+lib/ypsiloid/src/core/ypsiloid.Yaml.scala	126	21	18
 lib/ypsiloid/src/core/ypsiloid.YamlPath.scala	1	0	4
 lib/ypsiloid/src/core/ypsiloid.internal.scala	12	13	0
 lib/ypsiloid/src/core/ypsiloid_core.scala	4	0	3

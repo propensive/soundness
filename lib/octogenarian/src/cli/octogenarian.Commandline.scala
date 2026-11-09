@@ -336,7 +336,7 @@ extends Git.Backend:
   private def exists(path: jnf.Path): Boolean = jnf.Files.exists(path)
 
   private def nio(path: Path on Linux, rest: Text*): jnf.Path =
-    rest.foldLeft(jnf.Path.of(path.encode.s).nn): (path, name) => path.resolve(name.s).nn
+    rest.fold(jnf.Path.of(path.encode.s).nn): (path, name) => path.resolve(name.s).nn
 
   private def readFile(path: jnf.Path): Optional[Text] =
     if exists(path) then String(jnf.Files.readAllBytes(path).nn, "UTF-8").nn.tt.trim else Unset

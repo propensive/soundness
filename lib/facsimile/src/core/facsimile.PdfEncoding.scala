@@ -50,12 +50,12 @@ private[facsimile] object PdfEncoding:
       array(i) = if i == 0x7f || (i >= 0x80 && i <= 0x9f) then '\u0000' else i.toChar
       i += 1
 
-    // An indexed loop, not `foreach`: a closure over the exclusive buffer would alias it.
-    var j = 0
+    // An iterator loop, not `foreach`: a closure over the exclusive buffer would alias it.
+    val iterator = List.iterator(differences)
 
-    while j < differences.length do
-      array(differences(j)(0)) = differences(j)(1)
-      j += 1
+    while iterator.hasNext do
+      val difference = iterator.next()
+      array(difference(0)) = difference(1)
 
     Array.freeze(array)
 

@@ -146,10 +146,10 @@ object Dictionary:
   // Internal: derive an alphabet from the union of chars in the supplied
   // keys. Insertion order is preserved so the slot mapping is stable
   // across runs with the same input.
-  private def autoAlphabet[value](pairs: Iterable[(Text, value)]): Alphabet =
+  private def autoAlphabet[value](pairs: List[(Text, value)]): Alphabet =
     val chars = LinkedHashSet[Char]()
 
-    pairs.foreach: (key, _) =>
+    List.iterator(pairs).foreach: (key, _) =>
       val s = key.s
       var i = 0
 
@@ -163,7 +163,7 @@ object Dictionary:
   // (key, value) pairs, then (optionally) compute Aho-Corasick failure
   // and dictionary-suffix links via BFS.
   private def build[value: ClassTag]
-    ( pairs:       Iterable[(Text, value)],
+    ( pairs:       List[(Text, value)],
       alphabet:    Alphabet,
       ahoCorasick: Boolean )
   :   Dictionary[value] =
@@ -182,7 +182,7 @@ object Dictionary:
     val root = new NodeBuilder
     val alpha = alphabet.size
 
-    pairs.foreach: (key, v) =>
+    List.iterator(pairs).foreach: (key, v) =>
       var node = root
       val s = key.s
       var i = 0

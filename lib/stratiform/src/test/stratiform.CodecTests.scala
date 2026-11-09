@@ -123,7 +123,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
 
       result
 
-  private def bytesOf(values: Int*): Data = Array.from(values.map(_.toByte))
+  private def bytesOf(values: Int*): Data = values.map(_.toByte).to[Array]
 
   def run(): Unit =
     suite(m"Codec laws (C1–C3)"):

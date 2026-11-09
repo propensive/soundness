@@ -65,7 +65,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
     data.map { byte => f"${byte & 0xff}%02x".tt }.join.s
 
   private def bytes(values: Int*): Data =
-    Array.unsafeFrozen(values.map(_.toByte).toArray)
+    values.map(_.toByte).to[Array]
 
   private lazy val schemaDoc: Tel = resource("acceptance.tel").read[Tel]
 

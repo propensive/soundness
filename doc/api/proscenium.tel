@@ -394,6 +394,19 @@ entry .listIsSpreadable   lets a list be spliced into varargs: `f(list*)`
     in the companion, which is equivalent for resolution: a top-level opaque type's
     implicit scope includes the definitions beside it.
 
+entry .listGatherable   makes a repeated parameter a `List` in the body of its method
+    The `Gatherable` given (a `scala.Gatherable`, from the proscala compiler) which a
+    module compiled with `-Zgatherable-varargs` receives its repeated parameters through:
+    the body of `def join(parts: Text*)` sees `parts` as a `List[Text]`, converted once on
+    entry, where the language would hand it a stdlib `Seq`. Every Soundness module is
+    compiled this way, so a varargs method is written against the `List` API directly, with
+    no `parts.to(List)` on its first line. Callers are unaffected: the signature is still
+    `Text*`, and `join(texts*)` splices as before. It sits at the top level of the package
+    because `Gatherable[element]` has no subject whose companion could hold it; `-Yimports`
+    puts it in scope. A project using `soundness.*` without that root import, or without
+    the flag, keeps the stdlib `Seq`. Class parameters (`case class Path(segments: Text*)`),
+    `inline` parameters and macros are not affected by the flag and remain a `Seq`.
+
 entry .consConstructor   the given which supplies `head :: tail` on the opaque `List`
     `::` is right-associative, so the receiver of the extension is the head — the left
     operand at the call site — and the argument is the tail. The extension rides on a given

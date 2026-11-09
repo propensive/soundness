@@ -94,4 +94,4 @@ extension (css: Css.type)
   def fontFace(font: Font in (? >: Web)): Css = Css(FontFace.rules(font))
 
   // The rules for several fonts, each typeface once, with any `@import`s first as CSS requires.
-  def fontFaces(fonts: (Font in (? >: Web))*): Css = FontFace.stylesheet(List.from(fonts))
+  def fontFaces(fonts: (Font in (? >: Web))*): Css = FontFace.stylesheet(fonts)

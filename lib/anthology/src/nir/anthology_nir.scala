@@ -44,6 +44,7 @@ import scala.util.control as suc
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.nil
 import digression.*
 import distillate.*
 import eucalyptus.*
@@ -94,7 +95,7 @@ object nativeEdges:
     val targets: List[Triple] =
       // An unrecognized build host cannot name its own triple, and in any case has no Scala
       // Native runtime; report it as the C toolchain's absence.
-      if triples.isEmpty
+      if triples.nil
       then List(Triple.host.or(abort(Toolchain.Error(t"clang"))))
       else List(triples*)
 

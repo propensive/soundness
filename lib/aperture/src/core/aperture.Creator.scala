@@ -40,7 +40,7 @@ package aperture
 final class Creator(tracked val creatable: Creatable^, val value: creatable.Self):
 
   def apply(flags: creatable.Operand*): creatable.Self =
-    creatable.make(value, flags.to(List))
+    creatable.make(value, flags)
     value
 
   def apply[result]
@@ -48,4 +48,4 @@ final class Creator(tracked val creatable: Creatable^, val value: creatable.Self
     ( block: ((creatable.Result & Granting[creatable.Grants])^) ?=> result )
   :   result =
 
-    creatable.create(value, flags.to(List))(block)
+    creatable.create(value, flags)(block)
