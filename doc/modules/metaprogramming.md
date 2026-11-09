@@ -2,8 +2,8 @@
 
 ### About
 
-Soundness's compiletime machinery rests on a set of tools for writing and debugging macros, and
-they are available to any project doing the same:
+Much of the machinery which runs at [compiletime] here rests on a small set of tools for writing
+and debugging macros. They are available to any project which does the same:
 
 ```tabular
 column  Tool
@@ -15,57 +15,69 @@ row  `Introspect`  displays a macro expansion as an inspectable tree
 row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
 ```
 
-Collecting every given is the mechanism behind pluggable configuration throughout Soundness.
+Collecting every given is the mechanism behind pluggable configuration throughout these
+libraries.
 
 ### On metaprogramming
 
-Scala 3's macros are principled and under-tooled. A macro author stares at expansions with
-`println`, renders types with a `show` that ignores the caller's imports, and cannot ask an
-innocent question — "what givens of this type are in scope?" — because implicit search answers with
-one, or ambiguity. These gaps are generic; every macro project refills them.
+Scala 3's macros are principled, and short of tools. A macro author stares at expansions with
+`println`, renders types with a `show` which ignores the caller's imports, and cannot ask an
+innocent question, "which givens of this type are in scope?", because implicit search answers
+with one given, or with an ambiguity. These gaps are generic, and every macro project fills them
+again.
 
-Macros that check as the code compiles are how much of [safety by construction](../philosophy/safety-by-construction.md) is achieved elsewhere in Soundness.
+Here they are filled once. Macros which check code as it compiles are how much of
+[safety by construction](../philosophy/safety-by-construction.md) is achieved elsewhere.
 
-Soundness fills them once. Everything comes from the `soundness` package:
+Everything comes from the `soundness` package, and the second import lets the samples print
+their results:
 
 ```scala
 import soundness.*
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```
 
 ### Every given in scope
 
-Implicit search finds *the* given; `Every` finds *all of them*, as a compiletime search that
-returns their list — including instances that would be ambiguous against each other:
+Implicit search finds *the* [given]. `every` finds *all of them*. It is a compiletime search
+which returns their list, and it includes instances which would be ambiguous against each
+other:
 
 ```scala
-trait Plugin
+case class Plugin(name: Text)
 
-given alpha: Plugin = new Plugin {}
-given beta: Plugin = new Plugin {}
-
-every[Plugin].values.size   // 2
+given alpha: Plugin = Plugin(t"alpha")
+given beta: Plugin = Plugin(t"beta")
 ```
 
-This inverts the usual configuration flow: instead of one value naming all the options, each option
-is declared as a given where it applies, and the consumer collects whatever is in scope. It is how
-[socket options](sockets.md) accumulate, how every [log sink](logging.md) receives events, and how
-[terminal features](terminal.md) switch on.
+```scala fuel
+run
+##
+every[Plugin].values.each(plugin => Out.println(plugin.name))
+```
+
+This inverts the usual flow of configuration. Instead of one value which names all the options,
+each option is declared as a given where it applies, and the consumer collects whatever is in
+scope. It is how [socket options](sockets.md) accumulate, how every [log sink](logging.md)
+receives events, and how [terminal features](terminal.md) are switched on.
 
 ### Type-level values
 
 A type parameter is to typechecking what an ordinary parameter is to execution: a way of passing
-information to a place that will use it. Types are the poorer medium for it, though — type-level
-operations are far less expressive than value-level ones, and code written in them is harder to
-write and harder to read. Macros close the gap by letting the logic be written as ordinary
-value-level code that happens to *run* at compiletime, which leaves one thing missing: a way to
-carry a collection between the two worlds.
+information to the place which will use it. Types are the poorer medium. Type-level operations
+are far less expressive than those on values, and code written in them is harder to write and to
+read. Macros close the gap. The logic is written as ordinary code over values, which happens to
+*run* at compiletime. One thing is then missing: a way to carry a collection between the two
+worlds.
 
-That is what the type-level collections are for. A macro parameterized by static data — a list of
-names, a mapping — carries that data in a type and *reifies* it to a runtime value:
+The type-level collections do that. A macro which is parameterized by static data, such as a
+list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
 
-```scala
-reify[TypeList[("one", "two", "three")]]   // List("one", "two", "three")
-reify[TypeSet["yes" | "no" | "maybe"]]     // the members of the union
+```scala fuel
+run
+##
+Out.println(reify[TypeList[("one", "two", "three")]].inspect)
+Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
 ```
 
 Each runtime value has a type-level form:
@@ -79,95 +91,118 @@ row  a `Set`  a union, under `TypeSet`
 row  a `Map`  a tuple of pairs, under `TypeMap`
 ```
 
-`reify` also has a form taking a `Type` rather than a static type
-parameter, for use from inside a macro implementation where the type is only known abstractly, and
-`reifyAs` fixes the result type where inference needs the help.
+`reify` has a second form, which takes a `Type` rather than a static type parameter, for use
+inside a macro implementation where the type is known only abstractly. `reifyAs` fixes the type
+of the result where inference needs the help.
 
 The data stays in the type system, where macros can inspect it, until the moment a value is
 needed.
 
 ### Abstracting over containers
 
-A great many types are *containers* in the same sense — `Optional`, `Attempt`, `Task`, a
-collection — in that a value can be put into one, mapped over, and flat-mapped through. Writing
-an operation once over all of them needs those capabilities as values rather than as methods that
-happen to share names.
+Many types are *containers* in the same sense. An [`Optional`](optional-values.md), an
+`Attempt`, a [`Task`](concurrency.md) and a [collection](collections.md) all allow a value to be
+put in, mapped over, and flat-mapped through. Writing an operation once over all of them needs
+those capabilities as values, and not as methods which happen to share names.
 
-`Functor` supplies `point`, which lifts a value into the container, and mapping; `Monad` adds
-`bind`, which is `flatMap` under a name that does not collide with the method the container
-already has. Instances are constructed for any type that provides the requisite methods, so a
-container written without any of this in mind participates anyway.
+`Functor` supplies `point`, which lifts a value into the container, and mapping. `Monad` adds
+`bind`, which is `flatMap` under a name which does not collide with the method the container
+already has. Instances are constructed for any type which provides the needed methods, so a
+container written without any of this in mind takes part anyway.
 
-Two operations follow immediately, and are the reason it is worth having:
+Two operations follow at once, and are the reason this is worth having. `sequence` turns a
+collection of containers inside out:
+
+```scala fuel
+run
+##
+Out.println(List[Option[Int]](Some(1), Some(2), Some(3)).sequence.inspect)
+Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
+```
+
+`traverse` maps a function which may fail over a collection, and gathers the results in one
+container, not in a collection of containers. This is the shape of "parse all of these, and fail
+if any of them fails":
 
 ```scala
 def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
-
-List[Option[Int]](Some(1), Some(2), Some(3)).sequence   // Some(List(1, 2, 3))
-List(t"1", t"2", t"x").traverse(parseNumber)  // None: the failure, not a list of failures
 ```
 
-`sequence` turns a collection of containers inside out, and `traverse` maps a fallible function
-over a collection and gathers the results in one container rather than a collection of them —
-which is the shape of "parse all of these, and fail if any of them fails". Both work on any
-collection, and the result has the collection's own shape: a `List` of `Option`s sequences to an
-`Option` of a `List`, and a `Set` to an `Option` of a `Set`.
+```scala fuel
+run
+##
+Out.println(List(t"1", t"2", t"3").traverse(parseNumber).inspect)
+Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
+```
+
+Both work on any collection, and the result keeps the shape of the collection. A `List` of
+`Option`s sequences to an `Option` of a `List`, and a `Set` to an `Option` of a `Set`.
 
 ### Types as source text
 
-Rendering a type in an error message or generated code should produce what the *user* would write —
-respecting their imports, using infix syntax where the type is infix. `Syntax.name` does exactly
-that, covering the language's full type grammar:
+A type rendered in an error message or in generated code should read as the *user* would write
+it, with their imports respected and infix syntax used where the type is infix. `Syntax.name`
+does that, and covers the full grammar of types:
 
-```scala
-Syntax.name[Int | String & Double]        // t"Int | String & Double"
-Syntax.name[(text: Text) => text.type]   // t"(text: Text) => text.type"
-Syntax.name[Addable by Int to Double]     // the infix typeclass form
+```scala fuel
+run
+##
+Out.println(Syntax.name[Int | String & Double])
+Out.println(Syntax.name[(text: Text) => text.type])
+Out.println(Syntax.name[Addable by Int to Double])
 ```
 
-Macro error messages built with it read as Scala, not as compiler internals.
+Error messages from a macro built with it read as Scala, not as compiler internals.
 
 ### Inspecting expansions
 
-`Introspect.syntax` captures the tree of an expression — as the compiler sees it, tags and nodes
-and types — as a value that renders as a navigable diagram, and `Introspect.semantics` does the
-same for a symbol's flags and members:
+`Introspect.syntax` captures the tree of an expression, as the compiler sees it, with its tags,
+nodes and types. The result is a value which renders as a navigable diagram.
+`Introspect.semantics` does the same for the flags and members of a symbol:
 
 ```scala
 val x = 5
 
-Introspect.syntax(true):
+val tree = Introspect.syntax(true):
   1 + x
-// the full TASTy tree of the expression, inspectable
 ```
 
-For a macro author, this replaces `println`-archaeology with a structured view of what an
+For a macro author, this replaces archaeology with `println` by a structured view of what an
 expansion actually produced. Both work from *outside* a macro too, on any expression in ordinary
 code, which makes them useful for answering questions about the language itself. Introspecting
-`1 + x`, as above, shows the `Apply` of a `Select` over a `Literal` and an `Ident`; doing
-the same for a `val y: 5 = 5` shows a single `Literal`, because the singleton type let the
-compiler fold the addition away. Inside a macro, where a `Quotes` is available, the `syntax` and
-`semantics` extension methods do the same for an `Expr` or a `Symbol`, and the result is colored
-through a `TastyPalette` so it reads at a terminal.
+`1 + x`, as above, shows an `Apply` of a `Select` over a `Literal` and an `Ident`. Doing the
+same for a `val y: 5 = 5` shows a single `Literal`, because the [singleton type] let the
+compiler fold the addition away.
 
-A macro that must fail does so with `halt`, which takes a `Message` — so a macro's compile errors
-are built from the same structured messages as [runtime errors](errors.md), with their
-substitutions highlighted where the compiler's output supports it, and can be attached to a
-specific position in the source.
+Inside a macro, where a `Quotes` is available, the `syntax` and `semantics` extension methods do
+the same for an `Expr` or a `Symbol`. The result is colored through a `TastyPalette`, so it
+reads well at a terminal.
+
+A macro which must fail does so with `halt`, which takes a `Message`. The compile errors of a
+macro are therefore built from the same structured messages as [runtime errors](errors.md),
+with their substitutions highlighted where the compiler's output supports it, and they can be
+attached to a position in the source.
 
 ### Down to bytecode
 
-Occasionally the question is not what the compiler *typed* but what it *emitted* — whether a
-combinator inlines away, what a hot path compiles to. A classfile parses into typed methods and
-instructions, each instruction with its operand-stack state reconstructed, and a quoted expression
-can be compiled and disassembled in one step:
+Occasionally the question is not what the compiler *typed*, but what it *emitted*: whether a
+combinator inlines away, or what a hot path compiles to. A classfile parses into typed methods
+and instructions, and each instruction carries the state of the operand stack, reconstructed:
 
 ```scala
 import classloaders.threadContextClassloader
 
-Classfile[Exit].let(_.methods.map(_.name))   // the methods of the compiled class
-// each method's `bytecode` is the JVM instructions, with stack states, ready to render
+val methods = Classfile[Exit].let(_.methods.map(_.name))
 ```
 
-This is the foundation for performance work that must verify, rather than assume, what the
-optimizer did.
+The `bytecode` of each method is its JVM instructions, with their stack states, ready to render.
+A quoted expression can also be compiled and disassembled in one step. This is the foundation
+for performance work which must verify what the optimizer did, and not assume it.
+
+### Related
+
+- [Staging](staging.md) runs quoted code in another environment.
+- [Derivation](derivation.md) generates typeclass instances from the structure of a type.
+- [Annotations](annotations.md) reads annotations without a macro.
+- [Compiler](compiler.md) runs the Scala compiler as a library.
+- [Classpath](classpath.md) describes the classloaders which a classfile is read through.
