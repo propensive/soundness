@@ -1,8 +1,16 @@
 ## Overview
 
-Soundness is one library with many parts, and these tutorials take one topic each. They are
-grouped here by what a reader is likely to be doing; each builds its samples up in order, and
-most link to the philosophy behind their design — [safety by construction](../philosophy/safety-by-construction.md), [direct style](../philosophy/direct-style.md), [honest signatures](../philosophy/honest-signatures.md) and the rest.
+Soundness is one library with many parts, and each of these tutorials takes one topic. They are
+grouped here by what a reader is likely to be doing.
+
+Each tutorial builds its samples up in order, and the output of a sample is shown beneath it,
+as the sample produced it. Where a sample is meant to fail, the compiler's error or the thrown
+error is shown instead. A word with a precise meaning, such as [typeclass] or [strategy], is
+defined in the glossary, which appears where the word is used. Every tutorial ends with a list
+of the related tutorials, and most link to the philosophy behind their design:
+[safety by construction](../philosophy/safety-by-construction.md),
+[direct style](../philosophy/direct-style.md),
+[honest signatures](../philosophy/honest-signatures.md) and the rest.
 
 ### Foundations
 
@@ -73,6 +81,7 @@ most link to the philosophy behind their design — [safety by construction](../
 - [Concurrency](concurrency.md) — supervised tasks, cancellation and promises
 - [Logging](logging.md) — loggers, levels and routing
 - [Classpaths](classpath.md) — resources, classloaders and services
+- [Packaging](packaging.md) — slim JARs whose dependencies are fetched by hash
 - [Daemons](daemons.md) — long-running applications with fast clients
 - [Containers](docker.md) — building and reading images, and talking to a daemon
 - [Git](git.md) — repositories, commits, branches and remotes
