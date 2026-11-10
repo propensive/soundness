@@ -40,3 +40,6 @@ package servables:
 
 package construables:
   export ypsiloid.construables.yamlConstruable
+
+package detectables:
+  export ypsiloid.detectables.yamlDetectable

@@ -863,7 +863,8 @@ object soundness extends Fork:
     enigmatic.x509,
     bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256, caesura.http,
-    breviloquence.http, locomotion.http):
+    breviloquence.http, locomotion.http, bitumen.media, facsimile.media, pneumatic.media,
+    zeppelin.media):
     def summary = "Data formats, serialization, cryptography and persistence"
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
@@ -891,7 +892,7 @@ object soundness extends Fork:
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, coaxial.dns, susurration.core, syndesis.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, urticose.dns, hallucination.core,
-    phoenicia.core,
+    phoenicia.core, phoenicia.media,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
     scintillate.servlet,
     telekinesis.jvm, telekinesis.sockets, plutocrat.core, eucalyptus.gcp, punctuation.html,
@@ -1387,7 +1388,11 @@ object bitumen extends Library:
     override def scalaJs = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, galilei.jvm, guillotine.core, eucalyptus.core):
+  // The `detectables` which recognise a TAR archive: bitumen's only use of gesticulate.
+  object media extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, jvm, media, galilei.jvm, guillotine.core, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1413,7 +1418,7 @@ object breviloquence extends Library:
   object http extends Component(core, telekinesis.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
+  object test extends Tests(core, staged, http, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, staged, quantitative.units):
     // Capture-checked but not separation-checked: the benchmark sources annotate the
     // `Array[Byte]^{}` payloads they hold, matching the capture-checked `core` they measure, but
@@ -2065,7 +2070,12 @@ object facsimile extends Library:
     override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, file):
+  // The `detectables` which recognise a PDF: facsimile's only use of gesticulate.
+  object media extends Component(core, gesticulate.core):
+    override def scalaJs = false // as `core`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, file, media):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2807,8 +2817,12 @@ object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core, turbulence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The `detectables` which recognise a font file: phoenicia's only use of gesticulate.
+  object media extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // hellenism supplies `cp"…"` for the compile-time coverage tests over the fonts in `res/test`.
-  object test extends Tests(core, hellenism.core):
+  object test extends Tests(core, media, hellenism.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2851,7 +2865,11 @@ object pneumatic extends Library:
   object lzw extends Component(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, flate, brotli, lzma, lzw, parasite.core):
+  // The `detectables` which recognise gzip and XZ streams: pneumatic's only use of gesticulate.
+  object media extends Component(flate, lzma, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, flate, brotli, lzma, lzw, media, parasite.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   // Every codec on the same corpora, with xz-java (the reference Java XZ implementation) as
@@ -3709,7 +3727,7 @@ object xylophone extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   // The tests decode an `EmailAddress`, which `core` itself never mentions.
-  object test extends Tests(core, staged, urticose.core, hellenism.core)
+  object test extends Tests(core, staged, http, urticose.core, hellenism.core)
   // Aalto is the streaming-output rival: the fastest StAX writer on the JVM.
   object bench extends Benchmarks(core, quantitative.units, hellenism.core):
     def mvnDeps = Seq(
@@ -3734,7 +3752,7 @@ object ypsiloid extends Library:
   object http extends Component(core, telekinesis.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jacinta.core):
+  object test extends Tests(core, http, jacinta.core):
     def yamlTestSuiteCommit = "6ad3d2c62885d82fc349026c136ef560838fdf3d"
 
     def yamlTestSuite: T[PathRef] = Task:
@@ -3787,7 +3805,12 @@ object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core, turbulence.core, pneumatic.flate):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, galilei.jvm, imperial.core, diuretic.core, eucalyptus.core):
+  // The `detectables` which recognise a ZIP archive: zeppelin's only use of gesticulate.
+  object media extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, media, galilei.jvm, imperial.core, diuretic.core,
+      eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, gastronomy.core, monotonous.core, breviloquence.core):

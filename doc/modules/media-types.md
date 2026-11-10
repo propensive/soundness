@@ -146,6 +146,140 @@ have the `Content-Type` header follow automatically. The [HTTP client](http-clie
 takes a media type as the value of its `accept` header, and [email](email.md#composing)
 attachments carry one.
 
+### Detecting a media type
+
+Content often arrives without a trustworthy label, and has to be recognised from its bytes. A
+`Media["…"]` pattern does that for a stream — a Zephyrine `Cursor` — and binds a `Detection`:
+
+```scala
+import detectables.{gifDetectable, pngDetectable}
+
+val cursor = Cursor(hex"89504e470d0a1a0a0000000d49484452")
+
+cursor match
+  case Media["image/png"](png) => t"a PNG"
+  case Media["image/gif"](gif) => t"a GIF"
+  case _                       => t"something else"
+```
+
+Each case reads as much of the stream as it needs and then returns the cursor to where it was
+found, whether or not it matched: a later case, and the code which follows the match, see the
+whole stream. A detector cannot break this promise, because it never holds the cursor. It reads
+through a `Probe`, which can only go forwards, and the pattern rewinds the cursor when the
+detector returns or throws.
+
+What a pattern can detect is decided by the `Detectable` instances in scope, each imported by
+name from the `detectables` family, as the two above are. The media type is checked against the
+registry like any other, and a pattern for which no detector has been imported is a compile
+error:
+
+```scala fuel
+compile
+errors show
+##
+cursor match
+  case Media["image/jpeg"](jpeg) => t"a JPEG"
+  case _                         => t"something else"
+```
+
+#### How certain a detection is
+
+A few opening bytes rarely prove what a stream is, and a `Detection` says in its type how much
+was established. `png` above is a `Detection of "image/png" under Likely to (Raster in Png)`:
+content detected as `image/png`, with a certainty of `Likely`, which is read as a `Raster in Png`.
+The certainty is one of three, fixed by what the detector examined:
+
+```tabular
+column  Certainty
+column  What was examined
+column  Example
+row  `Plausible`  something merely consistent with the format, which reserves no identifying structure or keeps it out of reach  a leading `{` for JSON; a leading `<` for XML
+row  `Likely`  the structure which the format's specification designates as identifying, found where the specification puts it  the eight-byte PNG signature; the index at the end of a ZIP file
+row  `Certain`  the whole of the content, validated  none is provided: it means reading the entire stream
+```
+
+A `Likely` match is wrong only by coincidence or forgery, and says nothing about the rest of the
+content being well-formed. A `Plausible` match can be wrong by design: other formats legitimately
+begin the same way, so the order of `Plausible` cases matters where the order of `Likely` ones
+does not.
+
+Each level is a subtype of the one before it — `Certain <: Likely <: Plausible` — so a demand for
+at least a certainty is a bound. A second type argument to the pattern makes that demand of the
+detector, and a method makes it of a `Detection` it is given:
+
+```scala
+def decode(detection: Detection of "image/png" under (? <: Likely)): Text = t"decoding"
+
+cursor match
+  case Media["image/png", Likely](png) => decode(png)
+  case _                               => t"something else"
+```
+
+The JSON detector is only `Plausible`, so demanding more of it is rejected as the code compiles:
+
+```scala fuel
+compile
+errors show
+##
+import detectables.jsonDetectable
+
+cursor match
+  case Media["application/json", Likely](json) => t"JSON"
+  case _                                       => t"something else"
+```
+
+A detection is evidence, not a second handle on the stream: the cursor stays with the code that
+matched it, and `png.read(cursor)` reads it as the type the detection names.
+
+#### Formats a stream cannot identify
+
+Some formats are identified by something a forward read cannot reach — a ZIP file by the index
+at its end. The same patterns match content with random access, an `Expanse` or `Data` in memory,
+and there a detector may look anywhere. A detector declares which access it needs, and one media
+type may have both kinds, establishing different amounts. ZIP has: `zipDetectable` reads a stream,
+and can only see whether it opens as most archives do, while `zipIndexDetectable` finds the index:
+
+```scala
+import detectables.{zipDetectable, zipIndexDetectable}
+
+def identify(content: Data): Text = content match
+  case Media["application/zip", Likely](zip) => t"a ZIP archive"
+  case _                                     => t"something else"
+```
+
+A cursor can use only the first detector, so its `Media["application/zip"]` detection is
+`Plausible`, and `Media["application/zip", Likely]` does not compile for it. `Data` and an
+`Expanse` can use either, and the pattern takes whichever establishes more: there the same
+detection is `Likely`, and an archive which follows a program, as a self-extracting one does, is
+still found.
+
+#### Writing a detector
+
+A format which reserves a signature needs only its bytes, and the offset if it is not the start:
+
+```scala
+given sqlite: ("application/vnd.sqlite3" is Detectable under Likely over Probe to Data) =
+  Detectable.signature(0x53, 0x51, 0x4c, 0x69, 0x74, 0x65)
+```
+
+Anything else is a function of a `Probe`, for a stream, or of an `Expanse`:
+
+```scala
+given logfile: ("text/vnd.example" is Detectable under Plausible over Probe to Text) =
+  Detectable: probe =>
+    probe.skipWhitespace()
+    probe.next().lay(false)(_ == '['.toByte)
+
+given trailed: ("application/vnd.example" is Detectable under Likely over Expanse to Data) =
+  Detectable.positional: expanse =>
+    expanse.size >= 4 && expanse.read(expanse.size - 4, 4).utf8 == t"DONE"
+```
+
+The type states the certainty, and the detector must earn it: `Likely` only for the structure the
+format's specification designates as identifying, and `Certain` only for one which reads and
+validates everything — which, on a stream, means holding all of it in memory until the detector
+returns.
+
 ### Multipart
 
 `multipart/form-data` is the format of file uploads. It is parsed into a `Multipart` of typed

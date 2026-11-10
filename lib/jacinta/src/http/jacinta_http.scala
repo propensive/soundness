@@ -38,6 +38,7 @@ import hieroglyph.*
 import prepositional.*
 import spectacular.*
 import telekinesis.*
+import vacuous.*
 import zephyrine.*
 
 package postables:
@@ -54,3 +55,11 @@ package servables:
 
 package construables:
   given jsonConstruable: ("application/json" is Construable to Json) = Construable()
+
+package detectables:
+  // JSON reserves no signature: a document which opens an object or an array is only plausibly
+  // JSON, and one which is a bare string, number or literal is not recognised at all.
+  given jsonDetectable: ("application/json" is Detectable under Plausible over Probe to Json) =
+    Detectable: probe =>
+      probe.skipWhitespace()
+      probe.next().lay(false) { byte => byte == '{'.toByte || byte == '['.toByte }

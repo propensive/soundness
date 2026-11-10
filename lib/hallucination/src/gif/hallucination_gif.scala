@@ -37,3 +37,8 @@ import prepositional.*
 
 package construables:
   given gifConstruable: ("image/gif" is Construable to (Raster in Gif)) = Construable()
+
+package detectables:
+  // "GIF8", which opens both `GIF87a` and `GIF89a`.
+  given gifDetectable: ("image/gif" is Detectable under Likely over Probe to (Raster in Gif)) =
+    Detectable.signature(0x47, 0x49, 0x46, 0x38)

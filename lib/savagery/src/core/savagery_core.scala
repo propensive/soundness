@@ -37,6 +37,7 @@ import scala.math.Numeric
 import anticipation.*
 import geodesy.*
 import gesticulate.*
+import gossamer.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
@@ -80,3 +81,11 @@ extension [figure: Transformable as transformable](figure: figure)
 
 package construables:
   given svgConstruable: ("image/svg+xml" is Construable to Svg) = Construable()
+
+package detectables:
+  // An `svg` element, or the XML declaration which may precede it — as it may any XML.
+  given svgDetectable: ("image/svg+xml" is Detectable under Plausible over Probe to Svg) =
+    Detectable: probe =>
+      probe.skipWhitespace()
+      val opening = probe.take(5).ascii
+      opening == t"<?xml" || opening.starts(t"<svg")

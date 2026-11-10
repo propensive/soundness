@@ -40,3 +40,6 @@ export
 
 package construables:
   export savagery.construables.svgConstruable
+
+package detectables:
+  export savagery.detectables.svgDetectable

@@ -40,3 +40,6 @@ package servables:
 
 package construables:
   export jacinta.construables.jsonConstruable
+
+package detectables:
+  export jacinta.detectables.jsonDetectable

@@ -56,3 +56,6 @@ package recoveries:
 
 package construables:
   export honeycomb.construables.htmlConstruable
+
+package detectables:
+  export honeycomb.detectables.htmlDetectable

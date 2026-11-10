@@ -38,6 +38,7 @@ import hieroglyph.*
 import prepositional.*
 import spectacular.*
 import telekinesis.*
+import vacuous.*
 import zephyrine.*
 
 package construables:
@@ -55,3 +56,16 @@ package postables:
 package servables:
   given xmlServable: (encoder: Codepage) => Xml is Servable =
     Servable[Xml](xmlMediaType): value => Http.Body.Fixed(encoder.encoded(value.show))
+
+package detectables:
+  // An XML declaration is optional, so the most a stream can show is that it opens a tag, a
+  // declaration or a comment, as HTML and SVG do too.
+  given xmlDetectable: ("application/xml" is Detectable under Plausible over Probe to Xml) =
+    Detectable: probe =>
+      probe.skipWhitespace()
+      probe.next().lay(false)(_ == '<'.toByte)
+
+  given textXmlDetectable: ("text/xml" is Detectable under Plausible over Probe to Xml) =
+    Detectable: probe =>
+      probe.skipWhitespace()
+      probe.next().lay(false)(_ == '<'.toByte)

@@ -354,6 +354,57 @@ object Tests extends Suite("image", m"Hallucination Tests"):
       (Png().sniff(png), Png().sniff(jpeg), Jpeg().sniff(jpeg), Jpeg().sniff(png))
     . assert(_ == (true, false, true, false))
 
+    // Detection matches a stream against the formats named in the patterns, and leaves it unread.
+    def detect(data: Data): Text =
+      import detectables.{bmpDetectable, gifDetectable, jpegDetectable, pngDetectable}
+      import detectables.webpDetectable
+
+      Cursor(data) match
+        case Media["image/png", Likely](png)   => t"PNG"
+        case Media["image/jpeg", Likely](jpeg) => t"JPEG"
+        case Media["image/gif", Likely](gif)   => t"GIF"
+        case Media["image/bmp", Likely](bmp)   => t"BMP"
+        case Media["image/webp", Likely](webp) => t"WEBP"
+        case _                                 => t"none"
+
+    test(m"a PNG stream is detected"):
+      detect(png)
+    . assert(_ == t"PNG")
+
+    test(m"a JPEG stream is detected"):
+      detect(jpeg)
+    . assert(_ == t"JPEG")
+
+    test(m"a GIF stream is detected"):
+      detect(png.read[Raster in Png].to[Gif].read[Data])
+    . assert(_ == t"GIF")
+
+    test(m"a BMP stream is detected"):
+      detect(png.read[Raster in Png].to[Bmp].read[Data])
+    . assert(_ == t"BMP")
+
+    test(m"a WebP stream is detected"):
+      detect(hex"""524946462e000000574542505650384c220000002f0fc00200b93244f43f7651ffe8""")
+    . assert(_ == t"WEBP")
+
+    test(m"a stream in no known format is not detected"):
+      detect(broken)
+    . assert(_ == t"none")
+
+    test(m"a detected stream is read as the raster its detection names"):
+      import detectables.pngDetectable
+      val cursor = Cursor(png)
+
+      cursor match
+        case Media["image/png"](detection) =>
+          val raster: Raster in Png = detection.read(cursor)
+          (raster.width, raster.height)
+
+        case _ =>
+          (0, 0)
+
+    . assert(_ == (1, 1))
+
     test(m"a raster decodes from data whose format was not stated"):
       Raster(png).pipe: raster =>
         (raster.width, raster.height)

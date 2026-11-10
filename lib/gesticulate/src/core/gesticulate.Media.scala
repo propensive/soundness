@@ -42,8 +42,44 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import zephyrine.*
 
 object Media:
+  // Detects the media type of content: `cursor match case Media["image/gif"](gif) => …` matches
+  // if the contextual `"image/gif" is Detectable` recognises the content, and binds a
+  // `Detection` which records what was established. A cursor is left where it was found whether
+  // or not the case matches, so a later case, and the code which follows, see all of it.
+  //
+  // A second type argument demands a certainty: `Media["image/gif", Likely](gif)` compiles only
+  // if a detector which establishes at least `Likely` is in scope.
+  //
+  // An `Expanse`, or `Data` in memory, has random access, which lets a format be detected by
+  // something a stream cannot reach, such as the index at the end of a ZIP file.
+  transparent inline def unapply[label <: Label](scrutinee: Cursor[Data, {}]^): Option[Any] =
+    Detectable.cursor[label, Plausible](scrutinee)
+
+  transparent inline def unapply[label <: Label, floor <: Plausible]
+    ( scrutinee: Cursor[Data, {}]^ )
+  :   Option[Any] =
+
+    Detectable.cursor[label, floor](scrutinee)
+
+  transparent inline def unapply[label <: Label](scrutinee: Expanse^): Option[Any] =
+    Detectable.expanse[label, Plausible](scrutinee)
+
+  transparent inline def unapply[label <: Label, floor <: Plausible](scrutinee: Expanse^)
+  :   Option[Any] =
+
+    Detectable.expanse[label, floor](scrutinee)
+
+  transparent inline def unapply[label <: Label](scrutinee: Data): Option[Any] =
+    Detectable.expanse[label, Plausible](Detectable.memory(scrutinee))
+
+  transparent inline def unapply[label <: Label, floor <: Plausible](scrutinee: Data)
+  :   Option[Any] =
+
+    Detectable.expanse[label, floor](Detectable.memory(scrutinee))
+
   private val plain: MediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
 
   given text: Text is Media:

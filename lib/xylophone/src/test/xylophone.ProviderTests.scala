@@ -322,7 +322,7 @@ object ProviderTests extends Suite("xml-provider", m"Xylophone type provider tes
 
       test(m"An extension inherits its base's fields, group and attribute group"):
         val document = t"""<thing id="i" extra="true"><name>n</name><a>1</a><b>2</b></thing>"""
-        val record = Extensions.record(document.read[Xml])
+        val record = xylophone.Extensions.record(document.read[Xml])
         (record.id, record.name, record.a, record.b, record.extra)
       . assert(_ == (t"i", t"n", 1, 2, true))
 

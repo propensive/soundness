@@ -37,3 +37,8 @@ import prepositional.*
 
 package construables:
   given jpegConstruable: ("image/jpeg" is Construable to (Raster in Jpeg)) = Construable()
+
+package detectables:
+  // The start-of-image marker, and the first byte of the marker which follows it.
+  given jpegDetectable: ("image/jpeg" is Detectable under Likely over Probe to (Raster in Jpeg)) =
+    Detectable.signature(0xff, 0xd8, 0xff)
