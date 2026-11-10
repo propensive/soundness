@@ -45,12 +45,16 @@ object Completion:
 // A single completion candidate at a requested position. `name` is the text to
 // insert; `kind` distinguishes methods, extensions, types, etc.; `signature` is
 // the member's type rendered as a Stenography `Syntax` (a method's full
-// parameter/result signature, a value's type, …).
+// parameter/result signature, a value's type, …); `qualified` is the owner-qualified
+// name of the member it completes, as a documentation key is written (`gossamer.Text#length`:
+// `#` after a class or trait, `.` after an object or package), absent for a keyword, a
+// local or a synthetic member.
 case class Completion
   ( name:          Text,
     kind:          Completion.Kind,
     signature:     Syntax,
-    documentation: Optional[Text] = Unset )
+    documentation: Optional[Text] = Unset,
+    qualified:     Optional[Text] = Unset )
 
 // The result of a completion request: `replace` is the source region the chosen
 // completion replaces (an `Offset`-mode `Span`), and `items` the candidates.

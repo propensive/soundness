@@ -43,6 +43,10 @@ import harlequin.Fragment
 import ambience.systems.javaBaseSystem
 import denominative.dysasymptotics.linearSize
 
+// A top-level definition, for the qualified name of a completion: its `$package` carrier is
+// its package.
+val topLevelProbe: Int = 1
+
 // A `Dynamic` type with a `Completable` companion, exercising the dynamic-completions route: its
 // valid member names are not symbols, so only the companion can offer them. The companion is
 // found from the receiver's type at the caret and loaded reflectively from this test module's
@@ -218,6 +222,61 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name)).stdlib
     .assert(_.has(t"map"))
+
+    test(m"a member completion carries its owner-qualified name"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
+      import highlighting.typecheckedScala
+
+      val source = t"val xs = List(1, 2, 3)\nval y = xs.lengthCompa"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil): completions =>
+        completions.items.filter(_.name == t"lengthCompare").map(_.qualified)
+    .assert(_.has(t"scala.collection.immutable.List#lengthCompare"))
+
+    test(m"an object member's qualified name uses a dot"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
+      import highlighting.typecheckedScala
+
+      val source = t"val y = List.emp"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil): completions =>
+        completions.items.filter(_.name == t"empty").map(_.qualified)
+    .assert(_.has(t"scala.collection.immutable.List.empty"))
+
+    test(m"an inherited member is qualified by the class which declares it"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
+      import highlighting.typecheckedScala
+
+      val source = t"val xs = List(1, 2, 3)\nval y = xs.isEmp"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil): completions =>
+        completions.items.filter(_.name == t"isEmpty").map(_.qualified)
+    .assert(_.all(_.let(_.ends(t"#isEmpty")).or(false)))
+
+    test(m"a top-level definition is qualified by its package"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
+      import highlighting.typecheckedScala
+
+      val source = t"val y = harlequin.topLev"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil): completions =>
+        completions.items.filter(_.name == t"topLevelProbe").map(_.qualified)
+    .assert(_.has(t"harlequin.topLevelProbe"))
+
+    test(m"a keyword has no qualified name"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
+      import highlighting.typecheckedScala
+
+      val source = t"val y = List(1).map(x => x); va"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil): completions =>
+        completions.items.filter(_.kind == prophesy.Completion.Kind.Keyword).map(_.qualified)
+    .assert(_.all(_.absent))
 
     test(m"a Dynamic receiver completes through its Completable companion"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
