@@ -750,20 +750,44 @@ object Xml extends Tag.Container
       // that failed to unify; a `Decodable` instance is `Pure`, so the SAM
       // closing over the summoned capabilities contributes nothing to its
       // capture set.
+      // The type's annotations — which fields are attributes, which stay out of the namespace,
+      // the namespace itself and the fields' wire names — are per-derivation constants, resolved
+      // once here and closed over by the decoder, not recomputed on every decode call (the
+      // disjunction's map hoist). Fields marked `@attribute` are read from the element's
+      // attributes rather than its child elements, mirroring the encoder. A namespaced type's
+      // fields are matched by resolved name, so a document may use any prefix for the namespace;
+      // an unqualified field, or a type with no namespace, matches the raw label.
+      val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
+      val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
+
+      val namespace: Optional[BaseText] = namespaceOf[derivation].let: (uri, qualified) =>
+        if qualified then uri else Unset
+
+      // `@name[Xml]` / bare `@name` renames: field name -> element/attribute name on the wire.
+      // Read back the same way they are written.
+      val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
+
       xml =>
-        decodeElement[derivation](xml)
+        decodeElement[derivation](xml, attributeFields, unqualifiedFields, namespace, renames)
           ( using infer[ProductReflection[derivation]],
                   infer[Foci[Xml.Focus]],
                   infer[Tactic[Xml.Error]] )
 
     private inline def decodeElement[derivation <: Product]
-      ( xml: Xml )
+      ( xml:               Xml,
+        attributeFields:   Set[BaseText],
+        unqualifiedFields: Set[BaseText],
+        namespace:         Optional[BaseText],
+        renames:           Map[BaseText, BaseText] )
       ( using ProductReflection[derivation], Foci[Xml.Focus], Tactic[Xml.Error] )
     :   derivation =
 
       xml match
-        case e: Element           => buildWith[derivation](e)
-        case Fragment(e: Element) => buildWith[derivation](e)
+        case e: Element =>
+          buildWith[derivation](e, attributeFields, unqualifiedFields, namespace, renames)
+
+        case Fragment(e: Element) =>
+          buildWith[derivation](e, attributeFields, unqualifiedFields, namespace, renames)
 
         case _ =>
           // Wrong-shape input (including the `Absent` sentinel an
@@ -782,7 +806,13 @@ object Xml extends Tag.Container
 
             case _ =>
               raise(Xml.Error(Reason.AbsentProduct(typeName)))
-              buildWith[derivation](Element(t"", Attributes.empty, Array.empty))
+
+              buildWith[derivation]
+                ( Element(t"", Attributes.empty, Array.empty),
+                  attributeFields,
+                  unqualifiedFields,
+                  namespace,
+                  renames )
 
     // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
     // plain method: the argument buffer must not be allocated inside an inline expansion,
@@ -811,42 +841,22 @@ object Xml extends Tag.Container
 
         Xml.Parsable.assemble[derivation](reflection, Array.freeze(arguments))
 
-    private inline def buildWith[derivation <: Product: ProductReflection]
-      ( element: Element )
-      ( using foci: Foci[Xml.Focus], tactic: Tactic[Xml.Error] )
-    :   derivation =
+    // The plain methods below hold the per-field decoding logic, NOT part of the inline
+    // expansion: a derivation's per-field lambda is expanded once per field at every summon
+    // site, so a body written there is multiplied by every field of every derived type in a
+    // module (jacinta's `decodeField`). What stays inline is each field's own `decoded` call.
 
-      // Fields marked `@attribute` are read from the element's attributes
-      // rather than its child elements, mirroring the encoder.
-      val attributeFields: Map[BaseText, Set[attribute]] = fieldAnnotations[derivation, attribute]
+    // Indexes the element's children by raw label, by local name and — for a namespaced type —
+    // by local name among the children in the namespace, each keeping the first child seen,
+    // into the caller's maps.
+    private def indexChildren
+      ( element:            Element,
+        namespace:          Optional[BaseText],
+        children:           scm.HashMap[String, Element],
+        localChildren:      scm.HashMap[String, Element],
+        namespacedChildren: scm.HashMap[String, Element] )
+    :   Unit =
 
-      val unqualifiedFields: Map[BaseText, Set[unqualified]] =
-        fieldAnnotations[derivation, unqualified]
-
-      // A namespaced type's fields are matched by resolved name, so a document may use any
-      // prefix for the namespace; an unqualified field, or a type with no namespace, matches
-      // the raw label.
-      val namespace: Optional[BaseText] = namespaceOf[derivation].let: (uri, qualified) =>
-        if qualified then uri else Unset
-
-      def qualifiedField(fieldLabel: BaseText): Boolean =
-        namespace.present && !unqualifiedFields.defines(fieldLabel)
-
-      // A type with no namespace of its own has no opinion about prefixes, so a field matches
-      // a child by raw label or, failing that, by local name
-      def matches(child: Element, fieldLabel: BaseText, wireName: BaseText): Boolean =
-        if qualifiedField(fieldLabel) then child.qualified == Xml.Name(namespace, wireName)
-        else child.label == wireName || child.localName == wireName
-
-      // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
-      // name on the wire. Read back the same way they are written.
-      val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
-
-      // The first child by raw label, and — for a namespaced type — by local name among the
-      // children in the namespace
-      val children: scm.HashMap[String, Element] = scm.HashMap.empty
-      val localChildren: scm.HashMap[String, Element] = scm.HashMap.empty
-      val namespacedChildren: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
 
       while i < element.children.length do
@@ -866,6 +876,96 @@ object Xml extends Tag.Container
 
         i += 1
 
+    // Whether a field's codec gathers every same-label child (a collection field). The `AnyRef`
+    // cast (rather than `asMatchable`) sidesteps the capture-refined singleton type the checker
+    // would otherwise require of the scrutinee.
+    private[xylophone] def repeatable(codec: Any): Boolean = codec.asInstanceOf[AnyRef] match
+      case marked: Repeatable => marked.repeatable
+      case _                  => false
+
+    // The input a field's decoder reads. An `@attribute` field reads the matching attribute as
+    // an `Xml.Text`. A repeatable (collection) field gathers *all* same-label children, in
+    // document order, into a synthetic `Fragment` for the collection decoder — stratiform's
+    // synthetic-document idea; zero matches decode the empty fragment (an empty collection), so
+    // the declared default is never consulted, exactly as on the direct path. Any other field
+    // reads its first matching child: by resolved name for a qualified field of a namespaced
+    // type, so a document may use any prefix; else by raw label or, failing that, local name,
+    // since a type with no namespace of its own has no opinion about prefixes. `Unset` is a
+    // missing attribute or child, which the caller resolves to the declared default or the
+    // `Absent` sentinel.
+    private def locate
+      ( element:            Element,
+        children:           scm.HashMap[String, Element],
+        localChildren:      scm.HashMap[String, Element],
+        namespacedChildren: scm.HashMap[String, Element],
+        wireName:           BaseText,
+        attribute:          Boolean,
+        qualified:          Boolean,
+        repeated:           Boolean,
+        namespace:          Optional[BaseText] )
+    :   Optional[Xml] =
+
+      // `lay`, not `let`: `let` takes its lambda as a value, which is a closure allocated on every
+      // decode of every attribute field; `lay` is inline.
+      if attribute then element.attributes(wireName).lay(Unset: Optional[Xml]): text => Text(text)
+      else if repeated then
+        val gathered: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+        var child = 0
+
+        while child < element.children.length do
+          element.children.readUnchecked(child) match
+            case node: Element =>
+              val matched =
+                if qualified then node.qualified == Xml.Name(namespace, wireName)
+                else node.label == wireName || node.localName == wireName
+
+              if matched then gathered += node
+
+            case _ =>
+              ()
+
+          child += 1
+
+        Fragment(gathered.toSeq*)
+      else
+        // `get` and `match`, not `orElse`: its by-name alternative is a closure the JIT does not
+        // reliably eliminate here, and this runs once per field per decode.
+        val key: String = wireName.s
+
+        val found: Option[Element] =
+          if qualified then namespacedChildren.get(key)
+          else children.get(key) match
+            case None  => localChildren.get(key)
+            case found => found
+
+        found match
+          case Some(child) => child
+          case None        => Unset
+
+    // The focus of a field's decode. Each outer `focus` runs *after* the inner one, so `prior`
+    // is extended at the root side (`/outer/inner`), not the leaf side `XPath#element` would use.
+    private def slotFocus(prior: Optional[Xml.Focus], wireName: BaseText): Xml.Focus =
+      Xml.Focus(prior.lay(XPath())(_.path).prepend(wireName, 1))
+
+    private inline def buildWith[derivation <: Product: ProductReflection]
+      ( element:           Element,
+        attributeFields:   Set[BaseText],
+        unqualifiedFields: Set[BaseText],
+        namespace:         Optional[BaseText],
+        renames:           Map[BaseText, BaseText] )
+      ( using foci: Foci[Xml.Focus], tactic: Tactic[Xml.Error] )
+    :   derivation =
+
+      def qualifiedField(fieldLabel: BaseText): Boolean =
+        namespace.present && !unqualifiedFields.has(fieldLabel)
+
+      // The first child by raw label, and — for a namespaced type — by local name among the
+      // children in the namespace
+      val children: scm.HashMap[String, Element] = scm.HashMap.empty
+      val localChildren: scm.HashMap[String, Element] = scm.HashMap.empty
+      val namespacedChildren: scm.HashMap[String, Element] = scm.HashMap.empty
+      indexChildren(element, namespace, children, localChildren, namespacedChildren)
+
       // A SINGLE field traversal serving both modes, branching on `foci.active` per field. One
       // traversal is load-bearing: every wisteria traversal re-summons each field's decoder
       // (`summonInline`), recursively deriving nested types, so traversals multiply
@@ -879,70 +979,41 @@ object Xml extends Tag.Container
       // failure scan are needed.
       val active = foci.active
 
+      // The per-field code a derivation expands to is a handful of calls into the plain methods
+      // above: the field's input is found by `locate`, its focus by `slotFocus`. Only the
+      // decoder's own call stays inline, one per field, so each field's decoder is dispatched
+      // from its own call site. (Every test that summons a derived codec expands this lambda
+      // once per field, so what sits here is multiplied by the number of fields in a module.)
       val slots: Array[Venture[Any]]^{} =
         contexts[derivation]()[Venture[Any]]: [field] =>
           context =>
             val fieldLabel: BaseText = wisteria.label[BaseText]
             val wireName: BaseText = renames(fieldLabel).or(fieldLabel)
+            val isAttribute: Boolean = attributeFields.has(fieldLabel)
+            val qualified: Boolean = qualifiedField(fieldLabel)
+            val repeated: Boolean = repeatable(context)
 
+            // A missing field falls back to the case-class declared default (Wisteria's
+            // `default`); if absent, the `Absent` sentinel goes to the field's decoder.
+            // Primitives detect it and `raise + continue`; nested conjunctions detect it and
+            // may further short-circuit via a user-supplied `Default[Nested]`.
             def decodeNow(): field =
-              if attributeFields.defines(fieldLabel) then
-                // `@attribute` field: decode from the matching attribute as a
-                // `Xml.Text`; a missing attribute falls back to the declared
-                // default, else the `Absent` sentinel (raise + continue).
-                element.attributes(wireName).lay(default.or(context.decoded(Absent))): text =>
-                  context.decoded(Text(text))
-              else
-                // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
-                // capture-refined singleton type the checker would otherwise
-                // require of the scrutinee.
-                context.asInstanceOf[AnyRef] match
-                  case marked: Repeatable if marked.repeatable =>
-                    // A repeatable (collection) field gathers *all* same-label
-                    // children, in document order, into a synthetic `Fragment`
-                    // for the collection decoder — stratiform's synthetic-
-                    // document idea. Zero matches decode the empty fragment
-                    // (an empty collection): the declared default is never
-                    // consulted, exactly as on the direct path.
-                    val gathered: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
-                    var child = 0
+              locate
+                ( element,
+                  children,
+                  localChildren,
+                  namespacedChildren,
+                  wireName,
+                  isAttribute,
+                  qualified,
+                  repeated,
+                  namespace )
 
-                    while child < element.children.length do
-                      element.children.readUnchecked(child) match
-                        case node: Element =>
-                          if matches(node, fieldLabel, wireName) then gathered += node
-
-                        case _ =>
-                          ()
-
-                      child += 1
-
-                    context.decoded(Fragment(gathered.toSeq*))
-
-                  case _ =>
-                    val found =
-                      if qualifiedField(fieldLabel) then namespacedChildren.get(wireName.s)
-                      else children.get(wireName.s).orElse(localChildren.get(wireName.s))
-
-                    found match
-                      case Some(child) => context.decoded(child)
-                      // Missing field: fall back to the case-class declared
-                      // default (Wisteria's `default`); if absent, hand the
-                      // `Absent` sentinel to the field's decoder. Primitives
-                      // detect it and `raise + continue`; nested conjunctions
-                      // detect it and may further short-circuit via a
-                      // user-supplied `Default[Nested]`.
-                      case None        => default.or(context.decoded(Absent))
+              . lay(default.or(context.decoded(Absent))): input => context.decoded(input)
 
             if !active then Venture(decodeNow())
             else
-              focus({
-                // Each outer `focus` runs *after* the inner one, so we
-                // extend `prior` at the root side (`/outer/inner`), not the
-                // leaf side that `XPath#element` would use.
-                val base = prior.let(_.path).or(XPath())
-                Xml.Focus(base.prepend(wireName, 1))
-              }):
+              focus(slotFocus(prior, wireName)):
                 val before = foci.length
                 val value: field = decodeNow()
                 if foci.length > before then Venture.failed else Venture(value)
@@ -1070,67 +1141,78 @@ object Xml extends Tag.Container
         case node: Node =>
           Element(fieldName, Attributes.empty, Array(node), scope.or(Scope.empty))
 
+    // Puts a field's encoded value into the element. An `@attribute` field becomes an attribute
+    // carrying the encoded leaf's text — unless the leaf is an absent `Optional`, whose empty
+    // `Fragment` yields no attribute at all. A repeatable (collection) field encodes as repeated
+    // child elements — one per collection element, each relabelled with the field's wire name —
+    // the exact inverse of the decoder gathering all same-label children. Every other field
+    // becomes one child element via `wrap`.
+    private def place
+      ( encoded:    Xml,
+        wireName:   BaseText,
+        attribute:  Boolean,
+        repeated:   Boolean,
+        scope:      Optional[Scope],
+        attributes: scm.ArrayBuffer[(BaseText, BaseText)],
+        children:   scm.ArrayBuffer[Node] )
+    :   Unit =
+
+      if attribute then
+        encoded match
+          case Fragment() => ()
+          case _          => attributes += wireName -> textOf(encoded).or(t"")
+      else if repeated then
+        encoded match
+          case Fragment(nodes*) => nodes.each: node => children += wrap(wireName, node, scope)
+          case other            => children += wrap(wireName, other, scope)
+      else children += wrap(wireName, encoded, scope)
+
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
 
+      // Per-derivation constants, resolved once here and closed over by the encoder rather than
+      // recomputed on every encode call: the attribute and unqualified fields, the namespace,
+      // and the `@name[Xml]` / bare `@name` renames (field name -> element/attribute name on the
+      // wire).
+      val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
+      val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
+      val namespaced: Optional[(BaseText, Boolean)] = namespaceOf[derivation]
+
+      // The element's scope binds its namespace as the default; a field's element in no
+      // namespace, under a namespaced type, undeclares it
+      val scope: Scope = namespaced.lay(Scope.empty): (uri, _) => Scope(t"" -> uri)
+      val undeclaring: Scope = Scope(t"" -> t"")
+      val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
+
+      // The scope a field's element takes: under a namespaced type, an `@unqualified` field's
+      // element — or every field's, when the type's namespace is itself unqualified — is in no
+      // namespace, and undeclares the default; otherwise the field's own encoder's scope stands
+      val fieldScope: Optional[Scope] = namespaced.let: (_, qualified) =>
+        if qualified then Unset else undeclaring
+
+      val unqualifiedScope: Optional[Scope] = namespaced.let(_ => undeclaring)
+
       value =>
-        val attributeFields: Map[BaseText, Set[attribute]] = fieldAnnotations[derivation, attribute]
-
-        val unqualifiedFields: Map[BaseText, Set[unqualified]] =
-          fieldAnnotations[derivation, unqualified]
-
-        val namespaced: Optional[(BaseText, Boolean)] = namespaceOf[derivation]
-
-        // The element's scope binds its namespace as the default; a field's element in no
-        // namespace, under a namespaced type, undeclares it
-        val scope: Scope = namespaced.lay(Scope.empty): (uri, _) => Scope(t"" -> uri)
-        val undeclaring: Scope = Scope(t"" -> t"")
-
-        // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
-        // name on the wire.
-        val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
-
         val attributes: scm.ArrayBuffer[(BaseText, BaseText)] = scm.ArrayBuffer()
         val children: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
 
+        // The per-field code a derivation expands to is one call into `place`, a plain method
+        // (see `DecodableDerivation`'s note on the per-field lambda); only the encoder's own
+        // call stays inline, one per field.
         fields(value): [field] =>
           field =>
             val fieldLabel: BaseText = wisteria.label[BaseText]
             val wireName: BaseText = renames(fieldLabel).or(fieldLabel)
             val encoder: field is Encodable in Xml = wisteria.contextual
-            val encoded: Xml = encoder.encoded(field)
 
-            val fieldScope: Optional[Scope] = namespaced.let: (_, qualified) =>
-              if !qualified || unqualifiedFields.defines(fieldLabel) then undeclaring else Unset
-
-            // `@attribute` fields become attributes carrying the encoded leaf's
-            // text — unless the leaf is an absent `Optional`, whose empty
-            // `Fragment` yields no attribute at all; every other field becomes
-            // a child element via `wrap`.
-            if attributeFields.defines(fieldLabel) then
-              encoded match
-                case Fragment() => ()
-                case _          => attributes += wireName -> textOf(encoded).or(t"")
-            else
-              // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
-              // capture-refined singleton type the checker would otherwise
-              // require of the scrutinee.
-              encoder.asInstanceOf[AnyRef] match
-                case marked: Repeatable if marked.repeatable =>
-                  // A repeatable (collection) field encodes as repeated
-                  // child elements — one per collection element, each
-                  // relabelled with the field's wire name — the exact
-                  // inverse of the decoder gathering all same-label
-                  // children.
-                  encoded match
-                    case Fragment(nodes*) =>
-                      nodes.each: node => children += wrap(wireName, node, fieldScope)
-
-                    case other =>
-                      children += wrap(wireName, other, fieldScope)
-
-                case _ =>
-                  children += wrap(wireName, encoded, fieldScope)
+            place
+              ( encoder.encoded(field),
+                wireName,
+                attributeFields.has(fieldLabel),
+                DecodableDerivation.repeatable(encoder),
+                if unqualifiedFields.has(fieldLabel) then unqualifiedScope else fieldScope,
+                attributes,
+                children )
 
         Element
           ( typeName,
@@ -1139,12 +1221,12 @@ object Xml extends Tag.Container
             scope )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
+      // `@name[Xml]` / bare `@name` variant renames: variant name -> element label, read back
+      // the same way by the decoder. A per-derivation constant, resolved once here.
+      val variantNames: Map[BaseText, BaseText] = variantRelabelling[derivation, Xml]
+
       value =>
         val discriminable = infer[derivation is Discriminable in Xml]
-
-        // `@name[Xml]` / bare `@name` variant renames: variant name -> element
-        // label, read back the same way by the decoder.
-        val variantNames: Map[BaseText, BaseText] = variantRelabelling[derivation, Xml]
 
         variant(value): [variant <: derivation] =>
           value =>
@@ -2010,8 +2092,7 @@ object Xml extends Tag.Container
 
         Xml.Parsable.product[derivation](
           { () =>
-            val attributeFields: Map[BaseText, Set[attribute]] =
-              fieldAnnotations[derivation, attribute]
+            val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
 
             // `@name[Xml]` / bare `@name` renames: field name ->
             // element/attribute name on the wire, read back the same way
@@ -2025,7 +2106,7 @@ object Xml extends Tag.Container
                 ( renames(fieldLabel).or(fieldLabel).s,
                   context: Xml.Parsing,
                   default[Optional[field]]: Any,
-                  attributeFields.defines(fieldLabel) )
+                  attributeFields.has(fieldLabel) )
           },
           fallback,
           values => Xml.Parsable.assemble(reflection, values))
@@ -2073,12 +2154,7 @@ object Xml extends Tag.Container
       (namespaced.namespace, namespaced.qualified)
 
     case _ =>
-      summonInline[derivation is Annotated by xmlns] match
-        case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
-          fields.annotations.head.let: annotation => (annotation.uri, annotation.qualified)
-
-        case _ =>
-          Unset
+      typeAnnotation[derivation, xmlns].let: annotation => (annotation.uri, annotation.qualified)
 
   case class XmlAttribute(label: BaseText, elements: Set[BaseText], global: Boolean):
     type Self <: Label

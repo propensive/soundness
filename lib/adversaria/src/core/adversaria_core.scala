@@ -62,17 +62,25 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 // `@name` (i.e. `@name[Any]`) default on the same field. Fields without a `@name`
 // are absent (callers fall back to the field's own name). Used by each format's
 // derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
+//
+// Resolved when the derivation expands, not when it runs: a rename written as a literal is a
+// string constant in the generated code, so the derivation neither searches for an `Annotated`
+// instance nor rebuilds the `name` annotations it then reads back.
 inline def relabelling[self, format]: Map[Text, Text] =
-  // The `lay` default is unreachable — `fieldAnnotations` keeps only non-nil sets — but it
-  // coincides with the callers' documented fallback: the field's own name.
-  val general:  Map[Text, Text] =
-    fieldAnnotations[self, name[Any]].remap: (field, set) => field -> set.head.let(_.name).or(field)
+  ${adversaria.internal.relabelling[self, format]}
 
-  val specific: Map[Text, Text] =
-    fieldAnnotations[self, name[format]].remap: (field, set) =>
-      field -> set.head.let(_.name).or(field)
+// The names of the fields of `self` which carry an `annotation`, resolved when the derivation
+// expands. For a derivation that only needs to know *which* fields are marked (`@attribute`,
+// `@unqualified`, …), this is the cheap form of `fieldAnnotations`: a literal `Set` of field
+// names, with no annotation instance constructed.
+inline def annotatedFields[self, annotation <: StaticAnnotation]: Set[Text] =
+  ${adversaria.internal.annotatedFields[self, annotation]}
 
-  general + specific
+// The `annotation` on the type `self` itself — `@xmlns("urn:x") case class Order(…)` — rebuilt
+// once where the derivation expands, or `Unset` if the type does not carry one. The last one
+// declared is taken, as `Annotated`'s `annotations.head` would.
+inline def typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation] =
+  ${adversaria.internal.typeAnnotation[self, annotation]}
 
 // Like `fieldAnnotations`, but reads the `annotation`-typed annotations on the
 // subtypes (enum cases / sealed variants) of `self`, keyed by variant name,
@@ -88,13 +96,4 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 // `relabelling` but for `@name`-annotated enum cases / sealed variants. Maps each
 // renamed variant's name to its serialized discriminator.
 inline def variantRelabelling[self, format]: Map[Text, Text] =
-  // As in `relabelling`, the `lay` default is unreachable but semantically apt.
-  val general:  Map[Text, Text] =
-    subtypeAnnotations[self, name[Any]].remap: (variant, set) =>
-      variant -> set.head.let(_.name).or(variant)
-
-  val specific: Map[Text, Text] =
-    subtypeAnnotations[self, name[format]].remap: (variant, set) =>
-      variant -> set.head.let(_.name).or(variant)
-
-  general + specific
+  ${adversaria.internal.variantRelabelling[self, format]}
