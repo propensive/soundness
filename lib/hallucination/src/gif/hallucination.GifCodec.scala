@@ -40,7 +40,7 @@ import denominative.*
 import rudiments.*
 import rudiments.Scribe.apply
 import vacuous.*
-import Binary.*
+import zephyrine.*
 import Raster.Error.Reason
 
 // A pure-Scala GIF codec. Decoding reads GIF87a and GIF89a, with global and local colour
@@ -51,12 +51,12 @@ import Raster.Error.Reason
 private[hallucination] object GifCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
-      if data.length < 13 || u8(data, 0) != 'G' || u8(data, 1) != 'I' || u8(data, 2) != 'F'
+      if data.length < 13 || data.u8(0) != 'G' || data.u8(1) != 'I' || data.u8(2) != 'F'
       then abort(Raster.Error(Gif(), Reason.BadSignature))
 
-      val width = u16le(data, 6)
-      val height = u16le(data, 8)
-      val packed = u8(data, 10)
+      val width = data.u16(6)
+      val height = data.u16(8)
+      val packed = data.u8(10)
 
       var position = 13
 
@@ -73,30 +73,30 @@ private[hallucination] object GifCodec:
       val screen = new scala.Array[Long](width*height)
 
       def skipBlocks(): Unit =
-        while u8(data, position) != 0 do position += u8(data, position) + 1
+        while data.u8(position) != 0 do position += data.u8(position) + 1
         position += 1
 
       var finished = false
 
       while !finished do
-        u8(data, position) match
+        data.u8(position) match
           case 0x21 =>
-            val label = u8(data, position + 1)
+            val label = data.u8(position + 1)
             position += 2
 
             if label == 0xf9 then
-              val size = u8(data, position)
-              if (u8(data, position + 1)&1) == 1 then transparentIndex = u8(data, position + 4)
+              val size = data.u8(position)
+              if (data.u8(position + 1)&1) == 1 then transparentIndex = data.u8(position + 4)
               position += size + 1
 
             skipBlocks()
 
           case 0x2c =>
-            val left = u16le(data, position + 1)
-            val top = u16le(data, position + 3)
-            val frameWidth = u16le(data, position + 5)
-            val frameHeight = u16le(data, position + 7)
-            val framePacked = u8(data, position + 9)
+            val left = data.u16(position + 1)
+            val top = data.u16(position + 3)
+            val frameWidth = data.u16(position + 5)
+            val frameHeight = data.u16(position + 7)
+            val framePacked = data.u8(position + 9)
             position += 10
 
             val palette: Array[Int]^{} =
@@ -109,13 +109,13 @@ private[hallucination] object GifCodec:
                 global
 
             val interlaced = (framePacked&0x40) != 0
-            val minimum = u8(data, position)
+            val minimum = data.u8(position)
             position += 1
 
             val compressed = scm.ArrayBuilder.ofByte()
 
-            while u8(data, position) != 0 do
-              val size = u8(data, position)
+            while data.u8(position) != 0 do
+              val size = data.u8(position)
               var index = 0
 
               while index < size do
@@ -191,9 +191,9 @@ private[hallucination] object GifCodec:
 
   private def readTable(data: Data, position: Int, size: Int): Array[Int]^{} =
     Array.tabulate(size): index =>
-      u8(data, position + index*3) << 16 |
-        u8(data, position + index*3 + 1) << 8 |
-        u8(data, position + index*3 + 2)
+      data.u8(position + index*3) << 16 |
+        data.u8(position + index*3 + 1) << 8 |
+        data.u8(position + index*3 + 2)
 
   def encode(raster: Raster): Data =
     val width = raster.width

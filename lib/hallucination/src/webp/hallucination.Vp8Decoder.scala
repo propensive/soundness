@@ -36,6 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
+import zephyrine.*
 import Raster.Error.Reason
 import Vp8Tables.*
 import rudiments.foreach
@@ -129,10 +130,7 @@ private[hallucination] object Vp8Decoder:
 
     private var macroblocks: scala.Array[Macroblock^]^ = scala.Array()
 
-    private inline def u8(index: Int): Int = data.readUnchecked(index) & 0xff
-
-    private def u16le(index: Int): Int = u8(index) | (u8(index + 1) << 8)
-    private def u24le(index: Int): Int = u16le(index) | (u8(index + 2) << 16)
+    private def u24le(index: Int): Int = data.u16(index) | (data.u8(index + 2) << 16)
 
     update def run()(using Tactic[Raster.Error]): Vp8Frame =
       readFrameHeader()
@@ -195,13 +193,13 @@ private[hallucination] object Vp8Decoder:
       if (tag & 1) != 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
       val firstPartitionSize = tag >> 5
 
-      if u8(position) != 0x9d || u8(position + 1) != 0x01 || u8(position + 2) != 0x2a
+      if data.u8(position) != 0x9d || data.u8(position + 1) != 0x01 || data.u8(position + 2) != 0x2a
       then abort(Raster.Error(Webp(), Reason.BadSignature))
 
       position += 3
 
-      width = u16le(position) & 0x3fff; position += 2
-      height = u16le(position) & 0x3fff; position += 2
+      width = data.u16(position) & 0x3fff; position += 2
+      height = data.u16(position) & 0x3fff; position += 2
 
       if width == 0 || height == 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 

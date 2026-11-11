@@ -93,7 +93,7 @@ object Transport:
       writer.data
 
     def unseal(sequence: Int, head: Data, read: Int => Data): Optional[Data] =
-      read(int32(head))
+      read(head.i32be(0))
 
   // RFC 5647 as OpenSSH does it: the length is associated data, in the clear, the nonce is the
   // derived IV whose last eight bytes count invocations, and the tag follows the ciphertext. The
@@ -102,7 +102,7 @@ object Transport:
   // state.
   private class Gcm(aead: Crypto.Aead, key: Data, iv: Data, base: Int) extends Codec:
     private val fixed: Data = iv.keep(4)
-    private val start: Long = int64(iv.skip(4))
+    private val start: Long = iv.u64be(4)
     def blockSize: Int = 16
 
     private def nonce(sequence: Int): Data =
@@ -113,7 +113,7 @@ object Transport:
       join(head, aead.seal(key, nonce(sequence), head, body))
 
     def unseal(sequence: Int, head: Data, read: Int => Data): Optional[Data] =
-      aead.unseal(key, nonce(sequence), head, read(int32(head) + 16))
+      aead.unseal(key, nonce(sequence), head, read(head.i32be(0) + 16))
 
   // OpenSSH's `chacha20-poly1305@openssh.com` (PROTOCOL.chacha20poly1305): the second half of the
   // 64-byte key encrypts the length under block zero of its keystream, the first half encrypts
@@ -137,7 +137,7 @@ object Transport:
 
     def unseal(sequence: Int, head: Data, read: Int => Data): Optional[Data] =
       val n = nonce(sequence)
-      val length = int32(cipher.xor(lengthKey, n, 0, head))
+      val length = cipher.xor(lengthKey, n, 0, head).i32be(0)
 
       if length < 0 || length > Wire.Limit then Unset else
         val rest = read(length + 16)
@@ -146,15 +146,6 @@ object Transport:
         val polyKey = cipher.xor(main, n, 0, Array.fill[Byte](32)(0))
         val expected = Poly1305.mac(polyKey, join(head, encrypted))
         if Array.same(expected, tag) then cipher.xor(main, n, 1, encrypted) else Unset
-
-  private def int32(data: Data): Int =
-    val bytes = Array.unsafeJvm(data)
-
-    ((bytes(0) & 0xff) << 24) | ((bytes(1) & 0xff) << 16) | ((bytes(2) & 0xff) << 8) |
-      (bytes(3) & 0xff)
-
-  private def int64(data: Data): Long =
-    (int32(data.keep(4)).toLong << 32) | (int32(data.skip(4)).toLong & 0xffffffffL)
 
   private def be32(value: Int): Data =
     val writer = Wire.Writer()

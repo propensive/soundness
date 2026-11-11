@@ -353,30 +353,6 @@ object Zip:
       array(offset + i) = ((value >> (i*8)) & 0xff).toByte
       i += 1
 
-  // Little-endian readers from immutable data.
-  private[zeppelin] def u16(data: Data, offset: Int): Int =
-    (data.readUnchecked(offset) & 0xff) | ((data.readUnchecked(offset + 1) & 0xff) << 8)
-
-  private[zeppelin] def u32(data: Data, offset: Int): Long =
-    var value = 0L
-    var i = 0
-
-    while i < 4 do
-      value |= (data.readUnchecked(offset + i) & 0xffL) << (i*8)
-      i += 1
-
-    value
-
-  private[zeppelin] def u64(data: Data, offset: Int): Long =
-    var value = 0L
-    var i = 0
-
-    while i < 8 do
-      value |= (data.readUnchecked(offset + i) & 0xffL) << (i*8)
-      i += 1
-
-    value
-
   // The DOS date and time of an instant, in UTC: a ZIP timestamp records no zone, and UTC keeps
   // an archive the same wherever it is written. The civil date is Hinnant's `civil_from_days`;
   // an instant before 1980, which DOS cannot represent, is recorded as 1980's first second.

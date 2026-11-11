@@ -779,6 +779,51 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         zephyrine.Words.load(bytes(9, 9, 1, 2, 3, 4, 5, 6, 7, 8), 2)
       . assert(_ == 0x0807060504030201L)
 
+    suite(m"Integer loads from data"):
+      // f1 f2 f3 … fc: every byte has its high bit set, so a stray sign extension shows.
+      val sample: Data = Data.fill(12)(index => (index + 0xf1).toByte)
+
+      test(m"u8 loads an unsigned byte"):
+        sample.u8(2)
+      . assert(_ == 0xf3)
+
+      test(m"u16 is little-endian"):
+        sample.u16(0)
+      . assert(_ == 0xf2f1)
+
+      test(m"u16be is big-endian"):
+        sample.u16be(0)
+      . assert(_ == 0xf1f2)
+
+      test(m"u32 is little-endian and unsigned"):
+        sample.u32(1)
+      . assert(_ == 0xf5f4f3f2L)
+
+      test(m"i32 is the same word, signed"):
+        sample.i32(1)
+      . assert(_ == 0xf5f4f3f2)
+
+      test(m"u32be is big-endian and unsigned"):
+        sample.u32be(1)
+      . assert(_ == 0xf2f3f4f5L)
+
+      test(m"i32be is the same word, signed"):
+        sample.i32be(1)
+      . assert(_ == 0xf2f3f4f5)
+
+      test(m"u64 is little-endian"):
+        sample.u64(3)
+      . assert(_ == 0xfbfaf9f8f7f6f5f4L)
+
+      test(m"u64be is big-endian"):
+        sample.u64be(3)
+      . assert(_ == 0xf4f5f6f7f8f9fafbL)
+
+      test(m"u64 agrees with the SWAR word load"):
+        val raw = scala.Array.tabulate[Byte](12)(index => (index + 0xf1).toByte)
+        sample.u64(4) == zephyrine.Words.load(raw, 4)
+      . assert(_ == true)
+
     suite(m"Region tests"):
       def sample(size: Int): scala.Array[Byte]^ =
         val buffer = Array.scratch[Byte](size)

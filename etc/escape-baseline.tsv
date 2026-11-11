@@ -236,6 +236,7 @@ lib/galilei/src/core/galilei.Subtree.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Windows.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei_core.scala	0	6	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei.Ram.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+lib/galilei/src/jvm/galilei.SegmentMapped.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei_jvm.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/native/galilei_native.scala	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/test/galilei_test.scala	0	24	0	0	1	2	0	0	1	1	0	0	0	0	0	0	0
@@ -548,7 +549,7 @@ lib/susurration/src/core/susurration.Agent.scala	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/core/susurration.Channel.scala	0	0	7	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/core/susurration.KnownHosts.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/core/susurration.Session.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/susurration/src/core/susurration.Transport.scala	1	0	8	0	2	3	0	0	0	0	0	0	0	0	0	0	0
+lib/susurration/src/core/susurration.Transport.scala	1	0	8	0	2	2	0	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/core/susurration.Wire.scala	0	0	0	0	3	5	0	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/test/susurration_test.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/syndesis/src/core/syndesis.Mdns.scala	0	2	12	0	0	0	0	0	6	0	0	0	0	0	1	0	0
