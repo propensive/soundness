@@ -231,6 +231,7 @@ lib/galilei/src/core/galilei.Local.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.MacOs.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Platform.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Posix.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+lib/galilei/src/core/galilei.Published.scala	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Searchpaths.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Subtree.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Windows.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0

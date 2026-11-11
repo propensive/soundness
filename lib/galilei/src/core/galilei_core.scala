@@ -165,6 +165,40 @@ extension [plane: Filesystem](path: Path on plane)
     val mapping = backend.mapping(path)
     try lambda(mapping) finally mapping.unmap()
 
+  // Takes ownership of this name for the scope of `lambda` (issue #2472): an exclusive
+  // operating-system lock on the sibling `<name>.lock` is held throughout, so one process at
+  // a time -- and one scope within it -- can publish under the name. `Busy` if it is already
+  // owned. The `Owner` publishes each version of `record` by writing a temporary sibling and
+  // moving it over the name atomically; see `Published`.
+  def own[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
+    ( using backend: FilesystemBackend on plane, umask: Umask )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    def sibling(name: Text): Path on plane =
+      safely(path.parent).let(_.unsafeChild(name)(using Unsafe))
+      . or(abort(Io.Error(path, Operation.Open, Io.Error.Reason.Unsupported)))
+
+    val lock = sibling(t"${path.name}.lock")
+    val part = sibling(t".${path.name}.part")
+    val flags = List(OpenFlag.Write, OpenFlag.Create, OpenFlag.Lock)
+
+    backend.open(lock, flags, umask.mode(Umask.fileBits)): handle =>
+      lambda(Published.Publisher[record, plane](path, part, backend, umask))
+
+  // Maps the version of this name which is currently published, for the scope of `lambda`
+  // (issue #2472): the `Published` lends views of it, and moves on to a newer version when
+  // asked to `refresh`. No lock is taken, so a reader never delays the owner, nor the owner
+  // a reader. Whatever is mapped is unmapped when the scope ends.
+  def published[record](using erased void: Void)[result](lambda: Published[record]^ => result)
+    ( using backend: FilesystemBackend on plane )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    val reader = Published.Reader[record, plane](path, backend)
+    reader.open()
+    try lambda(reader) finally reader.close()
+
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
   :   Chain[Path on plane] raises Io.Error =

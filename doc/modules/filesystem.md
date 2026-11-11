@@ -379,6 +379,58 @@ place: a view goes on seeing the file it mapped, unchanged, for as long as it is
 is available on the JVM and on Scala Native; WASI has no memory mapping, and reports
 `Unsupported`.
 
+### Publishing versions
+
+A mapped file is a way for one program to share a large value with others, without a copy in
+each. The program which produces the value *owns* its name, and publishes one version after
+another under it. The programs which use it map whichever version is current, and move on to
+the next when they choose to. Nothing arbitrates between them, because two rules are kept:
+
+- A published file never changes. Each version is written beside the name and moved over it
+  in one step, so a reader which has mapped a version goes on seeing it, whole.
+- A name has one owner. `own` holds an operating-system lock on `<name>.lock` for as long as
+  its block runs, and a second owner, in this process or another, is refused with `Busy`.
+
+`own` gives an `Owner`, whose `publish` writes a value in whatever form its `Encodable in Data`
+instance gives, and returns the `Edition` it published:
+
+```scala fuel
+run
+##
+val edition = file.own[Text]: owner =>
+  owner.publish(t"first edition")
+
+Out.println(file.read[Text])
+```
+
+`published` gives a reader, a `Published`. Its `map` lends a `Mapped` view of the version it
+holds, and its `refresh` moves it to the version which the name now leads to, and says whether
+there was one:
+
+```scala fuel
+run
+##
+file.own[Text](_.publish(t"one"))
+
+file.published[Text]: reader =>
+  file.own[Text](_.publish(t"two"))
+  val before = reader.map(_.u8(0L))
+  val moved = reader.refresh()
+  val after = reader.map(_.u8(0L))
+  Out.println(t"$before, then $after")
+```
+
+A reader takes no lock, so it never delays the owner, and the owner never delays it. A view
+which is in use when a `refresh` happens, on this thread or another, stays valid until its
+block ends. Two editions are equal exactly when they are the same version of the file; they
+have no order.
+
+A reader keeps the version it has mapped in existence, even after a newer one has replaced it
+under the name, so a long-lived reader should `refresh` when it learns that there is something
+new, whether from a message or from [watching](#watching-for-changes) the name. The lock is
+advisory, and is dependable between cooperating programs on one machine's own filesystems,
+but not over a network filesystem.
+
 A `Slice` is a window onto part of a file, with an offset and an extent. It is opened for
 reading or writing like a file of its own. A region of a large file can therefore be streamed
 in or out without the rest being touched, and a write cannot stray outside its window.
