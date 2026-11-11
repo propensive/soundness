@@ -95,8 +95,27 @@ object Tels extends Tels2:
       fieldType:   Type,
       default:     Optional[Text],
       description: Optional[Text] = Unset,
-      key:         Boolean = false )
+      key:         Boolean = false,
+      indexes:     List[Index] = Nil )
   extends Member
+
+  // One secondary index over a repeatable field (§20, *Layout annotations*): an ordered tuple
+  // of static TELPs, each kept as it was written, since whether it is a TELP at all is a
+  // question for validation (E229). A storage-layout annotation for RaTEL: it constrains no
+  // document, and takes no part in subtyping.
+  case class Index(paths: List[Text]):
+    // Whether this is the same index as `that`: the same tuple of paths, each compared as a
+    // TELP where it is one -- so that two spellings of one path are one path -- and as text
+    // where it is not.
+    def same(that: Index): Boolean =
+      def identity(path: Text): Telp | Text = safely(Telp.parse(path)).or(path)
+      paths.map(identity) == that.paths.map(identity)
+
+  object Index:
+    // §20.3 field merge: `base`, followed by each of `layer` not already present.
+    def merge(base: List[Index], layer: List[Index]): List[Index] =
+      layer.fuse(base):
+        if state.exists(_.same(next)) then state else state + List(next)
 
   case class SelectRef
     ( required:   Polarity,
@@ -124,10 +143,16 @@ object Tels extends Tels2:
   // `patterns` holds the RE2 pattern constraints of §21.8, in declaration
   // order; each matches the entire value text and they AND-conjoin, so the
   // accepted language is the intersection of theirs.
+  // `width` and `intern` are the storage-layout annotations of §20 (*Layout annotations*),
+  // carried from the definition for a RaTEL writer: `width` asserts the byte count of every
+  // value's codec bytes, and `intern` asks for equal values to be stored once. Neither
+  // constrains a document, nor takes part in subtyping.
   case class Scalar
     ( validators: Array[Text]^{},
       encoding:   Optional[Text] = Unset,
-      patterns:   Array[Text]^{} = Array.empty )
+      patterns:   Array[Text]^{} = Array.empty,
+      width:      Optional[Int] = Unset,
+      intern:     Boolean = false )
   extends Type
 
   case object Flag extends Type
@@ -154,7 +179,12 @@ object Tels extends Tels2:
       validators:  Array[Text]^{},
       description: Optional[Text] = Unset,
       encoding:    Optional[Text] = Unset,
-      patterns:    Array[Text]^{} = Array.empty )
+      patterns:    Array[Text]^{} = Array.empty,
+      width:       Optional[Int] = Unset,
+      intern:      Boolean = false ):
+
+    // The scalar type which a reference to this definition denotes.
+    def scalar: Scalar = Scalar(validators, encoding, patterns, width, intern)
 
   // `excludes` is layer-only: the variant keywords a layer's `exclude`
   // children remove from the merged SelectDefinition (§20.3). A base-side
@@ -265,7 +295,13 @@ object Tels extends Tels2:
           // consumed as a flag rather than as a default value (§20.5).
           field("key",          Flag,       required = Loose),
           field("default",      stringRef,  required = Loose),
-          field("description",  stringRef,  required = Loose)),
+          field("description",  stringRef,  required = Loose),
+          // tels 2.1.0: appended, so that every earlier keyword index is unchanged.
+          field("index", Reference(t"Index"), required = Loose, repeatable = Loose)),
+
+        record("Index",
+          "A secondary index over a repeatable field: an ordered tuple of static paths.",
+          field("path", stringRef, repeatable = Loose)),
 
         record("SelectRef",
           "A select declaration at a member position, referencing a top-level SelectDefinition.",
@@ -288,14 +324,17 @@ object Tels extends Tels2:
           field("description", stringRef, required = Loose)),
 
         record("Scalar",
-          "A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding.",
+          "A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding and optional storage-layout annotations.",
           field("name", typeNameRef),
           // §21.8 made `validate` optional and added `pattern`; both members are
           // optional, and a scalar may declare neither (E224 is withdrawn).
           field("validate",    identifierRef, required = Loose, repeatable = Loose),
           field("pattern",     stringRef,     required = Loose, repeatable = Loose),
           field("encoding",    identifierRef, required = Loose),
-          field("description", stringRef, required = Loose)),
+          field("description", stringRef, required = Loose),
+          // tels 2.1.0: the storage-layout annotations, appended.
+          field("width",       stringRef, required = Loose),
+          field("intern",      Flag,      required = Loose)),
 
         record("Select",
           "A top-level select declaration: a named sum type.",
@@ -690,7 +729,10 @@ object Tels extends Tels2:
                          description = f.description.or(existing.description),
                          // §20.3: monotone OR — a layer may mark a field
                          // as key; nothing can clear it.
-                         key         = existing.key || f.key )
+                         key         = existing.key || f.key,
+                         // §20.3: a layer's indexes are appended, save any whose path
+                         // tuple is already present, by TELP identity.
+                         indexes     = Index.merge(existing.indexes, f.indexes) )
 
                   // §20.3 MergeStruct: the keyword matches a variant keyword
                   // contributed by an existing SelectRef — a collision (E205),
@@ -802,9 +844,17 @@ object Tels extends Tels2:
 
           val mergedPatterns = mergePatterns(out(existing).patterns, newDef.patterns)
 
+          // §20.3: `width` merges as `encoding` does -- set once, restated only as itself
+          // (E226) -- and `intern` as `key` does, by monotone OR.
+          val mergedWidth = out(existing).width.lay(newDef.width): base =>
+            newDef.width.let: layer =>
+              if layer != base then abort(Tel.Error(Reason.WidthConflict))
+
+            base
+
           out(existing) = ScalarDefinition(newDef.name, mergedValidators,
               newDef.description.or(out(existing).description), mergedEncoding,
-              mergedPatterns)
+              mergedPatterns, mergedWidth, out(existing).intern || newDef.intern)
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -1039,7 +1089,90 @@ object Tels extends Tels2:
           if variant.keyword == t"tel" then abort(Tel.Error(Reason.TelKeywordReserved))
           if !seen.add(variant.keyword) then abort(Tel.Error(Reason.DuplicateKeywordInStruct))
 
+      // The storage-layout annotations (§20, *Layout annotations*), on the composed schema,
+      // where a width and the encoding it needs may have come from different layers.
+      composed.scalars.each: scalar =>
+        scalar.width.let: width =>
+          // E227: a width describes the bytes of an encoding, so needs one.
+          val encoding = scalar.encoding.or(abort(Tel.Error(Reason.WidthWithoutEncoding)))
+
+          // E226: a standard codec of fixed width admits no other.
+          codecWidth(encoding).let: fixed =>
+            if fixed != width then abort(Tel.Error(Reason.WidthConflict))
+
+          // E231: values of a fixed width are stored in place, so are not interned.
+          if scalar.intern then abort(Tel.Error(Reason.WidthWithIntern))
+
       composed
+
+    // The fixed widths, in bytes, of the standard codecs (Standard Codecs §9); a codec which
+    // is not among them has no width to contradict.
+    private def codecWidth(encoding: Text): Optional[Int] = encoding.s match
+      case "u8" | "i8"            => 1
+      case "u16" | "i16"          => 2
+      case "u32" | "i32"          => 4
+      case "u64" | "i64" | "f64"  => 8
+      case "uuid"                 => 16
+      case "blake3-256"           => 32
+      case _                      => Unset
+
+    // E228–E230: the indexes of one field of the composed schema. The field must be
+    // effectively repeatable, and of a Struct or a Scalar type. Over a Scalar the only path
+    // is the root; over a Struct the root is not a path, and every path resolves statically.
+    private def checkIndexes(field: Field, schema: Tels): Unit raises Tel.Error =
+      if !field.indexes.nil then
+        if field.repeatable != Polarity.Loose then abort(Tel.Error(Reason.IndexNotApplicable))
+
+        val element: Optional[Struct] = structOf(field.fieldType, schema)
+
+        if element.absent && scalarOf(field.fieldType, schema).absent
+        then abort(Tel.Error(Reason.IndexNotApplicable))
+
+        field.indexes.each: index =>
+          index.paths.each: path =>
+            val telp = safely(Telp.parse(path)).or(abort(Tel.Error(Reason.IndexPathInvalid)))
+
+            element.lay(if !telp.components.nil then abort(Tel.Error(Reason.IndexNotApplicable))):
+              struct =>
+                if telp.components.nil then abort(Tel.Error(Reason.IndexPathInvalid))
+                resolveIndexPath(telp.components, struct, schema)
+
+    // The Struct a type resolves to through the composed namespace, or Unset.
+    private def structOf(t: Type, schema: Tels): Optional[Struct] = t match
+      case struct: Struct => struct
+
+      case Reference(name) =>
+        schema.records.seek(_.name == name).let: record =>
+          Struct(record.members, record.validators)
+
+      case _ => Unset
+
+    // E230: static resolution of an index path. Each component names a `Field` member --
+    // never a Select variant -- which is not repeatable; every component but the last
+    // resolves to a Struct, and the last to a Scalar. Members may be optional.
+    private def resolveIndexPath(components: List[Text], struct: Struct, schema: Tels)
+    :   Unit raises Tel.Error =
+
+      components match
+        case component :: rest =>
+          val field: Field =
+            struct.members.sweep { case field: Field if field.keyword == component => field }
+            . to[List] match
+              case field :: _ => field
+              case Nil        => abort(Tel.Error(Reason.IndexPathUnresolved))
+
+          if field.repeatable == Polarity.Loose then abort(Tel.Error(Reason.IndexPathUnresolved))
+
+          if rest.nil then
+            if scalarOf(field.fieldType, schema).absent
+            then abort(Tel.Error(Reason.IndexPathUnresolved))
+          else
+            val inner = structOf(field.fieldType, schema).or:
+              abort(Tel.Error(Reason.IndexPathUnresolved))
+
+            resolveIndexPath(rest, inner, schema)
+
+        case Nil => ()
 
     // §6 sigil validity: a single character that is not whitespace, not
     // a letter or digit, not a parenthetical symbol, and not `+` (which
@@ -1059,7 +1192,7 @@ object Tels extends Tels2:
       case Reference(name) =>
         schema.scalars.stdlib.find(_.name == name) match
           case scala.Some(definition) =>
-            Scalar(definition.validators, definition.encoding, definition.patterns)
+            definition.scalar
 
           case scala.None =>
             if builtinScalar(name) then Scalar(Array.empty) else Unset
@@ -1112,6 +1245,8 @@ object Tels extends Tels2:
           // member (it supplies the value of a required-but-elided field).
           if field.default.present && (!required || scalarOf(field.fieldType, schema).absent)
           then abort(Tel.Error(Reason.DefaultOnOptional))
+
+          checkIndexes(field, schema)
 
           if field.key then
             keys += 1
@@ -1174,7 +1309,7 @@ object Tels extends Tels2:
       case (a: Field, b: Field) =>
         a.required == b.required && a.repeatable == b.repeatable && a.key == b.key &&
           a.keyword == b.keyword && typeEq(a.fieldType, b.fieldType) &&
-          a.default == b.default && a.description == b.description
+          a.default == b.default && a.description == b.description && a.indexes == b.indexes
 
       case (a: SelectRef, b: SelectRef) =>
         a.required == b.required && a.repeatable == b.repeatable && a.reference == b.reference
@@ -1187,7 +1322,7 @@ object Tels extends Tels2:
 
       case (a: Scalar, b: Scalar) =>
         seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding &&
-          seqEq(a.patterns, b.patterns, textEq)
+          seqEq(a.patterns, b.patterns, textEq) && a.width == b.width && a.intern == b.intern
 
       case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
@@ -1204,7 +1339,7 @@ object Tels extends Tels2:
     private def scalarEq(a: ScalarDefinition, b: ScalarDefinition): Boolean =
       a.name == b.name && seqEq(a.validators, b.validators, textEq) &&
         a.description == b.description && a.encoding == b.encoding &&
-        seqEq(a.patterns, b.patterns, textEq)
+        seqEq(a.patterns, b.patterns, textEq) && a.width == b.width && a.intern == b.intern
 
     private def selectEq(a: SelectDefinition, b: SelectDefinition): Boolean =
       a.name == b.name &&
@@ -1327,7 +1462,23 @@ object Tels extends Tels2:
       children.each: cc =>
         if cc.keyword == t"encoding" && encoding.absent then encoding = firstAtomText(cc)
 
-      ScalarDefinition(scName, validators, descriptionOf(children), encoding, patterns)
+      // §20.6: `width` is a canonical positive decimal, `[1-9][0-9]*` (E225); `intern` is
+      // true iff an `intern` child is present.
+      val width: Optional[Int] = children.seek(_.keyword == t"width").let: cc =>
+        widthOf(firstAtomText(cc).or(t""))
+
+      val intern = children.exists(_.keyword == t"intern")
+
+      ScalarDefinition
+        ( scName, validators, descriptionOf(children), encoding, patterns, width, intern )
+
+    // A `width` value: a canonical positive decimal which fits an `Int` (E225 otherwise).
+    private[Tels] def widthOf(text: Text): Int raises Tel.Error =
+      val digits = text.s
+      val canonical = digits.length > 0 && digits.length <= 9 && !digits.startsWith("0") &&
+        digits.forall { char => char >= '0' && char <= '9' }
+
+      if canonical then Integer.parseInt(digits) else abort(Tel.Error(Reason.WidthNotDecimal))
 
     private def parseSelect(c: Tel.Compound): SelectDefinition raises Tel.Error =
       val seName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
@@ -1440,6 +1591,15 @@ object Tels extends Tels2:
 
         j += 1
 
+      // §20.6: each `index` child is one `Index`, of its inline atoms and then its `path`
+      // children's.
+      val indexes: List[Index] =
+        childCompounds(c).filter(_.keyword == t"index").to[List].map: cc =>
+          val nested = childCompounds(cc).bind: path =>
+            if path.keyword == t"path" then atomTexts(path) else Array.empty[Text]
+
+          Index(atomTexts(cc).to[List] + nested.to[List])
+
       // Child compounds may supply the same members in compound form.
       childCompounds(c).each: cc =>
         cc.keyword.s match
@@ -1452,7 +1612,7 @@ object Tels extends Tels2:
           case _              => ()
 
       Field(required, repeatable, keyword, fieldType, default,
-          descriptionOf(childCompounds(c)), key)
+          descriptionOf(childCompounds(c)), key, indexes)
 
     private def parseSelectRef(c: Tel.Compound): SelectRef raises Tel.Error =
       val ats = atomTexts(c)
@@ -1563,7 +1723,7 @@ object Tels extends Tels2:
       children.sweep { case Tel.Element.Value(j, _, t) if j == idx => t }
 
     // Field meta: keyword=0, type=1, optional=2, required=3, repeatable=4,
-    // irrepeatable=5, key=6, default=7, description=8.
+    // irrepeatable=5, key=6, default=7, description=8, index=9 (an `Index` node: path=0).
     private def fieldFromElement(element: Tel.Element): Field =
       val ch = childrenOf(element)
 
@@ -1574,7 +1734,9 @@ object Tels extends Tels2:
           fieldType   = typeFromText(textAt(ch, 1).or(t"")),
           default     = textAt(ch, 7),
           description = textAt(ch, 8),
-          key         = present(ch, 6) )
+          key         = present(ch, 6),
+          indexes     = nodesAt(ch, 9).to[List].map: index =>
+            Index(textsAt(childrenOf(index), 0).to[List]) )
 
     // SelectRef meta: reference=0, optional=1, required=2, repeatable=3,
     // irrepeatable=4.
@@ -1617,15 +1779,20 @@ object Tels extends Tels2:
       val (members, validators) = membersFromBody(ch, 1, 2, 3)
       RecordDefinition(textAt(ch, 0).or(t""), members, validators, textAt(ch, 4))
 
-    // Scalar meta: name=0, validate=1, pattern=2, encoding=3, description=4.
-    // These indices track the member order of the `Scalar` record in the
+    // Scalar meta: name=0, validate=1, pattern=2, encoding=3, description=4, width=5,
+    // intern=6. These indices track the member order of the `Scalar` record in the
     // Axiom; inserting `pattern` at 2 shifted `encoding` and `description`.
     private def scalarFromElement(element: Tel.Element): ScalarDefinition =
       val ch = childrenOf(element)
 
+      // A width which is not a canonical decimal cannot have come from a schema which was
+      // constructed (E225), so one found here is simply not carried.
+      val width: Optional[Int] = textAt(ch, 5).let: text =>
+        safely(Reconstructor.widthOf(text))
+
       ScalarDefinition
         ( textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 4), textAt(ch, 3),
-          textsAt(ch, 2) )
+          textsAt(ch, 2), width, present(ch, 6) )
 
     // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
     private def selectFromElement(element: Tel.Element): SelectDefinition =
@@ -1683,7 +1850,7 @@ object Tels extends Tels2:
 
     private[Tels] def builtin(scalar: ScalarDefinition): Boolean =
       builtinNames.contains(scalar.name) && scalar.encoding.absent && scalar.patterns.nil &&
-        scalar.description.absent
+        scalar.description.absent && scalar.width.absent && !scalar.intern
 
     // The schema document's root element: `name`, `sigil`, the definitions, the `document` body
     // and the layers, in the axiom's keyword order (name=0, sigil=1, record=2, scalar=3, select=4,
@@ -1725,7 +1892,7 @@ object Tels extends Tels2:
         val definition = axiom.scalars.seek(_.name == name.tt).or:
           panic(m"the axiom declares no scalar ${name.tt}")
 
-        Scalar(definition.validators, definition.encoding, definition.patterns)
+        definition.scalar
 
       def node(index: Int, record: String, children: Array[Tel.Element]^{}): Tel.Element =
         Tel.Element.Node(index, structOf(record), children)
@@ -1742,9 +1909,12 @@ object Tels extends Tels2:
       case Reference(name) => name
       case Flag            => t"Flag"
 
-      case Scalar(validators, encoding, patterns) =>
-        if encoding.present || !patterns.nil then abort(Error(Error.Reason.InlineScalar(keyword)))
-        else validators.to[List] match
+      case scalar: Scalar =>
+        val constrained =
+          scalar.encoding.present || !scalar.patterns.nil || scalar.width.present || scalar.intern
+
+        if constrained then abort(Error(Error.Reason.InlineScalar(keyword)))
+        else scalar.validators.to[List] match
           case Nil => t"String"
 
           case single :: Nil => single.s match
@@ -1759,7 +1929,7 @@ object Tels extends Tels2:
       case _: Struct => abort(Error(Error.Reason.InlineStruct(keyword)))
 
     // Field meta: keyword=0, type=1, optional=2, required=3, repeatable=4, irrepeatable=5, key=6,
-    // default=7, description=8.
+    // default=7, description=8, index=9 (an `Index` node: path=0).
     private def fieldChildren(context: Context, field: Field): Array[Tel.Element]^{} raises Error =
       import context.*
       val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -1770,6 +1940,10 @@ object Tels extends Tels2:
       if field.key then buffer += flag(6)
       field.default.let: default => buffer += value(7, "String", default)
       field.description.let: description => buffer += value(8, "String", description)
+
+      field.indexes.each: index =>
+        buffer += node(9, "Index", index.paths.to[Array].map(value(0, "String", _)))
+
       Array.from(buffer)
 
     private def polarityFlags
@@ -1842,6 +2016,8 @@ object Tels extends Tels2:
       scalar.patterns.each: pattern => buffer += value(2, "String", pattern)
       scalar.encoding.let: encoding => buffer += value(3, "Identifier", encoding)
       scalar.description.let: description => buffer += value(4, "String", description)
+      scalar.width.let: width => buffer += value(5, "String", width.toString.tt)
+      if scalar.intern then buffer += flag(6)
       Array.from(buffer)
 
     // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
@@ -2056,35 +2232,31 @@ object Tels extends Tels2:
           record.members.each: member => buffer += at(Array(member), Array.empty, Unset)
           record.validators.each: validator => buffer += at(Array.empty, Array(validator), Unset)
 
-      // `scalar N`: each validator; all patterns together; the encoding; the description. The
-      // four built-in scalars are never atoms, being declared by no document.
+      // `scalar N`: each validator; all patterns together; the encoding; the description; the
+      // width; `intern` (§20.3's canonical order). The four built-in scalars are never atoms,
+      // being declared by no document.
 
       scalars.each: scalar =>
         if !Renderer.builtin(scalar) then
           val path = Path.Scalar(scalar.name)
-
-          def at
-            ( validators: Array[Text]^{}, description: Optional[Text], encoding: Optional[Text],
-              patterns: Array[Text]^{} )
-          :   Atom =
-
-            val definition =
-              ScalarDefinition(scalar.name, validators, description, encoding, patterns)
-
-            part(path, scalars = Array(definition))
+          val bare = ScalarDefinition(scalar.name, Array.empty)
+          def at(definition: ScalarDefinition): Atom = part(path, scalars = Array(definition))
 
           if scalar.validators.nil && scalar.patterns.nil && scalar.encoding.absent &&
-            scalar.description.absent
-          then buffer += at(Array.empty, Unset, Unset, Array.empty)
+            scalar.description.absent && scalar.width.absent && !scalar.intern
+          then buffer += at(bare)
           else
             scalar.validators.each: validator =>
-              buffer += at(Array(validator), Unset, Unset, Array.empty)
+              buffer += at(bare.copy(validators = Array(validator)))
 
-            if !scalar.patterns.nil then buffer += at(Array.empty, Unset, Unset, scalar.patterns)
-            scalar.encoding.let: encoding => buffer += at(Array.empty, Unset, encoding, Array.empty)
+            if !scalar.patterns.nil then buffer += at(bare.copy(patterns = scalar.patterns))
+            scalar.encoding.let: encoding => buffer += at(bare.copy(encoding = encoding))
 
             scalar.description.let: description =>
-              buffer += at(Array.empty, description, Unset, Array.empty)
+              buffer += at(bare.copy(description = description))
+
+            scalar.width.let: width => buffer += at(bare.copy(width = width))
+            if scalar.intern then buffer += at(bare.copy(intern = true))
 
       // `select N`: all variants together; each exclude; each validator; the description.
 
@@ -2226,7 +2398,7 @@ object Tels extends Tels2:
 
       private def scalarOf(name: Text, schema: Tels): Optional[Type] =
         schema.scalars.seek(_.name == name).lay(builtinScalar(name)): definition =>
-          Scalar(definition.validators, definition.encoding, definition.patterns)
+          definition.scalar
 
       private def builtinScalar(name: Text): Optional[Type] =
         if name == Builtin.String then Scalar(Array.empty)
@@ -2433,7 +2605,7 @@ object Tels extends Tels2:
       val builtin: Optional[Type] = if builtinName then Scalar(Array.empty) else Unset
 
       schema.scalars.seek(_.name == name).lay(builtin): definition =>
-        Scalar(definition.validators, definition.encoding, definition.patterns)
+        definition.scalar
 
 case class Tels
   ( name:     Text,

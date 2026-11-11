@@ -541,9 +541,9 @@ trait Tels2:
 
     def referenced(struct: Tels.Struct): List[Text] =
       struct.members.to[proscenium.List].bind:
-        case Tels.Field(_, _, _, Tels.Reference(reference), _, _, _)  => List(reference)
-        case Tels.Field(_, _, _, nested: Tels.Struct, _, _, _)        => referenced(nested)
-        case _                                                        => Nil
+        case Tels.Field(_, _, _, Tels.Reference(reference), _, _, _, _) => List(reference)
+        case Tels.Field(_, _, _, nested: Tels.Struct, _, _, _, _)       => referenced(nested)
+        case _                                                          => Nil
 
     val fromRecords: List[Text] =
       records0.bind: record => referenced(Tels.Struct(record.members, record.validators))

@@ -1,0 +1,13 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e230-index-path-repeatable-intermediate
+
+record Line
+  field text String
+
+record Address
+  field line Line repeatable
+
+document
+  field address Address repeatable
+    index /line/text

@@ -1,0 +1,13 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e230-index-path-final-not-scalar
+
+record Region
+  field code String
+
+record Address
+  field region Region
+
+document
+  field address Address repeatable
+    index /region

@@ -211,6 +211,19 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
         SchemaResolver.resolve(pragma(signature = SchemaResolver.telsSignature)).step
       . assert(_ == Tels.Resolution.Step.Builtin)
 
+      test(m"the earlier tels pin answers at the built-in step"):
+        SchemaResolver.resolve(pragma(reference = Tel.Pragma.Reference.telsEarlier)).step
+      . assert(_ == Tels.Resolution.Step.Builtin)
+
+      test(m"the earlier tels signature answers at the built-in step"):
+        SchemaResolver.resolve(pragma(signature = SchemaResolver.telsEarlierSignature)).step
+      . assert(_ == Tels.Resolution.Step.Builtin)
+
+      test(m"the earlier tels pin resolves to the current axiom"):
+        val resolved = SchemaResolver.resolve(pragma(reference = Tel.Pragma.Reference.telsEarlier))
+        resolved.schema.records.exists(_.name == t"Index")
+      . assert(_ == true)
+
       test(m"a mismatched tels version pin does not answer as built-in"):
         val reference = Tel.Pragma.Reference
          ( t"specification.tel", t"tels", Tel.Pragma.Reference.Selector.Version(3, 0, 0) )

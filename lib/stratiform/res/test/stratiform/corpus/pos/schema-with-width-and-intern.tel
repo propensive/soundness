@@ -1,0 +1,16 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name schema-with-width-and-intern
+
+scalar Uuid
+  validate uuid
+  encoding uuid
+  width 16
+
+scalar Tag
+  validate identifier
+  intern
+
+document
+  field id Uuid
+  field tag Tag repeatable

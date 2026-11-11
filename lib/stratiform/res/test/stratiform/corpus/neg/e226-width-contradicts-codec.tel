@@ -1,0 +1,11 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e226-width-contradicts-codec
+
+scalar Count
+  validate decimal
+  encoding u32
+  width 8
+
+document
+  field count Count

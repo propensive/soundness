@@ -280,9 +280,9 @@ trait Tel4:
     private lazy val flags: scala.collection.immutable.Set[Text] =
       def within(members: Array[Tels.Member]^{}): scala.List[Text] =
         members.stdlib.toList.flatMap:
-          case Tels.Field(_, _, keyword, Tels.Flag, _, _, _)     => scala.List(keyword)
-          case Tels.Field(_, _, _, struct: Tels.Struct, _, _, _) => within(struct.members)
-          case _                                                 => scala.Nil
+          case Tels.Field(_, _, keyword, Tels.Flag, _, _, _, _)     => scala.List(keyword)
+          case Tels.Field(_, _, _, struct: Tels.Struct, _, _, _, _) => within(struct.members)
+          case _                                                    => scala.Nil
 
       val variants = composed.selects.stdlib.toList.flatMap: select =>
         select.variants.stdlib.toList.collect:

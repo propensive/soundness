@@ -1,0 +1,15 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e226-layer-encoding-contradicts-base-width
+
+scalar Count
+  validate decimal
+  width 8
+
+document
+  field count Count
+
+layer
+  name narrow
+  scalar Count
+    encoding u16

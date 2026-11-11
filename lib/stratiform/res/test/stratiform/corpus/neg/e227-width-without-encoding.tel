@@ -1,0 +1,10 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e227-width-without-encoding
+
+scalar Code
+  validate identifier
+  width 4
+
+document
+  field code Code

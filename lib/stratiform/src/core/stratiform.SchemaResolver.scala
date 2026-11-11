@@ -47,7 +47,8 @@ import vacuous.*
 //
 //   0. embedded-schema lookup (a self-contained BinTEL container)
 //   1. built-in lookup — the `tels` meta-schema, matched by its pinned
-//      coordinate `specification.tel/tels:2.0.0` or its signature,
+//      coordinate `specification.tel/tels:2.1.0` or its signature (or
+//      by those of the earlier `tels:2.0.0`, which it extends),
 //      without network access
 //   2. content-addressed store lookup (tel schema cache, LIRA store, …)
 //   3. library lookup (schema documents already in hand)
@@ -67,7 +68,12 @@ object SchemaResolver:
   // palimpsest of `SchemaSignature.fromDocument` over the canonical
   // tels.tel source. Pinned as a golden value, and recomputed from the
   // corpus by the test suite.
-  val telsSignature: Text = t"ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
+  val telsSignature: Text = t"şῩưȉιȈrίvỳқȧ7sƨşįḡẙƝVΩЗẅĥṽӫΊſlҚæơ"
+
+  // The signature of the earlier revision, `tels:2.0.0` (§8.2): a document which pins it, by
+  // coordinate or by signature, is still answered by the built-in, which extends that
+  // revision only by appended optional members.
+  val telsEarlierSignature: Text = t"ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
 
   // The built-in `acceptance` schema's signature (BinTEL §8.4), pinned
   // the same way over the canonical acceptance.tel; recognised at step 1
@@ -80,6 +86,7 @@ object SchemaResolver:
   val builtins: List[(Tel.Pragma.Reference, Text, Tels)] =
     List
       ( (Tel.Pragma.Reference.tels, telsSignature, Tels.Axiom.tels),
+        (Tel.Pragma.Reference.telsEarlier, telsEarlierSignature, Tels.Axiom.tels),
         (Tel.Pragma.Reference.acceptance, acceptanceSignature, Tels.Axiom.acceptance) )
 
   // A resolution outcome: the schema composed with the pragma's layer

@@ -2229,6 +2229,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == List(t"publishing", t"maven"))
 
       test(m"the pinned tels coordinate is recognised"):
+        pragmaOf(t"tel 1.0 specification.tel/tels:2.1.0\nname Percy\n")
+        . let(_.reference).let(_.isTels)
+      . assert(_ == true)
+
+      test(m"the earlier pinned tels coordinate is recognised"):
         pragmaOf(t"tel 1.0 specification.tel/tels:2.0.0\nname Percy\n")
         . let(_.reference).let(_.isTels)
       . assert(_ == true)

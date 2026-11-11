@@ -167,10 +167,10 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == true)
 
       test(m"§11 shared vector: the tels value hash"):
-        val hex = "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3"
+        val hex = "5fe9b009b90872af76f39b273773a85f2f21999d56a91785257deb8a7f6c9ae6"
         val bytes = hex.grouped(2).map(java.lang.Integer.parseInt(_, 16).toByte).toArray
         Base256.encode(bytes.asInstanceOf[Array[Byte]]).s
-      . assert(_ == "ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓ")
+      . assert(_ == "şῩưȉιȈrίvỳқȧ7sƨşįḡẙƝVΩЗẅĥṽӫΊſlҚæ")
 
     suite(m"BinTEL §4 varint"):
       def hex(data: Data): String =
@@ -940,7 +940,7 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
         digest.data.map(b => f"${b & 0xff}%02x".tt).join
-      . assert(_ == "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3")
+      . assert(_ == "5fe9b009b90872af76f39b273773a85f2f21999d56a91785257deb8a7f6c9ae6")
 
     suite(m"BinTEL §6.2 self-contained mode"):
       val schemaDoc = """name greeting

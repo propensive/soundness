@@ -111,7 +111,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
     suite(m"Rendering a schema value"):
       test(m"the tels axiom renders to the pinned tels value hash"):
         hex(SchemaSignature.hash(Tels.Renderer.element(Tels.Axiom.tels)))
-      . assert(_ == "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3")
+      . assert(_ == "5fe9b009b90872af76f39b273773a85f2f21999d56a91785257deb8a7f6c9ae6")
 
       test(m"the acceptance axiom renders to the pinned acceptance value hash"):
         hex(SchemaSignature.hash(Tels.Renderer.element(Tels.Axiom.acceptance)))
