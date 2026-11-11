@@ -360,6 +360,18 @@ package filesystemBackends:
           lambda(view)
         finally channel.close()
 
+      def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^ =
+        protect(path, Operation.Open):
+          val file = javaPath(path)
+          // `size` fails, informatively, for a file which is absent or unreadable.
+          val size = jnf.Files.size(file)
+
+          if jnf.Files.isDirectory(file)
+          then abort(Io.Error(path, Operation.Open, Reason.IsDirectory))
+
+          PointerMapping(file.toString, size).or:
+            abort(Io.Error(path, Operation.Open, Reason.PermissionDenied))
+
       def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text] =
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 

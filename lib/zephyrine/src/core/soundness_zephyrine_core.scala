@@ -37,12 +37,13 @@ package soundness
 // hand-written `via`/`accepting` forwarders below for the same problem). Consumers import
 // them from `zephyrine` directly.
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
-    Duct, Ductile, Expanse, Malleable, Pace,
+    Duct, Ductile, Expanse, Malleable, Mapped, Pace,
     Format, Formatting, Intake, Lineation, Parse, PositionTracking, Producer, Positionable,
     Records, records, Regulation, Spring, Stream, Substrate, Truncation, chunks,
     discard, drain, gather, locate,
     locateKey, memoize, pump, ingest, stream, streamOf, chain, truncate,
-    viaDuct, acceptingDuct}
+    viaDuct, acceptingDuct,
+    i32, i32be, u8, u16, u16be, u32, u32be, u64, u64be}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed
 // extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture

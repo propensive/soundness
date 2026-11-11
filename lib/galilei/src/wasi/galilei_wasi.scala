@@ -370,6 +370,10 @@ package filesystemBackends:
 
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
+      // WASI has no memory mapping: a component's linear memory is its own.
+      def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^ =
+        abort(Io.Error(path, Operation.Open, Reason.Unsupported))
+
       def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
         ( using Tactic[Io.Error] )
       :   result =

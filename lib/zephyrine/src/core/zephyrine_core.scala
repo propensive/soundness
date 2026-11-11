@@ -912,3 +912,20 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
     override update def fail(error: Throwable): Unit =
       duct.close()
       intake.fail(error)
+
+// Fixed-width integers loaded from a position in `Data`, shared by every binary format reader:
+// little-endian by default, as `Mapped`'s loads of the same names are, with a big-endian
+// (`…be`) twin of each multi-byte load for network-order formats. `u8` and `u16` are `Int`s;
+// `u32` widens to a `Long` so that it stays unsigned, and `i32` is the same word as a signed
+// `Int`. A load beyond the end of the data throws, as indexing does.
+extension (data: Data)
+  inline def u8(offset: Int): Int = data.readUnchecked(offset) & 0xff
+  inline def u16(offset: Int): Int = data.u8(offset) | data.u8(offset + 1) << 8
+  inline def i32(offset: Int): Int = data.u16(offset) | data.u16(offset + 2) << 16
+  inline def u32(offset: Int): Long = data.i32(offset) & 0xffffffffL
+  inline def u64(offset: Int): Long = data.u32(offset) | data.u32(offset + 4) << 32
+
+  inline def u16be(offset: Int): Int = data.u8(offset) << 8 | data.u8(offset + 1)
+  inline def i32be(offset: Int): Int = data.u16be(offset) << 16 | data.u16be(offset + 2)
+  inline def u32be(offset: Int): Long = data.i32be(offset) & 0xffffffffL
+  inline def u64be(offset: Int): Long = data.u32be(offset) << 32 | data.u32be(offset + 4)

@@ -348,6 +348,26 @@ package filesystemBackends:
           lambda(view)
         finally channel.close()
 
+      def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping =
+        protect(path, Operation.Open):
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          optionSet.add(jnf.StandardOpenOption.READ)
+          val channel = jnc.FileChannel.open(javaPath(path), optionSet).nn
+
+          // The mapping outlives the channel, which is needed only to establish it. A shared
+          // arena, since a read-only view may be loaded from any thread.
+          try
+            val arena = java.lang.foreign.Arena.ofShared().nn
+
+            try
+              val mode = jnc.FileChannel.MapMode.READ_ONLY.nn
+              val segment = channel.map(mode, 0L, channel.size, arena).nn
+              new SegmentMapping(arena, segment.asReadOnly.nn)
+            catch case throwable: Throwable =>
+              arena.close()
+              throw throwable
+          finally channel.close()
+
       private def attributeView(path: Path on Plane)(using Tactic[Io.Error])
       :   jnf.attribute.UserDefinedFileAttributeView =
 
