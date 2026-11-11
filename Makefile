@@ -7,21 +7,30 @@ publishLocal:
 # (test ids, name globs, axis constraints such as `N<=64`). Every run goes through
 # `etc/ci/fume-run.sh`, which gives it a private daemon and a private temporary directory and
 # removes both afterwards, so a suite's forgotten scratch files never outlive the run.
+#
+# The compilers run in-process in mill's single JVM (`.mill-jvm-opts`: 8 GB), and the largest
+# codec test modules (xylophone, stratiform, jacinta, ypsiloid, apoplexy: multi-megabyte
+# classes, because every test re-expands an inline derivation) all land at the end of the
+# graph together. Left to mill's default parallelism they exhaust the heap on a 16 GB machine,
+# so the assemblies are built with the same job cap the attest build uses (`SOUNDNESS_CI_JOBS`
+# in `etc/ci/attest.sh`); override it with `make test JOBS=8`.
+JOBS ?= $(or $(SOUNDNESS_CI_JOBS),4)
+
 test:
-	./mill test.assembly
+	./mill -j $(JOBS) test.assembly
 	./etc/ci/fume-run.sh -c out/test/assembly.dest/out.jar $(TESTS)
 
 test.%:
 	./mill clean $*.test
-	./mill $*.test.assembly
+	./mill -j $(JOBS) $*.test.assembly
 	./etc/ci/fume-run.sh -c out/$*/test/assembly.dest/out.jar $(TESTS)
 
 bench:
-	./mill bench.assembly
+	./mill -j $(JOBS) bench.assembly
 	./etc/ci/fume-run.sh --bench -c out/bench/assembly.dest/out.jar $(TESTS)
 
 bench.%:
-	./mill $*.bench.assembly
+	./mill -j $(JOBS) $*.bench.assembly
 	./etc/ci/fume-run.sh --bench -c out/$*/bench/assembly.dest/out.jar $(TESTS)
 
 keywords:
