@@ -255,30 +255,44 @@ trait Yaml2:
           case _ =>
             buildWith[derivation](null, renames)
 
+    // The plain methods below hold the per-field decoding logic, NOT part of the inline
+    // expansion: a derivation's per-field lambda is expanded once per field at every summon
+    // site, so a body written there is multiplied by every field of every derived type in a
+    // module (jacinta's `decodeField`). What stays inline is each field's own `decoded` call.
+
+    // The value of the mapping entry whose key is `target`, or null: the mapping is an array of
+    // alternating keys and values.
+    private def fieldAst(arr: Array[Any]^{} | Null, target: String): Yaml.Ast | Null =
+      var found: Yaml.Ast | Null = null
+
+      if arr != null then
+        val n = arr.length
+        var i = 0
+
+        while i < n && found == null do
+          val entryKey = arr.readUnchecked(i).asInstanceOf[Yaml.Ast]
+
+          entryKey.asMatchable match
+            case s: String if s == target =>
+              found = arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast]
+
+            case _ => ()
+
+          i += 2
+
+      found
+
+    // The focus of a field's decode or encode. Each outer `focus` runs *after* the inner one
+    // (contingency's try/finally order), so `prior` is extended at the root side via `prepend`:
+    // a nested case-class error lands at `/outer/inner` rather than `/inner/outer`. See
+    // `feedback-xml-decoder-split-design` lesson 4.
+    private[ypsiloid] def slotFocus(prior: Optional[Yaml.Focus], key: Text): Yaml.Focus =
+      Yaml.Focus(prior.lay(YamlPath())(_.pointer).prepend(key))
+
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( arr: Array[Any]^{} | Null, renames: Map[Text, Text] )
       ( using foci: Foci[Yaml.Focus], tactic: Tactic[Yaml.Error] )
     :   derivation =
-
-      def fieldAst(target: String): Yaml.Ast | Null =
-        var found: Yaml.Ast | Null = null
-
-        if arr != null then
-          val n = arr.length
-          var i = 0
-
-          while i < n && found == null do
-            val entryKey = arr.readUnchecked(i).asInstanceOf[Yaml.Ast]
-
-            entryKey.asMatchable match
-              case s: String if s == target =>
-                found = arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast]
-
-              case _ => ()
-
-            i += 2
-
-        found
 
       // A SINGLE field traversal serving both modes, branching on `foci.active` per field. One
       // traversal is load-bearing: every wisteria traversal re-summons each field's decoder
@@ -297,7 +311,7 @@ trait Yaml2:
         contexts[derivation]()[Venture[Any]]: [field] =>
           context =>
             val key: Text = renames(label).or(label)
-            val found = fieldAst(key.s)
+            val found = fieldAst(arr, key.s)
 
             // Missing field: try the case-class declared default
             // (Wisteria's `default`); if absent, hand the
@@ -312,16 +326,7 @@ trait Yaml2:
 
             if !active then Venture(decodeNow())
             else
-              // Each outer `focus` runs *after* the inner one
-              // (contingency's try/finally order), so we extend
-              // `prior` at the root side via `prepend` so a nested
-              // case-class error lands at `/outer/inner` rather than
-              // `/inner/outer`. See `feedback-xml-decoder-split-design`
-              // lesson 4.
-              focus({
-                val base = prior.let(_.pointer).or(YamlPath())
-                Yaml.Focus(base.prepend(key))
-              }):
+              focus(slotFocus(prior, key)):
                 val before = foci.length
                 val value: field = decodeNow()
                 if foci.length > before then Venture.failed else Venture(value)
@@ -392,10 +397,7 @@ trait Yaml2:
             field =>
               val key: Text = renames(label).or(label)
 
-              focus({
-                val base = prior.let(_.pointer).or(YamlPath())
-                Yaml.Focus(base.prepend(key))
-              }):
+              focus(DecodableDerivation.slotFocus(prior, key)):
                 val encoded = contextual.encode(field).root
 
                 if !(encoded == Unset) then

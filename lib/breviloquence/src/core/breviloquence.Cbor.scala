@@ -186,6 +186,21 @@ trait Cbor2:
                   infer[Foci[Pointer]],
                   infer[Tactic[Cbor.Error]] )
 
+    // The map's entries by text key — a plain method, NOT part of the inline expansion, which is
+    // repeated at every summon site of every derived type. Built immutably: the per-field lambda
+    // is polymorphic and must be pure, so it may only close over pure values — a mutable map
+    // would be a capability.
+    private def entries(root: Cbor.Ast, count: Int)(using Tactic[Cbor.Error]): Map[String, Ast] =
+      val builder = scala.collection.immutable.Map.newBuilder[String, Ast]
+      var index = 0
+
+      while index < count do
+        val key = root.key(index)
+        if key.isTextString then builder += key.string -> root.value(index)
+        index += 1
+
+      builder.result().to(Map)
+
     private inline def decodeRecord[derivation <: Product]
       ( cbor: Cbor, renames: Map[Text, Text] )
       ( using reflection: ProductReflection[derivation],
@@ -196,18 +211,7 @@ trait Cbor2:
       val root = cbor.root
       val count = if root.isMap then root.entries else 0
 
-      // Built immutably: the per-field lambda is polymorphic and must be pure, so it may only
-      // close over pure values — a mutable map would be a capability.
-      val values: Map[String, Ast] =
-        val builder = scala.collection.immutable.Map.newBuilder[String, Ast]
-        var index = 0
-
-        while index < count do
-          val key = root.key(index)
-          if key.isTextString then builder += key.string -> root.value(index)
-          index += 1
-
-        builder.result().to(Map)
+      val values: Map[String, Ast] = entries(root, count)
 
       // A SINGLE field traversal serving both modes, branching on `foci.active` per field
       // (each additional wisteria traversal re-summons every field's decoder, multiplying
