@@ -52,6 +52,21 @@ import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
 
+import adversaria.name
+import distillate.*
+import prepositional.*
+
+// The records for the derived-codec benchmarks: an attribute, a renamed field, a nested product
+// and a repeated field, so the decode and encode exercise every branch of the per-field code.
+case class BenchAuthor(name: Text, born: Int)
+
+case class BenchBook
+  ( @Xml.attribute isbn:        Text,
+    title:                      Text,
+    @name[Xml](t"pageCount") pages: Int,
+    author:                     BenchAuthor,
+    tags:                       List[Text] )
+
 object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
@@ -158,6 +173,21 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
   lazy val elem3: scala.xml.Elem = scala.xml.XML.loadString(xmlText3)
   lazy val elem4: scala.xml.Elem = scala.xml.XML.loadString(xmlText4)
   lazy val elem5: scala.xml.Elem = scala.xml.XML.loadString(xmlText5)
+
+  // The derived instances, generated here rather than in a benchmark body, so that each macro
+  // expands once, at its definition, and the benchmarks measure the codec, not its derivation.
+  val bookDecodable: BenchBook is Decodable in Xml = summon[BenchBook is Decodable in Xml]
+  val bookEncodable: BenchBook is Encodable in Xml = summon[BenchBook is Encodable in Xml]
+
+  val bookText: Text =
+    t"""<BenchBook isbn="978-0-00-000000-1"><title>A field guide to XML entities</title>"""
+    + t"""<pageCount>312</pageCount><author><name>A. Writer</name><born>1970</born></author>"""
+    + t"""<tags>xml</tags><tags>benchmark</tags><tags>codec</tags></BenchBook>"""
+
+  lazy val bookXml: Xml = unsafely(bookText.read[Xml])
+  lazy val book: BenchBook =
+    given BenchBook is Decodable in Xml = bookDecodable
+    unsafely(bookXml.as[BenchBook])
 
   def run(): Unit =
     val bench = Bench()
@@ -683,6 +713,23 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
             val text = xylophone.Benchmarks.elem5.toString
             java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
+
+    // The derived codecs on an already-parsed element: the per-field code a derivation expands
+    // to, isolated from parsing and printing. The instances are built once, above.
+    suite(m"Derived codecs (a book record)"):
+      val bookSize = xylophone.Benchmarks.bookText.s.getBytes("UTF-8").nn.length*Byte
+
+      bench(m"Decode a parsed element into a record")(target = 1*Second, operationSize = bookSize):
+        '{
+            given BenchBook is Decodable in Xml = xylophone.Benchmarks.bookDecodable
+            unsafely(xylophone.Benchmarks.bookXml.as[BenchBook])
+        }
+
+      bench(m"Encode a record to an element")(target = 1*Second, operationSize = bookSize):
+        '{
+            given BenchBook is Encodable in Xml = xylophone.Benchmarks.bookEncodable
+            xylophone.Benchmarks.book.in[Xml]
         }
 
   lazy val xmlText1: String = xmlExample1.s
