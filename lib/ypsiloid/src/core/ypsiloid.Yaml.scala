@@ -202,14 +202,20 @@ trait Yaml2:
       // rather than re-summoned via `provide` inside the SAM: under capture checking a `provide`
       // wraps the body in a context function that captures the `yaml` parameter, which the pure
       // `Decodable` SAM rejects.
+      //
+      // `@name[Yaml]` / bare `@name` renames: field name -> mapping key, read back the same way
+      // they are written. A per-derivation constant, resolved once here and closed over by the
+      // decoder rather than rebuilt on every decode call.
+      val renames: Map[Text, Text] = relabelling[derivation, Yaml]
+
       yaml =>
-        decodeMapping[derivation](yaml)
+        decodeMapping[derivation](yaml, renames)
           ( using infer[ProductReflection[derivation]],
                   infer[Foci[Yaml.Focus]],
                   infer[Tactic[Yaml.Error]] )
 
     private inline def decodeMapping[derivation <: Product]
-      ( yaml: Yaml )
+      ( yaml: Yaml, renames: Map[Text, Text] )
       ( using ProductReflection[derivation], Foci[Yaml.Focus], Tactic[Yaml.Error] )
     :   derivation =
 
@@ -219,7 +225,7 @@ trait Yaml2:
 
         case _ => null
 
-      if arr != null then buildWith[derivation](arr)
+      if arr != null then buildWith[derivation](arr, renames)
       else
         // Wrong-shape input (including the `Yaml.Ast(Unset)`
         // sentinel an outer conjunction passes in for a missing
@@ -247,16 +253,12 @@ trait Yaml2:
             raise(Yaml.Error(reason)) yet derivationDefault()
 
           case _ =>
-            buildWith[derivation](null)
+            buildWith[derivation](null, renames)
 
     private inline def buildWith[derivation <: Product: ProductReflection]
-      ( arr: Array[Any]^{} | Null )
+      ( arr: Array[Any]^{} | Null, renames: Map[Text, Text] )
       ( using foci: Foci[Yaml.Focus], tactic: Tactic[Yaml.Error] )
     :   derivation =
-
-      // `@name[Yaml]` / bare `@name` renames: field name -> mapping key, read
-      // back the same way they are written.
-      val renames: Map[Text, Text] = relabelling[derivation, Yaml]
 
       def fieldAst(target: String): Yaml.Ast | Null =
         var found: Yaml.Ast | Null = null
@@ -335,52 +337,56 @@ trait Yaml2:
     // discriminator. When the user supplies `Default[derivation]` we
     // register one error at the current focus and continue with the
     // sentinel; without one we abort.
-    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
-      provide[Foci[Yaml.Focus]]:
-        provide[Tactic[Yaml.Error]]:
-          provide[Tactic[Variant.Error]]:
-            val discriminable = infer[derivation is Discriminable in Yaml]
-            val labels: List[Text] = variantLabels
+    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml =
+      // The label list and the `@name[Yaml]` / bare `@name` variant renames (serialized
+      // discriminator back to the variant name) are per-derivation constants, resolved once
+      // here rather than on every decode call.
+      val labels: List[Text] = variantLabels
 
-            // `@name[Yaml]` / bare `@name` variant renames: map the serialized
-            // discriminator back to the variant name before delegating.
-            val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Yaml].remap: (variant, wire) => wire -> variant
+      val variantNames: Map[Text, Text] =
+        variantRelabelling[derivation, Yaml].remap: (variant, wire) => wire -> variant
 
-            val resolved: Optional[Text] =
-              discriminable.discriminate(yaml).let: wire =>
-                val discriminant = variantNames(wire).or(wire)
-                if labels.has(discriminant) then discriminant else Unset
+      yaml =>
+        provide[Foci[Yaml.Focus]]:
+          provide[Tactic[Yaml.Error]]:
+            provide[Tactic[Variant.Error]]:
+              val discriminable = infer[derivation is Discriminable in Yaml]
 
-            resolved.let: discriminant =>
-              delegate(discriminant): [variant <: derivation] =>
-                context => context.decoded(discriminable.variant(yaml))
+              val resolved: Optional[Text] =
+                discriminable.discriminate(yaml).let: wire =>
+                  val discriminant = variantNames(wire).or(wire)
+                  if labels.has(discriminant) then discriminant else Unset
 
-            . or:
-                focus(prior.or(Yaml.Focus(YamlPath()))):
-                  summonFrom:
-                    case derivationDefault: Default[`derivation`] =>
-                      raise(Yaml.Error(Reason.Absent)) yet derivationDefault()
+              resolved.let: discriminant =>
+                delegate(discriminant): [variant <: derivation] =>
+                  context => context.decoded(discriminable.variant(yaml))
 
-                    case _ =>
-                      // Under an accruing scope, record ONE error and skip the variant decode
-                      // without killing the whole scope: the returned value is never used (the
-                      // caller sees the focus delta, or the tracking scope is tainted), so
-                      // siblings keep accruing. Fail-fast scopes abort as before.
-                      if infer[Foci[Yaml.Focus]].active
-                      then raise(Yaml.Error(Reason.Absent)) yet null.asInstanceOf[derivation]
-                      else abort(Yaml.Error(Reason.Absent))
+              . or:
+                  focus(prior.or(Yaml.Focus(YamlPath()))):
+                    summonFrom:
+                      case derivationDefault: Default[`derivation`] =>
+                        raise(Yaml.Error(Reason.Absent)) yet derivationDefault()
+
+                      case _ =>
+                        // Under an accruing scope, record ONE error and skip the variant decode
+                        // without killing the whole scope: the returned value is never used
+                        // (the caller sees the focus delta, or the tracking scope is tainted),
+                        // so siblings keep accruing. Fail-fast scopes abort as before.
+                        if infer[Foci[Yaml.Focus]].active
+                        then raise(Yaml.Error(Reason.Absent)) yet null.asInstanceOf[derivation]
+                        else abort(Yaml.Error(Reason.Absent))
 
   object EncodableDerivation extends Derivable[Encodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Yaml =
 
+      // `@name[Yaml]` / bare `@name` renames: field name -> mapping key. A per-derivation
+      // constant, resolved once here rather than on every encode call.
+      val renames: Map[Text, Text] = relabelling[derivation, Yaml]
+
       value =>
         provide[Foci[Yaml.Focus]]:
           val entries = scm.ArrayBuffer.empty[Any]
-
-          // `@name[Yaml]` / bare `@name` renames: field name -> mapping key.
-          val renames: Map[Text, Text] = relabelling[derivation, Yaml]
 
           fields(value): [field] =>
             field =>
@@ -398,15 +404,16 @@ trait Yaml2:
 
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.from(entries)))
 
-    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
-      val discriminable = infer[derivation is Discriminable in Yaml]
-
-      // `@name[Yaml]` / bare `@name` variant renames: variant name -> wire
-      // discriminator, read back the same way by the decoder.
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml =
+      // `@name[Yaml]` / bare `@name` variant renames: variant name -> wire discriminator, read
+      // back the same way by the decoder. A per-derivation constant, resolved once here.
       val variantNames: Map[Text, Text] = variantRelabelling[derivation, Yaml]
 
-      variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
+      value =>
+        val discriminable = infer[derivation is Discriminable in Yaml]
+
+        variant(value): [variant <: derivation] =>
+          value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 trait Yaml1 extends Yaml2:
   this: Yaml.type =>

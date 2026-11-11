@@ -750,20 +750,44 @@ object Xml extends Tag.Container
       // that failed to unify; a `Decodable` instance is `Pure`, so the SAM
       // closing over the summoned capabilities contributes nothing to its
       // capture set.
+      // The type's annotations — which fields are attributes, which stay out of the namespace,
+      // the namespace itself and the fields' wire names — are per-derivation constants, resolved
+      // once here and closed over by the decoder, not recomputed on every decode call (the
+      // disjunction's map hoist). Fields marked `@attribute` are read from the element's
+      // attributes rather than its child elements, mirroring the encoder. A namespaced type's
+      // fields are matched by resolved name, so a document may use any prefix for the namespace;
+      // an unqualified field, or a type with no namespace, matches the raw label.
+      val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
+      val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
+
+      val namespace: Optional[BaseText] = namespaceOf[derivation].let: (uri, qualified) =>
+        if qualified then uri else Unset
+
+      // `@name[Xml]` / bare `@name` renames: field name -> element/attribute name on the wire.
+      // Read back the same way they are written.
+      val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
+
       xml =>
-        decodeElement[derivation](xml)
+        decodeElement[derivation](xml, attributeFields, unqualifiedFields, namespace, renames)
           ( using infer[ProductReflection[derivation]],
                   infer[Foci[Xml.Focus]],
                   infer[Tactic[Xml.Error]] )
 
     private inline def decodeElement[derivation <: Product]
-      ( xml: Xml )
+      ( xml:               Xml,
+        attributeFields:   Set[BaseText],
+        unqualifiedFields: Set[BaseText],
+        namespace:         Optional[BaseText],
+        renames:           Map[BaseText, BaseText] )
       ( using ProductReflection[derivation], Foci[Xml.Focus], Tactic[Xml.Error] )
     :   derivation =
 
       xml match
-        case e: Element           => buildWith[derivation](e)
-        case Fragment(e: Element) => buildWith[derivation](e)
+        case e: Element =>
+          buildWith[derivation](e, attributeFields, unqualifiedFields, namespace, renames)
+
+        case Fragment(e: Element) =>
+          buildWith[derivation](e, attributeFields, unqualifiedFields, namespace, renames)
 
         case _ =>
           // Wrong-shape input (including the `Absent` sentinel an
@@ -782,7 +806,13 @@ object Xml extends Tag.Container
 
             case _ =>
               raise(Xml.Error(Reason.AbsentProduct(typeName)))
-              buildWith[derivation](Element(t"", Attributes.empty, Array.empty))
+
+              buildWith[derivation]
+                ( Element(t"", Attributes.empty, Array.empty),
+                  attributeFields,
+                  unqualifiedFields,
+                  namespace,
+                  renames )
 
     // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
     // plain method: the argument buffer must not be allocated inside an inline expansion,
@@ -812,20 +842,13 @@ object Xml extends Tag.Container
         Xml.Parsable.assemble[derivation](reflection, Array.freeze(arguments))
 
     private inline def buildWith[derivation <: Product: ProductReflection]
-      ( element: Element )
+      ( element:           Element,
+        attributeFields:   Set[BaseText],
+        unqualifiedFields: Set[BaseText],
+        namespace:         Optional[BaseText],
+        renames:           Map[BaseText, BaseText] )
       ( using foci: Foci[Xml.Focus], tactic: Tactic[Xml.Error] )
     :   derivation =
-
-      // Fields marked `@attribute` are read from the element's attributes
-      // rather than its child elements, mirroring the encoder.
-      val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
-      val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
-
-      // A namespaced type's fields are matched by resolved name, so a document may use any
-      // prefix for the namespace; an unqualified field, or a type with no namespace, matches
-      // the raw label.
-      val namespace: Optional[BaseText] = namespaceOf[derivation].let: (uri, qualified) =>
-        if qualified then uri else Unset
 
       def qualifiedField(fieldLabel: BaseText): Boolean =
         namespace.present && !unqualifiedFields.has(fieldLabel)
@@ -835,10 +858,6 @@ object Xml extends Tag.Container
       def matches(child: Element, fieldLabel: BaseText, wireName: BaseText): Boolean =
         if qualifiedField(fieldLabel) then child.qualified == Xml.Name(namespace, wireName)
         else child.label == wireName || child.localName == wireName
-
-      // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
-      // name on the wire. Read back the same way they are written.
-      val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
 
       // The first child by raw label, and — for a namespaced type — by local name among the
       // children in the namespace
@@ -1071,21 +1090,21 @@ object Xml extends Tag.Container
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
 
+      // Per-derivation constants, resolved once here and closed over by the encoder rather than
+      // recomputed on every encode call: the attribute and unqualified fields, the namespace,
+      // and the `@name[Xml]` / bare `@name` renames (field name -> element/attribute name on the
+      // wire).
+      val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
+      val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
+      val namespaced: Optional[(BaseText, Boolean)] = namespaceOf[derivation]
+
+      // The element's scope binds its namespace as the default; a field's element in no
+      // namespace, under a namespaced type, undeclares it
+      val scope: Scope = namespaced.lay(Scope.empty): (uri, _) => Scope(t"" -> uri)
+      val undeclaring: Scope = Scope(t"" -> t"")
+      val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
+
       value =>
-        val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
-        val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
-
-        val namespaced: Optional[(BaseText, Boolean)] = namespaceOf[derivation]
-
-        // The element's scope binds its namespace as the default; a field's element in no
-        // namespace, under a namespaced type, undeclares it
-        val scope: Scope = namespaced.lay(Scope.empty): (uri, _) => Scope(t"" -> uri)
-        val undeclaring: Scope = Scope(t"" -> t"")
-
-        // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
-        // name on the wire.
-        val renames: Map[BaseText, BaseText] = relabelling[derivation, Xml]
-
         val attributes: scm.ArrayBuffer[(BaseText, BaseText)] = scm.ArrayBuffer()
         val children: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
 
@@ -1135,12 +1154,12 @@ object Xml extends Tag.Container
             scope )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
+      // `@name[Xml]` / bare `@name` variant renames: variant name -> element label, read back
+      // the same way by the decoder. A per-derivation constant, resolved once here.
+      val variantNames: Map[BaseText, BaseText] = variantRelabelling[derivation, Xml]
+
       value =>
         val discriminable = infer[derivation is Discriminable in Xml]
-
-        // `@name[Xml]` / bare `@name` variant renames: variant name -> element
-        // label, read back the same way by the decoder.
-        val variantNames: Map[BaseText, BaseText] = variantRelabelling[derivation, Xml]
 
         variant(value): [variant <: derivation] =>
           value =>

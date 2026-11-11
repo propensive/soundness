@@ -174,14 +174,20 @@ trait Cbor2:
         // per-field lambda (and a fresh `Foci` would silently discard pointers). A `Decodable`
         // is `Pure`, so the SAM closing over the summoned capabilities adds nothing to its
         // capture set.
+      //
+      // `@name[Cbor]` / bare `@name` renames: field name -> map key, read back the same way they
+      // are written. A per-derivation constant, resolved once here and closed over by the
+      // decoder rather than rebuilt on every decode call.
+      val renames: Map[Text, Text] = relabelling[derivation, Cbor]
+
       cbor =>
-        decodeRecord[derivation](cbor)
+        decodeRecord[derivation](cbor, renames)
           ( using infer[ProductReflection[derivation]],
                   infer[Foci[Pointer]],
                   infer[Tactic[Cbor.Error]] )
 
     private inline def decodeRecord[derivation <: Product]
-      ( cbor: Cbor )
+      ( cbor: Cbor, renames: Map[Text, Text] )
       ( using reflection: ProductReflection[derivation],
               foci:       Foci[Pointer],
               tactic:     Tactic[Cbor.Error] )
@@ -202,10 +208,6 @@ trait Cbor2:
           index += 1
 
         builder.result().to(Map)
-
-      // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
-      // back the same way they are written.
-      val renames: Map[Text, Text] = relabelling[derivation, Cbor]
 
       // A SINGLE field traversal serving both modes, branching on `foci.active` per field
       // (each additional wisteria traversal re-summons every field's decoder, multiplying
@@ -236,15 +238,15 @@ trait Cbor2:
       gate[derivation](reflection, slots, active)
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Cbor =
+      // `@name[Cbor]` / bare `@name` variant renames: map the serialized discriminator back to
+      // the variant name before delegating. A per-derivation constant, resolved once here.
+      val variantNames: Map[Text, Text] =
+        variantRelabelling[derivation, Cbor].remap: (variant, wire) => wire -> variant
+
       cbor =>
         provide[Tactic[Cbor.Error]]:
           provide[Tactic[Variant.Error]]:
             val discriminable = infer[derivation is Discriminable in Cbor]
-
-            // `@name[Cbor]` / bare `@name` variant renames: map the serialized
-            // discriminator back to the variant name before delegating.
-            val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Cbor].remap: (variant, wire) => wire -> variant
 
             discriminable.discriminate(cbor).lay:
               // Under an accruing scope, a missing discriminator records ONE error and skips
@@ -284,15 +286,16 @@ trait Cbor2:
 
         ast(Ast.map(Array.from(labels), Array.from(values)))
 
-    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Cbor = value =>
-      val discriminable = infer[derivation is Discriminable in Cbor]
-
-      // `@name[Cbor]` / bare `@name` variant renames: variant name -> wire
-      // discriminator, read back the same way by the decoder.
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Cbor =
+      // `@name[Cbor]` / bare `@name` variant renames: variant name -> wire discriminator, read
+      // back the same way by the decoder. A per-derivation constant, resolved once here.
       val variantNames: Map[Text, Text] = variantRelabelling[derivation, Cbor]
 
-      variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
+      value =>
+        val discriminable = infer[derivation is Discriminable in Cbor]
+
+        variant(value): [variant <: derivation] =>
+          value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 // The direct path: the instances that drive a `Cbor.Parsable` or a `Cbor.Printable` whenever
 // one exists. They sit above the derived path in `Cbor2`, and below `object Cbor`, where

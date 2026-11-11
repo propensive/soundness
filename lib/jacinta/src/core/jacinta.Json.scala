@@ -336,6 +336,12 @@ trait Json2 extends Json3:
       // (under capture checking those minted distinct root capabilities that failed to unify
       // with `build`'s per-field lambda). The decode SAM closes over the resolution-scoped
       // tactic, which the fresh (`^`) result honestly admits — no seal.
+      //
+      // `@name[Json]` / bare `@name` renames: field name -> JSON key, read back the same way
+      // they are written. A per-derivation constant, resolved once here and closed over by the
+      // decoder rather than rebuilt on every decode call.
+      val renames: Map[Text, Text] = relabelling[derivation, Json]
+
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
@@ -344,7 +350,7 @@ trait Json2 extends Json3:
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
         json =>
-          decodeObject[derivation](json)
+          decodeObject[derivation](json, renames)
             ( using infer[ProductReflection[derivation]],
                     infer[Foci[Json.Focus]],
                     infer[Tactic[Json.Error]] )
@@ -401,7 +407,7 @@ trait Json2 extends Json3:
       Json.Focus(pointer)
 
     private inline def decodeObject[derivation <: Product]
-      ( json: Json )
+      ( json: Json, renames: Map[Text, Text] )
       ( using reflection: ProductReflection[derivation],
               foci:       Foci[Json.Focus],
               tactic:     Tactic[Json.Error] )
@@ -421,10 +427,6 @@ trait Json2 extends Json3:
           i += 1
 
         builder.result().to(Map)
-
-      // `@name[Json]` / bare `@name` renames: field name -> JSON key, read
-      // back the same way they are written.
-      val renames: Map[Text, Text] = relabelling[derivation, Json]
 
       // A SINGLE field traversal serving both modes, branching on `foci.active` per field.
       // One traversal is load-bearing: every wisteria traversal re-summons each field's decoder
@@ -472,16 +474,16 @@ trait Json2 extends Json3:
       val fieldShaped: Boolean =
         infer[derivation is Discriminable in Json].isInstanceOf[Json.DiscriminantField[?]]
 
+      // `@name[Json]` / bare `@name` variant renames: map the serialized discriminator back to
+      // the variant name before delegating. A per-derivation constant, resolved once here.
+      val variantNames: Map[Text, Text] =
+        variantRelabelling[derivation, Json].remap: (variant, wire) => wire -> variant
+
       Json.Decodable(Morphology.Any):
         json =>
           provide[Tactic[Json.Error]]:
             provide[Tactic[Variant.Error]]:
               val discriminable = infer[derivation is Discriminable in Json]
-
-              // `@name[Json]` / bare `@name` variant renames: map the serialized
-              // discriminator back to the variant name before delegating.
-              val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Json].remap: (variant, wire) => wire -> variant
 
               discriminable.discriminate(json).lay:
                 focus(prior.or(Json.Focus(JsonPointer()))):
@@ -673,13 +675,14 @@ trait Json2 extends Json3:
     inline def disjunction[derivation: SumReflection]: derivation is Json.Encodable =
       // See the decoder disjunction: the codec-carried sum shape is permissive
       // (`Any`); precise `oneOf` schemas come from the standalone `Schematic`.
+      //
+      // `@name[Json]` / bare `@name` variant renames: variant name -> wire discriminator, read
+      // back the same way by the decoder. A per-derivation constant, resolved once here.
+      val variantNames: Map[Text, Text] = variantRelabelling[derivation, Json]
+
       Json.Encodable(() => Morphology.Any):
         value =>
           val discriminable = infer[derivation is Discriminable in Json]
-
-          // `@name[Json]` / bare `@name` variant renames: variant name -> wire
-          // discriminator, read back the same way by the decoder.
-          val variantNames: Map[Text, Text] = variantRelabelling[derivation, Json]
 
           variant(value): [variant <: derivation] =>
             value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
