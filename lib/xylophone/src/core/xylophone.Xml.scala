@@ -818,10 +818,8 @@ object Xml extends Tag.Container
 
       // Fields marked `@attribute` are read from the element's attributes
       // rather than its child elements, mirroring the encoder.
-      val attributeFields: Map[BaseText, Set[attribute]] = fieldAnnotations[derivation, attribute]
-
-      val unqualifiedFields: Map[BaseText, Set[unqualified]] =
-        fieldAnnotations[derivation, unqualified]
+      val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
+      val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
 
       // A namespaced type's fields are matched by resolved name, so a document may use any
       // prefix for the namespace; an unqualified field, or a type with no namespace, matches
@@ -830,7 +828,7 @@ object Xml extends Tag.Container
         if qualified then uri else Unset
 
       def qualifiedField(fieldLabel: BaseText): Boolean =
-        namespace.present && !unqualifiedFields.defines(fieldLabel)
+        namespace.present && !unqualifiedFields.has(fieldLabel)
 
       // A type with no namespace of its own has no opinion about prefixes, so a field matches
       // a child by raw label or, failing that, by local name
@@ -886,7 +884,7 @@ object Xml extends Tag.Container
             val wireName: BaseText = renames(fieldLabel).or(fieldLabel)
 
             def decodeNow(): field =
-              if attributeFields.defines(fieldLabel) then
+              if attributeFields.has(fieldLabel) then
                 // `@attribute` field: decode from the matching attribute as a
                 // `Xml.Text`; a missing attribute falls back to the declared
                 // default, else the `Absent` sentinel (raise + continue).
@@ -1074,10 +1072,8 @@ object Xml extends Tag.Container
     :   derivation is Encodable in Xml =
 
       value =>
-        val attributeFields: Map[BaseText, Set[attribute]] = fieldAnnotations[derivation, attribute]
-
-        val unqualifiedFields: Map[BaseText, Set[unqualified]] =
-          fieldAnnotations[derivation, unqualified]
+        val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
+        val unqualifiedFields: Set[BaseText] = annotatedFields[derivation, unqualified]
 
         val namespaced: Optional[(BaseText, Boolean)] = namespaceOf[derivation]
 
@@ -1101,13 +1097,13 @@ object Xml extends Tag.Container
             val encoded: Xml = encoder.encoded(field)
 
             val fieldScope: Optional[Scope] = namespaced.let: (_, qualified) =>
-              if !qualified || unqualifiedFields.defines(fieldLabel) then undeclaring else Unset
+              if !qualified || unqualifiedFields.has(fieldLabel) then undeclaring else Unset
 
             // `@attribute` fields become attributes carrying the encoded leaf's
             // text — unless the leaf is an absent `Optional`, whose empty
             // `Fragment` yields no attribute at all; every other field becomes
             // a child element via `wrap`.
-            if attributeFields.defines(fieldLabel) then
+            if attributeFields.has(fieldLabel) then
               encoded match
                 case Fragment() => ()
                 case _          => attributes += wireName -> textOf(encoded).or(t"")
@@ -2010,8 +2006,7 @@ object Xml extends Tag.Container
 
         Xml.Parsable.product[derivation](
           { () =>
-            val attributeFields: Map[BaseText, Set[attribute]] =
-              fieldAnnotations[derivation, attribute]
+            val attributeFields: Set[BaseText] = annotatedFields[derivation, attribute]
 
             // `@name[Xml]` / bare `@name` renames: field name ->
             // element/attribute name on the wire, read back the same way
@@ -2025,7 +2020,7 @@ object Xml extends Tag.Container
                 ( renames(fieldLabel).or(fieldLabel).s,
                   context: Xml.Parsing,
                   default[Optional[field]]: Any,
-                  attributeFields.defines(fieldLabel) )
+                  attributeFields.has(fieldLabel) )
           },
           fallback,
           values => Xml.Parsable.assemble(reflection, values))
@@ -2073,12 +2068,7 @@ object Xml extends Tag.Container
       (namespaced.namespace, namespaced.qualified)
 
     case _ =>
-      summonInline[derivation is Annotated by xmlns] match
-        case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
-          fields.annotations.head.let: annotation => (annotation.uri, annotation.qualified)
-
-        case _ =>
-          Unset
+      typeAnnotation[derivation, xmlns].let: annotation => (annotation.uri, annotation.qualified)
 
   case class XmlAttribute(label: BaseText, elements: Set[BaseText], global: Boolean):
     type Self <: Label

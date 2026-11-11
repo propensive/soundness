@@ -39,6 +39,8 @@ refer adversaria.Dereferenceable
 refer adversaria.name
 refer adversaria.relabelling
 refer adversaria.fieldAnnotations
+refer adversaria.annotatedFields
+refer adversaria.typeAnnotation
 
 entry .Annotated   a typeclass whose instances hold the static annotations on a type, its fields or its variants
   detail
@@ -330,6 +332,34 @@ entry .variantRelabelling   the serialized names of a sum type's variants for on
     case object Defer extends Decision
 
     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+    ```
+
+entry .annotatedFields   the names of the fields of a type which carry one annotation
+    `annotatedFields[T, A]` is the `Set` of names of the fields of `T` annotated with an `A`, as
+    a literal built when the derivation compiles. It is the form a derivation wants when it only
+    needs to know *which* fields are marked — xylophone's `@attribute` and `@unqualified` — and
+    constructs no annotation instance, where `fieldAnnotations` builds each field's annotations
+    into a `Set` inside a `Map`.
+
+    ```scala
+    import soundness.*
+
+    case class Book(title: Text, @Xml.attribute isbn: Text)
+
+    annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
+    ```
+
+entry .typeAnnotation   the annotation of one type on a type itself, if it has one
+    `typeAnnotation[T, A]` is the `A` annotating the type `T` — not its fields — rebuilt once,
+    where it is asked for, or `Unset`. It reads the payload of an annotation on a class, such as
+    xylophone's `@xmlns("urn:x")`.
+
+    ```scala
+    import soundness.*
+
+    @Xml.xmlns(t"urn:example") case class Order(id: Int)
+
+    typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
     ```
 
 entry .name   `@name(t"…")`: renames a field or variant in serialization, for every format or for one

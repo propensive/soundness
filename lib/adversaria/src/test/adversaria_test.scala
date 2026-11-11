@@ -50,6 +50,17 @@ case object Reject extends Decision
 
 case object Defer  extends Decision
 
+// Field renames for `relabelling`: `a` is renamed for one type argument, `b` by a bare
+// `@name`, and `c` is unannotated.
+case class Renamed(@name[Person](t"first") a: Text, @name(t"second") b: Int, c: Int)
+
+// A rename whose argument is not a literal: `relabelling` cannot bake it into the generated
+// code as a constant, so it rebuilds the annotation and reads it at the expansion site.
+object Wire:
+  val value: Text = t"dynamic"
+
+case class Dynamic(@name(Wire.value) x: Int)
+
 object Tests extends Suite("annotations", m"Adversaria tests"):
 
   def run(): Unit =
@@ -114,6 +125,46 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     test(m"variantRelabelling merges per-format and bare variant renames"):
       variantRelabelling[Decision, Person]
     . assert(_ == Map(t"Accept" -> t"yes", t"Reject" -> t"no"))
+
+    test(m"variantRelabelling for another format reads only the bare renames"):
+      variantRelabelling[Decision, Company]
+    . assert(_ == Map(t"Reject" -> t"no"))
+
+    test(m"relabelling merges per-format and bare field renames"):
+      relabelling[Renamed, Person]
+    . assert(_ == Map(t"a" -> t"first", t"b" -> t"second"))
+
+    test(m"relabelling for another format reads only the bare renames"):
+      relabelling[Renamed, Company]
+    . assert(_ == Map(t"b" -> t"second"))
+
+    test(m"relabelling is empty for a type without renames"):
+      relabelling[Employee, Person]
+    . assert(_ == Map())
+
+    test(m"relabelling reads a rename which is not a literal"):
+      relabelling[Dynamic, Person]
+    . assert(_ == Map(t"x" -> t"dynamic"))
+
+    test(m"annotatedFields names the fields carrying the annotation"):
+      annotatedFields[Letters, ref]
+    . assert(_ == Set(t"alpha", t"beta", t"delta"))
+
+    test(m"annotatedFields is empty when no field carries the annotation"):
+      annotatedFields[Employee, number]
+    . assert(_ == Set())
+
+    test(m"typeAnnotation reads the annotation on the type itself"):
+      typeAnnotation[Company, number]
+    . assert(_ == number(10))
+
+    test(m"typeAnnotation is Unset for an unannotated type"):
+      typeAnnotation[Person, number]
+    . assert(_ == Unset)
+
+    test(m"typeAnnotation is Unset for a type annotated with something else"):
+      typeAnnotation[Company, unique]
+    . assert(_ == Unset)
 
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)

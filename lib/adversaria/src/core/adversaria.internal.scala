@@ -157,6 +157,113 @@ object internal:
         }
 
 
+  // The class a derivation is about. `classSymbol`, not `typeSymbol`: wisteria derives
+  // `derivation & Product`, and an intersection has no type symbol, but its class symbol is
+  // the class — `Order & Product` is `Order`.
+  private def classOf(using Quotes)(self: quotes.reflect.TypeRepr): quotes.reflect.Symbol =
+    val dealiased = self.dealias
+    dealiased.classSymbol.getOrElse(dealiased.typeSymbol)
+
+  // The primary constructor's term parameters: a case class's fields, in declaration order.
+  private def fieldSymbols(using Quotes)(self: quotes.reflect.TypeRepr)
+  :   List[quotes.reflect.Symbol] =
+
+    classOf(self).primaryConstructor.paramSymss
+    . find(_.headOption.fold(false)(_.isTerm))
+    . getOrElse(Nil)
+
+  // The string an annotation argument denotes when it is written as a literal — a bare `"…"`,
+  // or a `t"…"` with no insertions, which gossamer expands to `"…".tt`, or `Text("…")`. A
+  // derivation then bakes the string into its code as a constant, where it would otherwise
+  // rebuild the annotation and read it back at runtime. Anything else is `Unset`, and the
+  // caller falls back to rebuilding.
+  private def literalText(using Quotes)(term: quotes.reflect.Term): Optional[String] =
+    import quotes.reflect.*
+
+    term match
+      case Inlined(_, Nil, expr)           => literalText(expr)
+      case Typed(expr, _)                  => literalText(expr)
+      case Block(Nil, expr)                => literalText(expr)
+      case Literal(StringConstant(string)) => string
+
+      case Apply(function, List(argument)) =>
+        val symbol = function.symbol
+        val wrapper = symbol.name == "tt" || symbol.name == "apply"
+
+        if wrapper && symbol.owner.fullName.startsWith("anticipation.") then literalText(argument)
+        else Unset
+
+      case _ =>
+        Unset
+
+  // The `@name` renames among `symbols` (fields or variants), resolved at expansion: a
+  // `@name[format]` overrides a bare `@name` (`name[Any]`) on the same symbol, and a symbol
+  // without either is absent. The result is the same `Map` the `Annotated`-based reading
+  // produced, but as a literal: a rename written as a literal string is a constant in the
+  // generated code, and one that is not is rebuilt and read once, at the derivation site —
+  // rather than every `name` on every field being reconstructed inside a `Set` inside a `Map`
+  // and filtered back out, at every expansion.
+  private def renames[format: Type](using Quotes)(symbols: List[quotes.reflect.Symbol])
+  :   Expr[Map[Text, Text]] =
+
+    import quotes.reflect.*
+
+    def rename(symbol: Symbol, operand: TypeRepr): Optional[Expr[Text]] =
+      symbol.annotations.filter(_.tpe <:< operand).reverse.headOption match
+        case None =>
+          Unset
+
+        case Some(annotation: Term) =>
+          val literal: Optional[Expr[Text]] = annotation match
+            case Apply(_, List(argument)) =>
+              literalText(argument).let(string => '{${Expr(string)}.tt})
+
+            case _ =>
+              Unset
+
+          literal.or(rebuild(annotation).let(term => '{${term.asExprOf[name[?]]}.name}))
+
+    val pairs: List[Expr[(Text, Text)]] = symbols.flatMap: symbol =>
+      val label: Expr[String] = Expr(symbol.name)
+      val general = rename(symbol, TypeRepr.of[name[Any]])
+      val specific = rename(symbol, TypeRepr.of[name[format]])
+
+      specific.or(general).option.map: text => '{($label.tt, $text)}
+
+    if pairs.isEmpty then '{Map[Text, Text]()} else '{Map.from(${Expr.ofList(pairs)})}
+
+  def relabelling[self: Type, format: Type]: Macro[Map[Text, Text]] =
+    import quotes.reflect.*
+    renames[format](fieldSymbols(TypeRepr.of[self]))
+
+  def variantRelabelling[self: Type, format: Type]: Macro[Map[Text, Text]] =
+    import quotes.reflect.*
+    renames[format](classOf(TypeRepr.of[self]).children)
+
+  // The names of the fields carrying an `annotation`, as a literal `Set` of constants.
+  def annotatedFields[self: Type, annotation: Type]: Macro[Set[Text]] =
+    import quotes.reflect.*
+
+    val operand = TypeRepr.of[annotation]
+
+    val names: List[Expr[Text]] =
+      fieldSymbols(TypeRepr.of[self]).filter(_.annotations.exists(_.tpe <:< operand)).map: field =>
+        '{${Expr(field.name)}.tt}
+
+    if names.isEmpty then '{Set[Text]()} else '{Set.from(${Expr.ofList(names)})}
+
+  // The `annotation` on the type itself, rebuilt once at the expansion site — the last one
+  // declared, as `Annotated`'s `annotations.head` read it — or `Unset`.
+  def typeAnnotation[self: Type, annotation: Type]: Macro[Optional[annotation]] =
+    import quotes.reflect.*
+
+    val operand = TypeRepr.of[annotation]
+    val found = classOf(TypeRepr.of[self]).annotations.filter(_.tpe <:< operand).reverse
+
+    found.headOption.flatMap(rebuild(_).option) match
+      case Some(term) => '{${term.asExprOf[annotation]}: Optional[annotation]}
+      case None       => '{Unset: Optional[annotation]}
+
   def dereferenceable[entity: Type, value: Type]: Macro[entity is Dereferenceable to value] =
     import quotes.reflect.*
 
