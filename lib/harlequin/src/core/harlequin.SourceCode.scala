@@ -36,7 +36,7 @@ import scala.annotation
 import scala.collection.mutable as scm
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*
-import dotty.tools.dotc.core.NameOps.isVarPattern
+import dotty.tools.dotc.core.NameOps.{isVarPattern, stripModuleClassSuffix}
 import dotty.tools.dotc.reporting.Diagnostic as CompilerDiagnostic
 import dotty.tools.dotc.reporting.HideNonSensicalMessages
 import dotty.tools.dotc.reporting.Reporter
@@ -475,6 +475,31 @@ object SourceCode:
   private def syntaxOf(using quotes: scala.quoted.Quotes)(tpe: Types.Type): Syntax =
     Syntax(tpe.asInstanceOf[quotes.reflect.TypeRepr])
 
+  // The owner-qualified name of a completion's symbol, in the shape a documentation key takes
+  // (`gossamer.Text#length`): `#` after a class or trait, `.` after an object or a package. A
+  // top-level definition's `$package` carrier is its package, as Fuel keys it. A member of a
+  // method, an anonymous class or a synthetic owner has no stable name, so none is given.
+  private def qualifiedName(symbol: Symbols.Symbol)(using Contexts.Context): Optional[Text] =
+    def plain(symbol: Symbols.Symbol): Text = symbol.name.stripModuleClassSuffix.toString.tt
+
+    def recur(symbol: Symbols.Symbol): Optional[Text] =
+      val owner: Symbols.Symbol = symbol.owner
+
+      if symbol.isAnonymousClass || symbol.isAnonymousFunction || symbol.is(Flags.Synthetic)
+      then Unset
+      else if owner.isEffectiveRoot then plain(symbol)
+      else if owner.isPackageObject then
+        recur(owner.owner).let { prefix => t"$prefix.${plain(symbol)}" }
+      else if !owner.isClass then Unset
+      else
+        recur(owner).let: prefix =>
+          val separator: Text =
+            if owner.is(Flags.ModuleClass) || owner.is(Flags.Package) then t"." else t"#"
+
+          t"$prefix$separator${plain(symbol)}"
+
+    if symbol.exists then recur(symbol) else Unset
+
   private def completionKind(symbol: Symbols.Symbol)(using Contexts.Context): Completion.Kind =
     if symbol.is(Flags.Extension) then Completion.Kind.Extension
     else if symbol.is(Flags.Package) then Completion.Kind.Package
@@ -515,7 +540,10 @@ object SourceCode:
       val items = raw.flatMap: completion =>
         completion.symbols.map: symbol =>
           Completion
-            ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
+            ( completion.label.tt,
+              completionKind(symbol),
+              syntaxOf(symbol.info.widenTermRefExpr),
+              qualified = qualifiedName(symbol) )
 
       if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), items.to(List))
 
@@ -538,7 +566,10 @@ object SourceCode:
     val items = raw.flatMap: completion =>
       completion.symbols.map: symbol =>
         Completion
-          ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
+          ( completion.label.tt,
+            completionKind(symbol),
+            syntaxOf(symbol.info.widenTermRefExpr),
+            qualified = qualifiedName(symbol) )
 
     Completions(Span.offset(offset.z, 0), items.to(List))
 
