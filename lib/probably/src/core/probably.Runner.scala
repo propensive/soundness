@@ -76,7 +76,7 @@ object Runner:
     def skip
       ( id:          Test.Id,
         kind:        Entry.Kind,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         expected:    Optional[Long] )
     :   Boolean =
 
@@ -113,7 +113,7 @@ object Runner:
     private var active: List[Test.Id] = Nil
     // [synchronized]
     @scala.caps.unsafe.untrackedCaptures
-    private var listed0: List[(Test.Id, Entry.Kind, Optional[Long], List[(Axis.Spec, Value)])] =
+    private var listed0: List[(Test.Id, Entry.Kind, Optional[Long], List[(Axis.Spec, Axis.Value)])] =
       Nil
     // [synchronized]
     @scala.caps.unsafe.untrackedCaptures
@@ -236,7 +236,7 @@ object Runner:
     def skip
       ( id:          Test.Id,
         kind:        Entry.Kind,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         expected:    Optional[Long] )
     :   Boolean =
 
@@ -285,7 +285,7 @@ object Runner:
           cells.flatMap { entry => entry(3).map(_(0)) }.distinct
 
         val seen: List[Axis.Schedule] = specs.map: spec =>
-          val values: List[Value] =
+          val values: List[Axis.Value] =
             cells.flatMap { entry => entry(3).filter(_(0) == spec).map(_(1)) }.distinct
 
           val bounds = declared.seek(_(2) == spec)
@@ -376,7 +376,7 @@ trait Runner[report] extends Findable:
   def skip
     ( id:          Test.Id,
       kind:        Entry.Kind,
-      coordinates: List[(Axis.Spec, Value)],
+      coordinates: List[(Axis.Spec, Axis.Value)],
       expected:    Optional[Long] )
   :   Boolean
 
@@ -399,7 +399,7 @@ trait Runner[report] extends Findable:
 
   // Whether a test (or one cell of an axial test) is excluded by the selection. In listing
   // mode every test is skipped, and those the selection admits are noted for enumeration.
-  def skip(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
+  def skip(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Axis.Value)]): Boolean =
     skip(id, kind, coordinates, Unset)
 
   // The test's `action` may capture a capability (an error tactic, a decoder, …), so the

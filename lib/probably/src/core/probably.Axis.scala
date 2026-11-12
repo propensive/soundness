@@ -128,6 +128,31 @@ object Axis:
   =>  Conversion[{ def valueOf(name: String): enumeration }, Axis[enumeration]] =
     Axis(_)
 
+  object Value:
+    def apply[value: Axable as axable](value0: value): Value =
+      axable.numeric(value0).lay(Value.Discrete(axable.label(value0))): number =>
+        axable.domain match
+          case Axis.Domain.Decimal => Value.Decimal(number)
+          case _                   => Value.Integral(number.toLong)
+
+  // One coordinate on one axis of a test. A cell of a test is addressed by a list of values,
+  // positionally aligned with the test's axes; a test with no axes has the single address
+  // `Nil`.
+  enum Value:
+    case Discrete(label: Text)
+    case Integral(number: Long)
+    case Decimal(number: Double)
+
+    def text: Text = this match
+      case Discrete(label)  => label
+      case Integral(number) => number.show
+      case Decimal(number)  => number.show
+
+    def numeric: Optional[Double] = this match
+      case Discrete(_)      => Unset
+      case Integral(number) => number.toDouble
+      case Decimal(number)  => number
+
 // One input variable of a test: a labelled domain of values, each of which contributes one
 // coordinate of the test's cells. Most tests have no axes; a comparative benchmark has one
 // discrete axis of implementations; input data of different sizes forms a numeric axis.
@@ -137,34 +162,9 @@ into case class Axis[value](label: Text, values: List[value], emergent: Boolean 
   ( using val axable: value is Axable ):
 
   def spec: Axis.Spec = Axis.Spec(label, axable.domain, emergent)
-  def point(value0: value): Value = Value(value0)(using axable)
-  def coordinate(value0: value): (Axis.Spec, Value) = (spec, point(value0))
-
-object Value:
-  def apply[value: Axable as axable](value0: value): Value =
-    axable.numeric(value0).lay(Value.Discrete(axable.label(value0))): number =>
-      axable.domain match
-        case Axis.Domain.Decimal => Value.Decimal(number)
-        case _                   => Value.Integral(number.toLong)
-
-// One coordinate on one axis of a test. A cell of a test is addressed by a list of values,
-// positionally aligned with the test's axes; a test with no axes has the single address
-// `Nil`.
-enum Value:
-  case Discrete(label: Text)
-  case Integral(number: Long)
-  case Decimal(number: Double)
-
-  def text: Text = this match
-    case Discrete(label)  => label
-    case Integral(number) => number.show
-    case Decimal(number)  => number.show
-
-  def numeric: Optional[Double] = this match
-    case Discrete(_)      => Unset
-    case Integral(number) => number.toDouble
-    case Decimal(number)  => number
+  def point(value0: value): Axis.Value = Axis.Value(value0)(using axable)
+  def coordinate(value0: value): (Axis.Spec, Axis.Value) = (spec, point(value0))
 
 // The distinguished comparison point of a test: one value on one of its axes, against
 // which every other cell along that axis is compared, using the `Baseline` settings.
-case class Anchor(axis: Axis.Spec, value: Value, baseline: Baseline)
+case class Anchor(axis: Axis.Spec, value: Axis.Value, baseline: Baseline)

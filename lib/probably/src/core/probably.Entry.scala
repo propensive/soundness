@@ -81,10 +81,10 @@ final class Entry(val id: Test.Id, val kind: Entry.Kind):
   private var axes0: List[Axis.Spec] = Nil
   // [synchronized]
   @scala.caps.unsafe.untrackedCaptures
-  private var ticks0: Map[Axis.Spec, List[Value]] = Map()
+  private var ticks0: Map[Axis.Spec, List[Axis.Value]] = Map()
   // [synchronized]
   @scala.caps.unsafe.untrackedCaptures
-  private var cells0: Ledger[List[Value], Tally] = Ledger()
+  private var cells0: Ledger[List[Axis.Value], Tally] = Ledger()
 
   // [synchronized] plain var in non-Stateful Entry
   @scala.caps.unsafe.untrackedCaptures
@@ -94,12 +94,12 @@ final class Entry(val id: Test.Id, val kind: Entry.Kind):
   var anchor: Optional[Anchor] = Unset
 
   def axes: List[Axis.Spec] = mutex(axes0)
-  def cells: List[(List[Value], Tally)] = mutex(cells0.to[List])
+  def cells: List[(List[Axis.Value], Tally)] = mutex(cells0.to[List])
 
   // Returns the cell at the given coordinates, creating it if absent. Appends any
   // not-yet-seen axes (emergent axes extend the axis list as their coordinates arrive) and
   // registers each axis's values in first-appearance order.
-  def cell(coordinates: List[(Axis.Spec, Value)]): Tally = mutex:
+  def cell(coordinates: List[(Axis.Spec, Axis.Value)]): Tally = mutex:
     coordinates.each: (axis, value) =>
       if !axes0.has(axis) then axes0 = axes0 :+ axis
       val seen = ticks0(axis).or(Nil)
@@ -114,7 +114,7 @@ final class Entry(val id: Test.Id, val kind: Entry.Kind):
 
   // The coordinate values of one axis in presentation order: first-appearance order for
   // discrete axes, numeric order for integral and decimal axes.
-  def values(axis: Axis.Spec): List[Value] =
+  def values(axis: Axis.Spec): List[Axis.Value] =
     val seen = mutex(ticks0(axis).or(Nil))
 
     axis.domain match

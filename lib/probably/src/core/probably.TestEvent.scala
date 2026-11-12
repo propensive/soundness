@@ -144,26 +144,26 @@ object TestEvent:
       difference: Optional[Text] )
 
   object Coordinate:
-    def of(spec: Axis.Spec, value: Value): Coordinate =
+    def of(spec: Axis.Spec, value: Axis.Value): Coordinate =
       val domain = spec.domain match
         case Axis.Domain.Discrete => t"discrete"
         case Axis.Domain.Integral => t"integral"
         case Axis.Domain.Decimal  => t"decimal"
 
       value match
-        case Value.Discrete(label) =>
+        case Axis.Value.Discrete(label) =>
           Coordinate(spec.label, domain, spec.emergent, label, Unset, Unset)
 
-        case Value.Integral(number) =>
+        case Axis.Value.Integral(number) =>
           Coordinate(spec.label, domain, spec.emergent, Unset, number, Unset)
 
-        case Value.Decimal(number) =>
+        case Axis.Value.Decimal(number) =>
           Coordinate(spec.label, domain, spec.emergent, Unset, Unset, number)
 
-    def of(coordinates: List[(Axis.Spec, Value)]): List[Coordinate] =
-      coordinates.map: (coordinate: (Axis.Spec, Value)) => of(coordinate(0), coordinate(1))
+    def of(coordinates: List[(Axis.Spec, Axis.Value)]): List[Coordinate] =
+      coordinates.map: (coordinate: (Axis.Spec, Axis.Value)) => of(coordinate(0), coordinate(1))
 
-  // An axis coordinate: the `Axis.Spec` fields plus the `Value`, its enum flattened into three
+  // An axis coordinate: the `Axis.Spec` fields plus the `Axis.Value`, its enum flattened into three
   // `Optional`s of which exactly one is present, according to `domain` (`discrete`, `integral`
   // or `decimal`).
   case class Coordinate
@@ -198,7 +198,7 @@ object TestEvent:
           schedule.most )
 
   // One axis of a scheduled test: the `Axis.Spec` fields, the labels of the values of the
-  // admitted cells (`Value#text`, in first-appearance order; none for an emergent axis) and,
+  // admitted cells (`Axis.Value#text`, in first-appearance order; none for an emergent axis) and,
   // for an emergent axis with declared bounds, the least and greatest values the run will
   // produce.
   case class AxisSchedule
