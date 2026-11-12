@@ -49,7 +49,7 @@ detail
 
     - `cataclysm.core` — `Css` and its nodes, errors, keywords and `Css.Convertible`; the
       selector model (`SelectorList`, `Selector`, `Compound`, `Simple`, …); the property
-      dataset (`PropertyDef`, `SyntaxMatcher`, `Css.Syntax`, `ValueToken`, `Outcome`); the
+      dataset (`PropertyDef`, `Css.Syntax.Matcher`, `Css.Syntax`, `ValueToken`, `Outcome`); the
       units (`Px`, `Rem`, `Vw`, `Pct`, `Deg`, `Fr`, …); the `css"…"` interpolator; the
       `classes` and `ids` extensions; and the `formatting` and `construables` packages.
       Compiles for the JVM, Scala.js and Scala Native.
@@ -285,7 +285,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
         Error 251: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
         number as the subcode. One is raised for each problem found while reading a
         stylesheet or parsing a selector, grammar or value; `read[Css]` collects them all
-        into a `Css.Errors`, while `SelectorList.parse` and `SyntaxMatcher.check` raise a
+        into a `Css.Errors`, while `SelectorList.parse` and `Css.Syntax.Matcher.check` raise a
         single `Css.Error` through a `Tactic[Css.Error]`. Constructing one needs a
         `Diagnostics`.
 
@@ -413,7 +413,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
     detail
         The parsed form of a value-definition-syntax string such as `<line-width> ||
         <line-style> || <color>` — the notation in which every property's permitted values
-        are described in the MDN dataset — which `SyntaxMatcher` matches a concrete value
+        are described in the MDN dataset — which `Css.Syntax.Matcher` matches a concrete value
         against. `PropertyDef#grammar` is the `Css.Syntax` of a property.
 
         The cases follow the notation. `Keyword(name)` is a literal identifier such as
@@ -435,9 +435,45 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
 
         It lives under `Css` rather than at the top level so that it does not clash with
         stenography's `Syntax` in the umbrella.
-    refer cataclysm.SyntaxMatcher
+    refer cataclysm.Css.Syntax.Matcher
     refer cataclysm.PropertyDef
   entry #rules   the stylesheet's nodes, in order
+    entry .Matcher   checks a property value against its grammar: valid, invalid or unsupported
+      detail
+          `Css.Syntax.Matcher.check(property, value)` tokenizes the value (`ValueToken`) and
+          matches it, with backtracking, against the property's `Css.Syntax`, resolving
+          composite `<type>`s from the MDN `syntaxes.json` dataset and matching the leaf
+          primitives — `<length>`, `<percentage>`, `<number>`, `<integer>`, `<angle>`,
+          `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`, `<url>`,
+          `<hex-color>`, the identifier types — at the token level. The result is an
+          `Outcome`: `Valid`, `Invalid`, or `Unsupported(types)` when the grammar reaches a
+          type the matcher implements neither as a composite nor as a primitive, so an
+          unimplemented corner of the grammar is reported rather than passed or failed
+          silently. This is the check `read[Css]`, `css"…"` and `Css.Style(…)` apply to every
+          declaration.
+
+          A value containing an arbitrary-substitution function, `var()` or `env()`, is always
+          valid, as a pending-substitution value is; the CSS-wide keywords are valid as the
+          sole value of every property; and `calc()`, `min()`, `max()`, `clamp()` and the
+          other math functions are accepted wherever a numeric primitive is expected.
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+          import errorDiagnostics.stackTracesDiagnostics
+
+          val grammar = Css.Syntax.Repeated(Css.Syntax.Type(t"length", Unset), 1, Unset, true)
+          Css.Syntax.Matcher.check(grammar, t"1px, 2px, 3px")     // Outcome.Valid
+          Css.Syntax.Matcher.check(grammar, t"1px 2px")           // Outcome.Invalid
+          ```
+      refer cataclysm.PropertyDef
+      refer cataclysm.Outcome
+      refer cataclysm.ValueToken
+      entry .check   a value against a property's grammar, or against a `Css.Syntax` directly
+          Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
+          grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
+          `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
+          unterminated string).
 
 entry .css   the `css"…"` interpolator: a stylesheet or inline style, checked as the code compiles
     `css"a { color: red }"` is a `Css`, and `css"color: red; width: 4px"` — bare
@@ -715,14 +751,14 @@ entry .PropertyDef   the definition of a CSS property from the MDN dataset: its 
 
       val width: PropertyDef = PropertyDef.of(t"width").or(halt(t"unknown"))
       width.syntax                                      // the dataset's grammar text
-      SyntaxMatcher.check(width, t"4px")                // Outcome.Valid
-      SyntaxMatcher.check(width, t"wide")               // Outcome.Invalid
+      Css.Syntax.Matcher.check(width, t"4px")                // Outcome.Valid
+      Css.Syntax.Matcher.check(width, t"wide")               // Outcome.Invalid
       PropertyDef.of(t"colour")                         // Unset
       ```
 
       Custom properties (`--name`) are valid without a definition and are the caller's
       responsibility: `of` returns `Unset` for them.
-  refer cataclysm.SyntaxMatcher
+  refer cataclysm.Css.Syntax.Matcher
   refer cataclysm.Css.Syntax
   entry .list   every known property, in dataset order
   entry .all   every known property, keyed by name in a `Dictionary`
@@ -731,51 +767,14 @@ entry .PropertyDef   the definition of a CSS property from the MDN dataset: its 
   entry #syntax   the value grammar as the dataset writes it, `<length> | auto`
   entry #grammar   the value grammar parsed to a `Css.Syntax`, computed on first use
 
-entry .SyntaxMatcher   checks a property value against its grammar: valid, invalid or unsupported
-  detail
-      `SyntaxMatcher.check(property, value)` tokenizes the value (`ValueToken`) and
-      matches it, with backtracking, against the property's `Css.Syntax`, resolving
-      composite `<type>`s from the MDN `syntaxes.json` dataset and matching the leaf
-      primitives — `<length>`, `<percentage>`, `<number>`, `<integer>`, `<angle>`,
-      `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`, `<url>`,
-      `<hex-color>`, the identifier types — at the token level. The result is an
-      `Outcome`: `Valid`, `Invalid`, or `Unsupported(types)` when the grammar reaches a
-      type the matcher implements neither as a composite nor as a primitive, so an
-      unimplemented corner of the grammar is reported rather than passed or failed
-      silently. This is the check `read[Css]`, `css"…"` and `Css.Style(…)` apply to every
-      declaration.
-
-      A value containing an arbitrary-substitution function, `var()` or `env()`, is always
-      valid, as a pending-substitution value is; the CSS-wide keywords are valid as the
-      sole value of every property; and `calc()`, `min()`, `max()`, `clamp()` and the
-      other math functions are accepted wherever a numeric primitive is expected.
-
-      ```scala
-      import soundness.*
-      import strategies.throwUnsafely
-      import errorDiagnostics.stackTracesDiagnostics
-
-      val grammar = Css.Syntax.Repeated(Css.Syntax.Type(t"length", Unset), 1, Unset, true)
-      SyntaxMatcher.check(grammar, t"1px, 2px, 3px")     // Outcome.Valid
-      SyntaxMatcher.check(grammar, t"1px 2px")           // Outcome.Invalid
-      ```
-  refer cataclysm.PropertyDef
-  refer cataclysm.Outcome
-  refer cataclysm.ValueToken
-  entry .check   a value against a property's grammar, or against a `Css.Syntax` directly
-      Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
-      grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
-      `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
-      unterminated string).
-
 entry .Outcome   the result of checking a value against a grammar: `Valid`, `Invalid` or `Unsupported`
-    An enum returned by `SyntaxMatcher.check`. `Valid` and `Invalid` are a definite
+    An enum returned by `Css.Syntax.Matcher.check`. `Valid` and `Invalid` are a definite
     verdict; `Unsupported(types)` names the value-definition types the matcher could not
     verify against, which `read[Css]` reports as `Css.Error.Reason.UnsupportedValue`.
 
 entry .ValueToken   one token of a property value: identifier, number, dimension, string, function, …
     The unit a property value is broken into before matching, following the CSS Syntax
-    Module Level 3 tokenizer for the tokens which appear in values. `SyntaxMatcher` consumes
+    Module Level 3 tokenizer for the tokens which appear in values. `Css.Syntax.Matcher` consumes
     them; they are exposed so that a tool can inspect a value's lexical shape. The cases:
 
     ```tabular

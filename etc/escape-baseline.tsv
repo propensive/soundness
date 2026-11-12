@@ -86,7 +86,7 @@ lib/capricious/src/core/capricious.Random.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	
 lib/capricious/src/core/capricious.Randomizable.scala	3	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/capricious/src/core/capricious_core.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0
 lib/capricious/src/test/capricious_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0	0
+lib/cataclysm/src/core/cataclysm.SyntaxMatching.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0	0
 lib/cataclysm/src/core/cataclysm.internal.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0	0
 lib/charisma/src/core/charisma.PeriodicTable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/charisma/src/test/charisma_test.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0

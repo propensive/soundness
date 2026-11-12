@@ -30,7 +30,7 @@ lib/capricious/src/core/capricious_core.scala	0	1	0
 lib/cataclysm/src/core/cataclysm.CssParser.scala	3	0	1
 lib/cataclysm/src/core/cataclysm.PropertyDef.scala	0	2	0
 lib/cataclysm/src/core/cataclysm.SelectorParser.scala	10	0	1
-lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala	0	2	0
+lib/cataclysm/src/core/cataclysm.SyntaxMatching.scala	0	2	0
 lib/cataclysm/src/core/cataclysm.SyntaxParser.scala	11	0	0
 lib/cataclysm/src/core/cataclysm.ValueTokenizer.scala	10	0	0
 lib/charisma/src/core/charisma.PeriodicTable.scala	0	1	0

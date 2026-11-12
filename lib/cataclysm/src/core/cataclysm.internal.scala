@@ -305,7 +305,7 @@ object internal:
       if topic == t"*" then Unset
       else sample(topic).lay(Unset):
         sampleText =>
-          val outcome = safely(SyntaxMatcher.check(definition, sampleText))
+          val outcome = safely(Css.Syntax.Matcher.check(definition, sampleText))
 
           if outcome.or(Outcome.Unsupported(Nil)) == Outcome.Invalid
           then m"cataclysm: a $topic value is not valid for the $property property"

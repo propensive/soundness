@@ -666,7 +666,7 @@ Each pair is a genuine clash, not a re-export:
 | kaleidoscope.core | `RegexBackend→Regex.Backend` (sealed: its `regexBackends` givens move too, or it unseals) — **done** |
 | parasite.core | `SharedProbate→Probate.Shared` (an alias; needs a companion) — **done** |
 | aviation.core | `RecurrenceLiteral→Recurrence.Literal` (an alias) — **done** |
-| cataclysm.core | `SyntaxMatcher→Css.Syntax.Matcher` |
+| cataclysm.core | `SyntaxMatcher→Css.Syntax.Matcher` — **done** |
 | fulminate.core | `UncheckedError→Error.Unchecked` |
 
 Still blocked: `TlsAcceptance`, `SecurePort` (platform-split `Tls`); `ArOpenable` (R6, as

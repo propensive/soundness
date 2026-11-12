@@ -183,7 +183,7 @@ private[cataclysm] object CssParser:
       if property.starts(t"--") then ()
       else PropertyDef.of(property) match
         case definition: PropertyDef =>
-          SyntaxMatcher.check(definition, value) match
+          Css.Syntax.Matcher.check(definition, value) match
             case Outcome.Valid =>
               ()
 

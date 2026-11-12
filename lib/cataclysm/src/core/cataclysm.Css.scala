@@ -343,6 +343,17 @@ object Css:
   trait Convertible extends Typeclass, Topical:
     def value(self: Self): Text
 
+  object Syntax:
+    // Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
+    // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
+    // functions and a handful of leaf primitives); leaf primitives (`<length>`,
+    // `<color>` parts, …) are matched at the token level. A value containing an
+    // arbitrary-substitution function (`var()`, `env()`) is always valid (it is a
+    // pending-substitution value). `calc()` and friends are accepted wherever a
+    // numeric primitive is expected. Any `<type>` that is neither resolvable nor an
+    // implemented primitive yields `Outcome.Unsupported`.
+    object Matcher extends SyntaxMatching
+
   // Syntax → Css.Syntax
   // The CSS Value Definition Syntax (VDS) — the grammar notation in which every
   // property's permitted values are described. A `Syntax` is the parsed form of a

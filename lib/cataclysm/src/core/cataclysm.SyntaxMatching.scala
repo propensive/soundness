@@ -44,15 +44,9 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-// Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
-// are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
-// functions and a handful of leaf primitives); leaf primitives (`<length>`,
-// `<color>` parts, …) are matched at the token level. A value containing an
-// arbitrary-substitution function (`var()`, `env()`) is always valid (it is a
-// pending-substitution value). `calc()` and friends are accepted wherever a
-// numeric primitive is expected. Any `<type>` that is neither resolvable nor an
-// implemented primitive yields `Outcome.Unsupported`.
-object SyntaxMatcher:
+// The implementation of `Css.Syntax.Matcher`, kept in a file of its own with its own imports (the
+// keyword tables deliberately use the stdlib `Set`) and mixed into that object.
+trait SyntaxMatching:
   // The composite syntaxes, from the string tables compiled from the bundled dataset at build
   // time (`CssData`).
   private lazy val rawComposites: Dictionary[Text] =
