@@ -374,4 +374,14 @@ object Css:
     case Repeated(term: Syntax, min: Int, max: Optional[Int], separated: Boolean)
     case Mandatory(term: Syntax)                     // `!` — the group must produce a value
 
+  // The result of checking a property value against its grammar. `Unsupported`
+  // carries the names of the value types the matcher does not yet implement and so
+  // could not verify against.
+  enum Outcome derives CanEqual:
+    import anticipation.*
+
+    case Valid
+    case Invalid
+    case Unsupported(types: List[Text])
+
 case class Css(rules: List[Css.Node]) derives CanEqual

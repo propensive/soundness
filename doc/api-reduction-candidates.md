@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **327**;
-  126 sit in a prefix family of two or more, across 41 families, and
+- exported multi-word type-level names still under review: **325**;
+  124 sit in a prefix family of two or more, across 40 families, and
   201 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -266,7 +266,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 
 | prefix | libraries | n | names |
 |---|---|---|---|
-| `Attribute*` | cataclysm | 2 | `AttributeMatcher`, `AttributeTest` |
 | `Block*` | enigmatic, galilei | 2 | `BlockCipher`, `BlockDevice` |
 | `Box*` | tessellate | 2 | `BoxDrawing`, `BoxLine` |
 | `Char*` | escapade, galilei | 2 | `CharDevice`, `CharSpan` |

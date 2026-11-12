@@ -49,6 +49,7 @@ import nomenclature.*
 import rudiments.all
 import spectacular.*
 import vacuous.*
+import cataclysm.Css.Outcome
 
 object internal:
   // A private-use sentinel marks each substitution. NUL would be removed by the

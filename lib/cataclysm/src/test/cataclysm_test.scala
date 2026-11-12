@@ -42,6 +42,9 @@ import errorDiagnostics.stackTracesDiagnostics
 import cataclysm.Css.Syntax
 import Css.Node.*
 import denominative.dysasymptotics.linearSize
+import cataclysm.Selector
+  . { AttributeMatcher, AttributeTest, Combinator, Compound, Prefix, PseudoArgument, Simple }
+import cataclysm.Css.Outcome
 
 object Tests extends Suite("css", m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────

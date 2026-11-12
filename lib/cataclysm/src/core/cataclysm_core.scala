@@ -39,6 +39,7 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import cataclysm.Selector.{Compound, PseudoArgument, Simple}
 
 // The `css"…"` typed CSS interpolator, wired through `contextual` like xylophone's
 // `x"…"` and honeycomb's `h"…"`. The transparent result is a `Css` (stylesheet) or a
@@ -94,4 +95,5 @@ package formatting:
   given compactCssFormatting: Css.Formatting = Css.Formatting(newlines = false, spaces = false)
 
 package construables:
+
   given cssConstruable: ("text/css" is Construable to Css) = Construable()

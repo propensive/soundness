@@ -43,6 +43,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import cataclysm.Css.Outcome
 
 // The implementation of `Css.Syntax.Matcher`, kept in a file of its own with its own imports (the
 // keyword tables deliberately use the stdlib `Set`) and mixed into that object.
