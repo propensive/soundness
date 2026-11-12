@@ -47,6 +47,25 @@ import spectacular.*
 import vacuous.*
 
 object Flag:
+  // Raised inside an `execute` block, where the requisite guard has already run and a failure
+  // can no longer be accrued, so it propagates to the executive's backstop: by `require()` on an
+  // absent flag (`Missing`), or by `validate()` on a present flag whose operand cannot be
+  // decoded (`Invalid`). In the pure section neither call fails: each records the fault on the
+  // `Cli`, and `execute` reports every missing or invalid flag together.
+  object Error:
+    enum Reason:
+      case Missing
+      case Invalid(detail: Text)
+
+  case class Error(flag: Flag, reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error
+    ( reason match
+        case Error.Reason.Missing =>
+          m"the required flag ${serialize(flag.name)} was not specified"
+
+        case Error.Reason.Invalid(detail) =>
+          m"the value of ${serialize(flag.name)} is not valid: $detail" )
+
   def serialize(name: Text | Char): Text = name.absolve match
     case char: Char => t"-$char"
     case text: Text => t"--$text"
@@ -157,7 +176,7 @@ extends Topical:
   // Requiring a flag in the pure section never fails fast: there may be several missing
   // requirements, and they are accrued on the `Cli` so that `execute` can report them all in
   // one friendly message. Inside `execute`, where the guard has already run, a missing flag
-  // raises a `MissingFlagError` immediately instead, for the backstop to handle.
+  // raises a `Flag.Error` immediately instead, for the backstop to handle.
   transparent inline def require()
     ( using cli:           Cli,
             interpreter:   Interpreter,
@@ -175,7 +194,7 @@ extends Topical:
         // condition for the application to handle.
         import scala.unsafeExceptions.canThrowAny
         import fulminate.errorDiagnostics.emptyDiagnostics
-        value.or(throw MissingFlagError(this))
+        value.or(throw Flag.Error(this, Flag.Error.Reason.Missing))
 
       case _ =>
         Requisite(this, value)
@@ -190,7 +209,7 @@ extends Topical:
   // capture in any storable type — hence the two separate summons below.) Like `require`,
   // failures in the pure section are accrued — as missing or as faults, with the interpreter's
   // own explanation where it raises one — and reported together by `execute`; inside `execute`,
-  // a missing flag raises `MissingFlagError` and a malformed one `InvalidFlagError`,
+  // a missing flag raises a `Missing` `Flag.Error` and a malformed one an `Invalid` one,
   // immediately.
   transparent inline def validate()
     ( using cli:         Cli,
@@ -229,7 +248,7 @@ extends Topical:
         // condition for the application to handle.
         import scala.unsafeExceptions.canThrowAny
 
-        if located.absent then throw MissingFlagError(this)
+        if located.absent then throw Flag.Error(this, Flag.Error.Reason.Missing)
         else
           attempt[Hazard]:
             summonInline
@@ -238,10 +257,11 @@ extends Topical:
             . interpret(located.or(Nil))
 
           . match
-            case Attempt.Success(value) => value.or(throw InvalidFlagError(this, bland))
+            case Attempt.Success(value) =>
+              value.or(throw Flag.Error(this, Flag.Error.Reason.Invalid(bland)))
 
             case Attempt.Failure(error) =>
-              throw InvalidFlagError(this, Error(error).message.text)
+              throw Flag.Error(this, Flag.Error.Reason.Invalid(Error(error).message.text))
 
       case _ =>
         if located.absent then

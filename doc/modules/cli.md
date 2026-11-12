@@ -433,9 +433,9 @@ def tool4(args: List[Text]): Unit =
       Exit.Ok
 ```
 
-Inside `execute`, the same calls give the value directly, and raise a `MissingFlagError` or
-an `InvalidFlagError` immediately, for the backstop to report. A required flag is also marked
-as required in the help text.
+Inside `execute`, the same calls give the value directly, and raise a `Flag.Error` (whose
+reason is `Missing` or `Invalid`) immediately, for the backstop to report. A required flag is
+also marked as required in the help text.
 
 Each way of reading a flag gives something different in the prelude and inside `execute`:
 
@@ -444,8 +444,8 @@ column  Read
 column  In the prelude
 column  Inside `execute`
 row  `flag()`  a `Prospective`, whose `present` and `absent` answer at once  an `Optional` value
-row  `flag.require()`  a `Requisite`, checked before `execute` runs  the value, or a `MissingFlagError`
-row  `flag.validate()`  a `Requisite`, checked before `execute` runs  the value, or a `MissingFlagError` or `InvalidFlagError`
+row  `flag.require()`  a `Requisite`, checked before `execute` runs  the value, or a `Flag.Error`
+row  `flag.validate()`  a `Requisite`, checked before `execute` runs  the value, or a `Flag.Error`
 row  `flag.present`  a `Boolean`  a `Boolean`
 row  `flag.value`  not available  an `Optional` value
 ```

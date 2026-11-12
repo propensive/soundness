@@ -1252,11 +1252,12 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
           invoke(app)(t"--count", t"4")(0)
         . check(_ == Exit.Ok)
 
-        test(m"Requiring a missing flag inside execute raises MissingFlagError"):
+        test(m"Requiring a missing flag inside execute raises a missing Flag.Error"):
           def app(using cli: Cli): Execution =
             execute(Flag[Text](t"count").require() yet Exit.Ok)
 
-          try invoke(app)() yet t"returned" catch case error: MissingFlagError => t"raised"
+          try invoke(app)() yet t"returned" catch case error: Flag.Error =>
+            if error.reason == Flag.Error.Reason.Missing then t"raised" else t"other"
         . check(_ == t"raised")
 
         class Wait(val text: Text)
@@ -1345,20 +1346,24 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
           invoke(app)(t"--count", t"42")(0)
         . check(_ == Exit.Ok)
 
-        test(m"Validating a malformed flag inside execute raises InvalidFlagError"):
+        test(m"Validating a malformed flag inside execute raises an invalid Flag.Error"):
           def app(using cli: Cli): Execution =
             execute(Flag[Int](t"count").validate() yet Exit.Ok)
 
           try invoke(app)(t"--count", t"4x") yet t"returned"
-          catch case error: InvalidFlagError => t"raised"
+          catch case error: Flag.Error =>
+            error.reason match
+              case Flag.Error.Reason.Invalid(_) => t"raised"
+              case _                           => t"other"
         . check(_ == t"raised")
 
-        test(m"Validating a missing flag inside execute raises MissingFlagError"):
+        test(m"Validating a missing flag inside execute raises a missing Flag.Error"):
           def app(using cli: Cli): Execution =
             execute(Flag[Int](t"count").validate() yet Exit.Ok)
 
           try invoke(app)() yet t"returned"
-          catch case error: MissingFlagError => t"raised"
+          catch case error: Flag.Error =>
+            if error.reason == Flag.Error.Reason.Missing then t"raised" else t"other"
         . check(_ == t"raised")
 
       suite(m"Pathname operand completion"):

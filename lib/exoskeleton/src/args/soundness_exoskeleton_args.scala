@@ -35,7 +35,7 @@ package soundness
 export
   exoskeleton
   . { Argument, arguments, Cli, CommandGroup, Commandline, Discoverable, Effectful, effectful,
-      Flag, Interpretable, Interpreter, InvalidFlagError, Login, MissingFlagError, Prospective,
+      Flag, Interpretable, Interpreter, Login, Prospective,
       Requisite, Setting, Shell, Speculative, Status, Subcommand, Suggestible, Suggestion, Switch,
       UserId }
 
