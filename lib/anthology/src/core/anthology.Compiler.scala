@@ -35,6 +35,7 @@ package anthology
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import digression.*
 import fulminate.*
 import gossamer.*
@@ -161,6 +162,13 @@ object Compiler:
     case Crash(error: StackTrace)
 
   case class Progress(complete: Double, stage: Text)
+
+  case class Notice
+    ( importance: Importance,
+     file:       Text,
+     message:    Text,
+     span:       Optional[Span],
+     markup:     Optional[Text] = Unset )
 
 trait Compiler:
   // The version of the compiler this drives, as the compiler itself reports it (`3.9.0-p16`,

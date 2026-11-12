@@ -60,6 +60,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import anthology.Toolchain.Universe
 
 object Scalac:
   type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8 | 3.9

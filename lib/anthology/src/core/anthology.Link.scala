@@ -50,7 +50,7 @@ object Link:
       case DuplicateEdge(source: Text, target: Text)  extends Reason(8)
       case CyclicToolchain                            extends Reason(9)
       case UnexpectedInput(format: Text)              extends Reason(10)
-      case CompilationFailed(notices: List[Notice])   extends Reason(11)
+      case CompilationFailed(notices: List[Compiler.Notice])   extends Reason(11)
       case MissingSetting(name: Text)                 extends Reason(12)
       case Packaging(detail: Text)                    extends Reason(13)
       case CompilerCrash                              extends Reason(14)

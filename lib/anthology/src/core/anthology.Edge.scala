@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import anthology.Toolchain.Tool
+
 // A toolchain edge: the tool that produces `target`-format content from `source`-format
 // content. Sources are never produced, so a target is an intermediate representation or an
 // application format.

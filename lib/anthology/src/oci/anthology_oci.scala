@@ -52,6 +52,7 @@ import turbulence.*
 import vacuous.*
 import xenophile.*
 import zephyrine.*
+import anthology.Toolchain.Tool
 
 object ociOptions:
   private def oci(edit: OciConfiguration => OciConfiguration): Toolchain.Setting =

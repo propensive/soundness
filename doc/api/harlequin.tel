@@ -38,7 +38,7 @@ detail
     ```scala fuel
     typecheck
     ##
-    given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+    given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
     given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
     import highlighting.typecheckedScala
 
@@ -205,7 +205,7 @@ entry .Token   one token of highlighted source: its text, accent, position, role
         ```scala fuel
         typecheck
         ##
-        given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+        given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
         given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
         import highlighting.typecheckedScala
 
@@ -331,7 +331,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       alternative Typechecked
         code
             locally:
-              given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+              given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
               given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
               import highlighting.typecheckedScala
               val code = Scala.highlight(t"val xs = List(1, 2, 3)")
@@ -340,7 +340,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       alternative Compiled
         code
             locally:
-              given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+              given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
               given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
               import highlighting.compiledScala
               Scala.highlight(t"val n: Int = \"oops\"").diagnostics.size   // 1
@@ -376,7 +376,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       ```scala fuel
       typecheck
       ##
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       import highlighting.typecheckedScala
 
@@ -471,7 +471,7 @@ entry .highlighting   the `Highlight` givens, one per depth, each to import by n
       ```scala fuel
       typecheck
       ##
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       import highlighting.typecheckedScala
 
@@ -535,7 +535,7 @@ entry .Diagnostic   a compiler diagnostic captured while highlighting: its span,
       ```scala fuel
       typecheck
       ##
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       import highlighting.typecheckedScala
 

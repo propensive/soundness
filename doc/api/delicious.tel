@@ -26,7 +26,7 @@ detail
     ##
     import soundness.*
 
-    val notice: Notice = ???   // from a Scalac process run with scalacOptions.semanticDiagnostics
+    val notice: Compiler.Notice = ???   // from a Scalac process run with scalacOptions.semanticDiagnostics
     val message: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
     message.let(_.plain)         // the message with every marker removed
     message.let(_.types.size)    // how many types it mentions
@@ -72,7 +72,7 @@ refer delicious.render
 entry .SemanticMessage   a compiler message parsed into its markup tree
   detail
       A `SemanticMessage` is the `Markup` nodes of one marked-up compiler message, made by
-      `SemanticMessage.parse` from the text an anthology `Notice#markup` carries when the
+      `SemanticMessage.parse` from the text an anthology `Compiler.Notice#markup` carries when the
       compiler ran with `scalacOptions.semanticDiagnostics`. From it, `#plain` is the message
       with its markers stripped (the same text as the notice's own `message`), `#types` the
       `Markup.Typed` nodes it mentions, and `render` and `teletype` (with a `Reifier`) its
@@ -83,7 +83,7 @@ entry .SemanticMessage   a compiler message parsed into its markup tree
       ##
       import soundness.*
 
-      val notice: Notice = ???
+      val notice: Compiler.Notice = ???
       notice.markup.let(SemanticMessage.parse(_)).let(_.types.map(_.plain))
       // the compiler-printed text of each type the message mentions
       ```

@@ -95,7 +95,7 @@ case class Javac(options: List[Javac.Option]):
                   (diagnostic.getEndPosition - diagnostic.getPosition).toInt )
 
           process.put:
-            Notice
+            Compiler.Notice
               ( importance,
                 "name".tt,
                 diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,

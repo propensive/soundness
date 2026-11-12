@@ -53,6 +53,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import anthology.Toolchain.{Tool, Universe}
 
 object linkerOptions:
   private def applicable(format: Artifact): Boolean =

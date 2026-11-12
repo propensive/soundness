@@ -46,6 +46,7 @@ import serpentine.*
 
 import errorDiagnostics.emptyDiagnostics
 import probates.cancelProbate
+import anthology.Toolchain.{Tool, Universe}
 
 // The Scala compile edges of a toolchain: `Language.Scala` to each universe the compiler can
 // emit. Each edge carries the `Scalac` it drives — options and all — so the compiler's own

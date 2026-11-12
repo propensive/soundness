@@ -46,6 +46,7 @@ import serpentine.*
 
 import errorDiagnostics.emptyDiagnostics
 import probates.cancelProbate
+import anthology.Toolchain.{Tool, Universe}
 
 // The Kotlin compile edge of a toolchain: `Language.Kotlin` to the classfile universe. Kotlin's
 // other backends emit klib rather than a universe anthology models, so only the JVM one is here.

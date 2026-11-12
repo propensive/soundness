@@ -72,10 +72,10 @@ object Kotlinc:
     catch case suc.NonFatal(_) => ()
 
 // Drives the Kotlin compiler in-process, presenting the same interface as `Scalac` and `Javac`:
-// named sources compile against an explicit classpath into an output directory, and the compiler's
-// messages become `Notice`s on the resulting `Compiler.Process`. Kotlin reads its sources from disk,
-// so they are written to a scratch directory for the duration of the compilation, and diagnostics
-// are mapped back onto the names they were given.
+// named sources compile against an explicit classpath into an output directory, and the
+// compiler's messages become `Compiler.Notice`s on the resulting `Compiler.Process`. Kotlin
+// reads its sources from disk, so they are written to a scratch directory for the duration of
+// the compilation, and diagnostics are mapped back onto the names they were given.
 case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[version]]):
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
   def version: Text = Kotlinc.version
@@ -136,7 +136,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
 
               Span.area((line - 1).z, (column - 1).z, (endLine - 1).z, (endColumn - 1).z)
 
-          process.put(Notice(importance, file, text, span))
+          process.put(Compiler.Notice(importance, file, text, span))
 
     // The Kotlin standard library is never implied: like every other classpath entry it is the
     // caller's to provide, which is what `-no-stdlib` makes so.

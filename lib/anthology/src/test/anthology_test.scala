@@ -49,6 +49,7 @@ import filesystemBackends.javaBaseFilesystem
 import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 import environments.javaBaseEnvironment
+import anthology.Toolchain.{Tool, Triple, Universe}
 
 private type JnfPath = java.nio.file.Path
 

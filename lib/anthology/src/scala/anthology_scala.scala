@@ -133,7 +133,7 @@ object scalacOptions:
 
       val betterFors = Scalac.Option[3.6](t"-language:experimental.betterFors")
 
-private[anthology] def notice(diagnostic: Diagnostic): Notice =
+private[anthology] def notice(diagnostic: Diagnostic): Compiler.Notice =
   val importance: Importance = Importance.fromOrdinal(diagnostic.level)
   val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
   val message: Text = diagnostic.message.tt
@@ -154,13 +154,13 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
             position.endLine.nn.z,
             position.endColumn.nn.z )
 
-      Notice(importance, file, message, span, markup)
+      Compiler.Notice(importance, file, message, span, markup)
 
   . nn
-  . orElse(Notice(importance, file, message, Unset, markup))
+  . orElse(Compiler.Notice(importance, file, message, Unset, markup))
   . nn
 
-// A reporter which relays each diagnostic to the given `Compiler.Process` as a `Notice`.
+// A reporter which relays each diagnostic to the given `Compiler.Process` as a `Compiler.Notice`.
 private[anthology] type ProcessReporter =
   Reporter & UniqueMessagePositions & HideNonSensicalMessages
 

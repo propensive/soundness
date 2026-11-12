@@ -51,6 +51,7 @@ import turbulence.*
 import zeppelin.*
 
 import filesystemBackends.javaBaseFilesystem
+import anthology.Toolchain.Tool
 
 object apkOptions:
   private def apk(edit: Apk.Configuration => Apk.Configuration): Toolchain.Setting =

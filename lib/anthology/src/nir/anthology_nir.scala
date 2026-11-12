@@ -59,6 +59,7 @@ import serpentine.*
 import vacuous.*
 
 import Artifact.Binary
+import anthology.Toolchain.{Tool, Triple, Universe}
 
 object nativeOptions:
   private def native(edit: NativeConfig => NativeConfig): Toolchain.Setting =

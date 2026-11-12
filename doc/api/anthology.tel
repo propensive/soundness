@@ -9,15 +9,15 @@ detail
     command lines. A compiler — `Scalac`, `Javac` or `Kotlinc` — is a value carrying typed
     options, valid only for the language versions which accept them; it compiles a map of
     named sources against a `LocalClasspath` into a directory, and hands back a
-    `Compiler.Process` whose diagnostics (`Notice`s with their importance, file and span),
+    `Compiler.Process` whose diagnostics (`Compiler.Notice`s with their importance, file and span),
     progress and `Compiler.Result` are values, not console output to re-parse. A crash is a
     `Compiler.Result.Crash` with its stack trace, and a running compilation can be aborted.
 
     Linking is the second half. The intermediate representation a compilation emits is a
-    `Universe` — `Classfile`, `Sjsir` or `Nir` — and the things a build produces are
+    `Toolchain.Universe` — `Classfile`, `Sjsir` or `Nir` — and the things a build produces are
     `Artifact.Application` nodes: an executable `Artifact.Jar`, a `Library` JAR, JavaScript
     (`anthology.Js`) under a chosen module system, browser Wasm (`anthology.Wasm`), a WASI
-    component (`Wasi`), an `OciImage` wrapping one, a native `Artifact.Binary` per `Triple`,
+    component (`Wasi`), an `OciImage` wrapping one, a native `Artifact.Binary` per `Toolchain.Triple`,
     a `Dex` archive and a signed `Apk`. Universes, languages and applications are the nodes of
     a `Toolchain`, a directed acyclic graph whose edges are tools; producing one format from
     another is path search over it, so a multi-stage build (classfiles dexed, then packaged
@@ -50,7 +50,7 @@ detail
 
       Toolchain(jarEdges()).produce
         ( Deliverable.Emission(out, classpath),
-          Universe.Classfile,
+          Toolchain.Universe.Classfile,
           Artifact.Jar,
           out,
           List(jarOptions.name(t"app.jar")),
@@ -60,9 +60,9 @@ detail
     The library is split into components by the tool each one wraps, so that a build takes on
     only the dependencies it uses:
 
-    - `anthology.core` — the vocabulary: `Compiler`, `Compiler.Process`, `Notice`, `Importance`,
-      `Compiler.Result`, `Compiler.Event`, `Artifact`, `Universe`, `Deliverable`, `Edge`, `Tool`,
-      `Toolchain`, `EntryPoint`, `Link`, `LinkEvent`, `Triple`, `NirPlugin` and the two
+    - `anthology.core` — the vocabulary: `Compiler`, `Compiler.Process`, `Compiler.Notice`, `Importance`,
+      `Compiler.Result`, `Compiler.Event`, `Artifact`, `Toolchain.Universe`, `Deliverable`, `Edge`, `Toolchain.Tool`,
+      `Toolchain`, `EntryPoint`, `Link`, `LinkEvent`, `Toolchain.Triple`, `NirPlugin` and the two
       edgeless nodes `Component` and `WasmObject`. JVM only (it needs hellenism's classpath).
     - `anthology.scala` — `Scalac`, its `scalacOptions`, warm `Scalac.Session`s, and the
       `scalacEdges` compile edges. The Scala compiler (`scala3-compiler`) is a *compile-only*
@@ -79,7 +79,7 @@ detail
       `wasm-tools` and the scala-wasm fork of `wit-bindgen`, which `WasiToolchain()` probes for.
     - `anthology.nir` — `nativeEdges` and `nativeOptions`, driving the Scala Native build
       (`tools_3`, bundled) through `clang` and `clang++`, which `nativeEdges()` probes for on
-      the `PATH`. Compiling *into* `Universe.Nir` needs the Scala Native compiler plugin, named
+      the `PATH`. Compiling *into* `Toolchain.Universe.Nir` needs the Scala Native compiler plugin, named
       by a `NirPlugin` given.
     - `anthology.dex` — `Dex`, `dexEdges` and `dexOptions`, driving R8's D8 dexer (bundled).
     - `anthology.apk` — `Apk`, `apkEdges`, `apkOptions` and `Axml`: a complete, signed,
@@ -108,7 +108,7 @@ refer anthology.Scalac
 refer anthology.Compiler.Process
 refer anthology.Toolchain
 refer anthology.Artifact
-refer anthology.Universe
+refer anthology.Toolchain.Universe
 
 entry .Compiler   the shape of an in-process compiler: a version, and sources plus classpath to a `Compiler.Process`
   detail
@@ -201,7 +201,7 @@ entry .Compiler   the shape of an in-process compiler: a version, and sources pl
         is how a tool wrapping another compiler feeds one. Its `#version` is the version of the
         compiler which ran it, so a completed compilation can say what produced its output
         without the caller keeping the compiler in hand.
-    refer anthology.Notice
+    refer anthology.Compiler.Notice
     refer anthology.Compiler.Result
     refer anthology.Compiler.Progress
     entry .Update   one element of the live feed: a diagnostic, or a progress tick
@@ -311,52 +311,52 @@ entry .Compiler   the shape of an in-process compiler: a version, and sources pl
     entry #complete   the fraction of the compilation done, from `0.0` to `1.0`
     entry #stage   the compiler's current phase, as it names it
 
+  entry .Notice   one diagnostic: its importance, file, message, span and semantic markup
+    detail
+        What a compiler reports about the sources, as a value: `#importance` is `Info`,
+        `Warning` or `Error`; `#file` the name the source was given in the compile's `Map`
+        (`hello.scala`), not a path on disk; `#message` the text; and `#span` the region of the
+        source it concerns, as a denominative `Span`, or `Unset` for a diagnostic with no
+        position. A tool can underline the offending code rather than echo the compiler's
+        output.
+
+        ```scala
+        import soundness.*
+
+        def render(notice: Compiler.Notice): Text = notice.span.lay(t"${notice.file}: ${notice.message}"): span =>
+          t"${notice.file}:${span.start.line}: ${notice.message}"
+        ```
+
+        `#markup` is only set by `Scalac` under `scalacOptions.semanticDiagnostics`: the raw
+        message with the compiler's in-band semantic markers (U+E000 and its companions)
+        preserved, which the delicious library parses into a `SemanticMessage` of styled spans,
+        placeholders and pickled types, so that a "found `A`, required `B`" message arrives as
+        two types to render and compare rather than as text to re-parse.
+    entry #importance   whether the notice is informational, a warning or an error
+    entry #file   the name the source was given when it was compiled
+    entry #message   the diagnostic's text, with any semantic markers stripped
+    entry #span   the region of the source the notice concerns, or `Unset`
+    entry #markup   the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
+
 entry .Compilation   a compilation's output directory and classpath, tagged with its `Universe`
   detail
       A token pairing the directory a compilation wrote to with the `LocalClasspath` it was
       compiled against, and carrying the universe it inhabits as a type parameter, so that a
-      `Compilation[Universe.Sjsir]` cannot be passed where a `Compilation[Universe.Nir]` is
+      `Compilation[Toolchain.Universe.Sjsir]` cannot be passed where a `Compilation[Toolchain.Universe.Nir]` is
       wanted: the two are different types, and the mismatch is a compile error in the build
       tool rather than a failure at link time.
 
       ```scala
       import soundness.*
 
-      val compilation: Compilation[Universe.Sjsir] = ???
-      val native: Compilation[Universe.Nir] = compilation   // does not compile
+      val compilation: Compilation[Toolchain.Universe.Sjsir] = ???
+      val native: Compilation[Toolchain.Universe.Nir] = compilation   // does not compile
       ```
 
       The `Toolchain` machinery flows the same pair untagged, as a `Deliverable.Emission`,
       since there the universe is a node of the graph rather than a type.
   entry #out   the directory the compilation wrote its output to
   entry #classpath   the classpath the sources were compiled against
-
-entry .Notice   one diagnostic: its importance, file, message, span and semantic markup
-  detail
-      What a compiler reports about the sources, as a value: `#importance` is `Info`,
-      `Warning` or `Error`; `#file` the name the source was given in the compile's `Map`
-      (`hello.scala`), not a path on disk; `#message` the text; and `#span` the region of the
-      source it concerns, as a denominative `Span`, or `Unset` for a diagnostic with no
-      position. A tool can underline the offending code rather than echo the compiler's
-      output.
-
-      ```scala
-      import soundness.*
-
-      def render(notice: Notice): Text = notice.span.lay(t"${notice.file}: ${notice.message}"): span =>
-        t"${notice.file}:${span.start.line}: ${notice.message}"
-      ```
-
-      `#markup` is only set by `Scalac` under `scalacOptions.semanticDiagnostics`: the raw
-      message with the compiler's in-band semantic markers (U+E000 and its companions)
-      preserved, which the delicious library parses into a `SemanticMessage` of styled spans,
-      placeholders and pickled types, so that a "found `A`, required `B`" message arrives as
-      two types to render and compare rather than as text to re-parse.
-  entry #importance   whether the notice is informational, a warning or an error
-  entry #file   the name the source was given when it was compiled
-  entry #message   the diagnostic's text, with any semantic markers stripped
-  entry #span   the region of the source the notice concerns, or `Unset`
-  entry #markup   the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
 
 entry .Importance   the level of a diagnostic: `Info`, `Warning` or `Error`
     Ordered as the Scala compiler's own levels (its ordinal is the compiler's), so a notice
@@ -383,10 +383,10 @@ entry .Language   the source languages, as the source nodes of a toolchain: `Sca
 entry .NirPlugin   the location of the Scala Native compiler plugin, as evidence that NIR can be emitted
   detail
       NIR is emitted by a compiler plugin (`nscplugin`) rather than by a backend built into
-      the Scala compiler, so compiling into `Universe.Nir` requires knowing where the plugin's
-      JAR is. A `NirPlugin` given in scope is that evidence: `Universe.nir` builds the
-      `Universe.Emission[Universe.Nir]` from it, adding `-Xplugin:<jar>` to the compiler's
-      arguments, and `scalacEdges.nir` demands it. Without one, `Scalac#targeting[Universe.Nir]`
+      the Scala compiler, so compiling into `Toolchain.Universe.Nir` requires knowing where the plugin's
+      JAR is. A `NirPlugin` given in scope is that evidence: `Toolchain.Universe.nir` builds the
+      `Toolchain.Universe.Emission[Toolchain.Universe.Nir]` from it, adding `-Xplugin:<jar>` to the compiler's
+      arguments, and `scalacEdges.nir` demands it. Without one, `Scalac#targeting[Toolchain.Universe.Nir]`
       cannot be applied and the edge cannot be built.
 
       ```scala
@@ -394,7 +394,7 @@ entry .NirPlugin   the location of the Scala Native compiler plugin, as evidence
       import strategies.throwUnsafely
 
       given NirPlugin = NirPlugin(t"/home/user/.cache/nscplugin_3-0.5.12.jar".as[Path on Linux])
-      summon[Universe.Emission[Universe.Nir]].flags   // List(t"-Xplugin:/home/user/.cache/nscplugin_3-0.5.12.jar")
+      summon[Toolchain.Universe.Emission[Toolchain.Universe.Nir]].flags   // List(t"-Xplugin:/home/user/.cache/nscplugin_3-0.5.12.jar")
       ```
 
       The stock published plugin (`org.scala-native:nscplugin_<scala version>:0.5.12`) works
@@ -406,7 +406,7 @@ entry .NirPlugin   the location of the Scala Native compiler plugin, as evidence
 entry .Artifact   a node of a toolchain: a source language, an intermediate representation or an application format
   detail
       Every node of a `Toolchain` is an `Artifact`, in one of three tiers: a `.Source` such as
-      `anthology.Language.Scala`, which compilers consume; an `.Ir` such as a `Universe`,
+      `anthology.Language.Scala`, which compilers consume; an `.Ir` such as a `Toolchain.Universe`,
       holding open-world, pre-link content in which libraries compose; or an `.Application`
       such as `Artifact.Jar` or `Apk`, a closed format a host runs. Tools consume any format
       but only ever produce an `Ir` or an `Application` — `Edge` says so in its types.
@@ -415,30 +415,30 @@ entry .Artifact   a node of a toolchain: a source language, an intermediate repr
       `hashCode` are final and compare only those. So wherever a parameter changes what a
       user receives — a JavaScript artifact's module system, a WASI artifact's interface
       version, a native binary's target triple — it is part of the `id`, and each
-      parameterization is a distinct node. `Artifact.Binary(Triple.Arm64MacOs)` is as
-      distinct from `Artifact.Binary(Triple.X64Linux)` as a JAR is from a JavaScript bundle;
+      parameterization is a distinct node. `Artifact.Binary(Toolchain.Triple.Arm64MacOs)` is as
+      distinct from `Artifact.Binary(Toolchain.Triple.X64Linux)` as a JAR is from a JavaScript bundle;
       that they share a linker does not make them interchangeable.
 
       The node set is open. A format can be declared as data, by its kind and name, with
       `.apply`, `.source`, `.ir` and `.application`, as a registry read at run time declares
       the forms no Soundness release knows; and a declared format is the *same node* as the
       built-in format of its kind and name, so `Artifact.ir(t"classfile")` reaches every edge
-      registered for `Universe.Classfile`.
+      registered for `Toolchain.Universe.Classfile`.
 
       ```scala
       import soundness.*
 
-      Artifact.ir(t"classfile") == Universe.Classfile                   // true
+      Artifact.ir(t"classfile") == Toolchain.Universe.Classfile                   // true
       Artifact(Artifact.Kind.Application, t"apk") == Apk                // true
       Artifact.source(t"wasm") == Artifact.application(t"wasm")         // false: different kinds
-      Artifact.Binary(Triple.Arm64MacOs) == Artifact.Binary(Triple.X64Linux)   // false
+      Artifact.Binary(Toolchain.Triple.Arm64MacOs) == Artifact.Binary(Toolchain.Triple.X64Linux)   // false
       ```
 
       A class extending `Artifact` other than through one of the three tier traits must
       define `#kind` itself, and none may override `equals` or `hashCode`; a case class
       extending it has no synthesized structural equality, so a format whose parameters
       distinguish nodes must encode them in its `id`, as every built-in format does.
-  refer anthology.Universe
+  refer anthology.Toolchain.Universe
   refer anthology.Toolchain
   refer anthology.Edge
   entry .Kind   the tier a format belongs to: `Source`, `Ir` or `Application`
@@ -449,7 +449,7 @@ entry .Artifact   a node of a toolchain: a source language, an intermediate repr
       `anthology.Language`; `Artifact.source(id)` declares another.
   entry .Ir   the tier of intermediate representations: classfiles, `.sjsir`, `.nir`, components
       `kind` is fixed to `Kind.Ir`. The built-in intermediate representations are the
-      `Universe`s a Scala compilation emits, plus the edgeless `Component` and `WasmObject`;
+      `Toolchain.Universe`s a Scala compilation emits, plus the edgeless `Component` and `WasmObject`;
       `Artifact.ir(id)` declares another.
   entry .Application   the tier of closed formats a host runs: a JAR, an APK, a bundle, a binary
       `kind` is fixed to `Kind.Application`. The built-in applications are `Artifact.Jar`,
@@ -462,10 +462,10 @@ entry .Artifact   a node of a toolchain: a source language, an intermediate repr
   entry .Binary   a machine-code executable for one target `Triple`: one node per triple
     detail
         The application node with id `binary-<triple>`, `binary-arm64-apple-darwin` for
-        example, reached from `Universe.Nir` through `nativeEdges`. A binary is bound to one
+        example, reached from `Toolchain.Universe.Nir` through `nativeEdges`. A binary is bound to one
         operating system and architecture's C library, so each triple is its own node and a
-        toolchain built with `nativeEdges(Triple.X64Linux)` has no path to
-        `Artifact.Binary(Triple.Arm64MacOs)`. Nested here as `Artifact.Binary` because the
+        toolchain built with `nativeEdges(Toolchain.Triple.X64Linux)` has no path to
+        `Artifact.Binary(Toolchain.Triple.Arm64MacOs)`. Nested here as `Artifact.Binary` because the
         umbrella's `Binary` is monotonous's.
     entry #triple   the target platform the binary runs on
   entry .apply   `Artifact(kind, id)`: a format declared as data, by its kind and name
@@ -476,78 +476,12 @@ entry .Artifact   a node of a toolchain: a source language, an intermediate repr
       edge can consume. It inspects as `Artifact.source(proto)`.
   entry .ir   `Artifact.ir(id)`: a declared intermediate representation
       `Artifact.ir(t"descriptor")`, a universe with its own carrier. `Artifact.ir(t"classfile")`
-      is `Universe.Classfile`.
+      is `Toolchain.Universe.Classfile`.
   entry .application   `Artifact.application(id)`: a declared application format
       `Artifact.application(t"bundle")`, a deliverable with its own host contract.
       `Artifact.application(t"js-es")` is `anthology.Js(anthology.Js.Module.Es)`.
   entry #id   the format's name, which with its kind is its whole identity
   entry #kind   the tier the format belongs to
-
-entry .Universe   the intermediate representation a compilation emits: `Classfile`, `Sjsir` or `Nir`
-  detail
-      A compilation emits one intermediate representation, and that choice decides which
-      library artifacts it can link against and which application formats it can become.
-      `Classfile` is JVM classfiles, linkable as an `Artifact.Jar`, a `Dex` or an `Apk`;
-      `Sjsir` is Scala.js IR, whose linked form — JavaScript, browser Wasm or a WASI component —
-      is chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM.
-      Each universe is an `Artifact.Ir` node of a `Toolchain`, with ids `classfile`, `sjsir`
-      and `nir`, and every universe additionally has a `Library` JAR packaging its unlinked
-      output.
-
-      The universe is also a *type*, the second type parameter of `Scalac`, so that a
-      compiler configured for one cannot be used as another: `Scalac[3.8](options)` targets
-      `Universe.Classfile`, and `targeting[Universe.Sjsir]` retargets it. The compiler flags
-      each universe needs follow from the `.Emission` given for it — none for classfiles,
-      `-scalajs` for Scala.js, and the plugin flag for Native, which exists only when a
-      `NirPlugin` is in scope — rather than being supplied by hand.
-
-      ```scala
-      import soundness.*
-
-      val forJs: Scalac[3.8, Universe.Sjsir] = Scalac[3.8](Nil).targeting[Universe.Sjsir]
-      summon[Universe.Emission[Universe.Sjsir]].flags   // List(t"-scalajs")
-      ```
-
-      Each universe beyond the JVM's has runtime prerequisites, supplied on the classpath like
-      any other library: `Sjsir` needs `scalajs-javalib`, `scalajs-library_2.13`,
-      `scalajs-scalalib_2.13` and `scala3-library_sjs1`, and `Nir` the Scala Native runtime
-      (`scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`). Their
-      absence surfaces as ordinary compiler diagnostics rather than as a distinct failure.
-  refer anthology.Scalac
-  refer anthology.Compilation
-  refer anthology.NirPlugin
-  entry .Classfile   JVM classfiles; also the type `Universe.Classfile`, the case's singleton type
-      The universe a plain `Scalac[version](options)` targets, and the only one `Javac` and
-      `Kotlinc` emit. It links as an `Artifact.Jar`, a `Library(Universe.Classfile)`, a `Dex`
-      or an `Apk`. The type alias `Universe.Classfile` is `Universe.Classfile.type`, so the
-      case can be named as a type parameter: `Compilation[Universe.Classfile]`.
-  entry .Sjsir   Scala.js IR; also the type `Universe.Sjsir`
-      Reached with `scalac.targeting[Universe.Sjsir]`, which adds `-scalajs`. It links through
-      `sjsEdges` as JavaScript under any module system, as browser Wasm, or — given a
-      `WasiToolchain` and a `Wasi.World` — as a WASI component, and packages as
-      `Library(Universe.Sjsir)`.
-  entry .Nir   Scala Native IR; also the type `Universe.Nir`
-      Reached with `scalac.targeting[Universe.Nir]`, which needs a `NirPlugin` given for its
-      `-Xplugin:` flag. It links through `nativeEdges` to an `Artifact.Binary` per target
-      triple, and packages as `Library(Universe.Nir)`.
-  entry .Emission   the compiler flags a universe's emission needs, as a typeclass over the universe
-    detail
-        `Universe.Emission[universe]` is what `Scalac#apply` and `Scalac.Setup`'s session
-        summon to learn the flags to add for the universe the compiler targets. The three
-        givens `.classfile`, `.sjsir` and `.nir` live in this companion, so no import is
-        needed; the last exists only when a `NirPlugin` is in scope, which is what makes
-        compiling for Native impossible without naming the plugin.
-    entry #flags   the arguments to add to the compiler's command line
-  entry .classfile   the `Emission[Classfile]` given: no extra flags
-  entry .sjsir   the `Emission[Sjsir]` given: `-scalajs`
-  entry .nir   the `Emission[Nir]` given, built from the `NirPlugin` in scope: `-Xplugin:<jar>`
-      Summoning it without a `NirPlugin` given is a compile error, so a `Scalac` retargeted to
-      `Universe.Nir` cannot be applied until the plugin's location is in scope.
-  entry #section   the label of the LIRA section holding this universe's content: `jvm`, `sjsir` or `nir`
-  entry #suffixes   the filename suffixes of this universe's stored forms, with `.tasty`
-      `.class` and `.tasty` for `Classfile`, `.sjsir` and `.tasty` for `Sjsir`, `.nir` and
-      `.tasty` for `Nir`: each universe's binary form, plus the TASTy which carries its
-      interface.
 
 entry .Deliverable   the value flowing along a toolchain path: sources, an emission, or a product
   detail
@@ -576,7 +510,7 @@ entry .Deliverable   the value flowing along a toolchain path: sources, an emiss
       reason `UnexpectedInput(format)` when given another variant, naming the format under
       production, which is how a miswired toolchain is diagnosed.
   refer anthology.Toolchain
-  refer anthology.Tool
+  refer anthology.Toolchain.Tool
   entry #sources   the named sources and classpath, for a compile edge
       Raises `Link.Error(UnexpectedInput(target.id))` unless this is a `Sources`.
   entry #emission   the output directory and classpath, for a link or packaging edge
@@ -592,7 +526,7 @@ entry .Edge   one edge of a toolchain: a tool producing the `target` format from
       `apkEdges()`, `sjsEdges()`, `nativeEdges()`, `ociEdges()`, `scalacEdges.classfile(…)`,
       `javacEdges(…)`, `kotlincEdges(…)` — each return the edges for their tool, and
       `Toolchain(…)` assembles any number of such lists; an edge for a new format is written
-      directly, with a `Tool` of its own.
+      directly, with a `Toolchain.Tool` of its own.
 
       ```scala fuel
       substitute ???  ...
@@ -602,59 +536,12 @@ entry .Edge   one edge of a toolchain: a tool producing the `target` format from
       val proto = Artifact.source(t"proto")
       val descriptor = Artifact.ir(t"descriptor")
 
-      def protoc: Tool = ???
+      def protoc: Toolchain.Tool = ???
       val edge = Edge(proto, descriptor, protoc)
       ```
   entry #source   the format the tool consumes
   entry #target   the format the tool produces: an intermediate representation or an application
   entry #tool   the tool which runs the edge
-
-entry .Tool   a toolchain edge's implementation: a compiler, linker or packager, with its settings type
-  detail
-      A `Tool` is an inert value: the capabilities its execution needs — a `Monitor`, a
-      `System`, a `WorkingDirectory` — flow through `#run`'s context rather than being
-      captured when it is built. It declares a `#Settings` type and an `#initial`
-      configuration of that type, which `Toolchain#produce` folds the applicable
-      `Toolchain.Setting`s into before calling `#run`.
-
-      ```scala
-      import soundness.*
-
-      def passThrough(label: Text): Tool = new Tool:
-        type Settings = Unit
-
-        def name: Text = label
-        def initial: Unit = ()
-
-        def run
-          ( settings:    Unit,
-            input:       Deliverable,
-            entryPoints: List[EntryPoint],
-            out:         Path on Linux )
-          ( using Monitor, System, WorkingDirectory )
-          ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
-        :   Deliverable =
-
-          input
-      ```
-
-      The built-in tools are private to their edge providers; what a user holds is the
-      `Edge`, whose `tool.name` is what a path reports.
-  refer anthology.Edge
-  refer anthology.Toolchain
-  entry #Settings   the configuration type this tool is driven by
-      `Unit` for the compile edges (the compiler carries its own options), `Text` for the JAR
-      edges (the filename), the Scala.js `StandardConfig` for `sjsEdges`, Scala Native's
-      `NativeConfig` for `nativeEdges`, `Apk.Configuration` for `apkEdges` and
-      `OciConfiguration` for `ociEdges`.
-  entry #name   the tool's name, as a path reports it: `scalac`, `jar`, `dex`, `apk`, `oci`, …
-  entry #initial   the default settings, before any `Toolchain.Setting` is applied
-  entry #run   runs the tool on a deliverable, writing into a directory, and returns what it produced
-      `run(settings, input, entryPoints, out)`: `input` is the `Deliverable` at the edge's
-      source node, `entryPoints` are ambient along the whole path (each tool applies or
-      ignores them as its format demands), and `out` is the directory to write into. It needs
-      a `Monitor`, `System` and `WorkingDirectory`, raises `Link.Error`, and logs
-      `LinkEvent`s.
 
 entry .Toolchain   a graph of formats and tools, over which producing one format from another is path search
   detail
@@ -673,7 +560,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
             import strategies.throwUnsafely
 
             val toolchain = Toolchain(jarEdges())
-            toolchain.path(Universe.Classfile, Artifact.Jar).map(_.tool.name)   // List(t"jar")
+            toolchain.path(Toolchain.Universe.Classfile, Artifact.Jar).map(_.tool.name)   // List(t"jar")
       frame
         label Adding the dex edges makes `Dex` reachable, one step away
         code
@@ -681,7 +568,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
             import strategies.throwUnsafely
 
             val toolchain = Toolchain(jarEdges(), dexEdges())
-            toolchain.path(Universe.Classfile, Dex).map(_.target.id)   // List(t"dex")
+            toolchain.path(Toolchain.Universe.Classfile, Dex).map(_.target.id)   // List(t"dex")
       frame
         label Adding the APK edge extends the path: classfiles are dexed, then packaged
         code
@@ -689,7 +576,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
             import strategies.throwUnsafely
 
             val toolchain = Toolchain(jarEdges(), dexEdges(), apkEdges())
-            toolchain.path(Universe.Classfile, Apk).map(_.target.id)   // List(t"dex", t"apk")
+            toolchain.path(Toolchain.Universe.Classfile, Apk).map(_.target.id)   // List(t"dex", t"apk")
       ##
       ```
 
@@ -748,7 +635,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
     entry #edit   the setting applied to an edge's settings, given the format that edge produces
   entry #edges   the toolchain's edges
   entry #path   the unique shortest path between two formats, as the edges to run in order
-      `toolchain.path(Universe.Classfile, Apk)` is the list of `Edge`s from the first to the
+      `toolchain.path(Toolchain.Universe.Classfile, Apk)` is the list of `Edge`s from the first to the
       second; a format is a zero-length path from itself. Raises `Link.Error` with reason
       `NoPath(source, target)` when no route exists — against the direction of the edges, or
       to a node whose edge was never registered — and `AmbiguousPath(source, target)` when two
@@ -761,8 +648,8 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
 
       val android = Toolchain(jarEdges(), dexEdges(), apkEdges())
       android.path(Dex, Dex)                                    // Nil
-      android.path(Universe.Classfile, Apk).map(_.tool.name)    // List(t"dex", t"apk")
-      safely(android.path(Apk, Universe.Classfile))             // Unset: no path backwards
+      android.path(Toolchain.Universe.Classfile, Apk).map(_.tool.name)    // List(t"dex", t"apk")
+      safely(android.path(Apk, Toolchain.Universe.Classfile))             // Unset: no path backwards
       ```
   entry #produce   produces the target format from the input by running each tool on the path, and returns the output's path
       `produce(input, source, target, out, settings = Nil, entryPoints = Nil)`: `input` is the
@@ -770,7 +657,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
       below `out` in a directory named by its format's `id` (an APK's dex archive lands in
       `out/dex/`), and the final product in `out` itself. The result is the final `Product`'s
       file, or, when the target is an intermediate representation such as
-      `Universe.Classfile`, the `Emission`'s directory.
+      `Toolchain.Universe.Classfile`, the `Emission`'s directory.
 
       Every setting is checked against the path's targets first, and one which applies to
       none raises `Link.Error` with reason `InapplicableSetting` before any tool runs. Entry
@@ -796,7 +683,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
       supervise:
         Toolchain(jarEdges(), dexEdges(), apkEdges()).produce
           ( Deliverable.Emission(out, classpath),
-            Universe.Classfile,
+            Toolchain.Universe.Classfile,
             Apk,
             staged,
             List(apkOptions.minApi(26), apkOptions.packageName(t"com.example.app")),
@@ -808,10 +695,144 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
       after the last; a compile edge on the path relays its `Compiler.Event`s onto the same
       channel.
 
+  entry .Universe   the intermediate representation a compilation emits: `Classfile`, `Sjsir` or `Nir`
+    detail
+        A compilation emits one intermediate representation, and that choice decides which
+        library artifacts it can link against and which application formats it can become.
+        `Classfile` is JVM classfiles, linkable as an `Artifact.Jar`, a `Dex` or an `Apk`;
+        `Sjsir` is Scala.js IR, whose linked form — JavaScript, browser Wasm or a WASI component —
+        is chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM.
+        Each universe is an `Artifact.Ir` node of a `Toolchain`, with ids `classfile`, `sjsir`
+        and `nir`, and every universe additionally has a `Library` JAR packaging its unlinked
+        output.
+
+        The universe is also a *type*, the second type parameter of `Scalac`, so that a
+        compiler configured for one cannot be used as another: `Scalac[3.8](options)` targets
+        `Toolchain.Universe.Classfile`, and `targeting[Toolchain.Universe.Sjsir]` retargets it. The compiler flags
+        each universe needs follow from the `.Emission` given for it — none for classfiles,
+        `-scalajs` for Scala.js, and the plugin flag for Native, which exists only when a
+        `NirPlugin` is in scope — rather than being supplied by hand.
+
+        ```scala
+        import soundness.*
+
+        val forJs: Scalac[3.8, Toolchain.Universe.Sjsir] = Scalac[3.8](Nil).targeting[Toolchain.Universe.Sjsir]
+        summon[Toolchain.Universe.Emission[Toolchain.Universe.Sjsir]].flags   // List(t"-scalajs")
+        ```
+
+        Each universe beyond the JVM's has runtime prerequisites, supplied on the classpath like
+        any other library: `Sjsir` needs `scalajs-javalib`, `scalajs-library_2.13`,
+        `scalajs-scalalib_2.13` and `scala3-library_sjs1`, and `Nir` the Scala Native runtime
+        (`scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`). Their
+        absence surfaces as ordinary compiler diagnostics rather than as a distinct failure.
+    refer anthology.Scalac
+    refer anthology.Compilation
+    refer anthology.NirPlugin
+    entry .Classfile   JVM classfiles; also the type `Toolchain.Universe.Classfile`, the case's singleton type
+        The universe a plain `Scalac[version](options)` targets, and the only one `Javac` and
+        `Kotlinc` emit. It links as an `Artifact.Jar`, a `Library(Toolchain.Universe.Classfile)`, a `Dex`
+        or an `Apk`. The type alias `Toolchain.Universe.Classfile` is `Universe.Classfile.type`, so the
+        case can be named as a type parameter: `Compilation[Toolchain.Universe.Classfile]`.
+    entry .Sjsir   Scala.js IR; also the type `Toolchain.Universe.Sjsir`
+        Reached with `scalac.targeting[Toolchain.Universe.Sjsir]`, which adds `-scalajs`. It links through
+        `sjsEdges` as JavaScript under any module system, as browser Wasm, or — given a
+        `WasiToolchain` and a `Wasi.World` — as a WASI component, and packages as
+        `Library(Toolchain.Universe.Sjsir)`.
+    entry .Nir   Scala Native IR; also the type `Toolchain.Universe.Nir`
+        Reached with `scalac.targeting[Toolchain.Universe.Nir]`, which needs a `NirPlugin` given for its
+        `-Xplugin:` flag. It links through `nativeEdges` to an `Artifact.Binary` per target
+        triple, and packages as `Library(Toolchain.Universe.Nir)`.
+    entry .Emission   the compiler flags a universe's emission needs, as a typeclass over the universe
+      detail
+          `Universe.Emission[universe]` is what `Scalac#apply` and `Scalac.Setup`'s session
+          summon to learn the flags to add for the universe the compiler targets. The three
+          givens `.classfile`, `.sjsir` and `.nir` live in this companion, so no import is
+          needed; the last exists only when a `NirPlugin` is in scope, which is what makes
+          compiling for Native impossible without naming the plugin.
+      entry #flags   the arguments to add to the compiler's command line
+    entry .classfile   the `Emission[Classfile]` given: no extra flags
+    entry .sjsir   the `Emission[Sjsir]` given: `-scalajs`
+    entry .nir   the `Emission[Nir]` given, built from the `NirPlugin` in scope: `-Xplugin:<jar>`
+        Summoning it without a `NirPlugin` given is a compile error, so a `Scalac` retargeted to
+        `Toolchain.Universe.Nir` cannot be applied until the plugin's location is in scope.
+    entry #section   the label of the LIRA section holding this universe's content: `jvm`, `sjsir` or `nir`
+    entry #suffixes   the filename suffixes of this universe's stored forms, with `.tasty`
+        `.class` and `.tasty` for `Classfile`, `.sjsir` and `.tasty` for `Sjsir`, `.nir` and
+        `.tasty` for `Nir`: each universe's binary form, plus the TASTy which carries its
+        interface.
+  entry .Tool   a toolchain edge's implementation: a compiler, linker or packager, with its settings type
+    detail
+        A `Tool` is an inert value: the capabilities its execution needs — a `Monitor`, a
+        `System`, a `WorkingDirectory` — flow through `#run`'s context rather than being
+        captured when it is built. It declares a `#Settings` type and an `#initial`
+        configuration of that type, which `Toolchain#produce` folds the applicable
+        `Toolchain.Setting`s into before calling `#run`.
+
+        ```scala
+        import soundness.*
+
+        def passThrough(label: Text): Toolchain.Tool = new Toolchain.Tool:
+          type Settings = Unit
+
+          def name: Text = label
+          def initial: Unit = ()
+
+          def run
+            ( settings:    Unit,
+              input:       Deliverable,
+              entryPoints: List[EntryPoint],
+              out:         Path on Linux )
+            ( using Monitor, System, WorkingDirectory )
+            ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
+          :   Deliverable =
+
+            input
+        ```
+
+        The built-in tools are private to their edge providers; what a user holds is the
+        `Edge`, whose `tool.name` is what a path reports.
+    refer anthology.Edge
+    refer anthology.Toolchain
+    entry #Settings   the configuration type this tool is driven by
+        `Unit` for the compile edges (the compiler carries its own options), `Text` for the JAR
+        edges (the filename), the Scala.js `StandardConfig` for `sjsEdges`, Scala Native's
+        `NativeConfig` for `nativeEdges`, `Apk.Configuration` for `apkEdges` and
+        `OciConfiguration` for `ociEdges`.
+    entry #name   the tool's name, as a path reports it: `scalac`, `jar`, `dex`, `apk`, `oci`, …
+    entry #initial   the default settings, before any `Toolchain.Setting` is applied
+    entry #run   runs the tool on a deliverable, writing into a directory, and returns what it produced
+        `run(settings, input, entryPoints, out)`: `input` is the `Deliverable` at the edge's
+        source node, `entryPoints` are ambient along the whole path (each tool applies or
+        ignores them as its format demands), and `out` is the directory to write into. It needs
+        a `Monitor`, `System` and `WorkingDirectory`, raises `Link.Error`, and logs
+        `LinkEvent`s.
+  entry .Triple   a target platform for a native link, rendered as an LLVM target triple
+    detail
+        Six targets: `Arm64MacOs`, `X64MacOs`, `Arm64Linux`, `X64Linux`, `Arm64Windows` and
+        `X64Windows`, each rendering through `#text` as the LLVM triple Scala Native is given
+        (`arm64-apple-darwin`, `x86_64-apple-darwin`, `aarch64-unknown-linux-gnu`,
+        `x86_64-unknown-linux-gnu`, `aarch64-pc-windows-msvc`, `x86_64-pc-windows-msvc`).
+        `Artifact.Binary(triple)` is the application node for a binary on that platform, and
+        `nativeEdges(triples*)` registers one edge per triple. Targets beyond the build host
+        require a C toolchain and sysroot capable of cross-compiling to them.
+
+        ```scala
+        import soundness.*
+
+        Toolchain.Triple.Arm64MacOs.text                       // t"arm64-apple-darwin"
+        Toolchain.Triple.host.let(Artifact.Binary(_))          // the build host's own binary node, or Unset
+        ```
+    refer anthology.nativeEdges
+    entry .host   the build host's own triple, from `os.name` and `os.arch`, or `Unset` if unrecognised
+        macOS, Linux and Windows on ARM64 or x86-64 are recognised; any other platform is
+        `Unset`, and `nativeEdges()` with no explicit triples reports it as the absence of
+        `clang`, since such a host has no Scala Native runtime either.
+    entry #text   the LLVM target triple
+
 entry .Component   the WebAssembly component universe: an intermediate node with no edges yet
     An `Artifact.Ir` with id `component`: WebAssembly library components, composing with one
     another through interfaces described by WIT, as TASTy lets `sjsir` and `nir` compose. It
-    is an `Ir` rather than a `Universe`, since no Scala compilation emits it — a component is
+    is an `Ir` rather than a `Toolchain.Universe`, since no Scala compilation emits it — a component is
     an application (`Wasi`) when the world it exports is runnable, and content in this
     universe when it is composed with others. No built-in edge produces or consumes it; the
     node exists so that composition tools can register theirs, and a path to it raises
@@ -836,7 +857,7 @@ entry .Link   the namespace of `Link.Error`, the failure of linking, path search
       tools. A tool's own fault (a thrown exception) is `Failed` with its stack trace; a
       structural fault (no path, a duplicate edge, a setting with nothing to configure) is
       its own reason; and a compile edge's failure is `CompilationFailed`, carrying every
-      `Notice` the compiler reported.
+      `Compiler.Notice` the compiler reported.
   entry .Error   raised by a toolchain: error 443, _linking failed because `reason`_
     detail
         `Link.Error(reason)`; its number's detail part is the reason's own number. Match on
@@ -892,29 +913,6 @@ entry .LinkEvent   what a toolchain logs as it links: start, each message, and t
       _starting linking_, _the linker reported: `message`_ and _linked output written to
       `path`_.
 
-entry .Triple   a target platform for a native link, rendered as an LLVM target triple
-  detail
-      Six targets: `Arm64MacOs`, `X64MacOs`, `Arm64Linux`, `X64Linux`, `Arm64Windows` and
-      `X64Windows`, each rendering through `#text` as the LLVM triple Scala Native is given
-      (`arm64-apple-darwin`, `x86_64-apple-darwin`, `aarch64-unknown-linux-gnu`,
-      `x86_64-unknown-linux-gnu`, `aarch64-pc-windows-msvc`, `x86_64-pc-windows-msvc`).
-      `Artifact.Binary(triple)` is the application node for a binary on that platform, and
-      `nativeEdges(triples*)` registers one edge per triple. Targets beyond the build host
-      require a C toolchain and sysroot capable of cross-compiling to them.
-
-      ```scala
-      import soundness.*
-
-      Triple.Arm64MacOs.text                       // t"arm64-apple-darwin"
-      Triple.host.let(Artifact.Binary(_))          // the build host's own binary node, or Unset
-      ```
-  refer anthology.nativeEdges
-  entry .host   the build host's own triple, from `os.name` and `os.arch`, or `Unset` if unrecognised
-      macOS, Linux and Windows on ARM64 or x86-64 are recognised; any other platform is
-      `Unset`, and `nativeEdges()` with no explicit triples reports it as the absence of
-      `clang`, since such a host has no Scala Native runtime either.
-  entry #text   the LLVM target triple
-
 entry .WasmObject   the relocatable-WebAssembly-object universe: an intermediate node with no edges yet
     An `Artifact.Ir` with id `wasm-object`: relocatable WebAssembly objects composing by the
     symbols of their linking sections — what `rustc --target wasm32` and clang emit, linked
@@ -925,8 +923,8 @@ entry .WasmObject   the relocatable-WebAssembly-object universe: an intermediate
 entry .Scalac   the Scala compiler as a value: typed options, a language version and a target universe
   detail
       A `Scalac[version, universe]` carries a list of `Scalac.Option`s, each typed by the
-      language versions which accept it, and the `Universe` it emits. `Scalac[3.8](options)`
-      — the single-type-argument form — targets `Universe.Classfile`; `#targeting` retargets
+      language versions which accept it, and the `Toolchain.Universe` it emits. `Scalac[3.8](options)`
+      — the single-type-argument form — targets `Toolchain.Universe.Classfile`; `#targeting` retargets
       it. Applied to a classpath and sources, it compiles in-process, in a task of its own,
       and returns a `Compiler.Process`:
 
@@ -983,7 +981,7 @@ entry .Scalac   the Scala compiler as a value: typed options, a language version
             import soundness.*
 
             val compiler = Scalac[3.8](List(scalacOptions.newSyntax, scalacOptions.experimental))
-            val forJs: Scalac[3.8, Universe.Sjsir] = compiler.targeting[Universe.Sjsir]
+            val forJs: Scalac[3.8, Toolchain.Universe.Sjsir] = compiler.targeting[Toolchain.Universe.Sjsir]
             forJs.commandLineArguments   // List(t"-new-syntax", t"-experimental"); `-scalajs` is added by the emission
       ##
       ```
@@ -994,13 +992,13 @@ entry .Scalac   the Scala compiler as a value: typed options, a language version
       The compile edges of a `Toolchain` (`scalacEdges`) carry a `Scalac` the same way.
 
       The stateless compiles share one compiler instance across the program (`.compiler()`),
-      replaced by `.refresh()` after a crash. Diagnostics become `Notice`s with their spans;
+      replaced by `.refresh()` after a crash. Diagnostics become `Compiler.Notice`s with their spans;
       under `scalacOptions.semanticDiagnostics` each also keeps its semantic markup. Progress
       is reported per whole percentage point, with the compiler's phase as the stage, and
       `Compiler.Process#abort()` is observed at the next tick.
   refer anthology.scalacOptions
   refer anthology.scalacEdges
-  refer anthology.Universe
+  refer anthology.Toolchain.Universe
   refer anthology.Compiler.Process
   entry .Versions   the language versions a `Scalac` can be declared for: `3.0` to `3.9`
       The union of literal types `3.0 | 3.1 | … | 3.9`, the bound of a `Scalac`'s version
@@ -1029,7 +1027,7 @@ entry .Scalac   the Scala compiler as a value: typed options, a language version
       `scala3-compiler` on the runtime classpath, which is what every `Scalac`'s `#version`
       and every process's `version` report.
   entry .apply   `Scalac[version](options)`: a compiler for the classfile universe
-      The single-type-argument form, which fixes the universe to `Universe.Classfile`;
+      The single-type-argument form, which fixes the universe to `Toolchain.Universe.Classfile`;
       `#targeting` changes it. Each option's versions must include the one named.
   entry .Setup   a compiler bound to a classpath: the subject of a warm session
     detail
@@ -1039,7 +1037,7 @@ entry .Scalac   the Scala compiler as a value: typed options, a language version
         the pair; the session is where the state lives.
     entry .sessional   the `Sessional` given which opens a `Scalac.Session` from a `Setup`
         In the companion, so no import is needed. It needs a `System`, the
-        `Universe.Emission` for the setup's universe, a `Tactic[Compiler.Error]` and a
+        `Toolchain.Universe.Emission` for the setup's universe, a `Tactic[Compiler.Error]` and a
         `Compiler.Event is Loggable`, and it is what `setup.session: …` resolves to.
     entry #scalac   the compiler, with its options and universe
     entry #classpath   the classpath the session compiles against
@@ -1149,7 +1147,7 @@ entry .Scalac   the Scala compiler as a value: typed options, a language version
       What the options contribute; the universe's emission flags, `-d`, `-classpath` and the
       sources are added at the call.
   entry #version   the version of the embedded compiler, `Scalac.version`
-  entry #targeting   the same compiler retargeted to another universe: `scalac.targeting[Universe.Sjsir]`
+  entry #targeting   the same compiler retargeted to another universe: `scalac.targeting[Toolchain.Universe.Sjsir]`
       Options are preserved; only the universe changes, and with it the emission flags the
       compile adds (`-scalajs`, or `-Xplugin:` for Native, which then needs a `NirPlugin`
       given at the call).
@@ -1160,7 +1158,7 @@ entry .Scalac   the Scala compiler as a value: typed options, a language version
       flags, `-d out`, `-classpath`, then `#commandLineArguments`; it logs them as
       `Compiler.Event.Running`, starts a task named `scalac` which runs the compilation on the
       shared compiler, and returns the `Compiler.Process` at once. It needs a `System`, a
-      `Monitor`, a `Probate`, the `Universe.Emission` for the compiler's universe, a
+      `Monitor`, a `Probate`, the `Toolchain.Universe.Emission` for the compiler's universe, a
       `Tactic[Compiler.Error]` and a `Compiler.Event is Loggable`. The output directory must
       exist already: the compiler refuses a `-d` it cannot find, which a direct call does
       not create (the `scalacEdges` tools do). A crash becomes `Compiler.Result.Crash` and
@@ -1201,7 +1199,7 @@ entry .scalacOptions   the Scala compiler's options as typed values, each valid 
   entry .experimental   `-experimental`, at 3.4 to 3.8
   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, at 3.9: keeps each notice's semantic markup
       Under this option the compiler marks each interpolated argument of a message in band,
-      with pickled TASTy for the types among them, and a `Notice` keeps that marked-up form
+      with pickled TASTy for the types among them, and a `Compiler.Notice` keeps that marked-up form
       as its `markup` alongside the plain `message`, for the delicious library to parse into
       a `SemanticMessage`.
   entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
@@ -1311,9 +1309,9 @@ entry .scalacEdges   the Scala compile edges of a toolchain: `Language.Scala` to
       universe, whatever it was declared for.
   refer anthology.Scalac
   refer anthology.Toolchain
-  entry .classfile   the edge from `Language.Scala` to `Universe.Classfile`, driving the given `Scalac`
-  entry .sjsir   the edge from `Language.Scala` to `Universe.Sjsir`, adding `-scalajs`
-  entry .nir   the edge from `Language.Scala` to `Universe.Nir`; needs a `NirPlugin` given
+  entry .classfile   the edge from `Language.Scala` to `Toolchain.Universe.Classfile`, driving the given `Scalac`
+  entry .sjsir   the edge from `Language.Scala` to `Toolchain.Universe.Sjsir`, adding `-scalajs`
+  entry .nir   the edge from `Language.Scala` to `Toolchain.Universe.Nir`; needs a `NirPlugin` given
       NIR is emitted by the Scala Native compiler plugin, so this edge exists only given
       evidence of the plugin's location, which supplies its `-Xplugin:` flag.
 
@@ -1388,7 +1386,7 @@ entry .Javac   the Java compiler as a value, over the running JDK's own compiler
       `Javac(options)` drives the system Java compiler (`ToolProvider.getSystemJavaCompiler`)
       in-process, through the same shape of API as `Scalac`: a map of named sources and a
       classpath compile into a directory in a task of their own, and the result is a
-      `Compiler.Process`. Java has one backend, so the output is always `Universe.Classfile`,
+      `Compiler.Process`. Java has one backend, so the output is always `Toolchain.Universe.Classfile`,
       and a mixed Scala and Java application links into one artifact.
 
       ```scala fuel
@@ -1410,7 +1408,7 @@ entry .Javac   the Java compiler as a value, over the running JDK's own compiler
         process.complete()
       ```
 
-      Java diagnostics become `Notice`s: errors as `Error`, warnings and mandatory warnings
+      Java diagnostics become `Compiler.Notice`s: errors as `Error`, warnings and mandatory warnings
       as `Warning`, the rest as `Info`, each with a single-line span where the compiler gives
       a position. The notice's `file` is not currently the name the source was given: it is
       the placeholder `name`, so a tool which must attribute a Java diagnostic to its source
@@ -1444,7 +1442,7 @@ entry .Javac   the Java compiler as a value, over the running JDK's own compiler
       `CompilerCrash` on a throw) and is declared to raise `Compiler.Error`. A crash becomes
       `Compiler.Result.Crash` and replaces the shared compiler.
 
-entry .javacEdges   the Java compile edge of a toolchain: `Language.Java` to `Universe.Classfile`
+entry .javacEdges   the Java compile edge of a toolchain: `Language.Java` to `Toolchain.Universe.Classfile`
   detail
       `javacEdges(javac)` is a one-edge list carrying the `Javac` it drives. The tool, named
       `javac`, creates the output directory, relays the compiler's events onto the
@@ -1465,7 +1463,7 @@ entry .Kotlinc   the Kotlin compiler as a value: typed options and a language ve
   detail
       `Kotlinc[version](options)` drives the Kotlin compiler in-process, presenting the same
       interface as `Scalac` and `Javac`: a map of named sources and a classpath compile into
-      a directory, and the compiler's messages become `Notice`s on the resulting
+      a directory, and the compiler's messages become `Compiler.Notice`s on the resulting
       `Compiler.Process`. The version parameter is one of `.Versions` (`1.9` to `2.4`), and
       each `kotlincOptions` value is typed by the versions which accept it, so an option a
       version lacks is a compile error in the tool.
@@ -1573,7 +1571,7 @@ entry .kotlincOptions   the Kotlin compiler's options as typed values
     entry .noCallAssertions   `-Xno-call-assertions`
     entry .noParameterAssertions   `-Xno-param-assertions`
 
-entry .kotlincEdges   the Kotlin compile edge of a toolchain: `Language.Kotlin` to `Universe.Classfile`
+entry .kotlincEdges   the Kotlin compile edge of a toolchain: `Language.Kotlin` to `Toolchain.Universe.Classfile`
   detail
       `kotlincEdges(kotlinc)` is a one-edge list carrying the `Kotlinc` it drives. Only the
       JVM backend is modelled: Kotlin's other backends emit klib rather than a universe
@@ -1587,7 +1585,7 @@ entry .Js   JavaScript bound to a host through a module system: one application 
       `anthology.Js(module)` is the application node with id `js-<module>`: `js-es`,
       `js-commonjs` or `js-script`. The module system is part of the artifact's binding
       contract — how a browser or Node imports it — so it is part of the node's identity, and
-      `sjsEdges()` registers one edge from `Universe.Sjsir` to each. It is **not exported** to
+      `sjsEdges()` registers one edge from `Toolchain.Universe.Sjsir` to each. It is **not exported** to
       the `soundness` umbrella, whose `Js` is xenophile's JavaScript foreign-function
       interface, so under `import soundness.*` it is written fully qualified.
 
@@ -1596,7 +1594,7 @@ entry .Js   JavaScript bound to a host through a module system: one application 
       import strategies.throwUnsafely
 
       val target = anthology.Js(anthology.Js.Module.Es)
-      Toolchain(sjsEdges()).path(Universe.Sjsir, target).map(_.tool.name)   // List(t"js-es")
+      Toolchain(sjsEdges()).path(Toolchain.Universe.Sjsir, target).map(_.tool.name)   // List(t"js-es")
       Artifact.application(t"js-es") == target                               // true
       ```
 
@@ -1642,7 +1640,7 @@ entry .Wasi   a standalone WebAssembly artifact bound to a version of the WASI i
 
       supervise:
         Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges()).produce
-          ( Deliverable.Emission(out, classpath), Universe.Sjsir, OciImage, linked )
+          ( Deliverable.Emission(out, classpath), Toolchain.Universe.Sjsir, OciImage, linked )
       ```
 
       The link writes `main.wasm` into the output directory.
@@ -1691,7 +1689,7 @@ entry .WasiToolchain   evidence that `wasm-tools` and `wit-bindgen` are installe
       naming the first tool which does not exit successfully.
 
 entry .Wasm   a core WebAssembly module with JavaScript glue, bound to a JavaScript host
-    `anthology.Wasm` is the application node with id `wasm`, reached from `Universe.Sjsir`
+    `anthology.Wasm` is the application node with id `wasm`, reached from `Toolchain.Universe.Sjsir`
     through `sjsEdges()`: the Scala.js linker's WebAssembly backend, emitted as an ES2022
     module which a browser or Node loads with its glue. It is **not exported** to the
     `soundness` umbrella, whose `Wasm` is xenophile's, so it is written fully qualified. The
@@ -1729,7 +1727,7 @@ entry .linkerOptions   settings for every format the Scala.js linker produces: I
 
 entry .sjsEdges   the Scala.js link edges: `Sjsir` to each JavaScript module system, to browser Wasm, and to a WASI component
   detail
-      `sjsEdges()` registers four edges from `Universe.Sjsir`: to `anthology.Js` under the
+      `sjsEdges()` registers four edges from `Toolchain.Universe.Sjsir`: to `anthology.Js` under the
       ES, CommonJS and script module systems, and to `anthology.Wasm`; `.wasi()` adds the
       fifth, to `Wasi(Wasi.Version.Wasip2)`, and exists only given a `WasiToolchain` and a
       `Wasi.World`. All drive the Scala.js linker — a JVM library bundled with
@@ -1756,7 +1754,7 @@ entry .sjsEdges   the Scala.js link edges: `Sjsir` to each JavaScript module sys
       supervise:
         Toolchain(sjsEdges()).produce
           ( Deliverable.Emission(out, classpath),
-            Universe.Sjsir,
+            Toolchain.Universe.Sjsir,
             anthology.Js(anthology.Js.Module.Es),
             linked,
             List(linkerOptions.optimize.fast),
@@ -1764,7 +1762,7 @@ entry .sjsEdges   the Scala.js link edges: `Sjsir` to each JavaScript module sys
       ```
 
       The emission must have been compiled with `-scalajs` (a `Scalac` retargeted to
-      `Universe.Sjsir`) against the Scala.js runtime JARs; a classfile compilation has no
+      `Toolchain.Universe.Sjsir`) against the Scala.js runtime JARs; a classfile compilation has no
       path to any of these nodes.
   refer anthology.linkerOptions
   refer anthology.Wasi
@@ -1798,7 +1796,7 @@ entry .Bundler   the running application's classpath, for a build which must pac
       def stage(out: Path on Linux, executor: Fqcn)(using Monitor): Path on Linux =
         Toolchain(jarEdges()).produce
           ( Deliverable.Emission(out, Bundler.applicationClasspath),
-            Universe.Classfile,
+            Toolchain.Universe.Classfile,
             Artifact.Jar,
             out,
             List(jarOptions.name(t"staged.jar")),
@@ -1820,7 +1818,7 @@ entry .Library   a JAR of one universe's unlinked compilation output, for downst
       through `jarEdges()`. It packages only the compilation's own output — classfiles, and
       any `.sjsir` or `.nir` alongside them, with their TASTy — not the classpath, and
       records no entry point, so entry points are ignored. A library's universe must match
-      its compilation's: `Toolchain(jarEdges()).path(Universe.Sjsir, Library(Universe.Nir))`
+      its compilation's: `Toolchain(jarEdges()).path(Toolchain.Universe.Sjsir, Library(Toolchain.Universe.Nir))`
       raises `NoPath`.
 
       ```scala fuel
@@ -1840,7 +1838,7 @@ entry .Library   a JAR of one universe's unlinked compilation output, for downst
 
       supervise:
         Toolchain(jarEdges()).produce
-          ( Deliverable.Emission(out, classpath), Universe.Sjsir, Library(Universe.Sjsir), linked )
+          ( Deliverable.Emission(out, classpath), Toolchain.Universe.Sjsir, Library(Toolchain.Universe.Sjsir), linked )
       ```
 
       The JAR is named `main.jar` unless `jarOptions.name` says otherwise.
@@ -1856,9 +1854,9 @@ entry .jarOptions   settings for the JAR-packaging edges
 
 entry .jarEdges   the JAR-packaging edges: `Classfile` to `Artifact.Jar`, and each universe to its `Library`
   detail
-      `jarEdges()` registers four edges, needing no external tool: from `Universe.Classfile`
-      to `Artifact.Jar`, and from each of `Universe.Classfile`, `Universe.Sjsir` and
-      `Universe.Nir` to its `Library`. Both tools' settings are the JAR's filename
+      `jarEdges()` registers four edges, needing no external tool: from `Toolchain.Universe.Classfile`
+      to `Artifact.Jar`, and from each of `Toolchain.Universe.Classfile`, `Toolchain.Universe.Sjsir` and
+      `Toolchain.Universe.Nir` to its `Library`. Both tools' settings are the JAR's filename
       (`jarOptions.name`, default `main.jar`).
 
       The `jar` tool bundles the emission directory *and the whole classpath*: a directory
@@ -1889,7 +1887,7 @@ entry .jarEdges   the JAR-packaging edges: `Classfile` to `Artifact.Jar`, and ea
         val jar: Path on Linux =
           Toolchain(jarEdges()).produce
             ( Deliverable.Emission(out, classpath),
-              Universe.Classfile,
+              Toolchain.Universe.Classfile,
               Artifact.Jar,
               linked,
               List(jarOptions.name(t"app.jar")),
@@ -1938,8 +1936,8 @@ entry .nativeEdges   the native link edges: `Nir` to an `Artifact.Binary` per ta
   detail
       `nativeEdges(triples*)` probes once for `clang` and `clang++` on the `PATH` (with the
       `WorkingDirectory` and `Environment` in scope), raising `Toolchain.Error` if either is
-      missing, and registers one edge from `Universe.Nir` to `Artifact.Binary(triple)` for
-      each triple given — or for the build host's own, `Triple.host`, when none is. The tool
+      missing, and registers one edge from `Toolchain.Universe.Nir` to `Artifact.Binary(triple)` for
+      each triple given — or for the build host's own, `Toolchain.Triple.host`, when none is. The tool
       drives the Scala Native build (bundled with `anthology.nir`) over the emission
       directory and its classpath, requires exactly one `EntryPoint` as the binary's main
       class (`NoEntryPoint` otherwise), and writes the binary, named `main`, below the
@@ -1962,22 +1960,22 @@ entry .nativeEdges   the native link edges: `Nir` to an `Artifact.Binary` per ta
       val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
 
       supervise:
-        Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
+        Toolchain(nativeEdges(Toolchain.Triple.Arm64MacOs, Toolchain.Triple.X64Linux)).produce
           ( Deliverable.Emission(out, classpath),
-            Universe.Nir,
-            Artifact.Binary(Triple.X64Linux),
+            Toolchain.Universe.Nir,
+            Artifact.Binary(Toolchain.Triple.X64Linux),
             linked,
             List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
             List(EntryPoint(Fqcn(t"Main"))) )
       ```
 
-      The emission must have been compiled into `Universe.Nir` — a `Scalac` retargeted with
+      The emission must have been compiled into `Toolchain.Universe.Nir` — a `Scalac` retargeted with
       a `NirPlugin` given — against the Scala Native runtime JARs. The compiler's own JARs
       are compile-classpath only and unreachable at native run time, which is why code
       which uses the compiler only inside macros still links. A build which throws raises
       `Link.Error` reason `Failed`.
   refer anthology.nativeOptions
-  refer anthology.Triple
+  refer anthology.Toolchain.Triple
   refer anthology.NirPlugin
   entry .apply   probes for `clang` and `clang++`, then one edge per triple (or the host's)
       Raises `Toolchain.Error(t"clang")` for a missing compiler, and the same for a build host
@@ -1985,7 +1983,7 @@ entry .nativeEdges   the native link edges: `Nir` to an `Artifact.Binary` per ta
 
 entry .Dex   Dalvik bytecode bound to the Android runtime: an archive of `classes*.dex` files
   detail
-      The application node with id `dex`, reached from `Universe.Classfile` through
+      The application node with id `dex`, reached from `Toolchain.Universe.Classfile` through
       `dexEdges()`: a zip archive, `main.dex.jar`, of `classes.dex`, `classes2.dex`, …, which
       ART and a `DexClassLoader` consume directly, and the intermediate node on the path from
       classfiles to an `Apk`. DEX carries no entry-point metadata — ART is told its main class
@@ -2007,7 +2005,7 @@ entry .Dex   Dalvik bytecode bound to the Android runtime: an archive of `classe
       val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
 
       supervise:
-        Toolchain(dexEdges()).produce(Deliverable.Emission(out, classpath), Universe.Classfile, Dex, linked)
+        Toolchain(dexEdges()).produce(Deliverable.Emission(out, classpath), Toolchain.Universe.Classfile, Dex, linked)
       ```
 
       Scala 3 output dexes cleanly: the compiler emits Java 17 class files with lambdas as
@@ -2047,7 +2045,7 @@ entry .dexEdges   the dexing edge: `Classfile` to `Dex`, driving R8's D8 through
 
 entry .Apk   a complete, installable Android package: dexed code, a binary manifest, aligned and signed
   detail
-      The application node with id `apk`, reached from `Universe.Classfile` through `Dex` by
+      The application node with id `apk`, reached from `Toolchain.Universe.Classfile` through `Dex` by
       `Toolchain(dexEdges(), apkEdges())`. The tool encodes a binary `AndroidManifest.xml`
       (`Axml`), stores the dex files uncompressed and 4-byte aligned so the runtime can
       memory-map them, and signs the package with APK Signature Scheme v2 (`.Signer`) — a
@@ -2073,7 +2071,7 @@ entry .Apk   a complete, installable Android package: dexed code, a binary manif
       supervise:
         Toolchain(dexEdges(), apkEdges()).produce
           ( Deliverable.Emission(out, classpath),
-            Universe.Classfile,
+            Toolchain.Universe.Classfile,
             Apk,
             staged,
             List
@@ -2243,7 +2241,7 @@ entry .OciConfiguration   the metadata written into an OCI artifact's config: ar
   entry #annotations   OCI annotations, as a map
 
 entry .OciImage   a WASI component packaged as a Wasm OCI artifact, written as an `oci-archive`
-    The application node with id `oci`, reached from `Universe.Sjsir` through the `wasip2`
+    The application node with id `oci`, reached from `Toolchain.Universe.Sjsir` through the `wasip2`
     component by `Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())`: the form a
     container runtime with a Wasm shim (`io.containerd.wasmtime.v1`) schedules and a
     registry distributes. The tool writes `image.tar` into the output directory, with the
@@ -2290,7 +2288,7 @@ entry .ociEdges   the wrapping edge: the `wasip2` component to its `OciImage`
 
       given Wasi.World = Wasi.World(t"/home/user/project/wit".as[Path on Linux], t"main")
       val toolchain = Toolchain(ociEdges())
-      safely(toolchain.path(Universe.Sjsir, OciImage))   // Unset: the component edge is missing
+      safely(toolchain.path(Toolchain.Universe.Sjsir, OciImage))   // Unset: the component edge is missing
       ```
   refer anthology.OciImage
   refer anthology.Wasi

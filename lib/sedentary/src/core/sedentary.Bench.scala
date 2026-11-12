@@ -539,7 +539,7 @@ extends Rig:
 
   def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux = stageOn(device, out)
 
-  protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.7, Toolchain.Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
   :   output =
@@ -567,7 +567,7 @@ private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Linux)
     val jarfile = supervise:
       Toolchain(jarEdges()).produce
         ( Deliverable.Emission(out, Bundler.applicationClasspath),
-          Universe.Classfile,
+          Toolchain.Universe.Classfile,
           Artifact.Jar,
           out,
           List(jarOptions.name(t"$uuid.jar")),

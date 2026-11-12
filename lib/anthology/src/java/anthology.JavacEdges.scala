@@ -46,6 +46,7 @@ import serpentine.*
 
 import errorDiagnostics.emptyDiagnostics
 import probates.cancelProbate
+import anthology.Toolchain.{Tool, Universe}
 
 // The Java compile edge of a toolchain: `Language.Java` to the classfile universe. Java has one
 // backend, so unlike Scala there is nothing to choose.
