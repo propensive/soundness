@@ -769,8 +769,8 @@ object Mcp:
       given Tactic[Async.Error] = ThrowTactic()
 
       val messages = supervise(spec.invokePrompt(server, client, name, arguments.or(Map()))).map:
-        case Human(message) => PromptMessage(Role.User, TextContent(message))
-        case Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
+        case Discourse.Human(message) => PromptMessage(Role.User, TextContent(message))
+        case Discourse.Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
 
       GetPrompt(Unset, messages)
 

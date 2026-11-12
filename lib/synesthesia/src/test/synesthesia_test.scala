@@ -42,7 +42,7 @@ object Tests extends Suite("mcp", m"Synesthesia Tests"):
     // only `Mcp.TextInt`, whose `id` is a `Text | Int` union, needs an instance of its own.
     suite(m"Native-rendering coverage"):
       test(m"a Discourse message inspects structurally"):
-        Human(t"hello").inspect
+        Discourse.Human(t"hello").inspect
       . assert(_ == t"Human(message:t\"hello\")")
 
       test(m"a TextInt inspects with its union field resolved"):
@@ -51,8 +51,8 @@ object Tests extends Suite("mcp", m"Synesthesia Tests"):
 
       test(m"synesthesia's types inspect natively"):
         Inspectable.fallbacks
-         ( Human(t"hello").inspect,
-           Agent(t"hi").inspect,
+         ( Discourse.Human(t"hello").inspect,
+           Discourse.Agent(t"hi").inspect,
            Mcp.BaseMetadata(t"name").inspect,
            Mcp.LoggingLevel.Debug.inspect,
            Mcp.TaskStatus.Working.inspect,

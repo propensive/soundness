@@ -91,7 +91,7 @@ object internal:
 
     val types = parts.map(StringConstant(_)).map(ConstantType(_).asType).reverse
 
-    if human then '{Human($result.tt)} else '{Agent($result.tt)}
+    if human then '{Discourse.Human($result.tt)} else '{Discourse.Agent($result.tt)}
 
 
   def spec[interface: Type]: Macro[interface is Mcp.Specification] =
