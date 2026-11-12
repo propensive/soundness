@@ -752,8 +752,10 @@ entry .Tabular   a typeclass: a value which is itself a table, supplying both it
 
 entry .Table   the namespace of a rendered table: its cells, rows, sections and style, and `Table.Error`
   detail
-      `Table` holds nothing but the error. There is no `Table` type: a table definition is a
-      `Scaffold`, data arranged by one a `Tabulation`, and the fitted result a `Grid`.
+      `Table` is a namespace, not a type: a table definition is a `Scaffold`, data arranged by
+      one a `Tabulation`, and the fitted result a `Grid`. `Table` holds the pieces a grid is
+      drawn from (`Cell`, `Row`, `Section`), the `Style` it is drawn in, the `Relabelling`
+      which renames derived columns, and the `Error` raised when a table cannot fit.
   refer escritoire.Scaffold
   refer escritoire.columnAttenuation
   entry .Error   the table needed more width than it was given
