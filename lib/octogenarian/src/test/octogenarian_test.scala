@@ -130,8 +130,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       Operations.planePath(worktree, name)
 
-    def patchFrom(lines: Text*): List[FileDiff] =
-      Patch.parse(lines)
+    def patchFrom(lines: Text*): List[Git.FileDiff] =
+      Git.Patch.parse(lines)
 
     def messages(using worktree: (Git.Worktree.Handle & Granting[Grant.Read & Grant.Write])^): List[Text] =
       worktree.log().value.map(_.message)
@@ -294,7 +294,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
         Git.Signature.parse(t"Prince Hal <hal@example.com> 1700000000 +0000")
       .assert(_ == Git.Signature(Git.Identity(t"Prince Hal", t"hal@example.com"), Git.Timestamp(1700000000L, 0)))
 
-    // ----- Patch parser ----------------------------------------------------
+    // ----- Git.Patch parser ----------------------------------------------------
 
     suite(m"Patch parser"):
 
@@ -323,7 +323,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"@@ -1 +1 @@",
            t"-old",
            t"+new" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Modified)
+      .assert(_ == Git.ChangeKind.Modified)
 
       test(m"a new file has ChangeKind.Added"):
         patchFrom
@@ -334,7 +334,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+++ b/new.txt",
            t"@@ -0,0 +1 @@",
            t"+content" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Added)
+      .assert(_ == Git.ChangeKind.Added)
 
       test(m"a deleted file has ChangeKind.Deleted"):
         patchFrom
@@ -345,7 +345,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+++ /dev/null",
            t"@@ -1 +0,0 @@",
            t"-content" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Deleted)
+      .assert(_ == Git.ChangeKind.Deleted)
 
       test(m"a renamed file has ChangeKind.Renamed"):
         patchFrom
@@ -353,7 +353,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"similarity index 100%",
            t"rename from old.txt",
            t"rename to new.txt" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Renamed)
+      .assert(_ == Git.ChangeKind.Renamed)
 
       test(m"a renamed file records both old and new paths"):
         patchFrom
@@ -370,7 +370,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"similarity index 80%",
            t"copy from source",
            t"copy to dest" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Copied)
+      .assert(_ == Git.ChangeKind.Copied)
 
       test(m"multiple files yield multiple FileDiffs"):
         patchFrom
@@ -487,7 +487,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"@@ -10 +10 @@",
            t"-other",
            t"+also" ).head.let: file =>
-          Patch.asDiff(file).edits.size
+          Git.Patch.asDiff(file).edits.size
       .assert(_ == 4)
 
       test(m"a header with no --- / +++ block still records paths from `diff --git`"):
@@ -1120,7 +1120,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
             val files = worktree.diff().value
             files.size == 1
-              && files.head.lay(false)(_.changeKind == ChangeKind.Modified)
+              && files.head.lay(false)(_.changeKind == Git.ChangeKind.Modified)
               && files.head.lay(false): file =>
                   file.hunks.bind(_.edits).exists:
                     case Ins(_, t"second") => true
@@ -1134,7 +1134,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             worktree.add(planePath(t"b"))
             val staged = worktree.diffStaged().value
             staged.size == 1
-              && staged.head.lay(false)(_.changeKind == ChangeKind.Added)
+              && staged.head.lay(false)(_.changeKind == Git.ChangeKind.Added)
               && staged.head.lay(false)(_.newPath == t"b")
         .assert(_ == true)
 
@@ -1164,7 +1164,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             sh"rm ${worktree.stem}/a".exec[Exit]()
             worktree.add(planePath(t"a"))
             worktree.diffStaged().value.head.lay(false): file =>
-              file.changeKind == ChangeKind.Deleted
+              file.changeKind == Git.ChangeKind.Deleted
                 && file.oldPath == t"a"
                 && file.newPath == Unset
         .assert(_ == true)
@@ -1492,7 +1492,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
             worktree.remotes().value
-        .assert(_ == List(Remote(t"origin", t"git@example.com:globe/hamlet.git")))
+        .assert(_ == List(Git.Remote(t"origin", t"git@example.com:globe/hamlet.git")))
 
         test(m"adding a remote twice fails with RemoteExists"):
           withWorktree: worktree ?=>

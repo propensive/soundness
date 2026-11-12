@@ -355,7 +355,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
   def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
-  :   List[FileDiff] =
+  :   List[Git.FileDiff] =
 
     io(Workspace.diffTree(objects(gitDir), left, right))
 
@@ -430,7 +430,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
   def diffWorktree
     ( gitDir: Path on Linux, worktree: Path on Linux, staged: Boolean, against: Optional[Text] )
     ( using Tactic[Git.Error] )
-  :   List[FileDiff] =
+  :   List[Git.FileDiff] =
 
     io:
       Workspace.diffWorktree

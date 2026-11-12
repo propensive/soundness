@@ -58,6 +58,7 @@ import cloaks.heapCloak
 import socketBackends.javaBaseSockets
 
 import java.nio.file as jnf
+import dissonance.Diff.Par
 
 // The native backend, checked against repositories the real `git` builds: every read must agree
 // with git's own answer, and every write must be one git accepts.
@@ -345,7 +346,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         val dir = gitRepo()
         sh"git -C $dir remote add origin git@example.com:globe/hamlet.git".exec[Exit]()
         dir.open[Git.Repo]() { repo ?=> repo.remotes().value }
-      .assert(_ == List(Remote(t"origin", t"git@example.com:globe/hamlet.git")))
+      .assert(_ == List(Git.Remote(t"origin", t"git@example.com:globe/hamlet.git")))
 
     suite(m"Working tree"):
 
@@ -486,13 +487,13 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
           val hunk = file.hunks.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
           val changes = hunk.edits.filter(!_.isInstanceOf[Par[?]]).fold(0) { (n, _) => n + 1 }
           (file.changeKind, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
-      .assert(_ == ((ChangeKind.Modified, 1, 5, 1, 5, 2)))
+      .assert(_ == ((Git.ChangeKind.Modified, 1, 5, 1, 5, 2)))
 
       test(m"diffBetween two commits matches the command-line parse of git diff"):
         val dir = gitRepo()
         val first = gitCommit(dir, t"a", t"one\ntwo\nthree\n", t"first")
         val second = gitCommit(dir, t"a", t"one\n2\nthree\nfour\n", t"second")
-        val expected = Patch.parse(gitOut(dir, t"diff", t"--no-color", first.text, second.text).cut(t"\n"))
+        val expected = Git.Patch.parse(gitOut(dir, t"diff", t"--no-color", first.text, second.text).cut(t"\n"))
         dir.open[Git.Worktree]() { worktree ?=> worktree.diffBetween(first, second) == expected }
       .assert(_ == true)
 

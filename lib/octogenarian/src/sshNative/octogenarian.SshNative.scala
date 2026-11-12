@@ -95,7 +95,7 @@ object SshNative:
 
       duplex.close()
 
-// Remote repositories over the native SSH client: no `ssh` binary, the host key checked
+// Git.Remote repositories over the native SSH client: no `ssh` binary, the host key checked
 // against the `Ssh.HostKeys` policy in scope, and the user's identities from `Ssh.Credentials`.
 // It connects through the socket backend directly rather than through the `Online`-gated
 // `Connectable`, so that it captures nothing: `Native` takes a list of pure transports. The

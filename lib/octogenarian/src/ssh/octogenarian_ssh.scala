@@ -39,7 +39,7 @@ import anticipation.*
 import guillotine.*
 
 package gitTransports:
-  // Remote repositories over a spawned `ssh`. The capture set is spelled out, as the `cli`
+  // Git.Remote repositories over a spawned `ssh`. The capture set is spelled out, as the `cli`
   // backend's is: an inferred one would freshen the logger it was built from.
   given sshCommand
   :   ( working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^ )

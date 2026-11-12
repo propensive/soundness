@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **333**;
-  130 sit in a prefix family of two or more, across 42 families, and
+- exported multi-word type-level names still under review: **331**;
+  128 sit in a prefix family of two or more, across 41 families, and
   203 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -276,7 +276,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Daemon*` | ethereal | 2 | `DaemonEnvironment`, `DaemonLogEvent` |
 | `Deps*` | burdock | 2 | `DepsDev`, `DepsEvent` |
 | `Dom*` | nomenclature | 2 | `DomId`, `DomIdentifier` |
-| `File*` | galilei, octogenarian | 2 | `FileDiff`, `FileOpenable` |
 | `Filesystem*` | galilei | 2 | `FilesystemAttribute`, `FilesystemBackend` |
 | `Foreign*` | xenophile | 2 | `ForeignBuffer`, `ForeignLibrary` |
 | `Http*` | anticipation, honeycomb, urticose | 4 | `HttpEquiv`, `HttpRequests`, `HttpStreams`, `HttpUrl` |
@@ -351,12 +350,12 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 `ArOpenable`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AttemptTactic`, `BaseLayout`,
 `BenchmarkDevice`, `BeneficencePlugin`, `BloomFilter`, `BorderStyle`, `BytecodePalette`,
 `CanonicalCbor`, `CanvasHandle`, `CaptionLayout`, `CardinalWind`, `CarriageReturn`,
-`CaseSensitivity`, `CellRef`, `ChangeKind`, `ChannelLayout`, `ChartPalette`, `CheckOverflow`,
-`ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`, `CommandGroup`,
-`CommonFormattable`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`, `DagDiagram`,
-`DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`,
-`DnsLabel`, `EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`,
-`EnumerationHasAsScala`, `EucalyptusGcp`, `FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`,
+`CaseSensitivity`, `CellRef`, `ChannelLayout`, `ChartPalette`, `CheckOverflow`, `ClasspathIndex`,
+`CliEvent`, `CollectionConverters`, `ColorDepth`, `CommandGroup`, `CommonFormattable`,
+`ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`, `DagDiagram`, `DecimalConverter`,
+`DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `EditorField`,
+`EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
+`EucalyptusGcp`, `FastForward`, `FieldIndex`, `FileOpenable`, `FlowExtent`, `FluidOunce`,
 `FoldableRectoPanel`, `FontMetric`, `FrameReader`, `GapPolicy`, `GarbageCollection`,
 `GaugePalette`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
 `HmacCipher`, `Html4Transitional`, `ImageOpenable`, `InitializationVector`, `IntercardinalWind`,
