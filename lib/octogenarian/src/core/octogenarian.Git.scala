@@ -940,7 +940,7 @@ object Git:
 
     def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
       ( using Tactic[Git.Error] )
-    :   List[FileDiff]
+    :   List[Delta]
 
     // Index and working files
     def status(gitDir: Path on Linux, worktree: Path on Linux, ignored: Boolean, untracked: Boolean)
@@ -993,7 +993,7 @@ object Git:
         staged:   Boolean,
         against:  Optional[Text] )
       ( using Tactic[Git.Error] )
-    :   List[FileDiff]
+    :   List[Delta]
 
     def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text]
 
@@ -1724,16 +1724,16 @@ object Git:
                   Operations.planePath(worktree, line.path),
                   line.origin.let(Operations.planePath(worktree, _)) )
 
-        def diff()(using Tactic[Git.Error]): Stale[List[FileDiff]] =
+        def diff()(using Tactic[Git.Error]): Stale[List[Delta]] =
           Stale(worktree.backend.diffWorktree(worktree.gitDir, worktree.root, false, Unset))
 
-        def diffStaged()(using Tactic[Git.Error]): Stale[List[FileDiff]] =
+        def diffStaged()(using Tactic[Git.Error]): Stale[List[Delta]] =
           Stale(worktree.backend.diffWorktree(worktree.gitDir, worktree.root, true, Unset))
 
-        def diffAgainst(revision: Git.Revision)(using Tactic[Git.Error]): Stale[List[FileDiff]] =
+        def diffAgainst(revision: Git.Revision)(using Tactic[Git.Error]): Stale[List[Delta]] =
           Stale(worktree.backend.diffWorktree(worktree.gitDir, worktree.root, false, revision.text))
 
-        def diffBetween(left: Git.Hash, right: Git.Hash)(using Tactic[Git.Error]): List[FileDiff] =
+        def diffBetween(left: Git.Hash, right: Git.Hash)(using Tactic[Git.Error]): List[Delta] =
           worktree.backend.diffTree(worktree.gitDir, left, right)
 
         def tracked()(using Tactic[Git.Error]): Stale[List[Path on worktree.Plane]] =
@@ -2129,13 +2129,13 @@ object Git:
     import vacuous.*
     import dissonance.Diff.{Del, Edit, Ins, Par}
 
-    // Streams a `git diff -p --no-color` output as one FileDiff per file.
+    // Streams a `git diff -p --no-color` output as one Delta per file.
     // Common cases (modify, add, delete, rename, copy) are handled. Binary
-    // diffs and mode-only changes produce a FileDiff with no hunks.
-    def parse(lines: List[Text]): List[FileDiff] =
+    // diffs and mode-only changes produce a Delta with no hunks.
+    def parse(lines: List[Text]): List[Delta] =
       val prefix = t"diff --git "
 
-      def recur(remaining: List[Text], files: List[FileDiff]): List[FileDiff] = remaining match
+      def recur(remaining: List[Text], files: List[Delta]): List[Delta] = remaining match
         case Nil => files.reverse
 
         case header :: rest if header.starts(prefix) =>
@@ -2150,7 +2150,7 @@ object Git:
 
     // Flattens every hunk's edits into a single Dissonance Diff[Text]. Assembled exclusively from
     // `Retained` edits, so the `Diff` carries the proof.
-    def asDiff(file: FileDiff): Diff[Text] & Retained =
+    def asDiff(file: Delta): Diff[Text] & Retained =
       Diff(file.hunks.bind(_.edits).stdlib*).retained
 
     private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
@@ -2158,11 +2158,11 @@ object Git:
       case List(start, count) => (safely(start.as[Int]).or(0), safely(count.as[Int]).or(0))
       case _                  => (0, 0)
 
-    private def parseFile(header: Text, body: List[Text]): FileDiff =
+    private def parseFile(header: Text, body: List[Text]): Delta =
       case class State
         ( oldPath:    Optional[Text]               = Unset,
           newPath:    Optional[Text]               = Unset,
-          changeKind: ChangeKind                   = ChangeKind.Modified,
+          status: Delta.Status                   = Delta.Status.Modified,
           hunks:      List[Hunk]                   = Nil,
           // Current hunk being read (with running line counters), if any.
           hunk:       Optional[Hunk]               = Unset,
@@ -2185,34 +2185,34 @@ object Git:
 
       def step(state: State, line: Text): State = line match
         case t"--- /dev/null" =>
-          state.copy(oldPath = Unset, changeKind = ChangeKind.Added)
+          state.copy(oldPath = Unset, status = Delta.Status.Added)
 
         case r"--- a/$path(.*)" =>
           state.copy(oldPath = path)
 
         case r"\+\+\+ /dev/null" =>
-          state.copy(newPath = Unset, changeKind = ChangeKind.Deleted)
+          state.copy(newPath = Unset, status = Delta.Status.Deleted)
 
         case r"\+\+\+ b/$path(.*)" =>
           state.copy(newPath = path)
 
         case r"rename from $path(.*)" =>
-          state.copy(oldPath = path, changeKind = ChangeKind.Renamed)
+          state.copy(oldPath = path, status = Delta.Status.Renamed)
 
         case r"rename to $path(.*)" =>
-          state.copy(newPath = path, changeKind = ChangeKind.Renamed)
+          state.copy(newPath = path, status = Delta.Status.Renamed)
 
         case r"copy from $path(.*)" =>
-          state.copy(oldPath = path, changeKind = ChangeKind.Copied)
+          state.copy(oldPath = path, status = Delta.Status.Copied)
 
         case r"copy to $path(.*)" =>
-          state.copy(newPath = path, changeKind = ChangeKind.Copied)
+          state.copy(newPath = path, status = Delta.Status.Copied)
 
         case r"new file mode .*" =>
-          state.copy(changeKind = ChangeKind.Added)
+          state.copy(status = Delta.Status.Added)
 
         case r"deleted file mode .*" =>
-          state.copy(changeKind = ChangeKind.Deleted)
+          state.copy(status = Delta.Status.Deleted)
 
         case r"@@ -$oldRange(\S+) \+$newRange(\S+) @@$section(.*)" =>
           val flushed = state.closeHunk()
@@ -2240,13 +2240,13 @@ object Git:
 
       val finalState = body.fold(initial)(step).closeHunk()
 
-      FileDiff
+      Delta
         ( finalState.oldPath,
           finalState.newPath,
-          finalState.changeKind,
+          finalState.status,
           finalState.hunks.reverse )
 
-  case class Patch(files: List[FileDiff])
+  case class Patch(files: List[Delta])
 
   // Edits are `Retained`: every hunk line carries its text, so `Patch.parse` mints the proof at
   // construction and `Patch.asDiff`'s result supports value-demanding operations (`redraft`).
@@ -2258,11 +2258,14 @@ object Git:
       section:  Text,
       edits:    List[dissonance.Diff.Edit[Text] & dissonance.Retained] )
 
-  case class FileDiff
-    ( oldPath:    Optional[Text],
-      newPath:    Optional[Text],
-      changeKind: ChangeKind,
-      hunks:      List[Hunk] )
+  // One file's part of a diff, in libgit2's terms: its paths on either side, how it changed, and
+  // its hunks.
+  object Delta:
+    enum Status:
+      case Added, Modified, Deleted, Renamed, Copied, TypeChanged
 
-  enum ChangeKind:
-    case Added, Modified, Deleted, Renamed, Copied, TypeChanged
+  case class Delta
+    ( oldPath: Optional[Text],
+      newPath: Optional[Text],
+      status:  Delta.Status,
+      hunks:   List[Hunk] )

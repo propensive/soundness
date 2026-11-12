@@ -845,19 +845,19 @@ private[octogenarian] object Workspace:
   // The differences between two snapshots, with content supplied by the caller for each side.
   def fileDiffs(left: Snapshot, right: Snapshot)(leftContent: (Text, Int, Git.Hash) => Data)
     ( rightContent: (Text, Int, Git.Hash) => Data )
-  :   List[Git.FileDiff] =
+  :   List[Git.Delta] =
 
     val paths = (left.keys.to[List] + right.keys.to[List]).distinct.order(_.s)
 
-    def describe(path: Text): Optional[Git.FileDiff] = left.at(path) match
+    def describe(path: Text): Optional[Git.Delta] = left.at(path) match
       case (leftMode: Int, leftHash: Git.Hash) =>
         right.at(path) match
           case (rightMode: Int, rightHash: Git.Hash) =>
             if leftHash == rightHash && leftMode == rightMode then Unset
             else
               val kind =
-                if kindOf(leftMode) != kindOf(rightMode) then Git.ChangeKind.TypeChanged
-                else Git.ChangeKind.Modified
+                if kindOf(leftMode) != kindOf(rightMode) then Git.Delta.Status.TypeChanged
+                else Git.Delta.Status.Modified
 
               val content =
                 if leftHash == rightHash then Nil
@@ -866,25 +866,25 @@ private[octogenarian] object Workspace:
                   val right = rightContent(path, rightMode, rightHash)
                   hunks(left, right)
 
-              Git.FileDiff(path, path, kind, content)
+              Git.Delta(path, path, kind, content)
 
           case _ =>
-            Git.FileDiff
+            Git.Delta
               ( path,
                 Unset,
-                Git.ChangeKind.Deleted,
+                Git.Delta.Status.Deleted,
                 hunks(leftContent(path, leftMode, leftHash), Data()) )
 
       case _ =>
         right.at(path) match
           case (mode: Int, hash: Git.Hash) =>
-            Git.FileDiff(Unset, path, Git.ChangeKind.Added, hunks(Data(), rightContent(path, mode, hash)))
+            Git.Delta(Unset, path, Git.Delta.Status.Added, hunks(Data(), rightContent(path, mode, hash)))
 
           case _ => Unset
 
-    def recur(remaining: List[Text], acc: List[Git.FileDiff]): List[Git.FileDiff] = remaining match
+    def recur(remaining: List[Text], acc: List[Git.Delta]): List[Git.Delta] = remaining match
       case path :: rest => describe(path) match
-        case diff: Git.FileDiff => recur(rest, diff :: acc)
+        case diff: Git.Delta => recur(rest, diff :: acc)
         case _              => recur(rest, acc)
 
       case _ => acc.reverse
@@ -911,7 +911,7 @@ private[octogenarian] object Workspace:
       staged: Boolean,
       against: Optional[Text] )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
-  :   List[Git.FileDiff] =
+  :   List[Git.Delta] =
 
     val contents = Index.read(gitDir)
     val index = indexSnapshot(contents)
@@ -942,7 +942,7 @@ private[octogenarian] object Workspace:
   def diffTree
     ( objects: Path on Linux, left: Git.Hash, right: Git.Hash )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
-  :   List[Git.FileDiff] =
+  :   List[Git.Delta] =
 
     def treeOf(hash: Git.Hash): Git.Hash = Store.readOr(objects, hash) match
       case (Git.Object.Kind.Commit, data) => Objects.parseCommit(hash, data).tree

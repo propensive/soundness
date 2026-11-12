@@ -9,7 +9,7 @@ detail
     repository handle, rather than as command strings assembled by hand and text output parsed
     afterwards. A branch (`Git.Branch`), a tag (`Git.Tag`) and a commit hash (`Git.Hash`) are
     distinct types, so an operation which expects a branch does not accept a tag; results come
-    back as values (`Commit`, `Git.FileDiff`, `Git.Head`, `Git.Merge.Outcome`) rather than as text to
+    back as values (`Commit`, `Git.Delta`, `Git.Head`, `Git.Merge.Outcome`) rather than as text to
     re-parse; failures are a `Git.Error` with a numbered `Git.Error.Reason`; and the API is honest
     about the one thing every Git library must be honest about: the repository is on disk, and
     other processes write it.
@@ -119,7 +119,7 @@ detail
 
     The library is split into components, by what each needs from the platform:
 
-    - `octogenarian.core` — the model (`Git` and everything nested in it, `Commit`, `Git.FileDiff`,
+    - `octogenarian.core` — the model (`Git` and everything nested in it, `Commit`, `Git.Delta`,
       `Git.Hunk`, `Git.Patch`, `Git.Remote`, `ReflogEntry`, `Notes` and `NoteRef`), the `Git.Repo` and
       `Git.Worktree` handles and the `Git.Backend` typeclass they drive. No process is spawned
       here, so a consumer of the native backend never compiles guillotine. JVM and Scala Native;
@@ -1367,10 +1367,10 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
       entry .status   the state of every changed path, as a `Stale[List[Git.PathStatus[worktree.Plane]]]`
           Untracked files are included unless `untracked = false`; ignored ones only with
           `ignored = true`.
-      entry .diff   the working files against the index, as a `Stale[List[FileDiff]]`
-      entry .diffStaged   the index against HEAD, as a `Stale[List[FileDiff]]`
-      entry .diffAgainst   the working files against a revision, as a `Stale[List[FileDiff]]`
-      entry .diffBetween   the trees of two commits against each other, as a plain `List[FileDiff]`
+      entry .diff   the working files against the index, as a `Stale[List[Delta]]`
+      entry .diffStaged   the index against HEAD, as a `Stale[List[Delta]]`
+      entry .diffAgainst   the working files against a revision, as a `Stale[List[Delta]]`
+      entry .diffBetween   the trees of two commits against each other, as a plain `List[Delta]`
           Keyed by hashes, so not `Stale`.
       entry .tracked   every path the index tracks, on the handle's plane, as a `Stale` list
       entry .conflicts   every path in conflict, on the handle's plane, as a `Stale` list
@@ -1507,12 +1507,12 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
     entry #name   the remote's name, `origin`
     entry #fetchUrl   the URL fetched from
     entry #pushUrl   the URL pushed to, if it differs from `#fetchUrl`
-  entry .Patch   reads patch text as `FileDiff`s, and flattens a file's hunks into one `Diff`
+  entry .Patch   reads patch text as `Delta`s, and flattens a file's hunks into one `Diff`
     detail
         `Patch.parse` reads the output of `git diff -p --no-color` — from a file, a mail, or
-        anywhere else — as one `FileDiff` per `diff --git` header, handling modified, added,
+        anywhere else — as one `Delta` per `diff --git` header, handling modified, added,
         deleted, renamed and copied files; a binary diff or a mode-only change gives a
-        `FileDiff` with no hunks. It is the same parser the command-line backend uses on git's
+        `Delta` with no hunks. It is the same parser the command-line backend uses on git's
         own output. `Patch(files)` is a parsed patch as a value.
 
         ```scala
@@ -1527,11 +1527,11 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
             t"+Remember the milk and the eggs" )
 
         val files = Git.Patch.parse(lines)
-        files.head.let(_.changeKind)   // Git.ChangeKind.Modified
+        files.head.let(_.status)   // Git.Delta.Status.Modified
         files.head.let(Git.Patch.asDiff(_).edits.size)   // 2
         ```
-    refer octogenarian.Git.FileDiff
-    entry .parse   the `FileDiff`s in lines of unified diff text
+    refer octogenarian.Git.Delta
+    entry .parse   the `Delta`s in lines of unified diff text
     entry .asDiff   a file's hunks flattened into one dissonance `Diff[Text] & Retained`
         Assembled from the hunks' `Retained` edits, so the diff carries every line's text and
         supports `redraft` and the other value-demanding operations.
@@ -1548,7 +1548,7 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
     entry #newLines   how many new lines the hunk spans
     entry #section   the heading after the `@@`: the enclosing function or class, if git found one
     entry #edits   the insertions, deletions and unchanged lines, in order
-  entry .FileDiff   the change to one file: its paths on both sides, the kind of change, and its hunks
+  entry .Delta   one file's part of a diff: its paths on both sides, the kind of change, and its hunks
     detail
         What `diff()`, `diffStaged()`, `diffAgainst(revision)` and `diffBetween(left, right)`
         report, one per file, and what `Patch.parse` reads from patch text. A binary diff or a
@@ -1569,18 +1569,17 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
         directory.open[Git.Worktree](Read & Write): worktree ?=>
           (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
           worktree.diff().value.map: file =>
-            t"${file.newPath.or(t"?")}: ${file.changeKind}, ${file.hunks.size} hunks"
+            t"${file.newPath.or(t"?")}: ${file.status}, ${file.hunks.size} hunks"
         ```
     refer octogenarian.Git.Hunk
     refer octogenarian.Git.Patch
     entry #oldPath   the path before the change, `Unset` for an added file
     entry #newPath   the path after the change, `Unset` for a deleted file
-    entry #changeKind   how the file changed
+    entry #status   how the file changed
     entry #hunks   the hunks, in order; empty for a binary or mode-only change
-  entry .ChangeKind   how a file changed: `Added`, `Modified`, `Deleted`, `Renamed`, `Copied` or `TypeChanged`
-      Carried by each `FileDiff`. `Patch.parse` infers it from the patch headers: `/dev/null` on
-      one side, `rename from`, `copy from`, `new file mode`, `deleted file mode`.
-
+    entry .Status   how a file changed: `Added`, `Modified`, `Deleted`, `Renamed`, `Copied` or `TypeChanged`
+        Carried by each `Delta`. `Patch.parse` infers it from the patch headers: `/dev/null` on
+        one side, `rename from`, `copy from`, `new file mode`, `deleted file mode`.
 entry .Commit   a commit as stored: its hash, tree, parents, author, committer, signature and message
   detail
       What `log()` lists and `commitAt(hash)` reads: the commit's own hash, the tree it
@@ -2240,7 +2239,7 @@ entry .Native   the `Git.Backend` which reads and writes a repository's files it
   entry #writeObject   stores an object loose and returns its hash
       Hashed as git hashes it, over the `<kind> <size>\0` header and the bytes; an object
       already present is not rewritten.
-  entry #diffTree   the file differences between two trees, as `FileDiff`s with hunks
+  entry #diffTree   the file differences between two trees, as `Delta`s with hunks
   entry #status   the index and working-tree state of every path, as `git status --porcelain` reports it
       Compares `HEAD`'s tree, the index and the working files, honouring `.gitignore` and
       `info/exclude`; `ignored` and `untracked` say whether those files are listed. Index

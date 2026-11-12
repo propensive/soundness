@@ -130,7 +130,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       Operations.planePath(worktree, name)
 
-    def patchFrom(lines: Text*): List[Git.FileDiff] =
+    def patchFrom(lines: Text*): List[Git.Delta] =
       Git.Patch.parse(lines)
 
     def messages(using worktree: (Git.Worktree.Handle & Granting[Grant.Read & Grant.Write])^): List[Text] =
@@ -302,7 +302,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
         patchFrom().size
       .assert(_ == 0)
 
-      test(m"a single Modified file yields one FileDiff"):
+      test(m"a single Modified file yields one Delta"):
         patchFrom
          ( t"diff --git a/sonnet.txt b/sonnet.txt",
            t"index 1234567..89abcde 100644",
@@ -315,17 +315,17 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t" three" ).size
       .assert(_ == 1)
 
-      test(m"a Modified file has ChangeKind.Modified"):
+      test(m"a Modified file has Delta.Status.Modified"):
         patchFrom
          ( t"diff --git a/sonnet.txt b/sonnet.txt",
            t"--- a/sonnet.txt",
            t"+++ b/sonnet.txt",
            t"@@ -1 +1 @@",
            t"-old",
-           t"+new" ).head.let(_.changeKind)
-      .assert(_ == Git.ChangeKind.Modified)
+           t"+new" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Modified)
 
-      test(m"a new file has ChangeKind.Added"):
+      test(m"a new file has Delta.Status.Added"):
         patchFrom
          ( t"diff --git a/new.txt b/new.txt",
            t"new file mode 100644",
@@ -333,10 +333,10 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"--- /dev/null",
            t"+++ b/new.txt",
            t"@@ -0,0 +1 @@",
-           t"+content" ).head.let(_.changeKind)
-      .assert(_ == Git.ChangeKind.Added)
+           t"+content" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Added)
 
-      test(m"a deleted file has ChangeKind.Deleted"):
+      test(m"a deleted file has Delta.Status.Deleted"):
         patchFrom
          ( t"diff --git a/old.txt b/old.txt",
            t"deleted file mode 100644",
@@ -344,16 +344,16 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"--- a/old.txt",
            t"+++ /dev/null",
            t"@@ -1 +0,0 @@",
-           t"-content" ).head.let(_.changeKind)
-      .assert(_ == Git.ChangeKind.Deleted)
+           t"-content" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Deleted)
 
-      test(m"a renamed file has ChangeKind.Renamed"):
+      test(m"a renamed file has Delta.Status.Renamed"):
         patchFrom
          ( t"diff --git a/old.txt b/new.txt",
            t"similarity index 100%",
            t"rename from old.txt",
-           t"rename to new.txt" ).head.let(_.changeKind)
-      .assert(_ == Git.ChangeKind.Renamed)
+           t"rename to new.txt" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Renamed)
 
       test(m"a renamed file records both old and new paths"):
         patchFrom
@@ -364,13 +364,13 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           (file.oldPath, file.newPath)
       .assert(_ == (t"old.txt", t"new.txt"))
 
-      test(m"a copied file has ChangeKind.Copied"):
+      test(m"a copied file has Delta.Status.Copied"):
         patchFrom
          ( t"diff --git a/source b/dest",
            t"similarity index 80%",
            t"copy from source",
-           t"copy to dest" ).head.let(_.changeKind)
-      .assert(_ == Git.ChangeKind.Copied)
+           t"copy to dest" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Copied)
 
       test(m"multiple files yield multiple FileDiffs"):
         patchFrom
@@ -468,7 +468,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"\\ No newline at end of file" ).head.let(_.hunks.head).let(_.edits.size)
       .assert(_ == 2)
 
-      test(m"a binary diff yields a FileDiff with no hunks"):
+      test(m"a binary diff yields a Delta with no hunks"):
         patchFrom
          ( t"diff --git a/blob b/blob",
            t"index 1234567..89abcde",
@@ -1120,7 +1120,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
             val files = worktree.diff().value
             files.size == 1
-              && files.head.lay(false)(_.changeKind == Git.ChangeKind.Modified)
+              && files.head.lay(false)(_.status == Git.Delta.Status.Modified)
               && files.head.lay(false): file =>
                   file.hunks.bind(_.edits).exists:
                     case Ins(_, t"second") => true
@@ -1134,7 +1134,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             worktree.add(planePath(t"b"))
             val staged = worktree.diffStaged().value
             staged.size == 1
-              && staged.head.lay(false)(_.changeKind == Git.ChangeKind.Added)
+              && staged.head.lay(false)(_.status == Git.Delta.Status.Added)
               && staged.head.lay(false)(_.newPath == t"b")
         .assert(_ == true)
 
@@ -1164,7 +1164,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             sh"rm ${worktree.stem}/a".exec[Exit]()
             worktree.add(planePath(t"a"))
             worktree.diffStaged().value.head.lay(false): file =>
-              file.changeKind == Git.ChangeKind.Deleted
+              file.status == Git.Delta.Status.Deleted
                 && file.oldPath == t"a"
                 && file.newPath == Unset
         .assert(_ == true)

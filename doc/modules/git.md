@@ -275,7 +275,7 @@ Git.Branch.parse(t"feature..old")
 ### Diffs
 
 `diff` reports changes as structured values, not as patch text to parse again. Each
-`Git.FileDiff` carries the paths on both sides, the kind of change, which is added, modified,
+`Git.Delta` carries the paths on both sides, the kind of change, which is added, modified,
 deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
 
 ```scala fuel
@@ -284,7 +284,7 @@ run
 directory.open[Git.Worktree](Read & Write): worktree ?=>
   (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
   val files = worktree.diff().value
-  Out.println(files.head.let(_.changeKind).inspect)
+  Out.println(files.head.let(_.status).inspect)
 ```
 
 Each diff method compares two sides:

@@ -486,8 +486,8 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
           val file = worktree.diff().value.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
           val hunk = file.hunks.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
           val changes = hunk.edits.filter(!_.isInstanceOf[Par[?]]).fold(0) { (n, _) => n + 1 }
-          (file.changeKind, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
-      .assert(_ == ((Git.ChangeKind.Modified, 1, 5, 1, 5, 2)))
+          (file.status, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
+      .assert(_ == ((Git.Delta.Status.Modified, 1, 5, 1, 5, 2)))
 
       test(m"diffBetween two commits matches the command-line parse of git diff"):
         val dir = gitRepo()

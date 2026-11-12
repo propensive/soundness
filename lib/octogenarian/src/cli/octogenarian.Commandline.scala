@@ -606,7 +606,7 @@ extends Git.Backend:
 
   def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
-  :   List[Git.FileDiff] =
+  :   List[Git.Delta] =
 
     val outcome = expect(run(dirArgs(gitDir) + List(t"diff", t"--no-color", left.text, right.text)))
     Git.Patch.parse(outcome.lines)
@@ -747,7 +747,7 @@ extends Git.Backend:
       staged:   Boolean,
       against:  Optional[Text] )
     ( using Tactic[Git.Error] )
-  :   List[Git.FileDiff] =
+  :   List[Git.Delta] =
 
     val stagedArgs = if staged then List(t"--staged") else Nil
     val arguments = List(t"diff", t"--no-color") + stagedArgs + against.let(List(_)).or(Nil)
