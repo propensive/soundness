@@ -70,6 +70,7 @@ build:
 	python3 etc/check-compatibility.py
 	python3 etc/check-while-count.py
 	python3 etc/check-escape-count.py
+	python3 etc/check-example-data.py
 	./mill soundness.all
 	./mill benches.jar
 
