@@ -70,8 +70,8 @@ import zephyrine.*
 
 object Tel extends Tel2:
   // A schema layer (§20.3 of the TEL specification), declared once as a singleton object whose
-  // name is part of its type, `object foo extends Tel.Layer("foo")`, so that the name can be
-  // read from the type alone: `Tel.Name[foo.type]` is `"foo"`. `@assign` and `@retract` refer to
+  // name is part of its type, `object song extends Tel.Layer("song")`, so that the name can be
+  // read from the type alone: `Tel.Name[song.type]` is `"song"`. `@assign` and `@retract` refer to
   // a layer by its object, so a misspelt layer is a compile error rather than a second layer.
   open class Layer[name <: String & Singleton](val name: name)
 
@@ -5847,7 +5847,7 @@ object Tel extends Tel2:
 
     // True iff the parked head's first content byte is the sigil and the
     // line is a comment (sigil-only or sigil + soft space + text), as opposed
-    // to a tabulation line or `#foo`-style keyword.
+    // to a tabulation line or `#song`-style keyword.
     private update def isCommentBody(): (Tactic[Tel.Error]^) ?->{this} Boolean = inHold:
       if !more || peek != sigil then false
       else
@@ -5859,7 +5859,7 @@ object Tel extends Tel2:
 
         if nextByte < 0 then true  // sigil at EOF — bare comment
         else if nextByte == LF.toInt || nextByte == CR.toInt then true
-        else if nextByte != SP.toInt then false  // `#foo` — not a comment
+        else if nextByte != SP.toInt then false  // `#song` — not a comment
         else
           // sigil + space + ... — could be comment or tabulation. Look ahead
           // to detect tabulation marker pattern. For now use mark+cue.
@@ -5918,7 +5918,7 @@ object Tel extends Tel2:
         consumeLineEnding()
         payload.tt
       else
-        // `#foo` — but we already classified this as a comment, so this
+        // `#song` — but we already classified this as a comment, so this
         // shouldn't happen. Treat as bare-content.
         val mk = beginMark()
         while more && peek != LF && peek != CR do advance()

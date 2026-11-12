@@ -3,5 +3,5 @@ tel 1.0 specification.tel/tels:2.0.0
 name e201-test
 
 document
-  field foo String
-  field foo String
+  field act String
+  field act String

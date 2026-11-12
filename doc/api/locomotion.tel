@@ -20,8 +20,8 @@ detail
 
     case class Person(@field(1) name: Text, @field(2) age: Int)
 
-    val bytes: Data = Person(t"Alice", 30).in[Protobuf].encode   // the wire bytes
-    Chain(bytes).read[Person in Protobuf]                        // Person(t"Alice", 30)
+    val bytes: Data = Person(t"Percy", 30).in[Protobuf].encode   // the wire bytes
+    Chain(bytes).read[Person in Protobuf]                        // Person(t"Percy", 30)
     bytes.read[Protobuf].as[Person]                              // the same, in two steps
     ```
 
@@ -351,8 +351,8 @@ entry .Protobuf   a Protocol Buffers wire value, and the home of every codec int
     detail
         A `Self`-typed typeclass has no type parameter, so neither `Protobuf.Parsable` nor
         `Protobuf.Printable` can appear in a `derives` clause. `Protobuf.Direct[T]` is the
-        carrier that can: `case class Foo(…) derives Protobuf.Direct` calls `.derived`, which
-        generates `Foo`'s parser and printer with `Inlinable.parsable` and
+        carrier that can: `case class Play(…) derives Protobuf.Direct` calls `.derived`, which
+        generates `Play`'s parser and printer with `Inlinable.parsable` and
         `Inlinable.printable` and stores them in the companion, where
         `Protobuf.Parsable.declared` and `Protobuf.Printable.declared` find them.
 
@@ -394,7 +394,7 @@ entry .Protobuf   a Protocol Buffers wire value, and the home of every codec int
         case class Person(@field(1) name: Text, @field(2) age: Int)
 
         given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]   // generated, by hand
-        val bytes = Person(t"Ada", 36).in[Protobuf].encode
+        val bytes = Person(t"Hal", 36).in[Protobuf].encode
         Chain(bytes).read[Person in Protobuf]                                // parsed without a tree
         ```
 
@@ -482,8 +482,8 @@ entry .Protobuf   a Protocol Buffers wire value, and the home of every codec int
         case class Person(@field(1) name: Text, @field(2) age: Int)
         given (Person is Protobuf.Printable) = Inlinable.printable[Person]
 
-        Person(t"Ada", 36).in[Protobuf].encode              // written once, directly
-        Protobuf.Printable.print(Person(t"Ada", 36))        // the same bytes
+        Person(t"Hal", 36).in[Protobuf].encode              // written once, directly
+        Protobuf.Printable.print(Person(t"Hal", 36))        // the same bytes
         ```
 
         The bytes are exactly those the derived `Encodable` writes — every scalar kind, text
@@ -522,7 +522,7 @@ entry .Protobuf   a Protocol Buffers wire value, and the home of every codec int
         given (Person is Protobuf.Printable) = Inlinable.printable[Person]
 
         val blocks = scala.collection.mutable.ListBuffer[Data]()
-        Protobuf.Printable.emit(Person(t"Ada", 36), blocks += _)
+        Protobuf.Printable.emit(Person(t"Hal", 36), blocks += _)
         ```
     entry .apply   a `Printable` from a measuring function and a writing function
         `Protobuf.Printable[T]((value, sizes) => …, (value, printer, sizes) => …)`; the
@@ -798,7 +798,7 @@ entry .Inlinable   the compile-time code generator behind direct parsers and pri
       given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
       given (Person is Protobuf.Printable) = Inlinable.printable[Person]
 
-      Person(t"Ada", 36).in[Data over Protobuf].read[Person in Protobuf]
+      Person(t"Hal", 36).in[Data over Protobuf].read[Person in Protobuf]
       ```
 
       Each generates a monomorphic instance for a case-class message or a sealed-sum
@@ -841,9 +841,9 @@ entry .Inlinable   the compile-time code generator behind direct parsers and pri
       dispatched or seamed by their types.
   entry .ForProtobuf   the `derives Inlinable.ForProtobuf` carrier: a message's structural instance in its companion
     detail
-        A `Self`-typed typeclass cannot appear in a `derives` clause, so `case class Foo(…)
+        A `Self`-typed typeclass cannot appear in a `derives` clause, so `case class Play(…)
         derives Inlinable.ForProtobuf` synthesises this parameterised subclass — which *is*
-        a `Foo is Inlinable` — into `Foo`'s companion, where the expansion-time summon of
+        a `Play is Inlinable` — into `Play`'s companion, where the expansion-time summon of
         another message's generator finds it. It delegates every method to the structural
         instance `Inlinable.derived` builds, and the resolution ladder unwraps it so the
         instance keeps its generator identity.
@@ -1204,7 +1204,7 @@ entry .inlining   the macro implementations behind `Inlinable.parsable`, `Inlina
       structural generators for messages, repeated and map fields and `oneof` sums, and the
       three entry macros. The generated parser or printer is bound to a lazy `self` so a
       recursive type reads through it in place, and a type refined with a `Form` member — a
-      `Foo in Protobuf` read infers `Foo { type Form = Protobuf }` — generates `Foo`'s codec.
+      `Play in Protobuf` read infers `Play { type Form = Protobuf }` — generates `Play`'s codec.
   entry .inlinableParsable   the macro behind `Inlinable.parsable[T]`
   entry .inlinablePrintable   the macro behind `Inlinable.printable[T]`
   entry .generates   the macro behind `Inlinable.Generates.generates`: succeeds for a message or oneof
@@ -1240,7 +1240,7 @@ entry .postables   the given which posts a `Protobuf` message as an HTTP request
       import postables.protobufPostable
 
       case class Person(@field(1) name: Text, @field(2) age: Int)
-      val body: Protobuf = Person(t"Alice", 30).in[Protobuf]
+      val body: Protobuf = Person(t"Percy", 30).in[Protobuf]
       ```
 
 entry .servables   the given which serves a `Protobuf` message as an HTTP response body

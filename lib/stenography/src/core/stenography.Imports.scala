@@ -73,7 +73,7 @@ object Imports:
   // `designators`, so that a type reached through a wildcard-imported prelude renders as the
   // user would write it.
   // The infix type aliases declared in `scope` which each refine a single type member, by that
-  // member's name: what lets `Foo { type Form = Bar }` be written `Foo in Bar` where `scope`
+  // member's name: what lets `Play { type Form = Json }` be written `Play in Json` where `scope`
   // is wildcard-imported. Where two aliases claim a member, the one first by name wins, as in
   // a macro's harvest.
   def infixAliases(scope: Designator)(using context: dotty.tools.dotc.core.Contexts.Context)

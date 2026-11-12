@@ -731,7 +731,7 @@ entry .Orderable   a type compared with itself: `Commensurable` with `Contrast =
       case class Person(name: Text, age: Int)
       given Person is Orderable = summon[Int is Orderable].contramap(_.age)
 
-      Person(t"Ada", 36) < Person(t"Grace", 85)   // true
+      Person(t"Cordelia", 25) < Person(t"Lear", 80)   // true
       ```
   refer hypotenuse.Commensurable
   entry #Contrast   the type compared against: the type itself

@@ -42,7 +42,7 @@ object Proxy:
 
 // `index` is the runtime witness of the type-level `ordinal` (the flattened path index), so
 // navigation and pattern-matching work for a proxy whose `ordinal` is statically abstract (`Nat`)
-// — e.g. the scrutinee of a `case root.cto.joined() => …` pattern, whose `ordinal` cannot be
+// — e.g. the scrutinee of a `case root.hero.name() => …` pattern, whose `ordinal` cannot be
 // read via `ValueOf`.
 class Proxy[key, value, +ordinal <: Nat](index: Int) extends Selectable, Dynamic, Findable:
   transparent inline def selectDynamic(key: String): value | Proxy[key, value, Nat] =

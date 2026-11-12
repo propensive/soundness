@@ -59,12 +59,12 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
   def run(): Unit =
     suite(m"Positional atom decoding (§19.2, AST path)"):
       test(m"inline atoms assign positionally to record fields (#1694)"):
-        t"recipient  Acme Corporation\n  address  1 Acme Way\n".read[Tel].as[PDelivery]
-      . assert(_ == PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
+        t"recipient  King Lear\n  address  1 Heath Rd\n".read[Tel].as[PDelivery]
+      . assert(_ == PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")))
 
       test(m"keyword-child form decodes identically to the positional form"):
-        val positional = t"recipient  Acme Corporation\n  address  1 Acme Way\n"
-        val explicit   = t"recipient\n  name  Acme Corporation\n  address  1 Acme Way\n"
+        val positional = t"recipient  King Lear\n  address  1 Heath Rd\n"
+        val explicit   = t"recipient\n  name  King Lear\n  address  1 Heath Rd\n"
         positional.read[Tel].as[PDelivery] == explicit.read[Tel].as[PDelivery]
       . assert(identity)
 
@@ -145,9 +145,9 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
         tel.read[value in Tel] == tel.read[Tel].as[value]
 
       test(m"inline atoms assign positionally, equally on both paths (#1694)"):
-        val doc = t"recipient  Acme Corporation\n  address  1 Acme Way\n"
+        val doc = t"recipient  King Lear\n  address  1 Heath Rd\n"
         (doc.read[PDelivery in Tel], parity[PDelivery](doc))
-      . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), true))
+      . assert(_ == (PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")), true))
 
       test(m"consecutive atoms fill consecutive members, equally on both paths"):
         val doc = t"item a xyz\n"
@@ -250,9 +250,9 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
         tel.read[value in Tel] == tel.read[Tel].as[value]
 
       test(m"inline atoms assign positionally, equally on both paths (#1699)"):
-        val doc = t"recipient  Acme Corporation\n  address  1 Acme Way\n"
+        val doc = t"recipient  King Lear\n  address  1 Heath Rd\n"
         (doc.read[PDelivery in Tel], parity[PDelivery](doc))
-      . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), true))
+      . assert(_ == (PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")), true))
 
       test(m"consecutive atoms fill consecutive members, equally on both paths"):
         val doc = t"item a xyz\n"
@@ -316,12 +316,12 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
         printed.read[Tel].as[value] == value0 && printed.read[value in Tel] == value0
 
       test(m"a nested record's leading scalars go inline"):
-        Tel.canonical(PDelivery(PRecipient(t"Acme", t"HQ")))
+        Tel.canonical(PDelivery(PRecipient(t"Lear", t"Heath")))
           .childCompounds.head.let(_.atoms.length)
       . assert(_ == 2)
 
       test(m"the canonical form reparses to the value on both paths"):
-        reparses(PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
+        reparses(PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")))
       . assert(identity)
 
       test(m"a repeatable's occurrences all go inline and reparse"):

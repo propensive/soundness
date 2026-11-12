@@ -54,7 +54,7 @@ import vacuous.*
 // the marker positions filled by runtime hole values.
 //
 // Phase-2 scope: hole substitution is supported only at the atom-text
-// position of a compound — `tel"name $alice"` works because `$alice`
+// position of a compound — `tel"name $juliet"` works because `$juliet`
 // appears immediately after the `name` keyword's separating space. A
 // compound-position spread or object/list spread is out of scope for
 // this commit (and tracked in doc/spec-notes.md).

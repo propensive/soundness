@@ -679,7 +679,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           case _ => false
 
       test(m"Ignore unknown attributes"):
-        val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
+        val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" cue="exit"/></svg>"""
                 . read[Svg]
 
         svg.figures.head

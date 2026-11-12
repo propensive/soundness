@@ -22,7 +22,7 @@ Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
 url"https:/example.com"                // a malformed URL
 (3*Metre) + (4*Second)                 // incoherent dimensions
 Br(Hr)                                 // a void element given children
-json.verify[Employee].nope             // a field the schema does not declare
+json.verify[Person].nope               // a field the schema does not declare
 ```
 
 And the following are *visible in a signature*, so a caller cannot fail to know about

@@ -58,7 +58,7 @@ object internal:
     def liftText(text: Text): Expr[Text] = '{${Expr(text.s)}.tt}
 
     // The literal's `Topic` is the tuple of its elements' literal types, leaf first, as `/`
-    // builds it: `p"/foo/bar/baz"` is a `Path of ("baz", "bar", "foo")`.
+    // builds it: `p"/verona/capulet/juliet"` is a `Path of ("juliet", "capulet", "verona")`.
     def topic(descent: scala.Seq[Text]): TypeRepr =
       descent.foldRight(TypeRepr.of[EmptyTuple]): (element, tail) =>
         (ConstantType(StringConstant(element.s)).asType, tail.asType) match

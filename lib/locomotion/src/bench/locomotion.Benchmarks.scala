@@ -110,7 +110,7 @@ object Benchmarks extends Suite("protobuf-bench", m"Locomotion Protobuf codec be
 
   // Corpus 1: a small message with three scalar fields — exercises the tag /
   // varint / short-string fast paths.
-  lazy val value1: Small = Small(42L, t"Alice", true)
+  lazy val value1: Small = Small(42L, t"Romeo", true)
 
   // Corpus 2: 100 user records as a repeated (unpacked) message field — the
   // typical "array of records" shape.
@@ -521,7 +521,7 @@ object Benchmarks extends Suite("protobuf-bench", m"Locomotion Protobuf codec be
             val out = new _root_.java.io.ByteArrayOutputStream(32)
             val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
             cos.writeInt64(1, 42L)
-            cos.writeString(2, "Alice")
+            cos.writeString(2, "Romeo")
             cos.writeBool(3, true)
             cos.flush()
             out.toByteArray.nn

@@ -405,7 +405,7 @@ object internal:
       case _                   => false
 
     // Find the first String literal anywhere in the pattern tree.
-    // Works for both `case "foo"` (Literal(StringConstant)) and `case t"foo"`
+    // Works for both `case "puck"` (Literal(StringConstant)) and `case t"puck"`
     // (Unapply on a SimpleTExtractor built from the literal).
     def findLiteral(tree: Tree): Option[String] =
       var found: Option[String] = None

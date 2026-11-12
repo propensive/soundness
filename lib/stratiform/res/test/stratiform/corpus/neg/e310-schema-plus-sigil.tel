@@ -4,4 +4,4 @@ name plus-sigil-test
 sigil +
 
 document
-  field foo String
+  field act String

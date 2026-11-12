@@ -79,26 +79,26 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       case class Couple(first: Person, second: Person)
 
       test(m"Construct a Query by generic derivation"):
-        Person(t"Jack", 12).query.show
+        Person(t"Juliet", 13).query.show
 
-      . assert(_ == t"name=Jack&age=12")
+      . assert(_ == t"name=Juliet&age=13")
 
       test(m"Construct a Query by partial generic derivation"):
         // This import seems to be required
         import queryParameters.arbitraryQueryParameter
-        Query.make(person = Person(t"Ken", 39)).show
+        Query.make(person = Person(t"Hamlet", 30)).show
 
-      . assert(_ == t"person.name=Ken&person.age=39")
+      . assert(_ == t"person.name=Hamlet&person.age=30")
 
       test(m"Construct a Query by nested generic derivation"):
-        Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show
+        Couple(Person(t"Romeo", 16), Person(t"Juliet", 13)).query.show
 
-      . assert(_ == t"first.name=Jack&first.age=12&second.name=Jill&second.age=11")
+      . assert(_ == t"first.name=Romeo&first.age=16&second.name=Juliet&second.age=13")
 
-      val query = Query(List(t"first.name"  -> t"Jack",
-                             t"first.age"   -> t"12",
-                             t"second.name" -> t"Jill",
-                             t"second.age"  -> t"11"))
+      val query = Query(List(t"first.name"  -> t"Romeo",
+                             t"first.age"   -> t"16",
+                             t"second.name" -> t"Juliet",
+                             t"second.age"  -> t"13"))
 
       // Disabled pending a fix for the `?1` capture-inference leak in legerdemain's Query
       // product decoder: under honest codec capabilities, `summon[T is Decodable in Query]`
@@ -109,11 +109,11 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       // maps `second` to `Person` yet asserts equality with a `Query`). To revisit.
       // inline given second: ("second" is Parametric to Person) = !!
       // test(m"Dereference a query")(query.second)
-      // . assert(_ == Query(List(t"name" -> t"Jill", t"age"  -> t"11")))
+      // . assert(_ == Query(List(t"name" -> t"Juliet", t"age"  -> t"13")))
       //
       // test(m"Decode a query"):
       //   summon[Couple is Decodable in Query].decoded(query)
-      // . assert(_ == Couple(Person(t"Jack", 12), Person(t"Jill", 11)))
+      // . assert(_ == Couple(Person(t"Romeo", 16), Person(t"Juliet", 13)))
 
 
     suite(m"Response parsing"):
@@ -178,31 +178,31 @@ object Tests extends Suite("http", m"Telekinesis tests"):
           . assert(_ == Nil)
 
           test(m"Single header at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo: bar\r\n\r\nbody"
+            val fixture = t"HTTP/1.1 200 OK\r\nX-Act: Hal\r\n\r\nbody"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
-          . assert(_ == List(Http.Header(t"X-Foo", t"bar")))
+          . assert(_ == List(Http.Header(t"X-Act", t"Hal")))
 
           test(m"Multiple headers at block size $blockSize"):
             val fixture =
-              t"HTTP/1.1 200 OK\r\nX-Foo: a\r\nX-Bar: b\r\nX-Baz: c\r\n\r\nbody"
+              t"HTTP/1.1 200 OK\r\nX-Act: a\r\nX-Cue: b\r\nX-Bow: c\r\n\r\nbody"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
-          . assert(_ == List(Http.Header(t"X-Foo", t"a"),
-                             Http.Header(t"X-Bar", t"b"),
-                             Http.Header(t"X-Baz", t"c")))
+          . assert(_ == List(Http.Header(t"X-Act", t"a"),
+                             Http.Header(t"X-Cue", t"b"),
+                             Http.Header(t"X-Bow", t"c")))
 
           test(m"Header value with leading whitespace at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo:    spacey\r\n\r\n"
+            val fixture = t"HTTP/1.1 200 OK\r\nX-Act:    spacey\r\n\r\n"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
-          . assert(_ == List(Http.Header(t"X-Foo", t"spacey")))
+          . assert(_ == List(Http.Header(t"X-Act", t"spacey")))
 
           test(m"Header value with leading tab at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo:\tspacey\r\n\r\n"
+            val fixture = t"HTTP/1.1 200 OK\r\nX-Act:\tspacey\r\n\r\n"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
-          . assert(_ == List(Http.Header(t"X-Foo", t"spacey")))
+          . assert(_ == List(Http.Header(t"X-Act", t"spacey")))
 
         test(m"Header with hyphenated mixed-case name"):
           val fixture = t"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
@@ -335,7 +335,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       def bodyText(request: Http.Request^): Text = request.body().memoize.utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
-      val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"
+      val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Act: Hal\r\n\r\nbody"
 
       for blockSize <- blockSizes do
         test(m"Parse method at block size $blockSize"):
@@ -361,7 +361,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
         test(m"Parse headers at block size $blockSize"):
           Http.Request.parse(chunks(fixture, blockSize)).textHeaders
 
-        . assert(_ == List(Http.Header(t"Host", t"example.com"), Http.Header(t"X-Foo", t"bar")))
+        . assert(_ == List(Http.Header(t"Host", t"example.com"), Http.Header(t"X-Act", t"Hal")))
 
         test(m"Parse body at block size $blockSize"):
           bodyText(Http.Request.parse(chunks(fixture, blockSize)))

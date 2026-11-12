@@ -325,13 +325,13 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
       test(m"Empty-loop star terminates")(motif(t"(a*)*").matches(t"aaa")).assert(_ == true)
       test(m"Empty-loop star matches nothing")(motif(t"(a*)*").matches(t"")).assert(_ == true)
 
-      test(m"Seek finds the leftmost match")(motif(t"o").seek(t"foo"))
+      test(m"Seek finds the leftmost match")(motif(t"o").seek(t"Romeo"))
       . assert(_ == Interval.zerary(1, 2))
 
-      test(m"Seek respects word boundaries")(motif(t"\\bfoo\\b").seek(t"afoo foo"))
-      . assert(_ == Interval.zerary(5, 8))
+      test(m"Seek respects word boundaries")(motif(t"\\blear\\b").seek(t"clear lear"))
+      . assert(_ == Interval.zerary(6, 10))
 
-      test(m"Seek misses absent patterns")(motif(t"z").seek(t"foo")).assert(_ == Unset)
+      test(m"Seek misses absent patterns")(motif(t"z").seek(t"lear")).assert(_ == Unset)
 
       test(m"Search finds every occurrence")(motif(t"a").search(t"banana"))
       . assert(_ == Chain(Interval.zerary(1, 2), Interval.zerary(3, 4), Interval.zerary(5, 6)))
@@ -342,7 +342,7 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
 
     suite(m"Seek acceleration"):
       def motif(pattern: Text): Motif = Motif.parse(pattern)
-      val filler = ("lorem ipsum dolor sit amet ".repeat(64).nn).tt
+      val filler = ("to be or not to be that is the question ".repeat(64).nn).tt
       val haystack = (filler.s + "ERROR overload").tt
 
       test(m"A literal-prefix pattern is found deep in the input"):
@@ -358,7 +358,7 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
       . assert(_ == Unset)
 
       test(m"An anchored pattern still only matches at the start"):
-        motif(t"^lorem").seek(haystack).present && motif(t"^ERROR").seek(haystack).absent
+        motif(t"^to be").seek(haystack).present && motif(t"^ERROR").seek(haystack).absent
       . assert(_ == true)
 
       test(m"A nullable pattern still matches emptily at the start"):
@@ -486,7 +486,7 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
       . assert(_ == true)
 
       test(m"Word boundaries are unverifiable"):
-        capture[Motif.Error](motif(t"\\bfoo\\b").subsumes(motif(t"foo")))
+        capture[Motif.Error](motif(t"\\blear\\b").subsumes(motif(t"lear")))
       . assert(_.reason == Reason.Unverifiable)
 
     suite(m"POSIX and Unicode classes"):
@@ -639,5 +639,5 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
       . assert(_ == false)
 
       test(m"A word boundary in any conjunct is unverifiable"):
-        capture[Motif.Error](motif(t"foo").subsumes(List(motif(t"foo"), motif(t"\\bfoo\\b"))))
+        capture[Motif.Error](motif(t"lear").subsumes(List(motif(t"lear"), motif(t"\\blear\\b"))))
       . assert(_.reason == Reason.Unverifiable)

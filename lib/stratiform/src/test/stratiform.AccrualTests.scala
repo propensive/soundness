@@ -41,7 +41,7 @@ import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
 case class APerson(name: Text, age: Int, email: Text) derives CanEqual
-case class AContact(person: APerson, company: Text) derives CanEqual
+case class AContact(person: APerson, house: Text) derives CanEqual
 case class APair(width: Int, height: Int) derives CanEqual
 
 object TProbe:
@@ -313,12 +313,12 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid record: no errors accrued"):
-        val tel = t"name Alice\nage 30\nemail a@b.c\n".read[Tel]
+        val tel = t"name Percy\nage 30\nemail a@b.c\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.size
       . assert(_ == 0)
 
       test(m"Single missing field: one error"):
-        val tel = t"name Alice\nage 30\n".read[Tel]
+        val tel = t"name Percy\nage 30\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.size
       . assert(_ == 1)
 
@@ -330,31 +330,31 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
         TProbe.constructions = 0
-        val tel = t"name Zoe\nage young\n".read[Tel]
+        val tel = t"name Nym\nage young\n".read[Tel]
         val issues = validateTel(tel)(_.as[TChecked])
         (issues.items.size, TProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
         TProbe.constructions = 0
-        val tel = t"name Zoe\nage 5\n".read[Tel]
+        val tel = t"name Nym\nage 5\n".read[Tel]
         validateTel(tel)(_.as[TChecked])
         TProbe.constructions
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):
       test(m"Two missing fields accrue two errors"):
-        val tel = t"name Alice\n".read[Tel]
+        val tel = t"name Percy\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
-        val tel = t"name Alice\n".read[Tel]
+        val tel = t"name Percy\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age", "/email"))
 
       test(m"Each missing-field error has reason Absent"):
-        val tel = t"name Alice\n".read[Tel]
+        val tel = t"name Percy\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.all:
           case (_, err) => err.reason == Tel.Error.Reason.Absent
       . assert(identity)
@@ -380,7 +380,7 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
 
     suite(m"Nested case-class errors"):
       test(m"Missing nested case-class field expands per sub-field"):
-        val tel = t"company Acme\n".read[Tel]
+        val tel = t"house Lancaster\n".read[Tel]
         validateTel(tel)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
@@ -407,12 +407,12 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       . assert(identity)
 
       test(m"Two unknown keywords accrue two errors"):
-        val doc = t"foo a\nbar b\n".read[Tel]
+        val doc = t"hal a\nnym b\n".read[Tel]
         validateAssign(doc, optionalFieldSchema).items.size
       . assert(_ == 2)
 
       test(m"Both unknown-keyword errors have reason UnknownKeyword"):
-        val doc = t"foo a\nbar b\n".read[Tel]
+        val doc = t"hal a\nnym b\n".read[Tel]
         validateAssign(doc, optionalFieldSchema).items.all:
           case (_, err) => err.reason == Tel.Error.Reason.UnknownKeyword
       . assert(identity)
@@ -432,7 +432,7 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
              Tel.Error.Reason.RequiredMemberAbsent )
 
       test(m"A duplicated non-repeatable member accrues a single E308"):
-        val doc = t"name Alice\nname Bob\nemail e\n".read[Tel]
+        val doc = t"name Percy\nname Hal\nemail e\n".read[Tel]
         validateAssign(doc, twoRequiredSchema).items.map(_(1).reason).to[Set]
       . assert(_ == Set(Tel.Error.Reason.NonRepeatableTooMany))
 
@@ -534,15 +534,15 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
 
     suite(m"Located schema-validation errors (LSP diagnostics)"):
       test(m"Unknown-keyword errors carry their keyword pointer"):
-        assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/foo", "/bar"))
+        assignPositions(t"hal a\nnym b\n", optionalFieldSchema).items.map(_(0).s).to[Set]
+      . assert(_ == Set("/hal", "/nym"))
 
       test(m"Unknown-keyword errors are located at the offending compound"):
-        assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to[Set]
+        assignPositions(t"hal a\nnym b\n", optionalFieldSchema).items.map(_(1)).to[Set]
       . assert(_ == Set(Tel.Error.spanAt(1, 1, 3), Tel.Error.spanAt(2, 1, 3)))
 
       test(m"An unlocated (untracked) validation still accrues without a position"):
-        val tel = t"foo a\n".read[Tel]
+        val tel = t"hal a\n".read[Tel]
 
         validate[Tel.Focus](Issues()):
           case error: Tel.Error =>
@@ -610,18 +610,18 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       // takes the root one. `supplementPositions` must tolerate that rather
       // than assume it is present.
       test(m"A run-level E308 accrues at the root without panicking"):
-        assignPositions(t"name Alice\nname Bob\nemail e\n", twoRequiredSchema).items
+        assignPositions(t"name Percy\nname Hal\nemail e\n", twoRequiredSchema).items
         . map { case (p, span) => (p.s, span.exists) }.to[Set]
       . assert(_ == Set(("/", false)))
 
     suite(m"Located decode errors"):
       test(m"A malformed field's focus names the field"):
-        decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
+        decodePositions(t"name Percy\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(0).s).to[Set]
       . assert(_ == Set("/age"))
 
       test(m"A malformed field is located at its value, not its keyword"):
-        decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
+        decodePositions(t"name Percy\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(1)).to[Set]
       . assert(_ == Set(Tel.Error.spanAt(2, 5, 10)))
 
@@ -631,34 +631,34 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
     // stamped as it goes; these tests are what pin the two answers together.
     suite(m"Located decode errors (direct path)"):
       test(m"The direct path accrues a located focus at all"):
-        directPerson(t"name Alice\nage notanumber\nemail e\n")
+        directPerson(t"name Percy\nage notanumber\nemail e\n")
         . items.map { case (pointer, span) => (pointer.s, span.exists) }.to[Set]
       . assert(_ == Set(("/age", true)))
 
       test(m"A malformed field is located at its value, as on the AST path"):
-        directPerson(t"name Alice\nage notanumber\nemail e\n").items.map(_(1)).to[Set]
+        directPerson(t"name Percy\nage notanumber\nemail e\n").items.map(_(1)).to[Set]
       . assert(_ == Set(Tel.Error.spanAt(2, 5, 10)))
 
       // The acceptance criterion for issue #1726: same document, both decode
       // paths, identical (pointer, span) pairs. `PositionalTests`' own parity
       // helper compares decoded values only, which is why this gap went unseen.
       test(m"Both paths agree on a malformed leaf field's focus"):
-        val doc = t"name Alice\nage notanumber\nemail e\n"
+        val doc = t"name Percy\nage notanumber\nemail e\n"
         directPerson(doc).items == decodePositions(doc)(_.as[APerson]).items
       . assert(_ == true)
 
       test(m"Both paths agree on a malformed field nested in a record"):
-        val doc = t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n"
+        val doc = t"person\n  name Percy\n  age nope\n  email e\nhouse Lancaster\n"
         directContact(doc).items == decodePositions(doc)(_.as[AContact]).items
       . assert(_ == true)
 
       test(m"Both paths agree on a missing required field"):
-        val doc = t"name Alice\nemail e\n"
+        val doc = t"name Percy\nemail e\n"
         directPerson(doc).items == decodePositions(doc)(_.as[APerson]).items
       . assert(_ == true)
 
       test(m"A nested field is located at its own value, not its parent's keyword"):
-        directContact(t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n")
+        directContact(t"person\n  name Percy\n  age nope\n  email e\nhouse Lancaster\n")
         . items.map { case (pointer, span) => (pointer.s, span) }.to[Set]
       . assert(_ == Set(("/person/age", Tel.Error.spanAt(3, 7, 4))))
 
@@ -669,5 +669,5 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       test(m"A fail-fast direct read carries the span on the error itself"):
         import parsing.trackPositions
         given APerson is Tel.Parsable = Tel.Parsable.derived
-        capture[Tel.Error](t"name Alice\nage notanumber\nemail e\n".read[APerson in Tel]).span
+        capture[Tel.Error](t"name Percy\nage notanumber\nemail e\n".read[APerson in Tel]).span
       . assert(_ == Tel.Error.spanAt(2, 5, 10))

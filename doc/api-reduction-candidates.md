@@ -12,7 +12,7 @@ remainder.
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
   `@unexported` to dodge a clash with stenography's), `Svg.Id` (previously re-exported from
   `object internal`), and the new namespace objects `Chemical`, `Exec` and `Variant`
-- the seventh pass was the `FooError` sweep: 37 of the 53 top-level compound error names
+- the seventh pass was the `PlayError` sweep: 37 of the 53 top-level compound error names
   nested, plus
   the `Socket`, `Tasty`, `Terminal`, `Http` and `Wit` families and `Ansi.Escapes`/`Tty`. It
   added the namespace objects `Font`, `Table`, `Rational`, `Number`, `IpAddress`, `Range`,
@@ -159,7 +159,7 @@ for the rest in the seventh pass:
 | `KeystoreError`                  | `Keystore.Error`                   | `core-jvm` is a platform *source directory* of `core`, not a component |
 | `TimestampError`                 | `Timestamp.Error`                  | aviation has its own `Timestamp`; the one in embarcadero is unrelated |
 
-## `FooError` types — the seventh and eighth passes' subject
+## `PlayError` types — the seventh and eighth passes' subject
 
 Compound error names were swept separately, because the host is almost always determinable:
 **the object that raises the error**. That heuristic found `Inspection` for
@@ -167,7 +167,7 @@ Compound error names were swept separately, because the host is almost always de
 for `PackageError`. Where the noun did not match its host, the *first* part was renamed —
 `AssemblyError` belongs to the `Assembler`, not to an "assembly".
 
-**41 of the 53 top-level `FooError` types have gone**, leaving 12 — plus 8 that are already
+**41 of the 53 top-level `PlayError` types have gone**, leaving 12 — plus 8 that are already
 nested inside another type but still carry a compound name. (Counted by declaration, so a
 type declared only as a `type` alias, or one living in a test module, is not included.)
 

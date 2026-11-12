@@ -1436,11 +1436,11 @@ entry .X25519   X25519 (RFC 7748), Diffie–Hellman over Curve25519: TLS 1.3's d
       import providers.javaBaseProvider
       import strategies.throwUnsafely
 
-      val alice = PrivateKey.generate[X25519]()
-      val bob = PrivateKey.generate[X25519]()
+      val romeo = PrivateKey.generate[X25519]()
+      val juliet = PrivateKey.generate[X25519]()
 
-      alice.agree(bob.public): one =>
-        bob.agree(alice.public): other =>
+      romeo.agree(juliet.public): one =>
+        juliet.agree(romeo.public): other =>
           Array.same(one, other) && one.length == 32   // true
       ```
   refer enigmatic.agree
@@ -1605,9 +1605,9 @@ entry .agree   `privateKey.agree(peerPublicKey)(block)`: lends the shared secret
     import providers.javaBaseProvider
     import strategies.throwUnsafely
 
-    val alice = PrivateKey.generate[X25519]()
-    val bob = PrivateKey.generate[X25519]()
-    alice.agree(bob.public) { secret => secret.length }   // 32
+    val romeo = PrivateKey.generate[X25519]()
+    val juliet = PrivateKey.generate[X25519]()
+    romeo.agree(juliet.public) { secret => secret.length }   // 32
     ```
 
 entry .seal   `key.seal(nonce, associated, plaintext)`: authenticated encryption under a nonce

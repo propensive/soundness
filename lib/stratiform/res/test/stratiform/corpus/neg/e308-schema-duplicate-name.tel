@@ -4,4 +4,4 @@ name first-name
 name second-name
 
 document
-  field foo String
+  field act String

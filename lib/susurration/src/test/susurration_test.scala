@@ -82,19 +82,19 @@ object Tests extends Suite("ssh", m"Susurration tests"):
     |# comment
     |Host work
     |  HostName git.example.com
-    |  User alice
+    |  User hamlet
     |  Port 2222
     |  IdentityFile ~/.ssh/id_work
     |
     |Host *.example.com !git.example.com
-    |    User bob
+    |    User horatio
     |
-    |Match host foo
+    |Match host elsinore
     |  User ignored
     |
     |Host *
     |  IdentityFile ~/.ssh/id_ed25519
-    |  User=carol
+    |  User=ophelia
     |  HostName %h.lan
     |""".s.stripMargin.tt
 
@@ -218,20 +218,20 @@ object Tests extends Suite("ssh", m"Susurration tests"):
 
       test(m"A named host resolves its own block, with the first value winning"):
         resolved.resolve(t"work")
-      . assert(_ == SshConfig.Resolution(t"git.example.com", t"alice", 2222,
+      . assert(_ == SshConfig.Resolution(t"git.example.com", t"hamlet", 2222,
           List(t"~/.ssh/id_work", t"~/.ssh/id_ed25519")))
 
       test(m"A wildcard block applies, and a negation excludes"):
         (resolved.resolve(t"dev.example.com").user, resolved.resolve(t"git.example.com").user)
-      . assert(_ == (t"bob", t"carol"))
+      . assert(_ == (t"horatio", t"ophelia"))
 
       test(m"Defaults expand %h and fall back to the host itself"):
         (resolved.resolve(t"other").hostName, resolved.resolve(t"other").port)
       . assert(_ == (t"other.lan", 22))
 
       test(m"A Match block's contents are not applied"):
-        resolved.resolve(t"foo").user
-      . assert(_ == t"carol")
+        resolved.resolve(t"elsinore").user
+      . assert(_ == t"ophelia")
 
       test(m"An empty configuration resolves to the host itself"):
         SshConfig(t"").resolve(t"example.com")

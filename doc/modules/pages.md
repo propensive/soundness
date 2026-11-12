@@ -179,7 +179,7 @@ and the title of the document is `pageTitle`:
 
 ```scala
 class Landing extends Archetype, Hero(t"Build pages from parts"),
-    StandardMetadata(t"Pages composed from archetypes"), Author(t"Ada"),
+    StandardMetadata(t"Pages composed from archetypes"), Author(t"Shakespeare"),
     Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
     Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
   override def pageTitle: Text = t"Example"

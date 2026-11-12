@@ -8,7 +8,7 @@ detail
     _Syndesis_ lets a program which serves something on the local network — a build daemon, a
     printer, a game — be found without anyone being told its address. It implements
     **DNS-based service discovery** (RFC 6763), which names a service *type* (`_fury._tcp`)
-    and its *instances* (`Gondor._fury._tcp.local`), carried over **multicast DNS** (RFC
+    and its *instances* (`Elsinore._fury._tcp.local`), carried over **multicast DNS** (RFC
     6762), where every host answers for its own names and no nameserver is involved.
 
     The vocabulary is in `Discovery`: a `Discovery.Service` and a `Discovery.Instance`, which
@@ -34,7 +34,7 @@ detail
     val txt = Discovery.Txt(t"fingerprint" -> t"ab12")
 
     supervise:
-      fury.advertise(Discovery.Description(t"Gondor", tcp"8443", txt)):
+      fury.advertise(Discovery.Description(t"Elsinore", tcp"8443", txt)):
         fury.browse:
           summon[Discovery.Browser].events.each:
             case Discovery.Event.Found(instance) => instance.resolve(5000L).endpoints
@@ -77,9 +77,9 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
       import strategies.throwUnsafely
 
       val fury = Discovery.Service(t"fury", Tcp)
-      val gondor = Discovery.Instance(t"Gondor", fury)
+      val elsinore = Discovery.Instance(t"Elsinore", fury)
       fury.dnsName                         // dns"_fury._tcp.local"
-      gondor.show                          // t"Gondor._fury._tcp.local"
+      elsinore.show                          // t"Elsinore._fury._tcp.local"
       Discovery.Txt(t"fp" -> t"abc").strings   // List(t"fp=abc")
       ```
 
@@ -139,18 +139,18 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
     detail
         An instance is a single DNS label of UTF-8 (RFC 6763 §4.1.1) — spaces and dots
         included, no escaping, up to 63 bytes — prefixed to its service's name, so
-        `Instance(t"Jon's Printer. Upstairs", fury)` has the labels `Jon's Printer. Upstairs`,
+        `Instance(t"Hamlet's Printer. Upstairs", fury)` has the labels `Hamlet's Printer. Upstairs`,
         `_fury`, `_tcp`, `local`. It shows in the presentation form of §4.3, with the label's
-        dots escaped: `Jon\.Printer._fury._tcp.local`.
+        dots escaped: `Hamlet\.Printer._fury._tcp.local`.
 
         ```scala
         import soundness.*
         import strategies.throwUnsafely
 
         val fury = Discovery.Service(t"fury", Tcp)
-        val gondor = Discovery.Instance(t"Gondor", fury)
-        gondor.renamed.label                   // t"Gondor (2)"
-        Discovery.Instance.parse(dns"Gondor._fury._tcp.local") == gondor
+        val elsinore = Discovery.Instance(t"Elsinore", fury)
+        elsinore.renamed.label                   // t"Elsinore (2)"
+        Discovery.Instance.parse(dns"Elsinore._fury._tcp.local") == elsinore
         ```
 
         An instance is the value a browser reports as found or lost, and the one `resolve` is
@@ -159,7 +159,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
     entry .apply   a validated instance from its label and service
         Needs a `Tactic[Discovery.Error]`; an empty label, or one over 63 bytes, raises reason
         `InvalidName` naming the label.
-    entry .parse   the instance a name such as `Gondor._fury._tcp.local` denotes, or `Unset`
+    entry .parse   the instance a name such as `Elsinore._fury._tcp.local` denotes, or `Unset`
         The first label is the instance's label, kept exactly as written, and the rest must
         parse as a `Service`; a name with no labels, or whose parent is not a service type
         (such as the service type's own name), is `Unset`.
@@ -167,7 +167,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
     entry #label   the instance's own name, one label of UTF-8
     entry #service   the service type the instance provides
     entry #dnsName   the full DNS-SD name: the label, then the service's name
-    entry #renamed   the next name to try after a conflict: `Gondor` → `Gondor (2)` → `Gondor (3)`
+    entry #renamed   the next name to try after a conflict: `Elsinore` → `Elsinore (2)` → `Elsinore (3)`
         RFC 6762 §9's renaming: a counter in parentheses is appended, or incremented if the
         label already ends with one. Needs a `Tactic[Discovery.Error]`, since the new label is
         validated like any other. The responder renames an advertised instance this way when
@@ -222,7 +222,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
         import strategies.throwUnsafely
 
         val txt = Discovery.Txt(t"fp" -> t"abc")
-        Discovery.Description(t"Gondor", tcp"8443", txt)
+        Discovery.Description(t"Elsinore", tcp"8443", txt)
         ```
     entry #instance   the label asked for; the name claimed may differ after a conflict
     entry #port   the port the instance serves on
@@ -241,11 +241,11 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
         import strategies.throwUnsafely
 
         val fury = Discovery.Service(t"fury", Tcp)
-        val gondor = Discovery.Instance(t"Gondor", fury)
+        val elsinore = Discovery.Instance(t"Elsinore", fury)
 
         val resolution =
           Discovery.Resolution
-            (gondor, dns"gondor.local", tcp"8443", Discovery.Txt.empty, List(ip"192.168.1.2", ip"fe80::1"))
+            (elsinore, dns"elsinore.local", tcp"8443", Discovery.Txt.empty, List(ip"192.168.1.2", ip"fe80::1"))
 
         resolution.endpoints.map(_.remote)   // List(t"192.168.1.2", t"fe80::1")
         ```
@@ -261,7 +261,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
         and `Lost(instance)` is one leaving, by a goodbye or by its records expiring. A change
         to an instance's details (its port or TXT record) is not an event: resolve it again.
         A `Browser` delivers these through `#events`.
-    entry .showable   renders an event as `found Gondor._fury._tcp.local` or `lost …`
+    entry .showable   renders an event as `found Elsinore._fury._tcp.local` or `lost …`
   entry .Activity   what a backend reports as it works, logged through the `Loggable` at each loan
     detail
         Each loan — an advertisement, a browse, a resolution — takes a `Discovery.Activity is
@@ -320,7 +320,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
         Available inside an `advertise` block as `summon[Discovery.Advertisement]`. Its
         `#instance` is read live rather than copied, because a host which turns up later
         asserting the same name makes the responder probe afresh and, if the probe is
-        answered, rename: `Gondor` may become `Gondor (2)` during the block. The handle is a
+        answered, rename: `Elsinore` may become `Elsinore (2)` during the block. The handle is a
         plain value, not a capability — the socket and the background tasks belong to the
         `Monitor` — which is what lets it pass through a nested loan.
 
@@ -337,8 +337,8 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
         val fury = Discovery.Service(t"fury", Tcp)
 
         supervise:
-          fury.advertise(Discovery.Description(t"Gondor", tcp"8443")):
-            summon[Discovery.Advertisement].instance.label   // t"Gondor", or t"Gondor (2)"
+          fury.advertise(Discovery.Description(t"Elsinore", tcp"8443")):
+            summon[Discovery.Advertisement].instance.label   // t"Elsinore", or t"Elsinore (2)"
         ```
     entry #instance   the instance currently claimed, which a conflict may have renamed
   entry .Browser   the handle a `browse` loan lends: events as they happen, and the instances known
@@ -393,7 +393,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
     entry .Reason   why discovery failed: `Conflict`, `Timeout`, `InvalidName`, `InvalidTxt`, `InvalidService` or `Unavailable`
       detail
           An enum, each case numbered, with a `Communicable` rendering such as _the name
-          `Gondor._fury._tcp.local` could not be claimed after repeated conflicts_ or _the
+          `Elsinore._fury._tcp.local` could not be claimed after repeated conflicts_ or _the
           instance `…` did not resolve before the timeout_.
       entry .communicable   renders each reason as a message
       entry #number   the reason's number, `1` to `6`, the second part of the error's code
@@ -402,7 +402,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
 entry .advertise   `service.advertise(description) { … }`: advertises an instance for the block
   detail
       An extension on `Discovery.Service`. The instance is probed for, claimed — renamed
-      `Gondor (2)` if another host holds the name, or this responder already advertises it —
+      `Elsinore (2)` if another host holds the name, or this responder already advertises it —
       and announced; it stays advertised for the block, and a goodbye is sent when the block
       ends, normally or by an exception, or when the `Monitor` is cancelled. The block
       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
@@ -418,7 +418,7 @@ entry .advertise   `service.advertise(description) { … }`: advertises an insta
       import discoveryBackends.mdnsSockets
 
       val fury = Discovery.Service(t"fury", Tcp)
-      val description = Discovery.Description(t"Gondor", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
+      val description = Discovery.Description(t"Elsinore", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
 
       supervise:
         fury.advertise(description):
@@ -493,10 +493,10 @@ entry .resolve   `instance.resolve(timeout)`: the instance's host, port, TXT rec
       import discoveryBackends.mdnsSockets
 
       val fury = Discovery.Service(t"fury", Tcp)
-      val gondor = Discovery.Instance(t"Gondor", fury)
+      val elsinore = Discovery.Instance(t"Elsinore", fury)
 
       supervise:
-        val resolution = gondor.resolve(5000L)
+        val resolution = elsinore.resolve(5000L)
         (resolution.port.number, resolution.txt(t"fp"), resolution.endpoints)
       ```
 
@@ -555,7 +555,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
       import abstractables.millisecondsAbstractable
 
       val fury = Discovery.Service(t"fury", Tcp)
-      val description = Discovery.Description(t"Gondor", tcp"8443")
+      val description = Discovery.Description(t"Elsinore", tcp"8443")
 
       supervise:
         val bus = Mdns.Transport.Bus()
@@ -564,7 +564,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
 
         fury.advertise(description)(using a):
           fury.browse(using b):
-            summon[Discovery.Browser].events.head   // Discovery.Event.Found(Gondor._fury._tcp.local)
+            summon[Discovery.Browser].events.head   // Discovery.Event.Found(Elsinore._fury._tcp.local)
       ```
 
       The responder's own failure to start — no multicast-capable interface, or a group it
@@ -638,7 +638,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
         import soundness.*
 
         val second = 1_000_000_000L
-        val record = Dns.Record(dns"gondor.local", 120, Dns.Rdata.A(ip"10.0.0.1"))
+        val record = Dns.Record(dns"elsinore.local", 120, Dns.Rdata.A(ip"10.0.0.1"))
         val cache = Mdns.Cache()
         cache.absorb(List(record), 0L)        // List(Mdns.Cache.Transition.Added(record))
         cache.sweep(121*second)               // List(Mdns.Cache.Transition.Removed(record))
@@ -674,7 +674,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
         import soundness.*
 
         val a = Dns.Record(dns"host.local", 120, Dns.Rdata.A(ip"10.0.0.1"), flush = true)
-        val srv = Dns.Record(dns"Gondor._fury._tcp.local", 120, Dns.Rdata.Srv(0, 0, 8443, dns"host.local"), flush = true)
+        val srv = Dns.Record(dns"Elsinore._fury._tcp.local", 120, Dns.Rdata.Srv(0, 0, 8443, dns"host.local"), flush = true)
         Mdns.Tiebreak.compare(a, srv)                   // Comparison.Less: A before SRV
         Mdns.Tiebreak.compare(List(srv, a), List(a, srv))   // Comparison.Same
         ```
@@ -704,7 +704,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
         import probates.awaitProbate
 
         val fury = Discovery.Service(t"fury", Tcp)
-        val description = Discovery.Description(t"Gondor", tcp"8443")
+        val description = Discovery.Description(t"Elsinore", tcp"8443")
 
         supervise:
           val bus = Mdns.Transport.Bus()
@@ -712,7 +712,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
 
           fury.advertise(description)(using a):
             fury.advertise(description.copy(port = tcp"8444"))(using a):
-              summon[Discovery.Advertisement].instance.label   // t"Gondor (2)"
+              summon[Discovery.Advertisement].instance.label   // t"Elsinore (2)"
         ```
     refer syndesis.Discovery.Backend
     refer syndesis.Mdns.Transport

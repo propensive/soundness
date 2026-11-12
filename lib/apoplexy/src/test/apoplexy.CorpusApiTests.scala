@@ -70,7 +70,7 @@ object CorpusApiTests extends Suite("openapi-corpus-client", m"OpenAPI corpus cl
         Credential(Authorization(t"tok-1", List(t"write:pets", t"read:pets"), Unset, Unset))
 
       val petJson =
-        t"""{"id": 42, "name": "Milo", "photoUrls": ["a"], "status": "available",
+        t"""{"id": 42, "name": "Graymalkin", "photoUrls": ["a"], "status": "available",
              "tags": [{"id": 1, "name": "cat"}]}"""
 
       test(m"the relative server URL extends the base"):
@@ -84,13 +84,13 @@ object CorpusApiTests extends Suite("openapi-corpus-client", m"OpenAPI corpus cl
       test(m"call[Pet]() decodes the JSON alternative of a JSON-or-XML response"):
         given Http.Backend = Recorder(() => ok(petJson))
         api.pet(42L).get.call[Swagger.Pet]().name
-      . assert(_ == t"Milo")
+      . assert(_ == t"Graymalkin")
 
       test(m"record() types the pet by its schema"):
         given Http.Backend = Recorder(() => ok(petJson))
         val pet = api.pet(42L).get.record()
         (pet.name, pet.photoUrls)
-      . assert(_ == (t"Milo", List(t"a")))
+      . assert(_ == (t"Graymalkin", List(t"a")))
 
       test(m"a required query parameter feeds findByStatus"):
         api.pet.findByStatus.get(status = t"available").request.query.values
@@ -99,7 +99,7 @@ object CorpusApiTests extends Suite("openapi-corpus-client", m"OpenAPI corpus cl
       test(m"findByStatus decodes a list of pets"):
         given Http.Backend = Recorder(() => ok(t"[$petJson]"))
         api.pet.findByStatus.get(status = t"available").call[List[Swagger.Pet]]().map(_.name)
-      . assert(_ == List(t"Milo"))
+      . assert(_ == List(t"Graymalkin"))
 
       test(m"the inventory, a map schema, is construed as Json"):
         given Http.Backend = Recorder(() => ok(t"""{"sold": 1}"""))

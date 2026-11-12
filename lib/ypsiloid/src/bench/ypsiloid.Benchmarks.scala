@@ -130,7 +130,7 @@ object Benchmarks extends Suite("yaml-bench", m"Ypsiloid YAML parser benchmarks"
         '{ ypsiloid.Benchmarks.snakeYaml.loadFromString(ypsiloid.Benchmarks.yamlText5.s).nn }
 
   // Fixture 1: small flow document — measures fixed overhead, dispatch.
-  lazy val yamlText1: Text = t"""{name: Alice, age: 30, items: [1, 2, 3]}"""
+  lazy val yamlText1: Text = t"""{name: Romeo, age: 30, items: [1, 2, 3]}"""
 
   // Fixture 2: typical application config — block mapping, ~30 keys, mixed
   // scalar types. Stresses the line-by-line block-mapping path and
@@ -206,8 +206,8 @@ limits:
         items: [a, b, c, d, e, f]
         count: 6
     second:
-      foo: bar
-      baz: 42
+      nym: sly
+      hal: 42
   third:
     leaf: value
 """

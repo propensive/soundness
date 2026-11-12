@@ -36,10 +36,10 @@ Document {
             ),
             compounds: [
                 Compound {
-                    keyword: "foo",
+                    keyword: "act",
                     atoms: [
                         Inline {
-                            text: "bar",
+                            text: "cue",
                             preceding_spaces: 2,
                         },
                     ],

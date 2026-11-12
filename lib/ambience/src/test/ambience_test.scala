@@ -144,9 +144,9 @@ object Tests extends Suite("environment", m"Ambience Tests"):
 
     suite(m"Environment tests"):
       test(m"Read a defined environment variable"):
-        given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/jack")
+        given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/hamlet")
         unsafely(Environment[Text](t"HOME"))
-      . assert(_ == t"/home/jack")
+      . assert(_ == t"/home/hamlet")
 
       test(m"An undefined environment variable raises an error"):
         given environment: Environment = fixedEnvironment()
@@ -187,18 +187,18 @@ object Tests extends Suite("environment", m"Ambience Tests"):
 
     suite(m"Variable override tests"):
       test(m"An overridden variable takes precedence"):
-        given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/jack")
+        given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/hamlet")
 
-        variables(home = t"/home/jill"):
+        variables(home = t"/home/ophelia"):
           unsafely(Environment[Text](t"HOME"))
-      . assert(_ == t"/home/jill")
+      . assert(_ == t"/home/ophelia")
 
       test(m"A variable not overridden falls back to the environment"):
-        given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/jack")
+        given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/hamlet")
 
         variables(term = t"xterm"):
           unsafely(Environment[Text](t"HOME"))
-      . assert(_ == t"/home/jack")
+      . assert(_ == t"/home/hamlet")
 
       test(m"An overridden name is snake-cased"):
         given environment: Environment = fixedEnvironment()
@@ -210,15 +210,15 @@ object Tests extends Suite("environment", m"Ambience Tests"):
       test(m"Several variables can be overridden at once"):
         given environment: Environment = fixedEnvironment()
 
-        variables(home = t"/home/jill", term = t"xterm"):
+        variables(home = t"/home/ophelia", term = t"xterm"):
           (unsafely(Environment[Text](t"HOME")), unsafely(Environment[Text](t"TERM")))
-      . assert(_ == (t"/home/jill", t"xterm"))
+      . assert(_ == (t"/home/ophelia", t"xterm"))
 
     suite(m"System property tests"):
       test(m"Read a defined system property"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         unsafely(System.properties.user.home[Text]())
-      . assert(_ == t"/home/jack")
+      . assert(_ == t"/home/hamlet")
 
       test(m"An undefined system property raises an error"):
         given system: System = fixedSystem()
@@ -272,24 +272,24 @@ object Tests extends Suite("environment", m"Ambience Tests"):
 
     suite(m"Directory tests"):
       test(m"The home directory comes from the `user.home` property"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         Directories.homeText
-      . assert(_ == t"/home/jack")
+      . assert(_ == t"/home/hamlet")
 
       test(m"The XDG data home defaults below the home directory"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         given environment: Environment = fixedEnvironment()
         Xdg.dataHome[FakePath]
-      . assert(_ == FakePath(t"/home/jack/.local/share"))
+      . assert(_ == FakePath(t"/home/hamlet/.local/share"))
 
       test(m"The XDG config home defaults below the home directory"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         given environment: Environment = fixedEnvironment()
         Xdg.configHome[FakePath]
-      . assert(_ == FakePath(t"/home/jack/.config"))
+      . assert(_ == FakePath(t"/home/hamlet/.config"))
 
       test(m"The XDG data home is taken from the environment when set"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         given environment: Environment = fixedEnvironment(t"XDG_DATA_HOME" -> t"/data")
         Xdg.dataHome[FakePath]
       . assert(_ == FakePath(t"/data"))
@@ -300,36 +300,36 @@ object Tests extends Suite("environment", m"Ambience Tests"):
       . assert(_ == Unset)
 
       test(m"The XDG data directories have standard defaults"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         given environment: Environment = fixedEnvironment()
         Xdg.dataDirs[FakePath]
       . assert(_ == List(FakePath(t"/usr/local/share"), FakePath(t"/usr/share")))
 
       test(m"The XDG config directories have a standard default"):
-        given system: System = fixedSystem(t"user.home" -> t"/home/jack")
+        given system: System = fixedSystem(t"user.home" -> t"/home/hamlet")
         given environment: Environment = fixedEnvironment()
         Xdg.configDirs[FakePath]
       . assert(_ == List(FakePath(t"/etc/xdg")))
 
       test(m"On Windows the config home is the roaming app data directory"):
         given system: System =
-          fixedSystem(t"user.home" -> t"C:\\Users\\Jack", t"os.name" -> t"Windows 11")
+          fixedSystem(t"user.home" -> t"C:\\Users\\Hamlet", t"os.name" -> t"Windows 11")
 
         given environment: Environment = fixedEnvironment()
         Directories.configHome[FakePath]
-      . assert(_ == FakePath(t"C:\\Users\\Jack\\AppData\\Roaming"))
+      . assert(_ == FakePath(t"C:\\Users\\Hamlet\\AppData\\Roaming"))
 
       test(m"On Windows the cache home is the local app data directory"):
         given system: System =
-          fixedSystem(t"user.home" -> t"C:\\Users\\Jack", t"os.name" -> t"Windows 11")
+          fixedSystem(t"user.home" -> t"C:\\Users\\Hamlet", t"os.name" -> t"Windows 11")
 
         given environment: Environment = fixedEnvironment()
         Directories.cacheHome[FakePath]
-      . assert(_ == FakePath(t"C:\\Users\\Jack\\AppData\\Local"))
+      . assert(_ == FakePath(t"C:\\Users\\Hamlet\\AppData\\Local"))
 
       test(m"On Windows the data directories come from `PROGRAMDATA`"):
         given system: System =
-          fixedSystem(t"user.home" -> t"C:\\Users\\Jack", t"os.name" -> t"Windows 11")
+          fixedSystem(t"user.home" -> t"C:\\Users\\Hamlet", t"os.name" -> t"Windows 11")
 
         given environment: Environment = fixedEnvironment()
         Directories.dataDirs[FakePath]

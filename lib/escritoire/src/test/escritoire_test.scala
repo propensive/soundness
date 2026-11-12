@@ -41,7 +41,7 @@ import denominative.dysasymptotics.linearAccess
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite("table", m"Escritoire tests"):
-  val people: List[Person] = List(Person(t"Alice", 30), Person(t"Bob", 5))
+  val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
 
   def render[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
      (using TableStyle, Attenuation^)
@@ -125,8 +125,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
 
     test(m"Column contramap adapts the row type"):
       val nameColumn = Column[Person, Text, Text](t"Name")(_.name)
-      nameColumn.contramap[(Person, Int)](_(0)).get((Person(t"Zoe", 9), 1))
-    . assert(_ == t"Zoe")
+      nameColumn.contramap[(Person, Int)](_(0)).get((Person(t"Peto", 40), 1))
+    . assert(_ == t"Peto")
 
     test(m"Int column is right-aligned by default"):
       Column[Person, Int, Text](t"Age")(_.age).textAlign
@@ -152,8 +152,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( t"╭───────┬─────╮",
             t"│ Name  │ Age │",
             t"├───────┼─────┤",
-            t"│ Alice │  30 │",
-            t"│ Bob   │   5 │",
+            t"│ Poins │  30 │",
+            t"│ Hal   │  16 │",
             t"╰───────┴─────╯" )
 
     test(m"Render a simple table with the default thick border style"):
@@ -165,8 +165,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( t"┏━━━━━━━┯━━━━━┓",
             t"┃ Name  │ Age ┃",
             t"┠───────┼─────┨",
-            t"┃ Alice │  30 ┃",
-            t"┃ Bob   │   5 ┃",
+            t"┃ Poins │  30 ┃",
+            t"┃ Hal   │  16 ┃",
             t"┗━━━━━━━┷━━━━━┛" )
 
     test(m"Horizontal style has rules but no vertical lines"):
@@ -178,8 +178,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( t"╶─────────────╴",
             t"  Name    Age  ",
             t"╶─────────────╴",
-            t"  Alice    30  ",
-            t"  Bob       5  ",
+            t"  Poins    30  ",
+            t"  Hal      16  ",
             t"╶─────────────╴" )
 
     test(m"Minimal style has only a title rule"):
@@ -190,14 +190,14 @@ object Tests extends Suite("table", m"Escritoire tests"):
         _ == List
           ( t"  Name    Age  ",
             t"╶─────────────╴",
-            t"  Alice    30  ",
-            t"  Bob       5  " )
+            t"  Poins    30  ",
+            t"  Hal      16  " )
 
     test(m"Number column right-aligns its values"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       render(scaffold, people, 40).at(Quat).or(t"")
-    . assert(_ == t"│ Alice │  30 │")
+    . assert(_ == t"│ Poins │  30 │")
 
     // ─── Paragraph wrapping ─────────────────────────────────────────────────
 
@@ -209,7 +209,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
     test(m"A paragraph column wraps text across several lines"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      render(wrapping, List(Person(t"Alice", 30)), 18)
+      render(wrapping, List(Person(t"Poins", 30)), 18)
     . assert:
         _ == List
           ( t"╭──────────┬─────╮",
@@ -224,7 +224,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
     test(m"A wrapped cell increases the height of its whole row"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      render(wrapping, List(Person(t"Alice", 30)), 18).size
+      render(wrapping, List(Person(t"Poins", 30)), 18).size
     . assert(_ == 8)
 
     // ─── Fixed-width truncation ─────────────────────────────────────────────
@@ -236,7 +236,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
     test(m"A Fixed column truncates over-long cells with an ellipsis"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      render(truncating, List(Person(t"Alice", 30)), 40).at(Quat).or(t"")
+      render(truncating, List(Person(t"Poins", 30)), 40).at(Quat).or(t"")
     . assert(_ == t"│ abcde… │")
 
     // ─── Derivation ─────────────────────────────────────────────────────────
@@ -250,8 +250,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( t"╭───────┬─────╮",
             t"│ Name  │ Age │",
             t"├───────┼─────┤",
-            t"│ Alice │  30 │",
-            t"│ Bob   │   5 │",
+            t"│ Poins │  30 │",
+            t"│ Hal   │  16 │",
             t"╰───────┴─────╯" )
 
     test(m"TableRelabelling overrides a derived column title"):
@@ -282,7 +282,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       import columnAttenuation.ignoreAttenuation
       import hieroglyph.textMetrics.wideCharacterWidthMetric
       val cjk = Scaffold[Person, Text](Column(t"N")(_ => t"日本"))
-      cjk.tabulate(List(Person(t"Alice", 30))).grid(40).render.to[List]
+      cjk.tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
     . assert:
         _ == List
           ( t"╭──────╮",
@@ -306,8 +306,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( t"╭───────╮",
             t"│ Name  │",
             t"├───────┤",
-            t"│ Alice │",
-            t"│ Bob   │",
+            t"│ Poins │",
+            t"│ Hal   │",
             t"╰───────╯" )
 
     test(m"a Collapsible column survives when there is room"):
@@ -325,8 +325,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( t"╭───────┬────────────╮",
             t"│ Name  │ Note       │",
             t"├───────┼────────────┤",
-            t"│ Alice │ annotation │",
-            t"│ Bob   │ annotation │",
+            t"│ Poins │ annotation │",
+            t"│ Hal   │ annotation │",
             t"╰───────┴────────────╯" )
 
     test(m"Bottom vertical alignment pads short cells from above"):
@@ -338,7 +338,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
           ( Column(t"A")(_ => t"one two"),
             Column(t"B", verticalAlign = VerticalAlignment.Bottom)(_ => t"x") )
 
-      render(aligned, List(Person(t"Alice", 30)), 13)
+      render(aligned, List(Person(t"Poins", 30)), 13)
     . assert:
         _ == List
           ( t"╭───────┬───╮",
@@ -368,25 +368,25 @@ object Tests extends Suite("table", m"Escritoire tests"):
     test(m"a row within a layout's aggregates is accommodated, and extending with it is the identity"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Alice", 30)))
-      val bob = scaffold.cells(Person(t"Bob", 5))
-      (layout.accommodates(bob), layout.extend(bob) eq layout)
+      val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Poins", 30)))
+      val hal = scaffold.cells(Person(t"Hal", 16))
+      (layout.accommodates(hal), layout.extend(hal) eq layout)
     . assert(_ == (true, true))
 
     test(m"a wider row is not accommodated and widens the aggregates"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Bob", 5)))
-      val alice = scaffold.cells(Person(t"Alexandra", 30))
-      val extended = layout.extend(alice)
-      (layout.accommodates(alice), extended eq layout, extended.aggregates.at(Prim).lay(0)(_.natural))
+      val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Hal", 16)))
+      val glendower = scaffold.cells(Person(t"Glendower", 30))
+      val extended = layout.extend(glendower)
+      (layout.accommodates(glendower), extended eq layout, extended.aggregates.at(Prim).lay(0)(_.natural))
     . assert(_ == (false, false, 9))
 
     test(m"a Fixed column accommodates any content"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       val layout = truncating.layout(40)
-      layout.accommodates(truncating.cells(Person(t"Alice", 30)))
+      layout.accommodates(truncating.cells(Person(t"Poins", 30)))
     . assert(_ == true)
 
     test(m"a row that widens a stretched column's claim but not its width leaves the layout stable"):
@@ -394,8 +394,8 @@ object Tests extends Suite("table", m"Escritoire tests"):
       import columnAttenuation.ignoreAttenuation
       // At 18 cells the phrase column is already pinned by the width, so a longer phrase
       // re-solves to the same survivors.
-      val layout = wrapping.layout(18).extend(wrapping.cells(Person(t"Alice", 30)))
-      val longer = Scaffold[Person, Text](Column(t"Phrase", sizing = columnar.Paragraph)(_ => t"the quick brown fox jumps"), Column(t"Age")(_.age)).cells(Person(t"Bob", 5))
+      val layout = wrapping.layout(18).extend(wrapping.cells(Person(t"Poins", 30)))
+      val longer = Scaffold[Person, Text](Column(t"Phrase", sizing = columnar.Paragraph)(_ => t"the quick brown fox jumps"), Column(t"Age")(_.age)).cells(Person(t"Hal", 16))
       val extended = layout.extend(longer)
       (extended eq layout, extended.stable(layout))
     . assert(_ == (false, true))
@@ -423,17 +423,17 @@ object Tests extends Suite("table", m"Escritoire tests"):
     test(m"a row's height is its rendered line count, wrapped or not"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      val alice = wrapping.cells(Person(t"Alice", 30))
-      val narrow = wrapping.layout(18).extend(alice)
-      val wide = wrapping.layout(40).extend(alice)
-      val cut = truncating.layout(40).extend(truncating.cells(Person(t"Alice", 30)))
+      val poins = wrapping.cells(Person(t"Poins", 30))
+      val narrow = wrapping.layout(18).extend(poins)
+      val wide = wrapping.layout(40).extend(poins)
+      val cut = truncating.layout(40).extend(truncating.cells(Person(t"Poins", 30)))
       val empty = Scaffold[Person, Text](Column(t"Name")(_.name), Column(t"Note")(_ => t"")).pipe: blank =>
-        val cells = blank.cells(Person(t"Alice", 30))
+        val cells = blank.cells(Person(t"Poins", 30))
         val layout = blank.layout(40).extend(cells)
         (layout.height(cells), layout.lines(cells, Nil).size)
-      ( (narrow.height(alice), narrow.lines(alice, Nil).size),
-        (wide.height(alice), wide.lines(alice, Nil).size),
-        (cut.height(truncating.cells(Person(t"Alice", 30))), cut.lines(truncating.cells(Person(t"Alice", 30)), Nil).size),
+      ( (narrow.height(poins), narrow.lines(poins, Nil).size),
+        (wide.height(poins), wide.lines(poins, Nil).size),
+        (cut.height(truncating.cells(Person(t"Poins", 30))), cut.lines(truncating.cells(Person(t"Poins", 30)), Nil).size),
         empty )
     . assert(_ == ((4, 4), (1, 1), (1, 1), (1, 1)))
 

@@ -325,7 +325,7 @@ entry .cp   the `cp"…"` interpolator: a classpath resource, checked as the cod
     compiles, that it exists on the compiler's classpath (through the compiler's thread
     context classloader). The result is a `Resource` whose `Locus` type member is the path's
     literal type. A path which is not a valid classpath path is a compile error, _hellenism:
-    the path `foobar` is not a valid classpath path_, and one which exists nowhere on the
+    the path `elsinore` is not a valid classpath path_, and one which exists nowhere on the
     compiler's classpath is another, _hellenism: the path `/missing.txt` is not on the
     classpath_.
 

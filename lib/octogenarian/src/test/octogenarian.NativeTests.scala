@@ -343,9 +343,9 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
       test(m"remotes are read from the configuration"):
         val dir = gitRepo()
-        sh"git -C $dir remote add origin git@example.com:foo/bar.git".exec[Exit]()
+        sh"git -C $dir remote add origin git@example.com:globe/hamlet.git".exec[Exit]()
         dir.open[Git.Repo]() { repo ?=> repo.remotes().value }
-      .assert(_ == List(Remote(t"origin", t"git@example.com:foo/bar.git")))
+      .assert(_ == List(Remote(t"origin", t"git@example.com:globe/hamlet.git")))
 
     suite(m"Working tree"):
 

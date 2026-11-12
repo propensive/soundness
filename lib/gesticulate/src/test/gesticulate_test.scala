@@ -325,7 +325,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
     . assert(_ == MediaType.Error.Reason.InvalidSuffix(t"wobble"))
 
     test(m"a parameter without a value is rejected"):
-      capture[MediaType.Error](t"text/plain; foo".as[MediaType]).reason
+      capture[MediaType.Error](t"text/plain; verse".as[MediaType]).reason
     . assert(_ == MediaType.Error.Reason.MissingParam)
 
     test(m"a media type with parameters round-trips"):

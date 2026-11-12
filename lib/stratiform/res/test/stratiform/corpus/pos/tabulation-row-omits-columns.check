@@ -19,7 +19,7 @@ Document {
             ),
             compounds: [
                 Compound {
-                    keyword: "Alice",
+                    keyword: "Percy",
                     atoms: [],
                     remark: None,
                     children: [],

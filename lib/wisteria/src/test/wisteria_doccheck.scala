@@ -45,7 +45,7 @@ object DerivationTutorial:
 
   case class Person(name: Text, age: Int) derives Presentation
 
-  Person(t"Ada", 36).present   // t"Person(name=Ada, age=36)"
+  Person(t"Hamlet", 30).present   // t"Person(name=Hamlet, age=30)"
 
   trait Labels[value]:
     def labels: List[Text]
@@ -77,7 +77,7 @@ object DerivationTutorial:
         build[derivation]:
           [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
 
-  Parsing.derived[Person].parse(t"Ada,36")   // Person(t"Ada", 36)
+  Parsing.derived[Person].parse(t"Hamlet,30")   // Person(t"Hamlet", 30)
 
   object ParsingSums extends Derivation[Parsing]:
     inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
@@ -111,7 +111,7 @@ object DerivationTutorial:
           [variant <: derivation] => leftValue =>
             complement(right).lay(false)(contextual.equal(leftValue, _))
 
-  Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))   // true
+  Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))   // true
 
   trait Naming[value]:
     def name(value: value): Text
@@ -145,7 +145,7 @@ object DerivationTutorial:
 
   case class Pair(label: Text, count: Int)
 
-  Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
+  Pair(t"Rosen", 10) + Pair(t"crantz", 15)   // Pair(t"Rosencrantz", 25)
 
   enum Tree derives Presentation:
     case Leaf
@@ -166,5 +166,5 @@ object DerivationTutorial:
   extension [value](value: value)
     def render(using rendering: Rendering[value]): Text = rendering.render(value)
 
-  Person(t"Ada", 36).render   // through Presentation, which Person derives
-  3.14.render                 // through Showable, which Double has
+  Person(t"Hamlet", 30).render   // through Presentation, which Person derives
+  3.14.render                    // through Showable, which Double has

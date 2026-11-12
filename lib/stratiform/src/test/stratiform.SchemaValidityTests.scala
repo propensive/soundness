@@ -135,10 +135,10 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         schemaCode(Text("""|tel 1.0
                        |name t
                        |document
-                       |  field foo String
+                       |  field hal String
                        |layer extension
                        |  overlay
-                       |    field foo Identifier
+                       |    field hal Identifier
                        |""".stripMargin))
       . assert(_ == 206)
 
@@ -146,10 +146,10 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         schemaCode(Text("""|tel 1.0
                        |name t
                        |document
-                       |  field foo String optional
+                       |  field hal String optional
                        |layer extension
                        |  overlay
-                       |    field foo String
+                       |    field hal String
                        |""".stripMargin))
       . assert(_ == 0)
 
@@ -184,7 +184,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         schemaCode(Text("""|tel 1.0
                        |name t
                        |document
-                       |  field foo Missing
+                       |  field hal Missing
                        |""".stripMargin))
       . assert(_ == 209)
 
@@ -196,7 +196,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
                        |select Pet
                        |  variant cat Cat
                        |document
-                       |  field foo Pet optional
+                       |  field hal Pet optional
                        |""".stripMargin))
       . assert(_ == 217)
 
@@ -351,7 +351,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
       . assert(_ == 222)
 
       test(m"a pattern using a construct outside RE2 raises E222"):
-        schemaCode(coded(pattern(t"(?=foo)bar"), t""))
+        schemaCode(coded(pattern(t"(?=hal)nym"), t""))
       . assert(_ == 222)
 
       test(m"E222 is reported before E223"):
@@ -387,12 +387,12 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
       test(m"restating an identical list needs no containment decision"):
         // A word boundary is `Unverifiable`, so this only passes if the
         // textual-identity short-circuit fires before any decision is made.
-        schemaCode(coded(pattern(t"\\bfoo\\b"),
-            t"layer l\n  scalar Code\n    pattern \\bfoo\\b\n"))
+        schemaCode(coded(pattern(t"\\bhal\\b"),
+            t"layer l\n  scalar Code\n    pattern \\bhal\\b\n"))
       . assert(_ == 0)
 
       test(m"an undecidable replacement fails closed as E223"):
-        schemaCode(coded(pattern(t"[a-z]+"), t"layer l\n  scalar Code\n    pattern \\bfoo\\b\n"))
+        schemaCode(coded(pattern(t"[a-z]+"), t"layer l\n  scalar Code\n    pattern \\bhal\\b\n"))
       . assert(_ == 223)
 
       // Neither replacement pattern alone is contained in the base, but their

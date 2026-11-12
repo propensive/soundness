@@ -66,33 +66,33 @@ given (Interface in Typescript at "/xenophile/definitions.ts") =
 
 A `Foreign` value stands for a value of a foreign type. Its members navigate as though the
 foreign declarations were Scala. The type of each step comes from the declarations, so the
-refinement tracks exactly what the foreign type system says. Here `Foo` declares a member `bar`
-of type `Bar`, and a method `greet` which takes a string:
+refinement tracks exactly what the foreign type system says. Here `Play` declares a member
+`scene` of type `Scene`, and a method `greet` which takes a string:
 
 ```scala fuel
 typecheck
 ##
-val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
+val play: Foreign of "Play" from Typescript = Foreign["Play", Typescript]
 
-val bar: Foreign of "Bar" from Typescript = foo.bar
-val greeting = foo.greet(t"hello")
+val scene: Foreign of "Scene" from Typescript = play.scene
+val greeting = play.greet(t"hello")
 ```
 
-`Foo` declares no member called `missing`, and `greet` does not take a number, so neither of
+`Play` declares no member called `missing`, and `greet` does not take a number, so neither of
 these compiles:
 
 ```scala fuel
 compile
 errors show
 ##
-foo.missing
+play.missing
 ```
 
 ```scala fuel
 compile
 errors show
 ##
-foo.greet(42)
+play.greet(42)
 ```
 
 Scala values pass as arguments where an `Interoperable` instance maps them onto the foreign

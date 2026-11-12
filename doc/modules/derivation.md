@@ -170,11 +170,11 @@ parse
 ##
 case class Person(name: Text, age: Int) derives Presentation
 
-val presented: Text = Person(t"Ada", 36).present
+val presented: Text = Person(t"Hamlet", 30).present
 ```
 
-Here `presented` is `t"Person(name=Ada, age=36)"`. Nested structures derive recursively. A case
-class of case classes needs nothing more.
+Here `presented` is `t"Person(name=Hamlet, age=30)"`. Nested structures derive recursively. A
+case class of case classes needs nothing more.
 
 ### What a derivation can see
 
@@ -252,12 +252,12 @@ object Parsing extends ProductDerivation[Parsing]:
       build[derivation]:
         [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
 
-Parsing.derived[Person].parse(t"Ada,36")
+Parsing.derived[Person].parse(t"Hamlet,30")
 ```
 
-`Parsing.derived[Person].parse(t"Ada,36")` is `Person(t"Ada", 36)`. `Parsing` is a typeclass of
-its own, and not the `Readable` which `read` looks for, so `t"Ada,36".read[Person]` does not
-compile. Its instances are reached through `derived`.
+`Parsing.derived[Person].parse(t"Hamlet,30")` is `Person(t"Hamlet", 30)`. `Parsing` is a
+typeclass of its own, and not the `Readable` which `read` looks for, so
+`t"Hamlet,30".read[Person]` does not compile. Its instances are reached through `derived`.
 
 The counterpart for sums is `delegate`, which takes the label of the variant to build, and
 dispatches to the instance of that variant. `variant` can read the answer off a value it was
@@ -322,12 +322,12 @@ object Equivalence extends Derivation[Equivalence]:
         [variant <: derivation] => leftValue =>
           complement(right).lay(false)(contextual.equal(leftValue, _))
 
-Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))
+Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))
 ```
 
-`Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))` is `true`, since
-the instance for `Text` ignores case. Different variants compare unequal. The same variant
-compares through the instance which both share.
+`Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))` is `true`,
+since the instance for `Text` ignores case. Different variants compare unequal. The same
+variant compares through the instance which both share.
 
 ### Enumerations of singletons
 
@@ -418,12 +418,12 @@ import arithmetic.addable
 
 case class Pair(label: Text, count: Int)
 
-val sum: Pair = Pair(t"foo", 10) + Pair(t"bar", 15)
+val sum: Pair = Pair(t"Rosen", 10) + Pair(t"crantz", 15)
 ```
 
-Here `sum` is `Pair(t"foobar", 25)`. Addition on `Pair` is addition on each field, so `Text`
-concatenates while `Int` sums, and no instance is written for `Pair` at all. `Subtractable`,
-`Multiplicable` and their siblings follow the same rule.
+Here `sum` is `Pair(t"Rosencrantz", 25)`. Addition on `Pair` is addition on each field, so
+`Text` concatenates while `Int` sums, and no instance is written for `Pair` at all.
+`Subtractable`, `Multiplicable` and their siblings follow the same rule.
 
 ### When derivation fails
 
@@ -489,7 +489,7 @@ extension [value](value: value)
 ```scala fuel
 parse
 ##
-val person: Text = Person(t"Ada", 36).render
+val person: Text = Person(t"Hamlet", 30).render
 val number: Text = 3.14.render
 ```
 
@@ -515,23 +515,23 @@ naming the paths, which are checked against the actual structure of the type:
 ```scala fuel
 parse
 ##
-case class Org(cto: Person, ceo: Person)
+case class Play(hero: Person, villain: Person)
 
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
 
-given orgSpecific: (Org is Specific over Json.Encodable) =
+given playSpecific: (Play is Specific over Json.Encodable) =
   specifically:
-    case root.ceo.name() => shout
+    case root.villain.name() => shout
 
 import formatting.compactJsonFormatting
 
-val encoded: Text = Org(Person(t"Ada", 36), Person(t"Bob", 40)).in[Json].show
+val encoded: Text = Play(Person(t"Othello", 40), Person(t"Iago", 28)).in[Json].show
 ```
 
-Here `encoded` is `{"cto":{"name":"Ada","age":36},"ceo":{"name":"BOB","age":40}}`. A misspelled
-path, or an instance of the wrong type for its field, is a compile error. A derivation which
-supports overrides consults the map at each field it visits, as [JSON](json.md) and
-[catalogs](catalogs.md) do.
+Here `encoded` is `{"hero":{"name":"Othello","age":40},"villain":{"name":"IAGO","age":28}}`. A
+misspelled path, or an instance of the wrong type for its field, is a compile error. A
+derivation which supports overrides consults the map at each field it visits, as
+[JSON](json.md) and [catalogs](catalogs.md) do.
 
 ### Related
 

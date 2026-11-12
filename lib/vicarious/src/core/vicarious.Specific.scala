@@ -33,7 +33,7 @@
 package vicarious
 
 object Specific:
-  // A partial function of field-path cases — `case root.cto.joined() => instance` — matched on the
+  // A partial function of field-path cases — `case root.hero.name() => instance` — matched on the
   // path proxy. Built via the top-level `specifically` builder.
   type Cases[key] = PartialFunction[Proxy[key, Any, Nat], Any]
 
@@ -41,7 +41,7 @@ object Specific:
 // derivation: for one or more flattened field paths of `key`, the typeclass instance that should be
 // used at that exact path instead of the one a generic derivation would otherwise resolve. The
 // paths are validated, and each instance type-checked against the path's field type, at the
-// definition site (via the `Proxy` path-DSL); `instances` maps each dotted path (e.g. "cto.joined")
+// definition site (via the `Proxy` path-DSL); `instances` maps each dotted path (e.g. "hero.name")
 // to the (type-erased) instance, which a Wisteria derivation reads and re-types at the field site.
 trait Specific:
   type Self

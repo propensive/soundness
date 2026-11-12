@@ -18,9 +18,9 @@ detail
 
     case class Person(name: Text, age: Int)
 
-    Person(t"Jo", 47).decompose
-    Person(t"Jo", 47).contrast(Person(t"Jo", 49))
-    // Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Jo"), t"age" -> Different(t"47", t"49", t"+2")), t"Person(Jo,47)", t"Person(Jo,49)")
+    Person(t"Lear", 80).decompose
+    Person(t"Lear", 80).contrast(Person(t"Lear", 82))
+    // Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), t"Person(Lear,80)", t"Person(Lear,82)")
     ```
 
     Three typeclasses do the work. `Decomposable` turns a value into a `Decomposition` — a
@@ -97,10 +97,10 @@ entry .Contrastable   how two values of a type are juxtaposed into a `Juxtaposit
       import soundness.*
 
       case class Person(name: Text, age: Int)
-      case class Organization(name: Text, ceo: Person, staff: List[Person])
+      case class Play(title: Text, hero: Person, cast: List[Person])
 
-      val expected = Organization(t"Acme", Person(t"John", 49), List(Person(t"Janet", 19), Person(t"Paweł", 32)))
-      val observed = Organization(t"Acme", Person(t"John", 43), List(Person(t"Paul", 32), Person(t"Janet", 19)))
+      val expected = Play(t"Othello", Person(t"Othello", 49), List(Person(t"Iago", 28), Person(t"Æmilia", 32)))
+      val observed = Play(t"Othello", Person(t"Othello", 43), List(Person(t"Emilia", 32), Person(t"Iago", 28)))
       expected.contrast(observed)
       ```
 
@@ -198,8 +198,8 @@ entry .Decomposable   how a value is taken apart into a `Decomposition` for disp
 
       case class Person(name: Text, age: Int)
 
-      Person(t"Bill", 29).decompose
-      // Decomposition.Product(t"Person", Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"), t"age" -> Primitive(t"Int", t"29", 29)), Person(t"Bill", 29))
+      Person(t"Iago", 28).decompose
+      // Decomposition.Product(t"Person", Map(t"name" -> Primitive(t"Text", t"Iago", t"Iago"), t"age" -> Primitive(t"Int", t"28", 28)), Person(t"Iago", 28))
 
       val x: Optional[Int] = Unset
       x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", Unset), Unset)

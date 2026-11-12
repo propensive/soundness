@@ -263,8 +263,8 @@ entry .variables   runs a block with named variables laid over the environment i
       import environments.javaBaseEnvironment
       import strategies.throwUnsafely
 
-      variables(gitIndexFile = t"/tmp/index", home = t"/home/jill"):
-        (Environment.gitIndexFile[Text], Environment.home[Text])   // (t"/tmp/index", t"/home/jill")
+      variables(gitIndexFile = t"/tmp/index", home = t"/home/juliet"):
+        (Environment.gitIndexFile[Text], Environment.home[Text])   // (t"/tmp/index", t"/home/juliet")
       ```
 
       The values are `Text`; an outer `Environment` is required.

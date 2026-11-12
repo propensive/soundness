@@ -27,14 +27,14 @@ detail
     import columnAttenuation.ignoreAttenuation
 
     case class Person(name: Text, age: Int)
-    val people: List[Person] = List(Person(t"Alice", 30), Person(t"Bob", 5))
+    val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
 
     people.tabulation.grid(40).render.to[List]
     // ╭───────┬─────╮
     // │ Name  │ Age │
     // ├───────┼─────┤
-    // │ Alice │  30 │
-    // │ Bob   │   5 │
+    // │ Poins │  30 │
+    // │ Hal   │  16 │
     // ╰───────┴─────╯
     ```
 
@@ -92,7 +92,7 @@ entry .Scaffold   how a row type is put into columns: a table definition which h
           ( Column(t"Name")(_.name),
             Column(t"Age")(_.age) )
 
-      scaffold.tabulate(List(Person(t"Alice", 30), Person(t"Bob", 5))).grid(40).render.to[List]
+      scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
       ```
 
       A `Tabulable` instance for a type is a function returning its scaffold, so a type whose
@@ -137,10 +137,10 @@ entry .Scaffold   how a row type is put into columns: a table definition which h
       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
 
       val titles = scaffold.layout(40)
-      val alice = scaffold.cells(Person(t"Alexandra", 30))
-      titles.accommodates(alice)         // false: the name is wider than the title
-      val layout = titles.extend(alice)  // re-solved with the wider claim
-      layout.lines(alice, Nil)           // the row's lines at the settled widths
+      val row = scaffold.cells(Person(t"Cleopatra", 38))
+      titles.accommodates(row)           // false: the name is wider than the title
+      val layout = titles.extend(row)    // re-solved with the wider claim
+      layout.lines(row, Nil)             // the row's lines at the settled widths
       ```
   entry #tabulate   the scaffold applied to data: a `Tabulation`
       `scaffold.tabulate(rows)` reads every column of every row into text at once, and
@@ -403,7 +403,7 @@ entry .columnar   the sizing strategies, each a `Columnar` to name in a `Column`
           ( Column(t"Name")(_.name),
             Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
 
-        val people = List(Person(t"Alice", 30), Person(t"Bob", 5))
+        val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
         collapsing.tabulate(people).grid(30).render.to[List]   // both columns
         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
         ```
@@ -424,7 +424,7 @@ entry .Tabulation   data arranged by a scaffold: the cells' text, ready to be la
       import columnAttenuation.ignoreAttenuation
 
       case class Person(name: Text, age: Int)
-      val people = List(Person(t"Alice", 30), Person(t"Bob", 5))
+      val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
 
       val tabulation: Tabulation[Text] = people.tabulation
       tabulation.grid(40).render.to[List]
@@ -476,7 +476,7 @@ entry .Grid   a table fitted to a width: sections of rows at settled column widt
       import columnAttenuation.ignoreAttenuation
 
       case class Person(name: Text, age: Int)
-      val grid: Grid[Text] = List(Person(t"Alice", 30)).tabulation.grid(40)
+      val grid: Grid[Text] = List(Person(t"Poins", 30)).tabulation.grid(40)
       grid.render.to[List]
       grid.sections.head.let(_.widths.to[List])   // the settled widths
       ```
@@ -532,7 +532,7 @@ entry .Layout   a table's settled column widths, and the claims they were solved
 
       case class Person(name: Text, age: Int)
       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
-      val people = List(Person(t"Alice", 30), Person(t"Bob", 5))
+      val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
 
       val cells = people.map(scaffold.cells(_))
       val layout = cells.fold(scaffold.layout(40)) { (layout, cells) => layout.extend(cells) }
@@ -673,7 +673,7 @@ entry .tabulation   `rows.tabulation`: a list tabulated by its element type's `T
 
     case class Person(name: Text, age: Int)
 
-    List(Person(t"Alice", 30), Person(t"Bob", 5)).tabulation.grid(40).render.to[List]
+    List(Person(t"Poins", 30), Person(t"Hal", 16)).tabulation.grid(40).render.to[List]
     List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
     ```
 
@@ -696,7 +696,7 @@ entry .Tabulable   a typeclass: how a type is put into columns, so a list of it 
 
       case class Person(name: Text, age: Int)
 
-      summon[Person is Tabulable[Text]].tabulate(List(Person(t"Alice", 30))).grid(40).render.to[List]
+      summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
       ```
 
       An instance of one's own is the seam for a type whose columns are not its fields:
@@ -767,7 +767,7 @@ entry .TableRelabelling   overrides the column titles a derived table takes from
       case class Person(name: Text, age: Int)
       given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
 
-      List(Person(t"Alice", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
+      List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
       ```
   refer escritoire.Tabulable
   entry #relabelling   the map from field names to titles
@@ -802,7 +802,7 @@ entry .Table   the namespace of `Table.Error`, raised when a table cannot fit it
         recover:
           case Table.Error(minimum, available) => List(t"needs $minimum, had $available")
         . protect:
-            wide.tabulate(List(t"Alice")).grid(5).render.to[List]
+            wide.tabulate(List(t"Poins")).grid(5).render.to[List]
         ```
     entry #minimumWidth   the narrowest width at which the table's columns could all fit
     entry #availableWidth   the width the table was asked to fit
@@ -889,7 +889,7 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
       import columnAttenuation.ignoreAttenuation
 
       case class Person(name: Text, age: Int)
-      val people = List(Person(t"Alice", 30), Person(t"Bob", 5))
+      val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
       ```
 
       ```scala fuel
@@ -901,8 +901,8 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               // ┏━━━━━━━┯━━━━━┓
               // ┃ Name  │ Age ┃
               // ┠───────┼─────┨
-              // ┃ Alice │  30 ┃
-              // ┃ Bob   │   5 ┃
+              // ┃ Poins │  30 ┃
+              // ┃ Hal   │  16 ┃
               // ┗━━━━━━━┷━━━━━┛
       alternative Thin rounded
         code
@@ -912,8 +912,8 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               // ╭───────┬─────╮
               // │ Name  │ Age │
               // ├───────┼─────┤
-              // │ Alice │  30 │
-              // │ Bob   │   5 │
+              // │ Poins │  30 │
+              // │ Hal   │  16 │
               // ╰───────┴─────╯
       alternative Horizontal
         code
@@ -923,8 +923,8 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               // ╶─────────────╴
               //   Name    Age
               // ╶─────────────╴
-              //   Alice    30
-              //   Bob       5
+              //   Poins    30
+              //   Hal      16
               // ╶─────────────╴
       alternative Vertical
         code
@@ -943,8 +943,8 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
               people.tabulation.grid(40).render.to[List]
               //   Name    Age
               // ╶─────────────╴
-              //   Alice    30
-              //   Bob       5
+              //   Poins    30
+              //   Hal      16
       ##
       ```
 

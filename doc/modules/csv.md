@@ -57,7 +57,7 @@ The delimiter inside a quoted cell is part of the cell, so this row has three ce
 ```scala fuel
 run
 ##
-Out.println(t"1,\"Lovelace, Ada\",36".read[Sheet].rows(Prim).inspect)
+Out.println(t"1,\"Bottom, Nick\",36".read[Sheet].rows(Prim).inspect)
 ```
 
 A `Sheet` holds all its rows in memory, in an array, so they can be replayed, indexed and
@@ -80,13 +80,13 @@ consumes as many columns as it has fields:
 case class FullName(first: Text, last: Text)
 case class Person(id: Int, name: FullName, age: Int)
 
-val ada = t"1,Ada,Lovelace,36".read[Sheet].rows(Prim).let(_.as[Person])
+val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
 ```
 
 ```scala fuel
 run
 ##
-Out.println(ada.inspect)
+Out.println(bottom.inspect)
 ```
 
 `rows(Prim)` gives an [optional](optional-values.md) row, since the sheet may be empty, so `let`
@@ -106,7 +106,7 @@ A cell which cannot be decoded as its field's type is an error:
 run
 errors show
 ##
-t"one,Ada,Lovelace,36".read[Person in Dsv]
+t"one,Nick,Bottom,36".read[Person in Dsv]
 ```
 
 ### Encoding
@@ -117,8 +117,8 @@ result as delimited text:
 ```scala fuel
 run
 ##
-Out.println(FullName(t"Ada", t"Lovelace").dsv.inspect)
-Out.println(List(FullName(t"Ada", t"Lovelace"), FullName(t"Grace", t"Hopper")).dsv.show)
+Out.println(FullName(t"Nick", t"Bottom").dsv.inspect)
+Out.println(List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show)
 ```
 
 `in[Text over Dsv]` encodes a value as a single record in one step, and `in[Data over Dsv]`
@@ -138,7 +138,7 @@ A cell is quoted only when it contains the delimiter, a quote or a line break, a
 within a cell is doubled:
 
 ```scala
-val quoted: Text = FullName(t"Ada", t"Lovelace, Countess").in[Text over Dsv]
+val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
 ```
 
 ```scala fuel
@@ -157,7 +157,7 @@ run
 ##
 locally:
   import dsvFormats.csvWithHeaderFormat
-  Out.println(t"last,first\nLovelace,Ada".read[FullName in Dsv].inspect)
+  Out.println(t"last,first\nBottom,Nick".read[FullName in Dsv].inspect)
 ```
 
 ### Formats
@@ -181,7 +181,7 @@ run
 ##
 locally:
   import dsvFormats.tsvFormat
-  Out.println(List(FullName(t"Ada", t"Lovelace")).dsv.show.inspect)
+  Out.println(List(FullName(t"Nick", t"Bottom")).dsv.show.inspect)
 ```
 
 ### Column spans
@@ -333,7 +333,7 @@ case class Measurement(name: Text, age: Int, height: Int)
 
 val damaged =
   import dsvFormats.csvWithHeaderFormat
-  t"name,age,height\nAlice,thirty,tall".read[Sheet].rows(Prim)
+  t"name,age,height\nHamlet,thirty,tall".read[Sheet].rows(Prim)
 
 val problems =
   Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
@@ -392,7 +392,7 @@ row  `codecs.derived`  the row decoder, even where a `Dsv.Parsable` is in scope 
 row  `codecs.strict`  parsed directly, with no instance declared  a compile error naming the type, unless it has a `Dsv.Parsable`
 ```
 
-The modes are alternatives, so import one at a time. Reading a `List[Foo] in Dsv` is direct in
+The modes are alternatives, so import one at a time. Reading a `List[Play] in Dsv` is direct in
 every mode, since the row decoder has no counterpart for a whole sheet.
 
 Each field of a directly parsed product reads one cell through its `Decodable in Text`

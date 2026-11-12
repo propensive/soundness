@@ -4,4 +4,4 @@ name e210-test
 sigil A
 
 document
-  field foo String
+  field act String

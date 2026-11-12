@@ -55,9 +55,9 @@ case class Report(title: Text, body: Text)
 
 object Tests extends Suite("email", m"Caduceus tests"):
   def run(): Unit =
-    val jack = unsafely(EmailAddress.parse(t"jack@example.com"))
-    val jill = unsafely(EmailAddress.parse(t"jill@example.com"))
-    val jane = unsafely(EmailAddress.parse(t"jane@example.com"))
+    val romeo = unsafely(EmailAddress.parse(t"romeo@example.com"))
+    val juliet = unsafely(EmailAddress.parse(t"juliet@example.com"))
+    val tybalt = unsafely(EmailAddress.parse(t"tybalt@example.com"))
 
     suite(m"Email body tests"):
       test(m"A text-only body has text but no HTML"):
@@ -166,12 +166,12 @@ object Tests extends Suite("email", m"Caduceus tests"):
 
     suite(m"Envelope tests"):
       test(m"A single recipient becomes a one-element list"):
-        Envelope.many[EmailAddress](jack)
-      . assert(_ == List(jack))
+        Envelope.many[EmailAddress](romeo)
+      . assert(_ == List(romeo))
 
       test(m"A list of recipients is kept as it is"):
-        Envelope.many[EmailAddress](soundness.List(jack, jill).asInstanceOf[soundness.List[soundness.EmailAddress]])
-      . assert(_ == List(jack, jill))
+        Envelope.many[EmailAddress](soundness.List(romeo, juliet).asInstanceOf[soundness.List[soundness.EmailAddress]])
+      . assert(_ == List(romeo, juliet))
 
       test(m"An empty list of recipients stays empty"):
         Envelope.many[EmailAddress](Nil)
@@ -180,56 +180,56 @@ object Tests extends Suite("email", m"Caduceus tests"):
     suite(m"Sending tests"):
       test(m"Sending records the subject"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = juliet)
         courier.envelopes.head.let(_.subject)
       . assert(_ == t"Greetings")
 
       test(m"Sending records the sender"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = juliet)
         courier.envelopes.head.let(_.from)
-      . assert(_ == jack)
+      . assert(_ == romeo)
 
       test(m"Sending records a single recipient"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = juliet)
         courier.envelopes.head.let(_.to)
-      . assert(_ == List(jill))
+      . assert(_ == List(juliet))
 
       test(m"Sending records several recipients"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = soundness.List(jill, jane).asInstanceOf[soundness.List[soundness.EmailAddress]])
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = soundness.List(juliet, tybalt).asInstanceOf[soundness.List[soundness.EmailAddress]])
         courier.envelopes.head.let(_.to)
-      . assert(_ == List(jill, jane))
+      . assert(_ == List(juliet, tybalt))
 
       test(m"Copied and blind-copied recipients are recorded"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill, cc = jane, bcc = jack)
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = juliet, cc = tybalt, bcc = romeo)
         courier.envelopes.head.lay((List[EmailAddress](), List[EmailAddress]())) { envelope => (envelope.cc, envelope.bcc) }
-      . assert(_ == (List(jane), List(jack)))
+      . assert(_ == (List(tybalt), List(romeo)))
 
       test(m"Recipients default to empty lists"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = juliet)
         courier.envelopes.head.lay((List[EmailAddress](), List[EmailAddress](), List[EmailAddress]())) { envelope => (envelope.cc, envelope.bcc, envelope.replyTo) }
       . assert(_ == (Nil, Nil, Nil))
 
       test(m"The sent email carries the body"):
         given courier: TestCourier = TestCourier()
-        given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        given sender: Sender = Sender(romeo)
+        t"hello".send(subject = t"Greetings", to = juliet)
         courier.emails.head.let(_.text)
       . assert(_ == t"hello")
 
     suite(m"Error message tests"):
       test(m"A courier error names both parties and the subject"):
-        val error = Courier.Error(jack, jill, t"Greetings")
+        val error = Courier.Error(romeo, juliet, t"Greetings")
         error.message.text
-      . assert(_ == t"unable to send email from jack@example.com to jill@example.com with "+
+      . assert(_ == t"unable to send email from romeo@example.com to juliet@example.com with "+
           t"subject Greetings")

@@ -263,17 +263,17 @@ entry .StackTrace   a captured stack trace as a value: exception class, message,
       constructor, `ι` an initializer, `ℓ` a lazy value, `↑` a super accessor, `⇢` another
       accessor, `≔` a trait setter, `⊢` an extension method, `∂` a direct method, `δ` a default
       argument, `⊡` a retained inline body, `⊙` an outer reference, `Σ` a specialized method
-      with its signature, with any following number in subscript. A module class `pkg.Foo$`
-      becomes `pkg.ΞFoo` and a package object's class is bracketed with `⁅…⁆`. With
+      with its signature, with any following number in subscript. A module class `globe.Play$`
+      becomes `globe.ΞPlay` and a package object's class is bracketed with `⁅…⁆`. With
       `method = true`, the result ends `()` and `$` separates as `.`.
 
       ```scala
       import soundness.*
 
-      StackTrace.rewrite("$plus$plus", method = true)       // t"++()"
-      StackTrace.rewrite("Foo$$anonfun$3", method = true)   // t"Foo.λ₃()"
-      StackTrace.rewrite("apply$mcJII$sp", method = true)   // t"applyΣ((Int, Int) -> Long)()"
-      StackTrace.rewrite("pkg.Foo$")                        // t"pkg.ΞFoo"
+      StackTrace.rewrite("$plus$plus", method = true)        // t"++()"
+      StackTrace.rewrite("Play$$anonfun$3", method = true)   // t"Play.λ₃()"
+      StackTrace.rewrite("apply$mcJII$sp", method = true)    // t"applyΣ((Int, Int) -> Long)()"
+      StackTrace.rewrite("globe.Play$")                      // t"globe.ΞPlay"
       ```
   entry .Marker   a name the compiler mints after a program's own names are fixed, and its glyph
       Each `Marker` has the `jvm` text the compiler writes (`$anonfun`, `<init>`, `$lzyINIT`),
@@ -297,7 +297,7 @@ entry .StackTrace   a captured stack trace as a value: exception class, message,
   entry .Method   a demangled class name and method name, as a frame records them
     detail
         Both names are already rewritten by `StackTrace.rewrite`: `className` is
-        `pkg.ΞFoo`-style, and `method` ends `()`.
+        `globe.ΞPlay`-style, and `method` ends `()`.
     entry #className   the demangled class name, with its package
     entry #method   the demangled method name
     entry #cls   the class name's last segment
@@ -316,15 +316,17 @@ entry .StackTrace   a captured stack trace as a value: exception class, message,
         ```scala
         import soundness.*
 
-        val source = StackTrace.Frame.Source(t"/src/Foo.scala", t"pkg.Foo.bar", t"λ", StackTrace.Frame.Kind.Lambda)
+        val source =
+          StackTrace.Frame.Source
+            ( t"/src/Play.scala", t"globe.Play.stage", t"λ", StackTrace.Frame.Kind.Lambda )
 
         val frame =
           StackTrace.Frame
-            ( StackTrace.Method(t"pkg.ΞFoo", t"bar.λ₁()"), t"Foo.scala", 12, false,
-              t"pkg.Foo$$", t"bar$$anonfun$$1", source )
+            ( StackTrace.Method(t"globe.ΞPlay", t"stage.λ₁()"), t"Play.scala", 12, false,
+              t"globe.Play$$", t"stage$$anonfun$$1", source )
 
-        (frame.displayClass, frame.displayMethod)     // (t"pkg.Foo.bar", t"λ")
-        (frame.displayPrefix, frame.displaySegment)   // (t"pkg.Foo", t"bar")
+        (frame.displayClass, frame.displayMethod)     // (t"globe.Play.stage", t"λ")
+        (frame.displayPrefix, frame.displaySegment)   // (t"globe.Play", t"stage")
         ```
     entry .Kind   what a frame turned out to be once resolved: a method, a lambda, … or compiler plumbing
       detail
@@ -341,7 +343,7 @@ entry .StackTrace   a captured stack trace as a value: exception class, message,
           definitions, its own source `#name`, its `#kind`, and optionally the `#code` of the
           line.
       entry #path   the full path of the source file
-      entry #owner   the chain of enclosing definitions, dotted: `pkg.Foo.bar`
+      entry #owner   the chain of enclosing definitions, dotted: `globe.Play.stage`
       entry #name   the definition's own source name
       entry #kind   what kind of definition it is, as a `StackTrace.Frame.Kind`
       entry #code   the source line, if the resolver read it, or `Unset`
@@ -413,7 +415,7 @@ entry .Smap   a parsed JSR-45 source map: where a classfile's synthetic line num
         List
           ( t"SMAP", t"Main.scala", t"Scala",
             t"*S Scala",
-            t"*F", t"+ 1 Main.scala", t"Main.scala", t"+ 2 Util.scala", t"foo/Util.scala",
+            t"*F", t"+ 1 Main.scala", t"Main.scala", t"+ 2 Util.scala", t"globe/Util.scala",
             t"*L", t"1#1,120:1", t"3#2,2:121",
             t"*S ScalaDebug",
             t"*F", t"+ 1 Main.scala", t"Main.scala",
@@ -421,7 +423,7 @@ entry .Smap   a parsed JSR-45 source map: where a classfile's synthetic line num
             t"*E" )
 
       val smap = Smap.parse(lines.join(t"\n"))
-      smap.let(_.expand(121))   // Smap.Expansion(List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 3)), 3)
+      smap.let(_.expand(121))   // Smap.Expansion(List(Smap.Origin(t"Util.scala", t"globe/Util.scala", 3)), 3)
       smap.let(_.expand(100))   // Unset: a real line
       ```
 

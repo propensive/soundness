@@ -21,10 +21,10 @@ detail
     case class FullName(first: Text, last: Text)
     case class Person(id: Int, name: FullName, age: Int)
 
-    val sheet: Sheet = t"1,Ada,Lovelace,36\n2,Alan,Turing,41".read[Sheet]
-    val ada: Person = t"1,Ada,Lovelace,36".read[Person in Dsv]
+    val sheet: Sheet = t"1,Nick,Bottom,36\n2,Francis,Flute,41".read[Sheet]
+    val nick: Person = t"1,Nick,Bottom,36".read[Person in Dsv]
     val people: List[Person] = sheet.as[Person]
-    val text: Text = people.dsv.show   // t"1,Ada,Lovelace,36\n2,Alan,Turing,41"
+    val text: Text = people.dsv.show   // t"1,Nick,Bottom,36\n2,Francis,Flute,41"
     ```
 
     A nested case class flattens across as many columns as it has fields (its _span_, the
@@ -85,8 +85,8 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
 
       case class Measurement(name: Text, age: Int)
 
-      val row: Optional[Dsv] = t"name,age\nAlice,30".read[Sheet].rows(Prim)
-      row.let(_.as[Measurement])          // Measurement(t"Alice", 30)
+      val row: Optional[Dsv] = t"name,age\nPercy,30".read[Sheet].rows(Prim)
+      row.let(_.as[Measurement])          // Measurement(t"Percy", 30)
       row.let(_[Int](t"age"))             // 30
       Dsv(t"a", t"b, c").show             // t"a,\"b, c\""
       ```
@@ -96,7 +96,7 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
       first cell of a row as any type `Decodable in Text` (in `Dsv2`); `Optional` fields;
       encoding of any type `Encodable in Text` as a one-cell row; the derivations of row
       decoders and encoders for every product type; and the `Aggregable` givens behind
-      `read[Foo in Dsv]` and `read[List[Foo] in Dsv]` (some in its parents, `Dsv1` and
+      `read[Play in Dsv]` and `read[List[Play] in Dsv]` (some in its parents, `Dsv1` and
       `Dsv2`). It also has `Format`, `Error`, `Redesignation`, and the direct-parsing
       typeclasses `Parsable` and `Field`.
 
@@ -154,7 +154,7 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
       case class FullName(first: Text, last: Text)
       case class Person(id: Int, name: FullName, age: Int)
 
-      t"1,Ada,Lovelace,36".read[Sheet].rows(Prim).let(_.as[Person])
+      t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
       ```
   entry .encodableDerivation   derives a row encoder for any product type, concatenating its fields' cells
       A nested case class contributes its own cells in place, so encoding is the mirror of
@@ -163,15 +163,15 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
       Cells are joined with the format's delimiter. A cell is quoted only if it contains the
       quote character, the delimiter, a line feed or a carriage return, and a quote within a
       quoted cell is doubled.
-  entry .aggregableDerived   under `codecs.derived`, reads `Foo in Dsv` through the row decoder even where `Foo` has a `Dsv.Parsable`
+  entry .aggregableDerived   under `codecs.derived`, reads `Play in Dsv` through the row decoder even where `Play` has a `Dsv.Parsable`
       Selected by `import codecs.derived`, it outranks the direct path for a type which has a
       `Dsv.Parsable` in scope, so a program can compare the two, or keep the accruing row
       decoder for one read.
-  entry .aggregableStrict   under `codecs.strict`, reads `Foo in Dsv` directly, through the `Dsv.Parsable` in scope
+  entry .aggregableStrict   under `codecs.strict`, reads `Play in Dsv` directly, through the `Dsv.Parsable` in scope
       Paired with `Dsv1#aggregableStrictFailure`: under `import codecs.strict` a type with a
       `Dsv.Parsable` is parsed directly, and one without is a compile error naming the type,
       instead of falling back to the row decoder.
-  entry .aggregableParsedList   `read[List[Foo] in Dsv]`: parses every row directly, through `Foo`'s `Dsv.Parsable`
+  entry .aggregableParsedList   `read[List[Play] in Dsv]`: parses every row directly, through `Play`'s `Dsv.Parsable`
       There is no row-decoder counterpart for a whole sheet, so this read is direct in every
       `codecs` mode, and needs a `Dsv.Parsable` for the element type (which `codecs.direct`
       derives for any product). Needs a `Dsv.Format`, a `Tactic[Dsv.Error]` and a
@@ -210,8 +210,8 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
         (or a product of such fields) fails to derive rather than falling back.
   entry .Parsable   the opt-in typeclass for parsing a type straight from the source, with no `Dsv` per row
     detail
-        A type which is `Dsv.Parsable` is read by `read[Foo in Dsv]`, `read[List[Foo] in Dsv]`
-        and `rowsOf[Foo]` directly from the parser's reusable row buffer, its cells addressed
+        A type which is `Dsv.Parsable` is read by `read[Play in Dsv]`, `read[List[Play] in Dsv]`
+        and `rowsOf[Play]` directly from the parser's reusable row buffer, its cells addressed
         in place, so no `Dsv` row value is built for each record. Declaring one switches the
         path; a type without one keeps the row decoder, unless `codecs.direct` is imported.
 
@@ -238,7 +238,7 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
     refer caesura.Dsv.Field
     refer caesura.DsvReader
     entry .derived   derives a `Dsv.Parsable` for a product type, each field read through its `Dsv.Field`
-        `given Foo is Dsv.Parsable = Dsv.Parsable.derived`, or `derives Dsv.Parsable`. Every
+        `given Play is Dsv.Parsable = Dsv.Parsable.derived`, or `derives Dsv.Parsable`. Every
         field must have a `Dsv.Field`, which any `Decodable in Text` type, any `Optional` of
         one, and any product of such fields has.
     entry .fromField   makes a `Dsv.Parsable` from a `Dsv.Field`, keeping its width
@@ -302,12 +302,12 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
         import soundness.*
         import dsvFormats.csvFormat
 
-        case class Tally(name: Text, count: Int)
+        case class Person(name: Text, age: Int)
 
-        safely(t"hello,many".read[Tally in Dsv])   // Unset
+        safely(t"Nym,many".read[Person in Dsv])   // Unset
         ```
 
-        Raised through the `Tactic[Dsv.Error]` in scope by `read[Sheet]`, `read[Foo in Dsv]`,
+        Raised through the `Tactic[Dsv.Error]` in scope by `read[Sheet]`, `read[Play in Dsv]`,
         `rows`, `rowsOf` and `Dsv#as`. `Reason` is the enum `MisplacedQuote` (subcode 1, a
         parse failure), `Absent` (2, a cell missing from a short row or a header column the
         row lacks) and `Unparseable(value, expected)` (3, a cell its decoder rejected, with
@@ -392,7 +392,7 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
 
       case class FullName(first: Text, last: Text)
 
-      Dsv(t"Ada", t"Lovelace").as[FullName]   // FullName(t"Ada", t"Lovelace")
+      Dsv(t"Nick", t"Bottom").as[FullName]   // FullName(t"Nick", t"Bottom")
       ```
   entry #header   the column names in order, where the row has them; `Unset` otherwise
   entry #apply   reads the cell of a named column, decoded to any type `Decodable in Text`
@@ -415,16 +415,16 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
       row.let(_.number[Int])   // 23
       ```
 
-entry .Dsv1   the middle-priority givens of the `Dsv` companion: the direct read of `Foo in Dsv`, and the `codecs.strict` failure
+entry .Dsv1   the middle-priority givens of the `Dsv` companion: the direct read of `Play in Dsv`, and the `codecs.strict` failure
   hidden
   detail
       A parent of the `Dsv` companion, so its givens are in `Dsv`'s implicit scope at a lower
       priority than the companion's own. Not referred to directly.
-  entry #aggregableParsed   `read[Foo in Dsv]` through `Foo`'s `Dsv.Parsable`: the first row, parsed directly
+  entry #aggregableParsed   `read[Play in Dsv]` through `Play`'s `Dsv.Parsable`: the first row, parsed directly
       Outranks the row decoder in `Dsv2`, so declaring a `Dsv.Parsable` switches the path.
       An input with no data row raises `Dsv.Error.Reason.Absent`. Needs a `Dsv.Format`, a
       `Tactic[Dsv.Error]` and a `Buffering`.
-  entry #aggregableStrictFailure   under `codecs.strict`, a compile error for a `Foo in Dsv` read with no direct codec
+  entry #aggregableStrictFailure   under `codecs.strict`, a compile error for a `Play in Dsv` read with no direct codec
       An inline given which names the type in the error, raised at the use site after
       selection, so that `codecs.strict` reports a type the direct path cannot read rather
       than letting the row decoder take it.
@@ -437,17 +437,17 @@ entry .Dsv2   the lowest-priority givens of the `Dsv` companion: the text fallba
   entry #decoder   any type `Decodable in Text`, decoded from the first cell of a row
       Held below the primitive cell decoders, which accrue errors, so `Int` and the rest use
       those; this one aborts on a bad cell through the text decoder.
-  entry #encodableOver   `foo.in[Text over Dsv]`: a value as one record of text in the `Dsv.Format` in scope
+  entry #encodableOver   `play.in[Text over Dsv]`: a value as one record of text in the `Dsv.Format` in scope
       ```scala
       import soundness.*
       import dsvFormats.csvFormat
 
       case class FullName(first: Text, last: Text)
 
-      FullName(t"Ada", t"Lovelace").in[Text over Dsv]   // t"Ada,Lovelace"
+      FullName(t"Nick", t"Bottom").in[Text over Dsv]   // t"Nick,Bottom"
       ```
-  entry #encodableOverData   `foo.in[Data over Dsv]`: a value as one record, encoded as bytes in the `Codepage` in scope
-  entry #aggregableIn   `read[Foo in Dsv]` through the row decoder: the first row, decoded with `Foo`'s `Decodable in Dsv`
+  entry #encodableOverData   `play.in[Data over Dsv]`: a value as one record, encoded as bytes in the `Codepage` in scope
+  entry #aggregableIn   `read[Play in Dsv]` through the row decoder: the first row, decoded with `Play`'s `Decodable in Dsv`
       The path for a type with no `Dsv.Parsable`, and for any type under `codecs.derived`.
       Reading from a stream parses only as far as the first record extends. Needs a
       `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
@@ -467,10 +467,10 @@ entry .Sheet   delimited data held in memory: every row, with the format and col
 
       case class Measurement(name: Text, age: Int)
 
-      val sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
+      val sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
       sheet.columns                          // Array(t"name", t"age")
-      sheet.as[Measurement]                  // List(Measurement(t"Alice", 30), Measurement(t"Bob", 25))
-      sheet.rows(Prim).let(_[Text](t"name")) // t"Alice"
+      sheet.as[Measurement]                  // List(Measurement(t"Percy", 30), Measurement(t"Hal", 25))
+      sheet.rows(Prim).let(_[Text](t"name")) // t"Percy"
       ```
 
       The format decides how the same rows are written out, quoting a cell which holds its
@@ -482,17 +482,17 @@ entry .Sheet   delimited data held in memory: every row, with the format and col
         code
             locally:
               import dsvFormats.csvFormat
-              Sheet(Array(Dsv(t"Ada", t"Lovelace, Countess"))).show   // t"Ada,\"Lovelace, Countess\""
+              Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
       alternative TSV
         code
             locally:
               import dsvFormats.tsvFormat
-              Sheet(Array(Dsv(t"Ada", t"Lovelace, Countess"))).show   // t"Ada\tLovelace, Countess"
+              Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
       alternative Space-separated
         code
             locally:
               import dsvFormats.ssvFormat
-              Sheet(Array(Dsv(t"Ada", t"Lovelace, Countess"))).show   // t"Ada \"Lovelace, Countess\""
+              Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
       ##
       ```
 
@@ -545,7 +545,7 @@ entry .DsvReader   the token reader a `Dsv.Parsable` reads from: one row at a ti
       instances need neither. It is an exclusive, stateful capability, owned by the read for
       its duration: nothing of it may be retained in the value parsed.
 
-      Readers are made only by caesura itself, for `read[Foo in Dsv]`, `read[List[Foo] in
+      Readers are made only by caesura itself, for `read[Play in Dsv]`, `read[List[Play] in
       Dsv]` and `rowsOf`; a program meets one only when writing a `Dsv.Parsable` or
       `Dsv.Field` by hand, rather than deriving it. The class is not exported to the
       `soundness` umbrella, and is named `caesura.DsvReader`.
@@ -576,7 +576,7 @@ entry .CellRef   the position of a cell being decoded: the focus each accrued `D
 
       case class Measurement(name: Text, age: Int, height: Int)
 
-      val damaged = t"name,age,height\nAlice,thirty,tall".read[Sheet].rows(Prim)
+      val damaged = t"name,age,height\nPercy,thirty,tall".read[Sheet].rows(Prim)
 
       Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
         ( Issues(),
@@ -624,9 +624,9 @@ entry .dsv   encodes a value as a `Dsv` row, or a list of values as a `Sheet`
 
     case class FullName(first: Text, last: Text)
 
-    FullName(t"Ada", t"Lovelace").dsv                                    // Dsv(t"Ada", t"Lovelace")
-    List(FullName(t"Ada", t"Lovelace"), FullName(t"Alan", t"Turing")).dsv.show
-    // t"Ada,Lovelace\nAlan,Turing"
+    FullName(t"Nick", t"Bottom").dsv                                     // Dsv(t"Nick", t"Bottom")
+    List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show
+    // t"Nick,Bottom\nFrancis,Flute"
     ```
 
 entry .rows   the rows of a character stream, parsed one at a time, as a single-use `Iterator[Dsv]`
@@ -647,9 +647,9 @@ entry .rows   the rows of a character stream, parsed one at a time, as a single-
     ```
 
 entry .rowsOf   the rows of a character stream, each parsed straight to a type through its `Dsv.Parsable`
-    `stream.rowsOf[Foo]` consumes the stream and yields one `Foo` per data row, read directly
+    `stream.rowsOf[Play]` consumes the stream and yields one `Play` per data row, read directly
     from the parser's buffer with no `Dsv` built: the fastest way through a large file.
-    `Foo` needs a `Dsv.Parsable`, declared or (under `codecs.direct`) derived. Needs a
+    `Play` needs a `Dsv.Parsable`, declared or (under `codecs.direct`) derived. Needs a
     `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
 
     ```scala
@@ -675,13 +675,13 @@ entry .dsvFormats   the standard delimited formats — CSV, TSV and space-separa
             locally:
               import dsvFormats.csvFormat
               import strategies.throwUnsafely
-              t"last,first\nLovelace,Ada".read[Sheet].rows.length   // 2: the header is just another row
+              t"last,first\nBottom,Nick".read[Sheet].rows.length   // 2: the header is just another row
       alternative With a header
         code
             locally:
               import dsvFormats.csvWithHeaderFormat
               import strategies.throwUnsafely
-              t"last,first\nLovelace,Ada".read[Sheet].rows.length   // 1, with columns `last` and `first`
+              t"last,first\nBottom,Nick".read[Sheet].rows.length   // 1, with columns `last` and `first`
       ##
       ```
 
@@ -762,15 +762,15 @@ entry .optionalityOptions   the policies for an `Optional` field's missing or ma
         code
             locally:
               import dsvFormats.csvFormat
-              case class Tally(name: Text, count: Optional[Int])
-              safely(t"hello,many".read[Tally in Dsv])   // Unset: the whole read failed
+              case class Person(name: Text, age: Optional[Int])
+              safely(t"Nym,many".read[Person in Dsv])   // Unset: the whole read failed
       alternative Lenient faults
         code
             locally:
               import dsvFormats.csvFormat
               import optionalityOptions.lenientDsvFaults
-              case class Tally(name: Text, count: Optional[Int])
-              safely(t"hello,many".read[Tally in Dsv])   // Tally(t"hello", Unset)
+              case class Person(name: Text, age: Optional[Int])
+              safely(t"Nym,many".read[Person in Dsv])   // Person(t"Nym", Unset)
       ##
       ```
 
@@ -796,11 +796,11 @@ entry .optics   lenses over a row's cells by column name and over a sheet's rows
       import optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvRowOptical}
       import strategies.throwUnsafely
 
-      val sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
+      val sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
 
-      sheet.lens(_(Sec).name = t"Carol")                                // Bob becomes Carol
+      sheet.lens(_(Sec).name = t"Poins")                                // Hal becomes Poins
       sheet.lens(_(Each).name = t"X")                                   // every name becomes X
-      sheet.lens(_(Filter[Dsv](_.data.head == t"Bob")).name = t"X")     // only Bob's
+      sheet.lens(_(Filter[Dsv](_.data.head == t"Hal")).name = t"X")     // only Hal's
       ```
   entry .dsvCellLens   a lens from a row onto the cell of a named column, `_.name`
       Needs `Dsv is Dynamical` (`dynamicAccess.dynamicDsv`). Reading a column the row lacks

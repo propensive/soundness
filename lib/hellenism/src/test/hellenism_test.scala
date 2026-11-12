@@ -88,8 +88,8 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
     . assert(_ == List(t"hellenism: the path /missing.txt is not on the classpath"))
 
     test(m"check that an invalid classpath path is an error"):
-      demilitarize(cp"foobar").map(_.message)
-    . assert(_ == List(t"hellenism: the path foobar is not a valid classpath path"))
+      demilitarize(cp"elsinore").map(_.message)
+    . assert(_ == List(t"hellenism: the path elsinore is not a valid classpath path"))
 
     test(m"load services from META-INF/services"):
       import systems.javaBaseSystem

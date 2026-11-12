@@ -44,7 +44,7 @@ object PathBenchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
 
     suite(m"Conjunctions"):
       bench(m"find the conjunction of two paths")(target = 500*Milli(Second)):
-        '{ (% / "foo" / "bar").conjunction(% / "foo" / "baz") }
+        '{ (% / "verona" / "capulet").conjunction(% / "verona" / "montague") }
 ```
 
 The rig first runs the body untimed so that the JIT can reach a steady state, then

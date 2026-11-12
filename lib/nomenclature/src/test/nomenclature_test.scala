@@ -204,12 +204,12 @@ object Tests extends Suite("names", m"Nomenclature tests"):
     suite(m"Native-rendering coverage"):
       test(m"nomenclature's types inspect natively"):
         given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-        Inspectable.fallbacks(Name[EndsO](t"foo").inspect, Moniker[Session](10351).inspect)
+        Inspectable.fallbacks(Name[EndsO](t"romeo").inspect, Moniker[Session](10351).inspect)
       . assert(_ == Nil)
 
       test(m"a name is distinguishable from the text it is"):
-        Name[EndsO](t"foo").inspect
-      . assert(_ == t"n\"foo\"")
+        Name[EndsO](t"romeo").inspect
+      . assert(_ == t"n\"romeo\"")
 
       test(m"a moniker inspects as its ordinal"):
         given (Vocabulary over Session) = Vocabulary(adjectives, animals)

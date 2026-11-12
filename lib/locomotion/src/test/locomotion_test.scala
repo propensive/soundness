@@ -180,12 +180,12 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       . assert(_ == Point(0, 5))
 
       test(m"string and int fields"):
-        proscenium.Chain(Person(t"Alice", 30).in[Protobuf].encode).read[Person in Protobuf]
-      . assert(_ == Person(t"Alice", 30))
+        proscenium.Chain(Person(t"Percy", 30).in[Protobuf].encode).read[Person in Protobuf]
+      . assert(_ == Person(t"Percy", 30))
 
       test(m"read[Protobuf] then as[T] (two-step)"):
-        proscenium.Chain(Person(t"Alice", 30).in[Protobuf].encode).read[Protobuf].as[Person]
-      . assert(_ == Person(t"Alice", 30))
+        proscenium.Chain(Person(t"Percy", 30).in[Protobuf].encode).read[Protobuf].as[Person]
+      . assert(_ == Person(t"Percy", 30))
 
       test(m"nested message"):
         proscenium.Chain(Wrapper(Point(3, 4), t"origin").in[Protobuf].encode).read[Wrapper in Protobuf]
@@ -357,8 +357,8 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       . assert(_ == Wrapper(Point(3, 4), t"origin"))
 
       test(m"a message split one byte per chunk reads directly"):
-        chunked(encoded(Person(t"Ada", 36)), 1).read[Person in Protobuf]
-      . assert(_ == Person(t"Ada", 36))
+        chunked(encoded(Person(t"Hal", 16)), 1).read[Person in Protobuf]
+      . assert(_ == Person(t"Hal", 16))
 
       test(m"a multi-byte varint split mid-value reads whole"):
         chunked(encoded(Point(Int.MaxValue, 300)), 2).read[Point in Protobuf]
@@ -455,13 +455,13 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
 
     suite(m"HTTP content-type integration"):
       test(m"serialises with the application/protobuf media type"):
-        Person(t"Alice", 30).in[Protobuf].generic(0)
+        Person(t"Percy", 30).in[Protobuf].generic(0)
       . assert(_ == t"application/protobuf")
 
       test(m"request/response body round-trips"):
-        val message = Person(t"Alice", 30).in[Protobuf]
+        val message = Person(t"Percy", 30).in[Protobuf]
         message.generic(1).read[Person in Protobuf]
-      . assert(_ == Person(t"Alice", 30))
+      . assert(_ == Person(t"Percy", 30))
 
     suite(m"Optics"):
       import conversions.encodableToProtobuf
@@ -500,8 +500,8 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       def encoded[value: Encodable in Protobuf](value: value): Data = value.in[Protobuf].encode
 
       test(m"a flat message reads directly from bytes"):
-        encoded(Person(t"Alice", 30)).read[Person in Protobuf]
-      . assert(_ == Person(t"Alice", 30))
+        encoded(Person(t"Percy", 30)).read[Person in Protobuf]
+      . assert(_ == Person(t"Percy", 30))
 
       test(m"a nested message inlines through its own generated parser"):
         encoded(Wrapper(Point(3, 4), t"origin")).read[Wrapper in Protobuf]
@@ -814,7 +814,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       same(m"a single int field", Sample(7))
       same(m"a negative int takes ten bytes", Sample(-1))
       same(m"a message of two ints", Point(3, 4))
-      same(m"a string and an int", Person(t"Jon", 42))
+      same(m"a string and an int", Person(t"Nym", 42))
       same(m"a nested message then a string", Wrapper(Point(1, 2), t"origin"))
       same(m"repeated strings, one field each", Tags(List(t"a", t"bb", t"ccc")))
       same(m"an empty repeated field writes nothing", Tags(Nil))

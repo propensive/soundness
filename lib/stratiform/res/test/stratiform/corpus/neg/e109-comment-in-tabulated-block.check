@@ -26,7 +26,7 @@ Document {
                     keyword: "row1",
                     atoms: [
                         Inline {
-                            text: "alice",
+                            text: "percy",
                             preceding_spaces: 1,
                         },
                     ],
@@ -37,7 +37,7 @@ Document {
                     keyword: "row2",
                     atoms: [
                         Inline {
-                            text: "bob",
+                            text: "hal",
                             preceding_spaces: 1,
                         },
                     ],

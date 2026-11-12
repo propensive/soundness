@@ -101,18 +101,18 @@ parse
 ##
 def decodePerson(json: Json): Person raises Json.Error =
   val name: Venture[Text] = venture(json.name.as[Text])
-  val role: Venture[Role] = venture(json.role.as[Role])
+  val age: Venture[Int] = venture(json.age.as[Int])
 
-  venture(checkConsistency(name(), role()))
+  venture(checkConsistency(name(), age()))
 
   guard:
-    Person(name(), role())
+    Person(name(), age())
 ```
 
 A `venture` evaluates immediately — its errors accrue like any others — but remembers
 whether anything went wrong. Forcing a failed venture with `name()` skips the enclosing
 venture or `guard` block rather than producing a value, so the consistency check above
-never runs on garbage; and because `role` was evaluated eagerly at its declaration, its
+never runs on garbage; and because `age` was evaluated eagerly at its declaration, its
 errors were collected even if `name` failed first. `guard` runs its block only when no
 error has been recorded so far. Under a fail-fast strategy both constructs disappear:
 an error escapes at the venture itself, and `guard` is the identity — the same body

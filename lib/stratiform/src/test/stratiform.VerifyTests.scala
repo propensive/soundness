@@ -48,10 +48,9 @@ import Tel.given
 // NB: `dynamicAccess.dynamicTel` is deliberately *not* imported here — verified
 // `Tel of T` navigation must work without it.
 
-case class Worker(name: Text, age: Int) derives CanEqual
-case class Office(street: Text, city: Text) derives CanEqual
-case class Assignment(worker: Worker, office: Office) derives CanEqual
-case class Crew(lead: Text, members: List[Worker]) derives CanEqual
+case class Person(name: Text, age: Int) derives CanEqual
+case class Duel(challenger: Person, opponent: Person) derives CanEqual
+case class Troupe(name: Text, players: List[Person]) derives CanEqual
 case class TextAge(name: Text, age: Text) derives CanEqual
 case class Nicked(name: Text, nick: Optional[Text]) derives CanEqual
 case class Config(name: Text, prefs: Map[Text, Int]) derives CanEqual
@@ -74,40 +73,40 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
   def run(): Unit =
     suite(m"Runtime verification"):
       test(m"A conformant value verifies and still decodes"):
-        Worker(t"Alice", 30).encode.verify[Worker].as[Worker]
-      . assert(_ == Worker(t"Alice", 30))
+        Person(t"Percy", 30).encode.verify[Person].as[Person]
+      . assert(_ == Person(t"Percy", 30))
 
       test(m"A conformant value verifies successfully"):
-        safely(Worker(t"Bob", 4).encode.verify[Worker]).present
+        safely(Person(t"Hal", 4).encode.verify[Person]).present
       . assert(_ == true)
 
       test(m"A wrong-typed field fails to verify"):
-        safely(TextAge(t"Bob", t"old").encode.verify[Worker]).absent
+        safely(TextAge(t"Hal", t"old").encode.verify[Person]).absent
       . assert(_ == true)
 
     suite(m"Typed navigation (no enabler import)"):
       test(m"Access a verified field"):
-        Worker(t"Alice", 30).encode.verify[Worker].name.as[Text]
-      . assert(_ == t"Alice")
+        Person(t"Percy", 30).encode.verify[Person].name.as[Text]
+      . assert(_ == t"Percy")
 
       test(m"Access a verified Int field"):
-        Worker(t"Alice", 30).encode.verify[Worker].age.as[Int]
+        Person(t"Percy", 30).encode.verify[Person].age.as[Int]
       . assert(_ == 30)
 
       test(m"Access a nested verified field"):
-        Assignment(Worker(t"Bob", 2), Office(t"Main", t"Town"))
-          .encode.verify[Assignment].office.city.as[Text]
-      . assert(_ == t"Town")
+        Duel(Person(t"Hamlet", 30), Person(t"Laertes", 25))
+          .encode.verify[Duel].opponent.name.as[Text]
+      . assert(_ == t"Laertes")
 
       test(m"Index into a verified collection field"):
-        Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2)))
-          .encode.verify[Crew].members(1).name.as[Text]
-      . assert(_ == t"B")
+        Troupe(t"Athens", List(Person(t"Quince", 1), Person(t"Bottom", 2)))
+          .encode.verify[Troupe].players(1).name.as[Text]
+      . assert(_ == t"Bottom")
 
     suite(m"Collection round-trip"):
       test(m"A list field round-trips through TEL"):
-        Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))).encode.as[Crew]
-      . assert(_ == Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))))
+        Troupe(t"Athens", List(Person(t"Quince", 1), Person(t"Bottom", 2))).encode.as[Troupe]
+      . assert(_ == Troupe(t"Athens", List(Person(t"Quince", 1), Person(t"Bottom", 2))))
 
       test(m"A map field round-trips through TEL"):
         Config(t"c", Map(t"a" -> 1, t"b" -> 2)).encode.as[Config]
@@ -115,12 +114,12 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
 
     suite(m"Schema derivation"):
       test(m"A product derives a Struct with kebab-cased field keywords"):
-        keywords(Tels.tels[Worker](t"worker").document)
+        keywords(Tels.tels[Person](t"person").document)
       . assert(_ == List(t"name", t"age"))
 
       test(m"A required field has implicit polarity, as a hand-written field does"):
 
-          Tels.tels[Worker](t"worker").document.members.to[List].sweep:
+          Tels.tels[Person](t"person").document.members.to[List].sweep:
             case field: Tels.Field if field.keyword == t"name" => field.required
           . to[List]
       . assert(_ == List(Tels.Polarity.Implicit))
@@ -133,10 +132,10 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
       . assert(_ == List(Tels.Polarity.Loose))
 
       test(m"A collection field is repeatable, referencing the element's record"):
-          val schema = Tels.tels[Crew](t"crew")
+          val schema = Tels.tels[Troupe](t"troupe")
 
           schema.document.members.to[List].sweep:
-            case field: Tels.Field if field.keyword == t"members" =>
+            case field: Tels.Field if field.keyword == t"players" =>
               field.repeatable -> field.fieldType
           . sweep:
               case (repeatable, Tels.Reference(name)) =>
@@ -166,24 +165,24 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
           case _              => false
 
     suite(m"Encodable & Schematic fusion"):
-      val worker = Worker(t"Alice", 30)
+      val person = Person(t"Percy", 30)
 
       test(m"A fused encoder encodes (and round-trips) as Tel"):
-        telSchematics.encodable[Worker].encoded(worker).as[Worker]
-      . assert(_ == worker)
+        telSchematics.encodable[Person].encoded(person).as[Person]
+      . assert(_ == person)
 
       test(m"A fused encoder yields a schema"):
-        telSchematics.encodable[Worker].schema()
+        telSchematics.encodable[Person].schema()
       . assert:
           case _: Tels.Struct => true
           case _              => false
 
       test(m"A fused decoder decodes from Tel"):
-        telSchematics.decodable[Worker].decoded(worker.encode)
-      . assert(_ == worker)
+        telSchematics.decodable[Person].decoded(person.encode)
+      . assert(_ == person)
 
       test(m"A fused decoder yields a schema"):
-        telSchematics.decodable[Worker].schema()
+        telSchematics.decodable[Person].schema()
       . assert:
           case _: Tels.Struct => true
           case _              => false
@@ -191,24 +190,24 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):
         demilitarize:
-          Worker(t"Alice", 30).encode.verify[Worker].nope
+          Person(t"Percy", 30).encode.verify[Person].nope
         . head.let(_.message)
       . assert(_.lay(false)(_.contains("has no field")))
 
       test(m"Indexing a non-collection field is rejected"):
         demilitarize:
-          Worker(t"Alice", 30).encode.verify[Worker].name(0)
+          Person(t"Percy", 30).encode.verify[Person].name(0)
         . head.let(_.message)
       . assert(_.lay(false)(_.contains("not an indexable collection")))
 
       test(m"Field access on a scalar position is rejected"):
         demilitarize:
-          Worker(t"Alice", 30).encode.verify[Worker].name.deeper
+          Person(t"Percy", 30).encode.verify[Person].name.deeper
         . head.let(_.message)
       . assert(_.lay(false)(_.contains("has no field")))
 
       test(m"Plain (unverified) field access requires the enabler"):
         demilitarize:
-          Worker(t"Alice", 30).encode.name
+          Person(t"Percy", 30).encode.name
         . head.let(_.message)
       . assert(_.lay(false)(_.contains("dynamicAccess.dynamicTel")))

@@ -65,7 +65,7 @@ object Variable:
 
   object Snapshot:
     // Remote identities render as the class name (or the array's component letter) followed by a
-    // fullwidth `＠` and the JDWP object identifier — echoing Java's `Foo@1a2b` closely enough to
+    // fullwidth `＠` and the JDWP object identifier — echoing Java's `Play@1a2b` closely enough to
     // read instantly as an object identity, while staying distinct from any literal rendering.
     // Parameterised over subtypes because `Inspectable`'s `Self` is invariant (see `Jdwp.Value`).
     given inspectable: [snapshot <: Snapshot] => snapshot is Inspectable = render(_)

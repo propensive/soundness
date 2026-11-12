@@ -51,7 +51,7 @@ Document {
                                     keyword: "field",
                                     atoms: [
                                         Inline {
-                                            text: "foo",
+                                            text: "act",
                                             preceding_spaces: 1,
                                         },
                                         Inline {
@@ -107,7 +107,7 @@ Document {
                                                     keyword: "field",
                                                     atoms: [
                                                         Inline {
-                                                            text: "foo",
+                                                            text: "act",
                                                             preceding_spaces: 1,
                                                         },
                                                         Inline {
@@ -134,4 +134,4 @@ Document {
     ],
 }
 errors:
-  E206 [0,0): Layer Field merge requires both base and layer types to be Struct: layer `extension` field `foo` in overlay: type mismatch
+  E206 [0,0): Layer Field merge requires both base and layer types to be Struct: layer `extension` field `act` in overlay: type mismatch

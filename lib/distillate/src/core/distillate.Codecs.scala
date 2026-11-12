@@ -50,7 +50,7 @@ package distillate
 // and the positions in error diagnostics differ.
 //
 // `Strict` is a `Direct`, so a format's generated instances apply under both;
-// strictness is added at the entry points (`read[Foo in F]`, `in[Text over
+// strictness is added at the entry points (`read[Play in F]`, `in[Text over
 // F]`, `in[Data over F]`), which a format gates with `Codecs.strictFailure`
 // where no direct instance resolves, so that nothing falls back to the derived
 // path silently. The modes are alternatives: importing two at once makes their

@@ -39,59 +39,59 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
   def run(): Unit =
     suite(m"Constructions"):
       test(m"Create a two-element path"):
-        % / "foo" / "bar"
+        % / "verona" / "capulet"
 
-      . assert(_ == Path(t"/", t"bar", t"foo"))
+      . assert(_ == Path(t"/", t"capulet", t"verona"))
 
       test(m"Create a one-element path"):
-        % / "foo"
+        % / "verona"
 
-      . assert(_ == Path(t"/", t"foo"))
+      . assert(_ == Path(t"/", t"verona"))
 
       test(m"Ensure path has correct type"):
-        val path: Path of ("bar", "foo") = % / "foo" / "bar"
+        val path: Path of ("capulet", "verona") = % / "verona" / "capulet"
         path
-      . assert(_ == Path(t"/", t"bar", t"foo"))
+      . assert(_ == Path(t"/", t"capulet", t"verona"))
 
       test(m"Badly-typed path produces error"):
         demilitarize:
-          val path: Path of ("bar", "foo") = % / "foo" / "baz"
+          val path: Path of ("capulet", "verona") = % / "verona" / "juliet"
         .map(_.message)
 
       . assert(!_.nil)
 
       test(m"Specificity of path is not obligatory"):
-        val path: Path = % / "foo" / "baz"
+        val path: Path = % / "verona" / "juliet"
         path
 
-      . assert(_ == Path(t"/", t"baz", t"foo"))
+      . assert(_ == Path(t"/", t"juliet", t"verona"))
 
       test(m"Construct a path on Linux"):
-        val path: Path on Linux = (% / "foo" / "baz").on[Linux]
+        val path: Path on Linux = (% / "verona" / "juliet").on[Linux]
         path
 
-      . assert(_ == Path(t"/", t"baz", t"foo"))
+      . assert(_ == Path(t"/", t"juliet", t"verona"))
 
       test(m"A peer replaces the leaf"):
-        val path: Path on Linux = (% / "foo" / "bar").on[Linux]
-        path.peer("baz")
+        val path: Path on Linux = (% / "verona" / "capulet").on[Linux]
+        path.peer("juliet")
 
-      . assert(_ == Path(t"/", t"baz", t"foo"))
+      . assert(_ == Path(t"/", t"juliet", t"verona"))
 
       test(m"A peer of a platformed path replaces the leaf"):
         unsafely:
-          val path: Path on Linux = (% / "foo" / "bar").on[Linux]
-          val leaf: Text = t"baz"
+          val path: Path on Linux = (% / "verona" / "capulet").on[Linux]
+          val leaf: Text = t"juliet"
           path.peer(leaf)
 
-      . assert(_ == Path(t"/", t"baz", t"foo"))
+      . assert(_ == Path(t"/", t"juliet", t"verona"))
 
       test(m"Construct a path with unknown label"):
         val dir: Text = t""
-        val path = (% / dir / "baz")
+        val path = (% / dir / "juliet")
         path
 
-      . assert(_ == Path(t"/", t"baz", t""))
+      . assert(_ == Path(t"/", t"juliet", t""))
 
       test(m"Path with unknown label permitted without Tactic"):
         val dir: Text = t"dir"
@@ -102,7 +102,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
       test(m"Unknown label not permitted on Linux without Tactic"):
         demilitarize:
           val dir: Text = t"dir"
-          val path = (% / dir / "baz").on[Linux]
+          val path = (% / dir / "juliet").on[Linux]
 
         . map(_.message)
 
@@ -129,27 +129,27 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
             case Name.Error(_, _, _) => ()
 
           . protect:
-              val path = (% / dir / "baz")
+              val path = (% / dir / "juliet")
         .map(_.message)
 
       . assert(!_.nil)
 
       test(m"Forbidden characters are forbidden"):
         demilitarize:
-          val path: Path on Linux = (% / "fo/o" / "baz").on[Linux]
+          val path: Path on Linux = (% / "ver/ona" / "juliet").on[Linux]
         . map(_.message)
 
       . assert(!_.nil)
 
       test(m"Autoconvert known `Path` to `Path on Linux`"):
         def receive(path: into[Path on Linux]): Unit = ()
-        receive(% / "foo" / "bar")
+        receive(% / "verona" / "capulet")
 
       . assert()
 
       test(m"Can't construct invalid path"):
         demilitarize:
-          (Drive('D') / "Foo ")
+          (Drive('D') / "Globe ")
 
       . assert(!_.nil)
 
@@ -160,74 +160,75 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
       test(m"Platformless path retains platformlessness"):
         demilitarize:
-          val path = % / "foo"
+          val path = % / "verona"
           summon[path.type <:< Path on Linux]
       . assert(!_.nil)
 
       test(m"Platformed path retains platformedness"):
         demilitarize:
-          val path = Drive('C') / "foo"
+          val path = Drive('C') / "verona"
           path: Int
         . map(_.message)
       . assert(_.head.lay(false)(_.tt.contains(t"Windows")))
 
       test(m"Windows path can't be converted to Linux"):
         demilitarize:
-          val path = (Drive('C') / "foo").on[Linux]
+          val path = (Drive('C') / "verona").on[Linux]
         . map(_.message)
       . assert(!_.nil)
 
       test(m"Linux path can't be converted to Windows"):
         demilitarize:
-          val path = (% / "foo").on[Windows]
+          val path = (% / "verona").on[Windows]
       . assert(!_.nil)
 
       test(m"Linux path can be converted to Mac OS"):
         demilitarize:
-          val path = (% / "foo").on[Linux].on[MacOs]
+          val path = (% / "verona").on[Linux].on[MacOs]
         .map(_.message)
       . assert(_ == Nil)
 
     suite(m"Relative paths"):
       test(m"Create a relative path"):
-        val relative: Relative of Mono["foo"] = ? / "foo"
+        val relative: Relative of Mono["verona"] = ? / "verona"
         relative
 
-      . assert(_ == Relative(0, List(t"foo")))
+      . assert(_ == Relative(0, List(t"verona")))
 
       test(m"Create a deeper relative path"):
-        val relative: Relative of ("bar", "foo") = ? / "foo" / "bar"
+        val relative: Relative of ("capulet", "verona") = ? / "verona" / "capulet"
         relative
 
-      . assert(_ == Relative(0, List(t"bar", t"foo")))
+      . assert(_ == Relative(0, List(t"capulet", t"verona")))
 
       test(m"Create a relative path with ascent"):
-        val relative: Relative of Mono["foo"] under 1 = ? / ^ / "foo"
+        val relative: Relative of Mono["verona"] under 1 = ? / ^ / "verona"
         relative
 
-      . assert(_ == Relative(1, List(t"foo")))
+      . assert(_ == Relative(1, List(t"verona")))
 
       test(m"Create a relative path with double ascent"):
-        val relative: Relative of Mono["foo"] under 2 = ? / ^ / ^ / "foo"
+        val relative: Relative of Mono["verona"] under 2 = ? / ^ / ^ / "verona"
         relative
 
-      . assert(_ == Relative(2, List(t"foo")))
+      . assert(_ == Relative(2, List(t"verona")))
 
     // A missing `Inspectable` is never a compile error — `derived` always succeeds and
     // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
     // only be held in place by asserting on the renderings themselves.
     suite(m"Native-rendering coverage"):
       test(m"serpentine's types inspect natively"):
-        Inspectable.fallbacks((% / "foo" / "bar").inspect, (? / ^ / "foo").inspect, ?.inspect)
+        Inspectable.fallbacks
+          ((% / "verona" / "capulet").inspect, (? / ^ / "verona").inspect, ?.inspect)
       . assert(_ == Nil)
 
       test(m"a path inspects as its path text"):
-        (% / "foo" / "bar").inspect
-      . assert(_ == t"/foo/bar")
+        (% / "verona" / "capulet").inspect
+      . assert(_ == t"/verona/capulet")
 
       test(m"a relative path inspects with its ascent"):
-        (? / ^ / ^ / "foo").inspect
-      . assert(_ == t"../../foo")
+        (? / ^ / ^ / "verona").inspect
+      . assert(_ == t"../../verona")
 
       test(m"the self-relative path inspects as a dot"):
         ?.inspect
@@ -235,52 +236,52 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
     suite(m"Encoding"):
       test(m"Serialize simple Linux path"):
-        val path: Path on Linux = % / "foo"
+        val path: Path on Linux = % / "verona"
         path.encode
 
-      . assert(_ == t"/foo")
+      . assert(_ == t"/verona")
 
       test(m"Serialize simple Windows path"):
-        val path: Path on Windows = (Drive('D') / "Foo")
+        val path: Path on Windows = (Drive('D') / "Globe")
         path.encode
 
-      . assert(_ == t"D:\\Foo")
+      . assert(_ == t"D:\\Globe")
 
       test(m"Encode a relative path"):
-        val relative: Relative on Linux = ? / ^ / "foo"
+        val relative: Relative on Linux = ? / ^ / "verona"
         relative.encode
 
-      . assert(_ == t"../foo")
+      . assert(_ == t"../verona")
 
       test(m"Encode a relative path with double ascent"):
-        val relative: Relative on Linux = ? / ^ / ^ / "foo"
+        val relative: Relative on Linux = ? / ^ / ^ / "verona"
         relative.encode
 
-      . assert(_ == t"../../foo")
+      . assert(_ == t"../../verona")
 
       test(m"Encode a peer"):
-        val relative: Relative on Linux = ? / "foo"
+        val relative: Relative on Linux = ? / "verona"
         relative.encode
 
-      . assert(_ == t"foo")
+      . assert(_ == t"verona")
 
       test(m"Encode a relative path on Windows"):
-        val relative: Relative on Windows = ? / ^ / "foo"
+        val relative: Relative on Windows = ? / ^ / "verona"
         relative.encode
 
-      . assert(_ == t"..\\foo")
+      . assert(_ == t"..\\verona")
 
       test(m"Encode a relative path with double ascent on Windows"):
-        val relative: Relative on Windows = ? / ^ / ^ / "foo"
+        val relative: Relative on Windows = ? / ^ / ^ / "verona"
         relative.encode
 
-      . assert(_ == t"..\\..\\foo")
+      . assert(_ == t"..\\..\\verona")
 
       test(m"Encode a peer on Windows"):
-        val relative: Relative on Windows = ? / "foo"
+        val relative: Relative on Windows = ? / "verona"
         relative.encode
 
-      . assert(_ == t"foo")
+      . assert(_ == t"verona")
 
     suite(m"Decoding"):
       test(m"Decode a simple Linux path with a terminal slash"):
@@ -328,49 +329,49 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
       . assert(!_.nil)
 
       test(m"Decode a simple relative path"):
-        t"foo".as[Relative on Linux]
-      . assert(_ == ? / "foo")
+        t"verona".as[Relative on Linux]
+      . assert(_ == ? / "verona")
 
       test(m"Decode a deeper relative path"):
-        t"foo/bar".as[Relative on Linux]
-      . assert(_ == ? / "foo" / "bar")
+        t"verona/capulet".as[Relative on Linux]
+      . assert(_ == ? / "verona" / "capulet")
 
       test(m"Decode a relative path with ascent"):
-        t"../foo/bar".as[Relative on Linux]
-      . assert(_ == ? / ^ / "foo" / "bar")
+        t"../verona/capulet".as[Relative on Linux]
+      . assert(_ == ? / ^ / "verona" / "capulet")
 
       test(m"Decode a relative path self-reference"):
         t".".as[Relative on Linux]
       . assert(_ == ?)
 
       test(m"Decode a relative path with greater ascent"):
-        t"../../foo/bar".as[Relative on Linux]
-      . assert(_ == ? / ^ / ^ / "foo" / "bar")
+        t"../../verona/capulet".as[Relative on Linux]
+      . assert(_ == ? / ^ / ^ / "verona" / "capulet")
 
       test(m"Decode a relative path with greater ascent on Windows"):
-        t"..\\..\\foo\\bar".as[Relative on Windows]
-      . assert(_ == ? / ^ / ^ / "foo" / "bar")
+        t"..\\..\\verona\\capulet".as[Relative on Windows]
+      . assert(_ == ? / ^ / ^ / "verona" / "capulet")
 
       test(m"Cannot decode a relative path without knowing plane"):
         demilitarize:
-          t"..\\..\\foo\\bar".as[Relative]
+          t"..\\..\\verona\\capulet".as[Relative]
       . assert(!_.nil)
 
     suite(m"Compiletime tests"):
       test(m"Specific path has known elements"):
-        val path = % / "foo" / "bar"
+        val path = % / "verona" / "capulet"
         path.knownElements
 
       . assert(identity)
 
       test(m"Specific path on plane has known elements"):
-        val path = % / "foo" / "bar"
+        val path = % / "verona" / "capulet"
         path.on[Linux].knownElements
 
       . assert(identity)
 
       test(m"Auto-converted path has no known elements"):
-        val path: Path on Linux = % / "foo" / "bar"
+        val path: Path on Linux = % / "verona" / "capulet"
         path.knownElements
 
       . assert(!_)
@@ -409,43 +410,43 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
       . assert()
 
       test(m"Typelevel conjunction of unplatformed Linux paths"):
-        val path1 = % / "home" / "work" / "data" / "foo" / "bar"
+        val path1 = % / "home" / "work" / "data" / "hamlet" / "ophelia"
         val path2 = % / "home" / "more"
         val result: Path of Mono["home"] = path1.conjunction(path2)
       . assert()
 
       test(m"Precedence check"):
-        val path1: Path on Linux = % / "foo" / "bar" / "baz"
-        val path2: Path on Linux = % / "foo" / "bar"
+        val path1: Path on Linux = % / "verona" / "capulet" / "juliet"
+        val path2: Path on Linux = % / "verona" / "capulet"
         path2.precedes(path1)
       . assert(_ == true)
 
       test(m"False precedence check"):
-        val path1: Path on Linux = % / "foo" / "bar" / "baz"
-        val path2: Path on Linux = % / "foo" / "bar"
+        val path1: Path on Linux = % / "verona" / "capulet" / "juliet"
+        val path2: Path on Linux = % / "verona" / "capulet"
         path1.precedes(path2)
       . assert(_ == false)
 
       test(m"Precedence check for equal paths"):
-        val path1: Path on Linux = % / "foo" / "bar" / "baz"
-        val path2: Path on Linux = % / "foo" / "bar" / "baz"
+        val path1: Path on Linux = % / "verona" / "capulet" / "juliet"
+        val path2: Path on Linux = % / "verona" / "capulet" / "juliet"
         path1.precedes(path2)
       . assert(_ == true)
 
       test(m"Shift a path by 1"):
-        val path: Path on Linux = % / "foo" / "bar" / "baz"
+        val path: Path on Linux = % / "verona" / "capulet" / "juliet"
         path.shift(1)
-      . assert(_ == % / "bar" / "baz")
+      . assert(_ == % / "capulet" / "juliet")
 
       test(m"Shift a path by 2"):
-        val path: Path on Linux = % / "foo" / "bar" / "baz"
+        val path: Path on Linux = % / "verona" / "capulet" / "juliet"
         path.shift(2)
-      . assert(_ == % / "baz")
+      . assert(_ == % / "juliet")
 
     suite(m"Relative tests"):
       test(m"Relative type retains plane"):
         demilitarize:
-          val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
+          val path1: Path on Linux = % / "home" / "work" / "data" / "hamlet"
           val path2: Path on Linux = % / "home" / "more"
           val relative = path1.toward(path2)
           relative: Optional[Relative on Linux]
@@ -455,7 +456,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
 
       test(m"Relative types on unique-root System have certain `Relation`"):
-        val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
+        val path1: Path on Linux = % / "home" / "work" / "data" / "hamlet"
         val path2: Path on Linux = % / "home" / "more"
         path1.toward(path2)
 
@@ -463,7 +464,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
 
       test(m"Relative types on non-unique system still retain Plane"):
-          val path1: Path on Windows = Drive('C') / "home" / "work" / "data" / "foo"
+          val path1: Path on Windows = Drive('C') / "home" / "work" / "data" / "hamlet"
           val path2: Path on Windows = Drive('C') / "home" / "more"
           val relative = path1.toward(path2)
           relative: Optional[Relative on Windows]
@@ -471,7 +472,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
       test(m"Relative types on different Systems are platformless"):
         demilitarize:
-          val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
+          val path1: Path on Linux = % / "home" / "work" / "data" / "hamlet"
           val path2: Path on MacOs = % / "home" / "more"
           val relative = path1.toward(path2)
           relative: Path on MacOs
@@ -481,7 +482,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
 
       test(m"Calculate simple relative path"):
-        val path1 = % / "home" / "work" / "data" / "foo"
+        val path1 = % / "home" / "work" / "data" / "hamlet"
         val path2 = % / "home" / "more"
         path1.toward(path2)
 
@@ -489,15 +490,15 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
 
       test(m"Calculate simple relative path in reverse"):
-        val path1 = % / "home" / "work" / "data" / "foo"
+        val path1 = % / "home" / "work" / "data" / "hamlet"
         val path2 = % / "home" / "more"
         path2.toward(path1)
 
-      . assert(_ == ? / ^ / "work" / "data" / "foo")
+      . assert(_ == ? / ^ / "work" / "data" / "hamlet")
 
 
       test(m"Calculate simple relative path on plane"):
-        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
         path1.toward(path2)
 
@@ -505,24 +506,24 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
 
       test(m"Calculate simple relative path on plane in reverse"):
-        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
         path2.toward(path1)
 
-      . assert(_ == ? / ^ / "work" / "data" / "foo")
+      . assert(_ == ? / ^ / "work" / "data" / "hamlet")
 
 
       // test(m"Calculate simple relative path on plane statically"):
-      //   val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+      //   val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
       //   val path2 = (% / "home" / "more").on[Linux]
-      //   val path3: Relative of ("foo", "data", "work") under 1 = path1.relativeTo(path2)
+      //   val path3: Relative of ("hamlet", "data", "work") under 1 = path1.relativeTo(path2)
       //   path3
 
-      // . assert(_ == ? / ^ / "work" / "data" / "foo")
+      // . assert(_ == ? / ^ / "work" / "data" / "hamlet")
 
 
       // test(m"Calculate simple relative path in reverse, statically"):
-      //   val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+      //   val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
       //   val path2 = (% / "home" / "more").on[Linux]
       //   val path3: Relative of Mono["more"] under 3 = path2.relativeTo(path1)
       //   path3
@@ -531,32 +532,33 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
 
       test(m"Add relative parent"):
-        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
         path1 + (? / ^)
 
       . assert(_ == % / "home" / "work" / "data")
 
 
       test(m"Add relative grandparent"):
-        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
         path1 + (? / ^ / ^)
 
       . assert(_ == % / "home" / "work")
 
 
       test(m"Add relative cousin"):
-        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
-        path1 + (? / ^ / ^ / "baz" / "quux")
+        val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
+        path1 + (? / ^ / ^ / "laertes" / "polonius")
 
-      . assert(_ == % / "home" / "work" / "baz" / "quux")
+      . assert(_ == % / "home" / "work" / "laertes" / "polonius")
 
 
       test(m"Add relative cousin, statically"):
-        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
-        val p2: Path of ("quux", "baz", "work", "home") = path1 + (? / ^ / ^ / "baz" / "quux")
+        val path1 = (% / "home" / "work" / "data" / "hamlet").on[Linux]
+        val p2: Path of ("polonius", "laertes", "work", "home") =
+          path1 + (? / ^ / ^ / "laertes" / "polonius")
         p2
 
-      . assert(_ == % / "home" / "work" / "baz" / "quux")
+      . assert(_ == % / "home" / "work" / "laertes" / "polonius")
 
     suite(m"Pattern matching"):
 
@@ -648,7 +650,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
       test(m"Windows path does not conform to Linux"):
         demilitarize:
-          p"""D:\Foo\Bar""": Path on Linux
+          p"""D:\Globe\Stage""": Path on Linux
       . assert(!_.nil)
 
       test(m"Invalid path"):

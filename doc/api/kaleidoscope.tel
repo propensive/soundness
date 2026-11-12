@@ -21,9 +21,9 @@ detail
       case r"$first(hello) $second(world)" => List(first, second)   // List(t"hello", t"world")
       case _                               => Nil
 
-    t"foo123bar" match
-      case r"foo$digits\d+bar" => digits   // List('1', '2', '3')
-      case _                   => Nil
+    t"act123scene" match
+      case r"act$digits\d+scene" => digits   // List('1', '2', '3')
+      case _                     => Nil
     ```
 
     Outside a pattern the same interpolators are expressions whose value is a `Regex`: its
@@ -85,38 +85,38 @@ entry .r   the `r"…"` interpolator: a regular expression as a pattern, or as a
     frame
       label A literal pattern, matched or not
       code
-          t"foo5bar" match
-            case r"foo\dbar" => true
-            case _           => false
+          t"act5scene" match
+            case r"act\dscene" => true
+            case _             => false
           // true
     frame
       label A shorthand bound to `digit`: a `Char`
       code
-          t"foo5bar" match
-            case r"foo$digit\dbar" => digit
-            case _                 => ' '
+          t"act5scene" match
+            case r"act$digit\dscene" => digit
+            case _                   => ' '
           // '5'
     frame
       label Repeated with `+`: a `List[Char]`
       code
-          t"foo123bar" match
-            case r"foo$digits\d+bar" => digits
-            case _                   => Nil
+          t"act123scene" match
+            case r"act$digits\d+scene" => digits
+            case _                     => Nil
           // List('1', '2', '3')
     frame
       label Made optional with `?`: an `Optional[Char]`
       code
-          t"foobar" match
-            case r"foo$digit\d?bar" => digit
-            case _                  => Unset
+          t"actscene" match
+            case r"act$digit\d?scene" => digit
+            case _                    => Unset
           // Unset
     frame
       label A second group, in parentheses: a `Text`, and the two bind as a pair
       code
-          t"foo123bar" match
-            case r"foo$digits\d+$word(bar)" => (digits, word)
-            case _                          => (Nil, t"")
-          // (List('1', '2', '3'), t"bar")
+          t"act123scene" match
+            case r"act$digits\d+$word(scene)" => (digits, word)
+            case _                            => (Nil, t"")
+          // (List('1', '2', '3'), t"scene")
     ##
     ```
 
@@ -274,12 +274,12 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
       import strategies.throwUnsafely
 
       val regex: Regex in JavaBaseRegex = Regex(t"[a-z]+@[a-z]+\\.com")
-      regex.matches(t"jon@example.com")          // true
-      regex.seek(t"mail jon@example.com now")    // the interval of the match
-      regex.search(t"a@b.com, c@d.com")          // a chain of two intervals
+      regex.matches(t"hamlet@example.com")          // true
+      regex.seek(t"mail hamlet@example.com now")    // the interval of the match
+      regex.search(t"a@b.com, c@d.com")             // a chain of two intervals
 
       val linear: Regex in Re2 = regex.re2
-      linear.matches(t"jon@example.com")         // true, in linear time
+      linear.matches(t"hamlet@example.com")         // true, in linear time
       ```
 
       The matching operations are methods rather than extensions so that they can never be
@@ -512,8 +512,8 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
       import soundness.*
       import strategies.throwUnsafely
 
-      Regex(t"o").seek(t"foo")   // Interval.zerary(1, 2)
-      Regex(t"z").seek(t"foo")   // Unset
+      Regex(t"u").seek(t"puck")   // Interval.zerary(1, 2)
+      Regex(t"z").seek(t"puck")   // Unset
       ```
   entry #search   every match at or after `start`, as a lazily-built `Chain` of intervals
       With `overlap` false (the default) the search resumes one past the end of each match;
@@ -624,8 +624,8 @@ entry .Glob   a glob — `*`, `**`, `?`, `[a-z]` wildcards — as tokens, transl
 
       Glob.parse(t"hello*world").regex        // t"hello[^/\\]*world"
       Glob.parse(t"hello[!a-z]world").regex   // t"hello[^a-z]world"
-      Glob.parse(t"**/*.jar").matches(t"dir/deeper/foo.jar")   // true
-      Glob.parse(t"*.jar").matches(t"dir/foo.jar")             // false: `*` does not cross `/`
+      Glob.parse(t"**/*.jar").matches(t"dir/deeper/globe.jar")   // true
+      Glob.parse(t"*.jar").matches(t"dir/globe.jar")             // false: `*` does not cross `/`
       t"h?llo*.jar".as[Glob]                  // Glob(Exact('h'), OneChar, Exact('l'), …)
       ```
 

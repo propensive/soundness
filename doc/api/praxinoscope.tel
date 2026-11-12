@@ -26,9 +26,9 @@ detail
     import strategies.throwUnsafely
 
     val motif: Motif = Motif.parse(t"[a-z]+@[a-z]+\\.com")
-    motif.matches(t"jon@example.com")       // true
-    motif.seek(t"mail jon@example.com")     // the interval of the match
-    motif.subsumes(Motif.parse(t"jon@example\\.com"))   // true
+    motif.matches(t"hamlet@example.com")       // true
+    motif.seek(t"mail hamlet@example.com")     // the interval of the match
+    motif.subsumes(Motif.parse(t"hamlet@example\\.com"))   // true
 
     Motif.parse(t"(?:a+)+b").matches(("a".repeat(200).nn).tt)      // false, in linear time
     Motif.parse(t"(a)\\1")                               // raises Motif.Error: a backreference
@@ -255,8 +255,8 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
       import soundness.*
       import strategies.throwUnsafely
 
-      Motif.parse(t"\\bfoo\\b").seek(t"afoo foo")   // Interval.zerary(5, 8)
-      Motif.parse(t"z").seek(t"foo")               // Unset
+      Motif.parse(t"\\blear\\b").seek(t"clear lear")   // Interval.zerary(6, 10)
+      Motif.parse(t"z").seek(t"lear")                    // Unset
       ```
   entry #search   every match at or after `start`, as a lazily-built `Chain` of intervals
       Each search resumes at the end of the previous match, or one past it when the match

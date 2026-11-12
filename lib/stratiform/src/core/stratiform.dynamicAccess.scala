@@ -35,7 +35,7 @@ package stratiform
 import rudiments.*
 
 // Importing `dynamicAccess.dynamicTel` grants `Tel is Dynamical`, the erased permission which
-// unlocks the dynamic syntax (`tel.foo`) for the rest of the scope. `dynamically[Tel]:` (or
+// unlocks the dynamic syntax (`tel.title`) for the rest of the scope. `dynamically[Tel]:` (or
 // `dynamically:`, for every format) grants the same permission within a block.
 
 package dynamicAccess:

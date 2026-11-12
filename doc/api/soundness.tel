@@ -166,8 +166,8 @@ entry .Map   the opaque hash map `proscenium.Map`, with its companion as a stabl
     ```scala
     import soundness.*
 
-    val ages = Map(t"Ada" -> 36)
-    ages.confine(t"Ada").let(ages(_))   // 36
+    val ages = Map(t"Hamlet" -> 30)
+    ages.confine(t"Hamlet").let(ages(_))   // 30
     ```
 
 entry .Chain   the opaque lazy sequence `proscenium.Chain`, with its companion as a stable value
@@ -329,8 +329,8 @@ entry .confine   `xs.confine(index)`: checks an index against a value and return
     ```scala
     import soundness.*
 
-    val ages = Map(t"Ada" -> 36)
-    ages.confine(t"Ada").let(ages(_))   // 36
+    val ages = Map(t"Hamlet" -> 30)
+    ages.confine(t"Hamlet").let(ages(_))   // 30
     ```
 
 entry .pick   `xs.pick(index) { i => … }`: checks an index and runs a lambda with it confined, or gives `Unset`
@@ -372,7 +372,7 @@ entry .define   `xs.define(index, value)`: a copy of a container with one positi
     ```scala
     import soundness.*
 
-    Map(t"Ada" -> 36).define(t"Alan", 41)
+    Map(t"Hamlet" -> 30).define(t"Ophelia", 25)
     ```
 
 entry .omit   `xs.omit(index)`: a copy of a container without one key or position

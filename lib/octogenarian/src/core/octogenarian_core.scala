@@ -42,7 +42,7 @@ import rudiments.*
 import serpentine.*
 
 // A `NoteRef` is a `Path on Notes under Git.Hash`: the commit hash is the root (it IS a `Root`,
-// since `Git.Hash extends Root`) and the namespace segments are the descent, so `commit / t"foo"`
+// since `Git.Hash extends Root`) and the namespace segments are the descent, so `commit / t"lear"`
 // goes straight to Serpentine's own `Path.def /`.
 type NoteRef = Path on Notes under Git.Hash
 
@@ -50,7 +50,7 @@ extension (noteRef: NoteRef)
   // The commit hash, from the path's root (encoded as `<hash>/`).
   def target: Git.Hash = Git.Hash.unsafe(noteRef.root.keep(40))
 
-  // The fully-qualified ref (`refs/notes/foo/bar`) naming the namespace; each segment is
+  // The fully-qualified ref (`refs/notes/lear/kent`) naming the namespace; each segment is
   // validated here.
   def namespace(using Tactic[Git.RefError]): Git.Ref =
     def recur(path: Git.Ref, segments: List[Text]): Git.Ref = segments match

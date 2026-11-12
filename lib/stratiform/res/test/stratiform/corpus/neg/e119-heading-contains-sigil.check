@@ -12,8 +12,8 @@ Document {
                         7,
                     ],
                     headings: [
-                        "foo",
-                        "# bar",
+                        "act",
+                        "# cue",
                     ],
                 },
             ),

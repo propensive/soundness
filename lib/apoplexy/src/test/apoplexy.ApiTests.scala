@@ -89,8 +89,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
 
     val api = Api(cp"/openapi/local/petstore.json")
 
-    val petJson  = t"""{"id": 42, "name": "Milo", "tag": "cat"}"""
-    val petsJson = t"""[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]"""
+    val petJson  = t"""{"id": 42, "name": "Graymalkin", "tag": "cat"}"""
+    val petsJson = t"""[{"id": 1, "name": "Tray"}, {"id": 2, "name": "Blanch"}]"""
 
     def ok(body: Text): Http.Response =
       Http.Response(Http.Ok, contentType = media"application/json")(body)
@@ -120,20 +120,20 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
           && request.query.values == List(t"width" -> t"10", t"height" -> t"20")
 
       test(m"POST sole method with a positional body"):
-        api.login(Credentials(t"jon", t"pw")).request
+        api.login(Credentials(t"hamlet", t"pw")).request
 
       . assert: request =>
           request.method == Http.Post && request.path == t"/login" && request.body != Api.Body.Empty
 
       test(m"PUT sole method with a positional body (verb omitted)"):
-        api.profile(NewPet(t"Rex")).request
+        api.profile(NewPet(t"Crab")).request
 
       . assert: request =>
           request.method == Http.Put && request.path == t"/profile" &&
             request.body != Api.Body.Empty
 
       test(m"the verb is still explicitly usable on a sole-method endpoint"):
-        api.profile.put(NewPet(t"Rex")).request.method
+        api.profile.put(NewPet(t"Crab")).request.method
       . assert(_ == Http.Put)
 
       test(m"an optional query parameter may be omitted"):
@@ -147,7 +147,7 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
           request.method == Http.Get && request.query.values == List(t"limit" -> t"10")
 
       test(m"POST /pets via explicit .post with a body"):
-        api.pets.post(NewPet(t"Milo", tag = t"cat")).request
+        api.pets.post(NewPet(t"Graymalkin", tag = t"cat")).request
       . assert(request => request.method == Http.Post && (request.body != Api.Body.Empty))
 
       test(m"GET /pets/{petId} via explicit .get with no arguments"):
@@ -155,7 +155,7 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
       . assert(request => request.method == Http.Get && request.path == t"/pets/{petId}")
 
       test(m"PUT /pets/{petId} via explicit .put with a body"):
-        api.pets(42).put(NewPet(t"Rex")).request.method
+        api.pets(42).put(NewPet(t"Crab")).request.method
       . assert(_ == Http.Put)
 
     suite(m"delete is always explicit"):
@@ -206,17 +206,17 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
       test(m".call[Pet]() decodes a single pet"):
         given Http.Backend = Recorder(() => ok(petJson))
         api.pets(42).get.call[Pet]()
-      . assert(_ == Pet(42, t"Milo", t"cat"))
+      . assert(_ == Pet(42, t"Graymalkin", t"cat"))
 
       test(m".call[List[Pet]]() decodes a list of pets"):
         given Http.Backend = Recorder(() => ok(petsJson))
         api.pets.get(limit = 10).call[List[Pet]]()
-      . assert(_ == List(Pet(1, t"Ada"), Pet(2, t"Bea")))
+      . assert(_ == List(Pet(1, t"Tray"), Pet(2, t"Blanch")))
 
       test(m".call[Json]() returns the raw body"):
         given Http.Backend = Recorder(() => ok(petJson))
         api.pets(42).get.call[Json]()
-      . assert(_.as[Pet] == Pet(42, t"Milo", t"cat"))
+      . assert(_.as[Pet] == Pet(42, t"Graymalkin", t"cat"))
 
       test(m".call[Http.Response]() returns the raw response"):
         given Http.Backend = Recorder(() => ok(petJson))
@@ -245,7 +245,7 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
       test(m"a POST sends its body"):
         val recorder = Recorder(() => ok(petJson))
         given Http.Backend = recorder
-        api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]()
+        api.pets.post(NewPet(t"Graymalkin", tag = t"cat")).call[Pet]()
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
@@ -409,12 +409,12 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
         given Http.Backend = Recorder(() => ok(petJson))
         val pet = api.pets(42).get.record()
         (pet.id, pet.name, pet.tag)
-      . assert(_ == (42, t"Milo", t"cat"))
+      . assert(_ == (42, t"Graymalkin", t"cat"))
 
       test(m"record() reads an array response as a list of records"):
         given Http.Backend = Recorder(() => ok(petsJson))
         api.pets.get(limit = 10).record().map(_.name)
-      . assert(_ == List(t"Ada", t"Bea"))
+      . assert(_ == List(t"Tray", t"Blanch"))
 
       test(m"record() reads an int64 property as a Long"):
         given Http.Backend = Recorder(() => ok(itemJson))
@@ -425,7 +425,7 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
       test(m"tuple() reads the response as a named tuple"):
         given Http.Backend = Recorder(() => ok(petJson))
         api.pets(42).get.tuple().name
-      . assert(_ == t"Milo")
+      . assert(_ == t"Graymalkin")
 
       test(m"record() is refused for a response that is not JSON"):
         demilitarize:

@@ -179,15 +179,15 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == (51.5: Optional[Double]))
 
       val card = json(t"""{
-        "familyName": "Curie", "givenName": "Marie", "additionalName": ["Salomea"],
-        "honorificPrefix": ["Dr", "Prof"],
-        "email": {"type": "work", "value": "marie@example.org"},
-        "org": {"organizationName": "Sorbonne"}
+        "familyName": "Coriolanus", "givenName": "Caius", "additionalName": ["Martius"],
+        "honorificPrefix": ["General", "Consul"],
+        "email": {"type": "work", "value": "caius@example.org"},
+        "org": {"organizationName": "Rome"}
       }""")
 
       test(m"an array of strings reads as a List of Text"):
         CardSchema.record(card).honorificPrefix
-      . assert(_ == List(t"Dr", t"Prof"))
+      . assert(_ == List(t"General", t"Consul"))
 
       test(m"an absent array reads as an empty list"):
         CardSchema.record(card).honorificSuffix
@@ -195,7 +195,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
 
       test(m"a nested object reads as a nested record"):
         CardSchema.record(card).email.let(_.value)
-      . assert(_ == (t"marie@example.org": Optional[Text]))
+      . assert(_ == (t"caius@example.org": Optional[Text]))
 
       test(m"an optional nested object is Unset when absent"):
         CardSchema.record(card).tel.let(_.value)
@@ -355,20 +355,20 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
     suite(m"JSON Resume"):
       val resume = json(t"""{
         "basics": {
-          "name": "Ada Lovelace", "email": "ada@example.org", "url": "https://ada.example.org/",
-          "location": {"city": "London", "countryCode": "GB"},
-          "profiles": [{"network": "Mastodon", "username": "ada"}]
+          "name": "William Shakespeare", "email": "will@example.org",
+          "url": "https://will.example.org/", "location": {"city": "London", "countryCode": "GB"},
+          "profiles": [{"network": "Mastodon", "username": "will"}]
         },
         "work": [
-          {"name": "Analytical Engine Co", "position": "Programmer", "startDate": "1843-01", "highlights": ["Note G"]},
-          {"name": "Byron Estate", "startDate": "eighteen-fifty"}
+          {"name": "The Globe", "position": "Playwright", "startDate": "1599-01", "highlights": ["Hamlet"]},
+          {"name": "New Place", "startDate": "sixteen-eleven"}
         ],
-        "skills": [{"name": "Mathematics", "keywords": ["Bernoulli numbers"]}]
+        "skills": [{"name": "Verse", "keywords": ["Iambic pentameter"]}]
       }""")
 
       test(m"an email-formatted string reads as an EmailAddress"):
         ResumeSchema.record(resume).basics.let(_.email)
-      . assert(_ == (email"ada@example.org": Optional[EmailAddress]))
+      . assert(_ == (email"will@example.org": Optional[EmailAddress]))
 
       test(m"a nested array of records inside a nested record"):
         ResumeSchema.record(resume).basics.let(_.profiles.map(_.network))
@@ -376,21 +376,21 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
 
       test(m"an array of records reads each record's fields"):
         ResumeSchema.record(resume).work.map(_.position)
-      . assert(_ == List((t"Programmer": Optional[Text]), Unset))
+      . assert(_ == List((t"Playwright": Optional[Text]), Unset))
 
       test(m"a date matching the pattern is accepted"):
         ResumeSchema.record(resume).work.head.let(_.startDate)
-      . assert(_ == (t"1843-01": Optional[Text]))
+      . assert(_ == (t"1599-01": Optional[Text]))
 
       test(m"a date not matching the pattern is rejected when that record is read"):
         capture[Json.Provider.Error](ResumeSchema.record(resume).work.at(Sec).let(_.startDate)).reason
       . assert:
-          case PatternMismatch(t"eighteen-fifty", _) => true
+          case PatternMismatch(t"sixteen-eleven", _) => true
           case _                                     => false
 
       test(m"a valid record's fields are unaffected by an invalid sibling"):
         ResumeSchema.record(resume).work.head.let(_.highlights)
-      . assert(_ == (List(t"Note G"): Optional[List[Text]]))
+      . assert(_ == (List(t"Hamlet"): Optional[List[Text]]))
 
     suite(m"SchemaStore: launchSettings, husky, jsdoc, prettier, mocha"):
       val launch = json(t"""{"iisSettings": {"windowsAuthentication": false, "iisExpress": {"applicationUrl": "http://localhost:5000", "sslPort": 44300}}}""")
@@ -551,9 +551,9 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == (t"leaf": Optional[Text]))
 
       test(m"an allOf merges the referenced base with the node's own properties"):
-        val record = AllOfSchema.record(json(t"""{"name": "Ann", "age": 41, "email": "ann@example.org"}"""))
+        val record = AllOfSchema.record(json(t"""{"name": "Nym", "age": 41, "email": "nym@example.org"}"""))
         (record.name, record.age, record.email)
-      . assert(_ == (t"Ann", 41, (email"ann@example.org": Optional[EmailAddress])))
+      . assert(_ == (t"Nym", 41, (email"nym@example.org": Optional[EmailAddress])))
 
       test(m"the object form is chosen when the root may also be a string"):
         ObjectOrStringRootSchema.record(json(t"""{"name": "cfg"}""")).name
@@ -756,7 +756,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
     suite(m"Schema features: dictionaries"):
       val dict = json(t"""{
         "labels": {"a": "1", "b": "2"}, "scores": {"x": 3}, "groups": {"g": ["p", "q"]},
-        "people": {"ann": {"name": "Ann"}}, "byPattern": {"x-a": "1", "y-b": "2"},
+        "people": {"nym": {"name": "Nym"}}, "byPattern": {"x-a": "1", "y-b": "2"},
         "mixedPatterns": {"x-a": "1"}, "open": {"any": [1]}, "nested": {"outer": {"inner": 5}}
       }""")
 
@@ -778,7 +778,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
 
       test(m"a dictionary of referenced records"):
         DictionariesSchema.record(dict).people.stdlib.map { (key, person) => (key, person.name) }
-      . assert(_ == scala.collection.immutable.Map(t"ann" -> t"Ann"))
+      . assert(_ == scala.collection.immutable.Map(t"nym" -> t"Nym"))
 
       test(m"patternProperties of one type reads as a Map"):
         DictionariesSchema.record(dict).byPattern

@@ -38,7 +38,7 @@ import textMetrics.uniformMetric
 import chiaroscuro.teletypeables.juxtapositionTeletype
 
 case class Person(name: Text, age: Int)
-case class Organization(name: Text, ceo: Person, staff: List[Person])
+case class Play(title: Text, hero: Person, cast: List[Person])
 
 case class IdName(id: Text, name: Text)
 
@@ -78,29 +78,29 @@ object Tests extends Suite("contrast", m"Chiaroscuro tests"):
 
 
       test(m"Decompose a person"):
-        Person(t"Bill", 29).decompose
+        Person(t"Hamlet", 30).decompose
 
       . assert: value =>
           value == Product
             ( t"Person",
-              Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
-                  t"age"  -> Primitive(t"Int", t"29", 29)),
-              Person(t"Bill", 29))
+              Map(t"name" -> Primitive(t"Text", t"Hamlet", t"Hamlet"),
+                  t"age"  -> Primitive(t"Int", t"30", 30)),
+              Person(t"Hamlet", 30))
 
-      test(m"Decompose an organization"):
-        Organization(t"Acme", Person(t"Bill", 29), Nil).decompose
+      test(m"Decompose a play"):
+        Play(t"Hamlet", Person(t"Hamlet", 30), Nil).decompose
 
       . assert:
           _ == Product
-                (t"Organization",
-                 Map(t"name"  -> Primitive(t"Text", t"Acme", t"Acme"),
-                     t"ceo"   -> Product
+                (t"Play",
+                 Map(t"title" -> Primitive(t"Text", t"Hamlet", t"Hamlet"),
+                     t"hero"  -> Product
                                   (t"Person",
-                                   Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
-                                       t"age"  -> Primitive(t"Int", t"29", 29)),
-                                   Person(t"Bill", 29)),
-                     t"staff" -> Decomposition.Sequence(t"List", Nil, Nil)),
-                 Organization(t"Acme", Person(t"Bill", 29), Nil))
+                                   Map(t"name" -> Primitive(t"Text", t"Hamlet", t"Hamlet"),
+                                       t"age"  -> Primitive(t"Int", t"30", 30)),
+                                   Person(t"Hamlet", 30)),
+                     t"cast"  -> Decomposition.Sequence(t"List", Nil, Nil)),
+                 Play(t"Hamlet", Person(t"Hamlet", 30), Nil))
 
       test(m"Decompose a sequence"):
         val list: List[Char] = List('a', 'b')
@@ -157,10 +157,12 @@ object Tests extends Suite("contrast", m"Chiaroscuro tests"):
 
       aspirationally:
         test(m"Structural comparison"):
-          Organization(t"Acme", Person(t"John", 49), List(Person(t"Janet", 19), Person(t"Paweł", 32)))
+          val cast = List(Person(t"Cassio", 19), Person(t"Æmilia", 32))
+          Play(t"Othello", Person(t"Othello", 49), cast)
 
-        . assert:
-            _ == Organization(t"Acme", Person(t"John", 43), List(Person(t"Paul", 32), Person(t"Janet", 19)))
+        . assert: play =>
+            val cast = List(Person(t"Emilia", 32), Person(t"Cassio", 19))
+            play == Play(t"Othello", Person(t"Othello", 43), cast)
 
         test(m"Text comparison"):
           t"The quick brown fox jumps over the lazy dog"

@@ -779,7 +779,7 @@ entry .Variable   a logical variable at a suspended frame, in the form the progr
         `Null` the null reference.
     entry .inspectable   renders a snapshot: literals as themselves, arrays as `⦋🅸₀1∣₁2∣…⦌＠id`, objects as `Cls＠id`
         A remote identity renders as the class name (or the array's component letter) followed
-        by a fullwidth `＠` and the JDWP object identifier — close enough to Java's `Foo@1a2b`
+        by a fullwidth `＠` and the JDWP object identifier — close enough to Java's `Play@1a2b`
         to read as an identity, and distinct from any literal rendering. The given is
         parameterised over the enumeration's case types, since `Inspectable` is invariant.
   entry .Provenance   where a variable's storage was found, carrying whatever identity a write needs

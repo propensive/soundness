@@ -148,7 +148,7 @@ object ScalaKeywords:
            // it unambiguous — a context bound (`[T: `), a parameter or member ascription
            // (`(x: `, `val x: `, `def x: `) — and offers no keywords at all; elsewhere the
            // union with an indented template body's definition keywords is offered, since
-           // the lexeme stream cannot separate `class Foo:` from an ascription.
+           // the lexeme stream cannot separate `class Play:` from an ascription.
            glyph(t":") ->
              KeywordPattern
                ( Keywords(definition, Expectation.TypeIdentifier),
@@ -184,7 +184,7 @@ object ScalaKeywords:
                  List
                   ( Element.Exact(Lexeme.Term) ->
                     KeywordPattern(Keywords(expression + Set(t"using")), parameterHeads),
-                    // A class/trait name lexes as a *type* identifier, so `class Foo(` finds
+                    // A class/trait name lexes as a *type* identifier, so `class Play(` finds
                     // its parameter position through a `Typal` branch.
                     Element.Exact(Lexeme.Typal) ->
                       KeywordPattern(Keywords(expression), parameterHeads),
@@ -207,7 +207,7 @@ object ScalaKeywords:
                ( Keywords(continuation),
                  List
                   ( word(t"package") -> leaf(statement),
-                    // An annotation: `@foo` is followed by the annotated definition.
+                    // An annotation: `@attribute` is followed by the annotated definition.
                     glyph(t"@") -> leaf(statement) ) ),
 
            Element.Exact(Lexeme.Typal) ->

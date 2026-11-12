@@ -136,7 +136,7 @@ object internal:
       accumulator.foldTree(Nil, lambda.asTerm)(Symbol.spliceOwner).reverse
 
     // The proxy whose `unapply` drives a pattern — drilling through the `unapply` selection to its
-    // qualifier (`root.cto.joined`), whose type carries the path index.
+    // qualifier (`root.hero.name`), whose type carries the path index.
     def proxyOf(tree: Tree): Term = tree.absolve match
       case Unapply(fun, _, _)   => proxyOf(fun)
       case Select(qualifier, _) => qualifier

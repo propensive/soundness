@@ -150,33 +150,33 @@ fields. The value becomes an element named for the type, with a child element fo
 and is read back whatever the order of the children:
 
 ```scala
-case class Worker(name: Text, age: Int)
+case class Person(name: Text, age: Int)
 
-val alice = t"<Worker><age>30</age><name>Alice</name></Worker>".read[Worker in Xml]
+val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(Worker(t"Alice", 30).in[Xml].show)
-Out.println(alice.inspect)
+Out.println(Person(t"Hamlet", 30).in[Xml].show)
+Out.println(hamlet.inspect)
 ```
 
 `in[Text over Xml]` encodes a value straight to its XML text, as the mirror of
-`read[Worker in Xml]`, and `in[Data over Xml]` writes the same text as bytes, in the `Codepage`
+`read[Person in Xml]`, and `in[Data over Xml]` writes the same text as bytes, in the `Codepage`
 in scope.
 
 A field marked `@attribute` becomes an attribute instead of a child element, and is read back
 as one:
 
 ```scala
-case class Book(title: Text, @attribute isbn: Text)
+case class Play(title: Text, @attribute year: Int)
 ```
 
 ```scala fuel
 run
 ##
-Out.println(Book(t"Dune", t"0441013597").in[Xml].show)
+Out.println(Play(t"Hamlet", 1603).in[Xml].show)
 ```
 
 `@name` renames an element or attribute where the Scala name and the XML name should differ.
@@ -213,7 +213,7 @@ case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
 ```scala fuel
 run
 ##
-Out.println(Profile(t"Ann", Unset, Map(t"apple" -> 3)).in[Xml].show)
+Out.println(Profile(t"Falstaff", Unset, Map(t"sack" -> 3)).in[Xml].show)
 ```
 
 In summary:
@@ -241,7 +241,7 @@ document with prose between its fields decodes as though the prose were not ther
 
 ```scala
 val untidy =
-  t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Worker in Xml]
+  t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
 ```
 
 ```scala fuel
@@ -267,7 +267,7 @@ A field which is required, and missing, is an error:
 run
 errors show
 ##
-t"<Worker><name>Alice</name></Worker>".read[Worker in Xml]
+t"<Person><name>Hamlet</name></Person>".read[Person in Xml]
 ```
 
 An `Optional` field has two further policies, from the package `optionalityOptions`, as
@@ -289,7 +289,7 @@ case class Tally(name: Text, count: Optional[Int])
 
 val tolerant =
   import optionalityOptions.lenientXmlFaults
-  x"<root><name>Ann</name><count>many</count></root>".as[Tally]
+  x"<root><name>Puck</name><count>many</count></root>".as[Tally]
 ```
 
 ```scala fuel
@@ -304,7 +304,7 @@ The `x"…"` interpolator writes XML directly, and checks it at compiletime. Val
 substituted into it:
 
 ```scala
-val name = t"Alice"
+val name = t"Hamlet"
 val user = x"<user>$name</user>"
 ```
 
@@ -371,13 +371,13 @@ XML, such as a case class, an `Int` or a `Text`, is encoded as it is assigned, w
 The other formats ask for one, such as `conversions.encodableToJson`.
 
 ```scala
-val staff = t"<staff><Worker><name>x</name><age>1</age></Worker></staff>".read[Xml]
+val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(staff.lens(_.Worker = Worker(t"Alice", 30)).show)
+Out.println(court.lens(_.Person = Person(t"Hamlet", 30)).show)
 ```
 
 ### Paths and queries
@@ -529,7 +529,7 @@ run
 locally:
   import formatting.indentedXmlFormatting
 
-  Out.println(Worker(t"Alice", 30).in[Xml].show)
+  Out.println(Person(t"Hamlet", 30).in[Xml].show)
 ```
 
 `show` renders the whole node into one `Text`. A large document need not be held in memory
@@ -590,12 +590,12 @@ namespace, and writes the same text:
 ```scala fuel
 alternative Through a tree
   code
-      Worker(t"Alice", 30).in[Text over Xml]
+      Person(t"Hamlet", 30).in[Text over Xml]
 alternative Direct
   code
       val direct =
-        given Worker is Xml.Printable = Xml.Direct.derived[Worker].printable
-        Worker(t"Alice", 30).in[Text over Xml]
+        given Person is Xml.Printable = Xml.Direct.derived[Person].printable
+        Person(t"Hamlet", 30).in[Text over Xml]
 ##
 ```
 
@@ -613,7 +613,7 @@ row  `codecs.derived`  the derived codecs, even where a direct instance is in sc
 row  `codecs.strict`  a generated parser and printer  a compile error naming the type
 ```
 
-Under `codecs.strict`, the error arises wherever `read[Foo in Xml]` or `in[Text over Xml]`
+Under `codecs.strict`, the error arises wherever `read[Play in Xml]` or `in[Text over Xml]`
 would otherwise fall back to the tree. The modes are alternatives, so import one at a time.
 
 ### Typed records from an XML Schema

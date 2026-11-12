@@ -847,8 +847,8 @@ object Tests extends Suite("time", m"Aviation Tests"):
       . assert(_ == Dec)
 
       test(m"Month from invalid text"):
-        capture(Month(t"foo"))
-      . assert(_ == Moment.Error(_.Unknown(t"foo", t"month")))
+        capture(Month(t"Ides"))
+      . assert(_ == Moment.Error(_.Unknown(t"Ides", t"month")))
 
       test(m"Month from invalid number 0"):
         capture(Month(0))

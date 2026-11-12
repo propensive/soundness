@@ -13,9 +13,9 @@ Document {
                         15,
                     ],
                     headings: [
-                        "foo",
+                        "act",
                         "",
-                        "baz",
+                        "pit",
                     ],
                 },
             ),

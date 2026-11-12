@@ -340,7 +340,7 @@ metadata travel with a repository, without one writer clobbering another:
 run
 ##
 directory.open[Git.Worktree](Read & Write): worktree ?=>
-  worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
+  worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
   val hash = worktree.head().value.commit.or(Git.Hash.zero)
   val notes = worktree.ref(Git.Refs.defaultNotes)
   worktree.addNote(hash, t"a note body", notes)

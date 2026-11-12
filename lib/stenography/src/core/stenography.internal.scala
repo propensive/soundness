@@ -129,8 +129,8 @@ object internal:
         // them that way.
         //
         // The `aliases` map holds the infix type aliases which refine a single type member,
-        // keyed by that member's name, so `Foo { type Form = Bar }` can be written back as
-        // `Foo in Bar`. Scanning scopes rather than the whole classpath is what keeps the
+        // keyed by that member's name, so `Play { type Form = Json }` can be written back as
+        // `Play in Json`. Scanning scopes rather than the whole classpath is what keeps the
         // rendering honest: an alias is only worth preferring where it is in scope to be written.
         val imported = importsInScope.filter(_.wildcard).map: imp =>
           imp.term.asInstanceOf[core.Types.Type].termSymbol
@@ -225,7 +225,7 @@ object internal:
           Syntax(ref.asInstanceOf[TypeRepr]) match
             // Add both forms so the same import path can shorten references
             // to either the type itself or its companion (e.g. `Textual` and
-            // `Textual.foo` both resolve via `import soundness.*`).
+            // `Textual.verse` both resolve via `import soundness.*`).
             case Syntax.Simple(designator) => List(designator, designator.companionObject)
             case _                         => Nil
 

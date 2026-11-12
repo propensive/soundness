@@ -19,27 +19,27 @@ does the rebuilding:
 ```scala fuel
 parse
 ##
-case class Role(name: Text, count: Int)
-case class Person(name: Text, roles: List[Role])
-case class Company(ceo: Person, name: Text)
+case class Person(name: Text, age: Int)
+case class Troupe(name: Text, players: List[Person])
+case class Play(title: Text, troupe: Troupe)
 
-company.lens(_.ceo.name = t"Bill")
+play.lens(_.troupe.name = t"The Mechanicals")
 ```
 
-The result is a new `Company`; the original is untouched and any other reference to it
+The result is a new `Play`; the original is untouched and any other reference to it
 still sees what it saw. Several updates apply together, and ones sharing a prefix
 rebuild the shared structure once rather than once each:
 
 ```scala fuel
 parse
 ##
-company.lens
-  ( _.ceo.roles = Nil,
-    _.ceo.name = t"Bill" )
+play.lens
+  ( _.troupe.players = Nil,
+    _.troupe.name = t"The Mechanicals" )
 ```
 
 The same syntax reaches through collections with `Each` and `Filter`, so "give every
-role a count of zero" is one expression rather than a rebuild written by hand.
+player an age of thirty" is one expression rather than a rebuild written by hand.
 
 ## Sharing without copying
 

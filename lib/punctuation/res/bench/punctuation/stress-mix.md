@@ -149,12 +149,12 @@ ___
 
 ## Section 7: emphasis edge cases
 
-Triple emphasis: ***foo bar baz***
-Mixed: *foo **bar** baz*
-Underscore mid-word: foo_bar_baz (not emphasis)
-Asterisk mid-word: foo*bar*baz (is emphasis)
-Adjacent runs: ****foo****
-Within strong: **foo *bar* baz**
+Triple emphasis: ***hal nym sly***
+Mixed: *hal **nym** sly*
+Underscore mid-word: hal_nym_sly (not emphasis)
+Asterisk mid-word: hal*nym*sly (is emphasis)
+Adjacent runs: ****hal****
+Within strong: **hal *nym* sly**
 Nested deeply: *a *b *c* d* e*
 
 ## Section 8: more references
@@ -221,9 +221,9 @@ final class Cursor[data]:
 *a*b*c*d*e*
 **a**b**c**d**
 ***a*b*c***
-*foo _bar_ baz*
-_foo *bar* baz_
-**foo *bar baz***
+*hal _nym_ sly*
+_hal *nym* sly_
+**hal *nym sly***
 
 End of repeat.
 
@@ -338,11 +338,11 @@ See [a], [b][], [c][a], and ![image][b].
 
 ## Final emphasis stress
 
-*foo*bar*baz*
-**foo**bar**baz**
-***foo***bar***baz***
-_foo_bar_baz_ (no emphasis since underscore mid-word)
-__foo__bar__baz__
+*hal*nym*sly*
+**hal**nym**sly**
+***hal***nym***sly***
+_hal_nym_sly_ (no emphasis since underscore mid-word)
+__hal__nym__sly__
 *a **b** c*
 **a *b* c**
 ***a **b** c***
@@ -413,7 +413,7 @@ End of bulk content.
 Ten paragraphs of mixed inline content follow.
 
 Paragraph 1: *a* **b** ***c*** `d` [e](https://e) ![f](/f.png) <https://g>.
-Paragraph 2: *foo* and **bar** and ***baz*** with `code` and [link](https://x).
+Paragraph 2: *hal* and **nym** and ***sly*** with `code` and [link](https://x).
 Paragraph 3: backslash escapes \* \_ \[ \] \\ and entities &amp; &#42;.
 Paragraph 4: HTML inlines <em>e</em> <strong>s</strong> <code>c</code>.
 Paragraph 5: hard break\
@@ -421,9 +421,9 @@ on next line and soft
 break here.
 Paragraph 6: long mixed prose with *italic*, **bold**, `code`, and a
 [link with title](https://example.com "title"), all on one paragraph.
-Paragraph 7: emphasis edge ***foo*bar*baz***.
-Paragraph 8: emphasis edge *foo **bar** baz*.
-Paragraph 9: emphasis edge **foo *bar* baz**.
+Paragraph 7: emphasis edge ***hal*nym*sly***.
+Paragraph 8: emphasis edge *hal **nym** sly*.
+Paragraph 9: emphasis edge **hal *nym* sly**.
 Paragraph 10: final paragraph with [ref-link][upstream].
 
 [upstream]: https://example.com/r8
@@ -520,9 +520,9 @@ Indented code block:
 
 ## Subsection 9.5: emphasis edge cases
 
-Triple emphasis: ***foo 9 bar baz***
-Mixed: *foo **bar 9** baz*
-Adjacent: ****foo 9****
+Triple emphasis: ***hal 9 nym sly***
+Mixed: *hal **nym 9** sly*
+Adjacent: ****hal 9****
 Nested: *a *b *c 9* d* e*
 
 ## Subsection 9.6: more references
@@ -621,9 +621,9 @@ Indented code block:
 
 ## Subsection 10.5: emphasis edge cases
 
-Triple emphasis: ***foo 10 bar baz***
-Mixed: *foo **bar 10** baz*
-Adjacent: ****foo 10****
+Triple emphasis: ***hal 10 nym sly***
+Mixed: *hal **nym 10** sly*
+Adjacent: ****hal 10****
 Nested: *a *b *c 10* d* e*
 
 ## Subsection 10.6: more references
@@ -722,9 +722,9 @@ Indented code block:
 
 ## Subsection 11.5: emphasis edge cases
 
-Triple emphasis: ***foo 11 bar baz***
-Mixed: *foo **bar 11** baz*
-Adjacent: ****foo 11****
+Triple emphasis: ***hal 11 nym sly***
+Mixed: *hal **nym 11** sly*
+Adjacent: ****hal 11****
 Nested: *a *b *c 11* d* e*
 
 ## Subsection 11.6: more references
@@ -823,9 +823,9 @@ Indented code block:
 
 ## Subsection 12.5: emphasis edge cases
 
-Triple emphasis: ***foo 12 bar baz***
-Mixed: *foo **bar 12** baz*
-Adjacent: ****foo 12****
+Triple emphasis: ***hal 12 nym sly***
+Mixed: *hal **nym 12** sly*
+Adjacent: ****hal 12****
 Nested: *a *b *c 12* d* e*
 
 ## Subsection 12.6: more references
@@ -924,9 +924,9 @@ Indented code block:
 
 ## Subsection 13.5: emphasis edge cases
 
-Triple emphasis: ***foo 13 bar baz***
-Mixed: *foo **bar 13** baz*
-Adjacent: ****foo 13****
+Triple emphasis: ***hal 13 nym sly***
+Mixed: *hal **nym 13** sly*
+Adjacent: ****hal 13****
 Nested: *a *b *c 13* d* e*
 
 ## Subsection 13.6: more references
@@ -1025,9 +1025,9 @@ Indented code block:
 
 ## Subsection 14.5: emphasis edge cases
 
-Triple emphasis: ***foo 14 bar baz***
-Mixed: *foo **bar 14** baz*
-Adjacent: ****foo 14****
+Triple emphasis: ***hal 14 nym sly***
+Mixed: *hal **nym 14** sly*
+Adjacent: ****hal 14****
 Nested: *a *b *c 14* d* e*
 
 ## Subsection 14.6: more references
@@ -1126,9 +1126,9 @@ Indented code block:
 
 ## Subsection 15.5: emphasis edge cases
 
-Triple emphasis: ***foo 15 bar baz***
-Mixed: *foo **bar 15** baz*
-Adjacent: ****foo 15****
+Triple emphasis: ***hal 15 nym sly***
+Mixed: *hal **nym 15** sly*
+Adjacent: ****hal 15****
 Nested: *a *b *c 15* d* e*
 
 ## Subsection 15.6: more references
@@ -1227,9 +1227,9 @@ Indented code block:
 
 ## Subsection 16.5: emphasis edge cases
 
-Triple emphasis: ***foo 16 bar baz***
-Mixed: *foo **bar 16** baz*
-Adjacent: ****foo 16****
+Triple emphasis: ***hal 16 nym sly***
+Mixed: *hal **nym 16** sly*
+Adjacent: ****hal 16****
 Nested: *a *b *c 16* d* e*
 
 ## Subsection 16.6: more references
@@ -1328,9 +1328,9 @@ Indented code block:
 
 ## Subsection 17.5: emphasis edge cases
 
-Triple emphasis: ***foo 17 bar baz***
-Mixed: *foo **bar 17** baz*
-Adjacent: ****foo 17****
+Triple emphasis: ***hal 17 nym sly***
+Mixed: *hal **nym 17** sly*
+Adjacent: ****hal 17****
 Nested: *a *b *c 17* d* e*
 
 ## Subsection 17.6: more references
@@ -1429,9 +1429,9 @@ Indented code block:
 
 ## Subsection 18.5: emphasis edge cases
 
-Triple emphasis: ***foo 18 bar baz***
-Mixed: *foo **bar 18** baz*
-Adjacent: ****foo 18****
+Triple emphasis: ***hal 18 nym sly***
+Mixed: *hal **nym 18** sly*
+Adjacent: ****hal 18****
 Nested: *a *b *c 18* d* e*
 
 ## Subsection 18.6: more references
@@ -1530,9 +1530,9 @@ Indented code block:
 
 ## Subsection 19.5: emphasis edge cases
 
-Triple emphasis: ***foo 19 bar baz***
-Mixed: *foo **bar 19** baz*
-Adjacent: ****foo 19****
+Triple emphasis: ***hal 19 nym sly***
+Mixed: *hal **nym 19** sly*
+Adjacent: ****hal 19****
 Nested: *a *b *c 19* d* e*
 
 ## Subsection 19.6: more references
@@ -1631,9 +1631,9 @@ Indented code block:
 
 ## Subsection 20.5: emphasis edge cases
 
-Triple emphasis: ***foo 20 bar baz***
-Mixed: *foo **bar 20** baz*
-Adjacent: ****foo 20****
+Triple emphasis: ***hal 20 nym sly***
+Mixed: *hal **nym 20** sly*
+Adjacent: ****hal 20****
 Nested: *a *b *c 20* d* e*
 
 ## Subsection 20.6: more references

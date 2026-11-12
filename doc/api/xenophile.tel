@@ -100,10 +100,10 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
   detail
       A `Foreign` stands for a value of a foreign type. Its static type is refined with the
       foreign type as a string-literal `Topic` and the source language as `Origin` — written
-      `Foreign of "Foo" from Typescript` — and, when an `Interface` was in scope where the
+      `Foreign of "Play" from Typescript` — and, when an `Interface` was in scope where the
       navigation began, the definitions path as `Locus`. A root is made with
-      `Foreign["Foo", Typescript]`; from there, member selection (`foo.bar`), function
-      application (`foo.greet(t"hello")`) and array indexing (`foo.tags(0)`) are each a macro
+      `Foreign["Play", Typescript]`; from there, member selection (`play.scene`), function
+      application (`play.greet(t"hello")`) and array indexing (`play.tags(0)`) are each a macro
       which looks the member up in the parsed definitions and refines the result's type by
       what the declarations say.
 
@@ -115,12 +115,12 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
       given (Interface in Typescript at "/xenophile/definitions.ts") =
         Interface[Typescript](cp"/xenophile/definitions.ts")
 
-      val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
-      val bar: Foreign of "Bar" from Typescript = foo.bar
-      val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
-      val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+      val play: Foreign of "Play" from Typescript = Foreign["Play", Typescript]
+      val scene: Foreign of "Scene" from Typescript = play.scene
+      val greeting: Foreign of "string" from Typescript = play.greet(t"hello")
+      val tags: Foreign of ("Array" over "string") from Typescript = play.tags
       val tag: Foreign of "string" from Typescript = tags(0)
-      val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
+      val nickname: Foreign of ("string" | "undefined") from Typescript = play.nickname
       ```
 
       A foreign type which the declarations spell as a union is a union of literal types
@@ -141,7 +141,7 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
       `result<ok, err>` parameter, and a C `Address` (topic `pointer`) satisfies any `ptr<T>`
       parameter.
 
-      Compile errors name the problem precisely: _xenophile: the foreign type Foo has no
+      Compile errors name the problem precisely: _xenophile: the foreign type Play has no
       member nonexistent_, _xenophile: greet expects 1 arguments, not 2_, _xenophile: greet
       expects an argument of foreign type string_, and _xenophile: no `Interface` with a
       definitions path is in scope_ when nothing binds the ecosystem to a file.
@@ -152,9 +152,9 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
   refer xenophile.Interface
   refer xenophile.Interoperable
   refer xenophile.call
-  entry .apply   `Foreign["Foo", Typescript]`: a reference to the named foreign type, as a root
+  entry .apply   `Foreign["Play", Typescript]`: a reference to the named foreign type, as a root
       A transparent inline macro taking the foreign type's name as a string-literal type and
-      the `Ecosystem` it belongs to. The result is `Foreign of "Foo" from Typescript`, with the
+      the `Ecosystem` it belongs to. The result is `Foreign of "Play" from Typescript`, with the
       definitions path recorded as `Locus` when an `Interface` for the ecosystem is in scope
       here; a root made without one still navigates (each step summons the `Interface`
       afresh) but offers no completions. The name must be a literal: _xenophile: the foreign
@@ -172,7 +172,7 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
       Invoked reflectively through `prophesy.Completable`: given the receiver's `TypeRepr` and
       the prefix typed so far, it reads `Topic`, `Origin` and `Locus` from the refinement,
       parses the definitions at the locus, and lists each member as a term or a method with
-      its signature (`(string): Foo`) rendered symbolically. A receiver with a compound topic,
+      its signature (`(string): Play`) rendered symbolically. A receiver with a compound topic,
       or whose root recorded no `Locus`, offers nothing.
   entry .converter   a Scala value with an `Interoperable` instance converts to a `Foreign` literal
       The `Conversion[value, Foreign of Topic from Ecosystem]` which lets `t"hello"` be passed
@@ -194,7 +194,8 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
       ```scala
       import soundness.*
 
-      val select = Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo")
+      val select =
+        Foreign.Expression.Select(Foreign.Expression.Reference(t"Play"), t"scene", t"Play")
       val literal = Foreign.Expression.Literal(t"hi")
       val call = Foreign.Expression.Apply(select, scala.collection.immutable.List(literal))
       ```
@@ -203,7 +204,7 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
   entry .Type   a foreign type as a dialect reports it: named, a union, or a generic application
     detail
         The `enum` a `Dialect` uses to describe member types. `Named(name)` is a plain type
-        (`int`, `string`, `Foo`); `Union(members)` a union of alternatives (an optional WIT
+        (`int`, `string`, `Play`); `Union(members)` a union of alternatives (an optional WIT
         value is `Union(List(Named("string"), Named("none")))`); and `Applied(constructor,
         arguments)` a generic application such as TypeScript's `Map<number, string>`, WebIDL's
         `sequence<T>`, WIT's `list<T>`, `option<T>`, `result<ok, err>` and `tuple<…>`, and the
@@ -221,8 +222,8 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
       `Origin` and `Locus` carried over. A field and a zero-parameter method may both be
       selected bare — a nullary WIT function such as `` `get-random-u64` `` is selected and then
       `call`ed, with no empty argument list — but a method with parameters must be applied:
-      _xenophile: greet is a method of Foo and must be called with arguments_. An unknown name
-      is _xenophile: the foreign type Foo has no member nonexistent_.
+      _xenophile: greet is a method of Play and must be called with arguments_. An unknown name
+      is _xenophile: the foreign type Play has no member nonexistent_.
   entry #applyDynamic   `foreign.method(args…)`: applies a declared method to foreign-typed arguments
       A transparent inline macro, reached through `Dynamic`. Each argument is a `Foreign from
       Origin` — a navigation from the same ecosystem, or a Scala value converted by
@@ -230,7 +231,7 @@ entry .Foreign   a value of a foreign type, navigated against its language's own
       subsumption. The arity must match (_xenophile: greet expects 1 arguments, not 2_), the
       arguments must be written directly rather than spread from a sequence, and the result is
       typed by the method's declared result. Selecting a field as though it were a method is
-      _xenophile: bar is not a method of Foo_.
+      _xenophile: scene is not a method of Play_.
   entry #apply   `foreign(index)`: an element of an array-typed foreign value
       A real `apply`, taking precedence over `Dynamic`, so `tags(0)` resolves here. The
       receiver's topic must be one of the array constructors — WebIDL `sequence` and
@@ -262,7 +263,7 @@ entry .Interface   binds an ecosystem to a definitions file on the compiler's cl
       `Interface` at all.
 
       Parsed definitions are cached by path for the lifetime of a compilation run, so a chain
-      such as `foo.bar.qux` parses its file once.
+      such as `play.scene.play` parses its file once.
   refer xenophile.Ecosystem
   refer xenophile.Dialect
   entry .apply   `Interface[Native](cp"/lib.h")` or `Interface[Native]("/lib.h")`: an interface over a definitions path
@@ -330,7 +331,7 @@ entry .Dialect   a grammar for a foreign type system: parses definitions into ea
       ```
 
       `parse` is total in every provided dialect: a source which does not parse defines
-      nothing, and the macro reports _xenophile: the foreign type Foo is not defined_ from the
+      nothing, and the macro reports _xenophile: the foreign type Play is not defined_ from the
       empty result.
   refer xenophile.Prototype
   refer xenophile.Ecosystem
@@ -341,7 +342,7 @@ entry .Dialect   a grammar for a foreign type system: parses definitions into ea
       no `Interface` (there is no `Locus`), and records no `Locus` on the types it produces.
   entry #resolve   the members of one named type, for a self-resolving dialect; `Unset` if unknown
       `Unset` by default, and for a self-resolving dialect when the type is not on the compile
-      classpath: _xenophile: the foreign type Foo is not defined on the compile classpath_.
+      classpath: _xenophile: the foreign type Play is not defined on the compile classpath_.
 
 entry .Prototype   the signature of one member of a foreign type: its parameters, result and addressing
   detail
@@ -1538,12 +1539,12 @@ entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code co
       given (Interface in Typescript at "/xenophile/definitions.ts") =
         Interface[Typescript](cp"/xenophile/definitions.ts")
 
-      val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
-      val bar: Foreign of "Bar" from Typescript = foo.bar
-      val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
-      val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+      val play: Foreign of "Play" from Typescript = Foreign["Play", Typescript]
+      val scene: Foreign of "Scene" from Typescript = play.scene
+      val greeting: Foreign of "string" from Typescript = play.greet(t"hello")
+      val tags: Foreign of ("Array" over "string") from Typescript = play.tags
       val tag: Foreign of "string" from Typescript = tags(0)
-      val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
+      val nickname: Foreign of ("string" | "undefined") from Typescript = play.nickname
       ```
 
       The companion holds two things. First, the `Interoperable` givens by which a Scala value
@@ -1566,7 +1567,7 @@ entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code co
       for a compatibility discipline to hash, raising `Typescript.Error` for anything outside
       its grammar rather than approximating it.
 
-      A member the file does not declare is a compile error, _xenophile: the foreign type Foo
+      A member the file does not declare is a compile error, _xenophile: the foreign type Play
       has no member nonexistent_; a wrong arity, _xenophile: greet expects 1 arguments, not
       2_; a wrongly-typed argument, _xenophile: greet expects an argument of foreign type
       string_. The members of a type are also offered as tab completions by a completion
@@ -1689,7 +1690,7 @@ entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code co
       entry #optional   whether the parameter may be omitted
       entry #rest   whether the parameter is a `...rest` parameter
     entry #text   a stable rendering of the type, as the source would write it
-        `string[][]`, `A & B`, `(event: string) => void`, `x is Foo`. It is for diagnostics;
+        `string[][]`, `A & B`, `(event: string) => void`, `x is Play`. It is for diagnostics;
         the canonical encoding a discipline hashes is structural and lives with the discipline.
   entry .Error   raised when a `.d.ts` source cannot be read
     detail

@@ -131,7 +131,7 @@ object Benchmarks extends Suite("regex-bench", m"Kaleidoscope regex benchmarks")
   // There is no static-FSA arm: the generated matcher is a whole-input test, and seeking runs
   // the Pike VM with the literal-prefix (memchr-style, via the `String.indexOf` intrinsic) or
   // first-symbol-class jump.
-  val seekFiller: String = "lorem ipsum dolor sit amet ".repeat(150).nn
+  val seekFiller: String = "to be or not to be that is ".repeat(150).nn
 
   val seekPatterns: Array[Text]^{} = Array
     ( t"ERROR [a-z.]+",

@@ -133,7 +133,7 @@ object Discovery:
       case label :: _ =>
         name.parent.let(Service.parse(_)).let: service => safely(Instance(label, service))
 
-    // The next name to try after a conflict (RFC 6762 §9): `Foo` → `Foo (2)` → `Foo (3)`.
+    // The next name to try after a conflict (RFC 6762 §9): `Hamlet` → `Hamlet (2)` → `Hamlet (3)`.
     private[syndesis] def next(label: Text): Text =
       val open: Optional[Ordinal] = label.offsetOf(t" (", Rtl)
 

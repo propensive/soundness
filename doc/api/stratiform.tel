@@ -13,8 +13,8 @@ detail
     ```
     tel 1.0
 
-    # the team
-    name Alice  # lead
+    # the cast
+    name Percy  # lead
     age 30
     address
       street 1 High Street
@@ -48,9 +48,9 @@ detail
 
     case class Person(name: Text, age: Int)
 
-    val person: Person = t"name Alice\nage 30\n".read[Tel].as[Person]
-    val same: Person = t"name Alice\nage 30\n".read[Person in Tel]
-    val text: Text = Person(t"Bob", 41).in[Text over Tel]        // t"name Bob\nage 41\n"
+    val person: Person = t"name Percy\nage 30\n".read[Tel].as[Person]
+    val same: Person = t"name Percy\nage 30\n".read[Person in Tel]
+    val text: Text = Person(t"Hal", 41).in[Text over Tel]        // t"name Hal\nage 41\n"
     ```
 
     A literal document is `tel"…"`, parsed as the code compiles and usable as a pattern; a
@@ -128,8 +128,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
             import soundness.*
             import strategies.throwUnsafely
 
-            val document: Tel = t"name Alice\nage 30\n".read[Tel]
-            document.field(t"name").let(_.primaryAtom)   // t"Alice"
+            val document: Tel = t"name Percy\nage 30\n".read[Tel]
+            document.field(t"name").let(_.primaryAtom)   // t"Percy"
       frame
         label Decoded into a case class
         code
@@ -138,8 +138,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
             case class Person(name: Text, age: Int)
 
-            val document: Tel = t"name Alice\nage 30\n".read[Tel]
-            val person: Person = document.as[Person]      // Person(t"Alice", 30)
+            val document: Tel = t"name Percy\nage 30\n".read[Tel]
+            val person: Person = document.as[Person]      // Person(t"Percy", 30)
       frame
         label Or read to the type in one step
         code
@@ -148,7 +148,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
             case class Person(name: Text, age: Int)
 
-            val person: Person = t"name Alice\nage 30\n".read[Person in Tel]
+            val person: Person = t"name Percy\nage 30\n".read[Person in Tel]
       frame
         label And verified, so navigation is checked as the code compiles
         code
@@ -157,8 +157,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
             case class Person(name: Text, age: Int)
 
-            val checked = t"name Alice\nage 30\n".read[Tel].verify[Person]
-            checked.name.as[Text]   // t"Alice"
+            val checked = t"name Percy\nage 30\n".read[Tel].verify[Person]
+            checked.name.as[Text]   // t"Percy"
             checked.email           // does not compile
       ##
       ```
@@ -198,8 +198,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
       case class Person(name: Text, age: Int)
 
-      t"name Alice\nage 30\n".read[Tel].as[Person]            // Person(t"Alice", 30)
-      safely(t"name Alice\nage old\n".read[Tel].as[Person])   // Unset: `old` is not an Int
+      t"name Percy\nage 30\n".read[Tel].as[Person]            // Person(t"Percy", 30)
+      safely(t"name Percy\nage old\n".read[Tel].as[Person])   // Unset: `old` is not an Int
       ```
   entry #enclosing   the innermost compound at a source line and column, as a path and a region
       `tel.enclosing(line, column)`, with 1-indexed coordinates, is the `Tel.Enclosure` of the
@@ -216,7 +216,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import strategies.throwUnsafely
       import parsing.trackPositions
 
-      t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(2, 4).let(_.path)   // telp"/person/name"
+      t"person\n  name Percy\n  age 30\n".read[Tel].enclosing(2, 4).let(_.path)   // telp"/person/name"
       ```
   entry #selectDynamic   dynamic field access, `tel.firstName`, by the kebab-case keyword
       `tel.firstName` looks up the child compound with keyword `first-name`, as an empty `Tel`
@@ -232,7 +232,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import strategies.throwUnsafely
       import dynamicAccess.dynamicTel
 
-      t"first-name Alice\n".read[Tel].firstName.primaryAtom   // t"Alice"
+      t"first-name Percy\n".read[Tel].firstName.primaryAtom   // t"Percy"
       ```
   entry #applyDynamic   indexed access, `tel.items(2)`, into a field's children or a repeated field
       On a plain `Tel`, `tel.items(2)` is the third child compound under the `items` field,
@@ -267,7 +267,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom)   // Array(t"1", t"2", t"3")
       ```
   entry #modify   replaces a field's compound in place, or appends it if absent
-      `tel.modify("name", Tel.scalar(t"Bob"))` re-keys the value's compound to the field's
+      `tel.modify("name", Tel.scalar(t"Hal"))` re-keys the value's compound to the field's
       kebab-case keyword and puts it where the existing compound was, keeping the surrounding
       blocks, comments and blank lines; a field with no compound is appended to the last
       block. A document-rooted value becomes a compound carrying the document's children. It
@@ -280,15 +280,15 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import strategies.throwUnsafely
       import dynamicAccess.dynamicTel
 
-      t"name Alice\nage 30\n".read[Tel].modify("name", Tel.scalar(t"Bob")).show   // t"name Bob\nage 30\n"
+      t"name Percy\nage 30\n".read[Tel].modify("name", Tel.scalar(t"Hal")).show   // t"name Hal\nage 30\n"
       ```
   entry #Self   the typeclass subject: `Tel` itself
   entry #Metadata   the metadata type a loaded document is paired with: `Tel.Metadata`
-  entry .Layer   the class a schema layer object extends: `object foo extends Tel.Layer("foo")`
+  entry .Layer   the class a schema layer object extends: `object verse extends Tel.Layer("verse")`
       A layer (TEL §20.3) is declared once, at the top level or in an object, as a singleton
-      whose name is part of its type, so that `@assign(foo)` and `@retract(foo)` refer to it
+      whose name is part of its type, so that `@assign(verse)` and `@retract(verse)` refer to it
       by its object and a misspelt layer is a compile error rather than a second layer. The
-      name is read from the type by `Tel.Name[foo.type]`. In a derived schema
+      name is read from the type by `Tel.Name[verse.type]`. In a derived schema
       (`Tels.tels[T]`), the fields assigned to a layer form its overlay, and the enum cases
       retracted from it are excluded under it, which is what `Tel.Acceptance` and `fulfil`
       offer and serve as components.
@@ -300,7 +300,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
       case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
       ```
-  entry .Name   the name of a layer, from its type: `Tel.Name[foo.type]` is `"foo"`
+  entry .Name   the name of a layer, from its type: `Tel.Name[verse.type]` is `"verse"`
   entry .telOpenable   the `Openable` for a readable and writable TEL source: `source.open[Tel](Read & Write)`
       In implicit scope through `Tel`'s companion for any `source` which is `Readable to Tel`
       and `Writable by Data`. Opening parses the source on entry, hands the block a
@@ -321,7 +321,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
         every field takes the root focus. Decoding points the span at the value; schema
         validation at the keyword, which an unknown-keyword diagnostic must underline.
 
-        Under `validate[Tel.Focus]` with an accruing error type, decoding `name Alice` and
+        Under `validate[Tel.Focus]` with an accruing error type, decoding `name Percy` and
         `age old` as a `Person(name: Text, age: Int)` records one `NotScalar` error at the
         focus `/age`, with the span of `old` when the document was parsed under
         `parsing.trackPositions`.
@@ -344,10 +344,10 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       raises `Mutation.Error` at the first operation the document rejects, and the result is
       a new document with its presentation otherwise untouched.
   entry .verify   checks a document against a type and re-types it for compile-checked navigation
-      An extension on `Tel`. `tel.verify[Office]` decodes the document as `Office` through its
+      An extension on `Tel`. `tel.verify[Person]` decodes the document as `Person` through its
       `Tel.Decodable` — raising `Tel.Error` if it does not conform, since TEL scalars are
       untyped text and only decoding can catch a non-numeric `Int` — and then returns the
-      same document typed as `Tel of Office from Office`. The phantom `Topic` is the current
+      same document typed as `Tel of Person from Person`. The phantom `Topic` is the current
       position in the type and `Origin` the root, so `#selectDynamic` and `#applyDynamic`
       resolve each field against the type as the code compiles, with no `dynamicAccess`
       import: a misspelled field, or a field the type lacks, does not compile. Fields reached
@@ -357,15 +357,15 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import soundness.*
       import strategies.throwUnsafely
 
-      case class Office(name: Text, city: Text)
-      case class Assignment(worker: Text, office: Office)
+      case class Person(name: Text, age: Int)
+      case class Play(title: Text, hero: Person)
 
-      val doc = Assignment(t"Bob", Office(t"Main", t"Town")).in[Tel]
-      doc.verify[Assignment].office.city.as[Text]   // t"Town"
-      doc.verify[Assignment].office.street           // does not compile
+      val doc = Play(t"Othello", Person(t"Othello", 40)).in[Tel]
+      doc.verify[Play].hero.name.as[Text]   // t"Othello"
+      doc.verify[Play].hero.rank             // does not compile
       ```
   entry .Nature   how a codec's type may occupy a line's atom positions: `Scalar`, `Flag` or `Struct`
-      TEL §20.2 lets a compound's inline atoms fill its members positionally — `person Alice
+      TEL §20.2 lets a compound's inline atoms fill its members positionally — `person Percy
       30` fills `name` and `age` — and `Nature` is the codec-level approximation of the
       member classification which decides that: `Scalar` is atom-assignable and never
       skipped, `Flag` is atom-assignable when the atom text equals the keyword, and `Struct`
@@ -393,8 +393,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
         case class Person(name: Text, age: Int)
 
-        Person(t"Alice", 30).in[Tel].show    // t"name Alice\nage 30\n"
-        Person(t"Alice", 30).tel             // the same `Tel`
+        Person(t"Percy", 30).in[Tel].show    // t"name Percy\nage 30\n"
+        Person(t"Percy", 30).tel             // the same `Tel`
         ```
 
         A custom encoder is built with `.apply`, giving its shape and nature; a type with an
@@ -407,7 +407,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
     entry #optional   whether a field of this type may legitimately be absent; `false` unless overridden
     entry #constructed   the §22.2 canonical child form of a value: `encoded` unless overridden
         For derived products, the compound with its leading scalar fields in atom position
-        (`person Alice 30`), as `Mutation.construct` builds it; what `Tel.canonical` uses for
+        (`person Percy 30`), as `Mutation.construct` builds it; what `Tel.canonical` uses for
         nested values.
     entry #canonicalized   the §22.2 canonical presentation as a document root: `constructed` unless overridden
         The root carries no atoms, so a derived product's fields are top-level children whose
@@ -427,8 +427,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
             case class Address(street: Text, city: Text)
             case class Delivery(name: Text, address: Address)
 
-            Delivery(t"Acme", Address(t"1 Acme Way", t"Town")).in[Tel].show
-            // t"name Acme\naddress\n  street 1 Acme Way\n  city Town\n"
+            Delivery(t"Lear", Address(t"1 Heath Rd", t"Town")).in[Tel].show
+            // t"name Lear\naddress\n  street 1 Heath Rd\n  city Town\n"
       alternative Canonical
         code
             import soundness.*
@@ -436,8 +436,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
             case class Address(street: Text, city: Text)
             case class Delivery(name: Text, address: Address)
 
-            Tel.canonical(Delivery(t"Acme", Address(t"1 Acme Way", t"Town"))).show
-            // t"name Acme\naddress    1 Acme Way  Town\n"
+            Tel.canonical(Delivery(t"Lear", Address(t"1 Heath Rd", t"Town"))).show
+            // t"name Lear\naddress    1 Heath Rd  Town\n"
       ##
       ```
   entry .Decodable   a TEL decoder for a type which also carries the shape of what it reads
@@ -459,8 +459,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
         case class Person(name: Text, age: Int = 18)
 
-        t"name Alice\n".read[Tel].as[Person]       // Person(t"Alice", 18)
-        t"person Alice 30\n".read[Tel].as[Person]  // does not compile
+        t"name Percy\n".read[Tel].as[Person]       // Person(t"Percy", 18)
+        t"person Percy 30\n".read[Tel].as[Person]  // does not compile
         ```
     entry .apply   builds a decoder from a shape, an optional nature and optionality, and a `Decodable in Tel`
         `Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar)(tel => …)`, the
@@ -517,7 +517,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
         case class Person(name: Text, age: Int)
         given Person is Tel.Parsable = Tel.Parsable.derived
 
-        t"name Alice\nage 30\n".read[Person in Tel]   // parsed with no tree built
+        t"name Percy\nage 30\n".read[Person in Tel]   // parsed with no tree built
         ```
 
         A field of a derived parser resolves through `Tel.Field`: its own `Parsable` if it has
@@ -625,8 +625,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
         case class Person(name: Text, age: Int)
 
         val schema: Tels = Tels.tels[Person](t"person")
-        val element: Tel.Element = Tel.Type.assign(t"name Alice\nage 30\n".read[Tel], schema)
-        safely(Tel.Type.assign(t"nam Alice\n".read[Tel], schema))   // Unset: E306 and E307
+        val element: Tel.Element = Tel.Type.assign(t"name Percy\nage 30\n".read[Tel], schema)
+        safely(Tel.Type.assign(t"nam Percy\n".read[Tel], schema))   // Unset: E306 and E307
         ```
     entry .assign   assigns types to a document under a schema, optionally with validators and codecs
         Three overloads. `assign(tel, schema)` runs no §21 checks, so a schema's own
@@ -950,30 +950,30 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
               import soundness.*
               import strategies.throwUnsafely
 
-              val document = t"# the team\nname Alice  # lead\nage 30\n".read[Tel]
-              document.field(t"name").let(_.primaryAtom)   // t"Alice"
+              val document = t"# the cast\nname Percy  # lead\nage 30\n".read[Tel]
+              document.field(t"name").let(_.primaryAtom)   // t"Percy"
         frame
           label Address the field with a pointer and rewrite its atom
           code
               import soundness.*
               import strategies.throwUnsafely
 
-              val document = t"# the team\nname Alice  # lead\nage 30\n".read[Tel]
+              val document = t"# the cast\nname Percy  # lead\nage 30\n".read[Tel]
               val pointer = Tel.Pointer.of(t"name")
-              val edited = Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Bob"))
-              edited.show   // t"# the team\nname Bob  # lead\nage 30\n": comment and remark intact
+              val edited = Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Hal"))
+              edited.show   // t"# the cast\nname Hal  # lead\nage 30\n": comment and remark intact
         frame
           label Insert a sibling after it
           code
               import soundness.*
               import strategies.throwUnsafely
 
-              val document = t"# the team\nname Alice  # lead\nage 30\n".read[Tel]
+              val document = t"# the cast\nname Percy  # lead\nage 30\n".read[Tel]
               val pointer = Tel.Pointer.of(t"name")
-              val edited = Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Bob"))
-              val email = Tel.Compound(t"email", Array(Tel.Atom.Inline(t"bob@example.com", 1)), Unset, Array.empty)
+              val edited = Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Hal"))
+              val email = Tel.Compound(t"email", Array(Tel.Atom.Inline(t"hal@example.com", 1)), Unset, Array.empty)
               Mutation(edited, Mutation.Op.InsertAfter(pointer, email)).show
-              // t"# the team\nname Bob  # lead\nemail bob@example.com\nage 30\n"
+              // t"# the cast\nname Hal  # lead\nemail hal@example.com\nage 30\n"
         ##
         ```
     entry .Step   one step: a keyword, and an optional occurrence index among siblings sharing it
@@ -1058,8 +1058,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
     entry #headings   the heading text after each marker
   entry .Compound   one keyword line: the keyword, its atoms, an optional remark and its child blocks
     detail
-        The unit of a TEL document. `Tel.Compound(t"name", Array(Tel.Atom.Inline(t"Alice",
-        1)), Unset, Array.empty)` is the line `name Alice`; a remark is the `# …` after two
+        The unit of a TEL document. `Tel.Compound(t"name", Array(Tel.Atom.Inline(t"Percy",
+        1)), Unset, Array.empty)` is the line `name Percy`; a remark is the `# …` after two
         spaces at the end of the line; children are the indented blocks beneath. A compound
         is wrapped as a `Tel` with `Tel.make`, and `Tel.compound` builds one from a keyword,
         atoms and child compounds in one call.
@@ -1114,7 +1114,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import strategies.throwUnsafely
       import parsing.trackPositions
 
-      val tel = t"person\n  name Alice\n".read[Tel]
+      val tel = t"person\n  name Percy\n".read[Tel]
       tel.locate(telp"/person/name")      // line 2, column 8, length 5
       tel.locateKey(telp"/person/name")   // line 2, column 3, length 4
       ```
@@ -1136,7 +1136,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import soundness.*
       import strategies.throwUnsafely
 
-      t"name Alice\nage 30\n".read[Tel]
+      t"name Percy\nage 30\n".read[Tel]
       ```
   entry .aggregableParsed   `source.read[T in Tel]` for a type with a `Tel.Parsable`: direct parsing, no tree
       In implicit scope, and chosen over `Tel.aggregableIn` whenever the type has a
@@ -1178,7 +1178,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       import soundness.*
       import strategies.throwUnsafely
 
-      val loaded = t"tel 1.0 example.com/contact\n\nname Alice\n".load[Tel]
+      val loaded = t"tel 1.0 example.com/contact\n\nname Percy\n".load[Tel]
       loaded.metadata.pragma.let(_.reference).let(_.text)   // t"example.com/contact"
       ```
   entry .loadableData   `bytes.load[Tel]`: as `.loadable`, from UTF-8 bytes with no transcoding
@@ -1252,7 +1252,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
         ```scala
         import soundness.*
 
-        safely(t"name Alice\n  age 30\n".read[Tel])   // Unset: E111, over-indentation
+        safely(t"name Percy\n  age 30\n".read[Tel])   // Unset: E111, over-indentation
         ```
     entry .Position   a 1-indexed source position: line, column, and optionally an offset and a token length
       detail
@@ -1383,14 +1383,14 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
         import soundness.*
         import strategies.throwUnsafely
 
-        t"name Alice\n".open[Tel]() { handle ?=> handle.current.show }   // t"name Alice\n"
+        t"name Percy\n".open[Tel]() { handle ?=> handle.current.show }   // t"name Percy\n"
         ```
 
         ```scala fuel
         typecheck
         ##
         file.open[Tel](Read & Write): handle ?=>
-          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+          handle.update(Tel.Pointer.of(t"name"), t"Hal")
           handle.insertAfter(Tel.Pointer.of(t"name"), email)
           handle.attachRemark(Tel.Pointer.of(t"age"), t"checked")
         ```
@@ -1465,9 +1465,9 @@ entry .tel   `value.tel`, a value's `Tel`; and the `tel"…"` interpolator and e
 
     case class Person(name: Text, age: Int)
 
-    Person(t"Alice", 30).tel.show   // t"name Alice\nage 30\n"
+    Person(t"Percy", 30).tel.show   // t"name Percy\nage 30\n"
 
-    val name = t"Alice"
+    val name = t"Percy"
     tel"name $name" match
       case tel"name $who" => who.primaryAtom
       case _              => t"anonymous"
@@ -1500,9 +1500,9 @@ entry .bintel   a document, element or value as BinTEL body bytes, guided by a s
     case class Person(name: Text, age: Int)
 
     val schema: Tels = Tels.tels[Person](t"person")
-    val document: Tel = t"name Alice\nage 30\n".read[Tel]
+    val document: Tel = t"name Percy\nage 30\n".read[Tel]
     val body: Data = document.bintel(schema)
-    Person(t"Alice", 30).bintel == body   // true
+    Person(t"Percy", 30).bintel == body   // true
     ```
 
 entry .valueHash   the BLAKE3 digest of a document's, element's or acceptance's BinTEL body: a hash of content, not bytes
@@ -1520,8 +1520,8 @@ entry .valueHash   the BLAKE3 digest of a document's, element's or acceptance's 
     case class Person(name: Text, age: Int)
     val schema: Tels = Tels.tels[Person](t"person")
 
-    t"name Alice\nage 30\n".read[Tel].valueHash(schema)
-      == t"# a person\nage 30\n\nname Alice\n".read[Tel].valueHash(schema)   // true
+    t"name Percy\nage 30\n".read[Tel].valueHash(schema)
+      == t"# a person\nage 30\n\nname Percy\n".read[Tel].valueHash(schema)   // true
     ```
 
 entry .bintelDocument   a document as a complete, self-framing BinTEL byte sequence under a schema signature
@@ -1545,7 +1545,7 @@ entry .fulfil   a writer's answer to an acceptance from a value: the first alter
     ##
     val accepting = Tel.Acceptance[(Contact, ContactV1)]()
 
-    Contact(t"Bea", t"bea@example.com", Unset).fulfil(accepting.acceptance).let: served =>
+    Contact(t"Nym", t"nym@example.com", Unset).fulfil(accepting.acceptance).let: served =>
       send(served.document)
     ```
 
@@ -1578,19 +1578,19 @@ entry .Tel2   the trait holding `Tel`'s derived codecs, primitive and collection
   entry #telViewOpenable   the read-only `Openable` for any source parseable as `Tel`
       Any source which is `Readable to Tel` may be opened; a `Write` mode is refused at open
       time with `Mutation.Error(WriteUnsupported)`, so a `Tactic[Mutation.Error]` is needed.
-      `t"name Alice\n".open[Tel]() { handle ?=> handle.current }` reads a text this way.
+      `t"name Percy\n".open[Tel]() { handle ?=> handle.current }` reads a text this way.
   entry #interpolator   the `tel"…"` interpolator: a document parsed as the code compiles, with typed substitutions
       Each `$value` is encoded through its own `Tel.Encodable`, so `tel"name $name"` with a
-      `Text` is the compound `name Alice`. A malformed literal is a compile error positioned
+      `Text` is the compound `name Percy`. A malformed literal is a compile error positioned
       at the offending range of the Scala source. The `tel` extension on `StringContext`,
       in the `stratiform` package, is the entry point; this given does the work.
 
       ```scala
       import soundness.*
 
-      val name = t"Alice"
+      val name = t"Percy"
       val contact: Tel = tel"name $name"
-      contact.field(t"name").let(_.primaryAtom)   // t"Alice"
+      contact.field(t"name").let(_.primaryAtom)   // t"Percy"
       ```
   entry #extrapolator   the `tel"…"` extractor: a pattern parsed as the code compiles, binding atom captures
       `case tel"name $name" =>` binds `name` to a `Tel` holding the captured atom, so
@@ -1600,7 +1600,7 @@ entry .Tel2   the trait holding `Tel`'s derived codecs, primitive and collection
       ```scala
       import soundness.*
 
-      tel"contact Alice alice@example.com" match
+      tel"contact Percy percy@example.com" match
         case tel"contact $name $email" => (name.primaryAtom, email.primaryAtom)
         case _                         => (t"", t"")
       ```
@@ -1732,7 +1732,7 @@ entry .Tel2   the trait holding `Tel`'s derived codecs, primitive and collection
       A missing `key` or `value` child reads through the codec's `absent()`, so a
       flag-natured value reports its absent form rather than misreading emptiness.
   entry #scalar   a `Tel` holding one atom: the form a scalar encodes to
-      `Tel.scalar(t"Bob")` is a keywordless compound with one atom, in whichever form reads
+      `Tel.scalar(t"Hal")` is a keywordless compound with one atom, in whichever form reads
       back as written (inline, source or literal). An empty text stays an empty inline atom,
       which serializes as no atom but is distinguishable, at the value level, from absence.
       What `modify` and the `telLens` setter take.
@@ -1782,8 +1782,8 @@ entry .Tel4   the trait holding `Tel.Provider`, the type provider over a TEL sch
         ##
         object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
 
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
-        record.name   // t"Alice"
+        val record = ContactRecords.record(t"name Percy\nage 30\n".read[Tel])
+        record.name   // t"Percy"
         record.age    // 30
         ```
 
@@ -1853,7 +1853,7 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
         t"name contact\n\ndocument\n  field name Identifier key\n  field email String optional repeatable\n"
 
       val written: Tels = Tels.Validation.validate(source.read[Tel].as[Tels])
-      val element: Tel.Element = Tel.Type.assign(t"name alice\nemail a@example.com\n".read[Tel], written)
+      val element: Tel.Element = Tel.Type.assign(t"name percy\nemail percy@example.com\n".read[Tel], written)
       ```
 
       The companion holds the schema machinery as nested objects, each a page of its own:
@@ -1947,7 +1947,7 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
     entry #key   whether this field identifies occurrences of the enclosing struct
         At most one field of a struct is a key (E221); it must be scalar-typed (E219) and
         required and non-repeatable (E220). A key is what a `Telp` key selector such as
-        `/contact/bea` matches, and two occurrences with the same key value are rejected at
+        `/contact/nym` matches, and two occurrences with the same key value are rejected at
         assignment (E314). A layer may mark a field as key; nothing can clear it.
   entry .SelectRef   a reference to a named select, at a member position
     detail
@@ -2104,7 +2104,7 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
         given Tels = Tels.tels[Person](t"person")
 
         import Tels.Decoder.asValidated
-        t"name Alice\nage 30\n".read[Tel].asValidated[Person]   // Person(t"Alice", 30)
+        t"name Percy\nage 30\n".read[Tel].asValidated[Person]   // Person(t"Percy", 30)
         ```
 
         Under the default fail-fast tactic the first E2xx/E3xx violation aborts with a
@@ -2660,13 +2660,13 @@ entry .Telp   a TEL path: a delimiter-first sequence of keywords and selectors o
       import soundness.*
       import strategies.throwUnsafely
 
-      val path: Telp = telp"/contact/bea/email/1"
-      path == Telp.parse(t".contact.bea.email.1")   // true
-      path.components                               // List(t"contact", t"bea", t"email", t"1")
-      path.encode                                   // t"/contact/bea/email/1"
+      val path: Telp = telp"/contact/nym/email/1"
+      path == Telp.parse(t".contact.nym.email.1")   // true
+      path.components                               // List(t"contact", t"nym", t"email", t"1")
+      path.encode                                   // t"/contact/nym/email/1"
       ```
 
-      A `telp"…"` literal is parsed as the code compiles, so `telp"contact/bea"` — no leading
+      A `telp"…"` literal is parsed as the code compiles, so `telp"contact/nym"` — no leading
       delimiter — is a compile error. `Telp` is also the pointer of `Tel.Focus`, the focus
       under which decoding errors accrue: a rendered focus such as `/person/name` is a valid,
       resolvable TELP, since keywords are kebab-case and so never all digits. It is a query
@@ -2687,31 +2687,31 @@ entry .Telp   a TEL path: a delimiter-first sequence of keywords and selectors o
       given schema: Tels = Tels.Validation.validate(source.read[Tel].as[Tels])
 
       val root: Tel.Element =
-        Tel.Type.assign(t"owner amy\ncontact bea\n  email bea@example.com\n  email bea@example.org\ncontact chu\n".read[Tel], schema)
+        Tel.Type.assign(t"owner hal\ncontact nym\n  email nym@example.com\n  email nym@example.org\ncontact pistol\n".read[Tel], schema)
       ```
 
       ```scala fuel
       frame
         label A non-repeatable member needs no selector
         code
-            telp"/owner/name".resolve(root)          // One(Value "amy")
+            telp"/owner/name".resolve(root)          // One(Value "hal")
       frame
         label A repeatable keyword at the end of the path is its occurrence sequence
         code
-            telp"/contact".resolve(root)             // Occurrences(bea, chu)
+            telp"/contact".resolve(root)             // Occurrences(nym, pistol)
       frame
         label An occurrence is selected by its key value
         code
-            telp"/contact/bea/name".resolve(root)    // One(Value "bea")
+            telp"/contact/nym/name".resolve(root)    // One(Value "nym")
       frame
         label An unkeyed repeatable member is selected by index
         code
-            telp"/contact/bea/email/1".resolve(root) // One(Value "bea@example.org")
+            telp"/contact/nym/email/1".resolve(root) // One(Value "nym@example.org")
       ##
       ```
 
-      Here `contact` is an optional, repeatable `Contact` whose `name` is its key, so `bea`
-      selects the first occurrence keyed `bea`, while `email`, which has no key, is selected
+      Here `contact` is an optional, repeatable `Contact` whose `name` is its key, so `nym`
+      selects the first occurrence keyed `nym`, while `email`, which has no key, is selected
       by index alone.
   refer stratiform.telp
   refer stratiform.Tel.Focus
@@ -2804,38 +2804,38 @@ entry .Revision   a composable log of edits, applied to a document one operation
             import soundness.*
             import strategies.throwUnsafely
 
-            val document: Tel = t"# contacts\nname Alice\n".read[Tel]
-            document.show   // t"# contacts\nname Alice\n"
+            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+            document.show   // t"# contacts\nname Percy\n"
       frame
         label Update one atom, leaving the comment in place
         code
             import soundness.*
             import strategies.throwUnsafely
 
-            val document: Tel = t"# contacts\nname Alice\n".read[Tel]
-            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
-            document.edited(renamed).show   // t"# contacts\nname Bob\n"
+            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
+            document.edited(renamed).show   // t"# contacts\nname Hal\n"
       frame
         label Then insert a member at the root
         code
             import soundness.*
             import strategies.throwUnsafely
 
-            val document: Tel = t"# contacts\nname Alice\n".read[Tel]
-            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
-            val emailed: Revision = Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"b@example.com"))
-            document.edited(renamed ++ emailed).show   // t"# contacts\nname Bob\nemail b@example.com\n"
+            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
+            val emailed: Revision = Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"hal@example.com"))
+            document.edited(renamed ++ emailed).show   // t"# contacts\nname Hal\nemail hal@example.com\n"
       frame
         label And attach a remark to the renamed line
         code
             import soundness.*
             import strategies.throwUnsafely
 
-            val document: Tel = t"# contacts\nname Alice\n".read[Tel]
-            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
-            val emailed: Revision = Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"b@example.com"))
+            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
+            val emailed: Revision = Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"hal@example.com"))
             val noted: Revision = Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"renamed")
-            document.edited(renamed ++ emailed ++ noted).show   // t"# contacts\nname Bob  # renamed\nemail b@example.com\n"
+            document.edited(renamed ++ emailed ++ noted).show   // t"# contacts\nname Hal  # renamed\nemail hal@example.com\n"
       ##
       ```
 
@@ -2847,7 +2847,7 @@ entry .Revision   a composable log of edits, applied to a document one operation
   entry .noop   the empty revision: applying it returns the document unchanged
   entry .at   begins an edit at a pointer: `Revision.at(pointer)` is a `Cursor`
   entry .compound   a fresh compound from a keyword and inline atom texts
-      `Revision.compound(t"email", t"b@example.com")` builds the payload of an insertion or
+      `Revision.compound(t"email", t"hal@example.com")` builds the payload of an insertion or
       replacement with every atom inline, each single-space-preceded, and no remark or
       children. For atoms chosen by the safety rules of §22.3 — a multi-line value becoming a
       source or literal atom — use `.construct`.
@@ -2915,9 +2915,9 @@ entry .Mutation   the primitive presentation-preserving edit operations of §22.
       import soundness.*
       import strategies.throwUnsafely
 
-      val document: Tel = t"name Alice\nage 30\n".read[Tel]
+      val document: Tel = t"name Percy\nage 30\n".read[Tel]
       val pointer: Tel.Pointer = Tel.Pointer.of(t"name")
-      Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Bob")).show   // t"name Bob\nage 30\n"
+      Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Hal")).show   // t"name Hal\nage 30\n"
       ```
 
       A pointer step is a keyword plus an occurrence index, resolved against the document an
@@ -2985,7 +2985,7 @@ entry .Mutation   the primitive presentation-preserving edit operations of §22.
       ```scala
       import soundness.*
 
-      Mutation.construct(t"name", t"Jon Pretty").atoms.length            // 1, an inline atom
+      Mutation.construct(t"name", t"Nick Bottom").atoms.length            // 1, an inline atom
       Mutation.construct(t"note", t"first line\nsecond line")            // a source atom
       Mutation.construct(t"note", t"first\n\nsecond\n")                  // a literal atom
       Mutation.construct(t"flag", t"").atoms.length                      // 0
@@ -3057,7 +3057,7 @@ entry .conversions   a given to import by name: any TEL-encodable value where a 
       import soundness.*
       import conversions.encodableToTel
 
-      val value: Tel = t"Alice"
+      val value: Tel = t"Percy"
       ```
   entry .encodableToTel   `Conversion[T, Tel]` for any `T: Encodable in Tel`
 
@@ -3075,8 +3075,8 @@ entry .dynamicAccess   a given to import by name: unchecked `tel.field` access t
       import strategies.throwUnsafely
       import dynamicAccess.dynamicTel
 
-      val document: Tel = t"name Alice\nage 30\n".read[Tel]
-      document.name.as[Text]   // t"Alice"
+      val document: Tel = t"name Percy\nage 30\n".read[Tel]
+      document.name.as[Text]   // t"Percy"
       ```
   entry .dynamicTel   `Tel is Dynamical`: the permission for `tel.field` syntax
 
@@ -3101,8 +3101,8 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
 
       case class Person(name: Text, age: Int)
 
-      val bytes: Data = Person(t"Alice", 30).bintel
-      Bintel.read[Person](bytes)   // Person(t"Alice", 30)
+      val bytes: Data = Person(t"Percy", 30).bintel
+      Bintel.read[Person](bytes)   // Person(t"Percy", 30)
       ```
 
       A *body* is what `encode` emits: the document root alone, with no magic number and no
@@ -3122,7 +3122,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
 
             val schemaDoc = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
             val schema = schemaDoc.as[Tels]
-            val greeting = t"name Alice\n".read[Tel]
+            val greeting = t"name Percy\n".read[Tel]
             val body: Data = greeting.bintel(schema)
             Bintel.decode(body, schema)   // the Tel.Element root
       frame
@@ -3133,7 +3133,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
 
             val schemaDoc = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
             val schema = schemaDoc.as[Tels]
-            val greeting = t"name Alice\n".read[Tel]
+            val greeting = t"name Percy\n".read[Tel]
             val body: Data = greeting.bintel(schema)
             val signature: Data = SchemaSignature.fromDocument(schemaDoc, Tels.Axiom.tels)
             val document: Data = Bintel.frame(body, signature)
@@ -3147,7 +3147,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
 
             val schemaDoc = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
             val schema = schemaDoc.as[Tels]
-            val greeting = t"name Alice\n".read[Tel]
+            val greeting = t"name Percy\n".read[Tel]
             val body: Data = greeting.bintel(schema)
             val signature: Data = SchemaSignature.fromDocument(schemaDoc, Tels.Axiom.tels)
             val document: Data = Bintel.frame(body, signature)
@@ -3240,7 +3240,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
       case class Person(name: Text, age: Int)
 
       val schema = Tels.tels[Person](t"person")
-      val element: Tel.Element = Bintel.decode(Person(t"Alice", 30).bintel, schema)
+      val element: Tel.Element = Bintel.decode(Person(t"Percy", 30).bintel, schema)
       ```
 
       The failures are `Bintel.Error`s: `VarintError` (B02) for a truncated, overwide or
@@ -3281,7 +3281,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
       case class Person(name: Text, age: Int)
       given (Person is Bintel.Parsable) = BintelInlinable.parsable[Person]
 
-      Bintel.parse[Person](Person(t"Alice", 30).bintel) == Bintel.read[Person](Person(t"Alice", 30).bintel)
+      Bintel.parse[Person](Person(t"Percy", 30).bintel) == Bintel.read[Person](Person(t"Percy", 30).bintel)
       ```
 
       The overload `parse[T](data, codecs, checkCanonical = false)` reads leaves whose type
@@ -3393,7 +3393,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
       import soundness.*
       import strategies.throwUnsafely
 
-      val greeting = t"name Alice\n".read[Tel]
+      val greeting = t"name Percy\n".read[Tel]
       val greetingSchema = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
 
       val document: Data = Bintel.selfContained(greeting, greetingSchema)
@@ -3872,7 +3872,7 @@ entry .internal   the macro implementations behind `tel"…"`, `telp"…"`, the 
   entry .retractions   reads a sum's `@retract(layer)` annotations as `(case, layer)` pairs
   entry .telp   the macro behind `telp"…"`: parses the literal with `Telp.parse` and points the caret at a bad component
   entry .interpolator   the macro behind `tel"…"`: parses the static parts at compile time and splices the holes
-      Substitution is supported at the atom position of a compound (`tel"name $alice"`); a
+      Substitution is supported at the atom position of a compound (`tel"name $percy"`); a
       parse failure's span is mapped back into the literal.
   entry .extractor   the macro behind the `tel"…"` pattern: a compile-time pattern with holes as capture sites
   entry .matchDocument   the runtime matcher the extractor splices: the captures, in document order, if the input matches
@@ -3951,13 +3951,13 @@ entry .BintelInlinable   compile-time generation of a `Bintel.Parsable`: a flat 
       import strategies.throwUnsafely
 
       case class Person(name: Text, age: Int)
-      case class Team(name: Text, members: List[Person])
+      case class Troupe(name: Text, players: List[Person])
 
       given (Person is Bintel.Parsable) = BintelInlinable.parsable[Person]
-      given (Team is Bintel.Parsable) = BintelInlinable.parsable[Team]
+      given (Troupe is Bintel.Parsable) = BintelInlinable.parsable[Troupe]
 
-      val team = Team(t"crew", List(Person(t"A", 1), Person(t"B", 2)))
-      Bintel.parse[Team](team.bintel) == team
+      val troupe = Troupe(t"mechanicals", List(Person(t"Quince", 40), Person(t"Bottom", 35)))
+      Bintel.parse[Troupe](troupe.bintel) == troupe
       ```
 
       BinTEL is schema-driven: the wire carries flat keyword *indices*, and the derivation
@@ -3975,7 +3975,7 @@ entry .BintelInlinable   compile-time generation of a `Bintel.Parsable`: a flat 
       returns an `Expr` of the decoded value, which the generator splices into the composed
       parser. The leaf instances in the companion (`int`, `long`, `boolean`, `double`, `text`,
       `string`) cover the primitives; a custom leaf is a user-written instance; and `case
-      class Foo(…) derives BintelInlinable.ForBintel` places a structural instance in `Foo`'s
+      class Play(…) derives BintelInlinable.ForBintel` places a structural instance in `Play`'s
       companion, where the generator finds it. The instance behind each summoned given is
       obtained *live*, by running the implicit search inside an in-macro staging compiler, so
       an instance and its type must be compiled in an earlier run than the expansion which
@@ -3990,11 +3990,11 @@ entry .BintelInlinable   compile-time generation of a `Bintel.Parsable`: a flat 
   entry .derived   the structural instance for a case class, reflected when invoked
       No macro: `Type[Self]` arrives with the `#parse` call. It is what `ForBintel.derived`
       wraps for a `derives` clause.
-  entry .ForBintel   the `derives`-clause carrier: `case class Foo(…) derives BintelInlinable.ForBintel`
+  entry .ForBintel   the `derives`-clause carrier: `case class Play(…) derives BintelInlinable.ForBintel`
     detail
         A `Self`-typed typeclass cannot appear in a `derives` clause, so this parameterised
-        subtrait — which *is* a `Foo is BintelInlinable` — is what the clause synthesizes into
-        `Foo`'s companion, where the generator's summon finds it. The resolution ladder
+        subtrait — which *is* a `Play is BintelInlinable` — is what the clause synthesizes into
+        `Play`'s companion, where the generator's summon finds it. The resolution ladder
         unwraps the delegate, so a structural instance keeps its generator identity.
     entry .derived   the carrier over `BintelInlinable.derived[value]`
     entry #parse   delegates to the wrapped instance's generator
@@ -4055,11 +4055,11 @@ entry .Inlinable   compile-time generation of a `Tel.Parsable`: a flat text-form
   entry .derived   the structural instance for a case class, reflected when invoked
       A record field's value is its children, one level deeper than its own entry line, which
       is the derived engine's reading.
-  entry .ForTel   the `derives`-clause carrier: `case class Foo(…) derives Inlinable.ForTel`
+  entry .ForTel   the `derives`-clause carrier: `case class Play(…) derives Inlinable.ForTel`
     detail
         A `Self`-typed typeclass cannot appear in a `derives` clause, so this parameterised
-        subtrait — which *is* a `Foo is Inlinable` — is what the clause synthesizes into
-        `Foo`'s companion, where the generator's summon finds it; the resolution ladder
+        subtrait — which *is* a `Play is Inlinable` — is what the clause synthesizes into
+        `Play`'s companion, where the generator's summon finds it; the resolution ladder
         unwraps the delegate so structural instances keep their generator identities.
     entry .derived   the carrier over `Inlinable.derived[value]`
     entry #parse   delegates to the wrapped instance's generator
@@ -4186,7 +4186,7 @@ entry .optics   the panopticon lens and optics over a `Tel`, to import by name
       import optics.{telLens, telOrdinalOptical, telEachOptical}
       import dynamicAccess.dynamicTel
 
-      val tel = t"person\n  name Alice\n  age 40\n".read[Tel]
+      val tel = t"person\n  name Percy\n  age 40\n".read[Tel]
       tel.lens(_.person.age = Tel.scalar(t"41"))   // the age updated in place, the keyword kept
       ```
   entry .telLens   a field name as a `Lens from Tel onto Tel`

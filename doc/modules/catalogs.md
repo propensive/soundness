@@ -6,7 +6,7 @@ A *catalog* holds one value for every field of a type. That means not only its i
 fields, but every field which can be reached through them, and the whole value itself. Each
 value is computed by one function, applied to the value of the field.
 
-The entries are addressed by the *path* of the field, as `cto.name` and not `name`. A path
+The entries are addressed by the *path* of the field, as `villain.name` and not `name`. A path
 is written as a selection through a proxy of the type, so a path which does not exist is a
 compile error. A catalog is built once and read many times, and two catalogs over the same
 type combine entry by entry.
@@ -21,7 +21,7 @@ and indexed by the paths which the type itself defines.
 Some things naturally belong to each field: how wide a column should be, what label a field
 is shown under, whether it is redacted in a log. A map from the name of a field to a value
 is the usual answer, and it has two weaknesses. Two fields of the same name, at different
-depths, such as the `name` of a `ceo` and of a `cto`, collide, so the key must become a
+depths, such as the `name` of a `hero` and of a `villain`, collide, so the key must become a
 path. And a path which is written as text is checked by nobody: a misspelled key is found
 when a lookup comes back empty.
 
@@ -48,11 +48,11 @@ form:
 
 ```scala
 case class Person(name: Text, age: Int)
-case class Org(ceo: Person, cto: Person)
+case class Play(hero: Person, villain: Person)
 
-val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+val play = Play(Person(t"Othello", 40), Person(t"Iago", 28))
 
-val labels: Catalog[Org, Text] = catalog(org)([field] => (field: field) => field.toString.tt)
+val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
 ```
 
 ```scala fuel
@@ -61,11 +61,11 @@ run
 Out.println(labels.size.show)
 ```
 
-There are seven entries: the whole `Org`, then `ceo`, `ceo.name`, `ceo.age`, `cto`,
-`cto.name` and `cto.age`. The first entry is for the whole value. After it come the fields,
-in the order in which they are declared, each followed by its own fields.
+There are seven entries: the whole `Play`, then `hero`, `hero.name`, `hero.age`, `villain`,
+`villain.name` and `villain.age`. The first entry is for the whole value. After it come the
+fields, in the order in which they are declared, each followed by its own fields.
 
-A `Catalog[Org, Text]` is indexed by the structure of `Org`, and holds a `Text` at every
+A `Catalog[Play, Text]` is indexed by the structure of `Play`, and holds a `Text` at every
 position. The type parameter for the key is what lets two catalogs over the same type be
 combined, and what checks every path which is used to read one.
 [Derivation](derivation.md#what-a-derivation-can-see) explains the polymorphic function.
@@ -77,13 +77,13 @@ has no fields of its own. Each selection is resolved at compiletime, into the in
 entry which it names:
 
 ```scala
-val ctoName: Text = labels(proxy ?=> proxy.cto.name)
-val wholeCeo: Text = labels(proxy ?=> proxy.ceo)
-val wholeOrg: Text = labels(proxy ?=> proxy)
+val villainName: Text = labels(proxy ?=> proxy.villain.name)
+val wholeHero: Text = labels(proxy ?=> proxy.hero)
+val wholePlay: Text = labels(proxy ?=> proxy)
 ```
 
-The first is the label of the CTO's name, the second is the entry for the whole `ceo` field,
-and the third is the entry for the whole `Org`.
+The first is the label of the villain's name, the second is the entry for the whole `hero`
+field, and the third is the entry for the whole `Play`.
 
 A selection which the type does not have is reported where it is written:
 
@@ -91,10 +91,10 @@ A selection which the type does not have is reported where it is written:
 compile
 errors show
 ##
-labels(proxy ?=> proxy.cto.title)
+labels(proxy ?=> proxy.villain.title)
 ```
 
-The path is the position of the field, not its name. `ceo.name` and `cto.name` are
+The path is the position of the field, not its name. `hero.name` and `villain.name` are
 therefore distinct entries, and there is no string anywhere to misspell. The proxy is
 provided for the catalog's key type, and the accessor only has to navigate it.
 
@@ -104,12 +104,12 @@ provided for the catalog's key type, and the accessor only has to navigate it.
 type of value, and the same paths address the new entries:
 
 ```scala
-val widths: Catalog[Org, Int] = labels.map(_.length)
+val widths: Catalog[Play, Int] = labels.map(_.length)
 ```
 
 ```scala
-val nameWidth: Int = widths(proxy ?=> proxy.cto.name)
-val ageWidth: Int = widths(proxy ?=> proxy.ceo.age)
+val nameWidth: Int = widths(proxy ?=> proxy.villain.name)
+val ageWidth: Int = widths(proxy ?=> proxy.hero.age)
 ```
 
 The structure is fixed by the key type, so nothing about the paths changes under `map`. A
@@ -122,11 +122,11 @@ values. The compiler ensures that the catalogs share a key, so their entries ali
 for position, without any matching of names:
 
 ```scala
-val cells: Catalog[Org, Text] = labels.braid(widths)((label, width) => t"$label ($width)")
+val cells: Catalog[Play, Text] = labels.braid(widths)((label, width) => t"$label ($width)")
 ```
 
 ```scala
-val cell: Text = cells(proxy ?=> proxy.cto.name)
+val cell: Text = cells(proxy ?=> proxy.villain.name)
 ```
 
 This is how a table of settings for each field is assembled: a catalog of labels, a catalog
@@ -150,11 +150,11 @@ val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text =
 run
 ##
 locally:
-  given (Org is Specific over Json.Encodable) =
+  given (Play is Specific over Json.Encodable) =
     specifically:
-      case root.cto.name() => shout
+      case root.villain.name() => shout
 
-  Out.println(org.in[Json].show)
+  Out.println(play.in[Json].show)
 ```
 
 Each case names a path through `root`. Its value must be an instance for the type at that

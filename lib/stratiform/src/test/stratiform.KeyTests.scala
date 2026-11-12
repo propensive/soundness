@@ -282,56 +282,56 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
       test(m"duplicate key values among repeatable children raise E314"):
         assignCodes(menagerie, Text("""|tel 1.0
                                    |
-                                   |owner amy
-                                   |contact bea
-                                   |contact bea
+                                   |owner hal
+                                   |contact nym
+                                   |contact nym
                                    |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"distinct key values are clean"):
         assignCodes(menagerie, Text("""|tel 1.0
                                    |
-                                   |owner amy
-                                   |contact bea
-                                   |contact chu
+                                   |owner hal
+                                   |contact nym
+                                   |contact pistol
                                    |""".stripMargin))
       . assert(_ == List())
 
       test(m"a compound-child key value participates in uniqueness"):
         assignCodes(menagerie, Text("""|tel 1.0
                                    |
-                                   |owner amy
-                                   |contact bea
+                                   |owner hal
+                                   |contact nym
                                    |contact
-                                   |  name bea
+                                   |  name nym
                                    |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"non-repeatable members are exempt: owner and admin may collide"):
         assignCodes(menagerie, Text("""|tel 1.0
                                    |
-                                   |owner amy
-                                   |admin amy
-                                   |contact amy
+                                   |owner hal
+                                   |admin hal
+                                   |contact hal
                                    |""".stripMargin))
       . assert(_ == List())
 
       test(m"key values are unique across keywords of the same parent"):
         assignCodes(menagerie, Text("""|tel 1.0
                                    |
-                                   |owner amy
-                                   |cat felix
-                                   |dog felix
+                                   |owner hal
+                                   |cat tybalt
+                                   |dog tybalt
                                    |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"same-variant duplicates raise E314"):
         assignCodes(menagerie, Text("""|tel 1.0
                                    |
-                                   |owner amy
-                                   |cat felix
-                                   |dog rex
-                                   |cat felix
+                                   |owner hal
+                                   |cat tybalt
+                                   |dog crab
+                                   |cat tybalt
                                    |""".stripMargin))
       . assert(_ == List(314))
 

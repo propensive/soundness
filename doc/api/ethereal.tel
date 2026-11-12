@@ -828,8 +828,8 @@ entry .LazyEnvironment   an `Environment` over a list of `NAME=value` entries, p
       ```scala
       import soundness.*
 
-      val environment: Environment = LazyEnvironment(List(t"HOME=/home/jon", t"SHELL=/bin/zsh"))
-      environment.variable(t"HOME")   // t"/home/jon"
+      val environment: Environment = LazyEnvironment(List(t"HOME=/home/hamlet", t"SHELL=/bin/zsh"))
+      environment.variable(t"HOME")   // t"/home/hamlet"
       ```
   entry #variable   the value of one variable, or `Unset`
   entry #entries   every variable, as a `Map`

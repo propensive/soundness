@@ -62,7 +62,7 @@ row  `stdios.javaLangSystemStdio`  where the samples print their results
 `read[Json]` parses any source of text into a `Json` value:
 
 ```scala
-val document = t"""{"name": "Alice", "age": 30}""".read[Json]
+val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
 ```
 
 `show` writes a `Json` value back out as text, in the formatting in scope:
@@ -80,7 +80,7 @@ Parsing fails on malformed input, and the failure goes to the [strategy] in scop
 run
 errors show
 ##
-t"""{"name": "Alice", "age": }""".read[Json]
+t"""{"name": "Hamlet", "age": }""".read[Json]
 ```
 
 ### Reading values
@@ -119,13 +119,13 @@ object reads into a value:
 ```scala
 case class Person(name: Text, age: Int)
 
-val bob = t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
+val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(bob.inspect)
+Out.println(horatio.inspect)
 ```
 
 Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
@@ -133,26 +133,27 @@ Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
 ```scala fuel
 run
 ##
-Out.println(Person(t"Alice", 30).in[Json].show)
+Out.println(Person(t"Hamlet", 30).in[Json].show)
 ```
 
 Nested case classes, and collections of them, derive in turn, so a whole structure converts in
 one step:
 
 ```scala
-case class Crew(rowers: List[Person], cox: Person, reserve: Option[Person])
+case class Troupe(players: List[Person], director: Person, prompter: Option[Person])
 
-val crew =
-  t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}""".read[Crew in Json]
+val troupe =
+  t"""{"players":[{"name":"Bottom","age":35}],"director":{"name":"Quince","age":40}}"""
+  . read[Troupe in Json]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(crew.inspect)
+Out.println(troupe.inspect)
 ```
 
-`read[Crew in Json]` parses and decodes together. `in`, `as` and `read` are the same vocabulary
+`read[Troupe in Json]` parses and decodes together. `in`, `as` and `read` are the same vocabulary
 for every format, and between them they give each route between text, `Json` and a Scala type:
 
 ```tabular
@@ -171,7 +172,7 @@ row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
 `in[Data over Json]` writes the same text as bytes in the `Codepage` in scope:
 
 ```scala
-val written: Text = Person(t"Bob", 40).in[Text over Json]
+val written: Text = Person(t"Hamlet", 30).in[Text over Json]
 ```
 
 ```scala fuel
@@ -197,8 +198,8 @@ case class Profile(name: Text, age: Optional[Int])
 ```scala fuel
 run
 ##
-Out.println(Profile(t"Eve", Unset).in[Json].show)
-Out.println(t"""{"name": "Eve"}""".read[Json].as[Profile].inspect)
+Out.println(Profile(t"Fool", Unset).in[Json].show)
+Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
 ```
 
 A field with a default value takes that default when the document omits it:
@@ -210,7 +211,7 @@ case class Account(name: Text, age: Int = 18)
 ```scala fuel
 run
 ##
-Out.println(t"""{"name": "Eve"}""".read[Json].as[Account].inspect)
+Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
 ```
 
 A field which is neither optional nor defaulted is required. A document without it does not
@@ -246,11 +247,11 @@ a separate given, so one can be varied alone:
 ```scala
 val strict =
   import optionalityOptions.strictJsonAbsence
-  capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
+  capture[Json.Error](t"""{"name": "Fool"}""".read[Json].as[Profile]).reason
 
 val lenient =
   import optionalityOptions.lenientJsonFaults
-  t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age
+  t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
 ```
 
 ```scala fuel
@@ -281,7 +282,7 @@ case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year
 ```scala fuel
 run
 ##
-Out.println(Record(t"Ann", 1984).in[Json].show)
+Out.println(Record(t"Juliet", 1582).in[Json].show)
 ```
 
 ### Tagged unions
@@ -456,7 +457,7 @@ Reaching for a field that is not there is not itself an error. It gives an absen
 decodes to `Unset` when an optional type is asked for, and raises only when a value is required:
 
 ```scala
-val person = t"""{"name": "Bob"}""".read[Json]
+val person = t"""{"name": "Hamlet"}""".read[Json]
 ```
 
 ```scala fuel
@@ -541,23 +542,23 @@ A deeper update is written with a [lens](optics.md). A lens reaches through seve
 may carry optics such as `Each` or `Filter` to change many elements at once:
 
 ```scala
-case class Role(name: Text)
-case class Entity(name: Text, age: Int, roles: List[Role])
-case class Org(name: Text, leader: Entity)
+case class Scene(place: Text)
+case class Act(name: Text, number: Int, scenes: List[Scene])
+case class Play(title: Text, opening: Act)
 
-val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).in[Json]
+val play = Play(t"Macbeth", Act(t"Act I", 1, List(Scene(t"A heath")))).in[Json]
 
-val older =
+val renumbered =
   import conversions.encodableToJson
   import optics.jsonLens
 
-  org.lens(_.leader.age = 41.in[Json])
+  play.lens(_.opening.number = 2.in[Json])
 ```
 
 ```scala fuel
 run
 ##
-Out.println(older.show)
+Out.println(renumbered.show)
 ```
 
 ### Formatting
@@ -571,7 +572,7 @@ run
 locally:
   import formatting.indentedJsonFormatting
 
-  Out.println(crew.in[Json].show)
+  Out.println(troupe.in[Json].show)
 ```
 
 `show` renders the whole document into one `Text`. A large document need not be held in memory
@@ -597,7 +598,7 @@ blocks are UTF-8 bytes, encoded straight from the serializer, which suits writin
 ```scala fuel
 typecheck
 ##
-val json = Person(t"Bob", 40).in[Json]
+val json = Person(t"Hamlet", 30).in[Json]
 
 Json.emit[Data](json, chunk => socket.write(chunk))
 ```
@@ -792,7 +793,7 @@ be built a segment at a time:
 ```scala fuel
 run
 ##
-Out.println(jp"#/foo/bar".encode)
+Out.println(jp"#/verona/capulet".encode)
 Out.println(JsonPointer()(t"a")(t"b").encode)
 ```
 
@@ -803,7 +804,7 @@ pointer does not compile, and the error points at the character at fault:
 compile
 errors show
 ##
-jp"#/foo~2bar"
+jp"#/verona~2capulet"
 ```
 
 ### Source positions
@@ -858,10 +859,10 @@ schemas to describe a service.
 document, now carrying that type:
 
 ```scala
-case class Employee(name: Text, age: Int, email: Text)
+case class Player(name: Text, age: Int, email: Text)
 
-val alice = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
-val employee = alice.verify[Employee]
+val viola = t"""{"name": "Viola", "age": 20, "email": "viola@example.com"}""".read[Json]
+val player = viola.verify[Player]
 ```
 
 A document which does not conform raises a `Json.Error`:
@@ -870,7 +871,7 @@ A document which does not conform raises a `Json.Error`:
 run
 errors show
 ##
-t"""{"name": "Bob"}""".read[Json].verify[Employee]
+t"""{"name": "Feste"}""".read[Json].verify[Player]
 ```
 
 The verified document carries the schema's structure in its type, so its fields are reached as
@@ -879,8 +880,8 @@ members, with full checking and without the `dynamicAccess.dynamicJson` import:
 ```scala fuel
 run
 ##
-Out.println(employee.name.as[Text])
-Out.println(employee.as[Employee].inspect)
+Out.println(player.name.as[Text])
+Out.println(player.as[Player].inspect)
 ```
 
 Anything the schema does not permit is a compiletime error. That includes a field which does
@@ -890,39 +891,41 @@ not exist, an index into something which is not an array, and a field of a scala
 compile
 errors show
 ##
-employee.nope
+player.nope
 ```
 
 ```scala fuel
 compile
 errors show
 ##
-employee.name(0)
+player.name(0)
 ```
 
 ```scala fuel
 compile
 errors show
 ##
-employee.name.deeper
+player.name.deeper
 ```
 
 Navigation runs to any depth, through nested objects and into arrays, and each step is checked:
 
 ```scala
-case class Workplace(city: Text)
-case class Posting(title: Text, workplace: Workplace)
-case class Squad(members: List[Person])
+case class Venue(city: Text)
+case class Premiere(title: Text, venue: Venue)
+case class Court(members: List[Person])
 
-val posting = t"""{"title": "Engineer", "workplace": {"city": "Tallinn"}}""".read[Json]
-val squad = t"""{"members": [{"name": "Ada", "age": 36}, {"name": "Bob", "age": 41}]}""".read[Json]
+val premiere = t"""{"title": "Hamlet", "venue": {"city": "London"}}""".read[Json]
+
+val court =
+  t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(posting.verify[Posting].workplace.city.as[Text])
-Out.println(squad.verify[Squad].members(1).name.as[Text])
+Out.println(premiere.verify[Premiere].venue.city.as[Text])
+Out.println(court.verify[Court].members(1).name.as[Text])
 ```
 
 It is the schema which licenses this access, not a blanket permission. Reaching a field of an
@@ -938,23 +941,23 @@ one awkward field calls for. A `Specific` names a path instead, and its override
 that path and nowhere else:
 
 ```scala
-case class Staffer(name: Text, age: Int)
-case class Firm(boss: Staffer, deputy: Staffer)
+case class Fencer(name: Text, age: Int)
+case class Duel(challenger: Fencer, opponent: Fencer)
 
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
 ```
 
-With the `Specific` given in scope, only the deputy's name is changed:
+With the `Specific` given in scope, only the opponent's name is changed:
 
 ```scala fuel
 run
 ##
 locally:
-  given (Firm is Specific over Json.Encodable) =
+  given (Duel is Specific over Json.Encodable) =
     specifically:
-      case root.deputy.name() => shout
+      case root.opponent.name() => shout
 
-  Out.println(Firm(Staffer(t"ann", 30), Staffer(t"bob", 40)).in[Json].show)
+  Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
 ```
 
 A path which ends at a collection takes an encoder for the collection. Deriving that encoder
@@ -970,13 +973,13 @@ val nameOnly: Person is Json.Encodable =
 run
 ##
 locally:
-  given (Crew is Specific over Json.Encodable) =
+  given (Troupe is Specific over Json.Encodable) =
     specifically:
-      case root.rowers() =>
+      case root.players() =>
         given Person is Json.Encodable = nameOnly
         summon[List[Person] is Json.Encodable]
 
-  Out.println(crew.in[Json].show)
+  Out.println(troupe.in[Json].show)
 ```
 
 ### Skipping the tree
@@ -1001,12 +1004,12 @@ tree. Both routes write the same text:
 ```scala fuel
 alternative Tree
   code
-      Person(t"Bob", 40).in[Text over Json]
+      Person(t"Hamlet", 30).in[Text over Json]
 alternative Direct
   code
       val direct =
         given Person is Json.Printable = Json.Direct.derived[Person].printable
-        Person(t"Bob", 40).in[Text over Json]
+        Person(t"Hamlet", 30).in[Text over Json]
 ##
 ```
 
@@ -1025,7 +1028,7 @@ row  `codecs.derived`  the derived codecs, even over a direct instance  the deri
 row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
 ```
 
-Under `codecs.strict` the error is reported wherever `read[Foo in Json]` or `in[Text over Json]`
+Under `codecs.strict` the error is reported wherever `read[Play in Json]` or `in[Text over Json]`
 would otherwise fall back to the tree. With none of the three imported, a type takes the direct
 route exactly when it has a direct instance of its own. The modes are alternatives, so import
 one at a time.
@@ -1195,7 +1198,7 @@ import logging.silentLogging
 import postables.jsonPostable
 
 val reply: Json =
-  url"https://example.com/people".submit(Http.Post)(Person(t"Bob", 40).in[Json]).receive[Text].read[Json]
+  url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
 ```
 
 With `servables.jsonServable` imported, an [HTTP server](http-server.md#responses) answers a

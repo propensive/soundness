@@ -26,12 +26,12 @@ detail
 
     case class Person(name: Text, age: Int)
 
-    val encoded: Cbor = Person(t"Ada", 36).in[Cbor]
-    encoded.as[Person]                                     // Person(t"Ada", 36)
+    val encoded: Cbor = Person(t"Hal", 36).in[Cbor]
+    encoded.as[Person]                                     // Person(t"Hal", 36)
 
-    val bytes: Data = Person(t"Ada", 36).in[Data over Cbor]
-    bytes.read[Person in Cbor]                             // Person(t"Ada", 36)
-    Cbor.unseal(encoded).show                              // t"{\"name\": \"Ada\", \"age\": 36}"
+    val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
+    bytes.read[Person in Cbor]                             // Person(t"Hal", 36)
+    Cbor.unseal(encoded).show                              // t"{\"name\": \"Hal\", \"age\": 36}"
     ```
 
     Reading is streaming: `read[Cbor]`, `read[Cbor.Ast]` and `read[T in Cbor]` over a
@@ -94,10 +94,10 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
 
       case class Person(name: Text, age: Int)
 
-      val person: Cbor = Person(t"Ada", 36).in[Cbor]
-      person.name.as[Text]                  // t"Ada"
-      (person.age = 40).as[Person]          // Person(t"Ada", 40)
-      Cbor.make(name = t"Anna".in[Cbor], age = 30.in[Cbor]).as[Person]
+      val person: Cbor = Person(t"Hal", 36).in[Cbor]
+      person.name.as[Text]                  // t"Hal"
+      (person.age = 40).as[Person]          // Person(t"Hal", 40)
+      Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor]).as[Person]
       ```
 
       The companion holds everything a `Cbor` can do: the `Encodable in Cbor` and
@@ -155,9 +155,9 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
       case class Person(name: Text, age: Int)
       case class Named(name: Text, age: Optional[Int])
 
-      val person: Cbor = Person(t"Ada", 36).in[Cbor]
-      (person.age = 40).as[Person]       // Person(t"Ada", 40)
-      (person.age = Unset).as[Named]     // Named(t"Ada", Unset)
+      val person: Cbor = Person(t"Hal", 36).in[Cbor]
+      (person.age = 40).as[Person]       // Person(t"Hal", 40)
+      (person.age = Unset).as[Named]     // Named(t"Hal", Unset)
       ```
   entry #as   decodes the document as a type, through its `Decodable in Cbor`
       `cbor.as[Person]` runs the type's decoder over the tree and needs a
@@ -185,7 +185,7 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
       `Cbor.Ast.encodable.encoded`, which gives the document's bytes.
   entry .applyDynamicNamed   `Cbor.make(key = value, …)`: a map built from named arguments
       The companion is `Dynamic` with the single method name `make`, so
-      `Cbor.make(name = t"Anna".in[Cbor], age = 30.in[Cbor])` is a map with those entries in
+      `Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor])` is a map with those entries in
       that order, each argument already a `Cbor`. This is how a map is assembled where no case
       class fits.
   entry .emit   a document's bytes a block at a time, pulled as an iterator or pushed to a function
@@ -298,8 +298,8 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
       Keys are written through `K`'s `Encodable in Text`, in the map's iteration order.
   entry .lens   `cbor.lens(_.field = value)`: a `Lens` from a document onto one of its map entries
       Each name becomes a `name is Lens from Cbor onto Cbor` which reads the entry with
-      `#selectDynamic` and writes it with an immutable update, so `team.lens(_.lead.name =
-      t"Bob")` rebuilds the path from the root. It needs a `(? >: Cbor) is Dynamical`
+      `#selectDynamic` and writes it with an immutable update, so `play.lens(_.hero.name =
+      t"Kent")` rebuilds the path from the root. It needs a `(? >: Cbor) is Dynamical`
       (`dynamicAccess.dynamicCbor`) and a `Tactic[Cbor.Error]`; with
       `conversions.encodableToCbor` imported, the assigned value may be any `Encodable in
       Cbor` rather than a `Cbor`.
@@ -311,12 +311,12 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
       import conversions.encodableToCbor
 
       case class Person(name: Text, age: Int)
-      case class Team(lead: Person, size: Int)
+      case class Play(hero: Person, year: Int)
 
-      val team: Cbor = Team(Person(t"John", 40), 3).in[Cbor]
-      team.lens(_.size = 5).as[Team]               // Team(Person(t"John", 40), 5)
-      team.lens(_.lead.name = t"Bob").as[Team]     // Team(Person(t"Bob", 40), 3)
-      summon["size" is Lens from Cbor onto Cbor](team).as[Int]   // 3
+      val play: Cbor = Play(Person(t"Lear", 80), 1606).in[Cbor]
+      play.lens(_.year = 1608).as[Play]            // Play(Person(t"Lear", 80), 1608)
+      play.lens(_.hero.name = t"Kent").as[Play]    // Play(Person(t"Kent", 80), 1606)
+      summon["year" is Lens from Cbor onto Cbor](play).as[Int]   // 1606
       ```
   entry .ordinalOptical   `cbor.lens(_.values(Sec) = x)`: an optic onto one element of an array by ordinal
       An `Ordinal` (`Prim`, `Sec`, `Ter`, …) applied inside a lens path selects one element
@@ -461,16 +461,16 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
               import strategies.throwUnsafely
 
               case class Person(name: Text, age: Int)
-              val bytes: Data = Person(t"Ada", 36).in[Data over Cbor]
-              bytes.length   // 15
+              val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
+              bytes.length   // 16
         frame
           label The bytes, in diagnostic notation
           code
-              Cbor.Ast.parse(bytes).show   // t"{\"name\": \"Ada\", \"age\": 36}"
+              Cbor.Ast.parse(bytes).show   // t"{\"name\": \"Hal\", \"age\": 36}"
         frame
           label And decoded back
           code
-              bytes.read[Person in Cbor]   // Person(t"Ada", 36)
+              bytes.read[Person in Cbor]   // Person(t"Hal", 36)
         ##
         ```
     entry .unset   whether a node is `undefined` (or absent): it is `Unset`
@@ -716,7 +716,7 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
         case class Person(name: Text, age: Int)
         given (Person is Cbor.Parsable) = Inlinable.parsable[Person]
 
-        val bytes: Data = Person(t"Ada", 36).in[Data over Cbor]
+        val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
         bytes.read[Person in Cbor]          // parsed without building a tree
         Chain(bytes).read[Person in Cbor]   // and over chunks, as they are pulled
         ```
@@ -774,8 +774,8 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
         case class Person(name: Text, age: Int)
         given (Person is Cbor.Printable) = Inlinable.printable[Person]
 
-        Person(t"Ada", 36).in[Data over Cbor]   // the same bytes, written directly
-        Cbor.Printable.print(Person(t"Ada", 36))
+        Person(t"Hal", 36).in[Data over Cbor]   // the same bytes, written directly
+        Cbor.Printable.print(Person(t"Hal", 36))
         ```
 
         `.print` gives the bytes whole and `.emit` hands them on a block at a time, so a
@@ -838,9 +838,9 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
     detail
         A `Self`-typed typeclass has no type parameters, so neither `Cbor.Parsable` nor
         `Cbor.Printable` can appear in a `derives` clause; `Cbor.Direct[T]` is the carrier
-        which can. `case class Foo(…) derives Cbor.Direct` generates `Foo`'s parser and
+        which can. `case class Play(…) derives Cbor.Direct` generates `Play`'s parser and
         printer once, into its companion, where the `declared` givens of `Cbor.Parsable`
-        and `Cbor.Printable` find them, so `Foo` reads and writes directly with no import
+        and `Cbor.Printable` find them, so `Play` reads and writes directly with no import
         and no per-use expansion.
 
         ```scala
@@ -913,7 +913,7 @@ entry .Cbor2   the trait which holds the derived-path givens of `object Cbor`, a
       import strategies.throwUnsafely
 
       case class Person(name: Text, age: Int)
-      Person(t"Ada", 36).in[Data over Cbor].read[Person in Cbor]   // Person(t"Ada", 36)
+      Person(t"Hal", 36).in[Data over Cbor].read[Person in Cbor]   // Person(t"Hal", 36)
       ```
   entry #decodable   derives a `Decodable in Cbor` for any case class, sealed hierarchy or text-decodable type
       An inline given, at the lowest priority, which takes the first of two routes: a type
@@ -1105,12 +1105,12 @@ entry .Inlinable   the compile-time code generator for direct codecs: `Inlinable
       import strategies.throwUnsafely
 
       case class Person(name: Text, age: Int)
-      case class Team(lead: Person, size: Int)
+      case class Play(hero: Person, year: Int)
 
-      given (Team is Cbor.Parsable) = Inlinable.parsable[Team]
-      given (Team is Cbor.Printable) = Inlinable.printable[Team]
+      given (Play is Cbor.Parsable) = Inlinable.parsable[Play]
+      given (Play is Cbor.Printable) = Inlinable.printable[Play]
 
-      Team(Person(t"Ada", 36), 5).in[Data over Cbor].read[Team in Cbor]
+      Play(Person(t"Lear", 80), 1606).in[Data over Cbor].read[Play in Cbor]
       ```
 
       A generated parser compares map keys against the field names compiled to immediates
@@ -1183,10 +1183,10 @@ entry .Inlinable   the compile-time code generator for direct codecs: `Inlinable
     entry #discriminantKey   the implementation of the discriminant-key evaluation
   entry .ForCbor   `derives Inlinable.ForCbor`: a case class's structural `Inlinable`, placed in its companion
     detail
-        A `Self`-typed typeclass cannot appear in a `derives` clause, so `case class Foo(…)
+        A `Self`-typed typeclass cannot appear in a `derives` clause, so `case class Play(…)
         derives Inlinable.ForCbor` synthesizes this parameterized subtrait — which *is* a
-        `Foo is Inlinable` — into `Foo`'s companion, where the staging summon finds it when
-        `Foo` is a field of a type being generated in a later compilation run. It delegates
+        `Play is Inlinable` — into `Play`'s companion, where the staging summon finds it when
+        `Play` is a field of a type being generated in a later compilation run. It delegates
         every operation to the structural instance it wraps.
     entry .derived   the `derives` hook: wraps `Inlinable.derived[T]`
     entry #parse   delegates to the wrapped instance's generator
@@ -1369,16 +1369,16 @@ entry .dynamicAccess   the given which enables `cbor.field`, `cbor.field(i)` and
       import dynamicAccess.dynamicCbor
 
       case class Person(name: Text, age: Int)
-      val person: Cbor = Person(t"Ada", 36).in[Cbor]
-      person.name.as[Text]            // t"Ada"
-      (person.age = 40).as[Person]    // Person(t"Ada", 40)
+      val person: Cbor = Person(t"Hal", 36).in[Cbor]
+      person.name.as[Text]            // t"Hal"
+      (person.age = 40).as[Person]    // Person(t"Hal", 40)
       ```
   entry .dynamicCbor   `Cbor is Dynamical`: an erased given which unlocks `selectDynamic`, `applyDynamic` and `updateDynamic`
 
 entry .conversions   a `Conversion` which lets any `Encodable in Cbor` value stand where a `Cbor` is wanted
   detail
       Imported by name for the scope which assigns through a lens: `import
-      conversions.encodableToCbor` lets `team.lens(_.size = 5)` take the `Int` directly,
+      conversions.encodableToCbor` lets `play.lens(_.year = 1608)` take the `Int` directly,
       where otherwise the assignment needs `5.in[Cbor]`.
   entry .encodableToCbor   `Conversion[T, Cbor]` for any `T` which is `Encodable in Cbor`: `_.encode`
 

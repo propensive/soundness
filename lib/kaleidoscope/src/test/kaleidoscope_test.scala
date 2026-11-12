@@ -225,53 +225,53 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
 
       suite(m"Scanner patterns"):
         test(m"Simple capture"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)")), t"foobar")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"act", t"(one)")), t"actone")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(t"bar")))
+        . assert(_ == Some(List(t"one")))
 
         test(m"Two captures"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)")), t"foobarbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"act", t"(one)", t"(two)")), t"actonetwo")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(t"bar", t"baz")))
+        . assert(_ == Some(List(t"one", t"two")))
 
         test(m"Two captures, one repeating"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)*")), t"foobarbazbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"act", t"(one)", t"(two)*")), t"actonetwotwo")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(t"bar", List(t"baz", t"baz"))))
+        . assert(_ == Some(List(t"one", List(t"two", t"two"))))
 
         test(m"Two captures, both repeating"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")), t"foobarbarbarbarbazbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"act", t"(one){4}", t"(two)*")), t"actoneoneoneonetwotwo")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(List(t"bar", t"bar", t"bar", t"bar"), List(t"baz", t"baz"))))
+        . assert(_ == Some(List(List(t"one", t"one", t"one", t"one"), List(t"two", t"two"))))
 
         test(m"Two captures, one optional and absent, one repeating"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")), t"foobarbar")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"act", t"(one)+", t"(two)?")), t"actoneone")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(List(t"bar", t"bar"), Unset)))
+        . assert(_ == Some(List(List(t"one", t"one"), Unset)))
 
         test(m"Two captures, one optional and present, one repeating"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")), t"fooberbirbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"act", t"(o.e)+", t"(two)?")), t"actoneoretwo")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
+        . assert(_ == Some(List(List(t"one", t"ore"), t"two")))
 
         test(m"Nested captures, one optional and present, one repeating"):
-          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")), t"fooberbirbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"a(ct", t"(o.e)+", t"(two)?)")), t"actoneoretwo")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
+        . assert(_ == Some(List(List(t"one", t"ore"), t"two")))
 
     suite(m"Match tests"):
       test(m"simple match"):
@@ -374,23 +374,23 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
 
       suite(m"Single-character matcher tests"):
         test(m"Match any character"):
-          t"foo!bar" match
-            case r"foo$ch.bar" => ch
-            case _             => Nil
+          t"act!scene" match
+            case r"act$ch.scene" => ch
+            case _               => Nil
 
         . assert(_ == '!')
 
         test(m"Match a digit"):
-          t"foo5bar" match
-            case r"foo$d\dbar" => d
-            case _             => Nil
+          t"act5scene" match
+            case r"act$d\dscene" => d
+            case _               => Nil
 
         . assert(_ == '5')
 
         test(m"Match a non-digit"):
-          t"foo!bar" match
-            case r"foo$c\Dbar" => c
-            case _             => Nil
+          t"act!scene" match
+            case r"act$c\Dscene" => c
+            case _               => Nil
 
         . assert(_ == '!')
 
@@ -423,44 +423,44 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
         . assert(_ == 'x')
 
         test(m"Match one-or-more digits"):
-          t"foo123bar" match
-            case r"foo$ds\d+bar" => ds
-            case _               => Nil
-
-        . assert(_ == List('1', '2', '3'))
-
-        test(m"Match zero-or-more digits; absent"):
-          t"foobar" match
-            case r"foo$ds\d*bar" => ds
-            case _               => Nil
-
-        . assert(_ == Nil)
-
-        test(m"Match optional digit; present"):
-          t"foo5bar" match
-            case r"foo$d\d?bar" => d
-            case _              => Unset
-
-        . assert(_ == '5')
-
-        test(m"Match optional digit; absent"):
-          t"foobar" match
-            case r"foo$d\d?bar" => d
-            case _              => Unset
-
-        . assert(_ == Unset)
-
-        test(m"Match exact number of digits"):
-          t"foo123bar" match
-            case r"foo$ds\d{3}bar" => ds
+          t"act123scene" match
+            case r"act$ds\d+scene" => ds
             case _                 => Nil
 
         . assert(_ == List('1', '2', '3'))
 
+        test(m"Match zero-or-more digits; absent"):
+          t"actscene" match
+            case r"act$ds\d*scene" => ds
+            case _                 => Nil
+
+        . assert(_ == Nil)
+
+        test(m"Match optional digit; present"):
+          t"act5scene" match
+            case r"act$d\d?scene" => d
+            case _                => Unset
+
+        . assert(_ == '5')
+
+        test(m"Match optional digit; absent"):
+          t"actscene" match
+            case r"act$d\d?scene" => d
+            case _                => Unset
+
+        . assert(_ == Unset)
+
+        test(m"Match exact number of digits"):
+          t"act123scene" match
+            case r"act$ds\d{3}scene" => ds
+            case _                   => Nil
+
+        . assert(_ == List('1', '2', '3'))
+
         test(m"Match a bounded run of any characters"):
-          t"foo!?#bar" match
-            case r"foo$cs.{2,4}bar" => cs
-            case _                  => Nil
+          t"act!?#scene" match
+            case r"act$cs.{2,4}scene" => cs
+            case _                    => Nil
 
         . assert(_ == List('!', '?', '#'))
 
@@ -513,17 +513,17 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
       . assert(_ == t"hello[^a-z]world")
 
       test(m"A star glob matches at runtime"):
-        Glob.parse(t"*.jar").matches(t"foo.jar")
+        Glob.parse(t"*.jar").matches(t"globe.jar")
 
       . assert(_ == true)
 
       test(m"A star does not cross a slash at runtime"):
-        Glob.parse(t"*.jar").matches(t"dir/foo.jar")
+        Glob.parse(t"*.jar").matches(t"dir/globe.jar")
 
       . assert(_ == false)
 
       test(m"A globstar crosses slashes at runtime"):
-        Glob.parse(t"**/*.jar").matches(t"dir/deeper/foo.jar")
+        Glob.parse(t"**/*.jar").matches(t"dir/deeper/globe.jar")
 
       . assert(_ == true)
 

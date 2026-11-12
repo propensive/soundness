@@ -219,8 +219,8 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
     case Leaf
     case Branch(value: Int, left: Tree, right: Tree)
 
-  case class Person(name: Text = t"noone", age: Int = 100, male: Boolean = true)
-  case class User(person: Person, email: Text = t"nobody@nowhere.com")
+  case class Person(name: Text = t"Lear", age: Int = 80, male: Boolean = true)
+  case class User(person: Person, email: Text = t"lear@example.com")
 
   enum SumOnlyEnum:
     case Alpha(n: Int)
@@ -250,8 +250,8 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
   type Json
   type CodecJson = [self] =>> self is Codec in Json
 
-  case class Employee(name: Text, age: Int)
-  case class Company(ceo: Employee, cto: Employee)
+  case class Fencer(name: Text, age: Int)
+  case class Duel(challenger: Fencer, opponent: Fencer)
 
   sealed trait Contact
   case class Email(address: Text) extends Contact
@@ -302,11 +302,11 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
 
       test(m"Present a product with default arguments"):
         Person().present
-      . assert(_ == t"Person(0:name=noone, 1:age=100, 2:male=yes)")
+      . assert(_ == t"Person(0:name=Lear, 1:age=80, 2:male=yes)")
 
       test(m"Present a nested product"):
         User(person = Person()).present
-      . assert(_ == t"User(0:person=Person(0:name=noone, 1:age=100, 2:male=yes), 1:email=nobody@nowhere.com)")
+      . assert(_ == t"User(0:person=Person(0:name=Lear, 1:age=80, 2:male=yes), 1:email=lear@example.com)")
 
       test(m"Present an empty product"):
         Empty().present
@@ -322,27 +322,27 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
       . assert(_ == t"(0:_1=5, 1:_2=hi)")
 
       test(m"Read a product by comma-separated text"):
-        t"alice,32,yes".read[Person]
-      . assert(_ == Person(t"alice", 32, true))
+        t"kent,48,yes".read[Person]
+      . assert(_ == Person(t"kent", 48, true))
 
       test(m"Read a product falling back to defaults for missing tail"):
-        t"alice".read[Person]
-      . assert(_ == Person(t"alice"))
+        t"kent".read[Person]
+      . assert(_ == Person(t"kent"))
 
       test(m"Read a product partially with defaults"):
-        t"alice,42".read[Person]
-      . assert(_ == Person(t"alice", 42, true))
+        t"kent,42".read[Person]
+      . assert(_ == Person(t"kent", 42, true))
 
       test(m"Compare equal products"):
         Eq.derived[Person].equal(Person(), Person())
       . assert(_ == true)
 
       test(m"Compare unequal products"):
-        Eq.derived[Person].equal(Person(t"alice"), Person(t"bob"))
+        Eq.derived[Person].equal(Person(t"kent"), Person(t"edgar"))
       . assert(_ == false)
 
       test(m"Equality is case-insensitive (per Eq[Text] given)"):
-        Eq.derived[Person].equal(Person(t"ALICE"), Person(t"alice"))
+        Eq.derived[Person].equal(Person(t"KENT"), Person(t"kent"))
       . assert(_ == true)
 
       test(m"Equality of two empty products"):
@@ -477,8 +477,8 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
 
       test(m"Addable composes products field-wise"):
         import arithmetic.addable
-        Pair(t"foo", 10) + Pair(t"bar", 15)
-      . assert(_ == Pair(t"foobar", 25))
+        Pair(t"Rosen", 10) + Pair(t"crantz", 15)
+      . assert(_ == Pair(t"Rosencrantz", 25))
 
       test(m"Subtractable composes products field-wise"):
         import arithmetic.subtractable
@@ -539,70 +539,70 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
         type Form = Json
 
       test(m"No Specific in scope yields no override paths"):
-        wisteria.internal.overridePaths[CodecJson, Company]
+        wisteria.internal.overridePaths[CodecJson, Duel]
       . assert(_ == Nil)
 
       test(m"A Specific in scope yields its override paths"):
-        given (Company is Specific over (Codec in Json)) =
+        given (Duel is Specific over (Codec in Json)) =
           specifically:
-            case root.cto.name() => nameCodec
-            case root.ceo.age()  => ageCodec
+            case root.opponent.name()  => nameCodec
+            case root.challenger.age() => ageCodec
 
-        wisteria.internal.overridePaths[CodecJson, Company].to[Set]
-      . assert(_ == Set(t"cto.name", t"ceo.age"))
+        wisteria.internal.overridePaths[CodecJson, Duel].to[Set]
+      . assert(_ == Set(t"opponent.name", t"challenger.age"))
 
       test(m"A Specific for a different typeclass is ignored"):
-        given (Company is Specific over (Codec in Json)) =
+        given (Duel is Specific over (Codec in Json)) =
           specifically:
-            case root.cto.name() => nameCodec
+            case root.opponent.name() => nameCodec
 
-        wisteria.internal.overridePaths[Eq, Company]
+        wisteria.internal.overridePaths[Eq, Duel]
       . assert(_ == Nil)
 
     suite(m"Specific override in derivation"):
-      val company = Company(Employee(t"al", 30), Employee(t"bo", 40))
+      val duel = Duel(Fencer(t"laertes", 25), Fencer(t"hamlet", 30))
       val shout: Text is Display = _.upper
       val doubled: Int is Display = n => (n*2).toString.tt
 
       test(m"Without a Specific, all fields use default instances"):
-        Display.derived[Company].display(company)
-      . assert(_ == t"al,30,bo,40")
+        Display.derived[Duel].display(duel)
+      . assert(_ == t"laertes,25,hamlet,30")
 
       test(m"A Specific overrides one field path along its spine only"):
-        given (Company is Specific over Display) =
+        given (Duel is Specific over Display) =
           specifically:
-            case root.cto.name() => shout
+            case root.opponent.name() => shout
 
-        Display.derived[Company].display(company)
-      . assert(_ == t"al,30,BO,40")
+        Display.derived[Duel].display(duel)
+      . assert(_ == t"laertes,25,HAMLET,30")
 
       test(m"Overrides at distinct spines stay independent"):
-        given (Company is Specific over Display) =
+        given (Duel is Specific over Display) =
           specifically:
-            case root.ceo.name() => shout
-            case root.cto.age()  => doubled
+            case root.challenger.name() => shout
+            case root.opponent.age()    => doubled
 
-        Display.derived[Company].display(company)
-      . assert(_ == t"AL,30,bo,80")
+        Display.derived[Duel].display(duel)
+      . assert(_ == t"LAERTES,25,hamlet,60")
 
       test(m"A whole non-leaf field can be overridden with a custom instance"):
-        val terse: Employee is Display = e => t"<${e.name}>"
+        val terse: Fencer is Display = e => t"<${e.name}>"
 
-        given (Company is Specific over Display) =
+        given (Duel is Specific over Display) =
           specifically:
-            case root.cto() => terse
+            case root.opponent() => terse
 
-        Display.derived[Company].display(company)
-      . assert(_ == t"al,30,<bo>")
+        Display.derived[Duel].display(duel)
+      . assert(_ == t"laertes,25,<hamlet>")
 
       test(m"A local element given is picked up by re-derivation"):
-        given Employee is Display = e => t"E(${e.name})"
-        Display.derived[Company].display(company)
-      . assert(_ == t"E(al),E(bo)")
+        given Fencer is Display = e => t"E(${e.name})"
+        Display.derived[Duel].display(duel)
+      . assert(_ == t"E(laertes),E(hamlet)")
 
       test(m"a sum field's variant is overridden via a local given + re-derive"):
         val maskedEmail: Email is Display = e => t"<hidden>"
-        val account = Account(t"ann", Email(t"ann@example.com"))
+        val account = Account(t"viola", Email(t"viola@example.com"))
 
         given (Account is Specific over Display) =
           specifically:
@@ -611,11 +611,11 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
               Display.derived[Contact]
 
         Display.derived[Account].display(account)
-      . assert(_ == t"ann,<hidden>")
+      . assert(_ == t"viola,<hidden>")
 
       test(m"the same override leaves other variants on their defaults"):
         val maskedEmail: Email is Display = e => t"<hidden>"
-        val account = Account(t"bob", Phone(t"555-1234"))
+        val account = Account(t"feste", Phone(t"555-1234"))
 
         given (Account is Specific over Display) =
           specifically:
@@ -624,13 +624,13 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
               Display.derived[Contact]
 
         Display.derived[Account].display(account)
-      . assert(_ == t"bob,555-1234")
+      . assert(_ == t"feste,555-1234")
 
       test(m"a nested Specific specialises one branch of a component"):
         // `Account.contact` uses a `Contact` whose `Email` variant has its `address` masked, while
         // a top-level `Account` derivation leaves other `Contact`s alone.
         val masked: Text is Display = _ => t"***"
-        val account = Account(t"ann", Email(t"ann@example.com"))
+        val account = Account(t"viola", Email(t"viola@example.com"))
 
         given (Account is Specific over Display) =
           specifically:
@@ -643,4 +643,4 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
               Display.derived[Contact]
 
         Display.derived[Account].display(account)
-      . assert(_ == t"ann,***")
+      . assert(_ == t"viola,***")

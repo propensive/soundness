@@ -47,8 +47,8 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
       import whatwg.*
 
       test(m"an element inspects as escaped, single-line HTML source"):
-        Div(style = t"bar")("hello").inspect
-      . assert(_ == t"html\"<div style=\\\"bar\\\">hello</div>\"")
+        Div(style = t"color: red")("hello").inspect
+      . assert(_ == t"html\"<div style=\\\"color: red\\\">hello</div>\"")
 
       test(m"attributes inspect as an element's start-tag text"):
         internal.Attributes(t"class" -> t"a", t"hidden" -> Unset).inspect
@@ -56,7 +56,7 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
 
       test(m"honeycomb's types inspect natively"):
         Inspectable.fallbacks
-         ( Div(style = t"bar")("hello").inspect,
+         ( Div(style = t"color: red")("hello").inspect,
            Html.Fragment(Div("content"), P("more content")).inspect,
            Html.Comment(t"hi").inspect,
            Html.Doctype(t"html").inspect,
@@ -97,12 +97,12 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
       . assert(_ == Div)
 
       test(m"self-closing tag with attributes"):
-        t"""<div style="bar"/>""".read[Html of "div"]
-      . assert(_ == Div(style = t"bar"))
+        t"""<div style="color: red"/>""".read[Html of "div"]
+      . assert(_ == Div(style = t"color: red"))
 
       test(m"case-insensitive element"):
-        t"""<DIV style="bar">hello world</DIV>""".read[Html of "div"]
-      . assert(_ == Div(style = t"bar")("hello world"))
+        t"""<DIV style="color: red">hello world</DIV>""".read[Html of "div"]
+      . assert(_ == Div(style = t"color: red")("hello world"))
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
@@ -113,20 +113,20 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
       . assert(_ == Br)
 
       test(m"void tag with an attribute"):
-        t"""<area style="bar">""".read[Html of "area"]
-      . assert(_ == Area(style = t"bar"))
+        t"""<area style="color: red">""".read[Html of "area"]
+      . assert(_ == Area(style = t"color: red"))
 
       test(m"void tag with an unquoted attribute"):
-        t"""<area style=bar>""".read[Html of Flow]
-      . assert(_ == Area(style = t"bar"))
+        t"""<area style=color:red>""".read[Html of Flow]
+      . assert(_ == Area(style = t"color:red"))
 
       test(m"void tag with a boolean attribute"):
         t"""<input disabled>""".read[Html of "input"]
       . assert(_ == Input(disabled = true))
 
       test(m"void tag with a single-quoted attribute"):
-        t"""<br style='bar baz'>""".read[Html of Flow]
-      . assert(_ == Br(style = t"bar baz"))
+        t"""<br style='color: red'>""".read[Html of Flow]
+      . assert(_ == Br(style = t"color: red"))
 
       test(m"simple nested tag"):
         t"""<div><area></div>""".read[Html of Flow]
@@ -177,8 +177,8 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
       . assert(_ == Head(Script("some &amp; content")))
 
       test(m"raw text, with tag literal"):
-        t"<head><script>some <foo> content</script></head>".read[Html of "head"]
-      . assert(_ == Head(Script("some <foo> content")))
+        t"<head><script>some <puck> content</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some <puck> content")))
 
       test(m"autoclosing tag"):
         t"""<ul><li>First item</ul>""".read[Html of Flow]
@@ -233,8 +233,8 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tr> autocloses"):
-          t"""<table style="bar"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
-        . assert(_ == Table(style = t"bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+          t"""<table style="color: red"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
+        . assert(_ == Table(style = t"color: red")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tbody> and <tr> autoclose"):
           t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></table>""".read[Html of Flow]
@@ -248,7 +248,7 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert: result =>
-            given (Attribution of "test" | "foo") = Attribution.classes()
+            given (Attribution of "test" | "globe") = Attribution.classes()
             result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
 
         test(m"Generic stylesheet"):
@@ -421,8 +421,8 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
         . assert(_ == P("😀"))
 
         test(m"unknown named entity passed through literally"):
-          t"""<p>&foo;</p>""".read[Html of Flow]
-        . assert(_ == P("&foo;"))
+          t"""<p>&puck;</p>""".read[Html of Flow]
+        . assert(_ == P("&puck;"))
 
         test(m"DOCTYPE case insensitivity"):
           val parsed = t"<!DocTyPe html>\n<title>x</title>\n<p>y".load[Html]
@@ -596,8 +596,8 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
 
       suite(m"Element coverage: raw text and RCDATA"):
         test(m"textarea with entity decoded"):
-          t"""<textarea>foo &amp; bar</textarea>""".read[Html of "textarea"]
-        . assert(_ == Textarea("foo & bar"))
+          t"""<textarea>Romeo &amp; Juliet</textarea>""".read[Html of "textarea"]
+        . assert(_ == Textarea("Romeo & Juliet"))
 
         test(m"textarea with fake nested tag"):
           t"""<textarea><div>not parsed</div></textarea>""".read[Html of "textarea"]
@@ -948,13 +948,13 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
 
         test(m"class can be added to element with children"):
           import honeycomb.stylesheets.uncheckedClasses
-          Div.foo(P("hello"))
-        . assert(_ == Div(`class` = t"foo")(P("hello")))
+          Div.globe(P("hello"))
+        . assert(_ == Div(`class` = t"globe")(P("hello")))
 
         test(m"class can be added to element with attributes"):
           import honeycomb.stylesheets.uncheckedClasses
-          Img.foo(alt = t"bar")
-        . assert(_ == Img(`class` = t"foo", alt = t"bar"))
+          Img.globe(alt = t"Hamlet")
+        . assert(_ == Img(`class` = t"globe", alt = t"Hamlet"))
 
         test(m"interpolate multiple attributes"):
           val dirname = "dirname"
@@ -1217,12 +1217,12 @@ object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
       . assert(_ == Div)
 
       test(m"self-closing tag with attributes"):
-        t"""<div style="bar"/>""".read[Html of "div"]
-      . assert(_ == Div(style = t"bar"))
+        t"""<div style="color: red"/>""".read[Html of "div"]
+      . assert(_ == Div(style = t"color: red"))
 
       test(m"case-insensitive element"):
-        t"""<DIV style="bar">hello world</DIV>""".read[Html of "div"]
-      . assert(_ == Div(style = t"bar")("hello world"))
+        t"""<DIV style="color: red">hello world</DIV>""".read[Html of "div"]
+      . assert(_ == Div(style = t"color: red")("hello world"))
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
@@ -1233,20 +1233,20 @@ object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
       . assert(_ == Br)
 
       test(m"void tag with an attribute"):
-        t"""<area style="bar">""".read[Html of "area"]
-      . assert(_ == Area(style = t"bar"))
+        t"""<area style="color: red">""".read[Html of "area"]
+      . assert(_ == Area(style = t"color: red"))
 
       test(m"void tag with an unquoted attribute"):
-        t"""<img style=bar>""".read[Html of Flow]
-      . assert(_ == Img(style = t"bar"))
+        t"""<img style=color:red>""".read[Html of Flow]
+      . assert(_ == Img(style = t"color:red"))
 
       test(m"void tag with a boolean attribute"):
         t"""<input disabled>""".read[Html of "input"]
       . assert(_ == Input(disabled = true))
 
       test(m"void tag with a single-quoted attribute"):
-        t"""<br style='bar baz'>""".read[Html of Flow]
-      . assert(_ == Br(style = t"bar baz"))
+        t"""<br style='color: red'>""".read[Html of Flow]
+      . assert(_ == Br(style = t"color: red"))
 
       test(m"simple nested tag"):
         t"""<div><br></div>""".read[Html of Flow]
@@ -1331,8 +1331,8 @@ object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tr> autocloses"):
-          t"""<table style="bar"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
-        . assert(_ == Table(style = t"bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+          t"""<table style="color: red"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
+        . assert(_ == Table(style = t"color: red")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tbody> and <tr> autoclose"):
           t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></table>""".read[Html of Flow]
@@ -1345,7 +1345,7 @@ object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert: result =>
-            given (Attribution of "test" | "foo") = Attribution.classes()
+            given (Attribution of "test" | "globe") = Attribution.classes()
             result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
 
         test(m"<tfoot> closes inferred <tbody>"):
@@ -1441,8 +1441,8 @@ object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
         . assert(_ == P("😀"))
 
         test(m"unknown named entity passed through literally"):
-          t"""<p>&foo;</p>""".read[Html of Flow]
-        . assert(_ == P("&foo;"))
+          t"""<p>&puck;</p>""".read[Html of Flow]
+        . assert(_ == P("&puck;"))
 
       suite(m"Attribute parsing depth"):
         test(m"multiple attributes preserved"):
@@ -1534,8 +1534,8 @@ object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
 
       suite(m"Element coverage: raw text and RCDATA"):
         test(m"textarea with entity decoded"):
-          t"""<textarea>foo &amp; bar</textarea>""".read[Html of "textarea"]
-        . assert(_ == Textarea("foo & bar"))
+          t"""<textarea>Romeo &amp; Juliet</textarea>""".read[Html of "textarea"]
+        . assert(_ == Textarea("Romeo & Juliet"))
 
         test(m"textarea with fake nested tag"):
           t"""<textarea><div>not parsed</div></textarea>""".read[Html of "textarea"]

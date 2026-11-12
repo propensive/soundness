@@ -91,6 +91,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Test names should be descriptive, but under 70 characters
 - Test assertions use fluent pattern (`. assert(_ == expectedValue)`)
 - Strong emphasis on compile-time type safety and immutability
+- Example data comes from Shakespeare: no arbitrary or real people, no company structure
+  (`ceo`, `Employee`, `Org`), no `foo`/`bar`/`baz`. Choose an example for the feature it must
+  show, not for its likeness to the one it replaces. `doc/standards/examples.md` has the palette
+  of shapes and the names by length; `python3 etc/check-example-data.py` (run by `make build`)
+  ratchets the retired vocabulary per file against `etc/example-data-baseline.tsv`.
 - No coercion helpers: a small private or local `def` (or a `given Conversion`) that only
   re-wraps a value into the type the next line wants is a missing abstraction, not a fix; use the
   typeclass or bridge, or add one. `doc/standards/plumbing.md` has the rubric and the replacement

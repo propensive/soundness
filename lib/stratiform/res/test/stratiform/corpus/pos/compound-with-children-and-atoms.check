@@ -11,7 +11,7 @@ Document {
                     keyword: "person",
                     atoms: [
                         Inline {
-                            text: "Alice",
+                            text: "Percy",
                             preceding_spaces: 1,
                         },
                         Inline {

@@ -7,23 +7,24 @@ info   lenses and optics: deep updates to immutable values, written as a path an
 detail
     _Panopticon_ updates a value deep inside an immutable structure without the nested `copy`
     calls which would otherwise rebuild every layer above it. The `lens` method takes updates
-    written as plain path assignments — `_.ceo.name = t"Bill"` — and returns the new value,
-    rebuilding only the structure on the paths it touches. A step in parentheses traverses a
-    collection: an `Ordinal` picks one element, `Each` reaches every element, a key indexes a
-    `Map`, and a `Filter` selects by a predicate.
+    written as plain path assignments — `_.troupe.name = t"Athenians"` — and returns the new
+    value, rebuilding only the structure on the paths it touches. A step in parentheses
+    traverses a collection: an `Ordinal` picks one element, `Each` reaches every element, a key
+    indexes a `Map`, and a `Filter` selects by a predicate.
 
     ```scala
     import soundness.*
 
-    case class Role(name: Text, count: Int)
-    case class Person(name: Text, roles: List[Role])
-    case class Company(ceo: Person, name: Text)
+    case class Person(name: Text, age: Int)
+    case class Troupe(name: Text, players: List[Person])
+    case class Play(troupe: Troupe, title: Text)
 
-    val company = Company(Person(t"John", List(Role(t"CEO", 1), Role(t"CFO", 2))), t"Acme")
+    val players = List(Person(t"Quince", 40), Person(t"Bottom", 30))
+    val play = Play(Troupe(t"Mechanicals", players), t"Pyramus")
 
-    company.lens(_.ceo.name = t"Bill")
-    company.lens(_.ceo.roles(Each).count = 0, _.name = t"Acme Ltd")
-    company.lens(_.ceo.roles(Filter[Role](_.count > 1)).name = t"$prior!")
+    play.lens(_.troupe.name = t"Athenians")
+    play.lens(_.troupe.players(Each).age = 0, _.title = t"Pyramus and Thisbe")
+    play.lens(_.troupe.players(Filter[Person](_.age > 30)).name = t"$prior!")
     ```
 
     Underneath the syntax are ordinary values. A `Lens` is a getter and a setter, and an
@@ -46,12 +47,12 @@ detail
     import dynamicAccess.dynamicJson, conversions.encodableToJson
     import optics.{jsonLens, jsonEachOptical}
 
-    case class Role(name: Text)
-    case class Person(name: Text, roles: List[Role])
-    case class Company(ceo: Person)
+    case class Person(name: Text)
+    case class Troupe(name: Text, players: List[Person])
+    case class Play(troupe: Troupe)
 
-    val json = Company(Person(t"John", List(Role(t"CEO")))).in[Json]
-    json.lens(_.ceo.name = t"Bill", _.ceo.roles(Each).name = t"member")
+    val json = Play(Troupe(t"Mechanicals", List(Person(t"Quince")))).in[Json]
+    json.lens(_.troupe.name = t"Athenians", _.troupe.players(Each).name = t"player")
     ```
 
     Updates sharing a prefix are fused by the `lens` macro, so the shared structure is
@@ -76,17 +77,18 @@ entry .lens   applies updates written as path assignments to a value, returning 
     ```scala
     import soundness.*
 
-    case class Role(name: Text, count: Int)
-    case class Person(name: Text, roles: List[Role])
-    case class Company(ceo: Person, name: Text)
+    case class Person(name: Text, age: Int)
+    case class Troupe(name: Text, players: List[Person])
+    case class Play(troupe: Troupe, title: Text)
 
-    val company = Company(Person(t"John", List(Role(t"CEO", 1), Role(t"CFO", 2))), t"Acme")
+    val players = List(Person(t"Quince", 40), Person(t"Bottom", 30))
+    val play = Play(Troupe(t"Mechanicals", players), t"Pyramus")
 
-    company.lens(_.ceo.name = t"Bill")                    // one field
-    company.lens(_.ceo.roles(Prim).name = t"Founder")     // the first role
-    company.lens(_.ceo.roles(Each).count = 0)             // every role
-    company.lens(_.ceo.roles(Each).name = t"$prior!")     // every role, from its old name
-    company.lens(_.ceo.name = t"Bill", _.name = t"Bill & Co")
+    play.lens(_.troupe.name = t"Athenians")                  // one field
+    play.lens(_.troupe.players(Prim).name = t"Prologue")     // the first player
+    play.lens(_.troupe.players(Each).age = 0)                // every player
+    play.lens(_.troupe.players(Each).name = t"$prior!")      // every player, from its old name
+    play.lens(_.troupe.name = t"Athenians", _.title = t"Pyramus and Thisbe")
     ```
 
     A field step needs a `Lens` for that name and type: for a case class, `Optic.deref`
@@ -111,59 +113,59 @@ entry .compose   composes two lenses, or two optics, into one which reaches thro
 
     ```scala fuel
     frame
-      label A lens onto a company's CEO
+      label A lens onto a play's hero
       code
           import soundness.*
 
           case class Person(name: Text, age: Int)
-          case class Company(ceo: Person, name: Text)
+          case class Play(hero: Person, title: Text)
 
-          val company = Company(Person(t"John", 52), t"Acme")
-          val ceo: Lens from Company onto Person = summon["ceo" is Lens from Company]
+          val play = Play(Person(t"Lear", 80), t"King Lear")
+          val hero: Lens from Play onto Person = summon["hero" is Lens from Play]
 
-          ceo(company)   // Person(t"John", 52)
+          hero(play)   // Person(t"Lear", 80)
     frame
       label Composed with a lens onto a person's name
       code
           import soundness.*
 
           case class Person(name: Text, age: Int)
-          case class Company(ceo: Person, name: Text)
+          case class Play(hero: Person, title: Text)
 
-          val company = Company(Person(t"John", 52), t"Acme")
-          val ceo: Lens from Company onto Person = summon["ceo" is Lens from Company]
+          val play = Play(Person(t"Lear", 80), t"King Lear")
+          val hero: Lens from Play onto Person = summon["hero" is Lens from Play]
           val name: Lens from Person onto Text = summon["name" is Lens from Person]
-          val ceoName = ceo.compose(name)
+          val heroName = hero.compose(name)
 
-          ceoName(company)   // t"John"
+          heroName(play)   // t"Lear"
     frame
-      label Applied to write the CEO's name
+      label Applied to write the hero's name
       code
           import soundness.*
 
           case class Person(name: Text, age: Int)
-          case class Company(ceo: Person, name: Text)
+          case class Play(hero: Person, title: Text)
 
-          val company = Company(Person(t"John", 52), t"Acme")
-          val ceo: Lens from Company onto Person = summon["ceo" is Lens from Company]
+          val play = Play(Person(t"Lear", 80), t"King Lear")
+          val hero: Lens from Play onto Person = summon["hero" is Lens from Play]
           val name: Lens from Person onto Text = summon["name" is Lens from Person]
-          val ceoName = ceo.compose(name)
+          val heroName = hero.compose(name)
 
-          ceoName(company) = t"Bill"   // Company(Person(t"Bill", 52), t"Acme")
+          heroName(play) = t"Kent"   // Play(Person(t"Kent", 80), t"King Lear")
     frame
       label Applied to modify it
       code
           import soundness.*
 
           case class Person(name: Text, age: Int)
-          case class Company(ceo: Person, name: Text)
+          case class Play(hero: Person, title: Text)
 
-          val company = Company(Person(t"John", 52), t"Acme")
-          val ceo: Lens from Company onto Person = summon["ceo" is Lens from Company]
+          val play = Play(Person(t"Lear", 80), t"King Lear")
+          val hero: Lens from Play onto Person = summon["hero" is Lens from Play]
           val name: Lens from Person onto Text = summon["name" is Lens from Person]
-          val ceoName = ceo.compose(name)
+          val heroName = hero.compose(name)
 
-          ceoName.modify(company)(_.upper)   // Company(Person(t"JOHN", 52), t"Acme")
+          heroName.modify(play)(_.upper)   // Play(Person(t"LEAR", 80), t"King Lear")
     ##
     ```
 
@@ -242,11 +244,11 @@ entry .Lens   a getter and a setter for one part of a value: an optic which can 
       case class Person(name: Text, age: Int)
 
       val name = summon["name" is Lens from Person]
-      val person = Person(t"Ada", 36)
+      val person = Person(t"Hamlet", 30)
 
-      name(person)               // t"Ada"
-      name(person) = t"Grace"    // Person(t"Grace", 36)
-      name.modify(person)(_.upper)   // Person(t"ADA", 36)
+      name(person)                 // t"Hamlet"
+      name(person) = t"Horatio"    // Person(t"Horatio", 30)
+      name.modify(person)(_.upper)   // Person(t"HAMLET", 30)
       ```
 
       Two lenses `compose` into a lens through both.
@@ -265,8 +267,8 @@ entry .Optical   turns a traversal value, such as `Each` or an ordinal, into an 
   detail
       `Traversal is Optical from Origin onto Target` makes, from a value of the traversal type,
       an `Optic from Origin onto Target`. It is what gives meaning to a step in parentheses in
-      a `lens` path: `_.roles(Each)` uses the `Optical` for `Each.type` over the type of
-      `roles`. The companion provides:
+      a `lens` path: `_.players(Each)` uses the `Optical` for `Each.type` over the type of
+      `players`. The companion provides:
 
       - `ordinalList` and `ordinalSeries`: an `Ordinal` picks one element of a `List` or a
         `Sequence`, which is unchanged if the ordinal is past its end;
@@ -280,12 +282,13 @@ entry .Optical   turns a traversal value, such as `Each` or an ordinal, into an 
       ```scala
       import soundness.*
 
-      case class Role(name: Text, count: Int)
-      case class User(name: Text, roles: Map[Text, Role])
+      case class Person(name: Text, age: Int)
+      case class Play(title: Text, cast: Map[Text, Person])
 
-      val user = User(t"Ada", Map(t"ceo" -> Role(t"CEO", 1), t"cfo" -> Role(t"CFO", 2)))
-      user.lens(_.roles(t"cfo").count = 3)
-      user.lens(_.roles(Filter[Text](_ != t"ceo")).name = t"$prior (acting)")
+      val cast = Map(t"hero" -> Person(t"Othello", 40), t"villain" -> Person(t"Iago", 28))
+      val play = Play(t"Othello", cast)
+      play.lens(_.cast(t"villain").age = 29)
+      play.lens(_.cast(Filter[Text](_ != t"hero")).name = t"honest $prior")
       ```
   refer panopticon.Each
   refer panopticon.Filter
@@ -301,8 +304,8 @@ entry .Optical   turns a traversal value, such as `Each` or an ordinal, into an 
 
 entry .Each   the traversal which reaches every element of a collection
   detail
-      `_.roles(Each)` in a `lens` path focuses on every element of `roles`, so one assignment
-      updates them all: `company.lens(_.ceo.roles(Each).count = 0)`. The companion's given
+      `_.players(Each)` in a `lens` path focuses on every element of `players`, so one assignment
+      updates them all: `play.lens(_.troupe.players(Each).age = 0)`. The companion's given
       covers `List`; formats provide their own for their arrays (`jsonEachOptical`,
       `xmlEachOptical`, `telEachOptical`, `dsvRowEachOptical`).
   refer panopticon.Optical
@@ -310,20 +313,22 @@ entry .Each   the traversal which reaches every element of a collection
 
 entry .Filter   a traversal which reaches the elements, or the map values, whose element or key matches a predicate
   detail
-      `Filter[Role](_.count > 1)` in a `lens` path focuses on the elements of a list which
-      satisfy the predicate; `Filter[Text](_ == t"cfo")` over a `Map` focuses on the values
+      `Filter[Person](_.age > 25)` in a `lens` path focuses on the elements of a list which
+      satisfy the predicate; `Filter[Text](_ == t"villain")` over a `Map` focuses on the values
       whose key does. The predicate is a pure function: a filter is part of an optic, which is
       a pure value, so the predicate may not capture a capability or mutable state.
 
       ```scala
       import soundness.*
 
-      case class Role(name: Text, count: Int)
-      case class Person(name: Text, roles: List[Role])
+      case class Person(name: Text, age: Int)
+      case class Troupe(name: Text, players: List[Person])
 
-      val person = Person(t"John", List(Role(t"CEO", 1), Role(t"CFO", 2), Role(t"CIO", 3)))
-      person.lens(_.roles(Filter[Role](_.count > 1)).count = 0)
-      // Person(t"John", List(Role(t"CEO", 1), Role(t"CFO", 0), Role(t"CIO", 0)))
+      val players = List(Person(t"Flute", 20), Person(t"Bottom", 30), Person(t"Quince", 40))
+      val troupe = Troupe(t"Mechanicals", players)
+      troupe.lens(_.players(Filter[Person](_.age > 25)).age = 0)
+      // Troupe(t"Mechanicals",
+      //   List(Person(t"Flute", 20), Person(t"Bottom", 0), Person(t"Quince", 0)))
       ```
 
       A `lens` call with a `Filter` step cannot be fused, since its operand is not a singleton,

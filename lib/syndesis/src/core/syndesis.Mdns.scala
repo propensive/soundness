@@ -796,7 +796,7 @@ object Mdns:
 
               ()
 
-    // The next name (RFC 6762 §9: `Gondor` → `Gondor (2)`), with its records rebuilt.
+    // The next name (RFC 6762 §9: `Hamlet` → `Hamlet (2)`), with its records rebuilt.
     private def rename(claim: Claim, transport: Transport, attempts: Int)
       ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Unit =

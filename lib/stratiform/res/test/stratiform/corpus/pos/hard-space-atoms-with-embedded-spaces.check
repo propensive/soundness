@@ -15,7 +15,7 @@ Document {
                             preceding_spaces: 2,
                         },
                         Inline {
-                            text: "foo bar",
+                            text: "act cue",
                             preceding_spaces: 2,
                         },
                     ],

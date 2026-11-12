@@ -221,7 +221,7 @@ object SubtypingTests extends Suite("tel-subtyping", m"Stratiform subtyping test
       val toSource = t"tel 1.0\n\nname narrow\n\ndocument\n  field name String\n  field flagged Flag optional\n"
       lazy val from = schema(fromSource)
       lazy val to = schema(toSource)
-      lazy val document = t"tel 1.0\n\nextra yes\nname Bea\nflagged\n".read[Tel]
+      lazy val document = t"tel 1.0\n\nextra yes\nname Nym\nflagged\n".read[Tel]
       lazy val element = Tel.Type.assign(document, from)
 
       test(m"the wide schema is a subtype of the narrow one"):
@@ -250,7 +250,7 @@ object SubtypingTests extends Suite("tel-subtyping", m"Stratiform subtyping test
       test(m"projection recurses into nested records"):
         val composedContact = Tels.Layers.compose(contact, List(t"with-address", t"extended-address"))
         val base = Tels.Layers.compose(contact, List(t"with-address"))
-        val source = t"tel 1.0\n\nname Bea\naddress\n  street High\n  city Town\n  country Land\n  postcode X1\n"
+        val source = t"tel 1.0\n\nname Nym\naddress\n  street High\n  city Town\n  country Land\n  postcode X1\n"
         val projected = Tels.Projection.project(Tel.Type.assign(source.read[Tel], composedContact), composedContact, base)
 
         projected match

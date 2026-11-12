@@ -8,8 +8,8 @@ tel 1.0 example.org/contact-schema
 # hard space after the keyword puts the line into hard-space mode, so
 # subsequent soft spaces become part of the value.
 
-name  Alice Anderson
-email alice@example.org
+name  Harry Monmouth
+email harry@example.org
 
 phone
   country-code 44
@@ -20,12 +20,12 @@ phone
   number 415-555-0123
 
 home
-  street  221B Baker Street
+  street  12 Eastcheap Road
   city London
   country UK
 
 work
-  street  1 Acme Way
+  street  1 Bankside
   city  San Francisco
   country US
 

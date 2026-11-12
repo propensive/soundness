@@ -35,7 +35,7 @@ detail
 
     api.pets(42).get.call[Pet]()                      // GET /pets/42, decoded by the schema
     api.pets.get(limit = 10).call[List[Pet]]()        // a query parameter
-    api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]()   // a JSON request body
+    api.pets.post(NewPet(t"Graymalkin", tag = t"cat")).call[Pet]()   // a JSON request body
     api.sessions(t"abc").delete.call()                // 204, no body: Unit
     api.pets(42).get.record().name                    // a record typed by the schema
     ```
@@ -974,9 +974,9 @@ entry .Conformant   how an `Http.Response` is read as a value, through the carri
       import charsets.utf8Charset
 
       case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
-      val response = Http.Response(Http.Ok, contentType = media"application/json")(t"""{"id": 42, "name": "Milo"}""")
+      val response = Http.Response(Http.Ok, contentType = media"application/json")(t"""{"id": 42, "name": "Graymalkin"}""")
 
-      summon[(Pet is Conformant) over Json].read(response)    // Pet(42, t"Milo")
+      summon[(Pet is Conformant) over Json].read(response)    // Pet(42, t"Graymalkin")
       summon[(Json is Conformant) over Json].read(response)
       summon[(Unit is Conformant) over Json].read(response)   // ()
       ```

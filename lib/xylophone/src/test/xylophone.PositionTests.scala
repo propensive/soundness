@@ -112,7 +112,7 @@ object PositionTests extends Suite("xml-positions", m"Xylophone position-index t
       . assert(_ == 7)
 
       test(m"Attribute length spans name='value'"):
-        val tracked = trackedDoc(t"""<root name="alice"/>""")
+        val tracked = trackedDoc(t"""<root name="percy"/>""")
         len(tracked.locate(XPath().element(t"root", 1).attribute(t"name")))
       . assert(_ == 12)
 

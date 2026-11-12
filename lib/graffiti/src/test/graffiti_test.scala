@@ -92,7 +92,7 @@ class AdminDashboard extends Dashboard:
   def brand: Text = t"Admin"
 
   def cards: List[Dashboard.Card] =
-    List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+    List(Dashboard.Card(t"Players", P("26 on stage")), Dashboard.Card(t"Scenes", P("20")))
 
 object Tests extends Suite("templates", m"Graffiti tests") uses parasite.threads:
   def run(): Unit =
@@ -258,7 +258,7 @@ object Tests extends Suite("templates", m"Graffiti tests") uses parasite.threads
       . assert(_ == true)
 
       test(m"each card shows its heading and its own content"):
-        html.contains(t"Users") && html.contains(t"128 active") && html.contains(t"Revenue")
+        html.contains(t"Players") && html.contains(t"26 on stage") && html.contains(t"Scenes")
       . assert(_ == true)
 
       test(m"the cards sit inside the <main> landmark"):

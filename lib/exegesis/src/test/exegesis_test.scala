@@ -410,12 +410,12 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
 
       test(m"an incomingCalls request decodes a CallHierarchyItem param and echoes it"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":7,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"foo","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
+          t"""{"jsonrpc":"2.0","id":7,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"hal","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
           response.as[JsonRpc.Response].result.as[List[CallHierarchyIncomingCall]].head.let(_.from.name)
-      . assert(_ == t"foo")
+      . assert(_ == t"hal")
 
       test(m"an inlayHint request encodes its kind as a protocol number"):
         val request: Json =
@@ -452,7 +452,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
 
       test(m"a completionItem/resolve request decodes a bare item and resolves it"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":10,"method":"completionItem/resolve","params":{"label":"foo"}}"""
+          t"""{"jsonrpc":"2.0","id":10,"method":"completionItem/resolve","params":{"label":"hal"}}"""
           . as[Json]
 
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[CompletionItem].detail)

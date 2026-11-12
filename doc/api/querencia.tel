@@ -78,8 +78,8 @@ entry .Browser   the web browser as a foreign ecosystem, whose interfaces are th
       ```scala
       import soundness.*
 
-      Javascript.serialize(document.getElementById(t"foo").focus().expr)
-      // t"document.getElementById('foo').focus()"
+      Javascript.serialize(document.getElementById(t"stage").focus().expr)
+      // t"document.getElementById('stage').focus()"
       ```
   entry .window   the page's `window` global, a foreign `Window`
       `Foreign of "Window" from Browser`, rendering as the JavaScript identifier `window`.

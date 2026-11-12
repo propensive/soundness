@@ -45,10 +45,10 @@ object CodecModeTests extends Suite("xml-codecs", m"Xylophone codec mode tests")
     given XmlSchema = XmlSchema.Freeform
 
     suite(m"Codec modes"):
-      val team = PTeam(t"Crew", List(PWorker(t"Zoë <&> \"q\"", 3), PWorker(t"Bob", 40)))
+      val troupe = PTroupe(t"Rome", List(PPerson(t"Cæsar <&> \"q\"", 55), PPerson(t"Brutus", 40)))
       val tree = PTree(t"root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil)))))
       val ping = XPing(1, List(XPong(2, List(XPing(3, Nil))), XPong(4, Nil)))
-      val opt = XOpt(t"a", Unset, PWorker(t"b", 2))
+      val opt = XOpt(t"a", Unset, PPerson(t"b", 2))
       val holder = XHolder(t"h", XNick(Unset), XEmpty())
       val mapped = XMapped(t"m", Map(t"x" -> 1, t"y" -> 2))
       val mixed = XMixed(true, 2.5, 1L << 40, t"")
@@ -57,27 +57,29 @@ object CodecModeTests extends Suite("xml-codecs", m"Xylophone codec mode tests")
       test(m"`codecs.direct` writes each record as `show` renders it"):
         import codecs.direct
 
-        ( team.in[Text over Xml], tree.in[Text over Xml], ping.in[Text over Xml],
+        ( troupe.in[Text over Xml], tree.in[Text over Xml], ping.in[Text over Xml],
           opt.in[Text over Xml], holder.in[Text over Xml], mapped.in[Text over Xml],
           mixed.in[Text over Xml], playlist.in[Text over Xml] )
-      . assert(_ == (team.in[Xml].show, tree.in[Xml].show, ping.in[Xml].show, opt.in[Xml].show,
+      . assert(_ == (troupe.in[Xml].show, tree.in[Xml].show, ping.in[Xml].show, opt.in[Xml].show,
           holder.in[Xml].show, mapped.in[Xml].show, mixed.in[Xml].show, playlist.in[Xml].show))
 
       test(m"`codecs.direct` reads each record back"):
         import codecs.direct
 
-        ( team.in[Text over Xml].read[PTeam in Xml], ping.in[Text over Xml].read[XPing in Xml],
+        ( troupe.in[Text over Xml].read[PTroupe in Xml], ping.in[Text over Xml].read[XPing in Xml],
           opt.in[Text over Xml].read[XOpt in Xml] )
-      . assert(_ == (team, ping, opt))
+      . assert(_ == (troupe, ping, opt))
 
       test(m"`codecs.direct` writes a record with no instance of its own directly"):
         import codecs.direct
 
-        given workerSeam: (PWorker is Encodable in Xml) =
+        given personSeam: (PPerson is Encodable in Xml) =
           _ => panic(m"a generated printer encoded a nested record through its Encodable")
 
-        PTeam(t"Crew", List(PWorker(t"Bob", 40))).in[Text over Xml]
-      . assert(_ == t"<PTeam><name>Crew</name><members><name>Bob</name><age>40</age></members></PTeam>")
+        PTroupe(t"Rome", List(PPerson(t"Brutus", 40))).in[Text over Xml]
+      . assert:
+          _ == t"<PTroupe><name>Rome</name><players><name>Brutus</name><age>40</age></players>"+
+            t"</PTroupe>"
 
       test(m"`codecs.direct` leaves a generic record on the derived path"):
         import codecs.direct
@@ -87,20 +89,20 @@ object CodecModeTests extends Suite("xml-codecs", m"Xylophone codec mode tests")
       test(m"`codecs.derived` encodes even where a direct printer is in scope"):
         import codecs.derived
 
-        given (PWorker is Xml.Printable) =
-          Xml.Printable.fromEncodable[PWorker](_ => panic(m"printed directly"))
+        given (PPerson is Xml.Printable) =
+          Xml.Printable.fromEncodable[PPerson](_ => panic(m"printed directly"))
 
-        PWorker(t"Ada", 36).in[Text over Xml]
-      . assert(_ == t"<PWorker><name>Ada</name><age>36</age></PWorker>")
+        PPerson(t"Hal", 36).in[Text over Xml]
+      . assert(_ == t"<PPerson><name>Hal</name><age>36</age></PPerson>")
 
       test(m"`codecs.strict` writes and reads a record directly"):
         import codecs.strict
 
-        given workerSeam: (PWorker is Encodable in Xml) =
+        given personSeam: (PPerson is Encodable in Xml) =
           _ => panic(m"a generated printer encoded a nested record through its Encodable")
 
-        team.in[Text over Xml].read[PTeam in Xml]
-      . assert(_ == team)
+        troupe.in[Text over Xml].read[PTroupe in Xml]
+      . assert(_ == troupe)
 
       test(m"`derives Xml.Direct` writes and reads without an import"):
         XDeclared(5, t"five").in[Text over Xml].read[XDeclared in Xml]

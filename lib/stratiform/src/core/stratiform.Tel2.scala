@@ -187,22 +187,22 @@ trait Tel2 extends Tel3:
   =>  value is Tel.Field =
     Tel.Field(Tel.Parsable.optionality[inner, value](field))
 
-  // The write-side mirror of `read[Foo in Tel]`: `foo.in[Text over Tel]` is the value's Tel
+  // The write-side mirror of `read[Play in Tel]`: `play.in[Text over Tel]` is the value's Tel
   // text, encoded to the tree and rendered, as `show`.
   given encodableOver: [value] => (encodable: (value is anticipation.Encodable in Tel)^)
   =>  ( (value is anticipation.Encodable in (Text over Tel))^{encodable} ) =
 
     value => Tel.showable.text(encodable.encode(value)).asInstanceOf[Text over Tel]
 
-  // `foo.in[Data over Tel]`: the same text, encoded in the `Codepage` in scope.
+  // `play.in[Data over Tel]`: the same text, encoded in the `Codepage` in scope.
   given encodableOverData: [value]
   =>  ( text: (value is anticipation.Encodable in (Text over Tel))^, codepage: hieroglyph.Codepage )
   =>  ( (value is anticipation.Encodable in (Data over Tel))^{text} ) =
 
     value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Tel]
 
-  // The AST-materializing read path: `source.read[Foo in Tel]` shorthand for
-  // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect` for
+  // The AST-materializing read path: `source.read[Play in Tel]` shorthand for
+  // `source.read[Tel].as[Play]`. Mirrors `jacinta`'s `aggregableDirect` for
   // `value in Json`. The `Form` type-tag is added by an `asInstanceOf` cast —
   // `value in Tel` is just `value { type Form = Tel }` so the cast is a no-op
   // at runtime. Lives at this priority so `object Tel`'s direct-parsing

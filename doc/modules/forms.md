@@ -38,9 +38,9 @@ filled in from an existing value:
 
 ```scala
 case class Person(name: Text, email: EmailAddress)
-case class Organization(leader: Person, name: Text)
+case class Troupe(leader: Person, name: Text)
 
-val form = elicit[Organization](validation = Validation(), submit = t"Save")
+val form = elicit[Troupe](validation = Validation(), submit = t"Save")
 ```
 
 ```scala fuel
@@ -72,13 +72,13 @@ A submission arrives as a `Query`: the pairs of keys and values of a form post, 
 nested fields are dotted, as in `leader.name`. `as` decodes it to the type:
 
 ```scala
-val query = t"leader.name=Ada&leader.email=ada%40example.com&name=Acme".as[Query]
+val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(query.as[Organization].inspect)
+Out.println(query.as[Troupe].inspect)
 ```
 
 The fields are decoded through the same types which are used everywhere. An
@@ -91,7 +91,7 @@ failure carries a pointer to the field at fault:
 run
 errors show
 ##
-t"leader.name=Ada&leader.email=nobody&name=Acme".as[Query].as[Organization]
+t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
 ```
 
 [Decoding](decoding.md#requiring-a-value) explains how a field's type decides whether the

@@ -53,27 +53,27 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
     t"second" -> Tree.Leaf(t"2"),
     t"third"  -> Tree.Items(List(Tree.Leaf(t"3"), Tree.Leaf(t"four"))),
     t"kind"   -> Tree.Node(Map())))
-  val alice: Tree = Tree.Node(Map(
-    t"name"   -> Tree.Leaf(t"Alice"),
+  val percy: Tree = Tree.Node(Map(
+    t"name"   -> Tree.Leaf(t"Percy"),
     t"size"   -> Tree.Leaf(t"12345"),
     t"active" -> Tree.Leaf(t"yes"),
     t"raw"    -> Tree.Leaf(t"x"),
     t"extras" -> Tree.Leaf(t"")))
 
-  val bob: Tree = Tree.Node(Map(t"name" -> Tree.Leaf(t"Bob")))
+  val hal: Tree = Tree.Node(Map(t"name" -> Tree.Leaf(t"Hal")))
 
-  val dave: Tree = Tree.Node(Map(
-    t"nickname" -> Tree.Leaf(t"Dai"),
-    t"aliases"  -> Tree.Items(List(Tree.Leaf(t"D"), Tree.Leaf(t"Davey"))),
-    t"partner"  -> Tree.Node(Map(t"name" -> Tree.Leaf(t"Eve"))),
+  val lear: Tree = Tree.Node(Map(
+    t"nickname" -> Tree.Leaf(t"Nuncle"),
+    t"aliases"  -> Tree.Items(List(Tree.Leaf(t"Lear"), Tree.Leaf(t"King"))),
+    t"partner"  -> Tree.Node(Map(t"name" -> Tree.Leaf(t"Cordelia"))),
     t"pets"     -> Tree.Items(List(
-      Tree.Node(Map(t"name" -> Tree.Leaf(t"Rex"))),
-      Tree.Node(Map(t"name" -> Tree.Leaf(t"Tom")))))))
+      Tree.Node(Map(t"name" -> Tree.Leaf(t"Tray"))),
+      Tree.Node(Map(t"name" -> Tree.Leaf(t"Blanch")))))))
 
   val estate: Tree = Tree.Node(Map(
     t"owner" -> Tree.Node(Map(
-      t"name"    -> Tree.Leaf(t"Carol"),
-      t"address" -> Tree.Node(Map(t"city" -> Tree.Leaf(t"Tallinn"))))),
+      t"name"    -> Tree.Leaf(t"Poins"),
+      t"address" -> Tree.Node(Map(t"city" -> Tree.Leaf(t"Messina"))))),
     t"tags"  -> Tree.Items(List(
       Tree.Node(Map(t"label" -> Tree.Leaf(t"old"))),
       Tree.Node(Map(t"label" -> Tree.Leaf(t"large")))))))
@@ -81,41 +81,41 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
   def run(): Unit =
     suite(m"Scalar fields"):
       test(m"a text field is read with its declared Text type"):
-        PersonRecords.record(alice).name
-      . assert(_ == t"Alice")
+        PersonRecords.record(percy).name
+      . assert(_ == t"Percy")
 
       test(m"a field's result type may differ from its origin type"):
-        val size: Int = PersonRecords.record(alice).size
+        val size: Int = PersonRecords.record(percy).size
         size
       . assert(_ == 5)
 
       test(m"a flag field is true when the field is present"):
-        PersonRecords.record(alice).active
+        PersonRecords.record(percy).active
       . assert(_ == true)
 
       test(m"a flag field is false when the field is absent"):
-        PersonRecords.record(bob).active
+        PersonRecords.record(hal).active
       . assert(_ == false)
 
       test(m"a field may return the raw origin value"):
-        PersonRecords.record(alice).raw
+        PersonRecords.record(percy).raw
       . assert(_ == Tree.Leaf(t"x"))
 
       test(m"a record retains its underlying data"):
-        PersonRecords.record(alice).data
-      . assert(_ == alice)
+        PersonRecords.record(percy).data
+      . assert(_ == percy)
 
       test(m"selectDynamic dispatches on the field name"):
-        PersonRecords.record(alice).selectDynamic("name").asInstanceOf[Text raises TreeError]
-      . assert(_ == t"Alice")
+        PersonRecords.record(percy).selectDynamic("name").asInstanceOf[Text raises TreeError]
+      . assert(_ == t"Percy")
 
     suite(m"Member parameters"):
       test(m"a member's parameters reach the Intensional instance verbatim"):
-        PersonRecords.record(alice).extras
+        PersonRecords.record(percy).extras
       . assert(_ == List(t"alpha", t"beta"))
 
       test(m"a record evaluates a field on every access"):
-        val record = PersonRecords.record(alice)
+        val record = PersonRecords.record(percy)
         val before = TreeProvider.evaluations.get
         record.count
         record.count
@@ -125,11 +125,11 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
     suite(m"Nested records"):
       test(m"a nested member yields a nested record"):
         NestedRecords.record(estate).owner.name
-      . assert(_ == t"Carol")
+      . assert(_ == t"Poins")
 
       test(m"nested records nest again"):
         NestedRecords.record(estate).owner.address.city
-      . assert(_ == t"Tallinn")
+      . assert(_ == t"Messina")
 
       test(m"a repeated record member yields a list of records"):
         NestedRecords.record(estate).tags.map(_.label)
@@ -141,42 +141,42 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
 
     suite(m"Multiplicity"):
       test(m"an optional field is Unset when absent"):
-        MultiplicityRecords.record(bob).nickname
+        MultiplicityRecords.record(hal).nickname
       . assert(_ == Unset)
 
       test(m"an optional field is present when supplied"):
-        MultiplicityRecords.record(dave).nickname
-      . assert(_ == t"Dai")
+        MultiplicityRecords.record(lear).nickname
+      . assert(_ == t"Nuncle")
 
       test(m"an optional field has an Optional type"):
-        val nickname: Optional[Text] = MultiplicityRecords.record(dave).nickname
+        val nickname: Optional[Text] = MultiplicityRecords.record(lear).nickname
         nickname
-      . assert(_ == t"Dai")
+      . assert(_ == t"Nuncle")
 
       test(m"a repeated scalar field is a list"):
-        MultiplicityRecords.record(dave).aliases
-      . assert(_ == List(t"D", t"Davey"))
+        MultiplicityRecords.record(lear).aliases
+      . assert(_ == List(t"Lear", t"King"))
 
       test(m"an absent repeated field is an empty list"):
-        MultiplicityRecords.record(bob).aliases
+        MultiplicityRecords.record(hal).aliases
       . assert(_ == List())
 
       test(m"an optional record is Unset when absent"):
-        MultiplicityRecords.record(bob).partner
+        MultiplicityRecords.record(hal).partner
       . assert(_ == Unset)
 
       test(m"an optional record is read when present"):
-        MultiplicityRecords.record(dave).partner.let(_.name)
-      . assert(_ == t"Eve")
+        MultiplicityRecords.record(lear).partner.let(_.name)
+      . assert(_ == t"Cordelia")
 
       test(m"a repeated record is a list of records"):
-        MultiplicityRecords.record(dave).pets.map(_.name)
-      . assert(_ == List(t"Rex", t"Tom"))
+        MultiplicityRecords.record(lear).pets.map(_.name)
+      . assert(_ == List(t"Tray", t"Blanch"))
 
       test(m"a tuple carries optional and repeated elements"):
-        val tuple = MultiplicityRecords.tuple(dave)
+        val tuple = MultiplicityRecords.tuple(lear)
         (tuple.nickname, tuple.aliases, tuple.partner.let(_.name), tuple.pets.map(_.name))
-      . assert(_ == (t"Dai", List(t"D", t"Davey"), t"Eve", List(t"Rex", t"Tom")))
+      . assert(_ == (t"Nuncle", List(t"Lear", t"King"), t"Cordelia", List(t"Tray", t"Blanch")))
 
     suite(m"Unions and keyed members"):
       val shapes: Tree = Tree.Node(Map(
@@ -245,33 +245,33 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
 
     suite(m"Independence"):
       test(m"records from the same specification are independent"):
-        val a = PersonRecords.record(alice)
-        val b = PersonRecords.record(bob)
+        val a = PersonRecords.record(percy)
+        val b = PersonRecords.record(hal)
         (a.name, b.name)
-      . assert(_ == (t"Alice", t"Bob"))
+      . assert(_ == (t"Percy", t"Hal"))
 
       test(m"specifications coexist with distinct fields"):
         val title = TitleRecords.record(Tree.Node(Map(t"title" -> Tree.Leaf(t"Dr"))))
-        (title.title, PersonRecords.record(alice).name)
-      . assert(_ == (t"Dr", t"Alice"))
+        (title.title, PersonRecords.record(percy).name)
+      . assert(_ == (t"Dr", t"Percy"))
 
     suite(m"Named tuples"):
       test(m"a tuple has the specification's names and types, in order"):
         val tuple
         :   (name: Text, size: Int, active: Boolean, raw: Tree, extras: List[Text], count: Int) =
-          PersonRecords.tuple(alice)
+          PersonRecords.tuple(percy)
 
         tuple.name
-      . assert(_ == t"Alice")
+      . assert(_ == t"Percy")
 
       test(m"a tuple's elements are accessed by name"):
-        PersonRecords.tuple(alice).size
+        PersonRecords.tuple(percy).size
       . assert(_ == 5)
 
       test(m"a tuple destructures positionally"):
-        val (name, size, active, _, _, _) = PersonRecords.tuple(alice)
+        val (name, size, active, _, _, _) = PersonRecords.tuple(percy)
         (name, size, active)
-      . assert(_ == (t"Alice", 5, true))
+      . assert(_ == (t"Percy", 5, true))
 
       test(m"a tuple's underlying tuple is plain"):
         TitleRecords.tuple(Tree.Node(Map(t"title" -> Tree.Leaf(t"Dr")))).toTuple
@@ -279,7 +279,7 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
 
       test(m"a nested node becomes a nested tuple"):
         NestedRecords.tuple(estate).owner.address.city
-      . assert(_ == t"Tallinn")
+      . assert(_ == t"Messina")
 
       test(m"a list member becomes a list of tuples"):
         NestedRecords.tuple(estate).tags.map(_.label)
@@ -287,7 +287,7 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
 
       test(m"a tuple evaluates each field once, when it is built"):
         val before = TreeProvider.evaluations.get
-        val tuple = PersonRecords.tuple(alice)
+        val tuple = PersonRecords.tuple(percy)
         tuple.count
         tuple.count
         TreeProvider.evaluations.get - before

@@ -21,11 +21,11 @@ detail
 
     case class Person(name: Text, age: Int)
 
-    val document: Json = t"""{"name": "Alice", "age": 30}""".read[Json]
-    document(t"name").as[Text]                  // t"Alice"
-    document.as[Person]                         // Person(t"Alice", 30)
-    Person(t"Bob", 40).in[Json].show            // t"""{"name":"Bob","age":40}"""
-    t"""{"name": "Carol", "age": 25}""".read[Person in Json]
+    val document: Json = t"""{"name": "Percy", "age": 30}""".read[Json]
+    document(t"name").as[Text]                  // t"Percy"
+    document.as[Person]                         // Person(t"Percy", 30)
+    Person(t"Hal", 40).in[Json].show            // t"""{"name":"Hal","age":40}"""
+    t"""{"name": "Poins", "age": 25}""".read[Person in Json]
     ```
 
     A document need never be built at all: a type with a `Json.Parsable` is read *directly* from
@@ -144,23 +144,23 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
             import soundness.*
             import strategies.throwUnsafely
 
-            val person: Json = t"""{"name": "Bob", "age": 40, "roles": ["lead", "cox"]}""".read[Json]
+            val person: Json = t"""{"name": "Hal", "age": 40, "friends": ["Poins", "Peto"]}""".read[Json]
       frame
         label A field reached by key
         code
-            person(t"roles")(0).as[Text]   // t"lead"
+            person(t"friends")(0).as[Text]   // t"Poins"
       frame
         label The same field, with dynamic access enabled
         code
             import dynamicAccess.dynamicJson
 
-            person.roles(0).as[Text]   // t"lead"
+            person.friends(0).as[Text]   // t"Poins"
       frame
         label The whole document, decoded to a case class
         code
-            case class Person(name: Text, age: Int, roles: List[Text])
+            case class Person(name: Text, age: Int, friends: List[Text])
 
-            person.as[Person]   // Person(t"Bob", 40, List(t"lead", t"cox"))
+            person.as[Person]   // Person(t"Hal", 40, List(t"Poins", t"Peto"))
       frame
         label An update, as a new document
         code
@@ -523,7 +523,7 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
         object Person:
           given Person is Json.Parsable = Json.Parsable.derived
 
-        t"""{"name": "Bob", "age": 40}""".read[Person in Json]   // read with no tree built
+        t"""{"name": "Hal", "age": 40}""".read[Person in Json]   // read with no tree built
         ```
 
         A hand-written instance is built with `.apply` from a shape and a function of the
@@ -648,8 +648,8 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
         case class Person(name: Text, age: Int)
         given Person is Json.Printable = Inlinable.printable[Person]
 
-        Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}""", written directly
-        Json.Printable.print(Person(t"Bob", 40))
+        Person(t"Hal", 40).in[Text over Json]   // t"""{"name":"Hal","age":40}""", written directly
+        Json.Printable.print(Person(t"Hal", 40))
         ```
 
         `.print` renders a value whole and `.emit` hands out its text in blocks.
@@ -693,7 +693,7 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
         not a record takes the derived path.
   entry .Direct   the carrier of `derives Json.Direct`: a type's generated parser and printer, made once
     detail
-        `case class Foo(…) derives Json.Direct` generates `Foo`'s `Json.Parsable` and
+        `case class Play(…) derives Json.Direct` generates `Play`'s `Json.Parsable` and
         `Json.Printable` once, into its companion, where `Json.Parsable.declared` and
         `Json.Printable.declared` find them with no import. A `Self`-typed typeclass cannot
         appear in a `derives` clause, which is why this parameterised carrier exists.
@@ -1066,8 +1066,8 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
       import strategies.throwUnsafely
       import dynamicAccess.dynamicJson
 
-      val person = t"""{"name": "Bob"}""".read[Json]
-      person.name.as[Text]              // t"Bob"
+      val person = t"""{"name": "Hal"}""".read[Json]
+      person.name.as[Text]              // t"Hal"
       person.missing.as[Optional[Int]]  // Unset
       ```
   entry #applyDynamic   `json.field(index)`: an element of an array field, with dynamic access enabled
@@ -1402,7 +1402,7 @@ entry .JsonPointer   an RFC 6901 JSON Pointer: a path into a document, written `
       import soundness.*
       import strategies.throwUnsafely
 
-      jp"#/foo/bar".encode               // t"#/foo/bar"
+      jp"#/verona/capulet".encode   // t"#/verona/capulet"
       JsonPointer()(t"a")(t"b").encode   // t"#/a/b"
       (JsonPointer() / t"a" / Prim).encode   // t"#/a/0"
       t"#/x/y".as[JsonPointer]
@@ -1420,7 +1420,7 @@ entry .JsonPointer   an RFC 6901 JSON Pointer: a path into a document, written `
   entry .filesystem   the pointer plane as a `Filesystem`: `/`-separated, rooted at `#`, with `~0`/`~1` escapes
   entry .interpolable   the macro behind `jp"…"`: a pointer literal parsed as the code compiles
       Reuses `.decodable` at expansion, so a malformed literal is a compile error at the
-      offending character: `jp"#/foo~2bar"` does not compile.
+      offending character: `jp"#/verona~2capulet"` does not compile.
   entry .decodable   reads a pointer from text, raising `JsonPointer.Error` with the offset of the fault
       The text must begin with `#` (`ExpectedHash`), a non-empty pointer must continue with
       `/` (`ExpectedSlash`), and every `~` must be followed by `0` or `1` (`BadEscape`). A
@@ -1513,16 +1513,16 @@ entry .j   the `j"…"` interpolator: a JSON literal checked as it compiles, wit
     ```
 
 entry .jp   the `jp"…"` interpolator: a JSON Pointer literal checked as it compiles
-    `jp"#/foo/bar"` is a `JsonPointer`, parsed while the code compiles so that a malformed
+    `jp"#/verona/capulet"` is a `JsonPointer`, parsed while the code compiles so that a malformed
     pointer — one not beginning with `#`, or with a bad `~` escape — is a compile error at the
     offending character. The interpolator takes no substitutions.
 
     ```scala
     import soundness.*
 
-    jp"#/foo/bar".encode   // t"#/foo/bar"
+    jp"#/verona/capulet".encode   // t"#/verona/capulet"
     jp"#".encode           // t"#"
-    jp"#/foo~2bar"         // does not compile: ~2 is not a valid escape
+    jp"#/verona~2capulet"         // does not compile: ~2 is not a valid escape
     ```
 
 entry .formatting   the two standard `Json.Formatting`s, each a given to import by name
@@ -1579,9 +1579,9 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads an absent 
 
             case class Profile(name: Text, age: Optional[Int])
 
-            t"""{"name": "Eve"}""".read[Json].as[Profile].age                   // Unset
-            t"""{"name": "Eve", "age": null}""".read[Json].as[Profile].age      // Unset
-            capture[Json.Error](t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile])
+            t"""{"name": "Nym"}""".read[Json].as[Profile].age                   // Unset
+            t"""{"name": "Nym", "age": null}""".read[Json].as[Profile].age      // Unset
+            capture[Json.Error](t"""{"name": "Nym", "age": "old"}""".read[Json].as[Profile])
       alternative Strict absence
         code
             import soundness.*
@@ -1590,7 +1590,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads an absent 
 
             case class Profile(name: Text, age: Optional[Int])
 
-            capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
+            capture[Json.Error](t"""{"name": "Nym"}""".read[Json].as[Profile]).reason
             // Json.Error.Reason.Absent
       alternative Strict nulls
         code
@@ -1600,7 +1600,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads an absent 
 
             case class Profile(name: Text, age: Optional[Int])
 
-            capture[Json.Error](t"""{"name": "Eve", "age": null}""".read[Json].as[Profile]).reason
+            capture[Json.Error](t"""{"name": "Nym", "age": null}""".read[Json].as[Profile]).reason
             // Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number)
       alternative Lenient faults
         code
@@ -1610,7 +1610,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads an absent 
 
             case class Profile(name: Text, age: Optional[Int])
 
-            t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age   // Unset
+            t"""{"name": "Nym", "age": "old"}""".read[Json].as[Profile].age   // Unset
       ##
       ```
   entry .strictJsonAbsence   an absent key raises `Json.Error(Absent)` rather than reading as `Unset`
@@ -1686,7 +1686,7 @@ entry .postables   sends a `Json` as an `application/json` request body; JVM onl
       typecheck
       ##
       import postables.jsonPostable
-      url"https://example.com/api".post(Json.make(name = t"Bob".in[Json]))
+      url"https://example.com/api".post(Json.make(name = t"Hal".in[Json]))
       ```
   entry .jsonPostable   `Json is Postable`: a request body of the document's text, as `application/json`
 
@@ -1717,20 +1717,20 @@ entry .optics   lenses and optics over `Json` documents, each a given to import 
       import dynamicAccess.dynamicJson, conversions.encodableToJson
       import optics.*
 
-      case class Role(name: Text)
-      case class Entity(name: Text, age: Int, roles: List[Role])
-      case class Org(name: Text, leader: Entity)
+      case class Scene(number: Int, place: Text)
+      case class Act(number: Int, scenes: List[Scene])
+      case class Play(title: Text, opening: Act)
 
-      val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).in[Json]
-      org.lens(_.leader.age = 41.in[Json]).as[Org].leader.age                      // 41
-      org.lens(_.leader.roles(Prim).name = t"Singer").as[Org]                        // the first role renamed
-      org.lens(_.leader.roles(Each).name = t"x").as[Org]                             // every role renamed
-      org.lens(_.leader.roles(Filter[Json](_.name.as[Text] == t"Leader")).name = t"x").as[Org]
+      val play = Play(t"Macbeth", Act(1, List(Scene(1, t"A heath")))).in[Json]
+      play.lens(_.opening.number = 2.in[Json]).as[Play].opening.number   // 2
+      play.lens(_.opening.scenes(Prim).place = t"Forres").as[Play]       // the first scene moved
+      play.lens(_.opening.scenes(Each).place = t"x").as[Play]            // every scene moved
+      play.lens(_.opening.scenes(Filter[Json](_.place.as[Text] == t"A heath")).place = t"x").as[Play]
       ```
   entry .jsonLens   a lens from a `Json` onto a named field, for `json.lens(_.name = …)`
       Needs dynamic access enabled (`dynamicAccess.dynamicJson`) and a `Tactic[Json.Error]`;
       reading a missing field yields an absent `Json`, and writing adds it.
-  entry .jsonOrdinalOptical   an optic onto one array element by its `Ordinal`: `roles(Prim)`
+  entry .jsonOrdinalOptical   an optic onto one array element by its `Ordinal`: `scenes(Prim)`
       Rebuilds the array immutably; an index past the end, or a non-array, leaves the
       document unchanged.
   entry .jsonEachOptical   the `Each` optic: applies a transform to every element of an array
@@ -1815,8 +1815,8 @@ entry .Inlinable   a compile-time code generator for one type's JSON parser and 
         given Person is Json.Parsable = Inlinable.parsable[Person]
         given Person is Json.Printable = Inlinable.printable[Person]
 
-      t"""{"name":"Bob","age":40}""".read[Person in Json]   // Person(t"Bob", 40)
-      Person(t"Bob", 40).in[Text over Json]                  // t"""{"name":"Bob","age":40}"""
+      t"""{"name":"Hal","age":40}""".read[Person in Json]   // Person(t"Hal", 40)
+      Person(t"Hal", 40).in[Text over Json]                  // t"""{"name":"Hal","age":40}"""
       ```
 
       The same two instances are generated once into a record's companion by `derives
@@ -1895,9 +1895,9 @@ entry .Inlinable   a compile-time code generator for one type's JSON parser and 
   entry .ForJson   the carrier which lets a case class say `derives Inlinable.ForJson`
     detail
         A `Self`-typed typeclass has no type parameters, so `Inlinable` cannot appear in a
-        `derives` clause. `case class Foo(…) derives Inlinable.ForJson` synthesises a
-        `ForJson[Foo]` — which *is* a `Foo is Inlinable`, delegating every method to
-        `Inlinable.derived[Foo]` — into `Foo`'s companion, where the expansion-time summon
+        `derives` clause. `case class Play(…) derives Inlinable.ForJson` synthesises a
+        `ForJson[Play]` — which *is* a `Play is Inlinable`, delegating every method to
+        `Inlinable.derived[Play]` — into `Play`'s companion, where the expansion-time summon
         finds it. The resolution ladder unwraps the delegate, so a structural instance keeps
         its generator identity.
     entry .derived   `ForJson.derived[T]`: wraps `Inlinable.derived[T]`, for the `derives` clause
@@ -2021,18 +2021,18 @@ entry .jsonSchematics   constructors for a codec fused with the schema it reads 
       import strategies.throwUnsafely
       import codepages.utf8Codepage
 
-      case class Employee(name: Text, age: Int, email: Text)
+      case class Contact(name: Text, age: Int, email: Text)
 
-      val fused = jsonSchematics.decodable[Employee]
-      fused.decoded(t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json])
+      val fused = jsonSchematics.decodable[Contact]
+      fused.decoded(t"""{"name": "Percy", "age": 30, "email": "percy@example.com"}""".read[Json])
       fused.schema()   // a JsonSchema.Object with the three properties
       ```
 
       These are methods, not givens, on purpose: a `Decodable & Schematic` given is a subtype
       of both its codec typeclass and `Schematic`, so as a given it would be ambiguous for
       any bare `Schematic` summon. Call one where a fused instance is wanted, or bind it as a
-      local given: `given (Employee is Decodable & Schematic in Json over JsonSchema) =
-      jsonSchematics.decodable[Employee]`.
+      local given: `given (Contact is Decodable & Schematic in Json over JsonSchema) =
+      jsonSchematics.decodable[Contact]`.
   refer jacinta.JsonSchema
   entry .encodable   the `Json.Encodable` for `T` fused with the `JsonSchema` of what it writes
       Needs a `T is Json.Encodable` in scope; `encoded` delegates to it, and `schema()` is
@@ -2059,9 +2059,9 @@ entry .JsonSchema   a JSON Schema as a value: derived from a Scala type, read fr
       import strategies.throwUnsafely
       import codepages.utf8Codepage
 
-      case class Employee(name: Text, age: Int, email: Optional[Text])
+      case class Contact(name: Text, age: Int, email: Optional[Text])
 
-      JsonSchema.derived[Employee].schema() match
+      JsonSchema.derived[Contact].schema() match
         case schema: JsonSchema.Object => schema.required   // List(t"name", t"age")
         case _                         => Unset
 
@@ -2274,10 +2274,10 @@ entry .verify   checks a document against a type's schema and re-types it, so it
           import strategies.throwUnsafely
           import codepages.utf8Codepage
 
-          case class Employee(name: Text, age: Int, email: Text)
+          case class Contact(name: Text, age: Int, email: Text)
 
-          val bob = t"""{"name": "Bob"}""".read[Json]
-          safely(bob.verify[Employee]).absent   // true: `age` and `email` are absent
+          val hal = t"""{"name": "Hal"}""".read[Json]
+          safely(hal.verify[Contact]).absent   // true: `age` and `email` are absent
     frame
       label A field of the wrong kind still fails
       code
@@ -2285,10 +2285,10 @@ entry .verify   checks a document against a type's schema and re-types it, so it
           import strategies.throwUnsafely
           import codepages.utf8Codepage
 
-          case class Employee(name: Text, age: Int, email: Text)
+          case class Contact(name: Text, age: Int, email: Text)
 
-          val bob = t"""{"name": "Bob", "age": "old", "email": "b@c.d"}""".read[Json]
-          safely(bob.verify[Employee]).absent   // true: `age` is a string, not a number
+          val hal = t"""{"name": "Hal", "age": "old", "email": "hal@example.com"}""".read[Json]
+          safely(hal.verify[Contact]).absent   // true: `age` is a string, not a number
     frame
       label A conformant document verifies, decodes and navigates with checked field names
       code
@@ -2296,12 +2296,12 @@ entry .verify   checks a document against a type's schema and re-types it, so it
           import strategies.throwUnsafely
           import codepages.utf8Codepage
 
-          case class Employee(name: Text, age: Int, email: Text)
+          case class Contact(name: Text, age: Int, email: Text)
 
-          val bob = t"""{"name": "Bob", "age": 41, "email": "b@c.d"}""".read[Json]
-          bob.verify[Employee].as[Employee]      // Employee(t"Bob", 41, t"b@c.d")
-          bob.verify[Employee].name.as[Text]     // t"Bob"
-          bob.verify[Employee].nope              // does not compile
+          val hal = t"""{"name": "Hal", "age": 41, "email": "hal@example.com"}""".read[Json]
+          hal.verify[Contact].as[Contact]       // Contact(t"Hal", 41, t"hal@example.com")
+          hal.verify[Contact].name.as[Text]     // t"Hal"
+          hal.verify[Contact].nope              // does not compile
     ##
     ```
 
@@ -2343,8 +2343,8 @@ entry .Parser   the streaming JSON tokenizer behind every `read[Json]`: one excl
       case class Person(name: Text, age: Int)
       given Person is Json.Parsable = Json.Parsable.derived
 
-      t"""{"name": "Bob", "age": 40}""".read[Json]
-      t"""{"name": "Bob", "age": 40}""".read[Person in Json]
+      t"""{"name": "Hal", "age": 40}""".read[Json]
+      t"""{"name": "Hal", "age": 40}""".read[Person in Json]
       ```
 
       The class is public as a *type* because the parsers `Inlinable.parsable[T]` and

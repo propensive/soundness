@@ -77,16 +77,16 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
   private val document: Text =
     Text("""|tel 1.0
         |
-        |owner amy
-        |contact bea
-        |  email bea@example.com
-        |  email bea@example.org
-        |contact chu
+        |owner hal
+        |contact nym
+        |  email nym@example.com
+        |  email nym@example.org
+        |contact pistol
         |
-        |cat felix
+        |cat tybalt
         |  toy  ball of string
-        |dog rex
-        |cat tom
+        |dog crab
+        |cat graymalkin
         |""".stripMargin)
 
   private lazy val schema: Tels =
@@ -112,7 +112,7 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
   def run(): Unit =
     suite(m"Grammar and identity (§3)"):
       test(m"the first character selects the delimiter"):
-        Telp.parse(t".contact.bea") == Telp.parse(t"/contact/bea")
+        Telp.parse(t".contact.nym") == Telp.parse(t"/contact/nym")
       . assert(_ == true)
 
       test(m"a path is its component sequence"):
@@ -124,7 +124,7 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
       . assert(_ == (Telp.Root, Telp.Root))
 
       test(m"components may contain spaces"):
-        Telp.parse(t"/cat/felix/toy/ball of string").components.last
+        Telp.parse(t"/cat/tybalt/toy/ball of string").components.last
       . assert(_ == t"ball of string")
 
       test(m"a doubled delimiter is a syntax error"):
@@ -136,11 +136,11 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
       . assert(_ == Telp.Error.Reason.Syntax)
 
       test(m"a path must begin with a delimiter character"):
-        capture[Telp.Error](Telp.parse(t"contact/bea")).reason
+        capture[Telp.Error](Telp.parse(t"contact/nym")).reason
       . assert(_ == Telp.Error.Reason.Syntax)
 
       test(m"hyphen is not a delimiter"):
-        capture[Telp.Error](Telp.parse(t"-contact-bea")).reason
+        capture[Telp.Error](Telp.parse(t"-contact-nym")).reason
       . assert(_ == Telp.Error.Reason.Syntax)
 
       test(m"a line feed in a path is a syntax error"):
@@ -153,8 +153,8 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
 
     suite(m"Rendering"):
       test(m"the encoder prefers the slash delimiter"):
-        Telp(List(t"contact", t"bea")).encode
-      . assert(_ == t"/contact/bea")
+        Telp(List(t"contact", t"nym")).encode
+      . assert(_ == t"/contact/nym")
 
       test(m"the root path renders as the delimiter alone"):
         Telp.Root.encode
@@ -167,8 +167,8 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
       . assert(_ == t"!contact!a.b/c!email!0")
 
       test(m"parse then render round-trips"):
-        Telp.parse(Telp(List(t"cat", t"felix", t"toy", t"0")).encode)
-      . assert(_ == Telp(List(t"cat", t"felix", t"toy", t"0")))
+        Telp.parse(Telp(List(t"cat", t"tybalt", t"toy", t"0")).encode)
+      . assert(_ == Telp(List(t"cat", t"tybalt", t"toy", t"0")))
 
     suite(m"Resolution (§4, §10 examples)"):
       test(m"the root path resolves to the context element"):
@@ -180,49 +180,49 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
         leaf(t"/owner")
       . assert(_ == t"<node>")
 
-      test(m"/owner/name is the Value amy"):
+      test(m"/owner/name is the Value hal"):
         leaf(t"/owner/name")
-      . assert(_ == t"amy")
+      . assert(_ == t"hal")
 
       test(m"a repeatable keyword at path end is its occurrence sequence"):
         leaf(t"/contact")
       . assert(_ == t"<2 occurrences>")
 
       test(m"an occurrence is selected by key value"):
-        leaf(t"/contact/bea/name")
-      . assert(_ == t"bea")
+        leaf(t"/contact/nym/name")
+      . assert(_ == t"nym")
 
       test(m"an occurrence is selected by zero-based index"):
         leaf(t"/contact/1/name")
-      . assert(_ == t"chu")
+      . assert(_ == t"pistol")
 
       test(m"an unkeyed repeatable member is index-only"):
-        leaf(t"/contact/bea/email/1")
-      . assert(_ == t"bea@example.org")
+        leaf(t"/contact/nym/email/1")
+      . assert(_ == t"nym@example.org")
 
       test(m"key selection is scoped to same-keyword occurrences"):
-        // `dog rex` between the two cats does not affect the cat sequence.
-        leaf(t"/cat/tom/name")
-      . assert(_ == t"tom")
+        // `dog crab` between the two cats does not affect the cat sequence.
+        leaf(t"/cat/graymalkin/name")
+      . assert(_ == t"graymalkin")
 
       test(m"index selection counts same-keyword occurrences only"):
         leaf(t"/cat/1/name")
-      . assert(_ == t"tom")
+      . assert(_ == t"graymalkin")
 
-      test(m"/dog/0/name is the Value rex"):
+      test(m"/dog/0/name is the Value crab"):
         leaf(t"/dog/0/name")
-      . assert(_ == t"rex")
+      . assert(_ == t"crab")
 
       test(m"a Select name is not a keyword"):
         failure(t"/pet")
       . assert(_ == Telp.Error.Reason.UnknownKeyword)
 
       test(m"a nested keyed occurrence is selected by index"):
-        leaf(t"/cat/felix/toy/0/label")
+        leaf(t"/cat/tybalt/toy/0/label")
       . assert(_ == t"ball of string")
 
       test(m"a nested keyed occurrence is selected by key, spaces included"):
-        leaf(t"/cat/felix/toy/ball of string/label")
+        leaf(t"/cat/tybalt/toy/ball of string/label")
       . assert(_ == t"ball of string")
 
     suite(m"Shadowing (§5)"):
@@ -233,7 +233,7 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
 
       test(m"leading zeros are permitted in an index selector"):
         leaf(t"/contact/01/name")
-      . assert(_ == t"chu")
+      . assert(_ == t"pistol")
 
     suite(m"Failures (§7)"):
       test(m"descending below a Value fails"):
@@ -245,7 +245,7 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
       . assert(_ == Telp.Error.Reason.UnknownKeyword)
 
       test(m"descending below a scalar occurrence fails"):
-        failure(t"/contact/bea/email/0/x")
+        failure(t"/contact/nym/email/0/x")
       . assert(_ == Telp.Error.Reason.NonStructDescent)
 
       test(m"an absent optional member fails"):
@@ -259,9 +259,9 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
                         |""".stripMargin)
 
         val schema = Tels.Validation.validate(extra.read[Tel].as[Tels])
-        val element = Tel.Type.assign(t"tel 1.0\n\nperson amy\n".read[Tel], schema)
+        val element = Tel.Type.assign(t"tel 1.0\n\nperson hal\n".read[Tel], schema)
         given Tels = schema
-        capture[Telp.Error](Telp.parse(t"/person/amy/nickname").resolve(element)).reason
+        capture[Telp.Error](Telp.parse(t"/person/hal/nickname").resolve(element)).reason
       . assert(_ == Telp.Error.Reason.AbsentMember)
 
       test(m"an index beyond the occurrence sequence fails"):
@@ -269,7 +269,7 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
       . assert(_ == Telp.Error.Reason.IndexOutOfRange)
 
       test(m"a key selector against an unkeyed type fails"):
-        failure(t"/contact/bea/email/latest")
+        failure(t"/contact/nym/email/latest")
       . assert(_ == Telp.Error.Reason.TypeNotKeyed)
 
       test(m"an unmatched key value fails"):
@@ -290,13 +290,13 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
     suite(m"Delimiter switch (§10)"):
       // §3: `+` is a delimiter although it is not sigil-valid.
       test(m"plus is a delimiter"):
-        Telp.parse(t"+contact+bea") == Telp.parse(t"/contact/bea")
+        Telp.parse(t"+contact+nym") == Telp.parse(t"/contact/nym")
       . assert(_ == true)
 
       test(m"a key containing the conventional delimiters uses another"):
         val doc = Text("""|tel 1.0
                       |
-                      |owner amy
+                      |owner hal
                       |contact a.b/c
                       |  email x@example.com
                       |""".stripMargin)

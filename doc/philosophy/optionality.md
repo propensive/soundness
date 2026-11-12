@@ -16,10 +16,10 @@ no `Some` to unwrap:
 ```scala fuel
 parse
 ##
-val name: Optional[Text] = t"Ada"
+val name: Optional[Text] = t"Hal"
 val missing: Optional[Text] = Unset
 
-name.or(t"anonymous")     // t"Ada"
+name.or(t"anonymous")     // t"Hal"
 missing.or(t"anonymous")  // t"anonymous"
 ```
 
@@ -111,8 +111,8 @@ conversion is explicit in both directions and confined to the boundary:
 ```scala fuel
 parse
 ##
-name.option              // Some(t"Ada"): Option[Text]
-Some(t"Ada").optional    // t"Ada": Optional[Text]
+name.option              // Some(t"Hal"): Option[Text]
+Some(t"Hal").optional    // t"Hal": Optional[Text]
 ```
 
 Converting at the edge rather than adopting `Option` throughout is the same discipline

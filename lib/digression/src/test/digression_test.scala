@@ -47,9 +47,9 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
       . assert(_ == t"++()")
 
       test(m"An anonymous function is marked as a lambda"):
-        StackTrace.rewrite("Foo$$anonfun$3", method = true)
+        StackTrace.rewrite("Play$$anonfun$3", method = true)
 
-      . assert(_ == t"Foo.λ₃()")
+      . assert(_ == t"Play.λ₃()")
 
       test(m"A default getter is marked as a default"):
         StackTrace.rewrite("defaulted$default$1")
@@ -87,10 +87,10 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
       . assert(_ == t"lazilyℓ₁()")
 
       test(m"Accessors are marked"):
-        List("super$foo", "protected$foo", "inline$foo", "foo$accessor").map:
+        List("super$stage", "protected$stage", "inline$stage", "stage$accessor").map:
           StackTrace.rewrite(_)
 
-      . assert(_ == List(t"↑foo", t"⇢foo", t"⇢foo", t"foo⇢"))
+      . assert(_ == List(t"↑stage", t"⇢stage", t"⇢stage", t"stage⇢"))
 
       test(m"A specialized method shows its signature, result last"):
         StackTrace.rewrite("apply$mcJII$sp", method = true)
@@ -108,9 +108,9 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
       . assert(_ == t"pkg.Base≔field_=()")
 
       test(m"An expanded private name joins its owner with one separator"):
-        StackTrace.rewrite("Foo$$hidden", method = true)
+        StackTrace.rewrite("Play$$hidden", method = true)
 
-      . assert(_ == t"Foo.hidden()")
+      . assert(_ == t"Play.hidden()")
 
       test(m"A unicode escape is decoded"):
         StackTrace.rewrite("x$u002Ey")
@@ -123,19 +123,19 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
       . assert(_ == t"pkg.Thing#λ/0x000001")
 
       test(m"A module class keeps its marker"):
-        StackTrace.rewrite("pkg.Foo$")
+        StackTrace.rewrite("pkg.Play$")
 
-      . assert(_ == t"pkg.ΞFoo")
+      . assert(_ == t"pkg.ΞPlay")
 
       test(m"A package file is bracketed"):
-        StackTrace.rewrite("pkg.Foo$package$")
+        StackTrace.rewrite("pkg.Play$package$")
 
-      . assert(_ == t"pkg.⁅Foo⁆")
+      . assert(_ == t"pkg.⁅Play⁆")
 
       test(m"A name with no `.` to split on is left alone"):
-        StackTrace.rewrite("Foo$")
+        StackTrace.rewrite("Play$")
 
-      . assert(_ == t"Foo#")
+      . assert(_ == t"Play#")
 
       test(m"Every glyph the markers produce is in the legend"):
         StackTrace.Marker.all.filter { marker => StackTrace.legend.at(marker.glyph).absent }
@@ -167,27 +167,28 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
           == true
 
     suite(m"Resolved frames"):
-      val source = StackTrace.Frame.Source(t"/src/Foo.scala", t"pkg.Foo.bar", t"λ", Kind.Lambda)
+      val source =
+        StackTrace.Frame.Source(t"/src/Play.scala", t"pkg.Play.stage", t"λ", Kind.Lambda)
 
       val frame =
         StackTrace.Frame
-         ( StackTrace.Method(t"pkg.ΞFoo", t"bar.λ₁()"), t"Foo.scala", 12, false,
-           t"pkg.Foo$$", t"bar$$anonfun$$1", source )
+         ( StackTrace.Method(t"pkg.ΞPlay", t"stage.λ₁()"), t"Play.scala", 12, false,
+           t"pkg.Play$$", t"stage$$anonfun$$1", source )
 
       test(m"A resolved frame displays the source definition"):
         (frame.displayClass, frame.displayMethod)
 
-      . assert(_ == (t"pkg.Foo.bar", t"λ"))
+      . assert(_ == (t"pkg.Play.stage", t"λ"))
 
       test(m"The displayed owner splits at its last segment"):
         (frame.displayPrefix, frame.displaySegment)
 
-      . assert(_ == (t"pkg.Foo", t"bar"))
+      . assert(_ == (t"pkg.Play", t"stage"))
 
       test(m"A definition joins its owner and name"):
         source.definition
 
-      . assert(_ == t"pkg.Foo.bar.λ")
+      . assert(_ == t"pkg.Play.stage.λ")
 
       test(m"A definition with no owner is just its name"):
         source.copy(owner = t"").definition
@@ -212,7 +213,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
           List
             ( "SMAP", "Main.scala", "Scala",
               "*S Scala",
-              "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "foo/Util.scala",
+              "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "globe/Util.scala",
               "*L", "1#1,120:1", "3#2,2:121",
               "*S ScalaDebug",
               "*F", "+ 1 Main.scala", "Main.scala",
@@ -261,13 +262,13 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
         smap.let(_.expand(121))
 
       . assert(_ == Smap.Expansion(
-          List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 3, t"Util")), 3))
+          List(Smap.Origin(t"Util.scala", t"globe/Util.scala", 3, t"Util")), 3))
 
       test(m"A coalesced run maps each of its lines"):
         smap.let(_.expand(122))
 
       . assert(_ == Smap.Expansion(
-          List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 4, t"Util")), 3))
+          List(Smap.Origin(t"Util.scala", t"globe/Util.scala", 4, t"Util")), 3))
 
       test(m"Nested inlining expands innermost first, back to a real line"):
         nested.let(_.expand(12))
@@ -301,7 +302,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
             List
               ( "SMAP", "Main.scala", "Scala",
                 "*S Scala",
-                "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "foo/Util.scala",
+                "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "globe/Util.scala",
                 "*L", "1#1,100:1", "3#2:101", "3#2,2:105,2",
                 "*E" )
             . map(_.tt).join(t"\n").s

@@ -110,7 +110,7 @@ entry .Typeclass   the base of every Soundness typeclass: an instance for a `Sel
       def welcome[value](value: value)(using greetable: value is Greetable): Text =
         greetable.greet(value)
 
-      welcome(t"Ada")   // t"Hello, Ada"
+      welcome(t"Hamlet")   // t"Hello, Hamlet"
       ```
 
       A `Typeclass` is *not* a pure type: many instances are built from capabilities — a

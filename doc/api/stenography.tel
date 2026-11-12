@@ -149,9 +149,9 @@ entry .Syntax   a Scala type as a tree in its source form, written as text again
         capability `c*` and a read-only `c.rd`.
       - `Projection(base, text)`, a type projection `A#B`, parenthesising a refined or infix
         base; and `Selection(left, right)`, a path selection `a.B`.
-      - `Structural(syntax, types, terms)`, a refinement `Foo { type A = X; def f: Y }`, whose
-        alias members may be written with an infix alias instead: `Foo { type Form = Bar }`
-        as `Foo in Bar`. A member which only bounds its type, `type A <: X`, stays a
+      - `Structural(syntax, types, terms)`, a refinement `Play { type A = X; def f: Y }`, whose
+        alias members may be written with an infix alias instead: `Play { type Form = Json }`
+        as `Play in Json`. A member which only bounds its type, `type A <: X`, stays a
         `Declaration` and is never written with an alias.
       - `Named(isUsing, name, syntax)`, a named parameter or named-tuple element, `x: Int`, or
         `using x: Int`.
@@ -232,7 +232,7 @@ entry .Syntax   a Scala type as a tree in its source form, written as text again
       parameterless or by-name member just its result, `: Int`; a bounded type member its
       bounds, `? <: Int`; and a type lambda its type parameters and body. The result's
       `method` flag says whether it is a term member (`def`) or a type member (`type`).
-  entry .clause   a parameter clause as source text: `(x: Int, y: Text)`, `(using Foo)` or `[T <: U: Bound]`
+  entry .clause   a parameter clause as source text: `(x: Int, y: Text)`, `(using Play)` or `[T <: U: Bound]`
       Renders one `quotes.reflect.ParamClause`. For a term clause, each parameter is written
       with its name and type, `inline` where it is declared so, and with `using` before a
       contextual parameter when `showUsing` is set; an anonymous contextual parameter is
@@ -376,8 +376,8 @@ entry .Imports   which names are in scope where a type is written: imported scop
         imported, as the target of an `export` alias is: `jacinta.Json` is written `Json`
         under `import soundness.*` because `soundness` exports it.
       - `#aliases`, a map from the name of a refined type member to the infix type alias in
-        scope which refines it, `"Form" -> t"in"`, so that `Foo { type Form = Bar }` can be
-        written `Foo in Bar`.
+        scope which refines it, `"Form" -> t"in"`, so that `Play { type Form = Json }` can be
+        written `Play in Json`.
       - `#pureFuns`, whether the code being written to has pure functions enabled, which
         capture checking implies. It decides whether an unannotated function type is written
         `->` or `=>`.
@@ -420,7 +420,7 @@ entry .Imports   which names are in scope where a type is written: imported scop
       Takes the designator of a package or object, such as `Designator(t"soundness")`, and
       a compiler `Context`, and returns the target of every exported type alias declared in
       it, together with that target's companion: under `import soundness.*`, `Textual` and
-      `Textual.foo` are both written unqualified. Only an alias which renames its target, or
+      `Textual.text` are both written unqualified. Only an alias which renames its target, or
       applies it to exactly its own type parameters in order, counts; an alias which reshapes
       its parameters (a tuple type, `Some`, `<:<`) does not make its target reachable by
       name. A scope which does not resolve, or whose declarations cannot be read, contributes

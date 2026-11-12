@@ -90,9 +90,9 @@ object Inlinable:
     def derived[value]: ForJson[value] = ForJson(Inlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
-  // a `derives` clause (it has no type parameters), so `case class Foo(...)
+  // a `derives` clause (it has no type parameters), so `case class Play(...)
   // derives Inlinable.ForJson` synthesizes this parameterized subtrait —
-  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
+  // which *is* a `Play is Inlinable` — into `Play`'s companion, where the
   // staging summon finds it. The resolution ladder unwraps the delegate so
   // structural instances keep their generator identities.
   final class ForJson[value](delegate0: value is Inlinable) extends Inlinable:

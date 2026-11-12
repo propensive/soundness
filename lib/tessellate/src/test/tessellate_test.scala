@@ -177,14 +177,14 @@ object Tests extends Suite("layout", m"Tessellate tests"):
         Flow.wrap(content, width, unbreakable = spans).to[List]
 
       test(m"an unbreakable span moves whole to the next line rather than breaking inside"):
-        protecting(t"see foo bar baz here", 12, 4.z thru 14.u)
+        protecting(t"see hal nym sly here", 12, 4.z thru 14.u)
 
-      . assert(_ == List(t"see", t"foo bar baz", t"here"))
+      . assert(_ == List(t"see", t"hal nym sly", t"here"))
 
       test(m"the same content without the span breaks at its spaces"):
-        wrapped(t"see foo bar baz here", 12)
+        wrapped(t"see hal nym sly here", 12)
 
-      . assert(_ == List(t"see foo bar", t"baz here"))
+      . assert(_ == List(t"see hal nym", t"sly here"))
 
       test(m"an unbreakable span is not hyphenated"):
         protecting(t"hyphenation", 7, 0.z thru 10.u)

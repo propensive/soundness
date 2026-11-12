@@ -2053,8 +2053,8 @@ object inlining:
     if structural then '{Inlinable.Generates[value]()}
     else report.errorAndAbort(s"locomotion: ${tpe.show} has no generated codec")
 
-  // A type with any `Form` refinement removed: a read of `Foo in Protobuf` infers the
-  // instance's type as `Foo { type Form = Protobuf }`, whose codec is `Foo`'s.
+  // A type with any `Form` refinement removed: a read of `Play in Protobuf` infers the
+  // instance's type as `Play { type Form = Protobuf }`, whose codec is `Play`'s.
   private def formless(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 

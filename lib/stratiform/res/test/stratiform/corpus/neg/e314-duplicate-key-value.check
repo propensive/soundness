@@ -24,7 +24,7 @@ Document {
                     keyword: "contact",
                     atoms: [
                         Inline {
-                            text: "amy",
+                            text: "ned",
                             preceding_spaces: 1,
                         },
                     ],
@@ -38,7 +38,7 @@ Document {
                                     keyword: "email",
                                     atoms: [
                                         Inline {
-                                            text: "amy@example.com",
+                                            text: "ned@example.com",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -54,7 +54,7 @@ Document {
                     keyword: "contact",
                     atoms: [
                         Inline {
-                            text: "bea",
+                            text: "nym",
                             preceding_spaces: 1,
                         },
                     ],
@@ -65,7 +65,7 @@ Document {
                     keyword: "contact",
                     atoms: [
                         Inline {
-                            text: "amy",
+                            text: "ned",
                             preceding_spaces: 1,
                         },
                     ],
@@ -78,4 +78,4 @@ Document {
     ],
 }
 errors:
-  E314 [0,0): Duplicate key value among keyed children of one parent: duplicate key value `amy` among keyed children (`contact` and `contact`)
+  E314 [0,0): Duplicate key value among keyed children of one parent: duplicate key value `ned` among keyed children (`contact` and `contact`)

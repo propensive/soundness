@@ -227,18 +227,18 @@ parser. It contains a single heading and one short paragraph.</p>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Acme Industries — Widgets, Sprockets &amp; More</title>
+<title>The Globe — Comedies, Tragedies &amp; More</title>
 <link rel="stylesheet" href="/static/site.css">
 <link rel="icon" href="/favicon.ico">
-<meta name="description" content="Acme Industries — widgets, sprockets and novelties.">
+<meta name="description" content="The Globe — comedies, tragedies and histories.">
 </head>
 <body class="home">
 <header class="site-header">
-  <div class="brand"><a href="/"><img src="/img/logo.svg" alt="Acme"></a></div>
+  <div class="brand"><a href="/"><img src="/img/logo.svg" alt="Globe"></a></div>
   <nav class="primary">
     <ul>
       <li><a href="/">Home</a></li>
-      <li><a href="/products">Products</a></li>
+      <li><a href="/plays">Plays</a></li>
       <li><a href="/about">About</a></li>
       <li><a href="/contact">Contact</a></li>
     </ul>
@@ -246,30 +246,30 @@ parser. It contains a single heading and one short paragraph.</p>
 </header>
 <main class="content">
   <section class="hero">
-    <h1>Welcome to Acme</h1>
-    <p>For over a century, we&rsquo;ve been the world&rsquo;s leading supplier of
-    widgets, sprockets and other essentials of modern life.</p>
-    <a class="cta" href="/products">Browse our catalog &rarr;</a>
+    <h1>Welcome to the Globe</h1>
+    <p>For over four centuries, we&rsquo;ve been the world&rsquo;s best-loved stage
+    for comedies, tragedies and the histories of England.</p>
+    <a class="cta" href="/plays">Browse our season &rarr;</a>
   </section>
   <section class="features">
-    <h2>Why Acme?</h2>
+    <h2>Why the Globe?</h2>
     <ul>
-      <li><strong>Quality</strong> &mdash; tested rigorously since 1903.</li>
-      <li><strong>Variety</strong> &mdash; over 5,000 products in stock.</li>
-      <li><strong>Service</strong> &mdash; same-day shipping on every order.</li>
+      <li><strong>Quality</strong> &mdash; performed nightly since 1599.</li>
+      <li><strong>Variety</strong> &mdash; thirty-seven plays in repertory.</li>
+      <li><strong>Comfort</strong> &mdash; standing room in every yard.</li>
     </ul>
   </section>
   <aside class="sidebar">
     <h3>Latest news</h3>
     <ol>
-      <li><a href="/news/1">New widget line announced</a></li>
-      <li><a href="/news/2">Sprocket factory expansion</a></li>
-      <li><a href="/news/3">Acme wins industry award</a></li>
+      <li><a href="/news/1">New Hamlet in rehearsal</a></li>
+      <li><a href="/news/2">Second gallery now opened</a></li>
+      <li><a href="/news/3">Globe wins playhouse award</a></li>
     </ol>
   </aside>
 </main>
 <footer class="site-footer">
-  <p>&copy; 1903&ndash;2025 Acme Industries. All rights reserved.</p>
+  <p>&copy; 1599&ndash;2025 The Globe. All rights reserved.</p>
   <p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></p>
 </footer>
 </body>
@@ -290,7 +290,7 @@ parser. It contains a single heading and one short paragraph.</p>
 <article>
 <header>
 <h1>On Parsing HTML</h1>
-<p class="byline">by <a rel="author" href="/authors/jane">Jane Doe</a>,
+<p class="byline">by <a rel="author" href="/authors/horatio">Horatio</a>,
 <time datetime="2024-09-12">12 September 2024</time></p>
 </header>
 <section>
@@ -365,7 +365,7 @@ real-world experience and is, in its strange way, beautiful.</p>
 </ul>
 </section>
 <footer>
-<p>Comments? <a href="mailto:jane@example.com">Email the author</a>.</p>
+<p>Comments? <a href="mailto:horatio@example.com">Email the author</a>.</p>
 </footer>
 </article>
 </body>

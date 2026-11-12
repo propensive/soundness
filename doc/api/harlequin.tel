@@ -581,8 +581,8 @@ entry .Fragment   analysis of a code fragment around a cursor, before any compil
       import harlequin.Fragment
 
       Fragment.memberBase(t"text.le", 7)            // (t"text.", t"le")
-      Fragment.infixBase(t"foo(bar, baz) ma", 16)   // (t"foo(bar, baz).", t"ma")
-      Fragment.unclosed(t"foo(bar, List[Int")       // List(']', ')')
+      Fragment.infixBase(t"hal(nym, sly) ma", 16)   // (t"hal(nym, sly).", t"ma")
+      Fragment.unclosed(t"hal(nym, List[Int")       // List(']', ')')
       Fragment.groups(t"def f[T](a: T)(using c: C): T")   // List(t"a: T", t"using c: C")
       ```
 
@@ -615,13 +615,13 @@ entry .Fragment   analysis of a code fragment around a cursor, before any compil
       (hard or soft: every Scala 3 keyword is rejected, so `erased ab` and `inline de` give
       no receiver), an operator, a comma or an open bracket, or a name in a definition or
       import position (`val xs ma`). A bracketed receiver is scanned as a balanced group,
-      so `foo(bar, baz) ma` yields `foo(bar, baz).`.
+      so `hal(nym, sly) ma` yields `hal(nym, sly).`.
   entry .expressionStart   where the value expression ending at the end of a text begins
       Scans back over identifier characters, `.` and balanced bracket groups, stopping at
-      an operator, a space or an open bracket at depth zero: `expressionStart(t"a + foo.bar")`
-      is `4`, and for `foo(bar).baz` it is `0`.
+      an operator, a space or an open bracket at depth zero: `expressionStart(t"a + hal.nym")`
+      is `4`, and for `hal(nym).sly` it is `0`.
   entry .unclosed   the closing brackets for those left open, innermost first
-      `unclosed(t"foo(bar, List[Int")` is `List(']', ')')`, so appending them in order
+      `unclosed(t"hal(nym, List[Int")` is `List(']', ')')`, so appending them in order
       completes the fragment. Brackets inside string and character literals (plain, escaped
       and triple-quoted) and inside line and block comments do not count; a closer with
       nothing open is ignored, so a fragment cut from inside a group still scans. The

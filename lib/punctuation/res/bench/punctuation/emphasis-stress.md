@@ -19,13 +19,13 @@ shortcut [c] reference. Backslash escapes \* \_ \[ \] \\ and entities &amp;
 &#42; &#x2A; &copy; appear too.
 
 Paragraph two — the gnarly cases for the rule of 3:
-*foo***bar
-**foo***bar
-***foo*bar**
-**foo*bar***
-*foo *bar* baz*
-**foo **bar** baz**
-***foo ***bar*** baz***
+*hal***nym
+**hal***nym
+***hal*nym**
+**hal*nym***
+*hal *nym* sly*
+**hal **nym** sly**
+***hal ***nym*** sly***
 *a*b*c*d*e*f*g*h*i*j*k*l*m*n*o*p*q*r*s*t*u*v*w*x*y*z*
 
 Paragraph three — alternating asterisk and underscore (different delimiters
@@ -38,21 +38,21 @@ __a**b**c__
 
 Paragraph four — Unicode flanking (left/right flanking rules with punctuation
 and whitespace boundaries):
-".*foo*."
-"(*foo*)"
+".*hal*."
+"(*hal*)"
 "a*b*c"
 "a *b* c"
 "a* b *c"
-"_foo_."
-"(_foo_)"
+"_hal_."
+"(_hal_)"
 "a_b_c"
 "a _b_ c"
 
 Paragraph five — long runs and adjacent runs:
-**********foo**********
-__________foo__________
-*****foo*****bar*****baz*****
-*foo**bar***baz****qux*****quux*
+**********hal**********
+__________hal__________
+*****hal*****nym*****sly*****
+*hal**nym***sly****ned*****puck*
 
 Paragraph six — links and images mixed with emphasis:
 [*italic link*](https://x)
@@ -65,11 +65,11 @@ Paragraph six — links and images mixed with emphasis:
 *[image](/i.png) and ![embedded](/e.png)*
 
 Paragraph seven — code spans inside emphasis (code spans take precedence):
-*foo `code` bar*
-**foo `code` bar**
-*`code` foo*
-*foo `co*de` bar*
-*foo \`code\` bar*
+*hal `code` nym*
+**hal `code` nym**
+*`code` hal*
+*hal `co*de` nym*
+*hal \`code\` nym*
 
 Paragraph eight — references inside emphasis:
 *[a]*
@@ -79,10 +79,10 @@ Paragraph eight — references inside emphasis:
 **[deep][]**
 
 Paragraph nine — backslash escapes inside delimiter runs:
-*foo\*bar*
-**foo\**bar**
-*foo\_bar*
-*foo\\bar*
+*hal\*nym*
+**hal\**nym**
+*hal\_nym*
+*hal\\nym*
 \*not emphasis\*
 \**not strong\**
 \*\*emphasis around escapes\*\*
@@ -92,13 +92,13 @@ Paragraph ten — autolinks and HTML inlines mixed with emphasis:
 **<mail@example.com>**
 *<span>html</span>*
 **<em>nested em</em>**
-*foo <span>span</span> bar*
+*hal <span>span</span> nym*
 
 Paragraph eleven — adjacent emphasis runs must not merge:
-*foo* *bar* *baz*
-**foo** **bar** **baz**
-*foo***bar***baz*
-**foo*bar*baz**
+*hal* *nym* *sly*
+**hal** **nym** **sly**
+*hal***nym***sly*
+**hal*nym*sly**
 
 Paragraph twelve — pathological-ish nested cases (still well-formed):
 *a *b *c *d *e *f *g *h *i *j* k* l* m* n* o* p* q* r*

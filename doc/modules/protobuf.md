@@ -46,7 +46,7 @@ case class Person(@field(1) name: Text, @field(2) age: Int)
 `read[Person in Protobuf]` reads bytes back to the type:
 
 ```scala
-val bytes = Person(t"Alice", 30).in[Protobuf].encode
+val bytes = Person(t"Hamlet", 30).in[Protobuf].encode
 ```
 
 ```scala fuel
@@ -253,7 +253,7 @@ compile
 ##
 given personPrintable: (Person is Protobuf.Printable) = Inlinable.printable[Person]
 
-val printed = Person(t"Ada", 36).in[Protobuf].encode
+val printed = Person(t"Hamlet", 30).in[Protobuf].encode
 ```
 
 The bytes are exactly those which the derived encoding writes. A message may therefore be
@@ -265,7 +265,7 @@ other.
 the `Protobuf` value otherwise:
 
 ```scala
-val direct = Person(t"Ada", 36).in[Data over Protobuf]
+val direct = Person(t"Hamlet", 30).in[Data over Protobuf]
 ```
 
 ```scala fuel
@@ -302,7 +302,7 @@ once, instead of generating them again at each use, which would cost compile tim
 are the same by either route. Only the speed differs, and the positions reported in errors.
 
 `codecs.strict` is `codecs.direct` for code which must not fall back. A
-`read[Foo in Protobuf]` or an `in[Data over Protobuf]` on a type with no direct codec is a
+`read[Play in Protobuf]` or an `in[Data over Protobuf]` on a type with no direct codec is a
 compile error which names the type. `in[Protobuf]` names the wire value itself, and is not
 restricted.
 

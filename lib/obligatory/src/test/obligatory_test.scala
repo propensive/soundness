@@ -140,28 +140,28 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
       . assert(_ == List(t"""{"text":"café"}"""))
 
       test(m"Server-side events"):
-        val input = t"data: foobar\ndata: baz\n\ndata: hello world\n\n"
+        val input = t"data: hamlet\ndata: ghost\n\ndata: hello world\n\n"
 
         Iterator(input).frames[Sse].to[List]
-      . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
+      . assert(_ == List("data: hamlet\ndata: ghost", "data: hello world"))
 
       test(m"Server-side events without terminal newlines"):
-        val input = t"data: foobar\ndata: baz\n\ndata: hello world"
+        val input = t"data: hamlet\ndata: ghost\n\ndata: hello world"
 
         Iterator(input).frames[Sse].to[List]
-      . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
+      . assert(_ == List("data: hamlet\ndata: ghost", "data: hello world"))
 
       test(m"Typed server-side events"):
-        val input = t"event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
+        val input = t"event: one\ndata: hamlet\ndata: ghost\n\ndata: hello world"
 
         Iterator(input).frames[Sse].map(_.as[Sse]).to[List]
-      . assert(_ == List(Sse("one", List("foobar", "baz")), Sse("message", List("hello world"))))
+      . assert(_ == List(Sse("one", List("hamlet", "ghost")), Sse("message", List("hello world"))))
 
       test(m"Typed server-side events with more fields"):
-        val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
+        val input = t"event: one\nid: 123\ndata: hamlet\ndata: ghost\n\ndata: hello world\nretry: 54321"
 
         Iterator(input).frames[Sse].map(_.as[Sse]).to[List]
-      . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
+      . assert(_ == List(Sse("one", List("hamlet", "ghost"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):
       def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)

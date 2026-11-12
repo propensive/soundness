@@ -951,11 +951,11 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       . assert(identity)
 
     suite(m"Key agreement and authenticated encryption"):
-      // RFC 7748 §6.1: Alice's and Bob's keys, and the secret they agree on.
-      val alicePrivate = t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A"
-      val alicePublic = t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"
-      val bobPrivate = t"5DAB087E624A8A4B79E17F8B83800EE66F3BB1292618B6FD1C2F8B27FF88E0EB"
-      val bobPublic = t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F"
+      // RFC 7748 §6.1: its two parties' keys (here Romeo's and Juliet's) and their shared secret.
+      val romeoPrivate = t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A"
+      val romeoPublic = t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"
+      val julietPrivate = t"5DAB087E624A8A4B79E17F8B83800EE66F3BB1292618B6FD1C2F8B27FF88E0EB"
+      val julietPublic = t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F"
       val shared = t"4A5D9D5BA4CE2DE1728E3BF480350F25E07E21C947D19E3376F09B3C1E161742"
 
       // An X25519 private key in PKCS#8 form carrying its public key, as `PrivateKey.generate`
@@ -969,35 +969,35 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         info.in[Der].as[PrivateKey[X25519]]
 
       test(m"Two X25519 keys agree on the same secret"):
-        val alice = PrivateKey.generate[X25519]()
-        val bob = PrivateKey.generate[X25519]()
-        alice.agree(bob.public): one =>
-          bob.agree(alice.public): other =>
+        val romeo = PrivateKey.generate[X25519]()
+        val juliet = PrivateKey.generate[X25519]()
+        romeo.agree(juliet.public): one =>
+          juliet.agree(romeo.public): other =>
             Array.same(one, other) && one.length == 32
       . assert(identity)
 
       test(m"A third X25519 key agrees on a different secret"):
-        val alice = PrivateKey.generate[X25519]()
-        val bob = PrivateKey.generate[X25519]()
-        val eve = PrivateKey.generate[X25519]()
-        alice.agree(bob.public)(one => eve.agree(alice.public)(other => Array.same(one, other)))
+        val romeo = PrivateKey.generate[X25519]()
+        val juliet = PrivateKey.generate[X25519]()
+        val tybalt = PrivateKey.generate[X25519]()
+        romeo.agree(juliet.public)(one => tybalt.agree(romeo.public)(two => Array.same(one, two)))
       . assert(!_)
 
       test(m"X25519 agrees on RFC 7748's shared secret"):
-        val alice = x25519Key(alicePrivate, alicePublic)
-        PublicKey.raw[X25519](bobPublic.deserialize[Hex]).let: bob =>
-          alice.agree(bob)(_.serialize[Hex])
+        val romeo = x25519Key(romeoPrivate, romeoPublic)
+        PublicKey.raw[X25519](julietPublic.deserialize[Hex]).let: juliet =>
+          romeo.agree(juliet)(_.serialize[Hex])
       . assert(_ == shared)
 
-      test(m"X25519 agrees on RFC 7748's shared secret from Bob's side"):
-        val bob = x25519Key(bobPrivate, bobPublic)
-        PublicKey.raw[X25519](alicePublic.deserialize[Hex]).let: alice =>
-          bob.agree(alice)(_.serialize[Hex])
+      test(m"X25519 agrees on RFC 7748's shared secret from Juliet's side"):
+        val juliet = x25519Key(julietPrivate, julietPublic)
+        PublicKey.raw[X25519](romeoPublic.deserialize[Hex]).let: romeo =>
+          juliet.agree(romeo)(_.serialize[Hex])
       . assert(_ == shared)
 
       test(m"An X25519 public key's raw form is its 32-byte point"):
-        x25519Key(alicePrivate, alicePublic).public.raw.let(_.serialize[Hex])
-      . assert(_ == alicePublic)
+        x25519Key(romeoPrivate, romeoPublic).public.raw.let(_.serialize[Hex])
+      . assert(_ == romeoPublic)
 
       test(m"A raw public key round-trips through its document form"):
         val key = PrivateKey.generate[X25519]()
@@ -1006,18 +1006,18 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       . assert(_ == true)
 
       test(m"Two ECDH P-256 keys agree on the same 32-byte secret"):
-        val alice = PrivateKey.generate[Ecdh[256]]()
-        val bob = PrivateKey.generate[Ecdh[256]]()
-        alice.agree(bob.public): one =>
-          bob.agree(alice.public): other =>
+        val romeo = PrivateKey.generate[Ecdh[256]]()
+        val juliet = PrivateKey.generate[Ecdh[256]]()
+        romeo.agree(juliet.public): one =>
+          juliet.agree(romeo.public): other =>
             Array.same(one, other) && one.length == 32
       . assert(identity)
 
       test(m"Two ECDH P-384 keys agree on the same 48-byte secret"):
-        val alice = PrivateKey.generate[Ecdh[384]]()
-        val bob = PrivateKey.generate[Ecdh[384]]()
-        alice.agree(bob.public): one =>
-          bob.agree(alice.public): other =>
+        val romeo = PrivateKey.generate[Ecdh[384]]()
+        val juliet = PrivateKey.generate[Ecdh[384]]()
+        romeo.agree(juliet.public): one =>
+          juliet.agree(romeo.public): other =>
             Array.same(one, other) && one.length == 48
       . assert(identity)
 
@@ -1323,14 +1323,14 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         info.in[Der].data
 
       test(m"The pure X25519 agrees on RFC 7748's shared secret"):
-        val alice = pkcs8(KeyAlgorithm.X25519, t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A", t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A")
-        val bob = spki(KeyAlgorithm.X25519, t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F")
-        pure.x25519.agree(alice, bob).serialize[Hex]
+        val romeo = pkcs8(KeyAlgorithm.X25519, t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A", t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A")
+        val juliet = spki(KeyAlgorithm.X25519, t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F")
+        pure.x25519.agree(romeo, juliet).serialize[Hex]
       . assert(_ == t"4A5D9D5BA4CE2DE1728E3BF480350F25E07E21C947D19E3376F09B3C1E161742")
 
       test(m"The pure X25519 derives RFC 7748's public key from the private scalar"):
-        val alice = pkcs8(KeyAlgorithm.X25519, t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A", t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A")
-        Array.same(pure.x25519.privateToPublic(alice), spki(KeyAlgorithm.X25519, t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"))
+        val romeo = pkcs8(KeyAlgorithm.X25519, t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A", t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A")
+        Array.same(pure.x25519.privateToPublic(romeo), spki(KeyAlgorithm.X25519, t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"))
       . assert(identity)
 
       test(m"Pure and JDK X25519 keys agree with each other"):

@@ -144,13 +144,13 @@ object Tests extends Suite("mcp", m"Synesthesia Tests"):
       . assert(_ == t"whom to greet")
 
       test(m"An omitted Optional parameter is Unset and the default argument applies"):
-        call(t"greet", t"""{"name": "Jon"}""").structuredContent
-      . assert(_ == t"""{"result": "Hello, Jon!"}""".read[Json])
+        call(t"greet", t"""{"name": "Horatio"}""").structuredContent
+      . assert(_ == t"""{"result": "Hello, Horatio!"}""".read[Json])
 
       test(m"Supplied Optional and defaulted parameters are decoded"):
-        call(t"greet", t"""{"name": "Jon", "greeting": "Hi", "punctuation": "?"}""")
+        call(t"greet", t"""{"name": "Horatio", "greeting": "Hi", "punctuation": "?"}""")
         . structuredContent
-      . assert(_ == t"""{"result": "Hi, Jon?"}""".read[Json])
+      . assert(_ == t"""{"result": "Hi, Horatio?"}""".read[Json])
 
       test(m"A missing required parameter is a protocol error"):
         try

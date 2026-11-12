@@ -321,15 +321,16 @@ entry .Html   an HTML value: one node or a sequence of nodes, typed by tag, cont
       as it is.
   entry .inspectable   `html.inspect`: a node's compact source, escaped inside an `html"…"` literal
       The `Inspectable` given for every `Html` value: the same markup `show` produces, with
-      its quotes and backslashes escaped, inside `html"…"`, so a `Div(style = t"bar")("hello")`
-      inspects as `html"<div style=\"bar\">hello</div>"` — distinguishable from a `Text`
-      holding the same markup, and from xylophone's `xml"…"`.
+      its quotes and backslashes escaped, inside `html"…"`, so a
+      `Div(style = t"color: red")("hello")` inspects as
+      `html"<div style=\"color: red\">hello</div>"` — distinguishable from a `Text` holding
+      the same markup, and from xylophone's `xml"…"`.
   entry .Vacuiscible   the mixin on an element made from a container tag: `apply(children*)` adds its children
     detail
-        A `Tag.Container` applied to attributes alone, as `Div(style = t"bar")`, yields an
-        `Html.Element & Html.Vacuiscible`, whose `apply` takes the children in a second
-        argument list: `Div(style = t"bar")("hello")`. Each child must be `Html` of the
-        element's `Transport` — what the tag admits — or `Unset`, which is dropped. The
+        A `Tag.Container` applied to attributes alone, as `Div(style = t"color: red")`,
+        yields an `Html.Element & Html.Vacuiscible`, whose `apply` takes the children in a
+        second argument list: `Div(style = t"color: red")("hello")`. Each child must be `Html`
+        of the element's `Transport` — what the tag admits — or `Unset`, which is dropped. The
         result is an element of the same topic and form.
     entry #apply   the element with the given children, each checked against what the tag admits
   entry .Transparent   the mixin on an element made from a transparent tag: its children decide its topic
@@ -1034,7 +1035,7 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
       frame
         label A body grown from data
         code
-            val scores = List(t"Ada" -> 3, t"Bo" -> 1)
+            val scores = List(t"Puck" -> 3, t"Snug" -> 1)
             val body = Tbody(scores.map { (name, score) => Tr(Td(name), Td(score.show)) }*)
             Table(header, body).show
       frame
@@ -1448,7 +1449,7 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
   entry #entities   the named character references of HTML, by name
       The HTML 4 set and the Living Standard's additions, name to replacement text
       (`amp` to `&`, `nbsp` to a no-break space, and over two thousand more). The parser
-      reads it; an unknown reference (`&foo;`) is left literally in the text.
+      reads it; an unknown reference (`&puck;`) is left literally in the text.
   entry #attributes   every attribute of the dialect, by its name
       A `Dictionary[Attribute]` built from the attribute givens of the companion, with the
       several givens for one name (`href`, `href2`, `href3`) merged into one `Attribute`
@@ -2371,7 +2372,7 @@ entry .Attribution   evidence that a name used as a method on a tag is a valid c
       import htmlDoms.whatwg
       import htmlDoms.whatwg.*
 
-      given (Attribution of "test" | "foo") = Attribution.classes()
+      given (Attribution of "test" | "stage") = Attribution.classes()
       Table.test(Thead(Tr(Th("First")))).show   // <table class="test">…
       ```
   refer honeycomb.Tag

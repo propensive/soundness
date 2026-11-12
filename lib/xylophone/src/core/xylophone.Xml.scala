@@ -1408,8 +1408,8 @@ object Xml extends Tag.Container
 
       ${xylophone.inlining.inlinablePrintable[value]}
 
-  // The `derives` carrier for a generated codec: `case class Foo(…) derives Xml.Direct` generates
-  // `Foo`'s parser and printer once, into its companion. (A `Self`-typed typeclass has no type
+  // The `derives` carrier for a generated codec: `case class Play(…) derives Xml.Direct` generates
+  // `Play`'s parser and printer once, into its companion. (A `Self`-typed typeclass has no type
   // parameters, so it cannot appear in a `derives` clause itself.)
   object Direct:
     inline def derived[value]: Direct[value] =
@@ -2942,7 +2942,7 @@ object Xml extends Tag.Container
   // comment on `PositionIndex` below.
   private object Locator:
     // The path arrives as `XPath.Location`s, root-first. The XPath convention
-    // is `/foo/bar/@attr`, so the first element step names the *root* element
+    // is `/play/act/@attr`, so the first element step names the *root* element
     // itself (no descent into children) and subsequent steps descend.
     private[xylophone] def walk
       ( xml:      Xml,
@@ -5614,11 +5614,11 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
       case Xml.Fragment(value) => decodable.decoded(value)
       case xml: Xml            => decodable.decoded(xml)
 
-  // Dynamic navigation. `xml.foo` selects every child element named `foo`,
+  // Dynamic navigation. `xml.scene` selects every child element named `scene`,
   // flattening across all element-nodes in the current `Fragment` (XML tags
   // are not unique, so a dereference yields a `Fragment` of zero or more
-  // matches). `xml.foo(ordinal)` picks a single one; the ordinal defaults to
-  // `Prim`, so `xml.foo()` is the first match. Both are gated by an erased
+  // matches). `xml.scene(ordinal)` picks a single one; the ordinal defaults to
+  // `Prim`, so `xml.scene()` is the first match. Both are gated by an erased
   // `Xml is Dynamical` (see `dynamicAccess.dynamicXml` and `dynamically`).
 
   private def selfNodes: Array[Xml.Node]^{} = this match

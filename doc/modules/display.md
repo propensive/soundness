@@ -95,13 +95,13 @@ case class Person(name: Text, age: Int)
 ```scala fuel
 run
 ##
-Out.println(Person(t"Simon", 72).inspect)
+Out.println(Person(t"Lear", 80).inspect)
 Out.println(List(t"one", t"two").inspect)
 Out.println((5: Optional[Int]).inspect)
 Out.println((Unset: Optional[Int]).inspect)
 ```
 
-`inspect` writes a `Text` in the form in which it appears in source code, `t"Simon"`, where
+`inspect` writes a `Text` in the form in which it appears in source code, `t"Lear"`, where
 `show` writes it verbatim. That is the distinction which the two audiences call for.
 
 The source form is a real source form. Control characters and quotes are escaped as Scala
@@ -135,7 +135,7 @@ enum Animal:
   case Dog(name: Text)
   case Cat
 
-val dog: Animal = Animal.Dog(t"Rex")
+val dog: Animal = Animal.Dog(t"Crab")
 val cat: Animal = Animal.Cat
 ```
 

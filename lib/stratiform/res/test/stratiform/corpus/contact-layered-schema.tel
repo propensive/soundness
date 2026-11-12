@@ -94,11 +94,11 @@ layer
 
 layer
   name with-business
-  record Organization
+  record Playhouse
     field name String
     field role String optional
   overlay
-    field business Organization optional
+    field business Playhouse optional
 
 
 # ── Layer 6: read-only-status ─────────────────────────────────────────────

@@ -107,12 +107,12 @@ object EquivalenceTests extends Suite("tel-equivalence", m"Stratiform schema/cod
 
       test(m"positional atoms agree across codecs and type assignment (#1694)"):
         equivalent[PDelivery]
-         ( t"recipient  Acme Corporation\n  address  1 Acme Way\n",
+         ( t"recipient  King Lear\n  address  1 Heath Rd\n",
            Tels.tels[PDelivery](t"delivery"),
-           PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")),
+           PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")),
            scala.collection.immutable.List
-            ( ("#/0/0", "Acme Corporation"),
-              ("#/0/1", "1 Acme Way") ) )
+            ( ("#/0/0", "King Lear"),
+              ("#/0/1", "1 Heath Rd") ) )
       . assert(identity)
 
       test(m"a repeatable split between atoms and children agrees"):
@@ -127,7 +127,7 @@ object EquivalenceTests extends Suite("tel-equivalence", m"Stratiform schema/cod
       . assert(identity)
 
       test(m"the canonical form validates against the derived schema"):
-        val doc = Tel.canonical(PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
+        val doc = Tel.canonical(PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")))
         validateAssign(doc, Tels.tels[PDelivery](t"delivery")).items.size
       . assert(_ == 0)
 
@@ -167,7 +167,7 @@ object EquivalenceTests extends Suite("tel-equivalence", m"Stratiform schema/cod
       . assert(_ == (PFlags(false, false), 0))
 
       test(m"a record of scalars, collections and nested records validates"):
-        val value = PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way"))
+        val value = PDelivery(PRecipient(t"King Lear", t"1 Heath Rd"))
         val issues = validateAssign(value.encode, Tels.tels[PDelivery](t"delivery")).items.size
         (value.encode.as[PDelivery], issues)
-      . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), 0))
+      . assert(_ == (PDelivery(PRecipient(t"King Lear", t"1 Heath Rd")), 0))

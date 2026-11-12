@@ -73,7 +73,7 @@ entry .send   sends any `Sendable` value as an email, with a subject and recipie
 
     t"Sales rose 4% in August.".send
       ( subject = t"Monthly report",
-        to      = List(email"alice@example.com", email"bob@example.com"),
+        to      = List(email"romeo@example.com", email"juliet@example.com"),
         cc      = email"archive@example.com" )
     ```
 

@@ -553,11 +553,11 @@ entry .Map   an immutable map from keys to values, as an opaque alias of the std
       ```scala
       import soundness.*
 
-      val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
-      ages.at(t"Ada")          // 36
-      ages.at(t"Cy")           // Unset
-      ages.define(t"Cy", 29)   // a new map of three entries; `ages` is unchanged
-      ages.map(_ + 1)          // Map(t"Ada" -> 37, t"Bob" -> 42)
+      val ages = Map(t"Romeo" -> 16, t"Juliet" -> 13)
+      ages.at(t"Romeo")           // 16
+      ages.at(t"Paris")           // Unset
+      ages.define(t"Paris", 25)   // a new map of three entries; `ages` is unchanged
+      ages.map(_ + 1)             // Map(t"Romeo" -> 17, t"Juliet" -> 14)
       ```
   refer proscenium.Ledger
   refer proscenium.Set

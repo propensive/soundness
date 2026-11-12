@@ -32,6 +32,6 @@
                                                                                                   */
 package another.pkg
 
-import testing.quux.*
+import testing.globe.*
 
-def foo(): Unit = Main
+def enter(): Unit = Main

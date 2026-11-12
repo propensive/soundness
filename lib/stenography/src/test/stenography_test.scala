@@ -54,7 +54,7 @@ trait Store extends caps.Mutable
 // from a skolem: `?1.Alias`, in the compiler's notation, where `?1` stands for the argument. The
 // typer reduces such a selection itself when it can see the member in the argument's type, so
 // one survives to be rendered only where the refinement is behind a type alias, as it is in a
-// typeclass written `Foo is Bar to Baz`. Type inference and an ordinary `val` both widen the
+// typeclass written `Play is Act to Scene`. Type inference and an ordinary `val` both widen the
 // skolem away too, so the tests read the type of the expression's own tree, through
 // `Probe.typeName`.
 trait Dependent:
@@ -352,17 +352,17 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
       Syntax.name[Addable { type Q = Int }]
     . assert(_ == t"Addable { type Q = Int }")
 
-    test(m"Refined type with def foo(x: Int): String"):
-      Syntax.name[Addable { def foo(x: Int): String }]
-    . assert(_ == t"Addable { def foo(x: Int): String }")
+    test(m"Refined type with def speak(x: Int): String"):
+      Syntax.name[Addable { def speak(x: Int): String }]
+    . assert(_ == t"Addable { def speak(x: Int): String }")
 
-    test(m"Refined type with def foo: Int => String"):
-      Syntax.name[Addable { def foo: Int => String }]
-    . assert(_ == t"Addable { def foo: Int => String }")
+    test(m"Refined type with def speak: Int => String"):
+      Syntax.name[Addable { def speak: Int => String }]
+    . assert(_ == t"Addable { def speak: Int => String }")
 
-    test(m"Refined type with def foo: (x: Int) => String"):
-      Syntax.name[Addable { def foo: (x: Int) => String }]
-    . assert(_ == t"Addable { def foo: (x: Int) => String }")
+    test(m"Refined type with def speak: (x: Int) => String"):
+      Syntax.name[Addable { def speak: (x: Int) => String }]
+    . assert(_ == t"Addable { def speak: (x: Int) => String }")
 
     test(m"Refined types"):
       Syntax.name[Addable { type Q = Int; type Other = String}]
@@ -406,16 +406,16 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
     . assert(_ == t"Addable { type Q = Int }")
 
     test(m"Refined higher-kinded type member"):
-      Syntax.name[Addable { type Hkt[Bar] = Option[Bar] }]
-    . assert(_ == t"Addable { type Hkt = [Bar] =>> Option[Bar] }")
+      Syntax.name[Addable { type Hkt[Verse] = Option[Verse] }]
+    . assert(_ == t"Addable { type Hkt = [Verse] =>> Option[Verse] }")
 
     // test(m"Refined type member with selection"):
-    //   Syntax.name[Addable { val foo: String; type Bar = foo.type }]
-    // .assert(_ == t"Addable { val foo: String; type Bar = foo.type }")
+    //   Syntax.name[Addable { val speech: String; type Verse = speech.type }]
+    // .assert(_ == t"Addable { val speech: String; type Verse = speech.type }")
 
     test(m"Refined higher-kinded type member 2"):
-      Syntax.name[Addable { type Hkt[Bar <: String] = Option[Bar] }]
-    . assert(_ == t"Addable { type Hkt = [Bar <: String] =>> Option[Bar] }")
+      Syntax.name[Addable { type Hkt[Verse <: String] = Option[Verse] }]
+    . assert(_ == t"Addable { type Hkt = [Verse <: String] =>> Option[Verse] }")
 
     // test(m"Refined higher-kinded type member 2"):
     //   Syntax.name[Addable { type Hkt[Coll[T] <: Iterable[T]] = Option[Coll[String]] }]

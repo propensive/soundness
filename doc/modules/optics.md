@@ -7,8 +7,9 @@ above it by hand, with nested calls to `copy` which grow with the depth of the d
 [lens](https://en.wikipedia.org/wiki/Bidirectional_transformation) does the rebuilding instead.
 
 The `lens` method takes an update written as a plain assignment to a path, such as
-`_.ceo.name = t"Bill"`, and returns the new structure. Optics such as `Each` and `Filter` carry
-a path through the elements of a collection, so one assignment can update many values.
+`_.opening.name = t"Act One"`, and returns the new structure. Optics such as `Each` and
+`Filter` carry a path through the elements of a collection, so one assignment can update many
+values.
 
 The same syntax updates the dynamic data formats: [JSON](json.md), [XML](xml.md),
 [YAML](yaml.md) and [CBOR](cbor.md). A deep update looks the same whether the structure is a
@@ -40,20 +41,20 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 The samples update one small structure:
 
 ```scala
-case class Role(name: Text, count: Int)
-case class Person(name: Text, roles: List[Role])
-case class Company(ceo: Person, name: Text)
+case class Scene(place: Text, number: Int)
+case class Act(name: Text, scenes: List[Scene])
+case class Play(opening: Act, title: Text)
 
-val company = Company(Person(t"John", List(Role(t"CEO", 1), Role(t"CFO", 2))), t"Acme")
+val play = Play(Act(t"Act I", List(Scene(t"A heath", 1), Scene(t"Forres", 2))), t"Macbeth")
 ```
 
 `lens` applies an update to a value. The update is a path which ends in an assignment. The
-result is a new `Company`, in which only the name of the CEO is different:
+result is a new `Play`, in which only the name of the opening act is different:
 
 ```scala fuel
 run
 ##
-Out.println(company.lens(_.ceo.name = t"Bill").inspect)
+Out.println(play.lens(_.opening.name = t"Act One").inspect)
 ```
 
 The original is untouched:
@@ -61,7 +62,7 @@ The original is untouched:
 ```scala fuel
 run
 ##
-Out.println(company.ceo.name)
+Out.println(play.opening.name)
 ```
 
 Several updates are applied together. Updates which share a prefix rebuild the shared structure
@@ -70,9 +71,9 @@ only once:
 ```scala fuel
 run
 ##
-val renamed = company.lens
-  ( _.ceo.name = t"Bill",
-    _.name = t"Acme Ltd" )
+val renamed = play.lens
+  ( _.opening.name = t"Act One",
+    _.title = t"The Tragedy of Macbeth" )
 
 Out.println(renamed.inspect)
 ```
@@ -84,7 +85,7 @@ compile error:
 compile
 errors show
 ##
-company.lens(_.ceo.title = t"Dr")
+play.lens(_.opening.epilogue = t"Exeunt")
 ```
 
 ### Reaching into collections
@@ -94,7 +95,7 @@ A path is a chain of steps, and a step in parentheses goes into a collection:
 ```tabular
 column  Step
 column  Selects
-row  a field name, as in `_.ceo`  that field
+row  a field name, as in `_.opening`  that field
 row  `(Prim)`, or any ordinal  one element
 row  `(Each)`  every element
 row  `(key)`  the value at a key, in a `Map`
@@ -106,7 +107,7 @@ An ordinal such as `Prim` selects one element:
 ```scala fuel
 run
 ##
-Out.println(company.lens(_.ceo.roles(Prim).name = t"Founder").ceo.roles.inspect)
+Out.println(play.lens(_.opening.scenes(Prim).place = t"A desert place").opening.scenes.inspect)
 ```
 
 `Each` selects every element:
@@ -114,7 +115,7 @@ Out.println(company.lens(_.ceo.roles(Prim).name = t"Founder").ceo.roles.inspect)
 ```scala fuel
 run
 ##
-Out.println(company.lens(_.ceo.roles(Each).count = 0).ceo.roles.inspect)
+Out.println(play.lens(_.opening.scenes(Each).number = 0).opening.scenes.inspect)
 ```
 
 `Filter` selects the elements which satisfy a predicate:
@@ -122,8 +123,8 @@ Out.println(company.lens(_.ceo.roles(Each).count = 0).ceo.roles.inspect)
 ```scala fuel
 run
 ##
-val updated = company.lens(_.ceo.roles(Filter[Role](_.count > 1)).count = 0)
-Out.println(updated.ceo.roles.inspect)
+val updated = play.lens(_.opening.scenes(Filter[Scene](_.number > 1)).number = 0)
+Out.println(updated.opening.scenes.inspect)
 ```
 
 ### Updating from the old value
@@ -134,7 +135,7 @@ value, and need not replace it outright:
 ```scala fuel
 run
 ##
-Out.println(company.lens(_.ceo.roles(Each).name = t"$prior!").ceo.roles.inspect)
+Out.println(play.lens(_.opening.scenes(Each).place = t"$prior!").opening.scenes.inspect)
 ```
 
 ### Documents too
@@ -147,14 +148,14 @@ import dynamicAccess.dynamicJson, conversions.encodableToJson
 import optics.{jsonLens, jsonEachOptical}
 import formatting.compactJsonFormatting
 
-val json = company.in[Json]
+val json = play.in[Json]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(json.lens(_.ceo.name = t"Bill").show)
-Out.println(json.lens(_.ceo.roles(Each).name = t"member").show)
+Out.println(json.lens(_.opening.name = t"Act One").show)
+Out.println(json.lens(_.opening.scenes(Each).place = t"Dunsinane").show)
 ```
 
 The `conversions` import lets a plain encodable value, such as a `Text`, an `Int` or a case
@@ -183,13 +184,13 @@ Underneath the syntax, a lens is an ordinary value: a getter and a setter. It ca
 passed around and composed, for the cases where the access itself is the abstraction:
 
 ```scala
-val nameLens = summon["name" is Lens from Person]
+val nameLens = summon["name" is Lens from Act]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(nameLens.modify(company.ceo)(_.upper).inspect)
+Out.println(nameLens.modify(play.opening)(_.upper).inspect)
 ```
 
 Two lenses `compose` into one, so a path can be assembled from parts which are held separately:
@@ -206,14 +207,15 @@ and not for a whole type:
 ```scala fuel
 typecheck
 ##
-case class Org(ceo: Person, cto: Person)
+case class Person(name: Text, age: Int)
+case class Duel(challenger: Person, opponent: Person)
 
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
 
-val orgSpecific: Org is Specific over Json.Encodable =
+val duelSpecific: Duel is Specific over Json.Encodable =
   specifically:
-    case root.cto.name() => shout
-    case root.ceo.name() => shout
+    case root.opponent.name() => shout
+    case root.challenger.name() => shout
 ```
 
 The paths are checked against the structure of the type as the code compiles, so a misspelled
@@ -224,7 +226,7 @@ visits each field:
 ```scala fuel
 typecheck
 ##
-orgSpecific.instances.keys
+duelSpecific.instances.keys
 ```
 
 The per-field encoder override for [JSON](json.md) is built on this. The

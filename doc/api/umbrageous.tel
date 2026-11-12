@@ -21,13 +21,13 @@ detail
     -P:umbrageous:testing:shaded.v1
     ```
 
-    With that mapping, a source declaring `package testing.quux` compiles to
-    `shaded.v1.testing.quux`. For each source it rewrites three things:
+    With that mapping, a source declaring `package testing.globe` compiles to
+    `shaded.v1.testing.globe`. For each source it rewrites three things:
 
     - a `package` clause whose name is a mapped package, or within one, is moved beneath the
       prefix; where several mappings match, the longest package wins;
     - every `package` clause gains a wildcard import of each mapping's prefix (except the
-      mapping which moved that clause), so `import testing.quux.*` in another package
+      mapping which moved that clause), so `import testing.globe.*` in another package
       still resolves, now to the shaded package;
     - a fully-qualified reference `_root_.testing.…` to a mapped package is redirected to
       `_root_.shaded.v1.testing.…`.
