@@ -64,8 +64,8 @@ row  arbitrary type names in a rule about types  `Play`, `Act`, `Scene`, `Sonnet
 row  filler prose    a soliloquy
 ```
 
-Addresses keep the reserved example domains (`example.com`, `.example`, `.local`): only the
-local part and the host label are Shakespeare's.
+Addresses keep the reserved example domains, as in `juliet@example.com` and `elsinore.local`:
+only the local part and the host label are Shakespeare's.
 
 ## When the string's length matters
 
