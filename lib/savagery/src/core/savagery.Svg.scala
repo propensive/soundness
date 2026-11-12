@@ -33,6 +33,7 @@
 package savagery
 
 
+import scala.collection.immutable.VectorMap
 import scala.collection.mutable.ListBuffer
 
 import anticipation.*
@@ -668,7 +669,6 @@ object Svg:
   object Figure:
     import scala.collection.mutable.Builder
 
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -792,7 +792,6 @@ object Svg:
       case _            => Nil
 
   sealed trait Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -819,7 +818,6 @@ object Svg:
       style:      Optional[Css.Style] = Unset,
       id:         Optional[Svg.Id]    = Unset )
   extends Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -850,7 +848,6 @@ object Svg:
       id:         Optional[Svg.Id]    = Unset,
       transforms: List[Transform]     = Nil )
   extends Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -916,7 +913,6 @@ object Svg:
       style:      Optional[Css.Style] = Unset,
       id:         Optional[Svg.Id]    = Unset )
   extends Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -956,7 +952,6 @@ object Svg:
       style:      Optional[Css.Style] = Unset,
       transforms: List[Transform]     = Nil )
   extends Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -988,7 +983,6 @@ object Svg:
       style:      Optional[Css.Style] = Unset,
       transforms: List[Transform]     = Nil )
   extends Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -1013,7 +1007,6 @@ object Svg:
       Xml.Element(label, Attributes.from(attrs.result().to(Map)), Array())
 
   object Lettering:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
@@ -1061,7 +1054,6 @@ object Svg:
       font:       Optional[Font in Web]        = Unset,
       transforms: List[Transform]              = Nil )
   extends Figure:
-    import scala.collection.immutable.VectorMap
     import anticipation.*
     import cataclysm.{Css, Web, style}
     import denominative.*
