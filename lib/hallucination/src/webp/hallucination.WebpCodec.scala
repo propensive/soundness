@@ -36,8 +36,7 @@ import java.io as ji
 
 import anticipation.*
 import contingency.*
-
-import Binary.*
+import zephyrine.*
 import Raster.Error.Reason
 
 // A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
@@ -83,18 +82,18 @@ private[hallucination] object WebpCodec:
 
       chunk match
         case "VP8L" =>
-          val chunkSize = u32le(data, 16)
+          val chunkSize = data.i32(16)
           val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
           val (width, height, rgba) = WebpLossless.decode(reader)
           raster(width, height, rgba)
 
         case "VP8 " =>
-          val chunkSize = u32le(data, 16)
+          val chunkSize = data.i32(16)
           lossy(Vp8Decoder.decode(data, chunkStart, chunkStart + chunkSize))
 
         case "VP8X" =>
-          val chunkSize = u32le(data, 16)
-          val riffEnd = (8 + u32le(data, 4)).min(data.length)
+          val chunkSize = data.i32(16)
+          val riffEnd = (8 + data.i32(4)).min(data.length)
           WebpExtended.decode(data, chunkStart, chunkStart + chunkSize, riffEnd)
 
         case _ =>

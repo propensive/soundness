@@ -32,6 +32,7 @@
                                                                                                   */
 package galilei
 
+import java.lang.foreign as jlf
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -56,7 +57,13 @@ object Ram:
       if readWrite then jnc.FileChannel.MapMode.READ_WRITE.nn
       else jnc.FileChannel.MapMode.READ_ONLY.nn
 
-    private var buffer: jn.MappedByteBuffer = channel.map(mapMode, 0, initial).nn
+    // The mapping is a `MemorySegment` owned by an arena (issue #2471), rather than a
+    // `MappedByteBuffer`: it is addressed with a `Long`, so a file of any size can be mapped,
+    // and it is unmapped when the arena is closed, at the end of the scope, rather than
+    // whenever the garbage collector finds the buffer unreachable. A shared arena, since the
+    // handle's `expanse` may be read from another thread.
+    private var arena: jlf.Arena = jlf.Arena.ofShared().nn
+    private var segment: jlf.MemorySegment = channel.map(mapMode, 0L, initial, arena).nn
     private var currentSize: Long = initial
 
     def size: Long = currentSize
@@ -65,24 +72,33 @@ object Ram:
     // `private` member's inline-accessor bridge would fail capture checking.
     def readFrom(offset: Long, length: Int): Data =
       val array = Array.allocate[Byte](length)
-      buffer.get(offset.toInt, array.raw)
+      jlf.MemorySegment.copy(segment, jlf.ValueLayout.JAVA_BYTE, offset, array.raw, 0, length)
       Array.freeze(array)
 
     def writeTo(offset: Long, data: Data): Unit =
-      buffer.put(offset.toInt, Array.unsafeJvm(data), 0, data.length)
+      // [java-boundary] the array is only read, into the mapped segment
+      val bytes = Array.unsafeJvm(data)
+      jlf.MemorySegment.copy(bytes, 0, segment, jlf.ValueLayout.JAVA_BYTE, offset, data.length)
 
     // Extends the mapped file to `newSize` and remaps, so subsequent positional writes can
     // address the grown region — the growth that a fixed up-front mapping otherwise forbids.
     // Only reachable with the `Write` grant; a `newSize` no larger than the current size is a
-    // no-op, and (like the initial mapping) `newSize` must fit in `Int`.
+    // no-op.
     def growTo(newSize: Long): Unit =
       if newSize > currentSize then
-        buffer.force()
+        flush()
         channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, newSize - 1)
-        buffer = channel.map(mapMode, 0, newSize).nn
+        val grown = jlf.Arena.ofShared().nn
+        val remapped = channel.map(mapMode, 0L, newSize, grown).nn
+        arena.close()
+        arena = grown
+        segment = remapped
         currentSize = newSize
 
-    def flush(): Unit = buffer.force()
+    def flush(): Unit = if readWrite then segment.force()
+
+    // Unmaps the file: called once, when the scope which opened or created the handle ends.
+    private[galilei] def unmap(): Unit = arena.close()
 
     // A shared positional view, for consumers written against zephyrine's `Expanse`.
     def expanse: Expanse = new Expanse:
@@ -125,10 +141,6 @@ object Ram:
         try
           val size = channel.size
 
-          // `MappedByteBuffer` addresses with `Int`, so mapping beyond 2GiB needs segmented
-          // mapping, which can follow if it proves necessary.
-          if size > Int.MaxValue then abort(Io.Error(value, Operation.Open, Reason.Unsupported))
-
           val lock =
             if mode.atoms.has(Exclusive) then
               try Option(channel.tryLock()) catch
@@ -141,7 +153,8 @@ object Ram:
           try
             val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
-            try block(using handle) finally if write then handle.flush()
+            try block(using handle) finally
+              try handle.flush() finally handle.unmap()
           finally lock.foreach: held => if held != null then held.release()
         finally channel.close()
 
@@ -171,7 +184,7 @@ object Ram:
       val size: Long = flags.reap { case RamFlag.Size(bytes) => bytes }
         . lay(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))(identity(_))
 
-      if size <= 0 || size > Int.MaxValue
+      if size <= 0
       then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
 
       val createFlags = flags.sweep { case flag: CreateFlag => flag }
@@ -197,7 +210,8 @@ object Ram:
             val handle =
               new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
 
-            try block(using handle) finally handle.flush()
+            try block(using handle) finally
+              try handle.flush() finally handle.unmap()
           catch case throwable: Throwable =>
             try backend.deleteIfExists(value) catch case _: Exception => ()
             throw throwable
@@ -211,7 +225,8 @@ object Ram:
 // The form for random access to a file's bytes through memory mapping:
 // `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`
 // and, when the `Write` grant was selected, positional writes with `ram(offset) = data`; both
-// go through a `MappedByteBuffer`, so the OS pages data in and out on demand. An `Exclusive`
+// go through a mapped `MemorySegment`, so the OS pages data in and out on demand, and a file of
+// any size can be mapped. An `Exclusive`
 // mode additionally acquires an OS file lock for the duration of the scope, so exclusivity
 // holds against other *processes*, not just other scopes in this one. (galilei's jvm module
 // is not yet capture-checked, so confinement is enforced only for callers compiled with

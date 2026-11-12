@@ -102,7 +102,6 @@ lib/gossamer/src/core/gossamer.internal.scala	6	1	3
 lib/gossamer/src/core/gossamer_core.scala	7	6	8
 lib/guillotine/src/core/guillotine.Process.scala	1	0	0
 lib/guillotine/src/core/guillotine.internal.scala	2	0	0
-lib/hallucination/src/core/hallucination.Binary.scala	0	1	0
 lib/hallucination/src/core/hallucination.Quantization.scala	2	1	0
 lib/hallucination/src/core/hallucination.Raster.scala	6	0	0
 lib/harlequin/src/core/harlequin.Fragment.scala	3	0	5
@@ -260,6 +259,6 @@ lib/zephyrine/src/core/zephyrine.Region.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Slate.scala	1	0	0
 lib/zephyrine/src/core/zephyrine.Utf8.scala	5	0	0
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	1
-lib/zephyrine/src/core/zephyrine_core.scala	4	0	0
-lib/zeppelin/src/core/zeppelin.Zip.scala	3	4	0
+lib/zephyrine/src/core/zephyrine_core.scala	4	1	0
+lib/zeppelin/src/core/zeppelin.Zip.scala	1	0	0
 lib/zeppelin/src/core/zeppelin.Zipfile.scala	3	0	0

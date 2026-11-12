@@ -581,6 +581,124 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         . map(_.message)
       . assert(!_.nil)
 
+    suite(m"Zero-copy mapped views"):
+      import errorDiagnostics.emptyDiagnostics
+
+      val viewFileLeaf: Text = Uuid().show
+      val viewFile: Path on Linux = unsafely((% / "tmp" / viewFileLeaf).on[Linux])
+      unsafely(viewFile.write(t"0123456789ABCDEF"))
+
+      test(m"A mapped view reports the file's size"):
+        unsafely(viewFile.mapped(_.size))
+      . assert(_ == 16L)
+
+      test(m"A mapped view loads a byte"):
+        unsafely(viewFile.mapped(_.u8(10L)))
+      . assert(_ == 0x41)
+
+      test(m"A mapped view loads a little-endian 16-bit integer"):
+        unsafely(viewFile.mapped(_.u16(1L)))
+      . assert(_ == 0x3231)
+
+      test(m"A mapped view loads a little-endian 32-bit integer at an odd offset"):
+        unsafely(viewFile.mapped(_.u32(3L)))
+      . assert(_ == 0x36353433L)
+
+      test(m"A signed 32-bit load is the same word as the unsigned one"):
+        unsafely(viewFile.mapped { view => view.i32(3L).toLong == view.u32(3L) })
+      . assert(_ == true)
+
+      test(m"A mapped view loads a little-endian 64-bit integer"):
+        unsafely(viewFile.mapped(_.u64(8L)))
+      . assert(_ == 0x4645444342413938L)
+
+      test(m"A slice is addressed from its own start"):
+        unsafely:
+          viewFile.mapped: view =>
+            val slice = view.slice(10L, 4L)
+            (slice.size, slice.u8(0L), slice.u16(2L))
+      . assert(_ == (4L, 0x41, 0x4443))
+
+      test(m"A load beyond the end of a slice is refused"):
+        unsafely:
+          viewFile.mapped: view =>
+            try view.slice(10L, 4L).u32(2L) catch case _: IndexOutOfBoundsException => -1L
+      . assert(_ == -1L)
+
+      test(m"Copying from a mapped view yields the bytes as data"):
+        unsafely(viewFile.mapped(_.copy(4L, 6).utf8))
+      . assert(_ == t"456789")
+
+      test(m"A mapped view compares its bytes with data in place"):
+        unsafely:
+          viewFile.mapped: view =>
+            (view.same(10L, t"ABC".in[Data]), view.same(10L, t"ABD".in[Data]))
+      . assert(_ == (true, false))
+
+      test(m"A comparison running past the end of the view is false"):
+        unsafely(viewFile.mapped(_.same(14L, t"EFG".in[Data])))
+      . assert(_ == false)
+
+      test(m"An empty file maps to an empty view"):
+        val emptyFileLeaf: Text = Uuid().show
+        val emptyFile: Path on Linux = unsafely((% / "tmp" / emptyFileLeaf).on[Linux])
+
+        unsafely:
+          emptyFile.write(t"")
+          emptyFile.mapped(_.size)
+      . assert(_ == 0L)
+
+      test(m"Mapping a file which does not exist is an error"):
+        val absentLeaf: Text = Uuid().show
+        val absent: Path on Linux = unsafely((% / "tmp" / absentLeaf).on[Linux])
+
+        unsafely:
+          capture[Io.Error](absent.mapped(_.size)).reason
+      . assert(_ == Io.Error.Reason.Nonexistent)
+
+      test(m"A mapped file can be replaced while it is being read"):
+        val oldLeaf: Text = Uuid().show
+        val newLeaf: Text = Uuid().show
+        val replaced: Path on Linux = unsafely((% / "tmp" / oldLeaf).on[Linux])
+        val successor: Path on Linux = unsafely((% / "tmp" / newLeaf).on[Linux])
+
+        unsafely:
+          replaced.write(t"first")
+          successor.write(t"second")
+
+          replaced.mapped: view =>
+            java.nio.file.Files.move
+              ( java.nio.file.Path.of("/tmp", newLeaf.s),
+                java.nio.file.Path.of("/tmp", oldLeaf.s),
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE )
+
+            (view.copy(0L, 5).utf8, replaced.read[Text])
+      . assert(_ == (t"first", t"second"))
+
+      test(m"A mapped view cannot escape its scope"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped: Mapped^ = viewFile.mapped(identity(_))
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A slice of a mapped view cannot escape its scope"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = viewFile.mapped { view => view.slice(0L, 1L) }
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A mapped file over a writable Ram mapping sees the same bytes"):
+        val sharedLeaf: Text = Uuid().show
+        val shared: Path on Linux = unsafely((% / "tmp" / sharedLeaf).on[Linux])
+
+        unsafely:
+          shared.write(t"0123456789")
+          shared.open[Ram](Read & Write) { ram ?=> ram(0L) = t"AB".in[Data] }
+          shared.mapped(_.u16(0L))
+      . assert(_ == 0x4241)
+
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics
 

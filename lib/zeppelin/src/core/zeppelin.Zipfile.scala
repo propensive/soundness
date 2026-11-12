@@ -101,8 +101,8 @@ object Zipfile:
     if eocdOffset >= 20 then
       val locator = source.read(eocdOffset - 20, 20)
 
-      if Zip.u32(locator, 0) == (Zip.zip64LocatorSig.toLong & 0xffffffffL) then
-        val rebased = Zip.u64(locator, 8) + delta
+      if locator.u32(0) == (Zip.zip64LocatorSig.toLong & 0xffffffffL) then
+        val rebased = locator.u64(8) + delta
 
         if rebased < 0 || rebased + 56 > source.size
         then raise(Zip.Error(Zip.Error.Reason.Zip64Error))
@@ -152,7 +152,7 @@ object Zipfile:
     val window = source.read(windowStart, windowSize)
 
     var i = window.length - 22
-    while i >= 0 && Zip.u32(window, i) != Zip.eocdSig.toLong do i -= 1
+    while i >= 0 && window.u32(i) != Zip.eocdSig.toLong do i -= 1
     if i < 0 then raise(Zip.Error(Zip.Error.Reason.MissingEocd))
 
     (window, i, windowStart + i)
@@ -163,11 +163,11 @@ object Zipfile:
   private[zeppelin] def parse(source: Expanse): Zipfile raises Zip.Error =
     val size = source.size
     val (window, i, eocdOffset) = findEocd(source)
-    var entryCount = Zip.u16(window, i + 10).toLong
-    var cdSize = Zip.u32(window, i + 12)
-    var cdOffset = Zip.u32(window, i + 16)
+    var entryCount = window.u16(i + 10).toLong
+    var cdSize = window.u32(i + 12)
+    var cdOffset = window.u32(i + 16)
     var cdEnd = eocdOffset // the central directory abuts the end-of-central-directory trailer
-    val commentLength = Zip.u16(window, i + 20)
+    val commentLength = window.u16(i + 20)
 
     val comment: Optional[Text] =
       if commentLength == 0 then Unset
@@ -178,8 +178,8 @@ object Zipfile:
       if eocdOffset >= 20 then
         val locator = source.read(eocdOffset - 20, 20)
 
-        if Zip.u32(locator, 0) == (Zip.zip64LocatorSig.toLong & 0xffffffffL) then
-          val recorded = Zip.u64(locator, 8)
+        if locator.u32(0) == (Zip.zip64LocatorSig.toLong & 0xffffffffL) then
+          val recorded = locator.u64(8)
 
           // The ZIP64 EOCD record abuts the locator; prefer the recorded offset, but if a
           // prepended prefix has shifted it, fall back to its physical position.
@@ -189,16 +189,16 @@ object Zipfile:
 
           val recordOffset =
             if atRecorded.length == 56 &&
-              Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
+              atRecorded.u32(0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
             then recorded
             else eocdOffset - 20 - 56
 
           val record = source.read(recordOffset, 56)
 
-          if Zip.u32(record, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL) then
-            entryCount = Zip.u64(record, 32)
-            cdSize = Zip.u64(record, 40)
-            cdOffset = Zip.u64(record, 48)
+          if record.u32(0) == (Zip.zip64EocdSig.toLong & 0xffffffffL) then
+            entryCount = record.u64(32)
+            cdSize = record.u64(40)
+            cdOffset = record.u64(48)
             cdEnd = recordOffset
           else
             raise(Zip.Error(Zip.Error.Reason.Zip64Error))
@@ -217,24 +217,24 @@ object Zipfile:
     var earliestEntry = Long.MaxValue
 
     while count < entryCount && p + 46 <= central.length do
-      if Zip.u32(central, p) != (Zip.centralHeaderSig.toLong & 0xffffffffL)
+      if central.u32(p) != (Zip.centralHeaderSig.toLong & 0xffffffffL)
       then raise(Zip.Error(Zip.Error.Reason.BadSignature(Zip.centralHeaderSig)))
 
-      val versionMadeBy = Zip.u16(central, p + 4)
-      val centralVersion = Zip.u16(central, p + 6)
-      val flags = Zip.u16(central, p + 8)
-      val methodId = Zip.u16(central, p + 10)
-      val dosTime = Zip.u16(central, p + 12)
-      val dosDate = Zip.u16(central, p + 14)
-      val crc = Zip.u32(central, p + 16).toInt
-      var compressedSize = Zip.u32(central, p + 20)
-      var uncompressedSize = Zip.u32(central, p + 24)
-      val nameLength = Zip.u16(central, p + 28)
-      val extraLength = Zip.u16(central, p + 30)
-      val entryCommentLength = Zip.u16(central, p + 32)
-      val internalAttributes = Zip.u16(central, p + 36)
-      val externalAttributes = Zip.u32(central, p + 38)
-      var localOffset = Zip.u32(central, p + 42)
+      val versionMadeBy = central.u16(p + 4)
+      val centralVersion = central.u16(p + 6)
+      val flags = central.u16(p + 8)
+      val methodId = central.u16(p + 10)
+      val dosTime = central.u16(p + 12)
+      val dosDate = central.u16(p + 14)
+      val crc = central.u32(p + 16).toInt
+      var compressedSize = central.u32(p + 20)
+      var uncompressedSize = central.u32(p + 24)
+      val nameLength = central.u16(p + 28)
+      val extraLength = central.u16(p + 30)
+      val entryCommentLength = central.u16(p + 32)
+      val internalAttributes = central.u16(p + 36)
+      val externalAttributes = central.u32(p + 38)
+      var localOffset = central.u32(p + 42)
 
       val nameStart = p + 46
       val nameBytes = central.segment((nameStart).z till (nameStart + nameLength).z)
@@ -251,20 +251,20 @@ object Zipfile:
       var q = 0
 
       while q + 4 <= extra.length do
-        val id = Zip.u16(extra, q)
-        val dataSize = Zip.u16(extra, q + 2)
+        val id = extra.u16(q)
+        val dataSize = extra.u16(q + 2)
 
         if id == 1 then
           var r = q + 4
 
           if uncompressedSize == u32Max && r + 8 <= extra.length then
-            uncompressedSize = Zip.u64(extra, r); r += 8
+            uncompressedSize = extra.u64(r); r += 8
 
           if compressedSize == u32Max && r + 8 <= extra.length then
-            compressedSize = Zip.u64(extra, r); r += 8
+            compressedSize = extra.u64(r); r += 8
 
           if localOffset == u32Max && r + 8 <= extra.length then
-            localOffset = Zip.u64(extra, r); r += 8
+            localOffset = extra.u64(r); r += 8
 
         q += 4 + dataSize
 
@@ -301,12 +301,12 @@ object Zipfile:
       val header = source.read(payloadOffset, 30)
       if header.length < 30 then raise(Zip.Error(Zip.Error.Reason.TruncatedArchive))
 
-      if Zip.u32(header, 0) != (Zip.localHeaderSig.toLong & 0xffffffffL)
+      if header.u32(0) != (Zip.localHeaderSig.toLong & 0xffffffffL)
       then raise(Zip.Error(Zip.Error.Reason.BadSignature(Zip.localHeaderSig)))
 
-      val localVersion = Zip.u16(header, 4)
-      val headerNameLength = Zip.u16(header, 26)
-      val headerExtraLength = Zip.u16(header, 28)
+      val localVersion = header.u16(4)
+      val headerNameLength = header.u16(26)
+      val headerExtraLength = header.u16(28)
       val extraOffset = payloadOffset + 30 + headerNameLength
 
       val localExtra: Data =
@@ -315,7 +315,7 @@ object Zipfile:
 
       val localSizes =
         (flags & Zip.streamedFlag) == 0 ||
-          Zip.u32(header, 14) != 0 || Zip.u32(header, 18) != 0 || Zip.u32(header, 22) != 0
+          header.u32(14) != 0 || header.u32(18) != 0 || header.u32(22) != 0
 
       val start = extraOffset + headerExtraLength
 
@@ -361,8 +361,8 @@ object Zipfile:
     if extra.length == 0 then Unset else
       val kept = Array.collect[Byte](): out =>
         def walk(q: Int): Unit = if q + 4 <= extra.length then
-          val id = Zip.u16(extra, q)
-          val end = math.min(q + 4 + Zip.u16(extra, q + 2), extra.length)
+          val id = extra.u16(q)
+          val end = math.min(q + 4 + extra.u16(q + 2), extra.length)
           if id != 1 then out.append(extra, q, end - q)
           walk(end)
 

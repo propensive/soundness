@@ -741,11 +741,6 @@ object Jdwp:
     // The queue sentinel which ends the dispatcher's pump when the channel closes.
     private[vivisection] object Terminate
 
-    // Reads a big-endian 32-bit integer from a raw byte array at the given offset.
-    private def int32(bytes: scala.Array[Byte], offset: Int): Int =
-      ((bytes(offset) & 0xff) << 24) | ((bytes(offset + 1) & 0xff) << 16) |
-        ((bytes(offset + 2) & 0xff) << 8) | (bytes(offset + 3) & 0xff)
-
     // Opens a connection over an already-connected duplex: exchanges the handshake, starts the
     // writer and reader pumps, negotiates identifier sizes, lends the connection, and tears
     // everything down afterwards. Modelled on `exegesis.LspSessional.exchange`.
@@ -793,7 +788,9 @@ object Jdwp:
                 handshaken = true
                 advancing = true
             else if bytes.length - offset >= Packet.headerLength then
-              val length = int32(bytes, offset)
+              // The packet's length, a big-endian word: the JDK's own load, since the
+              // accumulator's bytes are a JDK array, not `Data`.
+              val length = java.nio.ByteBuffer.wrap(bytes).nn.getInt(offset)
 
               if length >= Packet.headerLength && bytes.length - offset >= length then
                 val packet = Array.scratch[Byte](length)

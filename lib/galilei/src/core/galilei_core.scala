@@ -151,6 +151,20 @@ extension [plane: Filesystem](path: Path on plane)
 
     backend.expanse(path)(lambda)
 
+  // Scoped zero-copy reading (issue #2471): maps the whole file into memory, read-only, and
+  // passes a `zephyrine.Mapped` view of it, from which integers are loaded and slices taken
+  // in place. The file is unmapped when the scope ends, and the view is a capability which
+  // capture checking confines to the scope, so nothing can load from memory that has gone.
+  // Processes which map the same file share one copy of it, in the page cache. Supported by
+  // the JVM and Scala Native backends; WASI, having no memory mapping, raises `Unsupported`.
+  def mapped[result](lambda: zephyrine.Mapped^ => result)
+    ( using backend: FilesystemBackend on plane )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    val mapping = backend.mapping(path)
+    try lambda(mapping) finally mapping.unmap()
+
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
   :   Chain[Path on plane] raises Io.Error =

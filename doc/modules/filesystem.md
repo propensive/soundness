@@ -293,7 +293,7 @@ row  `File`  the file's contents, to read or write as the grants allow
 row  `Directory`  paths confined beneath the directory, on a fresh plane
 row  `Scratch`  a directory removed when the scope ends
 row  `Scratch.File`  a file removed when the scope ends, and its `path`
-row  `Ram`  positional reads and writes over a memory-mapped file
+row  `Ram`  positional reads and writes over a memory-mapped file, of any size
 row  `Watch`  a stream of the changes beneath a directory
 ```
 
@@ -333,6 +333,51 @@ file.open[Ram](Read & Write): ram ?=>
 Out.println(middle.utf8)
 Out.println(file.read[Text])
 ```
+
+`mapped` maps a whole file for reading, and lends a `Mapped` view of it for the length of a
+block. Nothing is copied: integers are loaded from the mapped memory in place, little-endian
+and at any offset, and a `slice` is a narrower view of the same memory. Several processes
+which map one file share a single copy of it, in the operating system's page cache, which is
+what makes a mapped file a way of sharing a large index between programs:
+
+```scala fuel
+run
+##
+file.write(t"0123456789ABCDEF")
+
+val word = file.mapped(_.u32(0L))
+
+val letters = file.mapped: view =>
+  val tail = view.slice(10L, 6L)
+  tail.copy(0L, 3).utf8
+
+Out.println(word.show)
+Out.println(letters)
+```
+
+The loads are these:
+
+```tabular
+column  Method
+column  Gives
+row  `u8`, `u16`  an unsigned byte or 16-bit integer, as an `Int`
+row  `u32`  an unsigned 32-bit integer, as a `Long`
+row  `i32`  the same 32 bits as a signed `Int`
+row  `u64`  a 64-bit integer, as a `Long`
+row  `slice`  a view of part of the memory, with no copy
+row  `copy`  some of the bytes as `Data`, for a value which must outlive the view
+row  `same`  whether the bytes at an offset are those of some `Data`, compared in place
+```
+
+The file is unmapped when the block ends. The view, and every slice of it, is a [capability]
+confined to the block, so a load from memory which is no longer mapped cannot be written. A method which receives a view declares it as `Mapped^`. The same loads are
+available on `Data`, with a big-endian `u16be`, `i32be`, `u32be` and `u64be` beside them, so a
+parser reads a format the same way from either.
+
+A mapped file should be replaced, by moving a new file onto its name, and not rewritten in
+place: a view goes on seeing the file it mapped, unchanged, for as long as it is held. Mapping
+is available on the JVM and on Scala Native; WASI has no memory mapping, and reports
+`Unsupported`.
 
 A `Slice` is a window onto part of a file, with an offset and an extent. It is opened for
 reading or writing like a file of its own. A region of a large file can therefore be streamed

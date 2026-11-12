@@ -43,7 +43,7 @@ import contingency.*
 import denominative.*
 import pneumatic.*
 import rudiments.*
-import Binary.*
+import zephyrine.*
 import Raster.Error.Reason
 
 // A pure-Scala PNG codec over pneumatic's `Zlib` (which selects `java.util.zip` on the JVM and
@@ -58,7 +58,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
-        data.length >= 8 && signature.extent.all: index => u8(data, index.n0) == signature(index)
+        data.length >= 8 && signature.extent.all: index => data.u8(index.n0) == signature(index)
 
       if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
 
@@ -74,14 +74,14 @@ private[hallucination] object PngCodec:
       var finished = false
 
       while !finished do
-        val length = u32be(data, position)
+        val length = data.i32be(position)
         // `slice` yields a fresh array and `String`'s constructor copies it.
         val chunkType =
           new String(Array.unsafeJvm(data.segment((position + 4).z till (position + 8).z)))
 
         val body = data.segment((position + 8).z till (position + 8 + length).z)
 
-        val storedCrc = u32be(data, position + 8 + length)
+        val storedCrc = data.i32be(position + 8 + length)
 
         if corpuscular.Crc32.checksum(data.segment((position + 4).z till (position + 8).z), body) !=
           storedCrc
@@ -89,11 +89,11 @@ private[hallucination] object PngCodec:
 
         chunkType match
           case "IHDR" =>
-            width = u32be(data, position + 8)
-            height = u32be(data, position + 12)
-            depth = u8(data, position + 16)
-            colorType = u8(data, position + 17)
-            interlace = u8(data, position + 20)
+            width = data.i32be(position + 8)
+            height = data.i32be(position + 12)
+            depth = data.u8(position + 16)
+            colorType = data.u8(position + 17)
+            interlace = data.u8(position + 20)
 
             val legal = colorType match
               case 0 => List(1, 2, 4, 8, 16).has(depth)
@@ -104,19 +104,19 @@ private[hallucination] object PngCodec:
               case _ => false
 
             val supported =
-              legal && u8(data, position + 18) == 0 && u8(data, position + 19) == 0 &&
+              legal && data.u8(position + 18) == 0 && data.u8(position + 19) == 0 &&
                 interlace <= 1
 
             if !supported then abort(Raster.Error(Png(), Reason.UnsupportedVariant))
 
           case "PLTE" =>
             palette = Array.tabulate(length/3): index =>
-              u8(data, position + 8 + index*3) << 16 |
-                u8(data, position + 9 + index*3) << 8 |
-                u8(data, position + 10 + index*3)
+              data.u8(position + 8 + index*3) << 16 |
+                data.u8(position + 9 + index*3) << 8 |
+                data.u8(position + 10 + index*3)
 
           case "tRNS" =>
-            transparency = Array.tabulate(length): index => u8(data, position + 8 + index)
+            transparency = Array.tabulate(length): index => data.u8(position + 8 + index)
 
           case "IDAT" =>
             idat.addAll(Array.unsafeJvm(body), 0, length)

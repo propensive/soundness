@@ -36,8 +36,7 @@ import scala.math
 
 import anticipation.*
 import contingency.*
-
-import Binary.*
+import zephyrine.*
 import Raster.Error.Reason
 
 // A pure-Scala BMP codec: decodes 1-, 4- and 8-bit palettes and 16-, 24- and 32-bit pixels,
@@ -46,21 +45,21 @@ import Raster.Error.Reason
 private[hallucination] object BmpCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
-      if data.length < 2 || u8(data, 0) != 'B' || u8(data, 1) != 'M'
+      if data.length < 2 || data.u8(0) != 'B' || data.u8(1) != 'M'
       then abort(Raster.Error(Bmp(), Reason.BadSignature))
 
-      val dataOffset = u32le(data, 10)
-      val headerSize = u32le(data, 14)
+      val dataOffset = data.i32(10)
+      val headerSize = data.i32(14)
 
       if headerSize < 40 then abort(Raster.Error(Bmp(), Reason.UnsupportedVariant))
 
-      val width = u32le(data, 18)
-      val rawHeight = u32le(data, 22)
+      val width = data.i32(18)
+      val rawHeight = data.i32(22)
       val topDown = rawHeight < 0
       val height = math.abs(rawHeight)
-      val bitCount = u16le(data, 28)
-      val compression = u32le(data, 30)
-      val colorCount = u32le(data, 46)
+      val bitCount = data.u16(28)
+      val compression = data.i32(30)
+      val colorCount = data.i32(46)
 
       if compression != 0 && compression != 3
       then abort(Raster.Error(Bmp(), Reason.UnsupportedVariant))
@@ -69,8 +68,8 @@ private[hallucination] object BmpCodec:
       // after a 40-byte header (RGB only) or inside a V4/V5 header (with alpha).
       val masks: (Int, Int, Int, Int) =
         if compression == 3 then
-          val alphaMask = if headerSize >= 108 then u32le(data, 66) else 0
-          (u32le(data, 54), u32le(data, 58), u32le(data, 62), alphaMask)
+          val alphaMask = if headerSize >= 108 then data.i32(66) else 0
+          (data.i32(54), data.i32(58), data.i32(62), alphaMask)
         else
           bitCount match
             case 16 => (0x7c00, 0x03e0, 0x001f, 0)
@@ -83,7 +82,7 @@ private[hallucination] object BmpCodec:
         else
           val size = if colorCount == 0 then 1 << bitCount else colorCount
 
-          Array.tabulate(size): index => u32le(data, paletteOffset + index*4)&0xffffff
+          Array.tabulate(size): index => data.i32(paletteOffset + index*4)&0xffffff
 
       val rowSize = ((bitCount*width + 31)/32)*4
       val alpha = masks(3) != 0
@@ -102,19 +101,19 @@ private[hallucination] object BmpCodec:
 
         bitCount match
           case 1 =>
-            val bit = (u8(data, row + x/8) >> (7 - x%8))&1
+            val bit = (data.u8(row + x/8) >> (7 - x%8))&1
             palette.readUnchecked(bit).toLong
 
           case 4 =>
-            val pair = u8(data, row + x/2)
+            val pair = data.u8(row + x/2)
             val entry = if x%2 == 0 then pair >> 4 else pair&15
             palette.readUnchecked(entry).toLong
 
           case 8 =>
-            palette.readUnchecked(u8(data, row + x)).toLong
+            palette.readUnchecked(data.u8(row + x)).toLong
 
           case 16 =>
-            val value = u16le(data, row + x*2)
+            val value = data.u16(row + x*2)
 
             val opaque =
               pack(rescale(value, masks(0)), rescale(value, masks(1)), rescale(value, masks(2)))
@@ -123,10 +122,10 @@ private[hallucination] object BmpCodec:
 
           case 24 =>
             val offset = row + x*3
-            pack(u8(data, offset + 2), u8(data, offset + 1), u8(data, offset))
+            pack(data.u8(offset + 2), data.u8(offset + 1), data.u8(offset))
 
           case 32 =>
-            val value = u32le(data, row + x*4)
+            val value = data.i32(row + x*4)
 
             val opaque =
               pack(rescale(value, masks(0)), rescale(value, masks(1)), rescale(value, masks(2)))

@@ -37,7 +37,7 @@ import scala.caps
 import anticipation.*
 import contingency.*
 import vacuous.*
-import Binary.*
+import zephyrine.*
 import Raster.Error.Reason
 
 // The extended (VP8X) WebP container, ported from image-rs/image-webp (`src/extended.rs` and
@@ -52,7 +52,7 @@ private[hallucination] object WebpExtended:
   extends caps.Mutable
 
   def decode(data: Data, start: Int, end: Int, riffEnd: Int): Raster raises Raster.Error =
-    val flags = u8(data, start)
+    val flags = data.u8(start)
     val hasAlpha = (flags & 0x10) != 0
     val animation = (flags & 0x02) != 0
     val canvasWidth = read3(data, start + 4) + 1
@@ -80,7 +80,7 @@ private[hallucination] object WebpExtended:
 
     while position + 8 <= end do
       val name = fourcc(data, position)
-      val size = u32le(data, position + 4)
+      val size = data.i32(position + 4)
       val payload = (position + 8, position + 8 + size)
 
       name match
@@ -114,7 +114,7 @@ private[hallucination] object WebpExtended:
   private def readAlpha(data: Data, start: Int, end: Int, width: Int, height: Int)
   :   scala.Array[Int] raises Raster.Error =
 
-    val info = u8(data, start)
+    val info = data.u8(start)
     val filtering = (info & 0x0c) >> 2
     val compression = info & 0x03
 
@@ -127,7 +127,7 @@ private[hallucination] object WebpExtended:
 
         scala.Array.tabulate(width*height): i => rgba(i*4 + 1) & 0xff
       else if compression == 0 then
-        scala.Array.tabulate(width*height): i => u8(data, start + 1 + i)
+        scala.Array.tabulate(width*height): i => data.u8(start + 1 + i)
       else
         abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 
@@ -215,7 +215,7 @@ private[hallucination] object WebpExtended:
         (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
 
   private def read3(data: Data, offset: Int): Int =
-    u8(data, offset) | (u8(data, offset + 1) << 8) | (u8(data, offset + 2) << 16)
+    data.u8(offset) | (data.u8(offset + 1) << 8) | (data.u8(offset + 2) << 16)
 
   private def fourcc(data: Data, offset: Int): String =
     String
