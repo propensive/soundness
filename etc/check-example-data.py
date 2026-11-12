@@ -41,6 +41,7 @@ SETS = [
 
 EXEMPT = [
   'doc/standards/examples.md',                  # names the retired vocabulary in order to retire it
+  'lib/stratiform/res/test/stratiform/corpus/DIVERGENCES.md',  # records the renaming
   'lib/locomotion/src/bench/BenchProtos.java',  # protoc output
   'lib/polysyllabic/res/*',                     # War and Peace
 ]
