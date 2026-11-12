@@ -274,8 +274,7 @@ item
   track api
   horizon mid
   status open
-  baseline  6 names exported by two libraries; 2 @unexported homonyms; ~110 R8 candidates (2026-11-12)
-  progress  0 names exported by two libraries; 19 of 22 high-confidence R8 rows done (2026-11-12)
+  baseline  0 names exported by two libraries; 19 of 22 high-confidence R8 rows done; Tag/Renderable still @unexported (2026-11-12, later; 6 names, 2 @unexported homonyms, ~110 R8 candidates earlier the same day)
   criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in doc/api-nesting-proposal.md is applied or reviewed-kept
 
 item
