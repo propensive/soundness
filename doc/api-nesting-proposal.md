@@ -62,6 +62,17 @@ does not split at all — it becomes a namespace for its own satellites.
   are specific and instructive; see the R7 section below. Where such a type is same-component
   it may still be *nested*, which several passes have done.
 
+- **R8 OVER-GENERIC SINGLE WORD**: a single-word top-level name whose meaning is one
+  library's notion, not the general concept the bare word suggests, nests under that
+  library's owner even though it has no prefix to strip. The test: would a reader seeing the
+  name unqualified under `import soundness.*` expect something more general than this?
+  ultimatum's layout tree is not *the* `Frame`; probably's test-axis coordinate is not *the*
+  `Value`. The counterweight is convenience: a library's principal type, or a commonly-used
+  concept that really is general (`Data`, `Path`, `Stream`, `Session`, `Table`, `Color`),
+  stays top-level. A name exported by two libraries into the umbrella is an R8 case by
+  definition, and so is an `@unexported` that exists only to dodge a clash. Candidates are in
+  the "Ninth-pass review" section below.
+
 ## The rename table (R1/R2/R4) — all verified same-component
 
 Errors, events and satellites nesting under an existing companion (the dominant shape):
@@ -613,3 +624,116 @@ its sites rely on the bounds check it removes, so that one waits on tightening t
 `Tel.Provider` and `Json.Provider`, by moving them into `core` (which gained the `polyvinyl.core`
 edge) and dropping the `records` components. `JsonBlueprint.{Doc, Property, Error}` became
 `Json.Provider.{Doc, Property, Error}`.
+
+## Ninth-pass review (2026-11-12): what api-1 still lacks, and R8
+
+A whole-surface review: 2008 names are exported into `package soundness`, 1510 of them
+single-word. Since the inventory was last regenerated, 49 listed names had gone and **49 new
+compound names had arrived** — `Acp*`, `Ssh*`, `*Supervisor`, `Font*`, `ChaCha20` — so new
+code keeps adding to the surface this track is draining, and nothing stops it. The inventory is
+regenerated, and the new names that keep their compounds are in its reviewed section.
+
+Every owner below was resolved to a declaration in the *same build component* unless marked
+*new*; † marks a proposal whose owner still needs confirming. Nothing here has been
+compiled, and every row is subject to the hazards the earlier passes recorded.
+
+### Umbrella clashes — two libraries export the same name
+
+Each pair is a genuine clash, not a re-export:
+
+| name | the side to move | proposal |
+|---|---|---|
+| `Namespace` | embarcadero's containerd record | `Containerd.Namespace`, with `Empty`, `Mount`, `Runtime`, `Container` |
+| `Commandline` | octogenarian's git-executable backend | `Git.Commandline` |
+| `Native` | octogenarian's pure-Scala git backend | not `Git.Native`: `Native` is in the **native** component and `Git` in core. Unexport it (`gitBackends.soundnessGit` supplies it), or a new namespace in the native component with `Peer` and `Transport` |
+| `Pane` | exoskeleton's tmux test-rig pane | `Tmux.Pane`, with `Screenshot` |
+| `Arithmetic` | probably's `Baseline.Mode` enum case | stop re-exporting it and `Geometric`; write `Baseline.Mode.*` |
+| `Bytes` | ultimatum's information unit | move `Information`, `Bytes`, `Byte` into quantitative, as their source comment anticipates |
+| `Tag`, `Renderable` | xylophone's, now `@unexported` | `Xml.Tag`, `Xml.Renderable`; drop the annotation |
+
+### Compound names still nestable (api-1)
+
+| library.component | renames |
+|---|---|
+| anthology.core | `CompileEvent→Compiler.Event`, `CompileProcess→Compiler.Process`, `CompileResult→Compiler.Result`, `CompileProgress→Compiler.Progress`; fold `CompileEvents` into `Compiler.Event`'s companion (`CompileFlag` is R6) |
+| escritoire.core | `TableCell`, `TableRow`, `TableSection`, `TableStyle`, `TableRelabelling` → `Table.*` (`TableRow`/`TableSection` hold `Array[…]^{}` — check capture inference first) |
+| ultimatum.core | `InlineAnchoring`, `InlineGrowth`, `InlineShrink` → `InlineRoot.*` (each enum's companion carries its default, and moves with it) |
+| dendrology.tree | `TreeTile→TreeDiagram.Tile`, `TreeStyle→TreeDiagram.Style`, `TextualTreeStyle→TreeDiagram.TextualStyle` |
+| dendrology.dag | `DagTile`, `DagStyle`, `TextualDagStyle` → `DagDiagram.*`; `LaneDagStyle`, `TextualLaneDagStyle` → `LaneDagDiagram.*` (not `Dag`, which is acyclicity's) |
+| espionage.core | `AcpAgent→Acp.Agent`, `AcpClient→Acp.Client`; the split traits nest beneath them (`Acp.Agent.Lifecycle`, `Acp.Client.Fs`, …). The agent-location enum that held `Acp.Agent` becomes `Acp.Endpoint` (ruling 3) |
+| degustation.tasty | `ClassSource→Universe.Source`, `ClassInfo→Universe.ClassInfo` |
+| exoskeleton.args | merge `InvalidFlagError` and `MissingFlagError` into `Flag.Error` with a `Reason` |
+| kaleidoscope.core | `RegexBackend→Regex.Backend` (sealed: its `regexBackends` givens move too, or it unseals) |
+| parasite.core | `SharedProbate→Probate.Shared` (an alias; needs a companion) |
+| aviation.core | `RecurrenceLiteral→Recurrence.Literal` (an alias) |
+| cataclysm.core | `SyntaxMatcher→Css.Syntax.Matcher` |
+| fulminate.core | `UncheckedError→Error.Unchecked` |
+
+Still blocked: `TlsAcceptance`, `SecurePort` (platform-split `Tls`); `ArOpenable` (R6, as
+`TarOpenable`); `PooledSupervisor` (dual platform definitions); `TableFixture` (`Table` is
+escritoire's); `Ssh*` in octogenarian (four components, and `Ssh` is susurration's);
+`DaemonEnvironment`, `Viewport*` and `Unix*` (outer names owned elsewhere).
+`BlockCipherMode`/`BlockCipherPadding` nest, members and all: `Cbc`, `Ecb`, `Ctr`, `Cfb`,
+`Ofb`, `Pkcs7`, `Iso10126` and `NoPadding` become `BlockCipher.Cbc` and so on (ruling 2).
+
+### R8 candidates — high confidence
+
+| library | names → proposed home |
+|---|---|
+| ultimatum.core | `Frame`, `Pane`, `Panes`, `Placement`, `Sizing`, `Occupancy`, `Limits`, `Arrangement`, `Tick` → *new* `Layout.*`; `Rect` → `Layout.Region` (ruling 4: no abbreviation) |
+| ultimatum.gauges | `Magnitude`, `Meter`, `Reading`, `Reckoning`, `Step`, `Standing`, `Transfer`, `Facet`, `Fraction`, `Gradient`, `Inlay` → *new* `Gauge.*`, or the existing `Gauging` |
+| anticipation | `Level→Log.Level`; the colour channels `Key`, `Cyan`, … → `Channel.*` † |
+| honeycomb | `Kind`, `Capture` (attribute value sets) → the companion of their element or attribute † |
+| archimedes | `Display`, `Cell` → `Mathml.*` |
+| cataclysm | `Compound`, `Simple` → `Selector.*`; `Outcome→Css.Outcome` |
+| savagery | `Group`, `Figure` → `Svg.*`; `Up`, `Down`, `Left`, `Right` → `Delta.*` |
+| facsimile | `Destination→Pdf.Destination` |
+| tasseomancy | `Lines`, `Category`, `Estimate` → `Chart.*` |
+| embarcadero | `Image`, `Index`, `History`, `Descriptor`, `Layer` → `Oci.*` |
+| cacophony | `Configuration`, `Device`, `Feed` → `Audio.*` |
+| dissonance | `Chunk`, `Ins`, `Del`, `Edit`, `Change` → `Diff.*` |
+| polyvinyl | `Member`, `Multiplicity` → `Specification.*` |
+| stratiform | `Mutation`, `Revision` → `Tel.*` |
+| gesticulate | `Part→Multipart.Part` |
+| perihelion | `Masking→Websocket.Masking` |
+| orthodoxy | `Scope→OAuth.Scope` |
+| octogenarian.core | `Remote`, `Patch` → `Git.*` |
+| anthology.core | `Notice→Compiler.Notice`; `Triple`, `Universe`, `Tool` → `Toolchain.*` |
+| praxinoscope | `Program`, `Ranges` → `Motif.*` |
+| harlequin | `Token→SourceCode.Token`, `Role→Token.Role` |
+| probably | `Value→Axis.Value` |
+| synesthesia | `Agent`, `Human` → `Discourse.*` (susurration has its own `Agent`) |
+
+### R8 candidates — wanting a ruling
+
+telekinesis `Auth`, `Context`; coaxial `Trust→Tls.Trust` (platform-split `Tls`); contingency
+`Pointer→Validation.Pointer`; probably `Report`, `Run`, `Trial`, `Verdict`; sedentary
+`Profile`, `Stress` → `Bench.*`; aperture `Read`, `Write`, `Mode` → `Openable.*`; profanity
+`Signal`, `Question`; zephyrine `Pace`, `Substrate`, `Regulation`; phoenicia `Face`,
+`Medium`; serpentine `Case`; anamnesis `Entity`; exoskeleton `Login`, `Execution`; ethereal
+`Resident`, `Terminus`, `Upgrade`, `Client`, `Egress` (they would need a new namespace, and
+`Daemon` is parasite's).
+
+### Rulings (2026-11-12)
+
+1. **The gate is a flare rule**, not an `etc/` ratchet: a new exported compound name, or a name
+   exported into the umbrella by two components, is reported where it is declared. Flare's
+   predicates (`defines`, `matches`, …) cannot express either today — `defines` sees every
+   member, not the umbrella surface — so this needs a flare feature built on what
+   `flare.Umbrella` already computes, then a release and a pin.
+2. **`BlockCipher.Cbc` and its siblings**: yes. The taxonomy nests with its members.
+3. **`AcpAgent` becomes `Acp.Agent`.** The enum occupying the name is not an agent but where to
+   find one — a subprocess or a pair of streams — so it becomes `Acp.Endpoint`. Everything ACP
+   nests inside `Acp`. exegesis has the same shape (`Lsp.Server` is the location enum), and
+   should follow when `LspLifecycle` and its siblings nest.
+4. **`Layout`** is the namespace for ultimatum's layout vocabulary, and `Rect` is renamed as it
+   moves: abbreviations are avoided. `Layout.Region`, since it is a region of the screen in
+   cells. facsimile's `Pdf.Rect` is not affected: it mirrors the PDF `/Rect` key.
+
+### Reviewed and kept top-level
+
+Either general vocabulary or a library's principal type: `Data`, `Builder`, `Cache`, `Color`,
+`Duration`, `Date`, `Html`, `Json`, `Error`, `Exit`, `Loop`, `Grid`, `Column`, `Command`,
+`Job`, `Credential`, `Catalog`, `Message`, `Session`, `Stream`, `Task`, `Promise`, `Path`,
+`Root`, `Query`, `Record`, `Url`, `Origin`, `Range`, `Span`, `Theme`, `Point`, `Segment`,
+`Series`, `Scale`, `Table`, `Sheet`, `Watch`, `Volume`, `Variant`.

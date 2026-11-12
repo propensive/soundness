@@ -258,6 +258,7 @@ item
   needs api-1
   needs api-2
   needs api-3
+  needs api-7
   criterion  doc/api-reduction-candidates.md no longer exists
 
 item
@@ -267,6 +268,14 @@ item
   status open
   needs dist-2
   criterion  the dist-2 CI check enforced on every surface-changing pull request for ten consecutive releases
+
+item
+  id api-7
+  track api
+  horizon mid
+  status open
+  baseline  6 names exported by two libraries; 2 @unexported homonyms; ~110 R8 candidates (2026-11-12)
+  criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in doc/api-nesting-proposal.md is applied or reviewed-kept
 
 item
   id doc-1
