@@ -663,7 +663,7 @@ Each pair is a genuine clash, not a re-export:
 | espionage.core | `AcpAgent→Acp.Agent`, `AcpClient→Acp.Client`; the split traits nest beneath them (`Acp.Agent.Lifecycle`, `Acp.Client.Fs`, …). The agent-location enum that held `Acp.Agent` becomes `Acp.Endpoint` (ruling 3) — **done** |
 | degustation.tasty | `ClassSource→Universe.Source`, `ClassInfo→Universe.ClassInfo` |
 | exoskeleton.args | merge `InvalidFlagError` and `MissingFlagError` into `Flag.Error` with a `Reason` — **done** |
-| kaleidoscope.core | `RegexBackend→Regex.Backend` (sealed: its `regexBackends` givens move too, or it unseals) |
+| kaleidoscope.core | `RegexBackend→Regex.Backend` (sealed: its `regexBackends` givens move too, or it unseals) — **done** |
 | parasite.core | `SharedProbate→Probate.Shared` (an alias; needs a companion) |
 | aviation.core | `RecurrenceLiteral→Recurrence.Literal` (an alias) |
 | cataclysm.core | `SyntaxMatcher→Css.Syntax.Matcher` |

@@ -104,12 +104,12 @@ object Glob:
 case class Glob(tokens: Glob.Token*):
   lazy val regex: Text = Text(tokens.map(_.regex).mkString)
 
-  // Matches the whole of `text`, on the backend selected by an imported `RegexBackend`
+  // Matches the whole of `text`, on the backend selected by an imported `Regex.Backend`
   // (`import regexBackends.re2`), defaulting to `java.util.regex` — the same selection
   // mechanism as the `r"…"` and `g"…"` interpolators. The engines cache compilation by
   // rendered pattern, so matching many candidates against one `Glob` compiles it only once.
   def matches[form](text: Text)
-    ( using backend: RegexBackend[form] = regexBackends.javaBaseRegex )
+    ( using backend: Regex.Backend[form] = regexBackends.javaBaseRegex )
     ( using engine:  form is Regex.Engine )
   :   Boolean =
 

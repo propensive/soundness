@@ -36,19 +36,9 @@ import praxinoscope.*
 
 extension (inline context: StringContext)
   transparent inline def r: Any = scala.compiletime.summonFrom:
-    case _: RegexBackend[Re2] => kaleidoscope.internal.expandRegexRe2(context)
-    case _                    => kaleidoscope.internal.expandRegexJvm(context)
+    case _: Regex.Backend[Re2] => kaleidoscope.internal.expandRegexRe2(context)
+    case _                     => kaleidoscope.internal.expandRegexJvm(context)
 
   transparent inline def g: Any = scala.compiletime.summonFrom:
-    case _: RegexBackend[Re2] => kaleidoscope.internal.expandGlobRe2(context)
-    case _                    => kaleidoscope.internal.expandGlobJvm(context)
-
-// Compile-time backend selector for the `r""` and `g""` interpolators: the macro summons a
-// `RegexBackend[Re2]` during expansion, so `import regexBackends.re2` switches a literal to the
-// praxinoscope RE2 engine, and its absence defaults to `java.util.regex`. The givens are
-// `inline` markers, erased at runtime.
-sealed trait RegexBackend[form]
-
-package regexBackends:
-  given javaBaseRegex: RegexBackend[JavaBaseRegex] = new RegexBackend[JavaBaseRegex] {}
-  given re2: RegexBackend[Re2] = new RegexBackend[Re2] {}
+    case _: Regex.Backend[Re2] => kaleidoscope.internal.expandGlobRe2(context)
+    case _                     => kaleidoscope.internal.expandGlobJvm(context)
