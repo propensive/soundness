@@ -49,10 +49,10 @@ detail
     - `ultimatum.core` — the layout model (`Tui.Pane`, `Tui.Panes`, `Tui.Sizing`, `Tui.Arrangement`,
       `Tui.Frame`, `Tui.Placement`, `Tui.Region`), the DSL (`panel`, `editor`, `menu`, `scrolling`,
       `stack`, `strip`, `grid`, `border`), the drivers (`conduct`, `layout`, `paint`,
-      `Form`), the surfaces (`Extent`, `FlowExtent`, `InlineRoot`, `ScreenRoot`), the
+      `Form`), the surfaces (`Extent`, `FlowExtent`, `Tui.Block`, `Tui.Screen`), the
       fixtures (`Fixture`, `Focus`, `EditorField`, `MenuField`, `ScrollFixture`), the
-      animation clock `Tick`, and the inline-rendering policies `InlineRoot.Anchoring`,
-      `InlineRoot.Growth` and `InlineRoot.Shrink` with their choice packages.
+      animation clock `Tick`, and the inline-rendering policies `Tui.Block.Anchoring`,
+      `Tui.Block.Growth` and `Tui.Block.Shrink` with their choice packages.
     - `ultimatum.gauges` — spinners, progress bars, meters, sparklines, counters, timers
       and step indicators, chosen by the _type_ of the status they display (`Fraction`,
       `Reckoning`, `Standing`, `Duration`, `Countdown`, `Transfer`, `Meter`,
@@ -81,8 +81,8 @@ detail
     the umbrella's own; `border` is the one DSL constructor the umbrella does not currently
     forward, so it is reached as `ultimatum.border`. The interactive drivers run inside
     profanity's `interactive` session, and so need a `Monitor` (from `supervise`) and a
-    `Probate`; the in-memory surfaces (`ScreenRoot(width, height)`,
-    `InlineRoot(width, height)`, `FlowExtent`) need only a `Stdio`, which is how the layout
+    `Probate`; the in-memory surfaces (`Tui.Screen(width, height)`,
+    `Tui.Block(width, height)`, `FlowExtent`) need only a `Stdio`, which is how the layout
     is tested without a terminal.
 
 refer ultimatum.conduct
@@ -132,8 +132,8 @@ entry .conduct   runs a pane layout interactively, fullscreen or inline, until t
       ```
 
       It needs a `Terminal` (from `interactive`), a `Monitor` (from `supervise`) and a
-      `Probate` for the deferred-repaint task, and an `InlineRoot.Anchoring`, `InlineRoot.Growth` and
-      `InlineRoot.Shrink` policy, each defaulted in its companion and overridden by importing one
+      `Probate` for the deferred-repaint task, and an `Tui.Block.Anchoring`, `Tui.Block.Growth` and
+      `Tui.Block.Shrink` policy, each defaulted in its companion and overridden by importing one
       given from `inlineAnchoring`, `inlineGrowth` or `inlineShrink`. A layout with an
       animated gauge arms one timer at the shortest period any of its fixtures asks for;
       a layout of static panes arms none and is purely event-driven.
@@ -146,12 +146,12 @@ entry .conduct   runs a pane layout interactively, fullscreen or inline, until t
   refer ultimatum.layout
 
 entry .layout   prints a pane layout once as a static block at the cursor
-    `layout(pane)` solves and paints the pane tree into an `InlineRoot` over the session's
+    `layout(pane)` solves and paints the pane tree into an `Tui.Block` over the session's
     terminal, presents it as a block of the height its content needs, and leaves the cursor
     on a fresh line below it — a one-shot rendering with no event loop, for a report or a
     summary which is drawn and then scrolled past like any other output. It needs a
-    `Terminal` and the three inline policies (`InlineRoot.Anchoring`, `InlineRoot.Growth`,
-    `InlineRoot.Shrink`), which default from their companions.
+    `Terminal` and the three inline policies (`Tui.Block.Anchoring`, `Tui.Block.Growth`,
+    `Tui.Block.Shrink`), which default from their companions.
 
     ```scala fuel
     typecheck
@@ -173,7 +173,7 @@ entry .layout   prints a pane layout once as a static block at the cursor
 entry .paint   solves a pane tree against a `Board` once and paints every leaf into its rectangle
     `paint(root, pane)` is the drawing step on its own, with no terminal session and no
     event loop: the pane is projected to a `Tui.Frame`, solved against the root's width (and,
-    for an `InlineRoot`, the height the content measures; for any other board, the board's
+    for an `Tui.Block`, the height the content measures; for any other board, the board's
     height), and each leaf's content or fixture is rendered into a `FlowExtent` over its
     rectangle, which is then composited onto the root and the root flushed. This is how a
     layout is rendered into an in-memory surface for testing, or onto a `TerminalBoard`
@@ -604,6 +604,203 @@ entry .Tui   the namespace for ultimatum's terminal-interface vocabulary, starti
     entry #bottom   the row just past the bottom edge: `top + height`
     entry #contains   whether a zero-based column and row fall inside the rectangle
 
+  entry .Block   the root board for inline mode: a block presented at the cursor by absolute addressing
+    detail
+        The root `conduct(Tui.Occupancy.Inline)` and `layout` draw into. Panels composite into
+        its character grid and `#flush` presents the grid as one write, each row at an
+        absolute screen row, so a redraw always lands in the same place and never drifts —
+        the property a relative, cursor-tracking present loses the moment a resize reflows
+        the lines already on screen. A geometry-stable re-present diffs against a snapshot
+        of what the last present drew and overprints only the cells which changed; an
+        identical frame emits nothing.
+
+        How the block behaves is governed by three policies read from context when the root
+        is built. `Anchoring` says where the block lives: under the default
+        `TopAfterResize` it is bottom-docked on launch, appearing beneath the shell command,
+        and on the first resize it tries to recover its position from the terminal's reply
+        to a cursor query, falling back to pinning itself to the top rows and clearing the
+        screen. `Growth` says what a taller frame does while bottom-docked (scroll the
+        screen into scrollback, or grow upward in place); `Shrink` what a shorter one
+        does (re-dock at the bottom, or hold the top row). Each is defaulted in its
+        companion and overridden by one import from `inlineAnchoring`, `inlineGrowth` or
+        `inlineShrink`.
+
+        ```scala
+        import soundness.*
+        import stdios.javaLangSystemStdio
+
+        val root = Tui.Block(3, 4)
+        root.reframe(3, 2)
+        root.move(Prim, Prim)
+        root.put(t"ab\ncd")
+        root.flush()
+        root.finish()
+        ```
+
+        `Block(terminal)` reads the terminal's columns and rows live, so a resize is
+        reflected on the next frame, and retains the terminal; `Block(width, height)`
+        is a fixed-size root over the `Stdio` in scope, for testing. An oversize block is
+        clamped to the terminal height. The grid members `width`, `height`, `move`, `put`,
+        `clear`, `clearLine`, `invalidate` (which marks the next present as a full resize
+        repaint; the form driver calls it on every `WindowSize` event) and `render` are
+        shared with the other surfaces.
+    refer ultimatum.Tui.Block.Anchoring
+    refer ultimatum.Tui.Block.Growth
+    refer ultimatum.Tui.Block.Shrink
+    refer ultimatum.Tui.Screen
+    entry .apply   a root over a terminal, read live, or a fixed-size root over a `Stdio`
+        `Block(terminal)` takes the three inline policies from context and the
+        terminal's `Stdio`, `knownColumns` and `knownRows`, re-read every frame; its result
+        captures the terminal. `Block(width, height)` takes a `Stdio` and the policies
+        from context and is a fresh root of fixed size.
+    entry #anchor   stashes the terminal's reply to the resize cursor query, for the next resized present
+        `anchor(row, column)` records where the terminal left the parked cursor after
+        reflowing the screen on a resize (one-based screen coordinates). The next present
+        after `invalidate` uses it to compute where the old block's residue now begins —
+        modelling both a reflowing terminal, which re-wraps each line, and a truncating one,
+        which clips in place, and trusting whichever model predicts the reply's column —
+        clears from there and re-docks, so the scrollback above the block survives. A reply
+        matching neither model, or no reply, falls back to the policy's full clear. The
+        anchor is consumed by that present, used or not. `Form` does this plumbing itself.
+    entry #width   the live width, from the terminal, re-read every frame
+    entry #reframe   resizes the grid to the measured block height, clamped to the terminal's rows
+        `reframe(width, height)` reallocates and blanks the grid before each frame is
+        composited; the driver calls it with the height the content measures.
+    entry #cursor   records whether the hardware cursor should be visible, applied by `flush`
+    entry #reset   forgets everything recorded about what is on screen, so the next frame is a first frame
+        After the caller has cleared the screen itself, this makes the next present render
+        at the current cursor as if nothing had been drawn, rather than relative to or
+        docked against a prior block.
+    entry #showCaret   records the caret's block-local cell; `flush` places the hardware cursor there
+    entry #flush   presents the grid as one write: a diff where the geometry is unchanged, else a full redraw
+        Under `Anchoring.Flow` the block is drawn relative to the cursor; under every
+        other anchoring it is addressed absolutely. The full redraw docks, grows, shrinks and
+        clears as the policies say, trims each row to its content (the terminal's erase has
+        cleared the rest) so a resize's reflow is predictable, resets the style after any row
+        which emitted colour so nothing bleeds, and parks the cursor at the caret cell —
+        hidden or not — so a later resize can ask where the block went.
+    entry #finish   drops the cursor onto a fresh line below the block and re-shows it
+        Called when the form ends, so the following output continues after the rendered
+        block, like a submitted prompt. Under `Anchoring.Fullscreen` it also leaves
+        the alternate screen buffer, restoring what was there before.
+
+    entry .Anchoring   where an inline block lives on screen, and what it does when the terminal resizes
+      detail
+          Read from context by `Block`, `conduct` and `layout`. `TopAfterResize`, the
+          default (`.default`, in the companion), starts bottom-docked — the block appears
+          inline beneath the shell command — and on the first resize recovers the block's
+          position from the terminal's cursor reply if it can, otherwise switches, once and
+          for good, to being pinned to the top rows and clears the screen, because a
+          bottom-docked block leaves a gap and strands a ghost when the terminal grows taller,
+          whereas a top-anchored one is simply overdrawn in place. `BottomDocked` never
+          switches: it clears a bottom band and re-docks on every resize. `TopAnchored` is
+          pinned to rows 1 to the block's height from the first frame. `Fullscreen` takes over
+          the alternate screen buffer, top-anchored, and restores the previous screen on
+          `finish`. `Flow` renders relative to the cursor, flowing with prior output, never
+          docking to an edge: growing scrolls the screen naturally and shrinking clears the
+          freed rows below.
+
+          ```scala fuel
+          alternative Default
+            code
+                locally:
+                  given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+                  val root = Tui.Block(3, 4)
+                  root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+                  // rows 3–4 of the 4-row terminal
+          alternative Top-anchored
+            code
+                locally:
+                  import inlineAnchoring.topAnchoring
+                  given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+                  val root = Tui.Block(3, 4)
+                  root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+                  // rows 1–2
+          alternative Bottom-docked
+            code
+                locally:
+                  import inlineAnchoring.bottomDockedAnchoring
+                  given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+                  val root = Tui.Block(3, 4)
+                  root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+                  // rows 3–4, and still rows 3–4 after a resize
+          alternative Fullscreen
+            code
+                locally:
+                  import inlineAnchoring.fullscreenAnchoring
+                  given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+                  val root = Tui.Block(3, 4)
+                  root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+                  root.finish()   // leaves the alternate screen, restoring what was there
+          ##
+          ```
+      refer ultimatum.inlineAnchoring
+      refer ultimatum.Tui.Block
+      entry .default   the given in implicit scope when none is imported: `TopAfterResize`
+    entry .Growth   what a bottom-docked inline block does when a frame is taller than the last
+      detail
+          `ScrollIntoScrollback`, the default (`.default`), scrolls the screen up by the extra
+          rows, pushing what was above into the scrollback, so the block stays docked at the
+          bottom and nothing above it is overwritten. `ClampToScreen` grows upward in place,
+          overwriting the rows above without touching the scrollback. Imported by name from
+          `inlineGrowth`; read by `Block` when it is built.
+      refer ultimatum.inlineGrowth
+      entry .default   the given in implicit scope when none is imported: `ScrollIntoScrollback`
+    entry .Shrink   what an inline block does when a frame is shorter than the last
+      detail
+          `RedockBottom`, the default (`.default`), moves the block down to stay docked at the
+          bottom and clears the rows it vacated above. `KeepTop` holds the top row where the
+          taller block began and clears below it, so the block stays put and the freed space
+          becomes blank screen beneath it, with `finish` leaving the cursor right under the
+          block rather than after the vacated rows. Imported by name from `inlineShrink`; read
+          by `Block` when it is built.
+      refer ultimatum.inlineShrink
+      entry .default   the given in implicit scope when none is imported: `RedockBottom`
+  entry .Screen   the root board for fullscreen mode: a buffered grid presented by diffing against the screen
+    detail
+        The root `conduct(Tui.Occupancy.Fullscreen)` draws into, inside the alternate screen
+        buffer. Panels composite into its character grid and `#flush` presents by diffing
+        the grid against a snapshot of what the last present drew, overprinting only the
+        damaged runs: an unchanged cell is a no-op and an identical frame emits nothing at
+        all. Every present is one write, so partial frames never flash and the resize
+        size-probe cannot interleave mid-frame. The first present, and any present after
+        `invalidate` (a resize, when the terminal has reflowed whatever was on screen),
+        redraws every row at its absolute position.
+
+        ```scala
+        import soundness.*
+        import stdios.javaLangSystemStdio
+
+        val root = Tui.Screen(3, 2)
+        root.move(Prim, Prim)
+        root.put(t"ab")
+        root.flush()                // draws both rows
+        root.move(Sec, Prim)
+        root.put(t"X")
+        root.flush()                // overprints one cell
+        root.render                 // t"aX \n   "
+        ```
+
+        `Screen(terminal)` reads the terminal's size live and retains the terminal;
+        `Screen(width, height)` is a fixed-size root over the `Stdio` in scope. The grid
+        members `move`, `put`, `clear`, `clearLine`, `invalidate` and `render` are shared
+        with the other surfaces.
+    refer ultimatum.Tui.Block
+    refer ultimatum.conduct
+    entry .apply   a root over a terminal, read live, or a fixed-size root over a `Stdio`
+        `Screen(terminal)` takes the terminal's `Stdio`, `knownColumns` and `knownRows`
+        and captures the terminal; `Screen(width, height)` takes a `Stdio` and is a fresh
+        root of fixed size.
+    entry #width   the live terminal width, for the solver
+    entry #height   the live terminal height, for the solver
+    entry #reframe   re-fits the grid to the live terminal size, blanking it and invalidating the snapshot if it changed
+        Called by the driver before each solve, so the grid and the terminal only ever
+        disagree mid-resize.
+    entry #cursor   records whether the hardware cursor should be visible, applied by `flush`
+    entry #showCaret   records the caret's cell; `flush` places the hardware cursor there
+    entry #flush   presents the grid as one write: only the changed runs, or every row after `invalidate`
+    entry #finish   re-shows the hardware cursor on exit; the alternate-screen wrapper restores the screen
+
 entry .BorderStyle   the six glyphs a `border` draws with: two rules and four corners
   detail
       A `BorderStyle` names a horizontal rule, a vertical rule and the top-left, top-right,
@@ -703,241 +900,43 @@ entry .FlowExtent   a `Board` confined to a rectangle of a parent surface, backe
   entry #in   the standard input stream of the extent as a `Stdio`: muted
   entry #print   the `Stdio` write: lays text out through the same cursor model as `put`
 
-entry .InlineRoot   the root board for inline mode: a block presented at the cursor by absolute addressing
-  detail
-      The root `conduct(Tui.Occupancy.Inline)` and `layout` draw into. Panels composite into
-      its character grid and `#flush` presents the grid as one write, each row at an
-      absolute screen row, so a redraw always lands in the same place and never drifts —
-      the property a relative, cursor-tracking present loses the moment a resize reflows
-      the lines already on screen. A geometry-stable re-present diffs against a snapshot
-      of what the last present drew and overprints only the cells which changed; an
-      identical frame emits nothing.
-
-      How the block behaves is governed by three policies read from context when the root
-      is built. `Anchoring` says where the block lives: under the default
-      `TopAfterResize` it is bottom-docked on launch, appearing beneath the shell command,
-      and on the first resize it tries to recover its position from the terminal's reply
-      to a cursor query, falling back to pinning itself to the top rows and clearing the
-      screen. `Growth` says what a taller frame does while bottom-docked (scroll the
-      screen into scrollback, or grow upward in place); `Shrink` what a shorter one
-      does (re-dock at the bottom, or hold the top row). Each is defaulted in its
-      companion and overridden by one import from `inlineAnchoring`, `inlineGrowth` or
-      `inlineShrink`.
-
-      ```scala
-      import soundness.*
-      import stdios.javaLangSystemStdio
-
-      val root = InlineRoot(3, 4)
-      root.reframe(3, 2)
-      root.move(Prim, Prim)
-      root.put(t"ab\ncd")
-      root.flush()
-      root.finish()
-      ```
-
-      `InlineRoot(terminal)` reads the terminal's columns and rows live, so a resize is
-      reflected on the next frame, and retains the terminal; `InlineRoot(width, height)`
-      is a fixed-size root over the `Stdio` in scope, for testing. An oversize block is
-      clamped to the terminal height. The grid members `width`, `height`, `move`, `put`,
-      `clear`, `clearLine`, `invalidate` (which marks the next present as a full resize
-      repaint; the form driver calls it on every `WindowSize` event) and `render` are
-      shared with the other surfaces.
-  refer ultimatum.InlineRoot.Anchoring
-  refer ultimatum.InlineRoot.Growth
-  refer ultimatum.InlineRoot.Shrink
-  refer ultimatum.ScreenRoot
-  entry .apply   a root over a terminal, read live, or a fixed-size root over a `Stdio`
-      `InlineRoot(terminal)` takes the three inline policies from context and the
-      terminal's `Stdio`, `knownColumns` and `knownRows`, re-read every frame; its result
-      captures the terminal. `InlineRoot(width, height)` takes a `Stdio` and the policies
-      from context and is a fresh root of fixed size.
-  entry #anchor   stashes the terminal's reply to the resize cursor query, for the next resized present
-      `anchor(row, column)` records where the terminal left the parked cursor after
-      reflowing the screen on a resize (one-based screen coordinates). The next present
-      after `invalidate` uses it to compute where the old block's residue now begins —
-      modelling both a reflowing terminal, which re-wraps each line, and a truncating one,
-      which clips in place, and trusting whichever model predicts the reply's column —
-      clears from there and re-docks, so the scrollback above the block survives. A reply
-      matching neither model, or no reply, falls back to the policy's full clear. The
-      anchor is consumed by that present, used or not. `Form` does this plumbing itself.
-  entry #width   the live width, from the terminal, re-read every frame
-  entry #reframe   resizes the grid to the measured block height, clamped to the terminal's rows
-      `reframe(width, height)` reallocates and blanks the grid before each frame is
-      composited; the driver calls it with the height the content measures.
-  entry #cursor   records whether the hardware cursor should be visible, applied by `flush`
-  entry #reset   forgets everything recorded about what is on screen, so the next frame is a first frame
-      After the caller has cleared the screen itself, this makes the next present render
-      at the current cursor as if nothing had been drawn, rather than relative to or
-      docked against a prior block.
-  entry #showCaret   records the caret's block-local cell; `flush` places the hardware cursor there
-  entry #flush   presents the grid as one write: a diff where the geometry is unchanged, else a full redraw
-      Under `Anchoring.Flow` the block is drawn relative to the cursor; under every
-      other anchoring it is addressed absolutely. The full redraw docks, grows, shrinks and
-      clears as the policies say, trims each row to its content (the terminal's erase has
-      cleared the rest) so a resize's reflow is predictable, resets the style after any row
-      which emitted colour so nothing bleeds, and parks the cursor at the caret cell —
-      hidden or not — so a later resize can ask where the block went.
-  entry #finish   drops the cursor onto a fresh line below the block and re-shows it
-      Called when the form ends, so the following output continues after the rendered
-      block, like a submitted prompt. Under `Anchoring.Fullscreen` it also leaves
-      the alternate screen buffer, restoring what was there before.
-
-  entry .Anchoring   where an inline block lives on screen, and what it does when the terminal resizes
-    detail
-        Read from context by `InlineRoot`, `conduct` and `layout`. `TopAfterResize`, the
-        default (`.default`, in the companion), starts bottom-docked — the block appears
-        inline beneath the shell command — and on the first resize recovers the block's
-        position from the terminal's cursor reply if it can, otherwise switches, once and
-        for good, to being pinned to the top rows and clears the screen, because a
-        bottom-docked block leaves a gap and strands a ghost when the terminal grows taller,
-        whereas a top-anchored one is simply overdrawn in place. `BottomDocked` never
-        switches: it clears a bottom band and re-docks on every resize. `TopAnchored` is
-        pinned to rows 1 to the block's height from the first frame. `Fullscreen` takes over
-        the alternate screen buffer, top-anchored, and restores the previous screen on
-        `finish`. `Flow` renders relative to the cursor, flowing with prior output, never
-        docking to an edge: growing scrolls the screen naturally and shrinking clears the
-        freed rows below.
-
-        ```scala fuel
-        alternative Default
-          code
-              locally:
-                given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-                val root = InlineRoot(3, 4)
-                root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
-                // rows 3–4 of the 4-row terminal
-        alternative Top-anchored
-          code
-              locally:
-                import inlineAnchoring.topAnchoring
-                given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-                val root = InlineRoot(3, 4)
-                root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
-                // rows 1–2
-        alternative Bottom-docked
-          code
-              locally:
-                import inlineAnchoring.bottomDockedAnchoring
-                given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-                val root = InlineRoot(3, 4)
-                root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
-                // rows 3–4, and still rows 3–4 after a resize
-        alternative Fullscreen
-          code
-              locally:
-                import inlineAnchoring.fullscreenAnchoring
-                given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-                val root = InlineRoot(3, 4)
-                root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
-                root.finish()   // leaves the alternate screen, restoring what was there
-        ##
-        ```
-    refer ultimatum.inlineAnchoring
-    refer ultimatum.InlineRoot
-    entry .default   the given in implicit scope when none is imported: `TopAfterResize`
-  entry .Growth   what a bottom-docked inline block does when a frame is taller than the last
-    detail
-        `ScrollIntoScrollback`, the default (`.default`), scrolls the screen up by the extra
-        rows, pushing what was above into the scrollback, so the block stays docked at the
-        bottom and nothing above it is overwritten. `ClampToScreen` grows upward in place,
-        overwriting the rows above without touching the scrollback. Imported by name from
-        `inlineGrowth`; read by `InlineRoot` when it is built.
-    refer ultimatum.inlineGrowth
-    entry .default   the given in implicit scope when none is imported: `ScrollIntoScrollback`
-  entry .Shrink   what an inline block does when a frame is shorter than the last
-    detail
-        `RedockBottom`, the default (`.default`), moves the block down to stay docked at the
-        bottom and clears the rows it vacated above. `KeepTop` holds the top row where the
-        taller block began and clears below it, so the block stays put and the freed space
-        becomes blank screen beneath it, with `finish` leaving the cursor right under the
-        block rather than after the vacated rows. Imported by name from `inlineShrink`; read
-        by `InlineRoot` when it is built.
-    refer ultimatum.inlineShrink
-    entry .default   the given in implicit scope when none is imported: `RedockBottom`
-
-entry .ScreenRoot   the root board for fullscreen mode: a buffered grid presented by diffing against the screen
-  detail
-      The root `conduct(Tui.Occupancy.Fullscreen)` draws into, inside the alternate screen
-      buffer. Panels composite into its character grid and `#flush` presents by diffing
-      the grid against a snapshot of what the last present drew, overprinting only the
-      damaged runs: an unchanged cell is a no-op and an identical frame emits nothing at
-      all. Every present is one write, so partial frames never flash and the resize
-      size-probe cannot interleave mid-frame. The first present, and any present after
-      `invalidate` (a resize, when the terminal has reflowed whatever was on screen),
-      redraws every row at its absolute position.
-
-      ```scala
-      import soundness.*
-      import stdios.javaLangSystemStdio
-
-      val root = ScreenRoot(3, 2)
-      root.move(Prim, Prim)
-      root.put(t"ab")
-      root.flush()                // draws both rows
-      root.move(Sec, Prim)
-      root.put(t"X")
-      root.flush()                // overprints one cell
-      root.render                 // t"aX \n   "
-      ```
-
-      `ScreenRoot(terminal)` reads the terminal's size live and retains the terminal;
-      `ScreenRoot(width, height)` is a fixed-size root over the `Stdio` in scope. The grid
-      members `move`, `put`, `clear`, `clearLine`, `invalidate` and `render` are shared
-      with the other surfaces.
-  refer ultimatum.InlineRoot
-  refer ultimatum.conduct
-  entry .apply   a root over a terminal, read live, or a fixed-size root over a `Stdio`
-      `ScreenRoot(terminal)` takes the terminal's `Stdio`, `knownColumns` and `knownRows`
-      and captures the terminal; `ScreenRoot(width, height)` takes a `Stdio` and is a fresh
-      root of fixed size.
-  entry #width   the live terminal width, for the solver
-  entry #height   the live terminal height, for the solver
-  entry #reframe   re-fits the grid to the live terminal size, blanking it and invalidating the snapshot if it changed
-      Called by the driver before each solve, so the grid and the terminal only ever
-      disagree mid-resize.
-  entry #cursor   records whether the hardware cursor should be visible, applied by `flush`
-  entry #showCaret   records the caret's cell; `flush` places the hardware cursor there
-  entry #flush   presents the grid as one write: only the changed runs, or every row after `invalidate`
-  entry #finish   re-shows the hardware cursor on exit; the alternate-screen wrapper restores the screen
-
 entry .inlineAnchoring   the five anchoring policies for an inline block, each a given to import by name
   detail
-      `InlineRoot.Anchoring.default` (`TopAfterResize`) applies when nothing is imported; one of
-      these replaces it for the `InlineRoot`, `conduct(Tui.Occupancy.Inline)` or `layout` call
+      `Tui.Block.Anchoring.default` (`TopAfterResize`) applies when nothing is imported; one of
+      these replaces it for the `Tui.Block`, `conduct(Tui.Occupancy.Inline)` or `layout` call
       in scope. `import soundness.*` does not bring them in.
 
       ```scala
       import soundness.*
       import inlineAnchoring.topAnchoring
       ```
-  entry .bottomDockedAnchoring   `InlineRoot.Anchoring.BottomDocked`: always docked at the bottom, re-docking on every resize
-  entry .topAnchoring   `InlineRoot.Anchoring.TopAnchored`: pinned to the top rows from the first frame
-  entry .topAfterResizeAnchoring   `InlineRoot.Anchoring.TopAfterResize`: bottom-docked, then top-anchored after the first resize
-  entry .fullscreenAnchoring   `InlineRoot.Anchoring.Fullscreen`: the alternate screen buffer, top-anchored
-  entry .flowAnchoring   `InlineRoot.Anchoring.Flow`: drawn relative to the cursor, flowing with prior output
+  entry .bottomDockedAnchoring   `Tui.Block.Anchoring.BottomDocked`: always docked at the bottom, re-docking on every resize
+  entry .topAnchoring   `Tui.Block.Anchoring.TopAnchored`: pinned to the top rows from the first frame
+  entry .topAfterResizeAnchoring   `Tui.Block.Anchoring.TopAfterResize`: bottom-docked, then top-anchored after the first resize
+  entry .fullscreenAnchoring   `Tui.Block.Anchoring.Fullscreen`: the alternate screen buffer, top-anchored
+  entry .flowAnchoring   `Tui.Block.Anchoring.Flow`: drawn relative to the cursor, flowing with prior output
 
 entry .inlineGrowth   the two growth policies for a bottom-docked inline block, each a given to import by name
   detail
-      `InlineRoot.Growth.default` (`ScrollIntoScrollback`) applies when nothing is imported.
+      `Tui.Block.Growth.default` (`ScrollIntoScrollback`) applies when nothing is imported.
 
       ```scala
       import soundness.*
       import inlineGrowth.clampedGrowth
       ```
-  entry .scrollbackGrowth   `InlineRoot.Growth.ScrollIntoScrollback`: scroll the screen up, pushing rows into scrollback
-  entry .clampedGrowth   `InlineRoot.Growth.ClampToScreen`: grow upward in place, overwriting the rows above
+  entry .scrollbackGrowth   `Tui.Block.Growth.ScrollIntoScrollback`: scroll the screen up, pushing rows into scrollback
+  entry .clampedGrowth   `Tui.Block.Growth.ClampToScreen`: grow upward in place, overwriting the rows above
 
 entry .inlineShrink   the two shrink policies for an inline block, each a given to import by name
   detail
-      `InlineRoot.Shrink.default` (`RedockBottom`) applies when nothing is imported.
+      `Tui.Block.Shrink.default` (`RedockBottom`) applies when nothing is imported.
 
       ```scala
       import soundness.*
       import inlineShrink.keepTopShrink
       ```
-  entry .redockBottomShrink   `InlineRoot.Shrink.RedockBottom`: re-dock at the bottom, clearing the rows vacated above
-  entry .keepTopShrink   `InlineRoot.Shrink.KeepTop`: hold the top row and clear below it
+  entry .redockBottomShrink   `Tui.Block.Shrink.RedockBottom`: re-dock at the bottom, clearing the rows vacated above
+  entry .keepTopShrink   `Tui.Block.Shrink.KeepTop`: hold the top row and clear below it
 
 entry .Fixture   a live element the layout can host: it keeps state, renders itself and reports its size
   detail
@@ -1088,7 +1087,7 @@ entry .ScrollFixture   a viewport over content taller than its space, with a scr
 entry .Form   the interactive driver: re-solves, repaints and routes events over a pane tree
   detail
       A `Form` is what `conduct` builds and runs; it is used directly to drive a layout
-      over a root of one's own choosing — an in-memory `FlowExtent` or `ScreenRoot` for a
+      over a root of one's own choosing — an in-memory `FlowExtent` or `Tui.Screen` for a
       test, with a hand-made event iterator. `Form(root, mode, pane, wake, throttle,
       debounce, scheduleWake)` takes the `Board` to draw on, the `Occupancy`, the pane
       tree, a `wake` callback which puts a `Terminal.Info.Redraw` on the event spool (bound
@@ -1142,7 +1141,7 @@ entry .Form   the interactive driver: re-solves, repaints and routes events over
       `Terminal.Info.CursorPosition` is stashed as the resize anchor;
       `Terminal.Info.Redraw` repaints (or reschedules its wake while a resize is still
       pending); any other `Interrupt` is ignored; and any other event goes to the focused
-      fixture's `handle`, whose pane is then repainted. An `InlineRoot` is `finish`ed when
+      fixture's `handle`, whose pane is then repainted. An `Tui.Block` is `finish`ed when
       the loop ends. The events are a murmuration `Iterator`, so a hand-rolled source is
       `new Iterator[Terminal.Event]` with `advance()` and `current`, or `list.iterator`.
 

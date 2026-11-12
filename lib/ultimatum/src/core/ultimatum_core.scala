@@ -172,9 +172,9 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   ( using terminal: Terminal,
           monitor:   Monitor,
           probate:   Probate,
-          anchoring: InlineRoot.Anchoring,
-          growth:    InlineRoot.Growth,
-          shrink:    InlineRoot.Shrink )
+          anchoring: Tui.Block.Anchoring,
+          growth:    Tui.Block.Growth,
+          shrink:    Tui.Block.Shrink )
 :   Unit =
 
   // A container mutation wakes the loop by putting a redraw event on the spool.
@@ -201,7 +201,7 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
           // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
           // first present; `finish` re-shows the cursor on the way out.
           // The root only reads the same single-owner terminal; no aliased writer.
-          val root = ScreenRoot(terminal)
+          val root = Tui.Screen(terminal)
           root.cursor(false)
 
           // No throttle or debounce: a fullscreen resize repaints immediately (the alternate screen
@@ -213,7 +213,7 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
     case Occupancy.Inline =>
       // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
       // so a drag must pause before the block is redrawn; typing stays immediate.
-      val root = InlineRoot(terminal)
+      val root = Tui.Block(terminal)
       Form(root, mode, pane, wake, 100, 50, scheduleWake).run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
@@ -239,16 +239,16 @@ def dirtyCells
   moved.result().to(Set) + changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
-// rectangle (no event loop). An `InlineRoot` is sized to the height its content
+// rectangle (no event loop). An `Tui.Block` is sized to the height its content
 // needs and presented at the cursor; any other canvas fills its own height.
 def paint(root: Board^, pane: Pane): Unit =
   val height = root match
-    case _: InlineRoot => pane.frame.measure(Arrangement.Stack).min
+    case _: Tui.Block => pane.frame.measure(Arrangement.Stack).min
     case _             => root.height
 
   root match
-    case inline: InlineRoot => inline.reframe(root.width, height)
-    case screen: ScreenRoot => screen.reframe()
+    case inline: Tui.Block => inline.reframe(root.width, height)
+    case screen: Tui.Screen => screen.reframe()
     case _                  => ()
 
   val placement = pane.frame.arrange(Region(0, 0, root.width, height))
@@ -278,26 +278,26 @@ def paint(root: Board^, pane: Pane): Unit =
 // the cursor on a fresh line below it.
 def layout(pane: Pane)
   ( using terminal:  Terminal,
-          anchoring: InlineRoot.Anchoring,
-          growth:    InlineRoot.Growth,
-          shrink:    InlineRoot.Shrink )
+          anchoring: Tui.Block.Anchoring,
+          growth:    Tui.Block.Growth,
+          shrink:    Tui.Block.Shrink )
 :   Unit =
 
-  val root = InlineRoot(terminal)
+  val root = Tui.Block(terminal)
   paint(root, pane)
   root.finish()
 
 package inlineAnchoring:
-  given bottomDockedAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.BottomDocked
-  given topAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.TopAnchored
-  given topAfterResizeAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.TopAfterResize
-  given fullscreenAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.Fullscreen
-  given flowAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.Flow
+  given bottomDockedAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.BottomDocked
+  given topAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.TopAnchored
+  given topAfterResizeAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.TopAfterResize
+  given fullscreenAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.Fullscreen
+  given flowAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.Flow
 
 package inlineGrowth:
-  given scrollbackGrowth: InlineRoot.Growth = InlineRoot.Growth.ScrollIntoScrollback
-  given clampedGrowth: InlineRoot.Growth = InlineRoot.Growth.ClampToScreen
+  given scrollbackGrowth: Tui.Block.Growth = Tui.Block.Growth.ScrollIntoScrollback
+  given clampedGrowth: Tui.Block.Growth = Tui.Block.Growth.ClampToScreen
 
 package inlineShrink:
-  given redockBottomShrink: InlineRoot.Shrink = InlineRoot.Shrink.RedockBottom
-  given keepTopShrink: InlineRoot.Shrink = InlineRoot.Shrink.KeepTop
+  given redockBottomShrink: Tui.Block.Shrink = Tui.Block.Shrink.RedockBottom
+  given keepTopShrink: Tui.Block.Shrink = Tui.Block.Shrink.KeepTop

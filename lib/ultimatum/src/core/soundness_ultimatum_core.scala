@@ -35,8 +35,8 @@ package soundness
 export
   ultimatum
   . { BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent, conduct, Focus,
-      Form, grid, InlineRoot, layout, menu,
-      MenuField, paint, panel, ScreenRoot, scrolling, ScrollFixture, stack, strip, Tick, Tui }
+      Form, grid, layout, menu,
+      MenuField, paint, panel, scrolling, ScrollFixture, stack, strip, Tick, Tui }
 
 package inlineAnchoring:
   export

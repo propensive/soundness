@@ -657,7 +657,7 @@ No name is now exported into `package soundness` by more than one library.
 |---|---|
 | anthology.core | `CompileEvent→Compiler.Event`, `CompileProcess→Compiler.Process`, `CompileResult→Compiler.Result`, `CompileProgress→Compiler.Progress`; fold `CompileEvents` into `Compiler.Event`'s companion (`CompileFlag` is R6) — **done** |
 | escritoire.core | `TableCell`, `TableRow`, `TableSection`, `TableStyle`, `TableRelabelling` → `Table.*` — **done** |
-| ultimatum.core | `InlineAnchoring`, `InlineGrowth`, `InlineShrink` → `InlineRoot.*` (each enum's companion carries its default, and moves with it) — **done** |
+| ultimatum.core | `InlineAnchoring`, `InlineGrowth`, `InlineShrink` → `InlineRoot.*` — **done**, and then `InlineRoot` itself became `Tui.Block` (with `ScreenRoot` as `Tui.Screen`), so these are `Tui.Block.Anchoring` and so on |
 | dendrology.tree | `TreeTile→TreeDiagram.Tile`, `TreeStyle→TreeDiagram.Style`, `TextualTreeStyle→TreeDiagram.TextualStyle` — **done** |
 | dendrology.dag | `DagTile`, `DagStyle`, `TextualDagStyle` → `DagDiagram.*`; `LaneDagStyle`, `TextualLaneDagStyle` → `LaneDagDiagram.*` (not `Dag`, which is acyclicity's) — **done** |
 | espionage.core | `AcpAgent→Acp.Agent`, `AcpClient→Acp.Client`; the split traits nest beneath them (`Acp.Agent.Lifecycle`, `Acp.Client.Fs`, …). The agent-location enum that held `Acp.Agent` becomes `Acp.Endpoint` (ruling 3) — **done** |

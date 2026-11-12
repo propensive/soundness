@@ -43,7 +43,7 @@ import vacuous.*
 import yossarian.*
 
 // The shared styled-grapheme grid behind `FlowExtent` (a clipped sub-rectangle that
-// composites onto a parent) and `InlineRoot` (the inline-mode root that presents its
+// composites onto a parent) and `Tui.Block` (the inline-mode root that presents its
 // grid at the cursor). Cells are stored in a `yossarian.Screen[StyleWord]`, so each
 // holds one grapheme cluster with its own style: writes flow within the grid, wrap at
 // the grid width (counting display columns, so a wide CJK glyph takes two cells), and
@@ -93,7 +93,7 @@ extends Board:
   def height: Int = gridHeight
 
   // Reallocate the grid to a new size, blanking it and homing the cursor. Used by
-  // `InlineRoot` to resize to the measured block height each frame.
+  // `Tui.Block` to resize to the measured block height each frame.
   protected update def reshape(width2: Int, height2: Int): Unit =
     gridWidth = width2.max(1)
     gridHeight = height2.max(1)

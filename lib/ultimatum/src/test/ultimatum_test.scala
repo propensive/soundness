@@ -406,7 +406,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a styled cell emits its colour as SGR"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1)
         root.move(Prim, Prim)
         root.put(e"$Bold(hi)")
@@ -420,7 +420,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a first inline render docks the block to the bottom rows"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"hi")
@@ -431,7 +431,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a growing block scrolls one more row into the dock"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
@@ -443,7 +443,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a shrinking block clears the row it vacated above"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
@@ -453,7 +453,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the caret is placed at its absolute screen cell"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab\ncd")
@@ -465,7 +465,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"finish drops the cursor onto a fresh line below the block"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
@@ -478,7 +478,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the first resize top-anchors the block, clearing the screen"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.invalidate()
@@ -492,7 +492,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.bottomDockedAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.invalidate()
@@ -506,7 +506,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.topAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
@@ -516,7 +516,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.fullscreenAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?1049h\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
@@ -526,7 +526,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.fullscreenAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
@@ -539,7 +539,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineShrink.keepTopShrink
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
@@ -552,7 +552,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineGrowth.clampedGrowth
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
@@ -572,7 +572,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         ( using Stdio, ji.ByteArrayOutputStream )
       :   Text =
 
-        val root = InlineRoot(width, 4)
+        val root = Tui.Block(width, 4)
         root.reframe(width, height); root.move(Prim, Prim); root.put(first); root.flush()
         summon[ji.ByteArrayOutputStream].reset()
         root.reframe(width, height); root.move(Prim, Prim); root.put(second); root.flush()
@@ -635,7 +635,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio =
           Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(e"$Bold(a)b"); root.flush()
@@ -647,7 +647,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a caret-only move emits just the caret placement"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd")
@@ -671,7 +671,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
         bytes.reset()
         w() = 4
@@ -688,7 +688,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
@@ -706,7 +706,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
@@ -724,7 +724,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
@@ -740,7 +740,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(4)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
         bytes.reset()
         w() = 6
@@ -756,7 +756,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
         w() = 4
         root.invalidate()
@@ -775,7 +775,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(4)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab中\nhi")
         root.showCaret(Prim, Sec)
         root.flush()
@@ -793,7 +793,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a row ending in a wide glyph trims to include the whole glyph"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(4, 4)
+        val root = Tui.Block(4, 4)
         root.reframe(4, 1); root.move(Prim, Prim); root.put(t"a中"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[9999B\r\n\e[4;1H\e[2Ka中\r\e[4;1H\e[?25h")
@@ -804,7 +804,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio =
           Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
-        val root = InlineRoot(4, 4)
+        val root = Tui.Block(4, 4)
         root.reframe(4, 1); root.move(Prim, Prim); root.put(e"a$Bold( )"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_.contains(t"\e[1m"))
@@ -821,7 +821,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
 
         val events = new Iterator[Terminal.Event]:
           // Capture-carrying elements do not flow through the opaque List (boxing), so
@@ -852,7 +852,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"typing during a pending resize does not present"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = new InlineRoot(() => 6, () => 4)
+        val root = new Tui.Block(() => 6, () => 4)
 
         val events = List[Terminal.Event](
           Interrupt.Winch,
@@ -871,7 +871,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"move and put emit nothing until flush"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab")
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -880,7 +880,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the first flush redraws every row absolutely"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab")
         root.flush()
@@ -890,7 +890,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"an identical re-flush emits nothing at all"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.flush()
@@ -900,7 +900,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a single changed cell is overprinted alone"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.move(Sec, Prim); root.put(t"X"); root.flush()
@@ -913,7 +913,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"invalidate forces the next flush to redraw in full"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.invalidate()
@@ -924,7 +924,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"clearing the grid blanks exactly the cells that had content"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.clear()
@@ -939,7 +939,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val liveRows = Atomic.Int(4)
-        val root = new ScreenRoot(() => 10, () => liveRows())
+        val root = new Tui.Screen(() => 10, () => liveRows())
 
         val resize = new Iterator[Terminal.Event]:
           private var pending = true
@@ -1661,7 +1661,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       def wakes(pane: Pane): List[Long] =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val recorded = scala.collection.mutable.ListBuffer[Long]()
-        val root = ScreenRoot(20, 3)
+        val root = Tui.Screen(20, 3)
         Form(root, Occupancy.Fullscreen, pane, () => (), 0, 0, delay => { recorded += delay; () })
         . run(Iterator(Keypress.Escape))
 

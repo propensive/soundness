@@ -214,8 +214,8 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
       case Occupancy.Inline     => frame.measure(Arrangement.Stack).min
 
     root match
-      case inline: InlineRoot => inline.reframe(root.width, height)
-      case screen: ScreenRoot => screen.reframe()
+      case inline: Tui.Block => inline.reframe(root.width, height)
+      case screen: Tui.Screen => screen.reframe()
       case _                  => ()
 
     val regions = frame.arrange(Region(0, 0, root.width, height)).cells
@@ -370,12 +370,12 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         resizeGrace = false
 
         root match
-          case inline: InlineRoot =>
+          case inline: Tui.Block =>
             anchor.let: (row, column) => inline.anchor(row, column)
             anchor = Unset
             inline.invalidate()
 
-          case screen: ScreenRoot =>
+          case screen: Tui.Screen =>
             screen.invalidate()
 
           case _ =>
@@ -473,5 +473,5 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
               else requestRefresh(changed)
 
     root match
-      case inline: InlineRoot => inline.finish()
+      case inline: Tui.Block => inline.finish()
       case _                  => ()
