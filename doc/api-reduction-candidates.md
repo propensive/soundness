@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **372**;
-  167 sit in a prefix family of two or more, across 48 families, and
+- exported multi-word type-level names still under review: **365**;
+  160 sit in a prefix family of two or more, across 47 families, and
   205 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -266,7 +266,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 
 | prefix | libraries | n | names |
 |---|---|---|---|
-| `Acp*` | espionage | 7 | `AcpAgent`, `AcpAgentLifecycle`, `AcpAgentSession`, `AcpClient`, `AcpClientFs`, `AcpClientSession`, `AcpClientTerminal` |
 | `Attribute*` | cataclysm | 2 | `AttributeMatcher`, `AttributeTest` |
 | `Block*` | enigmatic, galilei | 4 | `BlockCipher`, `BlockCipherMode`, `BlockCipherPadding`, `BlockDevice` |
 | `Box*` | tessellate | 2 | `BoxDrawing`, `BoxLine` |

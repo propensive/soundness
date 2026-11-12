@@ -52,7 +52,7 @@ object DemoAcpClient:
   def main(args: Array[Text]): Unit = cli:
     execute:
       supervise:
-        Acp.connect(Acp.Agent(sh"claude-code-acp")):
+        Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
           updated:
             update match
               case AgentMessageChunk(TextContent(text, _)) => Out.print(text)

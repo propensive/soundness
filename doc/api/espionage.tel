@@ -36,7 +36,7 @@ detail
     import workingDirectories.javaBaseWorkingDirectory
 
     supervise:
-      Acp.connect(Acp.Agent(sh"claude-code-acp")):
+      Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
         Acp.updated:
           Acp.update match
             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
@@ -78,7 +78,7 @@ detail
 
     The library has two source sets:
 
-    - `espionage.core` — `Acp` and the `@rpc` wire traits (`AcpAgent`, `AcpClient` and their
+    - `espionage.core` — `Acp` and the `@rpc` wire traits (`Acp.Agent`, `Acp.Client` and their
       parts). It is built for the JVM only, since it depends on obligatory's JSON-RPC
       support, and needs capture checking.
     - `espionage.demo` — `DemoAcpClient`, a complete command-line client, not published as a
@@ -112,7 +112,7 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
         accessors a handler reads (`sessionId`, `update`, `toolCall`, `options`, `path`,
         `line`, `limit`, `content`), the registration combinators (`updated`, `permission`,
         `readFile`, `writeFile`, `terminals`, `capabilities`) and the `Registry` they write to;
-      - the **connection side**: `Agent`, which says where the agent is, `connect`, which
+      - the **connection side**: `Endpoint`, which says where the agent is, `connect`, which
         opens the exchange, `Connection`, the handle it lends, reached as `connection`, and
         `Observer`, which sees the raw traffic;
       - `Error`, which the connection raises and a handler emits.
@@ -799,7 +799,7 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
         import workingDirectories.javaBaseWorkingDirectory
 
         val reason: Acp.StopReason = supervise:
-          Acp.connect(Acp.Agent(sh"claude-code-acp")):
+          Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
             Acp.updated:
               Acp.update match
                 case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
@@ -827,7 +827,7 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
 
         `observer`, if given, sees every message in both directions as it crosses the
         transport; the default is `Acp.Observer.Silent`.
-    refer espionage.Acp.Agent
+    refer espionage.Acp.Endpoint
     refer espionage.Acp.Connection
     refer espionage.Acp.Registry
     refer espionage.Acp.Observer
@@ -858,28 +858,28 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
     entry #received   called with each message read from the agent, before it is parsed
     entry #sent   called with each message sent to the agent, as its encoded body, before it is framed
 
-  entry .Agent   an agent this process can speak to: a command to launch, or a pair of streams
+  entry .Endpoint   where to find an agent this process can speak to: a command to launch, or a pair of streams
     detail
         A plain value saying where the agent is, holding no channel of its own: the channel is
-        opened when `Acp.connect` begins and closed when it ends. `Agent.Process(command)` is
+        opened when `Acp.connect` begins and closed when it ends. `Endpoint.Process(command)` is
         an agent launched as a subprocess, whose standard input and output carry the protocol,
-        and `Agent.Streams(input, output)` one already running behind a pair of `java.io`
-        streams — in this process, behind a socket, or a fixture in a test. `Agent(command)`
-        and `Agent.streams(input, output)` build each, widened to `Agent`.
+        and `Endpoint.Streams(input, output)` one already running behind a pair of `java.io`
+        streams — in this process, behind a socket, or a fixture in a test. `Endpoint(command)`
+        and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
 
         ```scala fuel
         typecheck
         ##
         import soundness.*
 
-        val launched: Acp.Agent = Acp.Agent(sh"claude-code-acp")
-        val gemini: Acp.Agent = Acp.Agent(sh"gemini --experimental-acp")
+        val launched: Acp.Endpoint = Acp.Endpoint(sh"claude-code-acp")
+        val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
         ```
 
         A subprocess agent is launched with a silent exec log, since its standard output is
         the wire, and is killed, not waited for, when the connection ends.
     refer espionage.Acp.connect
-    entry .apply   an agent launched as a subprocess: `Acp.Agent(command)`
+    entry .apply   an agent launched as a subprocess: `Acp.Endpoint(command)`
         Takes a guillotine `Command`, written with `sh"…"`.
     entry .streams   an agent already running behind an input and an output stream
         Which stream is which is from this process's point of view: `input` is what the agent
@@ -999,15 +999,15 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
 
         Every request raises `Acp.Error`, through the `Tactic[Acp.Error]` in scope, for an
         error response. The connection is obligatory's `JsonRpc` underneath, with `#Origin`
-        the agent's interface `AcpAgent`, and `#send` sends a message of a method this library
+        the agent's interface `Acp.Agent`, and `#send` sends a message of a method this library
         does not model.
     refer espionage.Acp.connect
-    refer espionage.AcpAgent
-    entry #Origin   the far end of the connection: `AcpAgent`
-    entry #lifecycle   the generated client for `AcpAgentLifecycle`: `initialize` and `authenticate`
+    refer espionage.Acp.Agent
+    entry #Origin   the far end of the connection: `Acp.Agent`
+    entry #lifecycle   the generated client for `Acp.Agent.Lifecycle`: `initialize` and `authenticate`
         Calling it directly bypasses the error conversion and version check the connection's
         own methods make.
-    entry #sessions   the generated client for `AcpAgentSession`: the `session/*` methods
+    entry #sessions   the generated client for `Acp.Agent.Session`: the `session/*` methods
         As `#lifecycle`, prefer the connection's own methods.
     entry #send   sends a message exactly as given, minting no id and awaiting no answer
         The raw seam for an extension method or a notification this library does not model.
@@ -1044,45 +1044,40 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
     entry #agentCapabilities   what the agent reported it can do, at initialization
     entry #authMethods   the ways the agent offered to authenticate, at initialization
 
-entry .AcpAgentLifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
-  detail
-      One of the `@rpc` traits which, together, make up the agent's interface `AcpAgent`;
-      split out so that obligatory's `JsonRpc.proxy` generates a class of manageable size per
-      trait. `Acp.Connection#lifecycle` is the generated client for it. A program needs it
-      only to build a connection of its own; `Acp.Connection` wraps it.
-  refer espionage.AcpAgent
-  entry #initialize   sends `initialize` with the protocol version and client capabilities
-  entry #authenticate   sends `authenticate` with an auth method's id
+  entry .Agent   the agent's whole interface, as the client calls it: `Acp.Agent.Lifecycle` and `Acp.Agent.Session`
+      The union of the client→agent wire traits, and the `JsonRpc` `Origin` of an
+      `Acp.Connection`. Nothing implements it on the client side: it is the type of the far
+      end.
+    entry .Lifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
+      detail
+          One of the `@rpc` traits which, together, make up the agent's interface `Acp.Agent`;
+          split out so that obligatory's `JsonRpc.proxy` generates a class of manageable size per
+          trait. `Acp.Connection#lifecycle` is the generated client for it. A program needs it
+          only to build a connection of its own; `Acp.Connection` wraps it.
+      refer espionage.Acp.Agent
+      entry #initialize   sends `initialize` with the protocol version and client capabilities
+      entry #authenticate   sends `authenticate` with an auth method's id
+    entry .Session   the wire trait for the `session/*` methods the client calls on the agent
+        `session/new`, `session/load`, `session/prompt`, `session/cancel` (a notification, so
+        returning `Unit`) and `session/set_mode`, each a method of that name, taking the
+        protocol's own parameter names and types. `Acp.Connection#sessions` is the generated
+        client for it, and `Acp.Connection`'s `newSession`, `loadSession`, `prompt`, `cancel` and
+        `setMode` wrap it.
 
-entry .AcpAgentSession   the wire trait for the `session/*` methods the client calls on the agent
-    `session/new`, `session/load`, `session/prompt`, `session/cancel` (a notification, so
-    returning `Unit`) and `session/set_mode`, each a method of that name, taking the
-    protocol's own parameter names and types. `Acp.Connection#sessions` is the generated
-    client for it, and `Acp.Connection`'s `newSession`, `loadSession`, `prompt`, `cancel` and
-    `setMode` wrap it.
-
-entry .AcpAgent   the agent's whole interface, as the client calls it: `AcpAgentLifecycle` and `AcpAgentSession`
-    The union of the client→agent wire traits, and the `JsonRpc` `Origin` of an
-    `Acp.Connection`. Nothing implements it on the client side: it is the type of the far
-    end.
-
-entry .AcpClientSession   the wire trait for what the agent calls on the client about a session
-    `session/update`, the protocol's only notification in this direction, and
-    `session/request_permission`, a request the agent blocks on. Implemented by the service
-    `Acp.connect` builds, which routes them to the handlers registered with `Acp.updated` and
-    `Acp.permission`.
-
-entry .AcpClientFs   the wire trait for the agent's filesystem requests: `fs/read_text_file` and `fs/write_text_file`
-    Implemented by the service `Acp.connect` builds, which routes them to the handlers
-    registered with `Acp.readFile` and `Acp.writeFile`, and answers `MethodNotFound` for one
-    which was not registered.
-
-entry .AcpClientTerminal   the wire trait for the agent's terminal requests: `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`
-    Implemented by the service `Acp.connect` builds, which routes them to the `Acp.Terminals`
-    bundle registered with `Acp.terminals`, and answers `MethodNotFound` if none was.
-
-entry .AcpClient   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
-    The union of `AcpClientSession`, `AcpClientFs` and `AcpClientTerminal`. The service
-    `Acp.connect` builds implements it, with one generated JSON-RPC dispatcher per part, so
-    a program implements it itself only to serve the protocol by other means than
-    `Acp.connect`.
+  entry .Client   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
+      The union of `Acp.Client.Session`, `Acp.Client.Fs` and `Acp.Client.Terminal`. The service
+      `Acp.connect` builds implements it, with one generated JSON-RPC dispatcher per part, so
+      a program implements it itself only to serve the protocol by other means than
+      `Acp.connect`.
+    entry .Session   the wire trait for what the agent calls on the client about a session
+        `session/update`, the protocol's only notification in this direction, and
+        `session/request_permission`, a request the agent blocks on. Implemented by the service
+        `Acp.connect` builds, which routes them to the handlers registered with `Acp.updated` and
+        `Acp.permission`.
+    entry .Fs   the wire trait for the agent's filesystem requests: `fs/read_text_file` and `fs/write_text_file`
+        Implemented by the service `Acp.connect` builds, which routes them to the handlers
+        registered with `Acp.readFile` and `Acp.writeFile`, and answers `MethodNotFound` for one
+        which was not registered.
+    entry .Terminal   the wire trait for the agent's terminal requests: `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`
+        Implemented by the service `Acp.connect` builds, which routes them to the `Acp.Terminals`
+        bundle registered with `Acp.terminals`, and answers `MethodNotFound` if none was.
