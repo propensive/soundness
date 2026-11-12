@@ -44,12 +44,12 @@ import spectacular.*
 import symbolism.*
 
 package logFormats:
-  given teletypeableLogFormat: (palette: LogPalette) => Level is Teletypeable = level =>
+  given teletypeableLogFormat: (palette: LogPalette) => Log.Level is Teletypeable = level =>
     val color = level match
-      case Level.Fine => palette.subdued
-      case Level.Info => palette.informative
-      case Level.Warn => palette.warning
-      case Level.Fail => palette.error
+      case Log.Level.Fine => palette.subdued
+      case Log.Level.Info => palette.informative
+      case Log.Level.Warn => palette.warning
+      case Log.Level.Fail => palette.error
 
     e"${Bg(color)}[${palette.black}($Bold( ${level.show} ))]"
 

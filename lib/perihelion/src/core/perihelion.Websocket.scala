@@ -89,7 +89,7 @@ enum Message:
 // frames that the server pumps to the socket as the `101` response body
 // (mirroring Coaxial's `Duplex.send`). The reader and the handler both enqueue
 // here, so a full queue backpressures every producer.
-class Channel()(using masking: Masking, buffering: Buffering):
+class Channel()(using masking: Websocket.Masking, buffering: Buffering):
   // The endpoints are held at an AnyRef rim: capture sets do not ride fields of
   // a shared front-end object. Each has one owner by construction: producers
   // serialize through this object's lock, and the server or client pump is the
@@ -130,7 +130,8 @@ class Channel()(using masking: Masking, buffering: Buffering):
 // Reads client frames off the connection, reassembles fragmented messages,
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
 // sends Close. Protocol violations raise `Websocket.Error`.
-class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error], Masking):
+class Reader(body: Spring[Data]^, channel: Channel)
+  ( using Tactic[Websocket.Error], Websocket.Masking ):
   def messages: Chain[Message] =
     // Deferred: constructing a stream-backed `Cursor` performs its first
     // refill, which on a live connection blocks until bytes arrive. The
@@ -540,7 +541,7 @@ class Websocket[message, state]
 
 
   // A server sends unmasked frames and requires the peer's to be masked.
-  given Masking = Masking.Server
+  given Websocket.Masking = Websocket.Masking.Server
 
   given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
 
@@ -571,7 +572,7 @@ class Websocket[message, state]
       . protect:
         // Resolved locally: the class-level `Masking` given would re-capture
         // the instance under construction.
-        given Masking = Masking.Server
+        given Websocket.Masking = Websocket.Masking.Server
 
         def loop(messages: Chain[Message], state: state): state =
           messages.flow(channel0.stop() yet state):

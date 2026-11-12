@@ -39,15 +39,15 @@ import prepositional.*
 
 trait Inscribable extends Typeclass, Formal:
   private inline def inscribable: this.type = this
-  def formatter(message: Self, level: Level, timestamp: Long): Form
+  def formatter(message: Self, level: Log.Level, timestamp: Long): Form
 
   def contramap[self2](lambda: self2 => Self): (self2 is Inscribable in Form)^{this, lambda} =
     new Inscribable:
       type Self = self2
       type Form = inscribable.Form
 
-      def formatter(message: Self, level: Level, timestamp: Long): Form =
+      def formatter(message: Self, level: Log.Level, timestamp: Long): Form =
         inscribable.formatter(lambda(message), level, timestamp)
 
-  extension (message: Self) def format(level: Level, timestamp: Long): Form =
+  extension (message: Self) def format(level: Log.Level, timestamp: Long): Form =
     formatter(message, level, timestamp)

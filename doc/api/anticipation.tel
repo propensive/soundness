@@ -872,10 +872,10 @@ entry .Log   logs an event at one of four levels, and names the categories an ev
   refer anticipation.Loggable
   refer anticipation.LogSink
   refer anticipation.logs
-  entry .fine   logs a value at `Level.Fine`: high-frequency detail, useful while debugging
-  entry .info   logs a value at `Level.Info`: one line per significant operation
-  entry .warn   logs a value at `Level.Warn`: a recoverable or unexpected-but-handled condition
-  entry .fail   logs a value at `Level.Fail`: an operation which failed unrecoverably
+  entry .fine   logs a value at `Log.Level.Fine`: high-frequency detail, useful while debugging
+  entry .info   logs a value at `Log.Level.Info`: one line per significant operation
+  entry .warn   logs a value at `Log.Level.Warn`: a recoverable or unexpected-but-handled condition
+  entry .fail   logs a value at `Log.Level.Fail`: an operation which failed unrecoverably
   entry .Category   a category of log event, carrying the runtime class of its marker trait
     detail
         Each category is an object paired with a marker trait of the same name; a sink
@@ -906,14 +906,14 @@ entry .Log   logs an event at one of four levels, and names the categories an ev
   entry .Resource   events about reading bundled resources, as a marker trait and its `Category`
   entry .Security   events about security-relevant conditions, as a marker trait and its `Category`
 
-entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
-  detail
-      An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
-      switched off; `Info` one line per significant operation; `Warn` a recoverable or
-      unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
-      logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
-      everything below a chosen level, as eucalyptus's `Logger(Out, level = Level.Warn)` does.
-  entry .comparable   orders levels by severity, from `Fine` to `Fail`
+  entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
+    detail
+        An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
+        switched off; `Info` one line per significant operation; `Warn` a recoverable or
+        unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
+        logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
+        everything below a chosen level, as eucalyptus's `Logger(Out, level = Log.Level.Warn)` does.
+    entry .comparable   orders levels by severity, from `Fine` to `Fail`
 
 entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
   detail

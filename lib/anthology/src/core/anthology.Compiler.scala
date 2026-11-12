@@ -72,7 +72,7 @@ object Compiler:
       new Loggable:
         type Self = Event
 
-        def log(level: Level, timestamp: Long, event: => Event): Unit =
+        def log(level: Log.Level, timestamp: Long, event: => Event): Unit =
           linkEvents.log(level, timestamp, LinkEvent.Message(event.communicate.text))
 
   enum Event:

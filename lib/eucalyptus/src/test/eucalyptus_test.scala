@@ -83,7 +83,7 @@ object Tests extends Suite("logging", m"Eucalyptus tests"):
         val capture = Capture()
         // The test logger is this test's single owner; no aliased writer.
         // [construction-fresh] fresh test Logger instance laundered as given
-        given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, level = Level.Warn))
+        given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, level = Log.Level.Warn))
         Log.fine(m"alpha")
         Log.info(m"beta")
         Log.warn(m"gamma")
