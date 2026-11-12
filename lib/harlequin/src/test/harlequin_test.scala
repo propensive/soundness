@@ -42,6 +42,7 @@ import harlequin.Fragment
 
 import ambience.systems.javaBaseSystem
 import denominative.dysasymptotics.linearSize
+import harlequin.SourceCode.Token
 
 // A top-level definition, for the qualified name of a completion: its `$package` carrier is
 // its package.
@@ -79,7 +80,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       test(m"harlequin's types inspect natively"):
         Inspectable.fallbacks
          ( Token(t"val", Accent.Keyword).inspect,
-           Token(t"xs", Accent.Term, role = Role.Binding).inspect )
+           Token(t"xs", Accent.Term, role = Token.Role.Binding).inspect )
       . assert(_ == Nil)
 
       test(m"a token inspects with all of its state"):

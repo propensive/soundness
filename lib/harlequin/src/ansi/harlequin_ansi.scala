@@ -41,9 +41,10 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import harlequin.SourceCode.Token
 
 // A palette maps each accent to a colour, and nothing more. Whether a term or type token
-// is a binding or a usage is carried by the token's `Role`, and any additional text
+// is a binding or a usage is carried by the token's `Token.Role`, and any additional text
 // styling (e.g. italicising bindings) is applied by a separate styling policy — not
 // encoded here.
 type ScalaSyntaxPalette = Palette:

@@ -39,6 +39,7 @@ import prophesy.*
 import rudiments.*
 import denominative.dysasymptotics.linearSize
 import vacuous.*
+import harlequin.SourceCode.Token
 
 // Maps Harlequin's token stream onto Prophesy's `Lexeme` alphabet, and extracts the reversed
 // lexeme context at a caret — the input to `KeywordPattern` lookup. The same mapping serves

@@ -46,16 +46,17 @@ import symbolism.*
 import vacuous.*
 
 import htmlDoms.whatwg, whatwg.*
+import harlequin.SourceCode.Token
 
 trait CommonFormattable extends Formattable:
   given lineClass: (Attribution of "line" | "amok") = Attribution.classes()
 
-  // The accent becomes a CSS class; a term/type token's `Role` (binding/usage) becomes a
+  // The accent becomes a CSS class; a term/type token's `Token.Role` (binding/usage) becomes a
   // second class, so a stylesheet — the styling policy for this front-end — can e.g.
   // italicise `.binding` on top of the accent's colour.
-  def classes(accent: Accent, role: Optional[Role]): ClassList =
-    // The name is an `Accent` or `Role` case name in lower case: letters only, which is a valid
-    // CSS identifier.
+  def classes(accent: Accent, role: Optional[Token.Role]): ClassList =
+    // The name is an `Accent` or `Token.Role` case name in lower case: letters only, which is a
+    // valid CSS identifier.
     def cssClass(name: Text): Name[CssClass] = unsafely(Name[CssClass](name))
 
     val roleClass: Optional[Name[CssClass]] = role.let: role => cssClass(role.show.lower)
@@ -63,7 +64,7 @@ trait CommonFormattable extends Formattable:
 
     ClassList(roleClass.lay(Set(accentClass))(Set(accentClass, _)))
 
-  def element(accent: Accent, role: Optional[Role], text: Text): Html.Element of "code" =
+  def element(accent: Accent, role: Optional[Token.Role], text: Text): Html.Element of "code" =
     whatwg.Code(`class` = classes(accent, role))(text)
 
   protected def postprocess(source: SourceCode): Html of Flow =
