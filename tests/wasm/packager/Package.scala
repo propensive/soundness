@@ -53,7 +53,7 @@ object Package:
       sys.exit(1)
 
     val image =
-      Image.wasm
+      Oci.Image.wasm
         ( component,
           exports = found.exports,
           imports = found.imports,

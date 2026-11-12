@@ -148,7 +148,7 @@ lib/diuretic/src/core/diuretic.JavaNioPath.scala	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/embarcadero/src/containerd/embarcadero.Containerd.scala	0	18	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/embarcadero/src/containerd/embarcadero.Workload.scala	0	4	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/embarcadero/src/core/docker.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-lib/embarcadero/src/oci/embarcadero.Image.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/embarcadero/src/oci/embarcadero.Oci.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/embarcadero/src/test/embarcadero_test.scala	0	12	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0
 lib/enigmatic/src/asn1/enigmatic.Asn1.scala	0	0	0	0	3	3	0	0	0	0	0	0	0	0	1	0	0
 lib/enigmatic/src/asn1/enigmatic.Der.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0

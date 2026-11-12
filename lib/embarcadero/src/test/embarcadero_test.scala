@@ -45,6 +45,7 @@ import Containerd
       DeleteTaskResponse, Empty, GetContainerResponse, ImageRecord, ListContainersResponse,
       ListImagesResponse, ListNamespacesResponse, ListTasksResponse, Mount, Namespace,
       ProcessStatus, Runtime, StartResponse, VersionResponse, WaitResponse }
+import embarcadero.Oci.{ContainerConfig, Image, Index, Layer, WasmComponent, WasmConfig}
 
 object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
   def run(): Unit =

@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **331**;
-  128 sit in a prefix family of two or more, across 41 families, and
-  203 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **327**;
+  126 sit in a prefix family of two or more, across 41 families, and
+  201 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -304,7 +304,7 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Unix*` | bitumen, galilei, profanity | 5 | `UnixEntry`, `UnixGroup`, `UnixMode`, `UnixSignal`, `UnixUser` |
 | `Viewport*` | cataclysm | 4 | `ViewportHeights`, `ViewportMaxes`, `ViewportMins`, `ViewportWidths` |
 | `Wasi*` | ambience, anthology, aviation, capricious, coaxial, galilei, telekinesis, turbulence | 9 | `WasiCliApi`, `WasiClockApi`, `WasiEnvironmentApi`, `WasiFilesystemApi`, `WasiHttpApi`, `WasiRandom`, `WasiRandomApi`, `WasiSocketsApi`, `WasiToolchain` |
-| `Wasm*` | anthology, embarcadero, xenophile | 4 | `WasmComponent`, `WasmConfig`, `WasmInvoke`, `WasmObject` |
+| `Wasm*` | anthology, xenophile | 2 | `WasmInvoke`, `WasmObject` |
 | `Web*` | iridescence, tarantula, xenophile | 4 | `WebColors`, `WebDriver`, `WebIdl`, `WebIdlDialect` |
 | `Windows*` | galilei, profanity | 2 | `WindowsEntry`, `WindowsSignal` |
 
@@ -344,7 +344,7 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | variants, not satellites | ultimatum, tasseomancy | 2 | `ScrollFixture`, `StackedBars` |
 | capability and category markers (R3) | anticipation, galilei | 3 | `CreationTimed`, `EmailAddresses`, `IpAddresses` |
 
-### Singletons (203)
+### Singletons (201)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `ArOpenable`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AttemptTactic`, `BaseLayout`,
@@ -352,37 +352,37 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 `CanonicalCbor`, `CanvasHandle`, `CaptionLayout`, `CardinalWind`, `CarriageReturn`,
 `CaseSensitivity`, `CellRef`, `ChannelLayout`, `ChartPalette`, `CheckOverflow`, `ClasspathIndex`,
 `CliEvent`, `CollectionConverters`, `ColorDepth`, `CommandGroup`, `CommonFormattable`,
-`ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`, `DagDiagram`, `DecimalConverter`,
-`DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `EditorField`,
-`EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
-`EucalyptusGcp`, `FastForward`, `FieldIndex`, `FileOpenable`, `FlowExtent`, `FluidOunce`,
-`FoldableRectoPanel`, `FontMetric`, `FrameReader`, `GapPolicy`, `GarbageCollection`,
-`GaugePalette`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
-`HmacCipher`, `Html4Transitional`, `ImageOpenable`, `InitializationVector`, `IntercardinalWind`,
-`InterfaceAddress`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JsInvoke`,
-`JuxtapositionPalette`, `LaneDagDiagram`, `LanguageFeature`, `LayeredDagDiagram`,
-`LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `ListHasAsScala`, `LocalhostDevice`,
-`LongNameFormat`, `LruCache`, `LspSessional`, `MarkdownPalette`, `MediaType`, `MenuField`,
-`MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NativeInvoke`, `NetworkInterface`,
-`NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`, `NumberMode`, `NumericRange`, `OffsetCalendar`,
-`OnlineClasspath`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`,
-`OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`,
-`PhysicalState`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`,
-`PollingWatcher`, `PooledSupervisor`, `PoolingSupervisor`, `PositionTracking`, `PosixCommands`,
-`PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`,
-`PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`, `RecurrenceSet`,
-`ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`,
-`RootFs`, `ScreenRoot`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`,
-`ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`,
-`SocketServer`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `StandardMetadata`,
-`StaticAnnotation`, `StreamOutputStream`, `StressSearch`, `SubOp`, `SymmetricKey`, `TableFixture`,
-`TastyPalette`, `TeletypeFormattable`, `TelReader`, `TemperatureScale`, `TemporaryDirectory`,
-`TerminalBoard`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
-`TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
-`UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UserId`, `ValueToken`,
-`VentureTactic`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`,
-`WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`,
-`WitDialect`, `WritingBuilder`, `WsSessional`, `XmlSchema`, `YamlPath`
+`CopyAttributes`, `CrLf`, `CtrlChar`, `DagDiagram`, `DecimalConverter`, `DecodableManifest`,
+`DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `EditorField`, `EitherTactic`,
+`EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `EucalyptusGcp`,
+`FastForward`, `FieldIndex`, `FileOpenable`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`,
+`FontMetric`, `FrameReader`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GivensPhase`,
+`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
+`ImageOpenable`, `InitializationVector`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`,
+`Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JsInvoke`, `JuxtapositionPalette`,
+`LaneDagDiagram`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`,
+`LinkEvent`, `ListHasAsScala`, `LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`,
+`MarkdownPalette`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`,
+`NativeInvoke`, `NetworkInterface`, `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`, `NumberMode`,
+`NumericRange`, `OffsetCalendar`, `OnlineClasspath`, `OpensslCrypto`, `OperationSize`,
+`OptionalTactic`, `OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`,
+`PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`,
+`PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PooledSupervisor`, `PoolingSupervisor`,
+`PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`,
+`ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`,
+`RectoPanel`, `RecurrenceSet`, `ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`,
+`Rgb32Opaque`, `RomanCalendar`, `ScreenRoot`, `SelectMenu`, `SelectorList`, `SemanticMessage`,
+`SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`,
+`SimpleTExtractor`, `SocketServer`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`,
+`StandardMetadata`, `StaticAnnotation`, `StreamOutputStream`, `StressSearch`, `SubOp`,
+`SymmetricKey`, `TableFixture`, `TastyPalette`, `TeletypeFormattable`, `TelReader`,
+`TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `ThemeColor`, `ThrowTactic`,
+`TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`,
+`TypescriptDialect`, `UdpResponse`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`,
+`UrlPalette`, `UserId`, `ValueToken`, `VentureTactic`, `VersoPanel`, `VerticalAlignment`,
+`VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`,
+`WideCharacterWidth`, `WireType`, `WitDialect`, `WritingBuilder`, `WsSessional`, `XmlSchema`,
+`YamlPath`
 
 ## Retained from the original inventory
 

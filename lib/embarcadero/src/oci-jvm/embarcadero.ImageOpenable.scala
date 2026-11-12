@@ -40,6 +40,7 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import zephyrine.*
+import embarcadero.Oci.Image
 
 // Opening a filesystem *path* as an OCI image, delegating the TAR bracket to bitumen's disk-backed
 // `TarOpenable`. Split from `embarcadero.oci`'s cross-platform sources because it needs

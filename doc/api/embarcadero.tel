@@ -12,17 +12,17 @@ detail
     containerd, the runtime beneath Docker and Kubernetes, driven over gRPC on a local socket
     to register containers, run tasks inside them, and manage images and namespaces.
 
-    An `Image` is assembled in memory from `Layer`s (each a `Tarfile`, gzip-compressed and
+    An `Oci.Image` is assembled in memory from `Oci.Layer`s (each a `Tarfile`, gzip-compressed and
     hashed twice, once uncompressed for its `diffId` and once as stored for its `digest`) and
-    an `Image.Config` whose `ContainerConfig` says what to run. The library computes the
+    an `Oci.Image.Config` whose `Oci.ContainerConfig` says what to run. The library computes the
     config blob, the `Oci.Manifest` which ties config and layers together by digest, and the
-    single-entry `Index`; `Image#archive` renders the whole thing as an OCI image-layout tar
+    single-entry `Oci.Index`; `Oci.Image#archive` renders the whole thing as an OCI image-layout tar
     (an "oci-archive") which `docker load`, `ctr images import`, `podman load` or `skopeo` will
-    accept. `Image.wasm` builds the same layout as a Wasm OCI Artifact, whose one layer is an
-    `application/wasm` component and whose config is a `WasmConfig` naming the WASI
+    accept. `Oci.Image.wasm` builds the same layout as a Wasm OCI Artifact, whose one layer is an
+    `application/wasm` component and whose config is a `Oci.WasmConfig` naming the WASI
     generation and the Component Model interfaces the component imports and exports. An
-    existing archive is read by opening it, `data.open[Image]()` or `path.open[Image]()`,
-    which gives an `Image.Handle` for the scope of a block: its `index`, `manifest`, `config`
+    existing archive is read by opening it, `data.open[Oci.Image]()` or `path.open[Oci.Image]()`,
+    which gives an `Oci.Image.Handle` for the scope of a block: its `index`, `manifest`, `config`
     and each `layer`, verified against the digests the manifest declares, with an `Oci.Error`
     for anything missing, corrupt or unsupported.
 
@@ -40,13 +40,13 @@ detail
           mtime = 0.bits.u32,
           data  = Archive.Body(content.in[Data]) )
 
-    val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-    val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
+    val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+    val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
 
     image.manifest.layers.map(_.digest)   // List(layer.digest)
     val archive: Data = image.archive.source[Data].memoize
 
-    archive.open[Image](): handle ?=>
+    archive.open[Oci.Image](): handle ?=>
       handle.imageConfig.rootfs.diff_ids  // List(layer.diffId)
     ```
 
@@ -80,9 +80,9 @@ detail
 
     The library has three source sets:
 
-    - `embarcadero.oci` — `Image`, `Layer`, `Oci`, `Descriptor`, `Index`, `RootFs`,
-      `History`, `ContainerConfig`, `WasmConfig` and `WasmComponent`, and
-      `Image.dataOpenable` for opening in-memory `Data` as an image. It compiles for the
+    - `embarcadero.oci` — `Oci.Image`, `Oci.Layer`, `Oci`, `Oci.Descriptor`, `Oci.Index`, `Oci.RootFs`,
+      `Oci.History`, `Oci.ContainerConfig`, `Oci.WasmConfig` and `Oci.WasmComponent`, and
+      `Oci.Image.dataOpenable` for opening in-memory `Data` as an image. It compiles for the
       JVM, Scala.js and Scala Native, so an image can be assembled in a browser or a Wasm
       guest; it draws on bitumen for its tar layers, pneumatic for gzip, gastronomy for
       SHA-256 and jacinta for the JSON documents.
@@ -98,7 +98,7 @@ detail
     they do not compete with other libraries' names in the `soundness` umbrella. The
     givens the library itself needs (`providers.javaBaseProvider`, `alphabets.hexLowerCase`,
     `formatting.compactJsonFormatting`, `codepages.utf8Codepage`) are imported inside it, so
-    a program imports only what its own code uses; the openables (`Image.dataOpenable`,
+    a program imports only what its own code uses; the openables (`Oci.Image.dataOpenable`,
     `Workload.openable`) sit in their companions and resolve with no import, while
     `imagePathOpenable` is a top-level given reached through `import soundness.*`. A
     containerd call needs a `Monitor` (from `supervise`) and tactics for `Grpc.Error`,
@@ -106,370 +106,11 @@ detail
     change it makes, so a `Containerd.Event is Loggable` such as `logging.silentLogging` must be
     in scope.
 
-refer embarcadero.Image
-refer embarcadero.Layer
+refer embarcadero.Oci.Image
+refer embarcadero.Oci.Layer
 refer embarcadero.Oci
 refer embarcadero.Containerd
 refer embarcadero.Workload
-
-entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config, manifest and index
-  detail
-      An `Image` is the complete, digest-consistent content of an OCI image: its `#layers`,
-      the `#config` document and its rendered `#configBytes`, the `#manifest` which names
-      the config and each layer by `Descriptor`, and the single-entry `#index` which names
-      the manifest. All of it is computed when the image is built, so the digests and sizes
-      are right by construction, and `#archive` renders it as the OCI image-layout tar a
-      runtime imports. The companion builds an image two ways: `.apply` from filesystem
-      layers and a `ContainerConfig`, and `.wasm` from a compiled Wasm component. Reading an
-      image back is a scoped *open*: `.Handle` is what `data.open[Image]()` (through
-      `.dataOpenable`) or `path.open[Image]()` (through `imagePathOpenable`, JVM only)
-      provides for the duration of a block.
-
-      The pieces come together in a fixed order, each addressed by the digest of the one
-      before:
-
-      ```scala fuel
-      frame
-        label A layer: a tar, compressed and hashed twice
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            layer.diffId   // sha256:… of the uncompressed tar
-            layer.digest   // sha256:… of the gzipped blob, as stored
-      frame
-        label The config: platform, rootfs diff_ids and what to run
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
-            image.imageConfig.let(_.rootfs.diff_ids)   // List(layer.diffId)
-            image.configDescriptor.digest              // sha256:… of the config JSON
-      frame
-        label The manifest: the config and each layer, by descriptor
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
-            image.manifest.config.digest            // the config descriptor's digest
-            image.manifest.layers.map(_.digest)     // List(layer.digest)
-            image.manifestDescriptor.digest         // sha256:… of the manifest JSON
-      frame
-        label The index and the archive: one manifest, written as an oci-layout tar
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
-            image.index.manifests.map(_.digest)     // List(image.manifestDescriptor.digest)
-            val archive: Data = image.archive.source[Data].memoize   // oci-layout, index.json, blobs/sha256/…
-      ##
-      ```
-
-      An `Image` is a plain case class with no capability of its own, so it can be built
-      anywhere — on the JVM, in Scala.js or on Scala Native — and handed to code which
-      writes the archive to a file, pushes it to a registry, or imports it into a daemon.
-  refer embarcadero.Layer
-  refer embarcadero.Oci
-  refer embarcadero.ContainerConfig
-  refer embarcadero.WasmConfig
-  entry .apply   assembles an image from filesystem layers and an optional runtime configuration
-      `Image(layers, config, architecture, os, annotations)` builds the `Image.Config`
-      (`architecture` defaults to `amd64` and `os` to `linux`; `rootfs` is the layers'
-      `diffId`s in order; `config` is the `ContainerConfig`, if any), renders it as compact
-      JSON for its config blob, descriptors it with the media type
-      `application/vnd.oci.image.config.v1+json`, wraps it and the layers' descriptors in
-      an `Oci.Manifest` (carrying `annotations`, if any), and names that manifest from a
-      single-entry `Index`. Nothing is raised: every digest is computed from bytes already
-      in memory.
-
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-      import strategies.throwUnsafely
-
-      val layer: Layer = Layer(Tarfile(Nil))
-
-      val image: Image =
-        Image
-          ( List(layer),
-            config       = ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
-            architecture = t"arm64",
-            annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
-
-      image.imageConfig.let(_.architecture)   // t"arm64"
-      ```
-  entry .wasm   assembles a Wasm OCI Artifact: one uncompressed `application/wasm` layer under a Wasm config
-      `Image.wasm(component, exports, imports, target, architecture, os, annotations)` is the
-      form the Wasm OCI Artifact layout prescribes for a WebAssembly workload. The one layer is
-      `Layer.blob(component, media"application/wasm")`: stored verbatim, so its `diffId` and
-      `digest` coincide. The config blob is a `WasmConfig` (media type
-      `application/vnd.wasm.config.v0+json`) whose `architecture` is `wasm` and whose `os`
-      names the WASI generation (`wasip2` by default), with `layerDigests` naming the
-      component blob and `component` recording the `exports`, `imports` and optional `target`
-      world as a `WasmComponent`. The manifest, index and archive are the ordinary OCI ones, so
-      the same registries and tools carry it; a runtime dispatches on the two media types to
-      hand the component to a Wasm engine (through a shim such as `io.containerd.wasmtime.v1`)
-      rather than a rootfs to `runc`.
-
-      ```scala
-      import soundness.*
-
-      val component: Data = hex"0061736d01000000"   // a compiled component's bytes
-
-      val artifact: Image =
-        Image.wasm
-          ( component,
-            exports = List(t"wasi:http/incoming-handler@0.2.0"),
-            imports = List(t"wasi:io/streams@0.2.0"),
-            target  = t"wasi:http/proxy@0.2.0" )
-
-      artifact.wasmConfig.let(_.os)                   // t"wasip2"
-      artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
-      ```
-
-      The interfaces are usually not typed by hand but read from the WIT world the component
-      was linked against: xenophile's `WitDialect.worlds(wit)(name)` gives a world whose
-      `exports` and `imports` pass straight through, which is how anthology's OCI edge and
-      the repository's own Wasm end-to-end packager (`tests/wasm/packager`) build the
-      artifacts they run under wasmtime and `wasmtime serve`. The bytes are never parsed: an
-      arbitrary payload is packaged just as a real component is.
-  entry .dataOpenable   the given behind `data.open[Image]()`: opens in-memory bytes as an OCI archive
-      A given in the companion, so it resolves with no import. It provides an
-      `Image.DataOpenable` and needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
-      `Tactic[Truncation.Error]` in scope, which it captures. Opening a filesystem *path*
-      is `imagePathOpenable`, in the JVM source set.
-  entry .Config   an OCI image config document: platform, rootfs diff_id chain, run configuration and history
-    detail
-        The config blob of a filesystem image (media type
-        `application/vnd.oci.image.config.v1+json`), as `Image.apply` writes it and
-        `Image.Handle#imageConfig` reads it back. It records the target `#architecture` and
-        `#os`, the `#rootfs` whose `diff_ids` are the uncompressed layers' digests in order,
-        the optional `#config` (a `ContainerConfig` of what to run), the build `#history`
-        and the `#created` time and `#author`. Its JSON encoding and decoding derive
-        through jacinta, and the member names are the wire names, so `created` renders as
-        `created`. Together with `WasmConfig` it makes up `Oci.Config`, the union a reader
-        gets from `Image.Handle#config` when it does not know which kind of artifact it
-        opened.
-    entry #architecture   the CPU architecture the image targets, such as `amd64` or `arm64`
-    entry #os   the operating system the image targets, such as `linux`
-    entry #rootfs   the `RootFs`: the ordered `diff_id`s of the uncompressed layers
-    entry #config   the `ContainerConfig` saying how to run the image, or `Unset`
-    entry #history   how each layer came to be, one `History` per layer or empty change, or `Unset`
-    entry #created   when the image was built, as RFC 3339 text, or `Unset`
-    entry #author   who built the image, or `Unset`
-  entry .Handle   the scoped view of an opened OCI archive: its index, manifest, config and blobs
-    detail
-        The capability `data.open[Image]()` or `path.open[Image]()` provides for the
-        duration of its block, and only then: it is an exclusive capability, so it cannot be
-        stored or returned. The archive's entries are read once and held for the handle's
-        lifetime, indexed by name, so every lookup after the first is a map access; archives
-        `Image#archive` writes put `index.json` before the blobs, so the metadata path is
-        cheap. Every method takes a `Tactic[Oci.Error]` and raises `Oci.Error` for a missing
-        or unreadable document or blob.
-
-        ```scala
-        import soundness.*
-        import codepages.utf8Codepage
-        import strategies.throwUnsafely
-
-        val image: Image = Image(List(Layer(Tarfile(Nil))))
-        val archive: Data = image.archive.source[Data].memoize
-
-        archive.open[Image](): handle ?=>
-          handle.index                                          // the top-level index
-          handle.manifest                                       // the manifest it names, digest-checked
-          handle.imageConfig                                    // the image config
-          handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
-        ```
-
-        A layer is reached three ways, which makes the cost explicit: `#compressed` streams
-        the stored bytes untouched, `#layer` decompresses them as a stream, and `#verified`
-        gathers them and checks digest and size against the descriptor. A reader which does
-        not know whether it has a filesystem image or a Wasm artifact asks for `#config`,
-        which dispatches on the config descriptor's media type.
-
-        Opening for writing is refused: `archive.open[Image](Write)` raises `Oci.Error` with
-        `WriteUnsupported`.
-    refer embarcadero.Oci
-    entry #blob   a blob by its `sha256:…` digest, as a stream of its stored chunks, unverified
-        The raw stored bytes (for a layer, the gzip-compressed tar) under
-        `blobs/sha256/<hex>`, as a `Stream[Data] over Credit`. Raises `Oci.Error` with
-        `UnsupportedDigest` for a digest whose algorithm is not `sha256`, and `MissingBlob`
-        when the archive has no such blob. Nothing is checked: `#verified` is the checked
-        read.
-    entry #index   the decoded top-level `index.json`, after checking the `oci-layout` marker
-        Reads the `oci-layout` document and requires its `imageLayoutVersion` to begin with
-        `1.`, then decodes `index.json` as an `Index`. Raises `Oci.Error` with
-        `MissingLayout`, `UnsupportedLayout`, `MissingIndex` or, for a document which does
-        not parse, `InvalidBlob`.
-    entry #manifest   the index's first manifest, or the one a descriptor selects, digest-verified
-        `handle.manifest` takes the first descriptor of `#index` (raising `Oci.Error` with
-        `NoManifest` if there is none); `handle.manifest(descriptor)` takes a chosen one. The
-        manifest blob is read through `#verified`, so a corrupted manifest is reported as
-        `DigestMismatch` rather than decoded, and then decoded as an `Oci.Manifest`.
-    entry #imageConfig   the decoded `Image.Config` of a manifest, by default the first
-        `handle.imageConfig` or `handle.imageConfig(manifest)`: the manifest's config blob,
-        verified and decoded as an `Image.Config`. For a Wasm artifact the blob is a
-        `WasmConfig`, and decoding it here fails with `InvalidBlob`; use `#config` when the
-        kind is not known.
-    entry #wasmConfig   the decoded `WasmConfig` of a manifest, by default the first
-        `handle.wasmConfig` or `handle.wasmConfig(manifest)`: the manifest's config blob,
-        verified and decoded as a `WasmConfig`.
-    entry #config   the config blob in whichever form its media type says: `Image.Config` or `WasmConfig`
-        `handle.config` or `handle.config(manifest)` returns an `Oci.Config`, decoding the
-        blob as a `WasmConfig` when the config descriptor's media type is
-        `application/vnd.wasm.config.v0+json` and as an `Image.Config` otherwise. This is the
-        entry point for a runtime deciding whether to unpack a rootfs or instantiate a
-        component:
-
-        ```scala
-        import soundness.*
-        import strategies.throwUnsafely
-
-        val archive: Data = Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
-
-        archive.open[Image](): handle ?=>
-          handle.config match
-            case config: WasmConfig   => config.component.let(_.exports)
-            case config: Image.Config => config.rootfs.diff_ids
-        ```
-    entry #compressed   a layer's stored blob, verbatim: for an OCI layer, the gzip-compressed tar
-        `#blob` by the descriptor's digest, as a `Stream[Data] over Credit`; the cheapest
-        way to copy a layer from one archive to another.
-    entry #layer   a layer's content as the uncompressed tar byte stream
-        Streams `#compressed` through a gzip decoder when the descriptor's media type carries
-        the `+gzip` suffix, and verbatim otherwise — so a Wasm artifact's
-        `application/wasm` layer comes back as the component's own bytes. The stream is not
-        checked against the digest, since checking would mean draining it first.
-    entry #verified   a blob gathered eagerly and checked against its descriptor's digest and size
-        Reads the whole blob into a `Data`, computes its SHA-256 and compares it with the
-        descriptor's `digest`, raising `Oci.Error` with `DigestMismatch(expected, actual)` if
-        they differ, and compares its length with the descriptor's `size`, raising
-        `InvalidBlob` if they differ. The opt-in checked path, used by `#manifest`,
-        `#imageConfig` and `#wasmConfig` for the documents they decode.
-  entry .DataOpenable   the `Openable` which opens in-memory `Data` as an OCI archive, read-only
-    detail
-        The class `Image.dataOpenable` provides, named rather than anonymous so that its
-        result type is stated exactly. It opens a `Data` (`Self`) as an `Image` (`Form`)
-        with no flags (`Operand = Nothing`), giving an `Image.Handle` (`Result`) for the
-        block. It needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
-        `Tactic[Truncation.Error]`. A mode including `Write` is refused with `Oci.Error`
-        (`WriteUnsupported`): archives are read, and written only by `Image#archive`.
-    entry #Self   `Data`: what is opened
-    entry #Form   `Image`: the form it is opened as
-    entry #Operand   `Nothing`: there are no open flags
-    entry #Result   `Image.Handle`: what the block receives
-    entry #open   reads the bytes as a tar, builds an `Image.Handle` over its entries and runs the block
-  entry #layers   the image's layers, in order, bottom-most first
-  entry #config   the config document: an `Image.Config` for a filesystem image, a `WasmConfig` for a Wasm artifact
-      The `Oci.Config` union; `#imageConfig` and `#wasmConfig` narrow it without a match.
-  entry #configBytes   the config blob as rendered: compact JSON, the bytes the config digest is taken over
-  entry #configDescriptor   the descriptor of the config blob, as the manifest references it
-  entry #manifest   the `Oci.Manifest` naming the config and each layer by descriptor
-  entry #manifestBytes   the manifest blob as rendered: compact JSON
-  entry #manifestDescriptor   the descriptor of the manifest blob, as the index references it
-  entry #index   the single-entry `Index` naming the manifest
-  entry #indexBytes   the `index.json` document as rendered: compact JSON
-  entry #imageConfig   the config as an `Image.Config`, or `Unset` for a Wasm artifact
-  entry #wasmConfig   the config as a `WasmConfig`, or `Unset` for a filesystem image
-  entry #blobs   every blob as a `(digest, bytes)` pair: the config, each layer, then the manifest
-      The content `#archive` writes under `blobs/sha256/`, keyed by the canonical
-      `sha256:<hex>` digest of each.
-  entry #archive   the image as an OCI image-layout tar: `oci-layout`, `index.json` and `blobs/sha256/…`
-      A `Tarfile` holding the `oci-layout` marker (`{"imageLayoutVersion":"1.0.0"}`), the
-      `index.json`, and one file per entry of `#blobs` named by its hex digest, each with mode
-      `UnixMode()`, owner and group `0` and mtime `0`, so the archive is reproducible. Read it
-      as bytes with `image.archive.source[Data]` and write it to a file: the result is what
-      `docker load`, `ctr images import`, `podman load` and `skopeo copy oci-archive:…`
-      accept, and what `data.open[Image]()` reads back.
-
-entry .Layer   one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
-  detail
-      A layer carries two distinct digests, and the OCI format depends on both being right.
-      The `#diffId` is the SHA-256 of the *uncompressed* content, recorded in the image
-      config's `rootfs.diff_ids`; the `#digest` is the SHA-256 of the blob *as stored*,
-      recorded in the manifest's layer descriptor alongside its `size`. For a filesystem
-      layer the two differ, because storage gzip-compresses the tar; for a blob layer they
-      coincide. Both are computed lazily from the content, once.
-
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-      import strategies.throwUnsafely
-
-      val layer: Layer = Layer(Tarfile(Nil))
-      layer.diffId == layer.digest   // false: the stored blob is gzipped
-      layer.descriptor.mediaType     // media"application/vnd.oci.image.layer.v1.tar+gzip"
-
-      val wasm: Layer = Layer.blob(hex"0061736d01000000", media"application/wasm")
-      wasm.diffId == wasm.digest     // true: stored verbatim
-      ```
-
-      A `Layer` has no public constructor: `.apply` makes a filesystem layer from a
-      `Tarfile`, and `.blob` makes a single-blob layer of any media type. The content is
-      held by name until first use, and memoized then.
-  refer embarcadero.Image
-  refer embarcadero.Descriptor
-  entry .apply   a filesystem layer from a `Tarfile`, stored gzip-compressed
-      `Layer(tar)` reads the tar's bytes as the raw content, compresses them with gzip for
-      the stored blob, and types the descriptor `application/vnd.oci.image.layer.v1.tar+gzip`.
-      Nothing is read until a digest or the blob is first asked for.
-  entry .blob   a layer whose content is one opaque blob, stored verbatim under its own media type
-      `Layer.blob(data, mediaType)` is the form a Wasm OCI Artifact uses for its
-      `application/wasm` component: no compression, so `#diffId` and `#digest` are the same
-      value and the descriptor's `size` is the data's length.
-  entry #raw   the uncompressed content: the tar bytes, or the blob itself
-  entry #blob   the content as stored: the gzipped tar, or the blob itself
-  entry #diffId   `sha256:<hex>` of `#raw`, as the image config's `rootfs.diff_ids` records it
-  entry #digest   `sha256:<hex>` of `#blob`, as the manifest's layer descriptor records it
-  entry #descriptor   the layer's `Descriptor`: media type, `#digest` and the stored blob's size
 
 entry .Oci   the namespace for OCI document types with generic names: `Oci.Manifest`, `Oci.Config`, `Oci.Error`
   detail
@@ -477,7 +118,7 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
       umbrella: `Manifest` would clash with revolution's JAR `Manifest`, and `Config` and
       `Error` are everyone's. `.Manifest` is the image manifest document, `.Config` the union
       of the two config-blob forms, and `.Error` what reading an archive raises.
-  refer embarcadero.Image
+  refer embarcadero.Oci.Image
   entry .Config   the two forms an image's config blob can take: `Image.Config | WasmConfig`
       A type alias. The two are distinguished on the wire by the config descriptor's media
       type (`application/vnd.oci.image.config.v1+json` or
@@ -514,7 +155,7 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
         import codepages.utf8Codepage
 
         val archive: Data = t"not an archive".in[Data]
-        safely(archive.open[Image]() { handle ?=> handle.index })   // Unset
+        safely(archive.open[Oci.Image]() { handle ?=> handle.index })   // Unset
         ```
 
         Under `safely` any failure is `Unset`; `capture[Oci.Error]` keeps the error so that
@@ -540,128 +181,479 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
     entry .communicable   renders each reason as a message, such as _the blob `digest` is not present in the archive_
     entry #reason   the `Oci.Error.Reason` which caused the failure
 
-entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
-  detail
-      The typed, digest-addressed pointer every OCI document uses to name a blob: a
-      manifest's `config` and `layers`, an index's `manifests`. `#digest` is the
-      `sha256:<lowercase hex>` of the blob as stored (for a layer, compressed) and `#size`
-      its byte length, so a reader can fetch the blob and check both. `Layer#descriptor`
-      makes one for a layer, and `Image#configDescriptor` and `Image#manifestDescriptor` for
-      the documents. The spec's `platform` member for multi-architecture indexes is not yet
-      modelled. It is the OCI JSON descriptor; containerd's protobuf one is
-      `Containerd.ContentDescriptor`.
-  refer embarcadero.Layer
-  refer embarcadero.Containerd.ContentDescriptor
-  entry #mediaType   the blob's media type, such as `application/vnd.oci.image.layer.v1.tar+gzip`
-  entry #digest   the `sha256:<hex>` digest of the stored blob
-  entry #size   the stored blob's length in bytes
-  entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
-  entry #urls   URLs the blob may be fetched from, or `Unset`
+  entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config, manifest and index
+    detail
+        An `Image` is the complete, digest-consistent content of an OCI image: its `#layers`,
+        the `#config` document and its rendered `#configBytes`, the `#manifest` which names
+        the config and each layer by `Descriptor`, and the single-entry `#index` which names
+        the manifest. All of it is computed when the image is built, so the digests and sizes
+        are right by construction, and `#archive` renders it as the OCI image-layout tar a
+        runtime imports. The companion builds an image two ways: `.apply` from filesystem
+        layers and a `ContainerConfig`, and `.wasm` from a compiled Wasm component. Reading an
+        image back is a scoped *open*: `.Handle` is what `data.open[Image]()` (through
+        `.dataOpenable`) or `path.open[Image]()` (through `imagePathOpenable`, JVM only)
+        provides for the duration of a block.
 
-entry .Index   an OCI image index: the top-level `index.json` listing one or more manifest descriptors
-  detail
-      The document (media type `application/vnd.oci.image.index.v1+json`) at the root of an
-      image layout, whose `#manifests` are the `Descriptor`s of the manifests the archive
-      holds. `Image.apply` and `Image.wasm` write a single-entry index; `Image.Handle#index`
-      reads one back, and `Image.Handle#manifest` takes its first entry by default. It
-      encodes and decodes as JSON through jacinta.
-  entry #schemaVersion   the index schema version: always `2`
-  entry #mediaType   the index's own media type, `application/vnd.oci.image.index.v1+json`
-  entry #manifests   the descriptors of the manifests, in order
-  entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+        The pieces come together in a fixed order, each addressed by the digest of the one
+        before:
 
-entry .History   one entry of an image config's `history`: how a layer, or an empty change, was produced
-  detail
-      A record in `Image.Config#history`, one per layer or per empty change, in order. Every
-      field is optional and omitted from the JSON when unset; the member names are the wire
-      names, so `created_by` and `empty_layer` keep their underscores.
-  entry #created   when the change was made, as RFC 3339 text, or `Unset`
-  entry #created_by   the command which produced the layer, or `Unset`
-  entry #author   who made the change, or `Unset`
-  entry #comment   a free-form note, or `Unset`
-  entry #empty_layer   `true` when the entry produced no filesystem layer, or `Unset`
+        ```scala fuel
+        frame
+          label A layer: a tar, compressed and hashed twice
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
 
-entry .RootFs   the `rootfs` of an image config: the ordered `diff_id`s of the uncompressed layers
-  detail
-      `RootFs(type, diff_ids)`, where `type` is always `layers` and `diff_ids` lists each
-      layer's `Layer#diffId` bottom-most first. `Image.apply` builds it from the layers; a
-      reader checks an unpacked layer's uncompressed tar against the matching entry. The
-      member names are the wire names.
-  entry #type   the rootfs type: always `layers`
-  entry #diff_ids   the layers' `diffId`s, in order
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
 
-entry .ContainerConfig   the execution parameters of an image: user, environment, entrypoint, command, working directory, labels
-  detail
-      The `config` member of an `Image.Config`: what a runtime does with the image's
-      filesystem. The member names are capitalised to match the wire format inherited from
-      the Docker image spec (`Cmd`, `Env`, `WorkingDir`), and every field is optional and
-      omitted from the JSON when unset.
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              layer.diffId   // sha256:… of the uncompressed tar
+              layer.digest   // sha256:… of the gzipped blob, as stored
+        frame
+          label The config: platform, rootfs diff_ids and what to run
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
 
-      ```scala
-      import soundness.*
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
 
-      val config: ContainerConfig =
-        ContainerConfig
-          ( Env        = List(t"PATH=/usr/bin:/bin"),
-            Entrypoint = List(t"/usr/bin/server"),
-            Cmd        = List(t"--port", t"8080"),
-            WorkingDir = t"/app",
-            Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
-      ```
-  refer embarcadero.Image
-  entry #User   the user (and optionally group) to run as, or `Unset`
-  entry #Env   environment variables as `NAME=value` entries, or `Unset`
-  entry #Entrypoint   the executable and its fixed arguments, or `Unset`
-  entry #Cmd   the default arguments, appended to `Entrypoint` or run alone, or `Unset`
-  entry #WorkingDir   the working directory the process starts in, or `Unset`
-  entry #Labels   free-form `Map[Text, Text]` labels, or `Unset`
-  entry #StopSignal   the signal which stops the container, such as `SIGTERM`, or `Unset`
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+              image.imageConfig.let(_.rootfs.diff_ids)   // List(layer.diffId)
+              image.configDescriptor.digest              // sha256:… of the config JSON
+        frame
+          label The manifest: the config and each layer, by descriptor
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
 
-entry .WasmComponent   the `component` member of a Wasm artifact config: the interfaces it exports and imports, and its target world
-  detail
-      What a Wasm OCI Artifact says about the Component Model contract its component was
-      built to: `#exports`, the interfaces it offers (`wasi:http/incoming-handler@0.2.0`),
-      `#imports`, the capabilities it needs (`wasi:io/streams@0.2.0`), and `#target`, the
-      standard world it fits (`wasi:http/proxy@0.2.0`), if any. The Wasm OCI Artifact layout
-      requires this member for `wasip2` artifacts, and it is what lets a host decide, before
-      fetching the component, whether it can satisfy the workload. `Image.wasm` builds it
-      from its `exports`, `imports` and `target` parameters, usually read from the WIT world
-      the component was linked against.
-  refer embarcadero.WasmConfig
-  entry #exports   the interfaces the component exports, as `namespace:package/interface@version` names
-  entry #imports   the interfaces the component imports
-  entry #target   the standard world the component targets, or `Unset`
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
 
-entry .WasmConfig   a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
-  detail
-      The config blob of a Wasm OCI Artifact (media type
-      `application/vnd.wasm.config.v0+json`). It stands where an `Image.Config` would, but
-      describes a component rather than a filesystem: there is no `rootfs`, because there
-      are no layers to stack; `#layerDigests` names the single `application/wasm` blob
-      directly, and `#component` states the interfaces it needs. `#architecture` is `wasm`
-      and `#os` names the WASI generation (`wasip1`, `wasip2` or `wasip3`): a runtime
-      dispatches on those two fields to recognise a Wasm workload at all. `Image.wasm` builds
-      one, `Image#wasmConfig` and `Image.Handle#wasmConfig` give it back, and it is one arm
-      of `Oci.Config`. The JSON uses the spec's camelCase `layerDigests` key, and omits
-      `created` and `author` when unset.
-  refer embarcadero.Image
-  refer embarcadero.WasmComponent
-  entry #created   when the artifact was built, as RFC 3339 text, or `Unset`
-  entry #author   who built the artifact, or `Unset`
-  entry #architecture   always `wasm`
-  entry #os   the WASI generation: `wasip1`, `wasip2` (the default) or `wasip3`
-  entry #layerDigests   the digests of the artifact's layers: the one `application/wasm` blob
-  entry #component   the `WasmComponent` naming the exports, imports and target world, or `Unset`
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+              image.manifest.config.digest            // the config descriptor's digest
+              image.manifest.layers.map(_.digest)     // List(layer.digest)
+              image.manifestDescriptor.digest         // sha256:… of the manifest JSON
+        frame
+          label The index and the archive: one manifest, written as an oci-layout tar
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
+
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
+
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+              image.index.manifests.map(_.digest)     // List(image.manifestDescriptor.digest)
+              val archive: Data = image.archive.source[Data].memoize   // oci-layout, index.json, blobs/sha256/…
+        ##
+        ```
+
+        An `Image` is a plain case class with no capability of its own, so it can be built
+        anywhere — on the JVM, in Scala.js or on Scala Native — and handed to code which
+        writes the archive to a file, pushes it to a registry, or imports it into a daemon.
+    refer embarcadero.Oci.Layer
+    refer embarcadero.Oci
+    refer embarcadero.Oci.ContainerConfig
+    refer embarcadero.Oci.WasmConfig
+    entry .apply   assembles an image from filesystem layers and an optional runtime configuration
+        `Image(layers, config, architecture, os, annotations)` builds the `Image.Config`
+        (`architecture` defaults to `amd64` and `os` to `linux`; `rootfs` is the layers'
+        `diffId`s in order; `config` is the `ContainerConfig`, if any), renders it as compact
+        JSON for its config blob, descriptors it with the media type
+        `application/vnd.oci.image.config.v1+json`, wraps it and the layers' descriptors in
+        an `Oci.Manifest` (carrying `annotations`, if any), and names that manifest from a
+        single-entry `Index`. Nothing is raised: every digest is computed from bytes already
+        in memory.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+
+        val image: Oci.Image =
+          Oci.Image
+            ( List(layer),
+              config       = Oci.ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
+              architecture = t"arm64",
+              annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
+
+        image.imageConfig.let(_.architecture)   // t"arm64"
+        ```
+    entry .wasm   assembles a Wasm OCI Artifact: one uncompressed `application/wasm` layer under a Wasm config
+        `Image.wasm(component, exports, imports, target, architecture, os, annotations)` is the
+        form the Wasm OCI Artifact layout prescribes for a WebAssembly workload. The one layer is
+        `Layer.blob(component, media"application/wasm")`: stored verbatim, so its `diffId` and
+        `digest` coincide. The config blob is a `WasmConfig` (media type
+        `application/vnd.wasm.config.v0+json`) whose `architecture` is `wasm` and whose `os`
+        names the WASI generation (`wasip2` by default), with `layerDigests` naming the
+        component blob and `component` recording the `exports`, `imports` and optional `target`
+        world as a `WasmComponent`. The manifest, index and archive are the ordinary OCI ones, so
+        the same registries and tools carry it; a runtime dispatches on the two media types to
+        hand the component to a Wasm engine (through a shim such as `io.containerd.wasmtime.v1`)
+        rather than a rootfs to `runc`.
+
+        ```scala
+        import soundness.*
+
+        val component: Data = hex"0061736d01000000"   // a compiled component's bytes
+
+        val artifact: Oci.Image =
+          Oci.Image.wasm
+            ( component,
+              exports = List(t"wasi:http/incoming-handler@0.2.0"),
+              imports = List(t"wasi:io/streams@0.2.0"),
+              target  = t"wasi:http/proxy@0.2.0" )
+
+        artifact.wasmConfig.let(_.os)                   // t"wasip2"
+        artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
+        ```
+
+        The interfaces are usually not typed by hand but read from the WIT world the component
+        was linked against: xenophile's `WitDialect.worlds(wit)(name)` gives a world whose
+        `exports` and `imports` pass straight through, which is how anthology's OCI edge and
+        the repository's own Wasm end-to-end packager (`tests/wasm/packager`) build the
+        artifacts they run under wasmtime and `wasmtime serve`. The bytes are never parsed: an
+        arbitrary payload is packaged just as a real component is.
+    entry .dataOpenable   the given behind `data.open[Image]()`: opens in-memory bytes as an OCI archive
+        A given in the companion, so it resolves with no import. It provides an
+        `Image.DataOpenable` and needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
+        `Tactic[Truncation.Error]` in scope, which it captures. Opening a filesystem *path*
+        is `imagePathOpenable`, in the JVM source set.
+    entry .Config   an OCI image config document: platform, rootfs diff_id chain, run configuration and history
+      detail
+          The config blob of a filesystem image (media type
+          `application/vnd.oci.image.config.v1+json`), as `Image.apply` writes it and
+          `Image.Handle#imageConfig` reads it back. It records the target `#architecture` and
+          `#os`, the `#rootfs` whose `diff_ids` are the uncompressed layers' digests in order,
+          the optional `#config` (a `ContainerConfig` of what to run), the build `#history`
+          and the `#created` time and `#author`. Its JSON encoding and decoding derive
+          through jacinta, and the member names are the wire names, so `created` renders as
+          `created`. Together with `WasmConfig` it makes up `Oci.Config`, the union a reader
+          gets from `Image.Handle#config` when it does not know which kind of artifact it
+          opened.
+      entry #architecture   the CPU architecture the image targets, such as `amd64` or `arm64`
+      entry #os   the operating system the image targets, such as `linux`
+      entry #rootfs   the `RootFs`: the ordered `diff_id`s of the uncompressed layers
+      entry #config   the `ContainerConfig` saying how to run the image, or `Unset`
+      entry #history   how each layer came to be, one `History` per layer or empty change, or `Unset`
+      entry #created   when the image was built, as RFC 3339 text, or `Unset`
+      entry #author   who built the image, or `Unset`
+    entry .Handle   the scoped view of an opened OCI archive: its index, manifest, config and blobs
+      detail
+          The capability `data.open[Image]()` or `path.open[Image]()` provides for the
+          duration of its block, and only then: it is an exclusive capability, so it cannot be
+          stored or returned. The archive's entries are read once and held for the handle's
+          lifetime, indexed by name, so every lookup after the first is a map access; archives
+          `Image#archive` writes put `index.json` before the blobs, so the metadata path is
+          cheap. Every method takes a `Tactic[Oci.Error]` and raises `Oci.Error` for a missing
+          or unreadable document or blob.
+
+          ```scala
+          import soundness.*
+          import codepages.utf8Codepage
+          import strategies.throwUnsafely
+
+          val image: Oci.Image = Oci.Image(List(Oci.Layer(Tarfile(Nil))))
+          val archive: Data = image.archive.source[Data].memoize
+
+          archive.open[Oci.Image](): handle ?=>
+            handle.index                                          // the top-level index
+            handle.manifest                                       // the manifest it names, digest-checked
+            handle.imageConfig                                    // the image config
+            handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
+          ```
+
+          A layer is reached three ways, which makes the cost explicit: `#compressed` streams
+          the stored bytes untouched, `#layer` decompresses them as a stream, and `#verified`
+          gathers them and checks digest and size against the descriptor. A reader which does
+          not know whether it has a filesystem image or a Wasm artifact asks for `#config`,
+          which dispatches on the config descriptor's media type.
+
+          Opening for writing is refused: `archive.open[Image](Write)` raises `Oci.Error` with
+          `WriteUnsupported`.
+      refer embarcadero.Oci
+      entry #blob   a blob by its `sha256:…` digest, as a stream of its stored chunks, unverified
+          The raw stored bytes (for a layer, the gzip-compressed tar) under
+          `blobs/sha256/<hex>`, as a `Stream[Data] over Credit`. Raises `Oci.Error` with
+          `UnsupportedDigest` for a digest whose algorithm is not `sha256`, and `MissingBlob`
+          when the archive has no such blob. Nothing is checked: `#verified` is the checked
+          read.
+      entry #index   the decoded top-level `index.json`, after checking the `oci-layout` marker
+          Reads the `oci-layout` document and requires its `imageLayoutVersion` to begin with
+          `1.`, then decodes `index.json` as an `Index`. Raises `Oci.Error` with
+          `MissingLayout`, `UnsupportedLayout`, `MissingIndex` or, for a document which does
+          not parse, `InvalidBlob`.
+      entry #manifest   the index's first manifest, or the one a descriptor selects, digest-verified
+          `handle.manifest` takes the first descriptor of `#index` (raising `Oci.Error` with
+          `NoManifest` if there is none); `handle.manifest(descriptor)` takes a chosen one. The
+          manifest blob is read through `#verified`, so a corrupted manifest is reported as
+          `DigestMismatch` rather than decoded, and then decoded as an `Oci.Manifest`.
+      entry #imageConfig   the decoded `Image.Config` of a manifest, by default the first
+          `handle.imageConfig` or `handle.imageConfig(manifest)`: the manifest's config blob,
+          verified and decoded as an `Image.Config`. For a Wasm artifact the blob is a
+          `WasmConfig`, and decoding it here fails with `InvalidBlob`; use `#config` when the
+          kind is not known.
+      entry #wasmConfig   the decoded `WasmConfig` of a manifest, by default the first
+          `handle.wasmConfig` or `handle.wasmConfig(manifest)`: the manifest's config blob,
+          verified and decoded as a `WasmConfig`.
+      entry #config   the config blob in whichever form its media type says: `Image.Config` or `WasmConfig`
+          `handle.config` or `handle.config(manifest)` returns an `Oci.Config`, decoding the
+          blob as a `WasmConfig` when the config descriptor's media type is
+          `application/vnd.wasm.config.v0+json` and as an `Image.Config` otherwise. This is the
+          entry point for a runtime deciding whether to unpack a rootfs or instantiate a
+          component:
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val archive: Data = Oci.Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
+
+          archive.open[Oci.Image](): handle ?=>
+            handle.config match
+              case config: Oci.WasmConfig   => config.component.let(_.exports)
+              case config: Oci.Image.Config => config.rootfs.diff_ids
+          ```
+      entry #compressed   a layer's stored blob, verbatim: for an OCI layer, the gzip-compressed tar
+          `#blob` by the descriptor's digest, as a `Stream[Data] over Credit`; the cheapest
+          way to copy a layer from one archive to another.
+      entry #layer   a layer's content as the uncompressed tar byte stream
+          Streams `#compressed` through a gzip decoder when the descriptor's media type carries
+          the `+gzip` suffix, and verbatim otherwise — so a Wasm artifact's
+          `application/wasm` layer comes back as the component's own bytes. The stream is not
+          checked against the digest, since checking would mean draining it first.
+      entry #verified   a blob gathered eagerly and checked against its descriptor's digest and size
+          Reads the whole blob into a `Data`, computes its SHA-256 and compares it with the
+          descriptor's `digest`, raising `Oci.Error` with `DigestMismatch(expected, actual)` if
+          they differ, and compares its length with the descriptor's `size`, raising
+          `InvalidBlob` if they differ. The opt-in checked path, used by `#manifest`,
+          `#imageConfig` and `#wasmConfig` for the documents they decode.
+    entry .DataOpenable   the `Openable` which opens in-memory `Data` as an OCI archive, read-only
+      detail
+          The class `Image.dataOpenable` provides, named rather than anonymous so that its
+          result type is stated exactly. It opens a `Data` (`Self`) as an `Image` (`Form`)
+          with no flags (`Operand = Nothing`), giving an `Image.Handle` (`Result`) for the
+          block. It needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
+          `Tactic[Truncation.Error]`. A mode including `Write` is refused with `Oci.Error`
+          (`WriteUnsupported`): archives are read, and written only by `Image#archive`.
+      entry #Self   `Data`: what is opened
+      entry #Form   `Image`: the form it is opened as
+      entry #Operand   `Nothing`: there are no open flags
+      entry #Result   `Image.Handle`: what the block receives
+      entry #open   reads the bytes as a tar, builds an `Image.Handle` over its entries and runs the block
+    entry #layers   the image's layers, in order, bottom-most first
+    entry #config   the config document: an `Image.Config` for a filesystem image, a `WasmConfig` for a Wasm artifact
+        The `Oci.Config` union; `#imageConfig` and `#wasmConfig` narrow it without a match.
+    entry #configBytes   the config blob as rendered: compact JSON, the bytes the config digest is taken over
+    entry #configDescriptor   the descriptor of the config blob, as the manifest references it
+    entry #manifest   the `Oci.Manifest` naming the config and each layer by descriptor
+    entry #manifestBytes   the manifest blob as rendered: compact JSON
+    entry #manifestDescriptor   the descriptor of the manifest blob, as the index references it
+    entry #index   the single-entry `Index` naming the manifest
+    entry #indexBytes   the `index.json` document as rendered: compact JSON
+    entry #imageConfig   the config as an `Image.Config`, or `Unset` for a Wasm artifact
+    entry #wasmConfig   the config as a `WasmConfig`, or `Unset` for a filesystem image
+    entry #blobs   every blob as a `(digest, bytes)` pair: the config, each layer, then the manifest
+        The content `#archive` writes under `blobs/sha256/`, keyed by the canonical
+        `sha256:<hex>` digest of each.
+    entry #archive   the image as an OCI image-layout tar: `oci-layout`, `index.json` and `blobs/sha256/…`
+        A `Tarfile` holding the `oci-layout` marker (`{"imageLayoutVersion":"1.0.0"}`), the
+        `index.json`, and one file per entry of `#blobs` named by its hex digest, each with mode
+        `UnixMode()`, owner and group `0` and mtime `0`, so the archive is reproducible. Read it
+        as bytes with `image.archive.source[Data]` and write it to a file: the result is what
+        `docker load`, `ctr images import`, `podman load` and `skopeo copy oci-archive:…`
+        accept, and what `data.open[Image]()` reads back.
+  entry .Index   an OCI image index: the top-level `index.json` listing one or more manifest descriptors
+    detail
+        The document (media type `application/vnd.oci.image.index.v1+json`) at the root of an
+        image layout, whose `#manifests` are the `Descriptor`s of the manifests the archive
+        holds. `Image.apply` and `Image.wasm` write a single-entry index; `Image.Handle#index`
+        reads one back, and `Image.Handle#manifest` takes its first entry by default. It
+        encodes and decodes as JSON through jacinta.
+    entry #schemaVersion   the index schema version: always `2`
+    entry #mediaType   the index's own media type, `application/vnd.oci.image.index.v1+json`
+    entry #manifests   the descriptors of the manifests, in order
+    entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+  entry .Layer   one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
+    detail
+        A layer carries two distinct digests, and the OCI format depends on both being right.
+        The `#diffId` is the SHA-256 of the *uncompressed* content, recorded in the image
+        config's `rootfs.diff_ids`; the `#digest` is the SHA-256 of the blob *as stored*,
+        recorded in the manifest's layer descriptor alongside its `size`. For a filesystem
+        layer the two differ, because storage gzip-compresses the tar; for a blob layer they
+        coincide. Both are computed lazily from the content, once.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+        layer.diffId == layer.digest   // false: the stored blob is gzipped
+        layer.descriptor.mediaType     // media"application/vnd.oci.image.layer.v1.tar+gzip"
+
+        val wasm: Oci.Layer = Oci.Layer.blob(hex"0061736d01000000", media"application/wasm")
+        wasm.diffId == wasm.digest     // true: stored verbatim
+        ```
+
+        A `Layer` has no public constructor: `.apply` makes a filesystem layer from a
+        `Tarfile`, and `.blob` makes a single-blob layer of any media type. The content is
+        held by name until first use, and memoized then.
+    refer embarcadero.Oci.Image
+    refer embarcadero.Oci.Descriptor
+    entry .apply   a filesystem layer from a `Tarfile`, stored gzip-compressed
+        `Layer(tar)` reads the tar's bytes as the raw content, compresses them with gzip for
+        the stored blob, and types the descriptor `application/vnd.oci.image.layer.v1.tar+gzip`.
+        Nothing is read until a digest or the blob is first asked for.
+    entry .blob   a layer whose content is one opaque blob, stored verbatim under its own media type
+        `Layer.blob(data, mediaType)` is the form a Wasm OCI Artifact uses for its
+        `application/wasm` component: no compression, so `#diffId` and `#digest` are the same
+        value and the descriptor's `size` is the data's length.
+    entry #raw   the uncompressed content: the tar bytes, or the blob itself
+    entry #blob   the content as stored: the gzipped tar, or the blob itself
+    entry #diffId   `sha256:<hex>` of `#raw`, as the image config's `rootfs.diff_ids` records it
+    entry #digest   `sha256:<hex>` of `#blob`, as the manifest's layer descriptor records it
+    entry #descriptor   the layer's `Descriptor`: media type, `#digest` and the stored blob's size
+  entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
+    detail
+        The typed, digest-addressed pointer every OCI document uses to name a blob: a
+        manifest's `config` and `layers`, an index's `manifests`. `#digest` is the
+        `sha256:<lowercase hex>` of the blob as stored (for a layer, compressed) and `#size`
+        its byte length, so a reader can fetch the blob and check both. `Layer#descriptor`
+        makes one for a layer, and `Image#configDescriptor` and `Image#manifestDescriptor` for
+        the documents. The spec's `platform` member for multi-architecture indexes is not yet
+        modelled. It is the OCI JSON descriptor; containerd's protobuf one is
+        `Containerd.ContentDescriptor`.
+    refer embarcadero.Oci.Layer
+    refer embarcadero.Containerd.ContentDescriptor
+    entry #mediaType   the blob's media type, such as `application/vnd.oci.image.layer.v1.tar+gzip`
+    entry #digest   the `sha256:<hex>` digest of the stored blob
+    entry #size   the stored blob's length in bytes
+    entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+    entry #urls   URLs the blob may be fetched from, or `Unset`
+  entry .History   one entry of an image config's `history`: how a layer, or an empty change, was produced
+    detail
+        A record in `Image.Config#history`, one per layer or per empty change, in order. Every
+        field is optional and omitted from the JSON when unset; the member names are the wire
+        names, so `created_by` and `empty_layer` keep their underscores.
+    entry #created   when the change was made, as RFC 3339 text, or `Unset`
+    entry #created_by   the command which produced the layer, or `Unset`
+    entry #author   who made the change, or `Unset`
+    entry #comment   a free-form note, or `Unset`
+    entry #empty_layer   `true` when the entry produced no filesystem layer, or `Unset`
+  entry .RootFs   the `rootfs` of an image config: the ordered `diff_id`s of the uncompressed layers
+    detail
+        `RootFs(type, diff_ids)`, where `type` is always `layers` and `diff_ids` lists each
+        layer's `Layer#diffId` bottom-most first. `Image.apply` builds it from the layers; a
+        reader checks an unpacked layer's uncompressed tar against the matching entry. The
+        member names are the wire names.
+    entry #type   the rootfs type: always `layers`
+    entry #diff_ids   the layers' `diffId`s, in order
+  entry .ContainerConfig   the execution parameters of an image: user, environment, entrypoint, command, working directory, labels
+    detail
+        The `config` member of an `Image.Config`: what a runtime does with the image's
+        filesystem. The member names are capitalised to match the wire format inherited from
+        the Docker image spec (`Cmd`, `Env`, `WorkingDir`), and every field is optional and
+        omitted from the JSON when unset.
+
+        ```scala
+        import soundness.*
+
+        val config: Oci.ContainerConfig =
+          Oci.ContainerConfig
+            ( Env        = List(t"PATH=/usr/bin:/bin"),
+              Entrypoint = List(t"/usr/bin/server"),
+              Cmd        = List(t"--port", t"8080"),
+              WorkingDir = t"/app",
+              Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
+        ```
+    refer embarcadero.Oci.Image
+    entry #User   the user (and optionally group) to run as, or `Unset`
+    entry #Env   environment variables as `NAME=value` entries, or `Unset`
+    entry #Entrypoint   the executable and its fixed arguments, or `Unset`
+    entry #Cmd   the default arguments, appended to `Entrypoint` or run alone, or `Unset`
+    entry #WorkingDir   the working directory the process starts in, or `Unset`
+    entry #Labels   free-form `Map[Text, Text]` labels, or `Unset`
+    entry #StopSignal   the signal which stops the container, such as `SIGTERM`, or `Unset`
+  entry .WasmConfig   a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
+    detail
+        The config blob of a Wasm OCI Artifact (media type
+        `application/vnd.wasm.config.v0+json`). It stands where an `Image.Config` would, but
+        describes a component rather than a filesystem: there is no `rootfs`, because there
+        are no layers to stack; `#layerDigests` names the single `application/wasm` blob
+        directly, and `#component` states the interfaces it needs. `#architecture` is `wasm`
+        and `#os` names the WASI generation (`wasip1`, `wasip2` or `wasip3`): a runtime
+        dispatches on those two fields to recognise a Wasm workload at all. `Image.wasm` builds
+        one, `Image#wasmConfig` and `Image.Handle#wasmConfig` give it back, and it is one arm
+        of `Oci.Config`. The JSON uses the spec's camelCase `layerDigests` key, and omits
+        `created` and `author` when unset.
+    refer embarcadero.Oci.Image
+    refer embarcadero.Oci.WasmComponent
+    entry #created   when the artifact was built, as RFC 3339 text, or `Unset`
+    entry #author   who built the artifact, or `Unset`
+    entry #architecture   always `wasm`
+    entry #os   the WASI generation: `wasip1`, `wasip2` (the default) or `wasip3`
+    entry #layerDigests   the digests of the artifact's layers: the one `application/wasm` blob
+    entry #component   the `WasmComponent` naming the exports, imports and target world, or `Unset`
+  entry .WasmComponent   the `component` member of a Wasm artifact config: the interfaces it exports and imports, and its target world
+    detail
+        What a Wasm OCI Artifact says about the Component Model contract its component was
+        built to: `#exports`, the interfaces it offers (`wasi:http/incoming-handler@0.2.0`),
+        `#imports`, the capabilities it needs (`wasi:io/streams@0.2.0`), and `#target`, the
+        standard world it fits (`wasi:http/proxy@0.2.0`), if any. The Wasm OCI Artifact layout
+        requires this member for `wasip2` artifacts, and it is what lets a host decide, before
+        fetching the component, whether it can satisfy the workload. `Image.wasm` builds it
+        from its `exports`, `imports` and `target` parameters, usually read from the WIT world
+        the component was linked against.
+    refer embarcadero.Oci.WasmConfig
+    entry #exports   the interfaces the component exports, as `namespace:package/interface@version` names
+    entry #imports   the interfaces the component imports
+    entry #target   the standard world the component targets, or `Unset`
 
 entry .ImageOpenable   the `Openable` which opens a filesystem path as an OCI archive, read-only
   detail
       In the JVM source set, since it reads the tar from disk through bitumen's
       `TarOpenable`. `ImageOpenable[path]` opens any `path` which is `Abstractable across
       Paths to Text` (`Self`) as an `Image` (`Form`), with no flags (`Operand = Nothing`),
-      giving an `Image.Handle` (`Result`) for the block. It needs a `Tactic[Oci.Error]`, a
+      giving an `Oci.Image.Handle` (`Result`) for the block. It needs a `Tactic[Oci.Error]`, a
       `Tactic[Tar.Error]` and a `Tactic[Truncation.Error]`, and refuses a mode including
       `Write` with `Oci.Error` (`WriteUnsupported`). The given `imagePathOpenable` provides
-      it, so a program writes `path.open[Image]()` rather than naming the class.
+      it, so a program writes `path.open[Oci.Image]()` rather than naming the class.
   refer embarcadero.imagePathOpenable
   entry #Self   the path type opened
   entry #Form   `Image`: the form it is opened as
@@ -684,7 +676,7 @@ entry .imagePathOpenable   the given behind `path.open[Image]()` on the JVM: ope
 
     val file: Path on Linux = % / "tmp" / "image.tar"
 
-    file.open[Image](): handle ?=>
+    file.open[Oci.Image](): handle ?=>
       handle.manifest.layers.map(_.digest)
     ```
 
@@ -777,7 +769,7 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #images   the images in the bound namespace, optionally filtered, as `ImageRecord`s
       `client.images()` or `client.images(filters)`, the images service's `List` call. An
       `ImageRecord` is the daemon's metadata — name, labels and a `ContentDescriptor` of
-      the manifest — not the image content; an image is loaded from an `Image#archive`
+      the manifest — not the image content; an image is loaded from an `Oci.Image#archive`
       with `ctr images import`, since the content store is not part of this client.
   entry #image   a single image by reference, as an `ImageRecord`
       The images service's `Get` call, by a reference such as
@@ -916,10 +908,10 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
     detail
         The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
-        manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Descriptor`, which
+        manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Oci.Descriptor`, which
         has the same meaning on the other side of the library. The `platform` member is not
         modelled.
-    refer embarcadero.Descriptor
+    refer embarcadero.Oci.Descriptor
     entry #mediaType   the blob's media type, as text
     entry #digest   the `sha256:<hex>` digest of the blob
     entry #size   the blob's length in bytes
@@ -930,9 +922,9 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
         The metadata record of the images service, which `Containerd#images` and
         `Containerd#image` return: `#name` is the reference (`docker.io/library/alpine:latest`)
         and `#target` the `ContentDescriptor` of the manifest in the content store. Named
-        `ImageRecord` to keep clear of the OCI `Image` this library builds; the record is the
+        `ImageRecord` to keep clear of the OCI `Oci.Image` this library builds; the record is the
         daemon's index entry, not the content.
-    refer embarcadero.Image
+    refer embarcadero.Oci.Image
     entry #name   the image reference
     entry #labels   free-form `Map[Text, Text]` labels
     entry #target   the `ContentDescriptor` of the image's manifest

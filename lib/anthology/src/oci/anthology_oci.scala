@@ -115,7 +115,7 @@ object ociEdges:
         jnf.Files.readAllBytes(jnf.Paths.get(component.encode.s).nn).nn.pipe(Array.unsafeFrozen)
 
       val image =
-        Image.wasm
+        Oci.Image.wasm
           ( bytes,
             exports      = exports,
             imports      = imports,

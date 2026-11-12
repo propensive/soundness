@@ -47,8 +47,8 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 
 ### Building an image
 
-A layer is a tar archive of files. Given a `Tarfile`, `Layer` wraps it and computes the digests
-which the format requires:
+A layer is a tar archive of files. Given a `Tarfile`, `Oci.Layer` wraps it and computes the
+digests which the format requires:
 
 ```scala
 def entry(name: Text, content: Text): Tar.Entry =
@@ -60,14 +60,14 @@ def entry(name: Text, content: Text): Tar.Entry =
      mtime = 0.bits.u32,
      data  = Archive.Body(content.in[Data]) )
 
-val layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+val layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
 ```
 
-An `Image` assembles one or more layers with a configuration, which holds the command to run, the
-environment and the working directory:
+An `Oci.Image` assembles one or more layers with a configuration, which holds the command to
+run, the environment and the working directory:
 
 ```scala
-val image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
+val image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
 ```
 
 ### What an image contains
@@ -105,14 +105,14 @@ filesystem at all. A runtime such as [wasmtime](https://wasmtime.dev/), reached 
 containerd shim like `io.containerd.wasmtime.v1`, instantiates it directly. What changes is
 not the distribution format, but what the configuration says the artifact *is*.
 
-`Image.wasm` assembles that form, a
+`Oci.Image.wasm` assembles that form, a
 [Wasm OCI Artifact](https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/):
 
 ```scala
 val component: Data = hex"0061736d01000000"
 
 val artifact =
-  Image.wasm
+  Oci.Image.wasm
    ( component,
      exports = List(t"wasi:http/incoming-handler@0.2.0"),
      imports = List(t"wasi:io/streams@0.2.0"),
@@ -156,7 +156,7 @@ world http {
 }"""
 
 WitDialect.worlds(wit)(t"http").let: world =>
-  Image.wasm(component, exports = world.exports, imports = world.imports)
+  Oci.Image.wasm(component, exports = world.exports, imports = world.imports)
 ```
 
 The [compiler](compiler.md#wasi-components) does exactly this on its edge which produces an OCI
@@ -175,7 +175,7 @@ val archive: Data = image.archive.source[Data].memoize
 ```scala fuel
 run
 ##
-archive.open[Image](): handle ?=>
+archive.open[Oci.Image](): handle ?=>
   handle.index.manifests.each(descriptor => Out.println(descriptor.mediaType.show))
   handle.manifest.layers.each(descriptor => Out.println(descriptor.digest.show))
   Out.println(handle.imageConfig.config.let(_.Cmd).inspect)
@@ -202,10 +202,10 @@ dispatches on the media type of the config descriptor. Telling a component from 
 a question which the archive answers, and not one the caller has to have known:
 
 ```scala
-archive.open[Image](): handle ?=>
+archive.open[Oci.Image](): handle ?=>
   handle.config match
-    case config: WasmConfig  => config.component
-    case config: Image.Config => config.rootfs
+    case config: Oci.WasmConfig   => config.component
+    case config: Oci.Image.Config => config.rootfs
 ```
 
 ### Connecting to a daemon
