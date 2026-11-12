@@ -26,9 +26,9 @@ detail
 
     case class Person(name: Text, age: Int)
 
-    val alice: Person = t"{name: Alice, age: 30}".read[Yaml].as[Person]
-    val same: Person = t"name: Alice\nage: 30".read[Person in Yaml]
-    val text: Text = Person(t"Alice", 30).in[Yaml].show   // name: Alice\nage: 30\n
+    val percy: Person = t"{name: Percy, age: 30}".read[Yaml].as[Person]
+    val same: Person = t"name: Percy\nage: 30".read[Person in Yaml]
+    val text: Text = Person(t"Percy", 30).in[Yaml].show   // name: Percy\nage: 30\n
     ```
 
     Decoding is the derivation every other format uses (wisteria's, over `Decodable in Yaml`
@@ -85,12 +85,12 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
 
       case class Person(name: Text, age: Int)
 
-      val doc: Yaml = t"name: Alice\nage: 30".read[Yaml]
-      doc.as[Person]                 // Person(t"Alice", 30)
+      val doc: Yaml = t"name: Percy\nage: 30".read[Yaml]
+      doc.as[Person]                 // Person(t"Percy", 30)
       doc(t"age").as[Int]            // 30
       doc.age.as[Int]                // 30, with `dynamicYaml` in scope
       (doc.age = 31).as[Person]      // a new document; `doc` is unchanged
-      doc.show                       // name: Alice\nage: 30\n
+      doc.show                       // name: Percy\nage: 30\n
       ```
 
       A document is a value: every update (`#update`, `#updateDynamic`, a `lens`) builds a
@@ -154,8 +154,8 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
 
       case class Person(name: Text, age: Int, email: Text)
 
-      t"name: Alice\nage: 30\nemail: a@b.c".read[Yaml].as[Person]
-      capture[Yaml.Error](t"name: Alice\nage: thirty".read[Yaml].as[Person]).reason
+      t"name: Percy\nage: 30\nemail: percy@example.com".read[Yaml].as[Person]
+      capture[Yaml.Error](t"name: Percy\nage: thirty".read[Yaml].as[Person]).reason
       // Yaml.Error.Reason.NotType(Yaml.Primitive.Str, Yaml.Primitive.Integer)
       ```
   entry #apply   `doc(index)` is a sequence item; `doc(field)` is a mapping value, or absent
@@ -170,7 +170,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
       import strategies.throwUnsafely
 
       t"[10, 20, 30]".read[Yaml](1).as[Int]            // 20
-      t"{name: Alice}".read[Yaml](t"age").as[Option[Int]]   // None
+      t"{name: Percy}".read[Yaml](t"age").as[Option[Int]]   // None
       ```
   entry #selectDynamic   `doc.field`: a mapping value by name, with dynamic access enabled
       `doc.name` desugars to `selectDynamic("name")` and is `#apply` with a text key, so a
@@ -196,7 +196,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
       import strategies.throwUnsafely
       import dynamicAccess.dynamicYaml
 
-      val doc = t"{name: Alice, age: 30}".read[Yaml]
+      val doc = t"{name: Percy, age: 30}".read[Yaml]
       (doc.age = 31)(t"age").as[Int]           // 31
       (doc.age = Unset)(t"age").as[Option[Int]]   // None
       ```
@@ -228,7 +228,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
         case _                        => -1
       ```
   entry .applyDynamicNamed   `Yaml.make(field = yaml, …)`: a mapping document from named arguments
-      `Yaml.make(name = t"Anna".in[Yaml], age = 30.in[Yaml])` desugars to
+      `Yaml.make(name = t"Kate".in[Yaml], age = 30.in[Yaml])` desugars to
       `applyDynamicNamed("make")(("name", …), ("age", …))` and builds a mapping with the
       entries in the order written; each argument is already a `Yaml`, so nest `Yaml.make`
       calls for nested mappings. The only method name accepted is `make`.
@@ -239,7 +239,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
 
       case class Person(name: Text, age: Int)
 
-      Yaml.make(name = t"Anna".in[Yaml], age = 30.in[Yaml]).as[Person]
+      Yaml.make(name = t"Kate".in[Yaml], age = 30.in[Yaml]).as[Person]
       ```
   entry .showable   renders a document as block-style YAML text, given a `Yaml.Formatting`
       The `Showable` in `Yaml`'s companion, so `doc.show` works wherever a `Yaml.Formatting`
@@ -257,14 +257,14 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
       import strategies.throwUnsafely
       import formatting.blockYamlFormatting
 
-      t"{name: Alice, tags: [x, y], meta: {}}".read[Yaml].show
-      // name: Alice
+      t"{name: Percy, tags: [x, y], meta: {}}".read[Yaml].show
+      // name: Percy
       // tags:
       //   - x
       //   - y
       // meta: {}
       ```
-  entry .inspectable   a debug rendering of a document on one line: `yaml"name: Alice\nage: 30\n"`
+  entry .inspectable   a debug rendering of a document on one line: `yaml"name: Percy\nage: 30\n"`
       Needs no `Formatting`, so a debugger or a test failure can always show a document: the
       block-style text with its line breaks escaped, wrapped as `yaml"…"`, so a document is
       distinguishable from the `Text` which holds the same characters.
@@ -549,7 +549,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
         extends Error(m"${items.size} issues"):
           def +(focus: Text): Issues = Issues(items :+ focus)
 
-        val doc = t"name: Alice\nage: thirty\n".read[Yaml]
+        val doc = t"name: Percy\nage: thirty\n".read[Yaml]
 
         validate[Yaml.Focus](Issues()):
           case error: Yaml.Error => accrual + prior.let(_.pointer.encode).or(t"#")
@@ -575,7 +575,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
         import soundness.*
         import strategies.throwUnsafely
 
-        val node: Yaml.Ast = Yaml.unseal(t"{name: Alice, tags: [a, b]}".read[Yaml])
+        val node: Yaml.Ast = Yaml.unseal(t"{name: Percy, tags: [a, b]}".read[Yaml])
 
         node.isObject                                    // true
         node.objectIndexOf("tags")                       // 1
@@ -865,7 +865,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
 
         case class Person(name: Text, age: Int) derives Yaml.Direct
 
-        Yaml.Printable.print(Person(t"Ada", 36))   // name: Ada\nage: 36\n
+        Yaml.Printable.print(Person(t"Hal", 36))   // name: Hal\nage: 36\n
         ```
     entry .emit   writes a value's text in blocks of the `Buffering` capacity, handing each to a function
         The push form for a large value: each completed line is handed to `deliver` once the
@@ -1059,11 +1059,11 @@ entry .Yaml2   the lowest priority layer of `object Yaml`: the tree codecs and t
 
       case class Member(name: Text, age: Optional[Int])
 
-      t"name: Eve\nage: null".read[Yaml].as[Member]   // Member(t"Eve", Unset)
+      t"name: Nym\nage: null".read[Yaml].as[Member]   // Member(t"Nym", Unset)
 
       locally:
         import optionalityOptions.strictYamlNulls
-        capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
+        capture[Yaml.Error](t"name: Nym\nage: null".read[Yaml].as[Member]).reason
         // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
       ```
   entry #optionalEncodable   `Optional[T] is Encodable in Yaml`: `Unset` encodes as absent
@@ -1216,13 +1216,13 @@ entry .y   the `y"…"` interpolator: a YAML literal, checked as the code compil
 
     case class Person(name: Text, age: Int)
 
-    val name = t"Alice"
+    val name = t"Percy"
     val age = 30
 
     y"""
       name: $name
       age: $age
-    """.as[Person]                        // Person(t"Alice", 30)
+    """.as[Person]                        // Person(t"Percy", 30)
 
     val more: List[Int] = List(2, 3)
     y"[$age, $more*]".as[List[Int]]       // List(30, 2, 3)
@@ -1236,15 +1236,15 @@ entry .y   the `y"…"` interpolator: a YAML literal, checked as the code compil
     import soundness.*
     import strategies.throwUnsafely
 
-    t"name: Alice".read[Yaml] match
-      case y"name: $n" => n.as[Text]   // t"Alice"
+    t"name: Percy".read[Yaml] match
+      case y"name: $n" => n.as[Text]   // t"Percy"
       case _           => t""
     ```
 
 entry .yp   the `yp"…"` interpolator: a `YamlPath` literal, checked as the code compiles
     `yp"#/servers/0/port"` is the `YamlPath` of that text, decoded while the code compiles
     through `YamlPath`'s own decoder, so a malformed path is a compile error pointing at the
-    offending character: `yp"/foo"` is rejected at the `/` (_a YAML path must begin with
+    offending character: `yp"/servers"` is rejected at the `/` (_a YAML path must begin with
     '#'_), and `yp"#/a~2b"` at the `~`. The interpolator takes no `$`-substitutions.
 
     ```scala
@@ -1292,9 +1292,9 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
 
             case class Member(name: Text, age: Optional[Int])
 
-            t"name: Eve\nage: null".read[Yaml].as[Member]        // Member(t"Eve", Unset)
-            t"name: Eve".read[Yaml].as[Member]                   // Member(t"Eve", Unset)
-            capture[Yaml.Error](t"name: Eve\nage: abc".read[Yaml].as[Member]).reason
+            t"name: Nym\nage: null".read[Yaml].as[Member]        // Member(t"Nym", Unset)
+            t"name: Nym".read[Yaml].as[Member]                   // Member(t"Nym", Unset)
+            capture[Yaml.Error](t"name: Nym\nage: abc".read[Yaml].as[Member]).reason
             // Yaml.Error.Reason.NotType(Yaml.Primitive.Str, Yaml.Primitive.Integer)
       alternative Strict nulls
         code
@@ -1304,7 +1304,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
 
             case class Member(name: Text, age: Optional[Int])
 
-            capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
+            capture[Yaml.Error](t"name: Nym\nage: null".read[Yaml].as[Member]).reason
             // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
       alternative Strict absence
         code
@@ -1314,7 +1314,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
 
             case class Member(name: Text, age: Optional[Int])
 
-            capture[Yaml.Error](t"name: Eve".read[Yaml].as[Member]).reason
+            capture[Yaml.Error](t"name: Nym".read[Yaml].as[Member]).reason
             // Yaml.Error.Reason.Absent
       alternative Lenient faults
         code
@@ -1324,7 +1324,7 @@ entry .optionalityOptions   how an `Optional` or `Option` field reads a missing 
 
             case class Member(name: Text, age: Optional[Int])
 
-            t"name: Eve\nage: abc".read[Yaml].as[Member]         // Member(t"Eve", Unset)
+            t"name: Nym\nage: abc".read[Yaml].as[Member]         // Member(t"Nym", Unset)
       ##
       ```
   entry .strictYamlAbsence   a missing key is `Yaml.Error(Absent)`, even for an `Optional` field

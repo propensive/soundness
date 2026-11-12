@@ -26,13 +26,13 @@ detail
     import strategies.throwUnsafely
     import xmlSchemas.freeformXmlSchema
 
-    case class Worker(name: Text, age: Int)
+    case class Person(name: Text, age: Int)
 
-    val xml: Xml = t"<Worker><name>Alice</name><age>30</age></Worker>".read[Xml]
-    val worker: Worker = xml.as[Worker]                   // Worker(t"Alice", 30)
-    val back: Xml = worker.in[Xml]                        // x"<Worker><name>Alice</name><age>30</age></Worker>"
-    val text: Text = worker.in[Text over Xml]
-    val again: Worker = text.read[Worker in Xml]
+    val xml: Xml = t"<Person><name>Percy</name><age>30</age></Person>".read[Xml]
+    val person: Person = xml.as[Person]                   // Person(t"Percy", 30)
+    val back: Xml = person.in[Xml]                        // x"<Person><name>Percy</name><age>30</age></Person>"
+    val text: Text = person.in[Text over Xml]
+    val again: Person = text.read[Person in Xml]
     ```
 
     The pieces, and where to find them:
@@ -120,11 +120,11 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
       import xmlSchemas.freeformXmlSchema
       import dynamicAccess.dynamicXml
 
-      val doc: Xml = t"<library><book id=\"1\"><title>Dune</title></book></library>".read[Xml]
-      doc.book().title().as[Text]            // t"Dune"
-      doc.book(Prim).show                    // t"<book id=\"1\"><title>Dune</title></book>"
+      val doc: Xml = t"<library><book id=\"1\"><title>Hamlet</title></book></library>".read[Xml]
+      doc.book().title().as[Text]            // t"Hamlet"
+      doc.book(Prim).show                    // t"<book id=\"1\"><title>Hamlet</title></book>"
       doc.selectText(xp"//book/@id")         // t"1"
-      x"<book><title>Dune</title></book>" == doc.book()
+      x"<book><title>Hamlet</title></book>" == doc.book()
       ```
 
       The type carries three refinements. `Topic` is the label of the node as a literal type
@@ -171,8 +171,8 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
 
       **Direct codecs.** `Xml.Parsable` and `Xml.Printable` read and write a value with no
       tree built, through an `Xml.Reader` or an `Xml.Out`. A record opts in with
-      `given Foo is Xml.Parsable = Xml.Parsable.derived` (or `.staged`,
-      `Inlinable.parsable[Foo]`, `Inlinable.printable[Foo]`), with `derives Xml.Direct`, or
+      `given Play is Xml.Parsable = Xml.Parsable.derived` (or `.staged`,
+      `Inlinable.parsable[Play]`, `Inlinable.printable[Play]`), with `derives Xml.Direct`, or
       for every record at once with `import codecs.direct`.
 
       **Schemas.** `object Orders extends Xml.Provider(cp"/xsd/orders.xsd")` reads an XML
@@ -218,10 +218,10 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
       import strategies.throwUnsafely
       import xmlSchemas.freeformXmlSchema
 
-      case class Worker(name: Text, age: Int)
+      case class Person(name: Text, age: Int)
 
       x"<message>42</message>".as[Int]                                       // 42
-      x"<Worker><name>Alice</name><age>30</age></Worker>".as[Worker]         // Worker(t"Alice", 30)
+      x"<Person><name>Percy</name><age>30</age></Person>".as[Person]         // Person(t"Percy", 30)
       x"<message>many</message>".as[Int]                                     // raises Xml.Error
       ```
 
@@ -239,13 +239,13 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
   entry #selectDynamic   `xml.child`: every child element with the name, as a `Fragment`
       Dynamic navigation, gated by an erased `Xml is Dynamical` — `import
       dynamicAccess.dynamicXml`, or a `dynamically[Xml]:` block — and the `Xml.Scope` in
-      scope. `xml.foo` selects every child element labelled `foo` of every element node in
+      scope. `xml.book` selects every child element labelled `book` of every element node in
       the fragment, in document order; XML tags are not unique, so the result is a `Fragment`
       of zero or more. A prefixed name (`` xml.`a:x` ``) whose prefix is bound, by the
       `Scope` given or by the parent element's own bindings, selects by resolved name,
       whatever prefix the child uses; an unbound prefix matches the raw label.
   entry #applyDynamic   `xml.child(ordinal)`: one child element with the name, defaulting to the first
-      `xml.foo()` is the first child element labelled `foo` and `xml.foo(Sec)` the second,
+      `xml.book()` is the first child element labelled `book` and `xml.book(Sec)` the second,
       each as a one-node `Fragment`, or an empty `Fragment` when there is no such child.
       Gated as `#selectDynamic` is, so the steps chain: `data.b().c().as[Int]`.
 
@@ -284,9 +284,9 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         import strategies.throwUnsafely
         import xmlSchemas.freeformXmlSchema
 
-        val built = Xml.Element(t"book", Attributes(t"id" -> t"1"), Array(Xml.Text(t"Dune")))
-        built == t"<book id=\"1\">Dune</book>".read[Xml]          // true
-        built.show                                                 // t"<book id=\"1\">Dune</book>"
+        val built = Xml.Element(t"book", Attributes(t"id" -> t"1"), Array(Xml.Text(t"Hamlet")))
+        built == t"<book id=\"1\">Hamlet</book>".read[Xml]        // true
+        built.show                                                 // t"<book id=\"1\">Hamlet</book>"
 
         Xml.Element(t"p:a", Attributes.empty, Array(), Xml.Scope(t"p" -> t"urn:p")).show
         // t"<p:a xmlns:p=\"urn:p\"/>"
@@ -437,10 +437,10 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         import strategies.throwUnsafely
         import xmlSchemas.freeformXmlSchema
 
-        case class Worker(name: Text, age: Int)
+        case class Person(name: Text, age: Int)
 
         val attempt = validate[Xml.Focus]:
-          x"<Worker><name>Ann</name><age>many</age></Worker>".as[Worker]
+          x"<Person><name>Nym</name><age>many</age></Person>".as[Person]
         ```
     refer xylophone.Xml.Focus
     entry .Reason   why the XML could not be read, each with its number
@@ -594,15 +594,15 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
       ```scala
       import soundness.*
 
-      val worker = Xml.Element(t"Worker", Attributes.empty, Array(Xml.Element(t"name", Attributes.empty, Array(Xml.Text(t"Alice")))))
+      val person = Xml.Element(t"Person", Attributes.empty, Array(Xml.Element(t"name", Attributes.empty, Array(Xml.Text(t"Percy")))))
 
       locally:
         import formatting.compactXmlFormatting
-        worker.show   // t"<Worker><name>Alice</name></Worker>"
+        person.show   // t"<Person><name>Percy</name></Person>"
 
       locally:
         import formatting.indentedXmlFormatting
-        worker.show   // t"<Worker>\n  <name>Alice</name>\n</Worker>\n"
+        person.show   // t"<Person>\n  <name>Percy</name>\n</Person>\n"
       ```
 
       An element with character data among its children is always written inline, so
@@ -701,7 +701,7 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
   entry .conversion3   widens an `Xml of label` to an `Xml of content` where the label is within the content
   entry .comment   admits an `Xml.Comment` as the child of any typed tag
   entry .xmlConversion   converts any `Encodable in Xml` value to `Xml`, where an `Xml` is expected
-      The coercion behind `document.lens(_.Worker = Worker(t"Alice", 30))`: the right-hand
+      The coercion behind `document.lens(_.Person = Person(t"Percy", 30))`: the right-hand
       side of a lens assignment, or any `Xml` parameter, accepts a case class, an `Int` or a
       `Text` and encodes it. Other formats ask for an import such as
       `conversions.encodableToJson`; XML's lives on the companion.
@@ -883,8 +883,8 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
       `<reference xmlns="">` and reads the element in no namespace. Exported as
       `xylophone.unqualified` and `soundness.unqualified`.
   entry .attribute   the annotation which makes a field an attribute rather than a child element
-      `case class Book(title: Text, @attribute isbn: Text)` encodes as
-      `<Book isbn="0441013597"><title>Dune</title></Book>` and decodes the attribute back.
+      `case class Play(title: Text, @attribute year: Int)` encodes as
+      `<Play year="1603"><title>Hamlet</title></Play>` and decodes the attribute back.
       An `Optional` attribute field is simply absent when `Unset`. The annotation is reached
       as `@attribute` through the umbrella's type alias `soundness.attribute` (a term named
       `attribute` would clash with galilei's and tarantula's), as `@Xml.attribute`, or as
@@ -893,10 +893,10 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
       ```scala
       import soundness.*
 
-      case class Book(title: Text, @attribute isbn: Text)
+      case class Play(title: Text, @attribute year: Int)
 
-      Book(t"Dune", t"0441013597").in[Xml]
-      // x"""<Book isbn="0441013597"><title>Dune</title></Book>"""
+      Play(t"Hamlet", 1603).in[Xml]
+      // x"""<Play year="1603"><title>Hamlet</title></Play>"""
       ```
   entry .XmlAttribute   a typed tag's attribute: its label, the elements it applies to, or `global`
     detail
@@ -982,13 +982,13 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
       import strategies.throwUnsafely
       import xmlSchemas.freeformXmlSchema
 
-      case class Tally(name: Text, count: Optional[Int])
+      case class Person(name: Text, age: Optional[Int])
 
-      x"<Tally><name>Ann</name></Tally>".as[Tally]                          // Tally(t"Ann", Unset)
+      x"<Person><name>Nym</name></Person>".as[Person]                       // Person(t"Nym", Unset)
 
       locally:
         import optionalityOptions.lenientXmlFaults
-        x"<Tally><name>Ann</name><count>many</count></Tally>".as[Tally]     // Tally(t"Ann", Unset)
+        x"<Person><name>Nym</name><age>many</age></Person>".as[Person]      // Person(t"Nym", Unset)
       ```
   entry .optionalEncodable   writes an `Optional[T]` field: no element at all when `Unset`
       `Unset` encodes to an empty `Fragment`, which the repeatable-aware product encoder
@@ -1003,8 +1003,8 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
 
       case class Profile(name: Text, stock: Map[Text, Int])
 
-      Profile(t"Ann", Map(t"apple" -> 3)).in[Xml]
-      // x"<Profile><name>Ann</name><stock><key>apple</key><value>3</value></stock></Profile>"
+      Profile(t"Nym", Map(t"apple" -> 3)).in[Xml]
+      // x"<Profile><name>Nym</name><stock><key>apple</key><value>3</value></stock></Profile>"
       ```
   entry .mapDecodable   reads a `Map[K, V]` from every entry element with the field's name
       Each gathered element's `<key>` and `<value>` children decode as the key and value
@@ -1100,13 +1100,13 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         import strategies.throwUnsafely
         import xmlSchemas.freeformXmlSchema
 
-        case class Worker(name: Text, age: Int)
-        case class Firm(name: Text, ceo: Worker)
+        case class Person(name: Text, age: Int)
+        case class Play(title: Text, hero: Person)
 
-        given Worker is Xml.Parsable = Xml.Parsable.derived
-        given Firm is Xml.Parsable = Xml.Parsable.derived
+        given Person is Xml.Parsable = Xml.Parsable.derived
+        given Play is Xml.Parsable = Xml.Parsable.derived
 
-        t"<Firm><name>Acme</name><ceo><name>Alice</name><age>30</age></ceo></Firm>".read[Firm in Xml]
+        t"<Play><title>Henry IV</title><hero><name>Hal</name><age>30</age></hero></Play>".read[Play in Xml]
         ```
 
         Semantics mirror the tree path exactly: wire names, `@attribute` fields,
@@ -1131,7 +1131,7 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         `Fragment`. Absence and attribute reads delegate to the decoder over the same
         sentinel inputs the tree derivation would hand it.
     entry .derived   a Wisteria-derived direct parser for a case class or sealed type, wrapped as nominal
-        `given Foo is Xml.Parsable = Xml.Parsable.derived`. Each field's parser resolves
+        `given Play is Xml.Parsable = Xml.Parsable.derived`. Each field's parser resolves
         through `Xml.Field`: an explicit `Parsable`, a text codec, structural derivation, or
         the bridge over a `Decodable in Xml`, so nested records parse directly too.
     entry .staged   a macro-generated monomorphic parser for a case class, faster than `derived`
@@ -1228,24 +1228,24 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         ```scala fuel
         alternative Through a tree
           code
-              case class Worker(name: Text, age: Int)
+              case class Person(name: Text, age: Int)
 
-              Worker(t"Alice", 30).in[Text over Xml]
-              // t"<Worker><name>Alice</name><age>30</age></Worker>"
+              Person(t"Percy", 30).in[Text over Xml]
+              // t"<Person><name>Percy</name><age>30</age></Person>"
         alternative Direct
           code
-              case class Worker(name: Text, age: Int)
-              given Worker is Xml.Printable = Inlinable.printable[Worker]
+              case class Person(name: Text, age: Int)
+              given Person is Xml.Printable = Inlinable.printable[Person]
 
-              Worker(t"Alice", 30).in[Text over Xml]
+              Person(t"Percy", 30).in[Text over Xml]
               // the same text, written with no tree built
         alternative In blocks
           code
-              case class Worker(name: Text, age: Int)
-              given Worker is Xml.Printable = Inlinable.printable[Worker]
+              case class Person(name: Text, age: Int)
+              given Person is Xml.Printable = Inlinable.printable[Person]
 
               val blocks = scala.collection.mutable.ListBuffer[Text]()
-              Xml.Printable.emit(Worker(t"Alice", 30), blocks += _)
+              Xml.Printable.emit(Person(t"Percy", 30), blocks += _)
         ##
         ```
 
@@ -1276,10 +1276,10 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
     entry .writeNodes   writes a field's nodes compactly
     entry .writeField   calls a nominal `Printable` in a field position of a generated printer
     entry #write   writes a value as its own element, or as a field's element with a label
-  entry .Direct   the `derives` carrier for a generated parser and printer: `case class Foo(…) derives Xml.Direct`
+  entry .Direct   the `derives` carrier for a generated parser and printer: `case class Play(…) derives Xml.Direct`
     detail
         A `Self`-typed typeclass has no type parameters, so it cannot appear in a `derives`
-        clause itself; `Xml.Direct[Foo]` holds `Foo`'s generated `Xml.Parsable` and
+        clause itself; `Xml.Direct[Play]` holds `Play`'s generated `Xml.Parsable` and
         `Xml.Printable`, generated once into the companion by `derived`, and the `declared`
         givens of `Xml.Parsable` and `Xml.Printable` resolve through it with no import.
 
@@ -1598,7 +1598,7 @@ entry .x   the `x"…"` interpolator: an XML literal parsed and checked as the c
       ```scala
       import soundness.*
 
-      val name = t"Alice"
+      val name = t"Percy"
       x"<user>$name</user>"
       x"<?stylesheet href='a.xsl'?><root/>"
       ```
@@ -2293,7 +2293,7 @@ entry .Tag   an element of a vocabulary: its name, its preset attributes, and wh
       `#admissible` child names and the `#presets` every instance starts with. Applying it
       with named arguments, `tag(id = t"main")`, is checked by a macro against the
       `Xml.XmlAttribute` givens of the vocabulary — an attribute the element does not take
-      is a compile error, _the attribute `foo` cannot be used on the element `<div>`_ — and
+      is a compile error, _the attribute `href` cannot be used on the element `<div>`_ — and
       each value is converted through an `Attributive` instance. `object Xml` is itself a
       `Tag.Container`, and an `XmlSchema`'s `elements` are tags.
 
@@ -2419,7 +2419,7 @@ entry .Inlinable   a compiletime code generator for reading a type from XML, com
   entry .derived   the structural instance for a case class
       Reflects `Self` when `parse` is invoked, so no macro is needed: `Type[Self]` arrives
       with the call.
-  entry .ForXml   the `derives`-clause carrier: `case class Foo(…) derives Inlinable.ForXml`
+  entry .ForXml   the `derives`-clause carrier: `case class Play(…) derives Inlinable.ForXml`
     detail
         A `Self`-typed typeclass has no type parameters, so it cannot appear in a `derives`
         clause; `ForXml[value]` is a parameterized subtrait which *is* a `value is
@@ -2463,7 +2463,7 @@ entry .inlining   the machinery behind `Inlinable`: the generators and entry mac
   entry .inlinablePrintable   the macro behind `Inlinable.printable[T]`
   entry .inlinableParsable   the macro behind `Inlinable.parsable[T]`
 
-entry .dynamicAccess   the permission for the dynamic syntax `xml.foo`, as a given to import by name
+entry .dynamicAccess   the permission for the dynamic syntax `xml.book`, as a given to import by name
   detail
       Member-style navigation of an `Xml` value — `xml.book`, `xml.book(Prim)`,
       `` xml.`svg:rect` `` — is unlocked by an erased `Xml is Dynamical` permission, so that
@@ -2622,11 +2622,11 @@ entry .optionalityOptions   how an `Optional` field reads a missing or faulty el
       import strategies.throwUnsafely
       import xmlSchemas.freeformXmlSchema
 
-      case class Tally(name: Text, count: Optional[Int])
+      case class Person(name: Text, age: Optional[Int])
 
       val tolerant =
         import optionalityOptions.lenientXmlFaults
-        x"<root><name>Ann</name><count>many</count></root>".as[Tally]   // Tally(t"Ann", Unset)
+        x"<root><name>Nym</name><age>many</age></root>".as[Person]   // Person(t"Nym", Unset)
       ```
   entry .strictXmlAbsence   a missing element or attribute for an `Optional` field is an `Xml.Error`
   entry .lenientXmlAbsence   a missing element or attribute for an `Optional` field is `Unset`; the default
@@ -2680,11 +2680,11 @@ entry .formatting   how XML is laid out when it is rendered, as a given to impor
       import strategies.throwUnsafely
       import xmlSchemas.freeformXmlSchema
 
-      case class Worker(name: Text, age: Int)
+      case class Person(name: Text, age: Int)
 
       locally:
         import formatting.indentedXmlFormatting
-        Worker(t"Alice", 30).in[Xml].show   // across several lines
+        Person(t"Percy", 30).in[Xml].show   // across several lines
       ```
   entry .compactXmlFormatting   no whitespace between elements, and no trailing newline
   entry .indentedXmlFormatting   each element on its own line, indented two spaces per level, with a trailing newline

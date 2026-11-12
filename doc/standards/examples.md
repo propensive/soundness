@@ -31,6 +31,8 @@ from the retired vocabulary beyond what `etc/example-data-baseline.tsv` records.
   *The Merchant of Venice*, *Julius Caesar*, and the *Henry IV* and *Henry V* plays.
 - **Reuse the palette.** The shapes below recur everywhere. Reach for one of them before
   inventing another, and invent another whenever none shows the feature.
+- **Avoid the characters who share a retired name.** Peter Quince, John of Gaunt and Paulina
+  read as the arbitrary people they replace, and the check counts them.
 - **Shakespeare is the one real person.** A sample book may name him as its author.
 
 ## The palette
@@ -49,7 +51,7 @@ row  an optional or defaulted field  `Person(name: Text, age: Optional[Int])`, `
 row  a map field  `Play(title: Text, cast: Map[Text, Person])`
 row  a recursive type  `Lineage(name: Text, heirs: List[Lineage])`  Lear; Goneril, Regan, Cordelia
 row  an attribute beside an element; a keyed record  `Play(title: Text, @attribute year: Int)`  *Hamlet* 1603, *Macbeth* 1606
-row  a name in parts  `FullName(first: Text, last: Text)`  Nick Bottom, Peter Quince, Toby Belch; Caius Martius Coriolanus
+row  a name in parts  `FullName(first: Text, last: Text)`  Nick Bottom, Francis Flute, Toby Belch; Caius Martius Coriolanus
 row  text that is deliberately not ASCII    Cæsar, Æmilia (the Folio's spellings)
 row  two parties and an eavesdropper    Romeo, Juliet and Tybalt
 row  hosts, users, paths, addresses    `elsinore.local`, the user `hamlet`, `/home/hamlet`, `juliet@example.com`, "Hamlet's Printer"
