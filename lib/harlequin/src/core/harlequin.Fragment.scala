@@ -250,7 +250,7 @@ object Fragment:
     recur(0, 0, initial)
 
   // The closing delimiters for the brackets left open in `code`, innermost first, so that
-  // appending them in order completes the fragment: `foo(bar, List[Int` yields `]` then `)`.
+  // appending them in order completes the fragment: `play(act, List[Int` yields `]` then `)`.
   // String literals and comments are skipped (see `walk`), so a bracket inside either does
   // not count. A closer with nothing open is ignored; a closer of the wrong kind closes the
   // innermost open bracket regardless, as the depth-zero scanners assume.

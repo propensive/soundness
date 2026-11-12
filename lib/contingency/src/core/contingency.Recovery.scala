@@ -39,7 +39,7 @@ import scala.util.boundary
 import fulminate.*
 
 // Captures a `recover` handler: cases that map each covered error type to a *replacement value* of
-// the protected block's result type. `recover { case FooError(n) => fallback }.protect { … }` runs
+// the protected block's result type. `recover { case ActError(n) => fallback }.protect { … }` runs
 // the block and, on the first covered error, escapes with the case body's value instead.
 object Recovery:
   object Escape:

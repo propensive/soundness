@@ -129,7 +129,7 @@ trait Yaml2:
     case given (`value` is Encodable in Text) => value => Yaml.ast(Yaml.Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
 
-  // The write-side mirror of `read[Foo in Yaml]`: `foo.in[Text over Yaml]` is the value's
+  // The write-side mirror of `read[Play in Yaml]`: `play.in[Text over Yaml]` is the value's
   // YAML text, encoded to the tree and rendered in the `Yaml.Formatting` in scope, as `show`.
   // Held here, below `Yaml1`'s `encodableOverPrinted`, so a type with a `Yaml.Printable`
   // prints directly instead.
@@ -139,7 +139,7 @@ trait Yaml2:
 
     value => encodable.encode(value).show.asInstanceOf[Text over Yaml]
 
-  // `source.read[Foo in Yaml]` shorthand for `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s
+  // `source.read[Play in Yaml]` shorthand for `source.read[Yaml].as[Play]`. Mirrors `jacinta`'s
   // `aggregableDirect` for `value in Json`: held here, below `Yaml1`'s `aggregableParsed`, so
   // a type with a `Yaml.Parsable` takes the direct path instead. The `Form` type-tag is added
   // by an `asInstanceOf` cast — `value in Yaml` is just `value { type Form = Yaml }` so the
@@ -1425,7 +1425,7 @@ object Yaml extends Yaml1, Dynamic:
         origin
 
   // Single-error abort variant retained for non-primitive accessors
-  // (`yaml(t"foo")`, `yaml(0)`, etc.) that need to short-circuit on
+  // (`yaml(t"title")`, `yaml(0)`, etc.) that need to short-circuit on
   // wrong-shape access. Primitive `Decodable in Yaml` instances no
   // longer route through this — they use the raise+yet helper below
   // so multi-error accrual can register each malformed field
@@ -1926,7 +1926,7 @@ object Yaml extends Yaml1, Dynamic:
 
     text => Chain(text).read[Yaml]
 
-  // `foo.in[Data over Yaml]`: the same text, encoded in the `Codepage` in scope.
+  // `play.in[Data over Yaml]`: the same text, encoded in the `Codepage` in scope.
   given encodableOverData: [value]
   =>  ( text: (value is Encodable in (Text over Yaml))^, codepage: hieroglyph.Codepage )
   =>  ( (value is Encodable in (Data over Yaml))^{text} ) =
@@ -3203,7 +3203,7 @@ object Yaml extends Yaml1, Dynamic:
               nextByte == Return || nextByte == -1
           then
             return PlainOutcome.Mapping
-          // else: `:foo` is part of the scalar; fall through.
+          // else: `:puck` is part of the scalar; fall through.
 
         // Slow-path single-byte handling (control chars, UTF-8 lead cells,
         // or `:` not followed by whitespace).
@@ -3773,7 +3773,7 @@ object Yaml extends Yaml1, Dynamic:
               parseFlowNode()
           skipFlowWhitespace()
           // A `:` here promotes the entry to a single-pair mapping per
-          // spec 7.5: `[foo: bar]` is shorthand for `[{foo: bar}]`.
+          // spec 7.5: `[hero: Hamlet]` is shorthand for `[{hero: Hamlet}]`.
           val entry =
             if more && peek == Colon then
               if newlineImmediatelyPrecedes(pos) then
@@ -4115,7 +4115,7 @@ object Yaml extends Yaml1, Dynamic:
 
     // Caller has seen a `?` at node-head. When followed by whitespace or
     // end-of-input, this is an explicit-key indicator: set up a block
-    // mapping at `indent`, read the first pair, then iterate. `?foo` (no
+    // mapping at `indent`, read the first pair, then iterate. `?puck` (no
     // separator) is just a plain scalar starting with `?`.
     private update def parseQuestion(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
       if isExplicitKeyIndicator then
@@ -6406,7 +6406,7 @@ object Yaml extends Yaml1, Dynamic:
     inline def derived[value <: Product: ProductReflection]: value is Yaml.Parsable =
       fromField(FieldDerivation.derived[value])
 
-    // Not inline: a read of `Foo in Yaml` infers `value` as the refinement `Foo { type Form =
+    // Not inline: a read of `Play in Yaml` infers `value` as the refinement `Play { type Form =
     // Yaml }`, and an anonymous class expanded with that type substituted does not override
     // `parse` under capture checking; here `value` stays abstract.
     def fromField[value](field: (value is Yaml.Field)^): (value is Yaml.Parsable)^{field} =
@@ -6425,8 +6425,8 @@ object Yaml extends Yaml1, Dynamic:
     given declared: [value] => (direct: Yaml.Direct[value]) => value is Yaml.Parsable =
       direct.parsable
 
-  // The `derives` carrier for a direct codec: `case class Foo(…) derives Yaml.Direct` derives
-  // `Foo`'s parser and printer once, into its companion, where they serve every read and
+  // The `derives` carrier for a direct codec: `case class Play(…) derives Yaml.Direct` derives
+  // `Play`'s parser and printer once, into its companion, where they serve every read and
   // write — with or without `import codecs.direct`, which would otherwise derive them at each
   // use. (A `Self`-typed typeclass has no type parameters, so it cannot appear in a `derives`
   // clause itself.)
@@ -6818,8 +6818,8 @@ extends Dynamic derives CanEqual:
       raise(Yaml.Error(Reason.NotType(Yaml.primitive(root), Yaml.Primitive.Sequence)))
       new Yaml(Yaml.Ast.Null)
 
-  // Mapping field access by name: `yaml(t"foo")` returns the value
-  // associated with key `foo`, or `Unset` (encoded as `Yaml.Ast(Unset)`)
+  // Mapping field access by name: `yaml(t"title")` returns the value
+  // associated with key `title`, or `Unset` (encoded as `Yaml.Ast(Unset)`)
   // when the field is absent. Mirrors Jacinta's `Json.apply(field)`.
   def apply(field: Text): Yaml =
     if root.isAbsent then new Yaml(Yaml.Ast(Unset))
@@ -6827,7 +6827,7 @@ extends Dynamic derives CanEqual:
       case -1    => new Yaml(Yaml.Ast(Unset))
       case index => new Yaml(root.objectValue(index))
 
-  // Dynamic field access — `yaml.foo` desugars to `selectDynamic("foo")`.
+  // Dynamic field access — `yaml.title` desugars to `selectDynamic("title")`.
   // Gated on an erased `Yaml is Dynamical` so the feature is opt-in via
   // `import dynamicAccess.dynamicYaml` or a `dynamically` block.
   def selectDynamic(field: String)(using erased dynamical: (? >: Yaml) is Dynamical): Yaml =
@@ -6859,8 +6859,8 @@ extends Dynamic derives CanEqual:
 
     Yaml.ast(Yaml.Ast.seqFromAnyArray(Array.freeze(updated)))
 
-  // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
-  // entry. `yaml.foo = Unset` deletes the entry.
+  // `yaml.title = newValue` — replaces `title` if present, or appends a new
+  // entry. `yaml.title = Unset` deletes the entry.
   def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
     ( using erased dynamical: (? >: Yaml) is Dynamical )
   :   Yaml raises Yaml.Error =

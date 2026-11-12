@@ -119,8 +119,8 @@ object inlining:
 
         symbol.name == "generated" && owners.contains(symbol.owner)
 
-  // A type with any `Form` refinement removed: a read of `Foo in Json` infers the instance's
-  // type as `Foo { type Form = Json }`, whose codec is `Foo`'s.
+  // A type with any `Form` refinement removed: a read of `Play in Json` infers the instance's
+  // type as `Play { type Form = Json }`, whose codec is `Play`'s.
   private def formless(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 

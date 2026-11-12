@@ -255,7 +255,7 @@ trait Json2 extends Json3:
   =>  value is Json.Parsable =
     Json.Parsable.optionality[inner, value](parsable)
 
-  // The write-side mirror of `read[Foo in Json]`: `foo.in[Text over Json]` is the value's
+  // The write-side mirror of `read[Play in Json]`: `play.in[Text over Json]` is the value's
   // JSON text, encoded to the tree and rendered in the `Json.Formatting` in scope, as `show`.
   given encodableOver: [value]
   =>  ( encodable: (value is anticipation.Encodable in Json)^, formatting: Json.Formatting )
@@ -263,7 +263,7 @@ trait Json2 extends Json3:
 
     value => encodable.encode(value).show.asInstanceOf[Text over Json]
 
-  // `foo.in[Data over Json]`: the same text, encoded in the `Codepage` in scope.
+  // `play.in[Data over Json]`: the same text, encoded in the `Codepage` in scope.
   given encodableOverData: [value]
   =>  ( text:     (value is anticipation.Encodable in (Text over Json))^,
         codepage: hieroglyph.Codepage )
@@ -973,8 +973,8 @@ object Json extends Json1, Dynamic:
 
       ${jacinta.inlining.inlinablePrintable[value]}
 
-  // The `derives` carrier for a generated codec: `case class Foo(…) derives Json.Direct`
-  // generates `Foo`'s parser and printer once, into its companion. (A `Self`-typed typeclass
+  // The `derives` carrier for a generated codec: `case class Play(…) derives Json.Direct`
+  // generates `Play`'s parser and printer once, into its companion. (A `Self`-typed typeclass
   // has no type parameters, so it cannot appear in a `derives` clause itself.)
   object Direct:
     inline def derived[value]: Direct[value] =

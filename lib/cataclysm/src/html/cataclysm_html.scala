@@ -48,8 +48,8 @@ transparent inline def attributeFor[name <: Label]: Text =
 // Honeycomb, e.g. `Div(style = Css.Style(color = rgb, width = 4.0*Px))`.
 given inlineStyle: (Css.Style is Attributive to Whatwg.Css) = _ -> _.text
 
-// Import this to make `Tag.foo(…)` check `foo` against the in-scope `Styles`
-// stylesheet, attaching `class="foo"` or `id="foo"` accordingly.
+// Import this to make `Tag.verse(…)` check `verse` against the in-scope `Styles`
+// stylesheet, attaching `class="verse"` or `id="verse"` accordingly.
 package cssBindings:
   inline given checkedBinding: [name <: Label] => NotGiven[name =:= "apply"]
   =>  Attribution of name =

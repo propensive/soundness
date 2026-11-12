@@ -459,7 +459,7 @@ object Syntax:
         // for says it is: the member's alias, where that type aliases it, and otherwise, where
         // it only bounds it, a projection on that type. The typer reduces such a selection itself
         // when it can see the member in the type, so the ones which reach here have it behind a
-        // type alias, as a typeclass written `Foo is Bar to Baz` does.
+        // type alias, as a typeclass written `Play is Staged to Act` does.
         case typeRef@TypeRef(prefix, name) if isSkolem(prefix) =>
           memberAlias(typeRef).lay(Projection(apply(skolemInfo(prefix)), name))(apply(_))
 
@@ -490,7 +490,7 @@ object Syntax:
               Selection(selection, name)
 
             // Any other prefix is a type rather than a path, so this is a projection from it:
-            // an applied alias such as `Foo is Bar to Baz`, which is what the compiler leaves
+            // an applied alias such as `Play is Staged to Act`, which is what the compiler leaves
             // when it replaces a skolem with the type it stands for. As with a skolem, the
             // member is written as its alias where the prefix aliases it.
             case other =>
@@ -619,11 +619,11 @@ object Syntax:
         case typ@Refinement(base, "apply", member) =>
           functionSyntax(typ, Nil, false).or(apply(member))
 
-        // A type member which is an alias, `type Form = Bar`, is kept as the bare type it
+        // A type member which is an alias, `type Form = Json`, is kept as the bare type it
         // aliases rather than as a `Declaration`, which is how `text` knows that an infix type
-        // alias in scope could write it: `Foo { type Form = Bar }` as `Foo in Bar`. Whether one
+        // alias in scope could write it: `Play { type Form = Json }` as `Play in Json`. Whether one
         // is in scope is decided there, so that the tree depends on the type alone. A bounded
-        // member, `type Form <: Bar`, is not what `Foo in Bar` expands to, so it stays a
+        // member, `type Form <: Json`, is not what `Play in Json` expands to, so it stays a
         // `Declaration`.
         case Refinement(base, name, member) =>
           if name == "Self" then Infix(apply(member), "is", apply(base))
@@ -790,7 +790,7 @@ enum Syntax:
     case Value(designator)       => s"${designator.text}.type".tt
     case Compound(syntaxes)      => joined(syntaxes.map(_.text)).tt
 
-    // A refinement or an infix type under a projection needs parentheses: `Foo { type Q = Int }#R`
+    // A refinement or an infix type under a projection needs parentheses: `Play { type Q = Int }#R`
     // would project from `Int`.
     case Projection(base, text) =>
       val base2 = base.infixed
@@ -827,11 +827,11 @@ enum Syntax:
         case _            => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
 
     // A refinement's type members which are aliases, where an infix type alias in scope
-    // (`imports.aliases`) refines them, are written with those aliases: `Foo { type Form = Bar }`
-    // as `Foo in Bar`. A bounded member is kept as a `Declaration`, which is not what an alias
+    // (`imports.aliases`) refines them, are written with those aliases: `Play { type Form = Json }`
+    // as `Play in Json`. A bounded member is kept as a `Declaration`, which is not what an alias
     // expands to, so it stays in the refinement. Members are taken in order, as the compiler
-    // nests them, so `Foo { type A = X; type B = Y }`, with an alias only for `B`, is
-    // `Foo { type A = X } by Y`, and with one only for `A`, `Foo in X { type B = Y }`.
+    // nests them, so `Play { type A = X; type B = Y }`, with an alias only for `B`, is
+    // `Play { type A = X } by Y`, and with one only for `A`, `Play in X { type B = Y }`.
     case Structural(base, members, defs) =>
       def aliasable(name: Text, syntax: Syntax): Boolean =
         imports.aliases.contains(name.s) && (syntax match

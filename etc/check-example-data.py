@@ -54,6 +54,8 @@ GENUINE = [
   ('lib/degustation/src/tasty/degustation.Universe.scala', 'placeholder'), # `$bar` is Scala's mangling of `|`
   ('lib/digression/src/core/digression.StackTrace.scala', 'placeholder'),
   ('lib/facsimile/src/core/facsimile.PdfEncoding.scala', 'placeholder'),   # Adobe glyph name `bar`
+  ('lib/archimedes/src/core/archimedes.Ergo.scala', 'placeholder'),       # the overbar accent
+  ('lib/tasseomancy/src/core/tasseomancy.*.scala', 'placeholder'),        # a chart's bars
 ]
 
 # Released migration notes are frozen (AGENTS.md); only the unreleased one is checked.

@@ -60,7 +60,7 @@ trait Dsv2:
   =>  ( (decodable is Decodable in Dsv)^{decodable} ) =
     value => decodable.decoded(value.data.stdlib.head)
 
-  // The write-side mirror of `read[Foo in Dsv]`: `foo.in[Text over Dsv]` is the value as a
+  // The write-side mirror of `read[Play in Dsv]`: `play.in[Text over Dsv]` is the value as a
   // single DSV record, encoded to the row and rendered in the `Dsv.Format` in scope.
   given encodableOver: [value] => (encodable: (value is Encodable in Dsv)^)
   =>  ( format: Dsv.Format )
@@ -68,15 +68,15 @@ trait Dsv2:
 
     value => encodable.encode(value).show.asInstanceOf[Text over Dsv]
 
-  // `foo.in[Data over Dsv]`: the same text, encoded in the `Codepage` in scope.
+  // `play.in[Data over Dsv]`: the same text, encoded in the `Codepage` in scope.
   given encodableOverData: [value]
   =>  ( text: (value is Encodable in (Text over Dsv))^, codepage: hieroglyph.Codepage )
   =>  ( (value is Encodable in (Data over Dsv))^{text} ) =
 
     value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Dsv]
 
-  // `source.read[Foo in Dsv]` shorthand: decodes a single DSV record (the first
-  // row) into `Foo` through the row AST. Held below `aggregableParsed` in
+  // `source.read[Play in Dsv]` shorthand: decodes a single DSV record (the first
+  // row) into `Play` through the row AST. Held below `aggregableParsed` in
   // `Dsv1`, so a type with a `Dsv.Parsable` takes the direct (AST-free) path
   // instead. The `Form` type-tag is added by an `asInstanceOf`
   // cast — `value in Dsv` is just `value { type Form = Dsv }`, so the cast is a
@@ -104,7 +104,7 @@ trait Dsv1 extends Dsv2:
 
   // The direct-read entry, gated on a `Dsv.Parsable` (above the AST-based
   // `aggregableIn` in `Dsv2`, so an instance switches the path, and below
-  // `object Dsv`, whose `codecs` modes override it). `read[Foo in Dsv]`
+  // `object Dsv`, whose `codecs` modes override it). `read[Play in Dsv]`
   // parses the first row. Captures the tactic it raises through.
   given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
@@ -290,7 +290,7 @@ object Dsv extends Dsv1:
 
     aggregableParsed[value]
 
-  // `read[List[Foo] in Dsv]` parses every row. Direct only — a row decoder has no
+  // `read[List[Play] in Dsv]` parses every row. Direct only — a row decoder has no
   // sheet-level counterpart — so it is neither overridden by `codecs.derived` nor gated by
   // `codecs.strict`; at this level, it outranks `Dsv1`'s `aggregableStrictFailure`.
   given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
@@ -347,8 +347,8 @@ object Dsv extends Dsv1:
     inline def derived[value <: Product: ProductReflection]: value is Dsv.Parsable =
       fromField(ParsableDerivation.derived[value])
 
-    // A `Field` as a `Parsable`. Not inline: a read of `Foo in Dsv` infers `value` as the
-    // refinement `Foo { type Form = Dsv }`, and an anonymous class expanded with that type
+    // A `Field` as a `Parsable`. Not inline: a read of `Play in Dsv` infers `value` as the
+    // refinement `Play { type Form = Dsv }`, and an anonymous class expanded with that type
     // substituted does not override `parse` under capture checking; here `value` stays
     // abstract.
     def fromField[value](field: value is Dsv.Field): value is Dsv.Parsable =
@@ -481,7 +481,7 @@ object Dsv extends Dsv1:
       val spans: Array[Int]^{} = Spannable.derived[derivation].spans()
 
       // `count` must be local to each decode call, not captured per instance: a derived
-      // decoder for a type used in more than one field (e.g. two `Foo` fields) is deduplicated
+      // decoder for a type used in more than one field (e.g. two `Person` fields) is deduplicated
       // to a single shared instance, so per-instance mutable state would leak between
       // successive decodes.
       provide[Foci[CellRef]]:

@@ -35,7 +35,7 @@ package contingency
 import scala.language.experimental.pureFunctions
 
 // Captures a `mitigate` handler: cases that map each covered error type to a *replacement error* of
-// another type. `mitigate { case FooError(n) => BarError(n) }.protect { … }` runs the block and
+// another type. `mitigate { case ActError(n) => PlayError(n) }.protect { … }` runs the block and
 // translates a covered error into the case body's error, which then propagates (`raises BarError`).
 object Mitigation:
   extension [lambda[_]](inline mitigation: Mitigation[lambda])

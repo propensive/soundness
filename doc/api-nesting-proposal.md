@@ -15,11 +15,11 @@ renaming there should follow the given-placement rule in CLAUDE.md rather than t
 
 ## Rules
 
-The split point is **semantic, not lexical**: `FooBar` becomes `Foo.Bar` only when `Foo`
+The split point is **semantic, not lexical**: `PlayScene` becomes `Play.Scene` only when `Play`
 is a meaningful concept on its own, and a compound that is itself an established concept
 does not split at all — it becomes a namespace for its own satellites.
 
-- **R1 SPLIT**: `Foo` names a concept, normally an existing type/object in the same
+- **R1 SPLIT**: `Play` names a concept, normally an existing type/object in the same
   component. `GitError → Git.Error`.
 - **R2 KEEP + NAMESPACE**: the compound is an established concept independent of its
   prefix. `JsonPointer` (RFC 6901) does not become `Json.Pointer`; instead
@@ -522,7 +522,7 @@ failed, comparing the hand-encoded schema against the `*.tel` resource that stil
 `AtomClass`. Only `make attest` found it.
 
 The check that generalises: after a sweep, look for literals whose entire content is a bare
-dotted name (`"Foo.Bar"`), since those are identifiers used as data rather than prose. Test
+dotted name (`"Play.Scene"`), since those are identifiers used as data rather than prose. Test
 names and error messages mentioning the new name are fine; a literal that *is* the name is
 not.
 
@@ -541,14 +541,14 @@ both put a new name into scope wherever the family is used.
 
 ## Corrections from the seventh and eighth passes (2026-08-13 to 2026-08-17)
 
-The `FooError` sweep, and the families around it. Forty-eight names, and six rules — five of
+The `PlayError` sweep, and the families around it. Forty-eight names, and six rules — five of
 them about not breaking something while moving something else.
 
-- **Import the outer, never the member.** A rename to `Foo.Error` breaks two import forms
-  that look harmless: `import lib.FooError` becomes `import lib.Foo.Error`, which imports the
-  *member* and leaves `Foo` out of scope, so every `Foo.Error` in the file fails to resolve;
-  and `import lib.{FooError, x}` becomes a dotted path inside a brace selector, which does not
-  parse. Both bit. The convention is `import lib.Foo` and write `Foo.Error`.
+- **Import the outer, never the member.** A rename to `Play.Error` breaks two import forms
+  that look harmless: `import lib.PlayError` becomes `import lib.Play.Error`, which imports the
+  *member* and leaves `Play` out of scope, so every `Play.Error` in the file fails to resolve;
+  and `import lib.{PlayError, x}` becomes a dotted path inside a brace selector, which does not
+  parse. Both bit. The convention is `import lib.Play` and write `Play.Error`.
 - **A capitalised name cannot share its spelling with a lowercase top-level class or object
   in the same package.** On a case-insensitive filesystem — the default on macOS — `Rpc.class`
   and `rpc.class` are one file, and the second written destroys the first. It surfaces far
@@ -602,7 +602,7 @@ fix the export file, sweep references (`grep -a`), clean-compile the library and
 module. `make attest` gates each PR.
 
 Eight passes have run this shape to completion; the rename table above is exhausted, and the
-`FooError` family with it — 48 of the 53 compound error names have gone. What is left is
+`PlayError` family with it — 48 of the 53 compound error names have gone. What is left is
 recorded under "Next actions" in `api-reduction-candidates.md`. `TarHeader` is named there
 for a reason worth repeating: `readUnchecked` clears the capture-checking blocker, but two of
 its sites rely on the bounds check it removes, so that one waits on tightening the guards.

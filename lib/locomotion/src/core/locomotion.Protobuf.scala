@@ -70,8 +70,8 @@ trait Protobuf2:
   inline given decodable: [value] => value is Decodable in Protobuf = summonFrom:
     case given Reflection[`value`] => DecodableDerivation.derived
 
-  // The AST-materializing read path: `bytes.read[Foo in Protobuf]` shorthand
-  // for `bytes.read[Protobuf].as[Foo]`. Lives at this priority so `object
+  // The AST-materializing read path: `bytes.read[Play in Protobuf]` shorthand
+  // for `bytes.read[Protobuf].as[Play]`. Lives at this priority so `object
   // Protobuf`'s direct-parsing `aggregableParsed` wins whenever the value
   // has a `Protobuf.Parsable`; when it does not, this resolves exactly as
   // before. `value in Protobuf` is just `value { type Form = Protobuf }`,
@@ -155,7 +155,7 @@ trait Protobuf2:
         Protobuf.message(Aggregable.bytesData.accept(stream)).as[value]
         . asInstanceOf[value in Protobuf]
 
-  // The write-side mirror of `read[Foo in Protobuf]`: `foo.in[Data over Protobuf]` is the
+  // The write-side mirror of `read[Play in Protobuf]`: `play.in[Data over Protobuf]` is the
   // message's wire bytes. `.in[Protobuf]` is already direct wherever a `Printable` exists (its
   // wire value is the printed array, uncopied), so one instance serves both paths.
   given encodableOver: [value] => (encodable: (value is Encodable in Protobuf)^)
@@ -314,8 +314,8 @@ object Protobuf extends Protobuf1:
 
       ${locomotion.inlining.inlinablePrintable[value]}
 
-  // The `derives` carrier for a generated codec: `case class Foo(…) derives Protobuf.Direct`
-  // generates `Foo`'s parser and printer once, into its companion, where they serve every read
+  // The `derives` carrier for a generated codec: `case class Play(…) derives Protobuf.Direct`
+  // generates `Play`'s parser and printer once, into its companion, where they serve every read
   // and write — with or without `import codecs.direct`, which would otherwise expand them at
   // each use. (A `Self`-typed typeclass has no type parameters, so it cannot appear in a
   // `derives` clause itself.)

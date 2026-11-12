@@ -147,7 +147,7 @@ def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
 // reified two ways. For a `Task`, it is the bound `Task[result] { type Error <: e }` on its member;
 // the bound (not an equality) keeps the error covariant, so a task failing only with `Async.Error`
-// is usable where `emits FooError` is expected, and `await`'s `raises (Error | Async.Error)` simply
+// is usable where `emits ActError` is expected, and `await`'s `raises (Error | Async.Error)` simply
 // converts the emission to a value-replacing exit in the caller's scope. For anything else it is
 // the side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
 // (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement, not a context function, so it

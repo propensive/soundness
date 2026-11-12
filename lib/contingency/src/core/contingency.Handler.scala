@@ -43,7 +43,7 @@ object Handler:
 
       ${contingency.internal.protectBody[lambda, result]('handler, 'body, 'diagnostics)}
 
-// Captures a typed error handler. `handle { case FooError(n) => … }` records, at compile time, the
+// Captures a typed error handler. `handle { case ActError(n) => … }` records, at compile time, the
 // error types the cases cover (in `lambda`); `.protect { … }` then injects one
 // handler-backed `Emit` per covered type into the block, so an `emit`/`raise` of a covered error
 // runs its case body as a side-effect, while any *uncovered* (or *re-emitted*) error stays a free

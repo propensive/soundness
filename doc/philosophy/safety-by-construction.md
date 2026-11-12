@@ -62,7 +62,7 @@ parse
 ##
 p"/home/user/data.csv"                // a Path, on a specific platform
 n"worker"                             // a Name, valid for its plane
-% / "foo" / "bar"                     // Path of ("bar", "foo") — the elements in the type
+% / "lear" / "kent"                   // Path of ("kent", "lear") — the elements in the type
 ```
 
 The last is the strongest form: the path's element names are in its type, so code that

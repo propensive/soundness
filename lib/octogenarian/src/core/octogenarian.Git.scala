@@ -365,7 +365,7 @@ object Git:
     def ref: Git.Ref = Git.Refs / t"heads" / text
 
   // `Git.Hash` extends Serpentine's `Root`, so a hash is the root of a notes path:
-  // `hash / t"foo" / t"bar"` is a `NoteRef`. Equality is by hash text.
+  // `hash / t"lear" / t"kent"` is a `NoteRef`. Equality is by hash text.
   object Hash:
     def apply(text: Text)(using Tactic[Git.RefError]): Git.Hash = text match
       case r"[a-f0-9]{40}" => new Git.Hash(text)

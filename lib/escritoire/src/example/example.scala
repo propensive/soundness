@@ -110,12 +110,12 @@ def run(): Unit =
 
     case class Member(name: Text, handle: Text, age: Int)
 
-    val pinkFloyd =
+    val mechanicals =
       List
-        ( Member(t"Nick Mason", t"@nickmasondrums", 80),
-          Member(t"David Gilmour", t"@davidgilmour", 78) )
+        ( Member(t"Nick Bottom", t"@bottomtheweaver", 35),
+          Member(t"Francis Flute", t"@flutethebellowsmender", 20) )
 
-    Out.println(pinkFloyd.table)
+    Out.println(mechanicals.table)
 
   // for style <- List
   //               (tableStyles.thickTableStyle,
@@ -135,6 +135,6 @@ val fruits =
       Fruit(t"橙子", t"orange", t"апельсин", t"オレンジ", webColors.DarkOrange),
       Fruit(t"柚子", t"yuzu", t"юдзу", t"柚子", webColors.Yellow) )
 
-enum Foo:
-  case User(name: Text, size: Double)
-  case Organization(name: Text, founded: Int)
+enum Verse:
+  case Sonnet(number: Int, firstLine: Text)
+  case Song(title: Text)

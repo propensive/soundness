@@ -151,7 +151,7 @@ object internal:
 
   // A path-carrier type `field { type VRoot = root; type VPath = path }` — a phantom refinement
   // threading the override root and dotted path down the derivation so type-keyed field resolution
-  // can distinguish, say, the `cto` employee from the `ceo` employee.
+  // can distinguish, say, the `hero` person from the `villain` person.
   private def carrierType(using Quotes)
     ( field: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr, path: String )
   :   quotes.reflect.TypeRepr =

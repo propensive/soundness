@@ -315,7 +315,7 @@ private[punctuation] object InlineParser:
   :   Optional[LinkResolution] =
 
     // 1. Inline link: ( dest title? )  — if it parses, use it; if not, fall
-    // through to reference forms (`[foo](bad](url)` may still resolve `[foo]`
+    // through to reference forms (`[puck](bad](url)` may still resolve `[puck]`
     // as a shortcut reference if defined elsewhere).
     if after < end && s.charAt(after) == '(' then
       InlineSupport.parseInlineLinkBody(s, after, end) match

@@ -37,7 +37,7 @@ import beneficence.*
 import gossamer.*
 import prepositional.*
 
-// Evidence that a name used dynamically on a `Tag` (e.g. `Div.foo(…)`) is a valid
+// Evidence that a name used dynamically on a `Tag` (e.g. `Div.verse(…)`) is a valid
 // id or class, and which attribute it populates. The name itself is the `Topic`
 // (a string-singleton type); `attribute` is `"class"` or `"id"`. A given of
 // `Attribution of name` brought into scope decides whether `Tag.name` is allowed

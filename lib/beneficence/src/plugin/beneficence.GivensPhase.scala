@@ -138,7 +138,7 @@ class GivensPhase() extends PluginPhase:
       private def typeclassOf(tpe: Types.Type, valSymbol: Symbols.Symbol)(using Context)
       :   Symbols.Symbol =
 
-        // For a "normal" given like `given foo: Show[Int] = ...` baseClasses leads with
+        // For a "normal" given like `given puck: Show[Int] = ...` baseClasses leads with
         // the typeclass class. For a modular `given X: T:` (with a refining body), the
         // typer creates a synthesized class named after the val (a `module class X$`
         // for value-style givens, or a plain `class X` for parameterised ones). In both

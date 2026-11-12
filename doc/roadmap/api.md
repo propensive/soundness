@@ -44,7 +44,7 @@ Horizon: near
 Baseline: 4 renamed names still defined at top level (`BlockCipherMode`, `BlockCipherPadding`, `SyntaxMatcher`, `TlsAcceptance`); 61 prefix families with 210 names, plus 216 singletons, still listed (measured 2026-09-25)
 
 The C1 candidates — multi-word names whose prefix already names a same-module type — move
-inside that type: `Foo.Bar`, not `FooBar`. Each move ships with migration instructions once
+inside that type: `Play.Scene`, not `PlayScene`. Each move ships with migration instructions once
 `dist-2` establishes the convention.
 
 Done when: the rename table in `doc/api-nesting-proposal.md` (which superseded the C1

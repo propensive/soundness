@@ -155,7 +155,7 @@ object internal:
 
     def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
       // Compare exclusions by canonical (de-exported) symbol so that excluding
-      // `gossamer.foo` also filters out any re-export like `soundness.foo`.
+      // `gossamer.verse` also filters out any re-export like `soundness.verse`.
       val excludedCanonicals = exclusions.map(canonical).filterNot(_.isNoSymbol).toSet
       val key = (repr, excludedCanonicals, gas)
 

@@ -171,10 +171,10 @@ beyond the bytes. Scoped on 2026-10-23:
   types, a type-parameter reference to its bound, and an intersection by the class/trait
   distinction of its parts — each of which asks what a referenced type *is*, in a dependency's
   TASTy or a Java classfile. (2) The declaring owner of a selected member (§6 "keying is by
-  declaration", `TastyDiscipline`): `foo.bar` pickles as `bar`'s signed name against `foo`'s
-  type, and finding that `bar` is declared in `Base` is a member lookup along `Foo`'s parents.
-  Neither needs subtyping, type inference, as-seen-from substitution or completion order; both
-  need the classpath loaded lazily, which is what `tasty-query` exists to do.
+  declaration", `TastyDiscipline`): `play.title` pickles as `title`'s signed name against
+  `play`'s type, and finding that `title` is declared in `Base` is a member lookup along `Play`'s
+  parents. Neither needs subtyping, type inference, as-seen-from substitution or completion
+  order; both need the classpath loaded lazily, which is what `tasty-query` exists to do.
 
 Three ways to close it:
 

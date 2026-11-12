@@ -56,9 +56,9 @@ object BintelInlinable:
     def derived[value]: ForBintel[value] = ForBintel(BintelInlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
-  // a `derives` clause (it has no type parameters), so `case class Foo(...)
+  // a `derives` clause (it has no type parameters), so `case class Play(...)
   // derives BintelInlinable.ForBintel` synthesizes this parameterized
-  // subtrait — which *is* a `Foo is BintelInlinable` — into `Foo`'s
+  // subtrait — which *is* a `Play is BintelInlinable` — into `Play`'s
   // companion, where the staging summon finds it. The resolution ladder
   // unwraps the delegate so structural instances keep their generator
   // identities.

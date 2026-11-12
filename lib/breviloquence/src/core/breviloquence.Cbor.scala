@@ -106,15 +106,15 @@ trait Cbor2:
   // The AST-materializing read path: parse the whole input into a `Cbor`,
   // then decode. Lives at this priority so `object Cbor`'s direct-parsing
   // `aggregableParsed` wins whenever the value has a `Cbor.Parsable`; when
-  // it does not, this resolves exactly as before. `source.read[Foo in Cbor]`
-  // is shorthand for `source.read[Cbor].as[Foo]`; the `Form` type-tag is
+  // it does not, this resolves exactly as before. `source.read[Play in Cbor]`
+  // is shorthand for `source.read[Cbor].as[Play]`; the `Form` type-tag is
   // added by an `asInstanceOf` cast — `value in Cbor` is just
   // `value { type Form = Cbor }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Cbor] => (tactic: Tactic[Cbor.Error])
   =>  ( ((value in Cbor) is Aggregable by Data)^{tactic} ) =
     Cbor.aggregable.map(_.as[value].asInstanceOf[value in Cbor])
 
-  // The write-side mirror of `read[Foo in Cbor]`: `foo.in[Data over Cbor]` is the value's
+  // The write-side mirror of `read[Play in Cbor]`: `play.in[Data over Cbor]` is the value's
   // CBOR bytes, encoded to the tree and serialized.
   given encodableOver: [value] => (encodable: (value is Encodable in Cbor)^)
   =>  ( (value is Encodable in (Data over Cbor))^{encodable} ) =
@@ -1117,8 +1117,8 @@ object Cbor extends Cbor1, Dynamic:
 
       ${breviloquence.inlining.inlinablePrintable[value]}
 
-  // The `derives` carrier for a generated codec: `case class Foo(…) derives Cbor.Direct`
-  // generates `Foo`'s parser and printer once, into its companion. (A `Self`-typed typeclass
+  // The `derives` carrier for a generated codec: `case class Play(…) derives Cbor.Direct`
+  // generates `Play`'s parser and printer once, into its companion. (A `Self`-typed typeclass
   // has no type parameters, so it cannot appear in a `derives` clause itself.)
   object Direct:
     inline def derived[value]: Direct[value] =

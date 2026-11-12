@@ -45,7 +45,7 @@ import spectacular.*
 // — `Git.Hash` extends `Root` directly) and its descent is the namespace
 // under `refs/notes/`.
 //
-// Modelling notes as Serpentine paths lets `commit / t"foo" / t"bar"` reuse
+// Modelling notes as Serpentine paths lets `commit / t"lear" / t"kent"` reuse
 // Path's own `def /` (which preserves singleton tracking, runs the
 // Admissibility check, and produces a refined `Path of (...)` type), rather
 // than going through a custom `Divisible` instance or a Conversion lift.
@@ -66,7 +66,7 @@ object Notes:
 
   // `Git.Hash` is the root of a notes path.  Encoded form is `<hash>/`
   // (40 hex chars + separator), so an empty-descent path encodes as
-  // `<hash>/` and `commit / t"foo"` encodes as `<hash>/foo`.
+  // `<hash>/` and `commit / t"lear"` encodes as `<hash>/lear`.
   given radical: Git.Hash is Radical:
     type Plane = Notes
     def encode(hash: Git.Hash): Text = t"${hash.text}/"
