@@ -160,22 +160,22 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
   . orElse(Notice(importance, file, message, Unset, markup))
   . nn
 
-// A reporter which relays each diagnostic to the given `CompileProcess` as a `Notice`.
+// A reporter which relays each diagnostic to the given `Compiler.Process` as a `Notice`.
 private[anthology] type ProcessReporter =
   Reporter & UniqueMessagePositions & HideNonSensicalMessages
 
-private[anthology] def processReporter(process: CompileProcess)
-  ( using loggable: (CompileEvent is Loggable)^ )
+private[anthology] def processReporter(process: Compiler.Process)
+  ( using loggable: (Compiler.Event is Loggable)^ )
 :   ProcessReporter^{loggable} =
 
   new Reporter with UniqueMessagePositions with HideNonSensicalMessages:
     def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
-      Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
+      Log.fine(Compiler.Event.Notice(diagnostic.toString.tt))
       process.put(notice(diagnostic))
 
-// A callback which relays whole-percentage progress to the given `CompileProcess`, and
+// A callback which relays whole-percentage progress to the given `Compiler.Process`, and
 // polls it for cancellation.
-private[anthology] def progressCallback(process: CompileProcess): dtdsi.ProgressCallback =
+private[anthology] def progressCallback(process: Compiler.Process): dtdsi.ProgressCallback =
   new dtdsi.ProgressCallback:
     // [field-purity] progress state in anonymous ProgressCallback
     @scala.caps.unsafe.untrackedCaptures
@@ -199,7 +199,7 @@ private[anthology] def progressCallback(process: CompileProcess): dtdsi.Progress
         last = int
 
         process.put
-          ( CompileProgress
+          ( Compiler.Progress
             ( last/100.0, if currentStage == null then t"null" else currentStage.tt ) )
 
       process.continue

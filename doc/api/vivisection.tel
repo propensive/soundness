@@ -1235,7 +1235,7 @@ entry .evaluator   opens a compiler session over the debuggee's classpath and le
     and `Inspectable` use experimental features) over the `LocalClasspath` the debuggee was
     launched with, builds a `Purview` over it, and lends an `Evaluator` for the block. The
     session and the evaluator both die with the block, and neither can outlive the stop that
-    lent the halt. It needs a `Monitor`, a `System`, a `CompileEvent is Loggable`, and tactics
+    lent the halt. It needs a `Monitor`, a `System`, a `Compiler.Event is Loggable`, and tactics
     for `Async.Error`, `Compiler.Error` and `Debugger.Error`.
 
     ```scala fuel
@@ -1431,7 +1431,7 @@ entry .Dap   the Debug Adapter Protocol: a stdio server over a session, and the 
       directions (it runs on the writer task, so it may capture only shared capabilities). The
       `Stdio` is consumed: the writer task owns the standard streams, and the caller may not use
       them after calling `listen`. Needs the launch givens of `Debuggee.Sessional`, a `System`,
-      a `CompileEvent is Loggable`, and tactics for `Async.Error`, `Framing.Error` (a malformed
+      a `Compiler.Event is Loggable`, and tactics for `Async.Error`, `Framing.Error` (a malformed
       frame) and `Truncation.Error`. A client which drops the connection without a `disconnect`
       still releases the debuggee when the input ends.
   entry .Envelope   any DAP message, read only for the members which decide how it is handled

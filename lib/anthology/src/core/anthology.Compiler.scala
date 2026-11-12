@@ -35,15 +35,132 @@ package anthology
 import ambience.*
 import anticipation.*
 import contingency.*
+import digression.*
 import fulminate.*
+import gossamer.*
 import hellenism.*
 import parasite.*
 import prepositional.*
+import rudiments.Atomic
+import rudiments.reverse
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
 object Compiler:
   // CompilerError → Compiler.Error
   case class Error()(using Diagnostics)
   extends fulminate.Error(779, 0)(m"there was a problem with the compiler configuration")
+
+  object Event:
+    given communicable: Event is Communicable =
+      case Start              => m"starting compilation"
+      case CompilerCrash      => m"the compiler crashed"
+      case Notice(diagnostic) => m"the compiler emitted a diagnostic: $diagnostic"
+      case Running(arguments) => m"running the compiler with arguments ${arguments.join(t" ")}"
+
+    // Relays a compiler's diagnostics onto the toolchain's own event channel, so a build watching
+    // one path's events sees compilation and linking alike. Compile edges install this for the
+    // duration of a compile, since a `Tool` is given the link channel and the compilers speak
+    // their own.
+    // Capture-polymorphic over the link channel's own capabilities, so the relay honestly carries
+    // whatever the toolchain's channel captures.
+    def relay[cap^](using linkEvents: (LinkEvent is Loggable)^{cap})
+    :   (Event is Loggable)^{cap, scala.caps.any} =
+
+      new Loggable:
+        type Self = Event
+
+        def log(level: Level, timestamp: Long, event: => Event): Unit =
+          linkEvents.log(level, timestamp, LinkEvent.Message(event.communicate.text))
+
+  enum Event:
+    case Start extends Event, Log.Compiler
+    case CompilerCrash extends Event, Log.Compiler
+    case Notice(diagnostic: Text) extends Event, Log.Compiler
+    case Running(arguments: List[Text]) extends Event, Log.Compiler
+
+  object Process:
+    // One element of the live update feed: a diagnostic or a progress tick, in
+    // arrival order across the compilation.
+    enum Update:
+      case Noticed(notice: Notice)
+      case Progressed(progress: Progress)
+
+  // `version` is the version of the compiler that ran, so a completed compilation can report what
+  // produced its output without the caller keeping the compiler in hand.
+  class Process(val version: Text):
+    // Cleared by `abort` on the caller's thread and polled by the compiler thread through its
+    // progress callback, so it is atomic: a plain field would let the compiler miss the abort.
+    private val continuing: Atomic[Boolean] = Atomic(true)
+
+    private val completion: Promise[Result] = Promise()
+    private val relay: Relay[Process.Update] = Relay()
+
+    // [field-purity]
+    @scala.caps.unsafe.untrackedCaptures
+    private var compilation: Optional[Task[Unit]] = Unset
+    // [field-purity]
+    @scala.caps.unsafe.untrackedCaptures
+    private var errorCount: Int = 0
+    // [field-purity]
+    @scala.caps.unsafe.untrackedCaptures
+    private var warningCount: Int = 0
+    // Newest-first; reversed by the `notices` accessor.
+    // [field-purity]
+    @scala.caps.unsafe.untrackedCaptures
+    private var noticeList: List[Notice] = Nil
+
+    def put(notice: Notice): Unit =
+      noticeList = notice :: noticeList
+      relay.put(Process.Update.Noticed(notice))
+
+      notice.importance match
+        case Importance.Error   => errorCount += 1
+        case Importance.Warning => warningCount += 1
+        case _                  => ()
+
+    def put(progress: Progress): Unit =
+      relay.put(Process.Update.Progressed(progress))
+
+    def put(result: Result): Unit = completion.offer(result)
+    def put(task: Task[Unit]): Unit = compilation = task
+    def errors: Int = errorCount
+    def warnings: Int = warningCount
+
+    def complete()(using Monitor)
+      ( using Tactic[Async.Error], (Event is Loggable)^ )
+    :   Result =
+
+      try completion.await() finally
+        safely(compilation.let(_.await()))
+        safely(relay.stop())
+
+    def abort(): Unit = continuing() = false
+    def cancelled: Boolean = !continuing()
+    private[anthology] def continue: Boolean = continuing()
+
+    // The live update feed: a single-owner, separation-checked pull endpoint over the
+    // relay, whose refill blocks for the first update and then drains whatever else has
+    // arrived into the same window. Claim it once; consume element-wise with
+    // `updates.records`. It ends when the compilation completes (`complete` stops the
+    // relay), so a claim after completion replays the whole feed and then ends.
+    def updates(using Buffering)
+    :   (Stream[Array[Process.Update]^{}] over Credit)^ =
+
+      relay.stream
+
+    // The diagnostics reported so far, oldest first: a strict snapshot for post-hoc
+    // inspection, complete once `complete()` has returned. Live consumers should prefer
+    // `updates`.
+    def notices: List[Notice] = noticeList.reverse
+
+  enum Result:
+    case Failure
+    case Success
+    case Crash(error: StackTrace)
+
+  case class Progress(complete: Double, stage: Text)
 
 trait Compiler:
   // The version of the compiler this drives, as the compiler itself reports it (`3.9.0-p16`,
@@ -56,4 +173,4 @@ trait Compiler:
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor )
-  :   CompileProcess logs CompileEvent raises Compiler.Error
+  :   Compiler.Process logs Compiler.Event raises Compiler.Error

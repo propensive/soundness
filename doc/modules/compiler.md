@@ -64,7 +64,7 @@ and completes with a result:
 ```scala
 supervise:
   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
-  val result = process.complete()   // CompileResult.Success, Failure, or Crash
+  val result = process.complete()   // Compiler.Result.Success, Failure, or Crash
 
   process.notices.each: notice =>
     report(notice.importance, notice.file, notice.message)
@@ -72,7 +72,7 @@ supervise:
   result
 ```
 
-`complete()` gives a `CompileResult`, which is `Success`, `Failure` or `Crash`. Each `Notice`
+`complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each `Notice`
 carries its importance, which is info, warning or error, its file and its span. A tool can
 underline the offending code, and need not echo the compiler's output. A crash arrives as a
 value too, with its [stack trace](stack-traces.md), and the process can be aborted before the
@@ -344,7 +344,7 @@ its options, such as `-Werror`, `-jvm-target` and explicit API mode, are under `
 and checked against the version in the same way:
 
 ```scala
-def kotlin(kotlinSource: Text, out: Path on Linux): CompileResult = supervise:
+def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
   process.complete()

@@ -49,7 +49,7 @@ extension (halt: Halt)
     ( body: (evaluator: Evaluator^) ?=> result )
     ( using Monitor,
             System,
-            (CompileEvent is Loggable)^,
+            (Compiler.Event is Loggable)^,
             Tactic[Async.Error],
             Tactic[Compiler.Error],
             Tactic[Debugger.Error] )

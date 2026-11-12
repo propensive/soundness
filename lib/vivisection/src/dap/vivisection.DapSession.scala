@@ -103,7 +103,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
           environment: Environment,
           loggable:    (Socket.Event is Loggable)^,
           exec:        (Exec.Event is Loggable)^,
-          compile:     (CompileEvent is Loggable)^,
+          compile:     (Compiler.Event is Loggable)^,
           note:        Diagnostics ):
 
   import dynamicAccess.dynamicJson

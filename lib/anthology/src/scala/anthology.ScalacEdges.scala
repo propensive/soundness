@@ -92,8 +92,8 @@ object scalacEdges:
 
       // The compiler's diagnostics are relayed onto the toolchain's own event channel, so a
       // build watching one path sees compilation and linking alike.
-      given compileEvents: ((CompileEvent is Loggable)^{linkEvents, scala.caps.any}) =
-        CompileEvents.relay(using linkEvents)
+      given compileEvents: ((Compiler.Event is Loggable)^{linkEvents, scala.caps.any}) =
+        Compiler.Event.relay(using linkEvents)
 
       mitigate:
         case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable(t"scalac"))
@@ -103,8 +103,8 @@ object scalacEdges:
           val process = scalac(classpath)(sources, out)
 
           process.complete() match
-            case CompileResult.Success  => Deliverable.Emission(out, classpath)
-            case CompileResult.Crash(_) => abort(Link.Error(Link.Error.Reason.CompilerCrash))
+            case Compiler.Result.Success  => Deliverable.Emission(out, classpath)
+            case Compiler.Result.Crash(_) => abort(Link.Error(Link.Error.Reason.CompilerCrash))
 
-            case CompileResult.Failure =>
+            case Compiler.Result.Failure =>
               abort(Link.Error(Link.Error.Reason.CompilationFailed(process.notices)))

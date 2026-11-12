@@ -44,11 +44,11 @@ import rudiments.*
 // context, loading the classpath's symbol table) and `finish` (post-run hooks) — to both
 // the stateless `Scalac#apply` path and warm `Scalac.Session`s.
 private[anthology] class ScalacDriver() extends dtd.Driver:
-  def baseContext(arguments: List[Text])(using (CompileEvent is Loggable)^)
+  def baseContext(arguments: List[Text])(using (Compiler.Event is Loggable)^)
   :   scala.Option[dtdc.Contexts.Context] =
 
     val context = initCtx.fresh
-    Log.info(CompileEvent.Running(arguments))
+    Log.info(Compiler.Event.Running(arguments))
 
     // The argument array crosses into the compiler through a Java-side copy: `toArray`'s
     // result carries a read capability the pure formal rejects.

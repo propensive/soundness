@@ -73,7 +73,7 @@ object Kotlinc:
 
 // Drives the Kotlin compiler in-process, presenting the same interface as `Scalac` and `Javac`:
 // named sources compile against an explicit classpath into an output directory, and the compiler's
-// messages become `Notice`s on the resulting `CompileProcess`. Kotlin reads its sources from disk,
+// messages become `Notice`s on the resulting `Compiler.Process`. Kotlin reads its sources from disk,
 // so they are written to a scratch directory for the duration of the compilation, and diagnostics
 // are mapped back onto the names they were given.
 case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[version]]):
@@ -83,10 +83,10 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate )
-  :   CompileProcess logs CompileEvent raises Compiler.Error =
+  :   Compiler.Process logs Compiler.Event raises Compiler.Error =
 
-    Log.info(CompileEvent.Start)
-    val process: CompileProcess = CompileProcess(version)
+    Log.info(Compiler.Event.Start)
+    val process: Compiler.Process = Compiler.Process(version)
     val scratch: jnf.Path = jnf.Files.createTempDirectory("kotlinc").nn
 
     // The name each source was given, keyed by the canonical path it was written to, so that a
@@ -121,7 +121,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         // which `-verbose` makes copious, would otherwise flood the stream.
         if importance != Importance.Info || location != null then
           val text: Text = if message == null then t"" else message.tt
-          Log.fine(CompileEvent.Notice(text))
+          Log.fine(Compiler.Event.Notice(text))
 
           val file: Text =
             if location == null then t"unknown"
@@ -145,11 +145,11 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         commandLineArguments +
         names.keys.to[List]
 
-    Log.info(CompileEvent.Running(t"kotlinc" :: arguments))
+    Log.info(Compiler.Event.Running(t"kotlinc" :: arguments))
 
     async:
       try
-        process.put(CompileProgress(0.1, t"kotlinc"))
+        process.put(Compiler.Progress(0.1, t"kotlinc"))
         jnf.Files.createDirectories(jnf.Paths.get(out.generic.s))
         val compiler = K2JVMCompiler()
         val parsed = compiler.createArguments().nn
@@ -159,12 +159,12 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
         val success = exit == ExitCode.OK
 
-        if success then process.put(CompileProgress(1.0, t"kotlinc"))
-        process.put(if success then CompileResult.Success else CompileResult.Failure)
+        if success then process.put(Compiler.Progress(1.0, t"kotlinc"))
+        process.put(if success then Compiler.Result.Success else Compiler.Result.Failure)
 
       catch case suc.NonFatal(error) =>
-        Log.fail(CompileEvent.CompilerCrash)
-        process.put(CompileResult.Crash(error.stackTrace))
+        Log.fail(Compiler.Event.CompilerCrash)
+        process.put(Compiler.Result.Crash(error.stackTrace))
 
       finally Kotlinc.remove(scratch)
 

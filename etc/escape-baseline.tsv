@@ -21,7 +21,7 @@ lib/anamnesis/src/core/anamnesis.Database.scala	0	0	5	0	0	0	0	4	0	0	0	0	0	0	0	0	
 lib/anthology/src/apk/anthology.Apk.scala	0	0	0	0	4	1	0	0	0	0	0	0	0	0	0	0	0
 lib/anthology/src/apk/anthology.Axml.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0
 lib/anthology/src/apk/anthology_apk.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0
-lib/anthology/src/core/anthology.CompileProcess.scala	0	0	4	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+lib/anthology/src/core/anthology.Compiler.scala	0	0	4	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/anthology/src/core/anthology.Toolchain.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	2	0	0
 lib/anthology/src/kotlin/anthology.Kotlinc.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0
 lib/anthology/src/link/anthology_link.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0

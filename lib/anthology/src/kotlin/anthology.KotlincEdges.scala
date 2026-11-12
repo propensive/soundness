@@ -72,7 +72,7 @@ object kotlincEdges:
       val (sources, classpath) = input.sources(Universe.Classfile)
       jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
 
-      given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
+      given compileEvents: (Compiler.Event is Loggable) = Compiler.Event.relay(using linkEvents)
 
       mitigate:
         case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable(t"kotlinc"))
@@ -82,8 +82,8 @@ object kotlincEdges:
           val process = kotlinc(classpath)(sources, out)
 
           process.complete() match
-            case CompileResult.Success  => Deliverable.Emission(out, classpath)
-            case CompileResult.Crash(_) => abort(Link.Error(Link.Error.Reason.CompilerCrash))
+            case Compiler.Result.Success  => Deliverable.Emission(out, classpath)
+            case Compiler.Result.Crash(_) => abort(Link.Error(Link.Error.Reason.CompilerCrash))
 
-            case CompileResult.Failure =>
+            case Compiler.Result.Failure =>
               abort(Link.Error(Link.Error.Reason.CompilationFailed(process.notices)))

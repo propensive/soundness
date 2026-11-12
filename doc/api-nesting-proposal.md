@@ -655,7 +655,7 @@ Each pair is a genuine clash, not a re-export:
 
 | library.component | renames |
 |---|---|
-| anthology.core | `CompileEvent→Compiler.Event`, `CompileProcess→Compiler.Process`, `CompileResult→Compiler.Result`, `CompileProgress→Compiler.Progress`; fold `CompileEvents` into `Compiler.Event`'s companion (`CompileFlag` is R6) |
+| anthology.core | `CompileEvent→Compiler.Event`, `CompileProcess→Compiler.Process`, `CompileResult→Compiler.Result`, `CompileProgress→Compiler.Progress`; fold `CompileEvents` into `Compiler.Event`'s companion (`CompileFlag` is R6) — **done** |
 | escritoire.core | `TableCell`, `TableRow`, `TableSection`, `TableStyle`, `TableRelabelling` → `Table.*` (`TableRow`/`TableSection` hold `Array[…]^{}` — check capture inference first) |
 | ultimatum.core | `InlineAnchoring`, `InlineGrowth`, `InlineShrink` → `InlineRoot.*` (each enum's companion carries its default, and moves with it) |
 | dendrology.tree | `TreeTile→TreeDiagram.Tile`, `TreeStyle→TreeDiagram.Style`, `TextualTreeStyle→TreeDiagram.TextualStyle` |

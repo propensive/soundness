@@ -82,7 +82,7 @@ object Dap:
             consume stdio: Stdio^,
             loggable:     (Socket.Event is Loggable)^,
             exec:         (Exec.Event is Loggable)^,
-            compile:      (CompileEvent is Loggable)^,
+            compile:      (Compiler.Event is Loggable)^,
             note:         Diagnostics )
   :   Unit =
 

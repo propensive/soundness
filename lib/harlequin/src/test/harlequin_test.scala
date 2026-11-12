@@ -154,7 +154,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     // Within a warm compiler session, a snippet is typed against what the session has compiled:
     // `Earlier` is on no classpath, only in the session's symbol table.
     test(m"session highlighting types a snippet against the session's compiles"):
-      given (CompileEvent is Loggable) = Loggable.silent[CompileEvent]
+      given (Compiler.Event is Loggable) = Loggable.silent[Compiler.Event]
       import strategies.throwUnsafely
 
       Scalac[3.8](Nil).on(LocalClasspath.of(Classloader[Tests.type])).session:

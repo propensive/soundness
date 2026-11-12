@@ -506,7 +506,7 @@ entry .highlighting   the `Highlight` givens, one per depth, each to import by n
       ```scala fuel
       typecheck
       ##
-      given (CompileEvent is Loggable) = Loggable.silent[CompileEvent]
+      given (Compiler.Event is Loggable) = Loggable.silent[Compiler.Event]
       import strategies.throwUnsafely
 
       Scalac[3.8](Nil).on(LocalClasspath.of(Classloader[Option[Int]])).session:
