@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **353**;
-  147 sit in a prefix family of two or more, across 46 families, and
+- exported multi-word type-level names still under review: **350**;
+  144 sit in a prefix family of two or more, across 46 families, and
   206 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -281,7 +281,7 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Filesystem*` | galilei | 2 | `FilesystemAttribute`, `FilesystemBackend` |
 | `Foreign*` | xenophile | 2 | `ForeignBuffer`, `ForeignLibrary` |
 | `Http*` | anticipation, honeycomb, urticose | 4 | `HttpEquiv`, `HttpRequests`, `HttpStreams`, `HttpUrl` |
-| `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
+| `Inline*` | profanity, ultimatum | 2 | `InlineBoard`, `InlineRoot` |
 | `Java*` | anthology, diuretic, enigmatic, gastronomy, kaleidoscope, scintillate, surveillance | 13 | `JavaBaseCrypto`, `JavaBaseHashing`, `JavaBaseRegex`, `JavaBaseWatcher`, `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
 | `Json*` | jacinta, obligatory | 3 | `JsonPointer`, `JsonRpc`, `JsonSchema` |
 | `Kotlin*` | xenophile | 3 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke` |

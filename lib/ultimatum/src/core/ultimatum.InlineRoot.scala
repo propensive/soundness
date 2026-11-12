@@ -42,19 +42,50 @@ import turbulence.*
 import vacuous.*
 
 object InlineRoot:
+  object Anchoring:
+    given default: Anchoring = TopAfterResize
+
+  // How an inline block relocates when the terminal is resized. `InlineRoot` reads
+  // this from context; the default (`TopAfterResize`) is provided in the companion,
+  // and a caller overrides it by importing one alternative from `inlineAnchoring`.
+  enum Anchoring:
+    case BottomDocked    // never switch; clear and re-dock on every resize
+    case TopAnchored     // pinned to rows 1..height from the first frame
+    case TopAfterResize  // bottom-docked, then top-anchored after the first resize
+    case Fullscreen      // take over the alternate screen buffer, top-anchored
+    case Flow            // render relative to the cursor, flowing with prior output
+
+  object Growth:
+    given default: Growth = ScrollIntoScrollback
+
+  // What happens when a frame is taller than the last while bottom-docked. The
+  // default (`ScrollIntoScrollback`) preserves the historic behaviour.
+  enum Growth:
+    case ScrollIntoScrollback  // scroll the screen up, pushing rows into scrollback
+    case ClampToScreen         // grow upward in place, overwriting the rows above
+
+  object Shrink:
+    given default: Shrink = RedockBottom
+
+  // What happens when a frame is shorter than the last. The default
+  // (`RedockBottom`) preserves the historic behaviour.
+  enum Shrink:
+    case RedockBottom  // re-dock at the bottom, clearing the rows vacated above
+    case KeepTop       // hold the top row and clear below (no re-dock gap)
+
   // The root for inline mode over a real terminal: width and the height clamp are
   // read live, so a resize is reflected on the next frame. The rendering policy is
-  // read from context (`InlineAnchoring`/`InlineGrowth`/`InlineShrink`), so it is
-  // fixed at the caller's site rather than inside the library.
+  // read from context (`Anchoring`/`Growth`/`Shrink`), so it is fixed at the caller's site
+  // rather than inside the library.
   def apply(terminal: Terminal)
-    ( using anchoring: InlineAnchoring, growth: InlineGrowth, shrink: InlineShrink )
+    ( using anchoring: Anchoring, growth: Growth, shrink: Shrink )
   :   InlineRoot^{terminal.rd, scala.caps.any} =
 
     new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
       ( using terminal.stdio, anchoring, growth, shrink )
 
   def apply(width: Int, height: Int)
-    ( using Stdio, InlineAnchoring, InlineGrowth, InlineShrink )
+    ( using Stdio, Anchoring, Growth, Shrink )
   :   InlineRoot^ =
 
     new InlineRoot(() => width, () => height)
@@ -64,7 +95,7 @@ object InlineRoot:
 // addressing (`cup`) so a redraw always lands in the same place and never drifts —
 // the property a relative, cursor-tracking present loses the moment a resize reflows
 // the lines already on screen. Anchoring, growth and shrink are each governed by a
-// contextual policy (`InlineAnchoring`/`InlineGrowth`/`InlineShrink`); the defaults
+// contextual policy (`Anchoring`/`Growth`/`Shrink`); the defaults
 // reproduce the historic behaviour. Under the default `TopAfterResize` anchoring the
 // block is BOTTOM-docked on launch (appearing inline beneath the shell command) and
 // switches to TOP-anchored — pinned to rows 1..height — on the first resize, because
@@ -77,9 +108,9 @@ object InlineRoot:
 // is clamped to the terminal height.
 class InlineRoot(widthFn: () ->{scala.caps.any.rd} Int, heightFn: () ->{scala.caps.any.rd} Int)
   ( using stdio:     Stdio,
-          anchoring: InlineAnchoring,
-          growth:    InlineGrowth,
-          shrink:    InlineShrink )
+          anchoring: InlineRoot.Anchoring,
+          growth:    InlineRoot.Growth,
+          shrink:    InlineRoot.Shrink )
 extends GridSurface(widthFn(), 0):
   private var presentedRows: Int = 0
   private var presentedColumns: Int = 0
@@ -92,9 +123,9 @@ extends GridSurface(widthFn(), 0):
   // Start top-anchored only when the policy pins the block from the first frame;
   // `TopAfterResize` starts bottom-docked and flips on the first `invalidate`.
   private var topAnchored: Boolean = anchoring match
-    case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
-    case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
-    case InlineAnchoring.Flow                                          => false
+    case InlineRoot.Anchoring.TopAnchored | InlineRoot.Anchoring.Fullscreen      => true
+    case InlineRoot.Anchoring.BottomDocked | InlineRoot.Anchoring.TopAfterResize => false
+    case InlineRoot.Anchoring.Flow                                          => false
 
   private var started: Boolean = false
 
@@ -218,7 +249,7 @@ extends GridSurface(widthFn(), 0):
     Out.print(frame.toString.tt)
 
   update def flush(): Unit =
-    if anchoring == InlineAnchoring.Flow then flushInline() else flushDocked()
+    if anchoring == InlineRoot.Anchoring.Flow then flushInline() else flushDocked()
 
   private update def flushDocked(): Unit =
     val rows    = heightFn()
@@ -252,7 +283,7 @@ extends GridSurface(widthFn(), 0):
 
     // `Fullscreen` takes over the alternate screen buffer for the session: enter it on
     // the first present (restored by `finish`), so the block owns a blank screen.
-    if anchoring == InlineAnchoring.Fullscreen && !started then emit(t"\e[?1049h")
+    if anchoring == InlineRoot.Anchoring.Fullscreen && !started then emit(t"\e[?1049h")
     started = true
 
     emit(csi.dectcem(false))
@@ -267,7 +298,7 @@ extends GridSurface(widthFn(), 0):
     // a terminal that failed to answer once won't start) and clear the whole screen;
     // otherwise clear a bottom band sized by the wrap heuristic.
     def unrecoveredResize(): Int =
-      if anchoring == InlineAnchoring.TopAfterResize then
+      if anchoring == InlineRoot.Anchoring.TopAfterResize then
         topAnchored = true
         emit(csi.cup(1, 1))
         emit(csi.ed(0))
@@ -312,16 +343,16 @@ extends GridSurface(widthFn(), 0):
           // scrolls); `ClampToScreen` instead grows upward in place, overwriting the
           // rows above without touching scrollback.
           growth match
-            case InlineGrowth.ScrollIntoScrollback =>
+            case InlineRoot.Growth.ScrollIntoScrollback =>
               emit(csi.cud(9999))
               emit(t"\r")
               emit(t"\n"*(h - presentedRows))
 
-            case InlineGrowth.ClampToScreen =>
+            case InlineRoot.Growth.ClampToScreen =>
               ()
 
           (rows - h + 1).max(1)
-        else if presentedRows > h && shrink == InlineShrink.KeepTop then
+        else if presentedRows > h && shrink == InlineRoot.Shrink.KeepTop then
           // Hold the top row where the taller block began, rather than re-docking down.
           (rows - presentedRows + 1).max(1)
         else
@@ -361,7 +392,7 @@ extends GridSurface(widthFn(), 0):
     // bottom-docked under `RedockBottom` the block re-docks down and the vacated rows
     // above are cleared instead (a resize already cleared them).
     if !resized && presentedRows > h then
-      if topAnchored || shrink == InlineShrink.KeepTop then
+      if topAnchored || shrink == InlineRoot.Shrink.KeepTop then
         var k = h
 
         while k < presentedRows do
@@ -495,7 +526,7 @@ extends GridSurface(widthFn(), 0):
     // `Inline` drops the cursor onto a fresh line right below the block, RELATIVELY (from
     // the caret down to the block's last row, then a newline that scrolls if at the foot),
     // so the following output — and the next inline block — continues immediately after it.
-    if anchoring == InlineAnchoring.Flow then
+    if anchoring == InlineRoot.Anchoring.Flow then
       val down = presentedRows - 1 - flowCursorRow
       if down > 0 then Out.print(csi.cud(down))
       Out.print(t"\r\n")
@@ -513,4 +544,4 @@ extends GridSurface(widthFn(), 0):
       Out.print(t"\r\n")
 
     Out.print(csi.dectcem(true))
-    if anchoring == InlineAnchoring.Fullscreen && started then Out.print(t"\e[?1049l")
+    if anchoring == InlineRoot.Anchoring.Fullscreen && started then Out.print(t"\e[?1049l")

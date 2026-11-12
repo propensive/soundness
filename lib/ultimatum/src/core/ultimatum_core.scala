@@ -172,9 +172,9 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   ( using terminal: Terminal,
           monitor:   Monitor,
           probate:   Probate,
-          anchoring: InlineAnchoring,
-          growth:    InlineGrowth,
-          shrink:    InlineShrink )
+          anchoring: InlineRoot.Anchoring,
+          growth:    InlineRoot.Growth,
+          shrink:    InlineRoot.Shrink )
 :   Unit =
 
   // A container mutation wakes the loop by putting a redraw event on the spool.
@@ -278,11 +278,26 @@ def paint(root: Board^, pane: Pane): Unit =
 // the cursor on a fresh line below it.
 def layout(pane: Pane)
   ( using terminal:  Terminal,
-          anchoring: InlineAnchoring,
-          growth:    InlineGrowth,
-          shrink:    InlineShrink )
+          anchoring: InlineRoot.Anchoring,
+          growth:    InlineRoot.Growth,
+          shrink:    InlineRoot.Shrink )
 :   Unit =
 
   val root = InlineRoot(terminal)
   paint(root, pane)
   root.finish()
+
+package inlineAnchoring:
+  given bottomDockedAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.BottomDocked
+  given topAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.TopAnchored
+  given topAfterResizeAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.TopAfterResize
+  given fullscreenAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.Fullscreen
+  given flowAnchoring: InlineRoot.Anchoring = InlineRoot.Anchoring.Flow
+
+package inlineGrowth:
+  given scrollbackGrowth: InlineRoot.Growth = InlineRoot.Growth.ScrollIntoScrollback
+  given clampedGrowth: InlineRoot.Growth = InlineRoot.Growth.ClampToScreen
+
+package inlineShrink:
+  given redockBottomShrink: InlineRoot.Shrink = InlineRoot.Shrink.RedockBottom
+  given keepTopShrink: InlineRoot.Shrink = InlineRoot.Shrink.KeepTop
