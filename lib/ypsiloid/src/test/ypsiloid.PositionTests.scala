@@ -116,23 +116,23 @@ object PositionTests extends Suite("yaml-positions", m"Ypsiloid position-index t
 
     suite(m"Block mappings"):
       test(m"Block mapping: first key value is on line 1"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locate(YamlPath()(t"foo")).let(_.line)
+        val source = t"hal: 1\nnym: 2\n"
+        source.read[Yaml].locate(YamlPath()(t"hal")).let(_.line)
       . assert(_ == 1)
 
       test(m"Block mapping: second key value is on line 2"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locate(YamlPath()(t"bar")).let(_.line)
+        val source = t"hal: 1\nnym: 2\n"
+        source.read[Yaml].locate(YamlPath()(t"nym")).let(_.line)
       . assert(_ == 2)
 
       test(m"Block mapping: first key starts at column 1"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locateKey(YamlPath()(t"foo")).let(_.column)
+        val source = t"hal: 1\nnym: 2\n"
+        source.read[Yaml].locateKey(YamlPath()(t"hal")).let(_.column)
       . assert(_ == 1)
 
       test(m"Block mapping: value column is past `key: `"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locate(YamlPath()(t"foo")).let(_.column)
+        val source = t"hal: 1\nnym: 2\n"
+        source.read[Yaml].locate(YamlPath()(t"hal")).let(_.column)
       . assert(_ == 6)
 
       test(m"Indented block mapping: inner key on the right line"):

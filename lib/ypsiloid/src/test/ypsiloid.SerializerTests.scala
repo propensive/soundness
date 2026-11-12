@@ -138,8 +138,8 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
       . assert(_ == List(1, 2, 3))
 
       test(m"Roundtrip a list of strings"):
-        roundtrip[List[Text]](List(t"alice", t"bob"))
-      . assert(_ == List(t"alice", t"bob"))
+        roundtrip[List[Text]](List(t"percy", t"hal"))
+      . assert(_ == List(t"percy", t"hal"))
 
       test(m"Roundtrip an empty list"):
         roundtrip(List[Int]())
@@ -150,8 +150,8 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
 
       test(m"Roundtrip a case class"):
-        roundtrip(Person(t"Jon", 42))
-      . assert(_ == Person(t"Jon", 42))
+        roundtrip(Person(t"Hal", 42))
+      . assert(_ == Person(t"Hal", 42))
 
       test(m"Roundtrip a nested case class"):
         roundtrip(NamedOuter(t"a", Inner(7)))
@@ -213,37 +213,38 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
 
       test(m"a streamed value reads back"):
         import strategies.throwUnsafely
-        val stream = summon[Yaml is Streamable by Text over Credit].stream(Person(t"Zoë", 30).in[Yaml])
+        val stream =
+          summon[Yaml is Streamable by Text over Credit].stream(Person(t"Cæsar", 30).in[Yaml])
         summon[Text is Aggregable by Text].accept(stream).read[Person in Yaml]
-      . assert(_ == Person(t"Zoë", 30))
+      . assert(_ == Person(t"Cæsar", 30))
 
     suite(m"HTTP content-type integration"):
       import codepages.utf8Codepage
       import formatting.blockYamlFormatting
 
       test(m"serialises with an application/yaml media type"):
-        Person(t"Jon", 42).in[Yaml].generic(0)
+        Person(t"Hal", 42).in[Yaml].generic(0)
       . assert(_.starts(t"application/yaml"))
 
       test(m"request body parses back via Instantiable"):
         val instantiable = summon[Yaml is Instantiable across HttpRequests from Text]
-        instantiable(t"name: Jon\nage: 42").as[Person]
-      . assert(_ == Person(t"Jon", 42))
+        instantiable(t"name: Hal\nage: 42").as[Person]
+      . assert(_ == Person(t"Hal", 42))
 
     suite(m"Codec modes"):
       import formatting.blockYamlFormatting
 
-      val person = Person(t"Zoë \"q\"", 30)
+      val person = Person(t"Cæsar \"q\"", 30)
       val outer = NamedOuter(t"n", Inner(7))
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
-      val renamed = YRenamed(t"Ada Lovelace", 1815)
-      val present = WithOptional(t"Ada", 36)
-      val absent = WithOptional(t"Bob", Unset)
-      val option = WithOption(t"Cy", None)
+      val renamed = YRenamed(t"Nick Bottom", 1595)
+      val present = WithOptional(t"Hal", 36)
+      val absent = WithOptional(t"Nym", Unset)
+      val option = WithOption(t"Sly", None)
       val shape: Shape = Shape.Circle(1.5)
 
-      val team =
-        YTeam(t"crew", List(Person(t"al", 1), Person(t"bo", 2)), Set(t"x"), Map(t"k" -> 1),
+      val troupe =
+        YTroupe(t"Eastcheap", List(Person(t"Hal", 1), Person(t"Nym", 2)), Set(t"x"), Map(t"k" -> 1),
             Nil, Unset, Some(t"hi"))
 
       test(m"`codecs.direct` writes each record as `show` renders it"):
@@ -251,10 +252,10 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
 
         ( person.in[Text over Yaml], outer.in[Text over Yaml], tree.in[Text over Yaml],
           renamed.in[Text over Yaml], present.in[Text over Yaml], absent.in[Text over Yaml],
-          option.in[Text over Yaml], team.in[Text over Yaml] )
+          option.in[Text over Yaml], troupe.in[Text over Yaml] )
       . assert(_ == (person.in[Yaml].show, outer.in[Yaml].show, tree.in[Yaml].show,
           renamed.in[Yaml].show, present.in[Yaml].show, absent.in[Yaml].show,
-          option.in[Yaml].show, team.in[Yaml].show))
+          option.in[Yaml].show, troupe.in[Yaml].show))
 
       test(m"`codecs.direct` reads each record back"):
         import codecs.direct
@@ -264,13 +265,13 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
           tree.in[Text over Yaml].read[Tree in Yaml],
           renamed.in[Text over Yaml].read[YRenamed in Yaml],
           absent.in[Text over Yaml].read[WithOptional in Yaml],
-          team.in[Text over Yaml].read[YTeam in Yaml] )
-      . assert(_ == (person, outer, tree, renamed, absent, team))
+          troupe.in[Text over Yaml].read[YTroupe in Yaml] )
+      . assert(_ == (person, outer, tree, renamed, absent, troupe))
 
       test(m"`codecs.direct` reads flow style too"):
         import codecs.direct
-        t"{name: Alice, age: 30}".read[Person in Yaml]
-      . assert(_ == Person(t"Alice", 30))
+        t"{name: Percy, age: 30}".read[Person in Yaml]
+      . assert(_ == Person(t"Percy", 30))
 
       test(m"`codecs.direct` writes a record with no instance of its own directly"):
         import codecs.direct
@@ -312,25 +313,25 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
 
       test(m"`codecs.direct` reads an absent optional as `Unset`, and a null too"):
         import codecs.direct
-        ( t"name: Eve".read[WithOptional in Yaml],
-          t"name: Eve\nage: null".read[WithOptional in Yaml] )
-      . assert(_ == (WithOptional(t"Eve", Unset), WithOptional(t"Eve", Unset)))
+        ( t"name: Nym".read[WithOptional in Yaml],
+          t"name: Nym\nage: null".read[WithOptional in Yaml] )
+      . assert(_ == (WithOptional(t"Nym", Unset), WithOptional(t"Nym", Unset)))
 
       test(m"`codecs.direct` reads a strict null as an error"):
         import codecs.direct
         import optionalityOptions.strictYamlNulls
-        capture[Yaml.Error](t"name: Eve\nage: null".read[WithOptional in Yaml]).reason
+        capture[Yaml.Error](t"name: Nym\nage: null".read[WithOptional in Yaml]).reason
       . assert(_ == Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer))
 
       test(m"`codecs.direct` reports a missing field as absent"):
         import codecs.direct
-        capture[Yaml.Error](t"name: Eve".read[Person in Yaml]).reason
+        capture[Yaml.Error](t"name: Nym".read[Person in Yaml]).reason
       . assert(_ == Yaml.Error.Reason.Absent)
 
       test(m"`codecs.direct` takes a declared default for a missing field"):
         import codecs.direct
-        t"name: Eve".read[WithDefault in Yaml]
-      . assert(_ == WithDefault(t"Eve", 18))
+        t"name: Nym".read[WithDefault in Yaml]
+      . assert(_ == WithDefault(t"Nym", 18))
 
       test(m"`codecs.derived` encodes even where a direct printer is in scope"):
         import codecs.derived
@@ -338,8 +339,8 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
         given (Person is Yaml.Printable) =
           Yaml.Printable.fromEncodable[Person](_ => panic(m"printed directly"))
 
-        Person(t"Ada", 36).in[Text over Yaml]
-      . assert(_ == t"name: Ada\nage: 36\n")
+        Person(t"Hal", 36).in[Text over Yaml]
+      . assert(_ == t"name: Hal\nage: 36\n")
 
       test(m"`codecs.derived` decodes even where a direct parser is in scope"):
         import codecs.derived
@@ -348,7 +349,7 @@ object SerializerTests extends Suite("yaml-serializer", m"Ypsiloid serializer te
         // A sentinel decoder: only the tree path can return it.
         given (Person is Decodable in Yaml) = _ => Person(t"derived", 0)
 
-        t"name: Ada\nage: 36".read[Person in Yaml]
+        t"name: Hal\nage: 36".read[Person in Yaml]
       . assert(_ == Person(t"derived", 0))
 
       test(m"`codecs.strict` writes and reads a record directly"):

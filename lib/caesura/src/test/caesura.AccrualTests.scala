@@ -71,29 +71,29 @@ object AccrualTests extends Suite("dsv-accrual", m"Caesura multi-error accrual t
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid row: no errors accrued"):
-        validateDsv(row(t"name,age,height\nAlice,30,170"))(_.as[ARecord]).items.size
+        validateDsv(row(t"name,age,height\nPercy,30,170"))(_.as[ARecord]).items.size
       . assert(_ == 0)
 
       test(m"Single unparseable cell: one error"):
-        validateDsv(row(t"name,age,height\nAlice,thirty,170"))(_.as[ARecord]).items.size
+        validateDsv(row(t"name,age,height\nPercy,thirty,170"))(_.as[ARecord]).items.size
       . assert(_ == 1)
 
       test(m"Single missing cell: one error"):
-        validateDsv(row(t"name,age,height\nAlice,30"))(_.as[ARecord]).items.size
+        validateDsv(row(t"name,age,height\nPercy,30"))(_.as[ARecord]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple unparseable cells"):
       test(m"Two unparseable cells accrue two errors"):
-        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.size
+        validateDsv(row(t"name,age,height\nPercy,thirty,tall"))(_.as[ARecord]).items.size
       . assert(_ == 2)
 
       test(m"Columns identify the unparseable cells"):
-        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord])
+        validateDsv(row(t"name,age,height\nPercy,thirty,tall"))(_.as[ARecord])
          .items.map(_(0).s).to[Set]
       . assert(_ == Set("age", "height"))
 
       test(m"Each unparseable error has reason Unparseable"):
-        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.all:
+        validateDsv(row(t"name,age,height\nPercy,thirty,tall"))(_.as[ARecord]).items.all:
           case (_, err) => err.reason match
             case Dsv.Error.Reason.Unparseable(_, _) => true
             case _                                 => false
@@ -102,36 +102,36 @@ object AccrualTests extends Suite("dsv-accrual", m"Caesura multi-error accrual t
     suite(m"Gated construction"):
       test(m"Constructor does not run when any cell failed"):
         CProbe.constructions = 0
-        val issues = validateDsv(row(t"name,age\nZoe,young"))(_.as[CChecked])
+        val issues = validateDsv(row(t"name,age\nHal,young"))(_.as[CChecked])
         (issues.items.size, CProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all cells are clean"):
         CProbe.constructions = 0
-        validateDsv(row(t"name,age\nZoe,5"))(_.as[CChecked])
+        validateDsv(row(t"name,age\nHal,5"))(_.as[CChecked])
         CProbe.constructions
       . assert(_ == 1)
 
     suite(m"Multiple missing cells"):
       test(m"Two missing cells accrue two errors"):
-        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.size
+        validateDsv(row(t"name,age,height\nPercy"))(_.as[ARecord]).items.size
       . assert(_ == 2)
 
       test(m"Columns identify the missing cells"):
-        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.map(_(0).s).to[Set]
+        validateDsv(row(t"name,age,height\nPercy"))(_.as[ARecord]).items.map(_(0).s).to[Set]
       . assert(_ == Set("age", "height"))
 
       test(m"Each missing-cell error has reason Absent"):
-        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.all:
+        validateDsv(row(t"name,age,height\nPercy"))(_.as[ARecord]).items.all:
           case (_, err) => err.reason == Dsv.Error.Reason.Absent
       . assert(identity)
 
     suite(m"Missing + unparseable mixed"):
       test(m"One unparseable plus one missing: two errors at the right columns"):
-        validateDsv(row(t"name,age,height\nAlice,thirty"))(_.as[ARecord]).items.map(_(0).s).to[Set]
+        validateDsv(row(t"name,age,height\nPercy,thirty"))(_.as[ARecord]).items.map(_(0).s).to[Set]
       . assert(_ == Set("age", "height"))
 
     suite(m"Regression: does not abort on the first bad cell"):
       test(m"Both bad cells are reported, not just the first"):
-        validateDsv(row(t"name,age,height\nAlice,bad1,bad2"))(_.as[ARecord]).items.size
+        validateDsv(row(t"name,age,height\nPercy,bad1,bad2"))(_.as[ARecord]).items.size
       . assert(_ > 1)

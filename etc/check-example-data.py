@@ -58,6 +58,7 @@ GENUINE = [
   ('lib/tasseomancy/src/core/tasseomancy.*.scala', 'placeholder'),        # a chart's bars
   ('doc/api/tasseomancy.tel', 'placeholder'),
   ('doc/modules/charts.md', 'placeholder'),
+  ('lib/xylophone/src/test/xylophone.ProviderTests.scala', 'people'),   # the W3C `po.xml` sample
   ('doc/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
 ]
 

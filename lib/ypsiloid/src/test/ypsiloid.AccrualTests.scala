@@ -40,7 +40,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
 
 case class APerson(name: Text, age: Int, email: Text) derives CanEqual
-case class AContact(person: APerson, company: Text) derives CanEqual
+case class AContact(person: APerson, city: Text) derives CanEqual
 
 object AccrualTests extends Suite("yaml-accrual", m"Ypsiloid multi-error accrual tests"):
 
@@ -64,33 +64,33 @@ object AccrualTests extends Suite("yaml-accrual", m"Ypsiloid multi-error accrual
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid object: no errors accrued"):
-        val yaml = t"name: Alice\nage: 30\nemail: a@b.c\n".read[Yaml]
+        val yaml = t"name: Percy\nage: 30\nemail: a@b.c\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 0)
 
       test(m"Single missing field: one error"):
-        val yaml = t"name: Alice\nage: 30\n".read[Yaml]
+        val yaml = t"name: Percy\nage: 30\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 1)
 
       test(m"Single wrong-type field: one error"):
-        val yaml = t"name: Alice\nage: thirty\nemail: a@b\n".read[Yaml]
+        val yaml = t"name: Percy\nage: thirty\nemail: a@b\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):
       test(m"Two missing primitive fields accrue two errors"):
-        val yaml = t"name: Alice\n".read[Yaml]
+        val yaml = t"name: Percy\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
-        val yaml = t"name: Alice\n".read[Yaml]
+        val yaml = t"name: Percy\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
-        val yaml = t"name: Alice\n".read[Yaml]
+        val yaml = t"name: Percy\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.all:
           case (_, err) => err.reason == Yaml.Error.Reason.Absent
       . assert(identity)
@@ -131,7 +131,7 @@ object AccrualTests extends Suite("yaml-accrual", m"Ypsiloid multi-error accrual
         // class hits the wrong-shape branch of the inner conjunction,
         // which builds against an empty mapping and lets each sub-
         // field raise its own missing-field error.
-        val yaml = t"company: Acme\n".read[Yaml]
+        val yaml = t"city: Verona\n".read[Yaml]
         validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
@@ -140,8 +140,8 @@ object AccrualTests extends Suite("yaml-accrual", m"Ypsiloid multi-error accrual
              "#/person/email" )
 
       test(m"Mixed errors at different depths accrue together"):
-        val yaml = t"person:\n  name: D\ncompany: Acme\n".read[Yaml]
-        // person is present but missing `age` and `email`; company is
+        val yaml = t"person:\n  name: D\ncity: Verona\n".read[Yaml]
+        // person is present but missing `age` and `email`; city is
         // present.
         validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/person/age", "#/person/email"))

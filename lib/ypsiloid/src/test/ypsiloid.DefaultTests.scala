@@ -41,7 +41,7 @@ import discriminables.yamlByTypeDiscriminable
 import denominative.dysasymptotics.linearSize
 
 case class DPerson(name: Text, age: Int, email: Text) derives CanEqual
-case class DContact(person: DPerson, company: Text) derives CanEqual
+case class DContact(person: DPerson, city: Text) derives CanEqual
 
 enum DShape derives CanEqual:
   case Circle(radius: Int)
@@ -65,7 +65,7 @@ object DefaultPersonScope:
   given Default[DPerson] = () => DPerson(t"", 0, t"")
 
   def run(): Set[String] =
-    val yaml = t"company: Acme\n".read[Yaml]
+    val yaml = t"city: Verona\n".read[Yaml]
     validate[Yaml.Focus](Issues2()):
       case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
@@ -75,7 +75,7 @@ object DefaultShapeScope:
   given Default[DShape] = () => DShape.Circle(-1)
 
   def runIssues(): (Set[String], Int) =
-    val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
+    val yaml = t"type: Triangle\npuck: snug\n".read[Yaml]
     val issues = validate[Yaml.Focus](Issues2()):
       case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
@@ -107,7 +107,7 @@ object DefaultTests extends Suite("yaml-defaults", m"Ypsiloid Default-driven sen
       test(m"Without Default[DPerson], a missing nested still expands"):
         // Confirms the existing (no-Default) PR-3 accrual semantics
         // are unchanged for users who don't opt in.
-        val yaml = t"company: Acme\n".read[Yaml]
+        val yaml = t"city: Verona\n".read[Yaml]
         validateYaml(yaml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
@@ -119,31 +119,31 @@ object DefaultTests extends Suite("yaml-defaults", m"Ypsiloid Default-driven sen
         // Outside a `Default[DShape]`, the disjunction calls `abort`,
         // which the surrounding `validate` captures as one accrual
         // entry. No `Variant.Error` punches through.
-        val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
+        val yaml = t"type: Triangle\npuck: snug\n".read[Yaml]
         validateYaml(yaml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
       test(m"Without Default[DShape], absent discriminator aborts cleanly"):
-        val yaml = t"foo: bar\n".read[Yaml]
+        val yaml = t"puck: snug\n".read[Yaml]
         validateYaml(yaml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
         YProbe.constructions = 0
-        val yaml = t"name: Zoe\n".read[Yaml]
+        val yaml = t"name: Hal\n".read[Yaml]
         val issues = validateYaml(yaml)(_.as[YChecked])
         (issues.items.size, YProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
         YProbe.constructions = 0
-        val yaml = t"name: Zoe\nage: 5\n".read[Yaml]
+        val yaml = t"name: Hal\nage: 5\n".read[Yaml]
         validateYaml(yaml)(_.as[YChecked])
         YProbe.constructions
       . assert(_ == 1)
 
       test(m"A failing sum field and a missing sibling both accrue"):
-        val yaml = t"shape:\n  foo: bar\n".read[Yaml]
+        val yaml = t"shape:\n  puck: snug\n".read[Yaml]
         validateYaml(yaml)(_.as[YMix]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/shape", "#/name"))

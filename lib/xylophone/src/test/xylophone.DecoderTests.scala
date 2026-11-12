@@ -41,7 +41,7 @@ import parsing.trackPositions
 import denominative.dysasymptotics.linearSize
 
 case class DPerson(name: Text, age: Int, email: Text) derives CanEqual
-case class DContact(person: DPerson, company: Text) derives CanEqual
+case class DContact(person: DPerson, city: Text) derives CanEqual
 
 enum DShape derives CanEqual:
   case Circle(radius: Int)
@@ -70,7 +70,7 @@ object DefaultPersonScope:
   given Default[DPerson] = () => DPerson(t"", 0, t"")
 
   def run(): Set[String] =
-    val xml = x"<root><company>Acme</company></root>"
+    val xml = x"<root><city>London</city></root>"
     validate[Xml.Focus](XmlIssues()):
       case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(xml.as[DContact]).items.map(_(0).s).to[Set]
@@ -87,7 +87,7 @@ object DefaultShapeScope:
   given Default[DShape] = () => DShape.Circle(-1)
 
   def run(): (Set[String], Int) =
-    val xml = x"<Triangle><foo>bar</foo></Triangle>"
+    val xml = x"<Triangle><hal>nym</hal></Triangle>"
     val accrued = validate[Xml.Focus](XmlIssues()):
       case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(xml.as[DShape])
@@ -114,29 +114,29 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
 
     suite(m"Simple product"):
       test(m"Decode a flat case class"):
-        x"<root><name>Alice</name><age>30</age><email>a@b.c</email></root>".as[DPerson]
-      . assert(_ == DPerson(t"Alice", 30, t"a@b.c"))
+        x"<root><name>Percy</name><age>30</age><email>a@b.c</email></root>".as[DPerson]
+      . assert(_ == DPerson(t"Percy", 30, t"a@b.c"))
 
       test(m"Field order doesn't matter"):
-        x"<root><age>21</age><email>b@x</email><name>Bob</name></root>".as[DPerson]
-      . assert(_ == DPerson(t"Bob", 21, t"b@x"))
+        x"<root><age>21</age><email>b@x</email><name>Nym</name></root>".as[DPerson]
+      . assert(_ == DPerson(t"Nym", 21, t"b@x"))
 
     suite(m"Nested product"):
       test(m"Decode a nested case class"):
         x"""<root>
-              <person><name>Carol</name><age>40</age><email>c@x</email></person>
-              <company>Acme</company>
+              <person><name>Poins</name><age>40</age><email>c@x</email></person>
+              <city>London</city>
             </root>""".as[DContact]
-      . assert(_ == DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme"))
+      . assert(_ == DContact(DPerson(t"Poins", 40, t"c@x"), t"London"))
 
     suite(m"Optional fields"):
       test(m"A missing Optional field decodes as Unset"):
-        x"<root><name>Ann</name></root>".as[Profile]
-      . assert(_ == Profile(t"Ann", Unset, Unset))
+        x"<root><name>Hal</name></root>".as[Profile]
+      . assert(_ == Profile(t"Hal", Unset, Unset))
 
       test(m"A present Optional field decodes as its inner type"):
-        x"<root><name>Ann</name><nickname>annie</nickname><age>30</age></root>".as[Profile]
-      . assert(_ == Profile(t"Ann", t"annie", 30))
+        x"<root><name>Hal</name><nickname>harry</nickname><age>30</age></root>".as[Profile]
+      . assert(_ == Profile(t"Hal", t"harry", 30))
 
       test(m"A missing Optional @attribute field decodes as Unset"):
         x"""<root id="x1"><body>hi</body></root>""".as[Tagged]
@@ -147,31 +147,31 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
       . assert(_ == Tagged(t"x1", t"en", t"hi"))
 
       test(m"A missing Optional nested product decodes as Unset"):
-        x"<root><name>Smith</name></root>".as[Household]
-      . assert(_ == Household(t"Smith", Unset))
+        x"<root><name>Lancaster</name></root>".as[Household]
+      . assert(_ == Household(t"Lancaster", Unset))
 
       test(m"A present Optional nested product decodes"):
-        x"<root><name>Smith</name><head><name>Ann</name><age>30</age><email>a@b.c</email></head></root>"
+        x"<root><name>Lancaster</name><head><name>Hal</name><age>30</age><email>a@b.c</email></head></root>"
         . as[Household]
-      . assert(_ == Household(t"Smith", DPerson(t"Ann", 30, t"a@b.c")))
+      . assert(_ == Household(t"Lancaster", DPerson(t"Hal", 30, t"a@b.c")))
 
       test(m"A malformed present Optional field is still an error"):
-        validateXml(x"<root><name>Ann</name><age>old</age></root>")(_.as[Profile]).items.map(_(0).s)
+        validateXml(x"<root><name>Hal</name><age>old</age></root>")(_.as[Profile]).items.map(_(0).s)
       . assert(_ == List("/age[1]"))
 
       test(m"Strict absence raises Missing for a missing Optional field"):
         import optionalityOptions.strictXmlAbsence
-        capture[Xml.Error](x"<root><name>Ann</name><age>30</age></root>".as[Profile]).reason
+        capture[Xml.Error](x"<root><name>Hal</name><age>30</age></root>".as[Profile]).reason
       . assert(_ == Xml.Error.Reason.Missing)
 
       test(m"Lenient faults read a malformed Optional field as Unset"):
         import optionalityOptions.lenientXmlFaults
-        x"<root><name>Ann</name><age>old</age></root>".as[Profile]
-      . assert(_ == Profile(t"Ann", Unset, Unset))
+        x"<root><name>Hal</name><age>old</age></root>".as[Profile]
+      . assert(_ == Profile(t"Hal", Unset, Unset))
 
       test(m"Lenient faults accrue nothing for a malformed Optional field"):
         import optionalityOptions.lenientXmlFaults
-        validateXml(x"<root><name>Ann</name><age>old</age></root>")(_.as[Profile]).items.size
+        validateXml(x"<root><name>Hal</name><age>old</age></root>")(_.as[Profile]).items.size
       . assert(_ == 0)
 
     suite(m"Map fields"):
@@ -188,9 +188,9 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
 
       test(m"Non-textual keys and product values decode"):
         x"""<root>
-              <members><key>1</key><value><name>Ann</name><age>30</age><email>a@b.c</email></value></members>
+              <members><key>1</key><value><name>Hal</name><age>30</age><email>a@b.c</email></value></members>
             </root>""".as[Roster]
-      . assert(_ == Roster(Map(1 -> DPerson(t"Ann", 30, t"a@b.c"))))
+      . assert(_ == Roster(Map(1 -> DPerson(t"Hal", 30, t"a@b.c"))))
 
       test(m"An entry missing its value registers an error"):
         validateXml(x"<root><name>shop</name><stock><key>apple</key></stock></root>")(_.as[Inventory])
@@ -200,18 +200,18 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
         XProbe.constructions = 0
-        val issues = validateXml(x"<root><name>Zoe</name></root>")(_.as[XChecked])
+        val issues = validateXml(x"<root><name>Hal</name></root>")(_.as[XChecked])
         (issues.items.size, XProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
         XProbe.constructions = 0
-        validateXml(x"<root><name>Zoe</name><age>5</age></root>")(_.as[XChecked])
+        validateXml(x"<root><name>Hal</name><age>5</age></root>")(_.as[XChecked])
         XProbe.constructions
       . assert(_ == 1)
 
       test(m"A failing sum field and a missing sibling both accrue"):
-        validateXml(x"<root><shape><foo>bar</foo></shape></root>")(_.as[XMix])
+        validateXml(x"<root><shape><hal>nym</hal></shape></root>")(_.as[XMix])
         . items.map(_(0).s).to[Set]
       . assert(_ == Set("/shape[1]", "/name[1]"))
 
@@ -226,49 +226,49 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
 
     suite(m"Validation accrual"):
       test(m"Fully-valid input accrues zero errors"):
-        val xml = x"<root><name>Alice</name><age>30</age><email>a@b.c</email></root>"
+        val xml = x"<root><name>Percy</name><age>30</age><email>a@b.c</email></root>"
         validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 0)
 
       test(m"One missing field accrues one error"):
-        val xml = x"<root><name>Alice</name><age>30</age></root>"
+        val xml = x"<root><name>Percy</name><age>30</age></root>"
         validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 1)
 
       test(m"Pointer identifies the missing field"):
-        val xml = x"<root><name>Alice</name><age>30</age></root>"
+        val xml = x"<root><name>Percy</name><age>30</age></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/email[1]"))
 
       test(m"Two missing primitive fields accrue two errors"):
-        val xml = x"<root><name>Alice</name></root>"
+        val xml = x"<root><name>Percy</name></root>"
         validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify both missing primitive fields"):
-        val xml = x"<root><name>Alice</name></root>"
+        val xml = x"<root><name>Percy</name></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age[1]", "/email[1]"))
 
       test(m"Wrong-type primitive field accrues an error"):
-        val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
+        val xml = x"<root><name>Percy</name><age>oldish</age><email>a@b.c</email></root>"
         validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 1)
 
       test(m"Wrong-type primitive field reports the field's path"):
-        val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
+        val xml = x"<root><name>Percy</name><age>oldish</age><email>a@b.c</email></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age[1]"))
 
       test(m"Wrong-type and missing-field errors mix"):
-        val xml = x"<root><name>Alice</name><age>oldish</age></root>"
+        val xml = x"<root><name>Percy</name><age>oldish</age></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age[1]", "/email[1]"))
 
       test(m"Nested missing primitive field reports both segments"):
         val xml = x"""<root>
-                       <person><name>Dave</name><age>22</age></person>
-                       <company>Acme</company>
+                       <person><name>Peto</name><age>22</age></person>
+                       <city>London</city>
                      </root>"""
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/person[1]/email[1]"))
@@ -278,7 +278,7 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
         // raise+continue at `/person[1]` and then every sub-field's
         // missing-field raise at `/person[1]/<field>[1]` — the same
         // accrual rule that handles same-level missing fields.
-        val xml = x"<root><company>Acme</company></root>"
+        val xml = x"<root><city>London</city></root>"
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
@@ -306,14 +306,14 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
         // Outside a `Default[DShape]`, the disjunction calls `abort`,
         // which the surrounding `validate` captures and reports as one
         // accrual entry. No `Variant.Error` punches through.
-        val xml = x"<UnknownVariant><foo>bar</foo></UnknownVariant>"
+        val xml = x"<UnknownVariant><hal>nym</hal></UnknownVariant>"
         validateXml(xml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
       test(m"Without Default[DPerson], a missing nested still expands"):
         // Confirms the existing (no-Default) accrual semantics from the
         // previous PR are unchanged for users who don't opt in.
-        val xml = x"<root><company>Acme</company></root>"
+        val xml = x"<root><city>London</city></root>"
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
@@ -343,14 +343,14 @@ object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder 
         . protect(decode(document)).items
 
       test(m"Missing-field error on a tracked Xml reports the parent's position"):
-        val source = t"<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
+        val source = t"<root>\n  <name>Percy</name>\n  <age>30</age>\n</root>"
         val tracked = source.load[Xml]
         val results = validateWithPositions(tracked)(_.asTracked[DPerson])
         results.seek(_(0) == t"/email[1]").let(_(1))
       . assert(_ == Unset)
 
       test(m"Non-tracked Xml has Unset positions"):
-        val xml = x"<root><name>Alice</name></root>"
+        val xml = x"<root><name>Percy</name></root>"
         case class Tagged(items: List[Optional[Int]] = Nil)(using Diagnostics)
         extends Error(m"${items.size}"):
           def +(line: Optional[Int]): Tagged = Tagged(items :+ line)

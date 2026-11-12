@@ -68,12 +68,12 @@ object FocusTests extends Suite("yaml-focus", m"Ypsiloid focus + position tests"
   def run(): Unit =
     suite(m"Pointer-only focus (untracked Yaml)"):
       test(m"Missing field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        val yaml = t"name: Percy\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
       . assert(_ == Set("#/email"))
 
       test(m"Wrong-type field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
+        val yaml = t"name: Percy\nage: thirty\nemail: a@b".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
       . assert(_ == Set("#/age"))
 
@@ -94,7 +94,7 @@ address:
       . assert(_ == Set("#/address/city", "#/address/zip"))
 
       test(m"Untracked roots leave the focus position Unset"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        val yaml = t"name: Percy\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).all((_, line, _) => line == Unset)
       . assert(identity)
 
@@ -108,7 +108,7 @@ address:
         // focus *path* is registered by the focus block's try/finally
         // either way, so we verify that path here and exercise the
         // `withPosition` plumbing in a separate direct test below.
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        val yaml = t"name: Percy\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
       . assert(_ == Set("#/email"))
 
@@ -129,12 +129,12 @@ address:
         // run, the plumbing is wired correctly — once primitive
         // decoders gain raise+yet sentinels in PR 3, wrong-type errors
         // will land with `position` populated through this same path.
-        val source = t"name: Alice\nage: 30\nemail: a@b\n"
+        val source = t"name: Percy\nage: 30\nemail: a@b\n"
         val yaml = source.read[Yaml]
         Yaml.Focus(YamlPath()(t"age")).withPosition(yaml).position.let(_.line)
       . assert(_ == 2)
 
       test(m"withPosition leaves position Unset when the pointer doesn't resolve"):
-        val yaml = t"name: Alice".read[Yaml]
+        val yaml = t"name: Percy".read[Yaml]
         Yaml.Focus(YamlPath()(t"missing")).withPosition(yaml).position
       . assert(_ == Unset)

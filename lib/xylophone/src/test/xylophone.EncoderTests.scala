@@ -84,12 +84,12 @@ object EncoderTests extends Suite("xml-encoder", m"Xylophone case-class encoder 
 
     suite(m"Optional fields"):
       test(m"An absent Optional field encodes no element"):
-        Profile(t"Ann", Unset, Unset).in[Xml]
-      . assert(_ == x"<Profile><name>Ann</name></Profile>")
+        Profile(t"Hal", Unset, Unset).in[Xml]
+      . assert(_ == x"<Profile><name>Hal</name></Profile>")
 
       test(m"A present Optional field encodes as its inner type"):
-        Profile(t"Ann", t"annie", 30).in[Xml]
-      . assert(_ == x"<Profile><name>Ann</name><nickname>annie</nickname><age>30</age></Profile>")
+        Profile(t"Hal", t"harry", 30).in[Xml]
+      . assert(_ == x"<Profile><name>Hal</name><nickname>harry</nickname><age>30</age></Profile>")
 
       test(m"An absent Optional @attribute field encodes no attribute"):
         Tagged(t"x1", Unset, t"hi").in[Xml]
@@ -100,14 +100,15 @@ object EncoderTests extends Suite("xml-encoder", m"Xylophone case-class encoder 
       . assert(_ == x"""<Tagged id="x1" lang="en"><body>hi</body></Tagged>""")
 
       test(m"A present Optional nested product encodes as a child element"):
-        Household(t"Smith", DPerson(t"Ann", 30, t"a@b.c")).in[Xml]
+        Household(t"Lancaster", DPerson(t"Hal", 30, t"a@b.c")).in[Xml]
       . assert: xml =>
-          xml == x"""<Household><name>Smith</name><head><name>Ann</name><age>30</age><email>a@b.c</email></head></Household>"""
+          xml == x"""<Household><name>Lancaster</name><head><name>Hal</name><age>30</age><email>a@b.c</email></head></Household>"""
 
       test(m"Optional fields round-trip"):
-        List(Profile(t"Ann", Unset, Unset), Profile(t"Bob", t"bobby", 41), Profile(t"Cy", Unset, 7))
+        List
+         ( Profile(t"Hal", Unset, Unset), Profile(t"Poins", t"ned", 41), Profile(t"Nym", Unset, 7) )
         . map(_.in[Xml].as[Profile])
-      . assert(_ == List(Profile(t"Ann", Unset, Unset), Profile(t"Bob", t"bobby", 41), Profile(t"Cy", Unset, 7)))
+      . assert(_ == List(Profile(t"Hal", Unset, Unset), Profile(t"Poins", t"ned", 41), Profile(t"Nym", Unset, 7)))
 
     suite(m"Map fields"):
       test(m"A Map field encodes one entry element per mapping"):
@@ -124,28 +125,28 @@ object EncoderTests extends Suite("xml-encoder", m"Xylophone case-class encoder 
       . assert(_ == Inventory(t"shop", Map(t"apple" -> 3, t"pear" -> 5)))
 
       test(m"A Map with non-textual keys and product values round-trips"):
-        val roster = Roster(Map(1 -> DPerson(t"Ann", 30, t"a@b.c"), 2 -> DPerson(t"Bob", 41, t"b@c.d")))
+        val roster = Roster(Map(1 -> DPerson(t"Hal", 30, t"a@b.c"), 2 -> DPerson(t"Nym", 41, t"b@c.d")))
         roster.in[Xml].as[Roster]
-      . assert(_ == Roster(Map(1 -> DPerson(t"Ann", 30, t"a@b.c"), 2 -> DPerson(t"Bob", 41, t"b@c.d"))))
+      . assert(_ == Roster(Map(1 -> DPerson(t"Hal", 30, t"a@b.c"), 2 -> DPerson(t"Nym", 41, t"b@c.d"))))
 
     suite(m"Simple product"):
       test(m"Encode a flat case class"):
-        DPerson(t"Alice", 30, t"a@b.c").in[Xml]
-      . assert(_ == x"<DPerson><name>Alice</name><age>30</age><email>a@b.c</email></DPerson>")
+        DPerson(t"Percy", 30, t"a@b.c").in[Xml]
+      . assert(_ == x"<DPerson><name>Percy</name><age>30</age><email>a@b.c</email></DPerson>")
 
       test(m"Flat case class round-trips"):
-        DPerson(t"Alice", 30, t"a@b.c").in[Xml].as[DPerson]
-      . assert(_ == DPerson(t"Alice", 30, t"a@b.c"))
+        DPerson(t"Percy", 30, t"a@b.c").in[Xml].as[DPerson]
+      . assert(_ == DPerson(t"Percy", 30, t"a@b.c"))
 
     suite(m"Nested product"):
       test(m"Encode a nested case class"):
-        DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme").in[Xml]
+        DContact(DPerson(t"Poins", 40, t"c@x"), t"London").in[Xml]
       . assert: xml =>
-          xml == x"""<DContact><person><name>Carol</name><age>40</age><email>c@x</email></person><company>Acme</company></DContact>"""
+          xml == x"""<DContact><person><name>Poins</name><age>40</age><email>c@x</email></person><city>London</city></DContact>"""
 
       test(m"Nested case class round-trips"):
-        DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme").in[Xml].as[DContact]
-      . assert(_ == DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme"))
+        DContact(DPerson(t"Poins", 40, t"c@x"), t"London").in[Xml].as[DContact]
+      . assert(_ == DContact(DPerson(t"Poins", 40, t"c@x"), t"London"))
 
     suite(m"Sum type by element label"):
       test(m"Encode the Circle variant"):
@@ -166,22 +167,22 @@ object EncoderTests extends Suite("xml-encoder", m"Xylophone case-class encoder 
 
     suite(m"@attribute fields"):
       test(m"An @attribute field encodes as an attribute"):
-        Book(t"Dune", t"0441013597").in[Xml]
-      . assert(_ == x"""<Book isbn="0441013597"><title>Dune</title></Book>""")
+        Book(t"Hamlet", t"1603160316").in[Xml]
+      . assert(_ == x"""<Book isbn="1603160316"><title>Hamlet</title></Book>""")
 
       test(m"An @attribute field round-trips"):
-        Book(t"Dune", t"0441013597").in[Xml].as[Book]
-      . assert(_ == Book(t"Dune", t"0441013597"))
+        Book(t"Hamlet", t"1603160316").in[Xml].as[Book]
+      . assert(_ == Book(t"Hamlet", t"1603160316"))
 
     suite(m"@name fields"):
       test(m"@name[Xml] and bare @name rename elements; other-format @name ignored"):
-        Labelled(t"Dune", t"Herbert", t"sci-fi", 412).in[Xml]
+        Labelled(t"Hamlet", t"Shakespeare", t"tragedy", 412).in[Xml]
       . assert: xml =>
-          xml == x"""<Labelled><Title>Dune</Title><writer>Herbert</writer><note>sci-fi</note><pages>412</pages></Labelled>"""
+          xml == x"""<Labelled><Title>Hamlet</Title><writer>Shakespeare</writer><note>tragedy</note><pages>412</pages></Labelled>"""
 
       test(m"@name fields round-trip"):
-        Labelled(t"Dune", t"Herbert", t"sci-fi", 412).in[Xml].as[Labelled]
-      . assert(_ == Labelled(t"Dune", t"Herbert", t"sci-fi", 412))
+        Labelled(t"Hamlet", t"Shakespeare", t"tragedy", 412).in[Xml].as[Labelled]
+      . assert(_ == Labelled(t"Hamlet", t"Shakespeare", t"tragedy", 412))
 
     suite(m"@name variants"):
       test(m"@name[Xml] renames a variant's element"):

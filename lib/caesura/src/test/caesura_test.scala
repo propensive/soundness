@@ -62,26 +62,26 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       import dsvFormats.csvFormat
 
       test(m"read a single record directly"):
-        t"hello,world".read[DirectFoo in Dsv]
-      . assert(_ == DirectFoo(t"hello", t"world"))
+        t"Hamlet,Elsinore".read[DirectPlay in Dsv]
+      . assert(_ == DirectPlay(t"Hamlet", t"Elsinore"))
 
       test(m"`in[Text over Dsv]` writes a single record"):
-        DirectFoo(t"hello", t"world").in[Text over Dsv]
-      . assert(_ == t"hello,world")
+        DirectPlay(t"Hamlet", t"Elsinore").in[Text over Dsv]
+      . assert(_ == t"Hamlet,Elsinore")
 
       test(m"`in[Text over Dsv]` writes what `read[T in Dsv]` reads"):
-        DirectFoo(t"a, b", t"c").in[Text over Dsv].read[DirectFoo in Dsv]
-      . assert(_ == DirectFoo(t"a, b", t"c"))
+        DirectPlay(t"a, b", t"c").in[Text over Dsv].read[DirectPlay in Dsv]
+      . assert(_ == DirectPlay(t"a, b", t"c"))
 
       test(m"`in[Data over Dsv]` writes what `read[T in Dsv]` reads"):
         import codepages.utf8Codepage
         import charsets.utf8Charset, textSanitizers.strictSanitizer
-        DirectFoo(t"Zoë", t"c").in[Data over Dsv].read[DirectFoo in Dsv]
-      . assert(_ == DirectFoo(t"Zoë", t"c"))
+        DirectPlay(t"Julius Cæsar", t"Rome").in[Data over Dsv].read[DirectPlay in Dsv]
+      . assert(_ == DirectPlay(t"Julius Cæsar", t"Rome"))
 
       test(m"read every row as a List directly"):
-        t"a,b\nc,d\ne,f".read[List[DirectFoo] in Dsv]
-      . assert(_ == List(DirectFoo(t"a", t"b"), DirectFoo(t"c", t"d"), DirectFoo(t"e", t"f")))
+        t"a,b\nc,d\ne,f".read[List[DirectPlay] in Dsv]
+      . assert(_ == List(DirectPlay(t"a", t"b"), DirectPlay(t"c", t"d"), DirectPlay(t"e", t"f")))
 
       test(m"typed rows stream one value per row"):
         t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count).to[List]
@@ -101,40 +101,40 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       . assert(_ == DirectStat(t"z", 9, t"note"))
 
       test(m"quoted cells with embedded newlines parse directly"):
-        t"\"1\n2\",x".read[DirectFoo in Dsv]
-      . assert(_ == DirectFoo(t"1\n2", t"x"))
+        t"\"1\n2\",x".read[DirectPlay in Dsv]
+      . assert(_ == DirectPlay(t"1\n2", t"x"))
 
       test(m"`codecs.direct` parses a record with no instance of its own directly"):
         import codecs.direct
 
-        given fooSeam: (Foo is Decodable in Dsv) =
+        given playSeam: (Play is Decodable in Dsv) =
           _ => panic(m"the read decoded the record through its Decodable")
 
-        t"hello,world".read[Foo in Dsv]
-      . assert(_ == Foo(t"hello", t"world"))
+        t"Hamlet,Elsinore".read[Play in Dsv]
+      . assert(_ == Play(t"Hamlet", t"Elsinore"))
 
       test(m"`codecs.direct` parses every row of a record with no instance of its own"):
         import codecs.direct
-        t"a,b\nc,d".read[List[Foo] in Dsv]
-      . assert(_ == List(Foo(t"a", t"b"), Foo(t"c", t"d")))
+        t"a,b\nc,d".read[List[Play] in Dsv]
+      . assert(_ == List(Play(t"a", t"b"), Play(t"c", t"d")))
 
       test(m"`codecs.derived` decodes even where a direct parser is in scope"):
         import codecs.derived
 
         // A sentinel decoder: only the derived path can return it.
-        given (DirectFoo is Decodable in Dsv) = _ => DirectFoo(t"derived", t"")
+        given (DirectPlay is Decodable in Dsv) = _ => DirectPlay(t"derived", t"")
 
-        t"hello,world".read[DirectFoo in Dsv]
-      . assert(_ == DirectFoo(t"derived", t""))
+        t"Hamlet,Elsinore".read[DirectPlay in Dsv]
+      . assert(_ == DirectPlay(t"derived", t""))
 
       test(m"`codecs.strict` reads a record directly"):
         import codecs.strict
 
-        given fooSeam: (Foo is Decodable in Dsv) =
+        given playSeam: (Play is Decodable in Dsv) =
           _ => panic(m"the read decoded the record through its Decodable")
 
-        (t"hello,world".read[Foo in Dsv], t"a,b\nc,d".read[List[Foo] in Dsv])
-      . assert(_ == (Foo(t"hello", t"world"), List(Foo(t"a", t"b"), Foo(t"c", t"d"))))
+        (t"Hamlet,Elsinore".read[Play in Dsv], t"a,b\nc,d".read[List[Play] in Dsv])
+      . assert(_ == (Play(t"Hamlet", t"Elsinore"), List(Play(t"a", t"b"), Play(t"c", t"d"))))
 
       test(m"`codecs.strict` rejects a type with no direct parser"):
         val errors = demilitarize:
@@ -196,32 +196,32 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       . assert(_ == Dsv.Error(summon[Dsv.Format], Dsv.Error.Reason.MisplacedQuote, Prim.next.next, Sec, 12))
 
       test(m"multi-line CSV without trailing newline"):
-        t"""foo,bar\nbaz,quux""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t"""puck,snug\nmoth,snout""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"puck", t"snug"), Dsv(t"moth", t"snout")))
 
       test(m"multi-line CSV with trailing newline"):
-        t"""foo,bar\nbaz,quux\n""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t"""puck,snug\nmoth,snout\n""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"puck", t"snug"), Dsv(t"moth", t"snout")))
 
       test(m"multi-line CSV with CR and LF"):
-        t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t"""puck,snug\r\nmoth,snout\r\n""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"puck", t"snug"), Dsv(t"moth", t"snout")))
 
       test(m"multi-line CSV with quoted newlines"):
-        t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t""""puck","snug"\n"moth","snout"\n""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"puck", t"snug"), Dsv(t"moth", t"snout")))
 
       test(m"multi-line CSV with newlines and quotes in cells"):
-        t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
+        t""""p""uck","Hello\nWorld"\nmoth,"1\n2\n3\n"\n""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"p\"uck", t"Hello\nWorld"), Dsv(t"moth", t"1\n2\n3\n")))
 
       test(m"multi-line CSV with quoted quotes adjacent to newlines"):
-        t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
+        t""""p""uck","Hello\nWorld"\nmoth,"1""\n""2\n3\n"\n""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"p\"uck", t"Hello\nWorld"), Dsv(t"moth", t"1\"\n\"2\n3\n")))
 
       test(m"CSV with quoted quotes adjacent to delimiters"):
-        t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows.to[List]
-      . assert(_ == List(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
+        t""""p""uck","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows.to[List]
+      . assert(_ == List(Dsv(t"p\"uck", t"\"Hello\nWorld\"")))
 
 
     suite(m"Alternative formats"):
@@ -274,43 +274,43 @@ object Tests extends Suite("dsv", m"Caesura tests"):
 
     test(m"decode case class"):
       import dsvFormats.csvFormat
-      t"""hello,world""".read[Sheet].rows.head.let(_.as[Foo])
-    . assert(_ == Foo(t"hello", t"world"))
+      t"""Hamlet,Elsinore""".read[Sheet].rows.head.let(_.as[Play])
+    . assert(_ == Play(t"Hamlet", t"Elsinore"))
 
     test(m"decode complex case class"):
       import dsvFormats.csvFormat
-      t"""0.1,two,three,4,five,six""".read[Sheet].rows.head.let(_.as[Bar])
-    . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
+      t"""0.1,Hamlet,Elsinore,4,Othello,Venice""".read[Sheet].rows.head.let(_.as[Season])
+    . assert(_ == Season(0.1, Play(t"Hamlet", t"Elsinore"), 4, Play(t"Othello", t"Venice")))
 
     test(m"`read[T in Dsv]` decodes a single record directly"):
       import dsvFormats.csvFormat
-      t"""hello,world""".read[Foo in Dsv]
-    . assert(_ == Foo(t"hello", t"world"))
+      t"""Hamlet,Elsinore""".read[Play in Dsv]
+    . assert(_ == Play(t"Hamlet", t"Elsinore"))
 
     test(m"`read[T in Dsv]` decodes a record by headings"):
       import dsvFormats.csvWithHeaderFormat
-      t"greeting,name\nhello,world".read[Quux in Dsv]
-    . assert(_ == Quux(t"world", t"hello"))
+      t"greeting,name\nhail,Macbeth".read[Hail in Dsv]
+    . assert(_ == Hail(t"Macbeth", t"hail"))
 
     test(m"`read[T in Dsv]` decodes the first record of a one-char-chunk stream"):
       import dsvFormats.csvFormat
-      val stream = Iterator.from("hello,world\nnext,row\n".grouped(1).nn.map(_.tt)).stream
-      Dsv.aggregableIn[Foo].accept(stream)
-    . assert(_ == Foo(t"hello", t"world"))
+      val stream = Iterator.from("Hamlet,Elsinore\nOthello,Venice\n".grouped(1).nn.map(_.tt)).stream
+      Dsv.aggregableIn[Play].accept(stream)
+    . assert(_ == Play(t"Hamlet", t"Elsinore"))
 
     test(m"`read[T in Dsv]` decodes by headings from a one-char-chunk stream"):
       import dsvFormats.csvWithHeaderFormat
-      val stream = Iterator.from("greeting,name\nhello,world\n".grouped(1).nn.map(_.tt)).stream
-      Dsv.aggregableIn[Quux].accept(stream)
-    . assert(_ == Quux(t"world", t"hello"))
+      val stream = Iterator.from("greeting,name\nhail,Macbeth\n".grouped(1).nn.map(_.tt)).stream
+      Dsv.aggregableIn[Hail].accept(stream)
+    . assert(_ == Hail(t"Macbeth", t"hail"))
 
     test(m"encode case class"):
-      Foo(t"hello", t"world").dsv
-    . assert(_ == Dsv(t"hello", t"world"))
+      Play(t"Hamlet", t"Elsinore").dsv
+    . assert(_ == Dsv(t"Hamlet", t"Elsinore"))
 
     test(m"encode complex case class"):
-      Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv
-    . assert(_ == Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))
+      Season(0.1, Play(t"Hamlet", t"Elsinore"), 4, Play(t"Othello", t"Venice")).dsv
+    . assert(_ == Dsv(t"0.1", t"Hamlet", t"Elsinore", t"4", t"Othello", t"Venice"))
 
     // A missing `Inspectable` is never a compile error — `derived` always succeeds and
     // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
@@ -362,60 +362,60 @@ object Tests extends Suite("dsv", m"Caesura tests"):
 
     test(m"decode case class from TSV"):
       import dsvFormats.tsvFormat
-      t"hello\tworld".read[Sheet].rows.head.let(_.as[Foo])
-    . assert(_ == Foo(t"hello", t"world"))
+      t"Hamlet\tElsinore".read[Sheet].rows.head.let(_.as[Play])
+    . assert(_ == Play(t"Hamlet", t"Elsinore"))
 
     test(m"decode case class from CSV by headings"):
       import dsvFormats.csvWithHeaderFormat
-      t"greeting,name\nhello,world".read[Sheet].rows.head.let(_.as[Quux])
-    . assert(_ == Quux(t"world", t"hello"))
+      t"greeting,name\nhail,Macbeth".read[Sheet].rows.head.let(_.as[Hail])
+    . assert(_ == Hail(t"Macbeth", t"hail"))
 
     test(m"convert case class to TSV"):
       import dsvFormats.tsvFormat
-      List(Foo(t"hello", t"world")).dsv.show
-    . assert(_ == t"hello\tworld")
+      List(Play(t"Hamlet", t"Elsinore")).dsv.show
+    . assert(_ == t"Hamlet\tElsinore")
 
     suite(m"Optics"):
       import dsvFormats.csvWithHeaderFormat
       import dynamicAccess.dynamicDsv
-      def sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
+      def sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
 
       test(m"cell lens reads a cell by column name"):
         sheet.rows.head.let(summon["name" is Lens from Dsv onto Text](_))
-      . assert(_ == t"Alice")
+      . assert(_ == t"Percy")
 
       test(m"cell lens replaces a cell by column name"):
-        sheet.rows.head.let(_.lens(_.name = t"Carol").data.head)
-      . assert(_ == t"Carol")
+        sheet.rows.head.let(_.lens(_.name = t"Poins").data.head)
+      . assert(_ == t"Poins")
 
       test(m"row optic updates a cell in the n-th row"):
-        sheet.lens(_(Sec).name = t"Carol").rows.to[List].map(_.data.head.or(t"?"))
-      . assert(_ == List(t"Alice", t"Carol"))
+        sheet.lens(_(Sec).name = t"Poins").rows.to[List].map(_.data.head.or(t"?"))
+      . assert(_ == List(t"Percy", t"Poins"))
 
       test(m"each-row optic updates every row"):
         sheet.lens(_(Each).name = t"X").rows.to[List].map(_.data.head.or(t"?"))
       . assert(_ == List(t"X", t"X"))
 
       test(m"filter-row optic updates only matching rows"):
-        sheet.lens(_(Filter[Dsv](_.data.head == t"Bob")).name = t"X")
+        sheet.lens(_(Filter[Dsv](_.data.head == t"Hal")).name = t"X")
          .rows.to[List].map(_.data.head.or(t"?"))
-      . assert(_ == List(t"Alice", t"X"))
+      . assert(_ == List(t"Percy", t"X"))
 
     suite(m"Roundtrip"):
       import dsvFormats.csvFormat
 
       test(m"case class survives encode, render, parse and decode"):
-        Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv.show
-         .read[Sheet].rows.head.let(_.as[Bar])
-      . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
+        Season(0.1, Play(t"Hamlet", t"Elsinore"), 4, Play(t"Othello", t"Venice")).dsv.show
+         .read[Sheet].rows.head.let(_.as[Season])
+      . assert(_ == Season(0.1, Play(t"Hamlet", t"Elsinore"), 4, Play(t"Othello", t"Venice")))
 
       test(m"quoted cell survives a parse/render roundtrip"):
         t""""hello, world",test""".read[Sheet].show
       . assert(_ == t""""hello, world",test""")
 
       test(m"multi-row data survives a parse/render roundtrip"):
-        t"foo,bar\nbaz,quux".read[Sheet].show
-      . assert(_ == t"foo,bar\nbaz,quux")
+        t"puck,snug\nmoth,snout".read[Sheet].show
+      . assert(_ == t"puck,snug\nmoth,snout")
 
     suite(m"Optional fields"):
       test(m"an Optional field spans one column"):
@@ -479,15 +479,15 @@ object Tests extends Suite("dsv", m"Caesura tests"):
 
     suite(m"Cell spanning"):
       test(m"a flat product spans one column per field"):
-        Spannable.derived[Foo].spans().to[List]
+        Spannable.derived[Play].spans().to[List]
       . assert(_ == List(1, 1))
 
       test(m"a nested product sums each field's child spans"):
-        Spannable.derived[Bar].spans().to[List]
+        Spannable.derived[Season].spans().to[List]
       . assert(_ == List(1, 2, 1, 2))
 
       test(m"the total column count is the sum of all spans"):
-        Spannable.derived[Bar].spans().total
+        Spannable.derived[Season].spans().total
       . assert(_ == 6)
 
     suite(m"Field renaming"):
@@ -507,15 +507,15 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       . assert(_ == t"target person")
 
 
-case class Foo(one: Text, two: Text)
-case class DirectFoo(one: Text, two: Text)
-object DirectFoo:
-  given parsable: DirectFoo is Dsv.Parsable = Dsv.Parsable.derived
+case class Play(title: Text, place: Text)
+case class DirectPlay(title: Text, place: Text)
+object DirectPlay:
+  given parsable: DirectPlay is Dsv.Parsable = Dsv.Parsable.derived
 
 case class DirectStat(name: Text, count: Int, note: Optional[Text])
 object DirectStat:
   given parsable: DirectStat is Dsv.Parsable = Dsv.Parsable.derived
-case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
-case class Quux(name: Text, greeting: Text)
+case class Season(rate: Double, opener: Play, weeks: Int, closer: Play)
+case class Hail(name: Text, greeting: Text)
 case class Greeting(word: Text, name: Optional[Text])
 case class Tally(name: Text, count: Optional[Int])

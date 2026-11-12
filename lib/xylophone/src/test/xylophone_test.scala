@@ -41,8 +41,8 @@ import threads.virtualThreads
 import probates.cancelProbate
 import xylophone.optics.{xmlEachOptical, xmlLens, xmlOrdinalOptical}
 
-case class Worker(name: Text, age: Int)
-case class Firm(name: Text, ceo: Worker)
+case class Person(name: Text, age: Int)
+case class Play(title: Text, hero: Person)
 
 case class Book(title: Text, @attribute isbn: Text) derives CanEqual
 case class Bibliography(author: Text, book: Book) derives CanEqual
@@ -89,7 +89,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
            Xml.Comment(t"hi").inspect,
            Xml.Cdata(t"hi").inspect,
            Xml.Doctype(t"html").inspect,
-           Xml.ProcessingInstruction(t"foo", t"bar").inspect,
+           Xml.ProcessingInstruction(t"hal", t"nym").inspect,
            Attributes(t"id" -> t"x").inspect )
       . assert(_ == Nil)
 
@@ -99,8 +99,8 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       . assert(_ == t"<message>1</message>".read[Xml])
 
       test(m"Processing instruction"):
-        x"<?foo bar baz?>"
-      . assert(_ == t"<?foo bar baz?>".read[Xml])
+        x"<?hal nym sly?>"
+      . assert(_ == t"<?hal nym sly?>".read[Xml])
 
       test(m"Serialize content"):
         x"<message>hello world</message>".show
@@ -113,18 +113,18 @@ object Tests extends Suite("xml", m"Xylophone tests"):
 
     suite(m"`in Xml` decoder shorthand"):
       test(m"`read[T in Xml]` resolves a value directly from text"):
-        t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
-      . assert(_ == Worker(t"Alice", 30))
+        t"<Person><name>Percy</name><age>30</age></Person>".read[Person in Xml]
+      . assert(_ == Person(t"Percy", 30))
 
       test(m"`read[T in Xml]` works for nested case classes"):
-        t"<Firm><name>Acme</name><ceo><name>Alice</name><age>30</age></ceo></Firm>"
-          . read[Firm in Xml]
-      . assert(_ == Firm(t"Acme", Worker(t"Alice", 30)))
+        t"<Play><title>Hamlet</title><hero><name>Hamlet</name><age>30</age></hero></Play>"
+          . read[Play in Xml]
+      . assert(_ == Play(t"Hamlet", Person(t"Hamlet", 30)))
 
       test(m"`read[T in Xml]` drops a leading XML declaration"):
-        t"""<?xml version="1.0"?><Worker><name>Alice</name><age>30</age></Worker>"""
-          . read[Worker in Xml]
-      . assert(_ == Worker(t"Alice", 30))
+        t"""<?xml version="1.0"?><Person><name>Percy</name><age>30</age></Person>"""
+          . read[Person in Xml]
+      . assert(_ == Person(t"Percy", 30))
 
     test(m"extract integer"):
       x"""<message>1</message>""".as[Int]
@@ -173,12 +173,12 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       . assert(_ == elem(t"a"))
 
       test(m"Element name is case-sensitive"):
-        t"<Foo/>".read[Xml]
-      . assert(_ == elem(t"Foo"))
+        t"<Lear/>".read[Xml]
+      . assert(_ == elem(t"Lear"))
 
       test(m"Element name with mixed case is preserved"):
-        t"<FooBar/>".read[Xml]
-      . assert(_ == elem(t"FooBar"))
+        t"<KingLear/>".read[Xml]
+      . assert(_ == elem(t"KingLear"))
 
       test(m"Element name with underscore"):
         t"<a_b/>".read[Xml]
@@ -335,8 +335,8 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       . assert(_ == elem(t"a", Xml.Comment(t" &amp; ")))
 
       test(m"Comment containing tag-like text"):
-        t"<a><!-- <foo/> --></a>".read[Xml]
-      . assert(_ == elem(t"a", Xml.Comment(t" <foo/> ")))
+        t"<a><!-- <hal/> --></a>".read[Xml]
+      . assert(_ == elem(t"a", Xml.Comment(t" <hal/> ")))
 
       test(m"Comment with double-hyphen is rejected"):
         capture[Parse.Error](t"<a><!-- a -- b --></a>".read[Xml])
@@ -386,7 +386,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
             elem(t"a"))
 
       test(m"Processing instruction target cannot be xml"):
-        capture[Parse.Error](t"<a><?xml foo?></a>".read[Xml])
+        capture[Parse.Error](t"<a><?xml hal?></a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
 
       test(m"A leading XML declaration is dropped from a fragment read"):
@@ -406,7 +406,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
 
       test(m"Processing instruction target cannot be XML"):
-        capture[Parse.Error](t"<a><?XML foo?></a>".read[Xml])
+        capture[Parse.Error](t"<a><?XML hal?></a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
 
 
@@ -444,8 +444,8 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       . assert(_ == elem(t"a", Xml.Text(t"A")))
 
       test(m"Mixed text and entities"):
-        t"<a>foo &amp; bar</a>".read[Xml]
-      . assert(_ == elem(t"a", Xml.Text(t"foo & bar")))
+        t"<a>hal &amp; nym</a>".read[Xml]
+      . assert(_ == elem(t"a", Xml.Text(t"hal & nym")))
 
       test(m"Multiple entities in sequence"):
         t"<a>&lt;&gt;&amp;</a>".read[Xml]
@@ -547,7 +547,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
             case _                                   => false
 
       test(m"Literal ]]> in text is rejected"):
-        capture[Parse.Error](t"<a>foo]]>bar</a>".read[Xml])
+        capture[Parse.Error](t"<a>hal]]>nym</a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.Unexpected])
 
 
@@ -586,7 +586,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         case class NotEncodable()
         val bad: NotEncodable = NotEncodable()
         demilitarize:
-          x"<foo>$bad</foo>"
+          x"<hal>$bad</hal>"
         . map(_.focus)
       . assert(_ == List("bad"))
 
@@ -594,14 +594,14 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         case class NotShowable()
         val whatever: NotShowable = NotShowable()
         demilitarize:
-          x"<foo>$whatever</foo>"
+          x"<hal>$whatever</hal>"
         . map(_.focus)
       . assert(_ == List("whatever"))
 
     suite(m"Compile-time parse-error sub-positioning"):
       test(m"mismatched close tag in literal lands inside the literal"):
         val errors = demilitarize:
-          x"<foo></bar>"
+          x"<hal></nym>"
         // Focus should be inside the literal text, NOT cover the whole `x"..."`.
         // The whole literal is 14 chars; a precise focus is shorter.
         errors.map(_.focus.length < 14)
@@ -609,67 +609,67 @@ object Tests extends Suite("xml", m"Xylophone tests"):
 
       test(m"mismatched close tag focus contains close-tag name"):
         demilitarize:
-          x"<foo></bar>"
+          x"<hal></nym>"
         . map(_.focus)
-      . assert(_.head.lay(false)(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("nym")))
 
       test(m"focus is identity-mapped through literal \\n (interpolators don't decode it)"):
         // In an interpolator, `\n` is passed through verbatim — both source
         // and value have 2 chars for `\n` — so the mapping is the identity.
         demilitarize:
-          x"<foo>\n</bar>"
+          x"<hal>\n</nym>"
         . map(_.focus)
-      . assert(_.head.lay(false)(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("nym")))
 
       test(m"focus respects literal é in source (single value char)"):
         // A non-ASCII char in source is one char in value too; identity.
         demilitarize:
-          x"<foo>é</bar>"
+          x"<hal>é</nym>"
         . map(_.focus)
-      . assert(_.head.lay(false)(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("nym")))
 
       test(m"focus respects \\u#### lexer escape"):
         // The fixture has the literal 6 chars \\u00e9 in source. Whether the
         // subcompiler decodes \\u#### or preserves it raw, the byte-by-byte
         // walker in buildMapping picks the right step.
         demilitarize:
-          x"<foo>\u00e9</bar>"
+          x"<hal>\u00e9</nym>"
         . map(_.focus)
-      . assert(_ == List("bar>"))
+      . assert(_ == List("nym>"))
 
       test(m"focus is exact in triple-quoted literal"):
         // Triple-quoted strings don't process escapes, so source ≡ value.
         demilitarize:
-          x"""<foo></bar>"""
+          x"""<hal></nym>"""
         . map(_.focus)
-      . assert(_.head.lay(false)(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("nym")))
 
       test(m"focus on bad name is exactly the offending span (with escape)"):
-        // After `\n` (1 value char, 2 source chars), the `</bar>` close span
+        // After `\n` (1 value char, 2 source chars), the `</nym>` close span
         // should still resolve precisely. Parser reports closeStart at the
-        // `b` and length 4 (consumes `>`); we expect the substring `bar>`.
+        // `n` and length 4 (consumes `>`); we expect the substring `nym>`.
         demilitarize:
-          x"<foo>\n</bar>"
+          x"<hal>\n</nym>"
         . map(_.focus)
-      . assert(_ == List("bar>"))
+      . assert(_ == List("nym>"))
 
       test(m"focus respects $$$$ escape in literal"):
         // $$ in source decodes to a single $ in the value (2 source chars,
         // 1 value char). The bad close tag after it should still focus
-        // precisely on `bar>`.
+        // precisely on `nym>`.
         demilitarize:
-          x"<foo>$$</bar>"
+          x"<hal>$$</nym>"
         . map(_.focus)
-      . assert(_ == List("bar>"))
+      . assert(_ == List("nym>"))
 
       test(m"focus in a part after a substitution lands on the right part"):
         // The Origins tuple is reversed like Transport; a decode that re-reversed it
         // mapped errors in later parts through the wrong part's source range.
         val greeting = t"hello"
         demilitarize:
-          x"<foo>$greeting</foo></bar>"
+          x"<hal>$greeting</hal></nym>"
         . map(_.focus)
-      . assert(_.head.lay(false)(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("nym")))
 
 
     suite(m"Extractor tests"):
@@ -744,9 +744,9 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       . assert(!_)
 
       test(m"Match a literal processing instruction"):
-        val scrutinee: Xml = x"<a><?foo bar?>hi</a>"
+        val scrutinee: Xml = x"<a><?hal nym?>hi</a>"
         scrutinee.absolve match
-          case x"<a><?foo bar?>$node</a>" => node
+          case x"<a><?hal nym?>$node</a>" => node
       . assert(_ == Xml.Text(t"hi"))
 
       test(m"Capture the remaining attributes as a map"):
@@ -1000,7 +1000,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         t"""<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://""" +
           t"""www.w3.org/2003/05/soap-envelope" xmlns:ord="urn:orders"><soap:Body>""" +
           t"""<ord:Item ord:code="A&amp;B" note="&lt;tab&#x9;line&#xA;cr&#xD;&quot;">""" +
-          t"""Zoë ☃ 😀 &amp; &lt;b&gt; cr&#xD;</ord:Item><!-- a comment --><![CDATA[""" +
+          t"""Cæsar ☃ 😀 &amp; &lt;b&gt; cr&#xD;</ord:Item><!-- a comment --><![CDATA[""" +
           t"""<raw & text>]]><?target data?></soap:Body></soap:Envelope>"""
 
       val document = unsafely(soap.load[Xml])
@@ -1441,9 +1441,9 @@ object Tests extends Suite("xml", m"Xylophone tests"):
 
       test(m"an unknown axis is rejected at its first character"):
         demilitarize:
-          xp"/foo::bar"
+          xp"/hal::nym"
         . map(_.focus)
-      . assert(_ == List("f"))
+      . assert(_ == List("h"))
 
     suite(m"XPath combinators"):
       test(m"an absolute path builds with /"):
@@ -1505,8 +1505,8 @@ object Tests extends Suite("xml", m"Xylophone tests"):
     suite(m"Dynamic access"):
       test(m"Dynamic dereference selects a child element's text"):
         import dynamicAccess.dynamicXml
-        t"<root><foo>bar</foo></root>".read[Xml].foo().as[Text]
-      . assert(_ == t"bar")
+        t"<root><hal>nym</hal></root>".read[Xml].hal().as[Text]
+      . assert(_ == t"nym")
 
       test(m"Chained dynamic dereference navigates nested elements"):
         import dynamicAccess.dynamicXml
@@ -1564,23 +1564,23 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       def dribbleText(text: Text, size: Int): Stream[Text] over Credit =
         Iterator.from(text.s.grouped(size).nn.map(_.tt)).stream
 
-      val bibliography = Bibliography(t"Zoë & Co", Book(t"Tales", t"978-0"))
-      val firm = bibliography.in[Xml].show
+      val bibliography = Bibliography(t"Cæsar & Co", Book(t"Sonnets", t"978-0"))
+      val rendered = bibliography.in[Xml].show
 
       test(m"a tree parses from a one-byte-chunk stream"):
-        summon[Xml is Aggregable by Data].accept(dribble(firm, 1)).show
-      . assert(_ == firm.read[Xml].show)
+        summon[Xml is Aggregable by Data].accept(dribble(rendered, 1)).show
+      . assert(_ == rendered.read[Xml].show)
 
       test(m"a tree parses from a one-char-chunk text stream"):
-        summon[Xml is Aggregable by Text].accept(dribbleText(firm, 1)).show
-      . assert(_ == firm.read[Xml].show)
+        summon[Xml is Aggregable by Text].accept(dribbleText(rendered, 1)).show
+      . assert(_ == rendered.read[Xml].show)
 
       test(m"a value decodes from a one-byte-chunk stream"):
-        summon[(Bibliography in Xml) is Aggregable by Data].accept(dribble(firm, 1))
+        summon[(Bibliography in Xml) is Aggregable by Data].accept(dribble(rendered, 1))
       . assert(_ == bibliography)
 
       test(m"a value decodes from a one-char-chunk text stream"):
-        summon[(Bibliography in Xml) is Aggregable by Text].accept(dribbleText(firm, 1))
+        summon[(Bibliography in Xml) is Aggregable by Text].accept(dribbleText(rendered, 1))
       . assert(_ == bibliography)
 
     suite(m"Optics"):
@@ -1615,9 +1615,9 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       // No import is needed: `Xml.xmlConversion`, in the companion, is what panopticon's
       // `Coercible` finds for an `Encodable in Xml` value (#1384).
       test(m"a bare encodable case class is coerced in a lens assignment"):
-        t"<doc><Worker><name>x</name><age>1</age></Worker></doc>".read[Xml]
-         .lens(_.Worker = Worker(t"Alice", 30)).show
-      . assert(_ == t"<doc><Worker><name>Alice</name><age>30</age></Worker></doc>")
+        t"<doc><Person><name>x</name><age>1</age></Person></doc>".read[Xml]
+         .lens(_.Person = Person(t"Percy", 30)).show
+      . assert(_ == t"<doc><Person><name>Percy</name><age>30</age></Person></doc>")
 
       test(m"a bare encodable leaf is coerced through an each optic"):
         doc.lens(_(Each) = 0).show
