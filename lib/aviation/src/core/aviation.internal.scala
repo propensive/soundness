@@ -427,7 +427,7 @@ object internal:
   // via the transparent inline), and the period by the duration parser, tagged with the Gregorian
   // month radix so its calendar components add correctly.
   def recInterpolator[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
-  :   Macro[RecurrenceLiteral] =
+  :   Macro[Recurrence.Literal] =
 
     import quotes.reflect.*
 

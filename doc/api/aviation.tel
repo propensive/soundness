@@ -533,13 +533,7 @@ entry .tsInterpolator   the `Interpolable` behind `ts"…"`, with a result type 
 
 entry .recInterpolator   the `Interpolable` behind `rec"…"`, with a result type chosen by the literal
     An inline given whose transparent `interpolate` expands the `rec"…"` literal to a
-    `RecurrenceLiteral` of the start's precision, through `internal.recInterpolator`.
-
-entry .RecurrenceLiteral   the result type of `rec"…"`: a recurrence of a date, timestamp or moment
-    The union `(Recurrence of Date by (Timespan of Month.type)) | (Recurrence of Timestamp by
-    …) | (Recurrence of Moment by …)`. The period is a `Timespan of Month.type` so that its
-    calendar components add correctly to each kind of start; the transparent interpolator
-    narrows the union to the one member the literal has.
+    `Recurrence.Literal` of the start's precision, through `internal.recInterpolator`.
 
 entry .occurrences   the occurrences of any `Recurrent` value, as a lazy `Chain`
     An extension on any value with a `Recurrent` instance — a `Recurrence`, an `Rrule`, a
@@ -2527,6 +2521,12 @@ entry .Recurrence   an ISO 8601 repeating interval, `R5/2024-01-01/P1D`: a start
   entry #start   the first occurrence
   entry #period   the step between occurrences, typed as it was built (`Timespan of Month.type`, …)
   entry #repetitions   how many occurrences there are, or `Unset` for an unbounded recurrence
+
+  entry .Literal   the result type of `rec"…"`: a recurrence of a date, timestamp or moment
+      The union `(Recurrence of Date by (Timespan of Month.type)) | (Recurrence of Timestamp by
+      …) | (Recurrence of Moment by …)`. The period is a `Timespan of Month.type` so that its
+      calendar components add correctly to each kind of start; the transparent interpolator
+      narrows the union to the one member the literal has.
 
 entry .RecurrenceSet   an iCalendar recurrence set: merged occurrence streams, plus extra dates, minus exclusions
   detail

@@ -610,17 +610,10 @@ inline given tsInterpolator: (Year | Monthstamp | Date | Timestamp | Moment) is 
 
     ${aviation.internal.tsInterpolator[parts]('insertions)}
 
-// The result of a `rec"…"` literal: an ISO 8601 repeating interval whose start type follows the
-// literal's precision (the period is tagged with the Gregorian month radix so it adds correctly).
-type RecurrenceLiteral =
-  (Recurrence of Date by (Timespan of Month.type)) |
-    (Recurrence of Timestamp by (Timespan of Month.type)) |
-    (Recurrence of Moment by (Timespan of Month.type))
-
-inline given recInterpolator: RecurrenceLiteral is Interpolable:
+inline given recInterpolator: Recurrence.Literal is Interpolable:
   transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
     ( inline insertions: Any* )
-  :   RecurrenceLiteral =
+  :   Recurrence.Literal =
 
     ${aviation.internal.recInterpolator[parts, origins]('insertions)}
 
@@ -632,7 +625,7 @@ extension (inline context: StringContext)
   transparent inline def ts: Interpolation =
     interpolation[Year | Monthstamp | Date | Timestamp | Moment](context)
 
-  transparent inline def rec: Interpolation = interpolation[RecurrenceLiteral](context)
+  transparent inline def rec: Interpolation = interpolation[Recurrence.Literal](context)
 
 // Combinators over any `Recurrent` (a `Recurrence`, an `Rrule`, …): its occurrence stream and ways
 // to bound it. `occurrences` is lazy and may be infinite — bound it with `until`/`within`/`take`.

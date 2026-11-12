@@ -53,6 +53,13 @@ import vacuous.*
 // (`Topic`, via `of`) and its period (`Operand`, via `by`): a `Recurrence of Date by (Timespan of
 // Month.type)`.
 object Recurrence:
+  // The result of a `rec"…"` literal: an ISO 8601 repeating interval whose start type follows the
+  // literal's precision (the period is tagged with the Gregorian month radix so it adds correctly).
+  type Literal =
+    (Recurrence of Date by (Timespan of Month.type)) |
+      (Recurrence of Timestamp by (Timespan of Month.type)) |
+      (Recurrence of Moment by (Timespan of Month.type))
+
   def apply[point, span](start: point, period: span, repetitions: Optional[Int] = Unset)
   :   Recurrence of point by span =
 

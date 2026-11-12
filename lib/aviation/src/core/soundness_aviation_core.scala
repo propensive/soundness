@@ -46,7 +46,7 @@ export
       Monthstamp, Nov, now,
       Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
       following, occurrences, Unix, rec, Recurrence, recInterpolator,
-      RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
+      RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
       Rrule, Tai, until, WeekdayOrdinal, within,
       Sat, Sep, Sun, Thu, Timespan, Timestamp, Timezone, today, ts, tsInterpolator,
       Tue, tz, Tzdb, Wed, Week, WeekDate, Weekday, Weekdays,

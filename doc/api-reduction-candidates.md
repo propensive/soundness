@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **338**;
-  134 sit in a prefix family of two or more, across 43 families, and
-  204 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **337**;
+  132 sit in a prefix family of two or more, across 42 families, and
+  205 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -291,7 +291,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Log*` | anticipation, eucalyptus | 2 | `LogPalette`, `LogSink` |
 | `Oci*` | anthology | 2 | `OciConfiguration`, `OciImage` |
 | `Open*` | apoplexy, galilei | 2 | `OpenApi`, `OpenFlag` |
-| `Recurrence*` | aviation | 2 | `RecurrenceLiteral`, `RecurrenceSet` |
 | `Scala*` | degustation, harlequin | 3 | `ScalaAtom`, `ScalaReference`, `ScalaSyntaxPalette` |
 | `Schema*` | stratiform | 2 | `SchemaResolver`, `SchemaSignature` |
 | `Secure*` | coaxial | 2 | `SecureEndpoint`, `SecurePort` |
@@ -346,7 +345,7 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | variants, not satellites | ultimatum, tasseomancy | 2 | `ScrollFixture`, `StackedBars` |
 | capability and category markers (R3) | anticipation, galilei | 3 | `CreationTimed`, `EmailAddresses`, `IpAddresses` |
 
-### Singletons (204)
+### Singletons (205)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `ArOpenable`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AttemptTactic`, `BaseLayout`,
@@ -372,11 +371,11 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 `PhysicalState`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`,
 `PollingWatcher`, `PooledSupervisor`, `PoolingSupervisor`, `PositionTracking`, `PosixCommands`,
 `PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`,
-`PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`, `ReflogEntry`,
-`RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`,
-`ScreenRoot`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`,
-`SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
-`SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `StandardMetadata`,
+`PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`, `RecurrenceSet`,
+`ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`,
+`RootFs`, `ScreenRoot`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`,
+`ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`,
+`SocketServer`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `StandardMetadata`,
 `StaticAnnotation`, `StreamOutputStream`, `StressSearch`, `SubOp`, `SymmetricKey`,
 `SyntaxMatcher`, `TableFixture`, `TastyPalette`, `TeletypeFormattable`, `TelReader`,
 `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `ThemeColor`, `ThrowTactic`,

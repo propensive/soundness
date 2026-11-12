@@ -665,7 +665,7 @@ Each pair is a genuine clash, not a re-export:
 | exoskeleton.args | merge `InvalidFlagError` and `MissingFlagError` into `Flag.Error` with a `Reason` — **done** |
 | kaleidoscope.core | `RegexBackend→Regex.Backend` (sealed: its `regexBackends` givens move too, or it unseals) — **done** |
 | parasite.core | `SharedProbate→Probate.Shared` (an alias; needs a companion) — **done** |
-| aviation.core | `RecurrenceLiteral→Recurrence.Literal` (an alias) |
+| aviation.core | `RecurrenceLiteral→Recurrence.Literal` (an alias) — **done** |
 | cataclysm.core | `SyntaxMatcher→Css.Syntax.Matcher` |
 | fulminate.core | `UncheckedError→Error.Unchecked` |
 
