@@ -81,18 +81,18 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
         parsed.args.size == 2 && parsed.result == Bytecode.Frame.Z
 
     test(m"Detect virtual call as effectively static when receiver is a singleton"):
-      // Construct: GETSTATIC Foo$.MODULE$:LFoo$;  followed by  INVOKEVIRTUAL Foo$.doIt()V
-      val moduleFrame = Bytecode.Frame.L(t"Foo$$")
+      // Construct: GETSTATIC Play$.MODULE$:LPlay$;  followed by  INVOKEVIRTUAL Play$.doIt()V
+      val moduleFrame = Bytecode.Frame.L(t"Play$$")
       val getstatic =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
+          ( Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"),
             Unset,
             proscenium.List(moduleFrame),
             0 )
 
       val invoke =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+          ( Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"),
             Unset,
             Nil,
             3 )
@@ -104,14 +104,14 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
       val opaqueFrame = Bytecode.Frame.L(t"?")
       val getstatic =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Getstatic(t"Bar", t"thing", t"Ljava/lang/Object;"),
+          ( Bytecode.Opcode.Getstatic(t"Stage", t"thing", t"Ljava/lang/Object;"),
             Unset,
             proscenium.List(opaqueFrame),
             0 )
 
       val invoke =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+          ( Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"),
             Unset,
             Nil,
             3 )
@@ -120,17 +120,17 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
     . assert(_.nil)
 
     test(m"Linearizer inlines a resolvable static-dispatchable call"):
-      val moduleFrame = Bytecode.Frame.L(t"Foo$$")
+      val moduleFrame = Bytecode.Frame.L(t"Play$$")
       val getstatic =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
+          ( Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"),
             Unset,
             proscenium.List(moduleFrame),
             0 )
 
       val invoke =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+          ( Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"),
             Unset,
             Nil,
             3 )
@@ -143,7 +143,7 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
       val callee = Bytecode(Unset, calleeBody, 1, 0)
 
       val resolver: (Text, Text, Text) => Optional[Bytecode] =
-        (o, n, d) => if o == t"Foo$$" && n == t"doIt" then callee else Unset
+        (o, n, d) => if o == t"Play$$" && n == t"doIt" then callee else Unset
 
       caller.linearize(resolver, maxDepth = 2).map(_.depth)
     . assert(_ == List(0, 0, 1, 1))

@@ -86,10 +86,10 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == t"literal")
 
       test(m"A path literal's elements are its type"):
-        val path = p"/foo/bar/baz"
-        summon[path.Topic =:= ("baz", "bar", "foo")]
+        val path = p"/verona/capulet/juliet"
+        summon[path.Topic =:= ("juliet", "capulet", "verona")]
         List.from(path.descent)
-      . assert(_ == List(t"baz", t"bar", t"foo"))
+      . assert(_ == List(t"juliet", t"capulet", t"verona"))
 
       // A path is not streamable, so `load` reads it whole as bytes and hands them to the
       // document type's byte-native `Loadable`.

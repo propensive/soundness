@@ -343,8 +343,8 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       . assert(_ == (t"text.", t"le"))
 
       test(m"a chained call keeps the whole receiver"):
-        Fragment.memberBase(t"foo.bar(baz).qu", 15)
-      . assert(_ == (t"foo.bar(baz).", t"qu"))
+        Fragment.memberBase(t"hal.nym(sly).qu", 15)
+      . assert(_ == (t"hal.nym(sly).", t"qu"))
 
       test(m"the partial ends at the cursor, not the end of input"):
         Fragment.memberBase(t"text.length", 7)
@@ -355,8 +355,8 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       . assert(_ == (t"xs.", t"ma"))
 
       test(m"a bracketed receiver is scanned as a balanced group"):
-        Fragment.infixBase(t"foo(bar, baz) ma", 16)
-      . assert(_ == (t"foo(bar, baz).", t"ma"))
+        Fragment.infixBase(t"hal(nym, sly) ma", 16)
+      . assert(_ == (t"hal(nym, sly).", t"ma"))
 
       test(m"a keyword before the space is not a receiver"):
         Fragment.infixBase(t"if co", 5)
@@ -375,11 +375,11 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       . assert(_ == (Unset, t"le"))
 
       test(m"an expression start scans back over selections and brackets"):
-        Fragment.expressionStart(t"foo(bar).baz")
+        Fragment.expressionStart(t"hal(nym).sly")
       . assert(_ == 0)
 
       test(m"an expression start stops at an operator"):
-        Fragment.expressionStart(t"a + foo.bar")
+        Fragment.expressionStart(t"a + hal.nym")
       . assert(_ == 4)
 
       test(m"a soft modifier before the space is not a receiver"):
@@ -393,43 +393,43 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     // The bracket-depth scanners are text-only: no lexer, no compiler.
     suite(m"Bracket-depth scanning"):
       test(m"unclosed brackets are listed innermost first"):
-        Fragment.unclosed(t"foo(bar, List[Int")
+        Fragment.unclosed(t"hal(nym, List[Int")
       . assert(_ == List(']', ')'))
 
       test(m"a closed group leaves nothing unclosed"):
-        Fragment.unclosed(t"foo(bar)")
+        Fragment.unclosed(t"hal(nym)")
       . assert(_ == Nil)
 
       test(m"a bracket inside a string literal does not count"):
-        Fragment.unclosed(t"foo(\"(\", ")
+        Fragment.unclosed(t"hal(\"(\", ")
       . assert(_ == List(')'))
 
       test(m"an escaped quote does not end a string literal"):
-        Fragment.unclosed(t"foo(\"\\\"(\", ")
+        Fragment.unclosed(t"hal(\"\\\"(\", ")
       . assert(_ == List(')'))
 
       test(m"a bracket inside a triple-quoted string does not count"):
-        Fragment.unclosed(t"foo(\"\"\"a \" (\"\"\")")
+        Fragment.unclosed(t"hal(\"\"\"a \" (\"\"\")")
       . assert(_ == Nil)
 
       test(m"a bracket inside a line comment does not count"):
-        Fragment.unclosed(t"foo( // (\nbar")
+        Fragment.unclosed(t"hal( // (\nnym")
       . assert(_ == List(')'))
 
       test(m"a bracket inside a block comment does not count"):
-        Fragment.unclosed(t"foo( /* ( /* [ */ */ bar")
+        Fragment.unclosed(t"hal( /* ( /* [ */ */ nym")
       . assert(_ == List(')'))
 
       test(m"a bracket character literal does not count"):
-        Fragment.unclosed(t"foo('(', '\\'')")
+        Fragment.unclosed(t"hal('(', '\\'')")
       . assert(_ == Nil)
 
       test(m"a quoted expression's brace counts"):
-        Fragment.unclosed(t"'{ foo")
+        Fragment.unclosed(t"'{ hal")
       . assert(_ == List('}'))
 
       test(m"a stray closer is ignored"):
-        Fragment.unclosed(t"foo) + bar(")
+        Fragment.unclosed(t"hal) + nym(")
       . assert(_ == List(')'))
 
       test(m"the return-type colon is at depth zero"):
@@ -498,12 +498,12 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       . assert(_.has(t"using"))
 
       test(m"a call's argument list offers expressions, not definitions"):
-        val words = keywordsAt(t"foo(")
+        val words = keywordsAt(t"hal(")
         (words.has(t"new"), words.has(t"val"))
       . assert(_ == (true, false))
 
       test(m"a member selection offers no statement keywords"):
-        keywordsAt(t"foo.")
+        keywordsAt(t"hal.")
       . assert(!_.has(t"val"))
 
       test(m"a fresh binding position suppresses all completions"):
@@ -543,7 +543,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       . assert(_ == Nil)
 
       test(m"an indented template body after a colon offers definitions"):
-        keywordsAt(t"class Foo:\n  va")
+        keywordsAt(t"class Play:\n  va")
       . assert(_ == List(t"val", t"var"))
 
       test(m"an operator continues an expression"):

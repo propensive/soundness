@@ -53,9 +53,9 @@ object Tests extends Suite("types", m"Typonym tests"):
     . assert(_ == List("one", "two", "three", "four"))
 
     test(m"use Reifiable typeclass"):
-      def foo[T](using reifiable: T is Reifiable to List[String]): List[String] =
+      def roles[T](using reifiable: T is Reifiable to List[String]): List[String] =
         reifiable.reification()
-      foo["yes" | "no" | "maybe"]
+      roles["yes" | "no" | "maybe"]
     . assert(_ == List("yes", "no", "maybe"))
 
     suite(m"Primitive constants"):

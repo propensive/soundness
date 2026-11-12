@@ -86,10 +86,10 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
     . assert(_ == List(Markup.Textual(t"type mismatch")))
 
     test(m"A sym marker parses with its attributes"):
-      Markup.parse(t"method ${mark(t"sym", List(t"name" -> t"foo", t"full" -> t"example.foo"), t"foo")} here")
+      Markup.parse(t"method ${mark(t"sym", List(t"name" -> t"act", t"full" -> t"example.act"), t"act")} here")
     . assert(_ == List
         ( Markup.Textual(t"method "),
-          Markup.Symbolic(t"foo", t"example.foo", Rendition.Default, List(Markup.Textual(t"foo"))),
+          Markup.Symbolic(t"act", t"example.act", Rendition.Default, List(Markup.Textual(t"act"))),
           Markup.Textual(t" here") ))
 
     test(m"A name marker records whether it is a type name"):
@@ -101,12 +101,12 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
     . assert(_ == List(Markup.Spanned(t"mystery", Rendition.Default, List(Markup.Textual(t"???")))))
 
     test(m"Renditions decode from their wire names"):
-      Markup.parse(mark(t"sym", List(t"name" -> t"foo", t"style" -> t"dcl"), t"def foo: Int"))
+      Markup.parse(mark(t"sym", List(t"name" -> t"act", t"style" -> t"dcl"), t"def act: Int"))
     . assert(_ == List
-        ( Markup.Symbolic(t"foo", t"", Rendition.Declaration, List(Markup.Textual(t"def foo: Int"))) ))
+        ( Markup.Symbolic(t"act", t"", Rendition.Declaration, List(Markup.Textual(t"def act: Int"))) ))
 
     test(m"Markers nest, and children keep their order"):
-      val inner = mark(t"sym", List(t"name" -> t"foo"), t"foo")
+      val inner = mark(t"sym", List(t"name" -> t"act"), t"act")
       Markup.parse(mark(t"name", Nil, t"method $inner"))
     . assert(_ == List
         ( Markup.Named
@@ -114,7 +114,7 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
               Rendition.Default,
               List
                 ( Markup.Textual(t"method "),
-                  Markup.Symbolic(t"foo", t"", Rendition.Default, List(Markup.Textual(t"foo"))) )) ))
+                  Markup.Symbolic(t"act", t"", Rendition.Default, List(Markup.Textual(t"act"))) )) ))
 
     test(m"Percent-encoded attribute values decode"):
       Markup.parse(mark(t"sym", List(t"name" -> t"%003ainit%003a"), t"constructor"))
@@ -130,27 +130,27 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
     . assert(_ == List(Markup.Textual(t"broken  text")))
 
     test(m"An unterminated marker splices its children into the parent"):
-      Markup.parse(t"a ${Start}sym${AttrsSep}name=foo${TextSep}bar")
-    . assert(_ == List(Markup.Textual(t"a "), Markup.Textual(t"bar")))
+      Markup.parse(t"a ${Start}sym${AttrsSep}name=act${TextSep}nym")
+    . assert(_ == List(Markup.Textual(t"a "), Markup.Textual(t"nym")))
 
     test(m"A truncated header is treated as text"):
       Markup.parse(t"a ${Start}sym no header end")
     . assert(_ == List(Markup.Textual(t"a sym no header end")))
 
     test(m"Plain text strips all markers"):
-      val inner = mark(t"sym", List(t"name" -> t"foo"), t"foo")
+      val inner = mark(t"sym", List(t"name" -> t"act"), t"act")
       Markup.plain(t"method ${mark(t"name", Nil, t"call of $inner")} failed")
-    . assert(_ == t"method call of foo failed")
+    . assert(_ == t"method call of act failed")
 
     test(m"A type marker carries its TASTy payload and placeholders"):
-      val placeholder = t"0|local-type|Foo|1||Foo[Int]"
-      Markup.parse(mark(t"type", List(t"tasty" -> t"QUJD", t"p" -> placeholder), t"Foo[Int]"))
+      val placeholder = t"0|local-type|Play|1||Play[Int]"
+      Markup.parse(mark(t"type", List(t"tasty" -> t"QUJD", t"p" -> placeholder), t"Play[Int]"))
     . assert(_ == List
         ( Markup.Typed
             ( t"QUJD",
-              List(Placeholder(0, PlaceholderKind.LocalType, t"Foo", 1, Unset, t"Foo[Int]")),
+              List(Placeholder(0, PlaceholderKind.LocalType, t"Play", 1, Unset, t"Play[Int]")),
               Rendition.Default,
-              List(Markup.Textual(t"Foo[Int]")) ) ))
+              List(Markup.Textual(t"Play[Int]")) ) ))
 
     test(m"A placeholder decodes its six fields"):
       Placeholder.decode(t"3|skolem|x|0|Test.scala:5|x.type")
@@ -198,7 +198,7 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
     . assert(_ == false)
 
     test(m"A message with markers is marked"):
-      SemanticMessage.marked(mark(t"sym", Nil, t"foo"))
+      SemanticMessage.marked(mark(t"sym", Nil, t"act"))
     . assert(_ == true)
 
     test(m"Substitution replaces a placeholder sentinel"):

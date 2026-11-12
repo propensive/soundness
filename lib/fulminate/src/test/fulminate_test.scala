@@ -52,10 +52,10 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       . assert(_ == t"hello world")
 
       test(m"Multiple substitutions render in order"):
-        val a = t"foo"
-        val b = t"bar"
+        val a = t"Romeo"
+        val b = t"Juliet"
         m"a=$a, b=$b".text
-      . assert(_ == t"a=foo, b=bar")
+      . assert(_ == t"a=Romeo, b=Juliet")
 
       test(m"Substitution at start"):
         val x = t"start"
@@ -107,7 +107,7 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       . assert(_ == t"char=X")
 
       test(m"segments interleaves texts and messages"):
-        val name = t"foo"
+        val name = t"Puck"
         m"a $name b".segments.size
       . assert(_ == 3)
 

@@ -46,8 +46,8 @@ import errorDiagnostics.emptyDiagnostics
 import probates.cancelProbate
 import Async.nominative
 
-case class FooError(value: Int)(using Diagnostics) extends Error(m"foo failed with $value")
-case class BarError(label: Text)(using Diagnostics) extends Error(m"bar failed: $label")
+case class CueError(value: Int)(using Diagnostics) extends Error(m"cue missed: $value")
+case class LineError(label: Text)(using Diagnostics) extends Error(m"line forgotten: $label")
 
 object Tests extends Suite("threads", m"Parasite tests"):
 
@@ -1767,7 +1767,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
 
       suite(m"Typed asynchronous errors"):
         test(m"Awaiting a failed task delivers its body's typed error"):
-          capture[FooError](async(abort(FooError(7))).await()).value
+          capture[CueError](async(abort(CueError(7))).await()).value
         . assert(_ == 7)
 
         test(m"Awaiting a successful task delivers its value"):
@@ -1775,9 +1775,9 @@ object Tests extends Suite("threads", m"Parasite tests"):
         . assert(_ == 5)
 
         test(m"A raised (non-aborting) error still fails the task"):
-          capture[FooError]:
+          capture[CueError]:
             async:
-              raise(FooError(4))
+              raise(CueError(4))
               99
             . await()
           . value
@@ -1785,22 +1785,22 @@ object Tests extends Suite("threads", m"Parasite tests"):
 
         test(m"An error handled inside the task does not surface at await"):
           async:
-            safely(abort(FooError(1))).or(99)
+            safely(abort(CueError(1))).or(99)
           . await()
         . assert(_ == 99)
 
         test(m"Cancellation surfaces as Async.Error, not the body's error type"):
           val task = async:
             snooze(1.0*Second)
-            abort(FooError(1))
+            abort(CueError(1))
           task.cancel()
           capture[Async.Error](task.await()).reason
         . assert(_ == Async.Error.Reason.Cancelled)
 
         test(m"A task that raises one of two error types delivers the one that occurred"):
           def make(flag: Boolean) = async:
-            if flag then abort(FooError(1)) else abort(BarError(t"b"))
-          capture[FooError](make(true).await()).value
+            if flag then abort(CueError(1)) else abort(LineError(t"b"))
+          capture[CueError](make(true).await()).value
         . assert(_ == 1)
 
       suite(m"Asynchronous error handlers"):
@@ -1815,9 +1815,9 @@ object Tests extends Suite("threads", m"Parasite tests"):
             signal.offer(1)
 
           handle:
-            case FooError(n) => caught.set(n)
+            case CueError(n) => caught.set(n)
           . protect:
-              daemon(raise(FooError(5)))
+              daemon(raise(CueError(5)))
 
           val delivered = safely(signal.await(2.0*Second)).or(0)
           hook.cancel()
@@ -1829,10 +1829,10 @@ object Tests extends Suite("threads", m"Parasite tests"):
           val ran = juca.AtomicBoolean(false)
 
           handle:
-            case FooError(_) => trapped.set(true)
+            case CueError(_) => trapped.set(true)
           . protect:
               daemon:
-                if false then raise(FooError(0))
+                if false then raise(CueError(0))
                 ran.set(true)
 
               . attend()
@@ -1872,7 +1872,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
           given probate: Probate = brokenProbate
           val signal = Promise[Int]()
           val hook = Vm.intercept[Fault](signal.offer(1))
-          val d = daemon(raise(FooError(1)))
+          val d = daemon(raise(CueError(1)))
 
           // Attended from a separate strand so that the assertion can time out rather than hang if
           // the promise is never settled.

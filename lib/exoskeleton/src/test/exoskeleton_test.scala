@@ -66,7 +66,7 @@ object BadConfig extends Status(2, t"the configuration file was invalid")
 object Tests extends Suite("cli", m"Exoskeleton Tests"):
   def run(): Unit =
     supervise:
-      val foo: Text = "hello"
+      val greeting: Text = "hello"
       Enclave(t"abcd").dispatch:
         ' {
             import executives.completionsExecutive

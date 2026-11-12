@@ -195,7 +195,7 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
     suite(m"Attribute selectors"):
       val exactTest = AttributeTest(AttributeMatcher.Exact, t"\"text\"", Unset)
       val prefixTest = AttributeTest(AttributeMatcher.Prefix, t"\"https\"", Unset)
-      val substringTest = AttributeTest(AttributeMatcher.Substring, t"foo", Unset)
+      val substringTest = AttributeTest(AttributeMatcher.Substring, t"puck", Unset)
       val modifierTest = AttributeTest(AttributeMatcher.Exact, t"\"x\"", 'i')
 
       test(m"attribute presence"):
@@ -211,7 +211,7 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
       . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"href", prefixTest)))))
 
       test(m"a substring attribute match with an unquoted value"):
-        parse(t"[data*=foo]")
+        parse(t"[data*=puck]")
       . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"data", substringTest)))))
 
       test(m"an attribute match with a case-insensitive modifier"):

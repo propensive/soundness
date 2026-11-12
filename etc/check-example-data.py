@@ -63,6 +63,8 @@ GENUINE = [
   ('lib/gossamer/src/test/gossamer_test.scala', 'people'),               # a list of dictionary words
   ('lib/gossamer/src/test/gossamer_test.scala', 'company'),
   ('lib/gossamer/src/test/gossamer_test.scala', 'placeholder'),
+  ('lib/ultimatum/src/test/*', 'placeholder'),                           # progress bars
+  ('lib/burdock/src/test/*', 'placeholder'),
   ('doc/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
 ]
 

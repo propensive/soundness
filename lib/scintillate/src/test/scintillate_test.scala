@@ -265,11 +265,11 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
 
           val port = server.port
 
-          val response = rawRequest(port, t"GET /foo/bar HTTP/1.1\r\nHost: localhost\r\n\r\n")
+          val response = rawRequest(port, t"GET /verona/romeo HTTP/1.1\r\nHost: localhost\r\n\r\n")
           server.cancel()
           response
 
-      . assert(_.contains(t"GET /foo/bar"))
+      . assert(_.contains(t"GET /verona/romeo"))
 
       // As a client leaves it: the connection stays open after the body, so a body framed as the
       // connection's remainder is never complete, and the read of the response times out.

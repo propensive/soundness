@@ -61,14 +61,14 @@ object Tests extends Suite("decode", m"Distillate Tests"):
     . assert(_ == (12, 13, 14))
 
     test(m"Extract an email address"):
-      t"foo@bar.com" match
+      t"hamlet@example.com" match
         case As[EmailAddress](email) => email
         case _                       => email"something@else.com"
 
-    . assert(_ == email"foo@bar.com")
+    . assert(_ == email"hamlet@example.com")
 
     test(m"Do not extract an invalid email address"):
-      t"foobar.com" match
+      t"hamletexample.com" match
         case As[EmailAddress](email) => email
         case _                       => email"something@else.com"
 

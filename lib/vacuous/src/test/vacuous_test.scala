@@ -89,56 +89,56 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
 
     test(m"Abstract type not proven distinct from String"):
       demilitarize:
-        def foo[T]: Unit = infer[T is Distinct from String].unit
-        foo[String]
+        def cue[T]: Unit = infer[T is Distinct from String].unit
+        cue[String]
 
       . map(_.message)
     . assert(_.has("[↯SN-991] type T is abstract"))
 
     test(m"Abstract type is not proven distinct from anything, e.g. Int"):
       demilitarize:
-        def foo[T]: Unit = infer[T is Distinct from String].unit
-        foo[Int]
+        def cue[T]: Unit = infer[T is Distinct from String].unit
+        cue[Int]
 
       . map(_.message)
     . assert(_.has("[↯SN-991] type T is abstract"))
 
     test(m"Inline abstract type not distinct from Int"):
       demilitarize:
-        inline def foo[T]: Unit =
+        inline def cue[T]: Unit =
           val x = infer[T is Distinct from String]
 
-        foo[Int]
+        cue[Int]
 
       . map(_.message)
     . assert(_ == Nil)
 
     test(m"Inline abstract type not distinct from String"):
       demilitarize:
-        inline def foo[T]: Unit =
+        inline def cue[T]: Unit =
           val x = infer[T is Distinct from String]
 
-        foo[String]
+        cue[String]
 
       . map(_.message)
     . assert(!_.nil)
 
     test(m"String is not distinct from String | Int"):
       demilitarize:
-        inline def foo[T]: Unit =
+        inline def cue[T]: Unit =
           val x = infer[T is Distinct from (String | Int)]
 
-        foo[String]
+        cue[String]
 
       . map(_.message)
     . assert(!_.nil)
 
     test(m"String singleton is not distinct from String"):
       demilitarize:
-        inline def foo[T]: Unit =
+        inline def cue[T]: Unit =
           val x = infer[T is Distinct from (String | Int)]
 
-        foo[""]
+        cue[""]
 
       . map(_.message)
     . assert(!_.nil)
@@ -146,10 +146,10 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
 
     test(m"String singleton not distinct from another"):
       demilitarize:
-        inline def foo[T]: Unit =
-          val x = infer[T is Distinct from "foo"]
+        inline def cue[T]: Unit =
+          val x = infer[T is Distinct from "hamlet"]
 
-        foo[""]
+        cue[""]
 
       . map(_.message)
     . assert(_ == Nil)

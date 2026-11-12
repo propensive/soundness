@@ -45,8 +45,8 @@ object Tests extends Suite("dom", m"Querencia tests"):
   def run(): Unit =
     suite(m"DOM navigation and JavaScript rendering"):
       test(m"a navigated DOM call renders to JavaScript"):
-        Javascript.serialize(document.getElementById(t"foo").focus().expr)
-      . assert(_ == t"document.getElementById('foo').focus()")
+        Javascript.serialize(document.getElementById(t"lear").focus().expr)
+      . assert(_ == t"document.getElementById('lear').focus()")
 
       test(m"array indexing renders to a bracket access"):
         Javascript.serialize(document.querySelectorAll(t".btn")(0).click().expr)
@@ -65,13 +65,13 @@ object Tests extends Suite("dom", m"Querencia tests"):
       . assert(_ == t"document.getElementById('it\\'s a \\\\ backslash')")
 
       test(m"a member access has the precise refined foreign type"):
-        val element: Foreign of "HTMLElement" from Browser = document.getElementById(t"foo")
+        val element: Foreign of "HTMLElement" from Browser = document.getElementById(t"lear")
 
         element.expr
       . assert: expr =>
           val root = Foreign.Expression.Reference(t"document")
           val select = Foreign.Expression.Select(root, t"getElementById", t"Document")
-          expr == Foreign.Expression.Apply(select, List(Foreign.Expression.Literal(t"foo")).stdlib)
+          expr == Foreign.Expression.Apply(select, List(Foreign.Expression.Literal(t"lear")).stdlib)
 
       test(m"indexing yields the element's foreign type"):
         val element: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".x")(0)
@@ -83,8 +83,8 @@ object Tests extends Suite("dom", m"Querencia tests"):
 
     suite(m"Honeycomb integration"):
       test(m"a foreign DOM expression is accepted as an `onclick` handler"):
-        Button(onclick = document.getElementById(t"foo").focus()).show
-      . assert(_.contains(t"onclick=\"document.getElementById('foo').focus()\""))
+        Button(onclick = document.getElementById(t"lear").focus()).show
+      . assert(_.contains(t"onclick=\"document.getElementById('lear').focus()\""))
 
       test(m"a chained handler renders inside the rendered HTML"):
         Button(onclick = document.querySelector(t".x").click()).show

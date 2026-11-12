@@ -182,8 +182,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
     suite(m"Reference validation"):
 
       test(m"a valid branch name parses unchanged"):
-        Git.Revision.parse(t"feature/foo")
-      .assert(_ == t"feature/foo")
+        Git.Revision.parse(t"feature/sonnets")
+      .assert(_ == t"feature/sonnets")
 
       test(m"a name with internal hyphens parses"):
         Git.Revision.parse(t"long-running-feature")
@@ -210,11 +210,11 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       .assert(_.absent)
 
       test(m"reject a ref containing .."):
-        safely(Git.Revision.parse(t"foo..bar"))
+        safely(Git.Revision.parse(t"lear..kent"))
       .assert(_.absent)
 
       test(m"reject a ref with an empty segment"):
-        safely(Git.Revision.parse(t"foo//bar"))
+        safely(Git.Revision.parse(t"lear//kent"))
       .assert(_.absent)
 
       test(m"reject a ref containing a space"):
@@ -290,8 +290,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       .assert(_ == Git.Timestamp(1700000000L, -300))
 
       test(m"an author line parses into identity and timestamp"):
-        Git.Signature.parse(t"Jon Pretty <jon@example.com> 1700000000 +0000")
-      .assert(_ == Git.Signature(Git.Identity(t"Jon Pretty", t"jon@example.com"), Git.Timestamp(1700000000L, 0)))
+        Git.Signature.parse(t"Prince Hal <hal@example.com> 1700000000 +0000")
+      .assert(_ == Git.Signature(Git.Identity(t"Prince Hal", t"hal@example.com"), Git.Timestamp(1700000000L, 0)))
 
     // ----- Patch parser ----------------------------------------------------
 
@@ -303,10 +303,10 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"a single Modified file yields one FileDiff"):
         patchFrom
-         ( t"diff --git a/foo.txt b/foo.txt",
+         ( t"diff --git a/sonnet.txt b/sonnet.txt",
            t"index 1234567..89abcde 100644",
-           t"--- a/foo.txt",
-           t"+++ b/foo.txt",
+           t"--- a/sonnet.txt",
+           t"+++ b/sonnet.txt",
            t"@@ -1,3 +1,3 @@",
            t" one",
            t"-two",
@@ -316,9 +316,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"a Modified file has ChangeKind.Modified"):
         patchFrom
-         ( t"diff --git a/foo.txt b/foo.txt",
-           t"--- a/foo.txt",
-           t"+++ b/foo.txt",
+         ( t"diff --git a/sonnet.txt b/sonnet.txt",
+           t"--- a/sonnet.txt",
+           t"+++ b/sonnet.txt",
            t"@@ -1 +1 @@",
            t"-old",
            t"+new" ).head.let(_.changeKind)
@@ -389,9 +389,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"multiple hunks in one file are kept separate"):
         patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -1 +1 @@",
            t"-a",
            t"+a1",
@@ -402,9 +402,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"hunk records line range from @@ header"):
         val hunk = patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -5,3 +7,4 @@",
            t" ctx5",
            t"-old6",
@@ -416,9 +416,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"a single-line hunk omits the count field"):
         val hunk = patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -1 +1 @@",
            t"-x",
            t"+y" ).head.let(_.hunks.head)
@@ -427,9 +427,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"hunk edits get accurate left/right line numbers"):
         val edits = patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -5,3 +7,4 @@",
            t" ctx5",
            t"-old6",
@@ -447,9 +447,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"section header after @@ is preserved"):
         patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -1 +1 @@ def someFunction()",
            t"-old",
            t"+new" ).head.let(_.hunks.head).let(_.section)
@@ -457,9 +457,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"`\\ No newline at end of file` is ignored"):
         patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -1 +1 @@",
            t"-old",
            t"\\ No newline at end of file",
@@ -477,9 +477,9 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"asDiff flattens hunks into a Dissonance Diff"):
         patchFrom
-         ( t"diff --git a/foo b/foo",
-           t"--- a/foo",
-           t"+++ b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
+           t"--- a/sonnet",
+           t"+++ b/sonnet",
            t"@@ -1 +1 @@",
            t"-old",
            t"+new",
@@ -491,11 +491,11 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       test(m"a header with no --- / +++ block still records paths from `diff --git`"):
         patchFrom
-         ( t"diff --git a/foo b/foo",
+         ( t"diff --git a/sonnet b/sonnet",
            t"old mode 100644",
            t"new mode 100755" ).head.let: file =>
           (file.oldPath, file.newPath)
-      .assert(_ == (t"foo", t"foo"))
+      .assert(_ == (t"sonnet", t"sonnet"))
 
     // Compile-time checks on the handle types; the backend is immaterial, so they are not run per
     // backend (and `demilitarize` needs its given in the file's scope, not a parameter's).
@@ -1489,19 +1489,19 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
         test(m"addRemote then remotes() round-trip"):
           withWorktree: worktree ?=>
-            worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
+            worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
             worktree.remotes().value
-        .assert(_ == List(Remote(t"origin", t"git@example.com:foo/bar.git")))
+        .assert(_ == List(Remote(t"origin", t"git@example.com:globe/hamlet.git")))
 
         test(m"adding a remote twice fails with RemoteExists"):
           withWorktree: worktree ?=>
-            worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
-            capture[Git.Error](worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")).reason
+            worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
+            capture[Git.Error](worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")).reason
         .assert(_ == Git.Error.Reason.RemoteExists(t"origin"))
 
         test(m"removeRemote drops the remote"):
           withWorktree: worktree ?=>
-            worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
+            worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
             worktree.removeRemote(t"origin")
             worktree.remotes().value
         .assert(_.nil)
@@ -1513,22 +1513,22 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
         test(m"renameRemote changes the name"):
           withWorktree: worktree ?=>
-            worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
+            worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
             worktree.renameRemote(t"origin", t"upstream")
             worktree.remotes().value.map(_.name)
         .assert(_ == List(t"upstream"))
 
         test(m"setRemoteUrl with push sets the push URL"):
           withWorktree: worktree ?=>
-            worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
-            worktree.setRemoteUrl(t"origin", t"git@push.example.com:foo/bar.git", push = true)
+            worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
+            worktree.setRemoteUrl(t"origin", t"git@push.example.com:globe/hamlet.git", push = true)
             worktree.remote(t"origin").value.let(_.pushUrl)
-        .assert(_ == t"git@push.example.com:foo/bar.git")
+        .assert(_ == t"git@push.example.com:globe/hamlet.git")
 
         test(m"two remotes are listed and addressable separately"):
           withWorktree: worktree ?=>
-            worktree.addRemote(t"origin", t"git@a.example:foo.git")
-            worktree.addRemote(t"upstream", t"git@b.example:bar.git")
+            worktree.addRemote(t"origin", t"git@a.example:hamlet.git")
+            worktree.addRemote(t"upstream", t"git@b.example:macbeth.git")
             worktree.remotes().value.map(_.name).to[Set]
         .assert(_ == Set(t"origin", t"upstream"))
 
@@ -1730,17 +1730,17 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
         test(m"commit / namespace builds a NoteRef whose namespace is refs/notes/<namespace>"):
           val hash = Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
-          (hash / t"foo").namespace.encode
-        .assert(_ == t"refs/notes/foo")
+          (hash / t"lear").namespace.encode
+        .assert(_ == t"refs/notes/lear")
 
         test(m"chaining / extends the namespace path"):
           val hash = Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
-          (hash / t"foo" / t"bar").namespace.encode
-        .assert(_ == t"refs/notes/foo/bar")
+          (hash / t"lear" / t"kent").namespace.encode
+        .assert(_ == t"refs/notes/lear/kent")
 
         test(m"a NoteRef's target round-trips through the path root"):
           val hash = Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
-          (hash / t"foo").target == hash
+          (hash / t"lear").target == hash
         .assert(_ == true)
 
         test(m"(commit / namespace).content[Text] returns the note body"):
@@ -1759,7 +1759,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
         test(m"namespace validation rejects an invalid segment"):
           val hash = Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
-          safely((hash / t"foo" / t"bad..segment").namespace).let(_.encode)
+          safely((hash / t"lear" / t"bad..segment").namespace).let(_.encode)
         .assert(_.absent)
 
 
@@ -1804,7 +1804,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       .assert(_.absent)
 
       test(m"Git.Refs.heads rejects a segment containing .."):
-        safely(Git.Refs.heads(t"foo..bar")).let(_.encode)
+        safely(Git.Refs.heads(t"lear..kent")).let(_.encode)
       .assert(_.absent)
 
       test(m"Git.Refs.heads rejects a segment ending in .lock"):
