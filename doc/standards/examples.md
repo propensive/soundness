@@ -33,6 +33,8 @@ from the retired vocabulary beyond what `etc/example-data-baseline.tsv` records.
   inventing another, and invent another whenever none shows the feature.
 - **Avoid the characters who share a retired name.** Peter Quince, John of Gaunt and Paulina
   read as the arbitrary people they replace, and the check counts them.
+- **Mind the exports.** A sample that imports `soundness.*` shares its namespace: `History`,
+  `Hero` and `Setting` are already types there, so use them only as field names.
 - **Shakespeare is the one real person.** A sample book may name him as its author.
 
 ## The palette
@@ -45,7 +47,7 @@ row  a flat record of `Text` and `Int`  `Person(name: Text, age: Int)`  Hamlet 3
 row  a record in a record; two fields of one type; field paths  `Play(title: Text, hero: Person, villain: Person)`, `Duel(challenger: Person, opponent: Person)`  Othello and Iago; Hamlet and Laertes; `hero.name`, `villain.age`
 row  a list field; deep optics; an update inside a collection  `Play(title: Text, acts: List[Act])`, `Act(number: Int, scenes: List[Scene])`, `Scene(number: Int, place: Text)`  *Macbeth*: "A heath", "Dunsinane"
 row  a list of records  `Troupe(name: Text, players: List[Person])`  Quince, Bottom, Flute, Snug, Snout, Starveling
-row  a sum type  `enum Genre { case Comedy, Tragedy, History }`; `Verse` with `Sonnet(number: Int)` and `Song(title: Text)`
+row  a sum type  `enum Genre { case Comedy, Tragedy, Romance }`; `Verse` with `Sonnet(number: Int)` and `Song(title: Text)`
 row  several scalar types  `Speech(speaker: Text, act: Int, scene: Int, aside: Boolean)`, `Sonnet(number: Int, firstLine: Text)`  Sonnet 18, "Shall I compare thee to a summer's day?"
 row  an optional or defaulted field  `Person(name: Text, age: Optional[Int])`, `aside: Boolean = false`  the Fool, the Porter
 row  a map field  `Play(title: Text, cast: Map[Text, Person])`

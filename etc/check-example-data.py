@@ -57,6 +57,7 @@ GENUINE = [
   ('lib/archimedes/src/core/archimedes.Ergo.scala', 'placeholder'),       # the overbar accent
   ('lib/tasseomancy/src/core/tasseomancy.*.scala', 'placeholder'),        # a chart's bars
   ('doc/api/tasseomancy.tel', 'placeholder'),
+  ('doc/modules/charts.md', 'placeholder'),
   ('doc/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
 ]
 
@@ -66,7 +67,7 @@ def released(path):
   notes = sorted(glob.glob('doc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
   return path != notes[-1]
 
-PEOPLE = (r'\b(?:Alice|Bob|Carol|Dave|Mallory|Ada|Lovelace|Turing|Hopper|Curie|John|Jane|Doe|Smith|Jack|Jill'
+PEOPLE = (r'(?:\b|(?<=\\[nt]))(?:Alice|Bob|Carol|Dave|Mallory|Ada|Lovelace|Turing|Hopper|Curie|John|Jane|Doe|Smith|Jack|Jill'
           r'|Simon|Peter|Paul|George|Ringo|Mary|Amy|Bea|Zoe|Zoë|Janet|Paweł|Ann|Bill|Ken|Eve'
           r'|Gondor|Acme|Dune|Beatles|Rex|Whiskers|Milo|Townville|Cityburg'
           r'|alice|bob|carol|jack|jill|gondor|acme)\b'

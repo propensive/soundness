@@ -140,7 +140,7 @@ apply:
 ```scala fuel
 run
 ##
-Out.println((Drive('D') / "Foo").encode)
+Out.println((Drive('D') / "Verona").encode)
 Out.println(t"/home/work".as[Path on Linux].encode)
 ```
 
@@ -183,7 +183,7 @@ A path's element names may be carried in its type, so that a path which is known
 compiletime is known precisely:
 
 ```scala
-val exact: Path of ("bar", "foo") = % / "foo" / "bar"
+val exact: Path of ("capulet", "verona") = % / "verona" / "capulet"
 ```
 
 The names appear innermost first, which matches how the path is constructed. A path which is
@@ -196,7 +196,7 @@ not compile:
 compile
 errors show
 ##
-val wrong: Path of ("bar", "foo") = % / "foo" / "baz"
+val wrong: Path of ("capulet", "verona") = % / "verona" / "montague"
 ```
 
 Where the elements are not known, as for a path built from text at runtime, or one read from

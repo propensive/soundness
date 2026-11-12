@@ -52,7 +52,7 @@ an import. Nothing about text is assumed, which is
 The `t"…"` interpolator builds a `Text`, substituting any value which can be shown:
 
 ```scala
-val name = t"Ada"
+val name = t"Hamlet"
 ```
 
 ```scala fuel

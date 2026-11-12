@@ -47,10 +47,10 @@ final case class primary() extends StaticAnnotation
 final case class number(number: Int) extends StaticAnnotation
 
 case class Person(name: Text, @ident email: Text)
-case class Employee(person: Person, @ident @primary code: Long)
+case class Speech(speaker: Person, @ident @primary line: Long)
 
 @number(10)
-case class Company(name: Text)
+case class Play(title: Text)
 ```
 
 The annotations of a field are summoned by naming the type and the field:
@@ -58,7 +58,7 @@ The annotations of a field are summoned by naming the type and the field:
 ```scala fuel
 run
 ##
-Out.println(summon[Employee is Annotated on "code"]().inspect)
+Out.println(summon[Speech is Annotated on "line"]().inspect)
 ```
 
 `by` narrows the query to one type of annotation:
@@ -66,7 +66,7 @@ Out.println(summon[Employee is Annotated on "code"]().inspect)
 ```scala fuel
 run
 ##
-Out.println(summon[Employee is Annotated by ident on "code"]().inspect)
+Out.println(summon[Speech is Annotated by ident on "line"]().inspect)
 ```
 
 The plain form gives the annotations on the type itself:
@@ -74,7 +74,7 @@ The plain form gives the annotations on the type itself:
 ```scala fuel
 run
 ##
-Out.println(summon[Company is Annotated]().inspect)
+Out.println(summon[Play is Annotated]().inspect)
 ```
 
 `fields` gives every annotated field at once. A field with no annotation of the requested type
@@ -83,7 +83,7 @@ is absent from the map:
 ```scala fuel
 run
 ##
-Out.println(summon[Employee is Annotated by ident].fields.inspect)
+Out.println(summon[Speech is Annotated by ident].fields.inspect)
 ```
 
 The answer is computed as the code compiles, and is a constant in the compiled program. A field
@@ -92,8 +92,8 @@ with no annotations has an empty set, and so does a name which is not a field at
 ```scala fuel
 run
 ##
-Out.println(summon[Employee is Annotated on "person"]().inspect)
-Out.println(summon[Employee is Annotated on "salary"]().inspect)
+Out.println(summon[Speech is Annotated on "speaker"]().inspect)
+Out.println(summon[Speech is Annotated on "scene"]().inspect)
 ```
 
 ### Finding the annotated field
@@ -104,14 +104,14 @@ field does, the summoned instance knows its name:
 ```scala fuel
 run
 ##
-Out.println(summon[Employee is Annotated by primary].field)
+Out.println(summon[Speech is Annotated by primary].field)
 ```
 
 Finding the field is usually the first step towards reading or writing it, so the instance also
 offers a [lens](optics.md#lenses-as-values) onto it:
 
 ```scala
-val person = Person(t"Jack", t"jack@example.com")
+val person = Person(t"Romeo", t"romeo@example.com")
 ```
 
 ```scala fuel
@@ -120,7 +120,7 @@ run
 val identity = summon[Person is Annotated by ident]
 
 Out.println(identity.lens(person))
-Out.println(identity.lens.update(person, t"jill@example.com").inspect)
+Out.println(identity.lens.update(person, t"juliet@example.com").inspect)
 ```
 
 This is how a serialization library finds "the field marked as the identifier" without being
@@ -169,14 +169,14 @@ An annotation may take a type argument, and a query can filter by it:
 ```scala
 final case class marker[topic](id: Int) extends StaticAnnotation
 
-case class Marked(@marker[Person](1) @marker[Company](2) one: Int, @marker[Company](3) two: Int)
+case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
 ```
 
 ```scala fuel
 run
 ##
 Out.println(summon[Marked is Annotated by marker[Person]].fields.inspect)
-Out.println(summon[Marked is Annotated by marker[Company]].fields.inspect)
+Out.println(summon[Marked is Annotated by marker[Play]].fields.inspect)
 ```
 
 The field `two` carries a marker, but none for `Person`, so the first query gives it an empty
@@ -275,14 +275,14 @@ fields of a record dereferenced `to Any` can be read, but not written, since an 
 put into a `Long`:
 
 ```scala
-val anything = summon[Employee is Dereferenceable to Any]
+val anything = summon[Speech is Dereferenceable to Any]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(anything.select(Employee(person, 7L), t"code").toString.tt)
-Out.println(anything.lens(t"code").absent.inspect)
+Out.println(anything.select(Speech(person, 7L), t"line").toString.tt)
+Out.println(anything.lens(t"line").absent.inspect)
 ```
 
 These are the members of a `Dereferenceable`, for a record of type `T` dereferenced `to R`:

@@ -42,7 +42,7 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 ```scala
 case class Person(name: Text, age: Int)
 
-val encoded = Person(t"Ada", 36).in[Cbor]
+val encoded = Person(t"Hamlet", 30).in[Cbor]
 ```
 
 ```scala fuel
@@ -74,10 +74,10 @@ to its bytes, and is the mirror of `read[Person in Cbor]`:
 ```scala fuel
 run
 ##
-Out.println(Person(t"Ada", 36).in[Data over Cbor].read[Person in Cbor].inspect)
+Out.println(Person(t"Hamlet", 30).in[Data over Cbor].read[Person in Cbor].inspect)
 ```
 
-The same `Person`, written as compact [JSON](json.md), is 23 bytes.
+The same `Person`, written as compact [JSON](json.md), is 26 bytes.
 
 The `@name[Cbor]` [annotation](annotations.md) renames a field in the encoded map. A sealed
 hierarchy encodes with a discriminator, declared once:
@@ -142,7 +142,7 @@ Assigning to a field gives a new value, and assigning `Unset` removes the field:
 ```scala
 import dynamicAccess.dynamicCbor
 
-val person = Person(t"Ada", 36).in[Cbor]
+val person = Person(t"Hamlet", 30).in[Cbor]
 ```
 
 ```scala fuel
@@ -166,7 +166,7 @@ Where no case class fits, a CBOR map is assembled from named arguments:
 ```scala fuel
 run
 ##
-Out.println(Cbor.make(name = t"Anna".in[Cbor], age = 30.in[Cbor]).as[Person].inspect)
+Out.println(Cbor.make(name = t"Juliet".in[Cbor], age = 13.in[Cbor]).as[Person].inspect)
 ```
 
 ### Diagnostic notation
@@ -289,7 +289,7 @@ compile
 ##
 given personPrintable: (Person is Cbor.Printable) = Inlinable.printable[Person]
 
-val written = Person(t"Ada", 36).in[Data over Cbor]
+val written = Person(t"Hamlet", 30).in[Data over Cbor]
 ```
 
 The bytes are exactly those the derived encoding writes. `Cbor.Printable.emit` writes them a
@@ -311,7 +311,7 @@ row  `codecs.derived`  the derived codecs, even over a direct instance  the deri
 row  `codecs.strict`  a generated parser and printer  a compile error naming the type, unless it has a direct instance
 ```
 
-Under `codecs.strict`, `read[Foo in Cbor]` and `in[Data over Cbor]` never fall back to the
+Under `codecs.strict`, `read[Play in Cbor]` and `in[Data over Cbor]` never fall back to the
 tree. The modes are alternatives, so import one at a time.
 
 ### CBOR over HTTP

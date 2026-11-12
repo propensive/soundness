@@ -85,7 +85,7 @@ wins:
 val config = SshConfig(t"""
 Host work
   HostName git.example.com
-  User alice
+  User hamlet
   Port 2222
   IdentityFile ~/.ssh/id_work
 """)
@@ -140,7 +140,7 @@ import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogg
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
 val key = keyText.read[PrivateKey[Ed25519] in Pem]
-val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
 
 endpoint.session: ssh ?=>
   val result = ssh.exec(t"uname -a")
@@ -161,7 +161,7 @@ import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogg
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
 val branch = t"feature/one two"
-val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", Nil)
+val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", Nil)
 
 endpoint.session: ssh ?=>
   ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]

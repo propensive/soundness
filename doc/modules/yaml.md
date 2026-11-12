@@ -48,15 +48,15 @@ style give the same result:
 ```scala
 case class Person(name: Text, age: Int)
 
-val alice = t"{name: Alice, age: 30}".read[Yaml].as[Person]
-val bob = t"name: Bob\nage: 40".read[Person in Yaml]
+val hamlet = t"{name: Hamlet, age: 30}".read[Yaml].as[Person]
+val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(alice.inspect)
-Out.println(bob.inspect)
+Out.println(hamlet.inspect)
+Out.println(horatio.inspect)
 ```
 
 A document which lacks a required field, or holds a value of the wrong type, does not decode,
@@ -66,14 +66,14 @@ and the error says why:
 run
 errors show
 ##
-t"name: Carol".read[Person in Yaml]
+t"name: Ophelia".read[Person in Yaml]
 ```
 
 ```scala fuel
 run
 errors show
 ##
-t"{name: Dave, age: unknown}".read[Person in Yaml]
+t"{name: Yorick, age: unknown}".read[Person in Yaml]
 ```
 
 A stream of several documents, separated by `---`, reads as a list:
@@ -101,7 +101,7 @@ import formatting.blockYamlFormatting
 ```scala fuel
 run
 ##
-Out.println(Person(t"Alice", 30).in[Yaml].show)
+Out.println(Person(t"Hamlet", 30).in[Yaml].show)
 ```
 
 `in[Text over Yaml]` encodes a value straight to YAML text, in the `Yaml.Formatting` in scope,
@@ -129,17 +129,17 @@ row  present but rejected by the inner decoder  an error  `lenientYamlFaults` re
 ```scala
 case class Member(name: Text, age: Optional[Int])
 
-val eve = t"name: Eve\nage: null".read[Yaml].as[Member]
+val fool = t"name: Fool\nage: null".read[Yaml].as[Member]
 
 val strict =
   import optionalityOptions.strictYamlNulls
-  capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
+  capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
 ```
 
 ```scala fuel
 run
 ##
-Out.println(eve.inspect)
+Out.println(fool.inspect)
 Out.println(strict.inspect)
 ```
 
@@ -241,7 +241,7 @@ substituted into it. The same literal takes a document apart in a pattern, as
 [`j"…"`](json.md#matching-json) does:
 
 ```scala
-val name = t"Alice"
+val name = t"Hamlet"
 
 val person = y"""
   name: $name
@@ -263,7 +263,7 @@ document. Assigning `Unset` removes a field:
 ```scala
 import dynamicAccess.dynamicYaml
 
-val doc = t"{name: Alice, age: 30}".read[Yaml]
+val doc = t"{name: Hamlet, age: 30}".read[Yaml]
 ```
 
 ```scala fuel

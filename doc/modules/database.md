@@ -74,10 +74,10 @@ and searches them by the field marked `@primary`:
 ```scala
 case class Person(@primary email: Text, name: Text)
 
-val jack = Person(t"jack@example.com", t"Jack")
-val jill = Person(t"jill@example.com", t"Jill")
+val romeo = Person(t"romeo@example.com", t"Romeo")
+val juliet = Person(t"juliet@example.com", t"Juliet")
 
-given personResolvable: (Person is Resolvable by Text) = Resolvable(Set(jack, jill))
+given personResolvable: (Person is Resolvable by Text) = Resolvable(Set(romeo, juliet))
 ```
 
 With that in scope, `ref` takes the reference of a value, which holds nothing but its key.
@@ -86,10 +86,10 @@ Applying the reference resolves it back:
 ```scala fuel
 run
 ##
-val jillRef = jill.ref
+val julietRef = juliet.ref
 
-Out.println(jillRef.key)
-Out.println(jillRef().inspect)
+Out.println(julietRef.key)
+Out.println(julietRef().inspect)
 ```
 
 A reference built from a key which matches nothing raises a `Reference.Error` when it is

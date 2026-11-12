@@ -70,7 +70,7 @@ Each is constructed by applying its companion, and `Nil` is the empty list:
 val numbers: List[Int] = List(3, 1, 2)
 val letters = Sequence(t"a", t"b", t"c")
 val primes = Set(2, 3, 5, 7)
-val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
+val ages = Map(t"Lear" -> 80, t"Kent" -> 48)
 val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
 ```
 
@@ -402,11 +402,11 @@ Looking up a key which is not in a map gives `Unset`. It does not throw:
 ```scala fuel
 run
 ##
-Out.println(ages.at(t"Ada").inspect)
-Out.println(ages.at(t"Cy").inspect)
-Out.println(ages.defines(t"Ada").inspect)
-Out.println(ages.define(t"Cy", 29).inspect)
-Out.println(ages.omit(t"Bob").inspect)
+Out.println(ages.at(t"Lear").inspect)
+Out.println(ages.at(t"Edgar").inspect)
+Out.println(ages.defines(t"Lear").inspect)
+Out.println(ages.define(t"Edgar", 29).inspect)
+Out.println(ages.omit(t"Kent").inspect)
 Out.println(ages.keys.inspect)
 ```
 

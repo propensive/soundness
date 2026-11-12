@@ -206,7 +206,7 @@ mac"01-23-45-ab-cd"
 ### DNS names and messages
 
 The DNS has names of its own. Any label may hold any UTF-8, including dots and spaces, which
-is what the instance names of DNS-SD services, such as `Jon's Printer._ipp._tcp.local`, rely
+is what the instance names of DNS-SD services, such as `Hamlet's Printer._ipp._tcp.local`, rely
 on. A `Dns.Name` is written with `dns"…"`, and checked at compiletime. Equality ignores the
 case of ASCII letters, as the DNS itself compares names, while the labels keep their
 spelling:

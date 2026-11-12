@@ -149,9 +149,9 @@ whitespace and `.` for any character. Each binds a `Char`:
 ```scala fuel
 run
 ##
-t"foo5bar" match
-  case r"foo$digit\dbar" => Out.println(digit.inspect)
-  case _                 => Out.println(t"no match")
+t"act5scene" match
+  case r"act$digit\dscene" => Out.println(digit.inspect)
+  case _                   => Out.println(t"no match")
 ```
 
 A quantifier changes the shape of the binding, and its type changes to suit. One or more (`+`)
@@ -160,9 +160,9 @@ and zero or more (`*`) bind a `List`:
 ```scala fuel
 run
 ##
-t"foo123bar" match
-  case r"foo$digits\d+bar" => Out.println(digits.inspect)
-  case _                   => Out.println(t"no match")
+t"act123scene" match
+  case r"act$digits\d+scene" => Out.println(digits.inspect)
+  case _                     => Out.println(t"no match")
 ```
 
 The list is empty when the element matches nothing:
@@ -170,24 +170,24 @@ The list is empty when the element matches nothing:
 ```scala fuel
 run
 ##
-t"foobar" match
-  case r"foo$digits\d*bar" => Out.println(digits.inspect)
-  case _                   => Out.println(t"no match")
+t"actscene" match
+  case r"act$digits\d*scene" => Out.println(digits.inspect)
+  case _                     => Out.println(t"no match")
 ```
 
 An optional element (`?`) binds an `Optional`, which is `Unset` when the element is absent:
 
 ```scala
 def digit(text: Text): Optional[Char] = text match
-  case r"foo$digit\d?bar" => digit
-  case _                  => Unset
+  case r"act$digit\d?scene" => digit
+  case _                    => Unset
 ```
 
 ```scala fuel
 run
 ##
-Out.println(digit(t"foo5bar").inspect)
-Out.println(digit(t"foobar").inspect)
+Out.println(digit(t"act5scene").inspect)
+Out.println(digit(t"actscene").inspect)
 ```
 
 A bounded repetition follows the same rule, and binds a `List`:
@@ -195,9 +195,9 @@ A bounded repetition follows the same rule, and binds a `List`:
 ```scala fuel
 run
 ##
-t"foo!?#bar" match
-  case r"foo$chars.{2,4}bar" => Out.println(chars.inspect)
-  case _                     => Out.println(t"no match")
+t"act!?#scene" match
+  case r"act$chars.{2,4}scene" => Out.println(chars.inspect)
+  case _                       => Out.println(t"no match")
 ```
 
 The type of a binding is read directly from the pattern. The way a capture is written and the

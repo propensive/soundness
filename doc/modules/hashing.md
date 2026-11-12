@@ -127,8 +127,8 @@ case class Person(name: Text, age: Int)
 ```scala fuel
 run
 ##
-Out.println(Person(t"Alice", 30).digest[Sha2[256]].serialize[Hex])
-Out.println(Person(t"Alice", 31).digest[Sha2[256]].serialize[Hex])
+Out.println(Person(t"Hamlet", 30).digest[Sha2[256]].serialize[Hex])
+Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
 ```
 
 A digest is itself digestible, so a hash can be combined into a larger structure, and hashed

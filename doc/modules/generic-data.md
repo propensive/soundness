@@ -41,11 +41,11 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 
 ```scala
 case class Person(name: Text, age: Int)
-case class Group(persons: List[Person], size: Int)
+case class Troupe(players: List[Person], size: Int)
 
-val group = Group(List(Person(t"John", 30), Person(t"Jane", 25)), 2)
+val troupe = Troupe(List(Person(t"Quince", 40), Person(t"Bottom", 35)), 2)
 
-val transportable = group.pojo
+val transportable = troupe.pojo
 ```
 
 `as` decodes it. The receiving side must state the type it expects, and the data may not match
@@ -54,7 +54,7 @@ that type, so decoding can fail, and needs a [strategy]:
 ```scala fuel
 run
 ##
-Out.println(transportable.as[Group].inspect)
+Out.println(transportable.as[Troupe].inspect)
 ```
 
 Data which is not shaped like the expected type raises a `Pojo.Error`. A string, for
@@ -64,7 +64,7 @@ instance, is not a `Person`:
 run
 errors show
 ##
-t"John".pojo.as[Person]
+t"Bottom".pojo.as[Person]
 ```
 
 Nested case classes, collections and enumerations all derive their conversions, so any value
@@ -84,14 +84,15 @@ row  a case class  an `Array[Object]` of its fields in declaration order
 row  an enumeration case  an `Array[Object]` pair of its name and its payload
 ```
 
-So `Person(t"John", 30).pojo` is an array of the string `"John"` and the boxed integer `30`,
-and the `Green` case of an enumeration is an array of the string `"Green"` and an empty array:
+So `Person(t"Bottom", 35).pojo` is an array of the string `"Bottom"` and the boxed integer
+`35`, and the `Green` case of an enumeration is an array of the string `"Green"` and an empty
+array:
 
 ```scala
 enum Light:
   case Red, Amber, Green
 
-val person = Person(t"John", 30).pojo
+val person = Person(t"Bottom", 35).pojo
 val light = (Light.Green: Light).pojo
 ```
 

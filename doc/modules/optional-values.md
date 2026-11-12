@@ -49,7 +49,7 @@ An optional value has the type `Optional[…]`. A present value is assigned exac
 value would be, and an absent one is `Unset`:
 
 ```scala
-val name: Optional[Text] = t"Ada"
+val name: Optional[Text] = t"Hamlet"
 val nickname: Optional[Text] = Unset
 ```
 
@@ -235,7 +235,7 @@ both directions:
 run
 ##
 Out.println(name.option.inspect)
-Out.println(Some(t"Ada").optional.inspect)
+Out.println(Some(t"Hamlet").optional.inspect)
 ```
 
 ### Optional fields in data

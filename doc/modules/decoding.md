@@ -266,8 +266,8 @@ def recipient(text: Text): EmailAddress = text match
 ```scala fuel
 run
 ##
-Out.println(recipient(t"foo@bar.com").show)
-Out.println(recipient(t"foobar.com").show)
+Out.println(recipient(t"hamlet@example.com").show)
+Out.println(recipient(t"hamlet.example.com").show)
 ```
 
 ### Narrowing and widening

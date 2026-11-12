@@ -112,7 +112,7 @@ typecheck
 ##
 val one: Pet = api.pets(42).get.call[Pet]()
 val some: List[Pet] = api.pets.get(limit = 10).call[List[Pet]]()
-val created: Pet = api.pets.post(NewPet(t"Rex")).call[Pet]()
+val created: Pet = api.pets.post(NewPet(t"Crab")).call[Pet]()
 val deleted: Unit = api.sessions(t"abc").delete.call()
 ```
 

@@ -65,10 +65,12 @@ A diff applied to the original sequence gives the target. A difference computed 
 therefore be sent elsewhere and replayed:
 
 ```scala
-val original = List(t"foo", t"bar", t"baz")
-val revised = List(t"foo", t"quux", t"bop", t"baz")
+val original = List(t"Macbeth", t"Duncan", t"Banquo")
+val revised = List(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo")
 
-val changes = diff(Sequence(t"foo", t"bar", t"baz"), Sequence(t"foo", t"quux", t"bop", t"baz"))
+val changes = diff
+  ( Sequence(t"Macbeth", t"Duncan", t"Banquo"),
+    Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
 ```
 
 ```scala fuel

@@ -5,7 +5,7 @@
 A program which serves something on the local network, such as a build daemon, a printer or a
 game, can be found without anyone being told its address.
 [DNS-based service discovery](https://www.rfc-editor.org/rfc/rfc6763) names a service type,
-such as `_fury._tcp`, and its instances, such as `Gondor._fury._tcp.local`.
+such as `_fury._tcp`, and its instances, such as `Elsinore._fury._tcp.local`.
 [Multicast DNS](https://www.rfc-editor.org/rfc/rfc6762) carries those names on the link without
 a nameserver. Every host answers for its own.
 
@@ -44,7 +44,7 @@ val fury = Discovery.Service(t"fury", Tcp)
 run
 ##
 Out.println(fury.dnsName.show)
-Out.println(Discovery.Instance(t"Jon's Build Daemon", fury).dnsName.show)
+Out.println(Discovery.Instance(t"Hamlet's Build Daemon", fury).dnsName.show)
 ```
 
 A service name over fifteen characters is rejected:
@@ -73,7 +73,7 @@ Out.println(txt(t"missing").inspect)
 ### Advertising
 
 An advertisement is a loan. The instance is probed for, claimed, and announced. If another host
-holds the name, the instance is renamed, to `Gondor (2)`. It stays advertised for the block,
+holds the name, the instance is renamed, to `Elsinore (2)`. It stays advertised for the block,
 and a goodbye is sent when the block ends, or when the `Monitor` is canceled, which unwinds it:
 
 ```scala fuel
@@ -86,7 +86,7 @@ import probates.awaitProbate
 import logging.silentLogging
 
 supervise:
-  val description = Discovery.Description(t"Gondor", tcp"8443", txt)
+  val description = Discovery.Description(t"Elsinore", tcp"8443", txt)
 
   fury.advertise(description):
     summon[Discovery.Advertisement].instance.dnsName

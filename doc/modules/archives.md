@@ -175,8 +175,8 @@ val readme = Tar.Entry(t"README".as[Relative on Tar], t"Read me first".in[Data])
 val script = Tar.Entry.File
   ( path  = t"bin/run".as[Relative on Tar],
     mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
-    user  = UnixUser(1000, t"alice"),
-    group = UnixGroup(1000, t"alice"),
+    user  = UnixUser(1000, t"hamlet"),
+    group = UnixGroup(1000, t"hamlet"),
     mtime = 0.bits.u32,
     data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
 ```

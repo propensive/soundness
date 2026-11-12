@@ -188,7 +188,7 @@ run
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 import htmlDoms.html4Transitional
 
-Out.println(html4Transitional.Button(onclick = document.getElementById(t"foo").focus()).show)
+Out.println(html4Transitional.Button(onclick = document.getElementById(t"stage").focus()).show)
 ```
 
 A method which the DOM does not define, or an argument of the wrong type, is a compile error:
@@ -197,7 +197,7 @@ A method which the DOM does not define, or an argument of the wrong type, is a c
 compile
 errors show
 ##
-document.getElementByld(t"foo")
+document.getElementByld(t"stage")
 ```
 
 The JavaScript which reaches the page is known to be well-formed against the interfaces it

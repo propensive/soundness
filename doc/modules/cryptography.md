@@ -200,14 +200,14 @@ ECDH. The secret is lent to a block, and zeroed afterwards, since a protocol onl
 it into session keys:
 
 ```scala
-val alice = PrivateKey.generate[X25519]()
-val bob = PrivateKey.generate[X25519]()
+val romeo = PrivateKey.generate[X25519]()
+val juliet = PrivateKey.generate[X25519]()
 ```
 
 ```scala fuel
 run
 ##
-Out.println(alice.agree(bob.public) { secret => secret.length }.show)
+Out.println(romeo.agree(juliet.public) { secret => secret.length }.show)
 ```
 
 What the key agreement produces is then used with an authenticated cipher. AES-GCM seals a

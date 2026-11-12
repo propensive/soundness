@@ -50,11 +50,11 @@ Each line is a compound: a keyword, then its atoms. Indentation nests one compou
 another:
 
 ```
-name Alice
+name Hamlet
 age 30
 address
   street 1 High Street
-  city Northtown
+  city Elsinore
 ```
 
 ### Parsing and decoding
@@ -66,15 +66,15 @@ once:
 ```scala
 case class Person(name: Text, age: Int)
 
-val alice = t"name Alice\nage 30\n".read[Tel].as[Person]
-val bob = t"name Bob\nage 40\n".read[Person in Tel]
+val hamlet = t"name Hamlet\nage 30\n".read[Tel].as[Person]
+val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(alice.inspect)
-Out.println(bob.inspect)
+Out.println(hamlet.inspect)
+Out.println(horatio.inspect)
 ```
 
 A document which lacks a field, or holds a value of the wrong type, does not decode:
@@ -83,14 +83,14 @@ A document which lacks a field, or holds a value of the wrong type, does not dec
 run
 errors show
 ##
-t"name Carol\n".read[Person in Tel]
+t"name Ophelia\n".read[Person in Tel]
 ```
 
 ```scala fuel
 run
 errors show
 ##
-t"name Dave\nage unknown\n".read[Person in Tel]
+t"name Yorick\nage unknown\n".read[Person in Tel]
 ```
 
 A single source may hold several documents in sequence, and is read as a list of them with
@@ -104,7 +104,7 @@ out or embedded in a larger document. `show` writes a `Tel` as text:
 ```scala fuel
 run
 ##
-Out.println(Person(t"Alice", 30).in[Tel].show)
+Out.println(Person(t"Hamlet", 30).in[Tel].show)
 ```
 
 `in[Text over Tel]` encodes a value straight to its TEL text, and `in[Data over Tel]` writes
@@ -133,7 +133,7 @@ typecheck
 ##
 import probates.cancelProbate
 
-val outgoing = Person(t"Alice", 30).in[Tel]
+val outgoing = Person(t"Hamlet", 30).in[Tel]
 
 Tel.emit[Data](outgoing, chunk => socket.write(chunk))
 
@@ -183,7 +183,7 @@ The `tel"…"` [interpolator] writes a literal document. It is parsed at compile
 substitution is encoded through its own static type:
 
 ```scala
-val name = t"Alice"
+val name = t"Hamlet"
 val contact = tel"name $name"
 ```
 
@@ -211,16 +211,16 @@ at the start of the string.
 then navigated with full compiletime checking:
 
 ```scala
-case class Office(name: Text, city: Text)
-case class Assignment(worker: Person, office: Office)
+case class Castle(name: Text, city: Text)
+case class Residence(prince: Person, castle: Castle)
 
-val doc = Assignment(Person(t"Bob", 2), Office(t"Main", t"Town")).in[Tel]
+val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
 ```
 
 ```scala fuel
 run
 ##
-Out.println(doc.verify[Assignment].office.city.as[Text])
+Out.println(doc.verify[Residence].castle.city.as[Text])
 ```
 
 A misspelled field, or a field the type does not have, does not compile:
@@ -229,7 +229,7 @@ A misspelled field, or a field the type does not have, does not compile:
 compile
 errors show
 ##
-doc.verify[Assignment].office.town
+doc.verify[Residence].castle.town
 ```
 
 Unverified, dynamic access reaches into a document whose shape is known only informally. It is
@@ -256,7 +256,7 @@ path whichever delimiter writes it:
 ```scala fuel
 run
 ##
-Out.println((telp"/office/city" == telp".office.city").inspect)
+Out.println((telp"/castle/city" == telp".castle.city").inspect)
 ```
 
 A literal which is not a path does not compile:
@@ -265,10 +265,10 @@ A literal which is not a path does not compile:
 compile
 errors show
 ##
-telp"office/city"
+telp"castle/city"
 ```
 
-The path which a decoding error is tagged with, such as `/office/city`, is itself a `Telp`.
+The path which a decoding error is tagged with, such as `/castle/city`, is itself a `Telp`.
 
 ### Editing without destroying the file
 
@@ -280,8 +280,8 @@ value and write the file back, without reformatting everything a person wrote.
 ```scala
 import dynamicAccess.dynamicTel
 
-val document = t"# The account holder\nname Alice\n\nage 30\n".read[Tel]
-val renamed = document.modify("name", Tel.scalar(t"Bob"))
+val document = t"# The account holder\nname Hamlet\n\nage 30\n".read[Tel]
+val renamed = document.modify("name", Tel.scalar(t"Horatio"))
 ```
 
 ```scala fuel
@@ -296,7 +296,7 @@ remark to a compound, or insert or remove a child:
 
 ```scala
 val pointer = Tel.Pointer.of(t"name")
-val mutated = Mutation(document, List(Mutation.Op.UpdateAtom(pointer, 0, t"Bob")))
+val mutated = Mutation(document, List(Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
 ```
 
 ```scala fuel
@@ -413,7 +413,7 @@ object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
 ```scala fuel
 typecheck
 ##
-val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+val record = ContactRecords.record(t"name Hamlet\nage 30\n".read[Tel])
 val recordName: Text = record.name
 val recordAge: Int = record.age
 ```
@@ -443,7 +443,7 @@ A *self-contained* BinTEL frame carries its schema with it, so a document can tr
 reader which has never seen its schema, and still be decoded:
 
 ```scala
-val greeting = t"name Alice\n".read[Tel]
+val greeting = t"name Hamlet\n".read[Tel]
 val greetingSchema = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
 
 val frame = Bintel.selfContained(greeting, greetingSchema)
