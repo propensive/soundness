@@ -21,10 +21,10 @@ detail
     import soundness.*
     import strategies.throwUnsafely
 
-    val original = List(t"foo", t"bar", t"baz")
-    val changes = diff(Sequence(t"foo", t"bar", t"baz"), Sequence(t"foo", t"quux", t"baz"))
+    val original = List(t"Lear", t"Fool", t"Kent")
+    val changes = diff(Sequence(t"Lear", t"Fool", t"Kent"), Sequence(t"Lear", t"Edgar", t"Kent"))
 
-    changes.patch(original)                      // t"foo", t"quux", t"baz"
+    changes.patch(original)                      // t"Lear", t"Edgar", t"Kent"
     changes.serialize.read[Diff[Text]].patch(original)
     ```
 
@@ -54,7 +54,7 @@ entry .diff   the minimal edit script turning one sequence into another, by Myer
     diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
     // Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C'))
 
-    diff(Sequence(t"Foo", t"bar"), Sequence(t"foo", t"bar"), _.lower == _.lower).size  // 0
+    diff(Sequence(t"Lear", t"Kent"), Sequence(t"lear", t"Kent"), _.lower == _.lower).size  // 0
     ```
 
     Every edit the algorithm makes holds its element, so the result is a `Diff[element] &
@@ -95,8 +95,8 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
       import soundness.*
       import strategies.throwUnsafely
 
-      Chain(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop").read[Diff[Text]]
-      // Diff(Par(0, 0), Del(1, t"bar"), Ins(1, t"quux"), Ins(2, t"bop"))
+      Chain(t"2c2,3", t"< Fool", t"---", t"> Edgar", t"> Regan").read[Diff[Text]]
+      // Diff(Par(0, 0), Del(1, t"Fool"), Ins(1, t"Edgar"), Ins(2, t"Regan"))
       ```
 
       The format does not repeat the unchanged lines, so the `Par`s of a parsed diff carry no
@@ -180,8 +180,9 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
         ```scala
         import soundness.*
 
-        val changes = diff(Sequence(t"foo", t"bar", t"baz"), Sequence(t"foo", t"quux", t"baz"))
-        changes.patch(List(t"foo", t"bar", t"baz"))   // t"foo", t"quux", t"baz"
+        val changes =
+          diff(Sequence(t"Lear", t"Fool", t"Kent"), Sequence(t"Lear", t"Edgar", t"Kent"))
+        changes.patch(List(t"Lear", t"Fool", t"Kent"))   // t"Lear", t"Edgar", t"Kent"
         ```
 
         A diff which deletes or keeps beyond the end of the sequence it is applied to panics:

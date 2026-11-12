@@ -555,7 +555,7 @@ entry .Codecs   the contextual mode which chooses between a format's derived and
   entry .Derived   the mode taking the derived codec, even over a direct instance
   entry .Strict   the mode taking generated codecs, and a compile error where a type has none
       A `Strict` is a `Direct`, so a format's generated instances apply under both; the
-      strictness is added at the entry points (`read[Foo in F]`, `in[Text over F]`, `in[Data
+      strictness is added at the entry points (`read[Play in F]`, `in[Text over F]`, `in[Data
       over F]`), which a format gates with `.strictFailure`.
   entry .strictFailure   the compile error a format reports under `codecs.strict` for a type with no direct codec
       A macro which halts compilation with _`format`: `T` has no direct codec, and

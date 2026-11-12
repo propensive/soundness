@@ -406,16 +406,16 @@ entry .D   the drive `D:\`, as `Drive('D')`
 entry .p   the `p"…"` interpolator: a path literal, checked and typed as the code compiles
     `p"/home/user/data.csv"` decodes its literal as a POSIX path and, failing that, as a
     Windows path, and splices a `Path` whose platform is `Posix` or `Windows` accordingly and
-    whose `Topic` is the tuple of its names' literal types, leaf first: `p"/foo/bar/baz"` is
-    a `Path of ("baz", "bar", "foo") on Posix`. Text which is neither a valid POSIX nor a
-    valid Windows path is a compile error, _The path `…` is not a valid Windows or POSIX
-    path_. The interpolator takes no `$`-substitutions.
+    whose `Topic` is the tuple of its names' literal types, leaf first:
+    `p"/verona/capulet/juliet"` is a `Path of ("juliet", "capulet", "verona") on Posix`. Text
+    which is neither a valid POSIX nor a valid Windows path is a compile error, _The path `…`
+    is not a valid Windows or POSIX path_. The interpolator takes no `$`-substitutions.
 
     ```scala
     import soundness.*
 
-    val path = p"/foo/bar/baz"
-    summon[path.Topic =:= ("baz", "bar", "foo")]
+    val path = p"/verona/capulet/juliet"
+    summon[path.Topic =:= ("juliet", "capulet", "verona")]
     p"""C:\Windows\System32"""
     ```
 

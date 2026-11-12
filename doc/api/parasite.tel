@@ -52,7 +52,7 @@ detail
     `snooze` or `relent()`. A task which neither pauses nor relents runs to completion.
 
     **Errors** travel in two directions. A task body raises through its own `Tactic`, and
-    the error arrives at `await` typed as the body declared it (`Task[Int] emits FooError`);
+    the error arrives at `await` typed as the body declared it (`Task[Int] emits CueError`);
     a daemon has no join, so its failure goes to the `Probate` in scope, is contained by an
     enclosing `contain { … }.protect { … }` region, or escalates to the thread's
     uncaught-exception handler, where `Vm.intercept[Fault]` sees it. Transient failures are
@@ -174,11 +174,11 @@ entry .async   spawns a task as a child of the monitor in scope, and returns its
       import probates.cancelProbate
       import strategies.throwUnsafely
 
-      case class FooError(n: Int)(using Diagnostics) extends Error(m"foo $n")
+      case class CueError(n: Int)(using Diagnostics) extends Error(m"missed cue $n")
 
       supervise:
         val task = async:
-          if false then abort(FooError(1))
+          if false then abort(CueError(1))
           42
 
         task.await()   // 42
@@ -480,13 +480,13 @@ entry .contain   catches exceptions escaping fire-and-forget workers in a region
       import probates.cancelProbate
       import strategies.throwUnsafely
 
-      case class FooError(n: Int)(using Diagnostics) extends Error(m"foo $n")
+      case class CueError(n: Int)(using Diagnostics) extends Error(m"missed cue $n")
 
       supervise:
         contain:
-          case FooError(n) => Remedy.Accept
+          case CueError(n) => Remedy.Accept
         . protect:
-            daemon(raise(FooError(5)))
+            daemon(raise(CueError(5)))
       ```
 
       This is distinct from the typed `trap`/`handle` of `contingency`, which handle declared,
@@ -517,7 +517,7 @@ entry .emits   `Task[result] emits error`: a task whose body may raise `error`
     An infix type alias which reifies "can produce these errors as a side-channel". For a
     `Task`, `Task[result] emits error` is the refinement `Task[result] { type Error <: error }`,
     the type `async` returns; the bound keeps the error covariant, so a task failing only with
-    `Async.Error` is usable where `emits FooError` is expected. For anything else it is the
+    `Async.Error` is usable where `emits CueError` is expected. For anything else it is the
     obligation `Emit[error] ?=> left`, the weaker sibling of `raises`. Not exported to the
     `soundness` umbrella: write `parasite.emits`, or let `async`'s result type be inferred.
 
@@ -831,7 +831,7 @@ entry .Task   the handle on a spawned computation: awaited for its result, or ca
       A `Task[result]` is what `async` and `task` return: a `Worker` under the monitor in
       scope, running its body on a strand of the supervisor. Its `Error` type member carries
       the union of errors the body may raise, refined by the `emits` alias, so
-      `async(abort(FooError(1)))` is a `Task[Nothing] emits (FooError | Async.Error)`, and
+      `async(abort(CueError(1)))` is a `Task[Nothing] emits (CueError | Async.Error)`, and
       `await` delivers a raised error through the caller's `Tactic[Error | Async.Error]`, still
       typed. `Async.Error` is always possible — cancellation, a timeout, an incomplete child
       under `probates.failProbate` — so it is added at the `await` site.
@@ -931,11 +931,11 @@ entry .Task   the handle on a spawned computation: awaited for its result, or ca
       import probates.cancelProbate
       import strategies.throwUnsafely
 
-      case class FooError(n: Int)(using Diagnostics) extends Error(m"foo $n")
+      case class CueError(n: Int)(using Diagnostics) extends Error(m"missed cue $n")
 
       supervise:
-        val task = async(abort(FooError(1)))
-        capture[FooError](task.await())   // FooError(1)
+        val task = async(abort(CueError(1)))
+        capture[CueError](task.await())   // CueError(1)
       ```
   entry #bind   a task which applies a task-producing function to this one's result and joins it
       `task.bind(n => async(n + 4))` is a new child of the monitor in scope; the function may

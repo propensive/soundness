@@ -423,11 +423,11 @@ entry .Bytecode   a method's instructions, each decoded, placed on its source li
       ```scala
       import soundness.*
 
-      val module = Bytecode.Frame.L(t"Foo$$")
+      val module = Bytecode.Frame.L(t"Play$$")
       val load = Bytecode.Instruction
-        (Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"), Unset, List(module), 0)
+        (Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"), Unset, List(module), 0)
       val call = Bytecode.Instruction
-        (Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"), Unset, Nil, 3)
+        (Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"), Unset, Nil, 3)
 
       Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
       ```

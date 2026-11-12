@@ -217,7 +217,7 @@ entry .Rendition   the form a symbol reference is presented in: default, declara
       column  Case
       column  Wire name
       column  The symbol is shown
-      row  `Declaration`  `dcl`  as its declaration: `def foo: Int`
+      row  `Declaration`  `dcl`  as its declaration: `def act: Int`
       row  `Located`  `located`  as its located name
       row  `Full`  `full`  as its full name
       row  `Default`  anything else, or `Unset`  as it is normally printed

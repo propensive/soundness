@@ -69,8 +69,8 @@ entry .Identity   a typeclass lifting a single value into a container: `point`
       An `inline given` macro, in implicit scope. It looks in the companion of `F` for `apply`
       methods with a single type parameter taking one value of that type — directly, by name,
       or as a variadic parameter, as `List.apply(elements*)` does — and builds `#point` as a
-      call to it. No candidate is a compile error, _the companion object `Foo` has no candidate
-      apply methods_ (SN-569), and more than one is another, _the companion object `Foo` has
+      call to it. No candidate is a compile error, _the companion object `Play` has no candidate
+      apply methods_ (SN-569), and more than one is another, _the companion object `Play` has
       more than one candidate apply method_ (SN-659).
   entry #point   lifts a single value into the container
 
@@ -93,9 +93,9 @@ entry .Functor   a typeclass mapping a function over a container's contents, wit
   entry .general   derives `Functor[F]` for any type with a single `map` method and an `Identity[F]`
       An `inline given` macro, in implicit scope. `#apply` calls the type's own `map`, and
       `#point` the `Identity` it finds. A missing `Identity` is a compile error, _could not find
-      Identity value for `Foo`_ (SN-970); a type with no `map` is another, _the type `Foo` has
+      Identity value for `Play`_ (SN-970); a type with no `map` is another, _the type `Play` has
       no map methods_ (SN-899), and one with several overloads of `map` a third, _the type
-      `Foo` has more than one possible map method_ (SN-380).
+      `Play` has more than one possible map method_ (SN-380).
   entry #point   lifts a single value into the container
   entry #apply   maps a function over a container's contents: `functor(value)(lambda)`
   entry #map   the extension form of `#apply`, on any value of the container type
@@ -128,9 +128,9 @@ entry .Monad   a typeclass sequencing computations in a container: `bind`, with 
   entry .monad   derives `Monad[F]` for any type with a single `flatMap` method and a `Functor[F]`
       An `inline given` macro, in implicit scope. `#bind` calls the type's own `flatMap`, and
       `point` and mapping come from the `Functor` it finds. A missing `Functor` is a compile
-      error, _could not find Functor value for `Foo`_ (SN-585); a type with no `flatMap` is
-      another, _the type `Foo` has no flatMap methods_ (SN-356), and one with several overloads
-      of `flatMap` a third, _the type `Foo` has more than one possible flatMap method_ (SN-538).
+      error, _could not find Functor value for `Play`_ (SN-585); a type with no `flatMap` is
+      another, _the type `Play` has no flatMap methods_ (SN-356), and one with several overloads
+      of `flatMap` a third, _the type `Play` has more than one possible flatMap method_ (SN-538).
   entry #bind   applies a container-returning function to a container's contents, and flattens
       `monad.bind(value)(lambda)`: `flatMap` by another name.
   entry #flatMap   the extension form of `#bind`, so that `for`-comprehensions work through a `Monad`

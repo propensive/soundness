@@ -119,8 +119,8 @@ entry .Flow   wraps, fits, truncates, chops and measures textual content within 
         import hyphenations.englishHyphenation
         import textMetrics.uniformMetric
 
-        Flow.wrap(t"see foo bar baz here", 12, unbreakable = List(4.z thru 14.u))
-        // t"see", t"foo bar baz", t"here"
+        Flow.wrap(t"see hal nym sly here", 12, unbreakable = List(4.z thru 14.u))
+        // t"see", t"hal nym sly", t"here"
         ```
 
         It needs a `Text is Measurable` and a `Hyphenation` in scope.

@@ -67,7 +67,7 @@ entry .Findable   marks a type whose named givens are recorded in the `META-INF/
       classes is recorded by the beneficence plugin under `META-INF/givens/<typeclass>`, where
       the typeclass is the given's first proper base class: for `given javaBaseSystem: System`
       the file is `META-INF/givens/ambience.System`, and the line is
-      `ambience.systems.javaBaseSystem`. A given declared with a refining body (`given foo: T:
+      `ambience.systems.javaBaseSystem`. A given declared with a refining body (`given puck: T:
       …`), which the compiler implements as a class of its own, is recorded under `T`.
 
       What the plugin records, as the declaration changes:

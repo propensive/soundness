@@ -687,27 +687,27 @@ entry .Sse   one server-sent event: its event name, data lines, id and retry int
             import soundness.*
             import strategies.throwUnsafely
 
-            val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
+            val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
       frame
         label Framed into events at each blank line
         code
             import soundness.*
             import strategies.throwUnsafely
 
-            val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
+            val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
 
             Chain(input).frames[Sse].to[List]
-            // List(t"event: one\nid: 123\ndata: foobar\ndata: baz", t"data: hello world\nretry: 54321")
+            // List(t"event: one\nid: 123\ndata: hamlet\ndata: yorick", t"data: hello world\nretry: 54321")
       frame
         label Each event decoded into its fields
         code
             import soundness.*
             import strategies.throwUnsafely
 
-            val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
+            val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
 
             Chain(input).frames[Sse].map(_.as[Sse]).to[List]
-            // List(Sse(t"one", List(t"foobar", t"baz"), t"123"), Sse(t"message", List(t"hello world"), Unset, 54321L))
+            // List(Sse(t"one", List(t"hamlet", t"yorick"), t"123"), Sse(t"message", List(t"hello world"), Unset, 54321L))
       ##
       ```
 

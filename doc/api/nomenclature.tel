@@ -429,7 +429,7 @@ entry .internal   the opaque `Name` type and its companion, which the `nomenclat
         The `Inspectable` given for any subtype of `Name[Any]`. A `Name` is a `Text`, so without
         an instance of its own it would reach the `Text` instance and render as `t"…"`, and a
         validated name would be indistinguishable from unchecked text; this one renders
-        `n"foo"`, with the characters escaped as a text literal's are. It is written for every
+        `n"puck"`, with the characters escaped as a text literal's are. It is written for every
         subtype of `Name[Any]` rather than for one plane, since the `Self` of a typeclass is
         invariant and an instance for `Name[Linux]` would not cover `Name[Linux & Posix]`.
     entry .decodable   `text.as[Name[plane]]`: validated decoding, through the `Decodable` typeclass
