@@ -133,7 +133,7 @@ Document {
                                     keyword: "field",
                                     atoms: [
                                         Inline {
-                                            text: "foo",
+                                            text: "act",
                                             preceding_spaces: 1,
                                         },
                                         Inline {

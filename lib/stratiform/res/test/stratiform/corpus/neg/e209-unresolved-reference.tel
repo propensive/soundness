@@ -3,4 +3,4 @@ tel 1.0 specification.tel/tels:2.0.0
 name e209-test
 
 document
-  field foo DoesNotExist
+  field act DoesNotExist

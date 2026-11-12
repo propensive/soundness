@@ -21,7 +21,7 @@ Document {
             ),
             compounds: [
                 Compound {
-                    keyword: "foo",
+                    keyword: "act",
                     atoms: [
                         Inline {
                             text: "ABCD",

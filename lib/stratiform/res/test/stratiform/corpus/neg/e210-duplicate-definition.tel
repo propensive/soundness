@@ -9,4 +9,4 @@ record DupName
   field y String
 
 document
-  field foo DupName
+  field act DupName

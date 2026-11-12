@@ -46,7 +46,7 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "Alice Anderson",
+                            text: "Harry Monmouth",
                             preceding_spaces: 2,
                         },
                     ],
@@ -57,7 +57,7 @@ Document {
                     keyword: "email",
                     atoms: [
                         Inline {
-                            text: "alice@example.org",
+                            text: "harry@example.org",
                             preceding_spaces: 1,
                         },
                     ],
@@ -170,7 +170,7 @@ Document {
                                     keyword: "street",
                                     atoms: [
                                         Inline {
-                                            text: "221B Baker Street",
+                                            text: "12 Eastcheap Road",
                                             preceding_spaces: 2,
                                         },
                                     ],
@@ -224,7 +224,7 @@ Document {
                                     keyword: "street",
                                     atoms: [
                                         Inline {
-                                            text: "1 Acme Way",
+                                            text: "1 Bankside",
                                             preceding_spaces: 2,
                                         },
                                     ],

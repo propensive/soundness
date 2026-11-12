@@ -8,7 +8,7 @@ Document {
             tabulation: None,
             compounds: [
                 Compound {
-                    keyword: "#foo",
+                    keyword: "#act",
                     atoms: [],
                     remark: None,
                     children: [],

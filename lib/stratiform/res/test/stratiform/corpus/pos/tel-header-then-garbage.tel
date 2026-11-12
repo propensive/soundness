@@ -1,7 +1,7 @@
 tel 1.0
 
 title Document with a TEL header
-author Ada
+author Sly
 
 # The single-document parser stops at the separator below, so none of the
 # non-TEL content that follows is parsed or validated.

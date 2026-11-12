@@ -19,7 +19,7 @@ Document {
             ),
             compounds: [
                 Compound {
-                    keyword: "Alice",
+                    keyword: "Percy",
                     atoms: [
                         Inline {
                             text: "hello",

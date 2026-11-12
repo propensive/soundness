@@ -51,7 +51,7 @@ Document {
                                     keyword: "field",
                                     atoms: [
                                         Inline {
-                                            text: "foo",
+                                            text: "act",
                                             preceding_spaces: 1,
                                         },
                                         Inline {
@@ -73,4 +73,4 @@ Document {
     ],
 }
 errors:
-  E209 [0,0): Reference does not resolve to a Definition in the schema: Reference `DoesNotExist` (Field `foo`) does not resolve to any Definition
+  E209 [0,0): Reference does not resolve to a Definition in the schema: Reference `DoesNotExist` (Field `act`) does not resolve to any Definition

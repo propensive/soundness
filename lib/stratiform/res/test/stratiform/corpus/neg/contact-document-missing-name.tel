@@ -4,6 +4,6 @@ tel 1.0 example.org/contact-schema
 # the test pipeline locates via the URL tail). The contact schema requires
 # a `name` field, which this document omits — expect E307.
 
-email alice@example.org
+email harry@example.org
 
 active

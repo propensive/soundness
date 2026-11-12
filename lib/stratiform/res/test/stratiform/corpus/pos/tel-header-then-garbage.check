@@ -49,7 +49,7 @@ Document {
                     keyword: "author",
                     atoms: [
                         Inline {
-                            text: "Ada",
+                            text: "Sly",
                             preceding_spaces: 1,
                         },
                     ],

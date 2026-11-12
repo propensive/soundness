@@ -3,9 +3,9 @@ tel 1.0 specification.tel/tels:2.0.0
 name e206-test
 
 document
-  field foo String
+  field act String
 
 layer
   name extension
   overlay
-    field foo Identifier
+    field act Identifier

@@ -24,7 +24,7 @@ Document {
                     keyword: "owner",
                     atoms: [
                         Inline {
-                            text: "amy",
+                            text: "ned",
                             preceding_spaces: 1,
                         },
                     ],
@@ -42,7 +42,7 @@ Document {
                     keyword: "contact",
                     atoms: [
                         Inline {
-                            text: "amy",
+                            text: "ned",
                             preceding_spaces: 1,
                         },
                     ],
@@ -56,7 +56,7 @@ Document {
                                     keyword: "email",
                                     atoms: [
                                         Inline {
-                                            text: "amy@example.com",
+                                            text: "ned@example.com",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -72,7 +72,7 @@ Document {
                     keyword: "contact",
                     atoms: [
                         Inline {
-                            text: "bea",
+                            text: "nym",
                             preceding_spaces: 1,
                         },
                     ],

@@ -54,3 +54,14 @@ comparison for this reason (`treeDivergences` in `stratiform_test`).
 `e119-non-space-after-marker`: this implementation reports one E119 per
 malformed heading, where the reference reports one per marker. The accrual
 tests exempt the fixture from their strict comparison for that reason.
+
+## Example names ahead of the pin
+
+The fixtures' example data — Alice and Bob, Ada, amy and bea, an Acme
+address, `foo`/`bar`/`baz`, and the layered schema's `Organization` record —
+was replaced here with Shakespeare's names ahead of `UPSTREAM_SHA`, by the
+same substitution as upstream commit b5dfa40 (branch `corpus/shakespeare`,
+"Draw the conformance corpus's example data from Shakespeare"). Every name
+keeps the length of the one it replaced, so the `.check` files were edited by
+the same substitution rather than regenerated. A sync to a commit that
+includes b5dfa40 removes this divergence.

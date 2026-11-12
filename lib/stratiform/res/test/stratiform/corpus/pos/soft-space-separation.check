@@ -11,11 +11,11 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "Alice",
+                            text: "Percy",
                             preceding_spaces: 1,
                         },
                         Inline {
-                            text: "Bob",
+                            text: "Hal",
                             preceding_spaces: 1,
                         },
                     ],

@@ -19,7 +19,7 @@ Document {
             ),
             compounds: [
                 Compound {
-                    keyword: "Alice",
+                    keyword: "Percy",
                     atoms: [
                         Inline {
                             text: "30",
@@ -32,7 +32,7 @@ Document {
                     children: [],
                 },
                 Compound {
-                    keyword: "Bob",
+                    keyword: "Hal",
                     atoms: [
                         Inline {
                             text: "25",
