@@ -40,9 +40,8 @@ val letters = diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
 ```
 
 Each edit is an insertion (`Diff.Ins`), a deletion (`Diff.Del`) or an unchanged element
-(`Diff.Par`), and holds
-its position in the left sequence, the right sequence, or both. The edits of a `Diff` are an
-ordinary sequence, which a pattern match takes apart:
+(`Diff.Par`), and holds its position in the left sequence, the right sequence, or both. The edits
+of a `Diff` are an ordinary sequence, which a pattern match takes apart:
 
 ```scala fuel
 run
