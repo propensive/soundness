@@ -699,6 +699,130 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           shared.mapped(_.u16(0L))
       . assert(_ == 0x4241)
 
+    suite(m"Publishing versions under an owned name"):
+      import errorDiagnostics.emptyDiagnostics
+
+      val publishDir: Text = Uuid().show
+      val publishRoot: Path on Linux = unsafely((% / "tmp" / publishDir).on[Linux])
+      unsafely(publishRoot.create[Directory]())
+
+      val indexFile: Path on Linux = unsafely((% / "tmp" / publishDir / "index").on[Linux])
+      val lockFile: Path on Linux = unsafely((% / "tmp" / publishDir / "index.lock").on[Linux])
+      val partFile: Path on Linux = unsafely((% / "tmp" / publishDir / ".index.part").on[Linux])
+      val otherFile: Path on Linux = unsafely((% / "tmp" / publishDir / "other").on[Linux])
+      val absentFile: Path on Linux = unsafely((% / "tmp" / publishDir / "absent").on[Linux])
+
+      def text(view: Mapped^): Text = view.copy(0L, view.size.toInt).utf8
+
+      test(m"Publishing writes the encoded value under the name"):
+        unsafely:
+          indexFile.own[Text](_.publish(t"first"))
+          indexFile.read[Text]
+      . assert(_ == t"first")
+
+      test(m"Publishing leaves no temporary file behind"):
+        partFile.existent()
+      . assert(_ == false)
+
+      test(m"The name's lock file sits beside it"):
+        lockFile.existent()
+      . assert(_ == true)
+
+      test(m"A name which is owned cannot be owned again"):
+        unsafely:
+          indexFile.own[Text]: owner =>
+            capture[Io.Error](indexFile.own[Text](_.publish(t"usurped"))).reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"A refused owner publishes nothing"):
+        unsafely(indexFile.read[Text])
+      . assert(_ == t"first")
+
+      test(m"Ownership is released when its scope ends"):
+        unsafely:
+          indexFile.own[Text](_.publish(t"second"))
+          indexFile.read[Text]
+      . assert(_ == t"second")
+
+      test(m"Two names are owned independently"):
+        unsafely:
+          indexFile.own[Text]: owner =>
+            otherFile.own[Text](_.publish(t"other"))
+            otherFile.read[Text]
+      . assert(_ == t"other")
+
+      test(m"Each publication has an edition of its own"):
+        unsafely:
+          indexFile.own[Text]: owner =>
+            owner.publish(t"third") == owner.publish(t"fourth")
+      . assert(_ == false)
+
+      test(m"A reader maps the published version"):
+        unsafely(indexFile.published[Text](_.map(text)))
+      . assert(_ == t"fourth")
+
+      test(m"A reader's edition is the edition which was published"):
+        unsafely:
+          indexFile.own[Text]: owner =>
+            val edition = owner.publish(t"fifth")
+            indexFile.published[Text](_.edition == edition)
+      . assert(_ == true)
+
+      test(m"A reader keeps its version until it refreshes"):
+        unsafely:
+          indexFile.published[Text]: reader =>
+            val before = reader.map(text)
+            indexFile.own[Text](_.publish(t"sixth"))
+            val unrefreshed = reader.map(text)
+            val refreshed = reader.refresh()
+            (before, unrefreshed, refreshed, reader.map(text))
+      . assert(_ == (t"fifth", t"fifth", true, t"sixth"))
+
+      test(m"Refreshing with nothing new published does nothing"):
+        unsafely(indexFile.published[Text](_.refresh()))
+      . assert(_ == false)
+
+      test(m"A view survives a refresh made while it is being read"):
+        unsafely:
+          indexFile.published[Text]: reader =>
+            reader.map: view =>
+              indexFile.own[Text](_.publish(t"seventh"))
+              reader.refresh()
+              (text(view), reader.map(text))
+      . assert(_ == (t"sixth", t"seventh"))
+
+      test(m"A reader does not prevent the owner publishing, nor take the lock"):
+        unsafely:
+          indexFile.published[Text]: reader =>
+            indexFile.own[Text](_.publish(t"eighth"))
+            indexFile.read[Text]
+      . assert(_ == t"eighth")
+
+      test(m"A name with nothing published cannot be read"):
+        unsafely(capture[Io.Error](absentFile.published[Text](_.edition)).reason)
+      . assert(_ == Io.Error.Reason.Nonexistent)
+
+      test(m"An owner cannot escape its scope"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = indexFile.own[Text](identity(_))
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A reader cannot escape its scope"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = indexFile.published[Text](identity(_))
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A published view cannot escape its scope"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = indexFile.published[Text](_.map(identity(_)))
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics
 
