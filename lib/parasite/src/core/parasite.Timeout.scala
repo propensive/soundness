@@ -49,7 +49,7 @@ object Timeout:
   // capabilities.
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)
     ( action: ->{caps.any.only[anticipation.Durable]} Unit )
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   Timeout^{action, monitor, probate} =
 
     val timeout = timeout0.generic/1_000_000L

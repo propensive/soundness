@@ -184,7 +184,7 @@ entry .async   spawns a task as a child of the monitor in scope, and returns its
         task.await()   // 42
       ```
 
-      It needs a `Monitor`, a `SharedProbate` and a `Codepoint` in scope. The body may capture
+      It needs a `Monitor`, a `Probate.Shared` and a `Codepoint` in scope. The body may capture
       the monitor, other task handles, plain values and any `Durable` capability (a logger, a
       connection), but not an enclosing `Tactic` or `Emit`, which belongs to the stack that
       installed it: raise through the body's own tactic, and the error arrives at `await`. An
@@ -247,7 +247,7 @@ entry .daemon   spawns fire-and-forget work which the scope cancels when it ends
       region may accept it, and otherwise it escalates to the thread's uncaught-exception
       handler, where `Vm.intercept[Fault]` observes it. Nothing is dropped silently.
 
-      It needs a `Monitor`, a `SharedProbate` and a `Codepoint` in scope.
+      It needs a `Monitor`, a `Probate.Shared` and a `Codepoint` in scope.
   refer parasite.Daemon
   refer parasite.contain
   refer parasite.Fault
@@ -399,7 +399,7 @@ entry .concurrent   forces each cell of a `Chain` in its own task, so a blocking
     An extension on `Chain[result]`: `stream.concurrent` is a chain with the same elements,
     where the question "is there a next cell?" is asked inside a task and awaited, so that
     forcing a cell which blocks on a live source happens on a strand of its own. The rest of
-    the chain is wrapped the same way, lazily. It needs a `Monitor` and a `SharedProbate`, and
+    the chain is wrapped the same way, lazily. It needs a `Monitor` and a `Probate.Shared`, and
     raises `Async.Error` if the forcing task is cancelled.
 
 entry .concurrently   runs numbered jobs across a bounded number of tasks, and returns the results in job order
@@ -427,7 +427,7 @@ entry .concurrently   runs numbered jobs across a bounded number of tasks, and r
       the task it ran on and surfaces at the join, as it would from an `await`. Zero jobs starts
       no task; fewer jobs than `parallelism` starts only as many tasks as jobs. The job is
       `Int ->{caps.any.only[Durable]} result`, so it may capture only what a task body may.
-      It needs a `Monitor`, a `SharedProbate`, a `Codepoint` and a `ClassTag[result]`.
+      It needs a `Monitor`, a `Probate.Shared`, a `Codepoint` and a `ClassTag[result]`.
 
 entry .retry   evaluates a block repeatedly under the `Tenacity` in scope, until it prevails or surrenders
   detail
@@ -491,7 +491,7 @@ entry .contain   catches exceptions escaping fire-and-forget workers in a region
 
       This is distinct from the typed `trap`/`handle` of `contingency`, which handle declared,
       *emitted* errors on the calling stack: a daemon cannot deliver to those, and `contain`
-      is the catch-all for what it throws. It needs a `SharedProbate` in scope, which becomes
+      is the catch-all for what it throws. It needs a `Probate.Shared` in scope, which becomes
       the outer link of the chain.
   refer parasite.Containment
   refer parasite.Remedy
@@ -520,13 +520,6 @@ entry .emits   `Task[result] emits error`: a task whose body may raise `error`
     `Async.Error` is usable where `emits CueError` is expected. For anything else it is the
     obligation `Emit[error] ?=> left`, the weaker sibling of `raises`. Not exported to the
     `soundness` umbrella: write `parasite.emits`, or let `async`'s result type be inferred.
-
-entry .SharedProbate   a `Probate` which captures only `Durable` capabilities
-    `Probate^{caps.any.only[anticipation.Durable]}`: what a `Worker` retains must be shared,
-    since a worker is a shared `Monitor`, so every `(using Monitor^, SharedProbate)` signature
-    takes a probate of this type. The pure probates of `probates` conform trivially, and
-    `failProbate`, which closes over a `Tactic`, is the one which needs the capture; a probate
-    closing over an exclusive resource cannot be handed to a task.
 
 entry .Monitor   a node of the supervision tree: the capability every suspension demands
   detail
@@ -635,7 +628,7 @@ entry .Worker   a task as a monitor: the node of the tree a spawned body runs un
   entry #map   a task which applies a function to this worker's result
       `worker.map(f)` is `async(f(worker.join()))`: a new task, a child of the monitor in scope,
       which joins this one and transforms its result. The function may capture only what a
-      task body may. Needs a `Monitor` and a `SharedProbate`.
+      task body may. Needs a `Monitor` and a `Probate.Shared`.
   entry #bind   a task which runs a task-producing function on this worker's result and joins it
       `worker.bind(f)` is `async(f(worker.join()).join())`, the monadic bind over tasks; `Task.monad`
       is the `mercator.Monad[Task]` built from it.
@@ -861,7 +854,7 @@ entry .Task   the handle on a spawned computation: awaited for its result, or ca
   refer parasite.Promise
   entry .apply   constructs a task from a body and an optional name: what `async` and `task` call
       `Task[result, error](body, name)` builds the worker under the `Monitor`, `Codepoint` and
-      `SharedProbate` in scope, with `Error = error`. The body is a function of the `Worker`
+      `Probate.Shared` in scope, with `Error = error`. The body is a function of the `Worker`
       which may capture only `Durable` capabilities. `async` and `task` are the forms to use,
       since they also supply the body's tactic.
   entry .Owned   the carrier through which a `transfer`red resource reaches its task's body
@@ -871,18 +864,18 @@ entry .Task   the handle on a spawned computation: awaited for its result, or ca
         It is constructed only by `transfer`.
     entry #apply   the resource, as a fresh exclusive reference on each access
   entry .monad   the `mercator.Monad[Task]`, so tasks compose with the generic monadic combinators
-      Needs a `Monitor` and a `SharedProbate` in scope when resolved: `point` is `async`, `bind`
+      Needs a `Monitor` and a `Probate.Shared` in scope when resolved: `point` is `async`, `bind`
       is `Task#bind` and `apply` (map) is `Task#map`. The tasks it produces are bound and
       awaited within the same monitor scope.
   entry .sleep   a task which completes after a duration or at an instant: the monadic `snooze`
       `Task.sleep(0.5*Second)` is `async(snooze(time))`, for composition with `bind`/`map`
       without suspending the calling strand; any `Schedulable` is accepted. Needs a `Monitor`,
-      a `SharedProbate` and a `Codepoint`.
+      a `Probate.Shared` and a `Codepoint`.
   entry .sequence   one task of every result of a `List[Task[result]]`, in list order
       An extension on `List[Task[result]]`: `tasks.sequence` is a task which joins each in
       turn and yields a `List[result]` in the same order, so the ordering of results says
       nothing about the order of completion; the tasks already run in parallel. A cancelled or
-      failed member raises at the sequence's `await`. Needs a `Monitor` and a `SharedProbate`.
+      failed member raises at the sequence's `await`. Needs a `Monitor` and a `Probate.Shared`.
 
       ```scala
       import soundness.*
@@ -898,7 +891,7 @@ entry .Task   the handle on a spawned computation: awaited for its result, or ca
       — and on an `Iterable[Task[result]]`: `tasks.race()` awaits a promise each task offers
       its result to, returns the first offered, and cancels every task in a `finally`, since
       the other results were not wanted. A task already complete wins at once. Needs a
-      `Monitor`, a `SharedProbate` and a `Tactic[Async.Error]`.
+      `Monitor`, a `Probate.Shared` and a `Tactic[Async.Error]`.
 
       ```scala
       import soundness.*
@@ -939,9 +932,9 @@ entry .Task   the handle on a spawned computation: awaited for its result, or ca
       ```
   entry #bind   a task which applies a task-producing function to this one's result and joins it
       `task.bind(n => async(n + 4))` is a new child of the monitor in scope; the function may
-      capture only what a task body may. Needs a `Monitor` and a `SharedProbate`.
+      capture only what a task body may. Needs a `Monitor` and a `Probate.Shared`.
   entry #map   a task which applies a function to this one's result
-      `async(3).map(_ + 1).await()` is `4`. Needs a `Monitor` and a `SharedProbate`.
+      `async(3).map(_ + 1).await()` is `4`. Needs a `Monitor` and a `Probate.Shared`.
 
 entry .Promise   a value supplied later, perhaps from another thread: one side awaits, the other fulfills
   detail
@@ -982,7 +975,7 @@ entry .Promise   a value supplied later, perhaps from another thread: one side a
   entry #complete   whether the promise holds a value
   entry #task   the promise's completion as a `Task`: the monadic `await`
       `promise.task` is `async(promise.await())`, for composition with `bind`/`map` without
-      suspending the calling strand. Needs a `Monitor`, a `SharedProbate` and a `Codepoint`.
+      suspending the calling strand. Needs a `Monitor`, a `Probate.Shared` and a `Codepoint`.
   entry #fulfill   settles the promise with a value, raising `Async.Error` if it is already settled
       Raises `Async.Error(AlreadyComplete)` if it holds a value and `Async.Error(Cancelled)` if
       it was cancelled, through the `Tactic[Async.Error]` in scope; otherwise installs the value
@@ -1012,7 +1005,7 @@ entry .Daemon   the handle on fire-and-forget work spawned by `daemon`
       uncaught-exception handler (`Vm.intercept[Fault]`) if none accepts them.
   refer parasite.daemon
   refer parasite.Fault
-  entry .apply   constructs a daemon from a body under the `Monitor`, `Codepoint` and `SharedProbate` in scope
+  entry .apply   constructs a daemon from a body under the `Monitor`, `Codepoint` and `Probate.Shared` in scope
       `daemon` is the form to use, since it also supplies the body's label-free tactic and
       enforces that the body is hygienic.
   entry #attend   waits for the daemon to finish, with no result and no error
@@ -1088,7 +1081,7 @@ entry .Probate   the policy for a task's unfinished children and escaped errors
       `contain { … }.protect { … }` overrides it near where work is spawned.
 
       A probate is an ordinary trait, not a capability, so a `given … : Probate` is pure and
-      importing one captures nothing; `SharedProbate` is the capture-typed form a worker
+      importing one captures nothing; `Shared` is the capture-typed form a worker
       retains. One is chosen by name, since `import soundness.*` imports no givens:
 
       ```scala
@@ -1113,6 +1106,13 @@ entry .Probate   the policy for a task's unfinished children and escaped errors
       the end of the chain an unaccepted error is rethrown on the worker's strand, reaching
       the uncaught-exception handler.
 
+  entry .Shared   a `Probate` which captures only `Durable` capabilities
+      `Probate^{caps.any.only[anticipation.Durable]}`: what a `Worker` retains must be shared,
+      since a worker is a shared `Monitor`, so every `(using Monitor^, Shared)` signature
+      takes a probate of this type. The pure probates of `probates` conform trivially, and
+      `failProbate`, which closes over a `Tactic`, is the one which needs the capture; a probate
+      closing over an exclusive resource cannot be handed to a task.
+
 entry .Containment   the `Probate` which `contain` builds: a region whose escaped exceptions are handled
   detail
       Delegates `cleanup` unchanged to the enclosing probate and overrides `trap` with the
@@ -1122,7 +1122,7 @@ entry .Containment   the `Probate` which `contain` builds: a region whose escape
   refer parasite.contain
   entry #cleanup   the enclosing probate's child-fate policy
   entry #trap   the handler's remedy for an error it matches, else the enclosing probate's
-  entry #protect   runs a block with this containment as the `SharedProbate` in scope
+  entry #protect   runs a block with this containment as the `Probate.Shared` in scope
       `contain { case … => … }.protect { daemon(…) }`: daemons and abandoned tasks spawned
       within the block route their escaped exceptions here.
 
@@ -1241,7 +1241,7 @@ entry .Timeout   a watchdog which runs an action when a deadline passes, unless 
       ```
 
       The action runs on the watchdog task, so, like any task body, it may capture only
-      `Durable` capabilities. Construction needs a `Monitor` and a `SharedProbate`; the
+      `Durable` capabilities. Construction needs a `Monitor` and a `Probate.Shared`; the
       watchdog is a child of that monitor, named `timeout`.
   entry .apply   starts a timeout of a duration, with the action to run when it fires
   entry #alive   whether the timeout has yet to fire

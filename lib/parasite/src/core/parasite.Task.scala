@@ -48,7 +48,7 @@ import vacuous.*
 object Task:
   def apply[result, error <: Hazard]
     ( evaluate: Worker ->{caps.any.only[anticipation.Durable]} result, name: Optional[Name[Async]] )
-    ( using monitor: Monitor^, codepoint: Codepoint, probate: SharedProbate )
+    ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate.Shared )
   :   (Task[result] { type Error = error })^{monitor, probate, evaluate} =
 
     // The handle is a fresh (`^`) capability — a `Task` IS a `Worker` — so both the handle
@@ -96,7 +96,7 @@ object Task:
   // bookkeeping: the tasks are bound and awaited within the same `Monitor` scope this given
   // requires.
   // [field-purity] monad[Task] given captures resolution-scoped monitor
-  given monad: (Monitor^, SharedProbate) => Monad[Task] = caps.unsafe.unsafeAssumePure:
+  given monad: (Monitor^, Probate.Shared) => Monad[Task] = caps.unsafe.unsafeAssumePure:
     new Monad[Task]:
       // `Monad`'s lambdas are unrestricted; a task body may capture only shared capabilities, so
       // the façade asserts that of the lambda as it does purity of the handle.
@@ -114,7 +114,7 @@ object Task:
   // The monadic form of `snooze`: a task which completes after the duration, for composition
   // with `bind`/`map` without suspending the calling strand.
   def sleep[time: Schedulable](time: time)
-    ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
+    ( using monitor: Monitor^, probate: Probate.Shared, codepoint: Codepoint )
   :   (Task[Unit] emits Async.Error)^{monitor, probate} =
 
     async(snooze(time))
@@ -122,13 +122,13 @@ object Task:
 
   extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
-    def sequence(using Monitor^, SharedProbate): Task[List[result]] emits Async.Error =
+    def sequence(using Monitor^, Probate.Shared): Task[List[result]] emits Async.Error =
       // [construction-fresh] fresh sequence Task handle sealed for pure fa\u00e7ade
       caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
   // The native collections are not `Iterable`: a `Traversable`-receiver twin materialises them.
   extension [self, result](tasks: self)(using traversable: self is murmuration.Traversable by Task[result])
-    def race()(using monitor: Monitor^, probate: SharedProbate)
+    def race()(using monitor: Monitor^, probate: Probate.Shared)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
 
       val list: List[Task[result]] = traversable.traverse(tasks).to[List]
@@ -141,7 +141,7 @@ object Task:
       try promise.await() finally list.each(_.cancel())
 
   extension [result](tasks: Iterable[Task[result]])
-    def race()(using monitor: Monitor^, probate: SharedProbate)
+    def race()(using monitor: Monitor^, probate: Probate.Shared)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
 
       List.from(tasks).race()
@@ -173,9 +173,9 @@ trait Task[+result]:
   :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
   def bind[result2](lambda: result ->{caps.any.only[anticipation.Durable]} Task[result2])
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}
 
   def map[result2](lambda: result ->{caps.any.only[anticipation.Durable]} result2)
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}

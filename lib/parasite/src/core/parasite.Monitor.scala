@@ -282,7 +282,7 @@ private object Preload:
 
     Fulfillment.Initializing
 
-abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate) extends Monitor:
+abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate.Shared) extends Monitor:
   self: Worker^ =>
   private val state: Atomic[Fulfillment[Result]] = Atomic(Preload.initial)
 
@@ -337,14 +337,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
 
 
   def map[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} result2)
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
   def bind[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} Task[result2])
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())

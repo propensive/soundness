@@ -43,7 +43,7 @@ detail
 
     An advertisement and a browse are **loans**: each lasts for its block and ends with it —
     or with the `Monitor` it runs under, whose cancellation unwinds the block. Both need a
-    `Monitor^`, a `SharedProbate`, a `Tactic[Discovery.Error]` and a `Discovery.Activity is
+    `Monitor^`, a `Probate.Shared`, a `Tactic[Discovery.Error]` and a `Discovery.Activity is
     Loggable` in scope, besides the backend. The backend is an explicit `using` clause of its
     own, so a responder other than the given one can be named: `fury.browse(using other)`.
 
@@ -284,7 +284,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
     detail
         The seam behind `advertise`, `browse` and `resolve`: each loan calls a start and, in a
         `finally`, the matching stop. Each start takes the `Monitor^` under which the backend
-        runs its background tasks (so cancelling the monitor ends them), a `SharedProbate`, a
+        runs its background tasks (so cancelling the monitor ends them), a `Probate.Shared`, a
         `Tactic[Discovery.Error]` and the `Loggable` the loan's `Activity` goes to. A backend
         holds no capabilities of its own, which is what lets loans nest — a browse inside an
         advertisement. `Mdns.Responder` is the implementation provided; the given
@@ -427,7 +427,7 @@ entry .advertise   `service.advertise(description) { … }`: advertises an insta
 
       The backend is a `using` clause of its own, before the block, so one other than the
       given can be named: `fury.advertise(description)(using responder) { … }`. The block
-      also needs a `Monitor^` (from `supervise`), a `SharedProbate`, a
+      also needs a `Monitor^` (from `supervise`), a `Probate.Shared`, a
       `Tactic[Discovery.Error]` and a `Discovery.Activity is Loggable`. Raises
       `Discovery.Error` for an invalid label or TXT record, a name which cannot be claimed
       after repeated conflicts, or a transport which cannot be opened. Loans nest: a browse
@@ -466,7 +466,7 @@ entry .browse   `service.browse { … }`: watches for instances of a service typ
       ```
 
       The backend is a `using` clause of its own (`fury.browse(using responder) { … }`), and
-      the block needs a `Monitor^`, a `SharedProbate`, a `Tactic[Discovery.Error]` and a
+      the block needs a `Monitor^`, a `Probate.Shared`, a `Tactic[Discovery.Error]` and a
       `Discovery.Activity is Loggable`. The browse logs `Discovery.Activity.Browsing`.
   refer syndesis.Discovery.Browser
   refer syndesis.Discovery.Event
@@ -502,7 +502,7 @@ entry .resolve   `instance.resolve(timeout)`: the instance's host, port, TXT rec
 
       Raises `Discovery.Error` reason `Timeout` if the records do not arrive in time, naming
       the instance. The call is a loan on the backend like the others — it takes the backend
-      as its own `using` clause, and needs a `Monitor^`, a `SharedProbate`, a
+      as its own `using` clause, and needs a `Monitor^`, a `Probate.Shared`, a
       `Tactic[Discovery.Error]` and a `Discovery.Activity is Loggable` — and logs
       `Discovery.Activity.Resolved` on success.
   refer syndesis.Discovery.Resolution
