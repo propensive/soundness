@@ -37,6 +37,7 @@ import escapade.*
 import escritoire.*
 import hieroglyph.*
 import polysyllabic.*
+import ultimatum.Tui.{Pane, Sizing}
 
 // A pane hosting a live table.
 def tabular(content: => Tabulation[Teletype])

@@ -680,7 +680,7 @@ escritoire's); `Ssh*` in octogenarian (four components, and `Ssh` is susurration
 
 | library | names → proposed home |
 |---|---|
-| ultimatum.core | `Frame`, `Pane`, `Panes`, `Placement`, `Sizing`, `Occupancy`, `Limits`, `Arrangement`, `Tick` → *new* `Layout.*`; `Rect` → `Layout.Region` (ruling 4: no abbreviation) |
+| ultimatum.core | `Frame`, `Pane`, `Panes`, `Placement`, `Sizing`, `Occupancy`, `Limits`, `Arrangement`, `Tick` → *new* `Tui.*` — **done**; `Rect` → `Tui.Region` (ruling 4: no abbreviation) |
 | ultimatum.gauges | `Magnitude`, `Meter`, `Reading`, `Reckoning`, `Step`, `Standing`, `Transfer`, `Facet`, `Fraction`, `Gradient`, `Inlay` → *new* `Gauge.*`, or the existing `Gauging` |
 | anticipation | `Level→Log.Level`; the colour channels `Key`, `Cyan`, … → `Channel.*` † |
 | honeycomb | `Kind`, `Capture` (attribute value sets) → the companion of their element or attribute † |
@@ -726,9 +726,10 @@ telekinesis `Auth`, `Context`; coaxial `Trust→Tls.Trust` (platform-split `Tls`
    find one — a subprocess or a pair of streams — so it becomes `Acp.Endpoint`. Everything ACP
    nests inside `Acp`. exegesis has the same shape (`Lsp.Server` is the location enum), and
    should follow when `LspLifecycle` and its siblings nest.
-4. **`Layout`** is the namespace for ultimatum's layout vocabulary, and `Rect` is renamed as it
-   moves: abbreviations are avoided. `Layout.Region`, since it is a region of the screen in
-   cells. facsimile's `Pdf.Rect` is not affected: it mirrors the PDF `/Rect` key.
+4. **`Tui`** is the namespace for ultimatum's layout vocabulary — and, in time, for most of
+   ultimatum's entities. `Layout` was the first choice but is punctuation's Markdown block enum
+   (`Markdown of Layout`), which keeps its name. `Rect` is renamed as it moves, since
+   abbreviations are avoided: `Tui.Region`, a region of the screen in cells. facsimile's `Pdf.Rect` is not affected: it mirrors the PDF `/Rect` key.
 
 ### Reviewed and kept top-level
 

@@ -242,7 +242,7 @@ supervise:
       progress() = Fraction.of(item, work.size)
 
   interactive: terminal ?=>
-    conduct(Occupancy.Inline)(stack(gauge(progress)))
+    conduct(Tui.Occupancy.Inline)(stack(gauge(progress)))
 ```
 
 A gauge reports the intrinsic size of its design each time the layout is solved, so it takes

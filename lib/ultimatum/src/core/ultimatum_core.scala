@@ -42,6 +42,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
+import ultimatum.Tui.{Arrangement, Occupancy, Pane, Panes, Region, Sizing}
 
 // Construct a leaf panel: a fractional weight and optional per-axis bounds,
 // plus deferred `content` that runs (with its `Extent` in context) once the
@@ -220,8 +221,8 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
 def dirtyCells
-  ( previous: Sequence[Rect],
-    current:  Sequence[Rect],
+  ( previous: Sequence[Region],
+    current:  Sequence[Region],
     changed:  Set[Int] )
 :   Set[Int] =
 
@@ -250,7 +251,7 @@ def paint(root: Board^, pane: Pane): Unit =
     case screen: ScreenRoot => screen.reframe()
     case _                  => ()
 
-  val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
+  val placement = pane.frame.arrange(Region(0, 0, root.width, height))
 
   // An explicit iterator loop rather than `.each`: the per-cell closure constructs a `FlowExtent`
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
@@ -261,8 +262,8 @@ def paint(root: Board^, pane: Pane): Unit =
   while running do cells.next() match
     case Iterator.Exhausted => running = false
 
-    case (leaf: Pane, rect: Rect) =>
-      val extent = FlowExtent(root, rect)
+    case (leaf: Pane, region: Region) =>
+      val extent = FlowExtent(root, region)
 
       leaf match
         case Pane.Leaf(_, content)   => content(extent)

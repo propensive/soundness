@@ -16,8 +16,8 @@ detail
     A layout is built with a small DSL: `panel` for content, `editor` and `menu` for input
     fields, `gauge` for a progress display, `tabular` for a live table, `scrolling` for a
     viewport, and `stack`, `strip` and `grid` to split space between them by weight and
-    bounds (`Sizing`). `conduct` runs the result interactively, either `Occupancy.Fullscreen`
-    on the alternate screen or `Occupancy.Inline` as a block at the cursor which keeps the
+    bounds (`Tui.Sizing`). `conduct` runs the result interactively, either `Tui.Occupancy.Fullscreen`
+    on the alternate screen or `Tui.Occupancy.Inline` as a block at the cursor which keeps the
     scrollback; `layout` prints a static block once; `paint` composites onto any `Board`.
 
     ```scala fuel
@@ -30,7 +30,7 @@ detail
 
     supervise:
       interactive: terminal ?=>
-        conduct(Occupancy.Inline):
+        conduct(Tui.Occupancy.Inline):
           stack
             ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Name")),
               editor(),
@@ -41,13 +41,13 @@ detail
     event goes to the focused field. The layout is _reactive_: a `Fixture` reports the
     size its current content needs on every solve, so an editor which wraps onto a second
     line pushes its siblings down, a table whose data changed re-negotiates its columns,
-    and a `Panes` container appended to while the form runs re-tiles it. A `Reading` cell
+    and a `Tui.Panes` container appended to while the form runs re-tiles it. A `Reading` cell
     assigned from a background task repaints the gauge which shows it.
 
     The library has three components, and an application takes only the ones it needs:
 
-    - `ultimatum.core` — the layout model (`Pane`, `Panes`, `Sizing`, `Arrangement`,
-      `Frame`, `Placement`, `Rect`), the DSL (`panel`, `editor`, `menu`, `scrolling`,
+    - `ultimatum.core` — the layout model (`Tui.Pane`, `Tui.Panes`, `Tui.Sizing`, `Tui.Arrangement`,
+      `Tui.Frame`, `Tui.Placement`, `Tui.Region`), the DSL (`panel`, `editor`, `menu`, `scrolling`,
       `stack`, `strip`, `grid`, `border`), the drivers (`conduct`, `layout`, `paint`,
       `Form`), the surfaces (`Extent`, `FlowExtent`, `InlineRoot`, `ScreenRoot`), the
       fixtures (`Fixture`, `Focus`, `EditorField`, `MenuField`, `ScrollFixture`), the
@@ -86,7 +86,7 @@ detail
     is tested without a terminal.
 
 refer ultimatum.conduct
-refer ultimatum.Pane
+refer ultimatum.Tui.Pane
 refer ultimatum.Form
 refer ultimatum.Fixture
 refer ultimatum.Gaugeable
@@ -100,13 +100,13 @@ entry .conduct   runs a pane layout interactively, fullscreen or inline, until t
       focusable fixtures (`editor`, `menu`, `scrolling`), tracked by identity so focus
       survives a pane inserted before it; any other keypress goes to the focused fixture; a
       `Terminal.Info.WindowSize` re-tiles the layout to the new size; and a
-      `Terminal.Info.Redraw` — which a `Panes` mutation, a `Reading` update, a
+      `Terminal.Info.Redraw` — which a `Tui.Panes` mutation, a `Reading` update, a
       `TableFixture#refresh` or an animation tick puts on the event spool — repaints.
 
-      `Occupancy.Fullscreen` (the default) takes over the alternate screen buffer for the
+      `Tui.Occupancy.Fullscreen` (the default) takes over the alternate screen buffer for the
       session, restored on exit, fills the terminal's height, hides the cursor except in a
       focused editor, and repaints only the cells which changed, so an unchanged frame
-      writes nothing. `Occupancy.Inline` draws a block at the cursor, sized to the height
+      writes nothing. `Tui.Occupancy.Inline` draws a block at the cursor, sized to the height
       its content needs, leaving the scrollback intact and the cursor on a fresh line below
       the block when the form ends; its resize repaints are throttled to about ten a second
       and debounced by 50 ms of quiet, so a window drag must pause before the block is
@@ -122,7 +122,7 @@ entry .conduct   runs a pane layout interactively, fullscreen or inline, until t
 
       supervise:
         interactive: terminal ?=>
-          conduct(Occupancy.Fullscreen):
+          conduct(Tui.Occupancy.Fullscreen):
             stack
               ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Compose")),
                 strip
@@ -142,7 +142,7 @@ entry .conduct   runs a pane layout interactively, fullscreen or inline, until t
       renderer owns `form` in the `soundness` umbrella; the class it drives keeps the name
       `Form`.
   refer ultimatum.Form
-  refer ultimatum.Occupancy
+  refer ultimatum.Tui.Occupancy
   refer ultimatum.layout
 
 entry .layout   prints a pane layout once as a static block at the cursor
@@ -172,7 +172,7 @@ entry .layout   prints a pane layout once as a static block at the cursor
 
 entry .paint   solves a pane tree against a `Board` once and paints every leaf into its rectangle
     `paint(root, pane)` is the drawing step on its own, with no terminal session and no
-    event loop: the pane is projected to a `Frame`, solved against the root's width (and,
+    event loop: the pane is projected to a `Tui.Frame`, solved against the root's width (and,
     for an `InlineRoot`, the height the content measures; for any other board, the board's
     height), and each leaf's content or fixture is rendered into a `FlowExtent` over its
     rectangle, which is then composited onto the root and the root flushed. This is how a
@@ -183,7 +183,7 @@ entry .paint   solves a pane tree against a `Board` once and paints every leaf i
     import soundness.*
 
     given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-    val root = FlowExtent(TerminalBoard(8, 3), Rect(0, 0, 8, 3))
+    val root = FlowExtent(TerminalBoard(8, 3), Tui.Region(0, 0, 8, 3))
 
     paint(root, stack(panel()(Out.print(t"top")), panel()(Out.print(t"bottom"))))
     root.render   // t"top     \nbottom  \n        "
@@ -195,7 +195,7 @@ entry .paint   solves a pane tree against a `Board` once and paints every leaf i
 
 entry .panel   a leaf pane whose content is drawn into its solved rectangle
     `panel(fraction, minWidth, maxWidth, minHeight, maxHeight)(content)` is the basic
-    building block: a `Pane.Leaf` whose `content` runs once the layout has been solved and
+    building block: a `Tui.Pane.Leaf` whose `content` runs once the layout has been solved and
     the pane's rectangle is known, with that rectangle's `Extent` in context. The `Extent`
     is a `Board` — `move`, `put`, `clear` — and a `Stdio`, so `Out.print` inside the body
     writes into the panel; text wraps at the panel's width and scrolls when it overflows
@@ -204,9 +204,9 @@ entry .panel   a leaf pane whose content is drawn into its solved rectangle
     ```scala
     import soundness.*
 
-    val title: Pane = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Activity"))
+    val title: Tui.Pane = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Activity"))
 
-    val status: Pane = panel(fraction = 2.0):
+    val status: Tui.Pane = panel(fraction = 2.0):
       val extent = summon[Extent]
       extent.move(Prim, Prim)
       extent.put(t"─"*extent.width)
@@ -219,19 +219,19 @@ entry .panel   a leaf pane whose content is drawn into its solved rectangle
 
 entry .editor   a focusable line-editor pane, whose height grows as its text wraps
     `editor(initial, fraction, minWidth, maxWidth, minHeight, maxHeight)` is a
-    `Pane.Widget` hosting an `EditorField` over a profanity `LineEditor`. The field is
+    `Tui.Pane.Widget` hosting an `EditorField` over a profanity `LineEditor`. The field is
     drawn by the shared `Interaction[Text, LineEditor]`, shows the hardware cursor while it
     has focus and hides it otherwise, and reports as its intrinsic height the number of
     rows its value wraps onto at the width it was last given, so an editor which overflows
     one line pushes the panes below it down. Its value is read back from the
     `EditorField`, which is why a form that needs the text afterwards builds the field
-    itself and wraps it in `Pane.Widget`.
+    itself and wraps it in `Tui.Pane.Widget`.
 
     ```scala
     import soundness.*
 
     val field = EditorField()
-    val pane: Pane = Pane.Widget(Sizing(minHeight = 1), field)
+    val pane: Tui.Pane = Tui.Pane.Widget(Tui.Sizing(minHeight = 1), field)
     field.handle(Keypress.CharKey('h'))
     field.handle(Keypress.CharKey('i'))
     field.value   // t"hi"
@@ -242,7 +242,7 @@ entry .editor   a focusable line-editor pane, whose height grows as its text wra
 
 entry .menu   a focusable selection-menu pane, one row per option
     `menu(options, current, fraction, minWidth, maxWidth, minHeight, maxHeight)` is a
-    `Pane.Widget` hosting a `MenuField` over a profanity `SelectMenu`: `options` are any
+    `Tui.Pane.Widget` hosting a `MenuField` over a profanity `SelectMenu`: `options` are any
     `Showable` values and `current` the one initially selected. Up and Down move the
     selection; the selected option is marked `>` while the menu has focus and `·` when it
     does not, so the selection is always visible and the focused menu is distinguished. The
@@ -251,12 +251,12 @@ entry .menu   a focusable selection-menu pane, one row per option
     ```scala
     import soundness.*
 
-    val sidebar: Pane =
+    val sidebar: Tui.Pane =
       menu(List(t"Overview", t"Compose", t"Settings"), t"Overview", minWidth = 20, maxWidth = 20)
     ```
 
 entry .scrolling   a viewport pane over a `ScrollFixture`, scrolled with Up and Down when focused
-    `scrolling(fixture)` is a `Pane.Widget` with a default `Sizing` over a
+    `scrolling(fixture)` is a `Tui.Pane.Widget` with a default `Tui.Sizing` over a
     `ScrollFixture` the caller has already built: the fixture, not its content, is the
     parameter, so the caller keeps the handle and can call `scroll`, `toBottom` and
     `refresh` on it while the form runs. Whatever rectangle the layout assigns becomes the
@@ -266,29 +266,29 @@ entry .scrolling   a viewport pane over a `ScrollFixture`, scrolled with Up and 
     import soundness.*
 
     val log = ScrollFixture()(List(e"first line", e"second line"))
-    val pane: Pane = scrolling(log)
+    val pane: Tui.Pane = scrolling(log)
     ```
 
 entry .strip   splits space between panes side by side, distributing width
     `strip(panes*)` places its children left to right on one row, each as tall as the
-    strip and as wide as its `Sizing` earns: the width is shared by `fraction`, a child
+    strip and as wide as its `Tui.Sizing` earns: the width is shared by `fraction`, a child
     whose minimum exceeds its share is fixed at that minimum and the rest re-shared, and a
-    child capped by its maximum likewise. `strip(panes: Panes)` is the same split over a
+    child capped by its maximum likewise. `strip(panes: Tui.Panes)` is the same split over a
     live container, whose children may be appended to or removed while a form runs.
 
     ```scala
     import soundness.*
 
     val frame = strip(panel(minWidth = 8)(()), panel()(())).frame
-    frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)   // List(8, 2)
+    frame.arrange(Tui.Region(0, 0, 10, 1)).cells.map(_.width)   // List(8, 2)
     ```
 
-    The name is the `Arrangement.Strip` it builds; `stack` is the vertical counterpart.
+    The name is the `Tui.Arrangement.Strip` it builds; `stack` is the vertical counterpart.
 
 entry .stack   splits space between panes one above another, distributing height
     `stack(panes*)` places its children top to bottom, each as wide as the stack and as
-    tall as its `Sizing` earns by the same rule as `strip`: share by `fraction`, fix any
-    child at a minimum or maximum it would otherwise cross. `stack(panes: Panes)` is the
+    tall as its `Tui.Sizing` earns by the same rule as `strip`: share by `fraction`, fix any
+    child at a minimum or maximum it would otherwise cross. `stack(panes: Tui.Panes)` is the
     same split over a live container. A bounded single-row panel (`minHeight = 1,
     maxHeight = 1`) at the top and bottom of a stack is how a title bar and a status bar
     are pinned while the middle takes the rest.
@@ -297,10 +297,10 @@ entry .stack   splits space between panes one above another, distributing height
     import soundness.*
 
     val frame = stack(panel()(()), panel()(())).frame
-    frame.arrange(Rect(0, 0, 8, 4)).cells   // List(Rect(0, 0, 8, 2), Rect(0, 2, 8, 2))
+    frame.arrange(Tui.Region(0, 0, 8, 4)).cells   // List(Tui.Region(0, 0, 8, 2), Tui.Region(0, 2, 8, 2))
     ```
 
-    The name is the `Arrangement.Stack` it builds.
+    The name is the `Tui.Arrangement.Stack` it builds.
 
 entry .grid   flows panes row-major into aligned columns, with an optional gap
     `grid(columns, gap)(panes*)` lays its children out in `columns` columns, filling each
@@ -317,11 +317,11 @@ entry .grid   flows panes row-major into aligned columns, with an optional gap
       ( panel(minHeight = 2)(()), panel(minHeight = 2)(()),
         panel(minHeight = 2)(()), panel(minHeight = 2)(()) )
 
-    cells.frame.arrange(Rect(0, 0, 11, 10)).cells
-    // List(Rect(0, 0, 5, 2), Rect(6, 0, 5, 2), Rect(0, 3, 5, 2), Rect(6, 3, 5, 2))
+    cells.frame.arrange(Tui.Region(0, 0, 11, 10)).cells
+    // List(Tui.Region(0, 0, 5, 2), Tui.Region(6, 0, 5, 2), Tui.Region(0, 3, 5, 2), Tui.Region(6, 3, 5, 2))
     ```
 
-    The name is the `Arrangement.Grid` it builds.
+    The name is the `Tui.Arrangement.Grid` it builds.
 
 entry .border   wraps a pane in a box-drawing border, on whichever sides are asked for
     `border(style, top, right, bottom, left)(child)` surrounds `child` with rules drawn in
@@ -336,23 +336,23 @@ entry .border   wraps a pane in a box-drawing border, on whichever sides are ask
     ```scala fuel
     alternative Full
       code
-          val boxed: Pane = ultimatum.border()(panel()(Out.print(t"hi")))
+          val boxed: Tui.Pane = ultimatum.border()(panel()(Out.print(t"hi")))
           // ┌──┐
           // │hi│
           // └──┘
     alternative Rounded
       code
-          val boxed: Pane = ultimatum.border(BorderStyle.rounded)(panel()(Out.print(t"hi")))
+          val boxed: Tui.Pane = ultimatum.border(BorderStyle.rounded)(panel()(Out.print(t"hi")))
           // ╭──╮
           // │hi│
           // ╰──╯
     alternative Sides only
       code
-          val boxed: Pane = ultimatum.border(top = false, bottom = false)(panel()(Out.print(t"hi")))
+          val boxed: Tui.Pane = ultimatum.border(top = false, bottom = false)(panel()(Out.print(t"hi")))
           // │hi│
     alternative Rule beneath
       code
-          val boxed: Pane =
+          val boxed: Tui.Pane =
             ultimatum.border(top = false, left = false, right = false)(panel()(Out.print(t"hi")))
           // hi
           // ──
@@ -373,228 +373,236 @@ entry .dirtyCells   which leaves must be repainted: those which moved, resized o
     ```scala
     import soundness.*
 
-    val before = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
-    val after  = Sequence(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
+    val before = Sequence(Tui.Region(0, 0, 10, 1), Tui.Region(0, 1, 10, 1))
+    val after  = Sequence(Tui.Region(0, 0, 10, 2), Tui.Region(0, 2, 10, 1))
     dirtyCells(before, after, Set())    // Set(0, 1)
     dirtyCells(before, before, Set(1))  // Set(1)
     ```
 
-entry .Pane   the content-bearing layout tree: a leaf with content, a widget, or a split
+entry .Tui   the namespace for ultimatum's terminal-interface vocabulary, starting with its layout model
   detail
-      A `Pane` is what the DSL builds and the drivers consume. It is an enum of three
-      shapes. `Leaf(sizing, content)` is a panel (`panel`): a `Sizing` and a function from
-      the solved `Extent^` to `Unit`, run once the rectangle is known. `Widget(sizing,
-      fixture)` hosts a live `Fixture` (`editor`, `menu`, `scrolling`, `gauge`, `tabular`)
-      which keeps its own state, reports its intrinsic size and may take focus.
-      `Branch(sizing, arrangement, panes)` splits its space among the children of a `Panes`
-      container along an `Arrangement` (`stack`, `strip`, `grid`).
+      Every type a layout is described, solved and placed with lives here: the content-bearing
+      `Pane` tree which `panel`, `strip`, `stack` and `grid` build, the `Panes` container a
+      running form re-tiles, the pure `Frame` a pane projects to for solving, and the
+      `Placement` of `Region`s which solving produces. They are nested because each name,
+      bare, would claim a far more general meaning than ultimatum gives it.
 
-      A pane tree is pure: a leaf's content is a pure function of its `Extent`, which is
-      itself the `Board` and `Stdio` it draws into, so panes can be collected and traversed
-      freely. The tree is projected to a `Frame` for solving with `#frame` and walked for
-      its leaves with `#leaves`, in the same order, so a solved `Placement`'s cells pair
-      one-to-one with the leaves.
+  entry .Pane   the content-bearing layout tree: a leaf with content, a widget, or a split
+    detail
+        A `Pane` is what the DSL builds and the drivers consume. It is an enum of three
+        shapes. `Leaf(sizing, content)` is a panel (`panel`): a `Sizing` and a function from
+        the solved `Extent^` to `Unit`, run once the rectangle is known. `Widget(sizing,
+        fixture)` hosts a live `Fixture` (`editor`, `menu`, `scrolling`, `gauge`, `tabular`)
+        which keeps its own state, reports its intrinsic size and may take focus.
+        `Branch(sizing, arrangement, panes)` splits its space among the children of a `Panes`
+        container along an `Arrangement` (`stack`, `strip`, `grid`).
 
-      ```scala
-      import soundness.*
+        A pane tree is pure: a leaf's content is a pure function of its `Extent`, which is
+        itself the `Board` and `Stdio` it draws into, so panes can be collected and traversed
+        freely. The tree is projected to a `Frame` for solving with `#frame` and walked for
+        its leaves with `#leaves`, in the same order, so a solved `Placement`'s cells pair
+        one-to-one with the leaves.
 
-      val tree: Pane = stack(panel()(Out.print(t"a")), strip(panel()(()), editor()))
-      tree.leaves.size                                   // 3
-      tree.frame.arrange(Rect(0, 0, 10, 4)).cells.size   // 3
-      tree.weight(2.0).sizing.fraction                   // 2.0
-      ```
-  refer ultimatum.Panes
-  refer ultimatum.Sizing
-  refer ultimatum.Frame
-  refer ultimatum.Fixture
-  entry #sizing   how this pane is sized within its parent: its weight and bounds
-  entry #frame   the pure layout structure, with content discarded, for the solver
-      A `Leaf` or a `Widget` becomes a `Frame.Cell` of its declared `Sizing` alone; a
-      `Branch` becomes a `Frame.Split` over its container's _current_ contents, so a
-      mutated `Panes` re-solves. A running `Form` does not use this projection directly: it
-      raises each widget's minimum to the size its content measures at the width it last
-      occupied, which is how growing content pushes the rest of the layout around.
-  entry #leaves   the leaf panes in frame order: left to right in a strip, top to bottom in a stack
-      A `Leaf` or `Widget` is its own single leaf; a `Branch` yields its children's leaves
-      concatenated. The order matches the cells of the `Placement` which `#frame` solves to.
-  entry #weight   a copy of this pane re-weighted with a new `fraction`, for use as a child of a split
-      The content, fixture or children are shared with the original; only the `Sizing`'s
-      fraction changes.
+        ```scala
+        import soundness.*
 
-entry .Panes   a mutable, ordered container of child panes which a running form re-tiles to
-  detail
-      `Panes(initial*)` holds the children of a `stack(panes)` or `strip(panes)` split.
-      Holding the reference lets the layout change while a form runs: `#append`, `#prepend`,
-      `#insert`, `#insertBefore`, `#insertAfter` and `#remove` alter the container, the
-      form picks the change up the next time it re-derives its tree, and once the
-      container is bound into a running form a mutation also wakes the event loop, so a
-      pane added from a background task appears immediately. Each mutation is one atomic
-      compare-and-set transition, so concurrent mutations from several tasks lose nothing.
-      Panes are compared by identity, so the same pane value is what `insertBefore` and
-      `remove` look for.
+        val tree: Tui.Pane = stack(panel()(Out.print(t"a")), strip(panel()(()), editor()))
+        tree.leaves.size                                   // 3
+        tree.frame.arrange(Tui.Region(0, 0, 10, 4)).cells.size   // 3
+        tree.weight(2.0).sizing.fraction                   // 2.0
+        ```
+    refer ultimatum.Tui.Panes
+    refer ultimatum.Tui.Sizing
+    refer ultimatum.Tui.Frame
+    refer ultimatum.Fixture
+    entry #sizing   how this pane is sized within its parent: its weight and bounds
+    entry #frame   the pure layout structure, with content discarded, for the solver
+        A `Leaf` or a `Widget` becomes a `Frame.Cell` of its declared `Sizing` alone; a
+        `Branch` becomes a `Frame.Split` over its container's _current_ contents, so a
+        mutated `Panes` re-solves. A running `Form` does not use this projection directly: it
+        raises each widget's minimum to the size its content measures at the width it last
+        occupied, which is how growing content pushes the rest of the layout around.
+    entry #leaves   the leaf panes in frame order: left to right in a strip, top to bottom in a stack
+        A `Leaf` or `Widget` is its own single leaf; a `Branch` yields its children's leaves
+        concatenated. The order matches the cells of the `Placement` which `#frame` solves to.
+    entry #weight   a copy of this pane re-weighted with a new `fraction`, for use as a child of a split
+        The content, fixture or children are shared with the original; only the `Sizing`'s
+        fraction changes.
 
-      ```scala fuel
-      frame
-        label A log with one line
-        code
-            val lines = Panes(panel(minHeight = 1, maxHeight = 1)(Out.print(t"started")))
-            val log: Pane = stack(lines)
-            lines.size   // 1
-      frame
-        label A line appended while the form runs
-        code
-            val lines = Panes(panel(minHeight = 1, maxHeight = 1)(Out.print(t"started")))
-            val log: Pane = stack(lines)
-            lines.append(panel(minHeight = 1, maxHeight = 1)(Out.print(t"compiling")))
-            lines.size   // 2; a running form re-tiles to show the new row
-      frame
-        label A line inserted before another
-        code
-            val lines = Panes(panel(minHeight = 1, maxHeight = 1)(Out.print(t"started")))
-            val log: Pane = stack(lines)
-            val compiling = panel(minHeight = 1, maxHeight = 1)(Out.print(t"compiling"))
-            lines.append(compiling)
-            lines.insertBefore(compiling, panel(minHeight = 1, maxHeight = 1)(Out.print(t"resolving")))
-            lines.size   // 3: started, resolving, compiling
-      ##
-      ```
+  entry .Panes   a mutable, ordered container of child panes which a running form re-tiles to
+    detail
+        `Panes(initial*)` holds the children of a `stack(panes)` or `strip(panes)` split.
+        Holding the reference lets the layout change while a form runs: `#append`, `#prepend`,
+        `#insert`, `#insertBefore`, `#insertAfter` and `#remove` alter the container, the
+        form picks the change up the next time it re-derives its tree, and once the
+        container is bound into a running form a mutation also wakes the event loop, so a
+        pane added from a background task appears immediately. Each mutation is one atomic
+        compare-and-set transition, so concurrent mutations from several tasks lose nothing.
+        Panes are compared by identity, so the same pane value is what `insertBefore` and
+        `remove` look for.
 
-      The container is not a capability: panes are pure, and its one effectful field, the
-      repaint callback, is installed by the form which runs it.
-  refer ultimatum.Pane
-  refer ultimatum.stack
-  refer ultimatum.strip
-  entry #contents   the current children, in order, as a `Sequence`
-  entry #size   the number of children
-  entry #apply   the child at a zero-based index
-  entry #append   adds a pane at the end
-  entry #prepend   adds a pane at the start
-  entry #insert   inserts a pane at a position, clamped to the container's bounds
-  entry #insertBefore   inserts a pane immediately before a reference pane, by identity; appends if absent
-  entry #insertAfter   inserts a pane immediately after a reference pane, by identity; appends if absent
-  entry #remove   removes a pane, by identity, if present
+        ```scala fuel
+        frame
+          label A log with one line
+          code
+              val lines = Tui.Panes(panel(minHeight = 1, maxHeight = 1)(Out.print(t"started")))
+              val log: Tui.Pane = stack(lines)
+              lines.size   // 1
+        frame
+          label A line appended while the form runs
+          code
+              val lines = Tui.Panes(panel(minHeight = 1, maxHeight = 1)(Out.print(t"started")))
+              val log: Tui.Pane = stack(lines)
+              lines.append(panel(minHeight = 1, maxHeight = 1)(Out.print(t"compiling")))
+              lines.size   // 2; a running form re-tiles to show the new row
+        frame
+          label A line inserted before another
+          code
+              val lines = Tui.Panes(panel(minHeight = 1, maxHeight = 1)(Out.print(t"started")))
+              val log: Tui.Pane = stack(lines)
+              val compiling = panel(minHeight = 1, maxHeight = 1)(Out.print(t"compiling"))
+              lines.append(compiling)
+              lines.insertBefore(compiling, panel(minHeight = 1, maxHeight = 1)(Out.print(t"resolving")))
+              lines.size   // 3: started, resolving, compiling
+        ##
+        ```
 
-entry .Sizing   how a pane is sized within its parent: a fractional weight and per-axis bounds
-  detail
-      `Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)` is carried by every pane
-      and read by the solver. `fraction` is the pane's relative weight on its parent's
-      split axis — siblings weighted 2, 3 and 4 claim 2/9, 3/9 and 4/9 of it, rounded by
-      largest remainder so the sizes sum exactly to the space — and the bounds are
-      content-driven limits on each axis: a child whose fair share would fall outside its
-      bound on the split axis is fixed at that bound and removed from the fractional pool,
-      and the rest re-share what remains. An `Unset` maximum is unbounded. Every DSL
-      constructor takes these five as named parameters, so a `Sizing` is written out only
-      for a hand-built `Pane.Widget`.
+        The container is not a capability: panes are pure, and its one effectful field, the
+        repaint callback, is installed by the form which runs it.
+    refer ultimatum.Tui.Pane
+    refer ultimatum.stack
+    refer ultimatum.strip
+    entry #contents   the current children, in order, as a `Sequence`
+    entry #size   the number of children
+    entry #apply   the child at a zero-based index
+    entry #append   adds a pane at the end
+    entry #prepend   adds a pane at the start
+    entry #insert   inserts a pane at a position, clamped to the container's bounds
+    entry #insertBefore   inserts a pane immediately before a reference pane, by identity; appends if absent
+    entry #insertAfter   inserts a pane immediately after a reference pane, by identity; appends if absent
+    entry #remove   removes a pane, by identity, if present
 
-      ```scala
-      import soundness.*
+  entry .Sizing   how a pane is sized within its parent: a fractional weight and per-axis bounds
+    detail
+        `Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)` is carried by every pane
+        and read by the solver. `fraction` is the pane's relative weight on its parent's
+        split axis — siblings weighted 2, 3 and 4 claim 2/9, 3/9 and 4/9 of it, rounded by
+        largest remainder so the sizes sum exactly to the space — and the bounds are
+        content-driven limits on each axis: a child whose fair share would fall outside its
+        bound on the split axis is fixed at that bound and removed from the fractional pool,
+        and the rest re-share what remains. An `Unset` maximum is unbounded. Every DSL
+        constructor takes these five as named parameters, so a `Sizing` is written out only
+        for a hand-built `Pane.Widget`.
 
-      val frame = strip(panel(fraction = 2.0)(()), panel(fraction = 3.0)(()), panel(fraction = 4.0)(())).frame
-      frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width)   // List(22, 33, 45)
-      ```
-  entry #fraction   the relative weight on the parent's split axis; `1.0` by default
-  entry #minWidth   the least width the pane may be given; `0` by default
-  entry #maxWidth   the most width the pane may be given, or `Unset` for no limit
-  entry #minHeight   the least height the pane may be given; `0` by default
-  entry #maxHeight   the most height the pane may be given, or `Unset` for no limit
+        ```scala
+        import soundness.*
 
-entry .Arrangement   how a split arranges its children: stacked, in a strip, or in a grid
-    The value a `Pane.Branch` or `Frame.Split` carries, named for the constructor which
-    builds it so the value and the call read the same. `Stack` puts the children one above
-    another, distributing height; `Strip` places them side by side, distributing width;
-    `Grid(columns, gap)` flows them row-major into `columns` columns whose widths are
-    negotiated across every row, with `gap` blank cells between columns and rows. A
-    `Frame#measure` takes an `Arrangement` to say which axis to measure: `Strip` for width,
-    anything else for height.
+        val frame = strip(panel(fraction = 2.0)(()), panel(fraction = 3.0)(()), panel(fraction = 4.0)(())).frame
+        frame.arrange(Tui.Region(0, 0, 100, 1)).cells.map(_.width)   // List(22, 33, 45)
+        ```
+    entry #fraction   the relative weight on the parent's split axis; `1.0` by default
+    entry #minWidth   the least width the pane may be given; `0` by default
+    entry #maxWidth   the most width the pane may be given, or `Unset` for no limit
+    entry #minHeight   the least height the pane may be given; `0` by default
+    entry #maxHeight   the most height the pane may be given, or `Unset` for no limit
 
-entry .Occupancy   how much of the terminal an interactive layout occupies: inline or fullscreen
-    The mode `conduct` and `Form` run in. `Fullscreen` takes over the terminal through the
-    alternate screen buffer (restored on exit), fills its fixed height, and repaints only
-    the cells which changed. `Inline` draws a variable-height block at the cursor, sized
-    to its content, without the alternate buffer, so the terminal's scrollback stays intact
-    and the block remains on screen after the form ends, with the cursor on a fresh line
-    beneath it. The enum was once named `Mode`; it was renamed so as not to clash with
-    aperture's `Mode` in the `soundness` umbrella.
+  entry .Arrangement   how a split arranges its children: stacked, in a strip, or in a grid
+      The value a `Pane.Branch` or `Frame.Split` carries, named for the constructor which
+      builds it so the value and the call read the same. `Stack` puts the children one above
+      another, distributing height; `Strip` places them side by side, distributing width;
+      `Grid(columns, gap)` flows them row-major into `columns` columns whose widths are
+      negotiated across every row, with `gap` blank cells between columns and rows. A
+      `Frame#measure` takes an `Arrangement` to say which axis to measure: `Strip` for width,
+      anything else for height.
 
-entry .Frame   the pure layout tree the solver works on: cells and splits with sizings
-  detail
-      A `Frame` is a `Pane` with its content discarded: `Cell(sizing)` for a leaf or
-      widget, `Split(sizing, arrangement, children)` for a branch. Solving against a root
-      `Rect` is two passes. `#measure` is bottom-up: each node's minimum and maximum on an
-      axis, where a split's minimum along its own axis is forced up to the sum of its
-      children's (a container can be no smaller than its contents), its maximum down to the
-      sum of theirs (any unbounded child makes the sum unbounded), and across the other
-      axis the minimum is the largest child minimum and the maximum the smallest child
-      maximum. `#arrange` is top-down: each child becomes a flex track — its measured
-      minimum, its fraction as weight, its measured maximum as cap — and the space is
-      distributed by fraction, any child which hits a bound fixed there, then recursed.
+  entry .Occupancy   how much of the terminal an interactive layout occupies: inline or fullscreen
+      The mode `conduct` and `Form` run in. `Fullscreen` takes over the terminal through the
+      alternate screen buffer (restored on exit), fills its fixed height, and repaints only
+      the cells which changed. `Inline` draws a variable-height block at the cursor, sized
+      to its content, without the alternate buffer, so the terminal's scrollback stays intact
+      and the block remains on screen after the form ends, with the cursor on a fresh line
+      beneath it. The enum was once named `Mode`; it was renamed so as not to clash with
+      aperture's `Mode` in the `soundness` umbrella.
 
-      ```scala
-      import soundness.*
+  entry .Frame   the pure layout tree the solver works on: cells and splits with sizings
+    detail
+        A `Frame` is a `Pane` with its content discarded: `Cell(sizing)` for a leaf or
+        widget, `Split(sizing, arrangement, children)` for a branch. Solving against a root
+        `Region` is two passes. `#measure` is bottom-up: each node's minimum and maximum on an
+        axis, where a split's minimum along its own axis is forced up to the sum of its
+        children's (a container can be no smaller than its contents), its maximum down to the
+        sum of theirs (any unbounded child makes the sum unbounded), and across the other
+        axis the minimum is the largest child minimum and the maximum the smallest child
+        maximum. `#arrange` is top-down: each child becomes a flex track — its measured
+        minimum, its fraction as weight, its measured maximum as cap — and the space is
+        distributed by fraction, any child which hits a bound fixed there, then recursed.
 
-      val frame = Frame.Split
-        ( Sizing(), Arrangement.Strip,
-          List(Frame.Cell(Sizing(1.0, minWidth = 8)), Frame.Cell(Sizing(1.0))) )
+        ```scala
+        import soundness.*
 
-      frame.measure(Arrangement.Strip)                       // Limits(8, Unset)
-      frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)   // List(8, 2)
-      ```
+        val frame = Tui.Frame.Split
+          ( Tui.Sizing(), Tui.Arrangement.Strip,
+            List(Tui.Frame.Cell(Tui.Sizing(1.0, minWidth = 8)), Tui.Frame.Cell(Tui.Sizing(1.0))) )
 
-      A grid is solved with the same track solver across its columns — each column's fold
-      of its members' limits, weighted by its members' largest fraction — and its rows are
-      content-sized at the tallest minimum in each, clamped to the grid's rectangle.
-  refer ultimatum.Pane
-  refer ultimatum.Placement
-  refer ultimatum.Sizing
-  entry #sizing   the node's own `Sizing`
-  entry #measure   the resolved minimum and maximum of this frame along one axis, as `Limits`
-      `measure(Arrangement.Strip)` measures width; any other arrangement measures height.
-      A cell's limits are its own sizing's; a split's aggregate its children's as the axis
-      and the split's arrangement dictate.
-  entry #arrange   solves this frame against a rectangle, producing a `Placement` tree
-      A cell takes the whole rectangle. A split divides the rectangle's width (`Strip`) or
-      height (anything else) among its children by fraction and bounds, each child getting
-      the full extent on the cross axis, and recurses; a grid places each child in its
-      negotiated column and content-sized row.
+        frame.measure(Tui.Arrangement.Strip)                       // Tui.Limits(8, Unset)
+        frame.arrange(Tui.Region(0, 0, 10, 1)).cells.map(_.width)   // List(8, 2)
+        ```
 
-entry .Placement   the result of solving a layout: a tree of rectangles mirroring the frame tree
-  detail
-      `Cell(rect)` is a solved leaf and `Split(rect, children)` a solved split; `#cells`
-      lists the leaf rectangles in frame order, which is the order of `Pane#leaves`, so the
-      two are zipped to pair every leaf with its rectangle.
-  entry #rect   the rectangle this node was given
-  entry #cells   the leaf rectangles in frame order: left to right in a strip, top to bottom in a stack
+        A grid is solved with the same track solver across its columns — each column's fold
+        of its members' limits, weighted by its members' largest fraction — and its rows are
+        content-sized at the tallest minimum in each, clamped to the grid's rectangle.
+    refer ultimatum.Tui.Pane
+    refer ultimatum.Tui.Placement
+    refer ultimatum.Tui.Sizing
+    entry #sizing   the node's own `Sizing`
+    entry #measure   the resolved minimum and maximum of this frame along one axis, as `Limits`
+        `measure(Arrangement.Strip)` measures width; any other arrangement measures height.
+        A cell's limits are its own sizing's; a split's aggregate its children's as the axis
+        and the split's arrangement dictate.
+    entry #arrange   solves this frame against a rectangle, producing a `Placement` tree
+        A cell takes the whole rectangle. A split divides the rectangle's width (`Strip`) or
+        height (anything else) among its children by fraction and bounds, each child getting
+        the full extent on the cross axis, and recurses; a grid places each child in its
+        negotiated column and content-sized row.
 
-entry .Limits   the resolved minimum and maximum size of a frame along one axis
-  detail
-      Returned by `Frame#measure`. `min` is a cell count and `max` an `Optional[Int]`
-      which is `Unset` when the frame is unbounded on that axis.
-  entry #min   the least size the frame can be given
-  entry #max   the most size the frame can take, or `Unset` for unbounded
+  entry .Placement   the result of solving a layout: a tree of rectangles mirroring the frame tree
+    detail
+        `Cell(rect)` is a solved leaf and `Split(rect, children)` a solved split; `#cells`
+        lists the leaf rectangles in frame order, which is the order of `Pane#leaves`, so the
+        two are zipped to pair every leaf with its rectangle.
+    entry #region   the rectangle this node was given
+    entry #cells   the leaf rectangles in frame order: left to right in a strip, top to bottom in a stack
 
-entry .Rect   a rectangular region within a surface, in zero-based top-origin coordinates
-  detail
-      `Rect(left, top, width, height)`: `left` and `top` are offsets from the enclosing
-      surface's top-left corner and `width` and `height` are cell counts. These are the
-      solver's own numbers, so they are plain `Int`s rather than `Ordinal`s; the `Board`
-      methods which position a cursor take ordinals (`Prim`, `Sec`, `n.z`).
+  entry .Limits   the resolved minimum and maximum size of a frame along one axis
+    detail
+        Returned by `Frame#measure`. `min` is a cell count and `max` an `Optional[Int]`
+        which is `Unset` when the frame is unbounded on that axis.
+    entry #min   the least size the frame can be given
+    entry #max   the most size the frame can take, or `Unset` for unbounded
 
-      ```scala
-      import soundness.*
+  entry .Region   a rectangular region within a surface, in zero-based top-origin coordinates
+    detail
+        `Region(left, top, width, height)`: `left` and `top` are offsets from the enclosing
+        surface's top-left corner and `width` and `height` are cell counts. These are the
+        solver's own numbers, so they are plain `Int`s rather than `Ordinal`s; the `Board`
+        methods which position a cursor take ordinals (`Prim`, `Sec`, `n.z`).
 
-      val rect = Rect(2, 1, 3, 1)
-      rect.right            // 5
-      rect.bottom           // 2
-      rect.contains(4, 1)   // true
-      rect.contains(5, 1)   // false
-      ```
-  entry #left   the zero-based column of the left edge
-  entry #top   the zero-based row of the top edge
-  entry #width   the width in cells
-  entry #height   the height in cells
-  entry #right   the column just past the right edge: `left + width`
-  entry #bottom   the row just past the bottom edge: `top + height`
-  entry #contains   whether a zero-based column and row fall inside the rectangle
+        ```scala
+        import soundness.*
+
+        val region = Tui.Region(2, 1, 3, 1)
+        rect.right            // 5
+        rect.bottom           // 2
+        rect.contains(4, 1)   // true
+        rect.contains(5, 1)   // false
+        ```
+    entry #left   the zero-based column of the left edge
+    entry #top   the zero-based row of the top edge
+    entry #width   the width in cells
+    entry #height   the height in cells
+    entry #right   the column just past the right edge: `left + width`
+    entry #bottom   the row just past the bottom edge: `top + height`
+    entry #contains   whether a zero-based column and row fall inside the rectangle
 
 entry .BorderStyle   the six glyphs a `border` draws with: two rules and four corners
   detail
@@ -638,21 +646,21 @@ entry .Extent   a virtual terminal confined to a rectangle: the `Board` and `Std
       positions with `move` and writes with `put`, and it is a `Stdio`, so a bare
       `Out.println` in the body flows into the rectangle; because it is a `Stdio`, the
       extent in a panel body shadows any terminal-wide `Stdio` in scope, which is what keeps
-      a panel's output inside the panel rather than on the whole screen. `#rect` is the
+      a panel's output inside the panel rather than on the whole screen. `#region` is the
       rectangle it covers within its parent surface. `FlowExtent` is the standard
       implementation.
 
       ```scala
       import soundness.*
 
-      val ruler: Pane = panel(minHeight = 1, maxHeight = 1):
+      val ruler: Tui.Pane = panel(minHeight = 1, maxHeight = 1):
         val extent = summon[Extent]
         extent.move(Prim, Prim)
         extent.put(t"·"*extent.width)
       ```
   refer ultimatum.FlowExtent
   refer ultimatum.panel
-  entry #rect   the rectangle this extent covers within its parent surface
+  entry #region   the rectangle this extent covers within its parent surface
 
 entry .FlowExtent   a `Board` confined to a rectangle of a parent surface, backed by a character grid
   detail
@@ -670,7 +678,7 @@ entry .FlowExtent   a `Board` confined to a rectangle of a parent surface, backe
       import soundness.*
 
       given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-      val flow = FlowExtent(TerminalBoard(3, 2), Rect(0, 0, 3, 2))
+      val flow = FlowExtent(TerminalBoard(3, 2), Tui.Region(0, 0, 3, 2))
       flow.put(t"abcdefghi")
       flow.render   // t"def\nghi": the grid scrolled
 
@@ -685,7 +693,7 @@ entry .FlowExtent   a `Board` confined to a rectangle of a parent surface, backe
       root the tests paint into and read back with `render`.
   refer ultimatum.Extent
   refer ultimatum.paint
-  entry #rect   the rectangle this extent covers within its parent
+  entry #region   the rectangle this extent covers within its parent
   entry #cursor   shows or hides the hardware cursor, through the parent
   entry #showCaret   leaves the caret at an extent-local cell, translated to the parent's coordinates
   entry #flush   composites the grid onto the parent, one row at a time, at the rectangle's offset
@@ -697,7 +705,7 @@ entry .FlowExtent   a `Board` confined to a rectangle of a parent surface, backe
 
 entry .InlineRoot   the root board for inline mode: a block presented at the cursor by absolute addressing
   detail
-      The root `conduct(Occupancy.Inline)` and `layout` draw into. Panels composite into
+      The root `conduct(Tui.Occupancy.Inline)` and `layout` draw into. Panels composite into
       its character grid and `#flush` presents the grid as one write, each row at an
       absolute screen row, so a redraw always lands in the same place and never drifts —
       the property a relative, cursor-tracking present loses the moment a resize reflows
@@ -777,7 +785,7 @@ entry .InlineRoot   the root board for inline mode: a block presented at the cur
 
 entry .ScreenRoot   the root board for fullscreen mode: a buffered grid presented by diffing against the screen
   detail
-      The root `conduct(Occupancy.Fullscreen)` draws into, inside the alternate screen
+      The root `conduct(Tui.Occupancy.Fullscreen)` draws into, inside the alternate screen
       buffer. Panels composite into its character grid and `#flush` presents by diffing
       the grid against a snapshot of what the last present drew, overprinting only the
       damaged runs: an unchanged cell is a no-op and an identical frame emits nothing at
@@ -898,7 +906,7 @@ entry .InlineShrink   what an inline block does when a frame is shorter than the
 entry .inlineAnchoring   the five anchoring policies for an inline block, each a given to import by name
   detail
       `InlineAnchoring.default` (`TopAfterResize`) applies when nothing is imported; one of
-      these replaces it for the `InlineRoot`, `conduct(Occupancy.Inline)` or `layout` call
+      these replaces it for the `InlineRoot`, `conduct(Tui.Occupancy.Inline)` or `layout` call
       in scope. `import soundness.*` does not bring them in.
 
       ```scala
@@ -935,7 +943,7 @@ entry .inlineShrink   the two shrink policies for an inline block, each a given 
 
 entry .Fixture   a live element the layout can host: it keeps state, renders itself and reports its size
   detail
-      A `Fixture` is what a `Pane.Widget` carries. It owns its own mutable state, renders
+      A `Fixture` is what a `Tui.Pane.Widget` carries. It owns its own mutable state, renders
       itself onto whichever `Board` the driver gives it — so the driver can move it to a
       new rectangle on re-layout — and reports through `#measure` the intrinsic size its
       current content needs, which is the hook the reactive layout uses to grow or shrink
@@ -961,10 +969,10 @@ entry .Fixture   a live element the layout can host: it keeps state, renders its
         def measure(width: Int): (Int, Int) = (4, 1)
         override def period: Optional[Int] = 1000
 
-      val pane: Pane = Pane.Widget(Sizing(minHeight = 1, maxHeight = 1), Clock())
+      val pane: Tui.Pane = Tui.Pane.Widget(Tui.Sizing(minHeight = 1, maxHeight = 1), Clock())
       ```
   refer ultimatum.Focus
-  refer ultimatum.Pane
+  refer ultimatum.Tui.Pane
   refer ultimatum.Form
   entry #render   draws the fixture onto a board, told whether it currently has focus
       `render(canvas, focused)`: the canvas is the `FlowExtent` over the fixture's solved
@@ -972,7 +980,7 @@ entry .Fixture   a live element the layout can host: it keeps state, renders its
       A `paint`-driven host passes `focused = false`.
   entry #measure   the minimum width and height the fixture's current content needs at a given width
       `measure(width)` returns `(minWidth, minHeight)`; the form takes the larger of each
-      and the pane's declared `Sizing` bound. A fixture which claims no intrinsic size
+      and the pane's declared `Tui.Sizing` bound. A fixture which claims no intrinsic size
       returns `(0, 1)` and takes whatever rectangle the sizing gives it.
   entry #period   how many milliseconds until the fixture wants redrawing again, or `Unset` if only on change
       A spinner returns its frame interval; a bar, an editor or a table returns `Unset`.
@@ -1057,7 +1065,7 @@ entry .ScrollFixture   a viewport over content taller than its space, with a scr
 
       val lines = List(e"one", e"two", e"three", e"four")
       val viewport = ScrollFixture()(lines)
-      val pane: Pane = scrolling(viewport)
+      val pane: Tui.Pane = scrolling(viewport)
 
       viewport.atBottom     // true
       viewport.scroll(-1)   // up one line, holding still as content is appended
@@ -1086,7 +1094,7 @@ entry .Form   the interactive driver: re-solves, repaints and routes events over
       test, with a hand-made event iterator. `Form(root, mode, pane, wake, throttle,
       debounce, scheduleWake)` takes the `Board` to draw on, the `Occupancy`, the pane
       tree, a `wake` callback which puts a `Terminal.Info.Redraw` on the event spool (bound
-      into every `Panes` and `Fixture` so a background change repaints), the resize
+      into every `Tui.Panes` and `Fixture` so a background change repaints), the resize
       `throttle` and `debounce` in milliseconds, and `scheduleWake`, which arranges a
       deferred wake after a delay — the debounced resize repaint and the animation tick
       both use it. `#run` then loops over an event iterator until it is exhausted or the
@@ -1096,7 +1104,7 @@ entry .Form   the interactive driver: re-solves, repaints and routes events over
       import soundness.*
 
       given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-      val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
+      val root = FlowExtent(TerminalBoard(10, 4), Tui.Region(0, 0, 10, 4))
 
       val events = List
         ( Keypress.CharKey('h'), Keypress.CharKey('i'),
@@ -1104,7 +1112,7 @@ entry .Form   the interactive driver: re-solves, repaints and routes events over
           Keypress.CharKey('y'), Keypress.CharKey('o'),
           Keypress.Escape )
 
-      Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
+      Form(root, Tui.Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
       root.render   // t"hi        \n          \nyo        \n          "
       ```
 
@@ -1121,8 +1129,8 @@ entry .Form   the interactive driver: re-solves, repaints and routes events over
       that runs it, held in a local or passed as `Form^`, and a closure which captures it
       cannot call `run`.
   refer ultimatum.conduct
-  refer ultimatum.Pane
-  refer ultimatum.Occupancy
+  refer ultimatum.Tui.Pane
+  refer ultimatum.Tui.Occupancy
   refer ultimatum.dirtyCells
   entry .apply   a fresh form over a board, mode and pane tree, with optional wake and timing parameters
       `Form(root, mode, pane, wake = () => (), throttle = 0, debounce = 0, scheduleWake = _ => ())`
@@ -1220,7 +1228,7 @@ entry .TableFixture   a live escritoire table as a pane, laid out afresh at ever
   entry #render   draws the lines the last measure produced, re-laying out if the canvas width differs
 
 entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]` content
-    `tabular(content)` is a `Pane.Widget` with a default `Sizing` over a `TableFixture`:
+    `tabular(content)` is a `Tui.Pane.Widget` with a default `Tui.Sizing` over a `TableFixture`:
     the table is laid out afresh at whatever width the layout gives it, on every frame,
     and its data is re-read each time. It needs a `TableStyle`, a `Text is Measurable` and
     a `Hyphenation` in scope. The style is fixed when the pane is built, so a table under
@@ -1234,7 +1242,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
             import hyphenations.englishHyphenation
             import textMetrics.uniformMetric
             case class Entry(name: Text, total: Int)
-            val pane: Pane = tabular(List(Entry(t"alpha", 1), Entry(t"beta", 22)).tabulation[Teletype])
+            val pane: Tui.Pane = tabular(List(Entry(t"alpha", 1), Entry(t"beta", 22)).tabulation[Teletype])
             // ┏━━━━━━━┯━━━━━━━┓
             // ┃ Name  │ Total ┃
             // ┠───────┼───────┨
@@ -1248,7 +1256,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
             import hyphenations.englishHyphenation
             import textMetrics.uniformMetric
             case class Entry(name: Text, total: Int)
-            val pane: Pane = tabular(List(Entry(t"alpha", 1), Entry(t"beta", 22)).tabulation[Teletype])
+            val pane: Tui.Pane = tabular(List(Entry(t"alpha", 1), Entry(t"beta", 22)).tabulation[Teletype])
             // ╭───────┬───────╮
             // │ Name  │ Total │
             // ├───────┼───────┤
@@ -1262,7 +1270,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
             import hyphenations.englishHyphenation
             import textMetrics.uniformMetric
             case class Entry(name: Text, total: Int)
-            val pane: Pane = tabular(List(Entry(t"alpha", 1), Entry(t"beta", 22)).tabulation[Teletype])
+            val pane: Tui.Pane = tabular(List(Entry(t"alpha", 1), Entry(t"beta", 22)).tabulation[Teletype])
             //   Name    Total
             // ╶───────────────╴
             //   alpha       1
@@ -1273,7 +1281,7 @@ entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]
     In a running form the table is a display-only fixture: it never takes focus, and a
     change to the data is shown after `TableFixture#refresh`, or on the next repaint for
     any other reason. To call `refresh`, build the `TableFixture` yourself and wrap it in
-    `Pane.Widget`.
+    `Tui.Pane.Widget`.
 
 entry .Gaugeable   a design for drawing a status type as a terminal gauge: a bar, a spinner, a meter, a checklist
   detail
@@ -1607,7 +1615,7 @@ entry .Reading   a mutable cell holding a gauge's current status; assigning to i
             progress() = Fraction.of(item, work.size)
 
         interactive: terminal ?=>
-          conduct(Occupancy.Inline)(stack(gauge(progress)))
+          conduct(Tui.Occupancy.Inline)(stack(gauge(progress)))
       ```
 
       The status type is fixed when the reading is made, so a job whose total is not yet
@@ -1628,7 +1636,7 @@ entry .Reading   a mutable cell holding a gauge's current status; assigning to i
 
 entry .gauge   a pane hosting a live gauge, drawn by the design in scope for the reading's status type
   detail
-      `gauge(reading)` builds a `Pane.Widget` for a `Reading`, using the `Gaugeable` given
+      `gauge(reading)` builds a `Tui.Pane.Widget` for a `Reading`, using the `Gaugeable` given
       for its status type at the call site, so which design is used is decided by the
       caller's imports at that line. The gauge reports its design's intrinsic size on every
       solve: an elastic design (a bar) fills what it is given, an inelastic one (a spinner,
@@ -1650,11 +1658,11 @@ entry .gauge   a pane hosting a live gauge, drawn by the design in scope for the
             Step(t"compile", Standing.Running),
             Step(t"publish", Standing.Pending) )
 
-      val checklist: Pane = gauge(Reading(steps))
+      val checklist: Tui.Pane = gauge(Reading(steps))
       ```
 
       The optional parameters `fraction`, `minWidth`, `maxWidth`, `minHeight` and `maxHeight`
-      are the pane's `Sizing`, as for any other pane; `minWidth` is raised to the design's
+      are the pane's `Tui.Sizing`, as for any other pane; `minWidth` is raised to the design's
       own minimum, and `maxWidth` is ignored for an inelastic design.
   refer ultimatum.Reading
   refer ultimatum.Gaugeable
@@ -1939,7 +1947,7 @@ entry .Captioned   any status with a label beside it: `⠹ resolving dependencie
       import palettes.emberGaugePalette
       import spinners.brailleDotsSpinner
 
-      val resolving: Pane = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
+      val resolving: Tui.Pane = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
       gaugeLine(Captioned(Fraction(0.5), t"copying"), 12).plain   // t"⠋ copying   "
       ```
 
@@ -2460,11 +2468,11 @@ entry .spinners   some forty indeterminate activity indicators for `Fraction`, e
       import textMetrics.uniformMetric
       import palettes.emberGaugePalette
 
-      val resolving: Pane =
+      val resolving: Tui.Pane =
         given spinner: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
         gauge(Reading(Fraction.indeterminate))
 
-      val copying: Pane = gauge(Reading(Fraction(0.0)))
+      val copying: Tui.Pane = gauge(Reading(Fraction(0.0)))
       ```
 
       Every design names the least adventurous `Gaugeable.Glyphs` which can draw it and,

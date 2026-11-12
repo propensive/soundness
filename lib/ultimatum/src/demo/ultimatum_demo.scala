@@ -47,6 +47,7 @@ import sparklines.blockSparkline
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import threads.platformThreads
+import ultimatum.Tui.{Occupancy, Pane}
 
 // A medium-complexity fullscreen layout demonstrating the framework: a title bar
 // and a status bar each pinned to a single row; a fixed-width sidebar menu; and a

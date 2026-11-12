@@ -260,7 +260,7 @@ others in the same state before finding them homes.
 perihelion's WebSocket frame has nested as `Websocket.Frame`, and obligatory's framing error is
 `Framing.Error`, so the umbrella's bare `Frame` is now unambiguous — but it is ultimatum's
 terminal layout tree, the less general of the two meanings. It heads the R8 table in
-`api-nesting-proposal.md`, with its layout satellites, under a new `Layout` namespace.
+`api-nesting-proposal.md`, with its layout satellites, under a new `Tui` namespace — now done.
 
 ## Remaining names by prefix family
 

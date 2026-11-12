@@ -41,6 +41,7 @@ import gaugeGlyphs.asciiGlyphs
 import palettes.solarizedDarkGaugePalette
 import processions.checklistProcession
 import textMetrics.uniformMetric
+import ultimatum.Tui.{Occupancy, Pane}
 
 // Every code example in `doc/modules/gauges.md`, compiled. Prose drifts from an API silently, and a
 // documented example that does not compile is worse than no example at all.
