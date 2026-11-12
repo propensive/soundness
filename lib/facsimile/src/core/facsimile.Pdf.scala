@@ -940,6 +940,105 @@ object Pdf:
     def width: Quantity[Points[1]] = right - left
     def height: Quantity[Points[1]] = top - bottom
 
+  object Destination:
+    import anticipation.*
+    import contingency.*
+    import denominative.*
+    import gossamer.*
+    import rudiments.*
+    import vacuous.*
+
+    // As an extension rather than a base-class method, since every case declares a `page`
+    // field of its own, which could not otherwise share the name.
+    extension (destination: Destination)
+      def page: Ordinal = destination match
+        case Xyz(page, _, _, _)    => page
+        case Fit(page)             => page
+        case FitWidth(page, _)     => page
+        case FitHeight(page, _)    => page
+        case FitRect(page, _)      => page
+        case FitBox(page)          => page
+        case FitBoxWidth(page, _)  => page
+        case FitBoxHeight(page, _) => page
+
+    // An explicit destination array (ISO 32000-2 §12.3.2.3), a dictionary wrapping one at
+    // `/D`, or a name/string to look up among the document's named destinations. `named` is
+    // consulted at most once, so a self-referential name cannot loop.
+    private[facsimile] def read
+      ( value: Cos,
+        pages: Map[Int, Ordinal],
+        named: Text => Optional[Cos],
+        following: Boolean = false )
+      ( using pdf: Pdf )
+    (using Tactic[Pdf.Error])
+    :   Optional[Destination] =
+
+      pdf.resolved(value) match
+        case Cos.Sequence(target :: Cos.Name(kind) :: rest) =>
+          val page: Optional[Ordinal] = target match
+            case Cos.Ref(number, _)  => pages(number)
+            case Cos.Integral(index) => index.toInt.z
+            case _                   => Unset
+
+          // `rest`'s first three elements, bound once by pattern rather than indexed: positional
+          // access on a `List` is O(n), and a short array simply leaves a dimension `Unset`.
+          val arguments: (Optional[Cos], Optional[Cos], Optional[Cos]) = rest match
+            case one :: two :: three :: _ => (one, two, three)
+            case one :: two :: _          => (one, two, Unset)
+            case one :: _                 => (one, Unset, Unset)
+            case _                        => (Unset, Unset, Unset)
+
+          val (arg0, arg1, arg2) = arguments
+
+          def dimension(argument: Optional[Cos]): Optional[Double] =
+            argument.let(pdf.resolved(_).double)
+
+          page.let: page =>
+            kind.s match
+              case "XYZ"   => Xyz(page, dimension(arg0), dimension(arg1), dimension(arg2))
+              case "Fit"   => Fit(page)
+              case "FitH"  => FitWidth(page, dimension(arg0))
+              case "FitV"  => FitHeight(page, dimension(arg0))
+              case "FitB"  => FitBox(page)
+              case "FitBH" => FitBoxWidth(page, dimension(arg0))
+              case "FitBV" => FitBoxHeight(page, dimension(arg0))
+
+              case "FitR" =>
+                Pdf.Rect.read(Cos.Sequence(rest), 1.0).let(FitRect(page, _))
+
+              case _ =>
+                Unset
+
+        case dictionary: Cos.Dictionary =>
+          dictionary(t"D").let(read(_, pages, named, following))
+
+        case other =>
+          if following then Unset else
+            val key = other match
+              case Cos.Name(name) => name
+              case cos            => cos.text
+
+            key.let(named(_)).let(read(_, pages, named, following = true))
+
+  // Where a link, bookmark or navigation action lands: a page — by position in the flattened
+  // page sequence — and how the viewer should fit it.
+  enum Destination:
+    import anticipation.*
+    import contingency.*
+    import denominative.*
+    import gossamer.*
+    import rudiments.*
+    import vacuous.*
+
+    case Xyz(page: Ordinal, left: Optional[Double], top: Optional[Double], zoom: Optional[Double])
+    case Fit(page: Ordinal)
+    case FitWidth(page: Ordinal, top: Optional[Double])
+    case FitHeight(page: Ordinal, left: Optional[Double])
+    case FitRect(page: Ordinal, rect: Pdf.Rect)
+    case FitBox(page: Ordinal)
+    case FitBoxWidth(page: Ordinal, top: Optional[Double])
+    case FitBoxHeight(page: Ordinal, left: Optional[Double])
+
 // An open PDF document: the scoped capability at the heart of the module. It owns the byte
 // source and a cache of resolved objects, so anything that can still touch the file — the
 // `Pdf` itself, and any lazily-resolving value that captures it — is confined to the `open`
@@ -950,6 +1049,8 @@ class Pdf private[facsimile]
     private[facsimile] val xref: Xref,
     val version: Pdf.Version )
 extends caps.ExclusiveCapability:
+  import Pdf.Destination
+
 
   private val cache: scala.collection.mutable.HashMap[Int, Cos] =
     scala.collection.mutable.HashMap()

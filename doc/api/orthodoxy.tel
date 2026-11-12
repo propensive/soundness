@@ -9,7 +9,7 @@ detail
     which a client obtains an access token from an API's authorization server and presents it
     with each request, on a user's behalf or on its own. A token is more than a string — it
     grants particular scopes, it expires, and it may come with a refresh token — so it is an
-    `Authorization` carrying all four, against which a `Scope` can be checked.
+    `Authorization` carrying all four, against which a `OAuth.Scope` can be checked.
 
     An `Issuer` is an authorization server as one client sees it, and each grant is a method
     on it which posts to the token endpoint through the `Http.Client` in scope and raises
@@ -38,7 +38,7 @@ detail
 
     The library has two source sets:
 
-    - `orthodoxy.core` — `Issuer`, `Authorization`, `Pkce`, `Scope`, `Credential` and
+    - `orthodoxy.core` — `Issuer`, `Authorization`, `Pkce`, `OAuth.Scope`, `Credential` and
       `OAuth.Error`: everything a client needs.
     - `orthodoxy.server` — the authorization-code flow as scintillate middleware, the
       extensions `oauth` and `require` on `Issuer`, with `Authorizations` holding each
@@ -216,8 +216,8 @@ entry .Authorization   an access token and what it grants: its scopes, its expir
       A token whose response named no scopes is taken to grant exactly those requested, as
       RFC 6749 §5.1 has it, so `#grants` is `true` for any scopes when `#scopes` is empty.
       `Authorization of scope`, a refinement of its `Topic`, is an authorization known to
-      grant a `Scope`: `Scope#apply` and `Issuer#require` produce one.
-  refer orthodoxy.Scope
+      grant a `OAuth.Scope`: `OAuth.Scope#apply` and `Issuer#require` produce one.
+  refer orthodoxy.OAuth.Scope
   refer orthodoxy.Issuer
   entry .authorization   sets a request's `authorization` header from an `Authorization`, as `Bearer <key>`
       The telekinesis `Directive` for the `authorization` named argument of `fetch` and
@@ -244,55 +244,6 @@ entry .Authorization   an access token and what it grants: its scopes, its expir
   entry #grants   whether the token grants every one of the given scopes
       `true` when `#scopes` contains them all, and also whenever `#scopes` is empty, since a
       response which named no scopes granted those requested.
-
-entry .Scope   a named set of OAuth scopes, which checks that an authorization grants them
-  detail
-      A `Scope(t"read", t"write")` names the scopes an operation needs. Applied with `()`, it
-      checks the `Authorization of …` given in scope and returns it refined as
-      `Authorization of scope.type`, so code which demands that refinement can only be
-      reached once the check has passed. Each missing scope is raised as
-      `OAuth.Error.Reason.InsufficientPrivileges`.
-
-      `Issuer#require(read, write)` provides an `Authorization of (read.type | write.type)`
-      without checking its scopes; within it, `read()` checks and narrows to
-      `Authorization of read.type`:
-
-      ```scala fuel
-      typecheck
-      ##
-      import soundness.*
-      import strategies.throwUnsafely
-      import internetAccess.online
-      import logging.silentLogging
-
-      given Authorizations = Authorizations()
-
-      val issuer = Issuer
-        ( url"https://issuer.example/token", t"client-1", t"s3cret",
-          url"https://issuer.example/authorize", url"https://app.example/callback" )
-
-      val read = Scope(t"read")
-      val write = Scope(t"write")
-
-      def handle(using Http.Request, Session): Http.Response =
-        issuer.oauth:
-          issuer.require(read, write):
-            val checked: Authorization of read.type = read()
-            Http.Response(Http.Ok)(t"may read")
-      ```
-
-      A scope should be a stable value (a `val` or an `object`), since its singleton type is
-      what the refinement records; `Issuer#require` takes scopes this way.
-  refer orthodoxy.Authorization
-  refer orthodoxy.require
-  entry #names   the scope names, as the issuer spells them
-  entry #apply   checks the given authorization grants every scope, and returns it refined to this scope
-      Needs an `Authorization of (? >: this.type)` in scope — an authorization refined to
-      this scope or to a union including it, as `Issuer#require` provides; a plain
-      `Authorization` is not one — and raises `OAuth.Error.Reason.InsufficientPrivileges(name)` for each name it does
-      not grant. Unlike `Authorization#grants`, an authorization with no named scopes fails
-      the check.
-  entry #Check   the type of an authorization this scope can check: `Authorization of (? >: this.type)`
 
 entry .Pkce   Proof Key for Code Exchange: a verifier the client keeps and the challenge it sends
   detail
@@ -394,6 +345,55 @@ entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fail
       entry #number   the reason's number, the second part of the error's code
     entry #reason   why the exchange failed, as an `OAuth.Error.Reason`
 
+  entry .Scope   a named set of OAuth scopes, which checks that an authorization grants them
+    detail
+        A `Scope(t"read", t"write")` names the scopes an operation needs. Applied with `()`, it
+        checks the `Authorization of …` given in scope and returns it refined as
+        `Authorization of scope.type`, so code which demands that refinement can only be
+        reached once the check has passed. Each missing scope is raised as
+        `OAuth.Error.Reason.InsufficientPrivileges`.
+
+        `Issuer#require(read, write)` provides an `Authorization of (read.type | write.type)`
+        without checking its scopes; within it, `read()` checks and narrows to
+        `Authorization of read.type`:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+
+        given Authorizations = Authorizations()
+
+        val issuer = Issuer
+          ( url"https://issuer.example/token", t"client-1", t"s3cret",
+            url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+        val read = OAuth.Scope(t"read")
+        val write = OAuth.Scope(t"write")
+
+        def handle(using Http.Request, Session): Http.Response =
+          issuer.oauth:
+            issuer.require(read, write):
+              val checked: Authorization of read.type = read()
+              Http.Response(Http.Ok)(t"may read")
+        ```
+
+        A scope should be a stable value (a `val` or an `object`), since its singleton type is
+        what the refinement records; `Issuer#require` takes scopes this way.
+    refer orthodoxy.Authorization
+    refer orthodoxy.require
+    entry #names   the scope names, as the issuer spells them
+    entry #apply   checks the given authorization grants every scope, and returns it refined to this scope
+        Needs an `Authorization of (? >: this.type)` in scope — an authorization refined to
+        this scope or to a union including it, as `Issuer#require` provides; a plain
+        `Authorization` is not one — and raises `OAuth.Error.Reason.InsufficientPrivileges(name)` for each name it does
+        not grant. Unlike `Authorization#grants`, an authorization with no named scopes fails
+        the check.
+    entry #Check   the type of an authorization this scope can check: `Authorization of (? >: this.type)`
+
 entry .Authorizations   a web application's store of each session's authorization-code flow state
   detail
       The store `Issuer#oauth` and `Issuer#require` keep each `Session`'s
@@ -444,7 +444,7 @@ entry .oauth   scintillate middleware which completes the authorization-code flo
         ( url"https://issuer.example/token", t"client-1", t"s3cret",
           url"https://issuer.example/authorize", url"https://app.example/callback" )
 
-      val read = Scope(t"read")
+      val read = OAuth.Scope(t"read")
 
       def handle(using Http.Request, Session): Http.Response =
         issuer.oauth:
@@ -484,7 +484,7 @@ entry .require   scintillate middleware which sends a user without an authorizat
         ( url"https://issuer.example/token", t"client-1", t"s3cret",
           url"https://issuer.example/authorize", url"https://app.example/callback" )
 
-      val read = Scope(t"read")
+      val read = OAuth.Scope(t"read")
 
       def handle(using Http.Request, Session): Http.Response =
         issuer.oauth:
@@ -494,7 +494,7 @@ entry .require   scintillate middleware which sends a user without an authorizat
 
       The scopes must be stable values, such as `val`s, since their singleton types refine the
       authorization. The held authorization is refined to the scopes without checking them
-      against its `#scopes`; a handler which must be sure calls `Scope#apply`. No PKCE
+      against its `#scopes`; a handler which must be sure calls `OAuth.Scope#apply`. No PKCE
       challenge is sent.
   refer orthodoxy.oauth
-  refer orthodoxy.Scope
+  refer orthodoxy.OAuth.Scope

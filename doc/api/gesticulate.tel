@@ -32,7 +32,7 @@ detail
     to the Scala type a body of that type is read as and written from, so that an HTTP client
     can construe a response by its `Content-Type`: each mapping is a given in the
     `construables` choice package, imported by name. And `Multipart` parses the
-    `multipart/form-data` format of file uploads into typed `Part`s, incrementally, each
+    `multipart/form-data` format of file uploads into typed `Multipart.Part`s, incrementally, each
     part's body lent from the input as it is read.
 
     The library is one source set, `gesticulate.core`, which compiles for the JVM, Scala.js
@@ -397,7 +397,7 @@ entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent
       A malformed body raises `Multipart.Error` with a `.Error.Reason`; scintillate's
       `Acceptable.multipart` reads a request's `Content-Type` for the boundary and parses the
       request body with this.
-  refer gesticulate.Part
+  refer gesticulate.Multipart.Part
   refer gesticulate.MediaType
   entry .Disposition   how a part is meant to be presented: `Inline`, `Attachment` or `FormData`
       The token of the part's `Content-Disposition` header. A form upload's parts are
@@ -453,54 +453,54 @@ entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent
       field. Finding it forces every part up to it, and so closes the bodies of the parts
       before it.
 
-entry .Part   one part of a multipart body: its disposition, headers, name, filename and lent body
-  detail
-      A `Part` is what `Multipart.parse` yields for each section of the body: the
-      `#disposition` and the `#name` and `#filename` parameters from its `Content-Disposition`
-      header, all of its `#headers` by name, and its `#body`, a `Spring[Data]` lent from the
-      input. A part `is Streamable by Data over Credit` (`.streamable`), so its body is read
-      with the usual verbs — `part.read[Data]`, `part.read[Text]` with a `Charset` in scope,
-      or `part.body()` for the stream itself.
+  entry .Part   one part of a multipart body: its disposition, headers, name, filename and lent body
+    detail
+        A `Part` is what `Multipart.parse` yields for each section of the body: the
+        `#disposition` and the `#name` and `#filename` parameters from its `Content-Disposition`
+        header, all of its `#headers` by name, and its `#body`, a `Spring[Data]` lent from the
+        input. A part `is Streamable by Data over Credit` (`.streamable`), so its body is read
+        with the usual verbs — `part.read[Data]`, `part.read[Text]` with a `Charset` in scope,
+        or `part.body()` for the stream itself.
 
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-      import strategies.throwUnsafely
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
 
-      val body =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
-        t"Content-Type: text/plain\r\n" +
-        t"\r\n" +
-        t"file content\r\n" +
-        t"--xyz--\r\n"
+        val body =
+          t"--xyz\r\n" +
+          t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
+          t"Content-Type: text/plain\r\n" +
+          t"\r\n" +
+          t"file content\r\n" +
+          t"--xyz--\r\n"
 
-      val part: Optional[Part] = Multipart.parse(Chain(body.in[Data])).parts.head
-      part.let(_.filename)                     // t"hello.txt"
-      part.let(_.disposition)                  // Multipart.Disposition.FormData
-      part.let(_.headers.at(t"Content-Type"))  // t"text/plain"
-      part.let(_.read[Data].utf8)              // t"file content"
-      ```
+        val part: Optional[Multipart.Part] = Multipart.parse(Chain(body.in[Data])).parts.head
+        part.let(_.filename)                     // t"hello.txt"
+        part.let(_.disposition)                  // Multipart.Disposition.FormData
+        part.let(_.headers.at(t"Content-Type"))  // t"text/plain"
+        part.let(_.read[Data].utf8)              // t"file content"
+        ```
 
-      The body is zero-copy: it is readable until the next part is forced, which skips
-      whatever remains of it, after which it reads as empty. Each `body()` continues from
-      wherever the previous read stopped, so a body may be taken in two pieces, but it cannot
-      be read twice: a part whose body is wanted later must be read into a `Data` first.
-  refer gesticulate.Multipart
-  entry .streamable   `Part is Streamable by Data over Credit`: a part's body, for `read[Data]` and the other stream verbs
-      In implicit scope. It needs a `Tactic[Truncation.Error]`, which the instance retains,
-      for a body whose input ends before the closing boundary.
-  entry #disposition   `Inline`, `Attachment` or `FormData`, or `Unset` if the part had no `Content-Disposition`
-  entry #headers   every header of the part, by name as written
-      Header names are matched exactly as they appear in the body, `Content-Type` and not
-      `content-type`.
-  entry #name   the field name from the `Content-Disposition` header, or `Unset`
-  entry #filename   the filename from the `Content-Disposition` header, or `Unset`
-      Present for a file field of a form; absent for a text field.
-  entry #body   the part's bytes, lent from the input: `body()` is the stream
-      A `Spring[Data]`: `body()` gives the `Stream[Data] over Credit` from wherever the
-      previous read stopped, and needs a `Tactic[Truncation.Error]`. It reads as empty once
-      the next part has been forced.
+        The body is zero-copy: it is readable until the next part is forced, which skips
+        whatever remains of it, after which it reads as empty. Each `body()` continues from
+        wherever the previous read stopped, so a body may be taken in two pieces, but it cannot
+        be read twice: a part whose body is wanted later must be read into a `Data` first.
+    refer gesticulate.Multipart
+    entry .streamable   `Part is Streamable by Data over Credit`: a part's body, for `read[Data]` and the other stream verbs
+        In implicit scope. It needs a `Tactic[Truncation.Error]`, which the instance retains,
+        for a body whose input ends before the closing boundary.
+    entry #disposition   `Inline`, `Attachment` or `FormData`, or `Unset` if the part had no `Content-Disposition`
+    entry #headers   every header of the part, by name as written
+        Header names are matched exactly as they appear in the body, `Content-Type` and not
+        `content-type`.
+    entry #name   the field name from the `Content-Disposition` header, or `Unset`
+    entry #filename   the filename from the `Content-Disposition` header, or `Unset`
+        Present for a file field of a form; absent for a text field.
+    entry #body   the part's bytes, lent from the input: `body()` is the stream
+        A `Spring[Data]`: `body()` gives the `Stream[Data] over Credit` from wherever the
+        previous read stopped, and needs a `Tactic[Truncation.Error]`. It reads as empty once
+        the next part has been forced.
 
 entry .Construable   the Scala type a media type is read as and written from, for an HTTP client's use
   detail

@@ -51,7 +51,7 @@ detail
     peer is sent.
 
     The library is one component, `perihelion.core` (JVM), over scintillate's server and
-    coaxial's sockets. `Masking`, `over`, `overIngressive`, `overTransmissible`,
+    coaxial's sockets. `Websocket.Masking`, `over`, `overIngressive`, `overTransmissible`,
     `Websocket`, `webSocket` and `WsSessional` are exported to the `soundness` umbrella.
     Three names are not: `Message`, because fulminate's `Message` already holds that name
     in the umbrella (`import perihelion.Message`), and the client givens `wsClient` and
@@ -308,7 +308,7 @@ entry .Websocket   the server-side WebSocket: the handshake response, its channe
         val frame = Websocket.Frame.Text(true, t"hello".in[Data])
         frame.encode.length == 7
 
-        given Masking = Masking.Client()
+        given Websocket.Masking = Websocket.Masking.Client()
         Websocket.Frame.parse(Cursor[Data](Chain(frame.encode))) match
           case Websocket.Frame.Text(last, data) => data.utf8
           case _                                => t"?"
@@ -335,6 +335,29 @@ entry .Websocket   the server-side WebSocket: the handshake response, its channe
     entry #payload   the frame's payload; for a `Close`, the code and reason as `closeData` lays them out
     entry #fin   whether this frame completes its message; always `true` for a control frame
     entry #encode   the frame as unmasked bytes: the header, the length in its short, 16- or 64-bit form, the payload
+
+  entry .Masking   which side of the connection this is, and so whether frames are masked
+    detail
+        RFC 6455 has a client mask every frame it sends with a fresh 32-bit key, and a server
+        send unmasked; each side rejects a frame masked the wrong way. A `Masking` fixes the
+        side: `#outbound(frame)` masks (or passes through) a complete encoded frame on its
+        way out, and `#inbound` says whether frames read from the peer must be masked.
+        `Websocket` installs `.Server` and `wsClient` a `.Client()`; a direct use of
+        `Websocket.Frame.parse`, `Reader` or `Channel` needs one as a given.
+
+        ```scala
+        import soundness.*
+
+        val frame = Websocket.Frame.Text(true, t"hi".in[Data]).encode
+        Websocket.Masking.Server.outbound(frame) == frame
+        Websocket.Masking.Client().outbound(frame) != frame
+        ```
+    entry .Server   the server side: send unmasked, require inbound frames to be masked
+    entry .Client   the client side: mask each outgoing frame with a fresh key, reject a masked inbound frame
+        `Masking.Client()` keeps one `SecureRandom` per connection for the keys, so two
+        maskings of the same frame differ.
+    entry #outbound   masks a complete, unmasked frame for sending, or returns it unchanged on the server
+    entry #inbound   whether frames read from the peer must be masked
 
 entry .Message   a complete WebSocket message: `Text` reassembled and UTF-8-decoded, or `Binary` as bytes
   detail
@@ -368,13 +391,13 @@ entry .Channel   the outgoing side of a connection: a thread-safe queue of frame
       `Close`s), the handler loop (`Reply` and `Conclude`) and a program's own `#send` all
       enqueue here, under a lock, and one pump — the server's response writer or the
       client's daemon — drains it to the socket, so a full queue back-pressures every
-      producer. Each frame is masked once at this boundary by the `Masking` in scope:
-      passed through by `Masking.Server`, masked with a fresh key by `Masking.Client`. It
-      is constructed with a `Masking` and a `Buffering`; `Websocket#channel` and the client
+      producer. Each frame is masked once at this boundary by the `Websocket.Masking` in scope:
+      passed through by `Websocket.Masking.Server`, masked with a fresh key by `Websocket.Masking.Client`. It
+      is constructed with a `Websocket.Masking` and a `Buffering`; `Websocket#channel` and the client
       connection hold the one for their connection, and a program reaches it through those.
       Public in the package, not exported to `soundness`.
   refer perihelion.Websocket
-  refer perihelion.Masking
+  refer perihelion.Websocket.Masking
   entry #send   enqueues one message as one complete frame, logging `Websocket.Event.Sent`
       Takes a `Message`; the frame is flushed at once, since an interactive protocol must
       deliver each frame promptly rather than fill a block. Needs a `Websocket.Event is
@@ -392,7 +415,7 @@ entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, 
       channel, a `Pong` is dropped, and a `Close` is echoed (with `1000` for an absent
       code), the channel stopped and the chain ended. A violation raises
       `Websocket.Error`, with `Truncated` for a body cut short. It needs a
-      `Tactic[Websocket.Error]` and the `Masking` of its side. The cursor over the body is
+      `Tactic[Websocket.Error]` and the `Websocket.Masking` of its side. The cursor over the body is
       created only when the first message is forced, so a server can send its `101` and a
       client its first frame before any read blocks. Public in the package, not exported
       to `soundness`.
@@ -401,8 +424,8 @@ entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, 
       import soundness.*
       import strategies.throwUnsafely
 
-      given Masking = Masking.Server
-      val frames = Chain(Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode))
+      given Websocket.Masking = Websocket.Masking.Server
+      val frames = Chain(Websocket.Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode))
       val spring: Spring[Data] = new Spring[Data]:
         def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit = Stream(frames)
 
@@ -411,29 +434,6 @@ entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, 
   refer perihelion.Channel
   refer perihelion.Message
   entry #messages   the reassembled messages, lazily, until the peer closes or the body ends
-
-entry .Masking   which side of the connection this is, and so whether frames are masked
-  detail
-      RFC 6455 has a client mask every frame it sends with a fresh 32-bit key, and a server
-      send unmasked; each side rejects a frame masked the wrong way. A `Masking` fixes the
-      side: `#outbound(frame)` masks (or passes through) a complete encoded frame on its
-      way out, and `#inbound` says whether frames read from the peer must be masked.
-      `Websocket` installs `.Server` and `wsClient` a `.Client()`; a direct use of
-      `Websocket.Frame.parse`, `Reader` or `Channel` needs one as a given.
-
-      ```scala
-      import soundness.*
-
-      val frame = Websocket.Frame.Text(true, t"hi".in[Data]).encode
-      Masking.Server.outbound(frame) == frame
-      Masking.Client().outbound(frame) != frame
-      ```
-  entry .Server   the server side: send unmasked, require inbound frames to be masked
-  entry .Client   the client side: mask each outgoing frame with a fresh key, reject a masked inbound frame
-      `Masking.Client()` keeps one `SecureRandom` per connection for the keys, so two
-      maskings of the same frame differ.
-  entry #outbound   masks a complete, unmasked frame for sending, or returns it unchanged on the server
-  entry #inbound   whether frames read from the peer must be masked
 
 entry .over   tags a value with the format it rides, `value.over[Json]`, so a reply serializes through it
     `over` is a phantom type member, so `value.over[Json]` is a no-op cast to `value over

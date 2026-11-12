@@ -64,3 +64,21 @@ object OAuth:
 
   case class Error(reason: OAuth.Error.Reason)(using Diagnostics)
   extends fulminate.Error(840, reason.number)(m"OAuth failed because $reason")
+
+  case class Scope(names: Text*):
+    import anticipation.*
+    import contingency.*
+    import prepositional.*
+    import rudiments.*
+
+    def apply()(using authorization: Authorization of (? >: this.type))
+    :   Authorization of this.type raises OAuth.Error =
+
+      names.each: name =>
+        if !authorization.scopes.has(name)
+        then raise(OAuth.Error(OAuth.Error.Reason.InsufficientPrivileges(name)))
+
+      authorization.of[this.type]
+
+
+    type Check = Authorization of (? >: this.type)

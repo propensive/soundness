@@ -273,8 +273,8 @@ given wsClient: ( online:            Online,
           ( Websocket.Error
               ( Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong") ) )
 
-      val masking: Masking = Masking.Client()
-      given Masking = masking
+      val masking: Websocket.Masking = Websocket.Masking.Client()
+      given Websocket.Masking = masking
       val channel: Channel = Channel()
 
       // Once the handshake is read, one writer (this pump, draining the spool) and one

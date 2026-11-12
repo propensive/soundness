@@ -84,7 +84,7 @@ case class Authorization
     expiry:  Optional[Long],
     refresh: Optional[Text] )
 extends Topical, Findable:
-  private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
+  private[orthodoxy] def of[scope <: OAuth.Scope]: Authorization of scope =
     this.asInstanceOf[Authorization of scope]
 
   // The token as a `Bearer` authorization, as the `Authorization` header carries it

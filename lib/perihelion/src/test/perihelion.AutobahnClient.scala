@@ -64,7 +64,7 @@ object AutobahnClient:
       def session(path: Text)(consume: Channel => perihelion.Message => Unit): Unit =
         val url = t"ws://$host:$port$path".as[Websocket.Url]
         val connection = summon[Websocket.Url is Duplexable].connect(url, Unset)
-        given Masking = connection.masking
+        given Websocket.Masking = connection.masking
 
         try
           recover:
