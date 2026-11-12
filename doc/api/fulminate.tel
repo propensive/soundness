@@ -152,7 +152,7 @@ entry .Error   the base of every Soundness error: a number, a structured message
   refer fulminate.Error.Unchecked
   entry .apply   any `Throwable` as an `Error`: itself if it is one, else wrapped as `Error.Unchecked`
       `Error(throwable)` passes an `Error` through unchanged and wraps any other `Throwable`
-      in an `Unchecked`, which keeps its message and stack trace. This is how a JDK
+      in an `Error.Unchecked`, which keeps its message and stack trace. This is how a JDK
       exception becomes a `Hazard` which can be raised.
   entry #d   the error's number: the `ddd` of `SN-ddd`, or 0 for an unnumbered error
   entry #e   the reason's number within the error: the `e` of `SN-ddd.e`, or 0
