@@ -101,7 +101,7 @@ column  Socket value
 column  A handler receives
 row  TCP  a `Port[Tcp]`, or an `Endpoint` of one to connect to  a connection
 row  UDP  a `Port[Udp]`, or an `Endpoint` of one to send to  a `Packet`
-row  Unix domain  a `DomainSocket` path  a connection
+row  Unix domain  a `Uds` path  a connection
 ```
 
 ### Clients
@@ -113,7 +113,7 @@ which encodes to text.
 ```scala fuel
 typecheck
 ##
-val reply: Stream[Data] over Credit = DomainSocket(t"/run/service.sock").transmit(t"request")
+val reply: Stream[Data] over Credit = Uds(t"/run/service.sock").transmit(t"request")
 ```
 
 `duplex` opens a persistent connection in both directions, sending and receiving
@@ -122,7 +122,7 @@ independently. It is the transport beneath [HTTP/2](http-server.md#http2):
 ```scala fuel
 typecheck
 ##
-DomainSocket(t"/run/service.sock").duplex: duplex =>
+Uds(t"/run/service.sock").duplex: duplex =>
   duplex.send(Stream(t"request".in[Data]))
   duplex.source
 ```

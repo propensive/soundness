@@ -36,21 +36,21 @@ import anticipation.*
 import prepositional.*
 import spectacular.*
 
-object DomainSocket:
-  given showable: DomainSocket is Showable = _.address
+object Uds:
+  given showable: Uds is Showable = _.address
 
   // The socket's path alone would be indistinguishable from any other path-like text, so the
   // rendering prefixes it with `⇄`, marking it as the bidirectional endpoint it is — in the same
   // spirit as `⌗8080` for a port.
-  given inspectable: [domainSocket <: DomainSocket] => domainSocket is Inspectable =
-    domainSocket => ("⇄"+domainSocket.address.s).tt
+  given inspectable: [uds <: Uds] => uds is Inspectable =
+    uds => ("⇄"+uds.address.s).tt
 
-  def apply[path: Abstractable across Paths to Text](path: path): DomainSocket =
-    DomainSocket(path.generic)
+  def apply[path: Abstractable across Paths to Text](path: path): Uds =
+    Uds(path.generic)
 
-  // DomainSocketEndpoint → DomainSocket.Endpoint
-  case class Endpoint(socket: DomainSocket, path: Text)
+  case class Endpoint(socket: Uds, path: Text)
 
-case class DomainSocket(private[coaxial] val address: Text):
+// A UNIX domain socket, addressed by its path in the filesystem.
+case class Uds(private[coaxial] val address: Text):
   def path[path: Instantiable across Paths from Text] = path(address)
-  def at(path: Text): DomainSocket.Endpoint = DomainSocket.Endpoint(this, path)
+  def at(path: Text): Uds.Endpoint = Uds.Endpoint(this, path)

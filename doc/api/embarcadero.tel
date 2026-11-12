@@ -720,7 +720,7 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
       import threads.virtualThreads
 
       supervise:
-        val socket = DomainSocket(t"/run/containerd/containerd.sock")
+        val socket = Uds(t"/run/containerd/containerd.sock")
         val client = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
 
         client.version().version
@@ -1148,7 +1148,7 @@ entry .Workload   a task's process state, and the openable which scopes a contai
       import threads.virtualThreads
 
       supervise:
-        val socket = DomainSocket(t"/run/containerd/containerd.sock")
+        val socket = Uds(t"/run/containerd/containerd.sock")
         given containerd: (Containerd^) = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
 
         val spec = Containerd.Container(t"web", image = t"docker.io/library/alpine:latest")

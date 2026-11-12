@@ -57,13 +57,13 @@ object Connectable:
       def connect(endpoint: self, interface: Optional[MacAddress]): Duplex raises Socket.Error =
         lambda(endpoint, interface)
 
-  given domainSocket: (backend: Socket.Backend, options: Every[Socket.Option.Domain])
-  =>  DomainSocket is Connectable:
+  given uds: (backend: Socket.Backend, options: Every[Socket.Option.Domain])
+  =>  Uds is Connectable:
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
-    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress])
+    def connect(uds: Uds, interface: Optional[MacAddress])
     :   Duplex raises Socket.Error =
 
-      backend.duplexDomain(domainSocket, options.values.to(List))
+      backend.duplexDomain(uds, options.values.to(List))
 
   // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
   // capability carrying that evidence in its capture set.

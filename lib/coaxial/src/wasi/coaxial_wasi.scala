@@ -227,7 +227,7 @@ package socketBackends:
 
       socketHandle
 
-    def listenDomain(address: DomainSocket, options: List[Socket.Option])
+    def listenDomain(address: Uds, options: List[Socket.Option])
     :   Wasm.Handle of "tcp-socket" raises Bind.Error =
 
       abort(Bind.Error(Bind.Error.Reason.Unsupported))
@@ -307,7 +307,7 @@ package socketBackends:
 
       connect(t"127.0.0.1", port.number)
 
-    def dialDomain(address: DomainSocket, options: List[Socket.Option])
+    def dialDomain(address: Uds, options: List[Socket.Option])
     :   WasiExchange raises Socket.Error =
 
       abort(Socket.Error(Socket.Error.Reason.Unsupported))
@@ -335,7 +335,7 @@ package socketBackends:
 
       duplexOf(connect(endpoint.remote, endpoint.port.number))
 
-    def duplexDomain(address: DomainSocket, options: List[Socket.Option])
+    def duplexDomain(address: Uds, options: List[Socket.Option])
     :   Duplex raises Socket.Error =
 
       abort(Socket.Error(Socket.Error.Reason.Unsupported))

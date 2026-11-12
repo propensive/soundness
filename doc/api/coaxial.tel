@@ -6,8 +6,8 @@ import soundness
 info   TCP, UDP, Unix-domain and TLS sockets, and a DNS resolver, behind one transport-generic API
 detail
     _Coaxial_ is socket programming with the transport decided by the **type of the socket
-    value** rather than by a different API: a `Tcp.Port` is served and a `DomainSocket` is
-    served with the same `listen`; an `Endpoint[Tcp.Port]`, a `DomainSocket` and a
+    value** rather than by a different API: a `Tcp.Port` is served and a `Uds` is
+    served with the same `listen`; an `Endpoint[Tcp.Port]`, a `Uds` and a
     `SecureEndpoint` are connected to with the same `transmit`, `react` and `duplex`. The
     operations are typeclass-driven — `Bindable` for anything that can serve, `Serviceable`
     for a request/response client, `Connectable` for a persistent bidirectional `Duplex`,
@@ -56,7 +56,7 @@ detail
 
     - `coaxial.core` — the whole platform-neutral API: `Socket` (its `Backend`, `Option`s,
       `Event`s, `Service` and `Error`), `Bind`, the typeclasses `Bindable`, `Connectable`,
-      `Routable`, `Serviceable`, `Duplexable` and `Subscribable`, `Duplex`, `DomainSocket`,
+      `Routable`, `Serviceable`, `Duplexable` and `Subscribable`, `Duplex`, `Uds`,
       `Multicast`, `Packet`, `UdpResponse`, `Control`, `Transmitter`, `Transmissible`,
       `Ingressive`, the loans `listen`, `listenOn`, `subscribe`, `transmit`, `react`,
       `exchange` and `duplex`, the `connectableSessional` given and the `socketOptions`
@@ -108,8 +108,8 @@ detail
     writes `import soundness.*` and then imports one backend and any options by name.
 
 refer coaxial.Duplex
-refer coaxial.DomainSocket
-refer coaxial.DomainSocket.Endpoint
+refer coaxial.Uds
+refer coaxial.Uds.Endpoint
 refer coaxial.Socket
 refer coaxial.Socket.Backend
 refer coaxial.Bindable
@@ -127,7 +127,7 @@ refer coaxial.query
 entry .listen   serves a socket for the duration of a block: a handler per arrival, each on its own task
   detail
       `socket.listen[input](handler)(block)` binds any `Bindable` socket — a `Tcp.Port`, a
-      `Udp.Port`, a `DomainSocket`, a `Multicast` group or, on the JVM, a `SecurePort` — runs
+      `Udp.Port`, a `Uds`, a `Multicast` group or, on the JVM, a `SecurePort` — runs
       `handler` for each arrival, and lends the running server to `block` as a
       `Socket.Service` capability. The server is stopped when the block ends, whether it
       returns or throws, so the accept loop can never outlive the code which needed it (this
@@ -225,7 +225,7 @@ entry .transmit   sends one message to an endpoint: a reply stream back for a `S
       Two overloads, chosen by the endpoint's typeclass:
 
       - For a `Serviceable` endpoint — an `Endpoint[Tcp.Port]`, a `Tcp.Port` (on the local
-        host) or a `DomainSocket` — `endpoint.transmit(message)` connects, streams the
+        host) or a `Uds` — `endpoint.transmit(message)` connects, streams the
         serialized message and half-closes its output, then returns the response as a lazy
         `Stream[Data] over Credit` which ends when the peer half-closes. The stream borrows the
         connection, so it is read (or `memoize`d) inside the scope which made it, and the
@@ -242,7 +242,7 @@ entry .transmit   sends one message to an endpoint: a reply stream back for a `S
       import codepages.utf8Codepage
       import socketBackends.javaBaseSockets
 
-      val reply: Stream[Data] over Credit = DomainSocket(t"/run/service.sock").transmit(t"request")
+      val reply: Stream[Data] over Credit = Uds(t"/run/service.sock").transmit(t"request")
       reply.memoize
       ```
 
@@ -329,7 +329,7 @@ entry .exchange   a full-duplex conversation: `react`'s state machine plus a `Tr
 entry .duplex   lends a persistent bidirectional `Duplex` connection to a block, and closes it afterwards
   detail
       `endpoint.duplex(lambda)` connects to any `Connectable` endpoint — an `Endpoint[Tcp.Port]`,
-      a `DomainSocket`, a `SecureEndpoint` — and passes the open `Duplex` to `lambda`, closing
+      a `Uds`, a `SecureEndpoint` — and passes the open `Duplex` to `lambda`, closing
       it when the lambda returns or throws. Unlike the request/response `transmit`, the
       connection is never half-closed: reads and writes are independent, which is the shape a
       multiplexing protocol such as HTTP/2 needs. `duplex(lambda)(interface)` binds the local
@@ -343,7 +343,7 @@ entry .duplex   lends a persistent bidirectional `Duplex` connection to a block,
       import logging.silentLogging
       import socketBackends.javaBaseSockets
 
-      DomainSocket(t"/run/service.sock").duplex: duplex =>
+      Uds(t"/run/service.sock").duplex: duplex =>
         duplex.send(Stream(t"request".in[Data]))
         duplex.source.memoize   // the read side, until the peer closes
       ```
@@ -463,7 +463,7 @@ entry .Socket   the socket vocabulary: the platform backend, the options, the ev
         `wasi:sockets` TCP socket on the IPv4 wildcard address.
     entry #listenDomain   binds a Unix-domain socket at a path, with the given options
         Raises `Bind.Error(Unsupported)` on Scala Native and WASI, which have no Unix-domain
-        sockets. On the JVM the socket file is created at the `DomainSocket`'s path and must
+        sockets. On the JVM the socket file is created at the `Uds`'s path and must
         not already exist.
     entry #accept   blocks for the next incoming connection, as a `Duplex`
         The handler reads the request from the duplex's `source`, and the accept loop writes
@@ -670,7 +670,7 @@ entry .Socket   the socket vocabulary: the platform backend, the options, the ev
         import logging.silentLogging
         import socketBackends.javaBaseSockets
 
-        val reason = capture[Socket.Error](DomainSocket(t"/nowhere.sock").duplex(_ => ())).reason
+        val reason = capture[Socket.Error](Uds(t"/nowhere.sock").duplex(_ => ())).reason
         reason == Socket.Error.Reason.Connect
         ```
     entry .Reason   why a connection failed, numbered 1 to 9
@@ -733,7 +733,7 @@ entry .Bind   the error raised when a socket cannot be bound
 
 entry .Bindable   what `listen` needs of a socket: bind, accept arrivals, answer each, close, stop
   detail
-      A socket value is `Bindable` when it can serve: `Tcp.Port`, `Udp.Port`, `DomainSocket`
+      A socket value is `Bindable` when it can serve: `Tcp.Port`, `Udp.Port`, `Uds`
       and `Multicast` are, through givens in this companion and in `Multicast`, and on the JVM
       `SecurePort` is. Each instance fixes three types which shape `listen`'s handler: a
       `#Binding` (the backend's handle, opaque to the caller), the `#Input` a handler
@@ -748,7 +748,7 @@ entry .Bindable   what `listen` needs of a socket: bind, accept arrivals, answer
       its own and gains `listen` for free.
   refer coaxial.listen
   refer coaxial.Socket.Backend
-  entry .domainSocket   serves a Unix-domain socket: `DomainSocket is Bindable`, handler `Duplex => Data`
+  entry .uds   serves a Unix-domain socket: `Uds is Bindable`, handler `Duplex => Data`
       Binds through `Socket.Backend#listenDomain`, so the socket file is created at the path
       and must not already exist. A domain socket has no network interface, so `listenOn`'s
       interface is ignored. Not available on Scala Native or WASI (`Bind.Error(Unsupported)`).
@@ -774,7 +774,7 @@ entry .Connectable   what `duplex` needs of an endpoint: open a persistent bidir
   detail
       The counterpart to `Serviceable` for protocols which keep a connection open and read and
       write concurrently — HTTP/2, WebSockets, SSH — rather than one request and one response.
-      `Endpoint[Tcp.Port]` and `DomainSocket` are `Connectable` through this companion, and on
+      `Endpoint[Tcp.Port]` and `Uds` are `Connectable` through this companion, and on
       the JVM and Scala Native `SecureEndpoint` is, over TLS. `duplex`, `connectableSessional`
       and the `session` loan are built on it.
 
@@ -782,7 +782,7 @@ entry .Connectable   what `duplex` needs of an endpoint: open a persistent bidir
       import soundness.*
 
       val (client, server) = Duplex.pair()
-      val connectable: DomainSocket is Connectable = Connectable((socket, interface) => client)
+      val connectable: Uds is Connectable = Connectable((socket, interface) => client)
       ```
 
       The trait's `connect` raises `Socket.Error`, so a lambda does not convert to it; `.apply`
@@ -794,7 +794,7 @@ entry .Connectable   what `duplex` needs of an endpoint: open a persistent bidir
       For an endpoint whose duplex is already in hand — an in-process `Duplex.pair()` in a
       test, say. The trait's `connect` declares `raises Socket.Error`, which is why a lambda
       cannot be an instance directly.
-  entry .domainSocket   connects to a Unix-domain socket as a `Duplex`: `DomainSocket is Connectable`
+  entry .uds   connects to a Unix-domain socket as a `Duplex`: `Uds is Connectable`
       Through `Socket.Backend#duplexDomain`, with the `Every[Socket.Option.Domain]` in scope;
       a domain socket has no interface, so the interface argument is ignored. Raises
       `Socket.Error(Unsupported)` on Scala Native and WASI.
@@ -828,7 +828,7 @@ entry .Serviceable   what `transmit` and `react` need of an endpoint: a request 
       The request/response role: a `Serviceable` endpoint is connected to, has a request
       streamed to it while its output is half-closed, and gives back a response stream which
       ends when the peer half-closes. `Endpoint[Tcp.Port]`, `Tcp.Port` (on the local host) and
-      `DomainSocket` are `Serviceable`. Instances are capabilities — they retain the
+      `Uds` are `Serviceable`. Instances are capabilities — they retain the
       `Tactic[Truncation.Error]` their response streams raise through — so `transmit`, `react`
       and `exchange` take the evidence as a capturing using-parameter rather than a context
       bound, and the instance is resolved where the tactic is in scope.
@@ -852,7 +852,7 @@ entry .Serviceable   what `transmit` and `react` need of an endpoint: a request 
   refer coaxial.transmit
   refer coaxial.react
   refer coaxial.Duplexable
-  entry .domainSocket   a request/response exchange over a Unix-domain socket: `DomainSocket is Serviceable`
+  entry .uds   a request/response exchange over a Unix-domain socket: `Uds is Serviceable`
       Through `Socket.Backend#dialDomain`, `#request`, `#response` and `#hangUp`, with the
       `Every[Socket.Option.Domain]` and a `Tactic[Truncation.Error]` in scope. Not available
       on Scala Native or WASI (`Socket.Error(Unsupported)`).
@@ -914,7 +914,7 @@ entry .Duplex   a persistent bidirectional connection: independent reads and wri
       import logging.silentLogging
       import socketBackends.javaBaseSockets
 
-      DomainSocket(t"/run/service.sock").duplex: duplex =>
+      Uds(t"/run/service.sock").duplex: duplex =>
         duplex.send(Stream(t"ping".in[Data]))
         val source = duplex.source                  // open once: a single reader
         val count = source.refill(Credit(64)).or(0) // one refill window is one message
@@ -1122,9 +1122,9 @@ entry .UdpResponse   a UDP handler's answer to a datagram: reply to the sender, 
         ()
     ```
 
-entry .DomainSocket   a Unix-domain socket, by the path of its socket file; servable and connectable
+entry .Uds   a Unix-domain socket, by the path of its socket file; servable and connectable
   detail
-      A `DomainSocket(path)` is a socket on the local filesystem — `/var/run/docker.sock`,
+      A `Uds(path)` is a socket on the local filesystem — `/var/run/docker.sock`,
       a daemon's control socket — which can be served with `listen` (the file is created at
       the path, which must not already exist), connected to for one request/response with
       `transmit` and `react`, or held open as a `Duplex` with `duplex` and `session`. It takes
@@ -1134,27 +1134,27 @@ entry .DomainSocket   a Unix-domain socket, by the path of its socket file; serv
       ```scala
       import soundness.*
 
-      val docker = DomainSocket(t"/var/run/docker.sock")
+      val docker = Uds(t"/var/run/docker.sock")
       docker.show                 // t"/var/run/docker.sock"
       docker.inspect              // t"⇄/var/run/docker.sock"
-      docker.at(t"/info")         // a DomainSocket.Endpoint
+      docker.at(t"/info")         // a Uds.Endpoint
       ```
 
       Unix-domain sockets exist on the JVM backend only: on Scala Native and WASI the
       operations raise `Unsupported`. On the JVM, `listenConnections` serves one with raw
       blocking streams and the peer's user, for a daemon which needs them. A domain socket
       has no network interface, so `listenOn` and `duplex(…)(interface)` ignore theirs.
-  refer coaxial.DomainSocket.Endpoint
+  refer coaxial.Uds.Endpoint
   refer coaxial.listenConnections
   refer coaxial.Bindable
   entry .showable   renders the socket as its path
   entry .inspectable   a debug rendering prefixed with `⇄`, marking a bidirectional endpoint
       The path alone would be indistinguishable from any other path-like text, so the
       rendering is `⇄/var/run/docker.sock`, in the spirit of `⌗8080` for a port.
-  entry .apply   `DomainSocket(path)` from any path type or text
+  entry .apply   `Uds(path)` from any path type or text
   entry .Endpoint   a socket paired with a request path: the address of a resource behind a domain socket
     detail
-        `DomainSocket.Endpoint(socket, path)` — made with `socket.at(path)` — names a path
+        `Uds.Endpoint(socket, path)` — made with `socket.at(path)` — names a path
         *within* the service a domain socket fronts, as an HTTP client over Docker's socket
         addresses `/info`. It is the domain-socket analogue of a URL, for libraries which
         route requests over domain sockets.
@@ -1162,7 +1162,7 @@ entry .DomainSocket   a Unix-domain socket, by the path of its socket file; serv
     entry #path   the path within the service
   entry #path   the socket file's path, as any path type (`Instantiable across Paths from Text`)
       `socket.path[Path on Linux]`, say.
-  entry #at   `socket.at(path)`: a `DomainSocket.Endpoint` for a path within the service
+  entry #at   `socket.at(path)`: a `Uds.Endpoint` for a path within the service
 
 entry .Multicast   a multicast group and port, subscribed to with `subscribe` or served with `listen`
   detail
@@ -1652,7 +1652,7 @@ entry .Connection   a raw Unix-domain connection: blocking Java streams and the 
         connection.peer == t"root"
       ```
   refer coaxial.listenConnections
-  refer coaxial.DomainSocket
+  refer coaxial.Uds
   entry #peer   the connecting user's principal name, as the kernel reports it, or `Unset` where the platform offers none
   entry #source   a fresh single-use pull stream over the read side
       `connection.source()` needs a `Buffering` and a `Tactic[Truncation.Error]`, which the
@@ -1663,8 +1663,8 @@ entry .Connection   a raw Unix-domain connection: blocking Java streams and the 
 
 entry .listenConnections   serves a Unix-domain socket with raw `Connection`s, for a daemon which needs Java streams; JVM only
   detail
-      `domainSocket.listenConnections(handler, ownerOnly = false)(block)` is `listen` for a
-      `DomainSocket` whose handler takes a `Connection` — the blocking stream pair and the
+      `uds.listenConnections(handler, ownerOnly = false)(block)` is `listen` for a
+      `Uds` whose handler takes a `Connection` — the blocking stream pair and the
       peer's user — rather than a `Duplex`. The accept loop and per-connection supervision
       are `listen`'s: each connection is served on its own `async` task (so a handler failure
       or a dropped client ends only that task, and the connection is always closed), a failure
@@ -1681,7 +1681,7 @@ entry .listenConnections   serves a Unix-domain socket with raw `Connection`s, f
       import logging.silentLogging
 
       supervise:
-        DomainSocket(t"/tmp/daemon.sock").listenConnections(_.close(), ownerOnly = true):
+        Uds(t"/tmp/daemon.sock").listenConnections(_.close(), ownerOnly = true):
           ()
       ```
 

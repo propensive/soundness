@@ -170,21 +170,21 @@ given requestTransmissible: Tactic[Truncation.Error] => Http.Request is Transmis
 
 // Fetch from a Unix domain socket, speaking HTTP/1.1 directly over the socket
 // (e.g. the Docker daemon's API). The request's `Host` is `localhost`.
-given domainSocketFetchable: DomainSocket.Endpoint is Fetchable onto DomainSocket =
+given udsFetchable: Uds.Endpoint is Fetchable onto Uds =
   new Fetchable:
-    type Self = DomainSocket.Endpoint
-    type Target = DomainSocket
+    type Self = Uds.Endpoint
+    type Target = Uds
 
-    def target(endpoint: DomainSocket.Endpoint): DomainSocket = endpoint.socket
-    def text(endpoint: DomainSocket.Endpoint): Text = endpoint.path
-    def hostname(endpoint: DomainSocket.Endpoint): Host = Localhost
+    def target(endpoint: Uds.Endpoint): Uds = endpoint.socket
+    def text(endpoint: Uds.Endpoint): Text = endpoint.path
+    def hostname(endpoint: Uds.Endpoint): Host = Localhost
 
-given domainSocketHttpClient: (Tactic[Truncation.Error], Tactic[Connect.Error])
-=>  Http.Client onto DomainSocket =
+given udsHttpClient: (Tactic[Truncation.Error], Tactic[Connect.Error])
+=>  Http.Client onto Uds =
   new Http.Client:
-    type Target = DomainSocket
+    type Target = Uds
 
-    def request(request: Http.Request, socket: DomainSocket)(using Http.Event is Loggable)
+    def request(request: Http.Request, socket: Uds)(using Http.Event is Loggable)
     :   Http.Response =
 
       // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and

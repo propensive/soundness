@@ -554,7 +554,7 @@ def cli[bus <: Matchable](using executive: Executive)
         acceptanceFile.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
           ( file.write(Chain(acceptance)) )
 
-      val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
+      val uds: Uds = Uds(socketFile.encode)
 
       // The timer's callback logs through the same single-owner syslog.
       // [by-name-receiver] timeout by-name body captures shared syslog
@@ -582,7 +582,7 @@ def cli[bus <: Matchable](using executive: Executive)
       // [by-name-receiver] acceptor and serving block share daemon state
       scala.caps.unsafe.unsafeAssumeSeparate:
         safely:
-          domainSocket.listenConnections(acceptor, ownerOnly = true):
+          uds.listenConnections(acceptor, ownerOnly = true):
             val buildId = launcherBuildId()
 
             scriptPath.let: script =>

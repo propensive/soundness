@@ -25,7 +25,7 @@ does not split at all — it becomes a namespace for its own satellites.
   prefix. `JsonPointer` (RFC 6901) does not become `Json.Pointer`; instead
   `JsonPointerError → JsonPointer.Error`. Likewise `MediaType`, `JsonSchema` and
   `XmlSchema` (external standards), `Httpd`, `BlockCipher`, `CompileError`,
-  `WebDriver`, `WorkingDirectory`, `DomainSocket`, `JsonRpc`, `OAuth`, `StackTrace`,
+  `WebDriver`, `WorkingDirectory`, `DomainSocket` (since renamed `Uds`), `JsonRpc`, `OAuth`, `StackTrace`,
   `SymmetricKey` (parallel with `PrivateKey`/`PublicKey`; the
   `Symmetric` trait is a separate abstraction). This resolves July's internal conflict:
   it proposed both `MediaType → Media.Type` and `MediaTypeError → MediaType.Error`.

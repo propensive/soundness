@@ -359,7 +359,7 @@ object Http2:
 
   // A cleartext-h2c endpoint: a connectable address plus the `:authority` to send.
   // Used as the `Target` of the HTTP/2 `Http.Client` given, distinct from the
-  // `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
+  // `Uds` target telekinesis binds to its HTTP/1.1 client.
   case class Endpoint[endpoint: {Connectable as connectable, Showable}]
     ( endpoint: endpoint, authority: Text ):
     // Establish a multiplexed connection whose underlying `Duplex` is closed when the
