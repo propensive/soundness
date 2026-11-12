@@ -274,9 +274,9 @@ Git.Branch.parse(t"feature..old")
 
 ### Diffs
 
-`diff` reports changes as structured values, not as patch text to parse again. Each `FileDiff`
-carries the paths on both sides, the kind of change, which is added, modified, deleted, renamed
-or copied, and its hunks. Each hunk is a list of edits:
+`diff` reports changes as structured values, not as patch text to parse again. Each
+`Git.FileDiff` carries the paths on both sides, the kind of change, which is added, modified,
+deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
 
 ```scala fuel
 run
@@ -299,7 +299,7 @@ row  `diffAgainst(revision)`  the revision  the working files
 row  `diffBetween(left, right)`  a commit  a commit
 ```
 
-The same parser, `Patch.parse`, reads a patch from anywhere.
+The same parser, `Git.Patch.parse`, reads a patch from anywhere.
 
 ### Merging, cherry-picking, reverting and rebasing
 
