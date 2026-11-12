@@ -75,7 +75,7 @@ object Benchmarks extends Suite("cbor-bench", m"Breviloquence CBOR parser benchm
   // a small definite-length map.
   lazy val cborBytes1: Array[Byte]^{} =
     val keys = Array[Any]("id", "name", "active")
-    val values = Array[Any](42L, "Alice", true)
+    val values = Array[Any](42L, "Romeo", true)
     encode(Cbor.Ast.map(keys, values))
 
   // Corpus 2: 100 user records — typical "array of records" pattern with five

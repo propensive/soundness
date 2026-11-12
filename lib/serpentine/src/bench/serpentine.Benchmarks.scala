@@ -54,42 +54,42 @@ object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
       bench(m"Find conjunction of 2-element paths")
         ( target = 500*Milli(Second) ):
         ' {
-            val p1 = % / "foo" / "bar"
-            val p2 = % / "foo" / "baz"
+            val p1 = % / "hal" / "ned"
+            val p2 = % / "hal" / "tom"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 3-element paths")(target = 500*Milli(Second)):
         ' {
-            val p1 = % / "foo" / "bar" / "quux"
-            val p2 = % / "foo" / "baz" / "quux"
+            val p1 = % / "hal" / "ned" / "peto"
+            val p2 = % / "hal" / "tom" / "peto"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 4-element paths")(target = 500*Milli(Second)):
         ' {
-            val p1 = % / "foo" / "bar" / "quux" / "bippy"
-            val p2 = % / "foo" / "baz" / "quux" / "bop"
+            val p1 = % / "hal" / "ned" / "peto" / "poins"
+            val p2 = % / "hal" / "tom" / "peto" / "owen"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 5-element paths")(target = 500*Milli(Second)):
         ' {
-            val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc"
-            val p2 = % / "foo" / "baz" / "quux" / "bop" / "def"
+            val p1 = % / "hal" / "ned" / "peto" / "poins" / "percy"
+            val p2 = % / "hal" / "tom" / "peto" / "owen" / "blunt"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 6-element paths")(target = 500*Milli(Second)):
         ' {
-            val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc" / "ghi"
-            val p2 = % / "foo" / "baz" / "quux" / "bop" / "def" / "jkl"
+            val p1 = % / "hal" / "ned" / "peto" / "poins" / "percy" / "kate"
+            val p2 = % / "hal" / "tom" / "peto" / "owen" / "blunt" / "percy"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 7-element paths")(target = 500*Milli(Second)):
         ' {
-            val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc" / "ghi" / "mno"
-            val p2 = % / "foo" / "baz" / "quux" / "bop" / "def" / "jkl" / "pqr"
+            val p1 = % / "hal" / "ned" / "peto" / "poins" / "percy" / "kate" / "blunt"
+            val p2 = % / "hal" / "tom" / "peto" / "owen" / "blunt" / "percy" / "kate"
             p1.conjunction(p2)
           }

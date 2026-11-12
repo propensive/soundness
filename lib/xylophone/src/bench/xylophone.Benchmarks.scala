@@ -833,20 +833,20 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
                xmlns:ord="http://example.com/orders">
   <soap:Header>
     <ord:Auth>
-      <ord:User>alice</ord:User>
+      <ord:User>romeo</ord:User>
       <ord:Token>a1b2c3d4e5f60718293a4b5c6d7e8f90</ord:Token>
     </ord:Auth>
   </soap:Header>
   <soap:Body>
     <ord:PlaceOrder>
       <ord:Customer id="c-4582">
-        <ord:Name>Alice Example</ord:Name>
-        <ord:Email>alice@example.com</ord:Email>
+        <ord:Name>Romeo Montague</ord:Name>
+        <ord:Email>romeo@example.com</ord:Email>
         <ord:Address>
-          <ord:Street>10 Downing Street</ord:Street>
-          <ord:City>London</ord:City>
-          <ord:Postcode>SW1A 2AA</ord:Postcode>
-          <ord:Country>UK</ord:Country>
+          <ord:Street>Montague Mansion</ord:Street>
+          <ord:City>Verona</ord:City>
+          <ord:Postcode>VR-37121</ord:Postcode>
+          <ord:Country>IT</ord:Country>
         </ord:Address>
       </ord:Customer>
       <ord:Items>
@@ -880,12 +880,12 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
   <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
   <updated>2024-09-12T09:00:00Z</updated>
   <author>
-    <name>Jane Doe</name>
-    <email>jane@example.org</email>
-    <uri>http://example.org/~jane</uri>
+    <name>Prospero</name>
+    <email>prospero@example.org</email>
+    <uri>http://example.org/~prospero</uri>
   </author>
   <generator uri="http://example.org/feed-tool" version="1.4.2">FeedTool</generator>
-  <rights>Copyright (c) 2024 Example Industries</rights>
+  <rights>Copyright (c) 2024 Prospero</rights>
   <subtitle>An example Atom feed used for parser benchmarking.</subtitle>
   <entry>
     <title>On the curious case of XML namespaces</title>
