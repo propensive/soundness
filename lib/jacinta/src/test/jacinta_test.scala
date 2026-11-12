@@ -50,7 +50,7 @@ import discriminables.jsonByKindDiscriminable
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
 
-case class Foo(x: Int, y: Text) derives CanEqual
+case class Sonnet(number: Int, firstLine: Text) derives CanEqual
 
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
 
@@ -58,11 +58,11 @@ case class Empty()
 case class Inner(n: Int)
 case class Outer(inner: Inner)
 case class NamedOuter(name: Text, inner: Inner)
-case class OptFoo(x: Option[Int])
-case class OptionalFoo(x: Optional[Int])
+case class OptLine(line: Option[Int])
+case class OptionalLine(line: Optional[Int])
 case class OptInner(inner: Optional[Inner] = Unset)
-case class Bar(a: Int, b: Text)
-case class BarOpt(a: Int, b: Optional[Text])
+case class Song(number: Int, title: Text)
+case class SongOpt(number: Int, title: Optional[Text])
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
 case class Marked(@memo(t"the count") n: Int)
 case class Renamed(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
@@ -82,30 +82,30 @@ enum Status derives CanEqual:
                      case Pending(at: Int)
 
 case class Person(name: Text, age: Int)
-case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])
+case class Court(lords: List[Person], king: Person, heir: Option[Person])
 
-case class FooOption(x: Int, y: Option[Int])
-case class FooOptional(x: Int, y: Optional[Int])
+case class CueOption(act: Int, scene: Option[Int])
+case class CueOptional(act: Int, scene: Optional[Int])
 
-enum Player:
-  case Guitarist(person: Person)
-  case Drummer(person: Person)
-  case Bassist(person: Person)
+enum Rank:
+  case Lord(person: Person)
+  case King(person: Person)
+  case Heir(person: Person)
 
-case class NewBand(members: List[Player])
+case class NewCourt(members: List[Rank])
 
-case class Role(name: String)
-case class Entity(name: String, age: Int, roles: List[Role])
-case class Org(name: String, leader: Entity)
+case class Scene(number: Int, place: String)
+case class Act(number: Int, scenes: List[Scene])
+case class Play(title: String, opening: Act)
 
 enum Animal:
   case Dog(name: Text)
   case Cat(name: Text)
 
-case class Worker(name: Text, age: Int) derives CanEqual
-case class Firm(boss: Worker, deputy: Worker) derives CanEqual
+case class Noble(name: Text, age: Int) derives CanEqual
+case class Duel(hero: Noble, rival: Noble) derives CanEqual
 
-case class Crew(lead: Worker, members: List[Worker]) derives CanEqual
+case class Cabal(head: Noble, members: List[Noble]) derives CanEqual
 
 // Recursion through a collection (#1429), direct recursion, recursion through a map, and a generic
 // product used over a recursive type (which must stay structurally derived, not mis-read as a codec).
@@ -201,23 +201,23 @@ object Tests extends Suite("json", m"Jacinta Tests"):
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
     suite(m"Native-rendering coverage"):
       test(m"a Json document inspects compactly, whatever formatting is in scope"):
-        t"foo".in[Json].inspect
-      . assert(_ == t""""foo"""")
+        t"puck".in[Json].inspect
+      . assert(_ == t""""puck"""")
 
       test(m"a bare Json.Ast is marked apart from the document wrapping it"):
-        Json.Ast("foo").inspect
-      . assert(_ == t"\"foo\"ᵃˢᵗ")
+        Json.Ast("puck").inspect
+      . assert(_ == t"\"puck\"ᵃˢᵗ")
 
       test(m"jacinta's types inspect natively"):
         Inspectable.fallbacks
-         ( t"foo".in[Json].inspect, 42.in[Json].inspect, Json.Ast("foo").inspect,
+         ( t"puck".in[Json].inspect, 42.in[Json].inspect, Json.Ast("puck").inspect,
            Json.Ast(42L).inspect )
       . assert(_ == Nil)
 
     suite(m"Serialization"):
       test(m"Serialize string"):
-        t"foo".in[Json].show
-      . assert(_ == t""""foo"""")
+        t"puck".in[Json].show
+      . assert(_ == t""""puck"""")
 
       test(m"Serialize double"):
         3.14159.in[Json].show
@@ -296,20 +296,20 @@ object Tests extends Suite("json", m"Jacinta Tests"):
       . assert(_ == t""""a\\\\b"""")
 
       test(m"Serialize case class with Option as None"):
-        FooOption(1, None).in[Json].show
-      . assert(_ == t"""{"x":1}""")
+        CueOption(1, None).in[Json].show
+      . assert(_ == t"""{"act":1}""")
 
       test(m"Serialize case class with Option as Some"):
-        FooOption(1, Some(2)).in[Json].show
-      . assert(_ == t"""{"x":1,"y":2}""")
+        CueOption(1, Some(2)).in[Json].show
+      . assert(_ == t"""{"act":1,"scene":2}""")
 
       test(m"Serialize case class with Optional as Unset"):
-        FooOptional(1, Unset).in[Json].show
-      . assert(_ == t"""{"x":1}""")
+        CueOptional(1, Unset).in[Json].show
+      . assert(_ == t"""{"act":1}""")
 
       test(m"Serialize case class with present Optional"):
-        FooOptional(1, 2).in[Json].show
-      . assert(_ == t"""{"x":1,"y":2}""")
+        CueOptional(1, 2).in[Json].show
+      . assert(_ == t"""{"act":1,"scene":2}""")
 
       test(m"Serialize a nested case class"):
         NamedOuter(t"hello", Inner(7)).in[Json].show
@@ -317,43 +317,43 @@ object Tests extends Suite("json", m"Jacinta Tests"):
 
     suite(m"Misc tests"):
       test(m"Serialize to Json"):
-        Foo(1, t"two").in[Json]
-      . assert(_ == Json.make(x = 1.in[Json], y = t"two".in[Json]))
+        Sonnet(18, t"Shall I compare thee").in[Json]
+      . assert(_ == Json.make(number = 18.in[Json], firstLine = t"Shall I compare thee".in[Json]))
 
       test(m"Parse from JSON"):
         t"""{"x": 1}""".read[Json]
       . assert(_ == Json.make(x = 1.in[Json]))
 
       test(m"Read case class"):
-        t"""{"x": 1, "y": "two"}""".read[Json].as[Foo]
-      . assert(_ == Foo(1, t"two"))
+        t"""{"number": 18, "firstLine": "Shall I compare thee"}""".read[Json].as[Sonnet]
+      . assert(_ == Sonnet(18, t"Shall I compare thee"))
 
       test(m"@name[Json] and bare @name rename keys when encoding"):
-        Renamed(t"Ann", 1984).in[Json].show
-      . assert(_ == t"""{"first_name":"Ann","yob":1984}""")
+        Renamed(t"Nym", 1599).in[Json].show
+      . assert(_ == t"""{"first_name":"Nym","yob":1599}""")
 
       test(m"@name renames round-trip"):
-        Renamed(t"Ann", 1984).in[Json].as[Renamed]
-      . assert(_ == Renamed(t"Ann", 1984))
+        Renamed(t"Nym", 1599).in[Json].as[Renamed]
+      . assert(_ == Renamed(t"Nym", 1599))
 
       test(m"Extract an absent Option"):
-        t"""{"y": 1}""".read[Json].as[OptFoo].x
+        t"""{"page": 1}""".read[Json].as[OptLine].line
       . assert(_ == None)
 
       test(m"Extract an option"):
-        t"""{"x": 1}""".read[Json].as[OptFoo].x
+        t"""{"line": 1}""".read[Json].as[OptLine].line
       . assert(_ == Some(1))
 
       test(m"Extract a present Optional"):
-        t"""{"x": 1}""".read[Json].as[OptionalFoo].x
+        t"""{"line": 1}""".read[Json].as[OptionalLine].line
       . assert(_ == 1)
 
       test(m"Extract an absent Optional"):
-        t"""{"y": 1}""".read[Json].as[OptionalFoo].x
+        t"""{"page": 1}""".read[Json].as[OptionalLine].line
       . assert(_ == Unset)
 
       test(m"Extract an explicit null Optional as Unset"):
-        t"""{"x": null}""".read[Json].as[OptionalFoo].x
+        t"""{"line": null}""".read[Json].as[OptionalLine].line
       . assert(_ == Unset)
 
       test(m"Decode a present Optional product field"):
@@ -369,7 +369,7 @@ object Tests extends Suite("json", m"Jacinta Tests"):
       . assert(_ == Unset)
 
       test(m"Extract a None"):
-        t"""{"y": 1}""".read[Json].as[OptFoo].x
+        t"""{"page": 1}""".read[Json].as[OptLine].line
       . assert(_ == None)
 
       test(m"Access an absent Optional dynamically"):
@@ -378,68 +378,68 @@ object Tests extends Suite("json", m"Jacinta Tests"):
       . assert(_ == Unset)
 
       test(m"Apply a case-class default when the field is omitted"):
-        t"""{"name": "Eve"}""".read[Json].as[WithDefault]
-      . assert(_ == WithDefault(t"Eve", 18))
+        t"""{"name": "Nym"}""".read[Json].as[WithDefault]
+      . assert(_ == WithDefault(t"Nym", 18))
 
       test(m"An explicit value overrides a case-class default"):
-        t"""{"name": "Eve", "age": 30}""".read[Json].as[WithDefault]
-      . assert(_ == WithDefault(t"Eve", 30))
+        t"""{"name": "Nym", "age": 30}""".read[Json].as[WithDefault]
+      . assert(_ == WithDefault(t"Nym", 30))
 
     suite(m"Optionality policy tests"):
       test(m"An absent Option field is None by default"):
-        t"""{"y": 1}""".read[Json].as[OptFoo].x
+        t"""{"page": 1}""".read[Json].as[OptLine].line
       . assert(_ == None)
 
       test(m"An explicit null Option field is None by default"):
-        t"""{"x": null}""".read[Json].as[OptFoo].x
+        t"""{"line": null}""".read[Json].as[OptLine].line
       . assert(_ == None)
 
       test(m"A wrong-typed Optional field raises NotType by default"):
-        capture[Json.Error](t"""{"x": "one"}""".read[Json].as[OptionalFoo]).reason
+        capture[Json.Error](t"""{"line": "one"}""".read[Json].as[OptionalLine]).reason
       . assert(_ == Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number))
 
       test(m"A wrong-typed Option field raises NotType by default"):
-        capture[Json.Error](t"""{"x": "one"}""".read[Json].as[OptFoo]).reason
+        capture[Json.Error](t"""{"line": "one"}""".read[Json].as[OptLine]).reason
       . assert(_ == Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number))
 
       test(m"Strict absence raises Absent for an absent Optional field"):
         import optionalityOptions.strictJsonAbsence
-        capture[Json.Error](t"""{"y": 1}""".read[Json].as[OptionalFoo]).reason
+        capture[Json.Error](t"""{"page": 1}""".read[Json].as[OptionalLine]).reason
       . assert(_ == Json.Error.Reason.Absent)
 
       test(m"Strict absence raises Absent for an absent Option field"):
         import optionalityOptions.strictJsonAbsence
-        capture[Json.Error](t"""{"y": 1}""".read[Json].as[OptFoo]).reason
+        capture[Json.Error](t"""{"page": 1}""".read[Json].as[OptLine]).reason
       . assert(_ == Json.Error.Reason.Absent)
 
       test(m"Strict absence still reads an explicit null as Unset"):
         import optionalityOptions.strictJsonAbsence
-        t"""{"x": null}""".read[Json].as[OptionalFoo].x
+        t"""{"line": null}""".read[Json].as[OptionalLine].line
       . assert(_ == Unset)
 
       test(m"Strict nulls hand a null Optional field to the inner decoder"):
         import optionalityOptions.strictJsonNulls
-        capture[Json.Error](t"""{"x": null}""".read[Json].as[OptionalFoo]).reason
+        capture[Json.Error](t"""{"line": null}""".read[Json].as[OptionalLine]).reason
       . assert(_ == Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number))
 
       test(m"Strict nulls hand a null Option field to the inner decoder"):
         import optionalityOptions.strictJsonNulls
-        capture[Json.Error](t"""{"x": null}""".read[Json].as[OptFoo]).reason
+        capture[Json.Error](t"""{"line": null}""".read[Json].as[OptLine]).reason
       . assert(_ == Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number))
 
       test(m"Strict nulls still read an absent Optional field as Unset"):
         import optionalityOptions.strictJsonNulls
-        t"""{"y": 1}""".read[Json].as[OptionalFoo].x
+        t"""{"page": 1}""".read[Json].as[OptionalLine].line
       . assert(_ == Unset)
 
       test(m"Lenient faults read a wrong-typed Optional field as Unset"):
         import optionalityOptions.lenientJsonFaults
-        t"""{"x": "one"}""".read[Json].as[OptionalFoo].x
+        t"""{"line": "one"}""".read[Json].as[OptionalLine].line
       . assert(_ == Unset)
 
       test(m"Lenient faults read a wrong-typed Option field as None"):
         import optionalityOptions.lenientJsonFaults
-        t"""{"x": "one"}""".read[Json].as[OptFoo].x
+        t"""{"line": "one"}""".read[Json].as[OptLine].line
       . assert(_ == None)
 
       test(m"Lenient faults read a malformed Optional product field as Unset"):
@@ -449,7 +449,7 @@ object Tests extends Suite("json", m"Jacinta Tests"):
 
       test(m"Lenient faults leave a well-typed Optional field alone"):
         import optionalityOptions.lenientJsonFaults
-        t"""{"x": 7}""".read[Json].as[OptionalFoo].x
+        t"""{"line": 7}""".read[Json].as[OptionalLine].line
       . assert(_ == 7)
 
       test(m"Policies apply per format: a strict JSON absence leaves a lenient default elsewhere"):
@@ -458,64 +458,64 @@ object Tests extends Suite("json", m"Jacinta Tests"):
       . assert(_ == false)
 
     suite(m"Generic derivation tests"):
-      val paul =
+      val regan =
         test(m"Serialize a simple case class"):
-          Person(t"Paul", 81).in[Json].show
-        .check(_ == t"""{"name":"Paul","age":81}""")
+          Person(t"Regan", 20).in[Json].show
+        .check(_ == t"""{"name":"Regan","age":20}""")
 
-      val john = t"""{"name": "John", "age": 40}"""
-      val george = t"""{"name": "George", "age": 58}"""
-      val ringo = t"""{"name": "Ringo", "age": 82}"""
+      val kent = t"""{"name": "Kent", "age": 48}"""
+      val edgar = t"""{"name": "Edgar", "age": 30}"""
+      val lear = t"""{"name": "Lear", "age": 80}"""
 
-      val beatles = t"""{"guitarists": [$john, $george], "drummer": $ringo, "bassist": $paul}"""
+      val court = t"""{"lords": [$kent, $edgar], "king": $lear, "heir": $regan}"""
 
-      val paulObj = test(m"Extract a Person"):
-        paul.read[Json].as[Person]
-      .check(_ == Person(t"Paul", 81))
+      val reganObj = test(m"Extract a Person"):
+        regan.read[Json].as[Person]
+      .check(_ == Person(t"Regan", 20))
 
-      val ringoObj = test(m"Extract a different person"):
-        ringo.read[Json].as[Person]
-      .check(_ == Person(t"Ringo", 82))
+      val learObj = test(m"Extract a different person"):
+        lear.read[Json].as[Person]
+      .check(_ == Person(t"Lear", 80))
 
-      test(m"Extract a band"):
-        beatles.read[Json].as[Band]
-      . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
+      test(m"Extract a court"):
+        court.read[Json].as[Court]
+      . assert(_ == Court(List(Person(t"Kent", 48), Person(t"Edgar", 30)), learObj, Some(reganObj)))
 
-      test(m"Extract a band directly"):
-        beatles.read[Band in Json]
-      . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
+      test(m"Extract a court directly"):
+        court.read[Court in Json]
+      . assert(_ == Court(List(Person(t"Kent", 48), Person(t"Edgar", 30)), learObj, Some(reganObj)))
 
-      val paulCoproduct = test(m"Serialize a coproduct"):
-        val paul: Player = Player.Bassist(paulObj)
-        paul.in[Json].show
-      .check(_ == t"""{"person":{"name":"Paul","age":81},"kind":"Bassist"}""")
+      val reganCoproduct = test(m"Serialize a coproduct"):
+        val regan: Rank = Rank.Heir(reganObj)
+        regan.in[Json].show
+      .check(_ == t"""{"person":{"name":"Regan","age":20},"kind":"Heir"}""")
 
       test(m"Decode a coproduct"):
-        paulCoproduct.read[Json].as[Player]
-      . assert(_ == Player.Bassist(paulObj))
+        reganCoproduct.read[Json].as[Rank]
+      . assert(_ == Rank.Heir(reganObj))
 
       test(m"Decode a coproduct as a precise subtype"):
-        paulCoproduct.read[Json].as[Player.Bassist]
-      . assert(_ == Player.Bassist(paulObj))
+        reganCoproduct.read[Json].as[Rank.Heir]
+      . assert(_ == Rank.Heir(reganObj))
 
-      import Player.*
-      val newBand = NewBand(List(Bassist(paulObj), Drummer(ringoObj), Guitarist(Person(t"John", 40)),
-          Guitarist(Person(t"George", 58))))
+      import Rank.*
+      val newCourt = NewCourt(List(Heir(reganObj), King(learObj), Lord(Person(t"Kent", 48)),
+          Lord(Person(t"Edgar", 30))))
 
-      val newBandText = test(m"Serialize NewBand"):
-        newBand.in[Json].show
-      .check(_ == t"""{"members":[{"person":{"name":"Paul","age":81},"kind":"Bassist"},{"person":{"name":"Ringo","age":82},"kind":"Drummer"},{"person":{"name":"John","age":40},"kind":"Guitarist"},{"person":{"name":"George","age":58},"kind":"Guitarist"}]}""")
+      val newCourtText = test(m"Serialize NewCourt"):
+        newCourt.in[Json].show
+      .check(_ == t"""{"members":[{"person":{"name":"Regan","age":20},"kind":"Heir"},{"person":{"name":"Lear","age":80},"kind":"King"},{"person":{"name":"Kent","age":48},"kind":"Lord"},{"person":{"name":"Edgar","age":30},"kind":"Lord"}]}""")
 
-      test(m"Decode a NewBand"):
-        newBandText.read[Json].as[NewBand]
-      . assert(_ == newBand)
+      test(m"Decode a NewCourt"):
+        newCourtText.read[Json].as[NewCourt]
+      . assert(_ == newCourt)
 
       test(m"Update a JSON object dynamically"):
         import dynamicAccess.dynamicJson
-        val john = t"""{"name": "John", "age": 40}""".as[Json]
-        val john2 = john.age = 41
-        john2.as[Person]
-      . assert(_ == Person("John", 41))
+        val kent = t"""{"name": "Kent", "age": 48}""".as[Json]
+        val kent2 = kent.age = 49
+        kent2.as[Person]
+      . assert(_ == Person("Kent", 49))
 
       test(m"Update a JSON array dynamically"):
         import dynamicAccess.dynamicJson
@@ -524,58 +524,58 @@ object Tests extends Suite("json", m"Jacinta Tests"):
         array2.as[List[Int]]
       . assert(_ == List(1, 5, 3))
 
-      val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).in[Json]
+      val play = Play("Macbeth", Act(1, List(Scene(1, "A heath")))).in[Json]
 
       test(m"Lens update on JSON"):
         import dynamicAccess.dynamicJson
-        val org2 = org.lens(_.leader.age = 41.in[Json])
-        org2.as[Org]
-      . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
+        val play2 = play.lens(_.opening.number = 2.in[Json])
+        play2.as[Play]
+      . assert(_ == Play("Macbeth", Act(2, List(Scene(1, "A heath")))))
 
       test(m"Lens update on JSON in a dynamically block"):
         dynamically[Json]:
-          val org2 = org.lens(_.leader.age = 41.in[Json])
-          org2.as[Org]
-      . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
+          val play2 = play.lens(_.opening.number = 2.in[Json])
+          play2.as[Play]
+      . assert(_ == Play("Macbeth", Act(2, List(Scene(1, "A heath")))))
 
       test(m"Lens update with optic on JSON"):
         import dynamicAccess.dynamicJson, conversions.encodableToJson
-        val org2 = org.lens(_.leader.roles(Prim) = Role("-"))
-        org2.as[Org]
-      . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
+        val play2 = play.lens(_.opening.scenes(Prim) = Scene(1, "-"))
+        play2.as[Play]
+      . assert(_ == Play("Macbeth", Act(1, List(Scene(1, "-")))))
 
       test(m"Deeper lens update with optic on JSON"):
         import dynamicAccess.dynamicJson, conversions.encodableToJson
-        val org2 = org.lens(_.leader.roles(Prim).name = "-")
-        org2.as[Org]
-      . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
+        val play2 = play.lens(_.opening.scenes(Prim).place = "-")
+        play2.as[Play]
+      . assert(_ == Play("Macbeth", Act(1, List(Scene(1, "-")))))
 
-      val band = Org("Q", Entity("John", 40, List(Role("a"), Role("b"), Role("c")))).in[Json]
+      val sketch = Play("Q", Act(1, List(Scene(1, "a"), Scene(2, "b"), Scene(3, "c")))).in[Json]
 
       test(m"Lens reads a field by name"):
         import dynamicAccess.dynamicJson
-        summon["name" is Lens from Json onto Json](org).as[String]
-      . assert(_ == "The Beatles")
+        summon["title" is Lens from Json onto Json](play).as[String]
+      . assert(_ == "Macbeth")
 
       test(m"Lens.modify transforms a field through a function"):
         import dynamicAccess.dynamicJson
-        val lens = summon["name" is Lens from Json onto Json]
-        lens.modify(org)(json => (json.as[String]+"!").in[Json]).as[Org]
-      . assert(_ == Org("The Beatles!", Entity("John", 40, List(Role("Leader")))))
+        val lens = summon["title" is Lens from Json onto Json]
+        lens.modify(play)(json => (json.as[String]+"!").in[Json]).as[Play]
+      . assert(_ == Play("Macbeth!", Act(1, List(Scene(1, "A heath")))))
 
       test(m"Each optic updates every array element"):
         import dynamicAccess.dynamicJson, conversions.encodableToJson
-        band.lens(_.leader.roles(Each).name = "x").as[Org]
-      . assert(_ == Org("Q", Entity("John", 40, List(Role("x"), Role("x"), Role("x")))))
+        sketch.lens(_.opening.scenes(Each).place = "x").as[Play]
+      . assert(_ == Play("Q", Act(1, List(Scene(1, "x"), Scene(2, "x"), Scene(3, "x")))))
 
       test(m"Filter optic updates only matching elements"):
         import dynamicAccess.dynamicJson, conversions.encodableToJson
-        band.lens(_.leader.roles(Filter[Json](_.name.as[String] == "b")).name = "x").as[Org]
-      . assert(_ == Org("Q", Entity("John", 40, List(Role("a"), Role("x"), Role("c")))))
+        sketch.lens(_.opening.scenes(Filter[Json](_.place.as[String] == "b")).place = "x").as[Play]
+      . assert(_ == Play("Q", Act(1, List(Scene(1, "a"), Scene(2, "x"), Scene(3, "c")))))
 
       test(m"Setting an absent field inserts it"):
         import dynamicAccess.dynamicJson, conversions.encodableToJson
-        org.lens(_.extra = 9).selectDynamic("extra").as[Int]
+        play.lens(_.extra = 9).selectDynamic("extra").as[Int]
       . assert(_ == 9)
 
     suite(m"Recursive derivation tests"):
@@ -640,12 +640,12 @@ object Tests extends Suite("json", m"Jacinta Tests"):
       . assert(_ == t"null")
 
     suite(m"Json field/index access"):
-      val obj = t"""{"name": "Alice", "age": 30}""".read[Json]
+      val obj = t"""{"name": "Percy", "age": 30}""".read[Json]
       val arr = t"[10, 20, 30]".read[Json]
 
       test(m"Apply a field name as Text"):
         obj(t"name").as[Text]
-      . assert(_ == t"Alice")
+      . assert(_ == t"Percy")
 
       test(m"Apply a numeric field"):
         obj(t"age").as[Int]
@@ -661,7 +661,7 @@ object Tests extends Suite("json", m"Jacinta Tests"):
 
       test(m"apply on existing field"):
         obj(t"name").as[Text]
-      . assert(_ == t"Alice")
+      . assert(_ == t"Percy")
 
       test(m"apply on absent field returns absent Json"):
         obj(t"missing").as[Optional[Int]]
@@ -679,9 +679,9 @@ object Tests extends Suite("json", m"Jacinta Tests"):
 
       test(m"Dynamic field access"):
         import dynamicAccess.dynamicJson
-        val person = t"""{"name": "Bob"}""".read[Json]
+        val person = t"""{"name": "Hal"}""".read[Json]
         person.name.as[Text]
-      . assert(_ == t"Bob")
+      . assert(_ == t"Hal")
 
       test(m"Dynamic indexed access of array field"):
         import dynamicAccess.dynamicJson
@@ -919,42 +919,42 @@ object Tests extends Suite("json", m"Jacinta Tests"):
 object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and format tests"):
   def run(): Unit =
     suite(m"Codec modes"):
-      val crew = Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50)))
+      val cabal = Cabal(Noble(t"Brutus", 30), List(Noble(t"Cassius", 40), Noble(t"Casca", 50)))
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
       val ping = JPing(1, List(JPong(2, List(JPing(3, Nil))), JPong(4, Nil)))
       val treeOpt = TreeOpt(t"a", TreeOpt(t"b", Unset))
-      val band = Band(List(Person(t"x", 1)), Person(t"y \"q\"\n", -2), None)
+      val court = Court(List(Person(t"x", 1)), Person(t"y \"q\"\n", -2), None)
       val counts = Counts(Map(t"a" -> 1), t"tag")
 
       test(m"`codecs.direct` writes each record as `show` renders it"):
         import codecs.direct
 
-        ( crew.in[Text over Json], tree.in[Text over Json], ping.in[Text over Json],
-          treeOpt.in[Text over Json], band.in[Text over Json], counts.in[Text over Json] )
-      . assert(_ == (crew.in[Json].show, tree.in[Json].show, ping.in[Json].show,
-          treeOpt.in[Json].show, band.in[Json].show, counts.in[Json].show))
+        ( cabal.in[Text over Json], tree.in[Text over Json], ping.in[Text over Json],
+          treeOpt.in[Text over Json], court.in[Text over Json], counts.in[Text over Json] )
+      . assert(_ == (cabal.in[Json].show, tree.in[Json].show, ping.in[Json].show,
+          treeOpt.in[Json].show, court.in[Json].show, counts.in[Json].show))
 
       test(m"`codecs.direct` reads each record back"):
         import codecs.direct
 
-        ( crew.in[Text over Json].read[Crew in Json], tree.in[Text over Json].read[Tree in Json],
+        ( cabal.in[Text over Json].read[Cabal in Json], tree.in[Text over Json].read[Tree in Json],
           ping.in[Text over Json].read[JPing in Json] )
-      . assert(_ == (crew, tree, ping))
+      . assert(_ == (cabal, tree, ping))
 
       test(m"`codecs.direct` writes a record with no instance of its own directly"):
         import codecs.direct
 
-        given workerSeam: (Worker is Json.Encodable) =
+        given nobleSeam: (Noble is Json.Encodable) =
           Json.Encodable(() => Morphology.Any)(_ => panic(m"encoded through its Encodable"))
 
-        crew.in[Text over Json]
-      . assert(_ == t"""{"lead":{"name":"al","age":30},"members":[{"name":"bo","age":40},{"name":"cy","age":50}]}""")
+        cabal.in[Text over Json]
+      . assert(_ == t"""{"head":{"name":"Brutus","age":30},"members":[{"name":"Cassius","age":40},{"name":"Casca","age":50}]}""")
 
       test(m"`codecs.direct` writes bytes through the generated printer"):
         import codecs.direct
         import codepages.utf8Codepage
-        crew.in[Data over Json].read[Crew in Json]
-      . assert(_ == crew)
+        cabal.in[Data over Json].read[Cabal in Json]
+      . assert(_ == cabal)
 
       test(m"`codecs.direct` leaves a generic record on the derived path"):
         import codecs.direct
@@ -964,26 +964,26 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       test(m"`codecs.direct` renders indented formatting through the tree"):
         import codecs.direct
         import formatting.indentedJsonFormatting
-        (crew.in[Text over Json], crew.in[Json].show)
+        (cabal.in[Text over Json], cabal.in[Json].show)
       . assert((direct, expected) => direct == expected)
 
       test(m"`codecs.derived` encodes even where a direct printer is in scope"):
         import codecs.derived
 
-        given (Worker is Json.Printable) =
-          Json.Printable.fromEncodable[Worker](_ => panic(m"printed directly"))
+        given (Noble is Json.Printable) =
+          Json.Printable.fromEncodable[Noble](_ => panic(m"printed directly"))
 
-        Worker(t"al", 30).in[Text over Json]
-      . assert(_ == t"""{"name":"al","age":30}""")
+        Noble(t"Brutus", 30).in[Text over Json]
+      . assert(_ == t"""{"name":"Brutus","age":30}""")
 
       test(m"`codecs.strict` writes and reads a record directly"):
         import codecs.strict
 
-        given workerSeam: (Worker is Json.Encodable) =
+        given nobleSeam: (Noble is Json.Encodable) =
           Json.Encodable(() => Morphology.Any)(_ => panic(m"encoded through its Encodable"))
 
-        crew.in[Text over Json].read[Crew in Json]
-      . assert(_ == crew)
+        cabal.in[Text over Json].read[Cabal in Json]
+      . assert(_ == cabal)
 
       test(m"`codecs.strict` rejects a type with no direct codec"):
         val errors = demilitarize:
@@ -1112,17 +1112,17 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
 
     suite(m"Derived direct parsing tests"):
       given Person is Json.Parsable = Json.Parsable.derived
-      given Band is Json.Parsable = Json.Parsable.derived
+      given Court is Json.Parsable = Json.Parsable.derived
       given WithDefault is Json.Parsable = Json.Parsable.derived
       given Renamed is Json.Parsable = Json.Parsable.derived
-      given FooOption is Json.Parsable = Json.Parsable.derived
-      given FooOptional is Json.Parsable = Json.Parsable.derived
-      given Org is Json.Parsable = Json.Parsable.derived
+      given CueOption is Json.Parsable = Json.Parsable.derived
+      given CueOptional is Json.Parsable = Json.Parsable.derived
+      given Play is Json.Parsable = Json.Parsable.derived
       given Tree is Json.Parsable = Json.Parsable.derived
       given TreeOpt is Json.Parsable = Json.Parsable.derived
       given Forest is Json.Parsable = Json.Parsable.derived
       given Empty is Json.Parsable = Json.Parsable.derived
-      given NewBand is Json.Parsable = Json.Parsable.derived
+      given NewCourt is Json.Parsable = Json.Parsable.derived
       given Status is Json.Parsable = Json.Parsable.derived
       given Boxed[Int] is Json.Parsable = Json.Parsable.derived
 
@@ -1134,25 +1134,25 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
         json.read[value in Json] == json.read[Json].as[value]
 
       test(m"Derive a direct product parser"):
-        t"""{"name": "Amy", "age": 50}""".read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+        t"""{"name": "Nym", "age": 50}""".read[Person in Json]
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"Derived parser accepts reordered fields"):
-        t"""{"age": 50, "name": "Amy"}""".read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+        t"""{"age": 50, "name": "Nym"}""".read[Person in Json]
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"Derived parser skips unknown fields, including nested ones"):
-        t"""{"name": "Amy", "extra": {"deep": [1, {"x": null}]}, "age": 50}"""
+        t"""{"name": "Nym", "extra": {"deep": [1, {"x": null}]}, "age": 50}"""
         . read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"Duplicate keys are last-wins, as on the AST path"):
-        parity[Person](t"""{"name": "Amy", "name": "Bea", "age": 50}""")
+        parity[Person](t"""{"name": "Nym", "name": "Pistol", "age": 50}""")
       . assert(identity)
 
       test(m"A missing field takes the declared default"):
-        t"""{"name": "Kid"}""".read[WithDefault in Json]
-      . assert(_ == WithDefault(t"Kid", 18))
+        t"""{"name": "Puck"}""".read[WithDefault in Json]
+      . assert(_ == WithDefault(t"Puck", 18))
 
       test(m"A missing required field raises Json.Error Absent"):
         capture[Json.Error](t"""{"age": 50}""".read[Person in Json])
@@ -1161,62 +1161,62 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
           case _                       => false)
 
       test(m"@name renames apply to direct parsing"):
-        parity[Renamed](t"""{"first_name": "Jon", "yob": 1983}""")
+        parity[Renamed](t"""{"first_name": "Hal", "yob": 1386}""")
       . assert(identity)
 
       test(m"An absent Option field is None"):
-        t"""{"x": 1}""".read[FooOption in Json]
-      . assert(_ == FooOption(1, None))
+        t"""{"act": 1}""".read[CueOption in Json]
+      . assert(_ == CueOption(1, None))
 
       test(m"An Optional field reads null and absent as Unset, a value as itself"):
-        ( t"""{"x": 1}""".read[FooOptional in Json],
-          t"""{"x": 1, "y": null}""".read[FooOptional in Json],
-          t"""{"x": 1, "y": 2}""".read[FooOptional in Json] )
-      . assert(_ == (FooOptional(1, Unset), FooOptional(1, Unset), FooOptional(1, 2)))
+        ( t"""{"act": 1}""".read[CueOptional in Json],
+          t"""{"act": 1, "scene": null}""".read[CueOptional in Json],
+          t"""{"act": 1, "scene": 2}""".read[CueOptional in Json] )
+      . assert(_ == (CueOptional(1, Unset), CueOptional(1, Unset), CueOptional(1, 2)))
 
       test(m"A direct parser reads a null Option field as None by default"):
-        t"""{"x": 1, "y": null}""".read[FooOption in Json]
-      . assert(_ == FooOption(1, None))
+        t"""{"act": 1, "scene": null}""".read[CueOption in Json]
+      . assert(_ == CueOption(1, None))
 
       test(m"A direct parser raises Absent for an absent Optional field under strict absence"):
         import optionalityOptions.strictJsonAbsence
-        given FooOptional is Json.Parsable = Json.Parsable.derived
-        capture[Json.Error](t"""{"x": 1}""".read[FooOptional in Json]).reason
+        given CueOptional is Json.Parsable = Json.Parsable.derived
+        capture[Json.Error](t"""{"act": 1}""".read[CueOptional in Json]).reason
       . assert(_ == Json.Error.Reason.Absent)
 
       test(m"A direct parser rejects a null Optional field under strict nulls"):
         import optionalityOptions.strictJsonNulls
-        given FooOptional is Json.Parsable = Json.Parsable.derived
-        capture[Parse.Error](t"""{"x": 1, "y": null}""".read[FooOptional in Json])
+        given CueOptional is Json.Parsable = Json.Parsable.derived
+        capture[Parse.Error](t"""{"act": 1, "scene": null}""".read[CueOptional in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedNumber(_) => true
           case _                                => false)
 
       test(m"A direct parser skips a wrong-kinded Optional field under lenient faults"):
         import optionalityOptions.lenientJsonFaults
-        given FooOptional is Json.Parsable = Json.Parsable.derived
-        t"""{"x": 1, "y": {"deep": [1, 2]}, "z": 3}""".read[FooOptional in Json]
-      . assert(_ == FooOptional(1, Unset))
+        given CueOptional is Json.Parsable = Json.Parsable.derived
+        t"""{"act": 1, "scene": {"deep": [1, 2]}, "z": 3}""".read[CueOptional in Json]
+      . assert(_ == CueOptional(1, Unset))
 
       test(m"A direct parser skips a wrong-kinded Option field under lenient faults"):
         import optionalityOptions.lenientJsonFaults
-        given FooOption is Json.Parsable = Json.Parsable.derived
-        t"""{"x": 1, "y": "two"}""".read[FooOption in Json]
-      . assert(_ == FooOption(1, None))
+        given CueOption is Json.Parsable = Json.Parsable.derived
+        t"""{"act": 1, "scene": "two"}""".read[CueOption in Json]
+      . assert(_ == CueOption(1, None))
 
       test(m"Nested products and collections parse directly"):
-        val json = t"""{"name": "Acme", "leader":
-            {"name": "Bob", "age": 40, "roles": [{"name": "CEO"}, {"name": "CTO"}]}}"""
+        val json = t"""{"title": "Macbeth", "opening": {"number": 1, "scenes":
+            [{"number": 1, "place": "A heath"}, {"number": 2, "place": "A camp"}]}}"""
 
-        json.read[Org in Json]
-      . assert(_ == Org("Acme", Entity("Bob", 40, List(Role("CEO"), Role("CTO")))))
+        json.read[Play in Json]
+      . assert(_ == Play("Macbeth", Act(1, List(Scene(1, "A heath"), Scene(2, "A camp")))))
 
       test(m"A full record round-trips equally on both paths"):
-        val json = t"""{"guitarists": [{"name": "John", "age": 40}, {"name": "George", "age":
-            58}], "drummer": {"name": "Ringo", "age": 82}, "bassist": {"name": "Paul", "age":
-            81}}"""
+        val json = t"""{"lords": [{"name": "Kent", "age": 48}, {"name": "Edgar", "age":
+            30}], "king": {"name": "Lear", "age": 80}, "heir": {"name": "Regan", "age":
+            20}}"""
 
-        parity[Band](json)
+        parity[Court](json)
       . assert(identity)
 
       test(m"Recursive types parse directly"):
@@ -1244,73 +1244,73 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       . assert(identity)
 
       test(m"A collection of a derived sum parses equally on both paths"):
-        val json = t"""{"members": [{"person": {"name": "Paul", "age": 81}, "kind": "Bassist"},
-            {"person": {"name": "Ringo", "age": 82}, "kind": "Drummer"}]}"""
+        val json = t"""{"members": [{"person": {"name": "Regan", "age": 20}, "kind": "Heir"},
+            {"person": {"name": "Lear", "age": 80}, "kind": "King"}]}"""
 
-        parity[NewBand](json)
+        parity[NewCourt](json)
       . assert(identity)
 
       test(m"A top-level collection of an opted-in element reads directly"):
-        t"""[{"name": "Amy", "age": 50}, {"name": "Bea", "age": 60}]"""
+        t"""[{"name": "Nym", "age": 50}, {"name": "Pistol", "age": 60}]"""
         . read[List[Person] in Json]
-      . assert(_ == List(Person(t"Amy", 50), Person(t"Bea", 60)))
+      . assert(_ == List(Person(t"Nym", 50), Person(t"Pistol", 60)))
 
       test(m"A mistyped directly-parsed field raises Parse.Error"):
         // On the AST path this is a `Json.Error`; token-level readers report
         // type mismatches as parse errors, with source positions.
-        capture[Parse.Error](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
+        capture[Parse.Error](t"""{"name": "Nym", "age": "x"}""".read[Person in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)
 
       test(m"A whole Data block reads directly, without stream plumbing"):
-        t"""{"name": "Amy", "age": 50}""".in[Data].read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+        t"""{"name": "Nym", "age": 50}""".in[Data].read[Person in Json]
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"An 18-digit-plus integer falls back to the general number path"):
         parity[Person](t"""{"name": "Old", "age": 99999999999999999999}""")
       . assert(identity)
 
       test(m"A leading zero raises the same issue on both paths"):
-        val direct = capture[Parse.Error](t"""{"name": "Amy", "age": 0123}""".read[Person in Json])
-        val ast = capture[Parse.Error](t"""{"name": "Amy", "age": 0123}""".read[Json])
+        val direct = capture[Parse.Error](t"""{"name": "Nym", "age": 0123}""".read[Person in Json])
+        val ast = capture[Parse.Error](t"""{"name": "Nym", "age": 0123}""".read[Json])
         (direct.issue, ast.issue)
       . assert: (directIssue, astIssue) =>
           directIssue == astIssue
 
       test(m"A negative integer reads on the fast path"):
-        t"""{"name": "Amy", "age": -3}""".read[Person in Json]
-      . assert(_ == Person(t"Amy", -3))
+        t"""{"name": "Nym", "age": -3}""".read[Person in Json]
+      . assert(_ == Person(t"Nym", -3))
 
       test(m"Malformed content inside a skipped field raises Parse.Error"):
-        capture[Parse.Error](t"""{"name": "Amy", "junk": {"x": }, "age": 50}""".read[Person in Json])
+        capture[Parse.Error](t"""{"name": "Nym", "junk": {"x": }, "age": 50}""".read[Person in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedSomeValue(_) => true
           case _                                   => false)
 
       test(m"Deeply nested skipped values are scanned correctly"):
-        t"""{"junk": [[[{"a": [1, {"b": "x\\n"}, null, true]}]]], "name": "Amy", "age": 50}"""
+        t"""{"junk": [[[{"a": [1, {"b": "x\\n"}, null, true]}]]], "name": "Nym", "age": 50}"""
         . read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"A custom Decodable beats derivation via fromDecodable"):
         // The documented escape hatch for a type whose hand-written decoder
         // must win over structural derivation.
-        val decodable: Worker is Json.Decodable =
+        val decodable: Noble is Json.Decodable =
           Json.Decodable(Morphology.Str): json =>
-            unsafely(Worker(json.root.string, 0))
+            unsafely(Noble(json.root.string, 0))
 
-        given Worker is Json.Parsable = Json.Parsable.fromDecodable(decodable)
+        given Noble is Json.Parsable = Json.Parsable.fromDecodable(decodable)
 
-        t"""\"Syd\"""".read[Worker in Json]
-      . assert(_ == Worker(t"Syd", 0))
+        t"""\"Sly\"""".read[Noble in Json]
+      . assert(_ == Noble(t"Sly", 0))
 
     suite(m"Staged direct parsing tests"):
       given Person is Json.Parsable = Json.Parsable.staged
-      given Band is Json.Parsable = Json.Parsable.staged
+      given Court is Json.Parsable = Json.Parsable.staged
       given WithDefault is Json.Parsable = Json.Parsable.staged
       given Renamed is Json.Parsable = Json.Parsable.staged
-      given FooOptional is Json.Parsable = Json.Parsable.staged
+      given CueOptional is Json.Parsable = Json.Parsable.staged
       given Tree is Json.Parsable = Json.Parsable.staged
       given Boxed[Int] is Json.Parsable = Json.Parsable.staged
 
@@ -1319,48 +1319,48 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
         json.read[record in Json] == json.read[Json].as[record]
 
       test(m"A staged parser reads a simple record"):
-        t"""{"name": "Amy", "age": 50}""".read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+        t"""{"name": "Nym", "age": 50}""".read[Person in Json]
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"A staged parser accepts reordered and unknown fields"):
-        t"""{"extra": [{}], "age": 50, "name": "Amy"}""".read[Person in Json]
-      . assert(_ == Person(t"Amy", 50))
+        t"""{"extra": [{}], "age": 50, "name": "Nym"}""".read[Person in Json]
+      . assert(_ == Person(t"Nym", 50))
 
       test(m"A staged parser takes declared defaults"):
-        t"""{"name": "Kid"}""".read[WithDefault in Json]
-      . assert(_ == WithDefault(t"Kid", 18))
+        t"""{"name": "Puck"}""".read[WithDefault in Json]
+      . assert(_ == WithDefault(t"Puck", 18))
 
       test(m"A staged parser raises Absent for missing required fields"):
         capture[Json.Error](t"""{"age": 50}""".read[Person in Json]).reason
       . assert(_ == Json.Error.Reason.Absent)
 
       test(m"A staged parser honors @name renames"):
-        agree[Renamed](t"""{"first_name": "Jon", "yob": 1983}""")
+        agree[Renamed](t"""{"first_name": "Hal", "yob": 1386}""")
       . assert(identity)
 
       test(m"A staged parser handles Optional null-vs-absent"):
-        ( t"""{"x": 1}""".read[FooOptional in Json],
-          t"""{"x": 1, "y": null}""".read[FooOptional in Json],
-          t"""{"x": 1, "y": 2}""".read[FooOptional in Json] )
-      . assert(_ == (FooOptional(1, Unset), FooOptional(1, Unset), FooOptional(1, 2)))
+        ( t"""{"act": 1}""".read[CueOptional in Json],
+          t"""{"act": 1, "scene": null}""".read[CueOptional in Json],
+          t"""{"act": 1, "scene": 2}""".read[CueOptional in Json] )
+      . assert(_ == (CueOptional(1, Unset), CueOptional(1, Unset), CueOptional(1, 2)))
 
       test(m"A staged parser raises Absent for an absent Optional field under strict absence"):
         import optionalityOptions.strictJsonAbsence
-        given FooOptional is Json.Parsable = Json.Parsable.staged
-        capture[Json.Error](t"""{"x": 1}""".read[FooOptional in Json]).reason
+        given CueOptional is Json.Parsable = Json.Parsable.staged
+        capture[Json.Error](t"""{"act": 1}""".read[CueOptional in Json]).reason
       . assert(_ == Json.Error.Reason.Absent)
 
       test(m"A staged parser skips a wrong-kinded Optional field under lenient faults"):
         import optionalityOptions.lenientJsonFaults
-        given FooOptional is Json.Parsable = Json.Parsable.staged
-        t"""{"x": 1, "y": "two"}""".read[FooOptional in Json]
-      . assert(_ == FooOptional(1, Unset))
+        given CueOptional is Json.Parsable = Json.Parsable.staged
+        t"""{"act": 1, "scene": "two"}""".read[CueOptional in Json]
+      . assert(_ == CueOptional(1, Unset))
 
       test(m"A staged parser reads collection and option fields"):
-        val json = t"""{"guitarists": [{"name": "John", "age": 40}], "drummer":
-            {"name": "Ringo", "age": 82}, "bassist": {"name": "Paul", "age": 81}}"""
+        val json = t"""{"lords": [{"name": "Kent", "age": 48}], "king":
+            {"name": "Lear", "age": 80}, "heir": {"name": "Regan", "age": 20}}"""
 
-        agree[Band](json)
+        agree[Court](json)
       . assert(identity)
 
       test(m"A staged parser handles recursive types"):
@@ -1372,11 +1372,11 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       . assert(_ == Boxed(42))
 
       test(m"A staged parser is last-wins for duplicate keys"):
-        agree[Person](t"""{"name": "Amy", "name": "Bea", "age": 50}""")
+        agree[Person](t"""{"name": "Nym", "name": "Pistol", "age": 50}""")
       . assert(identity)
 
       test(m"A staged parser rejects mistyped fields with Parse.Error"):
-        capture[Parse.Error](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
+        capture[Parse.Error](t"""{"name": "Nym", "age": "x"}""".read[Person in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)
@@ -1497,7 +1497,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
           case _                              => false)
 
       test(m"Decode missing required field raises Json.Error"):
-        capture[Json.Error](t"""{}""".read[Json].as[Foo])
+        capture[Json.Error](t"""{}""".read[Json].as[Sonnet])
       . assert(_.reason match
           case Json.Error.Reason.Absent => true
           case _                       => false)
@@ -1560,7 +1560,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
 
       test(m"emit as UTF-8 bytes matches the encoded text, including non-ASCII"):
         import formatting.compactJsonFormatting
-        val json = Json.make(name = t"Zoë ☃ 😀".in[Json], n = 42.in[Json])
+        val json = Json.make(name = t"Cæsar ☃ 😀".in[Json], n = 42.in[Json])
         val out = new java.io.ByteArrayOutputStream()
         Json.emit[Data](json, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
         java.util.Arrays.equals(out.toByteArray, json.show.s.getBytes("UTF-8"))
@@ -1568,7 +1568,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
 
       test(m"lend hands out borrowed blocks whose bytes equal the encoded text"):
         import formatting.compactJsonFormatting
-        val json = Json.make(name = t"Zoë ☃ 😀".in[Json], n = 42.in[Json], big = t"[${(0 until 3000).mkString(",")}]".read[Json])
+        val json = Json.make(name = t"Cæsar ☃ 😀".in[Json], n = 42.in[Json], big = t"[${(0 until 3000).mkString(",")}]".read[Json])
         val out = new java.io.ByteArrayOutputStream()
         var blocks = 0
 
@@ -1626,14 +1626,14 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
         import discriminables.jsonByTypeDiscriminable
 
         test(m"Discriminate by 'type'"):
-          val a: Animal = Animal.Dog(t"Rex")
+          val a: Animal = Animal.Dog(t"Crab")
           a.in[Json].show
-        . assert(_ == t"""{"name":"Rex","type":"Dog"}""")
+        . assert(_ == t"""{"name":"Crab","type":"Dog"}""")
 
         test(m"Decode disjunction by 'type'"):
-          val a: Animal = Animal.Cat(t"Whiskers")
+          val a: Animal = Animal.Cat(t"Graymalkin")
           a.in[Json].as[Animal]
-        . assert(_ == Animal.Cat(t"Whiskers"))
+        . assert(_ == Animal.Cat(t"Graymalkin"))
 
     suite(m"JsonPointer tests"):
       test(m"Empty pointer encodes with #"):
@@ -1641,7 +1641,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       . assert(identity)
 
       test(m"Pointer with one segment includes the segment"):
-        JsonPointer()(t"foo").encode.contains(t"foo")
+        JsonPointer()(t"verona").encode.contains(t"verona")
       . assert(identity)
 
       test(m"Pointer with multiple segments includes all"):
@@ -1743,28 +1743,28 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
           case _                    => false
 
       test(m"Derived schema for a case class is an Object"):
-        JsonSchema.derived[Bar].schema()
+        JsonSchema.derived[Song].schema()
       . assert:
           case _: JsonSchema.Object => true
           case _                    => false
 
       test(m"Derived schema for a case class lists fields as properties"):
-        JsonSchema.derived[Bar].schema() match
+        JsonSchema.derived[Song].schema() match
           case obj: JsonSchema.Object => obj.properties.keys
           case _                      => Set.empty[Text]
-      . assert(_ == Set(t"a", t"b"))
+      . assert(_ == Set(t"number", t"title"))
 
       test(m"Derived schema marks all fields required when none optional"):
-        JsonSchema.derived[Bar].schema() match
+        JsonSchema.derived[Song].schema() match
           case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
-      . assert(_ == Set(t"a", t"b"))
+      . assert(_ == Set(t"number", t"title"))
 
       test(m"Derived schema omits optional fields from required"):
-        JsonSchema.derived[BarOpt].schema() match
+        JsonSchema.derived[SongOpt].schema() match
           case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
-      . assert(_ == Set(t"a"))
+      . assert(_ == Set(t"number"))
 
       test(m"Derived schema for sum type uses oneOf"):
         JsonSchema.derived[Choice].schema() match
@@ -2010,8 +2010,8 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
 
     suite(m"JSON pointer interpolator"):
       test(m"a same-document pointer parses"):
-        jp"#/foo/bar".encode
-      . assert(_ == t"#/foo/bar")
+        jp"#/verona/capulet".encode
+      . assert(_ == t"#/verona/capulet")
 
       test(m"the whole-document pointer parses"):
         jp"#".encode
@@ -2019,47 +2019,47 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
 
       test(m"a pointer not beginning with '#' is rejected at the first character"):
         demilitarize:
-          jp"/foo/bar"
+          jp"/verona/capulet"
         . map(_.focus)
       . assert(_ == List("/"))
 
       test(m"a fragment not beginning with '/' is rejected after the '#'"):
         demilitarize:
-          jp"#foo"
+          jp"#verona"
         . map(_.focus)
-      . assert(_ == List("f"))
+      . assert(_ == List("v"))
 
       test(m"a malformed '~' escape is rejected at the '~'"):
         demilitarize:
-          jp"#/foo~2bar"
+          jp"#/verona~2capulet"
         . map(_.focus)
       . assert(_ == List("~"))
 
     suite(m"Specific per-path overrides"):
-      val firm = Firm(Worker(t"ann", 30), Worker(t"bob", 40))
+      val duel = Duel(Noble(t"Hal", 16), Noble(t"Percy", 40))
       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
 
       test(m"Without a Specific, all fields use default encoders"):
-        firm.in[Json].show
-      . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"bob","age":40}}""")
+        duel.in[Json].show
+      . assert(_ == t"""{"hero":{"name":"Hal","age":16},"rival":{"name":"Percy","age":40}}""")
 
       test(m"A Specific overrides one field path along its spine only"):
-        given (Firm is Specific over Json.Encodable) =
+        given (Duel is Specific over Json.Encodable) =
           specifically:
-            case root.deputy.name() => shout
+            case root.rival.name() => shout
 
-        firm.in[Json].show
-      . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}""")
+        duel.in[Json].show
+      . assert(_ == t"""{"hero":{"name":"Hal","age":16},"rival":{"name":"PERCY","age":40}}""")
 
       test(m"a collection element is overridden via a local given + re-derive"):
-        val nameOnly: Worker is Json.Encodable = Json.Encodable(() => Morphology.Str): w => Json(w.name)
+        val nameOnly: Noble is Json.Encodable = Json.Encodable(() => Morphology.Str): w => Json(w.name)
 
-        given (Crew is Specific over Json.Encodable) =
+        given (Cabal is Specific over Json.Encodable) =
           specifically:
             case root.members() =>
-              given Worker is Json.Encodable = nameOnly
-              summon[List[Worker] is Json.Encodable]
+              given Noble is Json.Encodable = nameOnly
+              summon[List[Noble] is Json.Encodable]
 
-        Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50))).in[Json].show
-      . assert(_ == t"""{"lead":{"name":"al","age":30},"members":["bo","cy"]}""")
+        Cabal(Noble(t"Brutus", 30), List(Noble(t"Cassius", 40), Noble(t"Casca", 50))).in[Json].show
+      . assert(_ == t"""{"head":{"name":"Brutus","age":30},"members":["Cassius","Casca"]}""")
 

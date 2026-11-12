@@ -82,52 +82,52 @@ object ValidationTests extends Suite("json-validation", m"Jacinta validation tes
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Validate a fully-valid object: no errors accrued"):
-        val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
+        val json = t"""{"name": "Percy", "age": 30, "email": "a@b.c"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 0)
 
       test(m"Validate single missing field: one error"):
-        val json = t"""{"name": "Bob", "age": 1}""".read[Json]
+        val json = t"""{"name": "Hal", "age": 1}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 1)
 
       test(m"Single wrong-type field: one error"):
-        val json = t"""{"name": "Bob", "age": "young", "email": "b@x"}""".read[Json]
+        val json = t"""{"name": "Hal", "age": "young", "email": "b@x"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):
       test(m"Two missing fields: two errors accrued"):
-        val json = t"""{"name": "Alice"}""".read[Json]
+        val json = t"""{"name": "Percy"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
-        val json = t"""{"name": "Alice"}""".read[Json]
+        val json = t"""{"name": "Percy"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => xs.to[Set])
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
-        val json = t"""{"name": "Alice"}""".read[Json]
+        val json = t"""{"name": "Percy"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.all:
           case (_, err) => err.reason == Json.Error.Reason.Absent
       . assert(identity)
 
     suite(m"Optionality policies under accrual"):
       test(m"A wrong-typed Optional field accrues one error by default"):
-        val json = t"""{"name": "Alice", "age": "thirty"}""".read[Json]
+        val json = t"""{"name": "Percy", "age": "thirty"}""".read[Json]
         validateJson(json)(_.as[VOptionalAge]).items.map(_(0).s)
       . assert(_ == List("#/age"))
 
       test(m"Lenient faults accrue nothing for a wrong-typed Optional field"):
         import optionalityOptions.lenientJsonFaults
-        val json = t"""{"name": "Alice", "age": "thirty"}""".read[Json]
+        val json = t"""{"name": "Percy", "age": "thirty"}""".read[Json]
         validateJson(json)(_.as[VOptionalAge]).items.size
       . assert(_ == 0)
 
       test(m"Strict absence accrues an Absent error with the field's pointer"):
         import optionalityOptions.strictJsonAbsence
-        val json = t"""{"name": "Alice"}""".read[Json]
+        val json = t"""{"name": "Percy"}""".read[Json]
         validateJson(json)(_.as[VOptionalAge]).items.map(_(0).s)
       . assert(_ == List("#/age"))
 
@@ -194,14 +194,14 @@ object ValidationTests extends Suite("json-validation", m"Jacinta validation tes
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
         VProbe.constructions = 0
-        val json = t"""{"name": "Zoe"}""".read[Json]
+        val json = t"""{"name": "Nym"}""".read[Json]
         val issues = validateJson(json)(_.as[VChecked])
         (issues.items.size, VProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
         VProbe.constructions = 0
-        val json = t"""{"name": "Zoe", "age": 5}""".read[Json]
+        val json = t"""{"name": "Nym", "age": 5}""".read[Json]
         validateJson(json)(_.as[VChecked])
         VProbe.constructions
       . assert(_ == 1)
@@ -243,23 +243,23 @@ object ValidationTests extends Suite("json-validation", m"Jacinta validation tes
         . protect(decode(text))
 
       test(m"Two missing fields accrue on the direct-parse path"):
-        validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json]).items.size
+        validateRead(t"""{"name": "Hal"}""")(_.read[VPerson in Json]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify both missing fields on the direct-parse path"):
-        validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json])
+        validateRead(t"""{"name": "Hal"}""")(_.read[VPerson in Json])
         . items.map(_(0).s).pipe(xs => xs.to[Set])
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Direct-parse construction is skipped when a field is missing"):
         VProbe.constructions = 0
-        val issues = validateRead(t"""{"name": "Zoe"}""")(_.read[VChecked in Json])
+        val issues = validateRead(t"""{"name": "Nym"}""")(_.read[VChecked in Json])
         (issues.items.size, VProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Direct-parse construction runs once when clean"):
         VProbe.constructions = 0
-        validateRead(t"""{"name": "Zoe", "age": 5}""")(_.read[VChecked in Json])
+        validateRead(t"""{"name": "Nym", "age": 5}""")(_.read[VChecked in Json])
         VProbe.constructions
       . assert(_ == 1)
 
@@ -289,7 +289,7 @@ object ValidationTests extends Suite("json-validation", m"Jacinta validation tes
         var consistencyRan = false
         var constructed = false
 
-        val json = t"""{"name": "Ada", "age": 36}""".read[Json]
+        val json = t"""{"name": "Hal", "age": 16}""".read[Json]
 
         validateJson(json): json =>
           val name = venture(json.name.as[Text])
@@ -332,7 +332,7 @@ object ValidationTests extends Suite("json-validation", m"Jacinta validation tes
         . protect(decode(json)).items
 
       test(m"Missing field reports a position on a tracked Json"):
-        val source = t"""{"name": "Alice"}"""
+        val source = t"""{"name": "Percy"}"""
         import parsing.trackPositions
         val json = source.read[Json]
         val results = validateWithPositions(json)(_.as[VPerson])
@@ -349,7 +349,7 @@ object ValidationTests extends Suite("json-validation", m"Jacinta validation tes
       . assert(_ == (2, 11))
 
       test(m"Non-tracking Json has Unset positions"):
-        val source = t"""{"name": "Alice"}"""
+        val source = t"""{"name": "Percy"}"""
         val json = source.read[Json]
         val results = validateWithPositions(json)(_.as[VPerson])
         results.all((_, line, _) => line == Unset)
