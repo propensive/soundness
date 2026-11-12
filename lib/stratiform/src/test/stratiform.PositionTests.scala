@@ -66,12 +66,12 @@ object PositionTests extends Suite("tel-positions", m"Stratiform position-index 
 
     suite(m"Nested compounds"):
       test(m"Locate a child compound's keyword"):
-        t"person\n  name Alice\n  age 30\n".read[Tel]
+        t"person\n  name Percy\n  age 30\n".read[Tel]
         . locateKey(Telp(List(t"person", t"name")))
       . assert(_ == at(2, 3, 4))
 
       test(m"Locate the keyword of a sibling child on a later line"):
-        t"person\n  name Alice\n  age 30\n".read[Tel]
+        t"person\n  name Percy\n  age 30\n".read[Tel]
         . locateKey(Telp(List(t"person", t"age")))
       . assert(_ == at(3, 3, 3))
 
@@ -80,7 +80,7 @@ object PositionTests extends Suite("tel-positions", m"Stratiform position-index 
       . assert(_ == at(3, 5, 1))
 
       test(m"A missing intermediate segment returns Unset"):
-        t"person\n  name Alice\n".read[Tel].locate(Telp(List(t"person", t"absent")))
+        t"person\n  name Percy\n".read[Tel].locate(Telp(List(t"person", t"absent")))
       . assert(_ == Unset)
 
     suite(m"Column tracks indentation"):
@@ -125,7 +125,7 @@ object PositionTests extends Suite("tel-positions", m"Stratiform position-index 
       . assert(_ == at(1, 6, 1))
 
       test(m"A compound with only children falls back to its keyword"):
-        t"person\n  name Alice\n".read[Tel].locate(Telp(List(t"person")))
+        t"person\n  name Percy\n".read[Tel].locate(Telp(List(t"person")))
       . assert(_ == at(1, 1, 6))
 
       test(m"A remark is not a value, so the keyword is used"):
@@ -133,11 +133,11 @@ object PositionTests extends Suite("tel-positions", m"Stratiform position-index 
       . assert(_ == at(1, 1, 4))
 
       test(m"A source atom's payload is not spanned, so the keyword is used"):
-        t"name\n    Alice\n".read[Tel].locate(Telp(List(t"name")))
+        t"name\n    Percy\n".read[Tel].locate(Telp(List(t"name")))
       . assert(_ == at(1, 1, 4))
 
       test(m"A literal atom's payload is not spanned, so the keyword is used"):
-        t"name\n      ---\nAlice\n      ---\n".read[Tel].locate(Telp(List(t"name")))
+        t"name\n      ---\nPercy\n      ---\n".read[Tel].locate(Telp(List(t"name")))
       . assert(_ == at(1, 1, 4))
 
       test(m"The root has no value, so it falls back to its empty keyword"):
@@ -207,23 +207,23 @@ object PositionTests extends Suite("tel-positions", m"Stratiform position-index 
         Tel.Enclosure(Telp(path), position)
 
       test(m"A coordinate on a top-level keyword encloses that compound"):
-        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(1, 2)
+        t"person\n  name Percy\n  age 30\n".read[Tel].enclosing(1, 2)
       . assert(_ == enclosure(List(t"person"), at(1, 1, 6)))
 
       test(m"A coordinate on a child's keyword encloses the child"):
-        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(2, 4)
+        t"person\n  name Percy\n  age 30\n".read[Tel].enclosing(2, 4)
       . assert(_ == enclosure(List(t"person", t"name"), at(2, 3, 4)))
 
       test(m"A coordinate inside the inline-atom run names the value region"):
-        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(2, 9)
+        t"person\n  name Percy\n  age 30\n".read[Tel].enclosing(2, 9)
       . assert(_ == enclosure(List(t"person", t"name"), at(2, 8, 5)))
 
       test(m"A coordinate in a child line's indentation encloses that child"):
-        t"person\n  name Alice\n".read[Tel].enclosing(2, 1)
+        t"person\n  name Percy\n".read[Tel].enclosing(2, 1)
       . assert(_ == enclosure(List(t"person", t"name"), at(2, 3, 4)))
 
       test(m"A coordinate on a later sibling encloses it, not the first"):
-        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(3, 5)
+        t"person\n  name Percy\n  age 30\n".read[Tel].enclosing(3, 5)
       . assert(_ == enclosure(List(t"person", t"age"), at(3, 3, 3)))
 
       test(m"A grandchild coordinate builds the full keyword path"):

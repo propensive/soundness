@@ -111,7 +111,7 @@ object ServingTests extends Suite("tel-serving", m"Stratiform acceptance serving
       lazy val composition = List(contact.base, hashOf(contact, t"with-address"), hashOf(contact, t"with-phone"))
 
       lazy val held = element(contact, composition,
-          t"name Bea\nemail bea@example.com\naddress\n  street High\n  city Town\n  country Land\nphone\n  country-code 44\n  number 123\n")
+          t"name Nym\nemail nym@example.com\naddress\n  street High\n  city Town\n  country Land\nphone\n  country-code 44\n  number 123\n")
 
       lazy val served = Tel.Acceptance.serve(request, contact, composition, held)
 
@@ -139,15 +139,15 @@ object ServingTests extends Suite("tel-serving", m"Stratiform acceptance serving
 
       test(m"a writer holding only the base serves the requirement itself"):
         val base = List(contact.base)
-        val plain = element(contact, base, t"name Bea\n")
+        val plain = element(contact, base, t"name Nym\n")
         Tel.Acceptance.serve(request, contact, base, plain).let(_.hashes.size)
       . assert(_ == 2)
 
     suite(m"Alternatives and permissions"):
       lazy val base = List(people.base)
       lazy val withAlpha = List(people.base, hashOf(people, t"alpha"))
-      lazy val plain = element(people, base, t"name Bea\n")
-      lazy val emailed = element(people, withAlpha, t"name Bea\nemail bea@example.com\n")
+      lazy val plain = element(people, base, t"name Nym\n")
+      lazy val emailed = element(people, withAlpha, t"name Nym\nemail nym@example.com\n")
 
       test(m"a writer unable to meet a required layer falls back to the next alternative"):
         val acceptance = Tel.Acceptance(alternative(people, List(t"strict")), alternative(people, List(), selfContained = true))

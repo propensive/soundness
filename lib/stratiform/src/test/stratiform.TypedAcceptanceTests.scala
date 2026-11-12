@@ -464,16 +464,16 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
 
     suite(m"Serving and reading typed values"):
       lazy val acceptance = Tel.Acceptance[(ContactV2, Invoice)]()
-      lazy val bea = ContactV2(t"Bea", t"bea@example.com", Address(t"High", t"Town"), t"123")
+      lazy val nym = ContactV2(t"Nym", t"nym@example.com", Address(t"High", t"Town"), t"123")
 
       test(m"a value of the first format is served with every component"):
-        bea.fulfil(acceptance.acceptance).let { served => (served.alternative.schema.count, served.hashes.size) }
+        nym.fulfil(acceptance.acceptance).let { served => (served.alternative.schema.count, served.hashes.size) }
       . assert(_ == (1, 6))
 
       test(m"and read back as that format, with every member"):
-        bea.fulfil(acceptance.acceptance).let: served =>
+        nym.fulfil(acceptance.acceptance).let: served =>
           acceptance.read(served.document) match
-            case contact: ContactV2 => contact == bea
+            case contact: ContactV2 => contact == nym
             case _: Invoice         => false
       . assert(_ == true)
 
@@ -485,7 +485,7 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       . assert(_ == t"42")
 
       test(m"a value with members unset is served and read without them"):
-        val plain = ContactV2(t"Bea", Unset, Unset, Unset)
+        val plain = ContactV2(t"Nym", Unset, Unset, Unset)
         plain.fulfil(acceptance.acceptance).let: served =>
           acceptance.read(served.document) match
             case contact: ContactV2 => contact == plain
@@ -498,11 +498,11 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       test(m"a writer of an older format is read as the most preferred compatible format"):
         val versions = Tel.Acceptance[(ContactV2, ContactV1)]()
 
-        ContactV1(t"Bea", t"bea@example.com").fulfil(versions.acceptance).let: served =>
+        ContactV1(t"Nym", t"nym@example.com").fulfil(versions.acceptance).let: served =>
           (served.hashes.size, versions.read(served.document) match
             case contact: ContactV2 => contact.email
             case _: ContactV1       => Unset)
-      . assert(_ == (2, t"bea@example.com"))
+      . assert(_ == (2, t"nym@example.com"))
 
       test(m"retracting layers are components of a sum's lineage"):
         Tel.Acceptance.lineage[Envelope](t"envelope").layers.map(_.name)

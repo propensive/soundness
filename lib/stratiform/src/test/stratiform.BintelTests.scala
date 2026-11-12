@@ -284,8 +284,8 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == "00")
 
       test(m"single scalar child via tel.bintel(schema)"):
-        hex(t"name Alice\n".read[Tel].bintel(nameSchema))
-      . assert(_ == "01 00 05 41 6C 69 63 65")
+        hex(t"name Percy\n".read[Tel].bintel(nameSchema))
+      . assert(_ == "01 00 05 50 65 72 63 79")
 
       test(m"empty scalar value encodes as zero-length"):
         val scalar = Tels.Scalar(Array.empty)
@@ -394,7 +394,7 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == 0)
 
       test(m"single scalar value round-trips"):
-        val original = t"name Alice\n".read[Tel]
+        val original = t"name Percy\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
@@ -402,7 +402,7 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
             children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
-      . assert(_ == List(t"Alice"))
+      . assert(_ == List(t"Percy"))
 
       test(m"a value derives its own schema and round-trips through BinTEL"):
         val shape: Tests.Shape2 = Tests.Shape2.Rectangle(3, 4)
@@ -426,8 +426,8 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == Tests.Shape2.Dot)
 
       test(m"a product round-trips bytes-to-typed-value through bintel/read"):
-        Bintel.read[Tests.Person](Tests.Person(t"Alice", 30).bintel)
-      . assert(_ == Tests.Person(t"Alice", 30))
+        Bintel.read[Tests.Person](Tests.Person(t"Percy", 30).bintel)
+      . assert(_ == Tests.Person(t"Percy", 30))
 
       test(m"empty scalar value round-trips"):
         val scalar = Tels.Scalar(Array.empty)
@@ -509,14 +509,14 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == List(t"example.com"))
 
       test(m"trailing bytes after document root raise Bintel.Error"):
-        val original = t"name Alice\n".read[Tel]
+        val original = t"name Percy\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val padded = bytes :+ 0xff.toByte
         capture[Bintel.Error](Bintel.decode(padded, nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
       test(m"truncated input raises Bintel.Error"):
-        val original = t"name Alice\n".read[Tel]
+        val original = t"name Percy\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val truncated = bytes.segment(0.z till (bytes.length - 1).z)
         // B02 (inside a varint), B06 (inside a value) or B09 (otherwise),
@@ -653,19 +653,19 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == true)
 
       test(m"tel.bintelDocument produces a file beginning with magic"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         bytes.segment(0.z till 4.z).to[List]
       . assert(_ == List(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte))
 
       test(m"decodeDocument round-trips through frame + decode"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         val doc = Bintel.decodeDocument(bytes, nameSchema)
         doc.root match
           case Tel.Element.Node(_, _, children) =>
             children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
-      . assert(_ == List(t"Alice"))
+      . assert(_ == List(t"Percy"))
 
       def firstName(document: Bintel.Document): Text = document.root match
         case Tel.Element.Node(_, _, children) =>
@@ -673,19 +673,19 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
         case _ => t"?"
 
       test(m"decodeDocument reports the continuation offset"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         Bintel.decodeDocument(bytes, nameSchema).continuation == bytes.length
       . assert(_ == true)
 
       test(m"single-document decoding ignores the continuation"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         val junk: Data = scala.Array[Byte](0x7f, 0x7f).asInstanceOf[Array[Byte]]
         val doc = Bintel.decodeDocument(concat(bytes, junk), nameSchema)
         (firstName(doc), doc.continuation == bytes.length)
-      . assert(_ == (t"Alice", true))
+      . assert(_ == (t"Percy", true))
 
       test(m"a declared length longer than the structure is B16"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         val forged = Array.allocate[Byte](bytes.length + 1)
         forged.place(bytes)
         forged(4) = (bytes.at(4.z).or(0.toByte) + 1).toByte
@@ -694,7 +694,7 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == Bintel.Error.Reason.DeclaredLengthMismatch)
 
       test(m"a declared length shorter than the structure fails inside the body"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         val forged = Array.thaw(bytes)
         forged(4) = (bytes.at(4.z).or(0.toByte) - 1).toByte
         capture[Bintel.Error](Bintel.decodeDocument(Array.freeze(forged), nameSchema))
@@ -702,26 +702,26 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == Bintel.Error.Reason.ValueTruncated)
 
       test(m"decodeWholeDocument accepts exactly one document"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         firstName(Bintel.decodeWholeDocument(bytes, nameSchema))
-      . assert(_ == t"Alice")
+      . assert(_ == t"Percy")
 
       test(m"decodeWholeDocument rejects a continuation as B08"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         capture[Bintel.Error](Bintel.decodeWholeDocument(concat(bytes, bytes), nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
       test(m"decodeStream yields every document of a stream in order"):
-        val alice = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val bob   = t"name Bob\n".read[Tel].bintelDocument(nameSchema, sig32)
-        Bintel.decodeStream(concat(alice, bob), nameSchema).map(firstName)
-      . assert(_ == List(t"Alice", t"Bob"))
+        val percy = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val hal   = t"name Hal\n".read[Tel].bintelDocument(nameSchema, sig32)
+        Bintel.decodeStream(concat(percy, hal), nameSchema).map(firstName)
+      . assert(_ == List(t"Percy", t"Hal"))
 
       test(m"decodeStream reports each document's continuation"):
-        val alice = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val bob   = t"name Bob\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val docs = Bintel.decodeStream(concat(alice, bob), nameSchema).map(_.continuation)
-        docs == List(alice.length, alice.length + bob.length)
+        val percy = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val hal   = t"name Hal\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val docs = Bintel.decodeStream(concat(percy, hal), nameSchema).map(_.continuation)
+        docs == List(percy.length, percy.length + hal.length)
       . assert(_ == true)
 
       test(m"decodeStream of empty input yields no documents"):
@@ -729,21 +729,21 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == List())
 
       test(m"a continuation that is not BinTEL is B01 at that position"):
-        val alice = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val percy = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         val junk: Data = scala.Array[Byte](0x7f, 0x7f, 0x7f, 0x7f, 0x7f).asInstanceOf[Array[Byte]]
-        capture[Bintel.Error](Bintel.decodeStream(concat(alice, junk), nameSchema)).reason
+        capture[Bintel.Error](Bintel.decodeStream(concat(percy, junk), nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.BadMagic)
 
     suite(m"BinTEL §9 textual encoding"):
       val sig32: Data = scala.Array.fill[Byte](32)(0x55.toByte).asInstanceOf[Array[Byte]]
 
       test(m"text begins with βτελ (the four BASE-256 chars for the magic bytes)"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         Bintel.text(bytes).s.substring(0, 4)
       . assert(_ == "βτελ")
 
       test(m"text/fromText round-trip"):
-        val source = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val source = t"name Percy\n".read[Tel].bintelDocument(nameSchema, sig32)
         val text = Bintel.text(source)
         val recovered = Bintel.fromText(text)
         recovered.stdlib == source.stdlib
@@ -883,20 +883,20 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
 
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
-        val tel = t"name Alice\n".read[Tel]
+        val tel = t"name Percy\n".read[Tel]
         val a = tel.valueHash(nameSchema).data.stdlib
         val b = tel.valueHash(nameSchema).data.stdlib
         a == b
       . assert(_ == true)
 
       test(m"valueHash differs when value differs"):
-        val a = t"name Alice\n".read[Tel].valueHash(nameSchema).data.stdlib
-        val b = t"name Bob\n".read[Tel].valueHash(nameSchema).data.stdlib
+        val a = t"name Percy\n".read[Tel].valueHash(nameSchema).data.stdlib
+        val b = t"name Hal\n".read[Tel].valueHash(nameSchema).data.stdlib
         a == b
       . assert(_ == false)
 
       test(m"valueHash output is 32 bytes"):
-        t"name Alice\n".read[Tel].valueHash(nameSchema).data.length
+        t"name Percy\n".read[Tel].valueHash(nameSchema).data.length
       . assert(_ == 32)
 
       test(m"§3 canonical tels.tel value hash is deterministic"):
@@ -948,7 +948,7 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
                         |document
                         |  field name Identifier
                         |""".stripMargin.tt
-      val dataDoc = t"name Alice\n"
+      val dataDoc = t"name Percy\n"
 
       def selfContained(): Data =
         Bintel.selfContained(dataDoc.read[Tel], schemaDoc.read[Tel])
@@ -1040,8 +1040,8 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
 
     suite(m"BinTEL direct parsing (BintelInlinable)"):
       given (Tests.Person is Bintel.Parsable) = BintelInlinable.parsable[Tests.Person]
-      given (Tests.Company is Bintel.Parsable) = BintelInlinable.parsable[Tests.Company]
-      given (Tests.Team is Bintel.Parsable) = BintelInlinable.parsable[Tests.Team]
+      given (Tests.Play is Bintel.Parsable) = BintelInlinable.parsable[Tests.Play]
+      given (Tests.Troupe is Bintel.Parsable) = BintelInlinable.parsable[Tests.Troupe]
       given (Tests.OptField is Bintel.Parsable) = BintelInlinable.parsable[Tests.OptField]
 
       given (Tests.WithDefault is Bintel.Parsable) =
@@ -1051,8 +1051,8 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       given (Tests.BShape is Bintel.Parsable) = BintelInlinable.parsable[Tests.BShape]
 
       test(m"a flat struct reads directly from body bytes"):
-        Bintel.parse[Tests.Person](Tests.Person(t"Alice", 30).bintel)
-      . assert(_ == Tests.Person(t"Alice", 30))
+        Bintel.parse[Tests.Person](Tests.Person(t"Percy", 30).bintel)
+      . assert(_ == Tests.Person(t"Percy", 30))
 
       test(m"the direct read agrees with Bintel.read"):
         val bytes = Tests.Person(t"Iris", 44).bintel
@@ -1060,14 +1060,14 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(identity)
 
       test(m"a nested struct inlines through its own generated parser"):
-        val company = Tests.Company(t"Acme", Tests.Person(t"Bob", 50))
-        Bintel.parse[Tests.Company](company.bintel)
-      . assert(_ == Tests.Company(t"Acme", Tests.Person(t"Bob", 50)))
+        val play = Tests.Play(t"Henry", Tests.Person(t"Hal", 50))
+        Bintel.parse[Tests.Play](play.bintel)
+      . assert(_ == Tests.Play(t"Henry", Tests.Person(t"Hal", 50)))
 
       test(m"a repeatable struct field gathers every occurrence in order"):
-        val team = Tests.Team(t"crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2)))
-        Bintel.parse[Tests.Team](team.bintel)
-      . assert(_ == Tests.Team(t"crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2))))
+        val troupe = Tests.Troupe(t"Athens", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2)))
+        Bintel.parse[Tests.Troupe](troupe.bintel)
+      . assert(_ == Tests.Troupe(t"Athens", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2))))
 
       test(m"a repeatable scalar field gathers every occurrence in order"):
         val readings = Tests.Readings(List(3, 1, 4, 1, 5), t"pi")
@@ -1110,10 +1110,10 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == Tests.OptField(7, Unset))
 
       test(m"a missing field with a declared default takes it"):
-        // A hand-built body: one child, index 0 ("name"), scalar "Bob".
-        val bytes = Array[Byte](0x01, 0x00, 0x03, 'B'.toByte, 'o'.toByte, 'b'.toByte)
+        // A hand-built body: one child, index 0 ("name"), scalar "Hal".
+        val bytes = Array[Byte](0x01, 0x00, 0x03, 'H'.toByte, 'a'.toByte, 'l'.toByte)
         Bintel.parse[Tests.WithDefault](bytes)
-      . assert(_ == Tests.WithDefault(t"Bob", 18))
+      . assert(_ == Tests.WithDefault(t"Hal", 18))
 
       test(m"a missing required field raises Absent with its sentinel"):
         // One child, index 1 ("age"), scalar "9" — "name" is missing.
@@ -1148,7 +1148,7 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == Bintel.Error.Reason.BadKeywordIndex)
 
       test(m"trailing bytes are rejected"):
-        val good = Tests.Person(t"Alice", 30).bintel
+        val good = Tests.Person(t"Percy", 30).bintel
         val padded = Array.from(good.to[List].stdlib :+ 0.toByte)
         capture[Bintel.Error](Bintel.parse[Tests.Person](padded)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
@@ -1162,10 +1162,10 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
       . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))
 
       test(m"`in[Text over Tel]` writes what `read[T in Tel]` reads"):
-        Tests.Person(t"Alice", 30).in[Text over Tel].read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Alice", 30))
+        Tests.Person(t"Percy", 30).in[Text over Tel].read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Percy", 30))
 
       test(m"`in[Data over Tel]` writes what `read[T in Tel]` reads"):
         import codepages.utf8Codepage
-        Tests.Person(t"Zoë", 30).in[Data over Tel].read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Zoë", 30))
+        Tests.Person(t"Cæsar", 30).in[Data over Tel].read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Cæsar", 30))

@@ -69,87 +69,87 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
   def run(): Unit =
     suite(m"Tel.Provider field access"):
       test(m"required String field is accessed as Text"):
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+        val record = ContactRecords.record(t"name Percy\nage 30\n".read[Tel])
         record.name
-      . assert(_ == t"Alice")
+      . assert(_ == t"Percy")
 
       test(m"second required field is accessed as Text"):
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+        val record = ContactRecords.record(t"name Percy\nage 30\n".read[Tel])
         record.age
       . assert(_ == t"30")
 
       test(m"optional field is absent when missing"):
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+        val record = ContactRecords.record(t"name Percy\nage 30\n".read[Tel])
         record.email
       . assert(_ == Unset)
 
       test(m"optional field is present when supplied"):
         val record = ContactRecords.record
-                      (t"name Alice\nemail alice@example.com\nage 30\n".read[Tel])
+                      (t"name Percy\nemail percy@example.com\nage 30\n".read[Tel])
         record.email
-      . assert(_ == (t"alice@example.com": Optional[Text]))
+      . assert(_ == (t"percy@example.com": Optional[Text]))
 
       test(m"records derived from the same schema can be queried independently"):
-        val a = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
-        val b = ContactRecords.record(t"name Bob\nage 40\n".read[Tel])
+        val a = ContactRecords.record(t"name Percy\nage 30\n".read[Tel])
+        val b = ContactRecords.record(t"name Hal\nage 40\n".read[Tel])
         (a.name, b.name)
-      . assert(_ == (t"Alice", t"Bob"))
+      . assert(_ == (t"Percy", t"Hal"))
 
     suite(m"Tel.Provider nested and repeatable fields"):
-      val team: Tel =
-        t"""name Core
+      val troupe: Tel =
+        t"""name Athens
            |tag alpha
            |tag beta
-           |lead
-           |  name Alice
-           |  role lead
-           |member
-           |  name Bob
-           |member
-           |  name Carol
-           |  role tester
+           |director
+           |  name Quince
+           |  part prologue
+           |player
+           |  name Bottom
+           |player
+           |  name Flute
+           |  part thisbe
            |""".s.stripMargin.tt.read[Tel]
 
       test(m"a repeatable scalar field reads as a list"):
-        TeamRecords.record(team).tag
+        TroupeRecords.record(troupe).tag
       . assert(_ == List(t"alpha", t"beta"))
 
       test(m"an absent repeatable field reads as an empty list"):
-        TeamRecords.record(t"name Solo\nlead\n  name Alice\n".read[Tel]).tag
+        TroupeRecords.record(t"name Solo\ndirector\n  name Quince\n".read[Tel]).tag
       . assert(_ == List())
 
       test(m"a reference to a record reads as a nested record"):
-        TeamRecords.record(team).lead.name
-      . assert(_ == t"Alice")
+        TroupeRecords.record(troupe).director.name
+      . assert(_ == t"Quince")
 
       test(m"an optional member of a nested record is read"):
-        TeamRecords.record(team).lead.role
-      . assert(_ == (t"lead": Optional[Text]))
+        TroupeRecords.record(troupe).director.part
+      . assert(_ == (t"prologue": Optional[Text]))
 
       test(m"an optional nested record is Unset when absent"):
-        TeamRecords.record(team).deputy.let(_.name)
+        TroupeRecords.record(troupe).prompter.let(_.name)
       . assert(_ == Unset)
 
       test(m"a repeatable reference reads as a list of records"):
-        TeamRecords.record(team).member.map(_.name)
-      . assert(_ == List(t"Bob", t"Carol"))
+        TroupeRecords.record(troupe).player.map(_.name)
+      . assert(_ == List(t"Bottom", t"Flute"))
 
       test(m"each repeated record reads its own optional members"):
-        TeamRecords.record(team).member.map(_.role)
-      . assert(_ == List(Unset, t"tester"))
+        TroupeRecords.record(troupe).player.map(_.part)
+      . assert(_ == List(Unset, t"thisbe"))
 
       test(m"a tuple carries nested and repeated elements"):
-        val tuple = TeamRecords.tuple(team)
-        (tuple.name, tuple.tag, tuple.lead.name, tuple.member.map(_.name))
-      . assert(_ == (t"Core", List(t"alpha", t"beta"), t"Alice", List(t"Bob", t"Carol")))
+        val tuple = TroupeRecords.tuple(troupe)
+        (tuple.name, tuple.tag, tuple.director.name, tuple.player.map(_.name))
+      . assert(_ == (t"Athens", List(t"alpha", t"beta"), t"Quince", List(t"Bottom", t"Flute")))
 
     suite(m"Tel.Provider names, structs, selects and validators"):
       given handle: ("handle" is Intensional in Tel.Provider from Tel to Handle) =
         Intensional { tel => Handle(tel.primaryAtom) }
 
       val profile: Tel =
-        t"""first-name Ada
-           |handle @ada
+        t"""first-name Hal
+           |handle @hal
            |bio
            |  line one
            |  line two
@@ -158,11 +158,11 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
 
       test(m"a kebab-case field is read through a backticked name"):
         ProfileRecords.record(profile).`first-name`
-      . assert(_ == t"Ada")
+      . assert(_ == t"Hal")
 
       test(m"a custom validator reads through a given at the call site"):
         ProfileRecords.record(profile).handle
-      . assert(_ == Handle(t"@ada"))
+      . assert(_ == Handle(t"@hal"))
 
       test(m"an inline struct reads as a nested record"):
         ProfileRecords.record(profile).bio.let(_.line)
@@ -173,7 +173,7 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
       . assert(_ == (t"hello": Optional[Text]))
 
       test(m"a select's flag variants read as booleans"):
-        val record = ProfileRecords.record(t"first-name Bo\nhandle @bo\narchived\n".read[Tel])
+        val record = ProfileRecords.record(t"first-name Nym\nhandle @nym\narchived\n".read[Tel])
         (record.active, record.archived, record.note)
       . assert(_ == (false, true, Unset))
 
@@ -184,8 +184,8 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
       . assert(_ == Tel.Provider.Error.Reason.Absent(t"first-name"))
 
       test(m"a missing required nested record fails when read"):
-        capture[Tel.Provider.Error](TeamRecords.record(t"name Solo\n".read[Tel]).lead).reason
-      . assert(_ == Tel.Provider.Error.Reason.Absent(t"lead"))
+        capture[Tel.Provider.Error](TroupeRecords.record(t"name Solo\n".read[Tel]).director).reason
+      . assert(_ == Tel.Provider.Error.Reason.Absent(t"director"))
 
     suite(m"Tel.Provider errors through the caller's tactic"):
       given handle: ("handle" is Intensional in Tel.Provider from Tel to Handle) =
@@ -231,7 +231,7 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
 
       test(m"a tuple has the schema's names and types"):
         val tuple: (name: Text, email: Optional[Text], age: Text) =
-          ContactRecords.tuple(t"name Alice\nage 30\n".read[Tel])
+          ContactRecords.tuple(t"name Percy\nage 30\n".read[Tel])
 
         tuple.age
       . assert(_ == t"30")
@@ -249,15 +249,15 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
 
     suite(m"Tel.Provider layers"):
       test(m"a member a layer introduces reads as optional, absent without the layer"):
-        LayeredRecords.record(t"name Alice\n".read[Tel]).email
+        LayeredRecords.record(t"name Percy\n".read[Tel]).email
       . assert(_ == Unset)
 
       test(m"and present with it"):
-        LayeredRecords.record(t"name Alice\nemail alice@example.com\n".read[Tel]).email
-      . assert(_ == (t"alice@example.com": Optional[Text]))
+        LayeredRecords.record(t"name Percy\nemail percy@example.com\n".read[Tel]).email
+      . assert(_ == (t"percy@example.com": Optional[Text]))
 
       test(m"the layers a document carries are named"):
-        LayeredRecords.layersOf(t"name Alice\nemail alice@example.com\n".read[Tel])
+        LayeredRecords.layersOf(t"name Percy\nemail percy@example.com\n".read[Tel])
       . assert(_ == List(t"with-email"))
 
       test(m"the acceptance requires the base and offers the layer"):
@@ -270,10 +270,10 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
         val lineage = SchemaSignature.Lineage(LayeredSchemaFixture.tels)
         val acceptance = LayeredRecords.acceptance(lineage)
         val composition = lineage.base :: lineage.layers.map(_.hash)
-        val held = Tel.Type.assign(t"name Alice\nemail alice@example.com\n".read[Tel], lineage.compose(composition))
+        val held = Tel.Type.assign(t"name Percy\nemail percy@example.com\n".read[Tel], lineage.compose(composition))
 
         Tel.Acceptance.serve(acceptance, lineage, composition, held).let: served =>
           LayeredRecords.receive(acceptance, SchemaSignature.Library(List(lineage)), served.document).let: tel =>
             LayeredRecords.record(tel).email
-      . assert(_ == (t"alice@example.com": Optional[Text]))
+      . assert(_ == (t"percy@example.com": Optional[Text]))
 

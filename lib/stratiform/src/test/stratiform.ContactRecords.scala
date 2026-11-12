@@ -105,23 +105,23 @@ object LayeredRecords extends Tel.Provider(LayeredSchemaFixture.tels)
 
 // Nested and repeatable members: a required `name`, a repeatable `tag` scalar, a required and an
 // optional reference to the `Person` record, and a repeatable one.
-object TeamSchemaFixture:
+object TroupeSchemaFixture:
   val person: Tels.RecordDefinition = Tels.RecordDefinition(
     t"Person",
     Array(
       Field(Polarity.Implicit, Polarity.Implicit, t"name", Scalar(Array(t"string")),     Unset),
-      Field(Polarity.Loose,    Polarity.Implicit, t"role", Scalar(Array(t"identifier")), Unset)),
+      Field(Polarity.Loose,    Polarity.Implicit, t"part", Scalar(Array(t"identifier")), Unset)),
     Array.empty)
 
   val tels: Tels = Tels(
-    name     = t"team",
+    name     = t"troupe",
     document = Struct(
       members = Array(
-        Field(Polarity.Implicit, Polarity.Implicit, t"name",   Scalar(Array(t"string")), Unset),
-        Field(Polarity.Implicit, Polarity.Loose,    t"tag",    Scalar(Array(t"string")), Unset),
-        Field(Polarity.Implicit, Polarity.Implicit, t"lead",   Reference(t"Person"),     Unset),
-        Field(Polarity.Loose,    Polarity.Implicit, t"deputy", Reference(t"Person"),     Unset),
-        Field(Polarity.Implicit, Polarity.Loose,    t"member", Reference(t"Person"),     Unset)),
+        Field(Polarity.Implicit, Polarity.Implicit, t"name",     Scalar(Array(t"string")), Unset),
+        Field(Polarity.Implicit, Polarity.Loose,    t"tag",      Scalar(Array(t"string")), Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, t"director", Reference(t"Person"),     Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, t"prompter", Reference(t"Person"),     Unset),
+        Field(Polarity.Implicit, Polarity.Loose,    t"player",   Reference(t"Person"),     Unset)),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
@@ -129,7 +129,7 @@ object TeamSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-object TeamRecords extends Tel.Provider(TeamSchemaFixture.tels)
+object TroupeRecords extends Tel.Provider(TroupeSchemaFixture.tels)
 
 // Kebab-case names, a custom validator, an inline struct, and a select member
 object ProfileSchemaFixture:
