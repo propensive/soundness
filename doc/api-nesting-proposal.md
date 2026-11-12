@@ -637,19 +637,19 @@ Every owner below was resolved to a declaration in the *same build component* un
 *new*; † marks a proposal whose owner still needs confirming. Nothing here has been
 compiled, and every row is subject to the hazards the earlier passes recorded.
 
-### Umbrella clashes — two libraries export the same name
+### Umbrella clashes — two libraries export the same name — all resolved
 
-Each pair is a genuine clash, not a re-export:
+No name is now exported into `package soundness` by more than one library.
 
-| name | the side to move | proposal |
-|---|---|---|
-| `Namespace` | embarcadero's containerd record | `Containerd.Namespace`, with `Empty`, `Mount`, `Runtime`, `Container` |
-| `Commandline` | octogenarian's git-executable backend | `Git.Commandline` |
-| `Native` | octogenarian's pure-Scala git backend | not `Git.Native`: `Native` is in the **native** component and `Git` in core. Unexport it (`gitBackends.soundnessGit` supplies it), or a new namespace in the native component with `Peer` and `Transport` |
-| `Pane` | exoskeleton's tmux test-rig pane | `Tmux.Pane`, with `Screenshot` |
-| `Arithmetic` | probably's `Baseline.Mode` enum case | stop re-exporting it and `Geometric`; write `Baseline.Mode.*` |
-| `Bytes` | ultimatum's information unit | move `Information`, `Bytes`, `Byte` into quantitative, as their source comment anticipates |
-| `Tag`, `Renderable` | xylophone's, now `@unexported` | `Xml.Tag`, `Xml.Renderable`; drop the annotation |
+| name | resolution |
+|---|---|
+| `Namespace` | embarcadero's is `Containerd.Namespace`, with the other 41 containerd records |
+| `Commandline`, `Native` | octogenarian's git backends are no longer exported; they are chosen through `gitBackends` |
+| `Pane` | ultimatum's is `Tui.Pane`. exoskeleton's keeps the name: it is the supertype `Tmux` implements, so `Tmux.Pane` would be backwards |
+| `Arithmetic` | probably's `Baseline.Mode` cases are no longer re-exported |
+| `Bytes` | rudiments' byte count is `Memory`; the unit `Bytes[n]`, with `Byte` and `Information`, moved into quantitative |
+| `Layout` | ultimatum's new namespace is `Tui`, since `Layout` is punctuation's Markdown enum |
+| `Tag`, `Renderable` | **blocked**: xylophone's stay `@unexported`, because `object Xml extends Tag.Container` and `Xml.Tag` would make `Xml` extend its own member |
 
 ### Compound names still nestable (api-1)
 
@@ -681,28 +681,28 @@ escritoire's); `Ssh*` in octogenarian (four components, and `Ssh` is susurration
 | library | names → proposed home |
 |---|---|
 | ultimatum.core | `Frame`, `Pane`, `Panes`, `Placement`, `Sizing`, `Occupancy`, `Limits`, `Arrangement`, `Tick` → *new* `Tui.*` — **done**; `Rect` → `Tui.Region` (ruling 4: no abbreviation) |
-| ultimatum.gauges | `Magnitude`, `Meter`, `Reading`, `Reckoning`, `Step`, `Standing`, `Transfer`, `Facet`, `Fraction`, `Gradient`, `Inlay` → *new* `Gauge.*`, or the existing `Gauging` |
-| anticipation | `Level→Log.Level`; the colour channels `Key`, `Cyan`, … → `Channel.*` † |
-| honeycomb | `Kind`, `Capture` (attribute value sets) → the companion of their element or attribute † |
-| archimedes | `Display`, `Cell` → `Mathml.*` |
-| cataclysm | `Compound`, `Simple` → `Selector.*`; `Outcome→Css.Outcome` |
-| savagery | `Group`, `Figure` → `Svg.*`; `Up`, `Down`, `Left`, `Right` → `Delta.*` |
-| facsimile | `Destination→Pdf.Destination` |
-| tasseomancy | `Lines`, `Category`, `Estimate` → `Chart.*` |
-| embarcadero | `Image`, `Index`, `History`, `Descriptor`, `Layer` → `Oci.*` |
-| cacophony | `Configuration`, `Device`, `Feed` → `Audio.*` |
-| dissonance | `Chunk`, `Ins`, `Del`, `Edit`, `Change` → `Diff.*` |
-| polyvinyl | `Member`, `Multiplicity` → `Specification.*` |
-| stratiform | `Mutation`, `Revision` → `Tel.*` |
-| gesticulate | `Part→Multipart.Part` |
-| perihelion | `Masking→Websocket.Masking` |
-| orthodoxy | `Scope→OAuth.Scope` |
-| octogenarian.core | `Remote`, `Patch` → `Git.*` |
-| anthology.core | `Notice→Compiler.Notice`; `Triple`, `Universe`, `Tool` → `Toolchain.*` |
-| praxinoscope | `Program`, `Ranges` → `Motif.*` |
-| harlequin | `Token→SourceCode.Token`, `Role→Token.Role` |
-| probably | `Value→Axis.Value` |
-| synesthesia | `Agent`, `Human` → `Discourse.*` (susurration has its own `Agent`) |
+| ultimatum.gauges | `Magnitude`, `Meter`, `Reading`, `Reckoning`, `Step`, `Standing`, `Transfer`, `Facet`, `Fraction`, `Gradient`, `Inlay` → *new* `Gauge.*`, or the existing `Gauging` — **deferred**: the gauges component is separate from core's `Tui`, so they need a namespace of their own, or the component split rethinking |
+| anticipation | `Level→Log.Level`; the colour channels `Key`, `Cyan`, … → `Channel.*` † — **done**: `Log.Level`, and all nine channels in `Channel`, which is now exported (perihelion's own `Channel`, `Reader` and `Message` nested in `Websocket`) |
+| honeycomb | `Kind`, `Capture` (attribute value sets) → the companion of their element or attribute † — **deferred**: `Kind` and `Capture` are two of a dozen attribute-value enums (`Autocomplete`, `Crossorigin`, `HDir`, `HttpEquiv`, `Method`, `Preload`, `Rel`, `Rev`, …), which should move as a family or not at all |
+| archimedes | `Display`, `Cell` → `Mathml.*` — **done** |
+| cataclysm | `Compound`, `Simple` → `Selector.*`; `Outcome→Css.Outcome` — **done**, with the rest of the selector grammar (`Combinator`, `Prefix`, `AttributeTest`, `AttributeMatcher`, `PseudoArgument`) |
+| savagery | `Group`, `Figure` → `Svg.*`; `Up`, `Down`, `Left`, `Right` → `Delta.*` — **directions done**. `Figure` is **deferred**: it is a sealed taxonomy, so it would take `Rectangle`, `Ellipse`, `Group`, `Polyline`, `Outline` and `Lettering` with it |
+| facsimile | `Destination→Pdf.Destination` — **done** |
+| tasseomancy | `Lines`, `Category`, `Estimate` → `Chart.*` — `Category` and `Estimate` **done**; `Lines` **kept**, as one of the chart kinds beside `Bars`, `Pie` and `Scatter` |
+| embarcadero | `Image`, `Index`, `History`, `Descriptor`, `Layer` → `Oci.*` — **done**, with `RootFs`, `ContainerConfig`, `WasmConfig` and `WasmComponent` |
+| cacophony | `Configuration`, `Device`, `Feed` → `Audio.*` — **done**, with `Outlet`, `Feed`'s output counterpart |
+| dissonance | `Chunk`, `Ins`, `Del`, `Edit`, `Change` → `Diff.*` — **done**, with `Par` and `Sub` (the abbreviations `Ins`, `Del`, `Par` and `Sub` remain) |
+| polyvinyl | `Member`, `Multiplicity` → `Specification.*` — **done** |
+| stratiform | `Mutation`, `Revision` → `Tel.*` — **done**, mixed into `Tel` from files of their own |
+| gesticulate | `Part→Multipart.Part` — **done** |
+| perihelion | `Masking→Websocket.Masking` — **done** |
+| orthodoxy | `Scope→OAuth.Scope` — **done** |
+| octogenarian.core | `Remote`, `Patch` → `Git.*` — **done**, with `FileDiff`, `Hunk` and `ChangeKind` |
+| anthology.core | `Notice→Compiler.Notice`; `Triple`, `Universe`, `Tool` → `Toolchain.*` — **done** |
+| praxinoscope | `Program`, `Ranges` → `Motif.*` — **done** |
+| harlequin | `Token→SourceCode.Token`, `Role→Token.Role` — **done** |
+| probably | `Value→Axis.Value` — **done** |
+| synesthesia | `Agent`, `Human` → `Discourse.*` (susurration has its own `Agent`) — **done** |
 
 ### R8 candidates — wanting a ruling
 

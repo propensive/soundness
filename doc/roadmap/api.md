@@ -122,6 +122,11 @@ library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate i
 case by case against rule R8 in `doc/api-nesting-proposal.md`. Convenience keeps a name
 top-level only when it is the library's principal type, or a concept that really is general.
 
+Progress (2026-11-12): no name is exported by more than one library; of the R8 high-confidence
+table, nineteen rows are done, three deferred for a ruling (ultimatum's gauges, honeycomb's
+attribute-value enums, savagery's `Figure` taxonomy), and xylophone's `Tag`/`Renderable` are
+blocked by `object Xml extends Tag.Container`.
+
 Done when: no name is exported into `package soundness` by more than one library, no
 `@unexported` exists only to dodge a clash, and every row of the R8 tables in
 `doc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
