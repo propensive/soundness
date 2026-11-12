@@ -38,6 +38,7 @@ import anticipation.*
 import vacuous.*
 
 import Motif.Node
+import praxinoscope.Motif.Program
 
 object Pike:
   // A priority-ordered thread list for one input position. The `dense`/`sparse` pair is a
@@ -87,7 +88,7 @@ object Pike:
   // match is found, giving leftmost-first `seek` semantics; `anchoredEnd` requires the match
   // to reach the end of the input.
   def run[input: Symbolizer as symbolizer]
-    ( program: Motif.Program, input: input, start: Int, anchoredStart: Boolean, anchoredEnd: Boolean )
+    ( program: Program, input: input, start: Int, anchoredStart: Boolean, anchoredEnd: Boolean )
   :   Optional[Array[Int]] =
 
     val ops = program.ops
@@ -118,19 +119,19 @@ object Pike:
         list.mark(pc)
 
         ops.readUnchecked(pc) match
-          case Motif.Program.Op.Jump(target) =>
+          case Program.Op.Jump(target) =>
             add(list, target, saved, at)
 
-          case Motif.Program.Op.Split(preferred, alternate) =>
+          case Program.Op.Split(preferred, alternate) =>
             add(list, preferred, saved, at)
             add(list, alternate, saved, at)
 
-          case Motif.Program.Op.Save(slot, next) =>
+          case Program.Op.Save(slot, next) =>
             val copy = saved.clone()
             copy(slot) = at
             add(list, next, copy, at)
 
-          case Motif.Program.Op.Test(anchor, next) =>
+          case Program.Op.Test(anchor, next) =>
             if test(anchor, at) then add(list, next, saved, at)
 
           case _ =>
@@ -178,11 +179,11 @@ object Pike:
         val saved = clist.regs(thread)
 
         ops.readUnchecked(pc) match
-          case Motif.Program.Op.Symbol(bounds, next) =>
+          case Program.Op.Symbol(bounds, next) =>
             if index < length && within(bounds, symbolizer.symbol(input, index))
             then add(nlist, next, saved, following)
 
-          case Motif.Program.Op.Accept =>
+          case Program.Op.Accept =>
             // Threads later in the list are alternatives a backtracking matcher would try
             // only after this one, so a match here supersedes all of them.
             if !anchoredEnd || index == length then

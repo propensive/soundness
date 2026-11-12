@@ -33,6 +33,7 @@
 package praxinoscope
 
 import anticipation.*
+import praxinoscope.Motif.Ranges
 
 object Symbolizer:
   given text: Text is Symbolizer:
@@ -41,12 +42,12 @@ object Symbolizer:
     def next(input: Text, index: Int): Int = index + Character.charCount(symbol(input, index))
     def before(input: Text, index: Int): Int = input.s.codePointBefore(index)
     def find(input: Text, literal: Text, from: Int): Int = input.s.indexOf(literal.s, from)
-    def word(symbol: Int): Boolean = Motif.Ranges.word.contains(symbol)
+    def word(symbol: Int): Boolean = Ranges.word.contains(symbol)
 
 // The symbol domain over which a compiled program runs: how an input is decoded into successive
 // `Int`-encoded symbols. Unicode codepoints over `Text` are the only instance today, but the
 // program representation depends only on this interface, so a UTF-8 byte domain (for streamed or
-// native matching) can be added without changing `Motif.Program` or the Pike VM.
+// native matching) can be added without changing `Program` or the Pike VM.
 trait Symbolizer:
   type Self
 

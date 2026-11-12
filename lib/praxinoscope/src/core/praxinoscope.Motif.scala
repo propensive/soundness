@@ -33,6 +33,7 @@
 package praxinoscope
 
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
 import contingency.*
@@ -580,7 +581,6 @@ object Motif:
     ( m"the regular expression could not be compiled because $reason at $index" )
 
   object Program:
-    import scala.collection.mutable.ArrayBuffer
     import anticipation.*
     import contingency.*
     import rudiments.*
@@ -709,7 +709,6 @@ object Motif:
   // Pike VM and analyzable by the containment checker. Capture group `n` records its bounds in
   // slots `2n` and `2n + 1`; slots `0` and `1` are the whole match.
   case class Program(ops: Array[Program.Op], slots: Int, captures: Int):
-    import scala.collection.mutable.ArrayBuffer
     import anticipation.*
     import contingency.*
     import rudiments.*

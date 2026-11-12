@@ -40,6 +40,7 @@ import gigantism.Lifts
 import vacuous.*
 
 import Motif.Node
+import praxinoscope.Motif.{Program, Ranges}
 
 object internal:
   private def integers(values: Array[Int])(using Quotes): Expr[Array[Int]] =
@@ -71,22 +72,22 @@ object internal:
       case Node.Anchor.LineStart       => '{Node.Anchor.LineStart}
       case Node.Anchor.LineEnd         => '{Node.Anchor.LineEnd}
 
-  given op: ToExpr[Motif.Program.Op]:
-    def apply(op: Motif.Program.Op)(using Quotes): Expr[Motif.Program.Op] = op match
-      case Motif.Program.Op.Symbol(bounds, next) =>
-        '{Motif.Program.Op.Symbol(${integers(bounds)}, ${Expr(next)})}
+  given op: ToExpr[Program.Op]:
+    def apply(op: Program.Op)(using Quotes): Expr[Program.Op] = op match
+      case Program.Op.Symbol(bounds, next) =>
+        '{Program.Op.Symbol(${integers(bounds)}, ${Expr(next)})}
 
-      case Motif.Program.Op.Split(preferred, alternate) =>
-        '{Motif.Program.Op.Split(${Expr(preferred)}, ${Expr(alternate)})}
+      case Program.Op.Split(preferred, alternate) =>
+        '{Program.Op.Split(${Expr(preferred)}, ${Expr(alternate)})}
 
-      case Motif.Program.Op.Jump(target)       => '{Motif.Program.Op.Jump(${Expr(target)})}
-      case Motif.Program.Op.Save(slot, next)   => '{Motif.Program.Op.Save(${Expr(slot)}, ${Expr(next)})}
-      case Motif.Program.Op.Test(anchor, next) => '{Motif.Program.Op.Test(${Expr(anchor)}, ${Expr(next)})}
-      case Motif.Program.Op.Accept             => '{Motif.Program.Op.Accept}
+      case Program.Op.Jump(target)       => '{Program.Op.Jump(${Expr(target)})}
+      case Program.Op.Save(slot, next)   => '{Program.Op.Save(${Expr(slot)}, ${Expr(next)})}
+      case Program.Op.Test(anchor, next) => '{Program.Op.Test(${Expr(anchor)}, ${Expr(next)})}
+      case Program.Op.Accept             => '{Program.Op.Accept}
 
-  given program: ToExpr[Motif.Program]:
-    def apply(program: Motif.Program)(using Quotes): Expr[Motif.Program] =
-      var exprs: List[Expr[Motif.Program.Op]] = Nil
+  given program: ToExpr[Program]:
+    def apply(program: Program)(using Quotes): Expr[Program] =
+      var exprs: List[Expr[Program.Op]] = Nil
       var index = program.ops.length - 1
 
       while index >= 0 do
@@ -94,7 +95,7 @@ object internal:
         index -= 1
 
       ' {
-          Motif.Program
+          Program
             ( Array(${Lifts.varargs(exprs)}*),
               ${Expr(program.slots)},
               ${Expr(program.captures)} )
@@ -112,7 +113,7 @@ object internal:
   // subset construction to a dense DFA transition table over the pattern's symbol classes,
   // executed by a tight, allocation-free loop. Returns `Unset` when the program uses word
   // boundaries (which the DFA does not model) or when subset construction exceeds `maxStates`.
-  def matcher(program: Motif.Program)(using Quotes): Optional[Expr[Fsa]] =
+  def matcher(program: Program)(using Quotes): Optional[Expr[Fsa]] =
     val ops = program.ops
     var unsupported = false
 
@@ -122,7 +123,7 @@ object internal:
       ops.readUnchecked(opIndex) match
         // The generated DFA has no notion of the symbol before the cursor, so a
         // context-dependent anchor falls back to the Pike VM.
-        case Motif.Program.Op.Test
+        case Program.Op.Test
           ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
             | Node.Anchor.LineEnd, _ ) =>
           unsupported = true
@@ -140,13 +141,13 @@ object internal:
 
       while opIndex < ops.length do
         ops.readUnchecked(opIndex) match
-          case Motif.Program.Op.Symbol(bounds, _) =>
+          case Program.Op.Symbol(bounds, _) =>
             var span = 0
 
             while span < bounds.length do
               cutSet += bounds.readUnchecked(span)
               val upper = bounds.readUnchecked(span + 1)
-              if upper < Motif.Ranges.maxSymbol then cutSet += upper + 1
+              if upper < Ranges.maxSymbol then cutSet += upper + 1
               span += 2
 
           case _ =>
@@ -173,13 +174,13 @@ object internal:
             visited(pc) = true
 
             ops.readUnchecked(pc) match
-              case Motif.Program.Op.Jump(target)       => stack = target :: stack
-              case Motif.Program.Op.Split(left, right) => stack = left :: right :: stack
-              case Motif.Program.Op.Save(_, next)      => stack = next :: stack
-              case Motif.Program.Op.Symbol(_, _)       => symbols = pc :: symbols
-              case Motif.Program.Op.Accept             => accepts = true
+              case Program.Op.Jump(target)       => stack = target :: stack
+              case Program.Op.Split(left, right) => stack = left :: right :: stack
+              case Program.Op.Save(_, next)      => stack = next :: stack
+              case Program.Op.Symbol(_, _)       => symbols = pc :: symbols
+              case Program.Op.Accept             => accepts = true
 
-              case Motif.Program.Op.Test(anchor, next) => anchor match
+              case Program.Op.Test(anchor, next) => anchor match
                 case Node.Anchor.Start => if first then stack = next :: stack
                 case Node.Anchor.End   => stack = next :: stack
                 case _                 => ()
@@ -201,12 +202,12 @@ object internal:
             visited(pc) = true
 
             ops.readUnchecked(pc) match
-              case Motif.Program.Op.Jump(target)       => stack = target :: stack
-              case Motif.Program.Op.Split(left, right) => stack = left :: right :: stack
-              case Motif.Program.Op.Save(_, next)      => stack = next :: stack
-              case Motif.Program.Op.Symbol(_, _)       => symbols = pc :: symbols
+              case Program.Op.Jump(target)       => stack = target :: stack
+              case Program.Op.Split(left, right) => stack = left :: right :: stack
+              case Program.Op.Save(_, next)      => stack = next :: stack
+              case Program.Op.Symbol(_, _)       => symbols = pc :: symbols
 
-              case Motif.Program.Op.Test(anchor, next) =>
+              case Program.Op.Test(anchor, next) =>
                 if anchor == Node.Anchor.Start && first then stack = next :: stack
 
               case _ =>
@@ -260,7 +261,7 @@ object internal:
 
           pcs.foreach: pc =>
             ops.readUnchecked(pc) match
-              case Motif.Program.Op.Symbol(bounds, target) =>
+              case Program.Op.Symbol(bounds, target) =>
                 if within(bounds, symbol) then successors = target :: successors
 
               case _ =>
