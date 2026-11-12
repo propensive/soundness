@@ -47,6 +47,7 @@ import vacuous.*
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
 import sortingAlgorithms.timsort
+import dissonance.Diff.{Edit, Par}
 
 // Three-way merging: of trees, path by path, and of text, line by line (diff3). A merge either
 // settles every path or leaves some in conflict, with the stages git records for them and the

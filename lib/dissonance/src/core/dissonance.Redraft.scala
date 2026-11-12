@@ -94,7 +94,7 @@ object Redraft:
     ( directives: List[Directive],
       original:   Sequence[Text],
       compare:    (Text, Text) -> Boolean )
-  :   (List[Edit[Text] & Retained], List[Anomaly]) =
+  :   (List[Diff.Edit[Text] & Retained], List[Anomaly]) =
 
     val n = original.size
 
@@ -112,7 +112,7 @@ object Redraft:
     var right = 0
     // Every edit is constructed with its line (from `original` or the directive itself), so each
     // is minted `Retained` at construction.
-    var edits: List[Edit[Text] & Retained] = Nil
+    var edits: List[Diff.Edit[Text] & Retained] = Nil
     var matchers: List[Matcher] = Nil
     var anomalies: List[Anomaly] = Nil
 
@@ -120,7 +120,7 @@ object Redraft:
       var k = cursor
 
       while k < target do
-        edits = Par(k, right, lines(k)).retained :: edits
+        edits = Diff.Par(k, right, lines(k)).retained :: edits
         right += 1
         k += 1
 
@@ -128,19 +128,19 @@ object Redraft:
 
     def keep(index: Int, text: Text, line: Int): Unit =
       keepUpTo(index)
-      edits = Par(index, right, lines(index)).retained :: edits
+      edits = Diff.Par(index, right, lines(index)).retained :: edits
       matchers = Matcher(text, index, line) :: matchers
       right += 1
       cursor = index + 1
 
     def cut(index: Int, text: Text, line: Int): Unit =
       keepUpTo(index)
-      edits = Del(index, lines(index)).retained :: edits
+      edits = Diff.Del(index, lines(index)).retained :: edits
       matchers = Matcher(text, index, line) :: matchers
       cursor = index + 1
 
     def add(text: Text): Unit =
-      edits = Ins(right, text).retained :: edits
+      edits = Diff.Ins(right, text).retained :: edits
       right += 1
 
     directives.indexed.each: (directive, ordinal) =>
@@ -201,20 +201,20 @@ object Redraft:
   // Demands a `Retained` diff: rendering reproduces every kept and deleted line verbatim, so
   // presence is required in the type rather than vouched for edit-by-edit.
   def render(diff: Diff[Text] & Retained, context: Context): Redraft =
-    val edits: List[Edit[Text] & Retained] = diff.retentions
+    val edits: List[Diff.Edit[Text] & Retained] = diff.retentions
 
     val original: Sequence[Text] = edits.bind: edit =>
       edit match
-        case Par(_, _, _) | Del(_, _) => List(edit.kept)
-        case Ins(_, _)                => List[Text]()
+        case Diff.Par(_, _, _) | Diff.Del(_, _) => List(edit.kept)
+        case Diff.Ins(_, _)                => List[Text]()
 
     . to[Sequence]
 
     val full: List[Directive] = edits.bind: edit =>
       edit match
-        case Par(_, _, _)  => List(Directive.Keep(edit.kept))
-        case Del(_, _)     => List(Directive.Mark(edit.kept, insert = false))
-        case Ins(_, value) => List(Directive.Mark(value, insert = true))
+        case Diff.Par(_, _, _)  => List(Directive.Keep(edit.kept))
+        case Diff.Del(_, _)     => List(Directive.Mark(edit.kept, insert = false))
+        case Diff.Ins(_, value) => List(Directive.Mark(value, insert = true))
 
     // Promote any ambiguous primary `+`/`-` marker to the forced `>`/`<` spelling.
     def deambiguate(directives: List[Directive]): List[Directive] =

@@ -40,6 +40,7 @@ import gossamer.*
 import kaleidoscope.*
 import rudiments.*
 import vacuous.*
+import dissonance.Diff.{Del, Edit, Ins, Par}
 
 object Patch:
   // Streams a `git diff -p --no-color` output as one FileDiff per file.

@@ -50,6 +50,7 @@ import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.preserveSymlinks
 import sortingAlgorithms.timsort
+import dissonance.Diff.{Del, Edit, Ins, Par}
 
 // The working tree and the index together: what differs between HEAD, the index and the files,
 // and the operations that move content between them. Paths are worktree-relative, slash-separated.

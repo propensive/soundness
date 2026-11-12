@@ -32,6 +32,8 @@
                                                                                                   */
 package dissonance
 
+import scala.language.experimental.pureFunctions
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -149,7 +151,46 @@ object Diff:
   case class Error(lineNo: Int, line: Text)(using Diagnostics)
   extends fulminate.Error(39, 0)(m"could not read the diff at line $lineNo: $line")
 
-case class Diff[element](edits: Edit[element]*):
+  sealed trait Change[+element] extends Product:
+    import vacuous.*
+
+    def map[element2](lambda: element => element2): Change[element2] = this match
+      case Sub(left, right, leftValue, rightValue) =>
+        Sub(left, right, leftValue.let(lambda), rightValue.let(lambda))
+
+      case edit: Edit[element] =>
+        edit.map(lambda)
+
+  sealed trait Edit[+element] extends Change[element]:
+    import vacuous.*
+
+    def value: Optional[element]
+
+    // Mapping preserves presence (`let` maps a present value to a present value), but not the
+    // `Retained` brand: expressing `this.type & Retained`-conditional results here would entangle
+    // the ADT with the marker, so a mapped edit must be re-minted (`retained`) where the brand is
+    // still needed.
+    override def map[element2](lambda: element => element2): Edit[element2] = this match
+      case Par(left, right, value) => Par(left, right, value.let(lambda))
+      case Del(left, value)        => Del(left, value.let(lambda))
+      case Ins(right, value)       => Ins(right, lambda(value))
+
+  case class Del[+element](left: Int, value: Optional[element] = Unset) extends Edit[element]
+  case class Ins[+element](right: Int, value: element) extends Edit[element]
+
+  case class Par[+element](left: Int, right: Int, value: Optional[element] = Unset)
+  extends Edit[element]
+
+  case class Sub[+element]
+    ( left: Int, right: Int, leftValue: Optional[element], rightValue: Optional[element] )
+  extends Change[element]
+
+  case class Chunk[element]
+    ( position: Int, rightPosition: Int, dels: List[Del[element]], inss: List[Ins[element]] )
+
+case class Diff[element](edits: Diff.Edit[element]*):
+  import Diff.{Change, Chunk, Del, Edit, Ins, Par, Sub}
+
   def size: Int = edits.count:
     case Par(_, _, _) => false
     case _            => true

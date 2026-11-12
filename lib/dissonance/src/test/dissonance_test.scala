@@ -51,89 +51,89 @@ object Tests extends Suite("diff", m"Dissonance tests"):
 
       test(m"One element, equal"):
         diff(Sequence('a'), Sequence('a'))
-      . assert(_ == Diff(Par(0, 0, 'a')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'a')))
 
       test(m"Straight swap"):
         diff(Sequence('a'), Sequence('A'))
-      . assert(_ == Diff(Del(0, 'a'), Ins(0, 'A')))
+      . assert(_ == Diff(Diff.Del(0, 'a'), Diff.Ins(0, 'A')))
 
       test(m"Two elements, equal"):
         diff(Sequence('a', 'b'), Sequence('a', 'b'))
-      . assert(_ == Diff(Par(0, 0, 'a'), Par(1, 1, 'b')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'a'), Diff.Par(1, 1, 'b')))
 
       test(m"Insertion to empty list"):
         diff(Sequence[Char](), Sequence('a'))
-      . assert(_ == Diff(Ins(0, 'a')))
+      . assert(_ == Diff(Diff.Ins(0, 'a')))
 
       test(m"Deletion to become empty list"):
         diff(t"a".chars.to[Sequence], t"".chars.to[Sequence])
-      . assert(_ == Diff(Del(0, 'a')))
+      . assert(_ == Diff(Diff.Del(0, 'a')))
 
       test(m"Prefix to short list"):
         diff(t"BC".chars.to[Sequence], t"ABC".chars.to[Sequence])
-      . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C')))
+      . assert(_ == Diff(Diff.Ins(0, 'A'), Diff.Par(0, 1, 'B'), Diff.Par(1, 2, 'C')))
 
       test(m"Suffix to short list"):
         diff(t"AB".chars.to[Sequence], t"ABC".chars.to[Sequence])
-      . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Ins(2, 'C')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'A'), Diff.Par(1, 1, 'B'), Diff.Ins(2, 'C')))
 
       test(m"Insertion in middle of short list"):
         diff(t"AC".chars.to[Sequence], t"ABC".chars.to[Sequence])
-      . assert(_ == Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'A'), Diff.Ins(1, 'B'), Diff.Par(1, 2, 'C')))
 
       test(m"Deletion from middle of short list"):
         diff(t"ABC".chars.to[Sequence], t"AC".chars.to[Sequence])
-      . assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'A'), Diff.Del(1, 'B'), Diff.Par(2, 1, 'C')))
 
       test(m"Deletion from start of short list"):
         List.from(diff(t"ABC".chars.to[Sequence], t"BC".chars.to[Sequence]).edits)
-      . assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
+      . assert(_ == List(Diff.Del(0, 'A'), Diff.Par(1, 0, 'B'), Diff.Par(2, 1, 'C')))
 
       test(m"Deletion from end of short list"):
         diff(t"ABC".chars.to[Sequence], t"AB".chars.to[Sequence])
-      . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Del(2, 'C')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'A'), Diff.Par(1, 1, 'B'), Diff.Del(2, 'C')))
 
       test(m"Multiple inner keeps"):
         diff(t"BCD".chars.to[Sequence], t"ABC".chars.to[Sequence])
-      . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
+      . assert(_ == Diff(Diff.Ins(0, 'A'), Diff.Par(0, 1, 'B'), Diff.Par(1, 2, 'C'), Diff.Del(2, 'D')))
 
       test(m"Example from blog"):
         List.from(diff(t"ABCABBA".chars.to[Sequence], t"CBABAC".chars.to[Sequence]).edits)
-      . assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
-          Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
+      . assert(_ == List(Diff.Del(0, 'A'), Diff.Del(1, 'B'), Diff.Par(2, 0, 'C'), Diff.Ins(1, 'B'), Diff.Par(3, 2, 'A'),
+          Diff.Par(4, 3, 'B'), Diff.Del(5, 'B'), Diff.Par(6, 4, 'A'), Diff.Ins(5, 'C')))
 
       test(m"Reversed example from blog"):
         List.from(diff(t"CBABAC".chars.to[Sequence], t"ABCABBA".chars.to[Sequence]).edits)
-      . assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
-          Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
+      . assert(_ == List(Diff.Del(0, 'C'), Diff.Ins(0, 'A'), Diff.Par(1, 1, 'B'), Diff.Ins(2, 'C'), Diff.Par(2, 3, 'A'),
+          Diff.Par(3, 4, 'B'), Diff.Ins(5, 'B'), Diff.Par(4, 6, 'A'), Diff.Del(5, 'C')))
 
       test(m"Item swap"):
         diff(t"AB".chars.to[Sequence], t"BA".chars.to[Sequence])
-      . assert(_ == Diff(Del(0, 'A'), Par(1, 0, 'B'), Ins(1, 'A')))
+      . assert(_ == Diff(Diff.Del(0, 'A'), Diff.Par(1, 0, 'B'), Diff.Ins(1, 'A')))
 
       test(m"Item change"):
         diff(t"A".chars.to[Sequence], t"C".chars.to[Sequence])
-      . assert(_ == Diff(Del(0, 'A'), Ins(0, 'C')))
+      . assert(_ == Diff(Diff.Del(0, 'A'), Diff.Ins(0, 'C')))
 
       test(m"Item change between values"):
         diff(t"NAN".chars.to[Sequence], t"NCN".chars.to[Sequence])
-      . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Ins(1, 'C'), Par(2, 2, 'N')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'N'), Diff.Del(1, 'A'), Diff.Ins(1, 'C'), Diff.Par(2, 2, 'N')))
 
       test(m"Item swap between values"):
         diff(t"NABN".chars.to[Sequence], t"NBAN".chars.to[Sequence])
-      . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Par(2, 1, 'B'), Ins(2, 'A'), Par(3, 3, 'N')))
+      . assert(_ == Diff(Diff.Par(0, 0, 'N'), Diff.Del(1, 'A'), Diff.Par(2, 1, 'B'), Diff.Ins(2, 'A'), Diff.Par(3, 3, 'N')))
 
       test(m"Item swap interspersed with values"):
         diff(t"AZB".chars.to[Sequence], t"BZA".chars.to[Sequence])
-      . assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
+      . assert(_ == Diff(Diff.Del(0, 'A'), Diff.Del(1, 'Z'), Diff.Par(2, 0, 'B'), Diff.Ins(1, 'Z'), Diff.Ins(2, 'A')))
 
       test(m"real-world example 1"):
         List.from(diff(Sequence('a', 'b', 'c'), Sequence('A', 'b', 'C')).edits)
-      . assert(_ == List.from(Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).edits))
+      . assert(_ == List.from(Diff(Diff.Del(0, 'a'), Diff.Ins(0, 'A'), Diff.Par(1, 1, 'b'), Diff.Del(2, 'c'), Diff.Ins(2, 'C')).edits))
 
       test(m"real-world example 2"):
         diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
-      . assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
+      . assert(_ == Diff(Diff.Del(0, t"A"), Diff.Par(1, 0, t"B"), Diff.Ins(1, t"C"), Diff.Ins(2, t"D")))
 
     val start = proscenium.Sequence(t"Lear", t"Fool", t"Kent")
     val end = proscenium.Sequence(t"Lear", t"Edgar", t"Edmund", t"Kent")
@@ -144,7 +144,7 @@ object Tests extends Suite("diff", m"Dissonance tests"):
 
       test(m"Parse a simple diff file"):
         diffStream.read[Diff[Text]]
-      . assert(_ == Diff(Par(0, 0), Del(1, t"Fool"), Ins(1, t"Edgar"), Ins(2, t"Edmund")))
+      . assert(_ == Diff(Diff.Par(0, 0), Diff.Del(1, t"Fool"), Diff.Ins(1, t"Edgar"), Diff.Ins(2, t"Edmund")))
 
       test(m"Apply parsed diff to source to get result"):
         diffStream.read[Diff[Text]].patch(List(t"Lear", t"Fool", t"Kent"))
@@ -152,7 +152,7 @@ object Tests extends Suite("diff", m"Dissonance tests"):
 
       test(m"Parse reverse diff file"):
         reverseStream.read[Diff[Text]]
-      . assert(_ == Diff(Par(0, 0), Del(1, t"Edgar"), Del(2, t"Edmund"), Ins(1, t"Fool")))
+      . assert(_ == Diff(Diff.Par(0, 0), Diff.Del(1, t"Edgar"), Diff.Del(2, t"Edmund"), Diff.Ins(1, t"Fool")))
 
       test(m"Apply parsed reverse diff to get source"):
         reverseStream.read[Diff[Text]].patch(List(t"Lear", t"Edgar", t"Edmund", t"Kent"))
@@ -200,30 +200,30 @@ object Tests extends Suite("diff", m"Dissonance tests"):
     suite(m"Rdiff tests"):
       val italianToSpanish = test(m"Do a normal diff on Italian/Spanish numbers"):
         diff(italian, spanish)
-      .check(_ == Diff(Del(0, t"zero"), Ins(0, t"cero"), Par(1,1, t"uno"), Del(2, t"due"),
-          Del(3, t"tre"), Del(4, t"quattro"), Del(5, t"cinque"), Del(6, t"sei"), Del(7, t"sette"),
-          Ins(2, t"dos"), Ins(3, t"tres"), Ins(4, t"cuatro"), Ins(5, t"cinco"), Ins(6, t"seis"),
-          Ins(7, t"siete")))
+      .check(_ == Diff(Diff.Del(0, t"zero"), Diff.Ins(0, t"cero"), Diff.Par(1,1, t"uno"), Diff.Del(2, t"due"),
+          Diff.Del(3, t"tre"), Diff.Del(4, t"quattro"), Diff.Del(5, t"cinque"), Diff.Del(6, t"sei"), Diff.Del(7, t"sette"),
+          Diff.Ins(2, t"dos"), Diff.Ins(3, t"tres"), Diff.Ins(4, t"cuatro"), Diff.Ins(5, t"cinco"), Diff.Ins(6, t"seis"),
+          Diff.Ins(7, t"siete")))
 
       test(m"Align on Levenshtein distance < 4"):
         italianToSpanish.rdiff(_.proximity(_) < 4)
-      . assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Sub(2, 2, t"due", t"dos"),
-          Sub(3, 3, t"tre", t"tres"), Sub(4, 4, t"quattro", t"cuatro"),
-          Sub(5, 5, t"cinque", t"cinco"), Sub(6, 6, t"sei", t"seis"),
-          Sub(7, 7, t"sette", t"siete")))
+      . assert(_ == RDiff(Diff.Sub(0, 0, t"zero", t"cero"), Diff.Par(1, 1, t"uno"), Diff.Sub(2, 2, t"due", t"dos"),
+          Diff.Sub(3, 3, t"tre", t"tres"), Diff.Sub(4, 4, t"quattro", t"cuatro"),
+          Diff.Sub(5, 5, t"cinque", t"cinco"), Diff.Sub(6, 6, t"sei", t"seis"),
+          Diff.Sub(7, 7, t"sette", t"siete")))
 
       test(m"Align on Levenshtein distance < 3"):
         italianToSpanish.rdiff(_.proximity(_) < 3)
-      . assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Sub(2, 2, t"due", t"dos"),
-          Sub(3, 3, t"tre", t"tres"), Sub(4, 4, t"quattro", t"cuatro"), Del(5, t"cinque"),
-          Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"), Sub(7, 7, t"sette", t"siete")))
+      . assert(_ == RDiff(Diff.Sub(0, 0, t"zero", t"cero"), Diff.Par(1, 1, t"uno"), Diff.Sub(2, 2, t"due", t"dos"),
+          Diff.Sub(3, 3, t"tre", t"tres"), Diff.Sub(4, 4, t"quattro", t"cuatro"), Diff.Del(5, t"cinque"),
+          Diff.Ins(5, t"cinco"), Diff.Sub(6, 6, t"sei", t"seis"), Diff.Sub(7, 7, t"sette", t"siete")))
 
       test(m"Align on Levenshtein distance < 2"):
         italianToSpanish.rdiff(_.proximity(_) < 2)
-      . assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Del(2, t"due"),
-          Ins(2, t"dos"), Sub(3, 3, t"tre", t"tres"), Del(4, t"quattro"), Del(5, t"cinque"),
-          Ins(4, t"cuatro"), Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"),
-          Del(7, t"sette"), Ins(7, t"siete")))
+      . assert(_ == RDiff(Diff.Sub(0, 0, t"zero", t"cero"), Diff.Par(1, 1, t"uno"), Diff.Del(2, t"due"),
+          Diff.Ins(2, t"dos"), Diff.Sub(3, 3, t"tre", t"tres"), Diff.Del(4, t"quattro"), Diff.Del(5, t"cinque"),
+          Diff.Ins(4, t"cuatro"), Diff.Ins(5, t"cinco"), Diff.Sub(6, 6, t"sei", t"seis"),
+          Diff.Del(7, t"sette"), Diff.Ins(7, t"siete")))
 
     suite(m"Evolution tests"):
       test(m"Sample words"):

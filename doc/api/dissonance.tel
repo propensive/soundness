@@ -7,12 +7,12 @@ info   minimal edit scripts between sequences, as values to apply, invert, align
 detail
     _Dissonance_ computes the difference between two sequences as an immutable value. `diff`
     runs Myers' algorithm over any two `Sequence`s, with equality or a comparison of the
-    caller's choosing, and returns a `Diff`: an edit script of insertions (`Ins`), deletions
-    (`Del`) and unchanged elements (`Par`), each with its positions in the two sequences.
+    caller's choosing, and returns a `Diff`: an edit script of insertions (`Diff.Ins`), deletions
+    (`Diff.Del`) and unchanged elements (`Diff.Par`), each with its positions in the two sequences.
 
     A `Diff` can be applied to the original as a patch, inverted with `flip`, grouped into
     changed and unchanged runs, refined with `rdiff` into an `RDiff` which pairs deletions with
-    the insertions that replaced them as substitutions (`Sub`), serialized in the unix `diff`
+    the insertions that replaced them as substitutions (`Diff.Sub`), serialized in the unix `diff`
     format and read back from it. A `Redraft` is the forgiving form of a patch, which names only
     the lines to remove and add and finds where they belong, and an `Evolution` follows each
     element through many versions rather than two.
@@ -45,14 +45,14 @@ entry .diff   the minimal edit script turning one sequence into another, by Myer
     `diff(left, right)` compares two `Sequence`s and returns the fewest insertions and
     deletions which turn `left` into `right`, interleaved with the unchanged elements, as a
     `Diff`. A third argument replaces `==` with any comparison, such as a case-insensitive one;
-    an element of `right` paired with an equal one of `left` is reported as a `Par` holding the
+    an element of `right` paired with an equal one of `left` is reported as a `Diff.Par` holding the
     element from `left`.
 
     ```scala
     import soundness.*
 
     diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
-    // Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C'))
+    // Diff(Diff.Par(0, 0, 'A'), Diff.Ins(1, 'B'), Diff.Par(1, 2, 'C'))
 
     diff(Sequence(t"Lear", t"Kent"), Sequence(t"lear", t"Kent"), _.lower == _.lower).size  // 0
     ```
@@ -72,7 +72,7 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
       import soundness.*
 
       val changes = diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
-      // Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D"))
+      // Diff(Diff.Del(0, t"A"), Diff.Par(1, 0, t"B"), Diff.Ins(1, t"C"), Diff.Ins(2, t"D"))
 
       changes.size                           // 3
       changes.patch(List(t"A", t"B"))         // t"B", t"C", t"D"
@@ -96,7 +96,7 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
       import strategies.throwUnsafely
 
       Chain(t"2c2,3", t"< Fool", t"---", t"> Edgar", t"> Regan").read[Diff[Text]]
-      // Diff(Par(0, 0), Del(1, t"Fool"), Ins(1, t"Edgar"), Ins(2, t"Regan"))
+      // Diff(Diff.Par(0, 0), Diff.Del(1, t"Fool"), Diff.Ins(1, t"Edgar"), Diff.Ins(2, t"Regan"))
       ```
 
       The format does not repeat the unchanged lines, so the `Par`s of a parsed diff carry no
@@ -204,8 +204,8 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
         val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
 
         diff(italian, spanish).rdiff(_.proximity(_) < 4)
-        // RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"),
-        //       Sub(2, 2, t"due", t"dos"), Sub(3, 3, t"tre", t"tres"))
+        // RDiff(Diff.Sub(0, 0, t"zero", t"cero"), Diff.Par(1, 1, t"uno"),
+        //       Diff.Sub(2, 2, t"due", t"dos"), Diff.Sub(3, 3, t"tre", t"tres"))
         ```
 
         The second parameter, `subSize` (default `1`), pairs a region outright, without
@@ -222,79 +222,82 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
       unchanged elements between them are not represented. `Diff.serialize` is written over
       this.
 
-entry .Edit   one step of a `Diff`: an insertion, a deletion or an unchanged element
-  detail
-      The sealed supertype of `Ins`, `Del` and `Par`, the three edits a `Diff` is made of. An
-      `Edit` is also a `Change`, the wider type of an `RDiff`'s steps, which adds `Sub`.
+  entry .Change   one step of an `RDiff`: an edit, or a substitution of one element for another
+    detail
+        The sealed supertype of `Edit` (so of `Ins`, `Del` and `Par`) and of `Sub`, the
+        substitution which `Diff#rdiff` makes from a similar deletion and insertion. A match over
+        an `RDiff`'s `#changes` has four cases.
 
-      Every edit has a `#value`, which is `Optional`: an `Ins` always has one, but a `Del` or a
-      `Par` may not, as in a diff read from the unix format. On an edit whose type is
-      `Retained`, `kept` reads the value as a bare element.
-  refer dissonance.Change
-  refer dissonance.Retained
-  entry #value   the element the edit concerns, if it is carried
-  entry #map     applies a function to the edit's element, keeping its positions
-      The result is an `Edit` of the same kind; the `Retained` mark is not kept, and may be
-      re-established with `retained`.
+        ```scala
+        import soundness.*
 
-entry .Change   one step of an `RDiff`: an edit, or a substitution of one element for another
-  detail
-      The sealed supertype of `Edit` (so of `Ins`, `Del` and `Par`) and of `Sub`, the
-      substitution which `Diff#rdiff` makes from a similar deletion and insertion. A match over
-      an `RDiff`'s `#changes` has four cases.
+        def describe(change: Diff.Change[Text]): Text = change match
+          case Diff.Par(_, _, _)       => t"keep"
+          case Diff.Del(_, _)          => t"remove"
+          case Diff.Ins(_, value)      => t"add $value"
+          case Diff.Sub(_, _, _, _)    => t"change"
+        ```
+    refer dissonance.Diff.Edit
+    refer dissonance.RDiff
+    entry #map   applies a function to the element, or elements, of the change, keeping its positions
+  entry .Chunk   one changed region of a diff: where it is, what it deletes and what it inserts
+    detail
+        The unit of the unix `diff` format, given by `Diff#chunks`: the region's starting
+        positions in the left and right sequences, then its deletions and its insertions.
+    entry #position        the region's starting position in the left sequence
+    entry #rightPosition   the region's starting position in the right sequence
+    entry #dels            the region's deletions, in order
+    entry #inss            the region's insertions, in order
+  entry .Edit   one step of a `Diff`: an insertion, a deletion or an unchanged element
+    detail
+        The sealed supertype of `Ins`, `Del` and `Par`, the three edits a `Diff` is made of. An
+        `Edit` is also a `Change`, the wider type of an `RDiff`'s steps, which adds `Sub`.
 
-      ```scala
-      import soundness.*
-
-      def describe(change: Change[Text]): Text = change match
-        case Par(_, _, _)       => t"keep"
-        case Del(_, _)          => t"remove"
-        case Ins(_, value)      => t"add $value"
-        case Sub(_, _, _, _)    => t"change"
-      ```
-  refer dissonance.Edit
-  refer dissonance.RDiff
-  entry #map   applies a function to the element, or elements, of the change, keeping its positions
-
-entry .Ins   an insertion: an element of the right sequence which is not in the left
-  detail
-      `Ins(right, value)`: `value` is inserted at position `right` of the right sequence. An
-      insertion always carries its value, since a patch could not otherwise produce it.
-  entry #right   the inserted element's position in the right sequence, from zero
-  entry #value   the inserted element
-
-entry .Del   a deletion: an element of the left sequence which is not in the right
-  detail
-      `Del(left, value)`: the element at position `left` of the left sequence is removed. The
-      value is `Optional` and defaults to `Unset`, since a patch needs only the position; a
-      diff from `diff` always records it, and one read from the unix format does too.
-  entry #left    the deleted element's position in the left sequence, from zero
-  entry #value   the deleted element, if it is carried
-
-entry .Par   an unchanged element, present at a position in each sequence
-  detail
-      `Par(left, right, value)`: the element at position `left` of the left sequence is the
-      one at `right` of the right. The value defaults to `Unset`: a diff read from the unix
-      format, which does not repeat unchanged lines, has none.
-  entry #left    the element's position in the left sequence, from zero
-  entry #right   the element's position in the right sequence, from zero
-  entry #value   the element, if it is carried
-
-entry .Sub   a substitution: an element of the left sequence replaced by a similar one in the right
-  detail
-      Made only by `Diff#rdiff`, from a deletion and an insertion it judged to correspond.
-      `Sub(left, right, leftValue, rightValue)` says that the element at `left`, `leftValue`,
-      became the element at `right`, `rightValue`. Both values are `Optional`, as a parsed
-      diff's deletions may have none. `RDiff#flip` swaps the two sides.
-  entry #left         the replaced element's position in the left sequence
-  entry #right        the replacing element's position in the right sequence
-  entry #leftValue    the element which was replaced, if it is carried
-  entry #rightValue   the element which replaced it, if it is carried
+        Every edit has a `#value`, which is `Optional`: an `Ins` always has one, but a `Del` or a
+        `Par` may not, as in a diff read from the unix format. On an edit whose type is
+        `Retained`, `kept` reads the value as a bare element.
+    refer dissonance.Diff.Change
+    refer dissonance.Retained
+    entry #value   the element the edit concerns, if it is carried
+    entry #map     applies a function to the edit's element, keeping its positions
+        The result is an `Edit` of the same kind; the `Retained` mark is not kept, and may be
+        re-established with `retained`.
+  entry .Del   a deletion: an element of the left sequence which is not in the right
+    detail
+        `Del(left, value)`: the element at position `left` of the left sequence is removed. The
+        value is `Optional` and defaults to `Unset`, since a patch needs only the position; a
+        diff from `diff` always records it, and one read from the unix format does too.
+    entry #left    the deleted element's position in the left sequence, from zero
+    entry #value   the deleted element, if it is carried
+  entry .Ins   an insertion: an element of the right sequence which is not in the left
+    detail
+        `Ins(right, value)`: `value` is inserted at position `right` of the right sequence. An
+        insertion always carries its value, since a patch could not otherwise produce it.
+    entry #right   the inserted element's position in the right sequence, from zero
+    entry #value   the inserted element
+  entry .Par   an unchanged element, present at a position in each sequence
+    detail
+        `Par(left, right, value)`: the element at position `left` of the left sequence is the
+        one at `right` of the right. The value defaults to `Unset`: a diff read from the unix
+        format, which does not repeat unchanged lines, has none.
+    entry #left    the element's position in the left sequence, from zero
+    entry #right   the element's position in the right sequence, from zero
+    entry #value   the element, if it is carried
+  entry .Sub   a substitution: an element of the left sequence replaced by a similar one in the right
+    detail
+        Made only by `Diff#rdiff`, from a deletion and an insertion it judged to correspond.
+        `Sub(left, right, leftValue, rightValue)` says that the element at `left`, `leftValue`,
+        became the element at `right`, `rightValue`. Both values are `Optional`, as a parsed
+        diff's deletions may have none. `RDiff#flip` swaps the two sides.
+    entry #left         the replaced element's position in the left sequence
+    entry #right        the replacing element's position in the right sequence
+    entry #leftValue    the element which was replaced, if it is carried
+    entry #rightValue   the element which replaced it, if it is carried
 
 entry .RDiff   an aligned diff, in which a similar deletion and insertion are paired as a `Sub`
   detail
       The result of `Diff#rdiff`: the same steps as a `Diff`, except that where a deletion
-      and an insertion correspond, they are one `Sub`. It suits display — a changed line shown
+      and an insertion correspond, they are one `Diff.Sub`. It suits display — a changed line shown
       as a modification of the old one, rather than as a removal and an unrelated addition —
       and the comparison of structured records, where a modified record is the same record.
 
@@ -302,30 +305,21 @@ entry .RDiff   an aligned diff, in which a similar deletion and insertion are pa
       import soundness.*
 
       val aligned = diff(Sequence(t"a", t"b"), Sequence(t"a", t"c")).rdiff(_ == _)
-      // RDiff(Par(0, 0, t"a"), Sub(1, 1, t"b", t"c"))
+      // RDiff(Diff.Par(0, 0, t"a"), Diff.Sub(1, 1, t"b", t"c"))
       ```
   refer dissonance.Diff
-  refer dissonance.Change
+  refer dissonance.Diff.Change
   entry #changes   the steps, in order: `Par`, `Del`, `Ins` and `Sub`
   entry #flip      the inverse aligned diff, from the right sequence back to the left
-      Insertions and deletions exchange places, and each `Par` and `Sub` has its two positions
-      (and, for a `Sub`, its two values) swapped.
+      Insertions and deletions exchange places, and each `Diff.Par` and `Diff.Sub` has its two positions
+      (and, for a `Diff.Sub`, its two values) swapped.
   entry #map       applies a function to the element, or elements, of every step
-
-entry .Chunk   one changed region of a diff: where it is, what it deletes and what it inserts
-  detail
-      The unit of the unix `diff` format, given by `Diff#chunks`: the region's starting
-      positions in the left and right sequences, then its deletions and its insertions.
-  entry #position        the region's starting position in the left sequence
-  entry #rightPosition   the region's starting position in the right sequence
-  entry #dels            the region's deletions, in order
-  entry #inss            the region's insertions, in order
 
 entry .Tract   a run of a diff: either a changed region or a stretch of unchanged elements
   detail
       `Diff#collate` divides a diff into alternating `Tract`s. A `Changed` tract holds a
       region's deletions and insertions separately, which is what `Diff#rdiff` pairs; an
-      `Unchanged` one holds the `Par`s between regions.
+      `Unchanged` one holds the `Diff.Par`s between regions.
 
       ```scala
       import soundness.*
@@ -341,11 +335,11 @@ entry .Tract   a run of a diff: either a changed region or a stretch of unchange
     entry #retentions   the `Par`s of the run, in order
 
 entry .Retained   the type-level proof that every edit of a diff carries its element
-    `Retained` is a refinement, `Any { type Retain = true }`, which marks an `Edit` or a
+    `Retained` is a refinement, `Any { type Retain = true }`, which marks an `Diff.Edit` or a
     `Diff` whose values are known to be present. `diff` and `Redraft#resolve` return a
     `Diff[element] & Retained`; a diff read from the unix format, or built by hand, does
     not. Being a refinement rather than a trait, the mark costs nothing at runtime: an
-    `Edit[Text] & Retained` is an `Edit` like any other.
+    `Diff.Edit[Text] & Retained` is an `Diff.Edit` like any other.
 
     Two operations need the proof. `kept` reads an edit's value as a bare element instead of
     an `Optional`, and `Diff.redraft` renders a diff as a `Redraft`, which must reproduce every
@@ -362,7 +356,7 @@ entry .Retained   the type-level proof that every edit of a diff carries its ele
     its values, and `retentions` gives a retained diff's edits with the mark.
 
 entry .retained   marks an edit or a diff as `Retained`, where every value is known to be present
-    An extension on `Edit` and on `Diff`, returning the receiver typed `& Retained`. It checks
+    An extension on `Diff.Edit` and on `Diff`, returning the receiver typed `& Retained`. It checks
     nothing: it is the place where code which has just supplied every value records the fact,
     as `diff` and `Redraft#resolve` do. Marking a diff whose edits lack values makes `kept`
     return absent values as if they were elements, and a rendered redraft wrong.
@@ -370,15 +364,15 @@ entry .retained   marks an edit or a diff as `Retained`, where every value is kn
     ```scala
     import soundness.*
 
-    val changes = Diff(Par(0, 0, t"a"), Ins(1, t"b")).retained
+    val changes = Diff(Diff.Par(0, 0, t"a"), Diff.Ins(1, t"b")).retained
     changes.redraft().serialize   // t"a", t"+ b": the context places the insertion
     ```
 
-    `Edit#map` and `Diff#map` drop the mark, which must be re-applied with `retained` when the
+    `Diff.Edit#map` and `Diff#map` drop the mark, which must be re-applied with `retained` when the
     mapped values are still all present.
 
 entry .kept   an edit's value: a bare element on a `Retained` edit, and `Optional` otherwise
-    An extension on any `Edit`. On an edit whose static type is `Retained`, it is a
+    An extension on any `Diff.Edit`. On an edit whose static type is `Retained`, it is a
     `transparent inline` accessor which returns the element itself, so no absence need be
     handled; on any other edit, or where the type is not known, it is `#value`, an
     `Optional[element]`.
@@ -386,7 +380,7 @@ entry .kept   an edit's value: a bare element on a `Retained` edit, and `Optiona
     ```scala
     import soundness.*
 
-    val edit = Del(0, t"gone").retained
+    val edit = Diff.Del(0, t"gone").retained
     val text: Text = edit.kept
     ```
 

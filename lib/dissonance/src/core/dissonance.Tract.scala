@@ -33,5 +33,5 @@
 package dissonance
 
 enum Tract[element]:
-  case Changed(deletions: List[Del[element]], insertions: List[Ins[element]])
-  case Unchanged(retentions: List[Par[element]])
+  case Changed(deletions: List[Diff.Del[element]], insertions: List[Diff.Ins[element]])
+  case Unchanged(retentions: List[Diff.Par[element]])

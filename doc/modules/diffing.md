@@ -28,6 +28,7 @@ results:
 import soundness.*
 import strategies.throwUnsafely
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+import Diff.{Del, Ins, Par, Sub}
 ```
 
 ### Computing a diff
@@ -38,7 +39,8 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 val letters = diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
 ```
 
-Each edit is an insertion (`Ins`), a deletion (`Del`) or an unchanged element (`Par`), and holds
+Each edit is an insertion (`Diff.Ins`), a deletion (`Diff.Del`) or an unchanged element
+(`Diff.Par`), and holds
 its position in the left sequence, the right sequence, or both. The edits of a `Diff` are an
 ordinary sequence, which a pattern match takes apart:
 

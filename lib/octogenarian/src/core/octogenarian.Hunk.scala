@@ -34,6 +34,7 @@ package octogenarian
 
 import anticipation.*
 import dissonance.*
+import dissonance.Diff.Edit
 
 // Edits are `Retained`: every hunk line carries its text, so `Patch.parse` mints the proof at
 // construction and `Patch.asDiff`'s result supports value-demanding operations (`redraft`).

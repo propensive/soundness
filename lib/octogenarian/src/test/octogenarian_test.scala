@@ -56,6 +56,7 @@ import filesystemOptions.overwritePreexisting
 import gitCommands.searchpathGitCommand
 
 import denominative.dysasymptotics.linearSize
+import dissonance.Diff.{Del, Ins, Par}
 
 object Tests extends Suite("git", m"Octogenarian Tests"):
   def run(): Unit =
