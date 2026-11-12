@@ -40,6 +40,11 @@ import codepages.utf8Codepage
 import formatting.compactJsonFormatting
 import strategies.throwUnsafely
 import Http2.*
+import Containerd
+  . { AnyMessage, Container, ContentDescriptor, CreateContainerResponse, CreateTaskResponse,
+      DeleteTaskResponse, Empty, GetContainerResponse, ImageRecord, ListContainersResponse,
+      ListImagesResponse, ListNamespacesResponse, ListTasksResponse, Mount, Namespace,
+      ProcessStatus, Runtime, StartResponse, VersionResponse, WaitResponse }
 
 object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
   def run(): Unit =
@@ -746,7 +751,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       val moment = Instant(1_700_000_001_000L)
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
-        val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
+        val container = Container(t"svc", createdAt = Containerd.Timestamp.of(moment))
         val restored = proscenium.Chain(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Unix]
       . assert(_ == moment)

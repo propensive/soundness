@@ -53,13 +53,13 @@ detail
     A `Containerd` client connects to a daemon through an `Http2.Endpoint` (normally a Unix
     socket carrying cleartext HTTP/2) inside a `supervise` scope, bound to one containerd
     namespace, and each of its methods is one gRPC call exchanging typed records: a
-    `Container` is registered with `createContainer`, given a root filesystem of `Mount`s and
+    `Containerd.Container` is registered with `createContainer`, given a root filesystem of `Containerd.Mount`s and
     a task with `createTask`, started, signalled, awaited and deleted with the `…Task`
-    methods, and inspected as a `Workload` whose `state` is a `ProcessStatus`. The
+    methods, and inspected as a `Workload` whose `state` is a `Containerd.ProcessStatus`. The
     `Workload` openable binds that whole lifecycle to a scope,
     `container.open[Workload](Read & Launch & Signalling)`, so a task is created, optionally
     started, and always killed, reaped and deleted when the block ends. The messages on the
-    wire — every `…Request` and `…Response`, `AnyMessage`, `Timestamp`, `Empty` — are
+    wire — every `…Request` and `…Response`, `Containerd.AnyMessage`, `Containerd.Timestamp`, `Containerd.Empty` — are
     ordinary case classes with protobuf field numbers, so they round-trip with the daemon and
     can be encoded and decoded directly through locomotion's `Protobuf`.
 
@@ -90,19 +90,20 @@ detail
       `imagePathOpenable`, which open a filesystem *path* as an image through bitumen's
       disk-backed tar reader.
     - `embarcadero.containerd` — JVM only: `Containerd`, `Workload`, the `Launch` and
-      `Signalling` modes, `ProcessStatus`, `DockerEvent`, and the protobuf message types,
+      `Signalling` modes, `Containerd.ProcessStatus`, `Containerd.Event`, and the protobuf message types,
       over obligatory's gRPC and telekinesis's HTTP/2.
 
-    Everything is exported to the `soundness` umbrella except `Timestamp`, whose name
-    aviation's `Timestamp` keeps: write `embarcadero.Timestamp` for the protobuf one. The
+    The containerd protobuf records — `Containerd.Container`, `Containerd.Mount`,
+    `Containerd.Timestamp` and the service requests and replies — are nested in `Containerd`, so
+    they do not compete with other libraries' names in the `soundness` umbrella. The
     givens the library itself needs (`providers.javaBaseProvider`, `alphabets.hexLowerCase`,
     `formatting.compactJsonFormatting`, `codepages.utf8Codepage`) are imported inside it, so
     a program imports only what its own code uses; the openables (`Image.dataOpenable`,
     `Workload.openable`) sit in their companions and resolve with no import, while
     `imagePathOpenable` is a top-level given reached through `import soundness.*`. A
     containerd call needs a `Monitor` (from `supervise`) and tactics for `Grpc.Error`,
-    `Http2.Error`, `Async.Error` and `Protobuf.Error`, and logs a `DockerEvent` for each
-    change it makes, so a `DockerEvent is Loggable` such as `logging.silentLogging` must be
+    `Http2.Error`, `Async.Error` and `Protobuf.Error`, and logs a `Containerd.Event` for each
+    change it makes, so a `Containerd.Event is Loggable` such as `logging.silentLogging` must be
     in scope.
 
 refer embarcadero.Image
@@ -548,9 +549,9 @@ entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` dige
       makes one for a layer, and `Image#configDescriptor` and `Image#manifestDescriptor` for
       the documents. The spec's `platform` member for multi-architecture indexes is not yet
       modelled. It is the OCI JSON descriptor; containerd's protobuf one is
-      `ContentDescriptor`.
+      `Containerd.ContentDescriptor`.
   refer embarcadero.Layer
-  refer embarcadero.ContentDescriptor
+  refer embarcadero.Containerd.ContentDescriptor
   entry #mediaType   the blob's media type, such as `application/vnd.oci.image.layer.v1.tar+gzip`
   entry #digest   the `sha256:<hex>` digest of the stored blob
   entry #size   the stored blob's length in bytes
@@ -705,7 +706,7 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
       `#killTask`, `#waitTask`, `#deleteTask`, `#task` and `#tasks`. Every call needs a
       `Monitor` and tactics for `Grpc.Error` (a non-zero gRPC status from the daemon),
       `Http2.Error`, `Async.Error` and `Protobuf.Error`, and each call which changes the
-      daemon logs a `DockerEvent` at `info`, so a `DockerEvent is Loggable` must be in
+      daemon logs a `Containerd.Event` at `info`, so a `Containerd.Event is Loggable` must be in
       scope.
 
       ```scala fuel
@@ -726,8 +727,8 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
         client.containers().map(container => (container.id, container.image))
         client.images().map(_.name)
 
-        val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
-        client.createContainer(Container(t"web", image = t"docker.io/library/alpine:latest"))
+        val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+        client.createContainer(Containerd.Container(t"web", image = t"docker.io/library/alpine:latest"))
         client.createTask(t"web", rootfs)
         val pid = client.startTask(t"web")
         client.waitTask(t"web").exitStatus
@@ -740,8 +741,8 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
       deleted in that order (containerd refuses to delete a task it has not reaped). The
       `Workload` openable does that sequence for a scope, with teardown on every exit path.
   refer embarcadero.Workload
-  refer embarcadero.Container
-  refer embarcadero.DockerEvent
+  refer embarcadero.Containerd.Container
+  refer embarcadero.Containerd.Event
   entry .apply   connects to a containerd endpoint, binding every call to a namespace
       `Containerd(endpoint, namespace)` takes an `Http2.Endpoint` over any `Connectable`
       and `Showable` endpoint type and the namespace name, opens a `Grpc.Channel` whose
@@ -759,12 +760,12 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #createContainer   registers a container, returning it as the daemon stored it
       The containers service's `Create` call. The `Container`'s `spec` carries the OCI
       runtime spec as an `AnyMessage`, passed through verbatim, and its `runtime` names the
-      runtime plugin (`io.containerd.runc.v2`). Logs `DockerEvent.ContainerCreated`.
+      runtime plugin (`io.containerd.runc.v2`). Logs `Containerd.Event.ContainerCreated`.
   entry #container   a single container by id, as a `Container`
       The containers service's `Get` call; a container the daemon does not have is a
       `Grpc.Error`.
   entry #deleteContainer   removes a container by id
-      The containers service's `Delete` call. Logs `DockerEvent.ContainerDeleted`. A
+      The containers service's `Delete` call. Logs `Containerd.Event.ContainerDeleted`. A
       container with a live task cannot be deleted: delete the task first.
   entry #namespaces   the namespaces on the daemon, optionally filtered
       `client.namespaces()` or `client.namespaces(filter)`, the namespaces service's `List`
@@ -784,20 +785,20 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #deleteImage   removes an image by reference, optionally waiting for its content to be collected
       `client.deleteImage(name)` or `client.deleteImage(name, sync = true)`, the images
       service's `Delete` call; `sync` makes the call return only after garbage collection.
-      Logs `DockerEvent.ImageDeleted`.
+      Logs `Containerd.Event.ImageDeleted`.
   entry #createTask   creates a task for a container, with its root filesystem mounts, returning the task's pid
       `client.createTask(containerId, rootfs, options)`, the tasks service's `Create` call.
       The `rootfs` is the `Mount`s of the root filesystem (an overlay of an unpacked
       snapshot, typically) and `options` an `AnyMessage` of runtime options, empty by
       default. The result is a `CreateTaskResponse` of the container id and the host pid of
-      the new, not yet started, task. Logs `DockerEvent.TaskCreated`.
+      the new, not yet started, task. Logs `Containerd.Event.TaskCreated`.
   entry #startTask   starts a created task, returning its host pid
       `client.startTask(containerId)` or `client.startTask(containerId, execId)` for an
-      exec process, the tasks service's `Start` call. Logs `DockerEvent.TaskStarted`.
+      exec process, the tasks service's `Start` call. Logs `Containerd.Event.TaskStarted`.
   entry #killTask   sends a signal to a task, or to every process in its container
       `client.killTask(containerId, signal, execId, all)`, the tasks service's `Kill` call,
       with the signal as a number (`15` for `SIGTERM`, `9` for `SIGKILL`); `all` targets
-      every process in the container. Logs `DockerEvent.TaskKilled`.
+      every process in the container. Logs `Containerd.Event.TaskKilled`.
   entry #waitTask   waits for a task to exit, returning its exit status and time
       `client.waitTask(containerId)` or `client.waitTask(containerId, execId)`, the tasks
       service's `Wait` call, which blocks until the process has exited and returns a
@@ -805,23 +806,330 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #deleteTask   deletes a task, returning its final exit status
       `client.deleteTask(containerId)` or `client.deleteTask(containerId, execId)`, the
       tasks service's `Delete` call, returning a `DeleteTaskResponse`. Logs
-      `DockerEvent.TaskDeleted`.
+      `Containerd.Event.TaskDeleted`.
   entry #task   the state of a single task, as a `Workload`
       `client.task(containerId)` or `client.task(containerId, execId)`, the tasks service's
       `Get` call; `Workload#state` is the `ProcessStatus`.
   entry #tasks   every task known to the daemon, optionally filtered
       `client.tasks()` or `client.tasks(filter)`, the tasks service's `List` call.
 
+  entry .ProcessStatus   the status of a task's process: `Unknown`, `Created`, `Running`, `Stopped`, `Paused` or `Pausing`
+    detail
+        containerd's process status, a protobuf enum carried in a `Workload` as its numeric
+        `#code`: `Unknown` (0), `Created` (1), `Running` (2), `Stopped` (3), `Paused` (4) and
+        `Pausing` (5). `Workload#state` and `Workload.Handle`'s `state()` decode a code to
+        one of these, and `Workload(…, status = ProcessStatus.Running.code)` goes the other
+        way.
+    refer embarcadero.Workload
+    entry .of   the status for a code, or `Unset` for a number the enum does not know
+    entry #code   the numeric value containerd sends on the wire
+
+  entry .Event   what the containerd client logs as it changes the daemon
+    detail
+        Every change `Containerd` makes to the daemon is logged at `info`: `ContainerCreated(id)`,
+        `ContainerDeleted(id)`, `ImageDeleted(name)`, `TaskCreated(container)`,
+        `TaskStarted(container, pid)`, `TaskKilled(container, signal)` and
+        `TaskDeleted(container)`. All but `ImageDeleted` are tagged `Log.Process`;
+        `ImageDeleted` is tagged `Log.Resource`. Reads (`containers`, `version`, `task`, …) log
+        nothing. A `Containerd.Event is Loggable` must be in scope for every client method;
+        `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message, such as _started the task for container `web` as PID `4321`_
+
+  entry .AnyMessage   the protobuf `google.protobuf.Any`: a serialized message with its type URL, passed through verbatim
+    detail
+        containerd carries opaque payloads — a container's OCI runtime spec, a runtime's
+        options, a task's options — as `Any` messages, which this client neither builds nor
+        interprets: `#typeUrl` names the message type and `#value` holds its serialized bytes
+        as an `AnyMessage.Payload`. Named `AnyMessage` to keep clear of `scala.Any`. An empty
+        `AnyMessage()` is the default wherever a message takes one.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+
+        val spec = Containerd.AnyMessage(t"types.containerd.io/opencontainers/runtime-spec/1/Spec",
+            Containerd.AnyMessage.Payload(t"{}".in[Data]))
+
+        spec.value.data.length   // 2
+        ```
+    entry .Payload   the serialized bytes of an `AnyMessage`, as an opaque, immutable byte array
+      detail
+          An opaque type over a frozen byte array rather than a bare `Data` field, so that
+          protobuf derivation can see it as a plain, capture-free value. `Payload(data)` wraps
+          a `Data`, `.empty` is the zero-length payload, and the `data` extension on
+          `AnyMessage` reads it back. It encodes on the wire as a length-delimited field.
+      entry .empty   the zero-length payload, the default `value` of an `AnyMessage`
+      entry .apply   wraps a `Data` as a payload
+      entry .encodable   encodes a payload as a length-delimited protobuf field
+      entry .decodable   decodes a length-delimited protobuf field as a payload
+    entry .data   `payload.data`: the payload's bytes as `Data`
+    entry #typeUrl   the type URL naming the serialized message's type
+    entry #value   the serialized message, as an `AnyMessage.Payload`
+
+  entry .Timestamp   the protobuf `google.protobuf.Timestamp`: seconds and nanoseconds since the Unix epoch
+    detail
+        The timestamp containerd's records carry (`Container#createdAt`, `Workload#exitedAt`,
+        …): whole `#seconds` and a `#nanos` fraction. It is **not** exported to the
+        `soundness` umbrella, since aviation's `Timestamp` keeps that name: write
+        `embarcadero.Timestamp`. It converts to and from any instant type through
+        anticipation's generic time abstraction, so an aviation `Instant` works with no
+        dependency between the two libraries, at millisecond precision: the generic
+        representation is epoch milliseconds, so protobuf's sub-millisecond nanoseconds are
+        not carried.
+
+        ```scala
+        import soundness.*
+        import abstractables.epochMillisecondsAbstractable
+        import chronometries.unixChronometry
+
+        val moment: Instant = Instant(1_700_000_001_000L)
+        val stamp: embarcadero.Timestamp = embarcadero.Timestamp.of(moment)
+        stamp.seconds                        // 1700000001L
+        stamp.instant[Instant over Unix]     // moment
+        ```
+    entry .of   a timestamp from any instant type `Abstractable across Instants to Long`, at millisecond precision
+    entry #seconds   whole seconds since the Unix epoch
+    entry #nanos   the nanosecond fraction, `0` to `999999999`; a multiple of a million when made by `.of`
+    entry #instant   the timestamp as any instant type `Instantiable across Instants from Long`, at millisecond precision
+
+  entry .Container   a containerd container record: id, labels, image, runtime, OCI spec, snapshot and timestamps
+    detail
+        The metadata record of the containers service, with its protobuf field numbers
+        preserved so that it round-trips with the daemon; fields the client does not model
+        (the `extensions` map) are skipped on decode. Only `#id` is required: `Container(t"web",
+        image = t"docker.io/library/alpine:latest")` is a complete definition to register with
+        `Containerd#createContainer` or open as a `Workload`. A container is a definition,
+        not a process; the task made for it is what runs.
+    refer embarcadero.Containerd
+    refer embarcadero.Workload
+    entry #id   the container's id, unique in its namespace
+    entry #labels   free-form `Map[Text, Text]` labels; containerd filters can select on them
+    entry #image   the reference of the image the container was made from
+    entry #runtime   the `Runtime` binding: the runtime plugin's name and options
+    entry #spec   the OCI runtime spec, as an opaque `AnyMessage`
+    entry #snapshotter   the snapshotter which holds the container's root filesystem
+    entry #snapshotKey   the key of the container's snapshot
+    entry #createdAt   when the daemon stored the record, as a `Timestamp`
+    entry #updatedAt   when the record last changed, as a `Timestamp`
+    entry #sandbox   the sandbox the container belongs to, if any
+
+  entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
+    detail
+        The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
+        manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Descriptor`, which
+        has the same meaning on the other side of the library. The `platform` member is not
+        modelled.
+    refer embarcadero.Descriptor
+    entry #mediaType   the blob's media type, as text
+    entry #digest   the `sha256:<hex>` digest of the blob
+    entry #size   the blob's length in bytes
+    entry #annotations   free-form `Map[Text, Text]` annotations
+
+  entry .ImageRecord   a containerd image record: a reference name pointing at content, with labels and timestamps
+    detail
+        The metadata record of the images service, which `Containerd#images` and
+        `Containerd#image` return: `#name` is the reference (`docker.io/library/alpine:latest`)
+        and `#target` the `ContentDescriptor` of the manifest in the content store. Named
+        `ImageRecord` to keep clear of the OCI `Image` this library builds; the record is the
+        daemon's index entry, not the content.
+    refer embarcadero.Image
+    entry #name   the image reference
+    entry #labels   free-form `Map[Text, Text]` labels
+    entry #target   the `ContentDescriptor` of the image's manifest
+    entry #createdAt   when the daemon stored the record, as a `Timestamp`
+    entry #updatedAt   when the record last changed, as a `Timestamp`
+
+  entry .Mount   a mount in a task's root filesystem: a source mounted at a target with a type and options
+    detail
+        The `containerd.types.Mount` message, given to `Containerd#createTask` as the task's
+        `rootfs` and to `container.open[Workload](…)` as its flags; `#mountType` is the proto's
+        `type`. An overlay of an unpacked snapshot is the common case:
+
+        ```scala
+        import soundness.*
+
+        val rootfs: List[Containerd.Mount] =
+          List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
+        ```
+    entry #mountType   the filesystem type, such as `overlay` or `bind`
+    entry #source   what is mounted
+    entry #target   where it is mounted, within the task's root
+    entry #options   the mount options, as `key=value` entries
+
+  entry .Namespace   a containerd namespace: an isolation scope for containers, images and tasks, with labels
+    detail
+        The record of the namespaces service: a `#name` (`default`, `k8s.io`, `moby`) and
+        free-form `#labels`. A `Containerd` client is bound to one namespace at connection;
+        `Containerd#namespaces`, `#createNamespace` and `#deleteNamespace` manage them.
+    entry #name   the namespace's name
+    entry #labels   free-form `Map[Text, Text]` labels
+
+  entry .Runtime   a container's runtime binding: the runtime plugin's name and its opaque options
+    detail
+        The `Container.Runtime` message: `#name` is the plugin (`io.containerd.runc.v2` for a
+        filesystem image, `io.containerd.wasmtime.v1` for a Wasm artifact under a wasmtime
+        shim) and `#options` an `AnyMessage` of its options. The name is exported to the
+        `soundness` umbrella as `Runtime`, so no other library may export one.
+    entry #name   the runtime plugin's name
+    entry #options   the plugin's options, as an opaque `AnyMessage`
+
+  entry .Empty   the protobuf `google.protobuf.Empty`: a message with no fields
+      The request of parameterless calls such as `Containerd#version`, and the reply of the
+      delete calls. `Empty()` is its only value.
+
+  entry .VersionResponse   the reply of containerd's `Version` call: the daemon's version and git revision
+    detail
+        What `Containerd#version` returns: `#version` is the semantic version (`1.7.0`) and
+        `#revision` the git revision the daemon was built from.
+    entry #version   the daemon's semantic version
+    entry #revision   the git revision it was built from
+
+  entry .CreateContainerRequest   the request of the containers service's `Create`: the container to register
+    detail
+        The `…Request` and `…Response` types are the containerd gRPC protocol mirrored field by field, each
+        a case class with protobuf field numbers which `Containerd`'s methods build and
+        decode, exported so that a program can speak to the daemon directly through a
+        `Grpc.Channel` or encode them with `in[Protobuf]`. For the containers service:
+        `CreateContainerRequest(container)` and `CreateContainerResponse(container)`,
+        `GetContainerRequest(id)` and `GetContainerResponse(container)`,
+        `ListContainersRequest(filters)` and `ListContainersResponse(containers)`, and
+        `DeleteContainerRequest(id)`, whose reply is `Empty`.
+    entry #container   the `Container` to register
+
+  entry .CreateContainerResponse   the reply of the containers service's `Create`: the container as stored
+    entry #container   the stored `Container`
+
+  entry .GetContainerRequest   the request of the containers service's `Get`: a container id
+    entry #id   the id of the container to fetch
+
+  entry .GetContainerResponse   the reply of the containers service's `Get`: the container
+    entry #container   the requested `Container`
+
+  entry .ListContainersRequest   the request of the containers service's `List`: optional filter expressions
+    entry #filters   containerd filter expressions, such as `labels."tier"==db`; empty for everything
+
+  entry .ListContainersResponse   the reply of the containers service's `List`: the matching containers
+    entry #containers   the matching `Container`s, in containerd's order
+
+  entry .DeleteContainerRequest   the request of the containers service's `Delete`: a container id; the reply is `Empty`
+    entry #id   the id of the container to remove
+
+  entry .CreateNamespaceRequest   the request of the namespaces service's `Create`: the namespace to create
+    detail
+        The namespaces service's messages: `CreateNamespaceRequest(namespace)` and
+        `CreateNamespaceResponse(namespace)`, `ListNamespacesRequest(filter)` and
+        `ListNamespacesResponse(namespaces)`, and `DeleteNamespaceRequest(name)`, whose reply
+        is `Empty`.
+    entry #namespace   the `Namespace` to create
+
+  entry .CreateNamespaceResponse   the reply of the namespaces service's `Create`: the namespace as stored
+    entry #namespace   the stored `Namespace`
+
+  entry .ListNamespacesRequest   the request of the namespaces service's `List`: an optional filter expression
+    entry #filter   a containerd filter expression; empty for everything
+
+  entry .ListNamespacesResponse   the reply of the namespaces service's `List`: the matching namespaces
+    entry #namespaces   the matching `Namespace`s
+
+  entry .DeleteNamespaceRequest   the request of the namespaces service's `Delete`: a namespace name; the reply is `Empty`
+    entry #name   the name of the namespace to remove
+
+  entry .GetImageRequest   the request of the images service's `Get`: an image reference
+    detail
+        The images service's messages: `GetImageRequest(name)` and `GetImageResponse(image)`,
+        `ListImagesRequest(filters)` and `ListImagesResponse(images)`, and
+        `DeleteImageRequest(name, sync)`, whose reply is `Empty`.
+    entry #name   the reference of the image to fetch
+
+  entry .GetImageResponse   the reply of the images service's `Get`: the image record
+    entry #image   the requested `ImageRecord`
+
+  entry .ListImagesRequest   the request of the images service's `List`: optional filter expressions
+    entry #filters   containerd filter expressions; empty for everything
+
+  entry .ListImagesResponse   the reply of the images service's `List`: the matching image records
+    entry #images   the matching `ImageRecord`s
+
+  entry .DeleteImageRequest   the request of the images service's `Delete`: an image reference and whether to wait; the reply is `Empty`
+    entry #name   the reference of the image to remove
+    entry #sync   whether to return only after the content has been garbage-collected
+
+  entry .CreateTaskRequest   the request of the tasks service's `Create`: the container, its rootfs mounts, stdio and options
+    detail
+        The tasks service's messages: `CreateTaskRequest` and `CreateTaskResponse(containerId,
+        pid)`, `StartRequest(containerId, execId)` and `StartResponse(pid)`,
+        `KillRequest(containerId, execId, signal, all)` with an `Empty` reply,
+        `WaitRequest(containerId, execId)` and `WaitResponse(exitStatus, exitedAt)`,
+        `DeleteTaskRequest(containerId, execId)` and `DeleteTaskResponse(id, pid, exitStatus,
+        exitedAt)`, `GetTaskRequest(containerId, execId)` and `GetTaskResponse(process)`, and
+        `ListTasksRequest(filter)` and `ListTasksResponse(tasks)`. An empty `execId` means the
+        container's main task; a non-empty one names an exec process within it.
+    entry #containerId   the container to create the task for
+    entry #rootfs   the `Mount`s of the task's root filesystem
+    entry #stdin   the path the task's standard input is read from; empty for none
+    entry #stdout   the path the task's standard output is written to; empty for none
+    entry #stderr   the path the task's standard error is written to; empty for none
+    entry #terminal   whether the task gets a pseudo-terminal
+    entry #options   runtime options, as an opaque `AnyMessage`
+
+  entry .CreateTaskResponse   the reply of the tasks service's `Create`: the container id and the new task's host pid
+    entry #containerId   the container the task was created for
+    entry #pid   the host pid of the created task
+
+  entry .StartRequest   the request of the tasks service's `Start`: the task, or exec process, to start
+    entry #containerId   the container whose task to start
+    entry #execId   the exec process to start; empty for the main task
+
+  entry .StartResponse   the reply of the tasks service's `Start`: the started process's host pid
+    entry #pid   the host pid of the started process
+
+  entry .KillRequest   the request of the tasks service's `Kill`: a signal for a task, an exec process or every process; the reply is `Empty`
+    entry #containerId   the container whose task to signal
+    entry #execId   the exec process to signal; empty for the main task
+    entry #signal   the signal number, such as `15` for `SIGTERM`
+    entry #all   whether to signal every process in the container
+
+  entry .WaitRequest   the request of the tasks service's `Wait`: the task, or exec process, to wait for
+    entry #containerId   the container whose task to wait for
+    entry #execId   the exec process to wait for; empty for the main task
+
+  entry .WaitResponse   the reply of the tasks service's `Wait`: the exit status and the time of exit
+    entry #exitStatus   the process's exit status
+    entry #exitedAt   when it exited, as a `Timestamp`
+
+  entry .DeleteTaskRequest   the request of the tasks service's `Delete`: the task, or exec process, to remove
+    entry #containerId   the container whose task to delete
+    entry #execId   the exec process to delete; empty for the main task
+
+  entry .DeleteTaskResponse   the reply of the tasks service's `Delete`: the removed process's id, pid, exit status and time
+    entry #id   the exec id of the removed process
+    entry #pid   its host pid
+    entry #exitStatus   the exit status it stopped with
+    entry #exitedAt   when it exited, as a `Timestamp`
+
+  entry .GetTaskRequest   the request of the tasks service's `Get`: the task, or exec process, to look up
+    entry #containerId   the container whose task to fetch
+    entry #execId   the exec process to fetch; empty for the main task
+
+  entry .GetTaskResponse   the reply of the tasks service's `Get`: the process state
+    entry #process   the requested `Workload`
+
+  entry .ListTasksRequest   the request of the tasks service's `List`: an optional filter expression
+    entry #filter   a containerd filter expression; empty for everything
+
+  entry .ListTasksResponse   the reply of the tasks service's `List`: the matching task processes
+    entry #tasks   the matching `Workload`s
+
 entry .Workload   a task's process state, and the openable which scopes a container's whole lifecycle to a block
   detail
       `Workload` is two things. As a **record**, it is a task's process state as containerd
       reports it (`containerd.v1.types.Process`, in part): the `#containerId` and exec `#id`
       it belongs to, its host `#pid`, the raw `#status` code (decoded by `#state` to a
-      `ProcessStatus`), and the `#exitStatus` and `#exitedAt` once it has stopped. It is
+      `Containerd.ProcessStatus`), and the `#exitStatus` and `#exitedAt` once it has stopped. It is
       what `Containerd#task` and `Containerd#tasks` return.
 
-      As a **form**, it is what a `Container` is opened as: `container.open[Workload]()`
-      registers the container, creates a task for it with the `Mount`s given as flags, runs
+      As a **form**, it is what a `Containerd.Container` is opened as: `container.open[Workload]()`
+      registers the container, creates a task for it with the `Containerd.Mount`s given as flags, runs
       the block with a `Workload.Handle`, and on every exit path — normal, exception or
       error — kills the task if it was started, reaps it, deletes it, and deletes the
       container. The lifetime of the workload *is* the scope. The mode says what the block
@@ -843,8 +1151,8 @@ entry .Workload   a task's process state, and the openable which scopes a contai
         val socket = DomainSocket(t"/run/containerd/containerd.sock")
         given containerd: (Containerd^) = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
 
-        val spec = Container(t"web", image = t"docker.io/library/alpine:latest")
-        val rootfs = Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a"))
+        val spec = Containerd.Container(t"web", image = t"docker.io/library/alpine:latest")
+        val rootfs = Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a"))
 
         val exit: Int = spec.open[Workload](Read & Launch & Signalling, rootfs): workload ?=>
           workload.pid
@@ -860,7 +1168,7 @@ entry .Workload   a task's process state, and the openable which scopes a contai
   refer embarcadero.Containerd
   refer embarcadero.Launch
   refer embarcadero.Signalling
-  refer embarcadero.ProcessStatus
+  refer embarcadero.Containerd.ProcessStatus
   entry .openable   the given behind `container.open[Workload](…)`: a `Workload.Openable` over the `Containerd^` in scope
       A given in the companion, so it resolves with no import. It needs a `Containerd^` given
       and a `Monitor^`, and tactics for `Grpc.Error`, `Http2.Error`, `Async.Error` and
@@ -897,8 +1205,8 @@ entry .Workload   a task's process state, and the openable which scopes a contai
   entry .Openable   the `Openable` which opens a `Container` as a `Workload`, with `Mount`s as its flags
     detail
         The class `Workload.openable` provides, named so that its result type is stated
-        exactly. It opens a `Container` (`Self`) as a `Workload` (`Form`), taking the
-        `Mount`s of the root filesystem as flags (`Operand`), and gives a `Workload.Handle`
+        exactly. It opens a `Containerd.Container` (`Self`) as a `Workload` (`Form`), taking the
+        `Containerd.Mount`s of the root filesystem as flags (`Operand`), and gives a `Workload.Handle`
         (`Result`). It is built over a `Containerd^` and a `Monitor^` and the four tactics a
         containerd call needs.
     entry #Self   `Container`: what is opened
@@ -931,284 +1239,3 @@ entry .Signalling   the open mode which lets the block signal the task: `contain
     it, `kill` is available on the `Workload.Handle`. The name is `Signalling`, not `Signal`,
     because profanity's interrupt holds `Signal` in the `soundness` umbrella; the grant
     itself is still `Workload.Grant.Signal`.
-
-entry .ProcessStatus   the status of a task's process: `Unknown`, `Created`, `Running`, `Stopped`, `Paused` or `Pausing`
-  detail
-      containerd's process status, a protobuf enum carried in a `Workload` as its numeric
-      `#code`: `Unknown` (0), `Created` (1), `Running` (2), `Stopped` (3), `Paused` (4) and
-      `Pausing` (5). `Workload#state` and `Workload.Handle`'s `state()` decode a code to
-      one of these, and `Workload(…, status = ProcessStatus.Running.code)` goes the other
-      way.
-  refer embarcadero.Workload
-  entry .of   the status for a code, or `Unset` for a number the enum does not know
-  entry #code   the numeric value containerd sends on the wire
-
-entry .DockerEvent   what the containerd client logs as it changes the daemon
-  detail
-      Every change `Containerd` makes to the daemon is logged at `info`: `ContainerCreated(id)`,
-      `ContainerDeleted(id)`, `ImageDeleted(name)`, `TaskCreated(container)`,
-      `TaskStarted(container, pid)`, `TaskKilled(container, signal)` and
-      `TaskDeleted(container)`. All but `ImageDeleted` are tagged `Log.Process`;
-      `ImageDeleted` is tagged `Log.Resource`. Reads (`containers`, `version`, `task`, …) log
-      nothing. A `DockerEvent is Loggable` must be in scope for every client method;
-      `logging.silentLogging` discards them.
-  entry .communicable   renders each event as a message, such as _started the task for container `web` as PID `4321`_
-
-entry .AnyMessage   the protobuf `google.protobuf.Any`: a serialized message with its type URL, passed through verbatim
-  detail
-      containerd carries opaque payloads — a container's OCI runtime spec, a runtime's
-      options, a task's options — as `Any` messages, which this client neither builds nor
-      interprets: `#typeUrl` names the message type and `#value` holds its serialized bytes
-      as an `AnyMessage.Payload`. Named `AnyMessage` to keep clear of `scala.Any`. An empty
-      `AnyMessage()` is the default wherever a message takes one.
-
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-
-      val spec = AnyMessage(t"types.containerd.io/opencontainers/runtime-spec/1/Spec",
-          AnyMessage.Payload(t"{}".in[Data]))
-
-      spec.value.data.length   // 2
-      ```
-  entry .Payload   the serialized bytes of an `AnyMessage`, as an opaque, immutable byte array
-    detail
-        An opaque type over a frozen byte array rather than a bare `Data` field, so that
-        protobuf derivation can see it as a plain, capture-free value. `Payload(data)` wraps
-        a `Data`, `.empty` is the zero-length payload, and the `data` extension on
-        `AnyMessage` reads it back. It encodes on the wire as a length-delimited field.
-    entry .empty   the zero-length payload, the default `value` of an `AnyMessage`
-    entry .apply   wraps a `Data` as a payload
-    entry .encodable   encodes a payload as a length-delimited protobuf field
-    entry .decodable   decodes a length-delimited protobuf field as a payload
-  entry .data   `payload.data`: the payload's bytes as `Data`
-  entry #typeUrl   the type URL naming the serialized message's type
-  entry #value   the serialized message, as an `AnyMessage.Payload`
-
-entry .Timestamp   the protobuf `google.protobuf.Timestamp`: seconds and nanoseconds since the Unix epoch
-  detail
-      The timestamp containerd's records carry (`Container#createdAt`, `Workload#exitedAt`,
-      …): whole `#seconds` and a `#nanos` fraction. It is **not** exported to the
-      `soundness` umbrella, since aviation's `Timestamp` keeps that name: write
-      `embarcadero.Timestamp`. It converts to and from any instant type through
-      anticipation's generic time abstraction, so an aviation `Instant` works with no
-      dependency between the two libraries, at millisecond precision: the generic
-      representation is epoch milliseconds, so protobuf's sub-millisecond nanoseconds are
-      not carried.
-
-      ```scala
-      import soundness.*
-      import abstractables.epochMillisecondsAbstractable
-      import chronometries.unixChronometry
-
-      val moment: Instant = Instant(1_700_000_001_000L)
-      val stamp: embarcadero.Timestamp = embarcadero.Timestamp.of(moment)
-      stamp.seconds                        // 1700000001L
-      stamp.instant[Instant over Unix]     // moment
-      ```
-  entry .of   a timestamp from any instant type `Abstractable across Instants to Long`, at millisecond precision
-  entry #seconds   whole seconds since the Unix epoch
-  entry #nanos   the nanosecond fraction, `0` to `999999999`; a multiple of a million when made by `.of`
-  entry #instant   the timestamp as any instant type `Instantiable across Instants from Long`, at millisecond precision
-
-entry .Container   a containerd container record: id, labels, image, runtime, OCI spec, snapshot and timestamps
-  detail
-      The metadata record of the containers service, with its protobuf field numbers
-      preserved so that it round-trips with the daemon; fields the client does not model
-      (the `extensions` map) are skipped on decode. Only `#id` is required: `Container(t"web",
-      image = t"docker.io/library/alpine:latest")` is a complete definition to register with
-      `Containerd#createContainer` or open as a `Workload`. A container is a definition,
-      not a process; the task made for it is what runs.
-  refer embarcadero.Containerd
-  refer embarcadero.Workload
-  entry #id   the container's id, unique in its namespace
-  entry #labels   free-form `Map[Text, Text]` labels; containerd filters can select on them
-  entry #image   the reference of the image the container was made from
-  entry #runtime   the `Runtime` binding: the runtime plugin's name and options
-  entry #spec   the OCI runtime spec, as an opaque `AnyMessage`
-  entry #snapshotter   the snapshotter which holds the container's root filesystem
-  entry #snapshotKey   the key of the container's snapshot
-  entry #createdAt   when the daemon stored the record, as a `Timestamp`
-  entry #updatedAt   when the record last changed, as a `Timestamp`
-  entry #sandbox   the sandbox the container belongs to, if any
-
-entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
-  detail
-      The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
-      manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Descriptor`, which
-      has the same meaning on the other side of the library. The `platform` member is not
-      modelled.
-  refer embarcadero.Descriptor
-  entry #mediaType   the blob's media type, as text
-  entry #digest   the `sha256:<hex>` digest of the blob
-  entry #size   the blob's length in bytes
-  entry #annotations   free-form `Map[Text, Text]` annotations
-
-entry .ImageRecord   a containerd image record: a reference name pointing at content, with labels and timestamps
-  detail
-      The metadata record of the images service, which `Containerd#images` and
-      `Containerd#image` return: `#name` is the reference (`docker.io/library/alpine:latest`)
-      and `#target` the `ContentDescriptor` of the manifest in the content store. Named
-      `ImageRecord` to keep clear of the OCI `Image` this library builds; the record is the
-      daemon's index entry, not the content.
-  refer embarcadero.Image
-  entry #name   the image reference
-  entry #labels   free-form `Map[Text, Text]` labels
-  entry #target   the `ContentDescriptor` of the image's manifest
-  entry #createdAt   when the daemon stored the record, as a `Timestamp`
-  entry #updatedAt   when the record last changed, as a `Timestamp`
-
-entry .Mount   a mount in a task's root filesystem: a source mounted at a target with a type and options
-  detail
-      The `containerd.types.Mount` message, given to `Containerd#createTask` as the task's
-      `rootfs` and to `container.open[Workload](…)` as its flags; `#mountType` is the proto's
-      `type`. An overlay of an unpacked snapshot is the common case:
-
-      ```scala
-      import soundness.*
-
-      val rootfs: List[Mount] =
-        List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
-      ```
-  entry #mountType   the filesystem type, such as `overlay` or `bind`
-  entry #source   what is mounted
-  entry #target   where it is mounted, within the task's root
-  entry #options   the mount options, as `key=value` entries
-
-entry .Namespace   a containerd namespace: an isolation scope for containers, images and tasks, with labels
-  detail
-      The record of the namespaces service: a `#name` (`default`, `k8s.io`, `moby`) and
-      free-form `#labels`. A `Containerd` client is bound to one namespace at connection;
-      `Containerd#namespaces`, `#createNamespace` and `#deleteNamespace` manage them.
-  entry #name   the namespace's name
-  entry #labels   free-form `Map[Text, Text]` labels
-
-entry .Runtime   a container's runtime binding: the runtime plugin's name and its opaque options
-  detail
-      The `Container.Runtime` message: `#name` is the plugin (`io.containerd.runc.v2` for a
-      filesystem image, `io.containerd.wasmtime.v1` for a Wasm artifact under a wasmtime
-      shim) and `#options` an `AnyMessage` of its options. The name is exported to the
-      `soundness` umbrella as `Runtime`, so no other library may export one.
-  entry #name   the runtime plugin's name
-  entry #options   the plugin's options, as an opaque `AnyMessage`
-
-entry .Empty   the protobuf `google.protobuf.Empty`: a message with no fields
-    The request of parameterless calls such as `Containerd#version`, and the reply of the
-    delete calls. `Empty()` is its only value.
-
-entry .VersionResponse   the reply of containerd's `Version` call: the daemon's version and git revision
-  detail
-      What `Containerd#version` returns: `#version` is the semantic version (`1.7.0`) and
-      `#revision` the git revision the daemon was built from.
-  entry #version   the daemon's semantic version
-  entry #revision   the git revision it was built from
-
-entry .CreateContainerRequest   the request of the containers service's `Create`: the container to register
-  detail
-      The `…Request` and `…Response` types are the containerd gRPC protocol mirrored field by field, each
-      a case class with protobuf field numbers which `Containerd`'s methods build and
-      decode, exported so that a program can speak to the daemon directly through a
-      `Grpc.Channel` or encode them with `in[Protobuf]`. For the containers service:
-      `CreateContainerRequest(container)` and `CreateContainerResponse(container)`,
-      `GetContainerRequest(id)` and `GetContainerResponse(container)`,
-      `ListContainersRequest(filters)` and `ListContainersResponse(containers)`, and
-      `DeleteContainerRequest(id)`, whose reply is `Empty`.
-  entry #container   the `Container` to register
-entry .CreateContainerResponse   the reply of the containers service's `Create`: the container as stored
-  entry #container   the stored `Container`
-entry .GetContainerRequest   the request of the containers service's `Get`: a container id
-  entry #id   the id of the container to fetch
-entry .GetContainerResponse   the reply of the containers service's `Get`: the container
-  entry #container   the requested `Container`
-entry .ListContainersRequest   the request of the containers service's `List`: optional filter expressions
-  entry #filters   containerd filter expressions, such as `labels."tier"==db`; empty for everything
-entry .ListContainersResponse   the reply of the containers service's `List`: the matching containers
-  entry #containers   the matching `Container`s, in containerd's order
-entry .DeleteContainerRequest   the request of the containers service's `Delete`: a container id; the reply is `Empty`
-  entry #id   the id of the container to remove
-
-entry .CreateNamespaceRequest   the request of the namespaces service's `Create`: the namespace to create
-  detail
-      The namespaces service's messages: `CreateNamespaceRequest(namespace)` and
-      `CreateNamespaceResponse(namespace)`, `ListNamespacesRequest(filter)` and
-      `ListNamespacesResponse(namespaces)`, and `DeleteNamespaceRequest(name)`, whose reply
-      is `Empty`.
-  entry #namespace   the `Namespace` to create
-entry .CreateNamespaceResponse   the reply of the namespaces service's `Create`: the namespace as stored
-  entry #namespace   the stored `Namespace`
-entry .ListNamespacesRequest   the request of the namespaces service's `List`: an optional filter expression
-  entry #filter   a containerd filter expression; empty for everything
-entry .ListNamespacesResponse   the reply of the namespaces service's `List`: the matching namespaces
-  entry #namespaces   the matching `Namespace`s
-entry .DeleteNamespaceRequest   the request of the namespaces service's `Delete`: a namespace name; the reply is `Empty`
-  entry #name   the name of the namespace to remove
-
-entry .GetImageRequest   the request of the images service's `Get`: an image reference
-  detail
-      The images service's messages: `GetImageRequest(name)` and `GetImageResponse(image)`,
-      `ListImagesRequest(filters)` and `ListImagesResponse(images)`, and
-      `DeleteImageRequest(name, sync)`, whose reply is `Empty`.
-  entry #name   the reference of the image to fetch
-entry .GetImageResponse   the reply of the images service's `Get`: the image record
-  entry #image   the requested `ImageRecord`
-entry .ListImagesRequest   the request of the images service's `List`: optional filter expressions
-  entry #filters   containerd filter expressions; empty for everything
-entry .ListImagesResponse   the reply of the images service's `List`: the matching image records
-  entry #images   the matching `ImageRecord`s
-entry .DeleteImageRequest   the request of the images service's `Delete`: an image reference and whether to wait; the reply is `Empty`
-  entry #name   the reference of the image to remove
-  entry #sync   whether to return only after the content has been garbage-collected
-
-entry .CreateTaskRequest   the request of the tasks service's `Create`: the container, its rootfs mounts, stdio and options
-  detail
-      The tasks service's messages: `CreateTaskRequest` and `CreateTaskResponse(containerId,
-      pid)`, `StartRequest(containerId, execId)` and `StartResponse(pid)`,
-      `KillRequest(containerId, execId, signal, all)` with an `Empty` reply,
-      `WaitRequest(containerId, execId)` and `WaitResponse(exitStatus, exitedAt)`,
-      `DeleteTaskRequest(containerId, execId)` and `DeleteTaskResponse(id, pid, exitStatus,
-      exitedAt)`, `GetTaskRequest(containerId, execId)` and `GetTaskResponse(process)`, and
-      `ListTasksRequest(filter)` and `ListTasksResponse(tasks)`. An empty `execId` means the
-      container's main task; a non-empty one names an exec process within it.
-  entry #containerId   the container to create the task for
-  entry #rootfs   the `Mount`s of the task's root filesystem
-  entry #stdin   the path the task's standard input is read from; empty for none
-  entry #stdout   the path the task's standard output is written to; empty for none
-  entry #stderr   the path the task's standard error is written to; empty for none
-  entry #terminal   whether the task gets a pseudo-terminal
-  entry #options   runtime options, as an opaque `AnyMessage`
-entry .CreateTaskResponse   the reply of the tasks service's `Create`: the container id and the new task's host pid
-  entry #containerId   the container the task was created for
-  entry #pid   the host pid of the created task
-entry .StartRequest   the request of the tasks service's `Start`: the task, or exec process, to start
-  entry #containerId   the container whose task to start
-  entry #execId   the exec process to start; empty for the main task
-entry .StartResponse   the reply of the tasks service's `Start`: the started process's host pid
-  entry #pid   the host pid of the started process
-entry .KillRequest   the request of the tasks service's `Kill`: a signal for a task, an exec process or every process; the reply is `Empty`
-  entry #containerId   the container whose task to signal
-  entry #execId   the exec process to signal; empty for the main task
-  entry #signal   the signal number, such as `15` for `SIGTERM`
-  entry #all   whether to signal every process in the container
-entry .WaitRequest   the request of the tasks service's `Wait`: the task, or exec process, to wait for
-  entry #containerId   the container whose task to wait for
-  entry #execId   the exec process to wait for; empty for the main task
-entry .WaitResponse   the reply of the tasks service's `Wait`: the exit status and the time of exit
-  entry #exitStatus   the process's exit status
-  entry #exitedAt   when it exited, as a `Timestamp`
-entry .DeleteTaskRequest   the request of the tasks service's `Delete`: the task, or exec process, to remove
-  entry #containerId   the container whose task to delete
-  entry #execId   the exec process to delete; empty for the main task
-entry .DeleteTaskResponse   the reply of the tasks service's `Delete`: the removed process's id, pid, exit status and time
-  entry #id   the exec id of the removed process
-  entry #pid   its host pid
-  entry #exitStatus   the exit status it stopped with
-  entry #exitedAt   when it exited, as a `Timestamp`
-entry .GetTaskRequest   the request of the tasks service's `Get`: the task, or exec process, to look up
-  entry #containerId   the container whose task to fetch
-  entry #execId   the exec process to fetch; empty for the main task
-entry .GetTaskResponse   the reply of the tasks service's `Get`: the process state
-  entry #process   the requested `Workload`
-entry .ListTasksRequest   the request of the tasks service's `List`: an optional filter expression
-  entry #filter   a containerd filter expression; empty for everything
-entry .ListTasksResponse   the reply of the tasks service's `List`: the matching task processes
-  entry #tasks   the matching `Workload`s

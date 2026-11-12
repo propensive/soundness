@@ -275,7 +275,7 @@ container with the root filesystem to mount, then started, waited on and killed:
 
 ```scala
 def run(client: Containerd)(using Monitor): Unit =
-  val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+  val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
 
   client.createTask(t"web", rootfs)
   val pid = client.startTask(t"web")

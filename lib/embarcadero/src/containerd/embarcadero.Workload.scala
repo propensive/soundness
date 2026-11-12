@@ -45,6 +45,8 @@ import rudiments.*
 import telekinesis.*
 import vacuous.*
 
+import Containerd.{Container, Mount, ProcessStatus, Timestamp, WaitResponse}
+
 object Workload:
   // Anchored here so `container.open[Workload](...)` resolves with no import.
   given openable: (containerd: Containerd^, monitor: Monitor^)
