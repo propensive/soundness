@@ -116,8 +116,9 @@ val streamed = key.uncloak:
 ```
 
 Decrypting with the wrong key raises a `Crypto.Error` which names the failure. The mode and
-padding of AES may also be fixed in the key's type, as in `Aes[256] over Cbc against Pkcs7`,
-and a pairing which the specification forbids does not compile.
+padding of AES may also be fixed in the key's type, as in
+`Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, and a pairing which the
+specification forbids does not compile.
 
 ### Passwords
 

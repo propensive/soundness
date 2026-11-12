@@ -674,7 +674,7 @@ Still blocked: `TlsAcceptance`, `SecurePort` (platform-split `Tls`); `ArOpenable
 escritoire's); `Ssh*` in octogenarian (four components, and `Ssh` is susurration's);
 `DaemonEnvironment`, `Viewport*` and `Unix*` (outer names owned elsewhere).
 `BlockCipherMode`/`BlockCipherPadding` nest, members and all: `Cbc`, `Ecb`, `Ctr`, `Cfb`,
-`Ofb`, `Pkcs7`, `Iso10126` and `NoPadding` become `BlockCipher.Cbc` and so on (ruling 2).
+`Ofb`, `Pkcs7`, `Iso10126` and `NoPadding` become `BlockCipher.Cbc` and so on (ruling 2). **Done.**
 
 ### R8 candidates — high confidence
 

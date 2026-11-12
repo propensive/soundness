@@ -40,8 +40,8 @@ import prepositional.*
 
 object Blowfish:
   given value: [bits <: 128 | 256 | 448: ValueOf, mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( blockMode: mode is BlockCipher.Mode )
+  =>  ( blockPadding: padding is BlockCipher.Padding )
   =>  ( mode Permits padding )
   =>  ( crypto: Crypto { def blowfish: Crypto.SymmetricCipher } )
   =>  ( Blowfish[bits] over mode against padding ) =
@@ -49,7 +49,7 @@ object Blowfish:
     . asInstanceOf[Blowfish[bits] over mode against padding]
 
 class Blowfish[bits <: 128 | 256 | 448: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+  ( mode: BlockCipher.Mode, padding: BlockCipher.Padding, cipher: Crypto.SymmetricCipher )
 extends BlockCipher(t"Blowfish", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

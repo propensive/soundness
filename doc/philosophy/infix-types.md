@@ -55,7 +55,7 @@ row  `from`  `Origin`  origin  `Ordinal is Optical from Yaml`
 row  `over`  `Transport`  transport  `value is Streamable by Data over Credit`
 row  `across`  `Domain`  domain  `Xml is Instantiable across HttpRequests`
 row  `onto`  `Target`  target  `Http.Client onto Origin["http"]`
-row  `against`  `Contrast`  contrast  `Aes[256] over Cbc against Pkcs7`
+row  `against`  `Contrast`  contrast  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
 row  `under`  `Limit`  limit  `Tar is Nominative under Rules`
 row  `at`  `Locus`  locus  `value is Decodable in Json at Json.Focus`
 ```

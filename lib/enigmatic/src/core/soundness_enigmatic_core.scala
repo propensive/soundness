@@ -36,11 +36,11 @@ package soundness
 // aggregates are re-exported by gastronomy (where they now live).
 export
   enigmatic
-  . { Aes, AesGcm, agree, Agreeing, Authenticated, BlockCipher, BlockCipherMode, BlockCipherPadding,
-      Blowfish, Cbc, Cfb, ChaCha20, ChaCha20Poly1305, Cipher, Cleartext, cleartext, Cloak, Crypto,
-      Ctr, decrypt, Decryptor, Des, Divulgence, Dsa, Ecb, Ecdh, Ecdsa, Ed25519, encrypt, Encryption,
-      Encryptor, Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto, KeyAlgorithm,
-      Keystream, MlDsa, NoPadding, Ofb, OpenSsh, Password, Permits, Pkcs7, Pkcs8, Poly1305,
+  . { Aes, AesGcm, agree, Agreeing, Authenticated, BlockCipher, Blowfish, ChaCha20,
+      ChaCha20Poly1305, Cipher, Cleartext, cleartext, Cloak, Crypto, decrypt, Decryptor, Des,
+      Divulgence, Dsa, Ecdh, Ecdsa, Ed25519, encrypt, Encryption, Encryptor, Hmac, hmac,
+      InitializationVector, JavaBaseCrypto, KeyAlgorithm, Keystream, MlDsa, OpenSsh, Password,
+      Permits, Pkcs8, Poly1305,
       PrivateKey, PublicKey, Rc2, SoundnessCrypto, Rsa, seal, Signature, Spki, Symmetric,
       SymmetricKey, TripleDes, uncloak, unseal, X25519, xor }
 

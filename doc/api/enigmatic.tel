@@ -50,8 +50,8 @@ detail
     The library's surface, by kind:
 
     - **Symmetric encryption**: `SymmetricKey`, the block ciphers `Aes`, `Blowfish`, `Des`,
-      `TripleDes` and `Rc2` over the modes `Cbc`, `Ecb`, `Ctr`, `Cfb`, `Ofb` and paddings
-      `Pkcs7`, `Iso10126`, `NoPadding`, with the `encrypt`/`decrypt` extensions (whole values,
+      `TripleDes` and `Rc2` over the modes `BlockCipher.Cbc`, `BlockCipher.Ecb`, `BlockCipher.Ctr`, `BlockCipher.Cfb`, `BlockCipher.Ofb` and paddings
+      `BlockCipher.Pkcs7`, `BlockCipher.Iso10126`, `BlockCipher.NoPadding`, with the `encrypt`/`decrypt` extensions (whole values,
       `Chain`s and `Stream`s), an explicit `InitializationVector` at every encryption site.
     - **Authenticated encryption and keystreams**: `AesGcm` and `ChaCha20Poly1305` (`seal` and
       `unseal` under a nonce with associated data), `ChaCha20` as a bare keystream (`xor`), and
@@ -89,8 +89,8 @@ detail
     `providers`, `blockCipherModes`, `blockCipherPaddings` and `signatureDigests` merge with
     the umbrella's own. `import soundness.*` imports no givens, so a cloak, a provider and (for
     a block cipher whose type does not name them) a mode and a padding are each imported by
-    name. Two givens are deliberately absent from those packages: `Ecb.mode` and
-    `NoPadding.padding` are reached only by naming them in the type (`over Ecb`, `against
+    name. Two givens are deliberately absent from those packages: `BlockCipher.Ecb.mode` and
+    `BlockCipher.NoPadding.padding` are reached only by naming them in the type (`over BlockCipher.Ecb`, `against
     NoPadding`), since each takes a contextual parameter — a permit and a `Tactic[Crypto.Error]`
     respectively — which a re-exported given cannot carry.
 
@@ -141,7 +141,7 @@ entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API
         def hmac(algorithm: Text): Crypto.Mac = JavaBaseCrypto.hmac(algorithm)
         def rsaSignature(digest: Text): Crypto.SignatureScheme = JavaBaseCrypto.rsaSignature(digest)
 
-      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       key.uncloak(t"Hello world".encrypt(InitializationVector.random))
       ```
   refer enigmatic.JavaBaseCrypto
@@ -219,7 +219,7 @@ entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API
         Error 521: _could not decrypt the data because `reason`_. Encryption is total — the
         types guarantee a valid transformation — so only the processing side can fail:
         `Data#decrypt`, the streaming `decrypt` (as the final window is pulled), `unseal`, and
-        encrypting with `NoPadding` over misaligned input. A provider's own failures
+        encrypting with `BlockCipher.NoPadding` over misaligned input. A provider's own failures
         (`javax.crypto.BadPaddingException` and the rest) are mapped to a `#reason` and their
         message kept as `#detail`.
 
@@ -230,7 +230,7 @@ entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API
         import strategies.throwUnsafely
         import cryptoPermits.permitUnauthenticatedCrypto
 
-        val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+        val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.NoPadding]()
 
         capture[Crypto.Error](key.uncloak(t"Hello world".encrypt(InitializationVector.random))).reason
         // Crypto.Error.Reason.IllegalBlockSize
@@ -243,7 +243,7 @@ entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API
         column  Message
         column  Note
         row  `BadPadding`  1  _the ciphertext was corrupted or the key was wrong_
-        row  `IllegalBlockSize`  2  _the input length was not valid for the cipher_  what `NoPadding` raises for input that is not a multiple of the block size in a block-aligned mode
+        row  `IllegalBlockSize`  2  _the input length was not valid for the cipher_  what `BlockCipher.NoPadding` raises for input that is not a multiple of the block size in a block-aligned mode
         row  `InvalidKey`  3  _the key was not valid for the cipher_  such as key material of the wrong length adopted with `SymmetricKey(bytes)`
         row  `InvalidAlgorithm`  4  _the algorithm was not available_
         row  `IoFailure`  5  _data could not be read or written_  the mapping of any other `java.security.GeneralSecurityException`
@@ -548,7 +548,7 @@ entry .InitializationVector   how the IV of a symmetric encryption is produced, 
       import cryptoPermits.permitUnauthenticatedCrypto
       import alphabets.hexUpperCase
 
-      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
 
       key.uncloak:
@@ -564,8 +564,8 @@ entry .Permits   evidence that a block-cipher mode may be combined with a paddin
   detail
       `mode Permits padding` is the compile-time check that `Aes[256] over mode against padding`
       is a combination the providers support: the block-structured and feedback modes (ECB,
-      CBC, CFB, OFB) take all three paddings, and the counter mode takes only `NoPadding`, so
-      `Aes[128] over Ctr against Pkcs7` has no given and does not compile. The thirteen givens
+      CBC, CFB, OFB) take all three paddings, and the counter mode takes only `BlockCipher.NoPadding`, so
+      `Aes[128] over BlockCipher.Ctr against BlockCipher.Pkcs7` has no given and does not compile. The thirteen givens
       live in the companion and resolve without any import.
   entry .ecbNoPadding   ECB with no padding
   entry .ecbPkcs7   ECB with PKCS#7 padding
@@ -623,7 +623,7 @@ entry .SymmetricKey   a cipher's key, held by a `Cloak`, lent to a block as both
       import strategies.throwUnsafely
       import cryptoPermits.permitUnauthenticatedCrypto
 
-      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
 
       key.uncloak:
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]   // t"Hello world"
@@ -953,8 +953,8 @@ entry .signatureDigests   the digest an RSA or ECDSA signature is taken over, ea
 
 entry .BlockCipher   the base of every block cipher: a mode, a padding, and the provider's mechanics
   detail
-      A `BlockCipher` holds a block cipher's type-level *policy* — which `BlockCipherMode` and
-      `BlockCipherPadding` apply, whether an IV is needed, how input length is checked — and
+      A `BlockCipher` holds a block cipher's type-level *policy* — which `Mode` and
+      `Padding` apply, whether an IV is needed, how input length is checked — and
       delegates the byte-level *mechanics* to the `Crypto.SymmetricCipher` captured from the
       provider when the cipher's given was summoned. `Aes`, `Blowfish`, `Des`, `TripleDes`
       and `Rc2` extend it, and each is refined with its mode and padding as `Aes[256] over Cbc
@@ -977,7 +977,7 @@ entry .BlockCipher   the base of every block cipher: a mode, a padding, and the 
       alternative CBC, PKCS#7
         code
             locally:
-              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+              val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
               key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 32: an IV block and a padded block
       alternative Imported
         code
@@ -988,12 +988,12 @@ entry .BlockCipher   the base of every block cipher: a mode, a padding, and the 
       alternative CTR
         code
             locally:
-              val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
+              val key = SymmetricKey.generate[Aes[256] over BlockCipher.Ctr against BlockCipher.NoPadding]()
               key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 27: an IV block and eleven bytes
       alternative CBC, no padding
         code
             locally:
-              val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+              val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.NoPadding]()
               key.uncloak(t"Hello world".encrypt(InitializationVector.zero))   // raises Crypto.Error: IllegalBlockSize
       ##
       ```
@@ -1004,8 +1004,8 @@ entry .BlockCipher   the base of every block cipher: a mode, a padding, and the 
       ciphertext is the IV followed by the ciphertext when the mode uses one; a stream
       ciphertext emits the IV as its first chunk.
   refer enigmatic.Aes
-  refer enigmatic.BlockCipherMode
-  refer enigmatic.BlockCipherPadding
+  refer enigmatic.BlockCipher.Mode
+  refer enigmatic.BlockCipher.Padding
   refer enigmatic.Permits
   refer enigmatic.encrypt
   entry #algorithm   the algorithm's JCE name: `AES`, `DES`, `DESede`, `Blowfish` or `RC2`
@@ -1030,93 +1030,84 @@ entry .BlockCipher   the base of every block cipher: a mode, a padding, and the 
   entry #genKey   fresh key material of `keySize` bits from the provider
   entry #privateToPublic   the key itself: a block cipher is symmetric
 
-entry .BlockCipherMode   the typeclass of a block-cipher mode: its JCE name, whether it uses an IV, whether it is block-aligned
-  detail
-      `mode is BlockCipherMode` is the evidence `Aes[256] over mode` needs, supplied by the
-      companion of each of `Cbc`, `Ecb`, `Ctr`, `Cfb` and `Ofb` as `mode`, and re-exported for
-      import-based inference by `blockCipherModes` (all but `Ecb`, whose given takes a
-      permit). `blockAligned` is true for the block-structured modes, ECB and CBC, which with
-      `NoPadding` require the input length to be a multiple of the block size, and false for
-      the stream-style modes CTR, CFB and OFB, which accept any length.
-  refer enigmatic.blockCipherModes
-  refer enigmatic.Permits
-  entry .apply   makes a mode's evidence from its JCE name, whether it uses an IV, and whether it is block-aligned
-  entry #name   the mode's name in a JCE transformation: `CBC`, `ECB`, `CTR`, `CFB` or `OFB`
-  entry #usesIv   whether the mode takes an initialization vector; only ECB does not
-  entry #blockAligned   whether, with `NoPadding`, the input must be a multiple of the block size
-
-entry .Cbc   cipher block chaining: each block chained to the last, under a random IV
-  detail
-      The block-structured mode most legacy formats use: it needs an IV, is block-aligned, and
-      takes any of the three paddings. The same plaintext encrypts differently under
-      `InitializationVector.random` each time, and identically under a fixed IV.
-  entry .mode   the `Cbc is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.cbc`
-
-entry .Ecb   electronic codebook: each block encrypted independently; gated as disallowed
-  detail
-      ECB reveals plaintext structure — equal blocks give equal ciphertext — so it is gated:
-      summoning its mode evidence, for either direction or even key generation, needs
-      `Permit[Concession.Ecb]`, which `cryptoPermits.permitDisallowedCrypto` supplies. It uses
-      no IV (the `InitializationVector` is ignored), is block-aligned, and takes any padding.
-      `Ecb.mode` is not re-exported by `blockCipherModes`, since a given with a contextual
-      parameter cannot be re-exported; write the mode in the type, `Aes[256] over Ecb`.
-  entry .mode   the `Ecb is BlockCipherMode` evidence, requiring an erased `Permit[Concession.Ecb]`
-
-entry .Ctr   counter mode: a keystream from an incrementing counter block, any length
-  detail
-      A stream-style mode: it needs an IV, is not block-aligned, and accepts only
-      `NoPadding` (`Permits.ctrNoPadding` is its one pairing). The counter increments over the
-      whole 128-bit block, as the JDK does.
-  entry .mode   the `Ctr is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.ctr`
-
-entry .Cfb   cipher feedback: a stream-style mode in its full-block variant
-  detail
-      Needs an IV, is not block-aligned, and takes any padding. The feedback is the full
-      block (128 bits for AES), as the JDK's `CFB` is.
-  entry .mode   the `Cfb is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.cfb`
-
-entry .Ofb   output feedback: a stream-style mode in its full-block variant
-  detail
-      Needs an IV, is not block-aligned, and takes any padding. The feedback is the full
-      block, as the JDK's `OFB` is.
-  entry .mode   the `Ofb is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.ofb`
-
-entry .BlockCipherPadding   the typeclass of a block-cipher padding: its JCE name and its length rule
-  detail
-      `padding is BlockCipherPadding` is the evidence `Aes[256] over Cbc against padding`
-      needs, supplied by the companions of `Pkcs7`, `Iso10126` and `NoPadding` as `padding`,
-      and re-exported for import-based inference by `blockCipherPaddings` (all but
-      `NoPadding`, whose given takes a tactic). `verify` is a no-op for the paddings which
-      accept any input length; `NoPadding` overrides it to reject misaligned input.
-  refer enigmatic.blockCipherPaddings
-  refer enigmatic.Permits
-  entry .apply   makes a padding's evidence from its JCE name, with the no-op length rule
-  entry #name   the padding's name in a JCE transformation: `PKCS5Padding`, `ISO10126Padding` or `NoPadding`
-  entry #verify   checks an input length against the block size; raises `Crypto.Error` only for `NoPadding`
-
-entry .Pkcs7   PKCS#7 padding: the last block filled with the count of padding bytes
-  detail
-      The usual padding, deterministic, so a fixed IV gives a byte-identical ciphertext. The
-      JDK calls it `PKCS5Padding` for historical reasons. Corrupt padding on decryption —
-      a wrong key — is a `Crypto.Error` with reason `BadPadding`.
-  entry .padding   the `Pkcs7 is BlockCipherPadding` evidence; in implicit scope, and `blockCipherPaddings.pkcs7`
-
-entry .Iso10126   ISO 10126 padding: random bytes with the count last
-  detail
-      Random padding bytes, so the same plaintext under a fixed IV still differs in its final
-      block. A JCE-only scheme: `OpensslCrypto` does not offer it.
-  entry .padding   the `Iso10126 is BlockCipherPadding` evidence; in implicit scope, and `blockCipherPaddings.iso10126`
-
-entry .NoPadding   no padding: the input must already fit the mode
-  detail
-      With a block-aligned mode (ECB, CBC) the input length must be a multiple of the block
-      size, checked as `Crypto.Error` with reason `IllegalBlockSize` — before encrypting a
-      whole value, and at end-of-stream for a stream; with a stream-style mode (CTR, CFB, OFB)
-      any length is accepted. The given captures a `Tactic[Crypto.Error]`, which is why
-      constructing a `NoPadding` cipher — and so generating or using a key for one — needs
-      that tactic in scope while every other padding is total, and why `NoPadding.padding` is
-      not re-exported by `blockCipherPaddings`: write it in the type, `against NoPadding`.
-  entry .padding   the `NoPadding is BlockCipherPadding` evidence, capturing a `Tactic[Crypto.Error]`
+  entry .Mode   the typeclass of a block-cipher mode: its JCE name, whether it uses an IV, whether it is block-aligned
+    detail
+        `mode is Mode` is the evidence `Aes[256] over mode` needs, supplied by the
+        companion of each of `Cbc`, `Ecb`, `Ctr`, `Cfb` and `Ofb` as `mode`, and re-exported for
+        import-based inference by `blockCipherModes` (all but `Ecb`, whose given takes a
+        permit). `blockAligned` is true for the block-structured modes, ECB and CBC, which with
+        `NoPadding` require the input length to be a multiple of the block size, and false for
+        the stream-style modes CTR, CFB and OFB, which accept any length.
+    refer enigmatic.blockCipherModes
+    refer enigmatic.Permits
+    entry .apply   makes a mode's evidence from its JCE name, whether it uses an IV, and whether it is block-aligned
+    entry #name   the mode's name in a JCE transformation: `CBC`, `ECB`, `CTR`, `CFB` or `OFB`
+    entry #usesIv   whether the mode takes an initialization vector; only ECB does not
+    entry #blockAligned   whether, with `NoPadding`, the input must be a multiple of the block size
+  entry .Padding   the typeclass of a block-cipher padding: its JCE name and its length rule
+    detail
+        `padding is Padding` is the evidence `Aes[256] over Cbc against padding`
+        needs, supplied by the companions of `Pkcs7`, `Iso10126` and `NoPadding` as `padding`,
+        and re-exported for import-based inference by `blockCipherPaddings` (all but
+        `NoPadding`, whose given takes a tactic). `verify` is a no-op for the paddings which
+        accept any input length; `NoPadding` overrides it to reject misaligned input.
+    refer enigmatic.blockCipherPaddings
+    refer enigmatic.Permits
+    entry .apply   makes a padding's evidence from its JCE name, with the no-op length rule
+    entry #name   the padding's name in a JCE transformation: `PKCS5Padding`, `ISO10126Padding` or `NoPadding`
+    entry #verify   checks an input length against the block size; raises `Crypto.Error` only for `NoPadding`
+  entry .Cbc   cipher block chaining: each block chained to the last, under a random IV
+    detail
+        The block-structured mode most legacy formats use: it needs an IV, is block-aligned, and
+        takes any of the three paddings. The same plaintext encrypts differently under
+        `InitializationVector.random` each time, and identically under a fixed IV.
+    entry .mode   the `Cbc is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.cbc`
+  entry .Ecb   electronic codebook: each block encrypted independently; gated as disallowed
+    detail
+        ECB reveals plaintext structure — equal blocks give equal ciphertext — so it is gated:
+        summoning its mode evidence, for either direction or even key generation, needs
+        `Permit[Concession.Ecb]`, which `cryptoPermits.permitDisallowedCrypto` supplies. It uses
+        no IV (the `InitializationVector` is ignored), is block-aligned, and takes any padding.
+        `Ecb.mode` is not re-exported by `blockCipherModes`, since a given with a contextual
+        parameter cannot be re-exported; write the mode in the type, `Aes[256] over Ecb`.
+    entry .mode   the `Ecb is BlockCipherMode` evidence, requiring an erased `Permit[Concession.Ecb]`
+  entry .Ctr   counter mode: a keystream from an incrementing counter block, any length
+    detail
+        A stream-style mode: it needs an IV, is not block-aligned, and accepts only
+        `NoPadding` (`Permits.ctrNoPadding` is its one pairing). The counter increments over the
+        whole 128-bit block, as the JDK does.
+    entry .mode   the `Ctr is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.ctr`
+  entry .Cfb   cipher feedback: a stream-style mode in its full-block variant
+    detail
+        Needs an IV, is not block-aligned, and takes any padding. The feedback is the full
+        block (128 bits for AES), as the JDK's `CFB` is.
+    entry .mode   the `Cfb is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.cfb`
+  entry .Ofb   output feedback: a stream-style mode in its full-block variant
+    detail
+        Needs an IV, is not block-aligned, and takes any padding. The feedback is the full
+        block, as the JDK's `OFB` is.
+    entry .mode   the `Ofb is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.ofb`
+  entry .Pkcs7   PKCS#7 padding: the last block filled with the count of padding bytes
+    detail
+        The usual padding, deterministic, so a fixed IV gives a byte-identical ciphertext. The
+        JDK calls it `PKCS5Padding` for historical reasons. Corrupt padding on decryption —
+        a wrong key — is a `Crypto.Error` with reason `BadPadding`.
+    entry .padding   the `Pkcs7 is BlockCipherPadding` evidence; in implicit scope, and `blockCipherPaddings.pkcs7`
+  entry .Iso10126   ISO 10126 padding: random bytes with the count last
+    detail
+        Random padding bytes, so the same plaintext under a fixed IV still differs in its final
+        block. A JCE-only scheme: `OpensslCrypto` does not offer it.
+    entry .padding   the `Iso10126 is BlockCipherPadding` evidence; in implicit scope, and `blockCipherPaddings.iso10126`
+  entry .NoPadding   no padding: the input must already fit the mode
+    detail
+        With a block-aligned mode (ECB, CBC) the input length must be a multiple of the block
+        size, checked as `Crypto.Error` with reason `IllegalBlockSize` — before encrypting a
+        whole value, and at end-of-stream for a stream; with a stream-style mode (CTR, CFB, OFB)
+        any length is accepted. The given captures a `Tactic[Crypto.Error]`, which is why
+        constructing a `NoPadding` cipher — and so generating or using a key for one — needs
+        that tactic in scope while every other padding is total, and why `NoPadding.padding` is
+        not re-exported by `blockCipherPaddings`: write it in the type, `against NoPadding`.
+    entry .padding   the `NoPadding is BlockCipherPadding` evidence, capturing a `Tactic[Crypto.Error]`
 
 entry .Aes   AES with a 128-, 192- or 256-bit key, in a block-cipher mode with a padding
   detail
@@ -1134,7 +1125,7 @@ entry .Aes   AES with a 128-, 192- or 256-bit key, in a block-cipher mode with a
       import strategies.throwUnsafely
       import cryptoPermits.permitUnauthenticatedCrypto
 
-      val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
+      val key = SymmetricKey.generate[Aes[128] over BlockCipher.Ctr against BlockCipher.NoPadding]()
       key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
       ```
   refer enigmatic.BlockCipher
@@ -1147,7 +1138,7 @@ entry .AesGcm   AES in Galois/Counter Mode: authenticated encryption with a 96-b
   detail
       The AEAD of SSH's `aes256-gcm@openssh.com`, TLS's `AES_*_GCM` suites and most of the
       modern internet, as `AesGcm[128]` or `AesGcm[256]`. It is a different primitive from
-      `Aes over Cbc` and the other block-cipher modes — it authenticates, takes associated
+      `Aes over BlockCipher.Cbc` and the other block-cipher modes — it authenticates, takes associated
       data, and takes a nonce the caller must never repeat — so it is its own `Cipher &
       Symmetric & Authenticated` rather than a `BlockCipherMode`, needs no permit, and is used
       through `seal` and `unseal` rather than `encrypt` and `decrypt`. Reached through the
@@ -1497,7 +1488,7 @@ entry .encrypt   encrypts a value, a `Chain[Data]` or a `Stream[Data]` with the 
       `value.encrypt[cipher](iv)` is the whole-value ciphertext — IV then ciphertext when the
       mode uses one — for any `Encryption` cipher, block or RSA. On a `Chain[Data]` and on a
       `(Stream[Data] over Credit)^` it is lazy, chunk-by-chunk encryption for a `BlockCipher`
-      only: the IV is the first chunk and `NoPadding`'s alignment check runs at end-of-stream,
+      only: the IV is the first chunk and `BlockCipher.NoPadding`'s alignment check runs at end-of-stream,
       and the stream form needs a `Buffering`. Each takes the `Encryptor[cipher]` from the
       enclosing `uncloak`, the cipher's given, a `Permit[Weakness[cipher]]` and a
       `Permit[Authentication[cipher]]` — so a block cipher needs
@@ -1505,7 +1496,7 @@ entry .encrypt   encrypts a value, a `Chain[Data]` or a `Stream[Data]` with the 
       cipher type is inferred from the `Encryptor` in scope.
 
       Encryption is total: the types guarantee a valid transformation, so it cannot fail,
-      except that `NoPadding` over misaligned input raises `Crypto.Error`.
+      except that `BlockCipher.NoPadding` over misaligned input raises `Crypto.Error`.
 
       ```scala
       import soundness.*
@@ -1515,7 +1506,7 @@ entry .encrypt   encrypts a value, a `Chain[Data]` or a `Stream[Data]` with the 
       import codepages.utf8Codepage
       import cryptoPermits.permitUnauthenticatedCrypto
 
-      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
 
       key.uncloak:
         t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
@@ -1553,7 +1544,7 @@ entry .decrypt   decrypts `Data` or a `Stream[Data]` with the `Decryptor` lent b
       import strategies.throwUnsafely
       import cryptoPermits.permitUnauthenticatedCrypto
 
-      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
       key.uncloak(ciphertext.decrypt.as[Text])   // t"Hello world"
       ```
@@ -1774,10 +1765,10 @@ entry .Poly1305   the one-time authenticator of RFC 8439, in Scala
 
 entry .blockCipherModes   the block-cipher modes, each a given to import by name for inference
   detail
-      A block cipher's mode may be written in its type, `Aes[256] over Cbc`, or left out and
+      A block cipher's mode may be written in its type, `Aes[256] over BlockCipher.Cbc`, or left out and
       inferred from the mode given in scope. The companions already supply the givens in
       implicit scope when the type names the mode; these re-exports are for the other case,
-      `SymmetricKey.generate[Aes[256]]()` with `import blockCipherModes.cbc`. `Ecb.mode` is
+      `SymmetricKey.generate[Aes[256]]()` with `import blockCipherModes.cbc`. `BlockCipher.Ecb.mode` is
       not here, since it takes an erased permit and a re-exported given cannot: write `over
       Ecb`.
 
@@ -1790,9 +1781,9 @@ entry .blockCipherModes   the block-cipher modes, each a given to import by name
       import blockCipherModes.cbc
       import blockCipherPaddings.pkcs7
 
-      val key = SymmetricKey.generate[Aes[256]]()   // Aes[256] over Cbc against Pkcs7
+      val key = SymmetricKey.generate[Aes[256]]()   // Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7
       ```
-  refer enigmatic.BlockCipherMode
+  refer enigmatic.BlockCipher.Mode
   refer enigmatic.blockCipherPaddings
   entry .cbc   cipher block chaining, `Cbc.mode`
   entry .ctr   counter mode, `Ctr.mode`; pairs only with `NoPadding`, which must be named in the type
@@ -1802,10 +1793,10 @@ entry .blockCipherModes   the block-cipher modes, each a given to import by name
 entry .blockCipherPaddings   the block-cipher paddings, each a given to import by name for inference
   detail
       As `blockCipherModes` for the padding: `import blockCipherPaddings.pkcs7` lets
-      `Aes[256] over Cbc` resolve without `against Pkcs7`. `NoPadding.padding` is not here,
+      `Aes[256] over BlockCipher.Cbc` resolve without `against BlockCipher.Pkcs7`. `BlockCipher.NoPadding.padding` is not here,
       since it captures a `Tactic[Crypto.Error]` and a re-exported given cannot: write
-      `against NoPadding`.
-  refer enigmatic.BlockCipherPadding
+      `against BlockCipher.NoPadding`.
+  refer enigmatic.BlockCipher.Padding
   refer enigmatic.blockCipherModes
   entry .pkcs7   PKCS#7 padding, `Pkcs7.padding`
   entry .iso10126   ISO 10126 padding, `Iso10126.padding`
@@ -1832,23 +1823,23 @@ entry .cloaks   where secrets are stored, each a given to import by name
         code
             locally:
               import cloaks.heapCloak
-              val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
-                SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+              val key: SymmetricKey[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7] =
+                SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       alternative `offHeapCloak`
         code
             locally:
               import cloaks.offHeapCloak
-              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()   // SymmetricKey[…]^{offHeapCloak}
+              val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()   // SymmetricKey[…]^{offHeapCloak}
       alternative `veiledHeapCloak`
         code
             locally:
               import cloaks.veiledHeapCloak
-              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+              val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       alternative `veiledOffHeapCloak`
         code
             locally:
               import cloaks.veiledOffHeapCloak
-              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+              val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       ##
       ```
 
@@ -2261,7 +2252,7 @@ entry .Pem   a PEM block: a label and the bytes its base64 armor carries
         `CertificateRequest`, `NewCertificateRequest`, `PrivateKey` (`PRIVATE KEY`, PKCS#8),
         `RsaPrivateKey` (`RSA PRIVATE KEY`, PKCS#1), `DsaPrivateKey`, `EcPrivateKey`
         (`EC PRIVATE KEY`, SEC1), `EncryptedPrivateKey`, `PublicKey` (`PUBLIC KEY`),
-        `Pkcs7`, `Cms`, `DhParameters`, `X509Crl`, `AttributeCertificate`,
+        `BlockCipher.Pkcs7`, `Cms`, `DhParameters`, `X509Crl`, `AttributeCertificate`,
         `EncryptedMessage`, `SignedMessage`, `RsaPublicKey`, `DsaPublicKey` and
         `OpensshPrivateKey` (`OPENSSH PRIVATE KEY`). Any other label parses as
         `Proprietary(label: Text)`, holding the text as written.
@@ -2668,7 +2659,7 @@ entry .OpensslCrypto   the `Crypto` provider backed by OpenSSL's `libcrypto`, on
       import providers.opensslProvider
       import cloaks.heapCloak
 
-      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val key = SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
       key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
       ```
 
@@ -2693,7 +2684,7 @@ entry .OpensslCrypto   the `Crypto` provider backed by OpenSSL's `libcrypto`, on
   entry .aes   AES through the EVP cipher API, one-shot and streaming, in every mode the key type names
       The `Crypto.SymmetricCipher` for `Aes[128 | 192 | 256]`: a transformation
       `AES/<mode>/<padding>` becomes OpenSSL's `aes-<bits>-<mode>`, with padding disabled
-      for `NoPadding`. `encrypt` prepends the IV to the ciphertext when one is given and
+      for `BlockCipher.NoPadding`. `encrypt` prepends the IV to the ciphertext when one is given and
       `decrypt` strips it; `stream` and `decryptStream` hold an EVP context open across
       chunks and free it at `finish`. A key is generated from `random`.
   entry .rsa   RSA, delegated to the JDK provider; unavailable on Scala Native

@@ -35,12 +35,104 @@ package enigmatic
 import scala.caps
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
+import gastronomy.{Concession, Permit}
 import gossamer.*
 import prepositional.*
 import vacuous.*
 import zephyrine.*
+
+// The vocabulary a block cipher is parameterized by: its `Mode` of operation (`Cbc`, `Ecb`, `Ctr`,
+// `Cfb`, `Ofb`) and its `Padding` (`Pkcs7`, `Iso10126`, `NoPadding`), as in
+// `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`.
+object BlockCipher:
+  object Mode:
+    def apply[mode](name0: Text, usesIv0: Boolean, blockAligned0: Boolean)
+    :   mode is Mode =
+
+      new Mode:
+        type Self = mode
+        val name: Text = name0
+        val usesIv: Boolean = usesIv0
+        val blockAligned: Boolean = blockAligned0
+
+  // `blockAligned` is true for block-structured modes (ECB, CBC) which, with
+  // `NoPadding`, require the input length to be a multiple of the block size; it is
+  // false for stream-style modes (CTR, CFB, OFB) which accept any length.
+
+  trait Mode extends Typeclass:
+    def name: Text
+    def usesIv: Boolean
+    def blockAligned: Boolean
+
+  object Cbc:
+    given mode: Cbc is Mode = Mode(t"CBC", true, true)
+
+  sealed trait Cbc
+
+  object Ecb:
+    // ECB reveals plaintext structure and is gated as a "disallowed" mode: summoning
+    // its mode evidence (for either direction, or even key generation) needs a permit.
+    given mode: (erased permit: Permit[Concession.Ecb]) => (Ecb is Mode) =
+      Mode(t"ECB", false, true)
+
+  sealed trait Ecb
+
+  object Ctr:
+    given mode: Ctr is Mode = Mode(t"CTR", true, false)
+
+  sealed trait Ctr
+
+  object Cfb:
+    given mode: Cfb is Mode = Mode(t"CFB", true, false)
+
+  sealed trait Cfb
+
+  object Ofb:
+    given mode: Ofb is Mode = Mode(t"OFB", true, false)
+
+  sealed trait Ofb
+
+  object Padding:
+    def apply[padding](name0: Text): padding is Padding = new Padding:
+      type Self = padding
+      val name: Text = name0
+
+  // `verify` is a no-op for paddings that accept any input length. `NoPadding`
+  // overrides it to reject misaligned input (for block-structured modes), raising a
+  // `Crypto.Error` through the `Tactic` its `given` captures — which is why
+  // constructing a `NoPadding` cipher, and hence encrypting with one, demands a
+  // `Tactic[Crypto.Error]` in scope while all other paddings remain total.
+
+  trait Padding extends Findable:
+    type Self
+    def name: Text
+    def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit = ()
+
+  object Pkcs7:
+    // The JDK calls PKCS#7 padding "PKCS5Padding" for historical reasons.
+    given padding: Pkcs7 is Padding = Padding(t"PKCS5Padding")
+
+  sealed trait Pkcs7
+
+  object Iso10126:
+    given padding: Iso10126 is Padding = Padding(t"ISO10126Padding")
+
+  sealed trait Iso10126
+
+  object NoPadding:
+    given padding: (tactic: Tactic[Crypto.Error]) => ((NoPadding is Padding)^{tactic}) =
+      new Padding:
+        type Self = NoPadding
+        val name: Text = t"NoPadding"
+
+        override def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit =
+          if blockAligned && length%blockSize != 0
+          then abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize))
+
+  sealed trait NoPadding
 
 // A block cipher's type-level *policy* (which mode and padding apply, whether an
 // IV is needed and how input length is checked) lives here; the byte-level
@@ -48,8 +140,8 @@ import zephyrine.*
 // `Crypto.SymmetricCipher`, captured at construction by the algorithm's given.
 abstract class BlockCipher
   ( val algorithm: Text,
-    mode:          BlockCipherMode,
-    padding:       BlockCipherPadding,
+    mode:          BlockCipher.Mode,
+    padding:       BlockCipher.Padding,
     cipher:        Crypto.SymmetricCipher )
 extends Cipher, Encryption, Symmetric:
   type Transport

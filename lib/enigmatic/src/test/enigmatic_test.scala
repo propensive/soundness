@@ -44,6 +44,7 @@ import cloaks.heapCloak
 import dysasymptotics.linearSize
 
 import alphabets.hexUpperCase
+import enigmatic.BlockCipher.{Cbc, Cfb, Ctr, Ecb, Iso10126, NoPadding, Pkcs7}
 
 object Tests extends Suite("crypto", m"Enigmatic tests"):
 

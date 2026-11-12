@@ -40,15 +40,15 @@ import prepositional.*
 
 object Des:
   given value: [mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( blockMode: mode is BlockCipher.Mode )
+  =>  ( blockPadding: padding is BlockCipher.Padding )
   =>  ( mode Permits padding )
   =>  ( crypto: Crypto { def des: Crypto.SymmetricCipher } )
   =>  ( Des over mode against padding ) =
     Des(blockMode, blockPadding, crypto.des).asInstanceOf[Des over mode against padding]
 
 class Des
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+  ( mode: BlockCipher.Mode, padding: BlockCipher.Padding, cipher: Crypto.SymmetricCipher )
 extends BlockCipher(t"DES", mode, padding, cipher):
   type Size = 56
   def keySize: 56 = 56
