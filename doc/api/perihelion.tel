@@ -54,14 +54,14 @@ detail
     coaxial's sockets. `Websocket.Masking`, `over`, `overIngressive`, `overTransmissible`,
     `Websocket`, `webSocket` and `WsSessional` are exported to the `soundness` umbrella.
     Three names are not: `Message`, because fulminate's `Message` already holds that name
-    in the umbrella (`import perihelion.Message`), and the client givens `wsClient` and
+    in the umbrella (`import perihelion.Websocket.Message`), and the client givens `wsClient` and
     `wsSessional`, whose capture-annotated refinement types a synthesized export forwarder
     would lose (`import perihelion.wsClient`, `import perihelion.wsSessional`). `Channel`
     and `Reader` are public in the package but not exported.
 
 refer perihelion.webSocket
 refer perihelion.Websocket
-refer perihelion.Message
+refer perihelion.Websocket.Message
 refer perihelion.wsClient
 refer coaxial.Control
 
@@ -83,7 +83,7 @@ entry .webSocket   upgrades the request being served to a WebSocket, handled as 
       label An echo of raw messages
       code
           import soundness.*
-          import perihelion.Message
+          import perihelion.Websocket.Message
           import logging.silentLogging
           import strategies.throwUnsafely
           import threads.virtualThreads
@@ -98,7 +98,7 @@ entry .webSocket   upgrades the request being served to a WebSocket, handled as 
       label A count of messages, threaded as the state
       code
           import soundness.*
-          import perihelion.Message
+          import perihelion.Websocket.Message
           import logging.silentLogging
           import strategies.throwUnsafely
           import threads.virtualThreads
@@ -159,7 +159,7 @@ entry .Websocket   the server-side WebSocket: the handshake response, its channe
       typecheck
       ##
       import soundness.*
-      import perihelion.Message
+      import perihelion.Websocket.Message
       import logging.silentLogging
       import strategies.throwUnsafely
       import threads.virtualThreads
@@ -180,8 +180,8 @@ entry .Websocket   the server-side WebSocket: the handshake response, its channe
       protocol's other pieces: the client's `.Url` and `.Connection`, the wire-level
       `.Frame`, and the `.Error` and `.Event` types.
   refer perihelion.webSocket
-  refer perihelion.Channel
-  refer perihelion.Reader
+  refer perihelion.Websocket.Channel
+  refer perihelion.Websocket.Reader
   refer coaxial.Control
   entry .magic   the GUID RFC 6455 appends to the key, `258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
       `Sec-WebSocket-Accept` is the Base64 of the SHA-1 of the client's `Sec-WebSocket-Key`
@@ -367,11 +367,11 @@ entry .Message   a complete WebSocket message: `Text` reassembled and UTF-8-deco
       surface here. A `Message` is both `Ingressive` and `Transmissible`, so it can be
       the handler's parameter type and a `Reply`'s argument, and a `Channel#send` takes
       one. It is not exported to `soundness` — fulminate's `Message` holds that name in
-      the umbrella — so it is imported by name: `import perihelion.Message`.
+      the umbrella — so it is imported by name: `import perihelion.Websocket.Message`.
 
       ```scala
       import soundness.*
-      import perihelion.Message
+      import perihelion.Websocket.Message
 
       def describe(message: Message): Text = message match
         case Message.Text(text)   => t"text: $text"
@@ -431,8 +431,8 @@ entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, 
 
       Reader(spring, Channel()).messages.to[List]
       ```
-  refer perihelion.Channel
-  refer perihelion.Message
+  refer perihelion.Websocket.Channel
+  refer perihelion.Websocket.Message
   entry #messages   the reassembled messages, lazily, until the peer closes or the body ends
 
 entry .over   tags a value with the format it rides, `value.over[Json]`, so a reply serializes through it

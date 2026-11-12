@@ -38,6 +38,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import anticipation.Channel.{Blue, Green, Red}
 
 object Tests extends Suite("image", m"Hallucination Tests"):
 

@@ -1142,7 +1142,7 @@ entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, 
       ```scala
       import soundness.*
 
-      type Rgb565 = (Red[5], Green[6], Blue[5])
+      type Rgb565 = (Channel.Red[5], Channel.Green[6], Channel.Blue[5])
       summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
       ```
@@ -1150,7 +1150,7 @@ entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, 
       `Channel` is not exported to the `soundness` umbrella, where the name belongs to a
       WebSocket channel; reach it as `anticipation.Channel`. The channel families `Red`,
       `Green`, `Blue` and the rest are exported.
-  refer anticipation.Red
+  refer anticipation.Channel.Red
   entry .Label   the literal label of a channel: `Label[Red[8]]` is `"red"`
   entry .Bits   the bit depth of a channel: `Bits[Red[8]]` is `8`
   entry .TotalBits   the total bit width of a layout
@@ -1162,15 +1162,15 @@ entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, 
   entry .Depth   the bit depth of a labelled channel within a layout
   entry .Storage   the narrowest primitive holding one pixel of a layout: `Byte`, `Short`, `Int` or `Long`
 
-entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
-entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
-entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
-entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
-entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
-entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
-entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
-entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
-entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
+  entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
+  entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
+  entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
+  entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
+  entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
+  entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
+  entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
+  entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
+  entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
 
 entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
   detail

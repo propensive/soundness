@@ -48,6 +48,7 @@ import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 
 import Control.*
+import perihelion.Websocket.{Channel, Reader}
 
 case class Ping(value: Int) derives CanEqual
 
@@ -163,7 +164,7 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
     def parseFrame(bytes: scala.Array[Byte]): Optional[Websocket.Frame] =
       Websocket.Frame.parse(Cursor[Data](Chain(Array.unsafeFrozen(bytes))))
 
-    def readMessages(frames: scala.Array[Byte]*): List[perihelion.Message] =
+    def readMessages(frames: scala.Array[Byte]*): List[perihelion.Websocket.Message] =
       val stream = Chain(frames*).map(Array.unsafeFrozen(_))
       val spring: Spring[Data] = new Spring[Data]:
         def apply()(using Tactic[Truncation.Error])
@@ -173,9 +174,9 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
 
       Reader(spring, Channel()).messages.to[List]
 
-    def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
-      case perihelion.Message.Text(text) => text
-      case perihelion.Message.Binary(_)  => t"<binary>"
+    def texts(messages: List[perihelion.Websocket.Message]): List[Text] = messages.map:
+      case perihelion.Websocket.Message.Text(text) => text
+      case perihelion.Websocket.Message.Binary(_)  => t"<binary>"
 
     // The pure-codec tests below read frames as a server does (inbound frames are the
     // client's, and masked); the client direction is exercised in "Client masking".
@@ -344,7 +345,7 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
       suite(m"WebSocket echo"):
         test(m"A text message is echoed back, and the handshake is accepted"):
           val server = SocketServer(0).handle:
-            webSocket(): (message: perihelion.Message) =>
+            webSocket(): (message: perihelion.Websocket.Message) =>
               Reply(message, ())
 
           val port = server.port
@@ -420,8 +421,8 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
         // its `Channel`, and the client decodes the typed greeting and concludes.
         test(m"A client handshakes and decodes a server-pushed typed message"):
           val server = SocketServer(0).handle:
-            val websocket = webSocket(): (message: perihelion.Message) => Continue(())
-            websocket.channel.send(perihelion.Message.Text(Ping(7).in[Json].show))
+            val websocket = webSocket(): (message: perihelion.Websocket.Message) => Continue(())
+            websocket.channel.send(perihelion.Websocket.Message.Text(Ping(7).in[Json].show))
             websocket
 
           val port = server.port

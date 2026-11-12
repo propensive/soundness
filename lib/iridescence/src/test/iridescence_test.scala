@@ -35,6 +35,7 @@ package iridescence
 import scala.compiletime
 
 import soundness.*
+import anticipation.Channel.{Alpha, Blue, Green, Grey, Red}
 
 given Colorimetry = colorimetry.daylightColorimetry
 

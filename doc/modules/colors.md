@@ -382,11 +382,13 @@ grayscale. A *layout* states that packing as a tuple of channel types, with the 
 significant first, and the compiler works out the rest:
 
 ```scala
+import Channel.{Blue, Green, Grey, Red}
+
 type Rgb565 = (Red[5], Green[6], Blue[5])
 
-val bits = scala.compiletime.constValue[anticipation.Channel.TotalBits[Rgb]]
-val narrowest = summon[anticipation.Channel.Storage[Rgb565] =:= Short]
-val grey = summon[anticipation.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+val bits = scala.compiletime.constValue[Channel.TotalBits[Rgb]]
+val narrowest = summon[Channel.Storage[Rgb565] =:= Short]
+val grey = summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
 ```
 
 `Rgb` takes 24 bits, and the narrowest types which hold an `Rgb565` and an eight-bit gray

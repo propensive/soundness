@@ -36,6 +36,7 @@ import scala.annotation.targetName
 
 import anticipation.*
 import prepositional.*
+import anticipation.Channel.{Alpha, Blue, Cyan, Green, Key, Magenta, Red, Yellow}
 
 export Rgb12Opaque.Rgb12
 export Rgb32Opaque.Rgb32
