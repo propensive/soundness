@@ -52,6 +52,7 @@ import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import rudiments.*
 import sedentary.*
 import symbolism.*

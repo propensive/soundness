@@ -45,6 +45,7 @@ import probably.*
 import proscenium.*
 import rudiments.*
 import quantitative.*
+import quantitative.Byte
 import sedentary.*
 import superlunary.embeddings.automaticEmbedding
 import symbolism.*

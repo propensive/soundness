@@ -46,6 +46,7 @@ import probably.*
 import spectacular.show
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory

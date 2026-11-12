@@ -49,6 +49,7 @@ import parasite.*, threads.virtualThreads, probates.cancelProbate
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import rudiments.*
 import sedentary.*
 import spectacular.*

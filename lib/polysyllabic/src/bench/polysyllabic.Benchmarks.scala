@@ -46,6 +46,7 @@ import hieroglyph.*, charsets.utf8Charset, textMetrics.uniformMetric, textSaniti
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
