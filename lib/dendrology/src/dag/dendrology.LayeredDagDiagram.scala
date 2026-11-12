@@ -43,7 +43,7 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-import DagTile.*
+import DagDiagram.Tile.*
 
 object LayeredDagDiagram:
   import Layering.Vertex
@@ -60,7 +60,7 @@ object LayeredDagDiagram:
     inline val VerticalPassThrough   = 16
     inline val HorizontalPassThrough = 32
 
-    def tile(cell: Int): DagTile =
+    def tile(cell: Int): DagDiagram.Tile =
       inline def has(inline flag: Int): Boolean = (cell & flag) != 0
 
       if has(VerticalPassThrough) && has(HorizontalPassThrough) then Crossing
@@ -138,7 +138,7 @@ object LayeredDagDiagram:
 
       LayeredDagDiagram(rows)
 
-  private def connectorRow(bends: List[(Int, Int, Boolean)], width: Int): List[DagTile] =
+  private def connectorRow(bends: List[(Int, Int, Boolean)], width: Int): List[DagDiagram.Tile] =
     val cells = new scala.Array[Int](width)
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
@@ -177,18 +177,20 @@ object LayeredDagDiagram:
 
     cells.iterator.map(Cell.tile).to(List)
 
-  private def nodeRow(nodes: Set[Int], passing: Set[Int], width: Int): List[DagTile] =
+  private def nodeRow(nodes: Set[Int], passing: Set[Int], width: Int): List[DagDiagram.Tile] =
     (0 until width).to(List).map: column =>
       if nodes(column) then Node else if passing(column) then Vertical else Space
 
-  given printable: [node: Showable] => (style: LaneDagStyle[Text])
+  given printable: [node: Showable] => (style: LaneDagDiagram.Style[Text])
   =>  LayeredDagDiagram[node] is Printable =
     (diagram, termcap) => diagram.render[Text]{ node => t"● $node  " }.join(t"\n")
 
-case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
+case class LayeredDagDiagram[node](rows: List[(List[DagDiagram.Tile], Map[Int, node])]):
   val size: Int = rows.length
 
-  def render[line](glyph: node => line)(using style: LaneDagStyle[line]): proscenium.List[line] =
+  def render[line](glyph: node => line)(using style: LaneDagDiagram.Style[line])
+  :   proscenium.List[line] =
+
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
     val widths = scala.Array.fill(maxCol)(2)
 
@@ -205,5 +207,5 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
 
     rendered.to(proscenium.List)
 
-  def tiles: List[List[DagTile]] = rows.map(_(0))
+  def tiles: List[List[DagDiagram.Tile]] = rows.map(_(0))
   def nodesAt: List[Map[Int, node]] = rows.map(_(1))

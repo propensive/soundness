@@ -33,46 +33,82 @@
 package dendrology
 
 import anticipation.*
+import beneficence.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
 import gossamer.*
+import gossamer.Textual.concatenable
 import hieroglyph.*
 import polysyllabic.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import tessellate.*
-import TreeTile.*
+
+import TreeDiagram.Tile.*
 
 object TreeDiagram:
   def apply[node: Expandable](roots: node*): TreeDiagram[node] =
     by[node](node.children(_))(roots*)
 
-  given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
+  given printable: [node: Showable] => (style: Style[Text]) => TreeDiagram[node] is Printable =
     (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
   def by[node](getChildren: node => List[node])(roots: node*): TreeDiagram[node] =
-    def recur(level: List[TreeTile], input: List[node]): Chain[(List[TreeTile], node)] =
+    def recur(level: List[Tile], input: List[node]): Chain[(List[Tile], node)] =
       val last = input.size - 1
 
       input.indexed.to[Chain].flatMap: (item, index) =>
-        val tiles: List[TreeTile] =
+        val tiles: List[TreeDiagram.Tile] =
           ((if index.n0 == last then Last else Branch) :: level).reverse
 
         ((tiles, item) #::
           recur((if index.n0 == last then Space else Extender) :: level, getChildren(item)))
-        : Chain[(List[TreeTile], node)]
+        : Chain[(List[TreeDiagram.Tile], node)]
 
     new TreeDiagram(recur(Nil, roots))
 
-case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
-  def render[line](line: node => line)(using style: TreeStyle[line]): Chain[line] = map[line]:
-    tiles => node => style.serialize(tiles, line(node))
+  enum Tile:
+    case Space, Last, Branch, Extender
+
+  trait Style[line] extends Findable:
+    def serialize(tiles: List[Tile], node: line): line
+
+    // A continuation row of a multi-line node: the same lanes, but with no branch glyph —
+    // extenders continue and a last child's branch gives way to space. A style that draws no
+    // distinct continuation prefix repeats its ordinary serialization.
+    def followOn(tiles: List[Tile], node: line): line = serialize(tiles, node)
+
+  case class TextualStyle[line: Textual as textual]
+    ( space: Text, last: Text, branch: Text, extender: Text )
+  extends Style[line]:
+    def serialize(tiles: List[Tile], node: line): line =
+      textual.apply(tiles.map(text(_)).join)+node
+
+    override def followOn(tiles: List[Tile], node: line): line =
+      textual.apply(tiles.map(followOnText(_)).join)+node
+
+    def text(tile: Tile): Text = tile match
+      case Tile.Space    => space
+      case Tile.Last     => last
+      case Tile.Branch   => branch
+      case Tile.Extender => extender
+
+    def followOnText(tile: Tile): Text = tile match
+      case Tile.Space    => space
+      case Tile.Last     => space
+      case Tile.Branch   => extender
+      case Tile.Extender => extender
+
+case class TreeDiagram[node](lines: Chain[(List[TreeDiagram.Tile], node)]):
+  def render[line](line: node => line)(using style: TreeDiagram.Style[line]): Chain[line] =
+    map[line]: tiles => node => style.serialize(tiles, line(node))
 
   // Render with word wrapping: each node's content flows into rows no wider than `width`
   // (inclusive of its tile prefix), and continuation rows take the style's follow-on tiles —
   // extenders continue beneath a branch, and space follows a last child.
   def flow[line: Textual { type Result = Char }](width: Int)(line: node => line)
-    ( using style: TreeStyle[line] )
+    ( using style: TreeDiagram.Style[line] )
     ( using Text is Measurable, Hyphenation )
   :   Chain[line] =
 
@@ -94,6 +130,6 @@ case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
           val continuations = rest.map: row => style.followOn(tiles, row)
           (style.serialize(tiles, row) :: continuations).to[Chain]
 
-  def map[row](line: List[TreeTile] => node => row): Chain[row] = lines.map(line(_)(_))
+  def map[row](line: List[TreeDiagram.Tile] => node => row): Chain[row] = lines.map(line(_)(_))
   def nodes: Chain[node] = lines.map(_(1))
-  def tiles: Chain[List[TreeTile]] = lines.map(_(0))
+  def tiles: Chain[List[TreeDiagram.Tile]] = lines.map(_(0))

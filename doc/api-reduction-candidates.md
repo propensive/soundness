@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **350**;
-  144 sit in a prefix family of two or more, across 46 families, and
-  206 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **342**;
+  134 sit in a prefix family of two or more, across 43 families, and
+  208 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -274,7 +274,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Compile*` | anthology, larceny | 2 | `CompileError`, `CompileFlag` |
 | `Css*` | nomenclature | 2 | `CssClass`, `CssIdentifier` |
 | `Daemon*` | ethereal | 2 | `DaemonEnvironment`, `DaemonLogEvent` |
-| `Dag*` | dendrology | 3 | `DagDiagram`, `DagStyle`, `DagTile` |
 | `Deps*` | burdock | 2 | `DepsDev`, `DepsEvent` |
 | `Dom*` | nomenclature | 2 | `DomId`, `DomIdentifier` |
 | `File*` | galilei, octogenarian | 2 | `FileDiff`, `FileOpenable` |
@@ -285,7 +284,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Java*` | anthology, diuretic, enigmatic, gastronomy, kaleidoscope, scintillate, surveillance | 13 | `JavaBaseCrypto`, `JavaBaseHashing`, `JavaBaseRegex`, `JavaBaseWatcher`, `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
 | `Json*` | jacinta, obligatory | 3 | `JsonPointer`, `JsonRpc`, `JsonSchema` |
 | `Kotlin*` | xenophile | 3 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke` |
-| `Lane*` | dendrology | 2 | `LaneDagDiagram`, `LaneDagStyle` |
 | `Larceny*` | larceny | 2 | `LarcenyPlugin`, `LarcenyTransformer` |
 | `Leap*` | aviation | 2 | `LeapMode`, `LeapSeconds` |
 | `Line*` | profanity, tessellate, turbulence | 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
@@ -301,10 +299,9 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
 | `Tar*` | bitumen | 2 | `TarBuilder`, `TarOpenable` |
 | `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph | 6 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextRun`, `TextSanitizer`, `TextStyle` |
-| `Textual*` | dendrology | 3 | `TextualDagStyle`, `TextualLaneDagStyle`, `TextualTreeStyle` |
 | `Time*` | abacist | 2 | `TimeMinutes`, `TimeSeconds` |
 | `Track*` | contingency | 2 | `TrackFoci`, `TrackTactic` |
-| `Tree*` | dendrology, proscenium | 5 | `TreeDiagram`, `TreeMap`, `TreeSet`, `TreeStyle`, `TreeTile` |
+| `Tree*` | dendrology, proscenium | 3 | `TreeDiagram`, `TreeMap`, `TreeSet` |
 | `Type*` | bitumen, typonym | 5 | `TypeElement`, `TypeFlag`, `TypeList`, `TypeMap`, `TypeSet` |
 | `Unix*` | bitumen, galilei, profanity | 5 | `UnixEntry`, `UnixGroup`, `UnixMode`, `UnixSignal`, `UnixUser` |
 | `Viewport*` | cataclysm | 4 | `ViewportHeights`, `ViewportMaxes`, `ViewportMins`, `ViewportWidths` |
@@ -349,7 +346,7 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | variants, not satellites | ultimatum, tasseomancy | 2 | `ScrollFixture`, `StackedBars` |
 | capability and category markers (R3) | anticipation, galilei | 3 | `CreationTimed`, `EmailAddresses`, `IpAddresses` |
 
-### Singletons (206)
+### Singletons (208)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `ArOpenable`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AttemptTactic`, `BaseLayout`,
@@ -357,38 +354,38 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 `CanonicalCbor`, `CanvasHandle`, `CaptionLayout`, `CardinalWind`, `CarriageReturn`,
 `CaseSensitivity`, `CellRef`, `ChangeKind`, `ChannelLayout`, `ChartPalette`, `CheckOverflow`,
 `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`, `CommandGroup`,
-`CommonFormattable`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`, `DecimalConverter`,
-`DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `EditorField`,
-`EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
-`EucalyptusGcp`, `FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`,
-`FontMetric`, `FrameReader`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GivensPhase`,
-`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
-`ImageOpenable`, `InitializationVector`, `IntercardinalWind`, `InterfaceAddress`,
-`InvalidFlagError`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JsInvoke`,
-`JuxtapositionPalette`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`,
-`LinkEvent`, `ListHasAsScala`, `LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`,
-`MarkdownPalette`, `MediaType`, `MenuField`, `MissingFlagError`, `MlDsa`, `MonotonicClock`,
-`MoveAtomically`, `MulOp`, `NativeInvoke`, `NetworkInterface`, `NirPlugin`, `NonFatal`, `NoteRef`,
-`NotFound`, `NumberMode`, `NumericRange`, `OffsetCalendar`, `OnlineClasspath`, `OpensslCrypto`,
-`OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`,
-`PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`,
-`PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PooledSupervisor`,
-`PoolingSupervisor`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`,
-`ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`,
-`RasterOpenable`, `RectoPanel`, `ReflogEntry`, `RegexBackend`, `RequestServable`, `ResetMode`,
-`Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `ScreenRoot`, `SelectMenu`,
-`SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SharedProbate`,
-`SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
-`SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `StandardMetadata`,
-`StaticAnnotation`, `StreamOutputStream`, `StressSearch`, `SubOp`, `SymmetricKey`,
-`SyntaxMatcher`, `TableFixture`, `TastyPalette`, `TeletypeFormattable`, `TelReader`,
-`TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `ThemeColor`, `ThrowTactic`,
-`TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`,
-`TypescriptDialect`, `UdpResponse`, `UncheckedError`, `UniformDistribution`, `UnitsNames`,
-`UnusedFeature`, `UrlPalette`, `UserId`, `ValueToken`, `VentureTactic`, `VersoPanel`,
-`VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`,
-`WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WitDialect`, `WritingBuilder`, `WsSessional`,
-`XmlSchema`, `YamlPath`
+`CommonFormattable`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`, `DagDiagram`,
+`DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`,
+`DnsLabel`, `EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`,
+`EnumerationHasAsScala`, `EucalyptusGcp`, `FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`,
+`FoldableRectoPanel`, `FontMetric`, `FrameReader`, `GapPolicy`, `GarbageCollection`,
+`GaugePalette`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
+`HmacCipher`, `Html4Transitional`, `ImageOpenable`, `InitializationVector`, `IntercardinalWind`,
+`InterfaceAddress`, `InvalidFlagError`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`,
+`IteratorHasAsScala`, `JsInvoke`, `JuxtapositionPalette`, `LaneDagDiagram`, `LanguageFeature`,
+`LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `ListHasAsScala`,
+`LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`, `MarkdownPalette`, `MediaType`,
+`MenuField`, `MissingFlagError`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`,
+`NativeInvoke`, `NetworkInterface`, `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`, `NumberMode`,
+`NumericRange`, `OffsetCalendar`, `OnlineClasspath`, `OpensslCrypto`, `OperationSize`,
+`OptionalTactic`, `OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`,
+`PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`,
+`PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PooledSupervisor`, `PoolingSupervisor`,
+`PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`,
+`ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`,
+`RectoPanel`, `ReflogEntry`, `RegexBackend`, `RequestServable`, `ResetMode`, `Rgb12Opaque`,
+`Rgb32Opaque`, `RomanCalendar`, `RootFs`, `ScreenRoot`, `SelectMenu`, `SelectorList`,
+`SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SharedProbate`, `SiderealDays`,
+`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
+`SoundnessHashing`, `SourceCode`, `SparseSegment`, `StandardMetadata`, `StaticAnnotation`,
+`StreamOutputStream`, `StressSearch`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TableFixture`,
+`TastyPalette`, `TeletypeFormattable`, `TelReader`, `TemperatureScale`, `TemporaryDirectory`,
+`TerminalBoard`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
+`TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`, `UncheckedError`,
+`UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UserId`, `ValueToken`,
+`VentureTactic`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`,
+`WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`,
+`WitDialect`, `WritingBuilder`, `WsSessional`, `XmlSchema`, `YamlPath`
 
 ## Retained from the original inventory
 

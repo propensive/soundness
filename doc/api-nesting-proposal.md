@@ -658,8 +658,8 @@ Each pair is a genuine clash, not a re-export:
 | anthology.core | `CompileEvent→Compiler.Event`, `CompileProcess→Compiler.Process`, `CompileResult→Compiler.Result`, `CompileProgress→Compiler.Progress`; fold `CompileEvents` into `Compiler.Event`'s companion (`CompileFlag` is R6) — **done** |
 | escritoire.core | `TableCell`, `TableRow`, `TableSection`, `TableStyle`, `TableRelabelling` → `Table.*` — **done** |
 | ultimatum.core | `InlineAnchoring`, `InlineGrowth`, `InlineShrink` → `InlineRoot.*` (each enum's companion carries its default, and moves with it) — **done** |
-| dendrology.tree | `TreeTile→TreeDiagram.Tile`, `TreeStyle→TreeDiagram.Style`, `TextualTreeStyle→TreeDiagram.TextualStyle` |
-| dendrology.dag | `DagTile`, `DagStyle`, `TextualDagStyle` → `DagDiagram.*`; `LaneDagStyle`, `TextualLaneDagStyle` → `LaneDagDiagram.*` (not `Dag`, which is acyclicity's) |
+| dendrology.tree | `TreeTile→TreeDiagram.Tile`, `TreeStyle→TreeDiagram.Style`, `TextualTreeStyle→TreeDiagram.TextualStyle` — **done** |
+| dendrology.dag | `DagTile`, `DagStyle`, `TextualDagStyle` → `DagDiagram.*`; `LaneDagStyle`, `TextualLaneDagStyle` → `LaneDagDiagram.*` (not `Dag`, which is acyclicity's) — **done** |
 | espionage.core | `AcpAgent→Acp.Agent`, `AcpClient→Acp.Client`; the split traits nest beneath them (`Acp.Agent.Lifecycle`, `Acp.Client.Fs`, …). The agent-location enum that held `Acp.Agent` becomes `Acp.Endpoint` (ruling 3) — **done** |
 | degustation.tasty | `ClassSource→Universe.Source`, `ClassInfo→Universe.ClassInfo` |
 | exoskeleton.args | merge `InvalidFlagError` and `MissingFlagError` into `Flag.Error` with a `Reason` |

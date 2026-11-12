@@ -33,38 +33,92 @@
 package dendrology
 
 // Deliberate stdlib opt-out, as in the diagram implementations.
+import scala.collection.immutable.Map
 
 import anticipation.*
+import beneficence.*
 import gossamer.*
 import gossamer.Textual.concatenable
-import rudiments.*
+import hieroglyph.*
+import rudiments.{map, zip, indexed, fold}
 import symbolism.*
-import DagTile.*
+import vacuous.*
 
-case class TextualDagStyle[line: Textual as textual]
-  ( space:      Text,
-    cornerNe:   Text,
-    vertical:   Text,
-    teeE:       Text,
-    horizontal: Text,
-    teeN:       Text,
-    crossing:   Text,
-    junction:   Text )
-extends DagStyle[line]:
-  def serialize(tiles: List[DagTile], node: line): line =
-    textual(tiles.map(text(_)).join)+node
+import DagDiagram.Tile.*
 
-  def text(tile: DagTile): Text = tile match
-    case Space      => space
-    case CornerNe   => cornerNe
-    case Vertical   => vertical
-    case TeeE       => teeE
-    case Horizontal => horizontal
-    case TeeN       => teeN
-    case Crossing   => crossing
-    case Junction   => junction
-    case _          => space
+// The styles a `LaneDagDiagram` is drawn in, mixed into its companion as `LaneDagDiagram.Style` and
+// `LaneDagDiagram.TextualStyle`. Kept in a file of their own, with their own imports, because
+// the diagram's internals deliberately use the stdlib collections.
+trait LaneDagStyles:
+  trait Style[line] extends Findable:
+    def serialize
+      ( tiles:  List[DagDiagram.Tile],
+        glyphs: Map[Int, line],
+        widths: List[Int],
+        label:  Optional[line] )
+    :   line
 
-  def followOnText(tile: DagTile): Text = tile match
-    case Space | Horizontal | CornerNe | TeeN | Junction => space
-    case _                                               => vertical
+    def width(glyph: line): Int
+
+  case class TextualStyle[line: Textual]
+    ( space:      Text,
+      vertical:   Text,
+      horizontal: Text,
+      cornerNe:   Text,
+      cornerNw:   Text,
+      cornerSe:   Text,
+      cornerSw:   Text,
+      teeN:       Text,
+      teeS:       Text,
+      teeE:       Text,
+      teeW:       Text,
+      junction:   Text,
+      crossing:   Text,
+      node:       Text )
+    ( using metric: Text is Measurable )
+  extends Style[line]:
+    // Display cells, not code units, so wide characters and combining marks lay out correctly.
+    def width(glyph: line): Int = metric.width(summon[line is Textual].text(glyph))
+
+    def serialize
+      ( tiles:  List[DagDiagram.Tile],
+        glyphs: Map[Int, line],
+        widths: List[Int],
+        label:  Optional[line] )
+    :   line =
+
+      val parts = tiles.zip(widths).indexed.map:
+        case ((Node, w), i) =>
+          val g = glyphs.getOrElse(i.n0, line(node))
+          val gw = width(g)
+          if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
+
+        case ((t, w), _) =>
+          val base = text(t)
+
+          val cell =
+            if base.s.length >= 1 then base.s.charAt(0).toString else " "
+
+          val filler =
+            if base.s.length >= 2 then base.s.charAt(1).toString else " "
+
+          val padding = if w > 1 then filler.repeat(w - 1).nn else ""
+          line(Text(cell + padding))
+
+      parts.fold(line(t""))(_+_)+label.or(line(t""))
+
+    def text(tile: DagDiagram.Tile): Text = tile match
+      case Space      => space
+      case Vertical   => vertical
+      case Horizontal => horizontal
+      case CornerNe   => cornerNe
+      case CornerNw   => cornerNw
+      case CornerSe   => cornerSe
+      case CornerSw   => cornerSw
+      case TeeN       => teeN
+      case TeeS       => teeS
+      case TeeE       => teeE
+      case TeeW       => teeW
+      case Junction   => junction
+      case Crossing   => crossing
+      case Node       => this.node

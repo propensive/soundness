@@ -132,9 +132,8 @@ lib/delicious/src/scala/delicious.Reifier.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	
 lib/delicious/src/test/delicious_test.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/dendrology/src/dag/dendrology.DagDiagram.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/dendrology/src/dag/dendrology.LaneDagDiagram.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0
-lib/dendrology/src/dag/dendrology.LaneDagStyle.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/dendrology/src/dag/dendrology.LaneDagStyles.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/dendrology/src/dag/dendrology.LayeredDagDiagram.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/dendrology/src/dag/dendrology.TextualLaneDagStyle.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/dendrology/src/demo/dendrology_demo.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
 lib/denominative/src/core/denominative.Applicable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/denominative/src/core/denominative.Countable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0
