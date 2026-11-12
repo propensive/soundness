@@ -462,7 +462,7 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
 
               case class Person(name: Text, age: Int)
               val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
-              bytes.length   // 15
+              bytes.length   // 16
         frame
           label The bytes, in diagnostic notation
           code
