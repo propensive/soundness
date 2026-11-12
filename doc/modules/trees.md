@@ -135,8 +135,9 @@ diagram.map { tiles => node => t"${tiles.size} ${node.name}" }.each(Out.println(
 `nodes` gives the node of each line, in drawing order, and `tiles` gives the tiles of each line.
 Here each label is preceded by the number of tiles on its line, which is the depth of its node.
 
-A `TreeDiagram.Tile` is one of four things, and a style says what each becomes. A `TreeDiagram.TextualStyle`
-says it with four short pieces of text, which is all that a new style needs:
+A `TreeDiagram.Tile` is one of four things, and a style says what each becomes. A
+`TreeDiagram.TextualStyle` says it with four short pieces of text, which is all that a new style
+needs:
 
 ```tabular
 column  Tile
