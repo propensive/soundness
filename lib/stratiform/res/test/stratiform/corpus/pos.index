@@ -88,6 +88,7 @@ remark-on-compound
 remark-payload-preserved
 remark-sigil-not-in-payload
 schema-layer-adds-encoding
+schema-layer-adds-index-and-width
 schema-layer-refines-pattern
 schema-layer-restates-encoding
 schema-minimal-valid
@@ -97,12 +98,14 @@ schema-with-default-value
 schema-with-definition-and-reference
 schema-with-encoding
 schema-with-flag
+schema-with-index
 schema-with-key
 schema-with-layer
 schema-with-layer-types
 schema-with-pattern
 schema-with-select
 schema-with-sigil
+schema-with-width-and-intern
 sigil-at-eol-not-remark
 sigil-concatenated-not-comment
 sigil-followed-by-hard-space-not-remark

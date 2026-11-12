@@ -999,7 +999,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
           pinned coordinates of the two built-in schemas, which `SchemaResolver` recognises
           without network access.
       entry .Selector   `Version(major, minor, patch)` or `Tag(name)`, each rendering as `#text`
-      entry .tels   `specification.tel/tels:2.0.0`, the built-in meta-schema's coordinate
+      entry .tels   `specification.tel/tels:2.1.0`, the built-in meta-schema's coordinate
+      entry .telsEarlier   `specification.tel/tels:2.0.0`, the earlier pin, which the built-in still answers
       entry .acceptance   `specification.tel/acceptance:1.0.0`, the built-in acceptance schema's coordinate
       entry .parse   a reference from its text, or `Unset` for any grammar violation
       entry #domain   the DNS domain
@@ -1338,6 +1339,13 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
           row  `MultipleKeyFields`  221  _more than one member of the Struct is key-flagged_
           row  `InvalidPattern`  222  _a `pattern` value is not a valid RE2 pattern_
           row  `PatternNotContained`  223  _a layer's patterns are not contained in the patterns they replace_
+          row  `WidthNotDecimal`  225  _a `width` is not a canonical positive decimal_
+          row  `WidthConflict`  226  _a `width` conflicts with the width already declared, or with its codec's fixed width_
+          row  `WidthWithoutEncoding`  227  _a scalar declares a `width` but no `encoding`_
+          row  `IndexNotApplicable`  228  _an `index` is declared on a field which is not repeatable, or not a Struct or Scalar_
+          row  `IndexPathInvalid`  229  _an `index` path is not a valid TELP, or is the root path on a Struct-typed field_
+          row  `IndexPathUnresolved`  230  _an `index` path does not resolve to a Scalar within the field's type_
+          row  `WidthWithIntern`  231  _a scalar declares both a `width` and `intern`_
           row  `NonStructCompound`  301  _the compound's type is not a Struct_
           row  `TooManyAtoms`  302  _more atoms than assignable member positions_
           row  `AtomAtNonAssignablePos`  303  _the atom is at a non-atom-assignable member position_
@@ -2167,6 +2175,18 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
         required and non-repeatable (E220). A key is what a `Telp` key selector such as
         `/contact/nym` matches, and two occurrences with the same key value are rejected at
         assignment (E314). A layer may mark a field as key; nothing can clear it.
+    entry #indexes   the secondary indexes declared over a repeatable field, for RaTEL
+        Each `index` child of a `field` line is one `Tels.Index`. The field must be repeatable,
+        and of a struct or scalar type (E228). A layer's indexes are appended to the base's,
+        save any already present. Indexes are a storage-layout annotation: they constrain no
+        document, and take no part in subtyping.
+  entry .Index   a secondary index over a repeatable field: an ordered tuple of paths
+      Written `index /country /city` beneath a `field` line. Each of its `#paths` is a TELP
+      (E229), which resolves within the field's type through non-repeatable fields to a scalar
+      (E230); over a scalar-typed field the only path is the root, `/`.
+    entry #paths   the paths, as they were written
+    entry #same   whether another index has the same paths, each compared as a TELP
+    entry .merge   a base's indexes followed by each of a layer's which is not already present
   entry .SelectRef   a reference to a named select, at a member position
     detail
         A `select` line inside a struct body: the member whose keyword space is every variant
@@ -2214,6 +2234,8 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
     entry #validators   the validator names applied to the value
     entry #encoding   the codec name of the scalar's binary form, or `Unset` for UTF-8 text
     entry #patterns   RE2 patterns the whole value must match, in declaration order
+    entry #width   the byte count every value's encoded form is asserted to have, for RaTEL
+    entry #intern   whether a RaTEL writer should store equal values once
   entry .Flag   the value-less type: a keyword whose presence is its value
       A member of type `Flag` is written as its bare keyword, inline among a compound's atoms
       or as a child with no content; one carrying content is E311. A derived `Boolean` field
@@ -2246,6 +2268,11 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
     entry #description   free-text description, if any
     entry #encoding   the codec name of the scalar's binary form, or `Unset` for UTF-8 text
     entry #patterns   RE2 patterns the whole value must match, in declaration order
+    entry #width   the byte count every value's encoded form is asserted to have, for RaTEL
+    entry #intern   whether a RaTEL writer should store equal values once
+        A `width` needs an `#encoding` (E227), must agree with a standard codec's fixed width
+        and cannot be changed by a layer (E226), and excludes `intern` (E231).
+    entry #scalar   the scalar type which a reference to this definition denotes
   entry .SelectDefinition   a named sum of variants in the schema's namespace
     detail
         A `select` declaration: `#name`, its `#variants`, `#validators`, an optional
@@ -3760,7 +3787,8 @@ entry .SchemaResolver   resolves a pragma's schema identification to a composed,
 
       0. the embedded schema of a self-contained BinTEL container, when one is passed;
       1. the built-ins — the `tels` meta-schema and the `acceptance` schema — by their pinned
-          coordinates (`specification.tel/tels:2.0.0`, with or without the version pin) or by
+          coordinates (`specification.tel/tels:2.1.0`, or the earlier `tels:2.0.0`, with or without
+          the version pin) or by
           their signatures, with no network access;
       2. every content-addressed `Tels.Resolution.Store` (a schema cache, a LIRA store), by
           signature;

@@ -1,0 +1,25 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name schema-layer-adds-index-and-width
+
+scalar Token
+  validate hex
+  encoding blake3-256
+
+record Address
+  field city String
+  field country String
+
+document
+  field token Token
+  field address Address repeatable
+    index /country
+
+layer
+  name indexed
+  scalar Token
+    width 32
+  overlay
+    field address Address
+      index /country
+      index /city /country

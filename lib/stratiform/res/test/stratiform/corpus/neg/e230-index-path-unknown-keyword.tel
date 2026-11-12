@@ -1,0 +1,10 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e230-index-path-unknown-keyword
+
+record Address
+  field city String
+
+document
+  field address Address repeatable
+    index /town

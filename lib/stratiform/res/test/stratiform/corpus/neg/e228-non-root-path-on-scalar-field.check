@@ -1,0 +1,99 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            reference: Some(
+                "specification.tel/tels:2.1.0",
+            ),
+            layers: [],
+            signature: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "name",
+                    atoms: [
+                        Inline {
+                            text: "e228-non-root-path-on-scalar-field",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "document",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "tag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "String",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [
+                                        Block {
+                                            comments: [],
+                                            tabulation: None,
+                                            compounds: [
+                                                Compound {
+                                                    keyword: "index",
+                                                    atoms: [
+                                                        Inline {
+                                                            text: "/text",
+                                                            preceding_spaces: 1,
+                                                        },
+                                                    ],
+                                                    remark: None,
+                                                    children: [],
+                                                },
+                                            ],
+                                            trailing_blank_lines: 1,
+                                        },
+                                    ],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}
+errors:
+  E228 [0,0): Field with an index is not repeatable, or its type is neither a Struct nor a Scalar, or a Scalar-typed field's index path is not the root path: field `tag` in document is Scalar-typed, so its index path must be the root path, not `/text`

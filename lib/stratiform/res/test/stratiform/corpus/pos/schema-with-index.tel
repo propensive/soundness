@@ -1,0 +1,20 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name schema-with-index
+
+record Region
+  field code String
+  field name String optional
+
+record Address
+  field street String
+  field city String
+  field country String
+  field region Region optional
+
+document
+  field address Address repeatable
+    index /country /city
+    index .region.code
+  field tag String repeatable
+    index /

@@ -1,0 +1,15 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e226-layer-width-conflict
+
+scalar Blob
+  encoding hex-bytes
+  width 32
+
+document
+  field blob Blob
+
+layer
+  name wider
+  scalar Blob
+    width 64

@@ -106,7 +106,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
           case _             => "?"
       . assert(_ == List
           ( "keyword", "type", "optional", "required", "repeatable", "irrepeatable", "key",
-            "default", "description" ))
+            "default", "description", "index" ))
 
       // §21.8 inserted `pattern` at index 2, shifting `encoding` to 3. The
       // `SemanticReconstructor` reads these positions by index, so this order
@@ -116,7 +116,15 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
         scalar.members.to[List].map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
-      . assert(_ == List("name", "validate", "pattern", "encoding", "description"))
+      . assert(_ == List
+          ( "name", "validate", "pattern", "encoding", "description", "width", "intern" ))
+
+      // tels 2.1.0 appended `index` to Field and `width` and `intern` to Scalar, and declared
+      // `Index` directly after `Field`; appending is what keeps every earlier keyword index,
+      // and so every earlier schema's encoding.
+      test(m"the Index record is declared directly after Field"):
+        Tels.Axiom.tels.records.to[List].map(_.name.s).keep(2)
+      . assert(_ == List("Field", "Index"))
 
     suite(m"Field declaration atom phase (§20.5)"):
       test(m"a trailing key atom sets the flag, not the default"):

@@ -1,0 +1,11 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e231-width-and-intern
+
+scalar Uuid
+  encoding uuid
+  width 16
+  intern
+
+document
+  field id Uuid

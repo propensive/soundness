@@ -61,7 +61,9 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
       0
     catch case error: Tel.Error => error.reason.number
 
-  private def schemaCode(text: Text): Int = codeOf(schemaOf(text))
+  // As `codeOf`, from source; a code raised in constructing the schema (E225) counts too.
+  private def schemaCode(text: Text): Int =
+    try codeOf(schemaOf(text)) catch case error: Tel.Error => error.reason.number
 
   // A base schema with a three-variant Select, referenced by `pet`.
   private def menagerie(required: Boolean, layerBody: Text): Text =
@@ -409,6 +411,359 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         val composed = Tels.Validation.validate(element.as[Tels])
         composed.scalars.seek(_.name == t"Code").let(_.patterns.to[List].map(_.s)).or(List())
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
+
+    suite(m"Layout annotations (§20, E225–E231)"):
+      def composed(text: Text): Tels = Tels.Validation.validate(schemaOf(text))
+
+      def scalarOf(text: Text): Tels.ScalarDefinition =
+        composed(text).scalars.seek(_.name == t"Token").or(panic(m"the suite expects a match"))
+
+      def indexesOf(text: Text): List[List[Text]] =
+        composed(text).document.members.to[List].bind:
+          case field: Tels.Field => field.indexes.map(_.paths)
+          case _                 => Nil
+
+      test(m"a width and an index are valid on a suitable scalar and field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |  width 32
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index /country
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"E225: a width with a leading zero"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |  width 016
+                       |document
+                       |  field token Token
+                       |""".stripMargin))
+      . assert(_ == 225)
+
+      test(m"E225: a width of zero"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |  width 0
+                       |document
+                       |  field token Token
+                       |""".stripMargin))
+      . assert(_ == 225)
+
+      test(m"E226: a width contradicting its codec's fixed width"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |  width 32
+                       |document
+                       |  field token Token
+                       |""".stripMargin))
+      . assert(_ == 226)
+
+      test(m"a width for a codec of no fixed width is the author's assertion"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding base-256
+                       |  width 7
+                       |document
+                       |  field token Token
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"E226: a layer restates a different width"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding base-256
+                       |  width 7
+                       |document
+                       |  field token Token
+                       |layer wider
+                       |  scalar Token
+                       |    width 8
+                       |""".stripMargin))
+      . assert(_ == 226)
+
+      test(m"a layer restating the same width is a no-op"):
+        scalarOf(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding base-256
+                       |  width 7
+                       |document
+                       |  field token Token
+                       |layer same
+                       |  scalar Token
+                       |    width 7
+                       |""".stripMargin)).width
+      . assert(_ == 7)
+
+      test(m"E227: a width without an encoding"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  width 4
+                       |document
+                       |  field token Token
+                       |""".stripMargin))
+      . assert(_ == 227)
+
+      test(m"a layer may supply the width for a base encoding"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |document
+                       |  field token Token
+                       |layer sized
+                       |  scalar Token
+                       |    width 16
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"E231: a width with intern"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |  width 16
+                       |  intern
+                       |document
+                       |  field token Token
+                       |""".stripMargin))
+      . assert(_ == 231)
+
+      test(m"E231: a layer interns a scalar of fixed width"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |  width 16
+                       |document
+                       |  field token Token
+                       |layer shared
+                       |  scalar Token
+                       |    intern
+                       |""".stripMargin))
+      . assert(_ == 231)
+
+      test(m"intern is carried from a layer into the composed scalar"):
+        scalarOf(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  validate identifier
+                       |document
+                       |  field token Token
+                       |layer shared
+                       |  scalar Token
+                       |    intern
+                       |""".stripMargin)).intern
+      . assert(_ == true)
+
+      test(m"E228: an index on a field which is not repeatable"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address
+                       |    index /country
+                       |""".stripMargin))
+      . assert(_ == 228)
+
+      test(m"E228: an index on a Flag-typed field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  field marks Flag repeatable
+                       |    index /
+                       |""".stripMargin))
+      . assert(_ == 228)
+
+      test(m"E228: a path other than the root on a Scalar-typed field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  field names String repeatable
+                       |    index /first
+                       |""".stripMargin))
+      . assert(_ == 228)
+
+      test(m"the root path indexes a repeatable Scalar-typed field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  field names String repeatable
+                       |    index /
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"E229: an index path which is not a TELP"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index country
+                       |""".stripMargin))
+      . assert(_ == 229)
+
+      test(m"E229: the root path on a Struct-typed field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index /
+                       |""".stripMargin))
+      . assert(_ == 229)
+
+      test(m"E230: an index path naming no field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index /county
+                       |""".stripMargin))
+      . assert(_ == 230)
+
+      test(m"E230: an index path ending at a Struct"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Place
+                       |  field city String
+                       |record Address
+                       |  field place Place
+                       |document
+                       |  field address Address repeatable
+                       |    index /place
+                       |""".stripMargin))
+      . assert(_ == 230)
+
+      test(m"E230: an index path through a repeatable field"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Place
+                       |  field city String
+                       |record Address
+                       |  field place Place repeatable
+                       |document
+                       |  field address Address repeatable
+                       |    index /place/city
+                       |""".stripMargin))
+      . assert(_ == 230)
+
+      test(m"an index path may pass through nested, optional fields"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Place
+                       |  field city String optional
+                       |record Address
+                       |  field place Place optional
+                       |document
+                       |  field address Address repeatable
+                       |    index /place/city
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"a layer's indexes are appended to the base's"):
+        indexesOf(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index /country
+                       |layer indexed
+                       |  overlay
+                       |    field address Address
+                       |      index /city /country
+                       |""".stripMargin))
+      . assert(_ == List(List(t"/country"), List(t"/city", t"/country")))
+
+      test(m"an index a layer restates is not duplicated"):
+        indexesOf(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding blake3-256
+                       |record Address
+                       |  field city String
+                       |  field country String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index /country
+                       |layer indexed
+                       |  overlay
+                       |    field address Address
+                       |      index /country
+                       |""".stripMargin))
+      . assert(_ == List(List(t"/country")))
+
+      test(m"layout annotations take no part in subtyping"):
+        val plain = schemaOf(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |record Address
+                       |  field city String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |""".stripMargin))
+
+        val annotated = schemaOf(Text("""|tel 1.0
+                       |name t
+                       |scalar Token
+                       |  encoding uuid
+                       |  width 16
+                       |record Address
+                       |  field city String
+                       |document
+                       |  field token Token
+                       |  field address Address repeatable
+                       |    index /city
+                       |""".stripMargin))
+
+        (Tels.Subtyping.subtype(plain, annotated), Tels.Subtyping.subtype(annotated, plain))
+      . assert(_ == (true, true))
 
     suite(m"Pattern value checks (§21.8)"):
       val schema = Tels.Validation.validate(schemaOf

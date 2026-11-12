@@ -173,7 +173,7 @@ object Telp:
       . let { record => Tels.Struct(record.members, record.validators) }
       . or:
           schema.scalars.seek(_.name == name)
-          . let { scalar => Tels.Scalar(scalar.validators, scalar.encoding, scalar.patterns) }
+          . let(_.scalar)
           . or:
               if name == Tels.Builtin.Flag then Tels.Flag
               else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier ||

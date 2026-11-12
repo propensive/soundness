@@ -1228,7 +1228,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
               else abort(Tel.Error(Reason.UnresolvedReference))
 
             . apply: scalarDef =>
-              Tels.Scalar(scalarDef.validators, scalarDef.encoding, scalarDef.patterns)
+              scalarDef.scalar
 
           . apply: record => Tels.Struct(record.members, record.validators)
 
@@ -2620,6 +2620,12 @@ object Tel extends Tel2, TelMutation, TelRevision:
       // meta-schema, recognised at resolution step 1 without network
       // access.
       val tels: Reference =
+        Reference(t"specification.tel", t"tels", Selector.Version(2, 1, 0))
+
+      // The earlier pin of `tels` (§8.1), which still names the built-in: 2.1.0 extends 2.0.0
+      // only by appended optional members, so every 2.0.0 schema is a 2.1.0 schema, and
+      // encodes identically.
+      val telsEarlier: Reference =
         Reference(t"specification.tel", t"tels", Selector.Version(2, 0, 0))
 
       // The canonical, version-pinned coordinate of the built-in `acceptance`
@@ -7669,6 +7675,24 @@ object Tel extends Tel2, TelMutation, TelRevision:
         case PatternNotContained =>
           m"a layer's patterns are not contained in the patterns they replace"
 
+        case WidthNotDecimal          => m"a `width` is not a canonical positive decimal"
+
+        case WidthConflict =>
+          m"a `width` conflicts with the width already declared, or with its codec's fixed width"
+
+        case WidthWithoutEncoding     => m"a scalar declares a `width` but no `encoding`"
+
+        case IndexNotApplicable =>
+          m"an `index` is declared on a field which is not repeatable, or not a Struct or Scalar"
+
+        case IndexPathInvalid =>
+          m"an `index` path is not a valid TELP, or is the root path on a Struct-typed field"
+
+        case IndexPathUnresolved =>
+          m"an `index` path does not resolve to a Scalar within the field's type"
+
+        case WidthWithIntern          => m"a scalar declares both a `width` and `intern`"
+
         case NonStructCompound =>
           m"the compound's type is not a Struct"
 
@@ -7742,6 +7766,8 @@ object Tel extends Tel2, TelMutation, TelRevision:
           | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
           | EncodingConflict | KeyOnNonScalar | KeyOnLooseMember | MultipleKeyFields
           | InvalidPattern | PatternNotContained
+          | WidthNotDecimal | WidthConflict | WidthWithoutEncoding | IndexNotApplicable
+          | IndexPathInvalid | IndexPathUnresolved | WidthWithIntern
           | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
           | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
           | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
@@ -7813,6 +7839,15 @@ object Tel extends Tel2, TelMutation, TelRevision:
       case PatternNotContained     extends Reason(223)
       // E224 (a scalar declaring neither `validate` nor `pattern`) is withdrawn and reserved:
       // an unconstrained scalar is valid (TEL §20).
+
+      // E225–E231: the storage-layout annotations of tels 2.1.0 (§20, *Layout annotations*).
+      case WidthNotDecimal         extends Reason(225)
+      case WidthConflict           extends Reason(226)
+      case WidthWithoutEncoding    extends Reason(227)
+      case IndexNotApplicable      extends Reason(228)
+      case IndexPathInvalid        extends Reason(229)
+      case IndexPathUnresolved     extends Reason(230)
+      case WidthWithIntern         extends Reason(231)
 
       // E3xx — validation errors per §19.3 / §21.
       case NonStructCompound       extends Reason(301)

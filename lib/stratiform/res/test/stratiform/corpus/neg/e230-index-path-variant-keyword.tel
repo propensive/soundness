@@ -1,0 +1,15 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e230-index-path-variant-keyword
+
+select Contact
+  variant email String
+  variant phone String
+
+record Person
+  field name String
+  select Contact
+
+document
+  field person Person repeatable
+    index /email

@@ -74,12 +74,12 @@ object Streamer:
         val rendered = members.to[List].map: (member: Tels.Member) => renderMember(member)
         t"{${rendered.join(t";")}}"
 
-      case Tels.Scalar(_, encoding, _) => t"scalar(${encoding.or(t"")})"
+      case Tels.Scalar(_, encoding, _, _, _) => t"scalar(${encoding.or(t"")})"
       case Tels.Flag                   => t"flag"
       case Tels.Reference(name)        => t"ref($name)"
 
     def renderMember(member: Tels.Member): Text = member match
-      case Tels.Field(required, repeatable, keyword, fieldType, _, _, _) =>
+      case Tels.Field(required, repeatable, keyword, fieldType, _, _, _, _) =>
         t"$keyword:${required.toString}:${repeatable.toString}:${renderType(fieldType)}"
 
       case Tels.SelectRef(required, repeatable, reference) =>

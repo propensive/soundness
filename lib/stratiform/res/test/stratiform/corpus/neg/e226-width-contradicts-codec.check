@@ -1,0 +1,135 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            reference: Some(
+                "specification.tel/tels:2.1.0",
+            ),
+            layers: [],
+            signature: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "name",
+                    atoms: [
+                        Inline {
+                            text: "e226-width-contradicts-codec",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "scalar",
+                    atoms: [
+                        Inline {
+                            text: "Count",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "validate",
+                                    atoms: [
+                                        Inline {
+                                            text: "decimal",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "encoding",
+                                    atoms: [
+                                        Inline {
+                                            text: "u32",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "width",
+                                    atoms: [
+                                        Inline {
+                                            text: "8",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "document",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "count",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Count",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 1,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}
+errors:
+  E226 [0,0): Layer declares a conflicting width for an existing scalar, or the width contradicts the encoding's fixed width: scalar `Count` declares width `8` but its encoding `u32` has fixed width 4

@@ -1,0 +1,10 @@
+tel 1.0 specification.tel/tels:2.1.0
+
+name e225-width-not-decimal
+
+scalar Uuid
+  encoding uuid
+  width 0x10
+
+document
+  field id Uuid
