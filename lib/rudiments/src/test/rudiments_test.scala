@@ -155,9 +155,9 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == t"ab")
 
       test(m"minimize orders by any Comparable key"):
-        val xs: List[Person] = List(Person(t"Zed", 40), Person(t"Amy", 30))
+        val xs: List[Person] = List(Person(t"Romeo", 16), Person(t"Juliet", 13))
         xs.minimize(_.name.s)
-      . assert(_ == Person(t"Amy", 30))
+      . assert(_ == Person(t"Juliet", 13))
 
       test(m"last on an occupied chain demands the unbounded acknowledgement"):
         import denominative.dysasymptotics.unboundedSize
@@ -1644,9 +1644,9 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == false)
 
       test(m"Atomic of a reference type is a cell"):
-        val cell: Atomic[Person] = Atomic(Person(t"Ada", 36))
+        val cell: Atomic[Person] = Atomic(Person(t"Hamlet", 30))
         cell().name
-      . assert(_ == t"Ada")
+      . assert(_ == t"Hamlet")
 
       // The risky reduction: `Optional[Text]` is the union `Unset | Text`, and the match type
       // must rule out the `Int`/`Long`/`Boolean` arms against a union scrutinee to reach `Cell`.
@@ -1823,9 +1823,9 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == t"alpha")
 
       test(m"a cell transition may construct from the value"):
-        val cell = Atomic.Ref(Person(t"Ada", 36))
+        val cell = Atomic.Ref(Person(t"Hamlet", 30))
         cell.since(p => Person(p.name, p.age + 1)).age
-      . assert(_ == 37)
+      . assert(_ == 31)
 
       // The pattern-bound `n` is derived from the transitioned value, so calling a method on it
       // is admitted where applying a free function to the value would not be.

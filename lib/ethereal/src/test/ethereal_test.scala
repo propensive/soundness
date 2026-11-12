@@ -1360,8 +1360,8 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
 
         // run: a command, two arguments, a directory. Body: 01 0d 04, then the four scalars.
         test(m"a run document frames as the pinned bytes"):
-          hex(Launcher.encode(Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon")))
-        . check(_ == t"b2c4b5bb4321${signatureHex}010d040002766901022d5201096e6f7465732e74787402092f686f6d652f6a6f6e")
+          hex(Launcher.encode(Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/hal")))
+        . check(_ == t"b2c4b5bb4321${signatureHex}010d040002766901022d5201096e6f7465732e74787402092f686f6d652f68616c")
 
         test(m"an exited document frames as the pinned bytes"):
           hex(Launcher.encode(Launcher.Message.Exited(127)))
@@ -1399,7 +1399,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         // file with its path, and a pipe without.
         val init =
           Launcher.Message.Init
-            ( 7, t"501", t"jon", t"/usr/bin/x", t"/tmp", true, false, true, List(t"a", t"b c"),
+            ( 7, t"501", t"hal", t"/usr/bin/x", t"/tmp", true, false, true, List(t"a", t"b c"),
               List(t"K=V"), invokedAs = t"x", umask = t"022",
               descriptors = List
                 ( Launcher.Descriptor(0, t"r", t"file", t"/in"),
@@ -1407,12 +1407,12 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
 
         test(m"an init message frames as the pinned bytes"):
           hex(Launcher.encode(init))
-        . check(_ == t"b2c4b5bb7d21${signatureHex}01000e000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d560a01780b033032321004000130010172020466696c6503032f696e100300023633010172020470697065")
+        . check(_ == t"b2c4b5bb7d21${signatureHex}01000e0001370103353031020368616c030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d560a01780b033032321004000130010172020466696c6503032f696e100300023633010172020470697065")
 
         // Every optional field of `Init` set, so a field decoded under the wrong index shows.
         val fullInit =
           Launcher.Message.Init
-            ( 7, t"S-1-5-21-1", t"jon", t"C:\\x.exe", t"C:\\", false, true, false, Nil, Nil,
+            ( 7, t"S-1-5-21-1", t"hal", t"C:\\x.exe", t"C:\\", false, true, false, Nil, Nil,
               t"x", Unset, 132, 43, 437, 65001, Nil )
 
         test(m"every message round-trips"):
@@ -1437,7 +1437,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 Launcher.Message.Verdict(true),
                 Launcher.Message.Shutdown,
                 Launcher.Message.Run(t"less"),
-                Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
+                Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/hal"),
                 Launcher.Message.Exited(3) )
 
           messages.map { message => Launcher.decode(Launcher.encode(message)) }
@@ -1461,7 +1461,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             Launcher.Message.Verdict(true),
             Launcher.Message.Shutdown,
             Launcher.Message.Run(t"less"),
-            Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
+            Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/hal"),
             Launcher.Message.Exited(3) ))
 
         // A raw record round-trips with its bytes, which no text could carry.

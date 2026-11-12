@@ -75,35 +75,35 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
       . assert(_ == Discovery.Error.Reason.InvalidService(t"_fury"))
 
     suite(m"Instances"):
-      val gondor = Discovery.Instance(t"Gondor", fury)
+      val elsinore = Discovery.Instance(t"Elsinore", fury)
 
       test(m"An instance's name prefixes its label as one label"):
-        Discovery.Instance(t"Jon's Printer. Upstairs", fury).dnsName.labels
-      . assert(_ == List(t"Jon's Printer. Upstairs", t"_fury", t"_tcp", t"local"))
+        Discovery.Instance(t"Hamlet's Printer. Upstairs", fury).dnsName.labels
+      . assert(_ == List(t"Hamlet's Printer. Upstairs", t"_fury", t"_tcp", t"local"))
 
       test(m"An instance shows with its label's dots escaped"):
-        Discovery.Instance(t"Jon.Printer", fury).show
-      . assert(_ == t"Jon\\.Printer._fury._tcp.local")
+        Discovery.Instance(t"Hamlet.Printer", fury).show
+      . assert(_ == t"Hamlet\\.Printer._fury._tcp.local")
 
       test(m"An instance parses from a PTR target"):
-        Discovery.Instance.parse(dns"Gondor._fury._tcp.local")
-      . assert(_ == gondor)
+        Discovery.Instance.parse(dns"Elsinore._fury._tcp.local")
+      . assert(_ == elsinore)
 
       test(m"Parsed instances keep the label as written"):
-        Discovery.Instance.parse(dns"Gondor._fury._tcp.local").let(_.label)
-      . assert(_ == t"Gondor")
+        Discovery.Instance.parse(dns"Elsinore._fury._tcp.local").let(_.label)
+      . assert(_ == t"Elsinore")
 
       test(m"A service type's own name is not an instance"):
         Discovery.Instance.parse(dns"_fury._tcp.local")
       . assert(_ == Unset)
 
       test(m"Renaming appends a counter"):
-        gondor.renamed.label
-      . assert(_ == t"Gondor (2)")
+        elsinore.renamed.label
+      . assert(_ == t"Elsinore (2)")
 
       test(m"Renaming increments an existing counter"):
-        gondor.renamed.renamed.label
-      . assert(_ == t"Gondor (3)")
+        elsinore.renamed.renamed.label
+      . assert(_ == t"Elsinore (3)")
 
       test(m"An empty label is rejected"):
         capture[Discovery.Error](Discovery.Instance(t"", fury)).reason
@@ -153,7 +153,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
 
     suite(m"The mDNS cache"):
       val second = 1_000_000_000L
-      val name = dns"gondor.local"
+      val name = dns"elsinore.local"
       def a(ttl: Int, flush: Boolean = false) = Dns.Record(name, ttl, Dns.Rdata.A(ip"10.0.0.1"), flush = flush)
       def other(ttl: Int, flush: Boolean = false) = Dns.Record(name, ttl, Dns.Rdata.A(ip"10.0.0.2"), flush = flush)
 
@@ -213,7 +213,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
       . assert(_ == List(a(120)))
 
     suite(m"Tiebreaking"):
-      val name = dns"Gondor._fury._tcp.local"
+      val name = dns"Elsinore._fury._tcp.local"
       def a(address: Ipv4) = Dns.Record(dns"host.local", 120, Dns.Rdata.A(address), flush = true)
 
       def srv(port: Int) =
@@ -268,8 +268,9 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
       import probates.awaitProbate
       import abstractables.millisecondsAbstractable
 
-      val gondor = Discovery.Instance(t"Gondor", fury)
-      val description = Discovery.Description(t"Gondor", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
+      val elsinore = Discovery.Instance(t"Elsinore", fury)
+      val description =
+        Discovery.Description(t"Elsinore", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
 
       test(m"An advertised instance is found by a browser"):
         supervise:
@@ -280,7 +281,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
             fury.advertise(description)(using a):
               fury.browse(using b):
                 summon[Discovery.Browser].events.head
-      . assert(_ == Discovery.Event.Found(gondor))
+      . assert(_ == Discovery.Event.Found(elsinore))
 
       test(m"A found instance resolves to its port, TXT and addresses"):
         supervise:
@@ -289,7 +290,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
             val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
 
             fury.advertise(description)(using a):
-              val resolution = gondor.resolve(5000L)(using b)
+              val resolution = elsinore.resolve(5000L)(using b)
               (resolution.port.number, resolution.txt(t"fp"), resolution.addresses, resolution.host)
       . assert(_ == (8443, t"abc", List(ip"10.0.0.1"), dns"a.local"))
 
@@ -303,7 +304,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
               val events = summon[Discovery.Browser].events.stdlib
               fury.advertise(description)(using a)(events.head)
               events(1)
-      . assert(_ == Discovery.Event.Lost(gondor))
+      . assert(_ == Discovery.Event.Lost(elsinore))
 
       test(m"A name another host holds is renamed after probing"):
         supervise:
@@ -314,7 +315,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
             fury.advertise(description)(using a):
               fury.advertise(description.copy(port = tcp"8444"))(using b):
                 summon[Discovery.Advertisement].instance.label
-      . assert(_ == t"Gondor (2)")
+      . assert(_ == t"Elsinore (2)")
 
       test(m"A name this responder holds is renamed without probing"):
         supervise:
@@ -324,7 +325,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
             fury.advertise(description)(using a):
               fury.advertise(description.copy(port = tcp"8444"))(using a):
                 summon[Discovery.Advertisement].instance.label
-      . assert(_ == t"Gondor (2)")
+      . assert(_ == t"Elsinore (2)")
 
       test(m"An instance that never existed does not resolve"):
         supervise:
@@ -333,14 +334,14 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
             capture[Discovery.Error](Discovery.Instance(t"Nowhere", fury).resolve(300L)(using b)).reason
       . assert(_ == Discovery.Error.Reason.Timeout(t"Nowhere._fury._tcp.local"))
 
-      // The rival's claim on Gondor's name, as a host that never probed would assert it.
+      // The rival's claim on Elsinore's name, as a host that never probed would assert it.
       val rival =
-        Dns.Record(gondor.dnsName, 120, Dns.Rdata.Srv(0, 0, 9999, dns"rogue.local"), flush = true)
+        Dns.Record(elsinore.dnsName, 120, Dns.Rdata.Srv(0, 0, 9999, dns"rogue.local"), flush = true)
 
       val rivalClaim = Dns.Message(7, Dns.Flags(response = true, authoritative = true), Nil, List(rival))
 
       def isProbe(message: Dns.Message): Boolean =
-        !message.flags.response && message.authority.exists(_.name == gondor.dnsName)
+        !message.flags.response && message.authority.exists(_.name == elsinore.dnsName)
 
       // An announcement from `a` of an SRV record on port 8443, and the name it is for.
       def announced(message: Dns.Message): Optional[Dns.Name] =
@@ -370,7 +371,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
               settled.offer(summon[Discovery.Advertisement].instance.label)
 
             (settled.await(15000L), held.await(15000L))
-      . assert(_ == (t"Gondor (2)", t"Gondor"))
+      . assert(_ == (t"Elsinore (2)", t"Elsinore"))
 
       test(m"A conflicting response makes an established name probe again"):
         supervise:
@@ -383,7 +384,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
               val probed = awaitPacket(rogue) { message => if isProbe(message) then true else Unset }
               val reannounced = awaitPacket(rogue)(announced(_))
               (probed, reannounced, summon[Discovery.Advertisement].instance.label)
-      . assert(_ == (true, gondor.dnsName, t"Gondor"))
+      . assert(_ == (true, elsinore.dnsName, t"Elsinore"))
 
       test(m"An established name whose rival defends it is renamed"):
         supervise:
@@ -397,7 +398,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
               rogue.send(rivalClaim.in[Data])
               val reannounced = awaitPacket(rogue)(announced(_))
               (reannounced.labels.head, summon[Discovery.Advertisement].instance.label)
-      . assert(_ == (t"Gondor (2)", t"Gondor (2)"))
+      . assert(_ == (t"Elsinore (2)", t"Elsinore (2)"))
 
       test(m"Advertising reports its activity to the loan's loggable"):
         val activity = scala.collection.mutable.ListBuffer[Discovery.Activity]()
@@ -412,7 +413,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
         List.from(activity)
       . assert: events =>
           import Discovery.Activity.*
-          events == List(Probing(gondor.dnsName), Claimed(gondor), Withdrawn(gondor))
+          events == List(Probing(elsinore.dnsName), Claimed(elsinore), Withdrawn(elsinore))
 
       test(m"Answers falling due together are aggregated into one response"):
         supervise:
@@ -431,7 +432,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
               awaitPacket(rogue): message =>
                 val ptrs = message.flags.response && message.answers.all(_.rtype == Dns.Type.Ptr)
                 if ptrs then message.answers.map(_.rdata) else Unset
-      . assert(_ == List(Dns.Rdata.Ptr(gondor.dnsName), Dns.Rdata.Ptr(fury.dnsName)))
+      . assert(_ == List(Dns.Rdata.Ptr(elsinore.dnsName), Dns.Rdata.Ptr(fury.dnsName)))
 
     suite(m"Discovery over the sockets"):
       import threads.platformThreads
@@ -474,9 +475,9 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
 
     suite(m"Resolutions"):
       test(m"A resolution's endpoints pair each address with the port"):
-        val gondor = Discovery.Instance(t"Gondor", fury)
+        val elsinore = Discovery.Instance(t"Elsinore", fury)
         val resolution =
-          Discovery.Resolution(gondor, dns"gondor.local", tcp"8443", Discovery.Txt.empty,
+          Discovery.Resolution(elsinore, dns"elsinore.local", tcp"8443", Discovery.Txt.empty,
               List(ip"192.168.1.2", ip"fe80::1"))
 
         resolution.endpoints.map(_.remote)

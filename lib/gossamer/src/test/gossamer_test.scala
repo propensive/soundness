@@ -512,9 +512,9 @@ object Tests extends Suite("text", m"Gossamer Tests"):
       . assert(_ == t"Twice upon a time")
 
       test(m"Several substitutions"):
-        t"foo bar baz".sub(t"ba", t"ma")
+        t"to be or not to be".sub(t"be", t"see")
 
-      . assert(_ == t"foo mar maz")
+      . assert(_ == t"to see or not to see")
 
       test(m"Overlapping substitutions"):
         t"fofofoo".sub(t"fofo", t"momo")
@@ -692,9 +692,9 @@ object Tests extends Suite("text", m"Gossamer Tests"):
       . assert(_ == t"Hello")
 
       test(m"Capitalize a mixed-case word"):
-        t"fooBar".capitalize
+        t"kingLear".capitalize
 
-      . assert(_ == t"FooBar")
+      . assert(_ == t"KingLear")
 
       test(m"Capitalize an uppercase word does not change it"):
         t"HELLO".capitalize
@@ -1471,7 +1471,7 @@ object Tests extends Suite("text", m"Gossamer Tests"):
       test(m"unsupported pattern shape errors"):
         demilitarize:
           t"hello".fuzzy():
-            case r"foo" => 1
+            case r"puck" => 1
 
         . map(_.message)
 

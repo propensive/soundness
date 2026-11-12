@@ -301,8 +301,8 @@ object Tests extends Suite("internet", m"Urticose tests"):
         t"\" \"@example.org".as[EmailAddress]
       . assert()
 
-      test(m"\"john..doe\"@example.org"):
-        t"\"john..doe\"@example.org".as[EmailAddress]
+      test(m"\"hamlet..prince\"@example.org"):
+        t"\"hamlet..prince\"@example.org".as[EmailAddress]
       . assert()
 
       test(m"mailhost!username@example.org"):
@@ -420,8 +420,8 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
     suite(m"URL tests"):
       test(m"inspect a URL"):
-        url"https://example.com/foo/bar".inspect
-      . assert(_ == t"https://example.com/foo/bar")
+        url"https://example.com/verona/capulet".inspect
+      . assert(_ == t"https://example.com/verona/capulet")
 
       test(m"parse Authority with username and password"):
         t"username:password@example.com".as[Authority]
@@ -456,16 +456,16 @@ object Tests extends Suite("internet", m"Urticose tests"):
           t"/path/to/location", t"query=1", t"ref"))
 
       test(m"Parse simple URL"):
-        t"https://example.com/foo".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/foo"))
+        t"https://example.com/verona".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/verona"))
 
       test(m"Parse url with fragment"):
         t"https://example.com/#id".as[HttpUrl]
       . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/", Unset, t"id"))
 
       test(m"Show simple URL"):
-        t"http://example.com/foo".as[HttpUrl].show
-      . assert(_ == t"http://example.com/foo")
+        t"http://example.com/verona".as[HttpUrl].show
+      . assert(_ == t"http://example.com/verona")
 
       test(m"show url with fragment"):
         t"https://example.com/#id".as[HttpUrl].show
@@ -545,8 +545,8 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == t"http://www.ietf.org/rfc/rfc2396.txt")
 
       test(m"Parse RFC 3986 mailto URL"):
-        t"mailto:John.Doe@example.com".as[Url[Label]].show
-      . assert(_ == t"mailto:John.Doe@example.com")
+        t"mailto:Hamlet.Prince@example.com".as[Url[Label]].show
+      . assert(_ == t"mailto:Hamlet.Prince@example.com")
 
       test(m"Parse RFC 3986 news URL"):
         t"news:comp.infosystems.www.servers.unix".as[Url[Label]].show
@@ -645,13 +645,13 @@ object Tests extends Suite("internet", m"Urticose tests"):
       // TODO: fix
       // test(m"Relative path is unescaped"):
       //   val message: Text = t"Hello world!"
-      //   url"http://user:pw@example.com/$message/foo".path
-      // .assert(_ == (? / n"Hello world!" / n"foo").descent)
+      //   url"http://user:pw@example.com/$message/juliet".path
+      // .assert(_ == (? / n"Hello world!" / n"juliet").descent)
 
       // test(m"Relative path with raw substitution is unescaped"):
       //   val message: Raw = Raw(t"Hello+world%21")
-      //   url"http://user:pw@example.com/$message/foo".path
-      // .assert(_ == (? / n"Hello world!" / n"foo").descent)
+      //   url"http://user:pw@example.com/$message/juliet".path
+      // .assert(_ == (? / n"Hello world!" / n"juliet").descent)
 
     suite(m"Hostname tests"):
       test(m"Parse a simple hostname"):
@@ -878,12 +878,12 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == true)
 
       test(m"An escaped dot is part of its label"):
-        Dns.Name.parse(t"Jon\\.Printer._ipp._tcp.local").labels.head
-      . assert(_ == t"Jon.Printer")
+        Dns.Name.parse(t"Hamlet\\.Printer._ipp._tcp.local").labels.head
+      . assert(_ == t"Hamlet.Printer")
 
       test(m"Showing a name re-escapes dots and backslashes"):
-        Dns.Name(t"Jon.Printer\\", t"_ipp", t"_tcp", t"local").show
-      . assert(_ == t"Jon\\.Printer\\\\._ipp._tcp.local")
+        Dns.Name(t"Hamlet.Printer\\", t"_ipp", t"_tcp", t"local").show
+      . assert(_ == t"Hamlet\\.Printer\\\\._ipp._tcp.local")
 
       test(m"A decimal escape yields its character"):
         Dns.Name.parse(t"a\\032b.c").labels.head
@@ -898,11 +898,11 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == t"_fury._tcp.local")
 
       test(m"A label can be prefixed to a name"):
-        Dns.Name(t"_fury", t"_tcp", t"local").prefix(t"Gondor").labels
-      . assert(_ == List(t"Gondor", t"_fury", t"_tcp", t"local"))
+        Dns.Name(t"_fury", t"_tcp", t"local").prefix(t"Elsinore").labels
+      . assert(_ == List(t"Elsinore", t"_fury", t"_tcp", t"local"))
 
       test(m"A name's parent drops its first label"):
-        Dns.Name(t"Gondor", t"_fury", t"_tcp", t"local").parent.let(_.show)
+        Dns.Name(t"Elsinore", t"_fury", t"_tcp", t"local").parent.let(_.show)
       . assert(_ == t"_fury._tcp.local")
 
       test(m"The root has no parent"):
@@ -910,11 +910,11 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == Unset)
 
       test(m"endsWith folds case"):
-        Dns.Name.parse(t"Gondor._fury._tcp.LOCAL").endsWith(Dns.Name.local)
+        Dns.Name.parse(t"Elsinore._fury._tcp.LOCAL").endsWith(Dns.Name.local)
       . assert(_ == true)
 
       test(m"endsWith rejects a non-suffix"):
-        Dns.Name.parse(t"gondor.local").endsWith(Dns.Name(t"example", t"local"))
+        Dns.Name.parse(t"elsinore.local").endsWith(Dns.Name(t"example", t"local"))
       . assert(_ == false)
 
       test(m"The octet length counts each label's length byte and the terminator"):
@@ -966,9 +966,9 @@ object Tests extends Suite("internet", m"Urticose tests"):
               07 6578616d706c65 03 636f6d 00 0001 0001
               c00c 0001 0001 00000e10 0004 5db8d822"""
 
-      val instance = Dns.Name(t"Gondor", t"_fury", t"_tcp", t"local")
+      val instance = Dns.Name(t"Hamlet", t"_fury", t"_tcp", t"local")
       val service = Dns.Name(t"_fury", t"_tcp", t"local")
-      val host = Dns.Name(t"gondor", t"local")
+      val host = Dns.Name(t"hamlet", t"local")
 
       val announcement =
         Dns.Message
@@ -984,8 +984,8 @@ object Tests extends Suite("internet", m"Urticose tests"):
       // Owner names and the PTR target compress; the SRV target does not (RFC 2782).
       val announcementBytes =
         hex"""0000 8400 0000 0004 0000 0000
-              05 5f66757279 04 5f746370 05 6c6f63616c 00 000c 0001 00001194 0009 06 476f6e646f72 c00c
-              c028 0021 8001 00000078 0014 0000 0000 1f90 06 676f6e646f72 05 6c6f63616c 00
+              05 5f66757279 04 5f746370 05 6c6f63616c 00 000c 0001 00001194 0009 06 48616d6c6574 c00c
+              c028 0021 8001 00000078 0014 0000 0000 1f90 06 68616d6c6574 05 6c6f63616c 00
               c028 0010 8001 00001194 000b 09 747874766572733d31 00
               c043 0001 8001 00000078 0004 c0a80102"""
 
@@ -1030,7 +1030,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
       test(m"A compressed SRV target is accepted on input"):
         val bytes =
           hex"""0000 8400 0000 0001 0000 0000
-                06 676f6e646f72 05 6c6f63616c 00 0021 0001 00000078 0008 0000 0000 1f90 c00c"""
+                06 68616d6c6574 05 6c6f63616c 00 0021 0001 00000078 0008 0000 0000 1f90 c00c"""
         bytes.as[Dns.Message].answers.head.let(_.rdata)
       . assert(_ == Dns.Rdata.Srv(0, 0, 8080, host))
 
@@ -1127,7 +1127,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"Record data in canonical form is uncompressed"):
         Dns.Record(instance, 120, Dns.Rdata.Srv(0, 0, 8080, host)).rdataBytes.serialize[Hex]
-      . assert(_ == hex"0000 0000 1f90 06 676f6e646f72 05 6c6f63616c 00".serialize[Hex])
+      . assert(_ == hex"0000 0000 1f90 06 68616d6c6574 05 6c6f63616c 00".serialize[Hex])
 
       val allFlags =
         Dns.Flags(true, Dns.Opcode.Notify, true, true, true, true, true, true, Dns.Rcode.Refused)

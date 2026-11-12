@@ -62,7 +62,7 @@ object Forwarded:
 
   def main(args: Array[String]): Unit =
     val robot = Robot(7)
-    val greeting = robot.greet("bob")
+    val greeting = robot.greet("hal")
     val serial = robot.serial + 1
     val combiner: Combiner[Int] = robot
     val sum = combiner.combine(2, 3)

@@ -316,8 +316,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val executable = Tar.Entry.File
                         ( path  = t"bin".as[Relative on Tar],
                           mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
-                          user  = UnixUser(1000, t"alice"),
-                          group = UnixGroup(1000, t"alice"),
+                          user  = UnixUser(1000, t"hamlet"),
+                          group = UnixGroup(1000, t"hamlet"),
                           mtime = 12345.bits.u32,
                           data  = Archive.Body(t"#!/bin/sh\n".in[Data]) )
 
@@ -340,7 +340,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         entries.head match
           case f: Tar.Entry.File => f.user.name.or(t"")
           case _                => t""
-      . assert(_ == t"alice")
+      . assert(_ == t"hamlet")
 
       test(m"mtime round-trips"):
         entries.head match

@@ -135,27 +135,27 @@ object Tests extends Suite("diff", m"Dissonance tests"):
         diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
       . assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
 
-    val start = proscenium.Sequence(t"foo", t"bar", t"baz")
-    val end = proscenium.Sequence(t"foo", t"quux", t"bop", t"baz")
+    val start = proscenium.Sequence(t"Lear", t"Fool", t"Kent")
+    val end = proscenium.Sequence(t"Lear", t"Edgar", t"Edmund", t"Kent")
 
     suite(m"Diff parsing tests"):
-      val diffStream = proscenium.Chain(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
-      val reverseStream = proscenium.Chain(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
+      val diffStream = proscenium.Chain(t"2c2,3", t"< Fool", t"---", t"> Edgar", t"> Edmund")
+      val reverseStream = proscenium.Chain(t"2,3c2", t"< Edgar", t"< Edmund", t"---", t"> Fool")
 
       test(m"Parse a simple diff file"):
         diffStream.read[Diff[Text]]
-      . assert(_ == Diff(Par(0, 0), Del(1, t"bar"), Ins(1, t"quux"), Ins(2, t"bop")))
+      . assert(_ == Diff(Par(0, 0), Del(1, t"Fool"), Ins(1, t"Edgar"), Ins(2, t"Edmund")))
 
       test(m"Apply parsed diff to source to get result"):
-        diffStream.read[Diff[Text]].patch(List(t"foo", t"bar", t"baz"))
+        diffStream.read[Diff[Text]].patch(List(t"Lear", t"Fool", t"Kent"))
       . assert(_.to[List] == end.to[List])
 
       test(m"Parse reverse diff file"):
         reverseStream.read[Diff[Text]]
-      . assert(_ == Diff(Par(0, 0), Del(1, t"quux"), Del(2, t"bop"), Ins(1, t"bar")))
+      . assert(_ == Diff(Par(0, 0), Del(1, t"Edgar"), Del(2, t"Edmund"), Ins(1, t"Fool")))
 
       test(m"Apply parsed reverse diff to get source"):
-        reverseStream.read[Diff[Text]].patch(List(t"foo", t"quux", t"bop", t"baz"))
+        reverseStream.read[Diff[Text]].patch(List(t"Lear", t"Edgar", t"Edmund", t"Kent"))
       . assert(_.to[List] == start.to[List])
 
     suite(m"Diff serialization tests"):
@@ -176,11 +176,11 @@ object Tests extends Suite("diff", m"Dissonance tests"):
 
       test(m"Serialize a simple diff"):
         changes.serialize.to[List]
-      . assert(_ == List(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop"))
+      . assert(_ == List(t"2c2,3", t"< Fool", t"---", t"> Edgar", t"> Edmund"))
 
       test(m"Serialize the reverse diff"):
         reverseChanges.serialize.to[List]
-      . assert(_ == List(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar"))
+      . assert(_ == List(t"2,3c2", t"< Edgar", t"< Edmund", t"---", t"> Fool"))
 
       test(m"Experimental diff"):
         diff(Sequence(t"one"), Sequence(t"two")).serialize.to[List]
@@ -252,10 +252,10 @@ object Tests extends Suite("diff", m"Dissonance tests"):
         List(Prim, Sec, Ter, Quat).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("dog", "dog and cat", "cat", "cat and dog"))
 
-      test(m"Jack and Jill"):
-        val evolution = evolve(List.from((scala.collection.immutable.List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map { w => w.chars.to[List] })))
+      test(m"Romeo and Juliet"):
+        val evolution = evolve(List.from((scala.collection.immutable.List(t"Romeo and Juliet", t"Romeo with Juliet", t"Romeo und Juliet").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter).map(evolution(_).map(_.toString.tt).join.s)
-      . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
+      . assert(_ == List("Romeo and Juliet", "Romeo with Juliet", "Romeo und Juliet"))
 
     val source = Sequence(t"line1", t"line2", t"line3")
     val dup = Sequence(t"a", t"b", t"a")

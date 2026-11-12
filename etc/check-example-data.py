@@ -59,6 +59,10 @@ GENUINE = [
   ('doc/api/tasseomancy.tel', 'placeholder'),
   ('doc/modules/charts.md', 'placeholder'),
   ('lib/xylophone/src/test/xylophone.ProviderTests.scala', 'people'),   # the W3C `po.xml` sample
+  ('lib/aviation/src/test/aviation_test.scala', 'people'),               # Christmas Eve, New Year's Eve
+  ('lib/gossamer/src/test/gossamer_test.scala', 'people'),               # a list of dictionary words
+  ('lib/gossamer/src/test/gossamer_test.scala', 'company'),
+  ('lib/gossamer/src/test/gossamer_test.scala', 'placeholder'),
   ('doc/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
 ]
 

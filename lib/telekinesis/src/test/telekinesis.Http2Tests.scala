@@ -147,7 +147,7 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
       val headers = List(
         Hpack.Entry(t":method", t"POST"),
         Hpack.Entry(t":scheme", t"http"),
-        Hpack.Entry(t":path", t"/foo/bar"),
+        Hpack.Entry(t":path", t"/verona/capulet"),
         Hpack.Entry(t":authority", t"unix"),
         Hpack.Entry(t"content-type", t"application/grpc"),
         Hpack.Entry(t"te", t"trailers"))
