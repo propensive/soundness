@@ -19,9 +19,9 @@ detail
     case class Person(name: Text, age: Int)
     case class Group(persons: List[Person], size: Int)
 
-    val group = Group(List(Person(t"John", 30), Person(t"Jane", 25)), 2)
+    val group = Group(List(Person(t"Hamlet", 30), Person(t"Ophelia", 25)), 2)
 
-    val transportable: Pojo = group.pojo   // Array(Array(Array("John", 30), …), 2)
+    val transportable: Pojo = group.pojo   // Array(Array(Array("Hamlet", 30), …), 2)
     safely(transportable.as[Group])        // the original group
     ```
 
@@ -35,11 +35,11 @@ detail
     frame
       label A product is an array of its fields
       code
-          Person(t"John", 30).pojo           // Array("John", 30)
+          Person(t"Hamlet", 30).pojo         // Array("Hamlet", 30)
     frame
       label A collection is an array of its elements
       code
-          List(Person(t"John", 30)).pojo     // Array(Array("John", 30))
+          List(Person(t"Hamlet", 30)).pojo   // Array(Array("Hamlet", 30))
     frame
       label A variant is a pair of its label and its payload
       code
@@ -78,7 +78,7 @@ entry .Pojo   a value as a tree of JDK types alone: strings, boxed primitives an
 
     case class Person(name: Text, age: Int)
 
-    val pojo: Pojo = Person(t"John", 30).pojo
+    val pojo: Pojo = Person(t"Hamlet", 30).pojo
     unsafely(pojo.as[Person])
     ```
 
@@ -109,7 +109,7 @@ entry .pojo   encodes a value as a classloader-neutral `Pojo`
     case class Person(name: Text, age: Int)
     case class Group(persons: List[Person], size: Int)
 
-    Group(List(Person(t"John", 30)), 1).pojo
+    Group(List(Person(t"Hamlet", 30)), 1).pojo
     (List(1L, 99L, 203L): List[Long]).pojo
     ```
 

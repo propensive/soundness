@@ -745,7 +745,7 @@ entry .Vacuiscible   a value which can be tested for emptiness, in O(1) for ever
       ```scala
       import soundness.*
 
-      val names: List[Text] = List(t"Ada")
+      val names: List[Text] = List(t"Hamlet")
       names.nil                 // false, with no dysasymptotics import
       Chain.from(List(1)).nil   // false: forces only the first cell
       ```
@@ -772,11 +772,11 @@ entry .Applicable   a value which can be read at an index or key: `Self is Appli
       import soundness.*
 
       val numbers = Sequence(10, 20, 30)
-      val ages = Map(t"Ada" -> 36)
-      numbers.at(Sec)          // 20
-      numbers.at(Sept)         // Unset
-      ages.at(t"Ada")          // 36
-      ages.defines(t"Bob")     // false
+      val ages = Map(t"Hamlet" -> 30)
+      numbers.at(Sec)            // 20
+      numbers.at(Sept)           // Unset
+      ages.at(t"Hamlet")         // 30
+      ages.defines(t"Yorick")    // false
       ```
 
       Instances: the frozen array and its `Sized` form, `Sequence`, the stdlib `IndexedSeq`

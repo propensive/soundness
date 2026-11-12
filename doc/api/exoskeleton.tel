@@ -1707,7 +1707,7 @@ entry .roff   renders a `Help` tree as a manpage, with a `Manual`'s metadata
       import soundness.*
 
       val help: Help = Help(t"mytool", t"a build tool", Nil, List(Help(t"build", t"compile", Nil, Nil)))
-      help.roff(using Manual(authors = List(t"Jane Doe"))).serialize
+      help.roff(using Manual(authors = List(t"William Shakespeare"))).serialize
       ```
 
       `Manpages.install` writes the page into the XDG man hierarchy.

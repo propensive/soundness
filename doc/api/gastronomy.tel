@@ -23,7 +23,7 @@ detail
     // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
 
     case class Person(name: Text, age: Int)
-    Person(t"Alice", 30).digest[Sha2[256]]
+    Person(t"Hamlet", 30).digest[Sha2[256]]
     ```
 
     Three decisions are always explicit, each an import by name (`import soundness.*` brings
@@ -312,7 +312,7 @@ entry .Digestible   how a value's bytes are fed into a hash; derived for case cl
         case Circle(radius: Double)
         case Square(side: Double)
 
-      Person(t"Alice", 30).digest[Sha2[256]]
+      Person(t"Hamlet", 30).digest[Sha2[256]]
       Shape.Circle(1.0).digest[Sha2[256]]
       ```
 

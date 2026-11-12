@@ -592,8 +592,8 @@ entry .EmailAddress   an email address: a local part, a domain, and optionally a
       t"not..allowed@example.com".as[EmailAddress]   // raises EmailAddress.Error (SuccessivePeriods)
       ```
 
-      A decoded address has no display name; `EmailAddress(t"Jon", localPart, domain)` gives
-      one, which `#text` renders as `Jon <local@domain>`. The `emailAddressInterfaces`
+      A decoded address has no display name; `EmailAddress(t"Hamlet", localPart, domain)` gives
+      one, which `#text` renders as `Hamlet <local@domain>`. The `emailAddressInterfaces`
       package names this type as the representative of anticipation's `EmailAddresses`
       domain, for libraries which take any email-address type.
   refer urticose.email
@@ -1046,7 +1046,7 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
   detail
       `Dns` is the home of a typed DNS, in the `urticose.dns` source set. A `Dns.Name` is a
       list of labels which may hold any UTF-8 — including dots and spaces, which DNS-SD
-      service instances (`Jon's Printer._ipp._tcp.local`) rely on — written `dns"…"` or
+      service instances (`Hamlet's Printer._ipp._tcp.local`) rely on — written `dns"…"` or
       parsed from presentation form, and compared with ASCII case folded, as the DNS compares
       names. A `Dns.Question` asks for a `Dns.Type` of record at a name; a `Dns.Record` holds
       a name, a TTL and typed data, one of the `Dns.Rdata` cases over urticose's own addresses
@@ -1092,10 +1092,10 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
 
         dns"Example.COM" == dns"example.com"           // true: equality folds ASCII case
         dns"Example.COM".labels                        // List(t"Example", t"COM"): the case is kept
-        Dns.Name.parse(t"Jon\\.Printer._ipp._tcp.local").labels.head   // t"Jon.Printer"
+        Dns.Name.parse(t"Hamlet\\.Printer._ipp._tcp.local").labels.head   // t"Hamlet.Printer"
         (Dns.Name(t"_fury", t"_tcp") + Dns.Name.local).show               // t"_fury._tcp.local"
-        dns"Gondor._fury._tcp.local".parent.let(_.show)                   // t"_fury._tcp.local"
-        dns"gondor.local".endsWith(Dns.Name.local)                        // true
+        dns"Elsinore._fury._tcp.local".parent.let(_.show)                 // t"_fury._tcp.local"
+        dns"elsinore.local".endsWith(Dns.Name.local)                      // true
         ```
 
         `hashCode` folds case as `equals` does, so names may key a `Map`.
@@ -1204,7 +1204,7 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
         Dns.Rdata.A(ip"10.0.0.1")
         Dns.Rdata.Aaaa(ip"2001:db8::1")
         Dns.Rdata.Mx(10, name)
-        Dns.Rdata.Srv(0, 0, 8080, dns"gondor.local")
+        Dns.Rdata.Srv(0, 0, 8080, dns"elsinore.local")
         Dns.Rdata.Txt(t"txtvers=1", t"path=/")
         Dns.Rdata.Unknown(Dns.Type(99), hex"deadbeef")
         ```
@@ -1268,8 +1268,8 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
         import soundness.*
         import strategies.throwUnsafely
 
-        val instance = dns"Gondor._fury._tcp.local"
-        Dns.Record(instance, 120, Dns.Rdata.Srv(0, 0, 8080, dns"gondor.local"), flush = true)
+        val instance = dns"Elsinore._fury._tcp.local"
+        Dns.Record(instance, 120, Dns.Rdata.Srv(0, 0, 8080, dns"elsinore.local"), flush = true)
         Dns.Record.opt(udpPayload = 4096, dnssecOk = true)
         ```
     entry .opt   an EDNS(0) `OPT` pseudo-record, with the sender's UDP payload size and the DO bit

@@ -32,8 +32,8 @@ detail
     val script = Tar.Entry.File
       ( path  = t"bin/run".as[Tar.Ref],
         mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
-        user  = UnixUser(1000, t"alice"),
-        group = UnixGroup(1000, t"alice"),
+        user  = UnixUser(1000, t"hamlet"),
+        group = UnixGroup(1000, t"hamlet"),
         mtime = 0.bits.u32,
         data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
 
@@ -299,8 +299,8 @@ entry .Tar   the tar format: a marker type, the plane of entry names, and the ho
         val script = Tar.Entry.File
           ( path  = t"bin/run".as[Tar.Ref],
             mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
-            user  = UnixUser(1000, t"alice"),
-            group = UnixGroup(1000, t"alice"),
+            user  = UnixUser(1000, t"hamlet"),
+            group = UnixGroup(1000, t"hamlet"),
             mtime = 0.bits.u32,
             data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
 
@@ -1170,14 +1170,14 @@ entry .UnixMode   a Unix permission mode as twelve named bits
 
 entry .UnixUser   the owner of an entry: a numeric id and, if known, a name
   detail
-      `UnixUser(1000, t"alice")` or `UnixUser(0)`. Tar stores both, the name in the 32-byte
+      `UnixUser(1000, t"hamlet")` or `UnixUser(0)`. Tar stores both, the name in the 32-byte
       `uname` field or a pax `uname` record when longer; `ar` stores the id alone. A name read
       from an archive which is blank is `Unset`.
 
       ```scala
       import soundness.*
 
-      UnixUser(1000, t"alice").name   // t"alice"
+      UnixUser(1000, t"hamlet").name   // t"hamlet"
       UnixUser(0).name                // Unset
       ```
   entry #value   the numeric user id

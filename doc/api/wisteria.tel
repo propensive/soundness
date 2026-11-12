@@ -44,7 +44,7 @@ detail
 
     case class Person(name: Text, age: Int) derives Presentation
 
-    Person(t"Ada", 36).present   // t"Person(name=Ada, age=36)"
+    Person(t"Hamlet", 30).present   // t"Person(name=Hamlet, age=30)"
     ```
 
     Inside the polymorphic lambda each combinator takes, the field or variant is described by
@@ -131,7 +131,7 @@ entry .Derivation   the base of a typeclass companion which derives for both pro
 
       case class Person(name: Text, age: Int)
 
-      Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))   // true
+      Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))   // true
       ```
 
       Both rules are `inline`: they expand at the use site, once per type in the derived
@@ -205,7 +205,7 @@ entry .ProductDerivation   the base of a typeclass companion which derives for p
 
       case class Person(name: Text, age: Int)
 
-      Parsing.derived[Person].parse(t"Ada,36")   // Person(t"Ada", 36)
+      Parsing.derived[Person].parse(t"Hamlet,30")   // Person(t"Hamlet", 30)
       ```
   refer wisteria.Derivation
   refer wisteria.ProductDerivable
@@ -399,14 +399,14 @@ entry .Derivable   `Derivation` for a typeclass written in the `Self` style: `va
             extension [value](value: value)
               def display(using display: value is Display): Text = display.display(value)
 
-            case class Employee(name: Text, age: Int)
+            case class Person(name: Text, age: Int)
 
             sealed trait Contact
             case class Email(address: Text) extends Contact
             case class Phone(number: Text) extends Contact
 
-            Employee(t"Ada", 36).display             // t"Ada,36"
-            (Email(t"ada@example.com"): Contact).display   // does not compile
+            Person(t"Juliet", 13).display                     // t"Juliet,13"
+            (Email(t"juliet@example.com"): Contact).display   // does not compile
       frame
         label A sum rule as well: the variant's own instance displays it
         code
@@ -435,19 +435,19 @@ entry .Derivable   `Derivation` for a typeclass written in the `Self` style: `va
             extension [value](value: value)
               def display(using display: value is Display): Text = display.display(value)
 
-            case class Employee(name: Text, age: Int)
+            case class Person(name: Text, age: Int)
 
             sealed trait Contact
             case class Email(address: Text) extends Contact
             case class Phone(number: Text) extends Contact
 
-            Employee(t"Ada", 36).display                   // t"Ada,36"
-            (Email(t"ada@example.com"): Contact).display   // t"ada@example.com"
+            Person(t"Juliet", 13).display                     // t"Juliet,13"
+            (Email(t"juliet@example.com"): Contact).display   // t"juliet@example.com"
       ##
       ```
 
-      Overrides for one field path come through vicarious: with a `Company is Specific over
-      Display` in scope, built as `specifically { case root.cto.name() => shout }`, the
+      Overrides for one field path come through vicarious: with a `Duel is Specific over
+      Display` in scope, built as `specifically { case root.opponent.name() => shout }`, the
       derived instance uses `shout` at exactly that path and the defaults elsewhere.
   refer wisteria.Derivation
   refer wisteria.ProductDerivable
@@ -529,7 +529,7 @@ entry .arithmetic   field-wise `+`, `-`, `*` and `/` for any product, as givens 
 
       case class Pair(label: Text, count: Int)
 
-      Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
+      Pair(t"Mac", 10) + Pair(t"beth", 15)   // Pair(t"Macbeth", 25)
       ```
 
       The derivation objects (`AddableDerivation` and its siblings) are `ProductDerivation`s

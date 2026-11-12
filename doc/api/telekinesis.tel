@@ -1161,7 +1161,7 @@ entry .Postable   how a value becomes a request body: its media type and its byt
       import codepages.utf8Codepage
 
       url"https://example.com/submit".submit(Http.Post)(t"Hello world")
-      url"https://example.com/form".submit()(Query(List(t"name" -> t"Jack")))
+      url"https://example.com/form".submit()(Query(List(t"name" -> t"Romeo")))
       ```
 
       A custom instance is `Postable(mediaType, streamer)`, the streamer a function from the
@@ -1457,10 +1457,10 @@ entry .query   `value.query`: a value as a `Query`; `url.query(query)`: a URL wi
     case class Person(name: Text, age: Int)
     case class Couple(first: Person, second: Person)
 
-    Person(t"Jack", 12).query.show
-    // t"name=Jack&age=12"
-    Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show
-    // t"first.name=Jack&first.age=12&second.name=Jill&second.age=11"
+    Person(t"Romeo", 16).query.show
+    // t"name=Romeo&age=16"
+    Couple(Person(t"Romeo", 16), Person(t"Juliet", 13)).query.show
+    // t"first.name=Romeo&first.age=16&second.name=Juliet&second.age=13"
     ```
 
     `url.query(query)` is an `HttpUrl` with the query's parameters appended to any it
@@ -1485,8 +1485,8 @@ entry .queryParameters   the given which lets a `Query` be built with arbitrary 
       import queryParameters.arbitraryQueryParameter
 
       case class Person(name: Text, age: Int)
-      Query.make(person = Person(t"Ken", 39)).show
-      // t"person.name=Ken&person.age=39"
+      Query.make(person = Person(t"Iago", 28)).show
+      // t"person.name=Iago&person.age=28"
       ```
   entry .arbitraryQueryParameter   any label is a query parameter of any type
 

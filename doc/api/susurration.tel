@@ -35,7 +35,7 @@ detail
     val key = keyText.read[PrivateKey[Ed25519] in Pem]
     given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
-    val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+    val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
 
     endpoint.session: ssh ?=>
       val result = ssh.exec(t"uname -a")
@@ -63,14 +63,14 @@ detail
           Endpoint(t"example.com", Port[Tcp](22)).duplex: duplex =>
             val transport = Ssh.Transport(duplex, t"example.com", 22)
             transport.connect()
-            transport.authenticate(t"alice", List(Ssh.Signer(key)))
+            transport.authenticate(t"hamlet", List(Ssh.Signer(key)))
     frame
       label A session over the authenticated transport runs a command
       code
           Endpoint(t"example.com", Port[Tcp](22)).duplex: duplex =>
             val transport = Ssh.Transport(duplex, t"example.com", 22)
             transport.connect()
-            transport.authenticate(t"alice", List(Ssh.Signer(key)))
+            transport.authenticate(t"hamlet", List(Ssh.Signer(key)))
             val session = Ssh.Session(transport)
             val result = session.exec(t"uname -a")
             session.close()
@@ -78,7 +78,7 @@ detail
     frame
       label An endpoint's session does all of it, and closes the connection afterwards
       code
-          Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key))).session: ssh ?=>
+          Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key))).session: ssh ?=>
             ssh.exec(t"uname -a").stdout.read[Text]
     ##
     ```
@@ -364,7 +364,7 @@ entry .Ssh   the protocol's constants, the client's decisions, and the umbrella'
 
         given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
         val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
-        val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+        val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
 
         endpoint.session: ssh ?=>
           ssh.exec(t"echo one").stdout.read[Text]   // t"one\n"
@@ -400,9 +400,9 @@ entry .Ssh   the protocol's constants, the client's decisions, and the umbrella'
         import soundness.*
         import errorDiagnostics.stackTracesDiagnostics
 
-        val config = SshConfig(t"Host work\n  HostName git.example.com\n  User alice\n  Port 2222")
+        val config = SshConfig(t"Host work\n  HostName git.example.com\n  User hamlet\n  Port 2222")
         Ssh.Endpoint(t"work", 22, t"me", Nil).resolved(config)
-        // Ssh.Endpoint(t"git.example.com", 2222, t"alice", Nil)
+        // Ssh.Endpoint(t"git.example.com", 2222, t"hamlet", Nil)
         ```
   entry .EndpointSessional   the `Sessional` instance behind `Ssh.Endpoint#session`
     detail
@@ -607,7 +607,7 @@ entry .Session   an authenticated connection which runs commands on the server
 
       given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
       val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
-      val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+      val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
 
       endpoint.session: ssh ?=>
         val upper = ssh.exec(t"tr a-z A-Z", t"whisper".bytestream)
@@ -668,7 +668,7 @@ entry .Session   an authenticated connection which runs commands on the server
 
       given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
       val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
-      val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+      val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
       val branch = t"feature/one two"
 
       endpoint.session: ssh ?=>
@@ -711,7 +711,7 @@ entry .Channel   a session channel: a remote process, its standard streams, its 
 
       given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
       val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
-      val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+      val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
 
       endpoint.session: ssh ?=>
         ssh.channel: channel =>
@@ -766,7 +766,7 @@ entry .Channel   a session channel: a remote process, its standard streams, its 
 
       given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
       val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
-      val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
+      val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
 
       endpoint.session: ssh ?=>
         ssh.channel: channel =>
@@ -1044,23 +1044,23 @@ entry .SshConfig   the part of `~/.ssh/config` a client needs to reach a host as
       val config = SshConfig(t"""
         Host work
           HostName git.example.com
-          User alice
+          User hamlet
           Port 2222
           IdentityFile ~/.ssh/id_work
 
         Host *.example.com !git.example.com
-          User bob
+          User horatio
 
         Host *
           IdentityFile ~/.ssh/id_ed25519
-          User=carol
+          User=ophelia
           HostName %h.lan
         """)
 
       config.resolve(t"work")
-      // SshConfig.Resolution(t"git.example.com", t"alice", 2222, List(t"~/.ssh/id_work", t"~/.ssh/id_ed25519"))
-      config.resolve(t"dev.example.com").user   // t"bob"
-      config.resolve(t"git.example.com").user   // t"carol": the negation excludes it from the second block
+      // SshConfig.Resolution(t"git.example.com", t"hamlet", 2222, List(t"~/.ssh/id_work", t"~/.ssh/id_ed25519"))
+      config.resolve(t"dev.example.com").user   // t"horatio"
+      config.resolve(t"git.example.com").user   // t"ophelia": the negation excludes it from the second block
       config.resolve(t"other").hostName         // t"other.lan"
       SshConfig(t"").resolve(t"example.com")    // SshConfig.Resolution(t"example.com", Unset, 22, Nil)
       ```

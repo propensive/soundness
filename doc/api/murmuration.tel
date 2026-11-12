@@ -33,7 +33,7 @@ detail
     import sortingAlgorithms.timsort
 
     val numbers: List[Int] = List(3, 1, 2)
-    val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
+    val ages = Map(t"Romeo" -> 16, t"Juliet" -> 13)
 
     numbers.map(_*2)                      // List(6, 2, 4)
     numbers.filter(_ > 1)                 // List(3, 2)
@@ -41,8 +41,8 @@ detail
     numbers.fold(0)(_ + _)                // 6
     numbers.sort                          // List(1, 2, 3)
     numbers.group(_%2)                    // Map(1 -> List(3, 1), 0 -> List(2))
-    ages.map(_ + 1)                       // Map(t"Ada" -> 37, t"Bob" -> 42): values mapped, keys kept
-    ages.remap { (name, age) => name }    // List(t"Ada", t"Bob")
+    ages.map(_ + 1)                       // Map(t"Romeo" -> 17, t"Juliet" -> 14): values mapped, keys kept
+    ages.remap { (name, age) => name }    // List(t"Romeo", t"Juliet")
     t"hello".filter(_ != 'l')             // t"heo"
     ```
 
@@ -466,9 +466,9 @@ entry .Keyed   the keyed-container surface: `keys` and `values`, typed by the co
       ```scala
       import soundness.*
 
-      val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
-      ages.keys     // Set(t"Ada", t"Bob")
-      ages.values   // List(36, 41)
+      val ages = Map(t"Romeo" -> 16, t"Juliet" -> 13)
+      ages.keys     // Set(t"Romeo", t"Juliet")
+      ages.values   // List(16, 13)
       ```
   refer murmuration.keys
   refer murmuration.values

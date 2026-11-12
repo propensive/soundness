@@ -19,9 +19,9 @@ detail
 
     case class Person(name: Text, age: Int)
 
-    t"Simon".show                     // t"Simon"
-    t"Simon".inspect                  // t"t\"Simon\""
-    Person(t"Simon", 72).inspect      // t"Person(name:t\"Simon\" ╱ age:72)"
+    t"Lear".show                      // t"Lear"
+    t"Lear".inspect                   // t"t\"Lear\""
+    Person(t"Lear", 80).inspect       // t"Person(name:t\"Lear\" ╱ age:80)"
     t"adult: ${true}"                 // t"adult: yes"
     ```
 
@@ -122,8 +122,8 @@ entry .Showable   the typeclass of values which may be displayed to a person, as
       context-free form.
 
       An instance for a type which is refined (a branded list, a literal type) should be
-      written over the subtypes of its subject (`[self <: Foo] => self is Showable`), since
-      `Self` is invariant and an instance for `Foo` does not cover `Foo` with a refinement.
+      written over the subtypes of its subject (`[self <: Play] => self is Showable`), since
+      `Self` is invariant and an instance for `Play` does not cover `Play` with a refinement.
   refer spectacular.show
   refer spectacular.Inspectable
   refer spectacular.Affirmation
@@ -197,8 +197,8 @@ entry .Inspectable   the typeclass of debug renderings, which every value has, a
         case Point
 
       (Shape.Circle(5): Shape).inspect   // t"Circle(radius:5)"
-      (t"Simon", 72).inspect             // t"(t\"Simon\" ╱ 72)"
-      (name = t"Simon", age = 72).inspect   // t"(name:t\"Simon\" ╱ age:72)"
+      (t"Lear", 80).inspect              // t"(t\"Lear\" ╱ 80)"
+      (name = t"Lear", age = 80).inspect   // t"(name:t\"Lear\" ╱ age:80)"
       ```
 
       Since a missing instance is never a compile error, coverage can regress silently: a

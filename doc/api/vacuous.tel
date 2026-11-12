@@ -16,10 +16,10 @@ detail
     ```scala
     import soundness.*
 
-    val name: Optional[Text] = t"Ada"
+    val name: Optional[Text] = t"Hamlet"
     val nickname: Optional[Text] = Unset
 
-    name.or(t"anonymous")          // t"Ada"
+    name.or(t"anonymous")          // t"Hamlet"
     nickname.or(t"anonymous")      // t"anonymous"
     name.let(_.upper)              // Optional[Text]: t"ADA"
     name.lay(0)(_.length)          // Int: 3
@@ -58,14 +58,14 @@ detail
     ```scala fuel
     alternative `Option`
       code
-          val users: Map[Text, Option[Text]] = Map(t"ada" -> Some(t"Ada"))
-          def email(name: Text): Option[Text] = if name == t"Ada" then Some(t"ada@example.com") else None
-          val result: Option[Option[Text]] = users.stdlib.get(t"ada").map(_.flatMap(email))
+          val users: Map[Text, Option[Text]] = Map(t"hamlet" -> Some(t"Hamlet"))
+          def email(name: Text): Option[Text] = if name == t"Hamlet" then Some(t"hamlet@example.com") else None
+          val result: Option[Option[Text]] = users.stdlib.get(t"hamlet").map(_.flatMap(email))
     alternative `Optional`
       code
-          val users: Map[Text, Optional[Text]] = Map(t"ada" -> t"Ada")
-          def email(name: Text): Optional[Text] = if name == t"Ada" then t"ada@example.com" else Unset
-          val result: Optional[Text] = users.at(t"ada").let(email)
+          val users: Map[Text, Optional[Text]] = Map(t"hamlet" -> t"Hamlet")
+          def email(name: Text): Optional[Text] = if name == t"Hamlet" then t"hamlet@example.com" else Unset
+          val result: Optional[Text] = users.at(t"hamlet").let(email)
           val address: Text = result.or(t"nobody@example.com")
     ##
     ```
@@ -100,7 +100,7 @@ entry .Optional   a value which may be absent, as the flat union `Unset | value`
       ```scala
       import soundness.*
 
-      val name: Optional[Text] = t"Ada"
+      val name: Optional[Text] = t"Hamlet"
       val missing: Optional[Text] = Unset
 
       name.let(_.upper).or(t"ANONYMOUS")   // t"ADA"
@@ -194,7 +194,7 @@ entry .let   transforms a present value; passes `Unset` through
     import soundness.*
 
     def initial(text: Text): Optional[Char] = text.chars.head
-    val name: Optional[Text] = t"Ada"
+    val name: Optional[Text] = t"Hamlet"
 
     name.let(_.upper)                 // Optional[Text]: t"ADA"
     name.let(_.keep(1)).let(initial)  // Optional[Char]: 'A', with no nesting
@@ -211,7 +211,7 @@ entry .lay   a fallback for absence and a function for presence, giving a plain 
     ```scala
     import soundness.*
 
-    val name: Optional[Text] = t"Ada"
+    val name: Optional[Text] = t"Hamlet"
     name.lay(0)(_.length)   // 3
     ```
 
@@ -239,8 +239,8 @@ entry .mask   discards a present value which satisfies a predicate
     ```scala
     import soundness.*
 
-    val name: Optional[Text] = t"Ada"
-    name.mask(_.length > 64)   // t"Ada": unchanged, since it is not unreasonably long
+    val name: Optional[Text] = t"Hamlet"
+    name.mask(_.length > 64)   // t"Hamlet": unchanged, since it is not unreasonably long
     ```
 
 entry .assume   the value, or a thrown `Optional.Error` if it is absent
@@ -254,8 +254,8 @@ entry .assume   the value, or a thrown `Optional.Error` if it is absent
     import soundness.*
     import unsafeExceptions.canThrowAny
 
-    val name: Optional[Text] = t"Ada"
-    name.assume   // t"Ada"
+    val name: Optional[Text] = t"Hamlet"
+    name.assume   // t"Hamlet"
     ```
 
 entry .presume   the value, or the type's `Default` if it is absent
@@ -288,8 +288,8 @@ entry .optional   an `Option` or a `java.util.Optional` as an `Optional`
     ```scala
     import soundness.*
 
-    Some(t"Ada").optional                    // t"Ada": Optional[Text]
-    java.util.Optional.empty[Text].optional  // Unset
+    Some(t"Hamlet").optional                  // t"Hamlet": Optional[Text]
+    java.util.Optional.empty[Text].optional   // Unset
     ```
 
 entry .unless   makes a value optional: `Unset` when a predicate holds
@@ -419,7 +419,7 @@ entry .Optionality   the proof that a type is an `Optional`, required by every c
       ```scala
       import soundness.*
 
-      val name: Text = t"Ada"
+      val name: Text = t"Hamlet"
       name.let(_.upper)   // does not compile
       ```
   entry .default   the macro given: an `Optionality[value]` when `Unset <: value`

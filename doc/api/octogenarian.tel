@@ -379,7 +379,7 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
         `main..feature`. Nothing is validated; an expression git cannot resolve is reported
         when it is used, as `NoSuchRef` or as `Unset` from `resolve`.
     entry .parse   checks a reference *name* against git's rules and returns it
-        Validates a name such as `feature/foo` — not an expression — segment by segment, as
+        Validates a name such as `feature/sonnets` — not an expression — segment by segment, as
         `Git.Refs.validateSegment` does but allowing `/`, and raises `Git.RefError` on the first
         rule broken. `Git.Branch.parse` and `Git.Tag.parse` are built on it.
     entry .encodable   a revision encodes as its text
@@ -530,7 +530,7 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
     entry #Limit   the root type of a notes path: `Git.Hash` itself
   entry .Identity   who: a name and an email address
     detail
-        `Git.Identity(t"Jon Pretty", t"jon@example.com")` is the `user.name` and `user.email`
+        `Git.Identity(t"Hamlet", t"hamlet@example.com")` is the `user.name` and `user.email`
         pair a commit's author and committer lines carry. A commit's committer is always read
         from the effective configuration (raising `NoSuchConfig` if either key is unset); its
         author is the same unless `commit(…, author = identity)` says otherwise, and a tag's
@@ -555,7 +555,7 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
         A `Git.Identity` with a `Git.Timestamp`, as `Commit#author`, `Commit#committer` and
         `Git.Tag.Annotation#tagger` carry it. Not to be confused with a cryptographic
         signature, which is a `Git.Signer`'s business.
-    entry .parse   a signature from a header line, `Jon <jon@example.com> 1700000000 +0100`, or `Unset`
+    entry .parse   a signature from a header line, `Hamlet <hamlet@example.com> 1700000000 +0100`, or `Unset`
     entry #identity   who
     entry #timestamp   when
     entry #text   the line as git writes it: `name <email> seconds offset`
@@ -1920,8 +1920,8 @@ entry .SshKeygen   signing and verifying with OpenSSH keys through `ssh-keygen -
       import strategies.throwUnsafely
 
       val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
-      val key: Path on Linux = t"/home/jon/.ssh/id_ed25519".as[Path on Linux]
-      val allowed: Path on Linux = t"/home/jon/.ssh/allowed_signers".as[Path on Linux]
+      val key: Path on Linux = t"/home/hamlet/.ssh/id_ed25519".as[Path on Linux]
+      val allowed: Path on Linux = t"/home/hamlet/.ssh/allowed_signers".as[Path on Linux]
       given Git.Verifier = SshKeygen.Verifier(allowed)
 
       directory.open[Git.Worktree](Read & Write): worktree ?=>

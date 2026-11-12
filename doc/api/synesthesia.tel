@@ -558,8 +558,8 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
           def greet(name: Text, greeting: Optional[Text]): Text = t"${greeting.or(t"Hello")}, $name"
 
         val interface = Mcp.Interface(t"session-1", Pyrus)
-        interface.`tools/call`(t"greet", t"""{"name": "Jon"}""".read[Json], Unset).structuredContent
-        // {"result": "Hello, Jon"}
+        interface.`tools/call`(t"greet", t"""{"name": "Hamlet"}""".read[Json], Unset).structuredContent
+        // {"result": "Hello, Hamlet"}
         ```
 
         The interface is `Streamable` as server-sent events (`.streamable`), which is how
@@ -703,7 +703,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 class Session() extends Mcp.Session
                 def initialize(): Session = new Session()
                 def name: Text = t"library"
-                def description: Text = t"The company library"
+                def description: Text = t"The Globe's library"
                 def version: Semver = v"1.0.0"
                 def prompts: List[Mcp.Prompt] = Nil
         frame
@@ -716,13 +716,13 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 class Session() extends Mcp.Session
                 def initialize(): Session = new Session()
                 def name: Text = t"library"
-                def description: Text = t"The company library"
+                def description: Text = t"The Globe's library"
                 def version: Semver = v"1.0.0"
                 def prompts: List[Mcp.Prompt] = Nil
 
                 @tool
                 @about("Find books by an author")
-                def byAuthor(author: Text): List[Text] = List(t"Dune")
+                def byAuthor(author: Text): List[Text] = List(t"Hamlet")
         frame
           label An optional and a defaulted parameter are not required
           code
@@ -733,7 +733,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 class Session() extends Mcp.Session
                 def initialize(): Session = new Session()
                 def name: Text = t"library"
-                def description: Text = t"The company library"
+                def description: Text = t"The Globe's library"
                 def version: Semver = v"1.0.0"
                 def prompts: List[Mcp.Prompt] = Nil
 
@@ -741,7 +741,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 @about("Find books by an author")
                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
                 :   List[Text] =
-                  List(t"Dune")
+                  List(t"Hamlet")
         frame
           label A resource, served at a URI with a MIME type
           code
@@ -752,7 +752,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 class Session() extends Mcp.Session
                 def initialize(): Session = new Session()
                 def name: Text = t"library"
-                def description: Text = t"The company library"
+                def description: Text = t"The Globe's library"
                 def version: Semver = v"1.0.0"
                 def prompts: List[Mcp.Prompt] = Nil
 
@@ -760,7 +760,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 @about("Find books by an author")
                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
                 :   List[Text] =
-                  List(t"Dune")
+                  List(t"Hamlet")
 
                 @resource("library://rules", mimeType = t"text/markdown")
                 @about("The lending rules")
@@ -775,7 +775,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 class Session() extends Mcp.Session
                 def initialize(): Session = new Session()
                 def name: Text = t"library"
-                def description: Text = t"The company library"
+                def description: Text = t"The Globe's library"
                 def version: Semver = v"1.0.0"
                 def prompts: List[Mcp.Prompt] = Nil
 
@@ -783,7 +783,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
                 @about("Find books by an author")
                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
                 :   List[Text] =
-                  List(t"Dune")
+                  List(t"Hamlet")
 
                 @resource("library://rules", mimeType = t"text/markdown")
                 @about("The lending rules")

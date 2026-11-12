@@ -422,7 +422,7 @@ entry .to   converts a collection to a requested shape: `xs.to[List]`, `text.to[
     `xs.to[Form]` goes through a `Convertible` instance from the receiver to the form, which may
     be a proper type or an unapplied constructor; any `Traversable` has instances for the
     collections, and a `Text` converts to a collection of `Char`. A second overload converts a
-    tuple to a case class: `(t"Ada", 36).to[Person]`, through `Mirror.ProductOf`. Transparent,
+    tuple to a case class: `(t"Hamlet", 30).to[Person]`, through `Mirror.ProductOf`. Transparent,
     so the result is fully applied at the call site; where no expected type pins it, the bare
     constructor may be left unapplied, and the parenthesised factory form `xs.to(List)` is the
     fallback there.
@@ -1314,8 +1314,8 @@ entry .confine   `xs.confine(index)`: checks an index against a value and return
     ```scala
     import soundness.*
 
-    val ages = Map(t"Ada" -> 36)
-    ages.confine(t"Ada").let(ages(_))   // Optional[Int]: 36
+    val ages = Map(t"Hamlet" -> 30)
+    ages.confine(t"Hamlet").let(ages(_))   // Optional[Int]: 30
     ```
 
 entry .pick   `xs.pick(index)(lambda)`: the fused form of `confine` and `let`

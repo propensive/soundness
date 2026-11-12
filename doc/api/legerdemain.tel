@@ -16,13 +16,13 @@ detail
     import formulations.postFormulation
     import strategies.throwUnsafely
 
-    case class Person(name: Text, admin: Boolean)
-    case class Team(leader: Person, title: Text)
+    case class Person(name: Text, crowned: Boolean)
+    case class Scene(speaker: Person, place: Text)
 
-    val form: Html of Flow = elicit[Team](validation = Validation(), submit = t"Save")
+    val form: Html of Flow = elicit[Scene](validation = Validation(), submit = t"Save")
 
-    val query = t"leader.name=Ada&leader.admin=on&title=Analysts".as[Query]
-    query.as[Team]   // Team(Person(t"Ada", true), t"Analysts")
+    val query = t"speaker.name=Macbeth&speaker.crowned=on&place=Dunsinane".as[Query]
+    query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
     ```
 
     The pieces fit together through three typeclasses. `Elicitable` says which `Widget` a
@@ -62,13 +62,13 @@ entry .elicit   renders the form for a type, optionally filled from a submitted 
 
     val blank = elicit[Person](validation = Validation(), submit = t"Register")
 
-    val submitted = t"name=Ada".as[Query]
+    val submitted = t"name=Hamlet".as[Query]
     val again = elicit[Person](submitted, Validation(), t"Register")
     ```
 
     Each field is labelled from its name, split at its capitals and capitalised (`firstName`
     becomes _First name_), and a nested case class becomes a `<fieldset>` with the field's
-    label as its legend. A field's widget is named by its dotted path, `leader.name`, which is
+    label as its legend. A field's widget is named by its dotted path, `speaker.name`, which is
     the key it is submitted under.
 
 entry .edit   renders the form for a value, filled with that value's fields
@@ -83,7 +83,7 @@ entry .edit   renders the form for a value, filled with that value's fields
 
     case class Person(name: Text, email: Text)
 
-    Person(t"Ada", t"ada@example.com").edit(Validation(), t"Update")
+    Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
     ```
 
 entry .formulations   the standard ways to frame a form in HTML, each a given to import by name
@@ -247,7 +247,7 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
   detail
       A `Query` is an ordered list of `(key, value)` pairs of `Text`, as a query string
       `a=1&b=2` or an `application/x-www-form-urlencoded` body holds them. Nested data is
-      flattened into dotted keys — `leader.name` — so a case class encodes to a `Query` field
+      flattened into dotted keys — `speaker.name` — so a case class encodes to a `Query` field
       by field and decodes from one, which is how form submissions and query parameters become
       typed values.
 
@@ -266,16 +266,16 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
             import soundness.*
             import strategies.throwUnsafely
 
-            val query = Query(List(t"name" -> t"Ada Lovelace"))
-            query.show   // t"name=Ada+Lovelace"
+            val query = Query(List(t"name" -> t"Nick Bottom"))
+            query.show   // t"name=Nick+Bottom"
       frame
         label A second parameter appended
         code
             import soundness.*
             import strategies.throwUnsafely
 
-            val query = Query(List(t"name" -> t"Ada Lovelace")) + Query(List(t"email" -> t"ada@example.com"))
-            query.show   // t"name=Ada+Lovelace&email=ada%40example.com"
+            val query = Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com"))
+            query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
       frame
         label Both nested under a prefix, then decoded
         code
@@ -283,14 +283,14 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
             import strategies.throwUnsafely
 
             case class Person(name: Text, email: Text)
-            case class Team(leader: Person, title: Text)
+            case class Scene(speaker: Person, place: Text)
 
             val query =
-              (Query(List(t"name" -> t"Ada Lovelace")) + Query(List(t"email" -> t"ada@example.com")))
-              . prefix(t"leader") + Query(List(t"title" -> t"Analysts"))
+              (Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com")))
+              . prefix(t"speaker") + Query(List(t"place" -> t"Athens"))
 
-            query.show      // t"leader.name=Ada+Lovelace&leader.email=ada%40example.com&title=Analysts"
-            query.as[Team]  // Team(Person(t"Ada Lovelace", t"ada@example.com"), t"Analysts")
+            query.show       // t"speaker.name=Nick+Bottom&speaker.email=bottom%40example.com&place=Athens"
+            query.as[Scene]  // Scene(Person(t"Nick Bottom", t"bottom@example.com"), t"Athens")
       ##
       ```
 
@@ -320,7 +320,7 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
 
       case class Person(name: Text, age: Int)
 
-      summon[Person is Encodable in Query].encoded(Person(t"Jack", 12)).show   // t"name=Jack&age=12"
+      summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
       ```
   entry .decodable   decodes URL-encoded text as a `Query`; and a `Query` as any decodable value or case class
       Two givens share the name. One splits text on `&` and each part at its first `=`,
@@ -341,7 +341,7 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
 
       case class Person(name: Text, email: Text)
 
-      t"name=Ada&email=a%40b.c".as[Query].as[Person]   // Person(t"Ada", t"a@b.c")
+      t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
       ```
   entry .EncodableDerivation   the product derivation of `Encodable in Query`: each field encoded under its name
     detail
@@ -392,7 +392,7 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
 
         case class Person(name: Text, email: Text)
 
-        capture[Query.Error](t"name=Ada".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
+        capture[Query.Error](t"name=Hamlet".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
         ```
     entry .Reason   why a query parameter could not be read: `Missing`, the only reason
       detail
@@ -420,16 +420,16 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
       raises `Query.Error` focused at that field's dotted pointer.
   entry #apply   the query's unnamed value, or `Unset`; or the part of the query under a key
       `query()` is the value of a query which holds exactly one pair with an empty key, and
-      `Unset` otherwise. `query(t"leader")` is the sub-query under `leader`: the pair keyed
-      `leader` becomes the unnamed value and each key beginning `leader.` loses that prefix.
+      `Unset` otherwise. `query(t"speaker")` is the sub-query under `speaker`: the pair keyed
+      `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
 
       ```scala
       import soundness.*
       import strategies.throwUnsafely
 
-      val query = t"leader.name=Ada&leader.email=a%40b.c&title=Analysts".as[Query]
-      query(t"leader")             // the query name=Ada&email=a%40b.c
-      query(t"leader")(t"name")()  // t"Ada"
+      val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
+      query(t"speaker")             // the query name=Hamlet&email=a%40b.c
+      query(t"speaker")(t"name")()  // t"Hamlet"
       ```
   entry #prefix   the query with every key put under a prefix: `name` becomes `prefix.name`
       An unnamed value's key becomes the prefix itself, so a value encoded on its own and then

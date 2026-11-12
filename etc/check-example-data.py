@@ -56,6 +56,8 @@ GENUINE = [
   ('lib/facsimile/src/core/facsimile.PdfEncoding.scala', 'placeholder'),   # Adobe glyph name `bar`
   ('lib/archimedes/src/core/archimedes.Ergo.scala', 'placeholder'),       # the overbar accent
   ('lib/tasseomancy/src/core/tasseomancy.*.scala', 'placeholder'),        # a chart's bars
+  ('doc/api/tasseomancy.tel', 'placeholder'),
+  ('doc/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
 ]
 
 # Released migration notes are frozen (AGENTS.md); only the unreleased one is checked.

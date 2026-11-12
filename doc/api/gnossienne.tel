@@ -7,7 +7,7 @@ info   typed references to entities, holding only their keys and resolved back t
 detail
     _Gnossienne_ represents a reference to an entity — a person, a product, a row — as a
     value which holds nothing but the entity's key, typed by what it refers to. A
-    `Reference to Person` built from `t"jill@example.com"` is not a `Text`, and cannot be
+    `Reference to Person` built from `t"juliet@example.com"` is not a `Text`, and cannot be
     confused with a reference to anything else.
 
     How a key finds its entity is a `Resolvable` typeclass instance. The usual one is built
@@ -22,14 +22,14 @@ detail
 
     case class Person(@primary email: Text, name: Text)
 
-    val jack = Person(t"jack@example.com", t"Jack")
-    val jill = Person(t"jill@example.com", t"Jill")
+    val romeo = Person(t"romeo@example.com", t"Romeo")
+    val juliet = Person(t"juliet@example.com", t"Juliet")
 
-    given Person is Resolvable by Text = Resolvable(Set(jack, jill))
+    given Person is Resolvable by Text = Resolvable(Set(romeo, juliet))
 
-    val reference: Reference to Person = jill.ref
-    reference.key                                   // t"jill@example.com"
-    reference()                                     // jill
+    val reference: Reference to Person = juliet.ref
+    reference.key                                   // t"juliet@example.com"
+    reference()                                     // juliet
     safely(Reference[Person](t"nobody@example.com")())   // Unset
     ```
 
@@ -91,9 +91,9 @@ entry .Reference   a typed reference to an entity, holding its key and resolved 
       import strategies.throwUnsafely
 
       case class Person(@primary email: Text, name: Text)
-      given Person is Resolvable by Text = Resolvable(Set(Person(t"jill@example.com", t"Jill")))
+      given Person is Resolvable by Text = Resolvable(Set(Person(t"juliet@example.com", t"Juliet")))
 
-      t"jill@example.com".as[Reference to Person]().name   // t"Jill"
+      t"juliet@example.com".as[Reference to Person]().name   // t"Juliet"
       ```
   entry .Error   raised when a reference's key matches no entity in the store
     detail
@@ -128,11 +128,11 @@ entry .Resolvable   a typeclass saying how a key of type `Operand` resolves to a
 
       case class Person(@primary email: Text, name: Text)
 
-      val people = Set(Person(t"jack@example.com", t"Jack"), Person(t"jill@example.com", t"Jill"))
+      val people = Set(Person(t"romeo@example.com", t"Romeo"), Person(t"juliet@example.com", t"Juliet"))
       given resolvable: Person is Resolvable by Text = Resolvable(people)
 
       resolvable.field                          // t"email"
-      resolvable.resolve(t"jack@example.com")   // Person(t"jack@example.com", t"Jack")
+      resolvable.resolve(t"romeo@example.com")   // Person(t"romeo@example.com", t"Romeo")
       ```
 
       A store of another kind — a database table, a remote service — can implement the
@@ -172,8 +172,8 @@ entry .ref   the reference to a value: its key, typed as a `Reference` to the va
 
     case class Person(@primary email: Text, name: Text)
 
-    val jill = Person(t"jill@example.com", t"Jill")
-    given Person is Resolvable by Text = unsafely(Resolvable(Set(jill)))
+    val juliet = Person(t"juliet@example.com", t"Juliet")
+    given Person is Resolvable by Text = unsafely(Resolvable(Set(juliet)))
 
-    jill.ref.key   // t"jill@example.com"
+    juliet.ref.key   // t"juliet@example.com"
     ```

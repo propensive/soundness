@@ -24,11 +24,11 @@ detail
     import soundness.*
     import textMetrics.uniformMetric
 
-    val name = t"Ada Lovelace"
-    name.words.map(_.keep(1)).join            // t"AL"
-    name.cut(t" ").head.upper                 // t"ADA"
-    name.offsetOf(t"Love")                    // an Optional ordinal, present here
-    name.pad(15, Rtl, '.')                    // t"...Ada Lovelace"
+    val name = t"Nick Bottom"
+    name.words.map(_.keep(1)).join            // t"NB"
+    name.cut(t" ").head.upper                 // t"NICK"
+    name.offsetOf(t"Bott")                    // an Optional ordinal, present here
+    name.pad(15, Rtl, '.')                    // t"....Nick Bottom"
     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
     ```
 
@@ -93,9 +93,9 @@ entry .t   the `t"…"` interpolator: a `Text` from a literal, with `Showable` s
       ```scala
       import soundness.*
 
-      val name = t"Ada"
+      val name = t"Hamlet"
       val count = 3
-      t"Hello, $name! You have $count messages."   // t"Hello, Ada! You have 3 messages."
+      t"Hello, $name! You have $count messages."   // t"Hello, Hamlet! You have 3 messages."
       t"tab\there"                                  // a real tab between the words
       ```
 
@@ -190,7 +190,7 @@ entry .Textual   the typeclass which makes a type textual: `Text`, `Ascii`, `Wri
       def initials[textual: Textual { type Result = Char }](name: textual): textual =
         name.words.map(_.keep(1).upper).join
 
-      initials(t"ada lovelace")   // t"AL"
+      initials(t"nick bottom")   // t"NB"
       ```
 
       The instances for `Text` (`.text`) and, through their companions, for `Ascii` and
@@ -611,7 +611,7 @@ entry .ends   whether a textual value ends with a suffix
     removes it if present.
 
 entry .chomp   removes a prefix (or, with `Rtl`, a suffix) from a textual value, if it is there
-    `t"Mr Smith".chomp(t"Mr ")` is `t"Smith"`, and `t"file.txt".chomp(t".txt", Rtl)` is
+    `t"Sir Toby".chomp(t"Sir ")` is `t"Toby"`, and `t"file.txt".chomp(t".txt", Rtl)` is
     `t"file"`; a text without the affix is returned unchanged, so `chomp` is safe to apply
     without a `starts` or `ends` check first.
 
@@ -697,7 +697,7 @@ entry .upper   a textual value in upper case
     a character with no single-character upper case (`ß`) is left alone.
 
 entry .capitalize   a textual value with its first character in upper case
-    `t"hello".capitalize` is `t"Hello"` and `t"fooBar".capitalize` is `t"FooBar"`; the rest
+    `t"hello".capitalize` is `t"Hello"` and `t"kingLear".capitalize` is `t"KingLear"`; the rest
     is unchanged. The empty text stays empty.
 
 entry .uncapitalize   a textual value with its first character in lower case

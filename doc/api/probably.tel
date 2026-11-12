@@ -407,7 +407,7 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
 
             case class Person(name: Text, age: Int)
 
-            val probe: Test[Person] = test(m"the oldest person")(Person(t"Jo", 49))
+            val probe: Test[Person] = test(m"the oldest person")(Person(t"Lear", 82))
       frame
         label An assertion records a verdict and returns nothing
         substitute given..Runner()  ...
@@ -419,7 +419,7 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
 
             case class Person(name: Text, age: Int)
 
-            test(m"the oldest person")(Person(t"Jo", 49)).assert(_.age > 40)
+            test(m"the oldest person")(Person(t"Lear", 82)).assert(_.age > 40)
       frame
         label A check returns the value for a later test to build on
         substitute given..Runner()  ...
@@ -431,8 +431,8 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
 
             case class Person(name: Text, age: Int)
 
-            val oldest: Person = test(m"the oldest person")(Person(t"Jo", 49)).check(_.age > 40)
-            test(m"the oldest person is named")(oldest.name).assert(_ == t"Jo")
+            val oldest: Person = test(m"the oldest person")(Person(t"Lear", 82)).check(_.age > 40)
+            test(m"the oldest person is named")(oldest.name).assert(_ == t"Lear")
       frame
         label A failed equality is reported as a contrast, field by field
         substitute given..Runner()  ...
@@ -444,8 +444,8 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
 
             case class Person(name: Text, age: Int)
 
-            test(m"the oldest person")(Person(t"Jo", 49)).assert(_ == Person(t"Jo", 47))
-            // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Jo"), t"age" -> Different(t"47", t"49", t"+2")), …)
+            test(m"the oldest person")(Person(t"Lear", 82)).assert(_ == Person(t"Lear", 80))
+            // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), …)
       ##
       ```
 

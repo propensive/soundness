@@ -17,10 +17,10 @@ detail
     final case class ident() extends StaticAnnotation
     final case class primary() extends StaticAnnotation
 
-    case class Employee(name: Text, @ident @primary code: Long)
+    case class Sonnet(firstLine: Text, @ident @primary number: Long)
 
-    summon[Employee is Annotated on "code"]()          // Set(ident(), primary())
-    summon[Employee is Annotated by ident].field       // "code"
+    summon[Sonnet is Annotated on "number"]()          // Set(ident(), primary())
+    summon[Sonnet is Annotated by ident].field         // "number"
     ```
 
     The library also defines `@name`, the annotation every Soundness serialization format
@@ -50,7 +50,7 @@ entry .Annotated   a typeclass whose instances hold the static annotations on a 
 
       - `T is Annotated` — every annotation on the type `T` itself, and on its fields;
       - `T is Annotated by A` — only those of annotation type `A` (a subtype check, so
-        `by marker[Person]` excludes a `marker[Company]`);
+        `by marker[Person]` excludes a `marker[Play]`);
       - `T is Annotated on "field"` — only the field named, whose name is checked against
         `T`'s primary constructor;
       - `Annotated under S` — the annotations on each variant of the sealed type or enum `S`.
@@ -67,23 +67,23 @@ entry .Annotated   a typeclass whose instances hold the static annotations on a 
       frame
         label Every annotation on the type and its fields
         code
-            summon[Employee is Annotated].fields
-            // Map("code" -> Set(ident(), primary()))
+            summon[Sonnet is Annotated].fields
+            // Map("number" -> Set(ident(), primary()))
       frame
         label `on`: the annotations of one field
         code
-            summon[Employee is Annotated on "code"]()
+            summon[Sonnet is Annotated on "number"]()
             // Set(ident(), primary())
       frame
         label `by`: only one annotation type, on that field
         code
-            summon[Employee is Annotated by ident on "code"]()
+            summon[Sonnet is Annotated by ident on "number"]()
             // Set(ident())
       frame
         label `by` alone: the one field so annotated, and a lens onto it
         code
-            summon[Employee is Annotated by ident].field
-            // "code"
+            summon[Sonnet is Annotated by ident].field
+            // "number"
       ##
       ```
 
@@ -124,10 +124,10 @@ entry .Annotated   a typeclass whose instances hold the static annotations on a 
         caller uses.
     entry #fields   each annotated field's name, with its annotations of the requested type
     entry #annotations   the annotations of the requested type on the type itself
-        `summon[Company is Annotated by unique].annotations` is the empty set if `Company`
+        `summon[Play is Annotated by unique].annotations` is the empty set if `Play`
         carries no `unique`, whatever its fields carry.
     entry #apply   the annotations: on the type itself, or on the field named with `on`
-        `summon[Company is Annotated]()` gives the type's own annotations; for a query with
+        `summon[Play is Annotated]()` gives the type's own annotations; for a query with
         `on "field"`, or one matching exactly one field, it gives that field's.
   entry .Field   the instance for a query which matched exactly one field: its name, and a lens onto it
     detail
@@ -144,10 +144,10 @@ entry .Annotated   a typeclass whose instances hold the static annotations on a 
 
         case class Person(name: Text, @ident email: Text)
 
-        val person = Person(t"Jack", t"jack@example.com")
+        val person = Person(t"Romeo", t"romeo@example.com")
         summon[Person is Annotated by ident].field                                   // "email"
-        summon[Person is Annotated by ident].lens(person)                            // t"jack@example.com"
-        summon[Person is Annotated by ident].lens.update(person, t"jill@example.com")
+        summon[Person is Annotated by ident].lens(person)                            // t"romeo@example.com"
+        summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
         ```
 
         If several fields carry the annotation, the instance is only an `Annotated.Fields`,
@@ -238,10 +238,10 @@ entry .Dereferenceable   a typeclass for reaching a record's fields by name, as 
       ```scala
       import soundness.*
 
-      case class Employee(name: Text, code: Long)
+      case class Play(title: Text, year: Long)
 
-      summon[Employee is Dereferenceable to Any].members(Employee(t"Jack", 7L))
-      // Map(t"name" -> t"Jack", t"code" -> 7L)
+      summon[Play is Dereferenceable to Any].members(Play(t"Hamlet", 1603L))
+      // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
       ```
 
 entry .membersOfType   the values of every field of a record which have the type asked for
