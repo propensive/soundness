@@ -579,9 +579,447 @@ object Motif:
   extends fulminate.Error(500, reason.number)
     ( m"the regular expression could not be compiled because $reason at $index" )
 
+  object Program:
+    import scala.collection.mutable.ArrayBuffer
+    import anticipation.*
+    import contingency.*
+    import rudiments.*
+    import Motif.Error.Reason.*
+    import Motif.Node
+
+    // A ceiling on compiled size: bounded repetitions compile by expansion, so nested `{n,m}`
+    // forms can grow geometrically. RE2 imposes a similar program-size limit.
+    val maxOps: Int = 100000
+
+    def compile(node: Node, captures: Int): Program raises Motif.Error =
+      val ops: ArrayBuffer[Program.Op] = ArrayBuffer()
+
+      def emit(op: Program.Op): Int =
+        if ops.size >= maxOps then abort(Motif.Error(0, RepetitionTooLarge))
+        ops += op
+        ops.size - 1
+
+      // Fills a `-1` hole in a previously-emitted branching op.
+      def patch(at: Int, target: Int): Unit = ops(at) = ops(at) match
+        case Program.Op.Split(preferred, alternate) =>
+          Program.Op.Split
+            ( if preferred == -1 then target else preferred,
+              if alternate == -1 then target else alternate )
+
+        case Program.Op.Jump(-1) => Program.Op.Jump(target)
+        case other               => other
+
+      def bounds(ranges: Ranges): Array[Int] = ranges.spans.to[Array]
+
+      // Emits the code for one node. Fragments are contiguous and fall through to whatever is
+      // emitted next, so a consuming op's `next` is always its own pc + 1; only loops and
+      // alternations jump.
+      def walk(node: Node): Unit = node match
+        case Node.Empty =>
+          ()
+
+        case Node.Literal(codepoint) =>
+          emit(Program.Op.Symbol(Array(codepoint, codepoint), ops.size + 1))
+
+        case Node.Klass(ranges) =>
+          emit(Program.Op.Symbol(bounds(ranges), ops.size + 1))
+
+        case Node.Boundary(anchor) =>
+          emit(Program.Op.Test(anchor, ops.size + 1))
+
+        case Node.Sequence(nodes) =>
+          nodes.each(walk(_))
+
+        case Node.Group(child, index) => index match
+          case index: Int =>
+            emit(Program.Op.Save(2*index, ops.size + 1))
+            walk(child)
+            emit(Program.Op.Save(2*index + 1, ops.size + 1))
+
+          case _ =>
+            walk(child)
+
+        case Node.Alternation(options) =>
+          def recur(options: List[Node]): Unit = options.absolve match
+            case only :: Nil =>
+              walk(only)
+
+            case head :: tail =>
+              val split = emit(Program.Op.Split(ops.size + 1, -1))
+              walk(head)
+              val jump = emit(Program.Op.Jump(-1))
+              patch(split, ops.size)
+              recur(tail)
+              patch(jump, ops.size)
+
+            case Nil =>
+              ()
+
+          recur(options)
+
+        case Node.Repeat(child, minimum, maximum, reluctant) =>
+          def split(): Int =
+            if reluctant then emit(Program.Op.Split(-1, ops.size + 1))
+            else emit(Program.Op.Split(ops.size + 1, -1))
+
+          var count = 0
+
+          while count < minimum do
+            walk(child)
+            count += 1
+
+          maximum match
+            case maximum: Int =>
+              var holes: List[Int] = Nil
+
+              while count < maximum do
+                holes = split() :: holes
+                walk(child)
+                count += 1
+
+              holes.each(patch(_, ops.size))
+
+            case _ =>
+              val loop = ops.size
+              val hole = split()
+              walk(child)
+              emit(Program.Op.Jump(loop))
+              patch(hole, ops.size)
+
+      emit(Program.Op.Save(0, 1))
+      walk(node)
+      emit(Program.Op.Save(1, ops.size + 1))
+      emit(Program.Op.Accept)
+
+      Program(Array.from(ops), 2*(captures + 1), captures)
+
+    // One instruction of a compiled program. Only `Symbol` consumes input; every other op is
+    // followed at no cost during the Pike VM's ε-closure. `bounds` is the interleaved
+    // `lo, hi, lo, hi, …` form of a `Ranges`, flattened for allocation-free scanning; `Split`
+    // lists its `preferred` target first, which is how greed and reluctance are encoded.
+    enum Op:
+      case Symbol(bounds: Array[Int], next: Int)
+      case Split(preferred: Int, alternate: Int)
+      case Jump(target: Int)
+      case Save(slot: Int, next: Int)
+      case Test(anchor: Node.Anchor, next: Int)
+      case Accept
+
+  // A regular expression compiled to a flat, array-indexed instruction sequence, executable by the
+  // Pike VM and analyzable by the containment checker. Capture group `n` records its bounds in
+  // slots `2n` and `2n + 1`; slots `0` and `1` are the whole match.
+  case class Program(ops: Array[Program.Op], slots: Int, captures: Int):
+    import scala.collection.mutable.ArrayBuffer
+    import anticipation.*
+    import contingency.*
+    import rudiments.*
+    import Motif.Error.Reason.*
+    import Motif.Node
+
+    def entry: Int = 0
+
+    // The consuming ops reachable from `pcs` without consuming input, and whether `Accept` is
+    // among the reachable ops. Zero-width tests are followed unconditionally, so the symbol set
+    // is a superset and the nullability flag an overestimate — both are the safe directions for
+    // the seek acceleration below, which they exist to serve.
+    private def reach(pcs: List[Int]): (List[Int], Boolean) =
+      val visited = new scala.Array[Boolean](ops.length)
+      var stack: List[Int] = pcs
+      var symbols: List[Int] = Nil
+      var accepts = false
+
+      while stack != Nil do stack.absolve match
+        case pc :: rest =>
+          stack = rest
+
+          if !visited(pc) then
+            visited(pc) = true
+
+            ops.readUnchecked(pc) match
+              case Program.Op.Jump(target)       => stack = target :: stack
+              case Program.Op.Split(left, right) => stack = left :: right :: stack
+              case Program.Op.Save(_, next)      => stack = next :: stack
+              case Program.Op.Test(_, next)      => stack = next :: stack
+              case Program.Op.Symbol(_, _)       => symbols = pc :: symbols
+              case Program.Op.Accept             => accepts = true
+
+      (symbols, accepts)
+
+    private lazy val opening: (List[Int], Boolean) = reach(entry :: Nil)
+
+    // Whether a match may consume nothing, in which case no position can be skipped.
+    lazy val nullable: Boolean = opening(1)
+
+    // The interleaved bounds of every symbol which can begin a match, coalesced.
+    lazy val firstBounds: Array[Int] =
+      var spans: List[Int] = Nil
+
+      opening(0).each: pc =>
+        ops.readUnchecked(pc).absolve match
+          case Program.Op.Symbol(bounds, _) =>
+            var index = 0
+
+            while index < bounds.length do
+              val range = Ranges(bounds.readUnchecked(index), bounds.readUnchecked(index + 1))
+
+              spans = range.spans.absolve match
+                case lo :: hi :: Nil => lo :: hi :: spans
+                case _               => spans
+
+              index += 2
+
+          case _ =>
+            ()
+
+      var merged = Ranges.empty
+      var todo = spans
+
+      while todo != Nil do todo.absolve match
+        case lo :: hi :: rest =>
+          merged = merged.union(Ranges(lo, hi))
+          todo = rest
+
+      merged.spans.to[Array]
+
+    // The longest literal every match must begin with (UTF-16-encoded, capped at 32 chars), or
+    // empty if the first consuming op is not unique and single-valued. Seeking jumps between
+    // occurrences of this literal with `Symbolizer.find` rather than stepping positions.
+    lazy val prefix: Text =
+      val builder = StringBuilder()
+
+      def recur(pcs: List[Int], accepts: Boolean): Unit =
+        if !accepts && builder.length < 32 then pcs match
+          case pc :: Nil => ops.readUnchecked(pc).absolve match
+            case Program.Op.Symbol(bounds, next) =>
+              if bounds.length == 2 && bounds.readUnchecked(0) == bounds.readUnchecked(1) then
+                builder.append(new String(Character.toChars(bounds.readUnchecked(0))))
+                val (symbols, accepts2) = reach(next :: Nil)
+                recur(symbols, accepts2)
+
+          case _ =>
+            ()
+
+      recur(opening(0), nullable)
+      builder.toString.tt
+
+  object Ranges:
+    import rudiments.*
+    import vacuous.*
+
+    // The greatest symbol in the default (Unicode codepoint) domain. Other symbol domains (UTF-8
+    // bytes, say) are strictly smaller, so this is a safe universal bound for `negate`.
+    val maxSymbol: Int = 0x10ffff
+
+    val empty: Ranges = new Ranges(Nil)
+    def apply(lo: Int, hi: Int): Ranges = new Ranges(lo :: hi :: Nil)
+    def point(symbol: Int): Ranges = new Ranges(symbol :: symbol :: Nil)
+
+    // The RE2 perl classes are ASCII-only.
+    val digit: Ranges = Ranges('0'.toInt, '9'.toInt)
+
+    val word: Ranges =
+      new Ranges
+        ( '0'.toInt :: '9'.toInt :: 'A'.toInt :: 'Z'.toInt :: '_'.toInt :: '_'.toInt ::
+          'a'.toInt :: 'z'.toInt :: Nil )
+
+    val space: Ranges = new Ranges('\t'.toInt :: '\r'.toInt :: ' '.toInt :: ' '.toInt :: Nil)
+    val any: Ranges = new Ranges(0 :: '\n'.toInt - 1 :: '\n'.toInt + 1 :: maxSymbol :: Nil)
+    val anySymbol: Ranges = new Ranges(0 :: maxSymbol :: Nil)
+
+    // Every symbol the predicate admits, as coalesced runs. Scanning the whole domain is what
+    // makes the Unicode classes exact — the JDK's own tables answer the predicate, so there is no
+    // second copy of the Unicode database here to drift out of date — and it costs one pass per
+    // distinct class, which `unicode` memoises.
+    def where(predicate: Int => Boolean): Ranges =
+      val spans = scala.collection.mutable.ListBuffer.empty[Int]
+      var symbol = 0
+      var start = -1
+
+      while symbol <= maxSymbol do
+        if predicate(symbol) then (if start < 0 then start = symbol)
+        else if start >= 0 then
+          spans += start
+          spans += symbol - 1
+          start = -1
+
+        symbol += 1
+
+      if start >= 0 then
+        spans += start
+        spans += maxSymbol
+
+      new Ranges(spans.to(List))
+
+    // The POSIX classes of RE2's `[[:name:]]` form, all ASCII-only.
+    val posix: Map[String, Ranges] =
+      Map
+        ( "alnum"  -> Ranges('0', '9').union(Ranges('A', 'Z')).union(Ranges('a', 'z')),
+          "alpha"  -> Ranges('A', 'Z').union(Ranges('a', 'z')),
+          "ascii"  -> Ranges(0x00, 0x7f),
+          "blank"  -> Ranges.point('\t').union(Ranges.point(' ')),
+          "cntrl"  -> Ranges(0x00, 0x1f).union(Ranges.point(0x7f)),
+          "digit"  -> digit,
+          "graph"  -> Ranges('!', '~'),
+          "lower"  -> Ranges('a', 'z'),
+          "print"  -> Ranges(' ', '~'),
+          "punct"  -> Ranges('!', '/').union(Ranges(':', '@')).union(Ranges('[', '`'))
+                      . union(Ranges('{', '~')),
+          "space"  -> Ranges('\t', '\r').union(Ranges.point(' ')),
+          "upper"  -> Ranges('A', 'Z'),
+          "word"   -> word,
+          "xdigit" -> Ranges('0', '9').union(Ranges('A', 'F')).union(Ranges('a', 'f')) )
+
+    private val unicodeClasses: scala.collection.concurrent.TrieMap[String, Optional[Ranges]] =
+      scala.collection.concurrent.TrieMap()
+
+    // A Unicode general category (`L`, `Lu`, `Nd`, …) or script (`Greek`, `Han`, …) by the name
+    // RE2's `\p{…}` uses, or `Unset` if no such class exists. `Any` is RE2's name for the whole
+    // domain. General categories are matched by prefix, so the one-letter `L` is the union of
+    // `Lu`, `Ll`, `Lt`, `Lm` and `Lo`, exactly as RE2 defines it.
+    def unicode(name: String): Optional[Ranges] =
+      unicodeClasses.getOrElseUpdate(name, compute(name))
+
+    private def compute(name: String): Optional[Ranges] =
+      if name == "Any" then anySymbol
+      else if categories.has(name) then where: symbol => categoryName(symbol) == name
+      else if categoryGroups.has(name)
+      then where: symbol => categoryName(symbol).startsWith(name)
+      else
+        try
+          val script = Character.UnicodeScript.forName(name).nn
+          where: symbol => Character.UnicodeScript.of(symbol) == script
+        catch case _: IllegalArgumentException => Unset
+
+    // The two-letter general-category abbreviation for a codepoint, as Unicode names them.
+    private def categoryName(symbol: Int): String = Character.getType(symbol) match
+      case Character.UPPERCASE_LETTER          => "Lu"
+      case Character.LOWERCASE_LETTER          => "Ll"
+      case Character.TITLECASE_LETTER          => "Lt"
+      case Character.MODIFIER_LETTER           => "Lm"
+      case Character.OTHER_LETTER              => "Lo"
+      case Character.NON_SPACING_MARK          => "Mn"
+      case Character.COMBINING_SPACING_MARK    => "Mc"
+      case Character.ENCLOSING_MARK            => "Me"
+      case Character.DECIMAL_DIGIT_NUMBER      => "Nd"
+      case Character.LETTER_NUMBER             => "Nl"
+      case Character.OTHER_NUMBER              => "No"
+      case Character.CONNECTOR_PUNCTUATION     => "Pc"
+      case Character.DASH_PUNCTUATION          => "Pd"
+      case Character.START_PUNCTUATION         => "Ps"
+      case Character.END_PUNCTUATION           => "Pe"
+      case Character.INITIAL_QUOTE_PUNCTUATION => "Pi"
+      case Character.FINAL_QUOTE_PUNCTUATION   => "Pf"
+      case Character.OTHER_PUNCTUATION         => "Po"
+      case Character.MATH_SYMBOL               => "Sm"
+      case Character.CURRENCY_SYMBOL           => "Sc"
+      case Character.MODIFIER_SYMBOL           => "Sk"
+      case Character.OTHER_SYMBOL              => "So"
+      case Character.SPACE_SEPARATOR           => "Zs"
+      case Character.LINE_SEPARATOR            => "Zl"
+      case Character.PARAGRAPH_SEPARATOR       => "Zp"
+      case Character.CONTROL                   => "Cc"
+      case Character.FORMAT                    => "Cf"
+      case Character.SURROGATE                 => "Cs"
+      case Character.PRIVATE_USE               => "Co"
+      case _                                   => "Cn"
+
+    private val categories: Set[String] =
+      Set
+        ( "Lu", "Ll", "Lt", "Lm", "Lo", "Mn", "Mc", "Me", "Nd", "Nl", "No", "Pc", "Pd", "Ps", "Pe",
+          "Pi", "Pf", "Po", "Sm", "Sc", "Sk", "So", "Zs", "Zl", "Zp", "Cc", "Cf", "Cs", "Co", "Cn" )
+
+    private val categoryGroups: Set[String] = Set("L", "M", "N", "P", "S", "Z", "C")
+
+    // Codepoints equivalent under simple case folding, grouped into orbits keyed by their folded
+    // form. An orbit is not always a pair: `K`, `k` and the Kelvin sign all fold together, which
+    // is why folding cannot be done by mapping each symbol up and down in isolation.
+    private lazy val foldOrbits: scala.collection.immutable.Map[Int, scala.Array[Int]] =
+      val groups = scala.collection.mutable.HashMap.empty[Int, scala.List[Int]]
+      var symbol = 0
+
+      while symbol <= maxSymbol do
+        val folded = Character.toLowerCase(Character.toUpperCase(symbol))
+        if folded != symbol then groups(folded) = symbol :: groups.getOrElse(folded, scala.Nil)
+        symbol += 1
+
+      groups.map{ (key, members) => (key, (key :: members).toArray) }.toMap
+
+  // A set of symbols, represented as a sorted, disjoint, non-adjacent list of inclusive
+  // `lo :: hi :: …` bounds. Symbols are `Int`-encoded members of an ordered alphabet: Unicode
+  // codepoints today, though nothing here assumes more than an ordering and an upper bound. The
+  // constructor is private because it admits unnormalized bounds; every public constructor and
+  // operation preserves the invariant.
+  case class Ranges private(spans: List[Int]):
+    import rudiments.*
+    import vacuous.*
+
+    def vacant: Boolean = spans == Ranges.empty.spans
+
+    def contains(symbol: Int): Boolean =
+      def recur(todo: List[Int]): Boolean = todo match
+        case lo :: hi :: tail => if symbol < lo then false else symbol <= hi || recur(tail)
+        case _                => false
+
+      recur(spans)
+
+    def union(that: Ranges): Ranges =
+      def interleave(left: List[Int], right: List[Int]): List[Int] = (left, right) match
+        case (Nil, _) => right
+        case (_, Nil) => left
+
+        case (lo1 :: hi1 :: tail1, lo2 :: hi2 :: tail2) =>
+          if lo1 <= lo2 then lo1 :: hi1 :: interleave(tail1, right)
+          else lo2 :: hi2 :: interleave(left, tail2)
+
+        case _ => Nil
+
+      def coalesce(todo: List[Int]): List[Int] = todo match
+        case lo1 :: hi1 :: lo2 :: hi2 :: tail =>
+          if lo2 <= hi1 + 1 then coalesce(lo1 :: Math.max(hi1, hi2) :: tail)
+          else lo1 :: hi1 :: coalesce(lo2 :: hi2 :: tail)
+
+        case other => other
+
+      new Ranges(coalesce(interleave(spans, that.spans)))
+
+    def negate(max: Int = Ranges.maxSymbol): Ranges =
+      def recur(todo: List[Int], from: Int): List[Int] = todo match
+        case lo :: hi :: tail =>
+          if from < lo then from :: (lo - 1) :: recur(tail, hi + 1) else recur(tail, hi + 1)
+
+        case _ =>
+          if from <= max then from :: max :: Nil else Nil
+
+      new Ranges(recur(spans, 0))
+
+    def intersect(that: Ranges): Ranges = negate().union(that.negate()).negate()
+
+    // The closure of this set under simple case folding, as RE2's `i` flag defines it. Only the
+    // orbits are examined, not the whole domain, so this is proportional to the number of
+    // case-varying codepoints rather than to the size of the set.
+    def folded: Ranges =
+      var result = this
+
+      Ranges.foldOrbits.foreach: (_, members) =>
+        var index = 0
+        var hit = false
+
+        while !hit && index < members.length do
+          hit = contains(members(index))
+          index += 1
+
+        if hit then
+          var at = 0
+
+          while at < members.length do
+            result = result.union(Ranges.point(members(at)))
+            at += 1
+
+      result
+
 // A parsed RE2 regular expression: the source `pattern`, its structural `node` form, the number
 // of capturing groups it contains, and its compiled `program`.
-case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
+case class Motif(pattern: Text, node: Node, captures: Int, program: Motif.Program):
   def matches[input: Symbolizer](input: input): Boolean =
     Pike.run(program, input, 0, true, true).present
 

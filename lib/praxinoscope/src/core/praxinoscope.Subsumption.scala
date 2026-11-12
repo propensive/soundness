@@ -52,8 +52,8 @@ object Subsumption:
   // is permitted to end here. `first` gates `^`, which only passes before any symbol has been
   // consumed. Word boundaries are context-dependent in a way this analysis does not model, so
   // programs containing them are rejected as `Unverifiable` upstream.
-  private class Analysis(program: Program):
-    val ops: Array[Program.Op] = program.ops
+  private class Analysis(program: Motif.Program):
+    val ops: Array[Motif.Program.Op] = program.ops
 
     private def traverse(pcs: List[Int], first: Boolean, ending: Boolean): (List[Int], Boolean) =
       val visited = new scala.Array[Boolean](ops.length)
@@ -69,13 +69,13 @@ object Subsumption:
             visited(pc) = true
 
             ops.readUnchecked(pc) match
-              case Program.Op.Jump(target)        => stack = target :: stack
-              case Program.Op.Split(left, right)  => stack = left :: right :: stack
-              case Program.Op.Save(_, next)       => stack = next :: stack
-              case Program.Op.Symbol(_, _)        => symbols = pc :: symbols
-              case Program.Op.Accept              => accepted = true
+              case Motif.Program.Op.Jump(target)        => stack = target :: stack
+              case Motif.Program.Op.Split(left, right)  => stack = left :: right :: stack
+              case Motif.Program.Op.Save(_, next)       => stack = next :: stack
+              case Motif.Program.Op.Symbol(_, _)        => symbols = pc :: symbols
+              case Motif.Program.Op.Accept              => accepted = true
 
-              case Program.Op.Test(anchor, next) => anchor match
+              case Motif.Program.Op.Test(anchor, next) => anchor match
                 case Node.Anchor.Start => if first then stack = next :: stack
                 case Node.Anchor.End   => if ending then stack = next :: stack
                 case _                 => ()
@@ -96,13 +96,13 @@ object Subsumption:
 
       symbolPcs.each: pc =>
         ops.readUnchecked(pc).absolve match
-          case Program.Op.Symbol(bounds, next) =>
+          case Motif.Program.Op.Symbol(bounds, next) =>
             if within(bounds, symbol) then successors = next :: successors
 
       successors
 
     def bounds(pc: Int): Array[Int] = ops.readUnchecked(pc).absolve match
-      case Program.Op.Symbol(bounds, _) => bounds
+      case Motif.Program.Op.Symbol(bounds, _) => bounds
 
   private def canonical(pcs: List[Int]): List[Int] = pcs.distinct.sort
 
@@ -116,14 +116,14 @@ object Subsumption:
 
     found
 
-  private def check(program: Program): Unit raises Motif.Error =
+  private def check(program: Motif.Program): Unit raises Motif.Error =
     var index = 0
 
     while index < program.ops.length do
       program.ops.readUnchecked(index) match
         // Word and line boundaries are context-dependent in a way this analysis does not
         // model, so a program containing one cannot be decided either way.
-        case Program.Op.Test
+        case Motif.Program.Op.Test
           ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
             | Node.Anchor.LineEnd, _ ) =>
           abort(Motif.Error(0, Unverifiable))
@@ -136,21 +136,21 @@ object Subsumption:
   // One representative symbol per equivalence class of the programs' transition ranges: within
   // a class, every `Symbol` op either accepts all members or none, so exploring one
   // representative per class covers the whole alphabet.
-  private def representatives(programs: scala.List[Program]): scala.Array[Int] =
+  private def representatives(programs: scala.List[Motif.Program]): scala.Array[Int] =
     val cuts = HashSet[Int](0)
 
-    def collect(program: Program): Unit =
+    def collect(program: Motif.Program): Unit =
       var index = 0
 
       while index < program.ops.length do
         program.ops.readUnchecked(index) match
-          case Program.Op.Symbol(bounds, _) =>
+          case Motif.Program.Op.Symbol(bounds, _) =>
             var span = 0
 
             while span < bounds.length do
               cuts += bounds.readUnchecked(span)
               val upper = bounds.readUnchecked(span + 1)
-              if upper < Ranges.maxSymbol then cuts += upper + 1
+              if upper < Motif.Ranges.maxSymbol then cuts += upper + 1
               span += 2
 
           case _ =>
@@ -190,7 +190,7 @@ object Subsumption:
     result
 
   // Decides whether every input matched by `second` is also matched by `first`.
-  def subsumes(first: Program, second: Program): Boolean raises Motif.Error =
+  def subsumes(first: Motif.Program, second: Motif.Program): Boolean raises Motif.Error =
     subsumes(first, second :: Nil)
 
   // Decides whether every input matched by *all* of `candidates` is also matched by `cover`,
@@ -204,7 +204,7 @@ object Subsumption:
   // escapes `cover` only if *no* cover path accepts, which needs the subset construction.
   // Containment fails iff some reachable product state accepts in every candidate but not in
   // `cover`.
-  def subsumes(cover: Program, candidates: List[Program]): Boolean raises Motif.Error =
+  def subsumes(cover: Motif.Program, candidates: List[Motif.Program]): Boolean raises Motif.Error =
     check(cover)
     candidates.each(check(_))
 
@@ -281,7 +281,7 @@ object Subsumption:
 
   // Decides whether some input is matched by both programs: reachability, in the product of
   // the two NFAs, of a point where both accept. Polynomial, unlike `subsumes`.
-  def intersects(first: Program, second: Program): Boolean raises Motif.Error =
+  def intersects(first: Motif.Program, second: Motif.Program): Boolean raises Motif.Error =
     check(first)
     check(second)
 

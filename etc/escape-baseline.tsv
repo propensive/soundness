@@ -427,9 +427,8 @@ lib/polysyllabic/src/test/polysyllabic_test.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	
 lib/polyvinyl/src/core/polyvinyl.Specification.scala	0	0	0	0	0	0	0	0	0	0	5	0	0	0	0	0	0
 lib/polyvinyl/src/test/polyvinyl_test.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0
 lib/praxinoscope/src/core/praxinoscope.Fsa.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/praxinoscope/src/core/praxinoscope.Motif.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/praxinoscope/src/core/praxinoscope.Motif.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/praxinoscope/src/core/praxinoscope.Pike.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0
-lib/praxinoscope/src/core/praxinoscope.Program.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/praxinoscope/src/core/praxinoscope.Subsumption.scala	0	0	0	0	0	0	0	0	0	0	4	0	0	0	1	0	0
 lib/praxinoscope/src/core/praxinoscope.internal.scala	0	0	0	0	3	0	0	0	0	0	0	0	0	0	1	0	0
 lib/prescience/src/core/prescience.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0

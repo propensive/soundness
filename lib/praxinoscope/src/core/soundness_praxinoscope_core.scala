@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export praxinoscope.{Fsa, Motif, Pike, Program, Ranges, Re2, Subsumption, Symbolizer}
+export praxinoscope.{Fsa, Motif, Pike, Re2, Subsumption, Symbolizer}

@@ -69,7 +69,7 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
       . assert(_ == Alternation(List(Literal('a'.toInt), Empty)))
 
       test(m"Parse a dot")(Motif.parse(t".").node)
-      . assert(_ == Klass(Ranges.any))
+      . assert(_ == Klass(Motif.Ranges.any))
 
       test(m"Parse a capturing group")(Motif.parse(t"(a)").node)
       . assert(_ == Group(Literal('a'.toInt), 1))
@@ -127,37 +127,37 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
                        Literal('}'.toInt) ) )
 
       test(m"Parse a character class")(Motif.parse(t"[a-c]").node)
-      . assert(_ == Klass(Ranges('a'.toInt, 'c'.toInt)))
+      . assert(_ == Klass(Motif.Ranges('a'.toInt, 'c'.toInt)))
 
       test(m"Parse a multi-part character class")(Motif.parse(t"[a-cx]").node)
-      . assert(_ == Klass(Ranges('a'.toInt, 'c'.toInt).union(Ranges.point('x'.toInt))))
+      . assert(_ == Klass(Motif.Ranges('a'.toInt, 'c'.toInt).union(Motif.Ranges.point('x'.toInt))))
 
       test(m"Coalesce adjacent class ranges")(Motif.parse(t"[a-cd-f]").node)
-      . assert(_ == Klass(Ranges('a'.toInt, 'f'.toInt)))
+      . assert(_ == Klass(Motif.Ranges('a'.toInt, 'f'.toInt)))
 
       test(m"Parse a negated character class")(Motif.parse(t"[^a]").node)
-      . assert(_ == Klass(Ranges.point('a'.toInt).negate()))
+      . assert(_ == Klass(Motif.Ranges.point('a'.toInt).negate()))
 
       test(m"Parse a class with a leading hyphen")(Motif.parse(t"[-a]").node)
-      . assert(_ == Klass(Ranges.point('-'.toInt).union(Ranges.point('a'.toInt))))
+      . assert(_ == Klass(Motif.Ranges.point('-'.toInt).union(Motif.Ranges.point('a'.toInt))))
 
       test(m"Parse a class with a trailing hyphen")(Motif.parse(t"[a-]").node)
-      . assert(_ == Klass(Ranges.point('-'.toInt).union(Ranges.point('a'.toInt))))
+      . assert(_ == Klass(Motif.Ranges.point('-'.toInt).union(Motif.Ranges.point('a'.toInt))))
 
       test(m"Parse a perl class in a character class")(Motif.parse(t"[\\d.]").node)
-      . assert(_ == Klass(Ranges.digit.union(Ranges.point('.'.toInt))))
+      . assert(_ == Klass(Motif.Ranges.digit.union(Motif.Ranges.point('.'.toInt))))
 
       test(m"Parse a digit class")(Motif.parse(t"\\d").node)
-      . assert(_ == Klass(Ranges.digit))
+      . assert(_ == Klass(Motif.Ranges.digit))
 
       test(m"Parse a negated digit class")(Motif.parse(t"\\D").node)
-      . assert(_ == Klass(Ranges.digit.negate()))
+      . assert(_ == Klass(Motif.Ranges.digit.negate()))
 
       test(m"Parse a word class")(Motif.parse(t"\\w").node)
-      . assert(_ == Klass(Ranges.word))
+      . assert(_ == Klass(Motif.Ranges.word))
 
       test(m"Parse a space class")(Motif.parse(t"\\s").node)
-      . assert(_ == Klass(Ranges.space))
+      . assert(_ == Klass(Motif.Ranges.space))
 
       test(m"Parse anchors")(Motif.parse(t"^a$$").node)
       . assert(_ == Sequence(List(Boundary(Start), Literal('a'.toInt), Boundary(End))))
@@ -187,34 +187,34 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
 
     suite(m"Range algebra"):
       test(m"Union of overlapping ranges coalesces")
-        (Ranges(0, 10).union(Ranges(5, 15)).spans)
+        (Motif.Ranges(0, 10).union(Motif.Ranges(5, 15)).spans)
       . assert(_ == List(0, 15))
 
-      test(m"Union of adjacent ranges coalesces")(Ranges(0, 4).union(Ranges(5, 9)).spans)
+      test(m"Union of adjacent ranges coalesces")(Motif.Ranges(0, 4).union(Motif.Ranges(5, 9)).spans)
       . assert(_ == List(0, 9))
 
-      test(m"Union of disjoint ranges keeps both")(Ranges(0, 1).union(Ranges(5, 9)).spans)
+      test(m"Union of disjoint ranges keeps both")(Motif.Ranges(0, 1).union(Motif.Ranges(5, 9)).spans)
       . assert(_ == List(0, 1, 5, 9))
 
-      test(m"Negation of a range")(Ranges(5, 9).negate().spans)
-      . assert(_ == List(0, 4, 10, Ranges.maxSymbol))
+      test(m"Negation of a range")(Motif.Ranges(5, 9).negate().spans)
+      . assert(_ == List(0, 4, 10, Motif.Ranges.maxSymbol))
 
-      test(m"Double negation is identity")(Ranges(5, 9).negate().negate().spans)
+      test(m"Double negation is identity")(Motif.Ranges(5, 9).negate().negate().spans)
       . assert(_ == List(5, 9))
 
-      test(m"Negation of everything is empty")(Ranges(0, Ranges.maxSymbol).negate().spans)
+      test(m"Negation of everything is empty")(Motif.Ranges(0, Motif.Ranges.maxSymbol).negate().spans)
       . assert(_ == List())
 
-      test(m"Intersection of overlapping ranges")(Ranges(0, 10).intersect(Ranges(5, 15)).spans)
+      test(m"Intersection of overlapping ranges")(Motif.Ranges(0, 10).intersect(Motif.Ranges(5, 15)).spans)
       . assert(_ == List(5, 10))
 
-      test(m"Intersection of disjoint ranges is empty")(Ranges(0, 4).intersect(Ranges(6, 9)).vacant)
+      test(m"Intersection of disjoint ranges is empty")(Motif.Ranges(0, 4).intersect(Motif.Ranges(6, 9)).vacant)
       . assert(_ == true)
 
-      test(m"Containment inside a range")(Ranges(5, 9).contains(7))
+      test(m"Containment inside a range")(Motif.Ranges(5, 9).contains(7))
       . assert(_ == true)
 
-      test(m"Containment outside a range")(Ranges(5, 9).contains(10))
+      test(m"Containment outside a range")(Motif.Ranges(5, 9).contains(10))
       . assert(_ == false)
 
     suite(m"Parsing failures"):

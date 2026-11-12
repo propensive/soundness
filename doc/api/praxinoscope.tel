@@ -15,8 +15,8 @@ detail
     everything another does (`subsumes`) and whether any input matches both (`intersects`).
 
     A pattern is parsed into a `Motif`, which holds its structural `Motif.Node` tree, its
-    count of capturing groups and its compiled `Program`, and is matched by `matches`, `seek`,
-    `search`, `groups` and `spans`. Character classes are sets of codepoints, `Ranges`;
+    count of capturing groups and its compiled `Motif.Program`, and is matched by `matches`, `seek`,
+    `search`, `groups` and `spans`. Character classes are sets of codepoints, `Motif.Ranges`;
     the `Pike` virtual machine runs a program over any input a `Symbolizer` can decode into
     symbols (`Text` as Unicode codepoints, today); and `Subsumption` decides containment and
     intersection over compiled programs.
@@ -61,7 +61,7 @@ detail
 
 refer praxinoscope.Motif
 refer praxinoscope.Re2
-refer praxinoscope.Program
+refer praxinoscope.Motif.Program
 refer praxinoscope.Subsumption
 refer kaleidoscope.Regex
 refer kaleidoscope.regexBackends
@@ -112,8 +112,8 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
       made from an `r"…"` literal under `regexBackends.re2` is staged into the program at
       compile time through `.staged`, so its `#node` is `Node.Empty`: only the program takes
       part in matching.
-  refer praxinoscope.Program
-  refer praxinoscope.Ranges
+  refer praxinoscope.Motif.Program
+  refer praxinoscope.Motif.Ranges
   refer praxinoscope.Subsumption
   refer kaleidoscope.Regex
   entry .parse   parses RE2 syntax into a `Motif`, or raises `Motif.Error` at the offending position
@@ -227,7 +227,7 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
           row  `AtomicGroup`  14  _atomic groups are not part of RE2 syntax_
           row  `UnsupportedGroup`  15  _the group syntax is not supported_  a `(?P` not followed by `<`
           row  `Flag`  16  _inline flags are not supported_  a flag letter other than `i`, `m`, `s` or `U`
-          row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  a count over `Motif.maxRepetition`, or a program over `Program.maxOps`
+          row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  a count over `Motif.maxRepetition`, or a program over `Motif.Program.maxOps`
           row  `BudgetExceeded`  18  _the analysis exceeded its computation budget_  a containment analysis past `Subsumption.maxStates`
           row  `Unverifiable`  19  _the pattern contains constructs which the analysis cannot verify_  a containment question about a pattern with a word or line boundary
           row  `InvalidPosixClass`  20  _the POSIX character class name is not recognised_
@@ -327,45 +327,106 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
       stepping through repeated matches needs. `anchored` false seeks from `start` instead of
       requiring the whole input.
 
-entry .Program   a pattern compiled to a flat instruction array, for the Pike VM and the containment analyses
-  detail
-      A `Program` is the `#ops` of a pattern as an array of `Program.Op`, with capture group
-      `n` recording its bounds in slots `2n` and `2n + 1` and the whole match in slots 0 and
-      1, so `#slots` is `2 × (captures + 1)`. `.compile` builds one from a `Motif.Node`, and
-      `Motif#program` holds it; `Pike.run` executes it and `Subsumption` analyses it. The
-      lazily computed `#nullable`, `#firstBounds` and `#prefix` are what let an unanchored
-      seek skip positions at which no match can begin.
-  refer praxinoscope.Motif
-  refer praxinoscope.Pike
-  entry .compile   compiles a node tree to a program, raising `Motif.Error` if it grows past `.maxOps`
-      Emits one `Symbol` op per literal or class, `Split`s for alternation and repetition
-      (preferred branch first, which is how greed and reluctance are encoded), `Jump`s for
-      loops, `Save`s around a capturing group, `Test`s for anchors, and a final `Accept`. A
-      bounded repetition `{n,m}` is expanded, so nested bounded repetitions grow
-      geometrically; past `maxOps` ops the compilation raises
-      `Motif.Error.Reason.RepetitionTooLarge`.
-  entry .maxOps   the ceiling on a program's length: 100000 ops
-  entry .Op   one instruction: `Symbol`, `Split`, `Jump`, `Save`, `Test` or `Accept`
-      `Symbol(bounds, next)` consumes one symbol within the interleaved `lo, hi, lo, hi, …`
-      bounds (a `Ranges` flattened for allocation-free scanning) and continues at `next`;
-      `Split(preferred, alternate)` forks a thread, preferring the first; `Jump(target)`
-      continues elsewhere; `Save(slot, next)` records the current position in a capture slot;
-      `Test(anchor, next)` passes only where the `Motif.Node.Anchor` holds; `Accept` ends a
-      match. Only `Symbol` consumes input; the rest are followed at no cost in the VM's
-      ε-closure.
-  entry #ops   the instructions, indexed by program counter
-  entry #slots   the number of capture slots: two per group, plus two for the whole match
-  entry #captures   the number of capturing groups
-  entry #entry   the program counter execution starts at: 0
-  entry #nullable   whether a match may consume nothing, in which case no position can be skipped when seeking
-  entry #firstBounds   the interleaved bounds of every symbol a match can begin with, coalesced
-      Empty when no symbol can begin a match. An unanchored seek over a pattern with no
-      literal prefix scans for a symbol within these bounds before starting threads.
-  entry #prefix   the longest literal every match must begin with, or empty text
-      Capped at 32 UTF-16 units, and empty when the first consuming op is not a single
-      unique symbol. An unanchored seek jumps between occurrences of it with
-      `Symbolizer#find`, which for `Text` is `String.indexOf`, rather than stepping through
-      every position.
+  entry .Program   a pattern compiled to a flat instruction array, for the Pike VM and the containment analyses
+    detail
+        A `Program` is the `#ops` of a pattern as an array of `Program.Op`, with capture group
+        `n` recording its bounds in slots `2n` and `2n + 1` and the whole match in slots 0 and
+        1, so `#slots` is `2 × (captures + 1)`. `.compile` builds one from a `Motif.Node`, and
+        `Motif#program` holds it; `Pike.run` executes it and `Subsumption` analyses it. The
+        lazily computed `#nullable`, `#firstBounds` and `#prefix` are what let an unanchored
+        seek skip positions at which no match can begin.
+    refer praxinoscope.Motif
+    refer praxinoscope.Pike
+    entry .compile   compiles a node tree to a program, raising `Motif.Error` if it grows past `.maxOps`
+        Emits one `Symbol` op per literal or class, `Split`s for alternation and repetition
+        (preferred branch first, which is how greed and reluctance are encoded), `Jump`s for
+        loops, `Save`s around a capturing group, `Test`s for anchors, and a final `Accept`. A
+        bounded repetition `{n,m}` is expanded, so nested bounded repetitions grow
+        geometrically; past `maxOps` ops the compilation raises
+        `Motif.Error.Reason.RepetitionTooLarge`.
+    entry .maxOps   the ceiling on a program's length: 100000 ops
+    entry .Op   one instruction: `Symbol`, `Split`, `Jump`, `Save`, `Test` or `Accept`
+        `Symbol(bounds, next)` consumes one symbol within the interleaved `lo, hi, lo, hi, …`
+        bounds (a `Ranges` flattened for allocation-free scanning) and continues at `next`;
+        `Split(preferred, alternate)` forks a thread, preferring the first; `Jump(target)`
+        continues elsewhere; `Save(slot, next)` records the current position in a capture slot;
+        `Test(anchor, next)` passes only where the `Motif.Node.Anchor` holds; `Accept` ends a
+        match. Only `Symbol` consumes input; the rest are followed at no cost in the VM's
+        ε-closure.
+    entry #ops   the instructions, indexed by program counter
+    entry #slots   the number of capture slots: two per group, plus two for the whole match
+    entry #captures   the number of capturing groups
+    entry #entry   the program counter execution starts at: 0
+    entry #nullable   whether a match may consume nothing, in which case no position can be skipped when seeking
+    entry #firstBounds   the interleaved bounds of every symbol a match can begin with, coalesced
+        Empty when no symbol can begin a match. An unanchored seek over a pattern with no
+        literal prefix scans for a symbol within these bounds before starting threads.
+    entry #prefix   the longest literal every match must begin with, or empty text
+        Capped at 32 UTF-16 units, and empty when the first consuming op is not a single
+        unique symbol. An unanchored seek jumps between occurrences of it with
+        `Symbolizer#find`, which for `Text` is `String.indexOf`, rather than stepping through
+        every position.
+  entry .Ranges   a set of symbols as sorted, disjoint runs of codepoints: the form every character class takes
+    detail
+        A `Ranges` holds its `#spans` as an interleaved list of inclusive bounds, `lo :: hi ::
+        lo :: hi :: …`, sorted, disjoint and never adjacent, so two sets are equal exactly when
+        their spans are. The constructor is private; `.apply`, `.point`, `.empty` and the named
+        classes build normalised sets, and `#union`, `#negate`, `#intersect` and `#folded`
+        preserve the invariant. Symbols are `Int`-encoded members of an ordered alphabet,
+        Unicode codepoints up to `.maxSymbol` today.
+
+        ```scala
+        import soundness.*
+
+        Motif.Ranges(0, 10).union(Motif.Ranges(5, 15)).spans     // List(0, 15)
+        Motif.Ranges(5, 9).negate().spans                   // List(0, 4, 10, 0x10ffff)
+        Motif.Ranges(0, 10).intersect(Motif.Ranges(5, 15)).spans  // List(5, 10)
+        Motif.Ranges.digit.contains('7')                    // true
+        Motif.Ranges.posix.at("alpha")                      // letters A–Z and a–z
+        Motif.Ranges.unicode("Lu")                          // every uppercase letter
+        ```
+
+        The parser resolves every class form to a `Ranges`, so `Motif.parse(t"[a-cd-f]").node`
+        is `Klass(Ranges('a', 'f'))`, the adjacent runs coalesced.
+    refer praxinoscope.Motif
+    entry .maxSymbol   the greatest symbol in the Unicode codepoint domain: `0x10ffff`
+        The upper bound `#negate` complements against. Any other symbol domain is smaller, so it
+        is a safe universal bound.
+    entry .empty   the set with no symbols
+    entry .apply   `Ranges(lo, hi)`: the inclusive run from `lo` to `hi`
+    entry .point   `Ranges.point(symbol)`: the set of one symbol
+    entry .digit   `\d`: the ASCII digits `0`–`9`
+        RE2's perl classes are ASCII-only, as are `.word` and `.space`.
+    entry .word   `\w`: ASCII letters, digits and `_`
+    entry .space   `\s`: tab, newline, vertical tab, form feed, carriage return and space
+    entry .any   `.`: every codepoint but newline
+        Under the `s` flag, `.` is `.anySymbol` instead.
+    entry .anySymbol   every codepoint: `\p{Any}`, and `.` under the `s` flag
+    entry .where   every symbol a predicate admits, as coalesced runs
+        Scans the whole codepoint domain once, which is how the Unicode classes are made exact
+        without a second copy of the Unicode database: the JDK's own `Character` tables answer
+        the predicate. One pass per distinct class, which `.unicode` memoises.
+    entry .posix   the POSIX classes of `[[:name:]]`, by name, all ASCII-only
+        `alnum`, `alpha`, `ascii`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`,
+        `punct`, `space`, `upper`, `word` and `xdigit`, as a `Map[String, Ranges]`; a name
+        not present is `Motif.Error.Reason.InvalidPosixClass` when parsed.
+    entry .unicode   a Unicode general category or script by the name `\p{…}` uses, or `Unset`
+        `Any` is the whole domain; a two-letter category such as `Lu` or `Nd` is matched
+        exactly; a one-letter group such as `L` is the union of its subcategories, as RE2
+        defines it; and any other name is tried as a script, `Greek` or `Han`. The result is
+        memoised, since each class costs one pass over the domain. An unknown name is
+        `Motif.Error.Reason.UnknownUnicodeClass` when parsed.
+    entry #spans   the interleaved inclusive bounds, `lo :: hi :: lo :: hi :: …`
+    entry #vacant   whether the set is empty
+    entry #contains   whether a symbol is in the set
+    entry #union   the symbols in either set, coalesced
+    entry #negate   the symbols not in the set, up to `max` (`Ranges.maxSymbol` by default)
+    entry #intersect   the symbols in both sets
+    entry #folded   the closure of the set under simple case folding, as the `i` flag defines it
+        A fold orbit is not always a pair — `K`, `k` and the Kelvin sign fold together — so
+        the closure is computed over orbits rather than by mapping each symbol up and down.
+        Only the case-varying codepoints are examined, so the cost is proportional to their
+        number rather than to the set's size.
 
 entry .Pike   the virtual machine which runs a `Program` over an input in linear time
   detail
@@ -376,78 +437,16 @@ entry .Pike   the virtual machine which runs a `Program` over an input in linear
       length, whatever the pattern, which is the guarantee the whole library rests on. Thread
       order is preference order, so the first thread to accept is the match a backtracking
       engine would have found first, with the same capture bounds.
-  refer praxinoscope.Program
+  refer praxinoscope.Motif.Program
   refer praxinoscope.Motif
   entry .run   runs a program from a UTF-16 offset, returning the winning thread's capture slots or `Unset`
       `Pike.run(program, input, start, anchoredStart, anchoredEnd)`, over any input with a
       `Symbolizer`. With `anchoredStart` false, a fresh lowest-priority thread joins at every
       position until a match is found — leftmost-first `seek` semantics — and positions at
-      which no match can begin are skipped by `Program#prefix` or `Program#firstBounds`;
+      which no match can begin are skipped by `Motif.Program#prefix` or `Motif.Program#firstBounds`;
       with `anchoredEnd` true, the match must reach the end of the input. The slots are an
       `Array[Int]` with `-1` where no thread saved a position. `Motif#matches`, `#seek`,
       `#search` and `#slots` are the usual callers.
-
-entry .Ranges   a set of symbols as sorted, disjoint runs of codepoints: the form every character class takes
-  detail
-      A `Ranges` holds its `#spans` as an interleaved list of inclusive bounds, `lo :: hi ::
-      lo :: hi :: …`, sorted, disjoint and never adjacent, so two sets are equal exactly when
-      their spans are. The constructor is private; `.apply`, `.point`, `.empty` and the named
-      classes build normalised sets, and `#union`, `#negate`, `#intersect` and `#folded`
-      preserve the invariant. Symbols are `Int`-encoded members of an ordered alphabet,
-      Unicode codepoints up to `.maxSymbol` today.
-
-      ```scala
-      import soundness.*
-
-      Ranges(0, 10).union(Ranges(5, 15)).spans     // List(0, 15)
-      Ranges(5, 9).negate().spans                   // List(0, 4, 10, 0x10ffff)
-      Ranges(0, 10).intersect(Ranges(5, 15)).spans  // List(5, 10)
-      Ranges.digit.contains('7')                    // true
-      Ranges.posix.at("alpha")                      // letters A–Z and a–z
-      Ranges.unicode("Lu")                          // every uppercase letter
-      ```
-
-      The parser resolves every class form to a `Ranges`, so `Motif.parse(t"[a-cd-f]").node`
-      is `Klass(Ranges('a', 'f'))`, the adjacent runs coalesced.
-  refer praxinoscope.Motif
-  entry .maxSymbol   the greatest symbol in the Unicode codepoint domain: `0x10ffff`
-      The upper bound `#negate` complements against. Any other symbol domain is smaller, so it
-      is a safe universal bound.
-  entry .empty   the set with no symbols
-  entry .apply   `Ranges(lo, hi)`: the inclusive run from `lo` to `hi`
-  entry .point   `Ranges.point(symbol)`: the set of one symbol
-  entry .digit   `\d`: the ASCII digits `0`–`9`
-      RE2's perl classes are ASCII-only, as are `.word` and `.space`.
-  entry .word   `\w`: ASCII letters, digits and `_`
-  entry .space   `\s`: tab, newline, vertical tab, form feed, carriage return and space
-  entry .any   `.`: every codepoint but newline
-      Under the `s` flag, `.` is `.anySymbol` instead.
-  entry .anySymbol   every codepoint: `\p{Any}`, and `.` under the `s` flag
-  entry .where   every symbol a predicate admits, as coalesced runs
-      Scans the whole codepoint domain once, which is how the Unicode classes are made exact
-      without a second copy of the Unicode database: the JDK's own `Character` tables answer
-      the predicate. One pass per distinct class, which `.unicode` memoises.
-  entry .posix   the POSIX classes of `[[:name:]]`, by name, all ASCII-only
-      `alnum`, `alpha`, `ascii`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`,
-      `punct`, `space`, `upper`, `word` and `xdigit`, as a `Map[String, Ranges]`; a name
-      not present is `Motif.Error.Reason.InvalidPosixClass` when parsed.
-  entry .unicode   a Unicode general category or script by the name `\p{…}` uses, or `Unset`
-      `Any` is the whole domain; a two-letter category such as `Lu` or `Nd` is matched
-      exactly; a one-letter group such as `L` is the union of its subcategories, as RE2
-      defines it; and any other name is tried as a script, `Greek` or `Han`. The result is
-      memoised, since each class costs one pass over the domain. An unknown name is
-      `Motif.Error.Reason.UnknownUnicodeClass` when parsed.
-  entry #spans   the interleaved inclusive bounds, `lo :: hi :: lo :: hi :: …`
-  entry #vacant   whether the set is empty
-  entry #contains   whether a symbol is in the set
-  entry #union   the symbols in either set, coalesced
-  entry #negate   the symbols not in the set, up to `max` (`Ranges.maxSymbol` by default)
-  entry #intersect   the symbols in both sets
-  entry #folded   the closure of the set under simple case folding, as the `i` flag defines it
-      A fold orbit is not always a pair — `K`, `k` and the Kelvin sign fold together — so
-      the closure is computed over orbits rather than by mapping each symbol up and down.
-      Only the case-varying codepoints are examined, so the cost is proportional to their
-      number rather than to the set's size.
 
 entry .Subsumption   decides containment and intersection of the languages of compiled programs
   detail
@@ -460,7 +459,7 @@ entry .Subsumption   decides containment and intersection of the languages of co
       boundaries are context-dependent in a way the analyses do not model, so a program
       containing one raises `Motif.Error.Reason.Unverifiable`.
   refer praxinoscope.Motif
-  refer praxinoscope.Program
+  refer praxinoscope.Motif.Program
   entry .maxStates   the budget on explored states: 100000, past which `.subsumes` raises `BudgetExceeded`
   entry .subsumes   whether every input matched by one program, or by all of a list, is matched by the cover
       `Subsumption.subsumes(first, second)` decides `L(second) ⊆ L(first)`;
@@ -476,12 +475,12 @@ entry .Subsumption   decides containment and intersection of the languages of co
 
 entry .Symbolizer   how an input is read as successive `Int`-encoded symbols, so a program can run over it
   detail
-      A typeclass, `input is Symbolizer`, which decodes an input into the symbols a `Program`
+      A typeclass, `input is Symbolizer`, which decodes an input into the symbols a `Motif.Program`
       consumes: its `#length`, the `#symbol` at a UTF-16 offset, the offset of the `#next`
       symbol, the symbol `#before` an offset, whether a symbol is a `#word` character, and
       `#find`, which locates a literal for seek acceleration. The program representation
       depends on nothing else about the input, so a UTF-8 byte domain, for streamed or native
-      matching, could be added without changing `Program` or `Pike`. `.text` is the one
+      matching, could be added without changing `Motif.Program` or `Pike`. `.text` is the one
       instance provided, over `Text` as Unicode codepoints, in implicit scope.
   refer praxinoscope.Pike
   entry .text   `Text is Symbolizer`: Unicode codepoints over UTF-16 text
@@ -502,7 +501,7 @@ entry .Fsa   a whole-input matcher generated as the code compiles: a static auto
       the pattern's symbol classes, driven by an allocation-free loop which neither
       backtracks nor tracks threads. It is a named holder rather than a bare function type so
       that capture-checked consumers can carry one through quoted code. The generator
-      declines — and the literal falls back to its staged `Program` — for a pattern with a
+      declines — and the literal falls back to its staged `Motif.Program` — for a pattern with a
       word or line boundary, or one whose automaton exceeds 512 states. A program does not
       build one by hand.
   refer kaleidoscope.regexBackends
@@ -516,7 +515,7 @@ entry .internal   the staging of motifs and programs into compiled code, and the
   hidden
   detail
       Not for direct use: the `ToExpr` givens which let kaleidoscope's `r"…"` macro splice a
-      `Motif` (as a `Motif.staged` call), a `Program`, each `Program.Op` and each
+      `Motif` (as a `Motif.staged` call), a `Motif.Program`, each `Motif.Program.Op` and each
       `Motif.Node.Anchor` into the extractor it emits, and `matcher`, which compiles a program
       by subset construction to the `Fsa` a captureless literal uses.
   entry .anchor   `ToExpr[Motif.Node.Anchor]`
