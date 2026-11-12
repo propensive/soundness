@@ -204,8 +204,10 @@ configuration, notes, linked worktrees, merging, rebasing and the stash are all 
 written directly, in Git's own formats. A repository is therefore always one which `git` itself
 understands, and an operation which one side stops on a conflict, the other can continue. It
 reaches a repository on the same filesystem by path. A remote one needs a transport, which the
-`http` and `ssh` components supply. `Native(List(SmartHttp(), SshCommand()))` speaks Git's wire
-protocol over whichever `Http.Backend` is in scope, and over a spawned `ssh`:
+`http` and `ssh` components supply. `octogenarian.Native(List(SmartHttp(), SshCommand()))`
+speaks Git's wire protocol over whichever `Http.Backend` is in scope, and over a spawned `ssh`.
+`Native` is not exported to `soundness`, where the name is xenophile's, so it is written
+qualified:
 
 ```scala fuel
 typecheck
@@ -213,7 +215,7 @@ typecheck
 import gitTransports.{smartHttp, sshCommand}
 import httpBackends.javaNetHttp
 
-given Git.Backend = Native(List(SmartHttp(), SshCommand()))
+given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
 ```
 
 Signing is independent of the backend. A `Git.Signer` makes the signature which a commit or tag

@@ -1837,27 +1837,27 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
     suite(m"stderr reasons"):
 
       test(m"a moved ref is read with both hashes"):
-        Commandline.reason(t"error: cannot lock ref 'refs/heads/main': is at 1111111111111111111111111111111111111111 but expected 2222222222222222222222222222222222222222")
+        octogenarian.Commandline.reason(t"error: cannot lock ref 'refs/heads/main': is at 1111111111111111111111111111111111111111 but expected 2222222222222222222222222222222222222222")
       .assert(_ == Git.Error.Reason.Moved(t"refs/heads/main", Git.Hash.unsafe(t"2222222222222222222222222222222222222222"), Git.Hash.unsafe(t"1111111111111111111111111111111111111111")))
 
       test(m"an existing ref is RefExists"):
-        Commandline.reason(t"fatal: cannot lock ref 'refs/tags/v1': reference already exists")
+        octogenarian.Commandline.reason(t"fatal: cannot lock ref 'refs/tags/v1': reference already exists")
       .assert(_ == Git.Error.Reason.RefExists(t"refs/tags/v1"))
 
       test(m"a non-repository is NoRepository"):
-        Commandline.reason(t"fatal: not a git repository (or any of the parent directories): .git")
+        octogenarian.Commandline.reason(t"fatal: not a git repository (or any of the parent directories): .git")
       .assert(_ == Git.Error.Reason.NoRepository(t""))
 
       test(m"overwritten local changes list their paths"):
-        Commandline.reason(t"error: Your local changes to the following files would be overwritten by checkout:\n\ta\n\tb\nPlease commit your changes or stash them before you switch branches.")
+        octogenarian.Commandline.reason(t"error: Your local changes to the following files would be overwritten by checkout:\n\ta\n\tb\nPlease commit your changes or stash them before you switch branches.")
       .assert(_ == Git.Error.Reason.Dirty(List(t"a", t"b")))
 
       test(m"an unrecognised message is Unexpected"):
-        Commandline.reason(t"something nobody anticipated")
+        octogenarian.Commandline.reason(t"something nobody anticipated")
       .assert(_ == Git.Error.Reason.Unexpected)
 
       test(m"an existing note names its target"):
-        Commandline.reason(t"error: Cannot add notes. Found existing notes for object 5c1d2b7e3a4f60918273645566778899aabbccdd. Use '-f' to overwrite existing notes")
+        octogenarian.Commandline.reason(t"error: Cannot add notes. Found existing notes for object 5c1d2b7e3a4f60918273645566778899aabbccdd. Use '-f' to overwrite existing notes")
       .assert(_ == Git.Error.Reason.NoteExists(Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")))
 
     // ----- Activity --------------------------------------------------------------
