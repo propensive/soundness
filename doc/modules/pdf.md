@@ -184,7 +184,7 @@ Each is read from the open document:
 column  Accessor
 column  Gives
 row  `info`  the document information, as a `Pdf.Info`
-row  `destinations`  the named destinations, as a `Map[Text, Destination]`
+row  `destinations`  the named destinations, as a `Map[Text, Pdf.Destination]`
 row  `bookmarks`  the outline, as a tree of `Bookmark`s
 row  `attachments`  the embedded files
 row  `annotations`, on a page  the page's annotations, as a `List[Annotation]`
