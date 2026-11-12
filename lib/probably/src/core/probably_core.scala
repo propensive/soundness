@@ -49,7 +49,6 @@ package decimalizers:
 
 export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
 
 // Exported at package level so that `n"…"` moniker and tag literals work wherever probably is
 // imported, without a separate `import Probing.nominative` in every suite. Both planes are in
