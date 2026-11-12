@@ -82,7 +82,7 @@ detail
     handled: a `java.lang.Error` which says why a situation was believed impossible.
 
     For macros, `halt` and `warn` report a `Message` as a compile-time diagnostic, with the
-    same `SN-` prefix, and a foreign `Throwable` is wrapped as an `UncheckedError` to make it
+    same `SN-` prefix, and a foreign `Throwable` is wrapped as an `Error.Unchecked` to make it
     a `Hazard`. How to *raise* and *handle* an error — `raises`, `Tactic`, `safely`,
     `recover`… — is `contingency`, which builds on this library.
 
@@ -149,10 +149,10 @@ entry .Error   the base of every Soundness error: a number, a structured message
   refer fulminate.Clarification
   refer fulminate.Diagnostics
   refer fulminate.Hazard
-  refer fulminate.UncheckedError
-  entry .apply   any `Throwable` as an `Error`: itself if it is one, else wrapped as `UncheckedError`
+  refer fulminate.Error.Unchecked
+  entry .apply   any `Throwable` as an `Error`: itself if it is one, else wrapped as `Error.Unchecked`
       `Error(throwable)` passes an `Error` through unchanged and wraps any other `Throwable`
-      in an `UncheckedError`, which keeps its message and stack trace. This is how a JDK
+      in an `Unchecked`, which keeps its message and stack trace. This is how a JDK
       exception becomes a `Hazard` which can be raised.
   entry #d   the error's number: the `ddd` of `SN-ddd`, or 0 for an unnumbered error
   entry #e   the reason's number within the error: the `e` of `SN-ddd.e`, or 0
@@ -172,10 +172,26 @@ entry .Error   the base of every Soundness error: a number, a structured message
       The message alone when the error has no number. This is what `HaltTactic` reports when
       an error becomes a compile error.
 
+  entry .Unchecked   a foreign `Throwable` wrapped as an `Error`, so that it can be raised
+    detail
+        Error 117: _unchecked error with message, `text`_, or _unchecked error with no
+        message_. `Unchecked(throwable)` keeps the original's message as `#text` and
+        adopts its stack trace, and is built with `emptyDiagnostics`, since the trace it carries
+        is the original's. `Error(throwable)` is the usual way to make one: it passes a real
+        `Error` through and wraps anything else. The original itself is not kept — `getCause`
+        is `null` — only its message and stack trace, so a handler which meets one should
+        surface it as a typed error, or fix the source of the throw, rather than match on the
+        original's class.
+    refer fulminate.Error
+    entry .describe   the message for an original message text; _with no message_ when it is empty
+    entry .apply   wraps a `Throwable`, keeping its message and stack trace
+    entry #text   the original's message, or empty text
+    entry #stackTrace   the original's stack trace, as the JVM array
+
 entry .Hazard   the domain of raisable values: any pure `Exception`
     `type Hazard = Exception & caps.Pure`. `Error` is pure by inheritance, so every Soundness
     error is a `Hazard`; a JDK exception must be wrapped (by `Error(throwable)`, as an
-    `UncheckedError`) to be raised, since purity cannot be established for an arbitrary
+    `Error.Unchecked`) to be raised, since purity cannot be established for an arbitrary
     `Throwable` subclass. Every `Tactic[error]`, `raises error` and `Attempt[_, error]` bounds
     its error by `Hazard`.
 
@@ -437,22 +453,6 @@ entry .warn   reports a compile warning from a macro
     `warn(message)`, `warn(message, position)`, `warn(d, message)`, `warn(d, message,
     position)`, `warn(d, reason, message)` and `warn(d, reason, message, position)` — with
     `report.warning` in place of `report.errorAndAbort`, so the expansion continues.
-
-entry .UncheckedError   a foreign `Throwable` wrapped as an `Error`, so that it can be raised
-  detail
-      Error 117: _unchecked error with message, `text`_, or _unchecked error with no
-      message_. `UncheckedError(throwable)` keeps the original's message as `#text` and
-      adopts its stack trace, and is built with `emptyDiagnostics`, since the trace it carries
-      is the original's. `Error(throwable)` is the usual way to make one: it passes a real
-      `Error` through and wraps anything else. The original itself is not kept — `getCause`
-      is `null` — only its message and stack trace, so a handler which meets one should
-      surface it as a typed error, or fix the source of the throw, rather than match on the
-      original's class.
-  refer fulminate.Error
-  entry .describe   the message for an original message text; _with no message_ when it is empty
-  entry .apply   wraps a `Throwable`, keeping its message and stack trace
-  entry #text   the original's message, or empty text
-  entry #stackTrace   the original's stack trace, as the JVM array
 
 entry .TextEscapes   decodes the standard escape sequences in text: `\n`, `\t`, `\uXXXX`…
   detail

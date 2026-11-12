@@ -45,7 +45,27 @@ type Hazard = Exception & caps.Pure
 object Error:
   def apply(throwable: Throwable): Error = throwable match
     case error: Error         => error
-    case throwable: Throwable => UncheckedError(throwable)
+    case throwable: Throwable => Unchecked(throwable)
+
+  object Unchecked:
+    def describe(message: Text): Message =
+      if message == "".tt then m"unchecked error with no message"
+      else m"unchecked error with message, $message"
+
+    def apply(throwable: Throwable): Unchecked =
+      val message: Text = throwable.getMessage() match
+        case null    => "".tt
+        case message => message.tt
+
+      new Unchecked(message, throwable.getStackTrace)
+
+  case class Unchecked private
+    ( text:       Text,
+      // [java-boundary] raw stack-trace array from Throwable.getStackTrace
+      @scala.caps.unsafe.untrackedCaptures
+      stackTrace: scala.Array[StackTraceElement | Null] | Null )
+  extends Error(117, 0)(Unchecked.describe(text))(using errorDiagnostics.emptyDiagnostics):
+    setStackTrace(stackTrace)
 
 transparent abstract class Error(val d: Int, val e: Int)
   ( val message: Message, private val cause: Throwable | Null )

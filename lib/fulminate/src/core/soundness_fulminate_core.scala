@@ -36,7 +36,7 @@ export
   fulminate
   . { Clarification, Communicable, communicate, Diagnostics, Error, halt, Hazard, m,
       Message,
-      Panic, panic, TextEscapes, UncheckedError, warn }
+      Panic, panic, TextEscapes, warn }
 
 package errorDiagnostics:
   export fulminate.errorDiagnostics.{emptyDiagnostics, stackTracesDiagnostics}

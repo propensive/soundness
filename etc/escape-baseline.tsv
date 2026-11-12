@@ -223,7 +223,7 @@ lib/facsimile/src/core/facsimile_editing.scala	0	5	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/file/facsimile.PdfFile.scala	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/test/facsimile_test.scala	0	20	0	0	18	17	0	0	0	0	2	0	0	0	1	0	0
 lib/frontier/src/core/frontier.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/fulminate/src/core/fulminate.UncheckedError.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+lib/fulminate/src/core/fulminate.Error.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/anticipation_galilei_core.scala	0	0	0	0	0	0	0	5	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.AccessRegister.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Dos.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0

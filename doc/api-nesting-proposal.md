@@ -667,7 +667,7 @@ Each pair is a genuine clash, not a re-export:
 | parasite.core | `SharedProbate→Probate.Shared` (an alias; needs a companion) — **done** |
 | aviation.core | `RecurrenceLiteral→Recurrence.Literal` (an alias) — **done** |
 | cataclysm.core | `SyntaxMatcher→Css.Syntax.Matcher` — **done** |
-| fulminate.core | `UncheckedError→Error.Unchecked` |
+| fulminate.core | `UncheckedError→Error.Unchecked` — **done** |
 
 Still blocked: `TlsAcceptance`, `SecurePort` (platform-split `Tls`); `ArOpenable` (R6, as
 `TarOpenable`); `PooledSupervisor` (dual platform definitions); `TableFixture` (`Table` is
