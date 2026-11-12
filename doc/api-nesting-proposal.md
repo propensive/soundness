@@ -661,7 +661,7 @@ Each pair is a genuine clash, not a re-export:
 | dendrology.tree | `TreeTile→TreeDiagram.Tile`, `TreeStyle→TreeDiagram.Style`, `TextualTreeStyle→TreeDiagram.TextualStyle` — **done** |
 | dendrology.dag | `DagTile`, `DagStyle`, `TextualDagStyle` → `DagDiagram.*`; `LaneDagStyle`, `TextualLaneDagStyle` → `LaneDagDiagram.*` (not `Dag`, which is acyclicity's) — **done** |
 | espionage.core | `AcpAgent→Acp.Agent`, `AcpClient→Acp.Client`; the split traits nest beneath them (`Acp.Agent.Lifecycle`, `Acp.Client.Fs`, …). The agent-location enum that held `Acp.Agent` becomes `Acp.Endpoint` (ruling 3) — **done** |
-| degustation.tasty | `ClassSource→Universe.Source`, `ClassInfo→Universe.ClassInfo` |
+| degustation.tasty | `ClassSource→Universe.Source`, `ClassInfo→Universe.ClassInfo` — **done** |
 | exoskeleton.args | merge `InvalidFlagError` and `MissingFlagError` into `Flag.Error` with a `Reason` — **done** |
 | kaleidoscope.core | `RegexBackend→Regex.Backend` (sealed: its `regexBackends` givens move too, or it unseals) — **done** |
 | parasite.core | `SharedProbate→Probate.Shared` (an alias; needs a companion) — **done** |

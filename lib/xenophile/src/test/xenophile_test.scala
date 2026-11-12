@@ -774,7 +774,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
     // snippet compiles against this test module's own classes, so the fixture `Interface` givens
     // above are importable by name.
     suite(m"Dynamic completions"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 

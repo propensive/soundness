@@ -37,9 +37,9 @@ import vacuous.*
 
 // The JDK's own classes, read through the platform class loader of the running JVM.
 private[degustation] object PlatformClasses:
-  def sources: List[ClassSource] = List(Loader)
+  def sources: List[Universe.Source] = List(Loader)
 
-  private object Loader extends ClassSource:
+  private object Loader extends Universe.Source:
     def read(path: Text): Optional[Data] =
       Optional(ClassLoader.getSystemResourceAsStream(path.s)).let: stream =>
         try

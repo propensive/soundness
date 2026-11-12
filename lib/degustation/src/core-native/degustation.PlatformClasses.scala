@@ -35,4 +35,4 @@ package degustation
 // Scala Native has no running JVM to read the JDK's classes from, so they must be on the
 // classpath, as a jar of the JDK's class files.
 private[degustation] object PlatformClasses:
-  def sources: List[ClassSource] = List()
+  def sources: List[Universe.Source] = List()

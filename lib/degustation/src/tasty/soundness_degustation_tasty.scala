@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-// `Universe` and `Classfile` are `@unexported`: their simple names belong to anthology and
-// mandible in the umbrella, so they are reached as `degustation.Universe` and the like.
-export degustation.{ClassInfo, ClassSource, Degustation, Erasure, Pickled, ScalaAtom,
-    ScalaReference, Unpickler}
+// `Classfile` is `@unexported`: its simple name belongs to mandible in the umbrella, so it is
+// reached as `degustation.Classfile`.
+export degustation.{Degustation, Erasure, Pickled, ScalaAtom, ScalaReference, Universe,
+    Unpickler}
