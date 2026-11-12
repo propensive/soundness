@@ -268,6 +268,20 @@ object Chart:
     case Redraw(svg: Svg)
     case Replace(id: Svg.Id, figure: Figure)
 
+  object Category:
+    import anticipation.*
+    import spectacular.*
+
+    def apply[label: Showable](label: label): Category = new Category(label.show)
+
+  // A category with no type of its own: what `Series.categorical` produces from a numeric axis, or
+  // any showable value wrapped by hand.
+  case class Category(label: Text)
+
+  // A value with the interval it is believed to lie in — a mean with its confidence interval, a
+  // median with its quartiles — drawn as a point with error bars, or a line with a band.
+  case class Estimate(value: Double, lower: Double, upper: Double)
+
 // Data, a chart kind that can draw it, and the fit of the one to the other. Immutable: `revise`
 // yields a new chart for new data along with what has to change on the page, keeping the fit
 // whenever it still accommodates the data so that the axes hold still. The style type is the

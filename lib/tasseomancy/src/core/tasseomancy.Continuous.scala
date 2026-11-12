@@ -39,6 +39,7 @@ import hypotenuse.*
 import prepositional.*
 import quantitative.*
 import vacuous.*
+import tasseomancy.Chart.Estimate
 
 object Continuous:
   given int: Int is Continuous = _.toDouble

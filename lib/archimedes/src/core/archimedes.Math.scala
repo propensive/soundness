@@ -54,6 +54,7 @@ import vacuous.*
 import xylophone.*
 import Mathml.*
 import zephyrine.Parse
+import archimedes.Mathml.Display
 
 // The root `<math>` element and Archimedes' integration points.
 //

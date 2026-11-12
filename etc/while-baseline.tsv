@@ -5,9 +5,8 @@ lib/acyclicity/src/core/acyclicity_core.scala	1	0	1
 lib/anthology/src/core/anthology.Toolchain.scala	3	0	0
 lib/apoplexy/src/core/apoplexy.OpenApi.scala	0	1	0
 lib/apoplexy/src/core/apoplexy.internal.scala	0	0	1
-lib/archimedes/src/core/archimedes.Cell.scala	0	0	5
 lib/archimedes/src/core/archimedes.Ergo.scala	11	0	12
-lib/archimedes/src/core/archimedes.Mathml.scala	1	1	0
+lib/archimedes/src/core/archimedes.Mathml.scala	1	1	5
 lib/aviation/src/core/aviation.HebrewCalendar.scala	5	0	0
 lib/aviation/src/core/aviation.LeapSeconds.scala	3	0	0
 lib/aviation/src/core/aviation.Timespan.scala	2	0	0
@@ -20,8 +19,7 @@ lib/breviloquence/src/core/breviloquence.Cbor.scala	17	10	1
 lib/breviloquence/src/core/breviloquence.CborParser.scala	15	1	0
 lib/breviloquence/src/core/breviloquence.inlining.scala	2	0	1
 lib/burdock/src/core/burdock.internal.scala	1	0	0
-lib/cacophony/src/core/cacophony.Audio.scala	2	2	0
-lib/cacophony/src/core/cacophony.Outlet.scala	1	0	0
+lib/cacophony/src/core/cacophony.Audio.scala	3	2	0
 lib/cacophony/src/core/cacophony.Pcm.scala	1	0	0
 lib/caesura/src/core/caesura.Dsv.scala	3	5	0
 lib/caesura/src/core/caesura.Sheet.scala	5	0	3

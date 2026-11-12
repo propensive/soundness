@@ -34,5 +34,4 @@ package soundness
 
 export cacophony
 . { Audio, Audible, Wave, Aiff, Aifc, Au, Snd, ChannelLayout, Monaural, Stereo,
-    Surround, Sonation, Configuration, Feed, Pcm, PcmFlag, Recording, Outlet,
-    Playback }
+    Surround, Sonation, Pcm, PcmFlag, Recording, Playback }

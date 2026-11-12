@@ -37,6 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
+import cacophony.Audio.{Feed, Outlet}
 
 object Tests extends Suite("audio", m"Cacophony Tests"):
 

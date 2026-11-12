@@ -36,6 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import denominative.dysasymptotics.{linearAccess, linearSize}
+import tasseomancy.Chart.{Category, Estimate}
 
 // A minimal TrueType font, assembled the way phoenicia's own fixtures are: enough tables for the
 // character map and the horizontal metrics, which is all a width measurement reads.

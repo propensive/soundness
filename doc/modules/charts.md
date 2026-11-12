@@ -47,11 +47,12 @@ The type of the abscissa decides the axis. A `Text`, an [enumeration] or a `Cate
 a `Duration`, an `Instant` or any `Quantity` is `Continuous`: its values have positions on a
 numeric axis. Either [typeclass] can be given for a type of your own.
 
-An `Estimate` is a continuous value with the interval it lies in, which a chart draws as an
+A `Chart.Estimate` is a continuous value with the interval it lies in, which a chart draws as an
 error bar or a band:
 
 ```scala
-val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
+val timings =
+  Series(t"sort")((1000, Chart.Estimate(2.1, 1.9, 2.4)), (10000, Chart.Estimate(24.0, 22.5, 26.1)))
 ```
 
 A value may also carry a note, as `Noted(3.0, t"Paris")`, which a scatter plot or a line chart

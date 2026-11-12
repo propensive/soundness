@@ -35,6 +35,7 @@ package tasseomancy
 import anticipation.*
 import rudiments.*
 import spectacular.*
+import tasseomancy.Chart.Category
 
 object Series:
   // A name is anything showable — a `Text`, an enum case, a number — shown once, at
