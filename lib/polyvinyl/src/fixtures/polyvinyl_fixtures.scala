@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import gossamer.*
+import polyvinyl.Specification.Member
 
 // Specification objects for the tests. Each lives in this module, compiled before `test`, so the
 // `record` macro can evaluate it while the call sites are being compiled.

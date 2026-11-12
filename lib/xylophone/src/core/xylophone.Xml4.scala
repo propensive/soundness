@@ -45,6 +45,7 @@ import rudiments.*
 import turbulence.read
 import vacuous.*
 import zephyrine.*
+import polyvinyl.Specification.{Member, Multiplicity}
 
 // The decoding shared by `Xml.Provider`'s readers, in a module of its own: one nested in the
 // provider would make each reader capture it.

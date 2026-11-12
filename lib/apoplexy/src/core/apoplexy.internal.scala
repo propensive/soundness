@@ -59,6 +59,7 @@ import vacuous.*
 
 import rudiments.sortingAlgorithms.timsort
 import zephyrine.Parse
+import polyvinyl.Specification.{Member, Multiplicity}
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------

@@ -45,6 +45,7 @@ import rudiments.*
 import turbulence.read
 import spectacular.*
 import vacuous.*
+import polyvinyl.Specification.{Member, Multiplicity}
 
 // Holds `Json.Provider`, the type provider over a JSON Schema document. Its own layer in `Json`'s
 // companion chain so that `Json.scala` need not carry it; it contributes no givens for `Json`

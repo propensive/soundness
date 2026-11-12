@@ -14,11 +14,11 @@ detail
 
     The pieces fit together like this:
 
-    - a `Specification` supplies the schema as an ordered list of `Member`s, and a handful of
+    - a `Specification` supplies the schema as an ordered list of `Specification.Member`s, and a handful of
       primitives over the underlying data: `access`, `absent` and `repeated`, and for richer
       formats `entries`, `kind`, `elements` and `pairs`;
-    - each `Member` is a `Member.Value` (a scalar, named by a type label), a `Member.Record` of
-      further members, or a `Member.Union` of alternatives, and carries a `Multiplicity`: `One`,
+    - each `Specification.Member` is a `Specification.Member.Value` (a scalar, named by a type label), a `Specification.Member.Record` of
+      further members, or a `Specification.Member.Union` of alternatives, and carries a `Specification.Multiplicity`: `One`,
       `Optional`, `Many` or `Keyed`;
     - an `Intensional` instance for each type label says what Scala type a scalar becomes and
       how one value of it is read; an `Intensional.Fallible` reading can fail;
@@ -55,8 +55,8 @@ detail
     until the object has been emitted; one file holding both cannot be ordered.
 
     The library has one published source set, `polyvinyl.core`, which compiles for every
-    platform and is exported in full to the `soundness` umbrella: `Intensional`, `Member`,
-    `Multiplicity`, `Record` and `Specification`. A second component, `polyvinyl.fixtures`, is
+    platform and is exported in full to the `soundness` umbrella: `Intensional`, `Specification.Member`,
+    `Specification.Multiplicity`, `Record` and `Specification`. A second component, `polyvinyl.fixtures`, is
     internal and unpublished: it holds the test specifications (`TreeProvider` over a small
     `Tree` document type, and objects such as `PersonRecords` and `ShapeRecords`) which the
     tests need compiled before their call sites, and is a compact worked example of a complete
@@ -67,9 +67,9 @@ detail
 
 refer polyvinyl.Specification
 refer polyvinyl.Record
-refer polyvinyl.Member
+refer polyvinyl.Specification.Member
 refer polyvinyl.Intensional
-refer polyvinyl.Multiplicity
+refer polyvinyl.Specification.Multiplicity
 
 entry .Specification   a type provider over one document format: a schema as `#fields`, and reading primitives
   detail
@@ -100,12 +100,12 @@ entry .Specification   a type provider over one document format: a schema as `#f
       case class TreeError(reason: Text)(using Diagnostics)
       extends Error(m"the tree could not be read because $reason")
 
-      abstract class TreeProvider(fields0: List[(Text, Member)]) extends Specification:
+      abstract class TreeProvider(fields0: List[(Text, Specification.Member)]) extends Specification:
         type Origin = Tree
         type Form = TreeProvider
         type Failure = TreeError
 
-        def fields(using Tactic[Specification.Error]): List[(Text, Member)] = fields0
+        def fields(using Tactic[Specification.Error]): List[(Text, Specification.Member)] = fields0
 
         def access(name: Text, tree: Tree)(using Tactic[TreeError]): Tree = tree match
           case Tree.Node(children) if Map.defines(children, name) => Map.at(children, name)
@@ -134,7 +134,7 @@ entry .Specification   a type provider over one document format: a schema as `#f
       A schema which cannot be read is raised from `#fields` as a `Specification.Error`, which
       the macros report as a compile error at the call site, as they do a field whose type label
       has no `Intensional` instance.
-  refer polyvinyl.Member
+  refer polyvinyl.Specification.Member
   refer polyvinyl.Intensional
   refer polyvinyl.Record
   entry .Error   a schema which could not be read: reported as a compile error where `record` or `tuple` is called
@@ -262,6 +262,83 @@ entry .Specification   a type provider over one document format: a schema as `#f
         A nested record member becomes a nested named tuple, and the record alternative of a
         union a nested tuple too.
 
+  entry .Member   one field of a specification's schema: a scalar, a nested record, or a union
+    detail
+        A specification's `#fields` are a list of named `Member`s, in the order a named tuple's
+        elements follow. There are three kinds:
+
+        - `Member.Value(fieldType, params, multiplicity)`: a scalar, read by the `Intensional`
+          instance for the label `fieldType` (`t"text"`, `t"integer"`), which receives `params`
+          (a bound, a pattern) verbatim;
+        - `Member.Record(fields, multiplicity)`: a nested record of further members, read from
+          the field's own value by the same specification;
+        - `Member.Union(alternatives, multiplicity)`: alternatives, each keyed by the kind of value
+          (as `Specification#kind` reports it) which selects it, read as the Scala union of their
+          types.
+
+        Each carries a `Multiplicity`, `One` by default, set with `#optional`, `#many` and
+        `#keyed`.
+
+        ```scala fuel
+        alternative One
+          code
+              t"tags" -> Specification.Member.Value(t"text")   // record.tags: Text
+        alternative Optional
+          code
+              t"tags" -> Specification.Member.Value(t"text").optional   // record.tags: Optional[Text]
+        alternative Many
+          code
+              t"tags" -> Specification.Member.Value(t"text").many   // record.tags: List[Text]
+        alternative Keyed
+          code
+              t"tags" -> Specification.Member.Value(t"text").keyed   // record.tags: Map[Text, Text]
+        alternative Union
+          code
+              t"tags" -> Specification.Member.Union(List(
+                t"leaf"  -> Specification.Member.Value(t"text"),
+                t"items" -> Specification.Member.Value(t"text").many))   // record.tags: Text | List[Text]
+        ##
+        ```
+
+        A union's alternative may carry its own multiplicity, so a union of one alternative nests
+        one multiplicity inside another (`List[List[Text]]`); a `Member` on its own carries only
+        one.
+    refer polyvinyl.Specification.Multiplicity
+    refer polyvinyl.Specification
+    entry .Value   a scalar field, read by the `Intensional` instance for its type label
+      entry #fieldType   the type label, such as `t"text"`, by which the field's `Intensional` instance is found
+          Instances are keyed by the exact label: `t"Text"` does not find the instance for
+          `"text"`, and a label with no instance is a compile error, _could not find an
+          Intensional instance for the field `name` with type `label`_.
+      entry #params   the member's parameters, passed verbatim to its instance
+          Such as a bound or a pattern, for an instance made with `Intensional.parametric`.
+      entry #multiplicity   how many values the field carries
+    entry .Record   a nested record of further members
+      entry #fields   the nested record's fields, in order
+      entry #multiplicity   how many nested records the field carries
+    entry .Union   a field whose value may take any of several shapes, chosen by its kind
+      detail
+          Each alternative is keyed by the kind (`Specification#kind`) of value which selects it,
+          and the field reads as the union of the alternatives' types (`Text | List[Text]`). A
+          value whose kind no alternative offers is passed to `Specification#unoffered`. In a
+          tuple, a record alternative becomes a nested named tuple.
+      entry #alternatives   each alternative, keyed by the kind of value which selects it
+      entry #multiplicity   how many values the field carries
+    entry #multiplicity   how many values the field carries
+    entry #of   this member with another multiplicity
+    entry #optional   this member read as `Optional`, `Unset` where the value is absent
+    entry #many   this member read as a `List` of any number of values
+    entry #keyed   this member read as a `Map[Text, _]` of values each under a name
+  entry .Multiplicity   how many values a field carries: one, at most one, any number, or any number by name
+      `One` reads exactly one value, through `Specification#access` and `Specification#required`;
+      `Optional` reads at most one, as an `Optional` which is `Unset` where `Specification#absent`
+      is true; `Many` reads any number, as a `List`, through `Specification#repeated`; and `Keyed`
+      reads any number each under a name, as a `Map[Text, _]`, through `Specification#entries`.
+
+      The macro applies the multiplicity itself, so an `Intensional` instance describes a single
+      value only, and a specification says nothing more about optionality or repetition. A
+      `Member` takes one with `#of`, or `#optional`, `#many` and `#keyed`.
+
 entry .Record   a value whose fields are typed by a specification, read lazily from its underlying data
   detail
       A `Record` is a `Selectable` over a raw value (its `#recordData`) and a function from a
@@ -309,88 +386,10 @@ entry .Record   a value whose fields are typed by a specification, read lazily f
       called by name, the caller casts and applies it. A name which is not a field panics with
       _the record has no field named `field`_.
 
-entry .Member   one field of a specification's schema: a scalar, a nested record, or a union
-  detail
-      A specification's `#fields` are a list of named `Member`s, in the order a named tuple's
-      elements follow. There are three kinds:
-
-      - `Member.Value(fieldType, params, multiplicity)`: a scalar, read by the `Intensional`
-        instance for the label `fieldType` (`t"text"`, `t"integer"`), which receives `params`
-        (a bound, a pattern) verbatim;
-      - `Member.Record(fields, multiplicity)`: a nested record of further members, read from
-        the field's own value by the same specification;
-      - `Member.Union(alternatives, multiplicity)`: alternatives, each keyed by the kind of value
-        (as `Specification#kind` reports it) which selects it, read as the Scala union of their
-        types.
-
-      Each carries a `Multiplicity`, `One` by default, set with `#optional`, `#many` and
-      `#keyed`.
-
-      ```scala fuel
-      alternative One
-        code
-            t"tags" -> Member.Value(t"text")   // record.tags: Text
-      alternative Optional
-        code
-            t"tags" -> Member.Value(t"text").optional   // record.tags: Optional[Text]
-      alternative Many
-        code
-            t"tags" -> Member.Value(t"text").many   // record.tags: List[Text]
-      alternative Keyed
-        code
-            t"tags" -> Member.Value(t"text").keyed   // record.tags: Map[Text, Text]
-      alternative Union
-        code
-            t"tags" -> Member.Union(List(
-              t"leaf"  -> Member.Value(t"text"),
-              t"items" -> Member.Value(t"text").many))   // record.tags: Text | List[Text]
-      ##
-      ```
-
-      A union's alternative may carry its own multiplicity, so a union of one alternative nests
-      one multiplicity inside another (`List[List[Text]]`); a `Member` on its own carries only
-      one.
-  refer polyvinyl.Multiplicity
-  refer polyvinyl.Specification
-  entry .Value   a scalar field, read by the `Intensional` instance for its type label
-    entry #fieldType   the type label, such as `t"text"`, by which the field's `Intensional` instance is found
-        Instances are keyed by the exact label: `t"Text"` does not find the instance for
-        `"text"`, and a label with no instance is a compile error, _could not find an
-        Intensional instance for the field `name` with type `label`_.
-    entry #params   the member's parameters, passed verbatim to its instance
-        Such as a bound or a pattern, for an instance made with `Intensional.parametric`.
-    entry #multiplicity   how many values the field carries
-  entry .Record   a nested record of further members
-    entry #fields   the nested record's fields, in order
-    entry #multiplicity   how many nested records the field carries
-  entry .Union   a field whose value may take any of several shapes, chosen by its kind
-    detail
-        Each alternative is keyed by the kind (`Specification#kind`) of value which selects it,
-        and the field reads as the union of the alternatives' types (`Text | List[Text]`). A
-        value whose kind no alternative offers is passed to `Specification#unoffered`. In a
-        tuple, a record alternative becomes a nested named tuple.
-    entry #alternatives   each alternative, keyed by the kind of value which selects it
-    entry #multiplicity   how many values the field carries
-  entry #multiplicity   how many values the field carries
-  entry #of   this member with another multiplicity
-  entry #optional   this member read as `Optional`, `Unset` where the value is absent
-  entry #many   this member read as a `List` of any number of values
-  entry #keyed   this member read as a `Map[Text, _]` of values each under a name
-
-entry .Multiplicity   how many values a field carries: one, at most one, any number, or any number by name
-    `One` reads exactly one value, through `Specification#access` and `Specification#required`;
-    `Optional` reads at most one, as an `Optional` which is `Unset` where `Specification#absent`
-    is true; `Many` reads any number, as a `List`, through `Specification#repeated`; and `Keyed`
-    reads any number each under a name, as a `Map[Text, _]`, through `Specification#entries`.
-
-    The macro applies the multiplicity itself, so an `Intensional` instance describes a single
-    value only, and a specification says nothing more about optionality or repetition. A
-    `Member` takes one with `#of`, or `#optional`, `#many` and `#keyed`.
-
 entry .Intensional   how a scalar type label is read: the Scala type it becomes, and how one value is read
   detail
       A specification declares one instance for each scalar type label its schemas can name. A
-      `"text" is Intensional in Form from Origin to Text` reads a `Member.Value(t"text")` as
+      `"text" is Intensional in Form from Origin to Text` reads a `Specification.Member.Value(t"text")` as
       `Text` from a value of the specification's `Origin`; the `Form` is the specification's
       marker type, so the instances are given in its companion and found with no import.
 
@@ -407,12 +406,12 @@ entry .Intensional   how a scalar type label is read: the Scala type it becomes,
           Intensional.parametric: (text, params) => params
       ```
 
-      An instance reads one value: the member's `Multiplicity` is applied by the macro around
+      An instance reads one value: the member's `Specification.Multiplicity` is applied by the macro around
       it. A reading which can fail is an `Intensional.Fallible` instead, typically made with
       `Intensional.Reading`. An instance retains its accessor, so it captures whatever the
       accessor does; one over a pure function is itself pure.
   refer polyvinyl.Specification
-  refer polyvinyl.Member
+  refer polyvinyl.Specification.Member
   entry .Fallible   an `Intensional` whose reading can fail, through the `Tactic` for its `Error`
     detail
         A reading which can fail — a value of the wrong kind, one outside its bounds, a string
@@ -454,6 +453,6 @@ entry .Intensional   how a scalar type label is read: the Scala type it becomes,
       defines.
   entry .parametric   an instance from a function of the value and the member's parameters
       For a type label whose reading depends on its parameters, such as a bounded integer or a
-      pattern: the function receives the `Member.Value`'s `params` verbatim.
+      pattern: the function receives the `Specification.Member.Value`'s `params` verbatim.
   entry #Self   the type label this instance reads, a literal `String` type such as `"text"`
   entry #transform   reads one value of the origin type, with the member's parameters
