@@ -37,6 +37,7 @@ import escapade.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
+import ultimatum.Tui.{Facet, Magnitude, Reckoning, Tick, Transfer}
 
 // Figures rather than pictures: counts for a `Reckoning`, and a composed report for a `Transfer`.
 // Import one by name; `Reckoning` has a default, `Transfer` deliberately does not.

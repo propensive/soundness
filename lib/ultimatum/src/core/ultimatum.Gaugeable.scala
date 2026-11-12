@@ -40,6 +40,7 @@ import profanity.*
 import rudiments.{each, indexed, keep}
 import symbolism.*
 import vacuous.*
+import ultimatum.Tui.{Reading, Tick}
 
 object Gaugeable:
   // One generic lifting of any design to the same status made optional, so that optionality is

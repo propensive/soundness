@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import ultimatum.Tui.{Checklist, Step}
+
 // Multi-step processes. `checklistProcession` is one row per step and animates the running one;
 // the rest fit on a single row.
 // A run of steps is a plain `Sequence[Step]`. It has no default design, because these differ in

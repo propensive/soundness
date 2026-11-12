@@ -35,6 +35,7 @@ package ultimatum
 import anticipation.*
 import iridescence.*
 import prepositional.*
+import ultimatum.Tui.{Gradient, Standing}
 
 object GaugePalette:
   // The no-import default, chosen from what the terminal can actually render: a caller who imports

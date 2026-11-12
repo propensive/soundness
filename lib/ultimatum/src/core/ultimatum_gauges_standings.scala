@@ -34,6 +34,7 @@ package ultimatum
 
 import anticipation.*
 import gossamer.*
+import ultimatum.Tui.Standing
 
 // One-cell (or one-word) markers for a `Standing`. Import one by name; with no import, `Standing`'s
 // companion supplies the tick and cross.

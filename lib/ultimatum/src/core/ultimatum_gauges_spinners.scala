@@ -34,6 +34,7 @@ package ultimatum
 
 import anticipation.*
 import gossamer.*
+import ultimatum.Tui.{Fraction, Spinner}
 
 // Indeterminate activity indicators, keyed on `Busy`. Import one by name to choose it; with no
 // import at all, `Busy`'s companion supplies the braille dots.

@@ -222,15 +222,11 @@ lib/turbulence/src/core/turbulence.Relay.scala	1	0	0
 lib/turbulence/src/core/turbulence.Sink.scala	1	0	0
 lib/turbulence/src/core/turbulence.Writable.scala	1	0	0
 lib/turbulence/src/core/turbulence_core.scala	0	1	0
-lib/ultimatum/src/core/ultimatum.Checklist.scala	0	0	1
 lib/ultimatum/src/core/ultimatum.FlowExtent.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.Form.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.GridSurface.scala	7	0	0
-lib/ultimatum/src/core/ultimatum.Inlay.scala	3	0	0
-lib/ultimatum/src/core/ultimatum.Magnitude.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.ScrollFixture.scala	1	0	0
-lib/ultimatum/src/core/ultimatum.Spinner.scala	1	0	0
-lib/ultimatum/src/core/ultimatum.Tui.scala	8	0	0
+lib/ultimatum/src/core/ultimatum.Tui.scala	13	0	1
 lib/ultimatum/src/core/ultimatum_core.scala	2	0	0
 lib/ulysses/src/core/ulysses.Bibliography.scala	0	9	0
 lib/ulysses/src/core/ulysses.BloomFilter.scala	0	2	0

@@ -33,6 +33,7 @@
 package ultimatum
 
 import aviation.*
+import ultimatum.Tui.{Countdown, Stopwatch}
 
 // Durations, written out. Elapsed time is an `aviation.Duration`; a `Countdown` keeps its own type,
 // so that the two can be shown side by side with different designs and the countdown can signal

@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **323**;
+- exported multi-word type-level names still under review: **322**;
   122 sit in a prefix family of two or more, across 39 families, and
-  201 are singletons. Names under "Reviewed items which should not be moved"
+  200 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -342,22 +342,22 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | variants, not satellites | ultimatum, tasseomancy | 2 | `ScrollFixture`, `StackedBars` |
 | capability and category markers (R3) | anticipation, galilei | 3 | `CreationTimed`, `EmailAddresses`, `IpAddresses` |
 
-### Singletons (201)
+### Singletons (200)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `ArOpenable`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AttemptTactic`, `BaseLayout`,
 `BenchmarkDevice`, `BeneficencePlugin`, `BloomFilter`, `BorderStyle`, `BytecodePalette`,
-`CanonicalCbor`, `CanvasHandle`, `CaptionLayout`, `CardinalWind`, `CarriageReturn`,
-`CaseSensitivity`, `CellRef`, `ChannelLayout`, `ChartPalette`, `CheckOverflow`, `ClasspathIndex`,
-`CliEvent`, `CollectionConverters`, `ColorDepth`, `CommandGroup`, `CommonFormattable`,
-`CopyAttributes`, `CrLf`, `CtrlChar`, `DagDiagram`, `DecimalConverter`, `DecodableManifest`,
-`DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `EditorField`, `EitherTactic`,
-`EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `EucalyptusGcp`,
-`FastForward`, `FieldIndex`, `FileOpenable`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`,
-`FontMetric`, `FrameReader`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GivensPhase`,
-`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
-`ImageOpenable`, `InitializationVector`, `InlineBoard`, `IntercardinalWind`, `InterfaceAddress`,
-`IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JsInvoke`, `JuxtapositionPalette`,
+`CanonicalCbor`, `CanvasHandle`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`,
+`ChannelLayout`, `ChartPalette`, `CheckOverflow`, `ClasspathIndex`, `CliEvent`,
+`CollectionConverters`, `ColorDepth`, `CommandGroup`, `CommonFormattable`, `CopyAttributes`,
+`CrLf`, `CtrlChar`, `DagDiagram`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`,
+`DivisionByZero`, `DivOp`, `DnsLabel`, `EditorField`, `EitherTactic`, `EmailAddress`,
+`EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `EucalyptusGcp`, `FastForward`,
+`FieldIndex`, `FileOpenable`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `FontMetric`,
+`FrameReader`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GivensPhase`, `GraphemeBreak`,
+`GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`, `ImageOpenable`,
+`InitializationVector`, `InlineBoard`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`,
+`Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JsInvoke`, `JuxtapositionPalette`,
 `LaneDagDiagram`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`,
 `LinkEvent`, `ListHasAsScala`, `LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`,
 `MarkdownPalette`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`,

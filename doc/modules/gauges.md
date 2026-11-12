@@ -36,6 +36,7 @@ import probates.awaitProbate
 import stdios.javaLangSystemStdio
 import termcapDefinitions.xtermTrueColorTermcap
 import threads.virtualThreads
+import Tui.{Captioned, Countdown, Fraction, Meter, Reading, Reckoning, Standing, Step, Transfer}
 ```
 
 ```tabular
@@ -50,7 +51,7 @@ row  `threads`, `probates`  the [concurrency](concurrency.md) context in which a
 ### Statuses
 
 What a gauge displays is a value of a specific type, and that type is what selects the
-design:
+design. The status types are nested in `Tui`, and imported from it above:
 
 ```tabular
 column  Status

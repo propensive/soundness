@@ -36,7 +36,7 @@ export
   ultimatum
   . { BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent, conduct, Focus,
       Form, grid, layout, menu,
-      MenuField, paint, panel, scrolling, ScrollFixture, stack, strip, Tick, Tui }
+      MenuField, paint, panel, scrolling, ScrollFixture, stack, strip, Tui }
 
 package inlineAnchoring:
   export
@@ -52,10 +52,7 @@ package inlineShrink:
 
 export
   ultimatum
-  . { Bar, CaptionLayout, Captioned, Checklist, Countdown, Dial, Facet,
-      Fraction, gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, Gradient,
-      Inlay, Magnitude, Meter, Reading, Reckoning, Sparkline,
-      Spinner, Standing, Step, Stopwatch, Transfer, whilst }
+  . { gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, whilst }
 
 // Every given is exported by name: a wildcard would silently drop them, since `import p.*` does not
 // import givens.

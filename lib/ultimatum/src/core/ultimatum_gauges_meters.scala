@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import ultimatum.Tui.{Dial, Meter}
+
 // Readings on a bounded scale. A meter can fall as well as rise, so these designs mark the scale
 // and colour the reading by where it sits on it.
 // `Meter` has no default design: a battery, a thermometer and a bullet chart are not substitutable,

@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import ultimatum.Tui.Sparkline
+
 // Runs of samples drawn as a miniature chart. A sparkline narrower than its series is decimated by
 // taking the maximum of each group, never truncated: a truncated sparkline would show only the
 // oldest samples while looking like the whole series.

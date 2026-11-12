@@ -681,7 +681,7 @@ escritoire's); `Ssh*` in octogenarian (four components, and `Ssh` is susurration
 | library | names → proposed home |
 |---|---|
 | ultimatum.core | `Frame`, `Pane`, `Panes`, `Placement`, `Sizing`, `Occupancy`, `Limits`, `Arrangement`, `Tick` → *new* `Tui.*` — **done**; `Rect` → `Tui.Region` (ruling 4: no abbreviation) |
-| ultimatum.gauges | `Magnitude`, `Meter`, `Reading`, `Reckoning`, `Step`, `Standing`, `Transfer`, `Facet`, `Fraction`, `Gradient`, `Inlay` → *new* `Gauge.*`, or the existing `Gauging` — **deferred**: the gauges component is separate from core's `Tui`, so they need a namespace of their own, or the component split rethinking |
+| ultimatum.gauges | `Magnitude`, `Meter`, `Reading`, `Reckoning`, `Step`, `Standing`, `Transfer`, `Facet`, `Fraction`, `Gradient`, `Inlay` → *new* `Gauge.*`, or the existing `Gauging` — **done**: the gauges component was merged into core, and these, with `Bar`, `Dial`, `Spinner`, `Sparkline`, `Checklist`, `Stopwatch`, `Captioned`, `CaptionLayout`, `Tick` and `Countdown`, nest in `Tui` |
 | anticipation | `Level→Log.Level`; the colour channels `Key`, `Cyan`, … → `Channel.*` † — **done**: `Log.Level`, and all nine channels in `Channel`, which is now exported (perihelion's own `Channel`, `Reader` and `Message` nested in `Websocket`) |
 | honeycomb | `Kind`, `Capture` (attribute value sets) → the companion of their element or attribute † — **deferred**: `Kind` and `Capture` are two of a dozen attribute-value enums (`Autocomplete`, `Crossorigin`, `HDir`, `HttpEquiv`, `Method`, `Preload`, `Rel`, `Rev`, …), which should move as a family or not at all |
 | archimedes | `Display`, `Cell` → `Mathml.*` — **done** |

@@ -37,6 +37,9 @@ import java.io as ji
 import soundness.*
 import denominative.dysasymptotics.linearSize
 import ultimatum.Tui.{Arrangement, Frame, Limits, Occupancy, Pane, Panes, Region, Sizing}
+import ultimatum.Tui
+  . { Captioned, Countdown, Facet, Fraction, Meter, Reading, Reckoning, Sparkline, Standing, Step,
+      Tick }
 
 object Tests extends Suite("tui", m"Ultimatum Tests"):
   def run(): Unit =

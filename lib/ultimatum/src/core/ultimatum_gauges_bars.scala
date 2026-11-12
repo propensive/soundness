@@ -34,6 +34,7 @@ package ultimatum
 
 import anticipation.*
 import gossamer.*
+import ultimatum.Tui.{Bar, Fraction}
 
 // Determinate progress bars, keyed on `Fraction`. Import one by name to choose it; with no import,
 // `Fraction`'s companion supplies the smooth eighth-block bar.

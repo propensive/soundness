@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import ultimatum.Tui.CaptionLayout
+
 // Where a label sits relative to the gauge it labels. Orthogonal to which design is used and to
 // which palette colours it, so a caption can be moved without touching either.
 package captions:
