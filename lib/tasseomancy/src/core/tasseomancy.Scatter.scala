@@ -40,6 +40,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group}
 
 object Scatter:
   case class Fit(abscissa: Scale, ordinate: Scale)

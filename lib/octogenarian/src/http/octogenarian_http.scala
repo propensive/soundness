@@ -35,5 +35,5 @@ package octogenarian
 import telekinesis.*
 
 package gitTransports:
-  // Remote repositories over smart HTTP(S), through whichever `Http.Backend` is in scope.
+  // Git.Remote repositories over smart HTTP(S), through whichever `Http.Backend` is in scope.
   given smartHttp: (backend: Http.Backend) => Transport = SmartHttp()

@@ -80,17 +80,23 @@ object Channel:
         case true  => Int
         case false => Long
 
-// `@unexported`: `Channel` would clash with perihelion's WebSocket `Channel` in the `soundness`
-// umbrella; reach the pixel channel machinery via `anticipation.Channel`.
-@unexported
+  trait Red[bits <: Int] extends Channel["red", bits]
+
+  trait Green[bits <: Int] extends Channel["green", bits]
+
+  trait Blue[bits <: Int] extends Channel["blue", bits]
+
+  trait Alpha[bits <: Int] extends Channel["alpha", bits]
+
+  trait Cyan[bits <: Int] extends Channel["cyan", bits]
+
+  trait Magenta[bits <: Int] extends Channel["magenta", bits]
+
+  trait Yellow[bits <: Int] extends Channel["yellow", bits]
+
+  trait Key[bits <: Int] extends Channel["key", bits]
+
+  trait Grey[bits <: Int] extends Channel["grey", bits]
+
 trait Channel[label <: String & Singleton, bits <: Int]
 
-trait Red[bits <: Int] extends Channel["red", bits]
-trait Green[bits <: Int] extends Channel["green", bits]
-trait Blue[bits <: Int] extends Channel["blue", bits]
-trait Alpha[bits <: Int] extends Channel["alpha", bits]
-trait Cyan[bits <: Int] extends Channel["cyan", bits]
-trait Magenta[bits <: Int] extends Channel["magenta", bits]
-trait Yellow[bits <: Int] extends Channel["yellow", bits]
-trait Key[bits <: Int] extends Channel["key", bits]
-trait Grey[bits <: Int] extends Channel["grey", bits]

@@ -849,7 +849,7 @@ object soundness extends Fork:
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
     tessellate.core,
-    ultimatum.core, ultimatum.gauges, ultimatum.tables, xenophile.native, exoskeleton.args,
+    ultimatum.core, ultimatum.tables, xenophile.native, exoskeleton.args,
     exoskeleton.core, exoskeleton.manpage, virility.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
@@ -1438,7 +1438,7 @@ object burdock extends Library:
   object core
       extends Component(zeppelin.core, galilei.jvm, exoskeleton.core, revolution.core, telekinesis.jvm,
                        jacinta.core, eucalyptus.core, fulminate.print, hellenism.core, boot,
-                       ultimatum.gauges):
+                       ultimatum.core):
     override def scalaJs = false // packaging; depends on JVM-only `telekinesis.jvm` and `galilei.jvm`
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
@@ -3482,14 +3482,11 @@ object typonym extends Library:
       settings.sep(super.scalacOptions())
 
 object ultimatum extends Library:
-  object core extends Component(profanity.core, escapade.core, yossarian.core, tessellate.core, parasite.core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // Gauges — spinners, progress bars, meters and step indicators — are a separate component so
-  // that the durations and byte quantities the transfer statuses need (`aviation`, `quantitative`)
-  // are not imposed on every `ultimatum.core` user. Only the `Fixture` and `Tick` hooks live in
-  // core.
-  object gauges extends Component(core, aviation.core, quantitative.units):
+  // The gauges — spinners, progress bars, meters and step indicators — live in core, so that their
+  // types can nest in `Tui`; their transfer statuses bring `aviation` and `quantitative` with them.
+  object core
+      extends Component(profanity.core, escapade.core, yossarian.core, tessellate.core, parasite.core,
+          aviation.core, quantitative.units):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Live escritoire tables as panes; a separate component so that `escritoire` is not imposed
@@ -3497,7 +3494,7 @@ object ultimatum extends Library:
   object tables extends Component(core, escritoire.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object demo extends Internal(core, gauges, ethereal.core, exoskeleton.completions):
+  object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
@@ -3513,7 +3510,7 @@ object ultimatum extends Library:
         .call(stdout = os.Inherit, stderr = os.Inherit)
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
-  object test extends Tests(core, gauges, tables):
+  object test extends Tests(core, tables):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

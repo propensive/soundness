@@ -55,14 +55,14 @@ def evolve[element: ClassTag]
       case Nil | _ :: Nil => evolution
 
       case left :: right :: more =>
-        val changes: List[Change[element]] =
+        val changes: List[Diff.Change[element]] =
           val diff0 = diff(left.to[Sequence], right.to[Sequence])
           similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
 
         def merge
           ( atoms:   List[Atom[element]],
-            edits:   List[Change[element]],
+            edits:   List[Diff.Change[element]],
             done:    List[Atom[element]]   = Nil,
             skips:   List[Atom[element]]   = Nil,
             inserts: List[Atom[element]]   = Nil )
@@ -75,9 +75,9 @@ def evolve[element: ClassTag]
             val updates: List[Atom[element]] =
               diff(left.to[Sequence], right.to[Sequence], _.value == _.value)
               . edits.to(List).map:
-                  case Ins(_, value)    => value
-                  case Del(index, _)    => left.readUnchecked(index)
-                  case Par(index, _, _) => left.readUnchecked(index).add(iteration)
+                  case Diff.Ins(_, value)    => value
+                  case Diff.Del(index, _)    => left.readUnchecked(index)
+                  case Diff.Par(index, _, _) => left.readUnchecked(index).add(iteration)
 
             updates + done
 
@@ -88,7 +88,7 @@ def evolve[element: ClassTag]
 
             case edit :: edits => atoms match
               case Nil => edit match
-                case Ins(_, value) =>
+                case Diff.Ins(_, value) =>
                   merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
 
                 case edit =>
@@ -97,21 +97,21 @@ def evolve[element: ClassTag]
               case atom :: atoms =>
                 if !atom.has(iteration - 1)
                 then merge
-                  ( atoms, edit :: (edits: List[Change[element]]), done, atom :: skips, inserts )
+                  ( atoms, edit :: (edits: List[Diff.Change[element]]), done, atom :: skips, inserts )
                 else edit match
-                  case Ins(_, value) =>
+                  case Diff.Ins(_, value) =>
                     val atom2 = Atom(value, Set(iteration))
 
                     merge
                       ( atom :: (atoms: List[Atom[element]]), edits, done, skips, atom2 :: inserts )
 
-                  case Del(_, value) =>
+                  case Diff.Del(_, value) =>
                     merge(atoms, edits, done, atom :: skips, inserts)
 
-                  case Par(_, _, value) =>
+                  case Diff.Par(_, _, value) =>
                     merge(atoms, edits, atom.add(iteration) :: finish())
 
-                  case Sub(_, _, _, _) =>
+                  case Diff.Sub(_, _, _, _) =>
                     merge(atoms, edits, atom.add(iteration) :: finish())
 
 
@@ -139,7 +139,7 @@ def diff[element]
   // Every edit the backtrack constructs carries its element (`left(position)` or
   // `right(rightPosition)`), so each is minted `Retained` at construction and the assembled
   // `Diff` carries the proof.
-  type Edits = List[Edit[element] & Retained]
+  type Edits = List[Diff.Edit[element] & Retained]
 
   @tailrec
   def count(position: Int, offset: Int): Int =
@@ -182,7 +182,7 @@ def diff[element]
     then
       backtrack
         ( position - 1, deletes, rows,
-          Par(position, rightPosition, left(position)).retained :: edits )
+          Diff.Par(position, rightPosition, left(position)).retained :: edits )
 
     else if deletes < rows.size && (deletes == 0 || ins >= del)
     then
@@ -190,20 +190,20 @@ def diff[element]
       then
         backtrack
           ( position, deletes, rowStack.tail.to(List),
-            Ins(rightPosition, right(rightPosition)).retained :: edits )
+            Diff.Ins(rightPosition, right(rightPosition)).retained :: edits )
       else
         backtrack
           ( position - 1, deletes, rows,
-            Par(position, rightPosition, left(position)).retained :: edits )
+            Diff.Par(position, rightPosition, left(position)).retained :: edits )
     else
       if position == del
       then
         backtrack
           ( del - 1, deletes - 1, rowStack.tail.to(List),
-            Del(position, left(position)).retained :: edits )
+            Diff.Del(position, left(position)).retained :: edits )
       else
         backtrack
           ( position - 1, deletes, rows,
-            Par(position, rightPosition, left(position)).retained :: edits )
+            Diff.Par(position, rightPosition, left(position)).retained :: edits )
 
   trace(0, 0, Nil, Nil)

@@ -192,7 +192,7 @@ object Detectable:
   // Data in memory, as content with random access. Public, because the inlined `unapply` calls
   // it wherever it is expanded, and an accessor synthesized for a private method cannot take
   // frozen `Data`.
-  def memory(data: Data): Expanse = Memory(data)
+  def memory(data: Data): Expanse = new Memory(data)
 
   private final class Memory(data: Data) extends Expanse:
     def size: Long = data.length.toLong

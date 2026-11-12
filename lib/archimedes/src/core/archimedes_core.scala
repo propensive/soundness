@@ -38,6 +38,7 @@ import gossamer.*
 import prepositional.*
 
 import Mathml.*
+import archimedes.Mathml.Cell
 
 // The MathML namespace URI, written as the `xmlns` attribute on the root
 // `<math>` element.

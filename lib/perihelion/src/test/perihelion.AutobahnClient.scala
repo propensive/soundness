@@ -39,6 +39,7 @@ import internetAccess.online
 import strategies.throwUnsafely
 import threads.virtualThreads
 import probates.awaitProbate
+import perihelion.Websocket.{Channel, Reader}
 
 // A conformance harness for driving the WebSocket *client* against the Autobahn|Testsuite
 // `fuzzingserver` — the counterpart of `AutobahnServer` (which drives the server against a
@@ -61,10 +62,10 @@ object AutobahnClient:
     supervise:
       // Open one connection, hand each inbound message to `consume`, and always close cleanly;
       // a protocol violation surfaces as a `Websocket.Error` and is answered with its close code.
-      def session(path: Text)(consume: Channel => perihelion.Message => Unit): Unit =
+      def session(path: Text)(consume: Channel => perihelion.Websocket.Message => Unit): Unit =
         val url = t"ws://$host:$port$path".as[Websocket.Url]
         val connection = summon[Websocket.Url is Duplexable].connect(url, Unset)
-        given Masking = connection.masking
+        given Websocket.Masking = connection.masking
 
         try
           recover:
@@ -91,7 +92,7 @@ object AutobahnClient:
 
       // How many cases does the fuzzingserver have? It sends the count as one Text message.
       session(t"/getCaseCount"): channel =>
-        case perihelion.Message.Text(text) => count = safely(Integer.parseInt(text.s.trim)).or(count)
+        case perihelion.Websocket.Message.Text(text) => count = safely(Integer.parseInt(text.s.trim)).or(count)
         case _                             => ()
 
       // Echo each case verbatim, preserving the Text/Binary frame type.

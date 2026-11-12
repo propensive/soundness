@@ -123,3 +123,13 @@ object Log:
 
   object Security extends Category(classOf[Security])
   transparent trait Security
+
+  object Level:
+    import symbolism.*
+
+    given comparable: Level is Comparable = Comparable.int.on(_.ordinal)
+
+  enum Level:
+    import symbolism.*
+
+    case Fine, Info, Warn, Fail

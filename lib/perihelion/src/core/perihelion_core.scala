@@ -61,6 +61,7 @@ import zephyrine.*
 import alphabets.base64Standard
 import cryptoPermits.permitDeprecatedCrypto
 import providers.javaBaseProvider
+import perihelion.Websocket.{Channel, Message}
 
 // `true` exactly when the message type is the raw `Message`. A match type reduces
 // by subtyping — `Message` matches the first case, any other (e.g. `Ping over Json`)
@@ -273,8 +274,8 @@ given wsClient: ( online:            Online,
           ( Websocket.Error
               ( Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong") ) )
 
-      val masking: Masking = Masking.Client()
-      given Masking = masking
+      val masking: Websocket.Masking = Websocket.Masking.Client()
+      given Websocket.Masking = masking
       val channel: Channel = Channel()
 
       // Once the handshake is read, one writer (this pump, draining the spool) and one

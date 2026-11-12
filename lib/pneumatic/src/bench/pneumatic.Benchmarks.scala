@@ -43,6 +43,7 @@ import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
@@ -64,14 +65,9 @@ import zephyrine.*
 // the copy paths; the *text* corpus is pseudo-random prose from a small vocabulary, which is
 // literal- and short-match-heavy and measures the range decoder and the literal coder.
 object Benchmarks extends Suite("compression-bench", m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and Brotli"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
+  given prefixes:    Prefixes        = Prefixes(List(Kilo, Mega, Giga, Tera))
   given Buffering                               = Buffering.standard
 
   // ── Corpora (forced once in warmup; referenced by fully-qualified name in the staged

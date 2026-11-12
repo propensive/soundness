@@ -42,14 +42,14 @@ detail
 
     The library has one source set, `archimedes.core`, which compiles for the JVM, Scala.js
     and Scala Native. Everything is exported to the `soundness` umbrella: `Math`, `Mathml`,
-    `Display`, `Ergo`, `Cell`, `mathmlNamespace` and the extensions `ergo`, `math`, `mathml`,
+    `Mathml.Display`, `Ergo`, `Mathml.Cell`, `mathmlNamespace` and the extensions `ergo`, `math`, `mathml`,
     `cell` and `draw`. The `html` extension which embeds a `Math` or a `Mathml` node in an
     HTML tree is honeycomb's, resolved through `Math.renderable` and `Mathml.renderable`.
 
 refer archimedes.Math
 refer archimedes.Mathml
 refer archimedes.Ergo
-refer archimedes.Cell
+refer archimedes.Mathml.Cell
 
 entry .Math   the `<math>` root element: a list of MathML nodes with a display mode and attributes
   detail
@@ -65,7 +65,7 @@ entry .Math   the `<math>` root element: a list of MathML nodes with a display m
       import strategies.throwUnsafely
       import xmlSchemas.freeformXmlSchema
 
-      val math: Math = Math(List(Msup(Mi(t"x"), Mn(t"2"))), Display.Block)
+      val math: Math = Math(List(Msup(Mi(t"x"), Mn(t"2"))), Mathml.Display.Block)
       math.in[Xml].show         // <math xmlns="…" display="block"><msup>…</msup></math>
       math.html                 // an Html of "math", for a honeycomb page
       math.draw                 // t"x²"
@@ -88,7 +88,7 @@ entry .Math   the `<math>` root element: a list of MathML nodes with a display m
       carries the encoding the file declared.
   refer archimedes.Mathml
   refer archimedes.Ergo
-  refer archimedes.Display
+  refer archimedes.Mathml.Display
   entry .aggregable   reads `Math` from MathML text, as `text.read[Math]`
       Parses the text as XML through xylophone's own `Aggregable`, then decodes the `<math>`
       root with `Mathml.Parser.decodeMath`. It needs an `XmlSchema` in scope, and tactics for
@@ -245,7 +245,7 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
       is not MathML.
   refer archimedes.Math
   refer archimedes.Ergo
-  refer archimedes.Cell
+  refer archimedes.Mathml.Cell
   entry .encodable   any node as a xylophone `Xml` element, as `node.in[Xml]`
       Generic over every `node <: Mathml`: an `Xml.Element` with the node's `label`, its
       attributes, and either a single text child or the children's own `in[Xml]`. The
@@ -565,24 +565,124 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
   entry #text   the character data of a token element, or `Unset` for a layout element
       `Mspace` and `Mglyph` are tokens with no text, so theirs is `Unset` too.
 
-entry .Display   whether a `<math>` root is a displayed block or set inline in running text
-  detail
-      The value of the `display` attribute on the root `<math>` element: `Display.Block` for
-      a displayed equation on its own line, `Display.Inline` for one set within a paragraph.
-      A `Math` holds one as its `display`, or `Unset` to leave the attribute off, and the
-      Ergo directives `◻` and `▭` set it.
+  entry .Display   whether a `<math>` root is a displayed block or set inline in running text
+    detail
+        The value of the `display` attribute on the root `<math>` element: `Display.Block` for
+        a displayed equation on its own line, `Display.Inline` for one set within a paragraph.
+        A `Math` holds one as its `display`, or `Unset` to leave the attribute off, and the
+        Ergo directives `◻` and `▭` set it.
 
-      ```scala
-      import soundness.*
-      import Mathml.*
+        ```scala
+        import soundness.*
+        import Mathml.*
 
-      Math(List(Mn(t"1")), Display.Block).in[Xml].show   // …display="block"…
-      Display.Block.encode                               // t"block"
-      ```
-  entry .encodable   renders a display mode as the attribute's text: `block` or `inline`
-  entry .unapply   matches the text `block` or `inline` as a `Display`, for a pattern
-      `case Display(display) =>` on a `Text`; any other text does not match, which is how
-      `Mathml.Parser.decodeMath` falls back to `Inline` for an unknown value.
+        Math(List(Mn(t"1")), Mathml.Display.Block).in[Xml].show   // …display="block"…
+        Mathml.Display.Block.encode                               // t"block"
+        ```
+    entry .encodable   renders a display mode as the attribute's text: `block` or `inline`
+    entry .unapply   matches the text `block` or `inline` as a `Display`, for a pattern
+        `case Display(display) =>` on a `Text`; any other text does not match, which is how
+        `Mathml.Parser.decodeMath` falls back to `Inline` for an unknown value.
+  entry .Cell   a block of monospaced text with a baseline: the terminal rendering of a formula
+    detail
+        A `Cell` is a rectangle of character cells, `#width` columns by `#height` rows, with a
+        `#baseline` — the row, from the top, of the mathematical axis which composition aligns
+        on. Its `#lines` are `Writing`s, so a combining accent or a multi-codepoint cluster
+        counts as one column, and every line has exactly `width` columns. `Cell.of` lays out
+        any `Mathml` node, and `#render` flattens the block to newline-separated `Text`; the
+        extensions `cell` and `draw` on a `Mathml` or a `Math` are the usual entry.
+
+        ```scala
+        import soundness.*
+        import Mathml.*
+
+        Mfrac(Mn(t"1"), Mn(t"2")).draw          // t" 1 \n───\n 2 "
+        Msup(Mi(t"x"), Mn(t"2")).draw           // t"x²"
+        Msqrt(Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))).draw   // t"┌─────\n√x + 1"
+        Mfenced(Mfrac(Mn(t"1"), Mn(t"2"))).draw // t"⎛ 1 ⎞\n⎜───⎟\n⎝ 2 ⎠"
+        ```
+
+        The layout rules: a superscript or subscript which can be spelled in Unicode's
+        superscript and subscript glyphs (digits, signs, brackets and much of the Latin
+        alphabet, though no superscript `q`) is set on the base's own line, as `x²` or `xᵢ`;
+        anything else — a Greek letter, a fraction, a nested script — stacks diagonally. A
+        fraction centres its parts over a `─` rule; a square root draws a `┌─` vinculum, with
+        a `│` stem and `╲` foot when the radicand is taller than a line; an nth root puts the
+        index a line above the sign. In a row, binary operators are spaced, and brackets,
+        integrals and the big operators `∑` and `∏` stretch to the height of the content: a
+        bracket becomes box-drawing pieces, an integral a `╭`–`│`–`╯` stroke (doubled or
+        tripled, with a `○` for a contour integral), and `∑` and `∏` line-art sized to the
+        summand. The companion's builders (`beside`, `fraction`, `radical`, `bracket`, …) are
+        the primitives `of` composes, usable directly for a layout of one's own.
+
+        In the `soundness` umbrella the name `Cell` is this type; probably's table cell is
+        `Tally`.
+    refer archimedes.draw
+    refer archimedes.Mathml
+    entry .inspectable   a debug rendering: the dimensions, the baseline and each line as a text literal
+        `Cell(2×1@0 t"xy")`: width by height, `@` the baseline row, then every line quoted, so
+        that trailing padding is visible. `#render` shows the block as it will appear, which an
+        inspection cannot.
+    entry .empty   the cell of one empty line, zero columns wide
+    entry .line   a one-line cell of the given text, with baseline 0
+        The width is the text's grapheme width under the wide-character metric, so a CJK
+        character counts two columns.
+    entry .blank   a cell of spaces, of the given width, height and baseline
+    entry .beside   joins cells left to right with their baselines aligned
+        The workhorse of `<mrow>`: each cell is framed with blank rows above and below so that
+        every baseline falls on the same row, then the rows are concatenated. The result's
+        baseline is the greatest of the inputs'.
+    entry .fraction   stacks a numerator over a `─` rule over a denominator
+        Both parts are centred within the wider plus a column of margin each side; the
+        baseline is the rule.
+    entry .superscript   sets a script cell diagonally above and to the right of a base cell
+        The stacked form, used when `Cell.of` cannot spell the script in Unicode glyphs. The
+        baseline moves down by the script's height.
+    entry .subscript   sets a script cell diagonally below and to the right of a base cell
+    entry .subsup   sets a subscript and a superscript cell to the right of a base, one above the other
+        Both scripts are padded to the wider; the base's baseline is kept, shifted by the
+        superscript's height.
+    entry .overscript   centres a cell above a base cell
+    entry .underscript   centres a cell below a base cell
+    entry .underover   centres one cell above and another below a base cell
+        How `Munderover` draws: a summation's limits above and below the `∑`.
+    entry .radical   draws a square-root sign and vinculum around a cell
+        A one-line radicand gets the `√` glyph with a `┌─…` overline; a taller one gets a
+        `╲` foot and a `│` stem rising to the corner.
+    entry .root   draws an nth root: the index one line above the sign, to its left
+        Always the tall form of the sign, so that the index has a line to sit on.
+    entry .fence   brackets a cell with an opening and a closing character, stretched to its height
+        `fence('(', ')', inner)`: how `Mfenced` draws.
+    entry .bracket   a bracket character stretched to a height, as a one-column cell
+        A single-line height gives the literal character; taller, `(`, `[` and `{` become
+        their box-drawing top, middle and bottom pieces (a brace puts its `⎨` at the baseline
+        row), and any other character a `│` rule. `opening` chooses the left- or right-hand
+        pieces.
+    entry .integral   an integral sign stretched to a height, with a column of padding after it
+        `∫`, `∬` and `∭` are one, two and three `╭`–`│`–`╯` strokes; `∮`, `∯` and `∰` overlay
+        a `○` on the axis row of the first stroke. A single-line height gives the plain glyph.
+    entry .bigOperator   `∑` or `∏` as line-art of a given height
+        A sum is `▁` and `▔` bars joined by `╲` and `╱` diagonals stepping in to a vertex, which
+        needs an even height of at least four; a product is a `┬──┬` lintel over two `│` legs,
+        at any height. The baseline is the vertical middle.
+    entry .row   lays out a list of nodes side by side, stretching brackets, integrals and big operators
+        Measures the non-stretchy content first, then draws each stretchy operator to that
+        height, and joins everything with `beside`. A one-line row keeps every operator's plain
+        glyph.
+    entry .of   lays out any `Mathml` node as a cell
+        The recursive layout: each element kind maps to the corresponding builder, a token to
+        `line` (with a binary operator spaced and an invisible operator dropped), and an
+        element with no special layout to a row of its children.
+    entry #lines   the rows of the block, top to bottom, each exactly `width` columns
+    entry #width   the number of columns
+    entry #baseline   the row, from the top, of the axis composition aligns on
+    entry #height   the number of rows
+    entry #render   the block as text, its lines joined with newlines
+        The form to print: trailing spaces are kept, so every line is the same width.
+    entry #hpad   pads each line with spaces on the left and right, widening the block
+    entry #hcenter   centres the block within a wider number of columns; never narrows
+    entry #framed   adds blank rows above and below to reach a given ascent and descent
+        Used by `Cell.beside` to bring cells to a common height before joining them row-wise.
 
 entry .Ergo   the Ergo shorthand: a one-line notation which parses to MathML and serializes back
   detail
@@ -775,107 +875,6 @@ entry .Ergo   the Ergo shorthand: a one-line notation which parses to MathML and
     entry #reason   which fault was found
     entry #offset   the character position at which parsing stopped, or `-1` from serialization
 
-entry .Cell   a block of monospaced text with a baseline: the terminal rendering of a formula
-  detail
-      A `Cell` is a rectangle of character cells, `#width` columns by `#height` rows, with a
-      `#baseline` — the row, from the top, of the mathematical axis which composition aligns
-      on. Its `#lines` are `Writing`s, so a combining accent or a multi-codepoint cluster
-      counts as one column, and every line has exactly `width` columns. `Cell.of` lays out
-      any `Mathml` node, and `#render` flattens the block to newline-separated `Text`; the
-      extensions `cell` and `draw` on a `Mathml` or a `Math` are the usual entry.
-
-      ```scala
-      import soundness.*
-      import Mathml.*
-
-      Mfrac(Mn(t"1"), Mn(t"2")).draw          // t" 1 \n───\n 2 "
-      Msup(Mi(t"x"), Mn(t"2")).draw           // t"x²"
-      Msqrt(Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))).draw   // t"┌─────\n√x + 1"
-      Mfenced(Mfrac(Mn(t"1"), Mn(t"2"))).draw // t"⎛ 1 ⎞\n⎜───⎟\n⎝ 2 ⎠"
-      ```
-
-      The layout rules: a superscript or subscript which can be spelled in Unicode's
-      superscript and subscript glyphs (digits, signs, brackets and much of the Latin
-      alphabet, though no superscript `q`) is set on the base's own line, as `x²` or `xᵢ`;
-      anything else — a Greek letter, a fraction, a nested script — stacks diagonally. A
-      fraction centres its parts over a `─` rule; a square root draws a `┌─` vinculum, with
-      a `│` stem and `╲` foot when the radicand is taller than a line; an nth root puts the
-      index a line above the sign. In a row, binary operators are spaced, and brackets,
-      integrals and the big operators `∑` and `∏` stretch to the height of the content: a
-      bracket becomes box-drawing pieces, an integral a `╭`–`│`–`╯` stroke (doubled or
-      tripled, with a `○` for a contour integral), and `∑` and `∏` line-art sized to the
-      summand. The companion's builders (`beside`, `fraction`, `radical`, `bracket`, …) are
-      the primitives `of` composes, usable directly for a layout of one's own.
-
-      In the `soundness` umbrella the name `Cell` is this type; probably's table cell is
-      `Tally`.
-  refer archimedes.draw
-  refer archimedes.Mathml
-  entry .inspectable   a debug rendering: the dimensions, the baseline and each line as a text literal
-      `Cell(2×1@0 t"xy")`: width by height, `@` the baseline row, then every line quoted, so
-      that trailing padding is visible. `#render` shows the block as it will appear, which an
-      inspection cannot.
-  entry .empty   the cell of one empty line, zero columns wide
-  entry .line   a one-line cell of the given text, with baseline 0
-      The width is the text's grapheme width under the wide-character metric, so a CJK
-      character counts two columns.
-  entry .blank   a cell of spaces, of the given width, height and baseline
-  entry .beside   joins cells left to right with their baselines aligned
-      The workhorse of `<mrow>`: each cell is framed with blank rows above and below so that
-      every baseline falls on the same row, then the rows are concatenated. The result's
-      baseline is the greatest of the inputs'.
-  entry .fraction   stacks a numerator over a `─` rule over a denominator
-      Both parts are centred within the wider plus a column of margin each side; the
-      baseline is the rule.
-  entry .superscript   sets a script cell diagonally above and to the right of a base cell
-      The stacked form, used when `Cell.of` cannot spell the script in Unicode glyphs. The
-      baseline moves down by the script's height.
-  entry .subscript   sets a script cell diagonally below and to the right of a base cell
-  entry .subsup   sets a subscript and a superscript cell to the right of a base, one above the other
-      Both scripts are padded to the wider; the base's baseline is kept, shifted by the
-      superscript's height.
-  entry .overscript   centres a cell above a base cell
-  entry .underscript   centres a cell below a base cell
-  entry .underover   centres one cell above and another below a base cell
-      How `Munderover` draws: a summation's limits above and below the `∑`.
-  entry .radical   draws a square-root sign and vinculum around a cell
-      A one-line radicand gets the `√` glyph with a `┌─…` overline; a taller one gets a
-      `╲` foot and a `│` stem rising to the corner.
-  entry .root   draws an nth root: the index one line above the sign, to its left
-      Always the tall form of the sign, so that the index has a line to sit on.
-  entry .fence   brackets a cell with an opening and a closing character, stretched to its height
-      `fence('(', ')', inner)`: how `Mfenced` draws.
-  entry .bracket   a bracket character stretched to a height, as a one-column cell
-      A single-line height gives the literal character; taller, `(`, `[` and `{` become
-      their box-drawing top, middle and bottom pieces (a brace puts its `⎨` at the baseline
-      row), and any other character a `│` rule. `opening` chooses the left- or right-hand
-      pieces.
-  entry .integral   an integral sign stretched to a height, with a column of padding after it
-      `∫`, `∬` and `∭` are one, two and three `╭`–`│`–`╯` strokes; `∮`, `∯` and `∰` overlay
-      a `○` on the axis row of the first stroke. A single-line height gives the plain glyph.
-  entry .bigOperator   `∑` or `∏` as line-art of a given height
-      A sum is `▁` and `▔` bars joined by `╲` and `╱` diagonals stepping in to a vertex, which
-      needs an even height of at least four; a product is a `┬──┬` lintel over two `│` legs,
-      at any height. The baseline is the vertical middle.
-  entry .row   lays out a list of nodes side by side, stretching brackets, integrals and big operators
-      Measures the non-stretchy content first, then draws each stretchy operator to that
-      height, and joins everything with `beside`. A one-line row keeps every operator's plain
-      glyph.
-  entry .of   lays out any `Mathml` node as a cell
-      The recursive layout: each element kind maps to the corresponding builder, a token to
-      `line` (with a binary operator spaced and an invisible operator dropped), and an
-      element with no special layout to a row of its children.
-  entry #lines   the rows of the block, top to bottom, each exactly `width` columns
-  entry #width   the number of columns
-  entry #baseline   the row, from the top, of the axis composition aligns on
-  entry #height   the number of rows
-  entry #render   the block as text, its lines joined with newlines
-      The form to print: trailing spaces are kept, so every line is the same width.
-  entry #hpad   pads each line with spaces on the left and right, widening the block
-  entry #hcenter   centres the block within a wider number of columns; never narrows
-  entry #framed   adds blank rows above and below to reach a given ascent and descent
-      Used by `Cell.beside` to bring cells to a common height before joining them row-wise.
-
 entry .mathmlNamespace   the MathML namespace URI, written as `xmlns` on every `<math>` root
     `http://www.w3.org/1998/Math/MathML`: `Math.attributePairs` always puts it first.
 
@@ -927,7 +926,7 @@ entry .ergo   the `ergo"…"` interpolator: an Ergo expression parsed as the cod
     in the companion, so `import soundness.*` suffices.
 
 entry .cell   a `Mathml` node or a `Math` laid out as a `Cell`, for composing with other blocks
-    `Cell.of(node)`, or for a `Math` the layout of its contents as a row. `draw` is the same
+    `Mathml.Cell.of(node)`, or for a `Math` the layout of its contents as a row. `draw` is the same
     block as text.
 
 entry .draw   a `Mathml` node or a `Math` as monospaced, box-drawing text for a terminal
@@ -939,7 +938,7 @@ entry .draw   a `Mathml` node or a `Math` as monospaced, box-drawing text for a 
     Math(List(Mathml.Mroot(Mathml.Mn(t"8"), Mathml.Mn(t"3")))).draw   // t"3 ┌─\n ╲│8"
     ```
 
-    Several lines joined with newlines, every line the same width; `Cell` describes the
+    Several lines joined with newlines, every line the same width; `Mathml.Cell` describes the
     layout rules.
 
 entry .internal   the macro implementation behind the `ergo"…"` interpolator

@@ -38,6 +38,7 @@ import anticipation.*
 import vacuous.*
 
 import Motif.Node
+import praxinoscope.Motif.Program
 
 object Pike:
   // A priority-ordered thread list for one input position. The `dense`/`sparse` pair is a

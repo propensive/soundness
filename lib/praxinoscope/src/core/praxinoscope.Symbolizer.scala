@@ -33,6 +33,7 @@
 package praxinoscope
 
 import anticipation.*
+import praxinoscope.Motif.Ranges
 
 object Symbolizer:
   given text: Text is Symbolizer:

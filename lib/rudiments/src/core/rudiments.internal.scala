@@ -42,7 +42,7 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  opaque type Bytes = Long
+  opaque type Memory = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
   @scala.annotation.targetName("And")
@@ -61,25 +61,25 @@ object internal:
 
     def char: Char = ('0' + int).toChar
 
-  object Bytes:
-    def apply(long: Long): Bytes = long
+  object Memory:
+    def apply(long: Long): Memory = long
 
-    given comparable: Bytes is Comparable = Comparable.long
+    given comparable: Memory is Comparable = Comparable.long
 
-    given zeroic: Bytes is Zeroic:
-      inline def zero: Bytes = 0L
+    given zeroic: Memory is Zeroic:
+      inline def zero: Memory = 0L
 
-    given communicable: [bytes <: Bytes] => bytes is Communicable =
-      bytes => Message(bytes.text)
+    given communicable: [memory <: Memory] => memory is Communicable =
+      memory => Message(memory.text)
 
-    given addable: Bytes is Addable by Bytes to Bytes = Addable(_ + _)
-    given subtractable: Bytes is Subtractable by Bytes to Bytes = Subtractable(_ - _)
-    given multiplicable: Bytes is Multiplicable by Int to Bytes = Multiplicable(_*_)
-    given multiplicable2: Int is Multiplicable by Bytes to Bytes = Multiplicable(_*_)
-    given divisible: Bytes is Divisible by Int to Bytes = Divisible(_/_)
-    given divisible2: Bytes is Divisible by Bytes to Double = Divisible(_.toDouble/_)
+    given addable: Memory is Addable by Memory to Memory = Addable(_ + _)
+    given subtractable: Memory is Subtractable by Memory to Memory = Subtractable(_ - _)
+    given multiplicable: Memory is Multiplicable by Int to Memory = Multiplicable(_*_)
+    given multiplicable2: Int is Multiplicable by Memory to Memory = Multiplicable(_*_)
+    given divisible: Memory is Divisible by Int to Memory = Divisible(_/_)
+    given divisible2: Memory is Divisible by Memory to Double = Divisible(_.toDouble/_)
 
-    extension (left: Bytes)
+    extension (left: Memory)
       def long: Long = left
 
       def text: Text = (left.toString+" bytes").tt

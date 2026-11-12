@@ -36,6 +36,7 @@ import galilei.*
 import hellenism.*
 import prepositional.*
 import serpentine.*
+import anthology.Toolchain.Universe
 
 // A token pairing a compilation's output directory with the classpath it was compiled against,
 // tagged with the universe it inhabits. A `Compilation[Universe.Sjsir]` may be linked as any

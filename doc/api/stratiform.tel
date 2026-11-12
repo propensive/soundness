@@ -55,7 +55,7 @@ detail
 
     A literal document is `tel"…"`, parsed as the code compiles and usable as a pattern; a
     location is a `Telp` path, written `telp"/office/city"`. Editing goes through
-    `Mutation` operations and `Revision` logs addressed by a `Tel.Pointer`, or through
+    `Tel.Mutation` operations and `Tel.Revision` logs addressed by a `Tel.Pointer`, or through
     `source.open[Tel](Read & Write)` which parses a source, offers the machine operations on
     a `Tel.Handle`, and writes the document back when the block ends. Unverified navigation
     (`tel.name`, `tel.items(0)`) is gated by `import dynamicAccess.dynamicTel`; a document
@@ -73,8 +73,8 @@ detail
 
     The library is split into components:
 
-    - `stratiform.core` — everything above: `Tel`, `Tels`, `Telp`, `Tel.Provider`, `Mutation`,
-      `Revision`, `Patterns`, `Positional`, `TelReader`, `Bintel`, `SchemaSignature`,
+    - `stratiform.core` — everything above: `Tel`, `Tels`, `Telp`, `Tel.Provider`, `Tel.Mutation`,
+      `Tel.Revision`, `Patterns`, `Positional`, `TelReader`, `Bintel`, `SchemaSignature`,
       `SchemaResolver`, `Varint`, the `@assign` and `@retract` layer annotations, and the
       `dynamicAccess`, `optionalityOptions` and `conversions` choice packages.
     - `stratiform.base256` — `Base256`, the binary-to-text alphabet BinTEL signatures and
@@ -102,8 +102,8 @@ refer stratiform.Tel
 refer stratiform.Tels
 refer stratiform.Telp
 refer stratiform.Bintel
-refer stratiform.Mutation
-refer stratiform.Revision
+refer stratiform.Tel.Mutation
+refer stratiform.Tel.Revision
 
 entry .Tel   a TEL document or compound, keeping its presentation; the home of the codecs, schema typing and BinTEL
   detail
@@ -179,8 +179,8 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       an `Acceptance` to text: call the specific instance, or `acceptance.encode`, directly.
   refer stratiform.Tels
   refer stratiform.Telp
-  refer stratiform.Mutation
-  refer stratiform.Revision
+  refer stratiform.Tel.Mutation
+  refer stratiform.Tel.Revision
   refer stratiform.TelReader
   refer stratiform.Bintel
   entry #as   decodes this document as a type, through its `Tel.Decodable`
@@ -960,7 +960,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
               val document = t"# the cast\nname Percy  # lead\nage 30\n".read[Tel]
               val pointer = Tel.Pointer.of(t"name")
-              val edited = Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Hal"))
+              val edited = Tel.Mutation(document, Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Hal"))
               edited.show   // t"# the cast\nname Hal  # lead\nage 30\n": comment and remark intact
         frame
           label Insert a sibling after it
@@ -970,9 +970,9 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
 
               val document = t"# the cast\nname Percy  # lead\nage 30\n".read[Tel]
               val pointer = Tel.Pointer.of(t"name")
-              val edited = Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Hal"))
+              val edited = Tel.Mutation(document, Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Hal"))
               val email = Tel.Compound(t"email", Array(Tel.Atom.Inline(t"hal@example.com", 1)), Unset, Array.empty)
-              Mutation(edited, Mutation.Op.InsertAfter(pointer, email)).show
+              Tel.Mutation(edited, Tel.Mutation.Op.InsertAfter(pointer, email)).show
               // t"# the cast\nname Hal  # lead\nemail hal@example.com\nage 30\n"
         ##
         ```
@@ -1429,6 +1429,224 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
   entry .ViewOpenable   the read-only `Openable` behind `Tel.telViewOpenable`: a `Write` mode is refused at open time
     entry #open   parses the source and runs the block; aborts `Mutation.Error(WriteUnsupported)` for a `Write` mode
 
+  entry .Mutation   the primitive presentation-preserving edit operations of §22.2, and their interpreter
+    detail
+        Each `.Op` is a local rewrite addressed by a `Tel.Pointer`: surrounding atoms, comments,
+        blank lines and unrelated children are untouched by construction, which is what lets a
+        program change one value in a file a person wrote and write it back intact.
+        `Mutation(tel, op)` applies one operation and `Mutation(tel, ops)` a list in order,
+        returning a new `Tel`; `Revision` is the composable DSL over the same operations.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val document: Tel = t"name Percy\nage 30\n".read[Tel]
+        val pointer: Tel.Pointer = Tel.Pointer.of(t"name")
+        Tel.Mutation(document, Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Hal")).show   // t"name Hal\nage 30\n"
+        ```
+
+        A pointer step is a keyword plus an occurrence index, resolved against the document an
+        operation is applied to, so a pointer stays meaningful across unrelated edits; but an
+        occurrence-indexed pointer must not be reused across operations which move, add or
+        remove compounds of the same keyword. Schema-dependent preconditions — that a deleted
+        member was not required, that a set flag is declared, that a replacement is well-typed
+        — are out of scope, as in the reference implementation: a schema-aware layer checks
+        them before delegating to these primitives.
+    refer stratiform.Tel.Revision
+    refer stratiform.Tel.Pointer
+    entry .Placement   which side of the other group `ReorderGroups` places a group: `Before` or `After`
+    entry .Member   a schema-free description of one struct member, for `.construct`
+        `Value(keyword, occurrences)` is a scalar member with its present occurrences (one for a
+        single member, several for a repeatable one, none for an absent member which ends the
+        inline run); `Flag(keyword)` a flag member; `Child(compound)` a ready-made child; and
+        `Break` an absent member which contributes nothing but ends the inline run, as an absent
+        scalar member does because the atom phase never skips a scalar position.
+    entry .Op   one primitive operation, addressed by a `Tel.Pointer`
+        The target-addressed operations, whose pointer names the compound they change:
+        `UpdateAtom(pointer, atomIndex, text)` rewrites one atom, keeping its form while the
+        new value is safe for it and otherwise escalating inline → source → literal, never
+        back; `Delete(pointer)` removes the compound, and an emptied block with its comments;
+        `Replace(pointer, compound)` substitutes a compound, keeping the original's remark;
+        `AttachRemark(pointer, text)` and `RemoveRemark(pointer)` set and clear the remark;
+        `SetFlag(pointer, keyword)` adds a flag inline when the compound has no children and
+        no source or literal atom, else as a child, and fails with `FlagAlreadySet` if present;
+        `UnsetFlag(pointer, keyword)` removes an inline or bare-child flag, as the identity when
+        absent; `InsertBefore(pointer, compound)` and `InsertAfter(pointer, compound)` place a
+        sibling next to the target, in a new block when the target's block is tabulated so the
+        new compound is not read as a row.
+
+        The parent-addressed operations, whose pointer names the container (`Tel.Pointer.Empty`
+        for the root): `Insert(pointer, compound)` appends at the member's natural position —
+        after the last compound of the same keyword, or in a fresh trailing block;
+        `InsertIntoBlock(parentPointer, blockIndex, compound)` appends a row to a block,
+        re-padded to its tabulation, failing with `TabulationOverflow` when a column value does
+        not fit; `ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)` moves one
+        occurrence within its keyword's group; `ReorderGroups(parentPointer, keyword,
+        otherKeyword, placement)` moves a whole member group before or after another, whole
+        blocks moving where the groups' blocks are disjoint; and `ResizeTabulation(parentPointer,
+        blockIndex, plannedRows)` recomputes a tabulation's marker offsets to fit its rows and
+        any planned ones, re-padding every row. Column geometry is measured in code points.
+    entry .apply   applies one operation, or a list in order, to a document
+        `Mutation(tel, op)` and `Mutation(tel, ops)`, each raising `Mutation.Error`. The
+        document's own sigil (from its pragma, `#` by default) feeds the inline-safety test, so
+        an updated value which would re-parse as a remark under a custom sigil escalates its
+        form.
+    entry .construct   a fresh compound with each atom's form chosen by the §22.3 safety rules
+        `construct(keyword, atoms*)` makes one atom per non-empty value — inline if the value
+        has no line break, no leading, trailing or doubled space and does not begin with the
+        sigil and a space; else a source atom if it has no empty line, no line ending in
+        whitespace and no leading space; else a literal atom under the shortest `---` delimiter
+        which collides with no line. An empty value yields no atom, since a leading space would
+        be a trailing space on the keyword line.
+
+        `construct(keyword, members)` and `construct(keyword, members, sigil)` run the canonical
+        presentation algorithm over a `Member` list: leading single-occurrence inline-safe
+        scalars and flags become inline atoms; a repeatable scalar goes all inline when every
+        occurrence is inline-safe and otherwise every occurrence becomes a child; and every
+        remaining member is a child in one block with no comments, tabulation or blank lines.
+        Inline atoms are soft-space-preceded up to the first value containing a space, and
+        hard-space-preceded from there on, so the construction re-parses to the same atoms.
+
+        ```scala
+        import soundness.*
+
+        Tel.Mutation.construct(t"name", t"Nick Bottom").atoms.length            // 1, an inline atom
+        Tel.Mutation.construct(t"note", t"first line\nsecond line")            // a source atom
+        Tel.Mutation.construct(t"note", t"first\n\nsecond\n")                  // a literal atom
+        Tel.Mutation.construct(t"flag", t"").atoms.length                      // 0
+        ```
+    entry .Error   raised when a pointer does not resolve or an operation's invariant fails
+      detail
+          Error 606: _the mutation failed because …_. `PointerNotFound` is a pointer, block
+          index or group which does not resolve to a compound, including a reorder whose groups
+          are interleaved or whose indices are out of range, and a `ResizeTabulation` on a block
+          with no tabulation; `AtomIndexOutOfRange` an `UpdateAtom` beyond the target's atoms;
+          `FlagAlreadySet` a `SetFlag` of a flag the target already has; `TabulationOverflow` an
+          `InsertIntoBlock` whose column value exceeds its column's capacity; and
+          `WriteUnsupported`, raised by `open[Tel]` with `Write` when the document's source
+          cannot be written back.
+      entry .Reason   the five reasons, each with a number
+        entry .communicable   renders each reason as a message
+      entry #reason   why the mutation failed
+  entry .Revision   a composable log of edits, applied to a document one operation at a time
+    detail
+        A `Revision` is an ordered sequence of `Mutation.Op`s. Revisions compose with `#++`,
+        and apply to a `Tel` with `revision(tel)` or the `Tel#edited` extension; each operation
+        in the sequence addresses the document the preceding operations produced, since
+        pointers resolve at apply time. The edit DSL starts at a `Tel.Pointer` with `.at`, whose
+        `.Cursor` has one method per operation, and builds the compounds an insertion or
+        replacement needs with `.compound` or `.construct`. Every operation preserves the
+        presentation it does not name — comments, blank lines, layout and unrelated children —
+        so a configuration file edited by a program comes back as its author wrote it, with one
+        value changed.
+
+        ```scala fuel
+        frame
+          label The document as read
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+              document.show   // t"# contacts\nname Percy\n"
+        frame
+          label Update one atom, leaving the comment in place
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+              val renamed: Tel.Revision = Tel.Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
+              document.edited(renamed).show   // t"# contacts\nname Hal\n"
+        frame
+          label Then insert a member at the root
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+              val renamed: Tel.Revision = Tel.Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
+              val emailed: Tel.Revision = Tel.Revision.at(Tel.Pointer.Empty).insert(Tel.Revision.compound(t"email", t"hal@example.com"))
+              document.edited(renamed ++ emailed).show   // t"# contacts\nname Hal\nemail hal@example.com\n"
+        frame
+          label And attach a remark to the renamed line
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              val document: Tel = t"# contacts\nname Percy\n".read[Tel]
+              val renamed: Tel.Revision = Tel.Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
+              val emailed: Tel.Revision = Tel.Revision.at(Tel.Pointer.Empty).insert(Tel.Revision.compound(t"email", t"hal@example.com"))
+              val noted: Tel.Revision = Tel.Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"renamed")
+              document.edited(renamed ++ emailed ++ noted).show   // t"# contacts\nname Hal  # renamed\nemail hal@example.com\n"
+        ##
+        ```
+
+        Applying a revision raises `Mutation.Error` when a pointer does not resolve or an
+        operation's precondition fails; the conventions for what each operation's pointer
+        addresses — the target compound, or its parent — are those of `Mutation.Op`.
+    refer stratiform.Tel.Mutation
+    refer stratiform.Tel.Pointer
+    entry .noop   the empty revision: applying it returns the document unchanged
+    entry .at   begins an edit at a pointer: `Revision.at(pointer)` is a `Cursor`
+    entry .compound   a fresh compound from a keyword and inline atom texts
+        `Revision.compound(t"email", t"hal@example.com")` builds the payload of an insertion or
+        replacement with every atom inline, each single-space-preceded, and no remark or
+        children. For atoms chosen by the safety rules of §22.3 — a multi-line value becoming a
+        source or literal atom — use `.construct`.
+    entry .construct   a fresh compound with each atom's form chosen by the §22.3 rules
+        `construct(keyword, atoms*)` and `construct(keyword, members)` are `Mutation.construct`:
+        the first picks inline, source or literal form per value, dropping empty values; the
+        second runs the canonical-presentation algorithm over a `Mutation.Member` list.
+    entry .Cursor   a pointer bound to the next operation: one method per `Mutation.Op`
+      detail
+          Each method returns a single-operation `Revision`, to be chained with `++`. The
+          pointer addresses the *target* compound for `#update`, `#delete`, `#replace`,
+          `#insertBefore`, `#insertAfter`, `#attachRemark`, `#removeRemark`, `#setFlag` and
+          `#unsetFlag`, and the *parent* for `#insert`, `#insertIntoBlock`, `#reorderWithinGroup`,
+          `#reorderGroups` and `#resizeTabulation`; `Tel.Pointer.Empty` is the document root.
+      entry #pointer   the pointer the operation is anchored at
+      entry #update   replaces the text of one of the target's atoms; the first, by default
+          `update(text)` rewrites atom 0 and `update(atomIndex, text)` any atom, counting every
+          presentation form. The atom's form is kept while the new value is still safe for it,
+          and otherwise escalates inline → source → literal, never back; preceding spaces are
+          kept, so an identity update leaves tabulation padding intact.
+      entry #delete   removes the target compound; an emptied block goes with its comments
+      entry #replace   replaces the target with a compound, keeping the target's remark
+      entry #insert   appends a compound at its natural position among the parent's children
+          Immediately after the last compound with the same keyword, in the same block when it
+          is untabulated and in a new block after it when it is; or in a fresh trailing block
+          when no member of that keyword exists yet.
+      entry #insertBefore   inserts a compound immediately before the target
+          In the target's block, or in a new block before it when the block is tabulated.
+      entry #insertAfter   inserts a compound immediately after the target
+      entry #insertIntoBlock   appends a compound as a row of the parent's `blockIndex`-th child block
+          The way to add a row to a tabulated block: each inline atom is one column value,
+          re-padded to the block's marker offsets. A value too wide for its column is
+          `TabulationOverflow`; `#resizeTabulation` first.
+      entry #attachRemark   sets the target's remark, replacing any it had
+      entry #removeRemark   removes the target's remark; an absent remark is the identity
+      entry #setFlag   sets a flag on the target, inline when it can be, else as a child
+          Inline — hard-space-preceded if the line is already in hard-space mode — when the
+          target has no children and no source or literal atom; otherwise as a bare-keyword
+          child. A flag already present is `FlagAlreadySet`.
+      entry #unsetFlag   removes an inline or child flag from the target; an absent flag is the identity
+      entry #reorderWithinGroup   moves the `oldIndex`-th occurrence of a keyword to `newIndex` among the parent's children
+          Zero-based within the keyword's group; block boundaries and surrounding comments are
+          preserved.
+      entry #reorderGroups   moves one keyword's member group before (the default) or after another's
+          Whole blocks move where the groups occupy disjoint blocks, so attached comments,
+          tabulations and blank lines travel with their group; both groups must be contiguous
+          before and after. `Mutation.Placement` chooses the side.
+      entry #resizeTabulation   recomputes the marker offsets of the parent's `blockIndex`-th tabulated block
+          By the minimal-offsets algorithm, accommodating any `plannedRows` about to be
+          inserted, and re-pads every existing row.
+    entry #ops   the operations, in order
+    entry #++   the revision followed by another
+    entry #apply   applies the operations to a document in order; `revision(tel)`
+        Raises `Mutation.Error`. `Tel#edited(revision)` is the same call as an extension.
+
 entry .optionalityOptions   how an `Optional` field treats absence and faults, each a given to import by name
   detail
       An `Optional` field reads as `Unset` when its keyword is missing or its compound has
@@ -1577,7 +1795,7 @@ entry .Tel2   the trait holding `Tel`'s derived codecs, primitive and collection
       `empty`. Not for direct use.
   entry #telViewOpenable   the read-only `Openable` for any source parseable as `Tel`
       Any source which is `Readable to Tel` may be opened; a `Write` mode is refused at open
-      time with `Mutation.Error(WriteUnsupported)`, so a `Tactic[Mutation.Error]` is needed.
+      time with `Tel.Mutation.Error(WriteUnsupported)`, so a `Tactic[Tel.Mutation.Error]` is needed.
       `t"name Percy\n".open[Tel]() { handle ?=> handle.current }` reads a text this way.
   entry #interpolator   the `tel"…"` interpolator: a document parsed as the code compiles, with typed substitutions
       Each `$value` is encoded through its own `Tel.Encodable`, so `tel"name $name"` with a
@@ -2784,225 +3002,6 @@ entry .Patterns   compiled RE2 pattern constraints, memoised by pattern text
   entry .compile   the compiled `Motif` of a pattern, or `Unset` if it is not valid RE2
       The caller decides what `Unset` means: E222 at schema-validity time, and fail-closed
       everywhere else — a value is never treated as matching a pattern which did not compile.
-
-entry .Revision   a composable log of edits, applied to a document one operation at a time
-  detail
-      A `Revision` is an ordered sequence of `Mutation.Op`s. Revisions compose with `#++`,
-      and apply to a `Tel` with `revision(tel)` or the `Tel#edited` extension; each operation
-      in the sequence addresses the document the preceding operations produced, since
-      pointers resolve at apply time. The edit DSL starts at a `Tel.Pointer` with `.at`, whose
-      `.Cursor` has one method per operation, and builds the compounds an insertion or
-      replacement needs with `.compound` or `.construct`. Every operation preserves the
-      presentation it does not name — comments, blank lines, layout and unrelated children —
-      so a configuration file edited by a program comes back as its author wrote it, with one
-      value changed.
-
-      ```scala fuel
-      frame
-        label The document as read
-        code
-            import soundness.*
-            import strategies.throwUnsafely
-
-            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
-            document.show   // t"# contacts\nname Percy\n"
-      frame
-        label Update one atom, leaving the comment in place
-        code
-            import soundness.*
-            import strategies.throwUnsafely
-
-            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
-            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
-            document.edited(renamed).show   // t"# contacts\nname Hal\n"
-      frame
-        label Then insert a member at the root
-        code
-            import soundness.*
-            import strategies.throwUnsafely
-
-            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
-            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
-            val emailed: Revision = Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"hal@example.com"))
-            document.edited(renamed ++ emailed).show   // t"# contacts\nname Hal\nemail hal@example.com\n"
-      frame
-        label And attach a remark to the renamed line
-        code
-            import soundness.*
-            import strategies.throwUnsafely
-
-            val document: Tel = t"# contacts\nname Percy\n".read[Tel]
-            val renamed: Revision = Revision.at(Tel.Pointer.of(t"name")).update(t"Hal")
-            val emailed: Revision = Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"hal@example.com"))
-            val noted: Revision = Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"renamed")
-            document.edited(renamed ++ emailed ++ noted).show   // t"# contacts\nname Hal  # renamed\nemail hal@example.com\n"
-      ##
-      ```
-
-      Applying a revision raises `Mutation.Error` when a pointer does not resolve or an
-      operation's precondition fails; the conventions for what each operation's pointer
-      addresses — the target compound, or its parent — are those of `Mutation.Op`.
-  refer stratiform.Mutation
-  refer stratiform.Tel.Pointer
-  entry .noop   the empty revision: applying it returns the document unchanged
-  entry .at   begins an edit at a pointer: `Revision.at(pointer)` is a `Cursor`
-  entry .compound   a fresh compound from a keyword and inline atom texts
-      `Revision.compound(t"email", t"hal@example.com")` builds the payload of an insertion or
-      replacement with every atom inline, each single-space-preceded, and no remark or
-      children. For atoms chosen by the safety rules of §22.3 — a multi-line value becoming a
-      source or literal atom — use `.construct`.
-  entry .construct   a fresh compound with each atom's form chosen by the §22.3 rules
-      `construct(keyword, atoms*)` and `construct(keyword, members)` are `Mutation.construct`:
-      the first picks inline, source or literal form per value, dropping empty values; the
-      second runs the canonical-presentation algorithm over a `Mutation.Member` list.
-  entry .Cursor   a pointer bound to the next operation: one method per `Mutation.Op`
-    detail
-        Each method returns a single-operation `Revision`, to be chained with `++`. The
-        pointer addresses the *target* compound for `#update`, `#delete`, `#replace`,
-        `#insertBefore`, `#insertAfter`, `#attachRemark`, `#removeRemark`, `#setFlag` and
-        `#unsetFlag`, and the *parent* for `#insert`, `#insertIntoBlock`, `#reorderWithinGroup`,
-        `#reorderGroups` and `#resizeTabulation`; `Tel.Pointer.Empty` is the document root.
-    entry #pointer   the pointer the operation is anchored at
-    entry #update   replaces the text of one of the target's atoms; the first, by default
-        `update(text)` rewrites atom 0 and `update(atomIndex, text)` any atom, counting every
-        presentation form. The atom's form is kept while the new value is still safe for it,
-        and otherwise escalates inline → source → literal, never back; preceding spaces are
-        kept, so an identity update leaves tabulation padding intact.
-    entry #delete   removes the target compound; an emptied block goes with its comments
-    entry #replace   replaces the target with a compound, keeping the target's remark
-    entry #insert   appends a compound at its natural position among the parent's children
-        Immediately after the last compound with the same keyword, in the same block when it
-        is untabulated and in a new block after it when it is; or in a fresh trailing block
-        when no member of that keyword exists yet.
-    entry #insertBefore   inserts a compound immediately before the target
-        In the target's block, or in a new block before it when the block is tabulated.
-    entry #insertAfter   inserts a compound immediately after the target
-    entry #insertIntoBlock   appends a compound as a row of the parent's `blockIndex`-th child block
-        The way to add a row to a tabulated block: each inline atom is one column value,
-        re-padded to the block's marker offsets. A value too wide for its column is
-        `TabulationOverflow`; `#resizeTabulation` first.
-    entry #attachRemark   sets the target's remark, replacing any it had
-    entry #removeRemark   removes the target's remark; an absent remark is the identity
-    entry #setFlag   sets a flag on the target, inline when it can be, else as a child
-        Inline — hard-space-preceded if the line is already in hard-space mode — when the
-        target has no children and no source or literal atom; otherwise as a bare-keyword
-        child. A flag already present is `FlagAlreadySet`.
-    entry #unsetFlag   removes an inline or child flag from the target; an absent flag is the identity
-    entry #reorderWithinGroup   moves the `oldIndex`-th occurrence of a keyword to `newIndex` among the parent's children
-        Zero-based within the keyword's group; block boundaries and surrounding comments are
-        preserved.
-    entry #reorderGroups   moves one keyword's member group before (the default) or after another's
-        Whole blocks move where the groups occupy disjoint blocks, so attached comments,
-        tabulations and blank lines travel with their group; both groups must be contiguous
-        before and after. `Mutation.Placement` chooses the side.
-    entry #resizeTabulation   recomputes the marker offsets of the parent's `blockIndex`-th tabulated block
-        By the minimal-offsets algorithm, accommodating any `plannedRows` about to be
-        inserted, and re-pads every existing row.
-  entry #ops   the operations, in order
-  entry #++   the revision followed by another
-  entry #apply   applies the operations to a document in order; `revision(tel)`
-      Raises `Mutation.Error`. `Tel#edited(revision)` is the same call as an extension.
-
-entry .Mutation   the primitive presentation-preserving edit operations of §22.2, and their interpreter
-  detail
-      Each `.Op` is a local rewrite addressed by a `Tel.Pointer`: surrounding atoms, comments,
-      blank lines and unrelated children are untouched by construction, which is what lets a
-      program change one value in a file a person wrote and write it back intact.
-      `Mutation(tel, op)` applies one operation and `Mutation(tel, ops)` a list in order,
-      returning a new `Tel`; `Revision` is the composable DSL over the same operations.
-
-      ```scala
-      import soundness.*
-      import strategies.throwUnsafely
-
-      val document: Tel = t"name Percy\nage 30\n".read[Tel]
-      val pointer: Tel.Pointer = Tel.Pointer.of(t"name")
-      Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Hal")).show   // t"name Hal\nage 30\n"
-      ```
-
-      A pointer step is a keyword plus an occurrence index, resolved against the document an
-      operation is applied to, so a pointer stays meaningful across unrelated edits; but an
-      occurrence-indexed pointer must not be reused across operations which move, add or
-      remove compounds of the same keyword. Schema-dependent preconditions — that a deleted
-      member was not required, that a set flag is declared, that a replacement is well-typed
-      — are out of scope, as in the reference implementation: a schema-aware layer checks
-      them before delegating to these primitives.
-  refer stratiform.Revision
-  refer stratiform.Tel.Pointer
-  entry .Placement   which side of the other group `ReorderGroups` places a group: `Before` or `After`
-  entry .Member   a schema-free description of one struct member, for `.construct`
-      `Value(keyword, occurrences)` is a scalar member with its present occurrences (one for a
-      single member, several for a repeatable one, none for an absent member which ends the
-      inline run); `Flag(keyword)` a flag member; `Child(compound)` a ready-made child; and
-      `Break` an absent member which contributes nothing but ends the inline run, as an absent
-      scalar member does because the atom phase never skips a scalar position.
-  entry .Op   one primitive operation, addressed by a `Tel.Pointer`
-      The target-addressed operations, whose pointer names the compound they change:
-      `UpdateAtom(pointer, atomIndex, text)` rewrites one atom, keeping its form while the
-      new value is safe for it and otherwise escalating inline → source → literal, never
-      back; `Delete(pointer)` removes the compound, and an emptied block with its comments;
-      `Replace(pointer, compound)` substitutes a compound, keeping the original's remark;
-      `AttachRemark(pointer, text)` and `RemoveRemark(pointer)` set and clear the remark;
-      `SetFlag(pointer, keyword)` adds a flag inline when the compound has no children and
-      no source or literal atom, else as a child, and fails with `FlagAlreadySet` if present;
-      `UnsetFlag(pointer, keyword)` removes an inline or bare-child flag, as the identity when
-      absent; `InsertBefore(pointer, compound)` and `InsertAfter(pointer, compound)` place a
-      sibling next to the target, in a new block when the target's block is tabulated so the
-      new compound is not read as a row.
-
-      The parent-addressed operations, whose pointer names the container (`Tel.Pointer.Empty`
-      for the root): `Insert(pointer, compound)` appends at the member's natural position —
-      after the last compound of the same keyword, or in a fresh trailing block;
-      `InsertIntoBlock(parentPointer, blockIndex, compound)` appends a row to a block,
-      re-padded to its tabulation, failing with `TabulationOverflow` when a column value does
-      not fit; `ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)` moves one
-      occurrence within its keyword's group; `ReorderGroups(parentPointer, keyword,
-      otherKeyword, placement)` moves a whole member group before or after another, whole
-      blocks moving where the groups' blocks are disjoint; and `ResizeTabulation(parentPointer,
-      blockIndex, plannedRows)` recomputes a tabulation's marker offsets to fit its rows and
-      any planned ones, re-padding every row. Column geometry is measured in code points.
-  entry .apply   applies one operation, or a list in order, to a document
-      `Mutation(tel, op)` and `Mutation(tel, ops)`, each raising `Mutation.Error`. The
-      document's own sigil (from its pragma, `#` by default) feeds the inline-safety test, so
-      an updated value which would re-parse as a remark under a custom sigil escalates its
-      form.
-  entry .construct   a fresh compound with each atom's form chosen by the §22.3 safety rules
-      `construct(keyword, atoms*)` makes one atom per non-empty value — inline if the value
-      has no line break, no leading, trailing or doubled space and does not begin with the
-      sigil and a space; else a source atom if it has no empty line, no line ending in
-      whitespace and no leading space; else a literal atom under the shortest `---` delimiter
-      which collides with no line. An empty value yields no atom, since a leading space would
-      be a trailing space on the keyword line.
-
-      `construct(keyword, members)` and `construct(keyword, members, sigil)` run the canonical
-      presentation algorithm over a `Member` list: leading single-occurrence inline-safe
-      scalars and flags become inline atoms; a repeatable scalar goes all inline when every
-      occurrence is inline-safe and otherwise every occurrence becomes a child; and every
-      remaining member is a child in one block with no comments, tabulation or blank lines.
-      Inline atoms are soft-space-preceded up to the first value containing a space, and
-      hard-space-preceded from there on, so the construction re-parses to the same atoms.
-
-      ```scala
-      import soundness.*
-
-      Mutation.construct(t"name", t"Nick Bottom").atoms.length            // 1, an inline atom
-      Mutation.construct(t"note", t"first line\nsecond line")            // a source atom
-      Mutation.construct(t"note", t"first\n\nsecond\n")                  // a literal atom
-      Mutation.construct(t"flag", t"").atoms.length                      // 0
-      ```
-  entry .Error   raised when a pointer does not resolve or an operation's invariant fails
-    detail
-        Error 606: _the mutation failed because …_. `PointerNotFound` is a pointer, block
-        index or group which does not resolve to a compound, including a reorder whose groups
-        are interleaved or whose indices are out of range, and a `ResizeTabulation` on a block
-        with no tabulation; `AtomIndexOutOfRange` an `UpdateAtom` beyond the target's atoms;
-        `FlagAlreadySet` a `SetFlag` of a flag the target already has; `TabulationOverflow` an
-        `InsertIntoBlock` whose column value exceeds its column's capacity; and
-        `WriteUnsupported`, raised by `open[Tel]` with `Write` when the document's source
-        cannot be written back.
-    entry .Reason   the five reasons, each with a number
-      entry .communicable   renders each reason as a message
-    entry #reason   why the mutation failed
 
 entry .assign   `@assign(layer)`: declares a case-class field in a schema layer
     An annotation on a field of a case class, naming the layer object the field belongs to

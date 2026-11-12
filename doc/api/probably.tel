@@ -975,7 +975,7 @@ entry .Axis   one input variable of a test: a labelled domain of values, each a 
       The values' type needs an `Axable`, which gives each value a stable label and, for
       numeric domains, a number, which makes the axis orderable and chartable.
   refer probably.Axable
-  refer probably.Value
+  refer probably.Axis.Value
   refer probably.Test
   entry .Domain   the kind of an axis: `Discrete` labels in declaration order, or `Integral`/`Decimal` coordinates in numeric order
   entry .Spec   the erased description of an axis as a report records it: its label, domain and whether it is emergent
@@ -1014,6 +1014,16 @@ entry .Axis   one input variable of a test: a labelled domain of values, each a 
   entry #point   one value as a `Value`
   entry #coordinate   one value as the `(Axis.Spec, Value)` pair a cell is addressed by
 
+  entry .Value   one coordinate on one axis: a discrete label, an integer or a decimal
+    detail
+        A cell of a test is addressed by a list of values positionally aligned with the test's
+        axes; a test with no axes has the single address `Nil`. `Value(x)` makes one through
+        the `Axable` in scope: `Discrete(label)` for a discrete domain, `Integral(number)` or
+        `Decimal(number)` for the numeric ones.
+    entry .apply   a value from a domain value, through its `Axable`
+    entry #text   the label a selection matches: the discrete label, or the number shown
+    entry #numeric   the number, or `Unset` for a discrete value
+
 entry .Axable   how a domain value becomes a point on an axis: a stable label and, for numeric domains, a number
   detail
       The typeclass behind `Axis`. The companion covers `Int` and `Long` (integral),
@@ -1021,7 +1031,7 @@ entry .Axable   how a domain value becomes a point on an axis: a stable label an
       every `reflect.Enum` with an `Enumerable` (discrete, labelled by case name). A type of
       the caller's own supplies `label`, and `domain`/`numeric` when it is numeric.
   refer probably.Axis
-  refer probably.Value
+  refer probably.Axis.Value
   entry .int   `Int` on an integral axis
   entry .long   `Long` on an integral axis
   entry .double   `Double` on a decimal axis
@@ -1030,16 +1040,6 @@ entry .Axable   how a domain value becomes a point on an axis: a stable label an
   entry #domain   the axis domain of the type; `Discrete` by default
   entry #label   the stable text of a value, used in reports and matched by `axis=value` selections
   entry #numeric   the value as a number, for numeric domains; `Unset` by default
-
-entry .Value   one coordinate on one axis: a discrete label, an integer or a decimal
-  detail
-      A cell of a test is addressed by a list of values positionally aligned with the test's
-      axes; a test with no axes has the single address `Nil`. `Value(x)` makes one through
-      the `Axable` in scope: `Discrete(label)` for a discrete domain, `Integral(number)` or
-      `Decimal(number)` for the numeric ones.
-  entry .apply   a value from a domain value, through its `Axable`
-  entry #text   the label a selection matches: the discrete label, or the number shown
-  entry #numeric   the number, or `Unset` for a discrete value
 
 entry .Anchor   the distinguished comparison point of a test: one value on one axis, with `Baseline` settings
   detail

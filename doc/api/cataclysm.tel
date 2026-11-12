@@ -17,7 +17,7 @@ detail
     and at-rules — read from text with `read[Css]`, written with the `css"…"` interpolator,
     joined with `+`, and rendered with `show` under a `Css.Formatting` chosen by name from
     the `formatting` package. A rule's selector is a `SelectorList` of `Selector`s, each a
-    `Compound` of `Simple` parts joined by `Combinator`s, covering the whole of Selectors
+    `Selector.Compound` of `Selector.Simple` parts joined by `Selector.Combinator`s, covering the whole of Selectors
     Level 4. Property values are typed: lengths, angles, times and grid flex are quantities
     in CSS's own units (`4.0*Px`, `90.0*Deg`, `200.0*Ms`, `2.0*Fr`), a colour renders as a
     hex triplet, and the `Css.Convertible` typeclass says which native type is acceptable
@@ -48,8 +48,8 @@ detail
     The library is split into three source sets:
 
     - `cataclysm.core` — `Css` and its nodes, errors, keywords and `Css.Convertible`; the
-      selector model (`SelectorList`, `Selector`, `Compound`, `Simple`, …); the property
-      dataset (`PropertyDef`, `SyntaxMatcher`, `Css.Syntax`, `ValueToken`, `Outcome`); the
+      selector model (`SelectorList`, `Selector`, `Selector.Compound`, `Selector.Simple`, …); the property
+      dataset (`PropertyDef`, `Css.Syntax.Matcher`, `Css.Syntax`, `ValueToken`, `Css.Outcome`); the
       units (`Px`, `Rem`, `Vw`, `Pct`, `Deg`, `Fr`, …); the `css"…"` interpolator; the
       `classes` and `ids` extensions; and the `formatting` and `construables` packages.
       Compiles for the JVM, Scala.js and Scala Native.
@@ -175,7 +175,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
       import soundness.*
 
       val sheet = Css(List(
-        Css.Node.Rule(SelectorList(List(Selector(Unset, Compound(List(Simple.Type(Unset, t"a"))), Nil))),
+        Css.Node.Rule(SelectorList(List(Selector(Unset, Selector.Compound(List(Selector.Simple.Type(Unset, t"a"))), Nil))),
           List(Css.Node.Declaration(t"color", t"red"))),
         Css.Node.At(t"import", t"url(\"x.css\")", Unset)))
       ```
@@ -285,7 +285,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
         Error 251: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
         number as the subcode. One is raised for each problem found while reading a
         stylesheet or parsing a selector, grammar or value; `read[Css]` collects them all
-        into a `Css.Errors`, while `SelectorList.parse` and `SyntaxMatcher.check` raise a
+        into a `Css.Errors`, while `SelectorList.parse` and `Css.Syntax.Matcher.check` raise a
         single `Css.Error` through a `Tactic[Css.Error]`. Constructing one needs a
         `Diagnostics`.
 
@@ -413,7 +413,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
     detail
         The parsed form of a value-definition-syntax string such as `<line-width> ||
         <line-style> || <color>` — the notation in which every property's permitted values
-        are described in the MDN dataset — which `SyntaxMatcher` matches a concrete value
+        are described in the MDN dataset — which `Css.Syntax.Matcher` matches a concrete value
         against. `PropertyDef#grammar` is the `Css.Syntax` of a property.
 
         The cases follow the notation. `Keyword(name)` is a literal identifier such as
@@ -435,9 +435,50 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
 
         It lives under `Css` rather than at the top level so that it does not clash with
         stenography's `Syntax` in the umbrella.
-    refer cataclysm.SyntaxMatcher
+    refer cataclysm.Css.Syntax.Matcher
     refer cataclysm.PropertyDef
   entry #rules   the stylesheet's nodes, in order
+    entry .Matcher   checks a property value against its grammar: valid, invalid or unsupported
+      detail
+          `Css.Syntax.Matcher.check(property, value)` tokenizes the value (`ValueToken`) and
+          matches it, with backtracking, against the property's `Css.Syntax`, resolving
+          composite `<type>`s from the MDN `syntaxes.json` dataset and matching the leaf
+          primitives — `<length>`, `<percentage>`, `<number>`, `<integer>`, `<angle>`,
+          `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`, `<url>`,
+          `<hex-color>`, the identifier types — at the token level. The result is an
+          `Outcome`: `Valid`, `Invalid`, or `Unsupported(types)` when the grammar reaches a
+          type the matcher implements neither as a composite nor as a primitive, so an
+          unimplemented corner of the grammar is reported rather than passed or failed
+          silently. This is the check `read[Css]`, `css"…"` and `Css.Style(…)` apply to every
+          declaration.
+
+          A value containing an arbitrary-substitution function, `var()` or `env()`, is always
+          valid, as a pending-substitution value is; the CSS-wide keywords are valid as the
+          sole value of every property; and `calc()`, `min()`, `max()`, `clamp()` and the
+          other math functions are accepted wherever a numeric primitive is expected.
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+          import errorDiagnostics.stackTracesDiagnostics
+
+          val grammar = Css.Syntax.Repeated(Css.Syntax.Type(t"length", Unset), 1, Unset, true)
+          Css.Syntax.Matcher.check(grammar, t"1px, 2px, 3px")     // Css.Outcome.Valid
+          Css.Syntax.Matcher.check(grammar, t"1px 2px")           // Css.Outcome.Invalid
+          ```
+      refer cataclysm.PropertyDef
+      refer cataclysm.Css.Outcome
+      refer cataclysm.ValueToken
+      entry .check   a value against a property's grammar, or against a `Css.Syntax` directly
+          Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
+          grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
+          `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
+          unterminated string).
+
+  entry .Outcome   the result of checking a value against a grammar: `Valid`, `Invalid` or `Unsupported`
+      An enum returned by `Css.Syntax.Matcher.check`. `Valid` and `Invalid` are a definite
+      verdict; `Unsupported(types)` names the value-definition types the matcher could not
+      verify against, which `read[Css]` reports as `Css.Error.Reason.UnsupportedValue`.
 
 entry .css   the `css"…"` interpolator: a stylesheet or inline style, checked as the code compiles
     `css"a { color: red }"` is a `Css`, and `css"color: red; width: 4px"` — bare
@@ -503,7 +544,7 @@ entry .css   the `css"…"` interpolator: a stylesheet or inline style, checked 
 entry .classes   the class names a stylesheet's selectors mention, as a `Set[Name[CssClass]]`
     An extension on `Css`. Walks every rule, including rules nested in other rules and in
     at-rule bodies, and the selector-list arguments of `:is()`, `:where()`, `:not()`,
-    `:has()` and `:nth-child(… of …)`, collecting each `Simple.Class`. This is the set
+    `:has()` and `:nth-child(… of …)`, collecting each `Selector.Simple.Class`. This is the set
     `Styles` and `cssBindings.checkedBinding` check an HTML template's class names
     against.
 
@@ -517,7 +558,7 @@ entry .classes   the class names a stylesheet's selectors mention, as a `Set[Nam
     ```
 
 entry .ids   the id names a stylesheet's selectors mention, as a `Set[Name[DomId]]`
-    An extension on `Css`, the counterpart of `classes` for `Simple.Id` parts: every
+    An extension on `Css`, the counterpart of `classes` for `Selector.Simple.Id` parts: every
     id selector in every selector list, however deeply nested.
 
 entry .formatting   the two standard renderings of a stylesheet, each a given to import by name
@@ -571,7 +612,7 @@ entry .SelectorList   a comma-separated list of selectors, the prelude of a rule
   detail
       The loosest of the three levels of a CSS selector: a `SelectorList` holds the
       alternatives separated by commas, each a `Selector` (a complex selector: compounds
-      joined by combinators), each of whose `Compound`s is a run of `Simple` parts. It is
+      joined by combinators), each of whose `Selector.Compound`s is a run of `Selector.Simple` parts. It is
       what a `Css.Node.Rule` carries, and what `:is()`, `:not()`, `:has()` and `:where()`
       take as their argument.
 
@@ -591,8 +632,8 @@ entry .SelectorList   a comma-separated list of selectors, the prelude of a rule
       `odd`, `even` and an `of` clause, and the nesting selector `&`. A malformed selector
       raises a `Css.Error`.
   refer cataclysm.Selector
-  refer cataclysm.Compound
-  refer cataclysm.Simple
+  refer cataclysm.Selector.Compound
+  refer cataclysm.Selector.Simple
   entry .showable   renders the list with `, ` between selectors
   entry .focusable   lets a selector list be a tarantula focus, with the strategy `css selector`
       The `Focusable` given, so a browser-automation lookup can take a parsed selector
@@ -618,87 +659,81 @@ entry .Selector   a complex selector: a head compound and the combinator–compo
       ```scala
       import soundness.*
 
-      val ul = Compound(List(Simple.Type(Unset, t"ul")))
-      val li = Compound(List(Simple.Type(Unset, t"li"), Simple.Class(Name[CssClass](t"item"))))
-      val selector = Selector(Unset, ul, List((Combinator.Child, li)))
+      val ul = Selector.Compound(List(Selector.Simple.Type(Unset, t"ul")))
+      val li = Selector.Compound(List(Selector.Simple.Type(Unset, t"li"), Selector.Simple.Class(Name[CssClass](t"item"))))
+      val selector = Selector(Unset, ul, List((Selector.Combinator.Child, li)))
       selector.show     // t"ul > li.item"
       ```
   refer cataclysm.SelectorList
-  refer cataclysm.Combinator
+  refer cataclysm.Selector.Combinator
   entry .showable   renders the selector, with a space around every combinator but the descendant's
   entry #lead   the leading combinator of a relative selector, or `Unset`
   entry #head   the first compound
   entry #rest   the steps after the head, each a combinator and the compound it reaches
 
-entry .Compound   a compound selector: simple selectors with nothing between them, `li.item:hover`
-  detail
-      A run of `Simple` parts bound together with no combinator and no whitespace: a type
-      or universal selector, if any, followed by ids, classes, attribute selectors,
-      pseudo-classes and pseudo-elements. `Compound(List(Simple.Type(Unset, t"a"),
-      Simple.PseudoClass(t"hover", Unset)))` is `a:hover`.
-  entry .showable   renders the parts concatenated
-  entry #parts   the simple selectors, in order
+  entry .Compound   a compound selector: simple selectors with nothing between them, `li.item:hover`
+    detail
+        A run of `Simple` parts bound together with no combinator and no whitespace: a type
+        or universal selector, if any, followed by ids, classes, attribute selectors,
+        pseudo-classes and pseudo-elements. `Compound(List(Simple.Type(Unset, t"a"),
+        Simple.PseudoClass(t"hover", Unset)))` is `a:hover`.
+    entry .showable   renders the parts concatenated
+    entry #parts   the simple selectors, in order
+  entry .Simple   one simple selector: a type, class, id, attribute, pseudo-class, pseudo-element, `*` or `&`
+    detail
+        The eight kinds of simple selector, as an enum. `Universal(namespace)` is `*`, with
+        an optional namespace `Prefix`; `Type(namespace, name)` an element name such as `div`
+        or `svg|rect`; `Id(name)` an id selector (hash and name), typed as a `Name[DomId]`; `Class(name)` a
+        a class selector (dot and name), typed as a `Name[CssClass]`; `Nesting` the `&` of a nested rule;
+        `Attribute(namespace, name, test)` a `[name]` with an optional `AttributeTest` such as
+        `^="https" i`; `PseudoClass(name, argument)` a `:hover` or `:nth-child(2n+1)`, with an
+        optional `PseudoArgument`; and `PseudoElement(name, argument)` a `::before`.
 
-entry .Simple   one simple selector: a type, class, id, attribute, pseudo-class, pseudo-element, `*` or `&`
-  detail
-      The eight kinds of simple selector, as an enum. `Universal(namespace)` is `*`, with
-      an optional namespace `Prefix`; `Type(namespace, name)` an element name such as `div`
-      or `svg|rect`; `Id(name)` an id selector (hash and name), typed as a `Name[DomId]`; `Class(name)` a
-      a class selector (dot and name), typed as a `Name[CssClass]`; `Nesting` the `&` of a nested rule;
-      `Attribute(namespace, name, test)` a `[name]` with an optional `AttributeTest` such as
-      `^="https" i`; `PseudoClass(name, argument)` a `:hover` or `:nth-child(2n+1)`, with an
-      optional `PseudoArgument`; and `PseudoElement(name, argument)` a `::before`.
+        ```scala
+        import soundness.*
 
-      ```scala
-      import soundness.*
+        Selector.Simple.Class(Name[CssClass](t"button")).show                         // t".button"
+        Selector.Simple.Attribute(Unset, t"href", Selector.AttributeTest(Selector.AttributeMatcher.Prefix, t"https", 'i')).show
+        // t"[href^=https i]"
+        ```
 
-      Simple.Class(Name[CssClass](t"button")).show                         // t".button"
-      Simple.Attribute(Unset, t"href", AttributeTest(AttributeMatcher.Prefix, t"https", 'i')).show
-      // t"[href^=https i]"
-      ```
-
-      Class and id names are `Name`s, so a name which is not a valid CSS identifier is
-      rejected when parsed (`Css.Error.Reason.InvalidName`), and `classes` and `ids` on a
-      `Css` return them typed.
-  refer cataclysm.PseudoArgument
-  refer cataclysm.AttributeTest
-  refer cataclysm.Prefix
-  entry .showable   renders each kind as CSS: `*`, `div`, an id or class selector, `&`, `[a^=b i]`, `:is(…)`, `::before`
-      An `An+B` argument is canonicalized: `1n` renders as `n`, `-1n` as `-n`, and an `a`
-      of zero as the bare `b`. Attribute values render unquoted.
-
-entry .Combinator   how two compounds relate: descendant, child, next sibling, subsequent sibling or column
-    An enum of the five combinators of Selectors Level 4: `Descendant` (whitespace),
-    `Child` (`>`), `NextSibling` (`+`), `SubsequentSibling` (`~`) and `Column` (`||`). A
-    `Selector#rest` pairs one with each compound after the head. The `showable` given in
-    the companion renders each as its symbol, with the descendant as a single space.
-
-entry .AttributeMatcher   how an attribute selector compares its value: `=`, `~=`, `|=`, `^=`, `$=` or `*=`
-    An enum of the six matchers: `Exact` (`=`), `Includes` (`~=`, a whitespace-separated
-    word), `DashMatch` (`|=`, the value or a `value-` prefix), `Prefix` (`^=`), `Suffix`
-    (`$=`) and `Substring` (`*=`). An `AttributeTest` holds one with the value it compares.
-
-entry .AttributeTest   the right-hand side of an attribute selector: matcher, value and modifier
-  detail
-      `AttributeTest(matcher, value, modifier)` is the `^="https" i` of `[href^="https"
-      i]`: the `AttributeMatcher`, the value compared (unquoted), and the optional
-      case-sensitivity modifier `i` or `s`. A `Simple.Attribute` with no test, `[disabled]`,
-      holds `Unset` instead.
-  entry #matcher   how the value is compared
-  entry #value   the value compared, without its quotes
-  entry #modifier   the `i` or `s` case modifier, or `Unset`
-
-entry .Prefix   the namespace prefix of a type, universal or attribute selector
-    An enum of the three forms, which mean different things and are kept distinct: `Any`
-    is `*|` (any namespace), `Default` is a bare `|` (no namespace), and `Named(prefix)` is
-    a declared namespace, `svg|`. A selector with no prefix at all holds `Unset`.
-
-entry .PseudoArgument   the argument of a functional pseudo-class: a selector list, an `An+B`, or raw text
-    An enum of the three shapes. `Selectors(list)` is the nested `SelectorList` of `:is()`,
-    `:where()`, `:not()` and `:has()`, so their contents are themselves inspectable;
-    `Nth(a, b, of)` is the `An+B` of `:nth-child()` and its siblings, with `odd` normalized
-    to `2n+1` and `even` to `2n`, and the optional `of` selector list kept alongside; and
-    `Raw(text)` is the argument of any other function, such as `:lang(en)`, kept as text.
+        Class and id names are `Name`s, so a name which is not a valid CSS identifier is
+        rejected when parsed (`Css.Error.Reason.InvalidName`), and `classes` and `ids` on a
+        `Css` return them typed.
+    refer cataclysm.Selector.PseudoArgument
+    refer cataclysm.Selector.AttributeTest
+    refer cataclysm.Selector.Prefix
+    entry .showable   renders each kind as CSS: `*`, `div`, an id or class selector, `&`, `[a^=b i]`, `:is(…)`, `::before`
+        An `An+B` argument is canonicalized: `1n` renders as `n`, `-1n` as `-n`, and an `a`
+        of zero as the bare `b`. Attribute values render unquoted.
+  entry .Combinator   how two compounds relate: descendant, child, next sibling, subsequent sibling or column
+      An enum of the five combinators of Selectors Level 4: `Descendant` (whitespace),
+      `Child` (`>`), `NextSibling` (`+`), `SubsequentSibling` (`~`) and `Column` (`||`). A
+      `Selector#rest` pairs one with each compound after the head. The `showable` given in
+      the companion renders each as its symbol, with the descendant as a single space.
+  entry .AttributeTest   the right-hand side of an attribute selector: matcher, value and modifier
+    detail
+        `AttributeTest(matcher, value, modifier)` is the `^="https" i` of `[href^="https"
+        i]`: the `AttributeMatcher`, the value compared (unquoted), and the optional
+        case-sensitivity modifier `i` or `s`. A `Simple.Attribute` with no test, `[disabled]`,
+        holds `Unset` instead.
+    entry #matcher   how the value is compared
+    entry #value   the value compared, without its quotes
+    entry #modifier   the `i` or `s` case modifier, or `Unset`
+  entry .AttributeMatcher   how an attribute selector compares its value: `=`, `~=`, `|=`, `^=`, `$=` or `*=`
+      An enum of the six matchers: `Exact` (`=`), `Includes` (`~=`, a whitespace-separated
+      word), `DashMatch` (`|=`, the value or a `value-` prefix), `Prefix` (`^=`), `Suffix`
+      (`$=`) and `Substring` (`*=`). An `AttributeTest` holds one with the value it compares.
+  entry .Prefix   the namespace prefix of a type, universal or attribute selector
+      An enum of the three forms, which mean different things and are kept distinct: `Any`
+      is `*|` (any namespace), `Default` is a bare `|` (no namespace), and `Named(prefix)` is
+      a declared namespace, `svg|`. A selector with no prefix at all holds `Unset`.
+  entry .PseudoArgument   the argument of a functional pseudo-class: a selector list, an `An+B`, or raw text
+      An enum of the three shapes. `Selectors(list)` is the nested `SelectorList` of `:is()`,
+      `:where()`, `:not()` and `:has()`, so their contents are themselves inspectable;
+      `Nth(a, b, of)` is the `An+B` of `:nth-child()` and its siblings, with `odd` normalized
+      to `2n+1` and `even` to `2n`, and the optional `of` selector list kept alongside; and
+      `Raw(text)` is the argument of any other function, such as `:lang(en)`, kept as text.
 
 entry .PropertyDef   the definition of a CSS property from the MDN dataset: its name and value grammar
   detail
@@ -715,14 +750,14 @@ entry .PropertyDef   the definition of a CSS property from the MDN dataset: its 
 
       val width: PropertyDef = PropertyDef.of(t"width").or(halt(t"unknown"))
       width.syntax                                      // the dataset's grammar text
-      SyntaxMatcher.check(width, t"4px")                // Outcome.Valid
-      SyntaxMatcher.check(width, t"wide")               // Outcome.Invalid
+      Css.Syntax.Matcher.check(width, t"4px")                // Css.Outcome.Valid
+      Css.Syntax.Matcher.check(width, t"wide")               // Css.Outcome.Invalid
       PropertyDef.of(t"colour")                         // Unset
       ```
 
       Custom properties (`--name`) are valid without a definition and are the caller's
       responsibility: `of` returns `Unset` for them.
-  refer cataclysm.SyntaxMatcher
+  refer cataclysm.Css.Syntax.Matcher
   refer cataclysm.Css.Syntax
   entry .list   every known property, in dataset order
   entry .all   every known property, keyed by name in a `Dictionary`
@@ -731,51 +766,9 @@ entry .PropertyDef   the definition of a CSS property from the MDN dataset: its 
   entry #syntax   the value grammar as the dataset writes it, `<length> | auto`
   entry #grammar   the value grammar parsed to a `Css.Syntax`, computed on first use
 
-entry .SyntaxMatcher   checks a property value against its grammar: valid, invalid or unsupported
-  detail
-      `SyntaxMatcher.check(property, value)` tokenizes the value (`ValueToken`) and
-      matches it, with backtracking, against the property's `Css.Syntax`, resolving
-      composite `<type>`s from the MDN `syntaxes.json` dataset and matching the leaf
-      primitives — `<length>`, `<percentage>`, `<number>`, `<integer>`, `<angle>`,
-      `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`, `<url>`,
-      `<hex-color>`, the identifier types — at the token level. The result is an
-      `Outcome`: `Valid`, `Invalid`, or `Unsupported(types)` when the grammar reaches a
-      type the matcher implements neither as a composite nor as a primitive, so an
-      unimplemented corner of the grammar is reported rather than passed or failed
-      silently. This is the check `read[Css]`, `css"…"` and `Css.Style(…)` apply to every
-      declaration.
-
-      A value containing an arbitrary-substitution function, `var()` or `env()`, is always
-      valid, as a pending-substitution value is; the CSS-wide keywords are valid as the
-      sole value of every property; and `calc()`, `min()`, `max()`, `clamp()` and the
-      other math functions are accepted wherever a numeric primitive is expected.
-
-      ```scala
-      import soundness.*
-      import strategies.throwUnsafely
-      import errorDiagnostics.stackTracesDiagnostics
-
-      val grammar = Css.Syntax.Repeated(Css.Syntax.Type(t"length", Unset), 1, Unset, true)
-      SyntaxMatcher.check(grammar, t"1px, 2px, 3px")     // Outcome.Valid
-      SyntaxMatcher.check(grammar, t"1px 2px")           // Outcome.Invalid
-      ```
-  refer cataclysm.PropertyDef
-  refer cataclysm.Outcome
-  refer cataclysm.ValueToken
-  entry .check   a value against a property's grammar, or against a `Css.Syntax` directly
-      Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
-      grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
-      `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
-      unterminated string).
-
-entry .Outcome   the result of checking a value against a grammar: `Valid`, `Invalid` or `Unsupported`
-    An enum returned by `SyntaxMatcher.check`. `Valid` and `Invalid` are a definite
-    verdict; `Unsupported(types)` names the value-definition types the matcher could not
-    verify against, which `read[Css]` reports as `Css.Error.Reason.UnsupportedValue`.
-
 entry .ValueToken   one token of a property value: identifier, number, dimension, string, function, …
     The unit a property value is broken into before matching, following the CSS Syntax
-    Module Level 3 tokenizer for the tokens which appear in values. `SyntaxMatcher` consumes
+    Module Level 3 tokenizer for the tokens which appear in values. `Css.Syntax.Matcher` consumes
     them; they are exposed so that a tool can inspect a value's lexical shape. The cases:
 
     ```tabular

@@ -48,7 +48,7 @@ import prepositional.*
 import symbolism.*
 import vacuous.*
 
-export rudiments.internal.{Bytes, Digit}
+export rudiments.internal.{Memory, Digit}
 
 // `Atomic[value]` is a match type over the concrete atomic types, not a representation: the
 // distinction is what makes it work. A match type AS the representation cannot reduce for an
@@ -806,21 +806,21 @@ extension [value](value: value)
 // ambiguity with these overloads — and a forcing `segment` besides.
 
 extension (bs: Int)
-  def b: Bytes = Bytes(bs)
-  def kib: Bytes = Bytes(bs*1024L)
-  def mib: Bytes = Bytes(bs*1024L*1024)
-  def gib: Bytes = Bytes(bs*1024L*1024*1024)
-  def tib: Bytes = Bytes(bs*1024L*1024*1024*1024)
+  def b: Memory = Memory(bs)
+  def kib: Memory = Memory(bs*1024L)
+  def mib: Memory = Memory(bs*1024L*1024)
+  def gib: Memory = Memory(bs*1024L*1024*1024)
+  def tib: Memory = Memory(bs*1024L*1024*1024*1024)
 
 extension (bs: Long)
-  def b: Bytes = Bytes(bs)
-  def kib: Bytes = Bytes(bs*1024)
-  def mib: Bytes = Bytes(bs*1024*1024)
-  def gib: Bytes = Bytes(bs*1024*1024*1024)
-  def tib: Bytes = Bytes(bs*1024*1024*1024*1024)
+  def b: Memory = Memory(bs)
+  def kib: Memory = Memory(bs*1024)
+  def mib: Memory = Memory(bs*1024*1024)
+  def gib: Memory = Memory(bs*1024*1024*1024)
+  def tib: Memory = Memory(bs*1024*1024*1024*1024)
 
 extension (data: Data)
-  def bytes: Bytes = Bytes(data.length)
+  def bytes: Memory = Memory(data.length)
 
 extension [product <: Product: Mirror.ProductOf](value: product)
   def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)

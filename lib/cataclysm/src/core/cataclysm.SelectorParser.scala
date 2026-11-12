@@ -38,6 +38,8 @@ import gossamer.*
 import nomenclature.*
 import vacuous.*
 import zephyrine.*
+import cataclysm.Selector
+  . { AttributeMatcher, AttributeTest, Combinator, Compound, Prefix, PseudoArgument, Simple }
 
 // Parses a (comment-stripped, whitespace-normalized) selector prelude into a
 // `SelectorList`, following Selectors Level 4. Strict: malformed input raises a

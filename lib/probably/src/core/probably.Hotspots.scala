@@ -40,7 +40,7 @@ object Hotspots:
     def include
       ( report:      Report,
         testId:      Test.Id,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         hotspots:    Hotspots )
     :   Report =
 

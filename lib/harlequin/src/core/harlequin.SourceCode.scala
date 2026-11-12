@@ -203,7 +203,7 @@ object SourceCode:
 
         val annotation: Optional[TokenTag] = trees(start, end)
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
-        val role: Optional[Role] = annotation.let(_.role)
+        val role: Optional[Token.Role] = annotation.let(_.role)
 
         val content: Chain[Token] =
           if start == end then Chain() else
@@ -266,7 +266,7 @@ object SourceCode:
 
   // The accent (colour category) and role (binding vs usage) resolved for a token span
   // from the parse tree.
-  private case class TokenTag(accent: Accent, role: Role)
+  private case class TokenTag(accent: Accent, role: Token.Role)
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
@@ -275,7 +275,7 @@ object SourceCode:
 
     def apply(start: Int, end: Int): Optional[TokenTag] = trees.get((start, end)).optional
 
-    private def tag(span: Spans.Span, accent: Accent, role: Role): Unit =
+    private def tag(span: Spans.Span, accent: Accent, role: Token.Role): Unit =
       if span.exists then trees += (span.start, span.end) -> TokenTag(accent, role)
 
     def ignored(tree: NameTree): Boolean =
@@ -295,10 +295,10 @@ object SourceCode:
     // its usage role.
     private def traversePattern(tree: Tree)(using Contexts.Context): Unit = tree match
       case tree: Ident if isBinderIdent(tree) =>
-        tag(tree.span, Accent.Term, Role.Binding)
+        tag(tree.span, Accent.Term, Token.Role.Binding)
 
       case tree: Bind =>
-        tag(tree.nameSpan, Accent.Term, Role.Binding)
+        tag(tree.nameSpan, Accent.Term, Token.Role.Binding)
         traversePattern(tree.body)
 
       case Typed(expr, tpt) =>
@@ -333,27 +333,27 @@ object SourceCode:
         case tree: NameTree if ignored(tree) => traverseChildren(tree)
 
         case tree: TypeDef if tree.mods.is(Flags.Param) =>
-          tag(tree.nameSpan, Accent.Typal, Role.Binding)
+          tag(tree.nameSpan, Accent.Typal, Token.Role.Binding)
           traverseChildren(tree)
 
         case tree: ValOrDefDef =>
-          tag(tree.nameSpan, Accent.Term, Role.Binding)
+          tag(tree.nameSpan, Accent.Term, Token.Role.Binding)
           traverseChildren(tree)
 
         case tree: MemberDef =>
-          tag(tree.nameSpan, Accent.Typal, Role.Binding)
+          tag(tree.nameSpan, Accent.Typal, Token.Role.Binding)
           traverseChildren(tree)
 
         case tree: Ident if tree.isType =>
-          tag(tree.span, Accent.Typal, Role.Usage)
+          tag(tree.span, Accent.Typal, Token.Role.Usage)
           traverseChildren(tree)
 
         case tree: Ident =>
-          tag(tree.span, Accent.Term, Role.Usage)
+          tag(tree.span, Accent.Term, Token.Role.Usage)
           traverseChildren(tree)
 
         case tree: TypTree =>
-          tag(tree.span, Accent.Typal, Role.Usage)
+          tag(tree.span, Accent.Typal, Token.Role.Usage)
           traverseChildren(tree)
 
         case CaseDef(pattern, guard, body) =>
@@ -742,13 +742,88 @@ object SourceCode:
 
     found.to(Map)
 
+  object Token:
+    import anticipation.*
+    import denominative.*
+    import gossamer.*
+    import rudiments.*
+    import spectacular.*
+    import stenography.*
+    import vacuous.*
+
+    val Newline: Token = Token("\n", Accent.Unparsed)
+    given showable: Token is Showable = _.text
+
+    // The `Showable` above is the token's text alone, which is what a rendered source listing
+    // needs, but it hides the accent, span and role — the state a reader of highlighted source
+    // is usually checking. Inspection shows each field, in product form. A `Meta` wraps a
+    // `Syntax`, whose textual form needs an `Imports` context which inspection cannot supply, so
+    // a present `Meta` is shown as `｢Meta｣`, without its type.
+    given inspectable: [token <: Token] => token is Inspectable = token =>
+      val meta = if token.meta.present then t"｢Meta｣" else t"○"
+      val role = token.role.lay(t"○"): role => t"｢${role.inspect}｣"
+
+      val fields =
+        t"text:${token.text.inspect} ╱ accent:${token.accent.inspect} ╱ meta:$meta"
+
+      t"Token($fields ╱ span:${token.span.inspect} ╱ role:$role)"
+
+    // `elaboration` is present on a callee token whose call the typer elaborated beyond its
+    // source text: inferred type arguments or synthesized `using` arguments.
+    case class Meta(tpe: Syntax, elaboration: Optional[prophesy.Elaboration] = Unset)
+
+    object Role:
+      import anticipation.*
+      import gossamer.*
+      import spectacular.*
+
+      given showable: Role is Showable = _.toString.tt.lower
+
+    // The role of a term or type token: whether it is a `Binding` (a `val`/`def`/parameter or
+    // pattern name, a class/type/type-parameter definition) or a `Usage` referring to one
+    // bound elsewhere. It is `Unset` on tokens that are neither terms nor types (keywords,
+    // literals, punctuation). A styling policy may, for example, render bindings in italic.
+    enum Role:
+      import anticipation.*
+      import gossamer.*
+      import spectacular.*
+
+      case Binding, Usage
+
+  // `span` locates the token in its `SourceCode`: a `Line`-mode `Span` carrying the
+  // token's 0-based line and column and its length. It is `Span.empty` until the
+  // token is placed into a `SourceCode`'s line grid. `role` distinguishes a binding from a
+  // usage for term (`Term`) and type (`Typal`) tokens, and is `Unset` for all others.
+  case class Token
+    ( text:   Text,
+      accent: Accent,
+      meta:   Optional[Token.Meta] = Unset,
+      span:   Span                 = Span.empty,
+      role:   Optional[Token.Role]       = Unset ):
+    import anticipation.*
+    import denominative.*
+    import gossamer.*
+    import rudiments.*
+    import spectacular.*
+    import stenography.*
+    import vacuous.*
+
+
+    def length: Int = text.length
+
+    def snip(point: Int): (Token, Token) =
+      ( Token(text.keep(point), accent, meta, span, role),
+        Token(text.skip(point), accent, meta, span, role) )
+
 case class SourceCode
   ( language:    ProgrammingLanguage,
     offset:      Int,
-    lines:       Array[List[Token]]^{},
+    lines:       Array[List[SourceCode.Token]]^{},
     focus:       Optional[Span] = Unset,
     diagnostics: List[Diagnostic] = Nil,
     completions: Optional[Completions] = Unset ):
+  import SourceCode.Token
+
 
   def lastLine: Int = offset + lines.length - 1
   def apply(line: Int): List[Token] = lines.readUnchecked(line - offset)

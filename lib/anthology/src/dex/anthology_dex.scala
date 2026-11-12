@@ -53,6 +53,7 @@ import rudiments.{bind, partition, to}
 import symbolism.`+`
 import serpentine.*
 import vacuous.*
+import anthology.Toolchain.{Tool, Universe}
 
 // The dexing configuration `dexEdges`' tool folds settings into: the lowest Android API level
 // the output must run on (lower levels oblige D8 to desugar more), D8's compilation mode, and

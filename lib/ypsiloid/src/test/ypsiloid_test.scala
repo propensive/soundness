@@ -1040,9 +1040,9 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
         Yaml.make(inner = Yaml.make(n = 7.in[Yaml])).as[Outer]
       . assert(_ == Outer(Inner(7)))
 
-    suite(m"Bytes decoder"):
-      test(m"Decode a numeric value as Bytes"):
-        t"255".read[Yaml].as[Bytes]
+    suite(m"Memory decoder"):
+      test(m"Decode a numeric value as Memory"):
+        t"255".read[Yaml].as[Memory]
       . assert(_ == 255L.b)
 
     suite(m"BCD arbitrary-precision numbers"):

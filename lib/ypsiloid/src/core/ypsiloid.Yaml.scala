@@ -1354,8 +1354,8 @@ object Yaml extends Yaml1, Dynamic:
   given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
 
   // Laundered pure like the primitive codecs (codec-thunk seal; see rep/DECISIONS.md).
-  given bytes: (tactic: Tactic[Yaml.Error])
-  =>  ( (Bytes is Decodable in Yaml)^{tactic, caps.any} ) =
+  given memory: (tactic: Tactic[Yaml.Error])
+  =>  ( (Memory is Decodable in Yaml)^{tactic, caps.any} ) =
     _.root.long.b
 
   given lens: [name <: Label: ValueOf]

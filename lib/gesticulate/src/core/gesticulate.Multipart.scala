@@ -271,5 +271,29 @@ object Multipart:
   case class Error(reason: Multipart.Error.Reason)(using Diagnostics)
   extends fulminate.Error(937, reason.number)(m"multipart data could not be read because $reason")
 
-case class Multipart(parts: Chain[Part]):
+  object Part:
+    import anticipation.*
+    import contingency.*
+    import prepositional.*
+    import turbulence.*
+    import vacuous.*
+    import zephyrine.{Credit, Spring}
+
+    given streamable: (tactic: Tactic[Truncation.Error])
+    =>  ( (Part is Streamable by Data over Credit)^{tactic} ) =
+      _.body()
+
+  // `body` is lent from the input being parsed, zero-copy: it is readable until the next part
+  // is read (which skips whatever remains of it), after which it reads as empty. Each `body()`
+  // continues from wherever the previous one stopped.
+  case class Part
+    ( disposition: Optional[Multipart.Disposition],
+      headers:     Map[Text, Text],
+      name:        Optional[Text],
+      filename:    Optional[Text],
+      body:        Spring[Data] )
+
+case class Multipart(parts: Chain[Multipart.Part]):
+  import Multipart.Part
+
   def at(name: Text): Optional[Part] = parts.seek(_.name == name)

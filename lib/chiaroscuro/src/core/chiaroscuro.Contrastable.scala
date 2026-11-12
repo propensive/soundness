@@ -47,6 +47,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import wisteria.*
+import dissonance.Diff.{Del, Ins, Par, Sub}
 
 object Contrastable:
   inline given derived: [entity] => entity is Contrastable = summonFrom:

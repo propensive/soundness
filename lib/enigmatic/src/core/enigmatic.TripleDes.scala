@@ -40,8 +40,8 @@ import prepositional.*
 
 object TripleDes:
   given value: [bits <: 112 | 168: ValueOf, mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( blockMode: mode is BlockCipher.Mode )
+  =>  ( blockPadding: padding is BlockCipher.Padding )
   =>  ( mode Permits padding )
   =>  ( crypto: Crypto { def tripleDes: Crypto.SymmetricCipher } )
   =>  ( TripleDes[bits] over mode against padding ) =
@@ -49,7 +49,7 @@ object TripleDes:
     . asInstanceOf[TripleDes[bits] over mode against padding]
 
 class TripleDes[bits <: 112 | 168: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+  ( mode: BlockCipher.Mode, padding: BlockCipher.Padding, cipher: Crypto.SymmetricCipher )
 extends BlockCipher(t"DESede", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

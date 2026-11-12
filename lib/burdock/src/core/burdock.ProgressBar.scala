@@ -50,4 +50,4 @@ object ProgressBar:
 
   // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
   def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+    gaugeLine(Tui.Fraction(fraction), width)(using bars.smoothBar)

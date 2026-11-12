@@ -55,7 +55,7 @@ inside a `supervise` block:
 
 ```scala
 supervise:
-  Acp.connect(Acp.Agent(sh"claude-code-acp")):
+  Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
     Acp.updated:
       Acp.update match
         case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
@@ -73,7 +73,7 @@ supervise:
 The value of the second block is the value of `connect`. Here it is the stop reason of the turn.
 When the block returns, the exchange is torn down, and a subprocess agent is killed, so nothing
 outlives the agent it speaks to. An agent which is already running, behind a socket or as a
-fixture in a test, connects through `Acp.Agent.streams(input, output)` instead of a command.
+fixture in a test, connects through `Acp.Endpoint.streams(input, output)` instead of a command.
 
 A capability which is not registered is never advertised. A client which registers no
 `readFile` handler reports no filesystem support, and a conformant agent will not ask.

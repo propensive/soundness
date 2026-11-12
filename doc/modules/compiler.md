@@ -64,7 +64,7 @@ and completes with a result:
 ```scala
 supervise:
   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
-  val result = process.complete()   // CompileResult.Success, Failure, or Crash
+  val result = process.complete()   // Compiler.Result.Success, Failure, or Crash
 
   process.notices.each: notice =>
     report(notice.importance, notice.file, notice.message)
@@ -72,18 +72,18 @@ supervise:
   result
 ```
 
-`complete()` gives a `CompileResult`, which is `Success`, `Failure` or `Crash`. Each `Notice`
-carries its importance, which is info, warning or error, its file and its span. A tool can
-underline the offending code, and need not echo the compiler's output. A crash arrives as a
-value too, with its [stack trace](stack-traces.md), and the process can be aborted before the
-compilation ends.
+`complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each
+`Compiler.Notice` carries its importance, which is info, warning or error, its file and its
+span. A tool can underline the offending code, and need not echo the compiler's output. A crash
+arrives as a value too, with its [stack trace](stack-traces.md), and the process can be aborted
+before the compilation ends.
 
 ### Semantic diagnostics
 
 A compiler error message is usually a sentence with types spliced into it. By the time it
 reaches a tool, those types are just words. Asked for semantic diagnostics, the compiler instead
 marks each interpolated argument in band, with pickled TASTy for the types among them, and a
-`Notice` keeps that marked-up form beside the plain one.
+`Compiler.Notice` keeps that marked-up form beside the plain one.
 
 The markup parses into a `SemanticMessage`: a typed tree of styled spans, placeholders and types.
 Each type is unpickled from its TASTy and rendered again through the same machinery which
@@ -103,22 +103,22 @@ column  Universe
 column  Emits
 column  Compiler flag
 column  Runtime libraries on the classpath
-row  `Universe.Classfile`  JVM classfiles
-row  `Universe.Sjsir`  Scala.js IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
-row  `Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+row  `Toolchain.Universe.Classfile`  JVM classfiles
+row  `Toolchain.Universe.Sjsir`  Scala.js IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
+row  `Toolchain.Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
 ```
 
 The form with a single type argument targets the classfile universe. `targeting` selects another
 explicitly:
 
 ```scala
-val forJs = compiler.targeting[Universe.Sjsir]
+val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
 ```
 
 The runtime libraries are supplied on the classpath like any other. Their absence appears as
-ordinary compiler diagnostics, and not as a distinct kind of failure. `Universe.Nir` also needs
-a `NirPlugin` in scope, which is evidence of where the Scala Native compiler plugin lives, since
-NIR is emitted by a plugin and not by a backend built into the compiler.
+ordinary compiler diagnostics, and not as a distinct kind of failure. `Toolchain.Universe.Nir`
+also needs a `NirPlugin` in scope, which is evidence of where the Scala Native compiler plugin
+lives, since NIR is emitted by a plugin and not by a backend built into the compiler.
 
 ### Producing artifacts
 
@@ -131,7 +131,7 @@ each tool on the path between them:
 supervise:
   Toolchain(jarEdges()).produce
     ( Deliverable.Emission(outputPath, classpath),
-      Universe.Classfile,
+      Toolchain.Universe.Classfile,
       Artifact.Jar,
       destination,
       List(jarOptions.name(t"app.jar")),
@@ -145,15 +145,15 @@ column  From
 column  Format
 column  Artifact
 row  any universe  `Library`  unlinked output, packaged for downstream assembly
-row  `Universe.Classfile`  `Artifact.Jar`  an executable JAR
-row  `Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
-row  `Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
-row  `Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
-row  `Universe.Sjsir`  `Js`  an ECMAScript module, a CommonJS module or a plain script
-row  `Universe.Sjsir`  `Wasm`  a WebAssembly module with JavaScript glue
-row  `Universe.Sjsir`  `Wasi`  a standalone component at a stated WASI generation
-row  `Universe.Sjsir`  `OciImage`  that component, wrapped as an OCI artifact
-row  `Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
+row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  an executable JAR
+row  `Toolchain.Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
+row  `Toolchain.Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
+row  `Toolchain.Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
+row  `Toolchain.Universe.Sjsir`  `Js`  an ECMAScript module, a CommonJS module or a plain script
+row  `Toolchain.Universe.Sjsir`  `Wasm`  a WebAssembly module with JavaScript glue
+row  `Toolchain.Universe.Sjsir`  `Wasi`  a standalone component at a stated WASI generation
+row  `Toolchain.Universe.Sjsir`  `OciImage`  that component, wrapped as an OCI artifact
+row  `Toolchain.Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
 ```
 
 The module system of a `Js` node is part of its identity, as the target triple is part of a
@@ -190,7 +190,7 @@ val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
 ```
 
 A declared format is the same node as the built-in format of its kind and name, so
-`Artifact.ir(t"classfile")` reaches every edge registered for `Universe.Classfile`.
+`Artifact.ir(t"classfile")` reaches every edge registered for `Toolchain.Universe.Classfile`.
 
 ### Deliverables and paths
 
@@ -209,7 +209,7 @@ row  `Deliverable.Product`  a linked or packaged file  an application format
 The path itself can be asked for directly, which is how a tool reports what it is about to run:
 
 ```scala
-val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Universe.Classfile, Apk).map(_.target.id)
+val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
 ```
 
 Here `steps` is `List(t"dex", t"apk")`. The path is the *unique shortest* one. Where none
@@ -231,7 +231,7 @@ from the classloader which loaded it, with its compiled output:
 def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
   Toolchain(jarEdges()).produce
     ( Deliverable.Emission(out, Bundler.applicationClasspath),
-      Universe.Classfile,
+      Toolchain.Universe.Classfile,
       Artifact.Jar,
       out,
       List(jarOptions.name(t"$uuid.jar")),
@@ -291,7 +291,7 @@ def component(witDirectory: Path on Linux, emission: Deliverable, destination: P
 
   supervise:
     Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
-    . produce(emission, Universe.Sjsir, OciImage, destination)
+    . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
 ```
 
 WASI generations are separate nodes, because they determine the ABI of an artifact:
@@ -322,7 +322,7 @@ the build host's own:
 def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
     ( emission,
-      Universe.Nir,
+      Toolchain.Universe.Nir,
       Artifact.Binary(Triple.X64Linux),
       destination,
       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
@@ -344,7 +344,7 @@ its options, such as `-Werror`, `-jvm-target` and explicit API mode, are under `
 and checked against the version in the same way:
 
 ```scala
-def kotlin(kotlinSource: Text, out: Path on Linux): CompileResult = supervise:
+def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
   process.complete()

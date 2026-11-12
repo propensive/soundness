@@ -671,7 +671,7 @@ object Acp:
   //
   // The connection block may capture the monitor — which a block that spawns a task, to prompt
   // and cancel concurrently, say, needs — freely: a monitor is a shared capability.
-  def connect[result](agent: Agent, observer: Optional[Observer^] = Unset)
+  def connect[result](agent: Endpoint, observer: Optional[Observer^] = Unset)
     ( register: (registry: Acp.Registry^) ?=> Unit )
     ( lambda: (connection: Acp.Connection) ?=> result )
     ( using Monitor^, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error] )
@@ -694,7 +694,7 @@ object Acp:
         lambda(using connection)
 
     agent match
-      case Agent.Streams(input, output) =>
+      case Endpoint.Streams(input, output) =>
         // The sink and the channel are minted by the exchange's writer and reader tasks, each
         // under its own tactic (see `Exchange.exchange`).
         val observer0: Observer^ = observer.or(Observer.Silent)
@@ -710,7 +710,7 @@ object Acp:
 
         open(writing, reading)
 
-      case Agent.Process(command) =>
+      case Endpoint.Process(command) =>
         // Launched with a silent logger — an exec log has no channel to reach, since an ACP
         // agent owns standard output — and a failure to launch reported as an `Internal` error
         // through the caller's tactic.
@@ -770,21 +770,22 @@ object Acp:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
-  object Agent:
+  object Endpoint:
     // An agent launched as a subprocess: how a client normally starts one.
-    def apply(command: guillotine.Command): Agent = Agent.Process(command)
+    def apply(command: guillotine.Command): Endpoint = Endpoint.Process(command)
 
-    // An agent already running behind a pair of streams. Widened to `Agent`, which is what
+    // An agent already running behind a pair of streams. Widened to `Endpoint`, which is what
     // `connect` is indexed by.
-    def streams(input: ji.InputStream, output: ji.OutputStream): Agent =
-      Agent.Streams(input, output)
+    def streams(input: ji.InputStream, output: ji.OutputStream): Endpoint =
+      Endpoint.Streams(input, output)
 
-  // An ACP agent this process can speak to: the far end of the exchange `connect` opens.
+  // Where to find an ACP agent this process can speak to: the far end of the exchange `connect`
+  // opens. Named for the place rather than the agent, whose own surface is `Acp.Agent`.
   //
   // A plain value, holding no capability: the channel is minted when the connection opens and
   // disposed of when it ends, and a stream or an intake — single-owner, and dead once the agent
   // is gone — has no business being carried in a description of where to find an agent.
-  enum Agent:
+  enum Endpoint:
     // Standard input and output of a subprocess carry the protocol.
     case Process(command: guillotine.Command)
 
@@ -911,7 +912,7 @@ object Acp:
   // and by the caller's thread at once, with synchronised state.
   class Connection private[espionage] (state: State)(using Monitor, Diagnostics)
   extends JsonRpc, anticipation.Durable:
-    type Origin = AcpAgent
+    type Origin = Agent
 
     // One proxy module per sub-interface, both sharing this instance's outgoing channel. The
     // connection is confined by its own type and each proxy is a member of it, so sealing the
@@ -920,12 +921,12 @@ object Acp:
     // [quote-wall] proxy macro cannot take a capability-typed splice
     private val channel: JsonRpc = caps.unsafe.unsafeAssumePure(this)
 
-    val lifecycle: AcpAgentLifecycle =
+    val lifecycle: Agent.Lifecycle =
       // [quote-wall] macro-generated proxy over sealed channel
-      caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentLifecycle])
+      caps.unsafe.unsafeAssumePure(channel.proxy[Agent.Lifecycle])
 
     // [quote-wall]
-    val sessions: AcpAgentSession = caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentSession])
+    val sessions: Agent.Session = caps.unsafe.unsafeAssumePure(channel.proxy[Agent.Session])
 
     // What the agent reported at initialization: pure data, recorded by `initialize`.
     // [synchronized] pure-data var on non-Stateful connection
@@ -1049,7 +1050,7 @@ object Acp:
   // A shared capability: the service answers requests from the reader task and the tasks it
   // spawns per request; its registry is shared and its state synchronised.
   private[espionage] class Service private (handlers: Registry^, state: State)
-  extends AcpClient, anticipation.Durable:
+  extends Client, anticipation.Durable:
     // Confined to this class rather than the file: `Acp.Error`'s constructor needs a
     // `Diagnostics`, and an ambient one would compete with the connection's own.
     import errorDiagnostics.stackTracesDiagnostics
@@ -1297,20 +1298,20 @@ object Acp:
       // take a capability-typed splice. One dispatcher per served interface, so each generated
       // class stays within the JVM constant-pool limit.
       // [quote-wall] dispatch macro cannot take capability-typed splice
-      val serving: AcpClient = caps.unsafe.unsafeAssumePure(service)
+      val serving: Client = caps.unsafe.unsafeAssumePure(service)
 
       val sessionDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
-        JsonRpc.serve[AcpClientSession](serving)
+        JsonRpc.serve[Client.Session](serving)
 
       val fsDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
-        JsonRpc.serve[AcpClientFs](serving)
+        JsonRpc.serve[Client.Fs](serving)
 
       val terminalDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
-        JsonRpc.serve[AcpClientTerminal](serving)
+        JsonRpc.serve[Client.Terminal](serving)
 
-      val sessionMethods: List[Text] = JsonRpc.methods[AcpClientSession]
-      val fsMethods: List[Text] = JsonRpc.methods[AcpClientFs]
-      val terminalMethods: List[Text] = JsonRpc.methods[AcpClientTerminal]
+      val sessionMethods: List[Text] = JsonRpc.methods[Client.Session]
+      val fsMethods: List[Text] = JsonRpc.methods[Client.Fs]
+      val terminalMethods: List[Text] = JsonRpc.methods[Client.Terminal]
 
       // A single writer, so writes never interleave. The encoding is compact — the framing
       // forbids embedded newlines. The observer sees the encoded body, not the terminator.
@@ -1379,83 +1380,83 @@ object Acp:
         reader.cancel()
         writer.cancel()
 
-// The client→agent request/notification surface, split so that each interface can be compiled
-// into its own JSON-RPC proxy class. The method names are the wire methods; return type `Unit`
-// marks a notification.
+  // The client→agent request/notification surface, split so that each interface can be compiled
+  // into its own JSON-RPC proxy class. The method names are the wire methods; return type `Unit`
+  // marks a notification.
+  object Agent:
+    trait Lifecycle:
+      @rpc
+      def initialize(protocolVersion: Int, clientCapabilities: Acp.ClientCapabilities)
+      :   Acp.InitializeResult
 
-trait AcpAgentLifecycle:
-  @rpc
-  def initialize(protocolVersion: Int, clientCapabilities: Acp.ClientCapabilities)
-  :   Acp.InitializeResult
+      @rpc
+      def authenticate(methodId: Text): Json
 
-  @rpc
-  def authenticate(methodId: Text): Json
+    trait Session:
+      @rpc
+      def `session/new`(cwd: Text, mcpServers: List[Acp.McpServer]): Acp.NewSessionResult
 
-trait AcpAgentSession:
-  @rpc
-  def `session/new`(cwd: Text, mcpServers: List[Acp.McpServer]): Acp.NewSessionResult
+      @rpc
+      def `session/load`(sessionId: Text, cwd: Text, mcpServers: List[Acp.McpServer]): Json
 
-  @rpc
-  def `session/load`(sessionId: Text, cwd: Text, mcpServers: List[Acp.McpServer]): Json
+      @rpc
+      def `session/prompt`(sessionId: Text, prompt: List[Acp.ContentBlock]): Acp.PromptResult
 
-  @rpc
-  def `session/prompt`(sessionId: Text, prompt: List[Acp.ContentBlock]): Acp.PromptResult
+      @rpc
+      def `session/cancel`(sessionId: Text): Unit
 
-  @rpc
-  def `session/cancel`(sessionId: Text): Unit
+      @rpc
+      def `session/set_mode`(sessionId: Text, modeId: Text): Json
 
-  @rpc
-  def `session/set_mode`(sessionId: Text, modeId: Text): Json
+  // The whole agent surface: what `Acp.Connection`'s generated proxies call.
+  trait Agent extends Agent.Lifecycle, Agent.Session
 
-// The whole agent surface: what `Acp.Connection`'s generated proxies call.
-trait AcpAgent extends AcpAgentLifecycle, AcpAgentSession
+  // The agent→client surface this client serves, split (as above) into one generated dispatcher
+  // class per interface. `session/update` is the protocol's only notification in this direction;
+  // everything else is a request the agent blocks on.
+  object Client:
+    trait Session:
+      @rpc
+      def `session/update`(sessionId: Text, update: Acp.SessionUpdate): Unit
 
-// The agent→client surface this client serves, split (as above) into one generated dispatcher
-// class per interface. `session/update` is the protocol's only notification in this direction;
-// everything else is a request the agent blocks on.
+      @rpc
+      def `session/request_permission`
+        ( sessionId: Text,
+          toolCall:  Acp.ToolCallUpdate,
+          options:   List[Acp.PermissionOption] )
+      :   Acp.RequestPermissionResult
 
-trait AcpClientSession:
-  @rpc
-  def `session/update`(sessionId: Text, update: Acp.SessionUpdate): Unit
+    trait Fs:
+      @rpc
+      def `fs/read_text_file`
+        ( sessionId: Text, path: Text, line: Optional[Int], limit: Optional[Int] )
+      :   Acp.ReadTextFileResult
 
-  @rpc
-  def `session/request_permission`
-    ( sessionId: Text,
-      toolCall:  Acp.ToolCallUpdate,
-      options:   List[Acp.PermissionOption] )
-  :   Acp.RequestPermissionResult
+      @rpc
+      def `fs/write_text_file`(sessionId: Text, path: Text, content: Text): Json
 
-trait AcpClientFs:
-  @rpc
-  def `fs/read_text_file`
-    ( sessionId: Text, path: Text, line: Optional[Int], limit: Optional[Int] )
-  :   Acp.ReadTextFileResult
+    trait Terminal:
+      @rpc
+      def `terminal/create`
+        ( sessionId:       Text,
+          command:         Text,
+          args:            Optional[List[Text]],
+          env:             Optional[List[Acp.EnvVariable]],
+          cwd:             Optional[Text],
+          outputByteLimit: Optional[Long] )
+      :   Acp.CreateTerminalResult
 
-  @rpc
-  def `fs/write_text_file`(sessionId: Text, path: Text, content: Text): Json
+      @rpc
+      def `terminal/output`(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult
 
-trait AcpClientTerminal:
-  @rpc
-  def `terminal/create`
-    ( sessionId:       Text,
-      command:         Text,
-      args:            Optional[List[Text]],
-      env:             Optional[List[Acp.EnvVariable]],
-      cwd:             Optional[Text],
-      outputByteLimit: Optional[Long] )
-  :   Acp.CreateTerminalResult
+      @rpc
+      def `terminal/wait_for_exit`(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus
 
-  @rpc
-  def `terminal/output`(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult
+      @rpc
+      def `terminal/kill`(sessionId: Text, terminalId: Text): Json
 
-  @rpc
-  def `terminal/wait_for_exit`(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus
+      @rpc
+      def `terminal/release`(sessionId: Text, terminalId: Text): Json
 
-  @rpc
-  def `terminal/kill`(sessionId: Text, terminalId: Text): Json
-
-  @rpc
-  def `terminal/release`(sessionId: Text, terminalId: Text): Json
-
-// The whole client surface: what `Service` implements and the exchange's reader dispatches.
-trait AcpClient extends AcpClientSession, AcpClientFs, AcpClientTerminal
+  // The whole client surface: what `Service` implements and the exchange's reader dispatches.
+  trait Client extends Client.Session, Client.Fs, Client.Terminal

@@ -42,6 +42,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
+import ultimatum.Tui.{Arrangement, Occupancy, Pane, Panes, Region, Sizing}
 
 // Construct a leaf panel: a fractional weight and optional per-axis bounds,
 // plus deferred `content` that runs (with its `Extent` in context) once the
@@ -171,9 +172,9 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   ( using terminal: Terminal,
           monitor:   Monitor,
           probate:   Probate,
-          anchoring: InlineAnchoring,
-          growth:    InlineGrowth,
-          shrink:    InlineShrink )
+          anchoring: Tui.Block.Anchoring,
+          growth:    Tui.Block.Growth,
+          shrink:    Tui.Block.Shrink )
 :   Unit =
 
   // A container mutation wakes the loop by putting a redraw event on the spool.
@@ -200,7 +201,7 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
           // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
           // first present; `finish` re-shows the cursor on the way out.
           // The root only reads the same single-owner terminal; no aliased writer.
-          val root = ScreenRoot(terminal)
+          val root = Tui.Screen(terminal)
           root.cursor(false)
 
           // No throttle or debounce: a fullscreen resize repaints immediately (the alternate screen
@@ -212,7 +213,7 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
     case Occupancy.Inline =>
       // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
       // so a drag must pause before the block is redrawn; typing stays immediate.
-      val root = InlineRoot(terminal)
+      val root = Tui.Block(terminal)
       Form(root, mode, pane, wake, 100, 50, scheduleWake).run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
@@ -220,8 +221,8 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
 def dirtyCells
-  ( previous: Sequence[Rect],
-    current:  Sequence[Rect],
+  ( previous: Sequence[Region],
+    current:  Sequence[Region],
     changed:  Set[Int] )
 :   Set[Int] =
 
@@ -238,19 +239,19 @@ def dirtyCells
   moved.result().to(Set) + changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
-// rectangle (no event loop). An `InlineRoot` is sized to the height its content
+// rectangle (no event loop). An `Tui.Block` is sized to the height its content
 // needs and presented at the cursor; any other canvas fills its own height.
 def paint(root: Board^, pane: Pane): Unit =
   val height = root match
-    case _: InlineRoot => pane.frame.measure(Arrangement.Stack).min
+    case _: Tui.Block => pane.frame.measure(Arrangement.Stack).min
     case _             => root.height
 
   root match
-    case inline: InlineRoot => inline.reframe(root.width, height)
-    case screen: ScreenRoot => screen.reframe()
+    case inline: Tui.Block => inline.reframe(root.width, height)
+    case screen: Tui.Screen => screen.reframe()
     case _                  => ()
 
-  val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
+  val placement = pane.frame.arrange(Region(0, 0, root.width, height))
 
   // An explicit iterator loop rather than `.each`: the per-cell closure constructs a `FlowExtent`
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
@@ -261,8 +262,8 @@ def paint(root: Board^, pane: Pane): Unit =
   while running do cells.next() match
     case Iterator.Exhausted => running = false
 
-    case (leaf: Pane, rect: Rect) =>
-      val extent = FlowExtent(root, rect)
+    case (leaf: Pane, region: Region) =>
+      val extent = FlowExtent(root, region)
 
       leaf match
         case Pane.Leaf(_, content)   => content(extent)
@@ -277,11 +278,26 @@ def paint(root: Board^, pane: Pane): Unit =
 // the cursor on a fresh line below it.
 def layout(pane: Pane)
   ( using terminal:  Terminal,
-          anchoring: InlineAnchoring,
-          growth:    InlineGrowth,
-          shrink:    InlineShrink )
+          anchoring: Tui.Block.Anchoring,
+          growth:    Tui.Block.Growth,
+          shrink:    Tui.Block.Shrink )
 :   Unit =
 
-  val root = InlineRoot(terminal)
+  val root = Tui.Block(terminal)
   paint(root, pane)
   root.finish()
+
+package inlineAnchoring:
+  given bottomDockedAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.BottomDocked
+  given topAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.TopAnchored
+  given topAfterResizeAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.TopAfterResize
+  given fullscreenAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.Fullscreen
+  given flowAnchoring: Tui.Block.Anchoring = Tui.Block.Anchoring.Flow
+
+package inlineGrowth:
+  given scrollbackGrowth: Tui.Block.Growth = Tui.Block.Growth.ScrollIntoScrollback
+  given clampedGrowth: Tui.Block.Growth = Tui.Block.Growth.ClampToScreen
+
+package inlineShrink:
+  given redockBottomShrink: Tui.Block.Shrink = Tui.Block.Shrink.RedockBottom
+  given keepTopShrink: Tui.Block.Shrink = Tui.Block.Shrink.KeepTop

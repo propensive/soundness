@@ -66,9 +66,9 @@ detail
     parameterised by the line type it renders, so a diagram renders directly into styled
     terminal text with the furniture in one colour and the labels in another.
 
-    The library is two source sets. `dendrology.tree` holds `TreeDiagram`, `TreeTile`,
-    `TreeStyle`, `TextualTreeStyle`, `Expandable` and `treeStyles`; `dendrology.dag` holds the
-    three DAG diagrams, `DagTile`, `DagStyle`, `LaneDagStyle`, their `Textual…` implementations
+    The library is two source sets. `dendrology.tree` holds `TreeDiagram`, `TreeDiagram.Tile`,
+    `TreeDiagram.Style`, `TreeDiagram.TextualStyle`, `Expandable` and `treeStyles`; `dendrology.dag` holds the
+    three DAG diagrams, `DagDiagram.Tile`, `DagDiagram.Style`, `LaneDagDiagram.Style`, their `Textual…` implementations
     and the `dagStyles` and `laneDagStyles` packages, and depends on `acyclicity`. Both are
     exported to the `soundness` umbrella, where the three choice packages merge with the
     umbrella's own.
@@ -80,14 +80,14 @@ refer dendrology.LayeredDagDiagram
 refer dendrology.treeStyles
 refer dendrology.laneDagStyles
 
-entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `TreeStyle`
+entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `TreeDiagram.Style`
   detail
       A `TreeDiagram[node]` is the layout of a tree: one line per node, in depth-first order,
-      each with the `TreeTile`s of its prefix — a branch or a last branch for the node itself,
+      each with the `Tile`s of its prefix — a branch or a last branch for the node itself,
       and for each ancestor an extender (if that ancestor has later siblings) or a space. It is
       built from its roots and a way of reaching children — a function, with `by`, or an
       `Expandable` instance on the node type, with `apply` — and rendered with a function from
-      node to label and the `TreeStyle` in scope.
+      node to label and the `Style` in scope.
 
       ```scala fuel
       alternative Square
@@ -123,14 +123,14 @@ entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `Tree
       The lines are a `Chain`, produced lazily: a large or deep tree is drawn as far as it is
       consumed, and an infinite tree still draws, since rendering a line needs only the
       ancestors' sibling counts, never the descendants of later nodes. A diagram is also
-      `Printable` (with a `TreeStyle[Text]` in scope and a `Showable` node), so it can be
+      `Printable` (with a `Style[Text]` in scope and a `Showable` node), so it can be
       written to `Out` directly, each node shown as `▪ node`.
 
       The rows are exposed — `nodes`, `tiles` and `map` — so a consumer can render lines
       itself: a coloured label for one kind of node, an annotation on another, with the
       box-drawing characters still the style's business.
-  refer dendrology.TreeStyle
-  refer dendrology.TreeTile
+  refer dendrology.TreeDiagram.Style
+  refer dendrology.TreeDiagram.Tile
   refer dendrology.treeStyles
   refer dendrology.Expandable
   entry .apply   a diagram of the given roots, with children found through the node type's `Expandable` instance
@@ -150,15 +150,15 @@ entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `Tree
       `TreeDiagram.by[node](node => children)(roots*)`: the right form when the structure is
       already in hand, or when the same type is drawn by different relations.
   entry .printable   writes a diagram to a terminal, each node shown as `▪ node`
-      Needs a `TreeStyle[Text]` in scope (one of `treeStyles`) and a `Showable` node type; the
+      Needs a `Style[Text]` in scope (one of `treeStyles`) and a `Showable` node type; the
       lines are joined with newlines.
   entry #lines   each line's tiles and node, as a lazy `Chain`
-  entry #render   the lines as rendered text: each node's label, prefixed by its tiles through the `TreeStyle` in scope
+  entry #render   the lines as rendered text: each node's label, prefixed by its tiles through the `TreeDiagram.Style` in scope
       `diagram.render(node => label)`, with the label of whatever line type the style renders —
       `Text` with the `treeStyles` givens, or a styled terminal type with a style for it.
   entry #flow   the lines with each label word-wrapped to a width, continuation rows taking the style's follow-on tiles
       `diagram.flow(width)(node => label)`: each node's content flows into rows no wider than
-      `width`, inclusive of its tile prefix, and the continuation rows take `TreeStyle#followOn`
+      `width`, inclusive of its tile prefix, and the continuation rows take `Style#followOn`
       tiles — an extender continues beneath a branch, and a space follows a last child — so the
       tree's lines run on past a wrapped label. Needs a `Text is Measurable` (such as
       `textMetrics.uniformMetric`) and a `Hyphenation` in scope, and a label type which is
@@ -184,53 +184,51 @@ entry .TreeDiagram   a tree laid out as lines of tiles, rendered through a `Tree
   entry #nodes   the node of each line, in drawing order
   entry #tiles   the tiles of each line, in drawing order
 
-entry .TreeTile   one piece of a tree line's prefix: a branch, a last branch, an extender or a space
-    An enum of four cases. `Branch` (`├─`) marks a node with later siblings and `Last` (`└─`)
-    the last of its siblings; to their left, `Extender` (`│ `) carries an ancestor's line down
-    past the node when that ancestor has later siblings, and `Space` fills the column when it
-    does not. A `TreeStyle` says what each becomes as text.
+  entry .Tile   one piece of a tree line's prefix: a branch, a last branch, an extender or a space
+      An enum of four cases. `Branch` (`├─`) marks a node with later siblings and `Last` (`└─`)
+      the last of its siblings; to their left, `Extender` (`│ `) carries an ancestor's line down
+      past the node when that ancestor has later siblings, and `Space` fills the column when it
+      does not. A `Style` says what each becomes as text.
+  entry .Style   the typeclass which renders a line of tree tiles and a label into one line
+    detail
+        `Style[line]` turns a `List[Tile]` and a node's label of type `line` into one
+        rendered line, and is what `TreeDiagram#render` and `#flow` take from scope. It is
+        parameterised by the line type, so a diagram can render into `Text` or into styled
+        terminal output alike. `TextualStyle` implements it for any `Textual` line type from
+        four short pieces of text, which is all a new style needs; the `treeStyles` package has
+        three ready-made. A style is `Findable`, so a diagram's `Printable` instance finds it in
+        scope.
+    refer dendrology.TreeDiagram.TextualStyle
+    refer dendrology.treeStyles
+    entry #serialize   a line's tiles and its label as one rendered line
+    entry #followOn   a continuation row of a multi-line node: the same lanes, with no branch glyph
+        Used by `TreeDiagram#flow` for the second and later rows of a wrapped label: an
+        extender continues, and a last child's branch gives way to space. The default repeats
+        `serialize`, for a style which draws no distinct continuation prefix.
+  entry .TextualStyle   a `TreeDiagram.Style` for any `Textual` line type, from four pieces of text
+    detail
+        `TextualStyle(space, last, branch, extender)` gives the text of each `Tile`; a
+        line is the tiles' texts joined, then the label. The pieces are usually two characters
+        wide, so that columns align, but need not be.
 
-entry .TreeStyle   the typeclass which renders a line of tree tiles and a label into one line
-  detail
-      `TreeStyle[line]` turns a `List[TreeTile]` and a node's label of type `line` into one
-      rendered line, and is what `TreeDiagram#render` and `#flow` take from scope. It is
-      parameterised by the line type, so a diagram can render into `Text` or into styled
-      terminal output alike. `TextualTreeStyle` implements it for any `Textual` line type from
-      four short pieces of text, which is all a new style needs; the `treeStyles` package has
-      three ready-made. A style is `Findable`, so a diagram's `Printable` instance finds it in
-      scope.
-  refer dendrology.TextualTreeStyle
-  refer dendrology.treeStyles
-  entry #serialize   a line's tiles and its label as one rendered line
-  entry #followOn   a continuation row of a multi-line node: the same lanes, with no branch glyph
-      Used by `TreeDiagram#flow` for the second and later rows of a wrapped label: an
-      extender continues, and a last child's branch gives way to space. The default repeats
-      `serialize`, for a style which draws no distinct continuation prefix.
+        ```scala
+        import soundness.*
 
-entry .TextualTreeStyle   a `TreeStyle` for any `Textual` line type, from four pieces of text
-  detail
-      `TextualTreeStyle(space, last, branch, extender)` gives the text of each `TreeTile`; a
-      line is the tiles' texts joined, then the label. The pieces are usually two characters
-      wide, so that columns align, but need not be.
+        given TreeDiagram.Style[Text] = TreeDiagram.TextualStyle(t"  ", t"└─", t"├─", t"│ ")
+        ```
 
-      ```scala
-      import soundness.*
-
-      given TreeStyle[Text] = TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
-      ```
-
-      On a follow-on row, `branch` is rendered as `extender` and `last` as `space`, so the
-      vertical lines continue beneath a wrapped label.
-  refer dendrology.TreeStyle
-  refer dendrology.treeStyles
-  entry #space   the text of a `Space` tile: beneath a last child
-  entry #last   the text of a `Last` tile: the branch to a node's last child
-  entry #branch   the text of a `Branch` tile: the branch to a child with later siblings
-  entry #extender   the text of an `Extender` tile: an ancestor's line carried down past a node
-  entry #serialize   the tiles' texts joined, then the label
-  entry #followOn   the tiles' follow-on texts joined, then the label
-  entry #text   the text of one tile
-  entry #followOnText   the text of one tile on a continuation row: `extender` for a branch, `space` for a last
+        On a follow-on row, `branch` is rendered as `extender` and `last` as `space`, so the
+        vertical lines continue beneath a wrapped label.
+    refer dendrology.TreeDiagram.Style
+    refer dendrology.treeStyles
+    entry #space   the text of a `Space` tile: beneath a last child
+    entry #last   the text of a `Last` tile: the branch to a node's last child
+    entry #branch   the text of a `Branch` tile: the branch to a child with later siblings
+    entry #extender   the text of an `Extender` tile: an ancestor's line carried down past a node
+    entry #serialize   the tiles' texts joined, then the label
+    entry #followOn   the tiles' follow-on texts joined, then the label
+    entry #text   the text of one tile
+    entry #followOnText   the text of one tile on a continuation row: `extender` for a branch, `space` for a last
 
 entry .Expandable   the typeclass of a node type which knows its own children
     `given node is Expandable = _.children` lets `TreeDiagram(roots*)` find each node's
@@ -240,7 +238,7 @@ entry .Expandable   the typeclass of a node type which knows its own children
 entry .treeStyles   the three ready-made tree styles, each a given to import by name
   detail
       `import soundness.*` brings none of these in; one is imported by name, and provides a
-      `TreeStyle` for any `Textual` line type.
+      `TreeDiagram.Style` for any `Textual` line type.
 
       ```scala
       import soundness.*
@@ -257,7 +255,7 @@ entry .DagDiagram   the dense drawing of a graph: one line per node, every edge 
       (dependencies first), and to each line's left a column for every earlier node, holding
       the tiles of the edges which start, pass or end there. The result cannot fail: a
       `Digraph`, which may hold a cycle, has no drawing until `acyclic` has converted it. It
-      renders through the `DagStyle` in scope, from the `dagStyles` package.
+      renders through the `Style` in scope, from the `dagStyles` package.
 
       ```scala
       import soundness.*
@@ -278,8 +276,8 @@ entry .DagDiagram   the dense drawing of a graph: one line per node, every edge 
       The whole layout is computed when the diagram is made, as a grid of the graph's size
       squared, which is what makes it the right form for a small graph with complicated edges
       and the wrong one for a long history; `LaneDagDiagram` is the form for that. A diagram is
-      `Printable` with a `DagStyle[Text]` in scope and a `Showable` node.
-  refer dendrology.DagStyle
+      `Printable` with a `Style[Text]` in scope and a `Showable` node.
+  refer dendrology.DagDiagram.Style
   refer dendrology.dagStyles
   refer dendrology.LaneDagDiagram
   refer acyclicity.Dag
@@ -287,58 +285,56 @@ entry .DagDiagram   the dense drawing of a graph: one line per node, every edge 
       Takes the graph's `Nodal` and `Topological` instances from scope, which a `Dag`, a frozen
       `Topology` and a `Hasse` supply from their companions, so a call needs no import.
   entry .printable   writes a diagram to a terminal, each node shown as `▪ node`
-      Needs a `DagStyle[Text]` (one of `dagStyles`) and a `Showable` node type.
+      Needs a `Style[Text]` (one of `dagStyles`) and a `Showable` node type.
   entry #lines   each line's tiles and node, in topological order
   entry #size   how many lines there are: one per node
-  entry #render   the lines as rendered text, each node's label after its tiles, through the `DagStyle` in scope
+  entry #render   the lines as rendered text, each node's label after its tiles, through the `DagDiagram.Style` in scope
   entry #nodes   the node of each line, in drawing order
   entry #tiles   the tiles of each line
 
-entry .DagTile   one cell of a DAG drawing: a node, a lane, a corner, a tee, a crossing or a space
-    An enum of fourteen cases, named for the compass points of their arms. `Space`;
-    `Vertical` and `Horizontal` lanes; the corners `CornerNe`, `CornerNw`, `CornerSe` and
-    `CornerSw`; the tees `TeeN`, `TeeS`, `TeeE` and `TeeW`; `Crossing`, a horizontal lane
-    passing over a continuing vertical one without joining it; `Junction`, where lanes meet
-    from all four sides; and `Node`, the bullet of a node on a lane diagram. `DagDiagram` uses
-    the first eight; `LaneDagDiagram` and `LayeredDagDiagram` use all fourteen. A `DagStyle` or
-    `LaneDagStyle` says what each becomes as text.
+  entry .Tile   one cell of a DAG drawing: a node, a lane, a corner, a tee, a crossing or a space
+      An enum of fourteen cases, named for the compass points of their arms. `Space`;
+      `Vertical` and `Horizontal` lanes; the corners `CornerNe`, `CornerNw`, `CornerSe` and
+      `CornerSw`; the tees `TeeN`, `TeeS`, `TeeE` and `TeeW`; `Crossing`, a horizontal lane
+      passing over a continuing vertical one without joining it; `Junction`, where lanes meet
+      from all four sides; and `Node`, the bullet of a node on a lane diagram. `DagDiagram` uses
+      the first eight; `LaneDagDiagram` and `LayeredDagDiagram` use all fourteen. A `Style` or
+      `LaneDagDiagram.Style` says what each becomes as text.
+  entry .Style   the typeclass which renders a line of a dense `DagDiagram`
+    detail
+        `Style[line]` turns a line's `List[Tile]` and a node's label into one rendered line
+        of type `line`, and is what `DagDiagram#render` takes from scope. `TextualStyle`
+        implements it for any `Textual` line type from eight pieces of text; the `dagStyles`
+        package has a box-drawing and an ASCII one. It is `Findable`, so the diagram's
+        `Printable` instance finds it.
+    refer dendrology.DagDiagram.TextualStyle
+    refer dendrology.dagStyles
+    entry #serialize   a line's tiles and its label as one rendered line
+  entry .TextualStyle   a `DagDiagram.Style` for any `Textual` line type, from eight pieces of text
+    detail
+        `TextualStyle(space, cornerNe, vertical, teeE, horizontal, teeN, crossing, junction)`
+        gives the text of each of the tiles a `DagDiagram` draws; any other `Tile` renders as
+        `space`. A line is the tiles' texts joined, then the label.
 
-entry .DagStyle   the typeclass which renders a line of a dense `DagDiagram`
-  detail
-      `DagStyle[line]` turns a line's `List[DagTile]` and a node's label into one rendered line
-      of type `line`, and is what `DagDiagram#render` takes from scope. `TextualDagStyle`
-      implements it for any `Textual` line type from eight pieces of text; the `dagStyles`
-      package has a box-drawing and an ASCII one. It is `Findable`, so the diagram's
-      `Printable` instance finds it.
-  refer dendrology.TextualDagStyle
-  refer dendrology.dagStyles
-  entry #serialize   a line's tiles and its label as one rendered line
+        ```scala
+        import soundness.*
 
-entry .TextualDagStyle   a `DagStyle` for any `Textual` line type, from eight pieces of text
-  detail
-      `TextualDagStyle(space, cornerNe, vertical, teeE, horizontal, teeN, crossing, junction)`
-      gives the text of each of the tiles a `DagDiagram` draws; any other `DagTile` renders as
-      `space`. A line is the tiles' texts joined, then the label.
-
-      ```scala
-      import soundness.*
-
-      given DagStyle[Text] =
-        TextualDagStyle(t"  ", t"└─", t"│ ", t"├─", t"──", t"┴─", t"│─", t"┼─")
-      ```
-  refer dendrology.DagStyle
-  refer dendrology.dagStyles
-  entry #space   the text of a `Space` tile
-  entry #cornerNe   the text of a `CornerNe` tile: an edge turning from a lane into a node's line
-  entry #vertical   the text of a `Vertical` tile: a lane passing a line
-  entry #teeE   the text of a `TeeE` tile: a lane with a branch to the right
-  entry #horizontal   the text of a `Horizontal` tile: an edge running along a line
-  entry #teeN   the text of a `TeeN` tile: an edge joining a line from above
-  entry #crossing   the text of a `Crossing` tile: a lane crossed by an edge
-  entry #junction   the text of a `Junction` tile: a lane joined by an edge on both sides
-  entry #serialize   the tiles' texts joined, then the label
-  entry #text   the text of one tile
-  entry #followOnText   the text of one tile on a continuation row: a lane continues, anything else is space
+        given DagDiagram.Style[Text] =
+          DagDiagram.TextualStyle(t"  ", t"└─", t"│ ", t"├─", t"──", t"┴─", t"│─", t"┼─")
+        ```
+    refer dendrology.DagDiagram.Style
+    refer dendrology.dagStyles
+    entry #space   the text of a `Space` tile
+    entry #cornerNe   the text of a `CornerNe` tile: an edge turning from a lane into a node's line
+    entry #vertical   the text of a `Vertical` tile: a lane passing a line
+    entry #teeE   the text of a `TeeE` tile: a lane with a branch to the right
+    entry #horizontal   the text of a `Horizontal` tile: an edge running along a line
+    entry #teeN   the text of a `TeeN` tile: an edge joining a line from above
+    entry #crossing   the text of a `Crossing` tile: a lane crossed by an edge
+    entry #junction   the text of a `Junction` tile: a lane joined by an edge on both sides
+    entry #serialize   the tiles' texts joined, then the label
+    entry #text   the text of one tile
+    entry #followOnText   the text of one tile on a continuation row: a lane continues, anything else is space
 
 entry .dagStyles   the two ready-made styles for a dense `DagDiagram`, each a given to import by name
   detail
@@ -388,10 +384,10 @@ entry .LaneDagDiagram   the lane drawing of a graph: nodes as bullets on vertica
       ```
 
       The drawing cannot fail: a `Digraph` has no drawing until `acyclic` has converted it.
-      It renders through the `LaneDagStyle` in scope, from the `laneDagStyles` package, which
-      needs a `Text is Measurable` too; a diagram is `Printable` with a `LaneDagStyle[Text]` in
+      It renders through the `Style` in scope, from the `laneDagStyles` package, which
+      needs a `Text is Measurable` too; a diagram is `Printable` with a `Style[Text]` in
       scope and a `Showable` node, each node labelled ` node`.
-  refer dendrology.LaneDagStyle
+  refer dendrology.LaneDagDiagram.Style
   refer dendrology.laneDagStyles
   refer dendrology.LayeredDagDiagram
   refer acyclicity.Dag
@@ -399,7 +395,7 @@ entry .LaneDagDiagram   the lane drawing of a graph: nodes as bullets on vertica
       Takes the graph's `Nodal` and `Topological` instances from scope; a `Dag`, a frozen
       `Topology` and a `Hasse` supply them with no import. An empty graph has no lines.
   entry .printable   writes a diagram to a terminal, each node labelled ` node`
-      Needs a `LaneDagStyle[Text]` (one of `laneDagStyles`, with a `Text is Measurable`) and a
+      Needs a `Style[Text]` (one of `laneDagStyles`, with a `Text is Measurable`) and a
       `Showable` node type.
   entry #lines   each row's tiles and, for a node row, its node; `Unset` for a connector row
   entry #size   how many rows there are, node and connector rows together
@@ -415,55 +411,54 @@ entry .LaneDagDiagram   the lane drawing of a graph: nodes as bullets on vertica
   entry #nodes   the node of each node row, in drawing order
   entry #tiles   the tiles of every row, connector rows included
 
-entry .LaneDagStyle   the typeclass which renders a row of a `LaneDagDiagram` or a `LayeredDagDiagram`
-  detail
-      `LaneDagStyle[line]` turns a row's `List[DagTile]`, the glyphs to draw at particular
-      columns, each column's width and an optional label into one rendered line of type
-      `line`, and measures a glyph's display width so that columns can be sized to fit.
-      `TextualLaneDagStyle` implements it for any `Textual` line type from fourteen pieces of
-      text; the `laneDagStyles` package has a box-drawing and an ASCII one. It is `Findable`,
-      so the diagrams' `Printable` instances find it.
-  refer dendrology.TextualLaneDagStyle
-  refer dendrology.laneDagStyles
-  entry #serialize   a row's tiles, its glyphs by column, the column widths and an optional label as one line
-  entry #width   the display width of a glyph, for sizing its column
+  entry .Style   the typeclass which renders a row of a `LaneDagDiagram` or a `LayeredDagDiagram`
+    detail
+        `Style[line]` turns a row's `List[DagDiagram.Tile]`, the glyphs to draw at particular
+        columns, each column's width and an optional label into one rendered line of type
+        `line`, and measures a glyph's display width so that columns can be sized to fit.
+        `TextualStyle` implements it for any `Textual` line type from fourteen pieces of
+        text; the `laneDagStyles` package has a box-drawing and an ASCII one. It is `Findable`,
+        so the diagrams' `Printable` instances find it.
+    refer dendrology.LaneDagDiagram.TextualStyle
+    refer dendrology.laneDagStyles
+    entry #serialize   a row's tiles, its glyphs by column, the column widths and an optional label as one line
+    entry #width   the display width of a glyph, for sizing its column
+  entry .TextualStyle   a `LaneDagDiagram.Style` for any `Textual` line type, from fourteen pieces of text
+    detail
+        `LaneDagDiagram.TextualStyle(space, vertical, horizontal, cornerNe, cornerNw, cornerSe, cornerSw,
+        teeN, teeS, teeE, teeW, junction, crossing, node)` gives the text of each `DagDiagram.Tile`, and
+        takes a `Text is Measurable` to measure glyphs in display cells rather than code units,
+        so wide characters and combining marks lay out correctly. Each piece is two characters:
+        the first is the cell, and the second is repeated to pad the column to its width, so a
+        `──` horizontal stretches and a `│ ` lane does not.
 
-entry .TextualLaneDagStyle   a `LaneDagStyle` for any `Textual` line type, from fourteen pieces of text
-  detail
-      `TextualLaneDagStyle(space, vertical, horizontal, cornerNe, cornerNw, cornerSe, cornerSw,
-      teeN, teeS, teeE, teeW, junction, crossing, node)` gives the text of each `DagTile`, and
-      takes a `Text is Measurable` to measure glyphs in display cells rather than code units,
-      so wide characters and combining marks lay out correctly. Each piece is two characters:
-      the first is the cell, and the second is repeated to pad the column to its width, so a
-      `──` horizontal stretches and a `│ ` lane does not.
+        ```scala
+        import soundness.*
+        import textMetrics.uniformMetric
 
-      ```scala
-      import soundness.*
-      import textMetrics.uniformMetric
-
-      given LaneDagStyle[Text] = TextualLaneDagStyle
-        ( t"  ", t"│ ", t"──", t"╰─", t"╯ ", t"╭─", t"╮ ",
-          t"┴─", t"┬─", t"├─", t"┤ ", t"┼─", t"──", t"● " )
-      ```
-  refer dendrology.LaneDagStyle
-  refer dendrology.laneDagStyles
-  entry #space   the text of a `Space` tile
-  entry #vertical   the text of a `Vertical` tile: a lane passing a row
-  entry #horizontal   the text of a `Horizontal` tile: an edge running along a row
-  entry #cornerNe   the text of a `CornerNe` tile: an edge from above turning right
-  entry #cornerNw   the text of a `CornerNw` tile: an edge from above turning left
-  entry #cornerSe   the text of a `CornerSe` tile: an edge from the right turning down
-  entry #cornerSw   the text of a `CornerSw` tile: an edge from the left turning down
-  entry #teeN   the text of a `TeeN` tile: a horizontal run joined from above
-  entry #teeS   the text of a `TeeS` tile: a horizontal run branching down
-  entry #teeE   the text of a `TeeE` tile: a lane branching right
-  entry #teeW   the text of a `TeeW` tile: a lane joined from the left
-  entry #junction   the text of a `Junction` tile: lanes meeting from all four sides
-  entry #crossing   the text of a `Crossing` tile: a horizontal run passing over a continuing lane
-  entry #node   the text of a `Node` tile: the default bullet, used when no glyph is given for the node
-  entry #width   the display width of a glyph, through the `Text is Measurable` the style was made with
-  entry #serialize   each tile's cell padded to its column's width, a glyph in place of a node's bullet, then the label
-  entry #text   the text of one tile
+        given LaneDagDiagram.Style[Text] = LaneDagDiagram.TextualStyle
+          ( t"  ", t"│ ", t"──", t"╰─", t"╯ ", t"╭─", t"╮ ",
+            t"┴─", t"┬─", t"├─", t"┤ ", t"┼─", t"──", t"● " )
+        ```
+    refer dendrology.LaneDagDiagram.Style
+    refer dendrology.laneDagStyles
+    entry #space   the text of a `Space` tile
+    entry #vertical   the text of a `Vertical` tile: a lane passing a row
+    entry #horizontal   the text of a `Horizontal` tile: an edge running along a row
+    entry #cornerNe   the text of a `CornerNe` tile: an edge from above turning right
+    entry #cornerNw   the text of a `CornerNw` tile: an edge from above turning left
+    entry #cornerSe   the text of a `CornerSe` tile: an edge from the right turning down
+    entry #cornerSw   the text of a `CornerSw` tile: an edge from the left turning down
+    entry #teeN   the text of a `TeeN` tile: a horizontal run joined from above
+    entry #teeS   the text of a `TeeS` tile: a horizontal run branching down
+    entry #teeE   the text of a `TeeE` tile: a lane branching right
+    entry #teeW   the text of a `TeeW` tile: a lane joined from the left
+    entry #junction   the text of a `Junction` tile: lanes meeting from all four sides
+    entry #crossing   the text of a `Crossing` tile: a horizontal run passing over a continuing lane
+    entry #node   the text of a `Node` tile: the default bullet, used when no glyph is given for the node
+    entry #width   the display width of a glyph, through the `Text is Measurable` the style was made with
+    entry #serialize   each tile's cell padded to its column's width, a glyph in place of a node's bullet, then the label
+    entry #text   the text of one tile
 
 entry .laneDagStyles   the two ready-made styles for lane and layered diagrams, each a given to import by name
   detail
@@ -506,9 +501,9 @@ entry .LayeredDagDiagram   the layered drawing of a graph: nodes in levels by de
       above its shallowest dependant, which shortens a long edge from a source that only feeds
       something deep. The rendered rows of a given graph therefore depend on the ranking and on
       the crossing minimisation, so a stored expectation must be regenerated when either
-      changes. It renders through the `LaneDagStyle` in scope, as `LaneDagDiagram` does, and is
-      `Printable` with a `LaneDagStyle[Text]` and a `Showable` node, each node shown as `● node`.
-  refer dendrology.LaneDagStyle
+      changes. It renders through the `LaneDagDiagram.Style` in scope, as `LaneDagDiagram` does, and is
+      `Printable` with a `LaneDagDiagram.Style[Text]` and a `Showable` node, each node shown as `● node`.
+  refer dendrology.LaneDagDiagram.Style
   refer dendrology.laneDagStyles
   refer acyclicity.Layering
   refer acyclicity.Ranking
@@ -517,7 +512,7 @@ entry .LayeredDagDiagram   the layered drawing of a graph: nodes in levels by de
       (`Ranking.LongestPath` from the companion unless `rankings.balancedRanking` is imported).
       An empty graph has no rows.
   entry .printable   writes a diagram to a terminal, each node shown as `● node`
-      Needs a `LaneDagStyle[Text]` (one of `laneDagStyles`, with a `Text is Measurable`) and a
+      Needs a `LaneDagDiagram.Style[Text]` (one of `laneDagStyles`, with a `Text is Measurable`) and a
       `Showable` node type.
   entry #rows   each row's tiles and the nodes at its columns; a connector row has none
   entry #size   how many rows there are, level and connector rows together

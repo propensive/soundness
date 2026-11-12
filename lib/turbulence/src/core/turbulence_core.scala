@@ -314,8 +314,8 @@ extension [element](stream: Chain[element])
     stream.size yet stream
 
 extension (stream: Chain[Data])
-  def drop(bytes: Bytes): Chain[Data] =
-    def recur(stream: Chain[Data], count: Bytes): Chain[Data] = stream.flow(Chain()):
+  def drop(bytes: Memory): Chain[Data] =
+    def recur(stream: Chain[Data], count: Memory): Chain[Data] = stream.flow(Chain()):
       if next.bytes < count
       then recur(more, count - next.bytes)
       else
@@ -373,8 +373,8 @@ extension (stream: Chain[Data])
     val size = newSize()
     recur(stream, 0, newArray(size), size, 0)
 
-  def take(bytes: Bytes): Chain[Data] =
-    def recur(stream: Chain[Data], count: Bytes): Chain[Data] =
+  def take(bytes: Memory): Chain[Data] =
+    def recur(stream: Chain[Data], count: Memory): Chain[Data] =
       stream.flow(Chain()):
         if next.bytes < count then
           val head: Data = next

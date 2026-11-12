@@ -34,5 +34,5 @@ package soundness
 
 export
   octogenarian
-  . { ChangeKind, Commit, FastForward, FileDiff, Git, Hunk, NoteRef, Notes, Patch, ReflogEntry,
-      Remote, ResetMode, SshUrl, target, namespace, content }
+  . { Commit, FastForward, Git, NoteRef, Notes, ReflogEntry,
+      ResetMode, SshUrl, target, namespace, content }

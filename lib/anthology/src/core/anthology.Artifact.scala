@@ -36,6 +36,7 @@ import scala.compiletime.asMatchable
 
 import anticipation.*
 import gossamer.*
+import anthology.Toolchain.Triple
 
 object Artifact:
   // The tiers of a toolchain's nodes, as data: the kind a format is declared with.

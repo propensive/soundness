@@ -52,7 +52,7 @@ import vacuous.*
 // supervision mirror `listen`: each connection is served by its own `async` task (so a handler
 // failure or a dropped client only ends its own task, and the connection is always closed),
 // while a failure to *accept* skips one loop iteration; `stop()` unwinds the parked `accept()`.
-extension (domainSocket: DomainSocket)
+extension (uds: Uds)
   // A loan, like `Bindable.listen`: the running server is lent to `block` as a
   // `Socket.Service` capability and always stopped afterwards.
   // With `ownerOnly`, the socket file is made mode 0600 as soon as it is bound (a bound socket
@@ -68,15 +68,15 @@ extension (domainSocket: DomainSocket)
 
     val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
     channel.configureBlocking(true)
-    channel.bind(jn.UnixDomainSocketAddress.of(domainSocket.address.s))
+    channel.bind(jn.UnixDomainSocketAddress.of(uds.address.s))
 
     if ownerOnly && jnf.FileSystems.getDefault.nn.supportedFileAttributeViews.nn.contains("posix")
     then
       jnf.Files.setPosixFilePermissions
-        ( jnf.Path.of(domainSocket.address.s),
+        ( jnf.Path.of(uds.address.s),
           jnf.attribute.PosixFilePermissions.fromString("rw-------") )
 
-    Log.info(Socket.Event.Listening(domainSocket.address))
+    Log.info(Socket.Event.Listening(uds.address))
 
     def peer(client: jnc.SocketChannel): Optional[Text] = safely:
       client.getOption(jdk.net.ExtendedSocketOptions.SO_PEERCRED).nn.user().nn.getName().nn.tt
@@ -105,6 +105,6 @@ extension (domainSocket: DomainSocket)
       bindLoop.stop()
       channel.close()
       safely(task.await())
-      Log.fine(Socket.Event.Closed(domainSocket.address))
+      Log.fine(Socket.Event.Closed(uds.address))
 
     try block(using service) finally service.stop()

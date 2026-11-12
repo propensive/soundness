@@ -56,7 +56,7 @@ object Isolation extends Rig(using Classloader[Isolation.type]):
   def stage(out: Path on Linux)(using Tactic[Rig.Error]): Classloader =
     classpath(out).classloader(Classloader.Delegation.Preferential)
 
-  val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
+  val scalac: Scalac[3.6, Toolchain.Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
   :   output =

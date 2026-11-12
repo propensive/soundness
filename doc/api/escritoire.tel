@@ -10,7 +10,7 @@ detail
     Each column declares a **sizing strategy** — wrap as a paragraph, truncate with an
     ellipsis, hold a fixed width, or collapse entirely when space runs out — and the layout
     engine negotiates the width between them, wrapping with hyphenation where wrapping is
-    allowed, and drawing the result with box characters in a `TableStyle` chosen in scope.
+    allowed, and drawing the result with box characters in a `Table.Style` chosen in scope.
 
     Three types carry a table from definition to text. A `Scaffold` says how a row type is
     put into `Column`s — titles, content, alignment, sizing — and holds no data. A
@@ -41,7 +41,7 @@ detail
     Laying out a table needs four contextual values, three of which are chosen by importing
     a given by name, since `import soundness.*` imports no givens:
 
-    - a `TableStyle`, from the `tableStyles` package — the rules, corners and padding;
+    - a `Table.Style`, from the `tableStyles` package — the rules, corners and padding;
     - an `Attenuation`, from `columnAttenuation` — what happens when no arrangement of the
       columns fits the width: `ignoreAttenuation` renders anyway, `failAttenuation` raises
       `Table.Error`;
@@ -124,7 +124,7 @@ entry .Scaffold   how a row type is put into columns: a table definition which h
       `scaffold.layout(width)` solves the column widths from the titles' claims and nothing
       else, for a table which is built incrementally: each row is then phrased with `#cells`
       and admitted with `Layout#extend`, which re-solves the widths only when the row's cells
-      exceed what the layout has already seen. Needs a `TableStyle`, a `Text is Measurable`
+      exceed what the layout has already seen. Needs a `Table.Style`, a `Text is Measurable`
       and an `Attenuation` in scope.
 
       ```scala
@@ -439,7 +439,7 @@ entry .Tabulation   data arranged by a scaffold: the cells' text, ready to be la
   refer escritoire.Layout
   entry .printable   prints a tabulation at the terminal's width
       The `Printable` given, which lays the table out at `termcap.width` and prints each
-      line through the text type's own `Printable`. It needs a `TableStyle`, a `Text is
+      line through the text type's own `Printable`. It needs a `Table.Style`, a `Text is
       Measurable`, an `Attenuation` and a `Hyphenation` in scope, and the text type's
       `Printable`.
   entry #Row   the row type the tabulation was made from
@@ -452,19 +452,19 @@ entry .Tabulation   data arranged by a scaffold: the cells' text, ready to be la
   entry #layout   the solved column widths at a width, from the titles' and every row's claims
       `tabulation.layout(width)` folds every row's cells into the columns' aggregate claims
       and solves the widths once, giving a `Layout`. Its `widths` are the widths `#grid`
-      renders with. Needs a `TableStyle`, a `Text is Measurable` and an `Attenuation`.
+      renders with. Needs a `Table.Style`, a `Text is Measurable` and an `Attenuation`.
   entry #grid   the tabulation fitted to a width: a `Grid` whose `render` is the lines
       `tabulation.grid(width)` solves the layout as `#layout` does, fits every cell to its
       column's width, and builds a `Grid` of two sections — the titles and the rows — sharing
       the same widths. If the columns' minima exceed `width` even after every collapsible
       column has gone, the `Attenuation` in scope is told: `columnAttenuation.failAttenuation`
       raises `Table.Error` and `ignoreAttenuation` lets the table overflow. Needs a
-      `TableStyle`, a `Text is Measurable`, an `Attenuation` and a `Hyphenation`.
+      `Table.Style`, a `Text is Measurable`, an `Attenuation` and a `Hyphenation`.
 
 entry .Grid   a table fitted to a width: sections of rows at settled column widths, in a style
   detail
-      The last stage before text. A `Grid[text]` is a list of `TableSection`s — each a run of
-      `TableRow`s with the column widths they share — and the `TableStyle` to draw them in.
+      The last stage before text. A `Grid[text]` is a list of `Table.Section`s — each a run of
+      `Table.Row`s with the column widths they share — and the `Table.Style` to draw them in.
       `Tabulation#grid` makes one with two sections, the titles and the data; `#render` draws
       it as a `Chain` of lines, with a rule between sections and the style's top and bottom
       lines around them.
@@ -483,7 +483,7 @@ entry .Grid   a table fitted to a width: sections of rows at settled column widt
 
       A grid is `Printable` through `.printable`, so it can be printed directly.
   refer escritoire.Tabulation
-  refer escritoire.TableStyle
+  refer escritoire.Table.Style
   refer escritoire.Layout
   entry .printable   prints a grid, one rendered line per terminal line
       The `Printable` given: `render` joined with newlines, each line printed through the
@@ -682,7 +682,7 @@ entry .Tabulable   a typeclass: how a type is put into columns, so a list of it 
       `row is Tabulable[text]` is a function `#table()` returning the `Scaffold[row, text]`
       for the type; `#tabulate` applies it to a list. Its companion derives an instance for
       any case class — a column per field, each titled by its field name uncamelled and
-      capitalised (`linesOfCode` becomes `Lines Of Code`), unless a `TableRelabelling` for the
+      capitalised (`linesOfCode` becomes `Lines Of Code`), unless a `Table.Relabelling` for the
       type in scope says otherwise — and provides instances for `Int`, `Double` and `Text`,
       each a single untitled column. A field's column is the field type's own `Tabulable`
       scaffold, adapted to the record with `Column#contramap`, so a field of a case-class type
@@ -713,7 +713,7 @@ entry .Tabulable   a typeclass: how a type is put into columns, so a list of it 
       Only `Text`-celled instances are derived: a `Teletype` table is written as a `Scaffold`
       by hand.
   refer escritoire.Scaffold
-  refer escritoire.TableRelabelling
+  refer escritoire.Table.Relabelling
   refer escritoire.tabulation
   entry .JoinTabulable   the derived instance for a product type, over its fields' columns
     detail
@@ -722,7 +722,7 @@ entry .Tabulable   a typeclass: how a type is put into columns, so a list of it 
     entry #table   the scaffold of the joined columns
   entry .conjunction   derives the instance for a case class, one column per field
       Each field's `Tabulable` gives its columns, which are adapted to the record and
-      retitled from the field's label — through a `TableRelabelling[derivation]` if one is
+      retitled from the field's label — through a `Table.Relabelling[derivation]` if one is
       in scope, and otherwise uncamelled and capitalised. This is what the `derived` given
       inherited from wisteria's `ProductDerivation` calls, so a case class needs no
       annotation to be tabulated.
@@ -750,34 +750,12 @@ entry .Tabular   a typeclass: a value which is itself a table, supplying both it
   entry #rows   the value's rows, as a list of `Element`
   entry #tabulate   the value as a `Tabulation`: `table(value).tabulate(rows(value))`
 
-entry .TableRelabelling   overrides the column titles a derived table takes from its field names
+entry .Table   the namespace of a rendered table: its cells, rows, sections and style, and `Table.Error`
   detail
-      A `TableRelabelling[target]` is a function `#relabelling()` from field names to the
-      titles wanted instead, consulted by the derived `Tabulable` for `target`: a field named
-      in the map takes the mapped title, and any other its uncamelled, capitalised name. A
-      given in scope at the point of derivation is enough; the trait is covariant in its
-      target, so a relabelling for a supertype applies to its subtypes.
-
-      ```scala
-      import soundness.*
-      import tableStyles.thinRoundedTableStyle
-      import textMetrics.uniformMetric
-      import columnAttenuation.ignoreAttenuation
-
-      case class Person(name: Text, age: Int)
-      given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
-
-      List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
-      ```
-  refer escritoire.Tabulable
-  entry #relabelling   the map from field names to titles
-      Called once and cached; a field absent from the map keeps its derived title.
-  entry #apply   the title for a field name, or `Unset` if the map does not name it
-
-entry .Table   the namespace of `Table.Error`, raised when a table cannot fit its width
-  detail
-      `Table` holds nothing but the error. There is no `Table` type: a table definition is a
-      `Scaffold`, data arranged by one a `Tabulation`, and the fitted result a `Grid`.
+      `Table` is a namespace, not a type: a table definition is a `Scaffold`, data arranged by
+      one a `Tabulation`, and the fitted result a `Grid`. `Table` holds the pieces a grid is
+      drawn from (`Cell`, `Row`, `Section`), the `Style` it is drawn in, the `Relabelling`
+      which renames derived columns, and the `Error` raised when a table cannot fit.
   refer escritoire.Scaffold
   refer escritoire.columnAttenuation
   entry .Error   the table needed more width than it was given
@@ -806,6 +784,97 @@ entry .Table   the namespace of `Table.Error`, raised when a table cannot fit it
         ```
     entry #minimumWidth   the narrowest width at which the table's columns could all fit
     entry #availableWidth   the width the table was asked to fit
+
+  entry .Cell   one cell as rendered: its fitted lines, width, alignment and decoration
+    detail
+        The renderer's record of a cell after `Layout#tableRow` has fitted it: the lines it
+        displays at its column's width, how many there are, how they align, and its decoration.
+        A user of `Grid` or `Layout` sees these inside a `Row`; nothing else makes them.
+    refer escritoire.Table.Row
+    entry #width   the column's settled width, in cells
+    entry #span   how many columns the cell spans; always `1`
+    entry #lines   the fitted lines
+    entry #minHeight   the number of lines
+    entry #textAlign   how each line is padded to the width
+    entry #verticalAlign   where the lines sit when the row is taller than `minHeight`
+    entry #decorate   the transformation applied to each rendered line, or `Unset`
+    entry #apply   the line at an index, which the caller has already checked against `minHeight`
+  entry .Row   one row of fitted cells, with its height in lines
+    detail
+        Made by `Layout#tableRow`, and rendered by `Grid.rowLines`. The row's height is its
+        tallest cell's line count, and a shorter cell is placed within it by its vertical
+        alignment.
+    refer escritoire.Table.Cell
+    refer escritoire.Grid
+    entry #cells   the fitted cells, one per surviving column
+    entry #title   whether this is a title row
+    entry #height   the number of visual lines the row occupies
+    entry #apply   the cell at a column index
+  entry .Section   a run of rows which share column widths
+    detail
+        A `Grid` is a list of sections, drawn with a rule between each pair. `Tabulation#grid`
+        makes two — the titles and the data — at the same widths; every section's rows are
+        rendered against the section's own `widths`.
+    refer escritoire.Grid
+    entry #widths   the column widths the section's rows were fitted to
+    entry #rows   the rows, lazily, as a `Chain`
+  entry .Style   the rules, corners and padding a table is drawn with
+    detail
+        A `Style` says how much padding each cell has on either side, which weight of line
+        — `Blank`, `Thin`, `Thick` or `Double`, or `Unset` for no line at all — draws the top
+        edge, the bottom edge, the rule beneath the titles, the outer sides and the inner column
+        edges, and which `LineCharset` (`Default`, `Rounded` or `Ascii`) supplies the glyphs.
+        The six styles in the `tableStyles` package cover the usual choices; a style of one's
+        own is a `Style` value given locally.
+
+        A style is a contextual value: `Tabulation#grid`, `Scaffold#layout` and the `Printable`
+        givens take one, and `import soundness.*` brings none in, so one of the `tableStyles`
+        givens is imported by name.
+
+        ```scala
+        import soundness.*
+
+        given ascii: Table.Style =
+          Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
+        ```
+
+        `Blank` and `Unset` differ: a `Blank` top line is drawn as a blank line, keeping the
+        table's vertical spacing, where `Unset` draws nothing. Styled `Teletype` content lays
+        out by its visible width in every style.
+    refer escritoire.tableStyles
+    refer escritoire.Grid
+    entry #padding   the cells to the left and right of each cell's content
+    entry #topLine   the weight of the top edge, or `Unset` for no top edge
+    entry #bottomLine   the weight of the bottom edge, or `Unset` for no bottom edge
+    entry #titleLine   the weight of the rule between the titles and the rows, or `Unset` for none
+    entry #sideLines   the weight of the outer left and right edges; `Blank` for none
+    entry #innerLines   the weight of the edges between columns; `Blank` for none
+    entry #charset   which glyph set draws the lines: `Default`, `Rounded` or `Ascii`
+    entry #columnCost   the chrome one column adds: its padding on both sides and one edge
+    entry #cost   the chrome of a given number of columns: their costs and the closing edge
+  entry .Relabelling   overrides the column titles a derived table takes from its field names
+    detail
+        A `Relabelling[target]` is a function `#relabelling()` from field names to the
+        titles wanted instead, consulted by the derived `Tabulable` for `target`: a field named
+        in the map takes the mapped title, and any other its uncamelled, capitalised name. A
+        given in scope at the point of derivation is enough; the trait is covariant in its
+        target, so a relabelling for a supertype applies to its subtypes.
+
+        ```scala
+        import soundness.*
+        import tableStyles.thinRoundedTableStyle
+        import textMetrics.uniformMetric
+        import columnAttenuation.ignoreAttenuation
+
+        case class Person(name: Text, age: Int)
+        given Table.Relabelling[Person] = () => Map(t"name" -> t"Full Name")
+
+        List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
+        ```
+    refer escritoire.Tabulable
+    entry #relabelling   the map from field names to titles
+        Called once and cached; a field absent from the map keeps its derived title.
+    entry #apply   the title for a field name, or `Unset` if the map does not name it
 
 entry .Attenuation   what happens when a table's columns cannot fit the width it was given
   detail
@@ -842,44 +911,9 @@ entry .columnAttenuation   the two policies for a table which does not fit, each
       Does nothing when told the table does not fit: the surviving columns keep their minimum
       widths and the lines run past the width asked for.
 
-entry .TableStyle   the rules, corners and padding a table is drawn with
-  detail
-      A `TableStyle` says how much padding each cell has on either side, which weight of line
-      — `Blank`, `Thin`, `Thick` or `Double`, or `Unset` for no line at all — draws the top
-      edge, the bottom edge, the rule beneath the titles, the outer sides and the inner column
-      edges, and which `LineCharset` (`Default`, `Rounded` or `Ascii`) supplies the glyphs.
-      The six styles in the `tableStyles` package cover the usual choices; a style of one's
-      own is a `TableStyle` value given locally.
-
-      A style is a contextual value: `Tabulation#grid`, `Scaffold#layout` and the `Printable`
-      givens take one, and `import soundness.*` brings none in, so one of the `tableStyles`
-      givens is imported by name.
-
-      ```scala
-      import soundness.*
-
-      given ascii: TableStyle =
-        TableStyle(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
-      ```
-
-      `Blank` and `Unset` differ: a `Blank` top line is drawn as a blank line, keeping the
-      table's vertical spacing, where `Unset` draws nothing. Styled `Teletype` content lays
-      out by its visible width in every style.
-  refer escritoire.tableStyles
-  refer escritoire.Grid
-  entry #padding   the cells to the left and right of each cell's content
-  entry #topLine   the weight of the top edge, or `Unset` for no top edge
-  entry #bottomLine   the weight of the bottom edge, or `Unset` for no bottom edge
-  entry #titleLine   the weight of the rule between the titles and the rows, or `Unset` for none
-  entry #sideLines   the weight of the outer left and right edges; `Blank` for none
-  entry #innerLines   the weight of the edges between columns; `Blank` for none
-  entry #charset   which glyph set draws the lines: `Default`, `Rounded` or `Ascii`
-  entry #columnCost   the chrome one column adds: its padding on both sides and one edge
-  entry #cost   the chrome of a given number of columns: their costs and the closing edge
-
 entry .tableStyles   six ready-made table styles, each a given to import by name
   detail
-      The box drawing is chosen by the `TableStyle` given in scope, and the choice is never
+      The box drawing is chosen by the `Table.Style` given in scope, and the choice is never
       implicit: `import soundness.*` brings none of these in, and one is imported by name. The
       same table under the six styles:
 
@@ -948,8 +982,8 @@ entry .tableStyles   six ready-made table styles, each a given to import by name
       ##
       ```
 
-      A style of one's own is a `TableStyle` value bound as a local given instead.
-  refer escritoire.TableStyle
+      A style of one's own is a `Table.Style` value bound as a local given instead.
+  refer escritoire.Table.Style
   entry .thickTableStyle   heavy top, bottom and sides; thin title rule and column edges; square corners
   entry .thinRoundedTableStyle   thin rules throughout, with rounded corners
   entry .horizontalTableStyle   thin top, bottom and title rules; no vertical lines
@@ -989,39 +1023,3 @@ entry .VerticalAlignment   where a cell sits in a row that another cell has made
     `Bottom`. A wrapped cell makes its whole row taller, and the other cells in that row sit
     at the top, middle or bottom of the extra height according to their column's
     `verticalAlign`; `Top` is the default for every type.
-
-entry .TableCell   one cell as rendered: its fitted lines, width, alignment and decoration
-  detail
-      The renderer's record of a cell after `Layout#tableRow` has fitted it: the lines it
-      displays at its column's width, how many there are, how they align, and its decoration.
-      A user of `Grid` or `Layout` sees these inside a `TableRow`; nothing else makes them.
-  refer escritoire.TableRow
-  entry #width   the column's settled width, in cells
-  entry #span   how many columns the cell spans; always `1`
-  entry #lines   the fitted lines
-  entry #minHeight   the number of lines
-  entry #textAlign   how each line is padded to the width
-  entry #verticalAlign   where the lines sit when the row is taller than `minHeight`
-  entry #decorate   the transformation applied to each rendered line, or `Unset`
-  entry #apply   the line at an index, which the caller has already checked against `minHeight`
-
-entry .TableRow   one row of fitted cells, with its height in lines
-  detail
-      Made by `Layout#tableRow`, and rendered by `Grid.rowLines`. The row's height is its
-      tallest cell's line count, and a shorter cell is placed within it by its vertical
-      alignment.
-  refer escritoire.TableCell
-  refer escritoire.Grid
-  entry #cells   the fitted cells, one per surviving column
-  entry #title   whether this is a title row
-  entry #height   the number of visual lines the row occupies
-  entry #apply   the cell at a column index
-
-entry .TableSection   a run of rows which share column widths
-  detail
-      A `Grid` is a list of sections, drawn with a rule between each pair. `Tabulation#grid`
-      makes two — the titles and the data — at the same widths; every section's rows are
-      rendered against the section's own `widths`.
-  refer escritoire.Grid
-  entry #widths   the column widths the section's rows were fitted to
-  entry #rows   the rows, lazily, as a `Chain`

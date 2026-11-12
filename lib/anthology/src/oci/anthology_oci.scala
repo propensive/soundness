@@ -52,6 +52,7 @@ import turbulence.*
 import vacuous.*
 import xenophile.*
 import zephyrine.*
+import anthology.Toolchain.Tool
 
 object ociOptions:
   private def oci(edit: OciConfiguration => OciConfiguration): Toolchain.Setting =
@@ -114,7 +115,7 @@ object ociEdges:
         jnf.Files.readAllBytes(jnf.Paths.get(component.encode.s).nn).nn.pipe(Array.unsafeFrozen)
 
       val image =
-        Image.wasm
+        Oci.Image.wasm
           ( bytes,
             exports      = exports,
             imports      = imports,

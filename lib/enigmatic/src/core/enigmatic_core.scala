@@ -57,20 +57,20 @@ package signatureDigests:
   given sha512Signature: Signature.Digest = Signature.Digest(t"SHA512")
 
 package blockCipherModes:
-  export Cbc.mode as cbc
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
+  export BlockCipher.Cbc.mode as cbc
+  export BlockCipher.Ctr.mode as ctr
+  export BlockCipher.Cfb.mode as cfb
+  export BlockCipher.Ofb.mode as ofb
   // `Ecb.mode` is not re-exported: it is now a context-function given (it requires
   // an erased `Permit[Concession.Ecb]`), and re-exporting such a given trips a
-  // compiler assertion. ECB is summoned from its own companion; use `over Ecb`.
+  // compiler assertion. ECB is summoned from its own companion; use `over BlockCipher.Ecb`.
 
 package blockCipherPaddings:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
+  export BlockCipher.Pkcs7.padding as pkcs7
+  export BlockCipher.Iso10126.padding as iso10126
   // `NoPadding` is not re-exported for import-based inference: its `given` takes a
   // `Tactic[Crypto.Error]`, and re-exporting a context-function given trips a
-  // compiler assertion ("bad adapt"). Use `against NoPadding` explicitly instead.
+  // compiler assertion ("bad adapt"). Use `against BlockCipher.NoPadding` explicitly instead.
 
 // The initialization vector is now supplied explicitly at the encryption site —
 // `InitializationVector.random` / `.fixed(…)` / `.zero` — so there is no

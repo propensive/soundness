@@ -872,10 +872,10 @@ entry .Log   logs an event at one of four levels, and names the categories an ev
   refer anticipation.Loggable
   refer anticipation.LogSink
   refer anticipation.logs
-  entry .fine   logs a value at `Level.Fine`: high-frequency detail, useful while debugging
-  entry .info   logs a value at `Level.Info`: one line per significant operation
-  entry .warn   logs a value at `Level.Warn`: a recoverable or unexpected-but-handled condition
-  entry .fail   logs a value at `Level.Fail`: an operation which failed unrecoverably
+  entry .fine   logs a value at `Log.Level.Fine`: high-frequency detail, useful while debugging
+  entry .info   logs a value at `Log.Level.Info`: one line per significant operation
+  entry .warn   logs a value at `Log.Level.Warn`: a recoverable or unexpected-but-handled condition
+  entry .fail   logs a value at `Log.Level.Fail`: an operation which failed unrecoverably
   entry .Category   a category of log event, carrying the runtime class of its marker trait
     detail
         Each category is an object paired with a marker trait of the same name; a sink
@@ -906,14 +906,14 @@ entry .Log   logs an event at one of four levels, and names the categories an ev
   entry .Resource   events about reading bundled resources, as a marker trait and its `Category`
   entry .Security   events about security-relevant conditions, as a marker trait and its `Category`
 
-entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
-  detail
-      An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
-      switched off; `Info` one line per significant operation; `Warn` a recoverable or
-      unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
-      logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
-      everything below a chosen level, as eucalyptus's `Logger(Out, level = Level.Warn)` does.
-  entry .comparable   orders levels by severity, from `Fine` to `Fail`
+  entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
+    detail
+        An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
+        switched off; `Info` one line per significant operation; `Warn` a recoverable or
+        unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
+        logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
+        everything below a chosen level, as eucalyptus's `Logger(Out, level = Log.Level.Warn)` does.
+    entry .comparable   orders levels by severity, from `Fine` to `Fail`
 
 entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
   detail
@@ -1142,7 +1142,7 @@ entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, 
       ```scala
       import soundness.*
 
-      type Rgb565 = (Red[5], Green[6], Blue[5])
+      type Rgb565 = (Channel.Red[5], Channel.Green[6], Channel.Blue[5])
       summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
       ```
@@ -1150,7 +1150,7 @@ entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, 
       `Channel` is not exported to the `soundness` umbrella, where the name belongs to a
       WebSocket channel; reach it as `anticipation.Channel`. The channel families `Red`,
       `Green`, `Blue` and the rest are exported.
-  refer anticipation.Red
+  refer anticipation.Channel.Red
   entry .Label   the literal label of a channel: `Label[Red[8]]` is `"red"`
   entry .Bits   the bit depth of a channel: `Bits[Red[8]]` is `8`
   entry .TotalBits   the total bit width of a layout
@@ -1162,15 +1162,15 @@ entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, 
   entry .Depth   the bit depth of a labelled channel within a layout
   entry .Storage   the narrowest primitive holding one pixel of a layout: `Byte`, `Short`, `Int` or `Long`
 
-entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
-entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
-entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
-entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
-entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
-entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
-entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
-entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
-entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
+  entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
+  entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
+  entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
+  entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
+  entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
+  entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
+  entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
+  entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
+  entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
 
 entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
   detail

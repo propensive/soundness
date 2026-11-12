@@ -47,7 +47,7 @@ object Loggable:
     caps.unsafe.unsafeAssumePure:
       new Loggable:
         type Self = event
-        def log(level: Level, timestamp: Long, event: => event): Unit = ()
+        def log(level: Log.Level, timestamp: Long, event: => event): Unit = ()
 
   // Derives the single `event is Loggable` that `Log.fine`/`info`/`warn`/`fail` summon: transcribe
   // the event to a common `carrier` once, then fan out to EVERY in-scope `LogSink` for that carrier
@@ -74,7 +74,7 @@ object Loggable:
     new Loggable:
       type Self = event
 
-      def log(level: Level, timestamp: Long, value: => event): Unit =
+      def log(level: Log.Level, timestamp: Long, value: => event): Unit =
         // Force and transcribe the event only if some sink would record it at this level; otherwise
         // (including no sinks at all) the by-name `value` is never evaluated.
         if sinks0.values.exists(_.accepts(level)) then
@@ -95,7 +95,7 @@ object Loggable:
 // those sinks, and the self type says so.
 trait Loggable extends Typeclass, Durable:
   loggable: Loggable^ =>
-    def log(level: Level, timestamp: Long, event: => Self): Unit
+    def log(level: Log.Level, timestamp: Long, event: => Self): Unit
 
     // `^{lambda}` only: the compiler treats a bare `Loggable` receiver as untracked
     // (empty capture set), so `this` is not a legal capture reference here. The laundering is

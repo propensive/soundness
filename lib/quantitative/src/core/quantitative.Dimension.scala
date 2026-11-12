@@ -43,3 +43,6 @@ sealed trait Heat extends Dimension
 sealed trait Current extends Dimension
 sealed trait Luminosity extends Dimension
 sealed trait AmountOfSubstance extends Dimension
+
+// Not an SI base dimension, but the one every byte quantity is measured in.
+sealed trait Information extends Dimension

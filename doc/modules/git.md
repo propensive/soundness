@@ -204,8 +204,10 @@ configuration, notes, linked worktrees, merging, rebasing and the stash are all 
 written directly, in Git's own formats. A repository is therefore always one which `git` itself
 understands, and an operation which one side stops on a conflict, the other can continue. It
 reaches a repository on the same filesystem by path. A remote one needs a transport, which the
-`http` and `ssh` components supply. `Native(List(SmartHttp(), SshCommand()))` speaks Git's wire
-protocol over whichever `Http.Backend` is in scope, and over a spawned `ssh`:
+`http` and `ssh` components supply. `octogenarian.Native(List(SmartHttp(), SshCommand()))`
+speaks Git's wire protocol over whichever `Http.Backend` is in scope, and over a spawned `ssh`.
+`Native` is not exported to `soundness`, where the name is xenophile's, so it is written
+qualified:
 
 ```scala fuel
 typecheck
@@ -213,7 +215,7 @@ typecheck
 import gitTransports.{smartHttp, sshCommand}
 import httpBackends.javaNetHttp
 
-given Git.Backend = Native(List(SmartHttp(), SshCommand()))
+given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
 ```
 
 Signing is independent of the backend. A `Git.Signer` makes the signature which a commit or tag
@@ -272,9 +274,9 @@ Git.Branch.parse(t"feature..old")
 
 ### Diffs
 
-`diff` reports changes as structured values, not as patch text to parse again. Each `FileDiff`
-carries the paths on both sides, the kind of change, which is added, modified, deleted, renamed
-or copied, and its hunks. Each hunk is a list of edits:
+`diff` reports changes as structured values, not as patch text to parse again. Each
+`Git.Delta` carries the paths on both sides, the kind of change, which is added, modified,
+deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
 
 ```scala fuel
 run
@@ -282,7 +284,7 @@ run
 directory.open[Git.Worktree](Read & Write): worktree ?=>
   (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
   val files = worktree.diff().value
-  Out.println(files.head.let(_.changeKind).inspect)
+  Out.println(files.head.let(_.status).inspect)
 ```
 
 Each diff method compares two sides:
@@ -297,7 +299,7 @@ row  `diffAgainst(revision)`  the revision  the working files
 row  `diffBetween(left, right)`  a commit  a commit
 ```
 
-The same parser, `Patch.parse`, reads a patch from anywhere.
+The same parser, `Git.Patch.parse`, reads a patch from anywhere.
 
 ### Merging, cherry-picking, reverting and rebasing
 

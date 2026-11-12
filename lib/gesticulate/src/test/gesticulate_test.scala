@@ -57,7 +57,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
             data.segment(offset.z till end.z) #:: go(end)
         go(0)
 
-      def bodyText(part: Part): Text = part.read[Data].utf8
+      def bodyText(part: Multipart.Part): Text = part.read[Data].utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 32, 4096)
 

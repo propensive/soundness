@@ -45,6 +45,7 @@ object Designation:
   given amperes: Designation[Amperes[1]] = () => t"A"
   given kelvins: Designation[Kelvins[1]] = () => t"K"
   given seconds: Designation[Seconds[1]] = () => t"s"
+  given bytes: Designation[Bytes[1]] = () => t"B"
 
   given kilograms: Designation[Kilograms[1]]:
     override def siPrefix: MetricPrefix = Kilo

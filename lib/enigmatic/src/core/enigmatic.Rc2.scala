@@ -40,15 +40,15 @@ import prepositional.*
 
 object Rc2:
   given value: [bits <: 40 | 64 | 128: ValueOf, mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( blockMode: mode is BlockCipher.Mode )
+  =>  ( blockPadding: padding is BlockCipher.Padding )
   =>  ( mode Permits padding )
   =>  ( crypto: Crypto { def rc2: Crypto.SymmetricCipher } )
   =>  ( Rc2[bits] over mode against padding ) =
     Rc2(blockMode, blockPadding, crypto.rc2).asInstanceOf[Rc2[bits] over mode against padding]
 
 class Rc2[bits <: 40 | 64 | 128: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+  ( mode: BlockCipher.Mode, padding: BlockCipher.Padding, cipher: Crypto.SymmetricCipher )
 extends BlockCipher(t"RC2", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

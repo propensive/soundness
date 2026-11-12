@@ -212,9 +212,9 @@ private[facsimile] object Guard:
           val intermediate = hash6(passwordBytes, keySalt, Array.empty[Byte])
 
           // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher:
-          // enigmatic's `NoPadding` given captures a `Tactic[Crypto.Error]`, and the only
+          // enigmatic's `BlockCipher.NoPadding` given captures a `Tactic[Crypto.Error]`, and the only
           // available strategy (`throwUnsafely`) yields a root `{any}` capability that
-          // capture checking cannot confine here — unlike the `Pkcs7` object ciphers below.
+          // capture checking cannot confine here — unlike the `BlockCipher.Pkcs7` object ciphers below.
           // See the module notes.
           try
             val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
@@ -351,18 +351,18 @@ private[facsimile] class Guard
       case Method.Aes256   => aesCbcEncrypt[256](fileKey, bytes)
 
   // A fresh random IV is prepended and PKCS#7 padding applied — both handled by enigmatic's
-  // `Cbc against Pkcs7`, whose whole-value output is exactly `iv ++ ciphertext`.
+  // `BlockCipher.Cbc against BlockCipher.Pkcs7`, whose whole-value output is exactly `iv ++ ciphertext`.
   private def aesCbcEncrypt[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
-    val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
+    val symmetricKey = SymmetricKey[Aes[bits] over BlockCipher.Cbc against BlockCipher.Pkcs7](key)
 
     symmetricKey.uncloak:
-      bytes.encrypt[Aes[bits] over Cbc against Pkcs7](InitializationVector.random)
+      bytes.encrypt[Aes[bits] over BlockCipher.Cbc against BlockCipher.Pkcs7](InitializationVector.random)
 
   // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext, which enigmatic
-  // reads back off the front; `Pkcs7` strips the padding. Any failure yields empty bytes.
+  // reads back off the front; `BlockCipher.Pkcs7` strips the padding. Any failure yields empty bytes.
   private def aesCbc[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
     if bytes.length <= 16 then Array.empty[Byte] else
-      val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
+      val symmetricKey = SymmetricKey[Aes[bits] over BlockCipher.Cbc against BlockCipher.Pkcs7](key)
 
-      safely(symmetricKey.uncloak(bytes.decrypt[Data, Aes[bits] over Cbc against Pkcs7]))
+      safely(symmetricKey.uncloak(bytes.decrypt[Data, Aes[bits] over BlockCipher.Cbc against BlockCipher.Pkcs7]))
       . or(Array.empty[Byte])

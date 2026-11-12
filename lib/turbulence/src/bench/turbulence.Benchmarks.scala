@@ -52,6 +52,7 @@ import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import rudiments.*
 import sedentary.*
 import symbolism.*
@@ -87,14 +88,9 @@ import pneumatic.*
 //     fan-in (`collectAll`) and fan-out (`broadcast3`).
 
 object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundness vs ZIO / FS2 / Kyo"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
+  given prefixes:    Prefixes        = Prefixes(List(Kilo, Mega, Giga, Tera))
   given Buffering                               = Buffering.standard
 
   // ── Corpora (forced once in warmup; referenced by fully-qualified name in the
@@ -173,9 +169,9 @@ object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundne
     IndexedSeq.tabulate(4)(i => Array.from(smallInput.stdlib.slice(i*q, (i + 1)*q)))
 
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
-  lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
+  lazy val aesKey: SymmetricKey[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7] =
     import enigmatic.cloaks.heapCloak
-    SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+    SymmetricKey.generate[Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]()
   lazy val jdkKeyBytes: scala.Array[Byte] = scala.Array.tabulate(32)(i => (i*7 + 1).toByte)
   lazy val jdkIvBytes:  scala.Array[Byte] = scala.Array.tabulate(16)(i => (i*13 + 3).toByte)
 
@@ -601,7 +597,7 @@ object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundne
                 . deserialize[Base64]
                 . memoize
 
-              val decrypted: Data = recovered.decrypt[Data, Aes[256] over Cbc against Pkcs7]
+              val decrypted: Data = recovered.decrypt[Data, Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7]
               decrypted.stream.decompress[Gzip]
               . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }

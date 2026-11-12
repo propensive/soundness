@@ -84,7 +84,7 @@ def run(): Unit =
          ( e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph ):
           lib => e"$Italic(${lib.description})" )
 
-  // given TableRelabelling[Person] = () => Map(
+  // given Table.Relabelling[Person] = () => Map(
   //   t"name" -> t"Addressee",
   //   t"age"  -> t"Years old"
   // )

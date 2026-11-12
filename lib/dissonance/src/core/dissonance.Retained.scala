@@ -44,13 +44,13 @@ import vacuous.*
 //     statically-proven `Retained` edits access their values directly
 //
 // A *structural refinement*, not a trait: refinements are erasure-transparent, so
-// `Edit[Text] & Retained` still erases to `Edit`. A nominal marker would erase intersections and
+// `Diff.Edit[Text] & Retained` still erases to `Diff.Edit`. A nominal marker would erase intersections and
 // `self <: Retained` bounds to the marker's own class, inserting checkcasts that fail at
 // runtime — the underlying value never actually implements it. (The same technique as
 // rudiments' `Populated`, the non-emptiness proof.)
 type Retained = Any { type Retain = true }
 
-extension [element](edit: Edit[element])
+extension [element](edit: Diff.Edit[element])
   // The `Retained` producer for a single edit: the cast *is* the mint, used only at a site where
   // presence is established by construction — an edit whose `value` was just supplied. (The same
   // discipline as `occupied`: one check, here construction itself, recorded in the type.)
@@ -63,7 +63,7 @@ extension [element](edit: Edit[element])
 // `element`. The receiver's precise type is carried by the `editType` parameter (the same
 // shape as deindexing's `apply`): a term-singleton `edit.type` in the summonFrom pattern
 // sends implicit-scope computation through `wildApprox`, which crashes on the intersection.
-extension [element, editType <: Edit[element]](edit: editType)
+extension [element, editType <: Diff.Edit[element]](edit: editType)
   transparent inline def kept: Optional[element] = summonFrom:
     case _: (`editType` <:< Retained) => edit.value.asInstanceOf[element]
     case _                            => edit.value
@@ -77,5 +77,5 @@ extension [element](diff: Diff[element])
 extension [element](diff: Diff[element] & Retained)
   // Transfers a `Diff`'s retention proof back to its edits: a `Diff & Retained` was assembled
   // exclusively from retained edits, so re-minting each one discharges no new obligation.
-  def retentions: List[Edit[element] & Retained] =
-    diff.edits.to(List).asInstanceOf[List[Edit[element] & Retained]]
+  def retentions: List[Diff.Edit[element] & Retained] =
+    diff.edits.to(List).asInstanceOf[List[Diff.Edit[element] & Retained]]

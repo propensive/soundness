@@ -40,6 +40,7 @@ import prophesy.ScalaKeywords
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import harlequin.SourceCode.Token
 
 // Analysis of a code fragment around a cursor: the pure-text and tokenized splitting a
 // completion host performs before any compiler runs — where the partial identifier begins,

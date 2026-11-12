@@ -190,7 +190,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // destination, appending it to the page's existing annotations.
   def addLink
     ( page: Page^, rect: Pdf.Rect, uri: Optional[Text] = Unset,
-      destination: Optional[Destination] = Unset )
+      destination: Optional[Pdf.Destination] = Unset )
   (using Tactic[Pdf.Error])
   :   Unit =
 
@@ -360,7 +360,7 @@ private def buildOutline
     (refs.head, refs.last, total)
 
 // A destination as its explicit `[page /Mode …]` array.
-private def destinationArray(pdf: (Pdf & Granting[Grant.Write])^, dest: Destination)
+private def destinationArray(pdf: (Pdf & Granting[Grant.Write])^, dest: Pdf.Destination)
 ( using Tactic[Pdf.Error] )
 :   Cos =
 
@@ -368,16 +368,16 @@ private def destinationArray(pdf: (Pdf & Granting[Grant.Write])^, dest: Destinat
   def opt(value: Optional[Double]): Cos = value.lay(Cos.Nil)(number(_))
 
   dest match
-    case Destination.Fit(_)             => Cos.Sequence(List(page, Cos.Name(t"Fit")))
-    case Destination.FitBox(_)          => Cos.Sequence(List(page, Cos.Name(t"FitB")))
-    case Destination.FitWidth(_, t)     => Cos.Sequence(List(page, Cos.Name(t"FitH"), opt(t)))
-    case Destination.FitHeight(_, l)    => Cos.Sequence(List(page, Cos.Name(t"FitV"), opt(l)))
-    case Destination.FitBoxWidth(_, t)  => Cos.Sequence(List(page, Cos.Name(t"FitBH"), opt(t)))
-    case Destination.FitBoxHeight(_, l) => Cos.Sequence(List(page, Cos.Name(t"FitBV"), opt(l)))
+    case Pdf.Destination.Fit(_)             => Cos.Sequence(List(page, Cos.Name(t"Fit")))
+    case Pdf.Destination.FitBox(_)          => Cos.Sequence(List(page, Cos.Name(t"FitB")))
+    case Pdf.Destination.FitWidth(_, t)     => Cos.Sequence(List(page, Cos.Name(t"FitH"), opt(t)))
+    case Pdf.Destination.FitHeight(_, l)    => Cos.Sequence(List(page, Cos.Name(t"FitV"), opt(l)))
+    case Pdf.Destination.FitBoxWidth(_, t)  => Cos.Sequence(List(page, Cos.Name(t"FitBH"), opt(t)))
+    case Pdf.Destination.FitBoxHeight(_, l) => Cos.Sequence(List(page, Cos.Name(t"FitBV"), opt(l)))
 
-    case Destination.Xyz(_, l, t, z) =>
+    case Pdf.Destination.Xyz(_, l, t, z) =>
       Cos.Sequence(List(page, Cos.Name(t"XYZ"), opt(l), opt(t), opt(z)))
 
-    case Destination.FitRect(_, rect) =>
+    case Pdf.Destination.FitRect(_, rect) =>
       Cos.Sequence(List(page, Cos.Name(t"FitR"), number(rect.left.value), number(rect.bottom.value),
           number(rect.right.value), number(rect.top.value)))

@@ -37,21 +37,21 @@ import gossamer.*
 import hieroglyph.*
 
 package dagStyles:
-  given boxDrawingDagStyle: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
+  given boxDrawingDagStyle: [text: Textual] => DagDiagram.TextualStyle[text] =
+    DagDiagram.TextualStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
 
-  given asciiDagStyle: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
+  given asciiDagStyle: [text: Textual] => DagDiagram.TextualStyle[text] =
+    DagDiagram.TextualStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
 
 package laneDagStyles:
   given boxDrawingLaneDagStyle: [text: Textual] => (Text is Measurable)
-  =>  TextualLaneDagStyle[text] =
-    TextualLaneDagStyle
+  =>  LaneDagDiagram.TextualStyle[text] =
+    LaneDagDiagram.TextualStyle
       ( "  ".tt, "│ ".tt, "──".tt, "╰─".tt, "╯ ".tt, "╭─".tt, "╮ ".tt,
         "┴─".tt, "┬─".tt, "├─".tt, "┤ ".tt, "┼─".tt, "──".tt, "● ".tt )
 
   given asciiLaneDagStyle: [text: Textual] => (Text is Measurable)
-  =>  TextualLaneDagStyle[text] =
-    TextualLaneDagStyle
+  =>  LaneDagDiagram.TextualStyle[text] =
+    LaneDagDiagram.TextualStyle
       ( "  ".tt, "| ".tt, "--".tt, "+-".tt, "+ ".tt, "+-".tt, "+ ".tt,
         "+-".tt, "+-".tt, "+-".tt, "+ ".tt, "+-".tt, "--".tt, "* ".tt )

@@ -470,7 +470,7 @@ extends Rig:
 
   def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux = stageOn(device, out)
 
-  protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.7, Toolchain.Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
   :   output =

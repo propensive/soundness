@@ -187,10 +187,10 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         (bytes(packet.data), packet.sender, packet.port.number)
       . assert(_ == (bytes(ascii(t"payload")), ip"192.168.0.1", 9999))
 
-    suite(m"DomainSocket"):
-      test(m"A DomainSocket endpoint pairs a socket with a path"):
-        val socket = DomainSocket(t"/var/run/docker.sock")
-        socket.at(t"/info") == DomainSocket.Endpoint(socket, t"/info")
+    suite(m"Uds"):
+      test(m"A Uds endpoint pairs a socket with a path"):
+        val socket = Uds(t"/var/run/docker.sock")
+        socket.at(t"/info") == Uds.Endpoint(socket, t"/info")
       . assert(_ == true)
 
     suite(m"Bind.Error"):
@@ -246,7 +246,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         test(m"A server receives the bytes a client transmits"):
           val path = t"/tmp/coaxial-request-response.sock"
           java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
-          val socket = DomainSocket(path)
+          val socket = Uds(path)
           val received: Promise[Text] = Promise()
 
           val handler = (connection: Duplex) =>
@@ -266,7 +266,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         test(m"A Duplex sends and receives over a domain socket"):
           val path = t"/tmp/coaxial-duplex.sock"
           java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
-          val socket = DomainSocket(path)
+          val socket = Uds(path)
 
           // One refill window is the client's single message (no half-close on a duplex).
           val handler = (connection: Duplex) =>
@@ -581,9 +581,9 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
 
     suite(m"Native-rendering coverage"):
       test(m"coaxial's types inspect natively"):
-        Inspectable.fallbacks(DomainSocket(t"/tmp/example.sock").inspect)
+        Inspectable.fallbacks(Uds(t"/tmp/example.sock").inspect)
       . assert(_ == Nil)
 
       test(m"A domain socket shows its path, marked as an endpoint"):
-        DomainSocket(t"/tmp/example.sock").inspect
+        Uds(t"/tmp/example.sock").inspect
       . assert(_ == t"⇄/tmp/example.sock")

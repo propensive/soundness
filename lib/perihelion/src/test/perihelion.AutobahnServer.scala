@@ -55,7 +55,7 @@ object AutobahnServer:
 
     supervise:
       SocketServer(port).handle:
-        webSocket(): (message: perihelion.Message) =>
+        webSocket(): (message: perihelion.Websocket.Message) =>
           Reply(message, ())
 
       // Keep the JVM alive so the daemon accept loop keeps serving.

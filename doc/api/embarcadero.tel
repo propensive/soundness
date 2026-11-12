@@ -12,17 +12,17 @@ detail
     containerd, the runtime beneath Docker and Kubernetes, driven over gRPC on a local socket
     to register containers, run tasks inside them, and manage images and namespaces.
 
-    An `Image` is assembled in memory from `Layer`s (each a `Tarfile`, gzip-compressed and
+    An `Oci.Image` is assembled in memory from `Oci.Layer`s (each a `Tarfile`, gzip-compressed and
     hashed twice, once uncompressed for its `diffId` and once as stored for its `digest`) and
-    an `Image.Config` whose `ContainerConfig` says what to run. The library computes the
+    an `Oci.Image.Config` whose `Oci.ContainerConfig` says what to run. The library computes the
     config blob, the `Oci.Manifest` which ties config and layers together by digest, and the
-    single-entry `Index`; `Image#archive` renders the whole thing as an OCI image-layout tar
+    single-entry `Oci.Index`; `Oci.Image#archive` renders the whole thing as an OCI image-layout tar
     (an "oci-archive") which `docker load`, `ctr images import`, `podman load` or `skopeo` will
-    accept. `Image.wasm` builds the same layout as a Wasm OCI Artifact, whose one layer is an
-    `application/wasm` component and whose config is a `WasmConfig` naming the WASI
+    accept. `Oci.Image.wasm` builds the same layout as a Wasm OCI Artifact, whose one layer is an
+    `application/wasm` component and whose config is a `Oci.WasmConfig` naming the WASI
     generation and the Component Model interfaces the component imports and exports. An
-    existing archive is read by opening it, `data.open[Image]()` or `path.open[Image]()`,
-    which gives an `Image.Handle` for the scope of a block: its `index`, `manifest`, `config`
+    existing archive is read by opening it, `data.open[Oci.Image]()` or `path.open[Oci.Image]()`,
+    which gives an `Oci.Image.Handle` for the scope of a block: its `index`, `manifest`, `config`
     and each `layer`, verified against the digests the manifest declares, with an `Oci.Error`
     for anything missing, corrupt or unsupported.
 
@@ -40,26 +40,26 @@ detail
           mtime = 0.bits.u32,
           data  = Archive.Body(content.in[Data]) )
 
-    val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-    val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
+    val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+    val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
 
     image.manifest.layers.map(_.digest)   // List(layer.digest)
     val archive: Data = image.archive.source[Data].memoize
 
-    archive.open[Image](): handle ?=>
+    archive.open[Oci.Image](): handle ?=>
       handle.imageConfig.rootfs.diff_ids  // List(layer.diffId)
     ```
 
     A `Containerd` client connects to a daemon through an `Http2.Endpoint` (normally a Unix
     socket carrying cleartext HTTP/2) inside a `supervise` scope, bound to one containerd
     namespace, and each of its methods is one gRPC call exchanging typed records: a
-    `Container` is registered with `createContainer`, given a root filesystem of `Mount`s and
+    `Containerd.Container` is registered with `createContainer`, given a root filesystem of `Containerd.Mount`s and
     a task with `createTask`, started, signalled, awaited and deleted with the `…Task`
-    methods, and inspected as a `Workload` whose `state` is a `ProcessStatus`. The
+    methods, and inspected as a `Workload` whose `state` is a `Containerd.ProcessStatus`. The
     `Workload` openable binds that whole lifecycle to a scope,
     `container.open[Workload](Read & Launch & Signalling)`, so a task is created, optionally
     started, and always killed, reaped and deleted when the block ends. The messages on the
-    wire — every `…Request` and `…Response`, `AnyMessage`, `Timestamp`, `Empty` — are
+    wire — every `…Request` and `…Response`, `Containerd.AnyMessage`, `Containerd.Timestamp`, `Containerd.Empty` — are
     ordinary case classes with protobuf field numbers, so they round-trip with the daemon and
     can be encoded and decoded directly through locomotion's `Protobuf`.
 
@@ -80,9 +80,9 @@ detail
 
     The library has three source sets:
 
-    - `embarcadero.oci` — `Image`, `Layer`, `Oci`, `Descriptor`, `Index`, `RootFs`,
-      `History`, `ContainerConfig`, `WasmConfig` and `WasmComponent`, and
-      `Image.dataOpenable` for opening in-memory `Data` as an image. It compiles for the
+    - `embarcadero.oci` — `Oci.Image`, `Oci.Layer`, `Oci`, `Oci.Descriptor`, `Oci.Index`, `Oci.RootFs`,
+      `Oci.History`, `Oci.ContainerConfig`, `Oci.WasmConfig` and `Oci.WasmComponent`, and
+      `Oci.Image.dataOpenable` for opening in-memory `Data` as an image. It compiles for the
       JVM, Scala.js and Scala Native, so an image can be assembled in a browser or a Wasm
       guest; it draws on bitumen for its tar layers, pneumatic for gzip, gastronomy for
       SHA-256 and jacinta for the JSON documents.
@@ -90,385 +90,27 @@ detail
       `imagePathOpenable`, which open a filesystem *path* as an image through bitumen's
       disk-backed tar reader.
     - `embarcadero.containerd` — JVM only: `Containerd`, `Workload`, the `Launch` and
-      `Signalling` modes, `ProcessStatus`, `DockerEvent`, and the protobuf message types,
+      `Signalling` modes, `Containerd.ProcessStatus`, `Containerd.Event`, and the protobuf message types,
       over obligatory's gRPC and telekinesis's HTTP/2.
 
-    Everything is exported to the `soundness` umbrella except `Timestamp`, whose name
-    aviation's `Timestamp` keeps: write `embarcadero.Timestamp` for the protobuf one. The
+    The containerd protobuf records — `Containerd.Container`, `Containerd.Mount`,
+    `Containerd.Timestamp` and the service requests and replies — are nested in `Containerd`, so
+    they do not compete with other libraries' names in the `soundness` umbrella. The
     givens the library itself needs (`providers.javaBaseProvider`, `alphabets.hexLowerCase`,
     `formatting.compactJsonFormatting`, `codepages.utf8Codepage`) are imported inside it, so
-    a program imports only what its own code uses; the openables (`Image.dataOpenable`,
+    a program imports only what its own code uses; the openables (`Oci.Image.dataOpenable`,
     `Workload.openable`) sit in their companions and resolve with no import, while
     `imagePathOpenable` is a top-level given reached through `import soundness.*`. A
     containerd call needs a `Monitor` (from `supervise`) and tactics for `Grpc.Error`,
-    `Http2.Error`, `Async.Error` and `Protobuf.Error`, and logs a `DockerEvent` for each
-    change it makes, so a `DockerEvent is Loggable` such as `logging.silentLogging` must be
+    `Http2.Error`, `Async.Error` and `Protobuf.Error`, and logs a `Containerd.Event` for each
+    change it makes, so a `Containerd.Event is Loggable` such as `logging.silentLogging` must be
     in scope.
 
-refer embarcadero.Image
-refer embarcadero.Layer
+refer embarcadero.Oci.Image
+refer embarcadero.Oci.Layer
 refer embarcadero.Oci
 refer embarcadero.Containerd
 refer embarcadero.Workload
-
-entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config, manifest and index
-  detail
-      An `Image` is the complete, digest-consistent content of an OCI image: its `#layers`,
-      the `#config` document and its rendered `#configBytes`, the `#manifest` which names
-      the config and each layer by `Descriptor`, and the single-entry `#index` which names
-      the manifest. All of it is computed when the image is built, so the digests and sizes
-      are right by construction, and `#archive` renders it as the OCI image-layout tar a
-      runtime imports. The companion builds an image two ways: `.apply` from filesystem
-      layers and a `ContainerConfig`, and `.wasm` from a compiled Wasm component. Reading an
-      image back is a scoped *open*: `.Handle` is what `data.open[Image]()` (through
-      `.dataOpenable`) or `path.open[Image]()` (through `imagePathOpenable`, JVM only)
-      provides for the duration of a block.
-
-      The pieces come together in a fixed order, each addressed by the digest of the one
-      before:
-
-      ```scala fuel
-      frame
-        label A layer: a tar, compressed and hashed twice
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            layer.diffId   // sha256:… of the uncompressed tar
-            layer.digest   // sha256:… of the gzipped blob, as stored
-      frame
-        label The config: platform, rootfs diff_ids and what to run
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
-            image.imageConfig.let(_.rootfs.diff_ids)   // List(layer.diffId)
-            image.configDescriptor.digest              // sha256:… of the config JSON
-      frame
-        label The manifest: the config and each layer, by descriptor
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
-            image.manifest.config.digest            // the config descriptor's digest
-            image.manifest.layers.map(_.digest)     // List(layer.digest)
-            image.manifestDescriptor.digest         // sha256:… of the manifest JSON
-      frame
-        label The index and the archive: one manifest, written as an oci-layout tar
-        code
-            import soundness.*
-            import codepages.utf8Codepage
-            import strategies.throwUnsafely
-
-            def entry(name: Text, content: Text): Tar.Entry =
-              Tar.Entry.File
-                ( path  = name.as[Relative on Tar],
-                  mode  = UnixMode(),
-                  user  = UnixUser(0),
-                  group = UnixGroup(0),
-                  mtime = 0.bits.u32,
-                  data  = Archive.Body(content.in[Data]) )
-
-            val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
-            val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
-            image.index.manifests.map(_.digest)     // List(image.manifestDescriptor.digest)
-            val archive: Data = image.archive.source[Data].memoize   // oci-layout, index.json, blobs/sha256/…
-      ##
-      ```
-
-      An `Image` is a plain case class with no capability of its own, so it can be built
-      anywhere — on the JVM, in Scala.js or on Scala Native — and handed to code which
-      writes the archive to a file, pushes it to a registry, or imports it into a daemon.
-  refer embarcadero.Layer
-  refer embarcadero.Oci
-  refer embarcadero.ContainerConfig
-  refer embarcadero.WasmConfig
-  entry .apply   assembles an image from filesystem layers and an optional runtime configuration
-      `Image(layers, config, architecture, os, annotations)` builds the `Image.Config`
-      (`architecture` defaults to `amd64` and `os` to `linux`; `rootfs` is the layers'
-      `diffId`s in order; `config` is the `ContainerConfig`, if any), renders it as compact
-      JSON for its config blob, descriptors it with the media type
-      `application/vnd.oci.image.config.v1+json`, wraps it and the layers' descriptors in
-      an `Oci.Manifest` (carrying `annotations`, if any), and names that manifest from a
-      single-entry `Index`. Nothing is raised: every digest is computed from bytes already
-      in memory.
-
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-      import strategies.throwUnsafely
-
-      val layer: Layer = Layer(Tarfile(Nil))
-
-      val image: Image =
-        Image
-          ( List(layer),
-            config       = ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
-            architecture = t"arm64",
-            annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
-
-      image.imageConfig.let(_.architecture)   // t"arm64"
-      ```
-  entry .wasm   assembles a Wasm OCI Artifact: one uncompressed `application/wasm` layer under a Wasm config
-      `Image.wasm(component, exports, imports, target, architecture, os, annotations)` is the
-      form the Wasm OCI Artifact layout prescribes for a WebAssembly workload. The one layer is
-      `Layer.blob(component, media"application/wasm")`: stored verbatim, so its `diffId` and
-      `digest` coincide. The config blob is a `WasmConfig` (media type
-      `application/vnd.wasm.config.v0+json`) whose `architecture` is `wasm` and whose `os`
-      names the WASI generation (`wasip2` by default), with `layerDigests` naming the
-      component blob and `component` recording the `exports`, `imports` and optional `target`
-      world as a `WasmComponent`. The manifest, index and archive are the ordinary OCI ones, so
-      the same registries and tools carry it; a runtime dispatches on the two media types to
-      hand the component to a Wasm engine (through a shim such as `io.containerd.wasmtime.v1`)
-      rather than a rootfs to `runc`.
-
-      ```scala
-      import soundness.*
-
-      val component: Data = hex"0061736d01000000"   // a compiled component's bytes
-
-      val artifact: Image =
-        Image.wasm
-          ( component,
-            exports = List(t"wasi:http/incoming-handler@0.2.0"),
-            imports = List(t"wasi:io/streams@0.2.0"),
-            target  = t"wasi:http/proxy@0.2.0" )
-
-      artifact.wasmConfig.let(_.os)                   // t"wasip2"
-      artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
-      ```
-
-      The interfaces are usually not typed by hand but read from the WIT world the component
-      was linked against: xenophile's `WitDialect.worlds(wit)(name)` gives a world whose
-      `exports` and `imports` pass straight through, which is how anthology's OCI edge and
-      the repository's own Wasm end-to-end packager (`tests/wasm/packager`) build the
-      artifacts they run under wasmtime and `wasmtime serve`. The bytes are never parsed: an
-      arbitrary payload is packaged just as a real component is.
-  entry .dataOpenable   the given behind `data.open[Image]()`: opens in-memory bytes as an OCI archive
-      A given in the companion, so it resolves with no import. It provides an
-      `Image.DataOpenable` and needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
-      `Tactic[Truncation.Error]` in scope, which it captures. Opening a filesystem *path*
-      is `imagePathOpenable`, in the JVM source set.
-  entry .Config   an OCI image config document: platform, rootfs diff_id chain, run configuration and history
-    detail
-        The config blob of a filesystem image (media type
-        `application/vnd.oci.image.config.v1+json`), as `Image.apply` writes it and
-        `Image.Handle#imageConfig` reads it back. It records the target `#architecture` and
-        `#os`, the `#rootfs` whose `diff_ids` are the uncompressed layers' digests in order,
-        the optional `#config` (a `ContainerConfig` of what to run), the build `#history`
-        and the `#created` time and `#author`. Its JSON encoding and decoding derive
-        through jacinta, and the member names are the wire names, so `created` renders as
-        `created`. Together with `WasmConfig` it makes up `Oci.Config`, the union a reader
-        gets from `Image.Handle#config` when it does not know which kind of artifact it
-        opened.
-    entry #architecture   the CPU architecture the image targets, such as `amd64` or `arm64`
-    entry #os   the operating system the image targets, such as `linux`
-    entry #rootfs   the `RootFs`: the ordered `diff_id`s of the uncompressed layers
-    entry #config   the `ContainerConfig` saying how to run the image, or `Unset`
-    entry #history   how each layer came to be, one `History` per layer or empty change, or `Unset`
-    entry #created   when the image was built, as RFC 3339 text, or `Unset`
-    entry #author   who built the image, or `Unset`
-  entry .Handle   the scoped view of an opened OCI archive: its index, manifest, config and blobs
-    detail
-        The capability `data.open[Image]()` or `path.open[Image]()` provides for the
-        duration of its block, and only then: it is an exclusive capability, so it cannot be
-        stored or returned. The archive's entries are read once and held for the handle's
-        lifetime, indexed by name, so every lookup after the first is a map access; archives
-        `Image#archive` writes put `index.json` before the blobs, so the metadata path is
-        cheap. Every method takes a `Tactic[Oci.Error]` and raises `Oci.Error` for a missing
-        or unreadable document or blob.
-
-        ```scala
-        import soundness.*
-        import codepages.utf8Codepage
-        import strategies.throwUnsafely
-
-        val image: Image = Image(List(Layer(Tarfile(Nil))))
-        val archive: Data = image.archive.source[Data].memoize
-
-        archive.open[Image](): handle ?=>
-          handle.index                                          // the top-level index
-          handle.manifest                                       // the manifest it names, digest-checked
-          handle.imageConfig                                    // the image config
-          handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
-        ```
-
-        A layer is reached three ways, which makes the cost explicit: `#compressed` streams
-        the stored bytes untouched, `#layer` decompresses them as a stream, and `#verified`
-        gathers them and checks digest and size against the descriptor. A reader which does
-        not know whether it has a filesystem image or a Wasm artifact asks for `#config`,
-        which dispatches on the config descriptor's media type.
-
-        Opening for writing is refused: `archive.open[Image](Write)` raises `Oci.Error` with
-        `WriteUnsupported`.
-    refer embarcadero.Oci
-    entry #blob   a blob by its `sha256:…` digest, as a stream of its stored chunks, unverified
-        The raw stored bytes (for a layer, the gzip-compressed tar) under
-        `blobs/sha256/<hex>`, as a `Stream[Data] over Credit`. Raises `Oci.Error` with
-        `UnsupportedDigest` for a digest whose algorithm is not `sha256`, and `MissingBlob`
-        when the archive has no such blob. Nothing is checked: `#verified` is the checked
-        read.
-    entry #index   the decoded top-level `index.json`, after checking the `oci-layout` marker
-        Reads the `oci-layout` document and requires its `imageLayoutVersion` to begin with
-        `1.`, then decodes `index.json` as an `Index`. Raises `Oci.Error` with
-        `MissingLayout`, `UnsupportedLayout`, `MissingIndex` or, for a document which does
-        not parse, `InvalidBlob`.
-    entry #manifest   the index's first manifest, or the one a descriptor selects, digest-verified
-        `handle.manifest` takes the first descriptor of `#index` (raising `Oci.Error` with
-        `NoManifest` if there is none); `handle.manifest(descriptor)` takes a chosen one. The
-        manifest blob is read through `#verified`, so a corrupted manifest is reported as
-        `DigestMismatch` rather than decoded, and then decoded as an `Oci.Manifest`.
-    entry #imageConfig   the decoded `Image.Config` of a manifest, by default the first
-        `handle.imageConfig` or `handle.imageConfig(manifest)`: the manifest's config blob,
-        verified and decoded as an `Image.Config`. For a Wasm artifact the blob is a
-        `WasmConfig`, and decoding it here fails with `InvalidBlob`; use `#config` when the
-        kind is not known.
-    entry #wasmConfig   the decoded `WasmConfig` of a manifest, by default the first
-        `handle.wasmConfig` or `handle.wasmConfig(manifest)`: the manifest's config blob,
-        verified and decoded as a `WasmConfig`.
-    entry #config   the config blob in whichever form its media type says: `Image.Config` or `WasmConfig`
-        `handle.config` or `handle.config(manifest)` returns an `Oci.Config`, decoding the
-        blob as a `WasmConfig` when the config descriptor's media type is
-        `application/vnd.wasm.config.v0+json` and as an `Image.Config` otherwise. This is the
-        entry point for a runtime deciding whether to unpack a rootfs or instantiate a
-        component:
-
-        ```scala
-        import soundness.*
-        import strategies.throwUnsafely
-
-        val archive: Data = Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
-
-        archive.open[Image](): handle ?=>
-          handle.config match
-            case config: WasmConfig   => config.component.let(_.exports)
-            case config: Image.Config => config.rootfs.diff_ids
-        ```
-    entry #compressed   a layer's stored blob, verbatim: for an OCI layer, the gzip-compressed tar
-        `#blob` by the descriptor's digest, as a `Stream[Data] over Credit`; the cheapest
-        way to copy a layer from one archive to another.
-    entry #layer   a layer's content as the uncompressed tar byte stream
-        Streams `#compressed` through a gzip decoder when the descriptor's media type carries
-        the `+gzip` suffix, and verbatim otherwise — so a Wasm artifact's
-        `application/wasm` layer comes back as the component's own bytes. The stream is not
-        checked against the digest, since checking would mean draining it first.
-    entry #verified   a blob gathered eagerly and checked against its descriptor's digest and size
-        Reads the whole blob into a `Data`, computes its SHA-256 and compares it with the
-        descriptor's `digest`, raising `Oci.Error` with `DigestMismatch(expected, actual)` if
-        they differ, and compares its length with the descriptor's `size`, raising
-        `InvalidBlob` if they differ. The opt-in checked path, used by `#manifest`,
-        `#imageConfig` and `#wasmConfig` for the documents they decode.
-  entry .DataOpenable   the `Openable` which opens in-memory `Data` as an OCI archive, read-only
-    detail
-        The class `Image.dataOpenable` provides, named rather than anonymous so that its
-        result type is stated exactly. It opens a `Data` (`Self`) as an `Image` (`Form`)
-        with no flags (`Operand = Nothing`), giving an `Image.Handle` (`Result`) for the
-        block. It needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
-        `Tactic[Truncation.Error]`. A mode including `Write` is refused with `Oci.Error`
-        (`WriteUnsupported`): archives are read, and written only by `Image#archive`.
-    entry #Self   `Data`: what is opened
-    entry #Form   `Image`: the form it is opened as
-    entry #Operand   `Nothing`: there are no open flags
-    entry #Result   `Image.Handle`: what the block receives
-    entry #open   reads the bytes as a tar, builds an `Image.Handle` over its entries and runs the block
-  entry #layers   the image's layers, in order, bottom-most first
-  entry #config   the config document: an `Image.Config` for a filesystem image, a `WasmConfig` for a Wasm artifact
-      The `Oci.Config` union; `#imageConfig` and `#wasmConfig` narrow it without a match.
-  entry #configBytes   the config blob as rendered: compact JSON, the bytes the config digest is taken over
-  entry #configDescriptor   the descriptor of the config blob, as the manifest references it
-  entry #manifest   the `Oci.Manifest` naming the config and each layer by descriptor
-  entry #manifestBytes   the manifest blob as rendered: compact JSON
-  entry #manifestDescriptor   the descriptor of the manifest blob, as the index references it
-  entry #index   the single-entry `Index` naming the manifest
-  entry #indexBytes   the `index.json` document as rendered: compact JSON
-  entry #imageConfig   the config as an `Image.Config`, or `Unset` for a Wasm artifact
-  entry #wasmConfig   the config as a `WasmConfig`, or `Unset` for a filesystem image
-  entry #blobs   every blob as a `(digest, bytes)` pair: the config, each layer, then the manifest
-      The content `#archive` writes under `blobs/sha256/`, keyed by the canonical
-      `sha256:<hex>` digest of each.
-  entry #archive   the image as an OCI image-layout tar: `oci-layout`, `index.json` and `blobs/sha256/…`
-      A `Tarfile` holding the `oci-layout` marker (`{"imageLayoutVersion":"1.0.0"}`), the
-      `index.json`, and one file per entry of `#blobs` named by its hex digest, each with mode
-      `UnixMode()`, owner and group `0` and mtime `0`, so the archive is reproducible. Read it
-      as bytes with `image.archive.source[Data]` and write it to a file: the result is what
-      `docker load`, `ctr images import`, `podman load` and `skopeo copy oci-archive:…`
-      accept, and what `data.open[Image]()` reads back.
-
-entry .Layer   one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
-  detail
-      A layer carries two distinct digests, and the OCI format depends on both being right.
-      The `#diffId` is the SHA-256 of the *uncompressed* content, recorded in the image
-      config's `rootfs.diff_ids`; the `#digest` is the SHA-256 of the blob *as stored*,
-      recorded in the manifest's layer descriptor alongside its `size`. For a filesystem
-      layer the two differ, because storage gzip-compresses the tar; for a blob layer they
-      coincide. Both are computed lazily from the content, once.
-
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-      import strategies.throwUnsafely
-
-      val layer: Layer = Layer(Tarfile(Nil))
-      layer.diffId == layer.digest   // false: the stored blob is gzipped
-      layer.descriptor.mediaType     // media"application/vnd.oci.image.layer.v1.tar+gzip"
-
-      val wasm: Layer = Layer.blob(hex"0061736d01000000", media"application/wasm")
-      wasm.diffId == wasm.digest     // true: stored verbatim
-      ```
-
-      A `Layer` has no public constructor: `.apply` makes a filesystem layer from a
-      `Tarfile`, and `.blob` makes a single-blob layer of any media type. The content is
-      held by name until first use, and memoized then.
-  refer embarcadero.Image
-  refer embarcadero.Descriptor
-  entry .apply   a filesystem layer from a `Tarfile`, stored gzip-compressed
-      `Layer(tar)` reads the tar's bytes as the raw content, compresses them with gzip for
-      the stored blob, and types the descriptor `application/vnd.oci.image.layer.v1.tar+gzip`.
-      Nothing is read until a digest or the blob is first asked for.
-  entry .blob   a layer whose content is one opaque blob, stored verbatim under its own media type
-      `Layer.blob(data, mediaType)` is the form a Wasm OCI Artifact uses for its
-      `application/wasm` component: no compression, so `#diffId` and `#digest` are the same
-      value and the descriptor's `size` is the data's length.
-  entry #raw   the uncompressed content: the tar bytes, or the blob itself
-  entry #blob   the content as stored: the gzipped tar, or the blob itself
-  entry #diffId   `sha256:<hex>` of `#raw`, as the image config's `rootfs.diff_ids` records it
-  entry #digest   `sha256:<hex>` of `#blob`, as the manifest's layer descriptor records it
-  entry #descriptor   the layer's `Descriptor`: media type, `#digest` and the stored blob's size
 
 entry .Oci   the namespace for OCI document types with generic names: `Oci.Manifest`, `Oci.Config`, `Oci.Error`
   detail
@@ -476,7 +118,7 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
       umbrella: `Manifest` would clash with revolution's JAR `Manifest`, and `Config` and
       `Error` are everyone's. `.Manifest` is the image manifest document, `.Config` the union
       of the two config-blob forms, and `.Error` what reading an archive raises.
-  refer embarcadero.Image
+  refer embarcadero.Oci.Image
   entry .Config   the two forms an image's config blob can take: `Image.Config | WasmConfig`
       A type alias. The two are distinguished on the wire by the config descriptor's media
       type (`application/vnd.oci.image.config.v1+json` or
@@ -513,7 +155,7 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
         import codepages.utf8Codepage
 
         val archive: Data = t"not an archive".in[Data]
-        safely(archive.open[Image]() { handle ?=> handle.index })   // Unset
+        safely(archive.open[Oci.Image]() { handle ?=> handle.index })   // Unset
         ```
 
         Under `safely` any failure is `Unset`; `capture[Oci.Error]` keeps the error so that
@@ -539,128 +181,479 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
     entry .communicable   renders each reason as a message, such as _the blob `digest` is not present in the archive_
     entry #reason   the `Oci.Error.Reason` which caused the failure
 
-entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
-  detail
-      The typed, digest-addressed pointer every OCI document uses to name a blob: a
-      manifest's `config` and `layers`, an index's `manifests`. `#digest` is the
-      `sha256:<lowercase hex>` of the blob as stored (for a layer, compressed) and `#size`
-      its byte length, so a reader can fetch the blob and check both. `Layer#descriptor`
-      makes one for a layer, and `Image#configDescriptor` and `Image#manifestDescriptor` for
-      the documents. The spec's `platform` member for multi-architecture indexes is not yet
-      modelled. It is the OCI JSON descriptor; containerd's protobuf one is
-      `ContentDescriptor`.
-  refer embarcadero.Layer
-  refer embarcadero.ContentDescriptor
-  entry #mediaType   the blob's media type, such as `application/vnd.oci.image.layer.v1.tar+gzip`
-  entry #digest   the `sha256:<hex>` digest of the stored blob
-  entry #size   the stored blob's length in bytes
-  entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
-  entry #urls   URLs the blob may be fetched from, or `Unset`
+  entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config, manifest and index
+    detail
+        An `Image` is the complete, digest-consistent content of an OCI image: its `#layers`,
+        the `#config` document and its rendered `#configBytes`, the `#manifest` which names
+        the config and each layer by `Descriptor`, and the single-entry `#index` which names
+        the manifest. All of it is computed when the image is built, so the digests and sizes
+        are right by construction, and `#archive` renders it as the OCI image-layout tar a
+        runtime imports. The companion builds an image two ways: `.apply` from filesystem
+        layers and a `ContainerConfig`, and `.wasm` from a compiled Wasm component. Reading an
+        image back is a scoped *open*: `.Handle` is what `data.open[Image]()` (through
+        `.dataOpenable`) or `path.open[Image]()` (through `imagePathOpenable`, JVM only)
+        provides for the duration of a block.
 
-entry .Index   an OCI image index: the top-level `index.json` listing one or more manifest descriptors
-  detail
-      The document (media type `application/vnd.oci.image.index.v1+json`) at the root of an
-      image layout, whose `#manifests` are the `Descriptor`s of the manifests the archive
-      holds. `Image.apply` and `Image.wasm` write a single-entry index; `Image.Handle#index`
-      reads one back, and `Image.Handle#manifest` takes its first entry by default. It
-      encodes and decodes as JSON through jacinta.
-  entry #schemaVersion   the index schema version: always `2`
-  entry #mediaType   the index's own media type, `application/vnd.oci.image.index.v1+json`
-  entry #manifests   the descriptors of the manifests, in order
-  entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+        The pieces come together in a fixed order, each addressed by the digest of the one
+        before:
 
-entry .History   one entry of an image config's `history`: how a layer, or an empty change, was produced
-  detail
-      A record in `Image.Config#history`, one per layer or per empty change, in order. Every
-      field is optional and omitted from the JSON when unset; the member names are the wire
-      names, so `created_by` and `empty_layer` keep their underscores.
-  entry #created   when the change was made, as RFC 3339 text, or `Unset`
-  entry #created_by   the command which produced the layer, or `Unset`
-  entry #author   who made the change, or `Unset`
-  entry #comment   a free-form note, or `Unset`
-  entry #empty_layer   `true` when the entry produced no filesystem layer, or `Unset`
+        ```scala fuel
+        frame
+          label A layer: a tar, compressed and hashed twice
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
 
-entry .RootFs   the `rootfs` of an image config: the ordered `diff_id`s of the uncompressed layers
-  detail
-      `RootFs(type, diff_ids)`, where `type` is always `layers` and `diff_ids` lists each
-      layer's `Layer#diffId` bottom-most first. `Image.apply` builds it from the layers; a
-      reader checks an unpacked layer's uncompressed tar against the matching entry. The
-      member names are the wire names.
-  entry #type   the rootfs type: always `layers`
-  entry #diff_ids   the layers' `diffId`s, in order
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
 
-entry .ContainerConfig   the execution parameters of an image: user, environment, entrypoint, command, working directory, labels
-  detail
-      The `config` member of an `Image.Config`: what a runtime does with the image's
-      filesystem. The member names are capitalised to match the wire format inherited from
-      the Docker image spec (`Cmd`, `Env`, `WorkingDir`), and every field is optional and
-      omitted from the JSON when unset.
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              layer.diffId   // sha256:… of the uncompressed tar
+              layer.digest   // sha256:… of the gzipped blob, as stored
+        frame
+          label The config: platform, rootfs diff_ids and what to run
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
 
-      ```scala
-      import soundness.*
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
 
-      val config: ContainerConfig =
-        ContainerConfig
-          ( Env        = List(t"PATH=/usr/bin:/bin"),
-            Entrypoint = List(t"/usr/bin/server"),
-            Cmd        = List(t"--port", t"8080"),
-            WorkingDir = t"/app",
-            Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
-      ```
-  refer embarcadero.Image
-  entry #User   the user (and optionally group) to run as, or `Unset`
-  entry #Env   environment variables as `NAME=value` entries, or `Unset`
-  entry #Entrypoint   the executable and its fixed arguments, or `Unset`
-  entry #Cmd   the default arguments, appended to `Entrypoint` or run alone, or `Unset`
-  entry #WorkingDir   the working directory the process starts in, or `Unset`
-  entry #Labels   free-form `Map[Text, Text]` labels, or `Unset`
-  entry #StopSignal   the signal which stops the container, such as `SIGTERM`, or `Unset`
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+              image.imageConfig.let(_.rootfs.diff_ids)   // List(layer.diffId)
+              image.configDescriptor.digest              // sha256:… of the config JSON
+        frame
+          label The manifest: the config and each layer, by descriptor
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
 
-entry .WasmComponent   the `component` member of a Wasm artifact config: the interfaces it exports and imports, and its target world
-  detail
-      What a Wasm OCI Artifact says about the Component Model contract its component was
-      built to: `#exports`, the interfaces it offers (`wasi:http/incoming-handler@0.2.0`),
-      `#imports`, the capabilities it needs (`wasi:io/streams@0.2.0`), and `#target`, the
-      standard world it fits (`wasi:http/proxy@0.2.0`), if any. The Wasm OCI Artifact layout
-      requires this member for `wasip2` artifacts, and it is what lets a host decide, before
-      fetching the component, whether it can satisfy the workload. `Image.wasm` builds it
-      from its `exports`, `imports` and `target` parameters, usually read from the WIT world
-      the component was linked against.
-  refer embarcadero.WasmConfig
-  entry #exports   the interfaces the component exports, as `namespace:package/interface@version` names
-  entry #imports   the interfaces the component imports
-  entry #target   the standard world the component targets, or `Unset`
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
 
-entry .WasmConfig   a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
-  detail
-      The config blob of a Wasm OCI Artifact (media type
-      `application/vnd.wasm.config.v0+json`). It stands where an `Image.Config` would, but
-      describes a component rather than a filesystem: there is no `rootfs`, because there
-      are no layers to stack; `#layerDigests` names the single `application/wasm` blob
-      directly, and `#component` states the interfaces it needs. `#architecture` is `wasm`
-      and `#os` names the WASI generation (`wasip1`, `wasip2` or `wasip3`): a runtime
-      dispatches on those two fields to recognise a Wasm workload at all. `Image.wasm` builds
-      one, `Image#wasmConfig` and `Image.Handle#wasmConfig` give it back, and it is one arm
-      of `Oci.Config`. The JSON uses the spec's camelCase `layerDigests` key, and omits
-      `created` and `author` when unset.
-  refer embarcadero.Image
-  refer embarcadero.WasmComponent
-  entry #created   when the artifact was built, as RFC 3339 text, or `Unset`
-  entry #author   who built the artifact, or `Unset`
-  entry #architecture   always `wasm`
-  entry #os   the WASI generation: `wasip1`, `wasip2` (the default) or `wasip3`
-  entry #layerDigests   the digests of the artifact's layers: the one `application/wasm` blob
-  entry #component   the `WasmComponent` naming the exports, imports and target world, or `Unset`
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+              image.manifest.config.digest            // the config descriptor's digest
+              image.manifest.layers.map(_.digest)     // List(layer.digest)
+              image.manifestDescriptor.digest         // sha256:… of the manifest JSON
+        frame
+          label The index and the archive: one manifest, written as an oci-layout tar
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+              import strategies.throwUnsafely
+
+              def entry(name: Text, content: Text): Tar.Entry =
+                Tar.Entry.File
+                  ( path  = name.as[Relative on Tar],
+                    mode  = UnixMode(),
+                    user  = UnixUser(0),
+                    group = UnixGroup(0),
+                    mtime = 0.bits.u32,
+                    data  = Archive.Body(content.in[Data]) )
+
+              val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+              val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+              image.index.manifests.map(_.digest)     // List(image.manifestDescriptor.digest)
+              val archive: Data = image.archive.source[Data].memoize   // oci-layout, index.json, blobs/sha256/…
+        ##
+        ```
+
+        An `Image` is a plain case class with no capability of its own, so it can be built
+        anywhere — on the JVM, in Scala.js or on Scala Native — and handed to code which
+        writes the archive to a file, pushes it to a registry, or imports it into a daemon.
+    refer embarcadero.Oci.Layer
+    refer embarcadero.Oci
+    refer embarcadero.Oci.ContainerConfig
+    refer embarcadero.Oci.WasmConfig
+    entry .apply   assembles an image from filesystem layers and an optional runtime configuration
+        `Image(layers, config, architecture, os, annotations)` builds the `Image.Config`
+        (`architecture` defaults to `amd64` and `os` to `linux`; `rootfs` is the layers'
+        `diffId`s in order; `config` is the `ContainerConfig`, if any), renders it as compact
+        JSON for its config blob, descriptors it with the media type
+        `application/vnd.oci.image.config.v1+json`, wraps it and the layers' descriptors in
+        an `Oci.Manifest` (carrying `annotations`, if any), and names that manifest from a
+        single-entry `Index`. Nothing is raised: every digest is computed from bytes already
+        in memory.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+
+        val image: Oci.Image =
+          Oci.Image
+            ( List(layer),
+              config       = Oci.ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
+              architecture = t"arm64",
+              annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
+
+        image.imageConfig.let(_.architecture)   // t"arm64"
+        ```
+    entry .wasm   assembles a Wasm OCI Artifact: one uncompressed `application/wasm` layer under a Wasm config
+        `Image.wasm(component, exports, imports, target, architecture, os, annotations)` is the
+        form the Wasm OCI Artifact layout prescribes for a WebAssembly workload. The one layer is
+        `Layer.blob(component, media"application/wasm")`: stored verbatim, so its `diffId` and
+        `digest` coincide. The config blob is a `WasmConfig` (media type
+        `application/vnd.wasm.config.v0+json`) whose `architecture` is `wasm` and whose `os`
+        names the WASI generation (`wasip2` by default), with `layerDigests` naming the
+        component blob and `component` recording the `exports`, `imports` and optional `target`
+        world as a `WasmComponent`. The manifest, index and archive are the ordinary OCI ones, so
+        the same registries and tools carry it; a runtime dispatches on the two media types to
+        hand the component to a Wasm engine (through a shim such as `io.containerd.wasmtime.v1`)
+        rather than a rootfs to `runc`.
+
+        ```scala
+        import soundness.*
+
+        val component: Data = hex"0061736d01000000"   // a compiled component's bytes
+
+        val artifact: Oci.Image =
+          Oci.Image.wasm
+            ( component,
+              exports = List(t"wasi:http/incoming-handler@0.2.0"),
+              imports = List(t"wasi:io/streams@0.2.0"),
+              target  = t"wasi:http/proxy@0.2.0" )
+
+        artifact.wasmConfig.let(_.os)                   // t"wasip2"
+        artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
+        ```
+
+        The interfaces are usually not typed by hand but read from the WIT world the component
+        was linked against: xenophile's `WitDialect.worlds(wit)(name)` gives a world whose
+        `exports` and `imports` pass straight through, which is how anthology's OCI edge and
+        the repository's own Wasm end-to-end packager (`tests/wasm/packager`) build the
+        artifacts they run under wasmtime and `wasmtime serve`. The bytes are never parsed: an
+        arbitrary payload is packaged just as a real component is.
+    entry .dataOpenable   the given behind `data.open[Image]()`: opens in-memory bytes as an OCI archive
+        A given in the companion, so it resolves with no import. It provides an
+        `Image.DataOpenable` and needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
+        `Tactic[Truncation.Error]` in scope, which it captures. Opening a filesystem *path*
+        is `imagePathOpenable`, in the JVM source set.
+    entry .Config   an OCI image config document: platform, rootfs diff_id chain, run configuration and history
+      detail
+          The config blob of a filesystem image (media type
+          `application/vnd.oci.image.config.v1+json`), as `Image.apply` writes it and
+          `Image.Handle#imageConfig` reads it back. It records the target `#architecture` and
+          `#os`, the `#rootfs` whose `diff_ids` are the uncompressed layers' digests in order,
+          the optional `#config` (a `ContainerConfig` of what to run), the build `#history`
+          and the `#created` time and `#author`. Its JSON encoding and decoding derive
+          through jacinta, and the member names are the wire names, so `created` renders as
+          `created`. Together with `WasmConfig` it makes up `Oci.Config`, the union a reader
+          gets from `Image.Handle#config` when it does not know which kind of artifact it
+          opened.
+      entry #architecture   the CPU architecture the image targets, such as `amd64` or `arm64`
+      entry #os   the operating system the image targets, such as `linux`
+      entry #rootfs   the `RootFs`: the ordered `diff_id`s of the uncompressed layers
+      entry #config   the `ContainerConfig` saying how to run the image, or `Unset`
+      entry #history   how each layer came to be, one `History` per layer or empty change, or `Unset`
+      entry #created   when the image was built, as RFC 3339 text, or `Unset`
+      entry #author   who built the image, or `Unset`
+    entry .Handle   the scoped view of an opened OCI archive: its index, manifest, config and blobs
+      detail
+          The capability `data.open[Image]()` or `path.open[Image]()` provides for the
+          duration of its block, and only then: it is an exclusive capability, so it cannot be
+          stored or returned. The archive's entries are read once and held for the handle's
+          lifetime, indexed by name, so every lookup after the first is a map access; archives
+          `Image#archive` writes put `index.json` before the blobs, so the metadata path is
+          cheap. Every method takes a `Tactic[Oci.Error]` and raises `Oci.Error` for a missing
+          or unreadable document or blob.
+
+          ```scala
+          import soundness.*
+          import codepages.utf8Codepage
+          import strategies.throwUnsafely
+
+          val image: Oci.Image = Oci.Image(List(Oci.Layer(Tarfile(Nil))))
+          val archive: Data = image.archive.source[Data].memoize
+
+          archive.open[Oci.Image](): handle ?=>
+            handle.index                                          // the top-level index
+            handle.manifest                                       // the manifest it names, digest-checked
+            handle.imageConfig                                    // the image config
+            handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
+          ```
+
+          A layer is reached three ways, which makes the cost explicit: `#compressed` streams
+          the stored bytes untouched, `#layer` decompresses them as a stream, and `#verified`
+          gathers them and checks digest and size against the descriptor. A reader which does
+          not know whether it has a filesystem image or a Wasm artifact asks for `#config`,
+          which dispatches on the config descriptor's media type.
+
+          Opening for writing is refused: `archive.open[Image](Write)` raises `Oci.Error` with
+          `WriteUnsupported`.
+      refer embarcadero.Oci
+      entry #blob   a blob by its `sha256:…` digest, as a stream of its stored chunks, unverified
+          The raw stored bytes (for a layer, the gzip-compressed tar) under
+          `blobs/sha256/<hex>`, as a `Stream[Data] over Credit`. Raises `Oci.Error` with
+          `UnsupportedDigest` for a digest whose algorithm is not `sha256`, and `MissingBlob`
+          when the archive has no such blob. Nothing is checked: `#verified` is the checked
+          read.
+      entry #index   the decoded top-level `index.json`, after checking the `oci-layout` marker
+          Reads the `oci-layout` document and requires its `imageLayoutVersion` to begin with
+          `1.`, then decodes `index.json` as an `Index`. Raises `Oci.Error` with
+          `MissingLayout`, `UnsupportedLayout`, `MissingIndex` or, for a document which does
+          not parse, `InvalidBlob`.
+      entry #manifest   the index's first manifest, or the one a descriptor selects, digest-verified
+          `handle.manifest` takes the first descriptor of `#index` (raising `Oci.Error` with
+          `NoManifest` if there is none); `handle.manifest(descriptor)` takes a chosen one. The
+          manifest blob is read through `#verified`, so a corrupted manifest is reported as
+          `DigestMismatch` rather than decoded, and then decoded as an `Oci.Manifest`.
+      entry #imageConfig   the decoded `Image.Config` of a manifest, by default the first
+          `handle.imageConfig` or `handle.imageConfig(manifest)`: the manifest's config blob,
+          verified and decoded as an `Image.Config`. For a Wasm artifact the blob is a
+          `WasmConfig`, and decoding it here fails with `InvalidBlob`; use `#config` when the
+          kind is not known.
+      entry #wasmConfig   the decoded `WasmConfig` of a manifest, by default the first
+          `handle.wasmConfig` or `handle.wasmConfig(manifest)`: the manifest's config blob,
+          verified and decoded as a `WasmConfig`.
+      entry #config   the config blob in whichever form its media type says: `Image.Config` or `WasmConfig`
+          `handle.config` or `handle.config(manifest)` returns an `Oci.Config`, decoding the
+          blob as a `WasmConfig` when the config descriptor's media type is
+          `application/vnd.wasm.config.v0+json` and as an `Image.Config` otherwise. This is the
+          entry point for a runtime deciding whether to unpack a rootfs or instantiate a
+          component:
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val archive: Data = Oci.Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
+
+          archive.open[Oci.Image](): handle ?=>
+            handle.config match
+              case config: Oci.WasmConfig   => config.component.let(_.exports)
+              case config: Oci.Image.Config => config.rootfs.diff_ids
+          ```
+      entry #compressed   a layer's stored blob, verbatim: for an OCI layer, the gzip-compressed tar
+          `#blob` by the descriptor's digest, as a `Stream[Data] over Credit`; the cheapest
+          way to copy a layer from one archive to another.
+      entry #layer   a layer's content as the uncompressed tar byte stream
+          Streams `#compressed` through a gzip decoder when the descriptor's media type carries
+          the `+gzip` suffix, and verbatim otherwise — so a Wasm artifact's
+          `application/wasm` layer comes back as the component's own bytes. The stream is not
+          checked against the digest, since checking would mean draining it first.
+      entry #verified   a blob gathered eagerly and checked against its descriptor's digest and size
+          Reads the whole blob into a `Data`, computes its SHA-256 and compares it with the
+          descriptor's `digest`, raising `Oci.Error` with `DigestMismatch(expected, actual)` if
+          they differ, and compares its length with the descriptor's `size`, raising
+          `InvalidBlob` if they differ. The opt-in checked path, used by `#manifest`,
+          `#imageConfig` and `#wasmConfig` for the documents they decode.
+    entry .DataOpenable   the `Openable` which opens in-memory `Data` as an OCI archive, read-only
+      detail
+          The class `Image.dataOpenable` provides, named rather than anonymous so that its
+          result type is stated exactly. It opens a `Data` (`Self`) as an `Image` (`Form`)
+          with no flags (`Operand = Nothing`), giving an `Image.Handle` (`Result`) for the
+          block. It needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
+          `Tactic[Truncation.Error]`. A mode including `Write` is refused with `Oci.Error`
+          (`WriteUnsupported`): archives are read, and written only by `Image#archive`.
+      entry #Self   `Data`: what is opened
+      entry #Form   `Image`: the form it is opened as
+      entry #Operand   `Nothing`: there are no open flags
+      entry #Result   `Image.Handle`: what the block receives
+      entry #open   reads the bytes as a tar, builds an `Image.Handle` over its entries and runs the block
+    entry #layers   the image's layers, in order, bottom-most first
+    entry #config   the config document: an `Image.Config` for a filesystem image, a `WasmConfig` for a Wasm artifact
+        The `Oci.Config` union; `#imageConfig` and `#wasmConfig` narrow it without a match.
+    entry #configBytes   the config blob as rendered: compact JSON, the bytes the config digest is taken over
+    entry #configDescriptor   the descriptor of the config blob, as the manifest references it
+    entry #manifest   the `Oci.Manifest` naming the config and each layer by descriptor
+    entry #manifestBytes   the manifest blob as rendered: compact JSON
+    entry #manifestDescriptor   the descriptor of the manifest blob, as the index references it
+    entry #index   the single-entry `Index` naming the manifest
+    entry #indexBytes   the `index.json` document as rendered: compact JSON
+    entry #imageConfig   the config as an `Image.Config`, or `Unset` for a Wasm artifact
+    entry #wasmConfig   the config as a `WasmConfig`, or `Unset` for a filesystem image
+    entry #blobs   every blob as a `(digest, bytes)` pair: the config, each layer, then the manifest
+        The content `#archive` writes under `blobs/sha256/`, keyed by the canonical
+        `sha256:<hex>` digest of each.
+    entry #archive   the image as an OCI image-layout tar: `oci-layout`, `index.json` and `blobs/sha256/…`
+        A `Tarfile` holding the `oci-layout` marker (`{"imageLayoutVersion":"1.0.0"}`), the
+        `index.json`, and one file per entry of `#blobs` named by its hex digest, each with mode
+        `UnixMode()`, owner and group `0` and mtime `0`, so the archive is reproducible. Read it
+        as bytes with `image.archive.source[Data]` and write it to a file: the result is what
+        `docker load`, `ctr images import`, `podman load` and `skopeo copy oci-archive:…`
+        accept, and what `data.open[Image]()` reads back.
+  entry .Index   an OCI image index: the top-level `index.json` listing one or more manifest descriptors
+    detail
+        The document (media type `application/vnd.oci.image.index.v1+json`) at the root of an
+        image layout, whose `#manifests` are the `Descriptor`s of the manifests the archive
+        holds. `Image.apply` and `Image.wasm` write a single-entry index; `Image.Handle#index`
+        reads one back, and `Image.Handle#manifest` takes its first entry by default. It
+        encodes and decodes as JSON through jacinta.
+    entry #schemaVersion   the index schema version: always `2`
+    entry #mediaType   the index's own media type, `application/vnd.oci.image.index.v1+json`
+    entry #manifests   the descriptors of the manifests, in order
+    entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+  entry .Layer   one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
+    detail
+        A layer carries two distinct digests, and the OCI format depends on both being right.
+        The `#diffId` is the SHA-256 of the *uncompressed* content, recorded in the image
+        config's `rootfs.diff_ids`; the `#digest` is the SHA-256 of the blob *as stored*,
+        recorded in the manifest's layer descriptor alongside its `size`. For a filesystem
+        layer the two differ, because storage gzip-compresses the tar; for a blob layer they
+        coincide. Both are computed lazily from the content, once.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+        layer.diffId == layer.digest   // false: the stored blob is gzipped
+        layer.descriptor.mediaType     // media"application/vnd.oci.image.layer.v1.tar+gzip"
+
+        val wasm: Oci.Layer = Oci.Layer.blob(hex"0061736d01000000", media"application/wasm")
+        wasm.diffId == wasm.digest     // true: stored verbatim
+        ```
+
+        A `Layer` has no public constructor: `.apply` makes a filesystem layer from a
+        `Tarfile`, and `.blob` makes a single-blob layer of any media type. The content is
+        held by name until first use, and memoized then.
+    refer embarcadero.Oci.Image
+    refer embarcadero.Oci.Descriptor
+    entry .apply   a filesystem layer from a `Tarfile`, stored gzip-compressed
+        `Layer(tar)` reads the tar's bytes as the raw content, compresses them with gzip for
+        the stored blob, and types the descriptor `application/vnd.oci.image.layer.v1.tar+gzip`.
+        Nothing is read until a digest or the blob is first asked for.
+    entry .blob   a layer whose content is one opaque blob, stored verbatim under its own media type
+        `Layer.blob(data, mediaType)` is the form a Wasm OCI Artifact uses for its
+        `application/wasm` component: no compression, so `#diffId` and `#digest` are the same
+        value and the descriptor's `size` is the data's length.
+    entry #raw   the uncompressed content: the tar bytes, or the blob itself
+    entry #blob   the content as stored: the gzipped tar, or the blob itself
+    entry #diffId   `sha256:<hex>` of `#raw`, as the image config's `rootfs.diff_ids` records it
+    entry #digest   `sha256:<hex>` of `#blob`, as the manifest's layer descriptor records it
+    entry #descriptor   the layer's `Descriptor`: media type, `#digest` and the stored blob's size
+  entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
+    detail
+        The typed, digest-addressed pointer every OCI document uses to name a blob: a
+        manifest's `config` and `layers`, an index's `manifests`. `#digest` is the
+        `sha256:<lowercase hex>` of the blob as stored (for a layer, compressed) and `#size`
+        its byte length, so a reader can fetch the blob and check both. `Layer#descriptor`
+        makes one for a layer, and `Image#configDescriptor` and `Image#manifestDescriptor` for
+        the documents. The spec's `platform` member for multi-architecture indexes is not yet
+        modelled. It is the OCI JSON descriptor; containerd's protobuf one is
+        `Containerd.ContentDescriptor`.
+    refer embarcadero.Oci.Layer
+    refer embarcadero.Containerd.ContentDescriptor
+    entry #mediaType   the blob's media type, such as `application/vnd.oci.image.layer.v1.tar+gzip`
+    entry #digest   the `sha256:<hex>` digest of the stored blob
+    entry #size   the stored blob's length in bytes
+    entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+    entry #urls   URLs the blob may be fetched from, or `Unset`
+  entry .History   one entry of an image config's `history`: how a layer, or an empty change, was produced
+    detail
+        A record in `Image.Config#history`, one per layer or per empty change, in order. Every
+        field is optional and omitted from the JSON when unset; the member names are the wire
+        names, so `created_by` and `empty_layer` keep their underscores.
+    entry #created   when the change was made, as RFC 3339 text, or `Unset`
+    entry #created_by   the command which produced the layer, or `Unset`
+    entry #author   who made the change, or `Unset`
+    entry #comment   a free-form note, or `Unset`
+    entry #empty_layer   `true` when the entry produced no filesystem layer, or `Unset`
+  entry .RootFs   the `rootfs` of an image config: the ordered `diff_id`s of the uncompressed layers
+    detail
+        `RootFs(type, diff_ids)`, where `type` is always `layers` and `diff_ids` lists each
+        layer's `Layer#diffId` bottom-most first. `Image.apply` builds it from the layers; a
+        reader checks an unpacked layer's uncompressed tar against the matching entry. The
+        member names are the wire names.
+    entry #type   the rootfs type: always `layers`
+    entry #diff_ids   the layers' `diffId`s, in order
+  entry .ContainerConfig   the execution parameters of an image: user, environment, entrypoint, command, working directory, labels
+    detail
+        The `config` member of an `Image.Config`: what a runtime does with the image's
+        filesystem. The member names are capitalised to match the wire format inherited from
+        the Docker image spec (`Cmd`, `Env`, `WorkingDir`), and every field is optional and
+        omitted from the JSON when unset.
+
+        ```scala
+        import soundness.*
+
+        val config: Oci.ContainerConfig =
+          Oci.ContainerConfig
+            ( Env        = List(t"PATH=/usr/bin:/bin"),
+              Entrypoint = List(t"/usr/bin/server"),
+              Cmd        = List(t"--port", t"8080"),
+              WorkingDir = t"/app",
+              Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
+        ```
+    refer embarcadero.Oci.Image
+    entry #User   the user (and optionally group) to run as, or `Unset`
+    entry #Env   environment variables as `NAME=value` entries, or `Unset`
+    entry #Entrypoint   the executable and its fixed arguments, or `Unset`
+    entry #Cmd   the default arguments, appended to `Entrypoint` or run alone, or `Unset`
+    entry #WorkingDir   the working directory the process starts in, or `Unset`
+    entry #Labels   free-form `Map[Text, Text]` labels, or `Unset`
+    entry #StopSignal   the signal which stops the container, such as `SIGTERM`, or `Unset`
+  entry .WasmConfig   a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
+    detail
+        The config blob of a Wasm OCI Artifact (media type
+        `application/vnd.wasm.config.v0+json`). It stands where an `Image.Config` would, but
+        describes a component rather than a filesystem: there is no `rootfs`, because there
+        are no layers to stack; `#layerDigests` names the single `application/wasm` blob
+        directly, and `#component` states the interfaces it needs. `#architecture` is `wasm`
+        and `#os` names the WASI generation (`wasip1`, `wasip2` or `wasip3`): a runtime
+        dispatches on those two fields to recognise a Wasm workload at all. `Image.wasm` builds
+        one, `Image#wasmConfig` and `Image.Handle#wasmConfig` give it back, and it is one arm
+        of `Oci.Config`. The JSON uses the spec's camelCase `layerDigests` key, and omits
+        `created` and `author` when unset.
+    refer embarcadero.Oci.Image
+    refer embarcadero.Oci.WasmComponent
+    entry #created   when the artifact was built, as RFC 3339 text, or `Unset`
+    entry #author   who built the artifact, or `Unset`
+    entry #architecture   always `wasm`
+    entry #os   the WASI generation: `wasip1`, `wasip2` (the default) or `wasip3`
+    entry #layerDigests   the digests of the artifact's layers: the one `application/wasm` blob
+    entry #component   the `WasmComponent` naming the exports, imports and target world, or `Unset`
+  entry .WasmComponent   the `component` member of a Wasm artifact config: the interfaces it exports and imports, and its target world
+    detail
+        What a Wasm OCI Artifact says about the Component Model contract its component was
+        built to: `#exports`, the interfaces it offers (`wasi:http/incoming-handler@0.2.0`),
+        `#imports`, the capabilities it needs (`wasi:io/streams@0.2.0`), and `#target`, the
+        standard world it fits (`wasi:http/proxy@0.2.0`), if any. The Wasm OCI Artifact layout
+        requires this member for `wasip2` artifacts, and it is what lets a host decide, before
+        fetching the component, whether it can satisfy the workload. `Image.wasm` builds it
+        from its `exports`, `imports` and `target` parameters, usually read from the WIT world
+        the component was linked against.
+    refer embarcadero.Oci.WasmConfig
+    entry #exports   the interfaces the component exports, as `namespace:package/interface@version` names
+    entry #imports   the interfaces the component imports
+    entry #target   the standard world the component targets, or `Unset`
 
 entry .ImageOpenable   the `Openable` which opens a filesystem path as an OCI archive, read-only
   detail
       In the JVM source set, since it reads the tar from disk through bitumen's
       `TarOpenable`. `ImageOpenable[path]` opens any `path` which is `Abstractable across
       Paths to Text` (`Self`) as an `Image` (`Form`), with no flags (`Operand = Nothing`),
-      giving an `Image.Handle` (`Result`) for the block. It needs a `Tactic[Oci.Error]`, a
+      giving an `Oci.Image.Handle` (`Result`) for the block. It needs a `Tactic[Oci.Error]`, a
       `Tactic[Tar.Error]` and a `Tactic[Truncation.Error]`, and refuses a mode including
       `Write` with `Oci.Error` (`WriteUnsupported`). The given `imagePathOpenable` provides
-      it, so a program writes `path.open[Image]()` rather than naming the class.
+      it, so a program writes `path.open[Oci.Image]()` rather than naming the class.
   refer embarcadero.imagePathOpenable
   entry #Self   the path type opened
   entry #Form   `Image`: the form it is opened as
@@ -683,7 +676,7 @@ entry .imagePathOpenable   the given behind `path.open[Image]()` on the JVM: ope
 
     val file: Path on Linux = % / "tmp" / "image.tar"
 
-    file.open[Image](): handle ?=>
+    file.open[Oci.Image](): handle ?=>
       handle.manifest.layers.map(_.digest)
     ```
 
@@ -705,7 +698,7 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
       `#killTask`, `#waitTask`, `#deleteTask`, `#task` and `#tasks`. Every call needs a
       `Monitor` and tactics for `Grpc.Error` (a non-zero gRPC status from the daemon),
       `Http2.Error`, `Async.Error` and `Protobuf.Error`, and each call which changes the
-      daemon logs a `DockerEvent` at `info`, so a `DockerEvent is Loggable` must be in
+      daemon logs a `Containerd.Event` at `info`, so a `Containerd.Event is Loggable` must be in
       scope.
 
       ```scala fuel
@@ -719,15 +712,15 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
       import threads.virtualThreads
 
       supervise:
-        val socket = DomainSocket(t"/run/containerd/containerd.sock")
+        val socket = Uds(t"/run/containerd/containerd.sock")
         val client = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
 
         client.version().version
         client.containers().map(container => (container.id, container.image))
         client.images().map(_.name)
 
-        val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
-        client.createContainer(Container(t"web", image = t"docker.io/library/alpine:latest"))
+        val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+        client.createContainer(Containerd.Container(t"web", image = t"docker.io/library/alpine:latest"))
         client.createTask(t"web", rootfs)
         val pid = client.startTask(t"web")
         client.waitTask(t"web").exitStatus
@@ -740,8 +733,8 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
       deleted in that order (containerd refuses to delete a task it has not reaped). The
       `Workload` openable does that sequence for a scope, with teardown on every exit path.
   refer embarcadero.Workload
-  refer embarcadero.Container
-  refer embarcadero.DockerEvent
+  refer embarcadero.Containerd.Container
+  refer embarcadero.Containerd.Event
   entry .apply   connects to a containerd endpoint, binding every call to a namespace
       `Containerd(endpoint, namespace)` takes an `Http2.Endpoint` over any `Connectable`
       and `Showable` endpoint type and the namespace name, opens a `Grpc.Channel` whose
@@ -759,12 +752,12 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #createContainer   registers a container, returning it as the daemon stored it
       The containers service's `Create` call. The `Container`'s `spec` carries the OCI
       runtime spec as an `AnyMessage`, passed through verbatim, and its `runtime` names the
-      runtime plugin (`io.containerd.runc.v2`). Logs `DockerEvent.ContainerCreated`.
+      runtime plugin (`io.containerd.runc.v2`). Logs `Containerd.Event.ContainerCreated`.
   entry #container   a single container by id, as a `Container`
       The containers service's `Get` call; a container the daemon does not have is a
       `Grpc.Error`.
   entry #deleteContainer   removes a container by id
-      The containers service's `Delete` call. Logs `DockerEvent.ContainerDeleted`. A
+      The containers service's `Delete` call. Logs `Containerd.Event.ContainerDeleted`. A
       container with a live task cannot be deleted: delete the task first.
   entry #namespaces   the namespaces on the daemon, optionally filtered
       `client.namespaces()` or `client.namespaces(filter)`, the namespaces service's `List`
@@ -776,7 +769,7 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #images   the images in the bound namespace, optionally filtered, as `ImageRecord`s
       `client.images()` or `client.images(filters)`, the images service's `List` call. An
       `ImageRecord` is the daemon's metadata — name, labels and a `ContentDescriptor` of
-      the manifest — not the image content; an image is loaded from an `Image#archive`
+      the manifest — not the image content; an image is loaded from an `Oci.Image#archive`
       with `ctr images import`, since the content store is not part of this client.
   entry #image   a single image by reference, as an `ImageRecord`
       The images service's `Get` call, by a reference such as
@@ -784,20 +777,20 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #deleteImage   removes an image by reference, optionally waiting for its content to be collected
       `client.deleteImage(name)` or `client.deleteImage(name, sync = true)`, the images
       service's `Delete` call; `sync` makes the call return only after garbage collection.
-      Logs `DockerEvent.ImageDeleted`.
+      Logs `Containerd.Event.ImageDeleted`.
   entry #createTask   creates a task for a container, with its root filesystem mounts, returning the task's pid
       `client.createTask(containerId, rootfs, options)`, the tasks service's `Create` call.
       The `rootfs` is the `Mount`s of the root filesystem (an overlay of an unpacked
       snapshot, typically) and `options` an `AnyMessage` of runtime options, empty by
       default. The result is a `CreateTaskResponse` of the container id and the host pid of
-      the new, not yet started, task. Logs `DockerEvent.TaskCreated`.
+      the new, not yet started, task. Logs `Containerd.Event.TaskCreated`.
   entry #startTask   starts a created task, returning its host pid
       `client.startTask(containerId)` or `client.startTask(containerId, execId)` for an
-      exec process, the tasks service's `Start` call. Logs `DockerEvent.TaskStarted`.
+      exec process, the tasks service's `Start` call. Logs `Containerd.Event.TaskStarted`.
   entry #killTask   sends a signal to a task, or to every process in its container
       `client.killTask(containerId, signal, execId, all)`, the tasks service's `Kill` call,
       with the signal as a number (`15` for `SIGTERM`, `9` for `SIGKILL`); `all` targets
-      every process in the container. Logs `DockerEvent.TaskKilled`.
+      every process in the container. Logs `Containerd.Event.TaskKilled`.
   entry #waitTask   waits for a task to exit, returning its exit status and time
       `client.waitTask(containerId)` or `client.waitTask(containerId, execId)`, the tasks
       service's `Wait` call, which blocks until the process has exited and returns a
@@ -805,23 +798,330 @@ entry .Containerd   a connected containerd client: one gRPC call per method, bou
   entry #deleteTask   deletes a task, returning its final exit status
       `client.deleteTask(containerId)` or `client.deleteTask(containerId, execId)`, the
       tasks service's `Delete` call, returning a `DeleteTaskResponse`. Logs
-      `DockerEvent.TaskDeleted`.
+      `Containerd.Event.TaskDeleted`.
   entry #task   the state of a single task, as a `Workload`
       `client.task(containerId)` or `client.task(containerId, execId)`, the tasks service's
       `Get` call; `Workload#state` is the `ProcessStatus`.
   entry #tasks   every task known to the daemon, optionally filtered
       `client.tasks()` or `client.tasks(filter)`, the tasks service's `List` call.
 
+  entry .ProcessStatus   the status of a task's process: `Unknown`, `Created`, `Running`, `Stopped`, `Paused` or `Pausing`
+    detail
+        containerd's process status, a protobuf enum carried in a `Workload` as its numeric
+        `#code`: `Unknown` (0), `Created` (1), `Running` (2), `Stopped` (3), `Paused` (4) and
+        `Pausing` (5). `Workload#state` and `Workload.Handle`'s `state()` decode a code to
+        one of these, and `Workload(…, status = ProcessStatus.Running.code)` goes the other
+        way.
+    refer embarcadero.Workload
+    entry .of   the status for a code, or `Unset` for a number the enum does not know
+    entry #code   the numeric value containerd sends on the wire
+
+  entry .Event   what the containerd client logs as it changes the daemon
+    detail
+        Every change `Containerd` makes to the daemon is logged at `info`: `ContainerCreated(id)`,
+        `ContainerDeleted(id)`, `ImageDeleted(name)`, `TaskCreated(container)`,
+        `TaskStarted(container, pid)`, `TaskKilled(container, signal)` and
+        `TaskDeleted(container)`. All but `ImageDeleted` are tagged `Log.Process`;
+        `ImageDeleted` is tagged `Log.Resource`. Reads (`containers`, `version`, `task`, …) log
+        nothing. A `Containerd.Event is Loggable` must be in scope for every client method;
+        `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message, such as _started the task for container `web` as PID `4321`_
+
+  entry .AnyMessage   the protobuf `google.protobuf.Any`: a serialized message with its type URL, passed through verbatim
+    detail
+        containerd carries opaque payloads — a container's OCI runtime spec, a runtime's
+        options, a task's options — as `Any` messages, which this client neither builds nor
+        interprets: `#typeUrl` names the message type and `#value` holds its serialized bytes
+        as an `AnyMessage.Payload`. Named `AnyMessage` to keep clear of `scala.Any`. An empty
+        `AnyMessage()` is the default wherever a message takes one.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+
+        val spec = Containerd.AnyMessage(t"types.containerd.io/opencontainers/runtime-spec/1/Spec",
+            Containerd.AnyMessage.Payload(t"{}".in[Data]))
+
+        spec.value.data.length   // 2
+        ```
+    entry .Payload   the serialized bytes of an `AnyMessage`, as an opaque, immutable byte array
+      detail
+          An opaque type over a frozen byte array rather than a bare `Data` field, so that
+          protobuf derivation can see it as a plain, capture-free value. `Payload(data)` wraps
+          a `Data`, `.empty` is the zero-length payload, and the `data` extension on
+          `AnyMessage` reads it back. It encodes on the wire as a length-delimited field.
+      entry .empty   the zero-length payload, the default `value` of an `AnyMessage`
+      entry .apply   wraps a `Data` as a payload
+      entry .encodable   encodes a payload as a length-delimited protobuf field
+      entry .decodable   decodes a length-delimited protobuf field as a payload
+    entry .data   `payload.data`: the payload's bytes as `Data`
+    entry #typeUrl   the type URL naming the serialized message's type
+    entry #value   the serialized message, as an `AnyMessage.Payload`
+
+  entry .Timestamp   the protobuf `google.protobuf.Timestamp`: seconds and nanoseconds since the Unix epoch
+    detail
+        The timestamp containerd's records carry (`Container#createdAt`, `Workload#exitedAt`,
+        …): whole `#seconds` and a `#nanos` fraction. It is **not** exported to the
+        `soundness` umbrella, since aviation's `Timestamp` keeps that name: write
+        `embarcadero.Timestamp`. It converts to and from any instant type through
+        anticipation's generic time abstraction, so an aviation `Instant` works with no
+        dependency between the two libraries, at millisecond precision: the generic
+        representation is epoch milliseconds, so protobuf's sub-millisecond nanoseconds are
+        not carried.
+
+        ```scala
+        import soundness.*
+        import abstractables.epochMillisecondsAbstractable
+        import chronometries.unixChronometry
+
+        val moment: Instant = Instant(1_700_000_001_000L)
+        val stamp: embarcadero.Timestamp = embarcadero.Timestamp.of(moment)
+        stamp.seconds                        // 1700000001L
+        stamp.instant[Instant over Unix]     // moment
+        ```
+    entry .of   a timestamp from any instant type `Abstractable across Instants to Long`, at millisecond precision
+    entry #seconds   whole seconds since the Unix epoch
+    entry #nanos   the nanosecond fraction, `0` to `999999999`; a multiple of a million when made by `.of`
+    entry #instant   the timestamp as any instant type `Instantiable across Instants from Long`, at millisecond precision
+
+  entry .Container   a containerd container record: id, labels, image, runtime, OCI spec, snapshot and timestamps
+    detail
+        The metadata record of the containers service, with its protobuf field numbers
+        preserved so that it round-trips with the daemon; fields the client does not model
+        (the `extensions` map) are skipped on decode. Only `#id` is required: `Container(t"web",
+        image = t"docker.io/library/alpine:latest")` is a complete definition to register with
+        `Containerd#createContainer` or open as a `Workload`. A container is a definition,
+        not a process; the task made for it is what runs.
+    refer embarcadero.Containerd
+    refer embarcadero.Workload
+    entry #id   the container's id, unique in its namespace
+    entry #labels   free-form `Map[Text, Text]` labels; containerd filters can select on them
+    entry #image   the reference of the image the container was made from
+    entry #runtime   the `Runtime` binding: the runtime plugin's name and options
+    entry #spec   the OCI runtime spec, as an opaque `AnyMessage`
+    entry #snapshotter   the snapshotter which holds the container's root filesystem
+    entry #snapshotKey   the key of the container's snapshot
+    entry #createdAt   when the daemon stored the record, as a `Timestamp`
+    entry #updatedAt   when the record last changed, as a `Timestamp`
+    entry #sandbox   the sandbox the container belongs to, if any
+
+  entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
+    detail
+        The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
+        manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Oci.Descriptor`, which
+        has the same meaning on the other side of the library. The `platform` member is not
+        modelled.
+    refer embarcadero.Oci.Descriptor
+    entry #mediaType   the blob's media type, as text
+    entry #digest   the `sha256:<hex>` digest of the blob
+    entry #size   the blob's length in bytes
+    entry #annotations   free-form `Map[Text, Text]` annotations
+
+  entry .ImageRecord   a containerd image record: a reference name pointing at content, with labels and timestamps
+    detail
+        The metadata record of the images service, which `Containerd#images` and
+        `Containerd#image` return: `#name` is the reference (`docker.io/library/alpine:latest`)
+        and `#target` the `ContentDescriptor` of the manifest in the content store. Named
+        `ImageRecord` to keep clear of the OCI `Oci.Image` this library builds; the record is the
+        daemon's index entry, not the content.
+    refer embarcadero.Oci.Image
+    entry #name   the image reference
+    entry #labels   free-form `Map[Text, Text]` labels
+    entry #target   the `ContentDescriptor` of the image's manifest
+    entry #createdAt   when the daemon stored the record, as a `Timestamp`
+    entry #updatedAt   when the record last changed, as a `Timestamp`
+
+  entry .Mount   a mount in a task's root filesystem: a source mounted at a target with a type and options
+    detail
+        The `containerd.types.Mount` message, given to `Containerd#createTask` as the task's
+        `rootfs` and to `container.open[Workload](…)` as its flags; `#mountType` is the proto's
+        `type`. An overlay of an unpacked snapshot is the common case:
+
+        ```scala
+        import soundness.*
+
+        val rootfs: List[Containerd.Mount] =
+          List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
+        ```
+    entry #mountType   the filesystem type, such as `overlay` or `bind`
+    entry #source   what is mounted
+    entry #target   where it is mounted, within the task's root
+    entry #options   the mount options, as `key=value` entries
+
+  entry .Namespace   a containerd namespace: an isolation scope for containers, images and tasks, with labels
+    detail
+        The record of the namespaces service: a `#name` (`default`, `k8s.io`, `moby`) and
+        free-form `#labels`. A `Containerd` client is bound to one namespace at connection;
+        `Containerd#namespaces`, `#createNamespace` and `#deleteNamespace` manage them.
+    entry #name   the namespace's name
+    entry #labels   free-form `Map[Text, Text]` labels
+
+  entry .Runtime   a container's runtime binding: the runtime plugin's name and its opaque options
+    detail
+        The `Container.Runtime` message: `#name` is the plugin (`io.containerd.runc.v2` for a
+        filesystem image, `io.containerd.wasmtime.v1` for a Wasm artifact under a wasmtime
+        shim) and `#options` an `AnyMessage` of its options. The name is exported to the
+        `soundness` umbrella as `Runtime`, so no other library may export one.
+    entry #name   the runtime plugin's name
+    entry #options   the plugin's options, as an opaque `AnyMessage`
+
+  entry .Empty   the protobuf `google.protobuf.Empty`: a message with no fields
+      The request of parameterless calls such as `Containerd#version`, and the reply of the
+      delete calls. `Empty()` is its only value.
+
+  entry .VersionResponse   the reply of containerd's `Version` call: the daemon's version and git revision
+    detail
+        What `Containerd#version` returns: `#version` is the semantic version (`1.7.0`) and
+        `#revision` the git revision the daemon was built from.
+    entry #version   the daemon's semantic version
+    entry #revision   the git revision it was built from
+
+  entry .CreateContainerRequest   the request of the containers service's `Create`: the container to register
+    detail
+        The `…Request` and `…Response` types are the containerd gRPC protocol mirrored field by field, each
+        a case class with protobuf field numbers which `Containerd`'s methods build and
+        decode, exported so that a program can speak to the daemon directly through a
+        `Grpc.Channel` or encode them with `in[Protobuf]`. For the containers service:
+        `CreateContainerRequest(container)` and `CreateContainerResponse(container)`,
+        `GetContainerRequest(id)` and `GetContainerResponse(container)`,
+        `ListContainersRequest(filters)` and `ListContainersResponse(containers)`, and
+        `DeleteContainerRequest(id)`, whose reply is `Empty`.
+    entry #container   the `Container` to register
+
+  entry .CreateContainerResponse   the reply of the containers service's `Create`: the container as stored
+    entry #container   the stored `Container`
+
+  entry .GetContainerRequest   the request of the containers service's `Get`: a container id
+    entry #id   the id of the container to fetch
+
+  entry .GetContainerResponse   the reply of the containers service's `Get`: the container
+    entry #container   the requested `Container`
+
+  entry .ListContainersRequest   the request of the containers service's `List`: optional filter expressions
+    entry #filters   containerd filter expressions, such as `labels."tier"==db`; empty for everything
+
+  entry .ListContainersResponse   the reply of the containers service's `List`: the matching containers
+    entry #containers   the matching `Container`s, in containerd's order
+
+  entry .DeleteContainerRequest   the request of the containers service's `Delete`: a container id; the reply is `Empty`
+    entry #id   the id of the container to remove
+
+  entry .CreateNamespaceRequest   the request of the namespaces service's `Create`: the namespace to create
+    detail
+        The namespaces service's messages: `CreateNamespaceRequest(namespace)` and
+        `CreateNamespaceResponse(namespace)`, `ListNamespacesRequest(filter)` and
+        `ListNamespacesResponse(namespaces)`, and `DeleteNamespaceRequest(name)`, whose reply
+        is `Empty`.
+    entry #namespace   the `Namespace` to create
+
+  entry .CreateNamespaceResponse   the reply of the namespaces service's `Create`: the namespace as stored
+    entry #namespace   the stored `Namespace`
+
+  entry .ListNamespacesRequest   the request of the namespaces service's `List`: an optional filter expression
+    entry #filter   a containerd filter expression; empty for everything
+
+  entry .ListNamespacesResponse   the reply of the namespaces service's `List`: the matching namespaces
+    entry #namespaces   the matching `Namespace`s
+
+  entry .DeleteNamespaceRequest   the request of the namespaces service's `Delete`: a namespace name; the reply is `Empty`
+    entry #name   the name of the namespace to remove
+
+  entry .GetImageRequest   the request of the images service's `Get`: an image reference
+    detail
+        The images service's messages: `GetImageRequest(name)` and `GetImageResponse(image)`,
+        `ListImagesRequest(filters)` and `ListImagesResponse(images)`, and
+        `DeleteImageRequest(name, sync)`, whose reply is `Empty`.
+    entry #name   the reference of the image to fetch
+
+  entry .GetImageResponse   the reply of the images service's `Get`: the image record
+    entry #image   the requested `ImageRecord`
+
+  entry .ListImagesRequest   the request of the images service's `List`: optional filter expressions
+    entry #filters   containerd filter expressions; empty for everything
+
+  entry .ListImagesResponse   the reply of the images service's `List`: the matching image records
+    entry #images   the matching `ImageRecord`s
+
+  entry .DeleteImageRequest   the request of the images service's `Delete`: an image reference and whether to wait; the reply is `Empty`
+    entry #name   the reference of the image to remove
+    entry #sync   whether to return only after the content has been garbage-collected
+
+  entry .CreateTaskRequest   the request of the tasks service's `Create`: the container, its rootfs mounts, stdio and options
+    detail
+        The tasks service's messages: `CreateTaskRequest` and `CreateTaskResponse(containerId,
+        pid)`, `StartRequest(containerId, execId)` and `StartResponse(pid)`,
+        `KillRequest(containerId, execId, signal, all)` with an `Empty` reply,
+        `WaitRequest(containerId, execId)` and `WaitResponse(exitStatus, exitedAt)`,
+        `DeleteTaskRequest(containerId, execId)` and `DeleteTaskResponse(id, pid, exitStatus,
+        exitedAt)`, `GetTaskRequest(containerId, execId)` and `GetTaskResponse(process)`, and
+        `ListTasksRequest(filter)` and `ListTasksResponse(tasks)`. An empty `execId` means the
+        container's main task; a non-empty one names an exec process within it.
+    entry #containerId   the container to create the task for
+    entry #rootfs   the `Mount`s of the task's root filesystem
+    entry #stdin   the path the task's standard input is read from; empty for none
+    entry #stdout   the path the task's standard output is written to; empty for none
+    entry #stderr   the path the task's standard error is written to; empty for none
+    entry #terminal   whether the task gets a pseudo-terminal
+    entry #options   runtime options, as an opaque `AnyMessage`
+
+  entry .CreateTaskResponse   the reply of the tasks service's `Create`: the container id and the new task's host pid
+    entry #containerId   the container the task was created for
+    entry #pid   the host pid of the created task
+
+  entry .StartRequest   the request of the tasks service's `Start`: the task, or exec process, to start
+    entry #containerId   the container whose task to start
+    entry #execId   the exec process to start; empty for the main task
+
+  entry .StartResponse   the reply of the tasks service's `Start`: the started process's host pid
+    entry #pid   the host pid of the started process
+
+  entry .KillRequest   the request of the tasks service's `Kill`: a signal for a task, an exec process or every process; the reply is `Empty`
+    entry #containerId   the container whose task to signal
+    entry #execId   the exec process to signal; empty for the main task
+    entry #signal   the signal number, such as `15` for `SIGTERM`
+    entry #all   whether to signal every process in the container
+
+  entry .WaitRequest   the request of the tasks service's `Wait`: the task, or exec process, to wait for
+    entry #containerId   the container whose task to wait for
+    entry #execId   the exec process to wait for; empty for the main task
+
+  entry .WaitResponse   the reply of the tasks service's `Wait`: the exit status and the time of exit
+    entry #exitStatus   the process's exit status
+    entry #exitedAt   when it exited, as a `Timestamp`
+
+  entry .DeleteTaskRequest   the request of the tasks service's `Delete`: the task, or exec process, to remove
+    entry #containerId   the container whose task to delete
+    entry #execId   the exec process to delete; empty for the main task
+
+  entry .DeleteTaskResponse   the reply of the tasks service's `Delete`: the removed process's id, pid, exit status and time
+    entry #id   the exec id of the removed process
+    entry #pid   its host pid
+    entry #exitStatus   the exit status it stopped with
+    entry #exitedAt   when it exited, as a `Timestamp`
+
+  entry .GetTaskRequest   the request of the tasks service's `Get`: the task, or exec process, to look up
+    entry #containerId   the container whose task to fetch
+    entry #execId   the exec process to fetch; empty for the main task
+
+  entry .GetTaskResponse   the reply of the tasks service's `Get`: the process state
+    entry #process   the requested `Workload`
+
+  entry .ListTasksRequest   the request of the tasks service's `List`: an optional filter expression
+    entry #filter   a containerd filter expression; empty for everything
+
+  entry .ListTasksResponse   the reply of the tasks service's `List`: the matching task processes
+    entry #tasks   the matching `Workload`s
+
 entry .Workload   a task's process state, and the openable which scopes a container's whole lifecycle to a block
   detail
       `Workload` is two things. As a **record**, it is a task's process state as containerd
       reports it (`containerd.v1.types.Process`, in part): the `#containerId` and exec `#id`
       it belongs to, its host `#pid`, the raw `#status` code (decoded by `#state` to a
-      `ProcessStatus`), and the `#exitStatus` and `#exitedAt` once it has stopped. It is
+      `Containerd.ProcessStatus`), and the `#exitStatus` and `#exitedAt` once it has stopped. It is
       what `Containerd#task` and `Containerd#tasks` return.
 
-      As a **form**, it is what a `Container` is opened as: `container.open[Workload]()`
-      registers the container, creates a task for it with the `Mount`s given as flags, runs
+      As a **form**, it is what a `Containerd.Container` is opened as: `container.open[Workload]()`
+      registers the container, creates a task for it with the `Containerd.Mount`s given as flags, runs
       the block with a `Workload.Handle`, and on every exit path — normal, exception or
       error — kills the task if it was started, reaps it, deletes it, and deletes the
       container. The lifetime of the workload *is* the scope. The mode says what the block
@@ -840,11 +1140,11 @@ entry .Workload   a task's process state, and the openable which scopes a contai
       import threads.virtualThreads
 
       supervise:
-        val socket = DomainSocket(t"/run/containerd/containerd.sock")
+        val socket = Uds(t"/run/containerd/containerd.sock")
         given containerd: (Containerd^) = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
 
-        val spec = Container(t"web", image = t"docker.io/library/alpine:latest")
-        val rootfs = Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a"))
+        val spec = Containerd.Container(t"web", image = t"docker.io/library/alpine:latest")
+        val rootfs = Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a"))
 
         val exit: Int = spec.open[Workload](Read & Launch & Signalling, rootfs): workload ?=>
           workload.pid
@@ -860,7 +1160,7 @@ entry .Workload   a task's process state, and the openable which scopes a contai
   refer embarcadero.Containerd
   refer embarcadero.Launch
   refer embarcadero.Signalling
-  refer embarcadero.ProcessStatus
+  refer embarcadero.Containerd.ProcessStatus
   entry .openable   the given behind `container.open[Workload](…)`: a `Workload.Openable` over the `Containerd^` in scope
       A given in the companion, so it resolves with no import. It needs a `Containerd^` given
       and a `Monitor^`, and tactics for `Grpc.Error`, `Http2.Error`, `Async.Error` and
@@ -897,8 +1197,8 @@ entry .Workload   a task's process state, and the openable which scopes a contai
   entry .Openable   the `Openable` which opens a `Container` as a `Workload`, with `Mount`s as its flags
     detail
         The class `Workload.openable` provides, named so that its result type is stated
-        exactly. It opens a `Container` (`Self`) as a `Workload` (`Form`), taking the
-        `Mount`s of the root filesystem as flags (`Operand`), and gives a `Workload.Handle`
+        exactly. It opens a `Containerd.Container` (`Self`) as a `Workload` (`Form`), taking the
+        `Containerd.Mount`s of the root filesystem as flags (`Operand`), and gives a `Workload.Handle`
         (`Result`). It is built over a `Containerd^` and a `Monitor^` and the four tactics a
         containerd call needs.
     entry #Self   `Container`: what is opened
@@ -931,284 +1231,3 @@ entry .Signalling   the open mode which lets the block signal the task: `contain
     it, `kill` is available on the `Workload.Handle`. The name is `Signalling`, not `Signal`,
     because profanity's interrupt holds `Signal` in the `soundness` umbrella; the grant
     itself is still `Workload.Grant.Signal`.
-
-entry .ProcessStatus   the status of a task's process: `Unknown`, `Created`, `Running`, `Stopped`, `Paused` or `Pausing`
-  detail
-      containerd's process status, a protobuf enum carried in a `Workload` as its numeric
-      `#code`: `Unknown` (0), `Created` (1), `Running` (2), `Stopped` (3), `Paused` (4) and
-      `Pausing` (5). `Workload#state` and `Workload.Handle`'s `state()` decode a code to
-      one of these, and `Workload(…, status = ProcessStatus.Running.code)` goes the other
-      way.
-  refer embarcadero.Workload
-  entry .of   the status for a code, or `Unset` for a number the enum does not know
-  entry #code   the numeric value containerd sends on the wire
-
-entry .DockerEvent   what the containerd client logs as it changes the daemon
-  detail
-      Every change `Containerd` makes to the daemon is logged at `info`: `ContainerCreated(id)`,
-      `ContainerDeleted(id)`, `ImageDeleted(name)`, `TaskCreated(container)`,
-      `TaskStarted(container, pid)`, `TaskKilled(container, signal)` and
-      `TaskDeleted(container)`. All but `ImageDeleted` are tagged `Log.Process`;
-      `ImageDeleted` is tagged `Log.Resource`. Reads (`containers`, `version`, `task`, …) log
-      nothing. A `DockerEvent is Loggable` must be in scope for every client method;
-      `logging.silentLogging` discards them.
-  entry .communicable   renders each event as a message, such as _started the task for container `web` as PID `4321`_
-
-entry .AnyMessage   the protobuf `google.protobuf.Any`: a serialized message with its type URL, passed through verbatim
-  detail
-      containerd carries opaque payloads — a container's OCI runtime spec, a runtime's
-      options, a task's options — as `Any` messages, which this client neither builds nor
-      interprets: `#typeUrl` names the message type and `#value` holds its serialized bytes
-      as an `AnyMessage.Payload`. Named `AnyMessage` to keep clear of `scala.Any`. An empty
-      `AnyMessage()` is the default wherever a message takes one.
-
-      ```scala
-      import soundness.*
-      import codepages.utf8Codepage
-
-      val spec = AnyMessage(t"types.containerd.io/opencontainers/runtime-spec/1/Spec",
-          AnyMessage.Payload(t"{}".in[Data]))
-
-      spec.value.data.length   // 2
-      ```
-  entry .Payload   the serialized bytes of an `AnyMessage`, as an opaque, immutable byte array
-    detail
-        An opaque type over a frozen byte array rather than a bare `Data` field, so that
-        protobuf derivation can see it as a plain, capture-free value. `Payload(data)` wraps
-        a `Data`, `.empty` is the zero-length payload, and the `data` extension on
-        `AnyMessage` reads it back. It encodes on the wire as a length-delimited field.
-    entry .empty   the zero-length payload, the default `value` of an `AnyMessage`
-    entry .apply   wraps a `Data` as a payload
-    entry .encodable   encodes a payload as a length-delimited protobuf field
-    entry .decodable   decodes a length-delimited protobuf field as a payload
-  entry .data   `payload.data`: the payload's bytes as `Data`
-  entry #typeUrl   the type URL naming the serialized message's type
-  entry #value   the serialized message, as an `AnyMessage.Payload`
-
-entry .Timestamp   the protobuf `google.protobuf.Timestamp`: seconds and nanoseconds since the Unix epoch
-  detail
-      The timestamp containerd's records carry (`Container#createdAt`, `Workload#exitedAt`,
-      …): whole `#seconds` and a `#nanos` fraction. It is **not** exported to the
-      `soundness` umbrella, since aviation's `Timestamp` keeps that name: write
-      `embarcadero.Timestamp`. It converts to and from any instant type through
-      anticipation's generic time abstraction, so an aviation `Instant` works with no
-      dependency between the two libraries, at millisecond precision: the generic
-      representation is epoch milliseconds, so protobuf's sub-millisecond nanoseconds are
-      not carried.
-
-      ```scala
-      import soundness.*
-      import abstractables.epochMillisecondsAbstractable
-      import chronometries.unixChronometry
-
-      val moment: Instant = Instant(1_700_000_001_000L)
-      val stamp: embarcadero.Timestamp = embarcadero.Timestamp.of(moment)
-      stamp.seconds                        // 1700000001L
-      stamp.instant[Instant over Unix]     // moment
-      ```
-  entry .of   a timestamp from any instant type `Abstractable across Instants to Long`, at millisecond precision
-  entry #seconds   whole seconds since the Unix epoch
-  entry #nanos   the nanosecond fraction, `0` to `999999999`; a multiple of a million when made by `.of`
-  entry #instant   the timestamp as any instant type `Instantiable across Instants from Long`, at millisecond precision
-
-entry .Container   a containerd container record: id, labels, image, runtime, OCI spec, snapshot and timestamps
-  detail
-      The metadata record of the containers service, with its protobuf field numbers
-      preserved so that it round-trips with the daemon; fields the client does not model
-      (the `extensions` map) are skipped on decode. Only `#id` is required: `Container(t"web",
-      image = t"docker.io/library/alpine:latest")` is a complete definition to register with
-      `Containerd#createContainer` or open as a `Workload`. A container is a definition,
-      not a process; the task made for it is what runs.
-  refer embarcadero.Containerd
-  refer embarcadero.Workload
-  entry #id   the container's id, unique in its namespace
-  entry #labels   free-form `Map[Text, Text]` labels; containerd filters can select on them
-  entry #image   the reference of the image the container was made from
-  entry #runtime   the `Runtime` binding: the runtime plugin's name and options
-  entry #spec   the OCI runtime spec, as an opaque `AnyMessage`
-  entry #snapshotter   the snapshotter which holds the container's root filesystem
-  entry #snapshotKey   the key of the container's snapshot
-  entry #createdAt   when the daemon stored the record, as a `Timestamp`
-  entry #updatedAt   when the record last changed, as a `Timestamp`
-  entry #sandbox   the sandbox the container belongs to, if any
-
-entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
-  detail
-      The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
-      manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Descriptor`, which
-      has the same meaning on the other side of the library. The `platform` member is not
-      modelled.
-  refer embarcadero.Descriptor
-  entry #mediaType   the blob's media type, as text
-  entry #digest   the `sha256:<hex>` digest of the blob
-  entry #size   the blob's length in bytes
-  entry #annotations   free-form `Map[Text, Text]` annotations
-
-entry .ImageRecord   a containerd image record: a reference name pointing at content, with labels and timestamps
-  detail
-      The metadata record of the images service, which `Containerd#images` and
-      `Containerd#image` return: `#name` is the reference (`docker.io/library/alpine:latest`)
-      and `#target` the `ContentDescriptor` of the manifest in the content store. Named
-      `ImageRecord` to keep clear of the OCI `Image` this library builds; the record is the
-      daemon's index entry, not the content.
-  refer embarcadero.Image
-  entry #name   the image reference
-  entry #labels   free-form `Map[Text, Text]` labels
-  entry #target   the `ContentDescriptor` of the image's manifest
-  entry #createdAt   when the daemon stored the record, as a `Timestamp`
-  entry #updatedAt   when the record last changed, as a `Timestamp`
-
-entry .Mount   a mount in a task's root filesystem: a source mounted at a target with a type and options
-  detail
-      The `containerd.types.Mount` message, given to `Containerd#createTask` as the task's
-      `rootfs` and to `container.open[Workload](…)` as its flags; `#mountType` is the proto's
-      `type`. An overlay of an unpacked snapshot is the common case:
-
-      ```scala
-      import soundness.*
-
-      val rootfs: List[Mount] =
-        List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
-      ```
-  entry #mountType   the filesystem type, such as `overlay` or `bind`
-  entry #source   what is mounted
-  entry #target   where it is mounted, within the task's root
-  entry #options   the mount options, as `key=value` entries
-
-entry .Namespace   a containerd namespace: an isolation scope for containers, images and tasks, with labels
-  detail
-      The record of the namespaces service: a `#name` (`default`, `k8s.io`, `moby`) and
-      free-form `#labels`. A `Containerd` client is bound to one namespace at connection;
-      `Containerd#namespaces`, `#createNamespace` and `#deleteNamespace` manage them.
-  entry #name   the namespace's name
-  entry #labels   free-form `Map[Text, Text]` labels
-
-entry .Runtime   a container's runtime binding: the runtime plugin's name and its opaque options
-  detail
-      The `Container.Runtime` message: `#name` is the plugin (`io.containerd.runc.v2` for a
-      filesystem image, `io.containerd.wasmtime.v1` for a Wasm artifact under a wasmtime
-      shim) and `#options` an `AnyMessage` of its options. The name is exported to the
-      `soundness` umbrella as `Runtime`, so no other library may export one.
-  entry #name   the runtime plugin's name
-  entry #options   the plugin's options, as an opaque `AnyMessage`
-
-entry .Empty   the protobuf `google.protobuf.Empty`: a message with no fields
-    The request of parameterless calls such as `Containerd#version`, and the reply of the
-    delete calls. `Empty()` is its only value.
-
-entry .VersionResponse   the reply of containerd's `Version` call: the daemon's version and git revision
-  detail
-      What `Containerd#version` returns: `#version` is the semantic version (`1.7.0`) and
-      `#revision` the git revision the daemon was built from.
-  entry #version   the daemon's semantic version
-  entry #revision   the git revision it was built from
-
-entry .CreateContainerRequest   the request of the containers service's `Create`: the container to register
-  detail
-      The `…Request` and `…Response` types are the containerd gRPC protocol mirrored field by field, each
-      a case class with protobuf field numbers which `Containerd`'s methods build and
-      decode, exported so that a program can speak to the daemon directly through a
-      `Grpc.Channel` or encode them with `in[Protobuf]`. For the containers service:
-      `CreateContainerRequest(container)` and `CreateContainerResponse(container)`,
-      `GetContainerRequest(id)` and `GetContainerResponse(container)`,
-      `ListContainersRequest(filters)` and `ListContainersResponse(containers)`, and
-      `DeleteContainerRequest(id)`, whose reply is `Empty`.
-  entry #container   the `Container` to register
-entry .CreateContainerResponse   the reply of the containers service's `Create`: the container as stored
-  entry #container   the stored `Container`
-entry .GetContainerRequest   the request of the containers service's `Get`: a container id
-  entry #id   the id of the container to fetch
-entry .GetContainerResponse   the reply of the containers service's `Get`: the container
-  entry #container   the requested `Container`
-entry .ListContainersRequest   the request of the containers service's `List`: optional filter expressions
-  entry #filters   containerd filter expressions, such as `labels."tier"==db`; empty for everything
-entry .ListContainersResponse   the reply of the containers service's `List`: the matching containers
-  entry #containers   the matching `Container`s, in containerd's order
-entry .DeleteContainerRequest   the request of the containers service's `Delete`: a container id; the reply is `Empty`
-  entry #id   the id of the container to remove
-
-entry .CreateNamespaceRequest   the request of the namespaces service's `Create`: the namespace to create
-  detail
-      The namespaces service's messages: `CreateNamespaceRequest(namespace)` and
-      `CreateNamespaceResponse(namespace)`, `ListNamespacesRequest(filter)` and
-      `ListNamespacesResponse(namespaces)`, and `DeleteNamespaceRequest(name)`, whose reply
-      is `Empty`.
-  entry #namespace   the `Namespace` to create
-entry .CreateNamespaceResponse   the reply of the namespaces service's `Create`: the namespace as stored
-  entry #namespace   the stored `Namespace`
-entry .ListNamespacesRequest   the request of the namespaces service's `List`: an optional filter expression
-  entry #filter   a containerd filter expression; empty for everything
-entry .ListNamespacesResponse   the reply of the namespaces service's `List`: the matching namespaces
-  entry #namespaces   the matching `Namespace`s
-entry .DeleteNamespaceRequest   the request of the namespaces service's `Delete`: a namespace name; the reply is `Empty`
-  entry #name   the name of the namespace to remove
-
-entry .GetImageRequest   the request of the images service's `Get`: an image reference
-  detail
-      The images service's messages: `GetImageRequest(name)` and `GetImageResponse(image)`,
-      `ListImagesRequest(filters)` and `ListImagesResponse(images)`, and
-      `DeleteImageRequest(name, sync)`, whose reply is `Empty`.
-  entry #name   the reference of the image to fetch
-entry .GetImageResponse   the reply of the images service's `Get`: the image record
-  entry #image   the requested `ImageRecord`
-entry .ListImagesRequest   the request of the images service's `List`: optional filter expressions
-  entry #filters   containerd filter expressions; empty for everything
-entry .ListImagesResponse   the reply of the images service's `List`: the matching image records
-  entry #images   the matching `ImageRecord`s
-entry .DeleteImageRequest   the request of the images service's `Delete`: an image reference and whether to wait; the reply is `Empty`
-  entry #name   the reference of the image to remove
-  entry #sync   whether to return only after the content has been garbage-collected
-
-entry .CreateTaskRequest   the request of the tasks service's `Create`: the container, its rootfs mounts, stdio and options
-  detail
-      The tasks service's messages: `CreateTaskRequest` and `CreateTaskResponse(containerId,
-      pid)`, `StartRequest(containerId, execId)` and `StartResponse(pid)`,
-      `KillRequest(containerId, execId, signal, all)` with an `Empty` reply,
-      `WaitRequest(containerId, execId)` and `WaitResponse(exitStatus, exitedAt)`,
-      `DeleteTaskRequest(containerId, execId)` and `DeleteTaskResponse(id, pid, exitStatus,
-      exitedAt)`, `GetTaskRequest(containerId, execId)` and `GetTaskResponse(process)`, and
-      `ListTasksRequest(filter)` and `ListTasksResponse(tasks)`. An empty `execId` means the
-      container's main task; a non-empty one names an exec process within it.
-  entry #containerId   the container to create the task for
-  entry #rootfs   the `Mount`s of the task's root filesystem
-  entry #stdin   the path the task's standard input is read from; empty for none
-  entry #stdout   the path the task's standard output is written to; empty for none
-  entry #stderr   the path the task's standard error is written to; empty for none
-  entry #terminal   whether the task gets a pseudo-terminal
-  entry #options   runtime options, as an opaque `AnyMessage`
-entry .CreateTaskResponse   the reply of the tasks service's `Create`: the container id and the new task's host pid
-  entry #containerId   the container the task was created for
-  entry #pid   the host pid of the created task
-entry .StartRequest   the request of the tasks service's `Start`: the task, or exec process, to start
-  entry #containerId   the container whose task to start
-  entry #execId   the exec process to start; empty for the main task
-entry .StartResponse   the reply of the tasks service's `Start`: the started process's host pid
-  entry #pid   the host pid of the started process
-entry .KillRequest   the request of the tasks service's `Kill`: a signal for a task, an exec process or every process; the reply is `Empty`
-  entry #containerId   the container whose task to signal
-  entry #execId   the exec process to signal; empty for the main task
-  entry #signal   the signal number, such as `15` for `SIGTERM`
-  entry #all   whether to signal every process in the container
-entry .WaitRequest   the request of the tasks service's `Wait`: the task, or exec process, to wait for
-  entry #containerId   the container whose task to wait for
-  entry #execId   the exec process to wait for; empty for the main task
-entry .WaitResponse   the reply of the tasks service's `Wait`: the exit status and the time of exit
-  entry #exitStatus   the process's exit status
-  entry #exitedAt   when it exited, as a `Timestamp`
-entry .DeleteTaskRequest   the request of the tasks service's `Delete`: the task, or exec process, to remove
-  entry #containerId   the container whose task to delete
-  entry #execId   the exec process to delete; empty for the main task
-entry .DeleteTaskResponse   the reply of the tasks service's `Delete`: the removed process's id, pid, exit status and time
-  entry #id   the exec id of the removed process
-  entry #pid   its host pid
-  entry #exitStatus   the exit status it stopped with
-  entry #exitedAt   when it exited, as a `Timestamp`
-entry .GetTaskRequest   the request of the tasks service's `Get`: the task, or exec process, to look up
-  entry #containerId   the container whose task to fetch
-  entry #execId   the exec process to fetch; empty for the main task
-entry .GetTaskResponse   the reply of the tasks service's `Get`: the process state
-  entry #process   the requested `Workload`
-entry .ListTasksRequest   the request of the tasks service's `List`: an optional filter expression
-  entry #filter   a containerd filter expression; empty for everything
-entry .ListTasksResponse   the reply of the tasks service's `List`: the matching task processes
-  entry #tasks   the matching `Workload`s

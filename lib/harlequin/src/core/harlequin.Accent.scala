@@ -41,7 +41,7 @@ object Accent:
 
 // An accent is a *colour category*, and nothing more: a palette maps each accent to one
 // colour. `Term` is a term and `Typal` is a type. Whether a term or type token is a
-// binding or a usage is an orthogonal annotation carried by the token (see `Role`), not a
+// binding or a usage is an orthogonal annotation carried by the token (see `Token.Role`), not a
 // colour distinction — so a `val`'s name and a use of it share the same accent, and a
 // separate styling policy may add italic/bold to bindings.
 enum Accent:

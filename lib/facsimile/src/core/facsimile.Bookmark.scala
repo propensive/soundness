@@ -39,5 +39,5 @@ import vacuous.*
 // tree: PDF's "outlines" are what every viewer presents as bookmarks.
 case class Bookmark
   ( title:       Text,
-    destination: Optional[Destination],
+    destination: Optional[Pdf.Destination],
     children:    List[Bookmark] )

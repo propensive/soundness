@@ -43,7 +43,7 @@ import fulminate.*
 // the handler does not match — bubbles to the enclosing containment, so they compose as they nest.
 class Containment
   ( handler: PartialFunction[Error, Remedy]^{scala.caps.any.only[anticipation.Durable]},
-    outer:   SharedProbate )
+    outer:   Probate.Shared )
 extends Probate:
   def cleanup(worker: Worker): Unit = outer.cleanup(worker)
 
@@ -56,4 +56,4 @@ extends Probate:
 
   // Installs this containment as the `Probate` in scope for `body`; daemons and abandoned tasks
   // spawned within it route their escaped exceptions here.
-  def protect[result](body: SharedProbate ?=> result): result = body(using this)
+  def protect[result](body: Probate.Shared ?=> result): result = body(using this)

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export polyvinyl.{Intensional, Member, Multiplicity, Record, Specification}
+export polyvinyl.{Intensional, Record, Specification}

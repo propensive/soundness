@@ -32,5 +32,4 @@
                                                                                                   */
 package soundness
 
-export espionage.{Acp, AcpAgent, AcpAgentLifecycle, AcpAgentSession, AcpClient,
-    AcpClientSession, AcpClientFs, AcpClientTerminal}
+export espionage.Acp

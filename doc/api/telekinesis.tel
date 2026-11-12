@@ -60,7 +60,7 @@ detail
       HTTP/1.1 wire codec directly over coaxial's sockets (JVM and Scala Native), with
       pooled keep-alive connections; on the JVM its `https` path negotiates HTTP/2 by ALPN.
     - `telekinesis.jvm` — `httpBackends.javaNetHttp` over `java.net.http`, and the Unix
-      domain-socket client (`domainSocketFetchable`, `domainSocketHttpClient`,
+      domain-socket client (`udsFetchable`, `udsHttpClient`,
       `requestTransmissible`).
     - `telekinesis.http2` — the HTTP/2 layer (JVM only): `Http2` with its `Connection`,
       `Stream`, `Frame`, `Event` and `Error`, the `Hpack` and `Huffman` codecs, `FrameReader`
@@ -601,13 +601,13 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
   entry .Submit   a request with a body, ready to be given its headers and payload
     detail
         What `url.submit` returns: the request target, host and the `Fetchable` target
-        (an `Origin` for an `HttpUrl`, a `DomainSocket` for a socket endpoint). Its `apply`
+        (an `Origin` for an `HttpUrl`, a `Uds` for a socket endpoint). Its `apply`
         is a macro which takes the method and headers in a first argument list and the
         payload in a second, builds the `Http.Request` with a `Content-Type` from the
         payload's `Postable`, and sends it through the `Http.Client onto target` in scope.
         See `submit`.
     entry #originForm   the request target: the path and query of the URL
-    entry #target   where the request goes: the URL's `Origin`, or a `DomainSocket`
+    entry #target   where the request goes: the URL's `Origin`, or a `Uds`
     entry #host   the `Host` header's value
     entry #applyDynamicNamed   `url.submit(Http.Put, accept = media"…")(payload)`: method, named headers, then the body
         The method, if given, appears once in the first argument list and defaults to
@@ -621,7 +621,7 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
         `Http.Get`) and headers, and sends the request through the `Http.Client onto target`
         in scope. See `fetch`.
     entry #originForm   the request target: the path and query of the URL
-    entry #target   where the request goes: the URL's `Origin`, or a `DomainSocket`
+    entry #target   where the request goes: the URL's `Origin`, or a `Uds`
     entry #host   the `Host` header's value
     entry #applyDynamicNamed   `url.fetch(accept = media"…", authorization = Auth.Bearer(token))`: named headers
         Needs an `Online`, an `Http.Event is Loggable`, and an `Http.Client onto` the
@@ -633,8 +633,8 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
         For `Origin["http" | "https"]` targets, two givens in the companion compete, selected
         by whether a `Redirects.Disabled` is in scope: `.http` follows redirects and `.httpStrict`
         does not. Both need a `Tactic[Connect.Error]`, an `Online` and an `Http.Backend`; the
-        request itself needs an `Http.Event is Loggable`. For a `DomainSocket` target the
-        client is `domainSocketHttpClient`, in `telekinesis.jvm`.
+        request itself needs an `Http.Event is Loggable`. For a `Uds` target the
+        client is `udsHttpClient`, in `telekinesis.jvm`.
 
         A client is a capability: it is built from a tactic, an `Online` token and a backend,
         all of which it retains. One is rarely summoned by hand; `fetch` and `submit` summon
@@ -1090,8 +1090,8 @@ entry .Fetchable   what `fetch` and `submit` accept as an endpoint, and the targ
   detail
       A `Fetchable` value yields a request target (its path and query, as text), a `Host`,
       and a `Target` the `Http.Client` is summoned for: an `HttpUrl` targets its
-      `Origin["http" | "https"]`, and a `DomainSocket.Endpoint` (with
-      `domainSocketFetchable`, in `telekinesis.jvm`) targets its socket. The companion's
+      `Origin["http" | "https"]`, and a `Uds.Endpoint` (with
+      `udsFetchable`, in `telekinesis.jvm`) targets its socket. The companion's
       `.httpUrl` covers every `HttpUrl`, including the scheme-refined types `url"…"` literals
       have.
   refer telekinesis.fetch
@@ -1343,7 +1343,7 @@ entry .internal   the macro implementations behind `fetch`, `submit` and `Http.R
 
 entry .fetch   `url.fetch(…)`: a `GET` (or other bodiless) request to a URL, with typed headers
   detail
-      An extension on any `Fetchable` endpoint — an `HttpUrl`, or a `DomainSocket.Endpoint`
+      An extension on any `Fetchable` endpoint — an `HttpUrl`, or a `Uds.Endpoint`
       on the JVM — which returns an `Http.Fetch`; its `apply` is a macro which takes an
       optional `Http.Method` (default `Http.Get`) and any headers, builds the request, and
       sends it through the `Http.Client` for the endpoint's target. Headers are named
@@ -1660,26 +1660,26 @@ entry .requestTransmissible   an `Http.Request` is transmitted over a raw socket
     It is a top-level given, so it must be imported by name
     (`import soundness.requestTransmissible`), and needs a `Tactic[Truncation.Error]`.
 
-entry .domainSocketFetchable   a `DomainSocket.Endpoint` is fetchable: HTTP/1.1 straight over a Unix domain socket
+entry .udsFetchable   a `Uds.Endpoint` is fetchable: HTTP/1.1 straight over a Unix domain socket
     In `telekinesis.jvm`, for an API served on a local socket such as the Docker daemon's.
     The request target is the endpoint's path, the `Host` is `localhost`, and the target the
-    client is summoned for is the `DomainSocket`. A top-level given, imported by name.
+    client is summoned for is the `Uds`. A top-level given, imported by name.
 
     ```scala fuel
     typecheck
     ##
     import soundness.*
-    import soundness.{domainSocketFetchable, domainSocketHttpClient, requestTransmissible}
+    import soundness.{udsFetchable, udsHttpClient, requestTransmissible}
     import internetAccess.online
     import logging.silentLogging
     import strategies.throwUnsafely
     import charsets.utf8Charset
 
-    val docker = DomainSocket(t"/var/run/docker.sock")
+    val docker = Uds(t"/var/run/docker.sock")
     docker.at(t"/version").fetch().receive[Text]
     ```
 
-entry .domainSocketHttpClient   the `Http.Client onto DomainSocket`: one request, one response, over the socket
+entry .udsHttpClient   the `Http.Client onto Uds`: one request, one response, over the socket
     In `telekinesis.jvm`. Serialises the request with `requestTransmissible`, parses the
     reply with `Http.Response.parse`, and does not follow redirects. Needs a
     `Tactic[Truncation.Error]` and a `Tactic[Connect.Error]`: a `Socket.Error` is mapped
@@ -2061,7 +2061,7 @@ entry .Http2   the HTTP/2 engine: frames, HPACK-coded headers, and the client an
     detail
         `Http2.Endpoint(endpoint, authority)` names a server to speak HTTP/2 to in the clear,
         with prior knowledge: `endpoint` is any value which is `Connectable` (and `Showable`) —
-        a coaxial `Endpoint(host, port)` over TCP, a `DomainSocket`, or a test's loopback — and
+        a coaxial `Endpoint(host, port)` over TCP, a `Uds`, or a test's loopback — and
         `authority` is the `:authority` pseudo-header every request carries, which the address
         alone does not say. It is the `Target` of the HTTP/2 `Http.Client` given (`Client.http2`),
         where telekinesis's HTTP/1.1 client targets a URL, and the subject of `.sessional`, which

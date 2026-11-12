@@ -34,7 +34,7 @@ package soundness
 
 export
   stratiform
-  . { Bintel, Revision, Mutation, SchemaResolver, SchemaSignature,
+  . { Bintel, SchemaResolver, SchemaSignature,
       Stratiform, Tel, Telp, Tel2, Tel3, Tel4, TelReader, Tels, Tels2, Varint, bintel,
       bintelDocument, documents,
       fulfil, retract, tel, telp, valueHash }

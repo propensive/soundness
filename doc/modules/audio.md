@@ -175,38 +175,38 @@ Out.println(summon[Surround[6] is ChannelLayout].channels.show)
 
 The rest of this page needs audio devices, so its samples are compiled but not run.
 
-An input device is a `Feed`. The feeds of the machine are listed with `Feed.list`, each with a
-`name`, a `vendor`, a `description`, and the `configurations` it offers. A feed records at a
-chosen sample rate, bit depth and layout, and produces a `Recording` whose `stream` yields audio
-in chunks until it is stopped. A machine may have no feeds at all, so the first one is an
-[optional] value:
+An input device is an `Audio.Feed`. The feeds of the machine are listed with `Audio.Feed.list`,
+each with a `name`, a `vendor`, a `description`, and the `configurations` it offers. A feed
+records at a chosen sample rate, bit depth and layout, and produces a `Recording` whose `stream`
+yields audio in chunks until it is stopped. A machine may have no feeds at all, so the first one
+is an [optional] value:
 
 ```scala
-Feed.list.head.let: feed =>
+Audio.Feed.list.head.let: feed =>
   if feed.supports[Stereo](44100.0*Hertz, 16) then
     val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
     val firstChunk: Optional[Audio across Stereo] = recording.stream.head
     recording.stop()
 ```
 
-`supports` asks whether a feed can honor a configuration before recording begins. Recording
-from a feed which is unavailable or misconfigured raises a `Feed.Error`. On macOS the JVM must
+`supports` asks whether a feed can honor a configuration before recording begins. Recording from
+a feed which is unavailable or misconfigured raises an `Audio.Feed.Error`. On macOS the JVM must
 have been granted permission to use the microphone, or no feeds are available.
 
 ### Playback
 
-An output device is an `Outlet`, listed with `Outlet.list`. Playing an audio value returns a
-`Playback`, which runs in the background. `await` blocks until it finishes, and `stop` ends it
-early:
+An output device is an `Audio.Outlet`, listed with `Audio.Outlet.list`. Playing an audio value
+returns a `Playback`, which runs in the background. `await` blocks until it finishes, and `stop`
+ends it early:
 
 ```scala
-Outlet.list.head.let: outlet =>
+Audio.Outlet.list.head.let: outlet =>
   val playback = outlet.play(audio)
   playback.await()
 ```
 
 Playing to an outlet which is unavailable, or which cannot accept the configuration of the
-audio, raises an `Outlet.Error`.
+audio, raises an `Audio.Outlet.Error`.
 
 ### Scoped lines
 
@@ -217,11 +217,11 @@ configuration are given as the form and its flags, which are `PcmFlag.Rate`, `Pc
 `PcmFlag.Chunk`:
 
 ```scala
-Feed.list.head.let: feed =>
+Audio.Feed.list.head.let: feed =>
   feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
     input.stream.head
 
-Outlet.list.head.let: outlet =>
+Audio.Outlet.list.head.let: outlet =>
   outlet.open[Pcm](Write): out ?=>
     out.play(audio)
 ```
@@ -233,13 +233,13 @@ The two kinds of device side by side:
 
 ```tabular
 column  Aspect
-column  `Feed`
-column  `Outlet`
+column  `Audio.Feed`
+column  `Audio.Outlet`
 row  Direction  input  output
-row  Listed with  `Feed.list`  `Outlet.list`
+row  Listed with  `Audio.Feed.list`  `Audio.Outlet.list`
 row  Open-ended use  `record`, giving a `Recording`  `play`, giving a `Playback`
 row  Scoped line  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
-row  Error  `Feed.Error`  `Outlet.Error`
+row  Error  `Audio.Feed.Error`  `Audio.Outlet.Error`
 ```
 
 ### Related

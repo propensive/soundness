@@ -76,7 +76,7 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
 
     // The layout of the titles alone, for a table that admits its rows one at a time.
     def layout(width: Int)
-      ( using style: TableStyle, metrics: Text is Measurable, attenuation: Attenuation^ )
+      ( using style: Table.Style, metrics: Text is Measurable, attenuation: Attenuation^ )
       ( using textual0: text is Textual { type Result = Char } )
     :   Layout[row, text] =
 

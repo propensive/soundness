@@ -41,7 +41,7 @@ import susurration.*
 import urticose.*
 
 package gitTransports:
-  // Remote repositories over the native SSH client. `Online` is demanded as evidence and not
+  // Git.Remote repositories over the native SSH client. `Online` is demanded as evidence and not
   // kept, as telekinesis's HTTP clients demand it: the transport itself is pure.
   given soundnessSsh
   :   Online

@@ -56,7 +56,7 @@ object Logger:
 
   def apply[eventType, loggingType, format, target]
     ( destination: target,
-      level:       Level               = Level.Info,
+      level:       Log.Level               = Log.Level.Info,
       name:        Optional[Text]      = Unset,
       categories:  Set[Log.Category]   = Set() )
     ( using inscribable: (loggingType is Inscribable in format)^,
@@ -80,7 +80,7 @@ object Logger:
     // The enqueue closure retains the formatter and writer, whose lifetime is the global
     // spool registry's (application-wide, by design of the shared-spool scheme); laundered
     // pure so `Logger` instances remain plain values.
-    val enqueue: (loggingType, Level, Long) -> Unit =
+    val enqueue: (loggingType, Log.Level, Long) -> Unit =
       // [registry-lifetime] enqueue closure retains writer of global spool registry
       caps.unsafe.unsafeAssumePure: (message, level, timestamp) =>
         spool.put(inscribable.formatter(message, level, timestamp))
@@ -121,15 +121,15 @@ object Logger:
         spool.stop()
 
 class Logger[-eventType, loggingType] private
-  ( threshold: Level, categories: Set[Log.Category], enqueue: (loggingType, Level, Long) -> Unit )
+  ( threshold: Log.Level, categories: Set[Log.Category], enqueue: (loggingType, Log.Level, Long) -> Unit )
 extends LogSink[eventType, loggingType]:
 
-  def accepts(level: Level): Boolean = level.ordinal >= threshold.ordinal
+  def accepts(level: Log.Level): Boolean = level.ordinal >= threshold.ordinal
 
   // With no categories configured, record everything (the level threshold is the only filter);
   // otherwise record only events whose runtime type mixes in one of the selected categories.
   override def admits(event: eventType): Boolean =
     categories.nil || categories.exists(_.reference.isInstance(event))
 
-  def submit(level: Level, timestamp: Long, message: loggingType): Unit =
+  def submit(level: Log.Level, timestamp: Long, message: loggingType): Unit =
     enqueue(message, level, timestamp)

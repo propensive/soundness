@@ -40,6 +40,7 @@ import profanity.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import ultimatum.Tui.{Arrangement, Frame, Occupancy, Pane, Region}
 
 object Form:
   // Minted fresh: the constructor proxy's result would be read-only, and `run` is an update.
@@ -65,7 +66,7 @@ object Form:
   // the pane is matched anyway, rather than re-tested on each access.
   private[ultimatum] case class Entry
     ( pane:    Pane,
-      rect:    Rect,
+      region:    Region,
       fixture: Optional[Fixture],
       focus:   Optional[Focus] )
 
@@ -179,7 +180,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
     def nextWidth(): Int =
       val index = consumed
       consumed += 1
-      if stale then root.width else previous.entries.at(index.z).lay(root.width)(_.rect.width)
+      if stale then root.width else previous.entries.at(index.z).lay(root.width)(_.region.width)
 
     def project(node: Pane): Frame = node match
       case Pane.Branch(sizing, arrangement, panes) =>
@@ -213,14 +214,14 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
       case Occupancy.Inline     => frame.measure(Arrangement.Stack).min
 
     root match
-      case inline: InlineRoot => inline.reframe(root.width, height)
-      case screen: ScreenRoot => screen.reframe()
+      case inline: Tui.Block => inline.reframe(root.width, height)
+      case screen: Tui.Screen => screen.reframe()
       case _                  => ()
 
-    val rects = frame.arrange(Rect(0, 0, root.width, height)).cells
+    val regions = frame.arrange(Region(0, 0, root.width, height)).cells
 
     Form.Layout:
-      panes.zip(rects).map: (leaf, rect) =>
+      panes.zip(regions).map: (leaf, region) =>
         val fixture: Optional[Fixture] = leaf match
           case Pane.Widget(_, fixture) => fixture
           case _                       => Unset
@@ -229,13 +230,13 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
           case Pane.Widget(_, focus: Focus) => focus
           case _                            => Unset
 
-        Form.Entry(leaf, rect, fixture, focus)
+        Form.Entry(leaf, region, fixture, focus)
   // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
   // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
   // crosses this boundary; both accesses below are then total.
   private update def paint(layout: Form.Layout)(index: Ordinal in layout.entries.type): Unit =
     val entry = layout.entries(index)
-    val extent = FlowExtent(root, entry.rect)
+    val extent = FlowExtent(root, entry.region)
 
     entry.pane match
       case Pane.Leaf(_, content) =>
@@ -273,11 +274,11 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         updated.entries.iterate(paint(updated)(_))
 
       case Occupancy.Fullscreen =>
-        val previousRects = if stale then Sequence() else previous.entries.map(_.rect)
+        val previousRegions = if stale then Sequence() else previous.entries.map(_.region)
 
         // An animated fixture is dirty by definition: its appearance depends on the clock, not on
         // its rectangle or its state, so nothing else in `dirtyCells` would notice it changing.
-        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed + animated)
+        val dirty = dirtyCells(previousRegions, updated.entries.map(_.region), changed + animated)
         dirty.each: index => updated.entries.pick(index.z)(paint(updated)(_))
 
     updated.focusables.pick(focusPosition(updated).z): position =>
@@ -369,12 +370,12 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         resizeGrace = false
 
         root match
-          case inline: InlineRoot =>
+          case inline: Tui.Block =>
             anchor.let: (row, column) => inline.anchor(row, column)
             anchor = Unset
             inline.invalidate()
 
-          case screen: ScreenRoot =>
+          case screen: Tui.Screen =>
             screen.invalidate()
 
           case _ =>
@@ -472,5 +473,5 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
               else requestRefresh(changed)
 
     root match
-      case inline: InlineRoot => inline.finish()
+      case inline: Tui.Block => inline.finish()
       case _                  => ()

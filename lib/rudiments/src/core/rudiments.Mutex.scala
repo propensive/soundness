@@ -51,7 +51,7 @@ class Mutex():
 // This lives beside `Mutex` rather than in `rudiments.Scoped.scala` because the compiler
 // (3.9.0-p16) fails a clean build of this module as soon as package `rudiments` has a
 // thirteenth compilation unit — even an empty one: the package object's `export
-// rudiments.internal.{Bytes, Digit}` is elaborated before `internal` is entered, and the
+// rudiments.internal.{Memory, Digit}` is elaborated before `internal` is entered, and the
 // import-suggestion fallback then reports cyclic references in `Atomic`. Move it out once
 // that is fixed.
 object Scoped:

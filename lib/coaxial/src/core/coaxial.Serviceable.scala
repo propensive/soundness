@@ -44,17 +44,17 @@ import vacuous.*
 import zephyrine.*
 
 object Serviceable:
-  given domainSocket: (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
+  given uds: (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
   =>  ( options: Every[Socket.Option.Domain] )
-  =>  ( (DomainSocket is Serviceable)^{tactic, caps.any} ) = new Serviceable:
-    type Self = DomainSocket
+  =>  ( (Uds is Serviceable)^{tactic, caps.any} ) = new Serviceable:
+    type Self = Uds
     type Output = Data
     type Connection = backend.Exchange
 
-    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress])
+    def connect(uds: Uds, interface: Optional[MacAddress])
     :   Connection raises Socket.Error =
 
-      backend.dialDomain(domainSocket, options.values.to(List))
+      backend.dialDomain(uds, options.values.to(List))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.request(connection, input)

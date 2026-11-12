@@ -44,6 +44,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group}
 
 object Histogram:
   case class Fit(edges: Sequence[Double], abscissa: Scale, ordinate: Scale)

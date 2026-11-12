@@ -108,6 +108,121 @@ object Toolchain:
     def appliesTo(format: Artifact): Boolean
     def edit(format: Artifact, settings: Any): Any
 
+  object Triple:
+    import anticipation.*
+    import gossamer.*
+    import vacuous.*
+
+    // The build host's target, read from the JVM's `os.name` and `os.arch` properties, or
+    // `Unset` on a platform outside the enumeration.
+    def host: Optional[Triple] =
+      val os = java.lang.System.getProperty("os.name").nn.toLowerCase.nn
+      val arch = java.lang.System.getProperty("os.arch").nn.toLowerCase.nn
+      val arm = arch.contains("aarch64") || arch.contains("arm64")
+
+      if os.contains("mac") then (if arm then Arm64MacOs else X64MacOs)
+      else if os.contains("linux") then (if arm then Arm64Linux else X64Linux)
+      else if os.contains("windows") then (if arm then Arm64Windows else X64Windows)
+      else Unset
+
+  // A target platform for a native link, rendered as an LLVM target triple. Targets beyond the
+  // build host require a C toolchain (and sysroot) capable of cross-compilation.
+  enum Triple:
+    import anticipation.*
+    import gossamer.*
+    import vacuous.*
+
+    case Arm64MacOs, X64MacOs, Arm64Linux, X64Linux, Arm64Windows, X64Windows
+
+    def text: Text = this match
+      case Arm64MacOs   => t"arm64-apple-darwin"
+      case X64MacOs     => t"x86_64-apple-darwin"
+      case Arm64Linux   => t"aarch64-unknown-linux-gnu"
+      case X64Linux     => t"x86_64-unknown-linux-gnu"
+      case Arm64Windows => t"aarch64-pc-windows-msvc"
+      case X64Windows   => t"x86_64-pc-windows-msvc"
+
+  object Universe:
+    import anticipation.*
+    import gossamer.*
+    import serpentine.*
+
+    type Classfile = Classfile.type
+    type Sjsir = Sjsir.type
+    type Nir = Nir.type
+
+    // Determines the additional compiler flags each universe's emission requires.
+    trait Emission[universe <: Universe]:
+      def flags: List[Text]
+
+    given classfile: Emission[Classfile]:
+      def flags: List[Text] = Nil
+
+    given sjsir: Emission[Sjsir]:
+      def flags: List[Text] = List(t"-scalajs")
+
+    // NIR is emitted by the Scala Native compiler plugin rather than by a backend built into the
+    // compiler, so compiling into the NIR universe requires evidence of the plugin's location.
+    given nir(using plugin: NirPlugin): Emission[Nir] =
+      new Emission[Nir]:
+        def flags: List[Text] = List(t"-Xplugin:${plugin.jar.encode}")
+
+  // The universe a compilation inhabits: the intermediate representation it emits, and hence the
+  // ecosystem of library artifacts it can link with. `Classfile` is JVM classfiles; `Sjsir` is
+  // Scala.js IR, whose linked representation (JavaScript, browser Wasm or a WASI component) is
+  // chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM. Each
+  // universe is an intermediate-representation node of a `Toolchain`.
+  // The `id` is a parameter rather than a match on the case: matching a case compares formats with
+  // `equals`, which compares their `id`s.
+  enum Universe(val id: Text) extends Artifact.Ir:
+    import anticipation.*
+    import gossamer.*
+    import serpentine.*
+
+    case Classfile extends Universe("classfile".tt)
+    case Sjsir extends Universe("sjsir".tt)
+    case Nir extends Universe("nir".tt)
+
+    // The label of the LIRA section holding this universe's content.
+    def section: Text = this match
+      case Classfile => t"jvm"
+      case Sjsir     => t"sjsir"
+      case Nir       => t"nir"
+
+    // The filename suffixes of this universe's stored representations: each universe's binary
+    // form, plus the TASTy that carries its interface.
+    def suffixes: List[Text] = this match
+      case Classfile => List(t".class", t".tasty")
+      case Sjsir     => List(t".sjsir", t".tasty")
+      case Nir       => List(t".nir", t".tasty")
+
+  // A toolchain edge's implementation: a compiler, linker or packager, together with the settings
+  // type configuring it and its default configuration. Tools are inert values: the capabilities
+  // their execution needs (asynchrony, system properties, a working directory) flow through
+  // `run`'s context rather than being captured at construction.
+  trait Tool:
+    import ambience.*
+    import anticipation.*
+    import contingency.*
+    import galilei.*
+    import parasite.*
+    import prepositional.*
+    import serpentine.*
+
+    type Settings
+
+    def name: Text
+    def initial: Settings
+
+    def run
+      ( settings:    Settings,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
+    :   Deliverable
+
 // An in-memory toolchain: a directed acyclic graph whose nodes are formats and whose edges are
 // tools. Producing one format from another is path search: the unique shortest edge sequence
 // between the two nodes determines the tools to run, in order. The node set is open—registering

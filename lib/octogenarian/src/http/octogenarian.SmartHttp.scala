@@ -139,7 +139,7 @@ object SmartHttp:
 
     def close(): Unit = ()
 
-// Remote repositories reached over HTTP or HTTPS by git's smart protocol: the capability
+// Git.Remote repositories reached over HTTP or HTTPS by git's smart protocol: the capability
 // advertisement from `info/refs` and each command as a `POST` to the service, with protocol
 // version 2 requested in the `Git-Protocol` header. Credentials in the URL's userinfo are sent as
 // Basic authentication.

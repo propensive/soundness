@@ -34,11 +34,11 @@ package soundness
 
 export
   probably
-  . { Anchor, Arithmetic, aspirationally, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
-      Derived, Geometric, Harness, Hotspots, impromptu, Impromptu, Inclusion,
+  . { Anchor, aspirationally, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
+      Derived, Harness, Hotspots, impromptu, Impromptu, Inclusion,
       Max, Mean, Metric, Min, nominative, Probing, Report, Reporter, Run, Runner, Spread,
       Spread2, Strain, suite, Tagging, taggingNominative, Tally, Temporal, Test, test,
-      Testable, Trial, Value, Verdict }
+      Testable, Trial, Verdict }
 
 // `probably.Tag` is deliberately NOT re-exported: `soundness.Tag` is honeycomb's HTML tag. A
 // suite rarely needs to name the type — tags are written as `n"…"` literals — and when it

@@ -41,6 +41,7 @@ import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import polyvinyl.Specification.{Member, Multiplicity}
 
 // Holds `Tel.Provider`, the type provider over a TEL schema. Its own layer in `Tel`'s companion
 // chain so that `Tel.scala` need not carry it, and so that it precedes nothing: it contributes

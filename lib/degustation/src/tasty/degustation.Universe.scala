@@ -45,25 +45,6 @@ import vacuous.*
 
 import Pickled.*
 
-object ClassSource:
-  // The first source that has an entry answers for it.
-  def apply(sources: ClassSource*): ClassSource = new ClassSource:
-    private val all = sources
-
-    def read(path: Text): Optional[Data] =
-      all.stdlib.view.map(_.read(path)).find(_.present).getOrElse(Unset)
-
-    def list(directory: Text): List[Text] =
-      all.stdlib.flatMap(_.list(directory).stdlib).distinct.to(List)
-
-// Where a universe finds its classes: a classpath reduced to two questions, so that the same
-// semantic layer runs wherever the bytes can be fetched from — directories and jars on the JVM,
-// a bundle in a browser, a linked-in archive in a native binary. Paths are slash-separated and
-// relative, as classfiles and `.tasty` files are named: `scala/collection/immutable/List.tasty`.
-trait ClassSource:
-  def read(path: Text): Optional[Data]
-  def list(directory: Text): List[Text]
-
 // A loaded `.tasty` file: its trees; the fully-qualified name of every definition in it that a
 // reference from outside a term body can reach, by address; the definitions inside term bodies,
 // which are local; and every definition's owner — the address of the definition enclosing it, or
@@ -106,45 +87,10 @@ case class Member
     address: Int,
     erased:  Optional[Text] )
 
-// A class as the universe knows it, from its TASTy or its classfile.
-case class ClassInfo
-  ( fullName:   Text,
-    flags:      Set[Flag],
-    typeParams: List[(Text, Type)],
-    // The addresses of the type parameters' definitions, which the class's own types refer to.
-    typeParamAddresses: List[Int],
-    parents:    List[Type],
-    members:    List[Member],
-    valueParam: Optional[Type],
-    scope:      Optional[Scope],
-    java:       Boolean,
-    // The address of the class's definition in its scope; -1 for a class without TASTy.
-    address:    Int = -1 ):
-
-  // The package the class is in, as its scope records it: the owner of a top-level class, or of
-  // the top-level class enclosing a nested one.
-  def pkg: Text = scope.lay(fullName.s.lastIndexOf('.') match
-    case -1    => t""
-
-    case index => fullName.s.substring(0, index).nn.tt): scope =>
-      def owner(address: Int): Text = scope.owners.at(address) match
-        case pkg: Text   => pkg
-        case parent: Int => owner(parent)
-        case _           => t""
-
-      owner(address)
-
-  def isTrait: Boolean = flags.contains(Flag.Trait)
-  def isObject: Boolean = flags.contains(Flag.Object)
-
-  // The value class rule the compiler applies: a class extending `AnyVal` that is not one of the
-  // primitives (nor `AnyVal` or `Null` themselves).
-  def isValueClass: Boolean = valueParam.present && !Universe.primitives.contains(fullName)
-
 // What a type reference turns out to name.
 enum Resolution:
   // A class, with the type arguments it was applied to, if any.
-  case Class(info: ClassInfo, arguments: List[Type], scope: Optional[Scope])
+  case Class(info: Universe.ClassInfo, arguments: List[Type], scope: Optional[Scope])
   // A type alias (opaque or not): `apply` substitutes arguments into its right-hand side, and
   // `body` is that right-hand side as declared (a lambda, when parameterized).
   case Alias
@@ -161,8 +107,60 @@ enum Resolution:
   case Package(path: Text)
   case Unknown(reason: Text)
 
-@unexported
 object Universe:
+  object Source:
+    // The first source that has an entry answers for it.
+    def apply(sources: Source*): Source = new Source:
+      private val all = sources
+
+      def read(path: Text): Optional[Data] =
+        all.stdlib.view.map(_.read(path)).find(_.present).getOrElse(Unset)
+
+      def list(directory: Text): List[Text] =
+        all.stdlib.flatMap(_.list(directory).stdlib).distinct.to(List)
+
+  // Where a universe finds its classes: a classpath reduced to two questions, so that the same
+  // semantic layer runs wherever the bytes can be fetched from — directories and jars on the JVM,
+  // a bundle in a browser, a linked-in archive in a native binary. Paths are slash-separated and
+  // relative, as classfiles and `.tasty` files are named: `scala/collection/immutable/List.tasty`.
+  trait Source:
+    def read(path: Text): Optional[Data]
+    def list(directory: Text): List[Text]
+
+  // A class as the universe knows it, from its TASTy or its classfile.
+  case class ClassInfo
+    ( fullName:   Text,
+      flags:      Set[Flag],
+      typeParams: List[(Text, Type)],
+      // The addresses of the type parameters' definitions, which the class's own types refer to.
+      typeParamAddresses: List[Int],
+      parents:    List[Type],
+      members:    List[Member],
+      valueParam: Optional[Type],
+      scope:      Optional[Scope],
+      java:       Boolean,
+      // The address of the class's definition in its scope; -1 for a class without TASTy.
+      address:    Int = -1 ):
+
+    // The package the class is in, as its scope records it: the owner of a top-level class, or of
+    // the top-level class enclosing a nested one.
+    def pkg: Text = scope.lay(fullName.s.lastIndexOf('.') match
+      case -1    => t""
+
+      case index => fullName.s.substring(0, index).nn.tt): scope =>
+        def owner(address: Int): Text = scope.owners.at(address) match
+          case pkg: Text   => pkg
+          case parent: Int => owner(parent)
+          case _           => t""
+
+        owner(address)
+
+    def isTrait: Boolean = flags.contains(Flag.Trait)
+    def isObject: Boolean = flags.contains(Flag.Object)
+
+    // The value class rule the compiler applies: a class extending `AnyVal` that is not one of the
+    // primitives (nor `AnyVal` or `Null` themselves).
+    def isValueClass: Boolean = valueParam.present && !Universe.primitives.contains(fullName)
 
   // A `scala.annotation.internal` marker annotation, as the compiler attaches to a parameter's
   // type for a modifier that is not otherwise representable in a method type.
@@ -172,10 +170,10 @@ object Universe:
   // The classes the compiler defines without a classfile or TASTy behind them: the top and
   // bottom of the type lattice, the repeated-parameter marker, and the function classes it
   // makes up by arity.
-  def synthetic(fullName: Text): Optional[ClassInfo] =
-    def make(parents: List[Text], flags: Set[Flag] = Set(Flag.Trait)): ClassInfo =
+  def synthetic(fullName: Text): Optional[Universe.ClassInfo] =
+    def make(parents: List[Text], flags: Set[Flag] = Set(Flag.Trait)): Universe.ClassInfo =
       val parentTypes = parents.map(classRef)
-      ClassInfo(fullName, flags, List(), List(), parentTypes, List(), Unset, Unset, java = false)
+      Universe.ClassInfo(fullName, flags, List(), List(), parentTypes, List(), Unset, Unset, java = false)
 
     fullName.s match
       case "scala.Any"           => make(List(), Set(Flag.Abstract)).copy(members = anyMembers)
@@ -882,15 +880,14 @@ object Universe:
     case Tree.ExplicitTpt(tpt)      => scala.List(tpt)
     case _                          => scala.List()
 
-// The classes a module's TASTy can reach, loaded lazily from a `ClassSource`, and the semantic
+// The classes a module's TASTy can reach, loaded lazily from a `Universe.Source`, and the semantic
 // questions over them that erasure and member lookup ask: what a name refers to, what a class's
 // parents and members are, how it linearizes. Nothing here subtypes, infers or substitutes beyond
 // an alias's parameters — the two questions the `tasty/1` discipline cannot read off the bytes
 // need no more than this.
-@unexported
-class Universe(source: ClassSource):
+class Universe(source: Universe.Source):
   private val scopes = mutable.HashMap[Text, Optional[Scope]]()
-  private val classes = mutable.HashMap[Text, Optional[ClassInfo]]()
+  private val classes = mutable.HashMap[Text, Optional[Universe.ClassInfo]]()
   private val linearizations = mutable.HashMap[Text, List[Text]]()
   private val linearizing = mutable.HashSet[Text]()
 
@@ -913,16 +910,16 @@ class Universe(source: ClassSource):
   // The class named `fullName`, from the first of its TASTy or its classfile that exists. A nested
   // class lives in its top-level class's TASTy, so every split of the name between package and
   // class segments is tried, longest package first.
-  def classOf(fullName: Text): Optional[ClassInfo] =
+  def classOf(fullName: Text): Optional[Universe.ClassInfo] =
     classes.getOrElseUpdate(fullName, Universe.synthetic(fullName).or(load(fullName)))
 
-  private def load(fullName: Text): Optional[ClassInfo] =
+  private def load(fullName: Text): Optional[Universe.ClassInfo] =
     // A class's simple name may itself contain dots (a top-level definitions' carrier is named
     // after its source file, `rudiments.Scribe$package`), so every way of reading the name as
     // package segments, a top-level class name and nested class names is tried, longest package
     // first; a module class `X$` lives in `X.tasty`.
     val segments = fullName.cut(t".").stdlib
-    var result: Optional[ClassInfo] = Unset
+    var result: Optional[Universe.ClassInfo] = Unset
     var split = segments.length - 1
 
     while result.absent && split >= 0 do
@@ -957,8 +954,8 @@ class Universe(source: ClassSource):
     result
 
   // The class at `path` (the class names from the top-level class inwards) in a loaded file.
-  private def classIn(scope: Scope, fullName: Text, path: scala.List[Text]): Optional[ClassInfo] =
-    def search(statements: scala.List[Tree], remaining: scala.List[Text]): Optional[ClassInfo] =
+  private def classIn(scope: Scope, fullName: Text, path: scala.List[Text]): Optional[Universe.ClassInfo] =
+    def search(statements: scala.List[Tree], remaining: scala.List[Text]): Optional[Universe.ClassInfo] =
       remaining.headOption match
         case None => Unset
 
@@ -983,7 +980,7 @@ class Universe(source: ClassSource):
       fullName: Text,
       typeDef:  Tree.TypeDef,
       template: Tree.Template )
-  :   ClassInfo =
+  :   Universe.ClassInfo =
 
     val typeParams = template.typeParams.stdlib.collect:
       case Tree.TypeParam(_, name, bounds, _) => (name, Universe.typeOf(bounds))
@@ -1042,10 +1039,10 @@ class Universe(source: ClassSource):
 
       else Unset
 
-    ClassInfo(fullName, typeDef.modifiers.flags, typeParams, typeParamAddresses, parents, members,
+    Universe.ClassInfo(fullName, typeDef.modifiers.flags, typeParams, typeParamAddresses, parents, members,
         valueParam, scope, java = false, typeDef.address)
 
-  private def fromClassfile(classfile: Classfile.Class): ClassInfo =
+  private def fromClassfile(classfile: Classfile.Class): Universe.ClassInfo =
     val flags = if classfile.isInterface then Set(Flag.Trait) else Set[Flag]()
 
     // `java.lang.Object` is the compiler's `AnyRef`: it extends `Any` and carries the members the
@@ -1111,7 +1108,7 @@ class Universe(source: ClassSource):
       val outerName = classOf(outer).let(_.fullName).or(outer)
       if classfile.static then t"$outerName$$.$simple" else t"$outerName.$simple"
 
-    ClassInfo(fullName, flags, List(), List(), parents, members, Unset, Unset, java = true)
+    Universe.ClassInfo(fullName, flags, List(), List(), parents, members, Unset, Unset, java = true)
 
   // --- resolution ---------------------------------------------------------------------------
 
@@ -1557,7 +1554,7 @@ class Universe(source: ClassSource):
   // Among the members of a name along a class's linearization, the one a reference denotes: the
   // one whose signature the reference carries, if it does; and a concrete one over an abstract
   // redeclaration (`findMember` joins them in the concrete one's favour).
-  def choose(info: ClassInfo, name: Name): Optional[(ClassInfo, Member)] =
+  def choose(info: Universe.ClassInfo, name: Name): Optional[(Universe.ClassInfo, Member)] =
     val candidates = termsIn(info, name.unsigned.spelled).stdlib
 
     // An unsigned reference to an overloaded name denotes the parameterless alternative (the
@@ -1581,7 +1578,7 @@ class Universe(source: ClassSource):
   // The type arguments with which `info`, applied to `arguments`, instantiates its base class
   // `owner`: the arguments themselves for the class itself, else those of the parent clause that
   // leads to `owner`, with the class's own parameters substituted.
-  def baseArguments(info: ClassInfo, arguments: List[Type], owner: ClassInfo)
+  def baseArguments(info: Universe.ClassInfo, arguments: List[Type], owner: Universe.ClassInfo)
   :   Optional[List[Type]] =
 
     if info.fullName == owner.fullName then arguments
@@ -1655,7 +1652,7 @@ class Universe(source: ClassSource):
   // refinement of the prefix's type (`x.Transport` with `x: Schematic { type Transport = T }`)
   // answers for them. The prefix is pinned to the scope it is spelled in, since the member's type
   // is read in the declaring class's.
-  private def seenFrom(tpe: Type, pinned: Type, owner: ClassInfo): Type =
+  private def seenFrom(tpe: Type, pinned: Type, owner: Universe.ClassInfo): Type =
     def stable(prefix: Type): Boolean = prefix match
       case Type.TermRef(_, _) | Type.TermRefIn(_, _, _) | Type.TermRefDirect(_)
         | Type.TermRefLocal(_, _) | Type.This(_) =>
@@ -1686,7 +1683,7 @@ class Universe(source: ClassSource):
   // finds a package-level type alias or definition.
   def packageObjectMember(pkg: Text, name: Text, kinds: Set[Kind])
 
-  :   Optional[(ClassInfo, Member)] =
+  :   Optional[(Universe.ClassInfo, Member)] =
 
     val packageObject = classOf(Universe.qualify(pkg, t"package$$")).let(memberIn(_, name, kinds))
 
@@ -1717,7 +1714,7 @@ class Universe(source: ClassSource):
 
   // The class a type is a reference to, through aliases, bounds and singletons.
   // The self type a class declares, if any.
-  def selfType(info: ClassInfo): Optional[Type] =
+  def selfType(info: Universe.ClassInfo): Optional[Type] =
     info.scope.let: scope =>
       scope.definition(info.address) match
         case Tree.TypeDef(_, _, Tree.Template(_, _, _, self, _), _) =>
@@ -1725,13 +1722,13 @@ class Universe(source: ClassSource):
 
         case _ => Unset
 
-  def classOf(tpe: Type, scope: Optional[Scope]): Optional[ClassInfo] = owner(tpe, scope) match
+  def classOf(tpe: Type, scope: Optional[Scope]): Optional[Universe.ClassInfo] = owner(tpe, scope) match
     case Resolution.Class(info, _, _) => info
     case _                            => Unset
 
   // The member called `name` of one of the given kinds, in `info` or the first of its
   // linearization that declares one, with its declaring class.
-  def memberIn(info: ClassInfo, name: Text, kinds: Set[Kind]): Optional[(ClassInfo, Member)] =
+  def memberIn(info: Universe.ClassInfo, name: Text, kinds: Set[Kind]): Optional[(Universe.ClassInfo, Member)] =
     // The class's own declarations first, which also keeps a parent clause that names a member
     // of the class itself from needing the linearization it is part of computing.
     info.members.stdlib.find { m => m.name == name && kinds.contains(m.kind) } match
@@ -1746,7 +1743,7 @@ class Universe(source: ClassSource):
         . headOption.getOrElse(Unset)
 
   // Every term member called `name` along the linearization, declaring class first.
-  def termsIn(info: ClassInfo, name: Text): List[(ClassInfo, Member)] =
+  def termsIn(info: Universe.ClassInfo, name: Text): List[(Universe.ClassInfo, Member)] =
     linearization(info).stdlib.flatMap: className =>
       classOf(className).lay(scala.List()): owner =>
         owner.members.filter: m => m.name == name && (m.kind == Kind.Def || m.kind == Kind.Val)
@@ -1756,7 +1753,7 @@ class Universe(source: ClassSource):
 
   // The class's linearization by full name: itself, then its parents' linearizations from the
   // last parent to the first, each contributing only the classes not yet seen.
-  def linearization(info: ClassInfo): List[Text] =
+  def linearization(info: Universe.ClassInfo): List[Text] =
     linearizations.get(info.fullName) match
       case Some(result) => result
 
@@ -1773,11 +1770,11 @@ class Universe(source: ClassSource):
 
   // `L(C) = C, L(Pn) +: … +: L(P1)`, where the concatenation keeps the *last* occurrence of a
   // class that appears more than once, so a class's superclass's linearization is a suffix.
-  private def computeLinearization(info: ClassInfo): List[Text] =
+  private def computeLinearization(info: Universe.ClassInfo): List[Text] =
     val concatenated = info.parents.stdlib.reverse.flatMap: parent =>
       classOf(parent, info.scope).lay(scala.List())(linearization(_).stdlib)
 
     val merged = concatenated.reverse.distinct.reverse.filter(_ != info.fullName)
     (info.fullName :: merged).to(List)
 
-  def derivesFrom(info: ClassInfo, base: Text): Boolean = linearization(info).has(base)
+  def derivesFrom(info: Universe.ClassInfo, base: Text): Boolean = linearization(info).has(base)

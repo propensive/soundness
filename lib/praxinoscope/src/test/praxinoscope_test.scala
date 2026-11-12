@@ -37,6 +37,7 @@ import denominative.dysasymptotics.linearSize // the suites read list sizes; the
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import praxinoscope.Motif.Ranges
 
 object Tests extends Suite("re2", m"Praxinoscope tests"):
   def run(): Unit =

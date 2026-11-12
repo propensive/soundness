@@ -32,7 +32,6 @@
                                                                                                   */
 package soundness
 
-export octogenarian.Commandline
 export octogenarian.Gpg
 
 package gitCommands:

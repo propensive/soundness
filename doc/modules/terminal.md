@@ -218,7 +218,7 @@ supervise:
     val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head.or(t""), maxWidth = 20))
     val body = border(BorderStyle.heavy)(editor(LineEditor()))
 
-    conduct(Occupancy.Inline)(strip(sidebar, body))
+    conduct(Tui.Occupancy.Inline)(strip(sidebar, body))
 ```
 
 Sizes are solved as fractions, with minima and maxima, and focus moves between widgets with

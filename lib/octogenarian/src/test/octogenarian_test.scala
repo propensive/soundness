@@ -56,6 +56,7 @@ import filesystemOptions.overwritePreexisting
 import gitCommands.searchpathGitCommand
 
 import denominative.dysasymptotics.linearSize
+import dissonance.Diff.{Del, Ins, Par}
 
 object Tests extends Suite("git", m"Octogenarian Tests"):
   def run(): Unit =
@@ -129,8 +130,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       Operations.planePath(worktree, name)
 
-    def patchFrom(lines: Text*): List[FileDiff] =
-      Patch.parse(lines)
+    def patchFrom(lines: Text*): List[Git.Delta] =
+      Git.Patch.parse(lines)
 
     def messages(using worktree: (Git.Worktree.Handle & Granting[Grant.Read & Grant.Write])^): List[Text] =
       worktree.log().value.map(_.message)
@@ -293,7 +294,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
         Git.Signature.parse(t"Prince Hal <hal@example.com> 1700000000 +0000")
       .assert(_ == Git.Signature(Git.Identity(t"Prince Hal", t"hal@example.com"), Git.Timestamp(1700000000L, 0)))
 
-    // ----- Patch parser ----------------------------------------------------
+    // ----- Git.Patch parser ----------------------------------------------------
 
     suite(m"Patch parser"):
 
@@ -301,7 +302,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
         patchFrom().size
       .assert(_ == 0)
 
-      test(m"a single Modified file yields one FileDiff"):
+      test(m"a single Modified file yields one Delta"):
         patchFrom
          ( t"diff --git a/sonnet.txt b/sonnet.txt",
            t"index 1234567..89abcde 100644",
@@ -314,17 +315,17 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t" three" ).size
       .assert(_ == 1)
 
-      test(m"a Modified file has ChangeKind.Modified"):
+      test(m"a Modified file has Delta.Status.Modified"):
         patchFrom
          ( t"diff --git a/sonnet.txt b/sonnet.txt",
            t"--- a/sonnet.txt",
            t"+++ b/sonnet.txt",
            t"@@ -1 +1 @@",
            t"-old",
-           t"+new" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Modified)
+           t"+new" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Modified)
 
-      test(m"a new file has ChangeKind.Added"):
+      test(m"a new file has Delta.Status.Added"):
         patchFrom
          ( t"diff --git a/new.txt b/new.txt",
            t"new file mode 100644",
@@ -332,10 +333,10 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"--- /dev/null",
            t"+++ b/new.txt",
            t"@@ -0,0 +1 @@",
-           t"+content" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Added)
+           t"+content" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Added)
 
-      test(m"a deleted file has ChangeKind.Deleted"):
+      test(m"a deleted file has Delta.Status.Deleted"):
         patchFrom
          ( t"diff --git a/old.txt b/old.txt",
            t"deleted file mode 100644",
@@ -343,16 +344,16 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"--- a/old.txt",
            t"+++ /dev/null",
            t"@@ -1 +0,0 @@",
-           t"-content" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Deleted)
+           t"-content" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Deleted)
 
-      test(m"a renamed file has ChangeKind.Renamed"):
+      test(m"a renamed file has Delta.Status.Renamed"):
         patchFrom
          ( t"diff --git a/old.txt b/new.txt",
            t"similarity index 100%",
            t"rename from old.txt",
-           t"rename to new.txt" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Renamed)
+           t"rename to new.txt" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Renamed)
 
       test(m"a renamed file records both old and new paths"):
         patchFrom
@@ -363,13 +364,13 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           (file.oldPath, file.newPath)
       .assert(_ == (t"old.txt", t"new.txt"))
 
-      test(m"a copied file has ChangeKind.Copied"):
+      test(m"a copied file has Delta.Status.Copied"):
         patchFrom
          ( t"diff --git a/source b/dest",
            t"similarity index 80%",
            t"copy from source",
-           t"copy to dest" ).head.let(_.changeKind)
-      .assert(_ == ChangeKind.Copied)
+           t"copy to dest" ).head.let(_.status)
+      .assert(_ == Git.Delta.Status.Copied)
 
       test(m"multiple files yield multiple FileDiffs"):
         patchFrom
@@ -467,7 +468,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"\\ No newline at end of file" ).head.let(_.hunks.head).let(_.edits.size)
       .assert(_ == 2)
 
-      test(m"a binary diff yields a FileDiff with no hunks"):
+      test(m"a binary diff yields a Delta with no hunks"):
         patchFrom
          ( t"diff --git a/blob b/blob",
            t"index 1234567..89abcde",
@@ -486,7 +487,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"@@ -10 +10 @@",
            t"-other",
            t"+also" ).head.let: file =>
-          Patch.asDiff(file).edits.size
+          Git.Patch.asDiff(file).edits.size
       .assert(_ == 4)
 
       test(m"a header with no --- / +++ block still records paths from `diff --git`"):
@@ -1119,7 +1120,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
             val files = worktree.diff().value
             files.size == 1
-              && files.head.lay(false)(_.changeKind == ChangeKind.Modified)
+              && files.head.lay(false)(_.status == Git.Delta.Status.Modified)
               && files.head.lay(false): file =>
                   file.hunks.bind(_.edits).exists:
                     case Ins(_, t"second") => true
@@ -1133,7 +1134,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             worktree.add(planePath(t"b"))
             val staged = worktree.diffStaged().value
             staged.size == 1
-              && staged.head.lay(false)(_.changeKind == ChangeKind.Added)
+              && staged.head.lay(false)(_.status == Git.Delta.Status.Added)
               && staged.head.lay(false)(_.newPath == t"b")
         .assert(_ == true)
 
@@ -1163,7 +1164,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             sh"rm ${worktree.stem}/a".exec[Exit]()
             worktree.add(planePath(t"a"))
             worktree.diffStaged().value.head.lay(false): file =>
-              file.changeKind == ChangeKind.Deleted
+              file.status == Git.Delta.Status.Deleted
                 && file.oldPath == t"a"
                 && file.newPath == Unset
         .assert(_ == true)
@@ -1491,7 +1492,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
             worktree.remotes().value
-        .assert(_ == List(Remote(t"origin", t"git@example.com:globe/hamlet.git")))
+        .assert(_ == List(Git.Remote(t"origin", t"git@example.com:globe/hamlet.git")))
 
         test(m"adding a remote twice fails with RemoteExists"):
           withWorktree: worktree ?=>
@@ -1837,27 +1838,27 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
     suite(m"stderr reasons"):
 
       test(m"a moved ref is read with both hashes"):
-        Commandline.reason(t"error: cannot lock ref 'refs/heads/main': is at 1111111111111111111111111111111111111111 but expected 2222222222222222222222222222222222222222")
+        octogenarian.Commandline.reason(t"error: cannot lock ref 'refs/heads/main': is at 1111111111111111111111111111111111111111 but expected 2222222222222222222222222222222222222222")
       .assert(_ == Git.Error.Reason.Moved(t"refs/heads/main", Git.Hash.unsafe(t"2222222222222222222222222222222222222222"), Git.Hash.unsafe(t"1111111111111111111111111111111111111111")))
 
       test(m"an existing ref is RefExists"):
-        Commandline.reason(t"fatal: cannot lock ref 'refs/tags/v1': reference already exists")
+        octogenarian.Commandline.reason(t"fatal: cannot lock ref 'refs/tags/v1': reference already exists")
       .assert(_ == Git.Error.Reason.RefExists(t"refs/tags/v1"))
 
       test(m"a non-repository is NoRepository"):
-        Commandline.reason(t"fatal: not a git repository (or any of the parent directories): .git")
+        octogenarian.Commandline.reason(t"fatal: not a git repository (or any of the parent directories): .git")
       .assert(_ == Git.Error.Reason.NoRepository(t""))
 
       test(m"overwritten local changes list their paths"):
-        Commandline.reason(t"error: Your local changes to the following files would be overwritten by checkout:\n\ta\n\tb\nPlease commit your changes or stash them before you switch branches.")
+        octogenarian.Commandline.reason(t"error: Your local changes to the following files would be overwritten by checkout:\n\ta\n\tb\nPlease commit your changes or stash them before you switch branches.")
       .assert(_ == Git.Error.Reason.Dirty(List(t"a", t"b")))
 
       test(m"an unrecognised message is Unexpected"):
-        Commandline.reason(t"something nobody anticipated")
+        octogenarian.Commandline.reason(t"something nobody anticipated")
       .assert(_ == Git.Error.Reason.Unexpected)
 
       test(m"an existing note names its target"):
-        Commandline.reason(t"error: Cannot add notes. Found existing notes for object 5c1d2b7e3a4f60918273645566778899aabbccdd. Use '-f' to overwrite existing notes")
+        octogenarian.Commandline.reason(t"error: Cannot add notes. Found existing notes for object 5c1d2b7e3a4f60918273645566778899aabbccdd. Use '-f' to overwrite existing notes")
       .assert(_ == Git.Error.Reason.NoteExists(Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")))
 
     // ----- Activity --------------------------------------------------------------

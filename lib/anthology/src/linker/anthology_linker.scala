@@ -52,6 +52,7 @@ import vacuous.*
 import zeppelin.*
 
 import Artifact.Jar
+import anthology.Toolchain.{Tool, Universe}
 
 object jarOptions:
   // The filename of the JAR within the output directory, for both `Jar` and `Library` nodes.

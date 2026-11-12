@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import enigmatic.BlockCipher.{Cbc, Cfb, Ctr, Ecb, Iso10126, NoPadding, Ofb, Pkcs7}
+
 // Evidence that a block-cipher `mode` may be combined with a `padding`, matching
 // the combinations the JDK actually supports. Block-structured modes accept all
 // three paddings; the counter mode accepts only `NoPadding`.

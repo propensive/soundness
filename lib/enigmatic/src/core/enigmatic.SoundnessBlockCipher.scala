@@ -38,6 +38,7 @@ import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import enigmatic.BlockCipher.{Cbc, Cfb, Ctr, Ecb, Iso10126, Ofb, Pkcs7}
 
 // A failure raised by the pure-Scala provider: the counterpart of the `javax.crypto` exceptions
 // the JDK provider throws, carrying the `Crypto.Error.Reason` directly so that the

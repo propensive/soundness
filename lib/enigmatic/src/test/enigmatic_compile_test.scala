@@ -39,6 +39,7 @@ import blockCipherModes.cbc, blockCipherPaddings.pkcs7
 import providers.javaBaseProvider
 import cryptoPermits.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated
 import cloaks.heapCloak
+import enigmatic.BlockCipher.{Cbc, Pkcs7}
 
 // Compile-time regressions for the cipher API. (Capture-checking confinement of
 // the lent `Encryptor`/`Decryptor` capability is enforced and regression-tested

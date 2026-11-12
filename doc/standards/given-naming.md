@@ -9,7 +9,7 @@ document decides what it is *called*. For why the name matters at all, see
 [declarative context](../philosophy/declarative-context.md) and
 [naming](../philosophy/naming.md).
 
-Givens in companion objects (`InlineAnchoring.default`, `Buffering.standard`) are outside
+Givens in companion objects (`Tui.Block.Anchoring.default`, `Buffering.standard`) are outside
 this standard: they resolve by type and are never written at an import site.
 
 ## The test

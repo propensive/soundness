@@ -43,6 +43,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group, Polyline}
 
 object Lines:
   case class Fit(abscissa: Scale, ordinate: Scale)

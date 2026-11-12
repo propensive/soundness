@@ -34,8 +34,9 @@ row  api-1  multi-word names nest  near
 row  api-2  homonyms and synonyms resolve  near
 row  api-3  the backing entities demote  mid
 row  api-4  naming conformance is checked  mid
-row  api-5  the inventory is deleted  long  api-1, api-2, api-3
+row  api-5  the inventory is deleted  long  api-1, api-2, api-3, api-7
 row  api-6  surface changes flow through the migration convention  long  dist-2
+row  api-7  over-generic top-level names nest  mid
 ```
 
 ## api-1: multi-word names nest
@@ -90,7 +91,7 @@ runs in the ordinary build.
 ## api-5: the inventory is deleted
 
 Horizon: long
-Needs: api-1, api-2, api-3
+Needs: api-1, api-2, api-3, api-7
 
 When every category is drained, the scaffolding comes down.
 
@@ -109,3 +110,25 @@ is no fear of improving an API, because migration is cheap.
 
 Done when: the `dist-2` CI check has been enforced on every surface-changing pull request for
 ten consecutive releases.
+
+## api-7: over-generic top-level names nest
+
+Horizon: mid
+Baseline: 6 names exported into the umbrella by two libraries each (`Namespace`, `Commandline`, `Pane`, `Arithmetic`, `Native`, `Bytes`); 2 homonyms hidden by `@unexported` (`Tag`, `Renderable`); about 110 single-word candidates in rule R8's tables (measured 2026-11-12)
+
+api-1 nests a name whose prefix repeats its context. This item covers the case with no prefix
+to strip: a single word whose bare spelling claims a general concept when it names one
+library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate is judged
+case by case against rule R8 in `doc/api-nesting-proposal.md`. Convenience keeps a name
+top-level only when it is the library's principal type, or a concept that really is general.
+
+Progress (2026-11-12): no name is exported by more than one library; of the R8 high-confidence
+table, nineteen rows are done, three deferred for a ruling (ultimatum's gauges, honeycomb's
+attribute-value enums, savagery's `Figure` taxonomy), and xylophone's `Tag`/`Renderable` are
+blocked by `object Xml extends Tag.Container`.
+
+Done when: no name is exported into `package soundness` by more than one library, no
+`@unexported` exists only to dodge a clash, and every row of the R8 tables in
+`doc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+top-level" list.
+

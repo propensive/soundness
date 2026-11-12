@@ -42,6 +42,9 @@ import errorDiagnostics.stackTracesDiagnostics
 import cataclysm.Css.Syntax
 import Css.Node.*
 import denominative.dysasymptotics.linearSize
+import cataclysm.Selector
+  . { AttributeMatcher, AttributeTest, Combinator, Compound, Prefix, PseudoArgument, Simple }
+import cataclysm.Css.Outcome
 
 object Tests extends Suite("css", m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────
@@ -83,9 +86,9 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
 
   // ── value-matcher helpers ────────────────────────────────────────────────
   def vm(property: Text, value: Text): Optional[Outcome] =
-    PropertyDef.of(property).let(SyntaxMatcher.check(_, value))
+    PropertyDef.of(property).let(Css.Syntax.Matcher.check(_, value))
 
-  def vmatch(grammar: Css.Syntax, value: Text): Outcome = SyntaxMatcher.check(grammar, value)
+  def vmatch(grammar: Css.Syntax, value: Text): Outcome = Css.Syntax.Matcher.check(grammar, value)
 
   def run(): Unit =
     suite(m"CSS parsing"):

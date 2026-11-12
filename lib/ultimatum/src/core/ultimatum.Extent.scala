@@ -34,8 +34,9 @@ package ultimatum
 
 import profanity.*
 import turbulence.*
+import ultimatum.Tui.{Region}
 
-// A virtual, embedded terminal confined to a `Rect` within a parent surface. An
+// A virtual, embedded terminal confined to a `Region` within a parent surface. An
 // `Extent` is both a `Board` (so widgets position through `move`) and an
 // `Stdio` (so bare `Out.println` in a panel body flows into the rectangle).
 // Because it is an `Stdio`, the `Extent` made available in a panel body shadows
@@ -45,4 +46,4 @@ import turbulence.*
 // would also admit a heavier yossarian-backed implementation, but nothing here
 // requires one.
 trait Extent extends Board, Stdio:
-  def rect: Rect
+  def region: Region

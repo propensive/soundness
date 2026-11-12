@@ -93,7 +93,7 @@ class Erasure(universe: Universe):
   // The erased signature of a definition: for a method, its clauses' parameters and its result;
   // for anything else — a value, a parameterless method — the signature the compiler gives a
   // non-method, `()`.
-  def signature(tree: Tree, scope: Optional[Scope], owner: Optional[ClassInfo]): Text = tree match
+  def signature(tree: Tree, scope: Optional[Scope], owner: Optional[Universe.ClassInfo]): Text = tree match
     case Tree.DefDef(_, name, clauses, returns, _, _) =>
       def typeClause(clause: List[Tree]): Boolean = clause.head match
         case Tree.TypeParam(_, _, _, _) => true
@@ -157,7 +157,7 @@ class Erasure(universe: Universe):
 
   // The signature of a member found by lookup: a Java member's is read off its descriptor; a
   // Scala member's from its declaration in its class's file.
-  def signature(owner: ClassInfo, member: Member): Text =
+  def signature(owner: Universe.ClassInfo, member: Member): Text =
     member.erased.or:
       owner.scope.let: scope => scope.definition(member.address).let(signature(_, scope, owner))
       . or(t"()")
@@ -178,7 +178,7 @@ class Erasure(universe: Universe):
   // A result type erases as a parameter does, except that `Unit` stays `scala.Unit`.
   def resultSigName(tpe: Type, scope: Optional[Scope]): Text =
     universe.classOf(tpe, scope) match
-      case info: ClassInfo if info.fullName == t"scala.Unit" => t"scala.Unit"
+      case info: Universe.ClassInfo if info.fullName == t"scala.Unit" => t"scala.Unit"
       case _                                                 => sigName(tpe, scope)
 
   def render(erased: Erased): Text = erased match
@@ -288,7 +288,7 @@ class Erasure(universe: Universe):
   // The erasure of a reference to a class: the special classes that erase to `Object` or
   // `Product`, the synthetic function classes, `Unit` as a parameter, a value class to its
   // underlying type, and every other class to itself.
-  private def classErasure(info: ClassInfo, arguments: List[Type], vc: Boolean): Erased =
+  private def classErasure(info: Universe.ClassInfo, arguments: List[Type], vc: Boolean): Erased =
     val name = info.fullName
 
     specialErasure.at(name).let(Erased.Ref(_)).or:
@@ -300,7 +300,7 @@ class Erasure(universe: Universe):
 
   // A derived value class erases to the erasure of its underlying type, with the class's type
   // arguments substituted; a primitive underlying that the class declares generically is boxed.
-  private def valueClassErasure(info: ClassInfo, arguments: List[Type]): Erased =
+  private def valueClassErasure(info: Universe.ClassInfo, arguments: List[Type]): Erased =
     info.valueParam.lay(Erased.Ref(info.fullName)): underlying =>
       val substituted =
         Universe.replace(underlying, info.typeParamAddresses.stdlib.zip(arguments.stdlib))
@@ -376,7 +376,7 @@ class Erasure(universe: Universe):
         case Resolution.Term(underlying, termScope) => arrayUpperBound(underlying, termScope)
         case _                                      => Unset
 
-    def classBound(info: ClassInfo): Optional[Text] =
+    def classBound(info: Universe.ClassInfo): Optional[Text] =
       if universal.contains(info.fullName) then Unset
       else if Universe.primitives.contains(info.fullName) then info.fullName
       else Object
@@ -429,13 +429,13 @@ class Erasure(universe: Universe):
     def arity(tpe: Type, count: Int): Int = tpe match
       case Type.Applied(constructor, List(_, tail)) =>
         universe.classOf(constructor, scope) match
-          case info: ClassInfo if info.fullName == t"scala.*:" => arity(tail, count + 1)
+          case info: Universe.ClassInfo if info.fullName == t"scala.*:" => arity(tail, count + 1)
           case _                                               => -1
 
       case other =>
         universe.classOf(other, scope) match
-          case info: ClassInfo if info.fullName == t"scala.EmptyTuple$$" => count
-          case info: ClassInfo if info.fullName == t"scala.EmptyTuple"   => count
+          case info: Universe.ClassInfo if info.fullName == t"scala.EmptyTuple$$" => count
+          case info: Universe.ClassInfo if info.fullName == t"scala.EmptyTuple"   => count
           case _                                                         => -1
 
     arity(tpe, 0) match
@@ -456,7 +456,7 @@ class Erasure(universe: Universe):
       case Type.Abstraction(_, _, _, result) => pattern(result)
       case _                                 => Unset
 
-    def classOf(tpe: Type): Optional[ClassInfo] = tpe match
+    def classOf(tpe: Type): Optional[Universe.ClassInfo] = tpe match
       case Type.Bind(_, _, bounds)       => classOf(Universe.upper(bounds))
       case Type.Param(_, _)              => Unset
       case Type.Annotated(underlying, _) => classOf(underlying)
@@ -478,7 +478,7 @@ class Erasure(universe: Universe):
           // subclass of the scrutinee, or an abstract one — ends the attempt, since whether it
           // matches cannot be decided here.
           classOf(stripped) match
-            case candidate: ClassInfo if !isAbstract(stripped) =>
+            case candidate: Universe.ClassInfo if !isAbstract(stripped) =>
               if universe.derivesFrom(subject, candidate.fullName) then Some(rhs)
               else if universe.derivesFrom(candidate, subject.fullName) then Some(Unset)
               else None

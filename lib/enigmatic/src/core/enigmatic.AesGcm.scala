@@ -42,7 +42,7 @@ import vacuous.*
 // `AES_*_GCM` suites and most of the rest of the modern internet use it. It is a different
 // primitive from `Aes over Cbc` and the other block-cipher modes — it authenticates, takes
 // associated data, and takes a nonce the caller must never repeat — so it is its own cipher
-// rather than a `BlockCipherMode`, and needs no `Permit[Concession.Unauthenticated]`.
+// rather than a `BlockCipher.Mode`, and needs no `Permit[Concession.Unauthenticated]`.
 object AesGcm:
   given value: [bits <: 128 | 256: ValueOf]
   =>  ( crypto: Crypto { def aesGcm: Crypto.Aead } )

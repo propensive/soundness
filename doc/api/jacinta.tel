@@ -422,7 +422,7 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
         `verify` and the schema machinery check exactly what the decoder reads. It is what
         `json.as[T]` and `read[T in Json]` resolve (the latter through the tree, unless `T` also
         has a `Json.Parsable`). The companion holds instances for the primitives, `Text`,
-        `Unit` (which accepts only `null`), `Ordinal`, `Bytes`, `Optional`, `Option`, `List`,
+        `Unit` (which accepts only `null`), `Ordinal`, `Memory`, `Optional`, `Option`, `List`,
         `Set`, `Sequence`, `Map` and `Json`, and derives one for any case class, enumeration or
         sealed hierarchy (`.decodable`); a type with a `Decodable in Text` is decoded from a
         JSON string through it.
@@ -1146,7 +1146,7 @@ entry .Json2   the mixin holding the derived-path and element-wise givens of `Js
       package's `strictJsonAbsence` (absent raises `Absent`), `strictJsonNulls` (a `null` is
       handed to the inner decoder) and `lenientJsonFaults` (a rejected value reads as `Unset`,
       under the ambient tactic's `tolerate`, so nothing accrues).
-  entry #bytes   decodes a JSON number to `Bytes`, a count of bytes
+  entry #memory   decodes a JSON number to `Memory`, a count of bytes
   entry #fieldOptional   reads an `Optional[T]` field directly, by the `optionalityOptions` policies in scope
   entry #fieldOption   reads an `Option[T]` field directly
   entry #fieldArray   reads any `Iterable` collection field directly, with a `Factory` in scope

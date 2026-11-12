@@ -49,6 +49,7 @@ import filesystemBackends.javaBaseFilesystem
 import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 import environments.javaBaseEnvironment
+import anthology.Toolchain.{Tool, Triple, Universe}
 
 private type JnfPath = java.nio.file.Path
 
@@ -424,7 +425,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
           test(m"A portable compilation succeeds"):
             process.complete()
-          . check(_ == CompileResult.Success)
+          . check(_ == Compiler.Result.Success)
 
           test(m"A portable compilation emits sjsir"):
             Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
@@ -469,7 +470,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
           test(m"A classfile compilation succeeds"):
             process.complete()
-          . check(_ == CompileResult.Success)
+          . check(_ == Compiler.Result.Success)
 
           test(m"The compiler reports its version"):
             Scalac[3.8](Nil).version
@@ -576,14 +577,14 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
               Scalac[3.8](Nil).on(classpath).session:
                 alpha.compile().complete()
                 compilation.compile(beta).complete()
-            . check(_ == CompileResult.Success)
+            . check(_ == Compiler.Result.Success)
 
             test(m"A failed compile leaves the session usable"):
               Scalac[3.8](Nil).on(classpath).session:
                 val bad = Map(t"gamma.scala" -> t"class Gamma:\n  def x: Int = \"nope\"\n")
                 val failure = bad.compile().complete()
                 (failure, alpha.compile().complete())
-            . check(_ == (CompileResult.Failure, CompileResult.Success))
+            . check(_ == (Compiler.Result.Failure, Compiler.Result.Success))
 
             test(m"A session compile exposes its classfiles in memory"):
               Scalac[3.8](Nil).on(classpath).session:
@@ -600,8 +601,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
                 var progressed: Int = 0
 
                 process.updates.records.each:
-                  case CompileProcess.Update.Progressed(_) => progressed += 1
-                  case CompileProcess.Update.Noticed(_)    => ()
+                  case Compiler.Process.Update.Progressed(_) => progressed += 1
+                  case Compiler.Process.Update.Noticed(_)    => ()
 
                 progressed > 0
             . check(_ == true)
@@ -633,7 +634,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
           test(m"A native compilation succeeds"):
             process.complete()
-          . check(_ == CompileResult.Success)
+          . check(_ == Compiler.Result.Success)
 
           test(m"A native compilation emits nir"):
             Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
@@ -690,7 +691,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
           test(m"A Kotlin compilation succeeds"):
             process.complete()
-          . check(_ == CompileResult.Success)
+          . check(_ == Compiler.Result.Success)
 
           test(m"A Kotlin compilation emits classfiles"):
             Files.list(Paths.get(out.encode.s, "demo")).nn.iterator.nn.asScala
@@ -709,7 +710,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
             test(m"A Kotlin compilation with a type error fails"):
               failing.complete()
-            . check(_ == CompileResult.Failure)
+            . check(_ == Compiler.Result.Failure)
 
             test(m"A Kotlin error is counted"):
               failing.errors

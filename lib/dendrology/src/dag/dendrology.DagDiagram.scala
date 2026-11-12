@@ -74,17 +74,59 @@ object DagDiagram:
 
     DagDiagram:
       List.tabulate(n): row =>
-        val tiles = List.tabulate(row): col => DagTile.fromOrdinal(layout(row*n + col))
+        val tiles = List.tabulate(row): col => DagDiagram.Tile.fromOrdinal(layout(row*n + col))
         (tiles, nodes(row))
 
-  given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
+  given printable: [node: Showable] => (style: Style[Text]) => DagDiagram[node] is Printable =
     (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
-case class DagDiagram[node](lines: List[(List[DagTile], node)]):
+  enum Tile:
+    case Space, CornerNe, Vertical, TeeE, Horizontal, TeeN, Crossing, Junction
+    case CornerNw, CornerSe, CornerSw, TeeW, TeeS, Node
+
+  trait Style[line] extends beneficence.Findable:
+    def serialize(tiles: proscenium.List[Tile], node: line): line
+
+  case class TextualStyle[line: Textual as textual]
+    ( space:      Text,
+      cornerNe:   Text,
+      vertical:   Text,
+      teeE:       Text,
+      horizontal: Text,
+      teeN:       Text,
+      crossing:   Text,
+      junction:   Text )
+  extends Style[line]:
+    import anticipation.*
+    import gossamer.*
+    import gossamer.Textual.concatenable
+    import rudiments.*
+    import symbolism.*
+    import Tile.*
+
+    def serialize(tiles: proscenium.List[Tile], node: line): line =
+      textual(tiles.map(text(_)).join)+node
+
+    def text(tile: Tile): Text = tile match
+      case Space      => space
+      case CornerNe   => cornerNe
+      case Vertical   => vertical
+      case TeeE       => teeE
+      case Horizontal => horizontal
+      case TeeN       => teeN
+      case Crossing   => crossing
+      case Junction   => junction
+      case _          => space
+
+    def followOnText(tile: Tile): Text = tile match
+      case Space | Horizontal | CornerNe | TeeN | Junction => space
+      case _                                               => vertical
+
+case class DagDiagram[node](lines: List[(List[DagDiagram.Tile], node)]):
   val size: Int = lines.length
 
-  def render[line](line: node => line)(using style: DagStyle[line]): List[line] =
+  def render[line](line: node => line)(using style: DagDiagram.Style[line]): List[line] =
     lines.map: (tiles, node) => style.serialize(tiles.to(proscenium.List), line(node))
 
   def nodes: List[node] = lines.map(_(1))
-  def tiles: List[List[DagTile]] = lines.map(_(0))
+  def tiles: List[List[DagDiagram.Tile]] = lines.map(_(0))

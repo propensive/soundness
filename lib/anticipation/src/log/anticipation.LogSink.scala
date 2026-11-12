@@ -47,7 +47,7 @@ package anticipation
 // application-lifetime registries — which needs no level exemption: a given that is a value, not
 // a polymorphic method, is a static capability, visible from every level.
 trait LogSink[-eventType, carrier] extends Durable:
-  def accepts(level: Level): Boolean
+  def accepts(level: Log.Level): Boolean
 
   // Reports whether this sink records events of the given (concrete) type. Takes the *original*
   // event rather than the transcribed carrier, because category membership (`Log.Category`) is a
@@ -56,4 +56,4 @@ trait LogSink[-eventType, carrier] extends Durable:
   // so category-agnostic sinks are unaffected.
   def admits(event: eventType): Boolean = true
 
-  def submit(level: Level, timestamp: Long, message: carrier): Unit
+  def submit(level: Log.Level, timestamp: Long, message: carrier): Unit

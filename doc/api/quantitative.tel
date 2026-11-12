@@ -300,6 +300,10 @@ entry .Candelas   the candela, the SI and principal unit of `Luminosity`: `Cande
     Symbol `cd`.
 entry .Moles   the mole, the SI and principal unit of `AmountOfSubstance`: `Moles[power]`
     Symbol `mol`.
+entry .Bytes   the byte, the principal unit of `Information`: `Bytes[power]`
+    Symbol `B`. A byte count is a `Quantity[Bytes[1]]`, made as `512.0*Byte` or
+    `14.2*Mebi(Byte)`, and a rate a `Quantity[Bytes[1] & Seconds[-1]]`. rudiments' `Memory` is
+    the exact integer count of bytes; this is the measured quantity.
 entry .Rankines   the degree Rankine, a unit of `Heat`: `Rankines[power]`
   detail
       Symbol `°R`; one kelvin is 1.8 degrees Rankine (`.ratio`). Like the kelvin it is measured
@@ -309,11 +313,11 @@ entry .Rankines   the degree Rankine, a unit of `Heat`: `Rankines[power]`
   entry .designation   the symbol `°R`
   entry .ratio   `Ratio[Rankines[1] & Kelvins[-1], 1.8]`: a kelvin is 1.8 degrees Rankine
 
-entry .Dimension   what a unit measures: `Distance`, `Mass`, `Time`, `Heat`, `Current`, `Luminosity`, `AmountOfSubstance`
+entry .Dimension   what a unit measures: `Distance`, `Mass`, `Time`, `Heat`, `Current`, `Luminosity`, `AmountOfSubstance`, `Information`
     The trait every dimension extends, each a sealed trait with no members: a `Units[power,
     dimension]` type names one, and the dimensional analysis compares quantities by their
     dimensions and powers rather than by their units. The seven SI base dimensions are
-    declared here, each with a `Principal` unit; `Typometry` (the typographic em) is an eighth
+    declared here, each with a `Principal` unit, and so is `Information`, measured in `Bytes`; `Typometry` (the typographic em) is an eighth
     in `quantitative.units`. A dimension of your own is a trait extending `Dimension`, with a
     `Units` type and, if its quantities are to be named, an `Amount` given. A `Dimension` is
     pure, so it never carries a capture set.
@@ -324,6 +328,7 @@ entry .Heat   the dimension of temperature; principal unit `Kelvins`
 entry .Current   the dimension of electric current; principal unit `Amperes`
 entry .Luminosity   the dimension of luminous intensity; principal unit `Candelas`
 entry .AmountOfSubstance   the dimension of amount of substance; principal unit `Moles`
+entry .Information   the dimension of information; principal unit `Bytes`, not an SI base dimension
 
 entry .Principal   which unit a dimension's mixed-unit results take: the SI unit of each base dimension
   detail
@@ -343,6 +348,7 @@ entry .Principal   which unit a dimension's mixed-unit results take: the SI unit
   entry .luminosity   `Candelas` is principal for `Luminosity`
   entry .heat   `Kelvins` is principal for `Heat`
   entry .amountOfSubstance   `Moles` is principal for `AmountOfSubstance`
+  entry .information   `Bytes` is principal for `Information`
 
 entry .Ratio   the conversion rate between two units of one dimension, as a singleton `Double` type
     `Ratio[From[1] & To[-1], rate]` says that one `To` is `rate` of `From`: `Ratio[Metres[1] &
@@ -384,6 +390,7 @@ entry .Designation   the symbol a unit renders with: `m`, `kg`, `ft`
   entry .metres   `m`
   entry .kilograms   `kg`: the symbol `g` with the `Kilo` prefix
   entry .seconds   `s`
+  entry .bytes   `B`
   entry .amperes   `A`
   entry .kelvins   `K`
   entry .candelas   `cd`
@@ -441,6 +448,7 @@ entry .Amount   the physical name of a combination of dimensions: `velocity`, `e
   entry .current   `current`, `Units[1, Current]`
   entry .heat   `temperature`, `Units[1, Heat]`
   entry .luminosity   `luminosity`, `Units[1, Luminosity]`
+  entry .information   `information`, `Units[1, Information]`
   entry .substance   `amount of substance`, `Units[1, AmountOfSubstance]`
   entry .Absement   mass·time
   entry .absement   `absement`
@@ -835,6 +843,8 @@ entry .Second   the second, one `Seconds[1]`: the SI unit of time, a `MetricUnit
     `2*Second`; `Metre/Second` a velocity; `Milli(Second)` a millisecond. Symbol `s`. The
     hour and minute as quantities are `Quantity[Hours[1]](1.0)` and `Quantity[Minutes[1]](1.0)`,
     since `Hour` and `Minute` as names are aviation's radices.
+entry .Byte   the byte, one `Bytes[1]`: the unit of information, a `MetricUnit`
+    `512.0*Byte`; `4.0*Mebi(Byte)` with a binary prefix. Symbol `B`.
 entry .Ampere   the ampere, one `Amperes[1]`: the SI unit of current, a `MetricUnit`
 entry .Kelvin   the kelvin, one `Kelvins[1]`: the SI unit of temperature difference, a `MetricUnit`
     `300*Kelvin` is a `Quantity[Kelvins[1]]`, a *difference* which a `Temperature` adds and

@@ -86,7 +86,7 @@ object Layout:
       titles:     List[Cells[text]],
       aggregates: Array[Metrics]^{},
       width:      Int,
-      style:      TableStyle )
+      style:      Table.Style )
     ( using metrics: Text is Measurable, attenuation: Attenuation^ )
   :   Layout[row, text] =
 
@@ -135,7 +135,7 @@ case class Layout[row, text: ClassTag]
     aggregates: Array[Metrics]^{},
     width:      Int,
     survivors:  IndexedSeq[(Int, Int)],
-    style:      TableStyle ):
+    style:      Table.Style ):
 
   lazy val widths: Array[Int]^{} = Array.from(survivors.map(_(1)))
 
@@ -170,7 +170,7 @@ case class Layout[row, text: ClassTag]
     ( using metrics:     Text is Measurable,
             textual:     text is Textual { type Result = Char },
             hyphenation: Hyphenation )
-  :   TableRow[text] =
+  :   Table.Row[text] =
 
     val tableCells = Array.from:
       survivors.map: (index, cellWidth) =>
@@ -183,14 +183,14 @@ case class Layout[row, text: ClassTag]
 
         val decoration: Optional[text -> text] = decorations.at(index.z)
 
-        TableCell
+        Table.Cell
           ( cellWidth, 1, lines, lines.size, column.textAlign, column.verticalAlign,
             decoration )
 
     val height =
       tableCells.maximize(_.minHeight).lay(0)(_.minHeight)
 
-    TableRow(tableCells, false, height)
+    Table.Row(tableCells, false, height)
 
   def lines(cells: Cells[text], decorations: List[Optional[text -> text]])
     ( using metrics:     Text is Measurable,

@@ -84,20 +84,20 @@ object TestClient:
   private def service: Acp.Service = fixture.asInstanceOf[Acp.Service]
 
   private val dispatch0: AnyRef =
-    val serving: AcpClient = fixture.asInstanceOf[Acp.Service]
+    val serving: Acp.Client = fixture.asInstanceOf[Acp.Service]
     val session: Json => Optional[Json] =
       // [test-harness] test fixture builds dispatchers over cast service
-      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientSession](serving))
+      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[Acp.Client.Session](serving))
 
     val fs: Json => Optional[Json] =
       // [test-harness]
-      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientFs](serving))
+      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[Acp.Client.Fs](serving))
 
     val terminal: Json => Optional[Json] =
       // [test-harness]
-      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientTerminal](serving))
-    val sessionMethods = JsonRpc.methods[AcpClientSession]
-    val fsMethods = JsonRpc.methods[AcpClientFs]
+      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[Acp.Client.Terminal](serving))
+    val sessionMethods = JsonRpc.methods[Acp.Client.Session]
+    val fsMethods = JsonRpc.methods[Acp.Client.Fs]
 
     val route: Json => Optional[Json] = json =>
       Acp.method(json).lay(session(json)): method =>
@@ -480,7 +480,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
         supervise:
           async(AgentFixture.serve(agentIn, toClient))
 
-          Acp.connect(Acp.Agent.streams(clientIn, toAgent)):
+          Acp.connect(Acp.Endpoint.streams(clientIn, toAgent)):
             updated:
               update match
                 case AgentMessageChunk(TextContent(text, _)) =>
@@ -534,7 +534,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
         supervise:
           async(AgentFixture.serve(agentIn, toClient))
 
-          Acp.connect(Acp.Agent.streams(clientIn, toAgent)):
+          Acp.connect(Acp.Endpoint.streams(clientIn, toAgent)):
             permission:
               options.filter(_.kind == PermissionOptionKind.AllowOnce).head
               . lay(Cancelled): option => Selected(option.optionId)

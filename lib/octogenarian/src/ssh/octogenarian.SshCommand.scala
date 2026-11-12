@@ -100,7 +100,7 @@ object SshCommand:
 
     def close(): Unit = ()
 
-// Remote repositories reached through a spawned `ssh`, as git itself reaches them: one process
+// Git.Remote repositories reached through a spawned `ssh`, as git itself reaches them: one process
 // per service, running `git-upload-pack` or `git-receive-pack` on the server with protocol
 // version 2 requested through the `GIT_PROTOCOL` variable (which `SendEnv` forwards, where the
 // server's `AcceptEnv` allows it). Both `ssh://[user@]host[:port]/path` and the `scp`-like

@@ -174,7 +174,7 @@ case class Selection
     terms.nil && kinds.nil && constraints.nil && tags.nil && exclusions.nil
 
   def admits
-    ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag] )
+    ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Axis.Value)], tags: List[Tag] )
   :   Boolean =
 
     admitted(kind) && admitted(id) && admitted(coordinates, false) && admitted(tags) &&
@@ -185,7 +185,7 @@ case class Selection
   // where for admission it admits everything — `not:N=4` must not remove tests without an
   // `N` axis, just as `N=4` must not exclude them.
   private def excludes
-    ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag] )
+    ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Axis.Value)], tags: List[Tag] )
   :   Boolean =
 
     admitted(kind) && admitted(id) && admitted(coordinates, true) && admitted(tags)
@@ -226,7 +226,7 @@ case class Selection
 
   // `strict`: whether a constraint on an axis absent from the coordinates fails (for an
   // exclusion) rather than passes (for an admission).
-  private def admitted(coordinates: List[(Axis.Spec, Value)], strict: Boolean): Boolean =
+  private def admitted(coordinates: List[(Axis.Spec, Axis.Value)], strict: Boolean): Boolean =
     constraints.all: constraint =>
       coordinates.seek(_(0).label == constraint.axis).lay(!strict): pair =>
         val value = pair(1)

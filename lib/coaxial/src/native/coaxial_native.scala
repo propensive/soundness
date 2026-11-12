@@ -185,7 +185,7 @@ package socketBackends:
 
     // Unix-domain sockets need `UnixDomainSocketAddress` and `ServerSocketChannel`, neither of
     // which Scala Native's javalib provides; unsupported for now (TCP and UDP are the native cut).
-    def listenDomain(address: DomainSocket, options: List[Socket.Option])
+    def listenDomain(address: Uds, options: List[Socket.Option])
     :   ServerBinding raises Bind.Error =
 
       abort(Bind.Error(Bind.Error.Reason.Unsupported))
@@ -413,7 +413,7 @@ package socketBackends:
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialDomain(address: DomainSocket, options: List[Socket.Option])
+    def dialDomain(address: Uds, options: List[Socket.Option])
     :   ClientExchange raises Socket.Error =
 
       abort(Socket.Error(Socket.Error.Reason.Unsupported))
@@ -468,7 +468,7 @@ package socketBackends:
       streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
         socket.close()
 
-    def duplexDomain(address: DomainSocket, options: List[Socket.Option])
+    def duplexDomain(address: Uds, options: List[Socket.Option])
     :   Duplex raises Socket.Error =
 
       abort(Socket.Error(Socket.Error.Reason.Unsupported))

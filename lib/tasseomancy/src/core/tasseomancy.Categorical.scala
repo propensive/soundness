@@ -35,6 +35,7 @@ package tasseomancy
 import anticipation.*
 import distillate.*
 import prepositional.*
+import tasseomancy.Chart.Category
 
 object Categorical:
   given text: Text is Categorical = text => text

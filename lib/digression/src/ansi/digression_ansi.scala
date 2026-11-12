@@ -221,8 +221,8 @@ package teletypeables:
           // everything else in the row is needed to identify the frame at all.
           Column(e"", sizing = columnar.Collapsible(0.5))(codeCell) )
 
-    given style: TableStyle =
-      TableStyle
+    given style: Table.Style =
+      Table.Style
         ( padding    = 0,
           topLine    = Unset,
           bottomLine = Unset,

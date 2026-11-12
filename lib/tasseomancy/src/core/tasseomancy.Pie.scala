@@ -46,6 +46,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group, Outline}
 
 object Pie:
   case class Fit(labels: Sequence[Text], total: Double)

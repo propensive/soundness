@@ -64,10 +64,10 @@ object Degustation:
   // Atomizes the `.tasty` files of one module — each named by its classpath-relative path — against
   // the classpath `dependencies`, which must carry everything the files reference, including the
   // Scala library and the JDK's classes.
-  def atomize(files: List[(Text, Data)], dependencies: ClassSource): List[ScalaAtom] =
+  def atomize(files: List[(Text, Data)], dependencies: Universe.Source): List[ScalaAtom] =
     val own = files.stdlib.toMap
 
-    val module = new ClassSource:
+    val module = new Universe.Source:
       def read(path: Text): Optional[Data] = own.get(path).getOrElse(Unset)
 
       def list(directory: Text): List[Text] =
@@ -75,7 +75,7 @@ object Degustation:
           . map(_.s.substring(if directory == t"" then 0 else directory.s.length + 1).nn.tt)
           . filter(_.s.indexOf('/') < 0).to(List)
 
-    val universe = Universe(ClassSource(module, dependencies))
+    val universe = Universe(Universe.Source(module, dependencies))
     val session = Session(universe)
 
     files.each: (path, _) => universe.scope(path).let(session.file(_))
@@ -236,7 +236,7 @@ object Degustation:
       val signature = if isType then t"()" else erasure.signature(tree, scope, owner)
       Symbol(fullName, ownerKey, isType, inline, signature, address, scope)
 
-    private def classAt(address: Int, scope: Scope): Optional[ClassInfo] =
+    private def classAt(address: Int, scope: Scope): Optional[Universe.ClassInfo] =
       scope.names.at(address).let(universe.classOf(_))
 
     // The owner key of the class at `address`: the package for a top-level-definition carrier,
@@ -252,7 +252,7 @@ object Degustation:
       else
         name
 
-    private def ownerKeyOf(info: ClassInfo): Text =
+    private def ownerKeyOf(info: Universe.ClassInfo): Text =
       if isCarrier(info.fullName) then info.pkg else info.fullName
 
     // A top-level-definition carrier, by its own name: a class nested in one (an opaque type's
@@ -321,13 +321,13 @@ object Degustation:
           val fullName = Universe.qualify(path, name.unsigned.text)
 
           universe.classOf(t"$fullName$$") match
-            case module: ClassInfo => Symbol(fullName, path, false, false, t"()", Unset, Unset)
+            case module: Universe.ClassInfo => Symbol(fullName, path, false, false, t"()", Unset, Unset)
             // A Java class named as a term holds its statics.
             case _ if universe.classOf(fullName).lay(false)(_.java) =>
               Symbol(fullName, path, false, false, t"()", Unset, Unset)
 
             case _ =>
-              val carried: Optional[(ClassInfo, Member)] =
+              val carried: Optional[(Universe.ClassInfo, Member)] =
                 universe.packageObjectMember(path, name.unsigned.text, Set(Kind.Val, Kind.Def))
 
               carried.let { pair => memberSymbol(pair(0), name) }.or:
@@ -344,7 +344,7 @@ object Degustation:
         case Resolution.Class(info, _, _) => memberSymbol(info, name)
         case other                        => throw Unencodable(t"owner of ${name.text}: $other")
 
-    private def memberSymbol(info: ClassInfo, name: Name): Symbol =
+    private def memberSymbol(info: Universe.ClassInfo, name: Name): Symbol =
       def missing: Symbol = throw Unencodable(t"no member ${name.text} in ${info.fullName}")
 
       universe.choose(info, name).lay(missing): pair =>
@@ -361,7 +361,7 @@ object Degustation:
         Symbol(fullName, ownerKey, false, inline, signature, address, owner.scope)
 
     private def selectType(name: Text, prefix: Type, scope: Scope): Symbol =
-      def typeMember(owner: ClassInfo, member: Member): Symbol =
+      def typeMember(owner: Universe.ClassInfo, member: Member): Symbol =
         val fullName = qualifiedMember(owner, name)
         Symbol(fullName, ownerKeyOf(owner), true, false, t"()", Unset, owner.scope)
 
@@ -408,7 +408,7 @@ object Degustation:
         case _ => general()
 
     private def selectType0(name: Text, prefix: Type, scope: Scope): Symbol =
-      def typeMember(owner: ClassInfo, member: Member): Symbol =
+      def typeMember(owner: Universe.ClassInfo, member: Member): Symbol =
         val fullName = qualifiedMember(owner, name)
         Symbol(fullName, ownerKeyOf(owner), true, false, t"()", Unset, owner.scope)
 
@@ -439,11 +439,11 @@ object Degustation:
 
           else
             universe.classOf(fullName) match
-              case info: ClassInfo =>
+              case info: Universe.ClassInfo =>
                 Symbol(info.fullName, ownerKeyOf(info), true, false, t"()", Unset, info.scope)
 
               case _ =>
-                val carried: Optional[(ClassInfo, Member)] =
+                val carried: Optional[(Universe.ClassInfo, Member)] =
                   universe.packageObjectMember(path, name, Set(Kind.Type, Kind.Class))
 
                 carried.let: pair => typeMember(pair(0), pair(1))
@@ -453,7 +453,7 @@ object Degustation:
 
     // A member's full name as the compiler spells it: its declaring class's full name, carrier
     // objects included, then the member's name.
-    private def qualifiedMember(owner: ClassInfo, name: Text): Text = t"${owner.fullName}.$name"
+    private def qualifiedMember(owner: Universe.ClassInfo, name: Text): Text = t"${owner.fullName}.$name"
 
     // Whether the definition `symbol` lies inside the definition at `enclosing` in `scope`.
     // Whether the definition `symbol` lies inside the definition at `enclosing` in `scope`, or is
@@ -722,7 +722,7 @@ object Degustation:
           case Tree.TypeDef(_, _, Tree.Template(_, _, _, self, _), _) => self.let(_(1))
           case _                                                      => Unset
 
-      // The class's self type with a declared one is `givenSelf & C` (`ClassInfo.selfType`), an
+      // The class's self type with a declared one is `givenSelf & C` (`Universe.ClassInfo.selfType`), an
       // intersection whatever is declared, and an intersection names no symbol.
       self.lay(symbolOfType(cls, t"", scope).fullName): _ => t"<none>"
 
@@ -1234,10 +1234,10 @@ object Degustation:
 
     // The erased-signature disambiguator of a term member's key: overloads differ here, and the
     // spelling matches what consumers' TASTy references carry in their SIGNED names.
-    private def signatureText(tree: Tree, scope: Scope, owner: Optional[ClassInfo]): Text =
+    private def signatureText(tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo]): Text =
       erasure.signature(tree, scope, owner)
 
-    private def keyOf(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo])
+    private def keyOf(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo])
     :   String =
 
       s"${spelled(ownerKey.s)}.${nameOf(tree)}${signatureText(tree, scope, owner)}"
@@ -1343,7 +1343,7 @@ object Degustation:
 
       case _ => scala.Nil
 
-    private def termAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo])
+    private def termAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo])
     :   Unit =
 
       val modifiers = modifiersOf(tree)
@@ -1510,7 +1510,7 @@ object Degustation:
 
         encodeType(out, mapped, scala.Nil, scope)
 
-    private def inlineAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo])
+    private def inlineAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo])
     :   Unit =
 
       // The body of an inline or macro definition is copied into consumers at their compile
@@ -1896,7 +1896,7 @@ object Degustation:
 
           case _ => false
 
-        def isStaticOwner(info: ClassInfo): Boolean =
+        def isStaticOwner(info: Universe.ClassInfo): Boolean =
           info.isObject && {
             val full = info.fullName.s
             val index = full.lastIndexOf('.')
@@ -2033,7 +2033,7 @@ object Degustation:
     // companion (`typeConstructorCompanion`): a parameterless, synthetic method of the companion's
     // type, unless the owner already has a term of the name.
     private def typeConstructorCompanions
-      ( template: Tree.Template, ownerKey: Text, info: Optional[ClassInfo], scope: Scope )
+      ( template: Tree.Template, ownerKey: Text, info: Optional[Universe.ClassInfo], scope: Scope )
 
     :   Unit =
 
@@ -2066,7 +2066,7 @@ object Degustation:
 
     // The class an alias ultimately names (`underlyingClassRef`): through eta-expansions,
     // annotations, applications and further aliases, but not refinements, bounds or opaque types.
-    private def underlyingClass(tpe: Type, scope: Scope): Optional[ClassInfo] = tpe match
+    private def underlyingClass(tpe: Type, scope: Scope): Optional[Universe.ClassInfo] = tpe match
       case Type.Abstraction(_, _, _, Type.Applied(head, _)) if etaExpansion(tpe) =>
         underlyingClass(head, scope)
 
@@ -2129,7 +2129,7 @@ object Degustation:
     // never reaches. These proxies are declarations of the companion to the compiler's reflection,
     // and so atoms.
     private def constructorProxies
-      ( module: Tree.TypeDef, template: Tree.Template, scope: Scope, info: Optional[ClassInfo] )
+      ( module: Tree.TypeDef, template: Tree.Template, scope: Scope, info: Optional[Universe.ClassInfo] )
 
     :   Unit =
 

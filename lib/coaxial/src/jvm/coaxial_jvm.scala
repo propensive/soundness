@@ -196,7 +196,7 @@ package socketBackends:
       configure(socket, options)
       ServerBinding.Tcp(socket)
 
-    def listenDomain(address: DomainSocket, options: List[Socket.Option])
+    def listenDomain(address: Uds, options: List[Socket.Option])
     :   ServerBinding raises Bind.Error =
 
       val socketAddress = jn.UnixDomainSocketAddress.of(address.address.s)
@@ -399,7 +399,7 @@ package socketBackends:
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialDomain(address: DomainSocket, options: List[Socket.Option])
+    def dialDomain(address: Uds, options: List[Socket.Option])
     :   ClientExchange raises Socket.Error =
 
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))
@@ -469,7 +469,7 @@ package socketBackends:
 
       channelDuplex(channel)
 
-    def duplexDomain(address: DomainSocket, options: List[Socket.Option])
+    def duplexDomain(address: Uds, options: List[Socket.Option])
     :   Duplex raises Socket.Error =
 
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))

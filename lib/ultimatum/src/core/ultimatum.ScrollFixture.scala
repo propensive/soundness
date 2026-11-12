@@ -118,7 +118,7 @@ extends Focus:
     case _             => ()
 
   // The pane's `Sizing` distributes the height; the fixture claims no intrinsic size of
-  // its own — whatever rect it receives becomes the viewport.
+  // its own — whatever region it receives becomes the viewport.
   def measure(width: Int): (Int, Int) = (0, 1)
 
   def render(canvas: Board^, focused: Boolean): Unit =

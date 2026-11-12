@@ -60,6 +60,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import anthology.Toolchain.Universe
 
 object Scalac:
   type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8 | 3.9
@@ -90,7 +91,7 @@ object Scalac:
     =>  ( system:   System,
           emission: Universe.Emission[universe],
           tactic:   Tactic[Compiler.Error],
-          loggable: (CompileEvent is Loggable)^ )
+          loggable: (Compiler.Event is Loggable)^ )
     =>  ( Sessional[version, universe]^{tactic, loggable, scala.caps.any} ) =
 
       Sessional()
@@ -122,7 +123,7 @@ object Scalac:
     // them on disk. Since session compiles run synchronously, the result is already complete
     // by the time the process is returned.
     class Process private[anthology] (output: dtio.AbstractFile)
-    extends CompileProcess(Scalac.version):
+    extends Compiler.Process(Scalac.version):
       // Every artifact the compile emitted — classfiles, TASTy, `.sjsir`, `.nir` — keyed by
       // its location on the classpath this output constitutes. Empty if the compile failed
       // before the back-end ran.
@@ -169,7 +170,7 @@ object Scalac:
   // loads at its next use from the *classpath*, not the retained symbols, so callers wanting
   // same-session macro expansion must `save` to a directory on the session's classpath.
   class Session private[anthology] (classpath: Text, options: List[Text])
-    ( using loggable: (CompileEvent is Loggable)^, tactic: Tactic[Compiler.Error] )
+    ( using loggable: (Compiler.Event is Loggable)^, tactic: Tactic[Compiler.Error] )
   extends caps.ExclusiveCapability, caps.Stateful:
 
     // The trailing empty argument stops the driver from treating an argument list with no
@@ -223,10 +224,10 @@ object Scalac:
           if !reporter.hasErrors then driver.finishRun(compiler, run)
 
         process.put
-          ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
+          ( if reporter.hasErrors then Compiler.Result.Failure else Compiler.Result.Success )
 
       catch case suc.NonFatal(error) =>
-        process.put(CompileResult.Crash(error.stackTrace))
+        process.put(Compiler.Result.Crash(error.stackTrace))
         rebuild()
 
       process
@@ -237,7 +238,7 @@ object Scalac:
     ( using system:   System,
             emission: Universe.Emission[universe],
             tactic:   Tactic[Compiler.Error],
-            loggable: (CompileEvent is Loggable)^ )
+            loggable: (Compiler.Event is Loggable)^ )
   extends aperture.Sessional:
     type Self = Scalac.Setup[version, universe]
 
@@ -270,10 +271,10 @@ case class Scalac[release <: Scalac.Versions, universe <: Universe] private
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate, Universe.Emission[universe] )
-    ( using Tactic[Compiler.Error], (CompileEvent is Loggable)^ )
-  :   CompileProcess =
+    ( using Tactic[Compiler.Error], (Compiler.Event is Loggable)^ )
+  :   Compiler.Process =
 
-    val scalacProcess: CompileProcess = CompileProcess(version)
+    val scalacProcess: Compiler.Process = Compiler.Process(version)
     val reporter = processReporter(scalacProcess)
 
     val arguments: List[Text] =
@@ -314,11 +315,11 @@ case class Scalac[release <: Scalac.Versions, universe <: Universe] private
           then driver.finishRun(Scalac.Scala3, run)
 
           scalacProcess.put
-            ( if summon[dtdc.Contexts.Context].reporter.hasErrors then CompileResult.Failure
-              else CompileResult.Success )
+            ( if summon[dtdc.Contexts.Context].reporter.hasErrors then Compiler.Result.Failure
+              else Compiler.Result.Success )
 
         catch case suc.NonFatal(error) =>
-          scalacProcess.put(CompileResult.Crash(error.stackTrace))
+          scalacProcess.put(Compiler.Result.Crash(error.stackTrace))
           Scalac.refresh()
 
     scalacProcess

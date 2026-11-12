@@ -40,6 +40,7 @@ import gigantism.Lifts
 import vacuous.*
 
 import Motif.Node
+import praxinoscope.Motif.{Program, Ranges}
 
 object internal:
   private def integers(values: Array[Int])(using Quotes): Expr[Array[Int]] =

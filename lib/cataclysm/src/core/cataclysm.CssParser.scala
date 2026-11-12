@@ -41,6 +41,7 @@ import vacuous.*
 import zephyrine.*
 
 import Css.Node
+import cataclysm.Css.Outcome
 
 // A small, lenient recursive-descent CSS reader built on a `zephyrine.Cursor`.
 // Selectors, at-rule preludes and property values are kept as raw (normalized)
@@ -183,7 +184,7 @@ private[cataclysm] object CssParser:
       if property.starts(t"--") then ()
       else PropertyDef.of(property) match
         case definition: PropertyDef =>
-          SyntaxMatcher.check(definition, value) match
+          Css.Syntax.Matcher.check(definition, value) match
             case Outcome.Valid =>
               ()
 

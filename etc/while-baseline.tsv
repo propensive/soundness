@@ -5,9 +5,8 @@ lib/acyclicity/src/core/acyclicity_core.scala	1	0	1
 lib/anthology/src/core/anthology.Toolchain.scala	3	0	0
 lib/apoplexy/src/core/apoplexy.OpenApi.scala	0	1	0
 lib/apoplexy/src/core/apoplexy.internal.scala	0	0	1
-lib/archimedes/src/core/archimedes.Cell.scala	0	0	5
 lib/archimedes/src/core/archimedes.Ergo.scala	11	0	12
-lib/archimedes/src/core/archimedes.Mathml.scala	1	1	0
+lib/archimedes/src/core/archimedes.Mathml.scala	1	1	5
 lib/aviation/src/core/aviation.HebrewCalendar.scala	5	0	0
 lib/aviation/src/core/aviation.LeapSeconds.scala	3	0	0
 lib/aviation/src/core/aviation.Timespan.scala	2	0	0
@@ -20,8 +19,7 @@ lib/breviloquence/src/core/breviloquence.Cbor.scala	17	10	1
 lib/breviloquence/src/core/breviloquence.CborParser.scala	15	1	0
 lib/breviloquence/src/core/breviloquence.inlining.scala	2	0	1
 lib/burdock/src/core/burdock.internal.scala	1	0	0
-lib/cacophony/src/core/cacophony.Audio.scala	2	2	0
-lib/cacophony/src/core/cacophony.Outlet.scala	1	0	0
+lib/cacophony/src/core/cacophony.Audio.scala	3	2	0
 lib/cacophony/src/core/cacophony.Pcm.scala	1	0	0
 lib/caesura/src/core/caesura.Dsv.scala	3	5	0
 lib/caesura/src/core/caesura.Sheet.scala	5	0	3
@@ -30,7 +28,7 @@ lib/capricious/src/core/capricious_core.scala	0	1	0
 lib/cataclysm/src/core/cataclysm.CssParser.scala	3	0	1
 lib/cataclysm/src/core/cataclysm.PropertyDef.scala	0	2	0
 lib/cataclysm/src/core/cataclysm.SelectorParser.scala	10	0	1
-lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala	0	2	0
+lib/cataclysm/src/core/cataclysm.SyntaxMatching.scala	0	2	0
 lib/cataclysm/src/core/cataclysm.SyntaxParser.scala	11	0	0
 lib/cataclysm/src/core/cataclysm.ValueTokenizer.scala	10	0	0
 lib/charisma/src/core/charisma.PeriodicTable.scala	0	1	0
@@ -59,7 +57,7 @@ lib/escapade/src/core/escapade.Teletype.scala	6	16	1
 lib/escapade/src/core/escapade.internal.scala	1	1	0
 lib/escritoire/src/core/escritoire.Grid.scala	0	2	0
 lib/escritoire/src/core/escritoire.Layout.scala	0	9	0
-lib/escritoire/src/core/escritoire.TableRow.scala	0	1	0
+lib/escritoire/src/core/escritoire.Table.scala	0	1	0
 lib/espionage/src/core/espionage.Acp.scala	1	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	4	2	0
 lib/ethereal/src/core/ethereal.Session.scala	9	0	0
@@ -152,8 +150,7 @@ lib/panopticon/src/core/panopticon.internal.scala	1	0	0
 lib/parasite/src/core/parasite.PoolingSupervisor.scala	5	0	0
 lib/parasite/src/core/parasite.Timeout.scala	1	0	0
 lib/parasite/src/core/parasite_core.scala	2	0	0
-lib/perihelion/src/core/perihelion.Masking.scala	0	3	0
-lib/perihelion/src/core/perihelion.Websocket.scala	1	2	0
+lib/perihelion/src/core/perihelion.Websocket.scala	1	5	0
 lib/perihelion/src/core/perihelion_core.scala	0	4	0
 lib/phoenicia/src/core/phoenicia.Sfnt.scala	1	9	0
 lib/phoenicia/src/core/phoenicia.Truetype.scala	1	3	0
@@ -165,10 +162,8 @@ lib/polaris/src/core/polaris.Debufferable.scala	0	4	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	8	8	2
 lib/polysyllabic/src/core/polysyllabic.TexPatterns.scala	7	0	8
 lib/polysyllabic/src/core/polysyllabic_core.scala	8	2	5
-lib/praxinoscope/src/core/praxinoscope.Motif.scala	7	8	2
+lib/praxinoscope/src/core/praxinoscope.Motif.scala	16	16	2
 lib/praxinoscope/src/core/praxinoscope.Pike.scala	4	4	0
-lib/praxinoscope/src/core/praxinoscope.Program.scala	5	8	0
-lib/praxinoscope/src/core/praxinoscope.Ranges.scala	4	0	0
 lib/praxinoscope/src/core/praxinoscope.Subsumption.scala	14	9	0
 lib/praxinoscope/src/core/praxinoscope.internal.scala	17	16	0
 lib/prescience/src/core/prescience.internal.scala	1	0	0
@@ -198,13 +193,13 @@ lib/sibylline/src/core/sibylline.Llm.scala	1	0	0
 lib/spectacular/src/core/spectacular.Inspectable.scala	2	1	2
 lib/stratiform/src/core/stratiform.Bintel.scala	15	18	0
 lib/stratiform/src/core/stratiform.BintelParser.scala	1	0	0
-lib/stratiform/src/core/stratiform.Mutation.scala	28	45	15
 lib/stratiform/src/core/stratiform.Positional.scala	3	5	0
 lib/stratiform/src/core/stratiform.SchemaResolver.scala	1	4	0
 lib/stratiform/src/core/stratiform.SchemaSignature.scala	5	5	0
 lib/stratiform/src/core/stratiform.Tel.scala	107	64	17
 lib/stratiform/src/core/stratiform.Tel2.scala	1	4	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	1
+lib/stratiform/src/core/stratiform.TelMutation.scala	28	45	15
 lib/stratiform/src/core/stratiform.Telp.scala	4	5	2
 lib/stratiform/src/core/stratiform.Tels.scala	12	23	2
 lib/stratiform/src/core/stratiform.Varint.scala	2	1	0
@@ -230,9 +225,8 @@ lib/turbulence/src/core/turbulence_core.scala	0	1	0
 lib/ultimatum/src/core/ultimatum.FlowExtent.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.Form.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.GridSurface.scala	7	0	0
-lib/ultimatum/src/core/ultimatum.InlineRoot.scala	7	0	0
-lib/ultimatum/src/core/ultimatum.ScreenRoot.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.ScrollFixture.scala	1	0	0
+lib/ultimatum/src/core/ultimatum.Tui.scala	13	0	1
 lib/ultimatum/src/core/ultimatum_core.scala	2	0	0
 lib/ulysses/src/core/ulysses.Bibliography.scala	0	9	0
 lib/ulysses/src/core/ulysses.BloomFilter.scala	0	2	0

@@ -697,8 +697,8 @@ entry .Flag   a named option, `--name` or `-n`, whose operand is read as a type
       How a read resolves depends on the `Effectful` capability. With it in scope (anywhere
       under `executives.directExecutive`; inside `execute` under the completions executive)
       `flag()` is the `Optional` value, `flag.require()` the value or a thrown
-      `MissingFlagError`, and `flag.validate()` the value or a thrown `MissingFlagError` or
-      `InvalidFlagError`. Without it — the prelude under the completions executive — the same
+      `Flag.Error`, and `flag.validate()` the value or a thrown `Flag.Error`, whose reason is
+      `Missing` or `Invalid`. Without it — the prelude under the completions executive — the same
       calls return handles, a `Prospective` or a `Requisite`, resolved eagerly from the
       arguments, whose `present` and `absent` may be consulted at once but whose value is
       available only inside `execute`. Either way the read registers the flag, so a flag the
@@ -800,7 +800,7 @@ entry .Flag   a named option, `--name` or `-n`, whose operand is read as a type
       In the prelude, a missing flag never fails fast: it is recorded with `Cli#demand`, and
       `execute` reports every missing requisite together, exits with status 2, and never
       runs its block, which is why `Requisite#apply` inside the block is unconditional. With
-      `Effectful` in scope, a missing flag throws `MissingFlagError` at once, for the
+      `Effectful` in scope, a missing flag throws a `Missing` `Flag.Error` at once, for the
       backstop to report.
   entry #validate   reads the flag as required and checks its operand decodes, accruing or raising the failures
       As `#require`, and additionally interprets the operand with the topic's
@@ -809,8 +809,8 @@ entry .Flag   a named option, `--name` or `-n`, whose operand is read as a type
       is present but malformed is recorded with `Cli#fault`, with the decoder's own message,
       or _a value is required but none was given_ / _the value is not valid_ when it gives
       none; `execute` prints them under _The following options were given invalid values_.
-      With `Effectful`, a missing flag throws `MissingFlagError` and a malformed one
-      `InvalidFlagError`. Unlike `#apply`, this is how a `Flag[Int]` whose decoder raises
+      With `Effectful`, a missing flag throws a `Missing` `Flag.Error` and a malformed one
+      an `Invalid` `Flag.Error`. Unlike `#apply`, this is how a `Flag[Int]` whose decoder raises
       is read.
   entry #select   restricts the flag to a list of options, offering them as completions and reading the chosen one
       `flag.select(options)` needs the topic to be `Suggestible`; every option's suggestion
@@ -826,6 +826,18 @@ entry .Flag   a named option, `--name` or `-n`, whose operand is read as a type
   entry #matches   whether an argument's applied text names this flag, by its name or an alias
       `--name` matches a `Text` name, `-n` a `Char` name; the argument's format decides which
       piece of the word is compared.
+  entry .Error   raised by `#require` or `#validate` inside `execute`, where a flag's failure can no longer be accrued
+    detail
+        Thrown by `Flag#require` and `Flag#validate` only when `Effectful` is in scope — inside
+        an `execute` block, or anywhere under `executives.directExecutive` — where the requisite
+        guard has already run; it propagates to the executive's `Backstop`. In the prelude
+        neither call fails: each records the fault on the `Cli`, and `execute` reports every
+        missing or invalid flag together with exit status 2.
+    entry #flag   the flag which was missing or invalid
+    entry #reason   `Missing`, or `Invalid(detail)` with what the decoder reported
+    entry .Reason   why the flag failed
+      entry .Missing   the flag was required but absent: _the required flag `--name` was not specified_
+      entry .Invalid   the flag's operand could not be decoded: _the value of `--name` is not valid: `detail`_
 
 entry .Switch   a flag which takes no operand: declared like a `Flag`, read as its presence
   detail
@@ -1024,25 +1036,6 @@ entry .Requisite   the handle for a required flag read in the prelude: unconditi
       Infallible only because `execute`'s guard has already aborted when the flag is
       missing; under a conjured `Effectful` (the `effectful` escape hatch) that guarantee
       is void and a missing flag panics.
-
-entry .MissingFlagError   raised when a required flag is absent and the failure cannot be accrued
-  detail
-      Error: _the required flag `--name` was not specified_. Thrown by `Flag#require` and
-      `Flag#validate` only when `Effectful` is in scope — inside an `execute` block, or
-      anywhere under `executives.directExecutive` — where the missing-requisite guard has
-      already run; it propagates to the executive's `Backstop`. In the prelude, `require()`
-      never fails: it records the flag on the `Cli`, and `execute` reports every missing
-      requisite together with exit status 2.
-  entry #flag   the flag which was missing
-
-entry .InvalidFlagError   raised when a validated flag is present but its operand cannot be decoded, and the failure cannot be accrued
-  detail
-      Error: _the value of `--name` is not valid: `reason`_, where the reason is the decoder's
-      own message. Thrown by `Flag#validate` only when `Effectful` is in scope; in the
-      prelude the fault is recorded on the `Cli` and reported by `execute` with the other
-      invalid or missing flags.
-  entry #flag   the flag whose operand was invalid
-  entry #reason   why the operand could not be decoded
 
 entry .Interpretable   how a flag's operand arguments are read as a type
   detail

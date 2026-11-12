@@ -393,7 +393,7 @@ object Mdns:
     private def now: Long = System.nanoTime
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────────────────────
-    private def acquire()(using Monitor^, SharedProbate, Tactic[Discovery.Error]): Transport =
+    private def acquire()(using Monitor^, Probate.Shared, Tactic[Discovery.Error]): Transport =
       mutex:
         loans += 1
 
@@ -472,7 +472,7 @@ object Mdns:
       Dns.Message(tag, Dns.Flags(response = true, authoritative = true), Nil, records)
 
     // ── Receiving ─────────────────────────────────────────────────────────────────────────────
-    private def dispatch(packet: Packet)(using Monitor^, SharedProbate): Unit =
+    private def dispatch(packet: Packet)(using Monitor^, Probate.Shared): Unit =
       safely(packet.data.as[Dns.Message]).let: message =>
         if message.flags.response then absorb(message)
         else if message.id != tag then
@@ -502,7 +502,7 @@ object Mdns:
     // authority records) for a name we hold is answered at once, in defence (§8.2); other
     // answers wait 20–120 ms (§6), so responders on the link do not all speak together. A
     // legacy querier (not on port 5353) is answered by unicast, under its own ID (§6.7).
-    private def answer(message: Dns.Message, packet: Packet)(using Monitor^, SharedProbate): Unit =
+    private def answer(message: Dns.Message, packet: Packet)(using Monitor^, Probate.Shared): Unit =
       val candidates = mutex(owned.flatMap(_.records))
 
       val answers = candidates.filter: record =>
@@ -524,7 +524,7 @@ object Mdns:
 
     // Delayed answers falling due together go out as one message (§6.4): the first to be
     // deferred schedules the response, and those deferred before it is sent join it.
-    private def defer(answers: List[Dns.Record])(using Monitor^, SharedProbate): Unit =
+    private def defer(answers: List[Dns.Record])(using Monitor^, Probate.Shared): Unit =
       val first = mutex:
         val first = deferred == Nil
         deferred = List.concat(deferred, answers)
@@ -548,7 +548,7 @@ object Mdns:
     // A response from the link: into the cache, whose changes are the browsers' events and may
     // complete a resolution; for a name we are probing, a conflict if its records differ from
     // ours; and for a name we hold, a contest.
-    private def absorb(message: Dns.Message)(using Monitor^, SharedProbate): Unit =
+    private def absorb(message: Dns.Message)(using Monitor^, Probate.Shared): Unit =
       val records = List.concat(message.answers, message.additional)
       notify(cache.absorb(records, now))
 
@@ -568,7 +568,7 @@ object Mdns:
     // afresh, under a new name if the probe is answered. A goodbye (TTL 0) is a stale record
     // retiring, not a rival. No goodbye is sent for the name given up: the shared PTR pointing
     // to it is the rival's too, and its unique records were never ours to retire.
-    private def contest(records: List[Dns.Record])(using Monitor^, SharedProbate): Unit =
+    private def contest(records: List[Dns.Record])(using Monitor^, Probate.Shared): Unit =
       val contested = mutex:
         val found = owned.filter: claim =>
           records.exists: record =>
@@ -692,7 +692,7 @@ object Mdns:
           List.concat(subtypes, addresses) )
 
     def advertise(service: Discovery.Service, description: Discovery.Description)
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Discovery.Advertising =
 
       val transport = acquire()
@@ -743,7 +743,7 @@ object Mdns:
     // (§8.2.1) waits a second and probes for the same name again; success is announced twice,
     // a second apart (§8.3).
     private def establish(claim: Claim, transport: Transport, attempts: Int)
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Unit =
 
       if attempts >= 100
@@ -798,7 +798,7 @@ object Mdns:
 
     // The next name (RFC 6762 §9: `Hamlet` → `Hamlet (2)`), with its records rebuilt.
     private def rename(claim: Claim, transport: Transport, attempts: Int)
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Unit =
 
       claim.instance = claim.instance.renamed
@@ -808,7 +808,7 @@ object Mdns:
     // After a conflict with an established claim: back through probing, unless the loan ended.
     // This runs in the background, where no loan's `Loggable` is at hand.
     private def reclaim(claim: Claim)
-      ( using monitor: Monitor^, probate: SharedProbate, tactic: Tactic[Discovery.Error] )
+      ( using monitor: Monitor^, probate: Probate.Shared, tactic: Tactic[Discovery.Error] )
     :   Unit =
 
       if !claim.withdrawn then transport.let: transport =>
@@ -819,7 +819,7 @@ object Mdns:
     // queried again at intervals doubling from a second to an hour (§5.2), each time telling
     // responders what we already know.
     def browse(service: Discovery.Service)
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Discovery.Browsing =
 
       acquire()
@@ -870,7 +870,7 @@ object Mdns:
     // ── Resolving ─────────────────────────────────────────────────────────────────────────────
     def resolve[duration: Abstractable across Durations to Long]
       ( instance: Discovery.Instance, timeout: duration )
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Discovery.Resolution =
 
       acquire()

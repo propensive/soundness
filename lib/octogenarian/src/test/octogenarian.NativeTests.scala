@@ -58,6 +58,7 @@ import cloaks.heapCloak
 import socketBackends.javaBaseSockets
 
 import java.nio.file as jnf
+import dissonance.Diff.Par
 
 // The native backend, checked against repositories the real `git` builds: every read must agree
 // with git's own answer, and every write must be one git accepts.
@@ -345,7 +346,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         val dir = gitRepo()
         sh"git -C $dir remote add origin git@example.com:globe/hamlet.git".exec[Exit]()
         dir.open[Git.Repo]() { repo ?=> repo.remotes().value }
-      .assert(_ == List(Remote(t"origin", t"git@example.com:globe/hamlet.git")))
+      .assert(_ == List(Git.Remote(t"origin", t"git@example.com:globe/hamlet.git")))
 
     suite(m"Working tree"):
 
@@ -485,14 +486,14 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
           val file = worktree.diff().value.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
           val hunk = file.hunks.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
           val changes = hunk.edits.filter(!_.isInstanceOf[Par[?]]).fold(0) { (n, _) => n + 1 }
-          (file.changeKind, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
-      .assert(_ == ((ChangeKind.Modified, 1, 5, 1, 5, 2)))
+          (file.status, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
+      .assert(_ == ((Git.Delta.Status.Modified, 1, 5, 1, 5, 2)))
 
       test(m"diffBetween two commits matches the command-line parse of git diff"):
         val dir = gitRepo()
         val first = gitCommit(dir, t"a", t"one\ntwo\nthree\n", t"first")
         val second = gitCommit(dir, t"a", t"one\n2\nthree\nfour\n", t"second")
-        val expected = Patch.parse(gitOut(dir, t"diff", t"--no-color", first.text, second.text).cut(t"\n"))
+        val expected = Git.Patch.parse(gitOut(dir, t"diff", t"--no-color", first.text, second.text).cut(t"\n"))
         dir.open[Git.Worktree]() { worktree ?=> worktree.diffBetween(first, second) == expected }
       .assert(_ == true)
 
@@ -928,7 +929,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
       test(m"a native clone over smart HTTP matches the repository git serves"):
         val (source, mirror) = populated()
         withHttpServer(mirror.parent.or(mirror)): base =>
-          given Git.Backend = Native(List(SmartHttp()))
+          given Git.Backend = octogenarian.Native(List(SmartHttp()))
           val target = freshDir()
           sh"rm -rf $target".exec[Exit]()
           Git.clone(t"$base/${mirror.name}".as[HttpUrl], target)
@@ -939,7 +940,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         val (source, mirror) = populated()
         gitCommit(source, t"c", t"c\n", t"third")
         withHttpServer(mirror.parent.or(mirror)): base =>
-          given Git.Backend = Native(List(SmartHttp()))
+          given Git.Backend = octogenarian.Native(List(SmartHttp()))
           val outcomes = source.open[Git.Repo](Read & Write): repo ?=>
             repo.addRemote(t"web", t"$base/${mirror.name}")
             repo.push(t"web", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]
@@ -950,7 +951,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         val (source, mirror) = populated()
         val other = gitRepo()
         withHttpServer(mirror.parent.or(mirror)): base =>
-          given Git.Backend = Native(List(SmartHttp()))
+          given Git.Backend = octogenarian.Native(List(SmartHttp()))
           other.open[Git.Repo](Read & Write): repo ?=>
             repo.addRemote(t"origin", t"$base/${mirror.name}")
             repo.fetch(t"origin")
@@ -987,7 +988,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         val (source, mirror) = populated()
         val other = gitRepo()
         withStubSsh:
-          given Git.Backend = Native(List(SshCommand()))
+          given Git.Backend = octogenarian.Native(List(SshCommand()))
           other.open[Git.Repo](Read & Write): repo ?=>
             repo.addRemote(t"origin", t"ssh://localhost${mirror.encode}")
             repo.fetch(t"origin", tags = true)
@@ -998,7 +999,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         val (source, mirror) = populated()
         gitCommit(source, t"c", t"c\n", t"third")
         withStubSsh:
-          given Git.Backend = Native(List(SshCommand()))
+          given Git.Backend = octogenarian.Native(List(SshCommand()))
           val outcomes = source.open[Git.Repo](Read & Write): repo ?=>
             repo.addRemote(t"shell", t"localhost:${mirror.encode}")
             repo.push(t"shell", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]
@@ -1061,7 +1062,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
           val (source, mirror) = populated()
           val other = gitRepo()
           withSshd: port =>
-            given Git.Backend = Native(List(SshNative()))
+            given Git.Backend = octogenarian.Native(List(SshNative()))
             other.open[Git.Repo](Read & Write): repo ?=>
               repo.addRemote(t"origin", t"ssh://$sshUser@127.0.0.1:$port${mirror.encode}")
               repo.fetch(t"origin", tags = true)
@@ -1072,7 +1073,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
           val (source, mirror) = populated()
           gitCommit(source, t"c", t"c\n", t"third")
           withSshd: port =>
-            given Git.Backend = Native(List(SshNative()))
+            given Git.Backend = octogenarian.Native(List(SshNative()))
             val outcomes = source.open[Git.Repo](Read & Write): repo ?=>
               repo.addRemote(t"native", t"ssh://$sshUser@127.0.0.1:$port${mirror.encode}")
               repo.push(t"native", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]

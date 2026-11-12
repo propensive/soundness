@@ -34,6 +34,7 @@ package anthology
 
 import anticipation.*
 import gossamer.*
+import anthology.Toolchain.Universe
 
 // A library JAR of one universe's compilation output—classfiles, and any `.sjsir` or `.nir`
 // alongside them—packaged for downstream assembly rather than execution. Packaging rather than

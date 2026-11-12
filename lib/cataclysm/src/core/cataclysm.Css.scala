@@ -343,6 +343,17 @@ object Css:
   trait Convertible extends Typeclass, Topical:
     def value(self: Self): Text
 
+  object Syntax:
+    // Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
+    // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
+    // functions and a handful of leaf primitives); leaf primitives (`<length>`,
+    // `<color>` parts, …) are matched at the token level. A value containing an
+    // arbitrary-substitution function (`var()`, `env()`) is always valid (it is a
+    // pending-substitution value). `calc()` and friends are accepted wherever a
+    // numeric primitive is expected. Any `<type>` that is neither resolvable nor an
+    // implemented primitive yields `Outcome.Unsupported`.
+    object Matcher extends SyntaxMatching
+
   // Syntax → Css.Syntax
   // The CSS Value Definition Syntax (VDS) — the grammar notation in which every
   // property's permitted values are described. A `Syntax` is the parsed form of a
@@ -362,5 +373,15 @@ object Css:
     // a repeat multiplier: `?` `*` `+` `{m,n}` `#`
     case Repeated(term: Syntax, min: Int, max: Optional[Int], separated: Boolean)
     case Mandatory(term: Syntax)                     // `!` — the group must produce a value
+
+  // The result of checking a property value against its grammar. `Unsupported`
+  // carries the names of the value types the matcher does not yet implement and so
+  // could not verify against.
+  enum Outcome derives CanEqual:
+    import anticipation.*
+
+    case Valid
+    case Invalid
+    case Unsupported(types: List[Text])
 
 case class Css(rules: List[Css.Node]) derives CanEqual

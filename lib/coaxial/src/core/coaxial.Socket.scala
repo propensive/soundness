@@ -85,7 +85,7 @@ object Socket:
     def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Option])
     :   ServerSocket raises Bind.Error
 
-    def listenDomain(address: DomainSocket, options: List[Option]): ServerSocket raises Bind.Error
+    def listenDomain(address: Uds, options: List[Option]): ServerSocket raises Bind.Error
 
     // Accept the next incoming connection, blocking until one arrives, as a `Duplex`: the handler
     // reads the request from its `source` and the accept loop writes the response with `send`.
@@ -147,7 +147,7 @@ object Socket:
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Option])
     :   Exchange raises Socket.Error
 
-    def dialDomain(address: DomainSocket, options: List[Option]): Exchange raises Socket.Error
+    def dialDomain(address: Uds, options: List[Option]): Exchange raises Socket.Error
 
     // Stream the request out, half-closing the output side; then read the response as a fresh
     // single-use pull endpoint whose refill blocks until data arrives or the peer half-closes.
@@ -165,7 +165,7 @@ object Socket:
       ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Option] )
     :   Duplex raises Socket.Error
 
-    def duplexDomain(address: DomainSocket, options: List[Option]): Duplex raises Socket.Error
+    def duplexDomain(address: Uds, options: List[Option]): Duplex raises Socket.Error
 
     //── Fire-and-forget datagram courier (`Routable`) ────────────────────────────────────────────
     type Courier

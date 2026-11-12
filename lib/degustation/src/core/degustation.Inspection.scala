@@ -82,7 +82,7 @@ object Inspection:
 
         val jars = entries.filter(!directories.has(_)).map(Jar(_))
 
-        val sources: List[ClassSource] =
+        val sources: List[Universe.Source] =
           directories.map(Directory(_)) + jars + PlatformClasses.sources
 
         try
@@ -91,7 +91,7 @@ object Inspection:
             val data = read(path)
             (relativePath(path, data, directories), data)
 
-          Degustation.atomize(files, ClassSource(sources.stdlib*))
+          Degustation.atomize(files, Universe.Source(sources.stdlib*))
 
         catch
           case error: Degustation.Unencodable =>
@@ -143,7 +143,7 @@ object Inspection:
   private class Directory(root: Path on Linux)
     ( using backend: FilesystemBackend on Linux, ioTactic: Tactic[Io.Error],
             nameTactic: Tactic[Name.Error] )
-  extends ClassSource:
+  extends Universe.Source:
     private def resolve(relative: Text): Path on Linux =
       val names: List[Text] = relative.cut(t"/").filter(_ != t"")
       names.fold(root): (path: Path on Linux, name: Text) => path / name
@@ -161,7 +161,7 @@ object Inspection:
   private class Jar(path: Path on Linux)
     ( using FilesystemBackend on Linux, Tactic[Io.Error], Tactic[Zip.Error],
             (Zip.Event is Loggable) )
-  extends ClassSource:
+  extends Universe.Source:
     private lazy val zipfile: Zipfile = Zipfile.read(path)
 
     private lazy val entries: Map[Text, Zip.Entry] =

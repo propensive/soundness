@@ -34,7 +34,9 @@ package synesthesia
 
 import anticipation.*
 
-sealed trait Discourse
+// One turn of a conversation with a model, by who said it.
+object Discourse:
+  case class Human(message: Text) extends Discourse
+  case class Agent(message: Text) extends Discourse
 
-case class Human(message: Text) extends Discourse
-case class Agent(message: Text) extends Discourse
+sealed trait Discourse

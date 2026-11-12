@@ -131,19 +131,19 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
     tickets.getOrElseUpdate((shape, size), data(shape, size).map(Ticket(_)))
 
 
-  // What the inline comparison operators are worth. `Bytes` is opaque over `Long` and has both
+  // What the inline comparison operators are worth. `Memory` is opaque over `Long` and has both
   // an inline `Orderable` — through which `<` expands to a primitive comparison — and a runtime
   // `Comparable`, so the same comparison can be made both ways over the same data. An
-  // `Array[Bytes]` is a `long[]`, so the operator path never leaves the stack, while the
+  // `Array[Memory]` is a `long[]`, so the operator path never leaves the stack, while the
   // typeclass path boxes both operands and answers with a `Comparison`.
-  val sizes0: scala.Array[Bytes] =
-    val array = new scala.Array[Bytes](10000)
+  val sizes0: scala.Array[Memory] =
+    val array = new scala.Array[Memory](10000)
     var state = 12345L
     var index = 0
 
     while index < 10000 do
       state = state*6364136223846793005L + 1442695040888963407L
-      array(index) = Bytes(state >>> 33)
+      array(index) = Memory(state >>> 33)
       index += 1
 
     array
@@ -687,7 +687,7 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
       bench(m"ten thousand comparisons through Comparable")(target = 250*Milli(Second)):
         '{
             val sizes = murmuration.Benchmarks.sizes0
-            val comparable = summon[Bytes is Comparable]
+            val comparable = summon[Memory is Comparable]
             var count = 0
             var index = 1
 

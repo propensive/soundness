@@ -371,8 +371,8 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
   entry .unit   `Unit is Decodable in Yaml`: a null scalar
       `null`, `~`, an empty value or anything tagged `!!null`; any other node registers
       `Reason.NotType(found, Null)`.
-  entry .bytes   `Bytes is Decodable in Yaml`: a byte count from an integer scalar
-      Reads the node as a `Long` and makes a `Bytes` (hypotenuse's unit) of it.
+  entry .memory   `Memory is Decodable in Yaml`: a byte count from an integer scalar
+      Reads the node as a `Long` and makes a `Memory` (rudiments' byte count) of it.
   entry .listDecodable   `List[T] is Decodable in Yaml` for any element with a decoder
       Reads a sequence, focusing each element by its ordinal so an element's fault is
       reported at `#/items/2`. A node which is not a sequence registers

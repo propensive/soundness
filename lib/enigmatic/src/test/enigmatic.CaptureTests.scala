@@ -46,6 +46,7 @@ import gossamer.textDecodable
 import providers.javaBaseProvider
 import cryptoPermits.permitDisallowedCrypto   // RSA-1024 below is weak; AES-CBC is unauthenticated
 import cloaks.heapCloak
+import enigmatic.BlockCipher.{Cbc, Pkcs7}
 
 // `uncloak` lends a key to its block as an `Encryptor`/`Decryptor` capability, and
 // capture checking confines the capability to that block: these tests demonstrate

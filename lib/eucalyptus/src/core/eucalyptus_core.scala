@@ -43,11 +43,11 @@ import prepositional.*
 import spectacular.*
 
 package logFormats:
-  given textLevelLogFormat: Level is Showable =
-    case Level.Fine => t"FINE"
-    case Level.Info => t"INFO"
-    case Level.Warn => t"WARN"
-    case Level.Fail => t"FAIL"
+  given textLevelLogFormat: Log.Level is Showable =
+    case Log.Level.Fine => t"FINE"
+    case Log.Level.Info => t"INFO"
+    case Log.Level.Warn => t"WARN"
+    case Log.Level.Fail => t"FAIL"
 
   given timestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
@@ -65,7 +65,7 @@ val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 def mute[event](using erased void: Void)[result](lambda: (event is Loggable) ?=> result): result =
   val silent: event is Loggable = new Loggable:
     type Self = event
-    def log(level: Level, timestamp: Long, event: => event): Unit = ()
+    def log(level: Log.Level, timestamp: Long, event: => event): Unit = ()
 
   lambda(using silent)
 

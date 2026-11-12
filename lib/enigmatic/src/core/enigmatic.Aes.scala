@@ -38,15 +38,15 @@ import prepositional.*
 
 object Aes:
   given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( blockMode: mode is BlockCipher.Mode )
+  =>  ( blockPadding: padding is BlockCipher.Padding )
   =>  ( mode Permits padding )
   =>  ( crypto: Crypto )
   =>  ( Aes[bits] over mode against padding ) =
     Aes(blockMode, blockPadding, crypto.aes).asInstanceOf[Aes[bits] over mode against padding]
 
 class Aes[bits <: 128 | 192 | 256: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+  ( mode: BlockCipher.Mode, padding: BlockCipher.Padding, cipher: Crypto.SymmetricCipher )
 extends BlockCipher(t"AES", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

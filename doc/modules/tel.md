@@ -296,7 +296,7 @@ remark to a compound, or insert or remove a child:
 
 ```scala
 val pointer = Tel.Pointer.of(t"name")
-val mutated = Mutation(document, List(Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
+val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
 ```
 
 ```scala fuel

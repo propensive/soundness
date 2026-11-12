@@ -58,160 +58,6 @@ import codepages.utf8Codepage
 import cryptoPermits.permitDeprecatedCrypto
 import providers.javaBaseProvider
 
-object Message:
-  // A formal `Message is Ingressive`, so the raw `Message` type satisfies the
-  // `Ingressive` requirement `webSocket` places on its message type. A `Message`
-  // channel is decoded by identity — the reader already produced the `Message` — so
-  // this is never actually applied; it could not recover the Text/Binary distinction
-  // from raw bytes anyway. In the companion, so it resolves with no import.
-  given ingressive: Message is Ingressive = Message.Binary(_)
-
-  // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
-  // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
-  given transmissible: Message is Transmissible =
-    case Text(text)   => zephyrine.Stream(Websocket.Frame.Text(true, text.in[Data]).encode)
-    case Binary(data) => zephyrine.Stream(Websocket.Frame.Binary(true, data).encode)
-
-// A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
-// binary frames are reassembled as raw bytes. Control frames (Ping/Pong/Close)
-// and fragmentation are handled by the library and never surface here.
-enum Message:
-  case Text(text: anticipation.Text)
-  case Binary(data: Data)
-
-  // The raw payload of a message: a Text message's UTF-8 bytes, or a Binary
-  // message's bytes verbatim. Used to decode an incoming message to a typed value.
-  private[perihelion] def bytes: Data = this match
-    case Text(text)   => text.in[Data]
-    case Binary(data) => data
-
-// The outgoing side of a connection: a bounded, thread-safe conduit of encoded
-// frames that the server pumps to the socket as the `101` response body
-// (mirroring Coaxial's `Duplex.send`). The reader and the handler both enqueue
-// here, so a full queue backpressures every producer.
-class Channel()(using masking: Masking, buffering: Buffering):
-  // The endpoints are held at an AnyRef rim: capture sets do not ride fields of
-  // a shared front-end object. Each has one owner by construction: producers
-  // serialize through this object's lock, and the server or client pump is the
-  // single consumer of the reader endpoint.
-  // Cast whole: a tuple binding of the two exclusive endpoints would place
-  // both in one inferred type, which separation checking rejects.
-  private val endpoints: (AnyRef, AnyRef) = Conduit[Data]().asInstanceOf[(AnyRef, AnyRef)]
-
-  private def intake: (Intake[Data] over Credit)^ =
-    endpoints(0).asInstanceOf[(Intake[Data] over Credit)^]
-
-  // The single reader endpoint: consumed exactly once, by the pump that writes
-  // the upgraded connection's outgoing bytes.
-  private[perihelion] def stream: (Stream[Data] over Credit)^ =
-    endpoints(1).asInstanceOf[(Stream[Data] over Credit)^]
-
-  // Mask each frame once, here, on its way out: every frame reaching the conduit
-  // is already complete and unmasked (a Reader auto-reply, a handler `Reply`, a
-  // `send`, or a `close`), so a client masks it and a server passes it through.
-  private[perihelion] def enqueue(frame: Data): Unit = synchronized:
-    intake.put(masking.outbound(frame))
-    // Flushed per frame: the conduit otherwise buffers a full block before
-    // publishing, but an interactive protocol must deliver each frame promptly.
-    intake.flush()
-
-  def send(message: Message): Unit logs Websocket.Event =
-    Log.fine(Websocket.Event.Sent(message.bytes.length))
-    // One message serializes to one complete frame; see `Transmissible`.
-    enqueue(Message.transmissible.serialize(message).memoize)
-
-  def stop(): Unit = synchronized(intake.finish())
-
-  def close(code: Int = 1000): Unit logs Websocket.Event =
-    Log.info(Websocket.Event.Closed(code))
-    enqueue(Websocket.Frame.Close(code, Data()).encode)
-    stop()
-
-// Reads client frames off the connection, reassembles fragmented messages,
-// answers Ping with Pong, and ends (stopping the outgoing side) when the peer
-// sends Close. Protocol violations raise `Websocket.Error`.
-class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error], Masking):
-  def messages: Chain[Message] =
-    // Deferred: constructing a stream-backed `Cursor` performs its first
-    // refill, which on a live connection blocks until bytes arrive. The
-    // cursor is created only when the first message is forced, so a server
-    // can send its `101` response (and a client its first frame) first.
-    Chain.defer:
-      // A neutral reference with an inline accessor: the parsing defs below
-      // close over the cursor, which a capability-typed binding would hide
-      // from them under the statement rule.
-      // The body cut short is the connection's abnormal closure.
-      given Tactic[Truncation.Error] = summon[Tactic[Websocket.Error]].contramap: error =>
-        given Diagnostics = error.diagnostics
-        Websocket.Error(Websocket.Error.Reason.Truncated)
-
-      val cursorRef: AnyRef = Cursor[Data](body()).asInstanceOf[AnyRef]
-      inline def cursor: Cursor[Data, {}]^ = cursorRef.asInstanceOf[Cursor[Data, {}]^]
-
-      // Validate `data` as UTF-8. `whole` marks a complete message, where a
-      // trailing partial multi-byte sequence is an error; for a fragment prefix it
-      // is tolerated, since a code point may straddle a fragment boundary. Used
-      // incrementally so invalid bytes fail the connection at once (RFC 6455 §8.1),
-      // not only once the whole message is in.
-      def validUtf8(data: Data, whole: Boolean): Boolean =
-        val decoder = java.nio.charset.StandardCharsets.UTF_8.nn.newDecoder().nn
-        // `wrap` yields a writable buffer, but the only operation on it is `decode`, which
-        // reads.
-        val in = java.nio.ByteBuffer.wrap(Array.unsafeJvm(data)).nn
-        val out = java.nio.CharBuffer.allocate(data.length + 1).nn
-        !decoder.decode(in, out, whole).nn.isError
-
-      def emit(text: Boolean, data: Data): Message =
-        if text then Message.Text(data.utf8) else Message.Binary(data)
-
-      // Extend a (new or in-progress) message by `data`, validating a text message
-      // incrementally and emitting it once `fin` is seen.
-      def extend(text: Boolean, data: Data, fin: Boolean): Chain[Message] =
-        if text && !validUtf8(data, fin)
-        then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
-
-        if fin then emit(text, data) #:: recur(Unset) else recur((text, data))
-
-      // A data frame arriving mid-message (a fragmented message is still open) is a
-      // protocol violation, as is a continuation with nothing to continue.
-      def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
-      :   Chain[Message] =
-
-        if partial.present then abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))
-        else extend(text, data, fin)
-
-      def recur(partial: Optional[(Boolean, Data)]): Chain[Message] =
-        (Websocket.Frame.parse(cursor): @unchecked) match
-          case Unset =>
-            Chain()
-
-          case Websocket.Frame.Ping(data) =>
-            channel.enqueue(Websocket.Frame.Pong(data).encode)
-            recur(partial)
-
-          case Websocket.Frame.Pong(_) =>
-            recur(partial)
-
-          case Websocket.Frame.Close(code, reason) =>
-            if !validUtf8(reason, true) then
-              abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
-
-            channel.enqueue
-              ( Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode )
-
-            channel.stop()
-            Chain()
-
-          case Websocket.Frame.Text(fin, data)   => started(fin, true, data, partial)
-          case Websocket.Frame.Binary(fin, data) => started(fin, false, data, partial)
-
-          case Websocket.Frame.Continuation(fin, data) =>
-            partial.lay(abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))):
-              (text, accumulated) =>
-                extend(text, accumulated + data, fin)
-
-      recur(Unset)
-
 object Websocket:
   val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -467,6 +313,220 @@ object Websocket:
       // Sealed: see `closeData`.
       header + payload
 
+  // Which side of a WebSocket connection this endpoint is, and hence how frames are
+  // masked. RFC 6455 §5.3: a client MUST mask every frame it sends with a fresh 32-bit
+  // key; a server MUST send unmasked and reject an unmasked client frame, and — the
+  // mirror image — a client MUST reject a masked server frame. Masking is applied once,
+  // on the outgoing side, at the `Channel` boundary (every element spooled there is
+  // already exactly one complete, unmasked frame); the incoming side (`Frame.parse`)
+  // enforces the expected direction.
+  object Masking:
+    import java.security.SecureRandom
+    import anticipation.*
+    import rudiments.*
+    import symbolism.*
+
+    // The server side: send unmasked, require inbound frames to be masked.
+    object Server extends Masking:
+      def outbound(frame: Data): Data = frame
+      def inbound: Boolean = true
+
+    // The client side: mask each outgoing frame with a fresh key, and reject a masked
+    // inbound (server) frame. One `SecureRandom` is kept per connection for the keys.
+    class Client() extends Masking:
+      private val random: SecureRandom = SecureRandom()
+
+      def inbound: Boolean = false
+
+      def outbound(frame: Data): Data =
+        // A frame we generated is unmasked, so its header is 2 bytes plus the 0/2/8 bytes
+        // of extended length; the mask bit (byte 1, high bit) is clear. Set it, splice in
+        // a fresh 4-byte key, and XOR the payload (`Frame.unmask` is its own inverse).
+        val headerLength = (frame.readUnchecked(1).toInt & 0x7f) match
+          case 126 => 4
+          case 127 => 10
+          case _   => 2
+
+        val key: Data =
+          val bytes = Array.allocate[Byte](4)
+          random.nextBytes(bytes.raw)
+          Array.freeze(bytes)
+
+        val header: Data = Data.fill(headerLength): index =>
+          if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte
+          else frame.readUnchecked(index)
+
+        val prefix: Data = header + key
+        val unmasked = Websocket.Frame.unmask(frame.skip(headerLength), key)
+        prefix + unmasked
+
+  trait Masking:
+    import java.security.SecureRandom
+    import anticipation.*
+    import rudiments.*
+    import symbolism.*
+
+    // Mask a complete, self-generated (and therefore well-formed and unmasked) frame, or
+    // return it unchanged for the server. `inbound` reports whether frames read from the
+    // peer must be masked.
+    def outbound(frame: Data): Data
+    def inbound: Boolean
+
+  object Message:
+    // A formal `Message is Ingressive`, so the raw `Message` type satisfies the
+    // `Ingressive` requirement `webSocket` places on its message type. A `Message`
+    // channel is decoded by identity — the reader already produced the `Message` — so
+    // this is never actually applied; it could not recover the Text/Binary distinction
+    // from raw bytes anyway. In the companion, so it resolves with no import.
+    given ingressive: Message is Ingressive = Message.Binary(_)
+
+    // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
+    // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
+    given transmissible: Message is Transmissible =
+      case Text(text)   => zephyrine.Stream(Websocket.Frame.Text(true, text.in[Data]).encode)
+      case Binary(data) => zephyrine.Stream(Websocket.Frame.Binary(true, data).encode)
+
+  // A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
+  // binary frames are reassembled as raw bytes. Control frames (Ping/Pong/Close)
+  // and fragmentation are handled by the library and never surface here.
+  enum Message:
+    case Text(text: anticipation.Text)
+    case Binary(data: Data)
+
+    // The raw payload of a message: a Text message's UTF-8 bytes, or a Binary
+    // message's bytes verbatim. Used to decode an incoming message to a typed value.
+    private[perihelion] def bytes: Data = this match
+      case Text(text)   => text.in[Data]
+      case Binary(data) => data
+
+  // The outgoing side of a connection: a bounded, thread-safe conduit of encoded
+  // frames that the server pumps to the socket as the `101` response body
+  // (mirroring Coaxial's `Duplex.send`). The reader and the handler both enqueue
+  // here, so a full queue backpressures every producer.
+  class Channel()(using masking: Websocket.Masking, buffering: Buffering):
+    // The endpoints are held at an AnyRef rim: capture sets do not ride fields of
+    // a shared front-end object. Each has one owner by construction: producers
+    // serialize through this object's lock, and the server or client pump is the
+    // single consumer of the reader endpoint.
+    // Cast whole: a tuple binding of the two exclusive endpoints would place
+    // both in one inferred type, which separation checking rejects.
+    private val endpoints: (AnyRef, AnyRef) = Conduit[Data]().asInstanceOf[(AnyRef, AnyRef)]
+
+    private def intake: (Intake[Data] over Credit)^ =
+      endpoints(0).asInstanceOf[(Intake[Data] over Credit)^]
+
+    // The single reader endpoint: consumed exactly once, by the pump that writes
+    // the upgraded connection's outgoing bytes.
+    private[perihelion] def stream: (Stream[Data] over Credit)^ =
+      endpoints(1).asInstanceOf[(Stream[Data] over Credit)^]
+
+    // Mask each frame once, here, on its way out: every frame reaching the conduit
+    // is already complete and unmasked (a Reader auto-reply, a handler `Reply`, a
+    // `send`, or a `close`), so a client masks it and a server passes it through.
+    private[perihelion] def enqueue(frame: Data): Unit = synchronized:
+      intake.put(masking.outbound(frame))
+      // Flushed per frame: the conduit otherwise buffers a full block before
+      // publishing, but an interactive protocol must deliver each frame promptly.
+      intake.flush()
+
+    def send(message: Message): Unit logs Websocket.Event =
+      Log.fine(Websocket.Event.Sent(message.bytes.length))
+      // One message serializes to one complete frame; see `Transmissible`.
+      enqueue(Message.transmissible.serialize(message).memoize)
+
+    def stop(): Unit = synchronized(intake.finish())
+
+    def close(code: Int = 1000): Unit logs Websocket.Event =
+      Log.info(Websocket.Event.Closed(code))
+      enqueue(Websocket.Frame.Close(code, Data()).encode)
+      stop()
+
+  // Reads client frames off the connection, reassembles fragmented messages,
+  // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
+  // sends Close. Protocol violations raise `Websocket.Error`.
+  class Reader(body: Spring[Data]^, channel: Channel)
+    ( using Tactic[Websocket.Error], Websocket.Masking ):
+    def messages: Chain[Message] =
+      // Deferred: constructing a stream-backed `Cursor` performs its first
+      // refill, which on a live connection blocks until bytes arrive. The
+      // cursor is created only when the first message is forced, so a server
+      // can send its `101` response (and a client its first frame) first.
+      Chain.defer:
+        // A neutral reference with an inline accessor: the parsing defs below
+        // close over the cursor, which a capability-typed binding would hide
+        // from them under the statement rule.
+        // The body cut short is the connection's abnormal closure.
+        given Tactic[Truncation.Error] = summon[Tactic[Websocket.Error]].contramap: error =>
+          given Diagnostics = error.diagnostics
+          Websocket.Error(Websocket.Error.Reason.Truncated)
+
+        val cursorRef: AnyRef = Cursor[Data](body()).asInstanceOf[AnyRef]
+        inline def cursor: Cursor[Data, {}]^ = cursorRef.asInstanceOf[Cursor[Data, {}]^]
+
+        // Validate `data` as UTF-8. `whole` marks a complete message, where a
+        // trailing partial multi-byte sequence is an error; for a fragment prefix it
+        // is tolerated, since a code point may straddle a fragment boundary. Used
+        // incrementally so invalid bytes fail the connection at once (RFC 6455 §8.1),
+        // not only once the whole message is in.
+        def validUtf8(data: Data, whole: Boolean): Boolean =
+          val decoder = java.nio.charset.StandardCharsets.UTF_8.nn.newDecoder().nn
+          // `wrap` yields a writable buffer, but the only operation on it is `decode`, which
+          // reads.
+          val in = java.nio.ByteBuffer.wrap(Array.unsafeJvm(data)).nn
+          val out = java.nio.CharBuffer.allocate(data.length + 1).nn
+          !decoder.decode(in, out, whole).nn.isError
+
+        def emit(text: Boolean, data: Data): Message =
+          if text then Message.Text(data.utf8) else Message.Binary(data)
+
+        // Extend a (new or in-progress) message by `data`, validating a text message
+        // incrementally and emitting it once `fin` is seen.
+        def extend(text: Boolean, data: Data, fin: Boolean): Chain[Message] =
+          if text && !validUtf8(data, fin)
+          then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
+
+          if fin then emit(text, data) #:: recur(Unset) else recur((text, data))
+
+        // A data frame arriving mid-message (a fragmented message is still open) is a
+        // protocol violation, as is a continuation with nothing to continue.
+        def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
+        :   Chain[Message] =
+
+          if partial.present then abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))
+          else extend(text, data, fin)
+
+        def recur(partial: Optional[(Boolean, Data)]): Chain[Message] =
+          (Websocket.Frame.parse(cursor): @unchecked) match
+            case Unset =>
+              Chain()
+
+            case Websocket.Frame.Ping(data) =>
+              channel.enqueue(Websocket.Frame.Pong(data).encode)
+              recur(partial)
+
+            case Websocket.Frame.Pong(_) =>
+              recur(partial)
+
+            case Websocket.Frame.Close(code, reason) =>
+              if !validUtf8(reason, true) then
+                abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
+
+              channel.enqueue
+                ( Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode )
+
+              channel.stop()
+              Chain()
+
+            case Websocket.Frame.Text(fin, data)   => started(fin, true, data, partial)
+            case Websocket.Frame.Binary(fin, data) => started(fin, false, data, partial)
+
+            case Websocket.Frame.Continuation(fin, data) =>
+              partial.lay(abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))):
+                (text, accumulated) =>
+                  extend(text, accumulated + data, fin)
+
+        recur(Unset)
+
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs
 // concurrently on `task`, consuming reassembled messages and replying via
@@ -474,12 +534,15 @@ object Websocket:
 class Websocket[message, state]
   ( request: Http.Request,
     initial: state,
-    decode:  Message => message,
+    decode:  Websocket.Message => message,
     handle:  (state: state) ?=> message => Control[state] )
   ( using Monitor, Probate ):
+  import Websocket.{Channel, Message, Reader}
+
+  import Websocket.Masking
 
   // A server sends unmasked frames and requires the peer's to be masked.
-  given Masking = Masking.Server
+  given Websocket.Masking = Websocket.Masking.Server
 
   given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
 
@@ -510,7 +573,7 @@ class Websocket[message, state]
       . protect:
         // Resolved locally: the class-level `Masking` given would re-capture
         // the instance under construction.
-        given Masking = Masking.Server
+        given Websocket.Masking = Websocket.Masking.Server
 
         def loop(messages: Chain[Message], state: state): state =
           messages.flow(channel0.stop() yet state):

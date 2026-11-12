@@ -113,7 +113,7 @@ A threshold drops everything below a chosen level:
 typecheck
 ##
 supervise:
-  given logger: Logger[Any, Message] = Logger(Out, level = Level.Warn)
+  given logger: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
   Log.info(m"not written")
   Log.warn(m"written")
 ```
@@ -252,9 +252,9 @@ logFile.create[File](CreateFlag.Parents)
 supervise:
   given fileLog: Logger[Any, Message] =
     import logFormats.timestampedLogFormat
-    Logger(logFile, level = Level.Fine)
+    Logger(logFile, level = Log.Level.Fine)
 
-  given terminalLog: Logger[Any, Message] = Logger(Out, level = Level.Warn)
+  given terminalLog: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
   Log.fine(m"only the file sees this")
   Log.warn(m"both see this")
 ```

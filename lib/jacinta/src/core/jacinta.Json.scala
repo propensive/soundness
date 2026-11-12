@@ -176,8 +176,8 @@ trait Json2 extends Json3:
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-12).
-  given bytes: (tactic: Tactic[Json.Error])
-  =>  ( (Bytes is Json.Decodable)^{tactic} ) =
+  given memory: (tactic: Tactic[Json.Error])
+  =>  ( (Memory is Json.Decodable)^{tactic} ) =
     Json.Decodable(Morphology.Whole)(_.root.long.b)
 
   // Element-wise `Json.Field` instances resolved during derivation: the

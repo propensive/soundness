@@ -44,7 +44,7 @@ object Strain:
     def include
       ( report:      Report,
         testId:      Test.Id,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         strain:      Strain )
     :   Report =
 
@@ -83,7 +83,7 @@ object Strain:
       val coordinates2 =
         if coordinates.exists(_(0).label == t"N") then coordinates else
           val axis = Axis.Spec(t"N", Axis.Domain.Integral, emergent = true)
-          coordinates :+ (axis -> Value.Integral(strain.concurrency))
+          coordinates :+ (axis -> Axis.Value.Integral(strain.concurrency))
 
       report.emit:
         TestEvent.StrainRecorded

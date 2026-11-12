@@ -15,9 +15,9 @@ detail
     position turns highlighting into completion.
 
     The result of `Scala.highlight` is a `SourceCode`: a grid of lines, each a `List` of
-    `Token`s, where a token has its text, an `Accent` (the colour category a palette maps
-    to a colour), an optional `Role` (binding or usage), its position as a `Span`, and,
-    at the deeper levels, a `Token.Meta` holding its type.
+    `SourceCode.Token`s, where a token has its text, an `Accent` (the colour category a palette maps
+    to a colour), an optional `Token.Role` (binding or usage), its position as a `Span`, and,
+    at the deeper levels, a `SourceCode.Token.Meta` holding its type.
 
     ```scala
     import soundness.*
@@ -38,7 +38,7 @@ detail
     ```scala fuel
     typecheck
     ##
-    given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+    given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
     given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
     import highlighting.typecheckedScala
 
@@ -49,7 +49,7 @@ detail
 
     The library is split into source sets by what each needs:
 
-    - `harlequin.core` — `SourceCode`, `Token`, `Accent`, `Role`, `ProgrammingLanguage`
+    - `harlequin.core` — `SourceCode`, `SourceCode.Token`, `Accent`, `Token.Role`, `ProgrammingLanguage`
       with `Scala` and `Java`, `Highlight` and `Depth`, `Diagnostic`, `Fragment`, `Lexis`,
       `Completion`/`Completions` (re-exported from prophesy) and `highlighting.tokenizedScala`.
       It embeds the Scala compiler, so it is JVM-only.
@@ -71,7 +71,7 @@ detail
     `syntaxHighlighting` and `formattables` choice packages merge with the umbrella's own.
 
 refer harlequin.SourceCode
-refer harlequin.Token
+refer harlequin.SourceCode.Token
 refer harlequin.Scala
 refer harlequin.Highlight
 refer harlequin.highlighting
@@ -105,7 +105,7 @@ entry .SourceCode   highlighted source: a grid of accented tokens with diagnosti
       `Depth.Typechecked` and `Depth.Compiled` each identifier the typer resolved carries its
       type, and the diagnostics are the compiler's. A compile error never makes highlighting
       fail: the source highlights *with* its errors.
-  refer harlequin.Token
+  refer harlequin.SourceCode.Token
   refer harlequin.Scala
   refer harlequin.Highlight
   refer harlequin.Diagnostic
@@ -164,80 +164,99 @@ entry .SourceCode   highlighted source: a grid of accented tokens with diagnosti
       `endLine` inclusive, with `#offset` set to `startLine` so their numbers are preserved,
       and `focus` as the new `#focus`. Diagnostics and completions are not carried over.
 
-entry .Token   one token of highlighted source: its text, accent, position, role and type
-  detail
-      A token is the unit a `SourceCode` is made of: a piece of `#text` which never
-      contains a newline, the `#accent` which classifies it, a `#span` locating it, and,
-      for a term or type identifier, its `#role` as a binding or a usage. At typechecked or
-      compiled depth an identifier the typer resolved also has a `#meta` holding its type as
-      a stenography `Syntax` and, on a callee, what the typer elaborated at the call.
-
-      ```scala
-      import soundness.*
-
-      val token = Token(t"xs", Accent.Term, role = Role.Binding)
-      token.show      // t"xs"
-      token.inspect   // Token(text:t"xs" ╱ accent:Term ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:｢Binding｣)
-      ```
-
-      Two tokens are equal when all five fields are, which is how `Token.Newline` is found in
-      a stream. A token is `Showable` as its text alone, which is what a rendered listing
-      needs, and `Inspectable` with every field.
-  refer harlequin.Accent
-  refer harlequin.Role
-  refer harlequin.SourceCode
-  entry .Newline   the token which separates lines while a source is being assembled
-      `Token("\n", Accent.Unparsed)`. It never appears in a finished `SourceCode`'s lines,
-      which are split on it.
-  entry .showable   a token shows as its text
-  entry .inspectable   a token inspects with every field, in product form
-      `Token(text:t"val" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)`. A present `#meta` is
-      shown as `｢Meta｣` without its type, since rendering a `Syntax` needs an `Imports`
-      context which inspection cannot supply; a present role as `｢Binding｣` or `｢Usage｣`.
-  entry .Meta   what the typer knows about a token: its type, and any elaboration of its call
+  entry .Token   one token of highlighted source: its text, accent, position, role and type
     detail
-        Attached to a token only at `Depth.Typechecked` or `Depth.Compiled`, and only to
-        the identifiers the typer gave a type: a `val`/`def` name carries its declared or
-        inferred type, a selection or identifier its type, a type tree its type. Tokens the
-        compiler could not type (because of an error nearby, or a type stenography cannot
-        render) simply have no `Meta`; highlighting never fails on one.
+        A token is the unit a `SourceCode` is made of: a piece of `#text` which never
+        contains a newline, the `#accent` which classifies it, a `#span` locating it, and,
+        for a term or type identifier, its `#role` as a binding or a usage. At typechecked or
+        compiled depth an identifier the typer resolved also has a `#meta` holding its type as
+        a stenography `Syntax` and, on a callee, what the typer elaborated at the call.
 
-        ```scala fuel
-        typecheck
-        ##
-        given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-        given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
-        import highlighting.typecheckedScala
+        ```scala
+        import soundness.*
 
-        val tokens = Scala.highlight(t"val xs = List(1, 2, 3)").lines.to[List].flat
-        tokens.seek(_.text == t"xs").let(_.meta).let(_.tpe.qualified)
-        // scala.collection.immutable.List[scala.Int]
-        tokens.seek(_.text == t"List").let(_.meta).let(_.elaboration).let(_.typeArguments)
-        // the inferred type argument, Int
+        val token = SourceCode.Token(t"xs", Accent.Term, role = Role.Binding)
+        token.show      // t"xs"
+        token.inspect   // SourceCode.Token(text:t"xs" ╱ accent:Term ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:｢Binding｣)
         ```
-    entry #tpe   the token's type, as a stenography `Syntax`
-        Rendered with `Syntax#text` (abbreviated against an `Imports` in scope) or
-        `Syntax#qualified`.
-    entry #elaboration   what the typer added at this call site, if anything
-        Present on a callee token whose call the typer elaborated beyond its source text: a
-        `prophesy.Elaboration` listing the inferred type arguments and the synthesized `using`
-        arguments, each naming the given resolved. Arguments written explicitly are never
-        recorded.
-  entry #text   the token's text, never containing a newline
-  entry #accent   the colour category: keyword, term, type, number, string, symbol, …
-  entry #meta   the typer's knowledge of the token, or `Unset` at tokenized depth
-  entry #span   where the token is: a line-mode `Span` of 0-based line, column and length
-      `Span.empty` for a token made by hand; a token in a `SourceCode` has its line and
-      column, read as `span.startLine`, `span.startColumn` and `span.endColumn`, each an
-      `Ordinal`.
-  entry #role   `Role.Binding` or `Role.Usage` for a term or type identifier, else `Unset`
-      Decided from the parse tree, so it is present at every depth: a `val`, `def`,
-      parameter, pattern or type definition's name is a binding, and an identifier referring
-      to one is a usage. Keywords, literals and punctuation have no role.
-  entry #length   the length of the token's text
-  entry #snip   the token split in two at a character offset
-      `token.snip(point)` is the pair of tokens with the text before and from `point`, each
-      keeping the accent, meta, span and role of the original.
+
+        Two tokens are equal when all five fields are, which is how `Token.Newline` is found in
+        a stream. A token is `Showable` as its text alone, which is what a rendered listing
+        needs, and `Inspectable` with every field.
+    refer harlequin.Accent
+    refer harlequin.SourceCode.Token.Role
+    refer harlequin.SourceCode
+    entry .Newline   the token which separates lines while a source is being assembled
+        `Token("\n", Accent.Unparsed)`. It never appears in a finished `SourceCode`'s lines,
+        which are split on it.
+    entry .showable   a token shows as its text
+    entry .inspectable   a token inspects with every field, in product form
+        `Token(text:t"val" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)`. A present `#meta` is
+        shown as `｢Meta｣` without its type, since rendering a `Syntax` needs an `Imports`
+        context which inspection cannot supply; a present role as `｢Binding｣` or `｢Usage｣`.
+    entry .Meta   what the typer knows about a token: its type, and any elaboration of its call
+      detail
+          Attached to a token only at `Depth.Typechecked` or `Depth.Compiled`, and only to
+          the identifiers the typer gave a type: a `val`/`def` name carries its declared or
+          inferred type, a selection or identifier its type, a type tree its type. Tokens the
+          compiler could not type (because of an error nearby, or a type stenography cannot
+          render) simply have no `Meta`; highlighting never fails on one.
+
+          ```scala fuel
+          typecheck
+          ##
+          given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
+          given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+          import highlighting.typecheckedScala
+
+          val tokens = Scala.highlight(t"val xs = List(1, 2, 3)").lines.to[List].flat
+          tokens.seek(_.text == t"xs").let(_.meta).let(_.tpe.qualified)
+          // scala.collection.immutable.List[scala.Int]
+          tokens.seek(_.text == t"List").let(_.meta).let(_.elaboration).let(_.typeArguments)
+          // the inferred type argument, Int
+          ```
+      entry #tpe   the token's type, as a stenography `Syntax`
+          Rendered with `Syntax#text` (abbreviated against an `Imports` in scope) or
+          `Syntax#qualified`.
+      entry #elaboration   what the typer added at this call site, if anything
+          Present on a callee token whose call the typer elaborated beyond its source text: a
+          `prophesy.Elaboration` listing the inferred type arguments and the synthesized `using`
+          arguments, each naming the given resolved. Arguments written explicitly are never
+          recorded.
+    entry #text   the token's text, never containing a newline
+    entry #accent   the colour category: keyword, term, type, number, string, symbol, …
+    entry #meta   the typer's knowledge of the token, or `Unset` at tokenized depth
+    entry #span   where the token is: a line-mode `Span` of 0-based line, column and length
+        `Span.empty` for a token made by hand; a token in a `SourceCode` has its line and
+        column, read as `span.startLine`, `span.startColumn` and `span.endColumn`, each an
+        `Ordinal`.
+    entry #role   `Role.Binding` or `Role.Usage` for a term or type identifier, else `Unset`
+        Decided from the parse tree, so it is present at every depth: a `val`, `def`,
+        parameter, pattern or type definition's name is a binding, and an identifier referring
+        to one is a usage. Keywords, literals and punctuation have no role.
+    entry #length   the length of the token's text
+    entry #snip   the token split in two at a character offset
+        `token.snip(point)` is the pair of tokens with the text before and from `point`, each
+        keeping the accent, meta, span and role of the original.
+    entry .Role   whether a term or type token binds a name or refers to one
+      detail
+          `Binding` is the name being defined — a `val`, `var`, `def` or parameter name, a
+          pattern variable (including each name in a tuple pattern, a `case` binder or a
+          `for`-comprehension generator), or a class, trait, object, type or type-parameter
+          name — and `Usage` is an identifier referring to a name bound elsewhere. It is decided
+          from the parse tree alone, so it is present at tokenized depth, and it is `Unset` on a
+          token which is neither a term nor a type.
+
+          ```scala
+          import soundness.*
+
+          val tokens = Scala.highlight(t"def gg[TT](vv: TT) = vv").lines.to[List].flat
+          tokens.filter(_.role == Role.Binding).map(_.text)   // gg, TT, vv
+          tokens.filter(_.role == Role.Usage).map(_.text)     // TT, vv
+          ```
+
+          A role shows as its name in lower case.
+      entry .showable   a role shows as its lower-case name
 
 entry .Accent   the colour category of a token, which a palette maps to one colour
   detail
@@ -251,33 +270,13 @@ entry .Accent   the colour category of a token, which a palette maps to one colo
       whitespace, comments and anything else the scanner skipped.
 
       Whether a `Term` or `Typal` token defines a name or uses one is a separate annotation,
-      `Role`, so a `val`'s name and a use of it share one accent and a styling policy may add
+      `Token.Role`, so a `val`'s name and a use of it share one accent and a styling policy may add
       italic or bold to bindings on top of the colour. In the terminal, `ScalaSyntaxPalette`
       gives each accent its colour; in HTML, `CommonFormattable` makes each accent a CSS class
       of the same name in lower case.
 
       An accent shows as its name in lower case: `Accent.Keyword.show == t"keyword"`.
   entry .showable   an accent shows as its lower-case name
-
-entry .Role   whether a term or type token binds a name or refers to one
-  detail
-      `Binding` is the name being defined — a `val`, `var`, `def` or parameter name, a
-      pattern variable (including each name in a tuple pattern, a `case` binder or a
-      `for`-comprehension generator), or a class, trait, object, type or type-parameter
-      name — and `Usage` is an identifier referring to a name bound elsewhere. It is decided
-      from the parse tree alone, so it is present at tokenized depth, and it is `Unset` on a
-      token which is neither a term nor a type.
-
-      ```scala
-      import soundness.*
-
-      val tokens = Scala.highlight(t"def gg[TT](vv: TT) = vv").lines.to[List].flat
-      tokens.filter(_.role == Role.Binding).map(_.text)   // gg, TT, vv
-      tokens.filter(_.role == Role.Usage).map(_.text)     // TT, vv
-      ```
-
-      A role shows as its name in lower case.
-  entry .showable   a role shows as its lower-case name
 
 entry .ProgrammingLanguage   a language harlequin can highlight: `Scala` or `Java`
   detail
@@ -331,7 +330,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       alternative Typechecked
         code
             locally:
-              given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+              given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
               given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
               import highlighting.typecheckedScala
               val code = Scala.highlight(t"val xs = List(1, 2, 3)")
@@ -340,7 +339,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       alternative Compiled
         code
             locally:
-              given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+              given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
               given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
               import highlighting.compiledScala
               Scala.highlight(t"val n: Int = \"oops\"").diagnostics.size   // 1
@@ -376,7 +375,7 @@ entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala f
       ```scala fuel
       typecheck
       ##
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       import highlighting.typecheckedScala
 
@@ -455,7 +454,7 @@ entry .Highlight   how deep highlighting goes, and the compiler it runs: the giv
 entry .Depth   the three depths of highlighting: tokenized, typechecked, compiled
     `Tokenized` classifies tokens with the scanner and parser alone and needs no classpath.
     `Typechecked` runs the compiler frontend as far as the typer, so identifiers carry their
-    types (`Token.Meta`), diagnostics are collected, and a caret yields the compiler's
+    types (`SourceCode.Token.Meta`), diagnostics are collected, and a caret yields the compiler's
     completions. `Compiled` additionally runs the phases after the typer (stopping before
     bytecode generation, so nothing is written) purely to surface the diagnostics only they
     can produce; the types are still read from the typer-stopped run, so they stay
@@ -471,7 +470,7 @@ entry .highlighting   the `Highlight` givens, one per depth, each to import by n
       ```scala fuel
       typecheck
       ##
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       import highlighting.typecheckedScala
 
@@ -506,7 +505,7 @@ entry .highlighting   the `Highlight` givens, one per depth, each to import by n
       ```scala fuel
       typecheck
       ##
-      given (CompileEvent is Loggable) = Loggable.silent[CompileEvent]
+      given (Compiler.Event is Loggable) = Loggable.silent[Compiler.Event]
       import strategies.throwUnsafely
 
       Scalac[3.8](Nil).on(LocalClasspath.of(Classloader[Option[Int]])).session:
@@ -535,7 +534,7 @@ entry .Diagnostic   a compiler diagnostic captured while highlighting: its span,
       ```scala fuel
       typecheck
       ##
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
       import highlighting.typecheckedScala
 
@@ -742,7 +741,7 @@ entry .ScalaSyntaxPalette   a palette with one colour per accent, for rendering 
     ```
 
     A palette maps each accent to a colour and nothing more: whether a token is a binding
-    or a usage is its `Role`, and any further styling of bindings is a policy applied on
+    or a usage is its `Token.Role`, and any further styling of bindings is a policy applied on
     top. The same palette serves punctuation's `scalaTeletypeFormattable` and delicious's
     `teletype` rendering of compiler messages. In `harlequin.ansi`.
 
@@ -751,7 +750,7 @@ entry .syntaxHighlighting   the terminal renderers of highlighted source, each a
       Three escapade `Teletypeable` givens, in `harlequin.ansi`, each needing a
       `ScalaSyntaxPalette` given in scope. `numberedTeletypeable` and `unnumberedTeletypeable`
       both render a `SourceCode`, so exactly one is imported by name; `tokenTeletypeable`
-      renders a single `Token`, and is what the other two use for each token.
+      renders a single `SourceCode.Token`, and is what the other two use for each token.
 
       ```scala fuel
       alternative Unnumbered
@@ -815,7 +814,7 @@ entry .CommonFormattable   renders a fenced code block as HTML, one `<code>` ele
       fence tag) and a `format` which highlights the content and passes the `SourceCode` to
       the trait's `postprocess`.
   refer harlequin.Accent
-  refer harlequin.Role
+  refer harlequin.SourceCode.Token.Role
   entry #lineClass   the given which allows `class="line"` and `class="amok"` on the elements
   entry #classes   the CSS classes of a token: its accent, and its role if it has one
       `classes(accent, role)` is a `ClassList` of the accent's lower-case name (`keyword`,

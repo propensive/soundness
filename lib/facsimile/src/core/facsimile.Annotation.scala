@@ -73,7 +73,7 @@ object Annotation:
               val uri =
                 if kind == t"URI" then action(t"URI").let(pdf.resolved(_).text) else Unset
 
-              Link(rect, target.let(Destination.read(_, pages, named)), uri, entries)
+              Link(rect, target.let(Pdf.Destination.read(_, pages, named)), uri, entries)
 
             case t"Text" =>
               Note
@@ -97,7 +97,7 @@ object Annotation:
 enum Annotation:
   case Link
     ( rect:        Pdf.Rect,
-      destination: Optional[Destination],
+      destination: Optional[Pdf.Destination],
       uri:         Optional[Text],
       dictionary:  Map[Text, Cos] )
 

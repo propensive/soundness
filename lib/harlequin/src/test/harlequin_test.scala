@@ -42,6 +42,7 @@ import harlequin.Fragment
 
 import ambience.systems.javaBaseSystem
 import denominative.dysasymptotics.linearSize
+import harlequin.SourceCode.Token
 
 // A top-level definition, for the qualified name of a completion: its `$package` carrier is
 // its package.
@@ -79,7 +80,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       test(m"harlequin's types inspect natively"):
         Inspectable.fallbacks
          ( Token(t"val", Accent.Keyword).inspect,
-           Token(t"xs", Accent.Term, role = Role.Binding).inspect )
+           Token(t"xs", Accent.Term, role = Token.Role.Binding).inspect )
       . assert(_ == Nil)
 
       test(m"a token inspects with all of its state"):
@@ -144,7 +145,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_ == (t"term", t"binding"))
 
     test(m"typechecked highlighting resolves the type of a val"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -154,7 +155,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     // Within a warm compiler session, a snippet is typed against what the session has compiled:
     // `Earlier` is on no classpath, only in the session's symbol table.
     test(m"session highlighting types a snippet against the session's compiles"):
-      given (CompileEvent is Loggable) = Loggable.silent[CompileEvent]
+      given (Compiler.Event is Loggable) = Loggable.silent[Compiler.Event]
       import strategies.throwUnsafely
 
       Scalac[3.8](Nil).on(LocalClasspath.of(Classloader[Tests.type])).session:
@@ -172,7 +173,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       errors == 0 && later.subsumes(t"Int") && again.subsumes(t"List") && again.subsumes(t"Int")
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -180,7 +181,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_ > 0)
 
     test(m"no completions are computed without a caret"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -188,7 +189,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_ == Unset)
 
     test(m"a bare type position completes in-scope types"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -197,7 +198,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"List"))
 
     test(m"a type application completes in-scope types"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -206,7 +207,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"List"))
 
     test(m"a bare term position completes in-scope names"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -215,7 +216,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"List"))
 
     test(m"completions at a member selection include the type's methods"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -224,7 +225,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"map"))
 
     test(m"a member completion carries its owner-qualified name"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -235,7 +236,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"scala.collection.immutable.List#lengthCompare"))
 
     test(m"an object member's qualified name uses a dot"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -246,7 +247,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"scala.collection.immutable.List.empty"))
 
     test(m"an inherited member is qualified by the class which declares it"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -257,7 +258,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.all(_.let(_.ends(t"#isEmpty")).or(false)))
 
     test(m"a top-level definition is qualified by its package"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -268,7 +269,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"harlequin.topLevelProbe"))
 
     test(m"a keyword has no qualified name"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -279,7 +280,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.all(_.absent))
 
     test(m"a Dynamic receiver completes through its Completable companion"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -290,7 +291,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     .assert(_.has(t"habitat"))
 
     test(m"dynamic completions are filtered by the partial member name"):
-      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
@@ -304,7 +305,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     // synthesized `using` arguments — on the callee's token, and never anything written.
     suite(m"Elaborations"):
       def elaborationsOf(source: Text, word: Text): List[prophesy.Elaboration] =
-        given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+        given Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
         given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
         import highlighting.typecheckedScala
 

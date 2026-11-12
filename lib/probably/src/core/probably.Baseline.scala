@@ -45,4 +45,4 @@ object Baseline:
 case class Baseline
   ( compare: Baseline.Compare = Mean,
     metric:  Baseline.Metric  = Cadential,
-    mode:    Baseline.Mode    = Geometric )
+    mode:    Baseline.Mode    = Baseline.Mode.Geometric )

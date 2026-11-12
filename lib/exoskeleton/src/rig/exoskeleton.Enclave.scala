@@ -225,7 +225,7 @@ extends Rig uses parasite.threads:
       val jarfile = supervise:
         Toolchain(jarEdges()).produce
           ( Deliverable.Emission(out, Bundler.applicationClasspath),
-            Universe.Classfile,
+            Toolchain.Universe.Classfile,
             Artifact.Jar,
             out,
             List(jarOptions.name(t"$name.jar")),
@@ -244,7 +244,7 @@ extends Rig uses parasite.threads:
         case Exit.Ok         => target
         case Exit.Fail(fail) => panic(m"xek could not package $target (exit status $fail)")
 
-  protected val scalac: Scalac[3.8, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.8, Toolchain.Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])

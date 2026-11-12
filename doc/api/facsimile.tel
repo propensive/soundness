@@ -560,7 +560,7 @@ entry .Pdf   an open PDF document: the scoped capability every read and edit res
       import soundness.*
       import strategies.throwUnsafely
 
-      def intro(data: Data): Optional[Destination] =
+      def intro(data: Data): Optional[Pdf.Destination] =
         PdfFile(data).open():
           pdf.destinations(t"intro")
       ```
@@ -650,6 +650,36 @@ entry .Pdf   an open PDF document: the scoped capability every read and edit res
             case body: Cos.Body => pdf.spring(body)().read[Data].length
             case _              => 0
       ```
+
+  entry .Destination   where a link or bookmark lands: a page, and how the viewer should fit it
+    detail
+        An enum of the explicit destinations of ISO 32000-2 §12.3.2.3, with the page given as
+        its ordinal in the flattened page sequence (`Prim` is the first page) and the view
+        parameters, which the format allows to be omitted, as `Optional[Double]`s in user-space
+        units:
+
+        ```tabular
+        column  Case
+        column  PDF
+        column  Shows
+        row  `Xyz(page, left, top, zoom)`  `/XYZ`  the position at the top-left corner, at a zoom
+        row  `Fit(page)`  `/Fit`  the whole page
+        row  `FitWidth(page, top)`  `/FitH`  the page's width, with `top` at the top of the window
+        row  `FitHeight(page, left)`  `/FitV`  the page's height, with `left` at the left
+        row  `FitRect(page, rect)`  `/FitR`  a rectangle of the page, as a `Pdf.Rect`
+        row  `FitBox(page)`  `/FitB`  the page's bounding box
+        row  `FitBoxWidth(page, top)`  `/FitBH`  the bounding box's width
+        row  `FitBoxHeight(page, left)`  `/FitBV`  the bounding box's height
+        ```
+
+        A destination is read from an explicit array, a dictionary wrapping one at `/D`, or a
+        name or string looked up among the document's named destinations (consulted once, so a
+        self-referential name cannot loop). `Pdf#destinations` gives the named ones;
+        `Annotation.Link` and `Bookmark` carry theirs; `addLink` and `setBookmarks` write them.
+    refer facsimile.Bookmark
+    refer facsimile.Annotation
+    entry .page   the destination's page, as an ordinal, whichever case it is
+        An extension on `Destination`, since every case declares a `page` field of its own.
 
 entry .Page   one page of the document, with its inherited attributes applied
   detail
@@ -820,7 +850,7 @@ entry .Annotation   a page annotation: a link, a note, a form widget, or any oth
       column  Case
       column  Subtype
       column  Carries
-      row  `Link(rect, destination, uri, dictionary)`  `/Link`  its target: a `Destination` (from `/Dest`, or the `/D` of a `/GoTo` action, named destinations resolved), a `uri` (from a `/URI` action), or neither
+      row  `Link(rect, destination, uri, dictionary)`  `/Link`  its target: a `Pdf.Destination` (from `/Dest`, or the `/D` of a `/GoTo` action, named destinations resolved), a `uri` (from a `/URI` action), or neither
       row  `Note(rect, contents, open, dictionary)`  `/Text`, a sticky note  its `/Contents`, and whether it is shown `/Open`
       row  `Widget(rect, fieldName, dictionary)`  `/Widget`, a form field's appearance  the field's `/T` name
       row  `Other(subtype, rect, dictionary)`  any other `/Subtype`  the subtype, by name
@@ -840,7 +870,7 @@ entry .Annotation   a page annotation: a link, a note, a form widget, or any oth
       `addLink` writes a link annotation; `setAnnotations` replaces a page's annotations with
       raw dictionaries.
   refer facsimile.Page
-  refer facsimile.Destination
+  refer facsimile.Pdf.Destination
   refer facsimile.addLink
   entry .rect   the annotation's rectangle in points, whichever case it is
       An extension on `Annotation`, since every case has a `rect` field of its own.
@@ -858,46 +888,16 @@ entry .Bookmark   one entry of the document outline, with its destination and ch
       import soundness.*
 
       val outline = List
-        ( Bookmark(t"Introduction", Destination.Fit(Prim), Nil),
+        ( Bookmark(t"Introduction", Pdf.Destination.Fit(Prim), Nil),
           Bookmark
             ( t"Chapters", Unset,
-              List(Bookmark(t"One", Destination.Fit(Sec), Nil)) ) )
+              List(Bookmark(t"One", Pdf.Destination.Fit(Sec), Nil)) ) )
       ```
-  refer facsimile.Destination
+  refer facsimile.Pdf.Destination
   refer facsimile.setBookmarks
   entry #title   the bookmark's text
   entry #destination   where it leads, or `Unset` for a heading which only groups its children
   entry #children   the bookmarks nested beneath it
-
-entry .Destination   where a link or bookmark lands: a page, and how the viewer should fit it
-  detail
-      An enum of the explicit destinations of ISO 32000-2 §12.3.2.3, with the page given as
-      its ordinal in the flattened page sequence (`Prim` is the first page) and the view
-      parameters, which the format allows to be omitted, as `Optional[Double]`s in user-space
-      units:
-
-      ```tabular
-      column  Case
-      column  PDF
-      column  Shows
-      row  `Xyz(page, left, top, zoom)`  `/XYZ`  the position at the top-left corner, at a zoom
-      row  `Fit(page)`  `/Fit`  the whole page
-      row  `FitWidth(page, top)`  `/FitH`  the page's width, with `top` at the top of the window
-      row  `FitHeight(page, left)`  `/FitV`  the page's height, with `left` at the left
-      row  `FitRect(page, rect)`  `/FitR`  a rectangle of the page, as a `Pdf.Rect`
-      row  `FitBox(page)`  `/FitB`  the page's bounding box
-      row  `FitBoxWidth(page, top)`  `/FitBH`  the bounding box's width
-      row  `FitBoxHeight(page, left)`  `/FitBV`  the bounding box's height
-      ```
-
-      A destination is read from an explicit array, a dictionary wrapping one at `/D`, or a
-      name or string looked up among the document's named destinations (consulted once, so a
-      self-referential name cannot loop). `Pdf#destinations` gives the named ones;
-      `Annotation.Link` and `Bookmark` carry theirs; `addLink` and `setBookmarks` write them.
-  refer facsimile.Bookmark
-  refer facsimile.Annotation
-  entry .page   the destination's page, as an ordinal, whichever case it is
-      An extension on `Destination`, since every case declares a `page` field of its own.
 
 entry .TextRun   one show-text operation, decoded and positioned in points
   detail
@@ -1235,7 +1235,7 @@ entry .setBookmarks   replaces the document outline with a tree of `Bookmark`s
 
     def outline(path: Path on Linux): Unit =
       PdfFile(path).open(Read & Write): doc ?=>
-        doc.setBookmarks(List(Bookmark(t"Start", Destination.Fit(Prim), Nil)))
+        doc.setBookmarks(List(Bookmark(t"Start", Pdf.Destination.Fit(Prim), Nil)))
     ```
 
 entry .appendPage   appends a page of the given size, with optional content and resources, returning its reference

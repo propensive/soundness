@@ -34,10 +34,9 @@ package soundness
 
 export
   ultimatum
-  . { Arrangement, BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent,
-      conduct, Focus, Form, Frame, grid, InlineAnchoring, InlineGrowth, InlineRoot, InlineShrink,
-      layout, Limits, menu, MenuField, Occupancy, paint, Pane, Panes, panel, Placement, Rect,
-      ScreenRoot, scrolling, ScrollFixture, Sizing, stack, strip, Tick }
+  . { BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent, conduct, Focus,
+      Form, grid, layout, menu,
+      MenuField, paint, panel, scrolling, ScrollFixture, stack, strip, Tui }
 
 package inlineAnchoring:
   export
@@ -50,3 +49,77 @@ package inlineGrowth:
 
 package inlineShrink:
   export ultimatum.inlineShrink.{redockBottomShrink, keepTopShrink}
+
+export
+  ultimatum
+  . { gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, whilst }
+
+// Every given is exported by name: a wildcard would silently drop them, since `import p.*` does not
+// import givens.
+
+package spinners:
+  export
+    ultimatum.spinners
+    . { aestheticSpinner, arcSpinner, arrowDoubleSpinner, arrowSpinner, balloonSpinner,
+        binarySpinner, bounceSpinner, bouncingBallSpinner, bouncingBarSpinner, boxSpinner,
+        brailleDotsSpinner, brailleGrowSpinner, brailleRingSpinner, brailleSnakeSpinner,
+        brailleWaveSpinner,
+        circleHalfSpinner, circlePulseSpinner, circleQuadrantSpinner, clockSpinner,
+        crossStarSpinner, dotsScrollSpinner, dqpbSpinner, earthSpinner, growingBarSpinner,
+        growingBlockSpinner, hamburgerSpinner, hourglassSpinner, hourglassThinSpinner, layerSpinner,
+        lineSpinner, moonPhaseSpinner, noiseSpinner, pipeSpinner, pointsSpinner, pulseSpinner,
+        shuttleSpinner, squareCornerSpinner, starSpinner, toggleRoundSpinner, toggleSpinner,
+        toggleSquareSpinner, triangleSpinner }
+
+package bars:
+  export
+    ultimatum.bars
+    . { arrowheadBar, asciiBar, blockBar, brailleBar, capsuleBar, dotBar, equalsBar, fineBar,
+        gradientBar, markerBar, percentageBar, pipBar, railBar, risingBar, segmentedBar, shadedBar,
+        smoothBar, squareBar }
+
+package meters:
+  export
+    ultimatum.meters
+    . { asciiMeter, batteryMeter, bulletMeter, columnMeter, needleMeter, thermometerMeter }
+
+package sparklines:
+  export ultimatum.sparklines.{asciiSparkline, blockSparkline, dotSparkline, tallSparkline}
+
+package counters:
+  export
+    ultimatum.counters
+    . { decimalTransferCounter, paddedCounter, percentageCounter, plainCounter, rateTransferCounter,
+        scaledCounter, terseTransferCounter, transferCounter, wordCounter }
+
+package standings:
+  export
+    ultimatum.standings
+    . { asciiStanding, heavyStanding, squareStanding, tickStanding, wordStanding }
+
+package processions:
+  export
+    ultimatum.processions
+    . { beadProcession, breadcrumbProcession, checklistProcession, numberedProcession,
+        ribbonProcession }
+
+package palettes:
+  export
+    ultimatum.palettes
+    . { ansiSixteenGaugePalette, emberGaugePalette, monochromeGaugePalette, oceanicGaugePalette,
+        plumGaugePalette, signalGaugePalette, slateGaugePalette, solarizedDarkGaugePalette,
+        solarizedLightGaugePalette, verdantGaugePalette }
+
+package timers:
+  export
+    ultimatum.timers
+    . { compactCountdown, compactElapsed, digitalCountdown, digitalElapsed, urgentCountdown }
+
+package captions:
+  export ultimatum.captions.{leadingCaption, spacedCaption, trailingCaption, truncatedCaption}
+
+package gaugeGlyphs:
+  export ultimatum.gaugeGlyphs.{asciiGlyphs, brailleGlyphs, emojiGlyphs, unicodeGlyphs}
+
+package informationPrefixes:
+  export ultimatum.informationPrefixes.{binaryBytes, decimalBytes}

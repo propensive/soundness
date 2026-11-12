@@ -359,8 +359,8 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
     entry #uri   the template's URI
   entry .PromptMessage   one message of a prompt: a role and a content block
     detail
-        `Mcp.Interface#prompts/get` makes a `Human` message a `User` `TextContent` and an
-        `Agent` message an `Assistant` one.
+        `Mcp.Interface#prompts/get` makes a `Discourse.Human` message a `User` `TextContent` and an
+        `Discourse.Agent` message an `Assistant` one.
     entry #role   who speaks, as `Role`
     entry #content   what is said, as a `ContentBlock`
   entry .GetPrompt   the reply to `prompts/get`: a description and the messages
@@ -531,7 +531,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
         throws answers a result marked `isError` carrying the exception's message, while an
         `Mcp.Error` (an unknown tool, a missing required parameter) is rethrown for `Mcp.send`
         to answer as a JSON-RPC error. `prompts/get` runs `spec.invokePrompt` and turns each
-        `Human` into a `User` message and each `Agent` into an `Assistant` one.
+        `Discourse.Human` into a `User` message and each `Discourse.Agent` into an `Assistant` one.
         `resources/read` answers `spec.invokeResource`. `initialize` answers the server's
         name, version and description with the default `ServerCapabilities`, and
         `logging/setLevel` records the level. `ping`, `notifications/initialized`,
@@ -966,7 +966,7 @@ entry .Content   the content-block vocabulary MCP and the Agent Client Protocol 
   entry .Role   who a message is from: the user or the assistant
     detail
         `User` and `Assistant`, encoded as `user` and `assistant`; `Mcp.Interface` makes a
-        `Human` prompt message a `User` one and an `Agent` message an `Assistant` one.
+        `Discourse.Human` prompt message a `User` one and an `Discourse.Agent` message an `Assistant` one.
     entry .encodable   writes `user` or `assistant`
     entry .decodable   reads `user` or `assistant`, raising `Json.Error` for anything else
   entry .ContentBlock   a block of content: text, an image, audio, a resource link or an embedded resource
@@ -1118,8 +1118,8 @@ entry .prompt   the `@prompt` annotation: a method returns a conversation templa
     A `@prompt` method of an `Mcp.Server` returns a `List[Discourse]`, written with the
     `human"…"` and `agent"…"` interpolators, and is listed by `prompts/list` as an
     `Mcp.Prompt` named after it, with a `PromptArgument` per parameter, and run by
-    `prompts/get` with the arguments as text. Each `Human` message becomes a `User`
-    `PromptMessage` and each `Agent` an `Assistant` one.
+    `prompts/get` with the arguments as text. Each `Discourse.Human` message becomes a `User`
+    `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
 
     ```scala
     import soundness.*
@@ -1182,12 +1182,11 @@ entry .Discourse   one message of a prompt's conversation: from the human or fro
       List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
     ```
 
-entry .Human   a prompt message from the user
-    `Human(message)`, as `human"…"` makes it. It inspects structurally, as
-    `Human(message:t"hello")`.
-
-entry .Agent   a prompt message from the assistant
-    `Agent(message)`, as `agent"…"` makes it.
+  entry .Human   a prompt message from the user
+      `Human(message)`, as `human"…"` makes it. It inspects structurally, as
+      `Human(message:t"hello")`.
+  entry .Agent   a prompt message from the assistant
+      `Agent(message)`, as `agent"…"` makes it.
 
 entry .human   the `human"…"` interpolator: a `Human` message, with substitutions shown as text
     Each `$substitution` must be `Showable`, and is rendered with its `Showable`; a value
@@ -1198,11 +1197,11 @@ entry .human   the `human"…"` interpolator: a `Human` message, with substituti
     import soundness.*
 
     val topic = t"parser"
-    human"Please review the $topic."   // Human(t"Please review the parser.")
+    human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
     ```
 
 entry .agent   the `agent"…"` interpolator: an `Agent` message, with substitutions shown as text
-    As `human"…"`, making an `Agent`: the assistant's side of a prompt's conversation.
+    As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
 
     ```scala
     import soundness.*
@@ -1216,7 +1215,7 @@ entry .internal   the macro implementations behind `human"…"`, `agent"…"` an
       Not for direct use: the object exists so that the macros have a stable home.
   entry .prompt   the macro behind `human"…"` and `agent"…"`
       Concatenates the literal parts with each substitution's `Showable` rendering and
-      splices a `Human` or an `Agent`.
+      splices a `Discourse.Human` or an `Discourse.Agent`.
   entry .spec   the macro behind `Mcp.Specification.mcpSpecification`
       Reads the `@tool`, `@resource` and `@prompt` methods of a server type (including
       annotations on overridden methods), derives their schemas, and splices an

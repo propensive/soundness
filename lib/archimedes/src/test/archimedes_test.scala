@@ -38,6 +38,7 @@ import Mathml.*
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import xylophone.XmlSchema
+import archimedes.Mathml.{Cell, Display}
 
 object Tests extends Suite("mathml", m"Archimedes tests"):
   def run(): Unit =

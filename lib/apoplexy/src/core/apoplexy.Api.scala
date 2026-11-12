@@ -54,6 +54,7 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
+import polyvinyl.Specification.Member
 
 object Api:
   // Root constructor: `Api(cp"/spec.json")` reads the spec resource's `Locus`,

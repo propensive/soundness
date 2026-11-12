@@ -42,6 +42,12 @@ import symbolism.*
 object Delta:
   def apply(dx: Float, dy: Float): Delta = Delta(Vector((dx, dy)))
 
+  // The four unit steps, in SVG's top-origin coordinates: `Up` decreases y.
+  val Up:    Delta = Delta(0.0f, -1.0f)
+  val Down:  Delta = Delta(0.0f, 1.0f)
+  val Left:  Delta = Delta(-1.0f, 0.0f)
+  val Right: Delta = Delta(1.0f, 0.0f)
+
   given showable: Delta is Showable = delta => t"${delta.dx.toString} ${delta.dy.toString}"
 
   // Labelled like `Point`'s, but with the `dx`/`dy` names which distinguish a displacement from

@@ -36,6 +36,10 @@ import java.io as ji
 
 import soundness.*
 import denominative.dysasymptotics.linearSize
+import ultimatum.Tui.{Arrangement, Frame, Limits, Occupancy, Pane, Panes, Region, Sizing}
+import ultimatum.Tui
+  . { Captioned, Countdown, Facet, Fraction, Meter, Reading, Reckoning, Sparkline, Standing, Step,
+      Tick }
 
 object Tests extends Suite("tui", m"Ultimatum Tests"):
   def run(): Unit =
@@ -72,7 +76,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // the parent surface is unused.
       def extent(width: Int, height: Int): FlowExtent^ =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
+        FlowExtent(TerminalBoard(width, height), Region(0, 0, width, height))
 
       test(m"text wraps at the rectangle's width"):
         val flow = extent(3, 2)
@@ -118,10 +122,10 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         flow.render
       . assert(_ == t"hi   ")
 
-      test(m"flush paints the grid onto the parent at the rect's offset"):
+      test(m"flush paints the grid onto the parent at the region's offset"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
-        val flow = FlowExtent(TerminalBoard(80, 24), Rect(2, 1, 3, 1))
+        val flow = FlowExtent(TerminalBoard(80, 24), Region(2, 1, 3, 1))
         flow.put(t"xy")
         flow.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -129,77 +133,77 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, children)
-      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, children)
+      def strip(children: Frame*): Frame = Frame.Split(Sizing(), Arrangement.Strip, children)
+      def stack(children: Frame*): Frame = Frame.Split(Sizing(), Arrangement.Stack, children)
 
       test(m"fractions divide the arrangement proportionally"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
-        frame.arrange(Rect(0, 0, 90, 10)).cells
-      . assert(_ == List(Rect(0, 0, 20, 10), Rect(20, 0, 30, 10), Rect(50, 0, 40, 10)))
+        frame.arrange(Region(0, 0, 90, 10)).cells
+      . assert(_ == List(Region(0, 0, 20, 10), Region(20, 0, 30, 10), Region(50, 0, 40, 10)))
 
       test(m"largest-remainder rounding fills the arrangement exactly"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
-        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width)
+        frame.arrange(Region(0, 0, 100, 1)).cells.map(_.width)
       . assert(_ == List(22, 33, 45))
 
       test(m"the rounded sizes always sum to the available space"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
-        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).fold(0)(_ + _)
+        frame.arrange(Region(0, 0, 100, 1)).cells.map(_.width).fold(0)(_ + _)
       . assert(_ == 100)
 
       test(m"a child whose minimum exceeds its share is fixed at the minimum"):
         val frame = strip(cell(Sizing(1.0, minWidth = 8)), cell(Sizing(1.0)))
-        frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
+        frame.arrange(Region(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(8, 2))
 
       test(m"a child whose maximum is below its share is capped at the maximum"):
         val frame = strip(cell(Sizing(1.0, maxWidth = 3)), cell(Sizing(1.0)))
-        frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
+        frame.arrange(Region(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(3, 7))
 
       test(m"a container's minimum is forced up to the sum of its children's"):
         val frame = strip(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
-        frame.measure(ultimatum.Arrangement.Strip)
+        frame.measure(Arrangement.Strip)
       . assert(_ == Limits(10, Unset))
 
       test(m"file children fill the cross arrangement (full height)"):
         val frame = strip(cell(Sizing(1.0)), cell(Sizing(1.0)))
-        frame.arrange(Rect(0, 0, 8, 4)).cells
-      . assert(_ == List(Rect(0, 0, 4, 4), Rect(4, 0, 4, 4)))
+        frame.arrange(Region(0, 0, 8, 4)).cells
+      . assert(_ == List(Region(0, 0, 4, 4), Region(4, 0, 4, 4)))
 
       test(m"rank splits distribute height and fill width"):
         val frame = stack(cell(Sizing(1.0)), cell(Sizing(1.0)))
-        frame.arrange(Rect(0, 0, 8, 4)).cells
-      . assert(_ == List(Rect(0, 0, 8, 2), Rect(0, 2, 8, 2)))
+        frame.arrange(Region(0, 0, 8, 4)).cells
+      . assert(_ == List(Region(0, 0, 8, 2), Region(0, 2, 8, 2)))
 
       test(m"nested ranks within files place rectangles correctly"):
         val frame = strip(cell(Sizing(1.0)), stack(cell(Sizing(1.0)), cell(Sizing(1.0))))
-        frame.arrange(Rect(0, 0, 10, 4)).cells
-      . assert(_ == List(Rect(0, 0, 5, 4), Rect(5, 0, 5, 2), Rect(5, 2, 5, 2)))
+        frame.arrange(Region(0, 0, 10, 4)).cells
+      . assert(_ == List(Region(0, 0, 5, 4), Region(5, 0, 5, 2), Region(5, 2, 5, 2)))
 
     suite(m"Grid arrangement"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
 
       def grid(columns: Int, gap: Int = 0)(children: Frame*): Frame =
-        Frame.Split(Sizing(), ultimatum.Arrangement.Grid(columns, gap), children)
+        Frame.Split(Sizing(), Arrangement.Grid(columns, gap), children)
 
       test(m"cells flow row-major into columns with content-sized rows"):
         val frame = grid(2)
           ( cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 2)),
             cell(Sizing(minHeight = 3)), cell(Sizing(minHeight = 1)) )
 
-        frame.arrange(Rect(0, 0, 10, 10)).cells
+        frame.arrange(Region(0, 0, 10, 10)).cells
       . assert:
           _ == List
-            ( Rect(0, 0, 5, 2), Rect(5, 0, 5, 2),
-              Rect(0, 2, 5, 3), Rect(5, 2, 5, 3) )
+            ( Region(0, 0, 5, 2), Region(5, 0, 5, 2),
+              Region(0, 2, 5, 3), Region(5, 2, 5, 3) )
 
       test(m"column widths are negotiated across every row"):
         val frame = grid(2)
           ( cell(Sizing(minWidth = 3, minHeight = 1)), cell(Sizing(minHeight = 1)),
             cell(Sizing(minWidth = 7, minHeight = 1)), cell(Sizing(minHeight = 1)) )
 
-        frame.arrange(Rect(0, 0, 10, 4)).cells.map(_.width)
+        frame.arrange(Region(0, 0, 10, 4)).cells.map(_.width)
       . assert(_ == List(7, 3, 7, 3))
 
       test(m"gaps separate both columns and rows"):
@@ -207,26 +211,26 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
           ( cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 2)),
             cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 2)) )
 
-        frame.arrange(Rect(0, 0, 11, 10)).cells
+        frame.arrange(Region(0, 0, 11, 10)).cells
       . assert:
           _ == List
-            ( Rect(0, 0, 5, 2), Rect(6, 0, 5, 2),
-              Rect(0, 3, 5, 2), Rect(6, 3, 5, 2) )
+            ( Region(0, 0, 5, 2), Region(6, 0, 5, 2),
+              Region(0, 3, 5, 2), Region(6, 3, 5, 2) )
 
       test(m"an incomplete final row keeps its column's width"):
         val frame = grid(2)
           ( cell(Sizing(minHeight = 1)), cell(Sizing(minHeight = 1)),
             cell(Sizing(minHeight = 1)) )
 
-        frame.arrange(Rect(0, 0, 10, 4)).cells
-      . assert(_ == List(Rect(0, 0, 5, 1), Rect(5, 0, 5, 1), Rect(0, 1, 5, 1)))
+        frame.arrange(Region(0, 0, 10, 4)).cells
+      . assert(_ == List(Region(0, 0, 5, 1), Region(5, 0, 5, 1), Region(0, 1, 5, 1)))
 
       test(m"a grid's width minimum sums its column minima and gaps"):
         val frame = grid(2, gap = 1)
           ( cell(Sizing(minWidth = 4, minHeight = 1)), cell(Sizing(minWidth = 2, minHeight = 1)),
             cell(Sizing(minWidth = 6, minHeight = 1)), cell(Sizing(minWidth = 5, minHeight = 1)) )
 
-        frame.measure(ultimatum.Arrangement.Strip)
+        frame.measure(Arrangement.Strip)
       . assert(_ == Limits(12, Unset))
 
       test(m"a grid's height is rigid at its content-sized rows"):
@@ -234,7 +238,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
           ( cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 3)),
             cell(Sizing(minHeight = 1)), cell(Sizing(minHeight = 1)) )
 
-        frame.measure(ultimatum.Arrangement.Stack)
+        frame.measure(Arrangement.Stack)
       . assert(_ == Limits(5, 5))
 
     suite(m"TableFixture"):
@@ -286,7 +290,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
       test(m"a fixed-minimum panel squeezes its fractional sibling"):
         val frame = strip(panel(minWidth = 8)(()), panel()(())).frame
-        frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
+        frame.arrange(Region(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(8, 2))
 
     suite(m"Focus and reactive layout"):
@@ -329,18 +333,18 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       . assert(_ == t"b")
 
       test(m"a moved or resized cell is dirty"):
-        val before = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
-        val after  = Sequence(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
+        val before = Sequence(Region(0, 0, 10, 1), Region(0, 1, 10, 1))
+        val after  = Sequence(Region(0, 0, 10, 2), Region(0, 2, 10, 1))
         dirtyCells(before, after, Set())
       . assert(_ == Set(0, 1))
 
       test(m"an unchanged cell is not dirty"):
-        dirtyCells(Sequence(Rect(0, 0, 10, 1)), Sequence(Rect(0, 0, 10, 1)), Set())
+        dirtyCells(Sequence(Region(0, 0, 10, 1)), Sequence(Region(0, 0, 10, 1)), Set())
       . assert(_ == Set())
 
       test(m"a content-changed cell is dirty though its rectangle is unchanged"):
-        val rects = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
-        dirtyCells(rects, rects, Set(1))
+        val regions = Sequence(Region(0, 0, 10, 1), Region(0, 1, 10, 1))
+        dirtyCells(regions, regions, Set(1))
       . assert(_ == Set(1))
 
       // Drive the whole interactive loop into an in-memory grid: type into the
@@ -348,7 +352,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // the composed screen.
       test(m"TAB moves focus so typing lands in the right panel"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
+        val root = FlowExtent(TerminalBoard(10, 4), Region(0, 0, 10, 4))
 
         val events = List
          ( Keypress.CharKey('h'), Keypress.CharKey('i'),
@@ -365,7 +369,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // pushed from row 2 down to row 3.
       test(m"a growing editor re-tiles and pushes its sibling down"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
+        val root = FlowExtent(TerminalBoard(10, 4), Region(0, 0, 10, 4))
         val events = List.concat(List.fill(21)(Keypress.CharKey('a')), List(Keypress.Escape))
         Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
@@ -405,7 +409,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a styled cell emits its colour as SGR"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1)
         root.move(Prim, Prim)
         root.put(e"$Bold(hi)")
@@ -419,7 +423,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a first inline render docks the block to the bottom rows"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"hi")
@@ -430,7 +434,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a growing block scrolls one more row into the dock"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
@@ -442,7 +446,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a shrinking block clears the row it vacated above"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
@@ -452,7 +456,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the caret is placed at its absolute screen cell"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab\ncd")
@@ -464,7 +468,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"finish drops the cursor onto a fresh line below the block"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
@@ -477,7 +481,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the first resize top-anchors the block, clearing the screen"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.invalidate()
@@ -491,7 +495,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.bottomDockedAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.invalidate()
@@ -505,7 +509,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.topAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
@@ -515,7 +519,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.fullscreenAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?1049h\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
@@ -525,7 +529,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineAnchoring.fullscreenAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
@@ -538,7 +542,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineShrink.keepTopShrink
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
@@ -551,7 +555,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         import inlineGrowth.clampedGrowth
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
@@ -571,7 +575,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         ( using Stdio, ji.ByteArrayOutputStream )
       :   Text =
 
-        val root = InlineRoot(width, 4)
+        val root = Tui.Block(width, 4)
         root.reframe(width, height); root.move(Prim, Prim); root.put(first); root.flush()
         summon[ji.ByteArrayOutputStream].reset()
         root.reframe(width, height); root.move(Prim, Prim); root.put(second); root.flush()
@@ -634,7 +638,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio =
           Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(e"$Bold(a)b"); root.flush()
@@ -646,7 +650,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a caret-only move emits just the caret placement"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 4)
+        val root = Tui.Block(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd")
@@ -670,7 +674,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
         bytes.reset()
         w() = 4
@@ -687,7 +691,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
@@ -705,7 +709,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
@@ -723,7 +727,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
@@ -739,7 +743,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(4)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
         bytes.reset()
         w() = 6
@@ -755,7 +759,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
         w() = 4
         root.invalidate()
@@ -774,7 +778,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(4)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab中\nhi")
         root.showCaret(Prim, Sec)
         root.flush()
@@ -792,7 +796,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a row ending in a wide glyph trims to include the whole glyph"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(4, 4)
+        val root = Tui.Block(4, 4)
         root.reframe(4, 1); root.move(Prim, Prim); root.put(t"a中"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[9999B\r\n\e[4;1H\e[2Ka中\r\e[4;1H\e[?25h")
@@ -803,7 +807,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio =
           Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
-        val root = InlineRoot(4, 4)
+        val root = Tui.Block(4, 4)
         root.reframe(4, 1); root.move(Prim, Prim); root.put(e"a$Bold( )"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_.contains(t"\e[1m"))
@@ -820,7 +824,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val w = Atomic.Int(6)
-        val root = new InlineRoot(() => w(), () => 4)
+        val root = new Tui.Block(() => w(), () => 4)
 
         val events = new Iterator[Terminal.Event]:
           // Capture-carrying elements do not flow through the opaque List (boxing), so
@@ -851,7 +855,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"typing during a pending resize does not present"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = new InlineRoot(() => 6, () => 4)
+        val root = new Tui.Block(() => 6, () => 4)
 
         val events = List[Terminal.Event](
           Interrupt.Winch,
@@ -870,7 +874,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"move and put emit nothing until flush"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab")
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -879,7 +883,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the first flush redraws every row absolutely"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab")
         root.flush()
@@ -889,7 +893,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"an identical re-flush emits nothing at all"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.flush()
@@ -899,7 +903,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a single changed cell is overprinted alone"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.move(Sec, Prim); root.put(t"X"); root.flush()
@@ -912,7 +916,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"invalidate forces the next flush to redraw in full"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.invalidate()
@@ -923,7 +927,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"clearing the grid blanks exactly the cells that had content"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = ScreenRoot(3, 2)
+        val root = Tui.Screen(3, 2)
         root.move(Prim, Prim); root.put(t"ab"); root.flush()
         bytes.reset()
         root.clear()
@@ -938,7 +942,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val liveRows = Atomic.Int(4)
-        val root = new ScreenRoot(() => 10, () => liveRows())
+        val root = new Tui.Screen(() => 10, () => liveRows())
 
         val resize = new Iterator[Terminal.Event]:
           private var pending = true
@@ -1005,7 +1009,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // yields a Redraw to wake it), and confirm the layout re-tiles to include it.
       test(m"a form picks up a pane appended while it runs"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalBoard(10, 2), Rect(0, 0, 10, 2))
+        val root = FlowExtent(TerminalBoard(10, 2), Region(0, 0, 10, 2))
         val panes = Panes(panel()(Out.print(t"A")))
 
         val events = new Iterator[Terminal.Event]:
@@ -1079,7 +1083,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
     suite(m"Focus indication"):
       def grid(): FlowExtent^ =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        FlowExtent(TerminalBoard(12, 2), Rect(0, 0, 12, 2))
+        FlowExtent(TerminalBoard(12, 2), Region(0, 0, 12, 2))
 
       def captured(block: Stdio ?=> Unit): Text =
         val bytes = ji.ByteArrayOutputStream()
@@ -1113,7 +1117,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // from `>` to `·` (a regression: only the panel gaining focus was redrawn).
       test(m"a panel that loses focus is repainted so its marker updates"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalBoard(12, 3), Rect(0, 0, 12, 3))
+        val root = FlowExtent(TerminalBoard(12, 3), Region(0, 0, 12, 3))
         val pane = stack(menu(List(t"alpha", t"beta"), t"alpha"), editor())
         Form(root, Occupancy.Fullscreen, pane).run(Iterator(Keypress.Tab, Keypress.Escape))
         root.render
@@ -1122,7 +1126,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
     suite(m"Borders"):
       def render(width: Int, height: Int)(pane: Pane): Text =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
+        val root = FlowExtent(TerminalBoard(width, height), Region(0, 0, width, height))
         paint(root, pane)
         root.render
 
@@ -1149,7 +1153,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
       test(m"a full border adds one cell on every side to the minimum size"):
         val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
-        (bordered.measure(ultimatum.Arrangement.Strip).min, bordered.measure(ultimatum.Arrangement.Stack).min)
+        (bordered.measure(Arrangement.Strip).min, bordered.measure(Arrangement.Stack).min)
       . assert(_ == (5, 4))
 
     suite(m"Gauge designs"):
@@ -1421,7 +1425,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
     suite(m"Gauges in a layout"):
       def render(width: Int, height: Int)(pane: Pane): Text =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
+        val root = FlowExtent(TerminalBoard(width, height), Region(0, 0, width, height))
         paint(root, pane)
         root.render
 
@@ -1431,7 +1435,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
       test(m"a gauge fixture paints its bar into the rectangle it is given"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val flow = FlowExtent(TerminalBoard(10, 1), Rect(0, 0, 10, 1))
+        val flow = FlowExtent(TerminalBoard(10, 1), Region(0, 0, 10, 1))
         Gaugeable.Fixture(Reading(Fraction(0.3)))(using bars.blockBar).render(flow, false)
         flow.render
       . assert(_ == t"███░░░░░░░")
@@ -1454,7 +1458,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val reading = Reading(Fraction(0.0))
         val fixture = Gaugeable.Fixture(reading)(using bars.blockBar)
-        val flow = FlowExtent(TerminalBoard(8, 1), Rect(0, 0, 8, 1))
+        val flow = FlowExtent(TerminalBoard(8, 1), Region(0, 0, 8, 1))
         reading() = Fraction(0.5)
         fixture.render(flow, false)
         flow.render
@@ -1660,7 +1664,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       def wakes(pane: Pane): List[Long] =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val recorded = scala.collection.mutable.ListBuffer[Long]()
-        val root = ScreenRoot(20, 3)
+        val root = Tui.Screen(20, 3)
         Form(root, Occupancy.Fullscreen, pane, () => (), 0, 0, delay => { recorded += delay; () })
         . run(Iterator(Keypress.Escape))
 
@@ -1702,7 +1706,7 @@ object ResizableRoot:
     var height: Int = initialHeight
 
 class ResizableRoot(size: ResizableRoot.Size)(using Stdio) extends Board:
-  private val flow = FlowExtent(TerminalBoard(size.width, size.height), Rect(0, 0, size.width, size.height))
+  private val flow = FlowExtent(TerminalBoard(size.width, size.height), Region(0, 0, size.width, size.height))
 
   def width: Int = size.width
   def height: Int = size.height

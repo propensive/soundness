@@ -716,11 +716,11 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.setBookmarks(List(Bookmark(t"Start", Destination.Fit(Prim), Nil)))
+          doc.setBookmarks(List(Bookmark(t"Start", Pdf.Destination.Fit(Prim), Nil)))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.bookmarks.head.let(_.destination)
-      . assert(_ == Destination.Fit(Prim))
+      . assert(_ == Pdf.Destination.Fit(Prim))
 
       test(m"adding a link annotation round-trips"):
         val onePage = document
@@ -1835,14 +1835,14 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(doc).open():
           pdf.destinations(t"intro")
-      . assert(_ == Destination.Xyz(Prim, 10.0, 20.0, Unset))
+      . assert(_ == Pdf.Destination.Xyz(Prim, 10.0, 20.0, Unset))
 
       test(m"an old-style /Dests dictionary also resolves"):
         val doc = navigable(t"/Dests << /intro [3 0 R /FitH 30] >>")
 
         PdfFile(doc).open():
           pdf.destinations(t"intro")
-      . assert(_ == Destination.FitWidth(Prim, 30.0))
+      . assert(_ == Pdf.Destination.FitWidth(Prim, 30.0))
 
       test(m"bookmarks form a tree with destinations"):
         val doc = navigable
@@ -1864,7 +1864,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(doc).open():
           pdf.bookmarks.head.let(_.destination)
-      . assert(_ == Destination.Fit(Prim))
+      . assert(_ == Pdf.Destination.Fit(Prim))
 
       test(m"a cyclic outline terminates"):
         val doc = navigable

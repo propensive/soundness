@@ -73,10 +73,10 @@ case class Javac(options: List[Javac.Option]):
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate )
-  :   CompileProcess logs CompileEvent raises Compiler.Error =
+  :   Compiler.Process logs Compiler.Event raises Compiler.Error =
 
-    Log.info(CompileEvent.Start)
-    val process: CompileProcess = CompileProcess(version)
+    Log.info(Compiler.Event.Start)
+    val process: Compiler.Process = Compiler.Process(version)
 
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
       def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
@@ -95,7 +95,7 @@ case class Javac(options: List[Javac.Option]):
                   (diagnostic.getEndPosition - diagnostic.getPosition).toInt )
 
           process.put:
-            Notice
+            Compiler.Notice
               ( importance,
                 "name".tt,
                 diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
@@ -103,24 +103,24 @@ case class Javac(options: List[Javac.Option]):
 
     val options = List(t"-classpath", classpath(), t"-d", out.generic)
     val javaSources = sources.to[List].map(JavaSource(_, _)).to[java.util.List]
-    Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
+    Log.info(Compiler.Event.Running(List(t"javac", options.join(t" "))))
 
     async:
       try
         val success: Boolean =
-          process.put(CompileProgress(0.1, t"javac"))
+          process.put(Compiler.Progress(0.1, t"javac"))
 
           Javac.compiler()
           . getTask(null, null, diagnostics, options.map(_.s).to[java.util.List], null, javaSources)
           . nn.call().nn.booleanValue()
 
-        if success then process.put(CompileProgress(1.0, t"javac"))
+        if success then process.put(Compiler.Progress(1.0, t"javac"))
 
-        process.put(if success then CompileResult.Success else CompileResult.Failure)
+        process.put(if success then Compiler.Result.Success else Compiler.Result.Failure)
 
       catch case suc.NonFatal(error) =>
         Javac.refresh()
-        Log.fail(CompileEvent.CompilerCrash)
-        process.put(CompileResult.Crash(error.stackTrace))
+        Log.fail(Compiler.Event.CompilerCrash)
+        process.put(Compiler.Result.Crash(error.stackTrace))
 
     process

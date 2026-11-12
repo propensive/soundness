@@ -35,6 +35,7 @@ package savagery
 import cataclysm.Css
 import geodesy.*
 import vacuous.*
+import savagery.Svg.Ellipse
 
 object Circle:
   def apply

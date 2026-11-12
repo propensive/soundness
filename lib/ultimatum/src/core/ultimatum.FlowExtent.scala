@@ -36,23 +36,24 @@ import anticipation.*
 import denominative.*
 import profanity.*
 import turbulence.*
+import ultimatum.Tui.{Region}
 
 object FlowExtent:
   private[ultimatum] class Writer(board: Board^):
     def write(text: Text): Unit = board.put(text)
 
-// A `Board` confined to a `Rect` of a parent surface, backed by the shared
+// A `Board` confined to a `Region` of a parent surface, backed by the shared
 // character grid (`GridSurface`). Writes flow and wrap within the rectangle;
 // `flush` paints the grid onto the parent surface, one row at a time, via the
 // parent's `move`/`put` (so positioning is always expressed through the `Board`
 // interface, never as inline escapes). It is also an `Stdio`, so bare
 // `Out.println` in a panel body flows into it.
-class FlowExtent(parent: Board^, val rect: Rect)
-extends GridSurface(rect.width, rect.height), Extent:
+class FlowExtent(parent: Board^, val region: Region)
+extends GridSurface(region.width, region.height), Extent:
   update def cursor(visible: Boolean): Unit = parent.cursor(visible)
 
   update def showCaret(column: Ordinal, row2: Ordinal): Unit =
-    parent.showCaret((rect.left + column.n0).z, (rect.top + row2.n0).z)
+    parent.showCaret((region.left + column.n0).z, (region.top + row2.n0).z)
 
   // Paint the whole grid onto the parent surface, one row at a time. The parent
   // is not itself flushed here — the caller presents the root once after every
@@ -62,7 +63,7 @@ extends GridSurface(rect.width, rect.height), Extent:
     var r = 0
 
     while r < height do
-      parent.move(rect.left.z, (rect.top + r).z)
+      parent.move(region.left.z, (region.top + r).z)
       parent.put(rowContent(r, gridWidth))
       r += 1
 
@@ -72,7 +73,7 @@ extends GridSurface(rect.width, rect.height), Extent:
   val termcap: Termcap = new Termcap:
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.TrueColor
-    override def width: Int = rect.width
+    override def width: Int = region.width
 
   val out = Stdio.MutePrintStream
   val err = Stdio.MutePrintStream

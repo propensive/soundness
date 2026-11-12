@@ -46,6 +46,7 @@ import probably.*
 import spectacular.show
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
@@ -55,14 +56,9 @@ import denominative.dysasymptotics.linearSize
 import denominative.*
 
 object Benchmarks extends Suite("markdown-bench", m"Punctuation benchmarks"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
+  given prefixes:    Prefixes        = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   // ─── inputs ───────────────────────────────────────────────────────────────
   // Loaded once from the bench module's classpath. `lazy val` means the cost

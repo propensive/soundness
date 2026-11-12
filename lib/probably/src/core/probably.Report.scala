@@ -46,7 +46,7 @@ object Report:
     def include
       ( report:      Report,
         testId:      Test.Id,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         verdict:     Verdict )
     :   Report =
 
@@ -88,7 +88,7 @@ object Report:
     def include
       ( report:      Report,
         testId:      Test.Id,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         anchor:      Anchor )
     :   Report =
 
@@ -111,7 +111,7 @@ object Report:
     def include
       ( report:      Report,
         testId:      Test.Id,
-        coordinates: List[(Axis.Spec, Value)],
+        coordinates: List[(Axis.Spec, Axis.Value)],
         detail:      Verdict.Detail )
     :   Report =
 
@@ -235,7 +235,7 @@ final class Report():
   def record
     ( testId:      Test.Id,
       kind:        Entry.Kind,
-      coordinates: List[(Axis.Spec, Value)],
+      coordinates: List[(Axis.Spec, Axis.Value)],
       run:         Run,
       headline:    Optional[Metric] = Unset )
   :   Report =

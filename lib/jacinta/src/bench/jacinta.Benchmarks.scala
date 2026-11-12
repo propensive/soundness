@@ -48,6 +48,7 @@ import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import rudiments.*
 import sedentary.*
 import spectacular.*
@@ -86,13 +87,8 @@ enum Document:
   case Example1, Example2, Example3, Users, Logs, Integers, Decimals
 
 object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
 
   // Auto-scale byte sizes (B → kB → MB → GB → TB) and byte rates so the
   // table prints "1.3 GB·s¯¹" instead of "1.3×10⁹ B·s¯¹".

@@ -340,10 +340,10 @@ object Inspectable extends Inspectable2:
 
     ("⟪"+body+"⟫").tt
 
-  // `Bytes` is a count, not a quantity to be rounded for display: an inspection which showed
+  // `Memory` is a count, not a quantity to be rounded for display: an inspection which showed
   // `4MB` would hide the difference between two nearby sizes, which is usually the reason for
   // looking.
-  given bytes: [bytes <: Bytes] => bytes is Inspectable = bytes => (bytes.long.toString+"B").tt
+  given memory: [memory <: Memory] => memory is Inspectable = memory => (memory.long.toString+"B").tt
   given digit: [digit <: Digit] => digit is Inspectable = digit => (digit.int.toString+"ᵈᵍ").tt
 
   // A `Message` renders as its own text, in the style of a `t"…"` literal but marked `m"…"`,

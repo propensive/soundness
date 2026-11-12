@@ -41,17 +41,17 @@ import vacuous.*
 import zephyrine.*
 
 object Bindable:
-  given domainSocket: (backend: Socket.Backend, options: Every[Socket.Option.Domain])
-  =>  DomainSocket is Bindable:
+  given uds: (backend: Socket.Backend, options: Every[Socket.Option.Domain])
+  =>  Uds is Bindable:
     type Binding = backend.ServerSocket
     type Input = Duplex
     type Output = Data
 
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
-    def bind(domainSocket: DomainSocket, interface: Optional[MacAddress])
+    def bind(uds: Uds, interface: Optional[MacAddress])
     :   Binding raises Bind.Error =
 
-      backend.listenDomain(domainSocket, options.values.to(List))
+      backend.listenDomain(uds, options.values.to(List))
 
     def connect(binding: Binding): Duplex raises Socket.Error = backend.accept(binding)
 

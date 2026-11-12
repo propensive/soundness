@@ -101,8 +101,8 @@ object Tests extends Suite("tree", m"Dendrology tests"):
     test(m"Tree flow: wider follow-on tiles never overflow the width"):
       // The `space` replacing `last` on follow-on rows is a cell wider, so the wrap budget
       // must come from the follow-on prefix, or every continuation row overflows by one.
-      given TreeStyle[Text] =
-        TextualTreeStyle(space = t"  ", last = t"└", branch = t"├", extender = t"│ ")
+      given TreeDiagram.Style[Text] =
+        TreeDiagram.TextualStyle(space = t"  ", last = t"└", branch = t"├", extender = t"│ ")
 
       TreeDiagram.by[Tree](_.children)
         ( Tree(t"parent", List(Tree(t"ab abcdef ghi jklmno"))) )
@@ -278,7 +278,7 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"B" -> Set(),
           t"C" -> Set(t"A", t"B"),
           t"D" -> Set(t"A") )
-      LayeredDagDiagram(dag).tiles.flatten.contains(DagTile.Crossing)
+      LayeredDagDiagram(dag).tiles.flatten.contains(DagDiagram.Tile.Crossing)
 
     . assert(_ == false)
 

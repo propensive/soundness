@@ -98,7 +98,7 @@ extension (issuer: Issuer)
 
           . or(lambda(using Issuer.Context[issuer.type]()))
 
-  def require[scope <: Scope & Singleton: scala.Precise](scopes: scope*)
+  def require[scope <: OAuth.Scope & Singleton: scala.Precise](scopes: scope*)
     ( using store: Authorizations, session: Session, request: Http.Request )
     ( using Issuer.Context of issuer.type )
     ( using Tactic[OAuth.Error] )

@@ -99,7 +99,7 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
 
           val process =
             if sjs then
-              Scalac[3.9](List()).targeting[Universe.Sjsir]
+              Scalac[3.9](List()).targeting[Toolchain.Universe.Sjsir]
                 (deps)(Map(t"fixture.scala" -> source), out)
             else Scalac[3.9](List())(deps)(Map(t"fixture.scala" -> source), out)
 

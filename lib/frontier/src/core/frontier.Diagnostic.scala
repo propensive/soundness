@@ -51,8 +51,8 @@ import vacuous.*
 // Not exported: clashes with harlequin.Diagnostic in the umbrella; reach it via frontier.Diagnostic
 @unexported
 object Diagnostic:
-  given treeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"   ", t" └─", t" ├─", t" │ ")
+  given treeStyle: [text: Textual] => TreeDiagram.TextualStyle[text] =
+    TreeDiagram.TextualStyle(t"   ", t" └─", t" ├─", t" │ ")
 
   given expandable: Diagnostic is Expandable = _.children
 

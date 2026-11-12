@@ -45,9 +45,9 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-import DagTile.*
+import DagDiagram.Tile.*
 
-object LaneDagDiagram:
+object LaneDagDiagram extends LaneDagStyles:
   private case class Lane[node](source: node, target: node, col: Int)
 
   // A cell's edges and crossings as bit flags in an `Int`, so a row is a plain array built in
@@ -62,7 +62,7 @@ object LaneDagDiagram:
     inline val VerticalPassThrough   = 16
     inline val HorizontalPassThrough = 32
 
-    def tile(cell: Int): DagTile =
+    def tile(cell: Int): DagDiagram.Tile =
       inline def has(inline flag: Int): Boolean = (cell & flag) != 0
 
       if has(VerticalPassThrough) && has(HorizontalPassThrough) then Crossing
@@ -149,7 +149,7 @@ object LaneDagDiagram:
         val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
         if colsUsed.isEmpty then 1 else colsUsed.iterator.max + 1
 
-      val rows = scm.ListBuffer[(List[DagTile], Optional[node])]()
+      val rows = scm.ListBuffer[(List[DagDiagram.Tile], Optional[node])]()
 
       for r <- 0 until total do
         if r > 0 then
@@ -191,7 +191,7 @@ object LaneDagDiagram:
       directEdge:   Boolean,
       currentNode:  node,
       width:        Int )
-  :   List[DagTile] =
+  :   List[DagDiagram.Tile] =
 
     val cells = new scala.Array[Int](width)
     val startedCols = justStarted.iterator.map(_.col).to(Set)
@@ -242,18 +242,18 @@ object LaneDagDiagram:
       col:      Int,
       current:  node,
       width:    Int )
-  :   List[DagTile] =
+  :   List[DagDiagram.Tile] =
 
     val continuing = state.filter{ (_, lane) => lane.target != current }.keys.to(Set)
 
     (0 until width).map: c => if c == col then Node else if continuing(c) then Vertical else Space
     . to(List)
 
-  given printable: [node: Showable] => (style: LaneDagStyle[Text])
+  given printable: [node: Showable] => (style: LaneDagDiagram.Style[Text])
   =>  LaneDagDiagram[node] is Printable =
     (diagram, termcap) => diagram.render[Text]{ node => t" $node" }.join(t"\n")
 
-  private def keepRow[node](row: (List[DagTile], Optional[node])): Boolean =
+  private def keepRow[node](row: (List[DagDiagram.Tile], Optional[node])): Boolean =
     val (tiles, node) = row
 
     if node.present then true else
@@ -261,14 +261,14 @@ object LaneDagDiagram:
       val verticalCount = tiles.count(_ == Vertical)
       !(onlyPassThrough && verticalCount != 1)
 
-  private def defaultWidths(rows: scala.collection.Iterator[List[DagTile]]): List[Int] =
+  private def defaultWidths(rows: scala.collection.Iterator[List[DagDiagram.Tile]]): List[Int] =
     val maxCol = rows.map(_.length).maxOption.getOrElse(0)
     List.fill(maxCol)(2)
 
   private def computeWidths[node, line]
-    ( rows:  List[(List[DagTile], Optional[node])],
+    ( rows:  List[(List[DagDiagram.Tile], Optional[node])],
       glyph: node => line,
-      style: LaneDagStyle[line] )
+      style: LaneDagDiagram.Style[line] )
   :   List[Int] =
 
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
@@ -284,10 +284,12 @@ object LaneDagDiagram:
 
     widths.iterator.to(List)
 
-case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
+case class LaneDagDiagram[node](lines: List[(List[DagDiagram.Tile], Optional[node])]):
   val size: Int = lines.length
 
-  def render[line](label: node => line)(using style: LaneDagStyle[line]): proscenium.List[line] =
+  def render[line](label: node => line)(using style: LaneDagDiagram.Style[line])
+  :   proscenium.List[line] =
+
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
 
     val rendered = lines.map: (tiles, node) =>
@@ -296,7 +298,8 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
     rendered.to(proscenium.List)
 
-  def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
+  def render[line](glyph: node => line, label: node => line)
+    ( using style: LaneDagDiagram.Style[line] )
   :   proscenium.List[line] =
 
     val widths = LaneDagDiagram.computeWidths(lines, glyph, style)
@@ -315,4 +318,4 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
   def compact: LaneDagDiagram[node] = LaneDagDiagram(lines.filter(LaneDagDiagram.keepRow))
 
   def nodes: List[node] = lines.flatMap(_(1).option)
-  def tiles: List[List[DagTile]] = lines.map(_(0))
+  def tiles: List[List[DagDiagram.Tile]] = lines.map(_(0))

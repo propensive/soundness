@@ -80,12 +80,12 @@ package tableStyles:
   import tessellate.BoxLine.*
   import tessellate.LineCharset.{Default, Rounded}
 
-  given thickTableStyle: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, Default)
-  given thinRoundedTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, Rounded)
-  given horizontalTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Blank, Blank, Default)
-  given midOnlyTableStyle: TableStyle = TableStyle(1, Blank, Blank, Thin, Blank, Blank, Default)
-  given verticalTableStyle: TableStyle = TableStyle(1, Blank, Blank, Blank, Thin, Thin, Default)
-  given minimalTableStyle: TableStyle = TableStyle(1, Unset, Unset, Thin, Blank, Blank, Default)
+  given thickTableStyle: Table.Style = Table.Style(1, Thick, Thick, Thin, Thick, Thin, Default)
+  given thinRoundedTableStyle: Table.Style = Table.Style(1, Thin, Thin, Thin, Thin, Thin, Rounded)
+  given horizontalTableStyle: Table.Style = Table.Style(1, Thin, Thin, Thin, Blank, Blank, Default)
+  given midOnlyTableStyle: Table.Style = Table.Style(1, Blank, Blank, Thin, Blank, Blank, Default)
+  given verticalTableStyle: Table.Style = Table.Style(1, Blank, Blank, Blank, Thin, Thin, Default)
+  given minimalTableStyle: Table.Style = Table.Style(1, Unset, Unset, Thin, Blank, Blank, Default)
 
 // The old table alignment vocabulary is now the shared `tessellate` one; the escritoire
 // names remain as aliases.

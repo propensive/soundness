@@ -80,7 +80,7 @@ package probates:
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
   // The only capturing probate: its instance closes over the ambient `Tactic`, so it is
-  // `SharedProbate`.
+  // `Probate.Shared`.
   given failProbate: (tactic: Tactic[Async.Error]) => (Probate^{tactic}) = _.delegate: child =>
     if !child.ready then raise(Async.Error(Async.Error.Reason.Incomplete))
 
@@ -126,7 +126,7 @@ transparent inline def monitor: Monitor^ = infer[Monitor^]
 // reaches the nearest `contain`/`Probate`.
 def daemon[error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
-  ( using Monitor^, SharedProbate )
+  ( using Monitor^, Probate.Shared )
 :   Daemon =
 
   val tactic = AsyncTactic[error]()
@@ -139,7 +139,7 @@ def daemon[error <: Hazard](using Codepoint)
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
 def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.Durable]})
-  ( using outer: SharedProbate )
+  ( using outer: Probate.Shared )
 :   Containment^{handler, outer} =
 
   Containment(handler, outer)
@@ -162,7 +162,7 @@ infix type emits[left, error <: Hazard] = left match
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
 def async[result, error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
-  ( using monitor: Monitor^, probate: SharedProbate )
+  ( using monitor: Monitor^, probate: Probate.Shared )
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // The tactic is per-task bookkeeping owned by the worker; laundered so the handle's
@@ -174,7 +174,7 @@ def async[result, error <: Hazard](using Codepoint)
 
 def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
-  ( using monitor: Monitor^, probate: SharedProbate )
+  ( using monitor: Monitor^, probate: Probate.Shared )
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // As in `async` above.
@@ -196,7 +196,7 @@ def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
 extension [resource](consume resource: resource^)
   def transfer[result, error <: Hazard](using Codepoint)
     ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
     // [construction-fresh] fresh AsyncTactic per task laundered
@@ -214,7 +214,7 @@ extension [resource](consume resource: resource^)
   // As `transfer`, for a named task.
   def transfer[result, error <: Hazard](using Codepoint)(name: Name[Async])
     ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
-    ( using monitor: Monitor^, probate: SharedProbate )
+    ( using monitor: Monitor^, probate: Probate.Shared )
   :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
     // [construction-fresh] fresh AsyncTactic per task laundered
@@ -249,7 +249,7 @@ def sleep[time: Schedulable](time: time)(using Monitor^): Unit =
     if monitor.supervisor.interrupted() then ()
 
 extension [result](stream: Chain[result])
-  def concurrent(using monitor: Monitor^, probate: SharedProbate)
+  def concurrent(using monitor: Monitor^, probate: Probate.Shared)
   :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
 
     // The task is created and awaited under the same monitor; there is no aliased writer.
@@ -276,7 +276,7 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 // fails its task and surfaces here at that task's join, as it would from an `await`.
 def concurrently[result: ClassTag](count: Int, parallelism: Int)
   ( job: Int ->{caps.any.only[anticipation.Durable]} result )
-  ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
+  ( using monitor: Monitor^, probate: Probate.Shared, codepoint: Codepoint )
 :   (Tactic[Async.Error]^) ?->{job, monitor, probate} Array[result]^{} =
 
   val index: Atomic[Int] = Atomic(0)

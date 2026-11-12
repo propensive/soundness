@@ -46,6 +46,7 @@ import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
+import quantitative.Byte
 import rudiments.*
 import sedentary.*
 import symbolism.*
@@ -63,14 +64,9 @@ import webserverErrorPages.minimalErrorPage
 // machinery, isolated from OS-socket and Loom-scheduling overhead.
 object Benchmarks
 extends Suite("httpd-bench", m"Scintillate socket-server benchmarks"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga))
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
+  given prefixes:    Prefixes        = Prefixes(List(Kilo, Mega, Giga))
 
   // A representative GET request with a handful of headers.
   lazy val getRequest: Data =

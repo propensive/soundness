@@ -47,14 +47,6 @@ import vacuous.*
 // `Float` and re-exports it for compatibility.
 export mosquito.Affine
 
-val Up:    Delta = Delta(0.0f, -1.0f)
-
-val Down:  Delta = Delta(0.0f, 1.0f)
-
-val Left:  Delta = Delta(-1.0f, 0.0f)
-
-val Right: Delta = Delta(1.0f, 0.0f)
-
 extension [numeric: Numeric, numeric2: Numeric](tuple: (numeric, numeric2))
   def `unary_+`: Delta = Delta(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
 

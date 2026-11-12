@@ -62,7 +62,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
 
   val uuid = Uuid()
   val out: Path on Linux = temporaryDirectory/uuid
-  val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
+  val scalac: Scalac[3.6, Toolchain.Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
   // stdlib bridge: `staging.Compiler.Settings.make` is the Scala 3 staging API, and takes the
   // compiler's own `Option`/`List` of `String`.

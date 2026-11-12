@@ -10,9 +10,9 @@ detail
     the **kind** of chart, the **fit** of the one to the other, and the **style**.
 
     - The shape is in the types. A `Series[x, y]` is a named run of points; its abscissa type
-      decides the axis: a `Text`, an enum or a `Category` is `Categorical`, a number, a
+      decides the axis: a `Text`, an enum or a `Chart.Category` is `Categorical`, a number, a
       `Duration`, an `Instant` or any `Quantity` is `Continuous`. `Samples[y]` are raw
-      measurements, `Estimate` a value with its interval, `Noted` a value with a note, and a
+      measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
       `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
     - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
       `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
@@ -358,6 +358,26 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
       chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
       ```
 
+  entry .Category   a category with no type of its own: any showable value wrapped as a label
+    detail
+        What `Series#categorical` makes from a numeric abscissa, or anything wrapped by hand:
+        `Category(42)` has the label `t"42"`. A `Category` is `Categorical` by its `#label`.
+    entry .apply   `Category(value)`: a category labelled by any showable value
+    entry #label   the label, as text
+  entry .Estimate   a value with the interval it is believed to lie in, drawn with error bars or a band
+      `Estimate(value, lower, upper)`: a mean with its confidence interval, a median with its
+      quartiles. It is `Continuous` by its `value`, with `bounds` of `(lower, upper)`, so a
+      scatter plot or bar chart draws an error bar through each one (`Chart.Cartesian#errorBar`)
+      and a line chart fills a translucent band between the bounds (`Lines.Style#band`); the
+      bounds also count towards the axis's extent, so the whole interval is on the axis.
+
+      ```scala
+      import soundness.*
+
+      val timings = Series(t"sort")((t"small", Chart.Estimate(5.0, 4.0, 6.0)), (t"large", Chart.Estimate(9.0, 8.5, 9.5)))
+      timings.chart(Bars()).fit.ordinate.upper   // 10.0
+      ```
+
 entry .Plottable   the compatibility of a shape of data with a kind of chart, and what it takes to draw it
   detail
       `data is Plottable in form to fit by style` exists only where the kind can draw the
@@ -387,9 +407,9 @@ entry .Plottable   the compatibility of a shape of data with a kind of chart, an
 entry .Series   one named run of points: the unit of data a chart kind is compatible with
   detail
       A `Series[x, y]` is a name and a `Sequence` of `(x, y)` pairs. The abscissa type decides
-      the axis: a `Text`, enum or `Category` is `Categorical` and suits `Bars`, `StackedBars`
+      the axis: a `Text`, enum or `Chart.Category` is `Categorical` and suits `Bars`, `StackedBars`
       and `Pie`; a number, `Duration`, `Instant` or `Quantity` is `Continuous` and suits
-      `Lines` and `Scatter`. The ordinate is always `Continuous`, and may be an `Estimate`
+      `Lines` and `Scatter`. The ordinate is always `Continuous`, and may be an `Chart.Estimate`
       (drawn with error bars or a band) or a `Noted` value (labelled beside its marker).
       Several series are any collection of them — a `List`, `Set` or `Sequence` — since the
       kinds' `traversable` instances cover anything traversable by series.
@@ -398,7 +418,7 @@ entry .Series   one named run of points: the unit of data a chart kind is compat
       import soundness.*
 
       val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
-      val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
+      val timings = Series(t"sort")((1000, Chart.Estimate(2.1, 1.9, 2.4)), (10000, Chart.Estimate(24.0, 22.5, 26.1)))
       val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
       val year = Series(2024)((t"jan", 1.0))   // named by any showable value
       year.name                                 // t"2024"
@@ -440,20 +460,6 @@ entry .Samples   raw measurements under one name, before any summary: what a his
   entry #values   the measurements, in the order given
   entry #add   the set with one more measurement appended
 
-entry .Estimate   a value with the interval it is believed to lie in, drawn with error bars or a band
-    `Estimate(value, lower, upper)`: a mean with its confidence interval, a median with its
-    quartiles. It is `Continuous` by its `value`, with `bounds` of `(lower, upper)`, so a
-    scatter plot or bar chart draws an error bar through each one (`Chart.Cartesian#errorBar`)
-    and a line chart fills a translucent band between the bounds (`Lines.Style#band`); the
-    bounds also count towards the axis's extent, so the whole interval is on the axis.
-
-    ```scala
-    import soundness.*
-
-    val timings = Series(t"sort")((t"small", Estimate(5.0, 4.0, 6.0)), (t"large", Estimate(9.0, 8.5, 9.5)))
-    timings.chart(Bars()).fit.ordinate.upper   // 10.0
-    ```
-
 entry .Noted   a value with a note attached, which a scatter plot or line chart sets beside its marker
     `Noted(value, note)`: the value is `Continuous` by `value`, and its `annotation` is the
     note, which `Chart.Cartesian#pointLabel` sets to the right of the marker, or on another
@@ -470,18 +476,11 @@ entry .Noted   a value with a note attached, which a scatter plot or line chart 
     The name was `Annotated` until 0.72.0; it collided in the umbrella with adversaria's
     `Annotated` typeclass.
 
-entry .Category   a category with no type of its own: any showable value wrapped as a label
-  detail
-      What `Series#categorical` makes from a numeric abscissa, or anything wrapped by hand:
-      `Category(42)` has the label `t"42"`. A `Category` is `Categorical` by its `#label`.
-  entry .apply   `Category(value)`: a category labelled by any showable value
-  entry #label   the label, as text
-
 entry .Categorical   a value that names a category on an axis: distinct labels, no arithmetic
   detail
       The typeclass of a bar chart's or a pie's abscissa. Categories are distinct labels in
       first-appearance order across all the series, with no positions between them. `Text`,
-      `Category` and any `scala.reflect.Enum` with an `Enumerable` instance are `Categorical`
+      `Chart.Category` and any `scala.reflect.Enum` with an `Enumerable` instance are `Categorical`
       through the companion; a type of your own needs one line:
 
       ```scala
@@ -498,11 +497,11 @@ entry .Categorical   a value that names a category on an axis: distinct labels, 
 entry .Continuous   a value with a position on a numeric axis, and optionally an interval around it
   detail
       The typeclass of every numeric axis. `#position` is the number drawn from, `#bounds` an
-      optional interval (an `Estimate` has one), `#annotation` an optional note (a `Noted`
+      optional interval (an `Chart.Estimate` has one), `#annotation` an optional note (a `Noted`
       value has one), and `#notation` says how an axis of this type is graduated, written and
       titled, since seconds are read differently from counts and a quantity is measured in
       units. The companion covers `Int`, `Long`, `Double`, `Float`, `F64`, every `Quantity`,
-      `Duration`, `Instant`, `Estimate` and `Noted`; a type of your own needs only a position:
+      `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
 
       ```scala
       import soundness.*
@@ -574,7 +573,7 @@ entry .Bars   bars grouped by category: one bar per series in each category's ba
       `Categorical` and `y` is `Continuous` with a `Calibration`. Each category is a band of
       the abscissa, in first-appearance order across all the series, and within it one bar per
       series rises (or falls) from zero to the value, with an error bar where the value is an
-      `Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+      `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
 
       ```scala
       import soundness.*
@@ -672,7 +671,7 @@ entry .Lines   a line per series through its points in abscissa order, with band
   detail
       A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
       are `Continuous` with a `Calibration`. Each series is a polyline through its points
-      sorted by abscissa; where the values are `Estimate`s a translucent band is filled
+      sorted by abscissa; where the values are `Chart.Estimate`s a translucent band is filled
       between their bounds; markers are drawn at the points if the style's `markers` is set;
       and a `Noted` value's note is set beside its marker. Neither axis is anchored at zero: a
       line shows change, not magnitude. The same fit as `Scatter`.
@@ -724,7 +723,7 @@ entry .Scatter   a marker per point, with error bars for intervals and labels fo
   detail
       A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
       are `Continuous` with a `Calibration`. Every point is a marker (`Chart.Cartesian#marker`),
-      an `Estimate` adds an error bar, and a `Noted` value a label beside the marker, placed
+      an `Chart.Estimate` adds an error bar, and a `Noted` value a label beside the marker, placed
       by cartouche so that notes at the same point are set on different sides. The fit is
       exactly a line chart's; only the drawing differs.
 

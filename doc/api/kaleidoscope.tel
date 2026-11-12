@@ -41,7 +41,7 @@ detail
     input. `Re2` is praxinoscope's automaton engine, which matches in time linear in the input
     and rejects, at compile time for a literal, the constructs an automaton cannot express
     (backreferences, lookaround, possessive quantifiers, atomic groups). The engine of a literal
-    is chosen by importing one `RegexBackend` given from the `regexBackends` package by name,
+    is chosen by importing one `Regex.Backend` given from the `regexBackends` package by name,
     since `import soundness.*` imports no givens; a `Regex` built at runtime is retagged with
     `Regex#re2`.
 
@@ -182,18 +182,10 @@ entry .g   the `g"…"` interpolator: a glob as a pattern, or as a `Regex` value
     `g".local/*" == r"\.local/[^/\\]*"` — and `Glob.parse(text).regex` shows the translation.
     A glob is total: every text is a glob, so `g"…"` never fails to compile.
 
-entry .RegexBackend   the marker a `regexBackends` given carries, read by `r"…"` and `g"…"` as they expand
-    `RegexBackend[form]` is a sealed phantom trait with no members. The `r"…"` and `g"…"`
-    macros summon a `RegexBackend[Re2]` while they expand: when `regexBackends.re2` is
-    imported the literal is compiled for praxinoscope's engine, checked against the RE2
-    subset, and tagged `Regex in Re2`; otherwise it is tagged `Regex in JavaBaseRegex`.
-    `Glob#matches` takes the same given, defaulting to `regexBackends.javaBaseRegex`. Nothing
-    else reads it, and a program never implements it.
-
 entry .regexBackends   the two matching engines, each a given to import by name
   detail
       Which engine a literal pattern compiles for is decided while the code compiles, by the
-      `RegexBackend` given in scope, and `import soundness.*` brings neither in: the default,
+      `Regex.Backend` given in scope, and `import soundness.*` brings neither in: the default,
       with no import, is `java.util.regex`, and the linear-time engine is chosen by name.
 
       ```scala
@@ -239,11 +231,11 @@ entry .regexBackends   the two matching engines, each a given to import by name
         r"(a)\1"   // does not compile: backreferences are not part of RE2 syntax
       ```
   entry .javaBaseRegex   the platform's `java.util.regex` engine: the default, so the import is rarely needed
-      `RegexBackend[JavaBaseRegex]`, the engine a literal compiles for when nothing is imported.
+      `Regex.Backend[JavaBaseRegex]`, the engine a literal compiles for when nothing is imported.
       It exists so that the default can be named — in a scope which has imported `re2` and
       wants one literal under the backtracking engine, say — and as `Glob#matches`'s default.
   entry .re2   praxinoscope's RE2 engine: linear-time matching, the RE2 subset, checked as the code compiles
-      `RegexBackend[Re2]`. With it imported, every `r"…"` and `g"…"` in scope is parsed into
+      `Regex.Backend[Re2]`. With it imported, every `r"…"` and `g"…"` in scope is parsed into
       its praxinoscope `Motif` while the code compiles, rejected there if it uses a
       backreference, lookaround, a possessive quantifier or an atomic group, and staged into
       the extractor so that no parsing or compilation happens at runtime. A literal with no
@@ -564,6 +556,14 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
   entry #allGroups   every group at any depth, in pattern order
   entry #captureGroups   every captured group at any depth, in pattern order: the groups `r"…"` binds
 
+  entry .Backend   the marker a `regexBackends` given carries, read by `r"…"` and `g"…"` as they expand
+      `Backend[form]` is a sealed phantom trait with no members. The `r"…"` and `g"…"`
+      macros summon a `Backend[Re2]` while they expand: when `regexBackends.re2` is
+      imported the literal is compiled for praxinoscope's engine, checked against the RE2
+      subset, and tagged `Regex in Re2`; otherwise it is tagged `Regex in JavaBaseRegex`.
+      `Glob#matches` takes the same given, defaulting to `regexBackends.javaBaseRegex`. Nothing
+      else reads it, and a program never implements it.
+
 entry .JavaBaseRegex   the `java.util.regex` engine's marker: the default `Form` of every `Regex`
   detail
       A sealed phantom trait with no members, naming the platform's `java.util.regex` (or,
@@ -663,7 +663,7 @@ entry .Glob   a glob — `*`, `**`, `?`, `[a-z]` wildcards — as tokens, transl
   entry #tokens   the glob's tokens, in order
   entry #regex   the glob translated to a regular expression, as `Text`
   entry #matches   whether the whole text matches the glob, on the engine `regexBackends` selects
-      Takes a `RegexBackend[form]` (defaulting to `regexBackends.javaBaseRegex`, so an
+      Takes a `Regex.Backend[form]` (defaulting to `regexBackends.javaBaseRegex`, so an
       `import regexBackends.re2` switches it, as it does the interpolators) and that form's
       `Regex.Engine`. The engines cache compilation by rendered pattern, so matching many
       candidates against one glob compiles it once.
@@ -674,7 +674,7 @@ entry .internal   the macros behind `r"…"` and `g"…"`, and the extractor cla
       Not for direct use: the object houses the interpolators' expansion and the two classes a
       pattern expands into. `expandRegexJvm`, `expandRegexRe2`, `expandGlobJvm` and
       `expandGlobRe2` are the transparent inline entry points `r` and `g` dispatch to, by
-      whether a `RegexBackend[Re2]` is in scope; `regexJvm`, `regexRe2`, `globJvm` and
+      whether a `Regex.Backend[Re2]` is in scope; `regexJvm`, `regexRe2`, `globJvm` and
       `globRe2` are their macro implementations. Each parses the parts with `Regex.parse`,
       reporting a `Regex.Error` as a compile error positioned at the offending character,
       computes the capture types from the groups' quantifiers, and splices a `NoExtraction` or

@@ -38,6 +38,7 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.to
+import polyvinyl.Specification.Member
 
 // A `Specification` over `Tree`, exercising every kind of member polyvinyl supports: scalar
 // fields with and without parameters, under each multiplicity, and nested records.

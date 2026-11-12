@@ -192,7 +192,7 @@ object internal:
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
       decomposable: test is Decomposable,
-      coordinates:  List[(Axis.Spec, Value)],
+      coordinates:  List[(Axis.Spec, Axis.Value)],
       discard:      Boolean,
       verified:     Boolean )
   :   result =

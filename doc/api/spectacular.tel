@@ -116,7 +116,7 @@ entry .Showable   the typeclass of values which may be displayed to a person, as
 
       `Showable` is deliberately demanding: there is no derivation and no fallback, so a type
       shows only if someone has decided how it should look. The companion holds instances for
-      the primitive types, `Text`, `String`, `Message`, `Bytes`, every Scala `enum`, every
+      the primitive types, `Text`, `String`, `Message`, `Memory`, every Scala `enum`, every
       `Textualizable` type, and the Soundness collections. A `Double` needs a
       `DecimalConverter` in scope and a `Boolean` an `Affirmation`, since neither has a single
       context-free form.
@@ -154,7 +154,7 @@ entry .Showable   the typeclass of values which may be displayed to a person, as
       true.show   // t"on"
       ```
   entry .option   shows a Scala `Option`: its value, or `none`
-  entry .bytes   shows a `Bytes` count through its own `text` rendering
+  entry .memory   shows a `Memory` count through its own `text` rendering
   entry .enumeration   shows a case of any Scala `enum` by its name
       Every `reflect.Enum` shows as its `toString`, the case's name, so an enum needs no
       instance of its own unless a different form is wanted; a parameterised case shows with
@@ -310,7 +310,7 @@ entry .Inspectable   the typeclass of debug renderings, which every value has, a
   entry .span   renders a `Span` by its shape: `⟪∅⟫`, `⟪@4+5⟫`, `⟪4:8+5⟫`, `⟪4‥8⟫` or `⟪4:8‥6:2⟫`
       A `Span` packs one of five ranges into a `Long`: empty, an offset and length, a line,
       column and length, a range of whole lines, or an area. The numbers are one-based.
-  entry .bytes   renders a `Bytes` count exactly, as `4194304B`, never rounded
+  entry .memory   renders a `Memory` count exactly, as `4194304B`, never rounded
   entry .digit   renders a `Digit` with the suffix `ᵈᵍ`
   entry .message   renders a `Message` as `m"…"`
   entry .set   renders a `Set` as `{a, b}`

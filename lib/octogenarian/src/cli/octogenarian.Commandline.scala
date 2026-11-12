@@ -606,10 +606,10 @@ extends Git.Backend:
 
   def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
-  :   List[FileDiff] =
+  :   List[Git.Delta] =
 
     val outcome = expect(run(dirArgs(gitDir) + List(t"diff", t"--no-color", left.text, right.text)))
-    Patch.parse(outcome.lines)
+    Git.Patch.parse(outcome.lines)
 
   // ─────────────────────────────────────── Index and working files ────────────────────────────
 
@@ -747,12 +747,12 @@ extends Git.Backend:
       staged:   Boolean,
       against:  Optional[Text] )
     ( using Tactic[Git.Error] )
-  :   List[FileDiff] =
+  :   List[Git.Delta] =
 
     val stagedArgs = if staged then List(t"--staged") else Nil
     val arguments = List(t"diff", t"--no-color") + stagedArgs + against.let(List(_)).or(Nil)
 
-    Patch.parse(expect(run(dirArgs(gitDir, worktree) + arguments)).lines)
+    Git.Patch.parse(expect(run(dirArgs(gitDir, worktree) + arguments)).lines)
 
   def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
     expect(run(dirArgs(gitDir, worktree) + List(t"ls-files"))).lines

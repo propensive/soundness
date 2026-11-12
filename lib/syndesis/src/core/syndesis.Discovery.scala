@@ -277,20 +277,20 @@ object Discovery:
     // whose `instance` is the name claimed — and later renamed, if a conflict after
     // establishment (RFC 6762 §9) forces it.
     def advertise(service: Service, description: Description)
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Advertising
 
     def withdraw(advertising: Advertising)(using Monitor^, (Activity is Loggable)^): Unit
 
     def browse(service: Service)
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Browsing
 
     def dismiss(browsing: Browsing)(using Monitor^): Unit
 
     def resolve[duration: Abstractable across Durations to Long]
       ( instance: Instance, timeout: duration )
-      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Activity is Loggable)^ )
+      ( using Monitor^, Probate.Shared, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Resolution
 
   // A browse in progress, as a backend hands it over: the events it will relay, and a view of

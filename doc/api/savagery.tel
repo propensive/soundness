@@ -10,25 +10,25 @@ detail
     function pipeline, colours and lengths have syntaxes of their own — and a program that
     concatenates them must get every one right at once. Here a `Point` is a position and a
     `Delta` a displacement, distinct types with the vector arithmetic between them; a path is
-    an `Outline` grown by named steps; a transform is a `Transform` value recorded on the
+    an `Svg.Outline` grown by named steps; a transform is a `Transform` value recorded on the
     figure, not applied to its coordinates; and each little language is rendered by the type
     that understands it, as `in[Xml]` or `encode`.
 
     ```scala
     import soundness.*
 
-    Rectangle((0, 0), 10, 5).in[Xml].show
+    Svg.Rectangle((0, 0), 10, 5).in[Xml].show
     // <rect x="0.0" y="0.0" width="10.0" height="5.0"/>
 
-    val plus = Outline().moveTo((0, 0)).lineTo((3, 4)).closed
+    val plus = Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).closed
     val drawing = Svg(50, 50, figures = List(plus, Circle((25, 25), 10).translate(Delta(3, 4))))
     drawing.in[Xml].show.keep(4)                                       // t"<svg"
     Document(drawing, enc"UTF-8").show.keep(5)                         // t"<?xml"
     ```
 
-    The figures are `Rectangle`, `Ellipse` (and `Circle`, which makes one), `Outline`,
-    `Polyline`, `Lettering` and `Group`, all `Figure`s; every one may carry an `id` (an
-    `Svg.Id`), a typed CSS `style` and a list of `transforms`. A `Lettering`'s `font` is a
+    The figures are `Svg.Rectangle`, `Svg.Ellipse` (and `Circle`, which makes one), `Svg.Outline`,
+    `Svg.Polyline`, `Svg.Lettering` and `Svg.Group`, all `Svg.Figure`s; every one may carry an `id` (an
+    `Svg.Id`), a typed CSS `style` and a list of `transforms`. A `Svg.Lettering`'s `font` is a
     `Font in Web`, which exists only for a typeface with a provision in scope, so the `Svg`
     that carries the text also carries the `@font-face` that makes the typeface available.
     Definitions are `Svg.Def`s — a `Svg.LinearGradient` of `Stop`s — and an `Svg` assembles
@@ -50,8 +50,8 @@ detail
     `construables` package merges with the umbrella's own.
 
 refer savagery.Svg
-refer savagery.Figure
-refer savagery.Outline
+refer savagery.Svg.Figure
+refer savagery.Svg.Outline
 refer savagery.Point
 refer savagery.Delta
 refer savagery.Transform
@@ -74,7 +74,7 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
       // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"/>
 
       val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
-      Svg(100, 100, defs = List(fade), figures = List(Rectangle((0, 0), 50, 50))).in[Xml].show
+      Svg(100, 100, defs = List(fade), figures = List(Svg.Rectangle((0, 0), 50, 50))).in[Xml].show
       ```
 
       An `Svg` is `Documentary`, so `Document(svg, enc"UTF-8").show` is a standalone `.svg`
@@ -91,7 +91,7 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
       (sized.width, sized.unit, sized.viewBox)   // (48.5f, Svg.Units.Mm, Svg.ViewBox(0, 0, 48.5f, 20))
 
       val saved = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>""".read[Svg]
-      saved.figures   // List(Rectangle(Point(0, 0), 10, 10))
+      saved.figures   // List(Svg.Rectangle(Point(0, 0), 10, 10))
       ```
 
       A `<g>` parses as a `Group`, `<polyline>` and `<polygon>` as a `Polyline`, `<text>` as a
@@ -99,7 +99,7 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
       `<linearGradient>` in the `<defs>` as a `LinearGradient`; `id`, `transform` and `style`
       are read on every figure, and an unknown element (`<image>`, say) or attribute is
       skipped. A figure written and read back renders identically.
-  refer savagery.Figure
+  refer savagery.Svg.Figure
   refer savagery.Svg.Error
   refer savagery.Svg.Parser
   refer savagery.construables
@@ -184,7 +184,7 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
         ```scala
         import soundness.*
 
-        Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.in[Xml].show
+        Svg.Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.in[Xml].show
         // <path d="M 0.0 0.0 Z" id="plus"/>
         ```
     entry .apply   `Svg.Id(text)`: an identifier from its text
@@ -219,173 +219,265 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
   entry #viewBox   the user-space rectangle shown, or `Unset` for the viewport's size from the origin
   entry #Metadata   what a `Document[Svg]` carries besides the drawing: its `Encoding`
 
-entry .Figure   the sealed root of every drawable element: rectangle, outline, ellipse, group, polyline, lettering
-  detail
-      Every figure renders to its SVG element as `figure.in[Xml]` through the companion's
-      `.encodable`, inspects with its case name and labelled fields, and may carry an `id`, an
-      inline `style` and a list of `transforms`, which are written as the `id`, `style` and
-      `transform` attributes, in that order, only when present. `Figure.fonts` collects the
-      fonts a list of figures sets text in, so an `Svg` can carry their `@font-face` rules.
+  entry .Figure   the sealed root of every drawable element: rectangle, outline, ellipse, group, polyline, lettering
+    detail
+        Every figure renders to its SVG element as `figure.in[Xml]` through the companion's
+        `.encodable`, inspects with its case name and labelled fields, and may carry an `id`, an
+        inline `style` and a list of `transforms`, which are written as the `id`, `style` and
+        `transform` attributes, in that order, only when present. `Figure.fonts` collects the
+        fonts a list of figures sets text in, so an `Svg` can carry their `@font-face` rules.
 
-      ```scala
-      import soundness.*
+        ```scala
+        import soundness.*
 
-      val figures: List[Figure] =
-        List
-          ( Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")),
-            Circle((5, 5), 3),
-            Lettering((1, 2), t"label", Lettering.Anchor.End, Lettering.Baseline.Middle) )
+        val figures: List[Svg.Figure] =
+          List
+            ( Svg.Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")),
+              Circle((5, 5), 3),
+              Svg.Lettering((1, 2), t"label", Svg.Lettering.Anchor.End, Svg.Lettering.Baseline.Middle) )
 
-      figures.map(_.in[Xml].show)
-      ```
+        figures.map(_.in[Xml].show)
+        ```
 
-      Transforms are added fluently with the `translate`, `rotate`, `scale`, `skew` and
-      `transform` extensions on any `Transformable` figure, each returning a new figure with
-      the transform appended; the geometry a figure was defined with is the geometry it keeps.
-  refer savagery.Rectangle
-  refer savagery.Outline
-  refer savagery.Ellipse
-  refer savagery.Group
-  refer savagery.Polyline
-  refer savagery.Lettering
-  refer savagery.Transformable
-  entry .encodable   a figure's SVG element, as `figure.in[Xml]`, for every subtype
-      Bounded by `Figure`, so it applies to a `Rectangle` or an `Outline` as much as to a
-      `Figure`.
-  entry .inspectable   renders a figure as its case name with each field labelled, strokes and transforms legible
-      `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`: unlike the XML, the
-      path operations are not compressed into one `d` attribute.
-  entry .fonts   the fonts a list of figures sets text in, groups included
-  entry #fonts   the fonts this figure sets text in: a `Lettering`'s font, a `Group`'s letterings' fonts, else none
+        Transforms are added fluently with the `translate`, `rotate`, `scale`, `skew` and
+        `transform` extensions on any `Transformable` figure, each returning a new figure with
+        the transform appended; the geometry a figure was defined with is the geometry it keeps.
+    refer savagery.Svg.Rectangle
+    refer savagery.Svg.Outline
+    refer savagery.Svg.Ellipse
+    refer savagery.Svg.Group
+    refer savagery.Svg.Polyline
+    refer savagery.Svg.Lettering
+    refer savagery.Transformable
+    entry .encodable   a figure's SVG element, as `figure.in[Xml]`, for every subtype
+        Bounded by `Figure`, so it applies to a `Rectangle` or an `Outline` as much as to a
+        `Figure`.
+    entry .inspectable   renders a figure as its case name with each field labelled, strokes and transforms legible
+        `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`: unlike the XML, the
+        path operations are not compressed into one `d` attribute.
+    entry .fonts   the fonts a list of figures sets text in, groups included
+    entry #fonts   the fonts this figure sets text in: a `Lettering`'s font, a `Group`'s letterings' fonts, else none
+  entry .Rectangle   a `<rect>`: a position, a width and a height
+    detail
+        `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`. The
+        position is the top-left corner; a pair of numbers converts to the `Point`.
 
-entry .Rectangle   a `<rect>`: a position, a width and a height
-  detail
-      `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`. The
-      position is the top-left corner; a pair of numbers converts to the `Point`.
+        ```scala
+        import soundness.*
 
-      ```scala
-      import soundness.*
+        Svg.Rectangle((2, 3), 8, 4).in[Xml].show
+        // <rect x="2.0" y="3.0" width="8.0" height="4.0"/>
 
-      Rectangle((2, 3), 8, 4).in[Xml].show
-      // <rect x="2.0" y="3.0" width="8.0" height="4.0"/>
+        Svg.Rectangle((0, 0), 1, 1, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show
+        // <rect x="0.0" y="0.0" width="1.0" height="1.0" id="box" style="fill: #ff0000"/>
+        ```
 
-      Rectangle((0, 0), 1, 1, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show
-      // <rect x="0.0" y="0.0" width="1.0" height="1.0" id="box" style="fill: #ff0000"/>
-      ```
+        An extractor pattern names all six fields: `case Rectangle(position, width, height,
+        transforms, style, id)`.
+    entry #position   the top-left corner
+    entry #width   the width, in user units
+    entry #height   the height
+    entry #transforms   the transforms, written as the `transform` attribute in order
+    entry #style   the inline CSS, or `Unset`
+    entry #id   the identifier, or `Unset`
+  entry .Outline   a `<path>`, built step by step: absolute steps suffixed `To`, relative ones without
+    detail
+        `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`. The `#ops` are held
+        **last first** — each step conses onto the list — and rendered in order as the `d`
+        attribute. Steps are the cases of `Stroke`: a move, a line, a cubic or quadratic curve
+        (with or without the first control point, for a smooth continuation), an arc and a
+        close. The fluent methods add one each; `Stroke` values can also be given directly, as
+        a pie chart does for its arcs.
 
-      An extractor pattern names all six fields: `case Rectangle(position, width, height,
-      transforms, style, id)`.
-  entry #position   the top-left corner
-  entry #width   the width, in user units
-  entry #height   the height
-  entry #transforms   the transforms, written as the `transform` attribute in order
-  entry #style   the inline CSS, or `Unset`
-  entry #id   the identifier, or `Unset`
+        ```scala fuel
+        frame
+          label An empty path
+          code
+              Svg.Outline().in[Xml].show
+              // <path d=""/>
+        frame
+          label A move to the start
+          code
+              Svg.Outline().moveTo((0, 0)).in[Xml].show
+              // <path d="M 0.0 0.0"/>
+        frame
+          label A line to another point
+          code
+              Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).in[Xml].show
+              // <path d="M 0.0 0.0 L 3.0 4.0"/>
+        frame
+          label A cubic curve, with its two control points
+          code
+              Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).in[Xml].show
+              // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0"/>
+        frame
+          label A relative step, as a Delta
+          code
+              Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).in[Xml].show
+              // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0"/>
+        frame
+          label Closed back to the start
+          code
+              Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).closed.in[Xml].show
+              // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0 Z"/>
+        ##
+        ```
 
-entry .Outline   a `<path>`, built step by step: absolute steps suffixed `To`, relative ones without
-  detail
-      `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`. The `#ops` are held
-      **last first** — each step conses onto the list — and rendered in order as the `d`
-      attribute. Steps are the cases of `Stroke`: a move, a line, a cubic or quadratic curve
-      (with or without the first control point, for a smooth continuation), an arc and a
-      close. The fluent methods add one each; `Stroke` values can also be given directly, as
-      a pie chart does for its arcs.
+        A relative line along one axis is written as `h` or `v`. The directional steps
+        `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` and their `move…` twins take one
+        length each; note that, as implemented, `lineUp(v)` draws `Delta(v, 0)` (an `h` step)
+        and `lineLeft(v)` draws `Delta(0, -v)` (a `v` step) — the names are rotated a quarter
+        turn from SVG's axes, so for a predictable direction write `line(v*Delta.Up)` with the
+        named directions instead.
+    refer savagery.Stroke
+    refer savagery.Point
+    refer savagery.Delta
+    entry #ops   the path operations, most recent first
+    entry #style   the inline CSS, or `Unset`
+    entry #id   the identifier, or `Unset`
+    entry #transforms   the transforms, written as the `transform` attribute
+    entry #moveTo   `M`: a move to an absolute point
+    entry #lineTo   `L`: a line to an absolute point
+    entry #move   `m`: a move by a `Delta`
+    entry #line   `l`, `h` or `v`: a line by a `Delta`, written as `h` or `v` when it is along one axis
+    entry #curve   `c` or `s`: a relative cubic curve, with both control points or only the second
+        `curve(ctrl1, ctrl2, point)` is a full cubic; `curve(ctrl2, point)` continues smoothly
+        from the previous curve, the first control point reflected.
+    entry #curveTo   `C` or `S`: an absolute cubic curve, with both control points or only the second
+    entry #quadCurve   `q` or `t`: a relative quadratic curve, with its control point or continuing smoothly
+    entry #quadCurveTo   `Q` or `T`: an absolute quadratic curve, with its control point or continuing smoothly
+    entry #moveUp   a relative move written as `Move(Delta(value, 0))`: along the x-axis, as implemented
+    entry #moveDown   a relative move written as `Move(Delta(-value, 0))`
+    entry #moveLeft   a relative move written as `Move(Delta(0, -value))`: along the y-axis, as implemented
+    entry #moveRight   a relative move written as `Move(Delta(0, value))`
+    entry #lineUp   a relative line written as `Draw(Delta(value, 0))`, rendered `h value`
+    entry #lineDown   a relative line written as `Draw(Delta(-value, 0))`, rendered `h -value`
+    entry #lineLeft   a relative line written as `Draw(Delta(0, -value))`, rendered `v -value`
+    entry #lineRight   a relative line written as `Draw(Delta(0, value))`, rendered `v value`
+    entry #closed   `Z`: closes the current subpath back to its start
+  entry .Ellipse   an `<ellipse>`, or a `<circle>` when its radii are equal
+    detail
+        `Ellipse(center, xRadius, yRadius, angle, transforms = Nil, style = Unset, id = Unset)`.
+        The `angle` is kept on the value but not yet written to the element: an ellipse renders
+        with `cx`, `cy`, `rx` and `ry` (or `r`, as a `<circle>`, when `#circle` is true). `Circle`
+        makes one with equal radii and a zero angle, and a parsed `<circle>` is an `Ellipse` too.
 
-      ```scala fuel
-      frame
-        label An empty path
-        code
-            Outline().in[Xml].show
-            // <path d=""/>
-      frame
-        label A move to the start
-        code
-            Outline().moveTo((0, 0)).in[Xml].show
-            // <path d="M 0.0 0.0"/>
-      frame
-        label A line to another point
-        code
-            Outline().moveTo((0, 0)).lineTo((3, 4)).in[Xml].show
-            // <path d="M 0.0 0.0 L 3.0 4.0"/>
-      frame
-        label A cubic curve, with its two control points
-        code
-            Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).in[Xml].show
-            // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0"/>
-      frame
-        label A relative step, as a Delta
-        code
-            Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).in[Xml].show
-            // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0"/>
-      frame
-        label Closed back to the start
-        code
-            Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).closed.in[Xml].show
-            // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0 Z"/>
-      ##
-      ```
+        ```scala
+        import soundness.*
 
-      A relative line along one axis is written as `h` or `v`. The directional steps
-      `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` and their `move…` twins take one
-      length each; note that, as implemented, `lineUp(v)` draws `Delta(v, 0)` (an `h` step)
-      and `lineLeft(v)` draws `Delta(0, -v)` (a `v` step) — the names are rotated a quarter
-      turn from SVG's axes, so for a predictable direction write `line(v*Up)` with the named
-      directions instead.
-  refer savagery.Stroke
-  refer savagery.Point
-  refer savagery.Delta
-  entry #ops   the path operations, most recent first
-  entry #style   the inline CSS, or `Unset`
-  entry #id   the identifier, or `Unset`
-  entry #transforms   the transforms, written as the `transform` attribute
-  entry #moveTo   `M`: a move to an absolute point
-  entry #lineTo   `L`: a line to an absolute point
-  entry #move   `m`: a move by a `Delta`
-  entry #line   `l`, `h` or `v`: a line by a `Delta`, written as `h` or `v` when it is along one axis
-  entry #curve   `c` or `s`: a relative cubic curve, with both control points or only the second
-      `curve(ctrl1, ctrl2, point)` is a full cubic; `curve(ctrl2, point)` continues smoothly
-      from the previous curve, the first control point reflected.
-  entry #curveTo   `C` or `S`: an absolute cubic curve, with both control points or only the second
-  entry #quadCurve   `q` or `t`: a relative quadratic curve, with its control point or continuing smoothly
-  entry #quadCurveTo   `Q` or `T`: an absolute quadratic curve, with its control point or continuing smoothly
-  entry #moveUp   a relative move written as `Move(Delta(value, 0))`: along the x-axis, as implemented
-  entry #moveDown   a relative move written as `Move(Delta(-value, 0))`
-  entry #moveLeft   a relative move written as `Move(Delta(0, -value))`: along the y-axis, as implemented
-  entry #moveRight   a relative move written as `Move(Delta(0, value))`
-  entry #lineUp   a relative line written as `Draw(Delta(value, 0))`, rendered `h value`
-  entry #lineDown   a relative line written as `Draw(Delta(-value, 0))`, rendered `h -value`
-  entry #lineLeft   a relative line written as `Draw(Delta(0, -value))`, rendered `v -value`
-  entry #lineRight   a relative line written as `Draw(Delta(0, value))`, rendered `v value`
-  entry #closed   `Z`: closes the current subpath back to its start
+        Svg.Ellipse((1, 2), 3, 4, Angle(0)).in[Xml].show   // <ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>
+        Svg.Ellipse((0, 0), 5, 5, Angle(0)).in[Xml].show   // <circle cx="0.0" cy="0.0" r="5.0"/>
+        ```
+    refer savagery.Circle
+    entry #center   the centre
+    entry #xRadius   the horizontal radius
+    entry #yRadius   the vertical radius
+    entry #angle   the rotation of the axes, an `Angle`; not written to the element
+    entry #transforms   the transforms, written as the `transform` attribute
+    entry #style   the inline CSS, or `Unset`
+    entry #id   the identifier, or `Unset`
+    entry #circle   whether the two radii are equal, so the element is a `<circle>`
+  entry .Group   a `<g>`: figures that move, style and identify together
+    detail
+        `Group(figures, id = Unset, style = Unset, transforms = Nil)`. A chart's axes, or one of
+        its series, is a group, so the whole part can be found and replaced by its identifier
+        when it changes. Its `fonts` are those of the letterings within, so an `Svg` carries
+        one `@font-face` per typeface however deeply the text is nested.
 
-entry .Ellipse   an `<ellipse>`, or a `<circle>` when its radii are equal
-  detail
-      `Ellipse(center, xRadius, yRadius, angle, transforms = Nil, style = Unset, id = Unset)`.
-      The `angle` is kept on the value but not yet written to the element: an ellipse renders
-      with `cx`, `cy`, `rx` and `ry` (or `r`, as a `<circle>`, when `#circle` is true). `Circle`
-      makes one with equal radii and a zero angle, and a parsed `<circle>` is an `Ellipse` too.
+        ```scala
+        import soundness.*
 
-      ```scala
-      import soundness.*
+        Svg.Group(List(Svg.Rectangle((0, 0), 1, 1), Circle((0, 0), 1)), id = Svg.Id(t"pair")).in[Xml].show
+        // <g id="pair"><rect x="0.0" y="0.0" width="1.0" height="1.0"/><circle cx="0.0" cy="0.0" r="1.0"/></g>
 
-      Ellipse((1, 2), 3, 4, Angle(0)).in[Xml].show   // <ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>
-      Ellipse((0, 0), 5, 5, Angle(0)).in[Xml].show   // <circle cx="0.0" cy="0.0" r="5.0"/>
-      ```
-  refer savagery.Circle
-  entry #center   the centre
-  entry #xRadius   the horizontal radius
-  entry #yRadius   the vertical radius
-  entry #angle   the rotation of the axes, an `Angle`; not written to the element
-  entry #transforms   the transforms, written as the `transform` attribute
-  entry #style   the inline CSS, or `Unset`
-  entry #id   the identifier, or `Unset`
-  entry #circle   whether the two radii are equal, so the element is a `<circle>`
+        Svg.Group(Nil).translate(Delta(1, 2)).in[Xml].show   // <g transform="translate(1.0,2.0)"/>
+        ```
+    entry #figures   the figures, in drawing order
+    entry #id   the identifier, or `Unset`
+    entry #style   the inline CSS, or `Unset`
+    entry #transforms   the transforms, applied to every figure within
+    entry #fonts   the fonts of every lettering within, recursively
+  entry .Polyline   a `<polyline>` through absolute points, or a `<polygon>` when closed
+    detail
+        `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`. The
+        shape of a plotted line, the area under it, or a bar's outline, without a path
+        operation per vertex: a plotted line and the filled area beneath it are the same figure
+        with one flag different.
+
+        ```scala
+        import soundness.*
+
+        Svg.Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))).in[Xml].show
+        // <polyline points="0.0,0.0 10.0,5.0 20.0,0.0"/>
+
+        Svg.Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true).in[Xml].show
+        // <polygon points="0.0,0.0 10.0,5.0 20.0,0.0"/>
+        ```
+    entry #points   the vertices, in order
+    entry #closed   whether the last point joins the first: a `<polygon>` rather than a `<polyline>`
+    entry #id   the identifier, or `Unset`
+    entry #style   the inline CSS, or `Unset`
+    entry #transforms   the transforms, written as the `transform` attribute
+  entry .Lettering   a `<text>`: a run of characters set at a position, anchored at its start, middle or end
+    detail
+        `Lettering(position, text, anchor = Anchor.Start, baseline = Unset, id = Unset, style =
+        Unset, font = Unset, transforms = Nil)`. Named for what it is in a drawing, since `Text`
+        is the string type. The `#anchor` says whether the position is the start, middle or end
+        of the run (`text-anchor`, omitted for `Start`), and the `#baseline` which line of the
+        glyphs lies on the position (`dominant-baseline`, left to the renderer when unset). The
+        text is escaped: `a < b` renders as `a &lt; b`.
+
+        ```scala
+        import soundness.*
+
+        Svg.Lettering((1, 2), t"Hi", Svg.Lettering.Anchor.Middle, Svg.Lettering.Baseline.Hanging).in[Xml].show
+        // <text x="1.0" y="2.0" text-anchor="middle" dominant-baseline="hanging">Hi</text>
+        ```
+
+        The `#font` is a `Font in Web`: a face paired with a provision for its typeface, which
+        exists only where such a provision is in scope, so a typeface without one cannot letter
+        an SVG. The font's declarations (`font-family`, `font-weight`, …) join the inline
+        style, and the `Svg` writes a `<style>` of `@font-face` rules for every typeface its
+        lettering names into its definitions; a generic family such as `Web.sansSerifFont` adds
+        none.
+
+        ```scala
+        import soundness.*
+
+        given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+        Svg.Lettering((0, 0), t"x", font = Font(Typeface["Menlo"].bold)).font.let(_.face.weight)   // Weight.Bold
+        Svg.Lettering((1, 2), t"Hi", font = Web.sansSerifFont).in[Xml].show
+        // <text x="1.0" y="2.0" style="font-family: sans-serif; font-weight: 400">Hi</text>
+        ```
+
+        `Font(face)` infers the medium from the `Optional[Font in Web]` field it is assigned to;
+        elsewhere write `Web.font(face)`.
+    entry .Anchor   where the text sits relative to its position: `Start`, `Middle` or `End`
+      detail
+          The `text-anchor` attribute, written only when it is not `Start`.
+      entry #text   the attribute value: `start`, `middle` or `end`
+    entry .Baseline   which line of the text lies on the position: `Alphabetic`, `Middle` or `Hanging`
+      detail
+          The `dominant-baseline` attribute. An unset baseline leaves it to the renderer, which
+          is the alphabetic baseline; `Hanging` hangs the text below the position, as a label
+          under an axis wants.
+      entry #text   the attribute value: `alphabetic`, `middle` or `hanging`
+    entry #position   the anchor point
+    entry #text   the characters, escaped when written
+    entry #anchor   the `Lettering.Anchor`
+    entry #baseline   the `Lettering.Baseline`, or `Unset`
+    entry #id   the identifier, or `Unset`
+    entry #style   the inline CSS, or `Unset`; the font's declarations are appended to it
+    entry #font   the `Font in Web`, or `Unset` for the renderer's default
+    entry #transforms   the transforms, written as the `transform` attribute
+    entry #fonts   the font, as a one-element list, or none
 
 entry .Circle   makes an `Ellipse` with equal radii: a `<circle>`
   detail
-      `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` is an `Ellipse`
+      `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` is an `Svg.Ellipse`
       with both radii the radius and a zero angle. There is no `Circle` type: a match over
-      figures sees an `Ellipse` whose `circle` is true.
+      figures sees an `Svg.Ellipse` whose `circle` is true.
 
       ```scala
       import soundness.*
@@ -395,104 +487,6 @@ entry .Circle   makes an `Ellipse` with equal radii: a `<circle>`
       ```
   entry .apply   `Circle(center, radius, transforms, style, id)`: the ellipse of that radius
 
-entry .Group   a `<g>`: figures that move, style and identify together
-  detail
-      `Group(figures, id = Unset, style = Unset, transforms = Nil)`. A chart's axes, or one of
-      its series, is a group, so the whole part can be found and replaced by its identifier
-      when it changes. Its `fonts` are those of the letterings within, so an `Svg` carries
-      one `@font-face` per typeface however deeply the text is nested.
-
-      ```scala
-      import soundness.*
-
-      Group(List(Rectangle((0, 0), 1, 1), Circle((0, 0), 1)), id = Svg.Id(t"pair")).in[Xml].show
-      // <g id="pair"><rect x="0.0" y="0.0" width="1.0" height="1.0"/><circle cx="0.0" cy="0.0" r="1.0"/></g>
-
-      Group(Nil).translate(Delta(1, 2)).in[Xml].show   // <g transform="translate(1.0,2.0)"/>
-      ```
-  entry #figures   the figures, in drawing order
-  entry #id   the identifier, or `Unset`
-  entry #style   the inline CSS, or `Unset`
-  entry #transforms   the transforms, applied to every figure within
-  entry #fonts   the fonts of every lettering within, recursively
-
-entry .Polyline   a `<polyline>` through absolute points, or a `<polygon>` when closed
-  detail
-      `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`. The
-      shape of a plotted line, the area under it, or a bar's outline, without a path
-      operation per vertex: a plotted line and the filled area beneath it are the same figure
-      with one flag different.
-
-      ```scala
-      import soundness.*
-
-      Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))).in[Xml].show
-      // <polyline points="0.0,0.0 10.0,5.0 20.0,0.0"/>
-
-      Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true).in[Xml].show
-      // <polygon points="0.0,0.0 10.0,5.0 20.0,0.0"/>
-      ```
-  entry #points   the vertices, in order
-  entry #closed   whether the last point joins the first: a `<polygon>` rather than a `<polyline>`
-  entry #id   the identifier, or `Unset`
-  entry #style   the inline CSS, or `Unset`
-  entry #transforms   the transforms, written as the `transform` attribute
-
-entry .Lettering   a `<text>`: a run of characters set at a position, anchored at its start, middle or end
-  detail
-      `Lettering(position, text, anchor = Anchor.Start, baseline = Unset, id = Unset, style =
-      Unset, font = Unset, transforms = Nil)`. Named for what it is in a drawing, since `Text`
-      is the string type. The `#anchor` says whether the position is the start, middle or end
-      of the run (`text-anchor`, omitted for `Start`), and the `#baseline` which line of the
-      glyphs lies on the position (`dominant-baseline`, left to the renderer when unset). The
-      text is escaped: `a < b` renders as `a &lt; b`.
-
-      ```scala
-      import soundness.*
-
-      Lettering((1, 2), t"Hi", Lettering.Anchor.Middle, Lettering.Baseline.Hanging).in[Xml].show
-      // <text x="1.0" y="2.0" text-anchor="middle" dominant-baseline="hanging">Hi</text>
-      ```
-
-      The `#font` is a `Font in Web`: a face paired with a provision for its typeface, which
-      exists only where such a provision is in scope, so a typeface without one cannot letter
-      an SVG. The font's declarations (`font-family`, `font-weight`, …) join the inline
-      style, and the `Svg` writes a `<style>` of `@font-face` rules for every typeface its
-      lettering names into its definitions; a generic family such as `Web.sansSerifFont` adds
-      none.
-
-      ```scala
-      import soundness.*
-
-      given (Typeface of "Menlo") is Typesettable in Web = Web.local()
-
-      Lettering((0, 0), t"x", font = Font(Typeface["Menlo"].bold)).font.let(_.face.weight)   // Weight.Bold
-      Lettering((1, 2), t"Hi", font = Web.sansSerifFont).in[Xml].show
-      // <text x="1.0" y="2.0" style="font-family: sans-serif; font-weight: 400">Hi</text>
-      ```
-
-      `Font(face)` infers the medium from the `Optional[Font in Web]` field it is assigned to;
-      elsewhere write `Web.font(face)`.
-  entry .Anchor   where the text sits relative to its position: `Start`, `Middle` or `End`
-    detail
-        The `text-anchor` attribute, written only when it is not `Start`.
-    entry #text   the attribute value: `start`, `middle` or `end`
-  entry .Baseline   which line of the text lies on the position: `Alphabetic`, `Middle` or `Hanging`
-    detail
-        The `dominant-baseline` attribute. An unset baseline leaves it to the renderer, which
-        is the alphabetic baseline; `Hanging` hangs the text below the position, as a label
-        under an axis wants.
-    entry #text   the attribute value: `alphabetic`, `middle` or `hanging`
-  entry #position   the anchor point
-  entry #text   the characters, escaped when written
-  entry #anchor   the `Lettering.Anchor`
-  entry #baseline   the `Lettering.Baseline`, or `Unset`
-  entry #id   the identifier, or `Unset`
-  entry #style   the inline CSS, or `Unset`; the font's declarations are appended to it
-  entry #font   the `Font in Web`, or `Unset` for the renderer's default
-  entry #transforms   the transforms, written as the `transform` attribute
-  entry #fonts   the font, as a one-element list, or none
-
 entry .Stroke   one operation of a path's data: a move, a line, a curve, an arc or a close
   detail
       The cases pair an absolute form, suffixed `To` and taking `Point`s, with a relative one
@@ -501,7 +495,7 @@ entry .Stroke   one operation of a path's data: a move, a line, a curve, an arc 
       is `Optional`: `Unset` continues smoothly from the previous curve, as `S` / `s`),
       `QuadraticTo(ctrl1, point)` / `Quadratic(ctrl1, shift)` (likewise `T` / `t` when the
       control point is unset), `ArcTo(rx, ry, angle, largeArc, sweep, point)` / `Arc(…, shift)`
-      and `Close`. An `Outline` holds a list of them, most recent first, and its fluent
+      and `Close`. An `Svg.Outline` holds a list of them, most recent first, and its fluent
       methods make them; a pie chart's wedges are built from `MoveTo`, `DrawTo`, `ArcTo` and
       `Close` directly.
 
@@ -515,10 +509,10 @@ entry .Stroke   one operation of a path's data: a move, a line, a curve, an arc 
             Stroke.DrawTo(Point(0, -10)),
             Stroke.MoveTo(Point(0, 0)) )
 
-      Outline(wedge).in[Xml].show
+      Svg.Outline(wedge).in[Xml].show
       // <path d="M 0.0 0.0 L 0.0 -10.0 A 10.0 10.0 0.0 0 1 10.0 0.0 Z"/>
       ```
-  refer savagery.Outline
+  refer savagery.Svg.Outline
   refer savagery.Sweep
   entry .inspectable   renders a stroke by its case name with its fields, `MoveTo(Point(x:0.0F ╱ y:0.0F))`
       Spelt out rather than derived, since the path-data form (`A 3.0 4.0 0.0 1 0 …`) drops
@@ -566,8 +560,8 @@ entry .Transform   one entry of a `transform` attribute: translate, scale, rotat
 entry .Transformable   a figure whose transform list can be read and replaced, so the fluent transforms apply to it
   detail
       `value is Transformable` gives `transforms(value)` and `withTransforms(value, list)`.
-      The companion has instances for `Rectangle`, `Outline`, `Ellipse`, `Group`, `Polyline`,
-      `Lettering` and `Svg` itself, which is what the `translate`, `scale`, `rotate`, `skew`
+      The companion has instances for `Svg.Rectangle`, `Svg.Outline`, `Svg.Ellipse`, `Svg.Group`, `Svg.Polyline`,
+      `Svg.Lettering` and `Svg` itself, which is what the `translate`, `scale`, `rotate`, `skew`
       and `transform` extensions require. `Transformable(get, put)` makes one for a type of
       your own from a pair of pure functions.
   refer savagery.transform
@@ -595,10 +589,10 @@ entry .translate   appends a translation by a `Delta`: `figure.translate(Delta(3
     ```scala
     import soundness.*
 
-    Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show
+    Svg.Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show
     // <rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>
 
-    Rectangle((0, 0), 10, 5).translate(+(3, 4))   // the same, with a tuple as the delta
+    Svg.Rectangle((0, 0), 10, 5).translate(+(3, 4))   // the same, with a tuple as the delta
     ```
 
 entry .scale   appends a scale, uniform or by two factors: `figure.scale(2.0f)` or `figure.scale(2.0f, 3.0f)`
@@ -607,7 +601,7 @@ entry .rotate   appends a rotation by an `Angle` about the origin: `figure.rotat
     ```scala
     import soundness.*
 
-    Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).in[Xml].show
+    Svg.Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).in[Xml].show
     // <rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>
     ```
 
@@ -621,8 +615,8 @@ entry .Point   a position: an `x` and a `y`, as `Float`s
       `Point(x, y)`, held as a mosquito `Vector[Float, 2]`. A `Point` and a `Delta` are
       different types for different things: a point plus a delta is a point, a point minus a
       point is a delta, and two points do not add. A pair of numbers of any numeric type
-      converts to a `Point` where one is expected, so `Rectangle((0, 0), 10, 5)` and
-      `Outline().moveTo((3, 4))` need no constructor.
+      converts to a `Point` where one is expected, so `Svg.Rectangle((0, 0), 10, 5)` and
+      `Svg.Outline().moveTo((3, 4))` need no constructor.
 
       ```scala
       import soundness.*
@@ -655,13 +649,13 @@ entry .Delta   a displacement: a `dx` and a `dy`, as `Float`s
       ```scala
       import soundness.*
 
-      val step: Delta = 7*Up + 3*Right   // Delta(3.0, -7.0): SVG's y-axis points down
+      val step: Delta = 7*Delta.Up + 3*Delta.Right   // Delta(3.0, -7.0): SVG's y-axis points down
       -Delta(3, 4)                       // Delta(-3.0, -4.0)
       Delta(1, 2) + Delta(3, 4)          // Delta(4.0, 6.0)
       Delta(1, -2).inspect               // t"Delta(dx:1.0F ╱ dy:-2.0F)"
       ```
   refer savagery.Point
-  refer savagery.Up
+  refer savagery.Delta.Up
   entry .apply   `Delta(dx, dy)` from two `Float`s
   entry .showable   the two components separated by a space, as path data writes a relative step
   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`, labelled to distinguish it from a `Point`
@@ -678,14 +672,11 @@ entry .Delta   a displacement: a `dx` and a `dy`, as `Float`s
   entry #dx   the horizontal component
   entry #dy   the vertical component, positive downward
 
-entry .Up   the unit delta upward: `Delta(0, -1)`, since SVG's y-axis points down
-    `7*Up` is `Delta(0, -7)`.
-
-entry .Down   the unit delta downward: `Delta(0, 1)`
-
-entry .Left   the unit delta leftward: `Delta(-1, 0)`
-
-entry .Right   the unit delta rightward: `Delta(1, 0)`
+  entry .Up   the unit delta upward: `Delta(0, -1)`, since SVG's y-axis points down
+      `7*Up` is `Delta(0, -7)`.
+  entry .Down   the unit delta downward: `Delta(0, 1)`
+  entry .Left   the unit delta leftward: `Delta(-1, 0)`
+  entry .Right   the unit delta rightward: `Delta(1, 0)`
 
 entry .unary_+   a tuple of two numbers as a `Delta`: `+(3, 4)` is `Delta(3, 4)`
     An extension on any pair of numeric types, so a displacement can be written without the

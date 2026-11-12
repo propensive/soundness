@@ -260,7 +260,7 @@ private[octogenarian] object Operations:
 
   def listRemotes(backend: Git.Backend^, gitDir: Path on Linux)
     ( using Tactic[Git.Error] )
-  :   List[Remote] =
+  :   List[Git.Remote] =
 
     val config = backend.configRead(localConfig(gitDir))
 
@@ -274,7 +274,7 @@ private[octogenarian] object Operations:
       val pushKey = Git.Config.Key(remoteSection, name, pushurlName)
       val url = setting(config, urlKey).or(t"")
       val push = setting(config, pushKey)
-      Remote(name, url, push)
+      Git.Remote(name, url, push)
 
   def upstream(backend: Git.Backend^, gitDir: Path on Linux, branch: Git.Branch)
     ( using Tactic[Git.Error] )
@@ -296,7 +296,7 @@ private[octogenarian] object Operations:
       url:     Text,
       fetch:   Optional[Git.Refspec] )
     ( using Tactic[Git.Error] )
-  :   Remote =
+  :   Git.Remote =
 
     if listRemotes(backend, gitDir).exists(_.name == name) then
       abort(Git.Error(Reason.RemoteExists(name)))
@@ -305,7 +305,7 @@ private[octogenarian] object Operations:
     backend.configWrite(source, Git.Config.Key(remoteSection, name, urlName), url, false)
     val refspec = fetch.or(Git.Refspec(t"refs/heads/*", t"refs/remotes/$name/*", true))
     backend.configWrite(source, Git.Config.Key(remoteSection, name, fetchName), refspec.text, false)
-    Remote(name, url)
+    Git.Remote(name, url)
 
   def removeRemote(backend: Git.Backend^, gitDir: Path on Linux, name: Text)
     ( using Tactic[Git.Error] )

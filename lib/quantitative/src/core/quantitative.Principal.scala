@@ -40,5 +40,6 @@ object Principal:
   given luminosity: Principal[Luminosity, Candelas]()
   given heat: Principal[Heat, Kelvins]()
   given amountOfSubstance: Principal[AmountOfSubstance, Moles]()
+  given information: Principal[Information, Bytes]()
 
 trait Principal[dimension <: Dimension, unit[_ <: Nat] <: Measure]()

@@ -59,7 +59,7 @@ object Httpd:
   enum Event:
     case Received(request: Http.Request) extends Event, Log.Network, Log.Protocol
     case Processed(request: Http.Request, duration: Long) extends Event, Log.Network
-    case BrokenStream(length: Bytes) extends Event, Log.Network
+    case BrokenStream(length: Memory) extends Event, Log.Network
     // Qualified: the sibling `Httpd.Error` would otherwise capture this bare name,
     // since a member of the enclosing object outranks a wildcard import.
     case ConnectionFailed(error: fulminate.Error) extends Event, Log.Network

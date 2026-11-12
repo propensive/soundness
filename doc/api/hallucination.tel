@@ -14,7 +14,7 @@ detail
     bytes which are not the format named is a typed `Raster.Error`, not a null.
 
     A raster may also carry its **pixel layout** in its type — `Raster by Rgba`, or `Raster
-    by (Red[5], Green[6], Blue[5])` — which is a tuple of iridescence `Channel` types, most
+    by (Channel.Red[5], Channel.Green[6], Channel.Blue[5])` — which is a tuple of iridescence `Channel` types, most
     significant first. A layout-typed raster's `pixel` reads a `Pixel[layout]` with one shift
     and mask computed as the code compiles, and `repack` converts between layouts. Whatever
     its layout, a raster's `descriptor` is the runtime mirror of that layout, for the
@@ -130,7 +130,7 @@ entry .Raster   an immutable raster image: pixels in a known layout, with its fo
       every coordinate, row by row from the top left, packing each `Chroma` as 24-bit RGB,
       and gives a `Raster by Rgb`. `Raster[layout](width, height)((x, y) => pixel)` takes a
       `Pixel[layout]` per coordinate and gives a `Raster by layout`, in the storage primitive
-      the layout's total bit depth needs, so a raster of `(Red[5], Green[6], Blue[5])` pixels
+      the layout's total bit depth needs, so a raster of `(Channel.Red[5], Channel.Green[6], Channel.Blue[5])` pixels
       is stored two bytes per pixel.
 
       ```scala
@@ -290,7 +290,7 @@ entry .Raster   an immutable raster image: pixels in a known layout, with its fo
       or `Rgba`.
   entry #Operand   the pixel layout, a tuple of channel types, when the raster's type states it
       The type member behind `Raster by Rgba`: a `Tuple` of iridescence channel types such
-      as `Red[8]`. It is a phantom: the layout is fixed when the raster is built, and the
+      as `Channel.Red[8]`. It is a phantom: the layout is fixed when the raster is built, and the
       refinement records it for `pixel` and the canvas. A raster read from bytes has no
       layout in its type; `repack[Rgba]` gives it one.
   entry #apply   the pixel at `(x, y)` as a `Chroma`, whatever the layout
@@ -443,7 +443,7 @@ entry .Descriptor   the runtime mirror of a pixel layout: each channel's label a
     entry #depth   the channel's width in bits
   entry .rgb   the descriptor of the eight-bit `Rgb` layout
   entry .rgba   the descriptor of the eight-bit `Rgba` layout
-  entry .of   the descriptor of a static layout: `Descriptor.of[(Red[5], Green[6], Blue[5])]`
+  entry .of   the descriptor of a static layout: `Descriptor.of[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]`
       An inline method which walks the layout tuple as the code compiles, reading each
       channel's label and depth from iridescence's `Channel` type functions, and builds the
       entries as values.
@@ -679,7 +679,7 @@ entry .repack   a copy of a raster in another pixel layout: `raster.repack[Rgba]
     val rgba = stripes.repack[Rgba]
     rgba.pixel(0, 2).alpha   // 255
 
-    val packed = Raster(1, 1)((x, y) => Chroma(255, 0, 51)).repack[(Red[5], Green[6], Blue[5])]
+    val packed = Raster(1, 1)((x, y) => Chroma(255, 0, 51)).repack[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]
     packed.pixel(0, 0).red   // 31
     packed.pixel(0, 0).blue  // 6
     ```

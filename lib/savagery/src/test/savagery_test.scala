@@ -38,6 +38,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
 import denominative.dysasymptotics.linearSize
+import savagery.Svg.{Ellipse, Group, Lettering, Outline, Polyline, Rectangle}
 
 object Tests extends Suite("svg", m"Savagery tests"):
   def run(): Unit =
@@ -300,7 +301,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
       .assert(_ == (3.0f, 4.0f))
 
       test(m"Scalar * Delta sum produces Delta"):
-        val result: Delta = 7*Up + 3*Right
+        val result: Delta = 7*Delta.Up + 3*Delta.Right
         (result.dx, result.dy)
       .assert(_ == (3.0f, -7.0f))
 
