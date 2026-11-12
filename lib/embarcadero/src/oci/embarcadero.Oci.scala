@@ -32,6 +32,8 @@
                                                                                                   */
 package embarcadero
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import fulminate.*
 import gesticulate.*
@@ -105,7 +107,6 @@ object Oci:
 
   object Image:
     import scala.caps
-    import scala.collection.mutable as scm
     import anticipation.*
     import aperture.*
     import bitumen.*
@@ -414,7 +415,6 @@ object Oci:
       index:              Index,
       indexBytes:         Data ):
     import scala.caps
-    import scala.collection.mutable as scm
     import anticipation.*
     import aperture.*
     import bitumen.*
