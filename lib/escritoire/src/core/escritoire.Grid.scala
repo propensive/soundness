@@ -59,7 +59,7 @@ object Grid:
   // cell's decoration (a background, say) covers its whole width — padding included —
   // while the rules stay undecorated. Line widths are unchanged: the padding moved, it
   // was not added, so the `rule` joint arithmetic below is unaffected.
-  def rowLines[text](style: TableStyle, widths: Array[Int]^{}, row: TableRow[text])
+  def rowLines[text](style: Table.Style, widths: Array[Int]^{}, row: Table.Row[text])
     ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
   :   IndexedSeq[text] =
 
@@ -96,7 +96,7 @@ object Grid:
   // A horizontal rule across columns of the given widths. Every rule adjoins at least one
   // row of columns, whose shared `widths` it takes unconditionally; `above`/`below` say which
   // side(s) those columns are on.
-  def rule[text](style: TableStyle, widths: Array[Int]^{}, above: Boolean, below: Boolean)
+  def rule[text](style: Table.Style, widths: Array[Int]^{}, above: Boolean, below: Boolean)
     ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
   :   text =
 
@@ -134,12 +134,12 @@ object Grid:
               bottom = vertical(descenders, style.innerLines),
               left   = horizontal.or(BoxLine.Blank) )
 
-case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
+case class Grid[text](sections: List[Table.Section[text]], style: Table.Style):
   def render
     ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
   :   Chain[text] =
 
-    def recur(widths: Array[Int]^{}, rows: Chain[TableRow[text]]): Chain[text] =
+    def recur(widths: Array[Int]^{}, rows: Chain[Table.Row[text]]): Chain[text] =
       rows match
         case row #:: tail => Grid.rowLines(style, widths, row).to(Chain) #::: recur(widths, tail)
         case _            => Chain()

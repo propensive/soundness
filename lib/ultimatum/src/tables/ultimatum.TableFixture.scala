@@ -52,7 +52,7 @@ object TableFixture:
   // it is only invoked from measure/render while the hosting form is live. Hence the single,
   // localised `unsafeAssumePure`.
   def apply(content: => Tabulation[Teletype])
-    ( using TableStyle, Text is Measurable, Hyphenation )
+    ( using Table.Style, Text is Measurable, Hyphenation )
   :   TableFixture =
 
     // [by-name-capture] by-name table content laundered to pure thunk
@@ -63,7 +63,7 @@ object TableFixture:
 // data changes, and rendering replays the lines the measure settled on. Call `refresh()`
 // after changing the underlying data to wake the form and re-render.
 class TableFixture(content: () -> Tabulation[Teletype])
-  ( using style: TableStyle, metric: Text is Measurable, hyphenation: Hyphenation )
+  ( using style: Table.Style, metric: Text is Measurable, hyphenation: Hyphenation )
 extends Fixture:
 
   // A no-op until the fixture is bound into a running form; see `bindWake`.

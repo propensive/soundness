@@ -46,7 +46,7 @@ import vacuous.*
 object Tabulation:
   given printable: [text]
   =>  ( textual: text is Textual { type Result = Char }, printable: text is Printable )
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
+  =>  ( Text is Measurable, Table.Style, Attenuation, polysyllabic.Hyphenation )
   =>  Tabulation[text] is Printable =
 
     (tabulation, termcap) =>
@@ -65,7 +65,7 @@ abstract class Tabulation[text: ClassTag]():
 
   // The layout of every column at `width`, from the titles' and every row's claims.
   def layout(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
+    ( using style: Table.Style, metrics: Text is Measurable )
     ( using textual: text is Textual { type Result = Char } )
     ( using attenuation: Attenuation^ )
   :   Layout[Row, text] =
@@ -76,7 +76,7 @@ abstract class Tabulation[text: ClassTag]():
     Layout.solve(columns, titleCells, aggregates, width, style)
 
   def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
+    ( using style: Table.Style, metrics: Text is Measurable )
     ( using textual: text is Textual { type Result = Char } )
     ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
   :   Grid[text] =
@@ -87,20 +87,20 @@ abstract class Tabulation[text: ClassTag]():
     val layout = Layout.solve(columns, titleCells, aggregates, width, style)
 
     def lines(data: List[Cells[text]], decorations2: List[List[Optional[text -> text]]])
-    :   Chain[TableRow[text]] =
+    :   Chain[Table.Row[text]] =
 
       // The decorations are consumed one row at a time alongside `data`, which is shorter or
       // longer at will, so this is a `zipAll`, not a `zip`; strict, because the iterator is
       // exclusive and cannot be captured by a lazy chain.
       val decorationIterator = Iterator.from(List.iterator(decorations2))
 
-      val rows: List[TableRow[text]] = data.map: cells =>
+      val rows: List[Table.Row[text]] = data.map: cells =>
         layout.tableRow(cells, decorationIterator.seek(_ => true)(Nil)(identity(_)))
 
       rows.to[Chain]
 
     Grid
       ( List
-          ( TableSection(layout.widths, lines(titleCells, Nil)),
-            TableSection(layout.widths, lines(rowCells, decorations)) ),
+          ( Table.Section(layout.widths, lines(titleCells, Nil)),
+            Table.Section(layout.widths, lines(rowCells, decorations)) ),
         style )

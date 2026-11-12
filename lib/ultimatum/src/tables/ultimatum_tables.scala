@@ -41,7 +41,7 @@ import ultimatum.Tui.{Pane, Sizing}
 
 // A pane hosting a live table.
 def tabular(content: => Tabulation[Teletype])
-  ( using TableStyle, Text is Measurable, Hyphenation )
+  ( using Table.Style, Text is Measurable, Hyphenation )
 :   Pane =
 
   Pane.Widget(Sizing(), TableFixture(content))

@@ -44,7 +44,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
   val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
 
   def render[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
-     (using TableStyle, Attenuation^)
+     (using Table.Style, Attenuation^)
   :   List[Text] =
     scaffold.tabulate(data).grid(width).render.to[List]
 
@@ -257,7 +257,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
     test(m"TableRelabelling overrides a derived column title"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
+      given Table.Relabelling[Person] = () => Map(t"name" -> t"Full Name")
       summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to[List].head.or(t"")
     . assert(_ == t"╭───────────┬─────╮")
 
@@ -353,7 +353,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
     // The table rendered row by row against a layout the rows were admitted to one at a time:
     // what a live view does, and what must match `grid.render` line for line.
     def incremental[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
-       (using TableStyle, Attenuation^)
+       (using Table.Style, Attenuation^)
     :   List[Text] =
       val cells: List[Cells[Text]] = data.map(scaffold.cells(_))
       val layout = cells.fold(scaffold.layout(width)) { (layout, cells) => layout.extend(cells) }
@@ -402,7 +402,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
 
     test(m"rendering row by row against an incremental layout matches the grid, in every style"):
       import columnAttenuation.ignoreAttenuation
-      val styles: List[TableStyle] =
+      val styles: List[Table.Style] =
         List(tableStyles.thickTableStyle, tableStyles.horizontalTableStyle, tableStyles.midOnlyTableStyle,
             tableStyles.minimalTableStyle, tableStyles.thinRoundedTableStyle, tableStyles.verticalTableStyle)
 
@@ -412,7 +412,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
             Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
 
       styles.all: style =>
-        given TableStyle = style
+        given Table.Style = style
         render(scaffold, people, 40) == incremental(scaffold, people, 40)
         && render(wrapping, people, 18) == incremental(wrapping, people, 18)
         && render(truncating, people, 40) == incremental(truncating, people, 40)

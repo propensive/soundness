@@ -1193,7 +1193,7 @@ entry .TableFixture   a live escritoire table as a pane, laid out afresh at ever
       renders overflowing (escritoire's `ignoreAttenuation`) rather than failing. Call
       `#refresh` after changing the underlying data to wake the form and re-render.
 
-      It needs a `TableStyle`, a `Text is Measurable` and a `Hyphenation` in scope when
+      It needs a `Table.Style`, a `Text is Measurable` and a `Hyphenation` in scope when
       built, which are the same three a static table needs. `tabular` wraps one in a pane.
 
       ```scala
@@ -1219,7 +1219,7 @@ entry .TableFixture   a live escritoire table as a pane, laid out afresh at ever
   refer ultimatum.tabular
   refer ultimatum.Fixture
   entry .apply   a fixture over by-name table content, with the style, metric and hyphenation in scope
-      `TableFixture(content: => Tabulation[Teletype])(using TableStyle, Text is Measurable,
+      `TableFixture(content: => Tabulation[Teletype])(using Table.Style, Text is Measurable,
       Hyphenation)`.
   entry #refresh   wakes the running form to re-measure and re-render, after the data has changed
   entry #measure   lays the table out at a width and returns its rendered width and row count
@@ -1230,7 +1230,7 @@ entry .TableFixture   a live escritoire table as a pane, laid out afresh at ever
 entry .tabular   a pane hosting a live table, from by-name `Tabulation[Teletype]` content
     `tabular(content)` is a `Tui.Pane.Widget` with a default `Tui.Sizing` over a `TableFixture`:
     the table is laid out afresh at whatever width the layout gives it, on every frame,
-    and its data is re-read each time. It needs a `TableStyle`, a `Text is Measurable` and
+    and its data is re-read each time. It needs a `Table.Style`, a `Text is Measurable` and
     a `Hyphenation` in scope. The style is fixed when the pane is built, so a table under
     a different style is a different pane:
 

@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **358**;
-  153 sit in a prefix family of two or more, across 47 families, and
-  205 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **353**;
+  147 sit in a prefix family of two or more, across 46 families, and
+  206 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -299,7 +299,6 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | `Secure*` | coaxial | 2 | `SecureEndpoint`, `SecurePort` |
 | `Ssh*` | octogenarian | 5 | `SshAddress`, `SshCommand`, `SshKeygen`, `SshNative`, `SshUrl` |
 | `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
-| `Table*` | escritoire, ultimatum | 6 | `TableCell`, `TableFixture`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
 | `Tar*` | bitumen | 2 | `TarBuilder`, `TarOpenable` |
 | `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph | 6 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextRun`, `TextSanitizer`, `TextStyle` |
 | `Textual*` | dendrology | 3 | `TextualDagStyle`, `TextualLaneDagStyle`, `TextualTreeStyle` |
@@ -350,7 +349,7 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 | variants, not satellites | ultimatum, tasseomancy | 2 | `ScrollFixture`, `StackedBars` |
 | capability and category markers (R3) | anticipation, galilei | 3 | `CreationTimed`, `EmailAddresses`, `IpAddresses` |
 
-### Singletons (205)
+### Singletons (206)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `ArOpenable`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AttemptTactic`, `BaseLayout`,
@@ -382,13 +381,14 @@ terminal layout tree, the less general of the two meanings. It heads the R8 tabl
 `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
 `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `StandardMetadata`,
 `StaticAnnotation`, `StreamOutputStream`, `StressSearch`, `SubOp`, `SymmetricKey`,
-`SyntaxMatcher`, `TastyPalette`, `TeletypeFormattable`, `TelReader`, `TemperatureScale`,
-`TemporaryDirectory`, `TerminalBoard`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`,
-`TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
-`UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UserId`,
-`ValueToken`, `VentureTactic`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`,
-`WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`,
-`WireType`, `WitDialect`, `WritingBuilder`, `WsSessional`, `XmlSchema`, `YamlPath`
+`SyntaxMatcher`, `TableFixture`, `TastyPalette`, `TeletypeFormattable`, `TelReader`,
+`TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `ThemeColor`, `ThrowTactic`,
+`TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`,
+`TypescriptDialect`, `UdpResponse`, `UncheckedError`, `UniformDistribution`, `UnitsNames`,
+`UnusedFeature`, `UrlPalette`, `UserId`, `ValueToken`, `VentureTactic`, `VersoPanel`,
+`VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`,
+`WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WitDialect`, `WritingBuilder`, `WsSessional`,
+`XmlSchema`, `YamlPath`
 
 ## Retained from the original inventory
 

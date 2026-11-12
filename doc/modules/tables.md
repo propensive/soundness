@@ -196,7 +196,7 @@ to slack in some other way is an ordinary implementation of the same interface.
 
 ### Styles
 
-The box drawing is a `TableStyle` given. The style is a change of import, not of the code
+The box drawing is a `Table.Style` given. The style is a change of import, not of the code
 which defines the table. `thinRoundedTableStyle` draws light rules throughout, with rounded
 corners:
 
@@ -272,11 +272,11 @@ height, according to their `VerticalAlignment`: `Top`, `Middle` or `Bottom`.
 
 A derived table titles its columns from the names of the fields, capitalized, so
 `linesOfCode` becomes `Lines of code`. Where that is not the title which is wanted, a
-`TableRelabelling` overrides it by name. The Scala field keeps its name, and the table gets
+`Table.Relabelling` overrides it by name. The Scala field keeps its name, and the table gets
 its own:
 
 ```scala
-given relabelling: TableRelabelling[Codebase]:
+given relabelling: Table.Relabelling[Codebase]:
   def relabelling() = Map(t"linesOfCode" -> t"LoC")
 ```
 

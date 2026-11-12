@@ -182,7 +182,7 @@ lib/escapade/src/test/escapade_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0
 lib/escritoire/src/core/escritoire.Columnation.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/escritoire/src/core/escritoire.Grid.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0	0
 lib/escritoire/src/core/escritoire.Layout.scala	0	0	0	0	0	0	0	0	0	0	2	2	0	0	1	0	0
-lib/escritoire/src/core/escritoire.TableCell.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0
+lib/escritoire/src/core/escritoire.Table.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0
 lib/escritoire/src/core/escritoire.Tabulable.scala	0	0	0	0	0	0	0	0	0	0	2	0	1	0	0	0	0
 lib/escritoire/src/core/escritoire_core.scala	0	0	0	0	0	0	0	0	0	0	2	0	2	0	1	0	0
 lib/escritoire/src/example/example.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1

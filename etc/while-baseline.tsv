@@ -59,7 +59,7 @@ lib/escapade/src/core/escapade.Teletype.scala	6	16	1
 lib/escapade/src/core/escapade.internal.scala	1	1	0
 lib/escritoire/src/core/escritoire.Grid.scala	0	2	0
 lib/escritoire/src/core/escritoire.Layout.scala	0	9	0
-lib/escritoire/src/core/escritoire.TableRow.scala	0	1	0
+lib/escritoire/src/core/escritoire.Table.scala	0	1	0
 lib/espionage/src/core/espionage.Acp.scala	1	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	4	2	0
 lib/ethereal/src/core/ethereal.Session.scala	9	0	0
