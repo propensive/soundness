@@ -95,7 +95,7 @@ trait Tel2 extends Tel3:
   // supports write-back.
   given telViewOpenable: [source]
   =>  ( readable: (source is Readable to Tel)^,
-        mutationError: Tactic[Mutation.Error] )
+        mutationError: Tactic[Tel.Mutation.Error] )
   =>  ( Tel.ViewOpenable[source]^{readable, mutationError} ) =
     Tel.ViewOpenable[source]()
 
@@ -555,11 +555,11 @@ trait Tel2 extends Tel3:
           Tel.compound(t"", Array.empty, Array.from(compounds))
 
         // The §22.2 member description of a value, in field order — the
-        // input to `Mutation.construct` for the canonical forms below.
+        // input to `Tel.Mutation.construct` for the canonical forms below.
         private def membersOf(value: derivation^{})
-        :   scala.collection.immutable.List[Mutation.Member] =
+        :   scala.collection.immutable.List[Tel.Mutation.Member] =
 
-          val members = scala.collection.mutable.ListBuffer.empty[Mutation.Member]
+          val members = scala.collection.mutable.ListBuffer.empty[Tel.Mutation.Member]
 
           fields(value): [field] =>
             fieldValue =>
@@ -572,15 +572,15 @@ trait Tel2 extends Tel3:
                   // may be: `true` is the bare keyword, `false` is elided.
                   val encoded = contextual.encode(fieldValue)
 
-                  if encoded.primaryAtom == t"true" then members += Mutation.Member.Flag(keyword)
-                  else members += Mutation.Member.Break
+                  if encoded.primaryAtom == t"true" then members += Tel.Mutation.Member.Flag(keyword)
+                  else members += Tel.Mutation.Member.Break
 
                 case Tel.Nature.Scalar =>
                   val encoded = contextual.encode(fieldValue)
 
                   encoded.subtree match
                     case c: Tel.Compound =>
-                      members += Mutation.Member.Value(keyword, List(encoded.primaryAtom))
+                      members += Tel.Mutation.Member.Value(keyword, List(encoded.primaryAtom))
 
                     case d: Tel.Document =>
                       // A repeatable scalar field: all occurrences inline or
@@ -592,11 +592,11 @@ trait Tel2 extends Tel3:
                       // run, exactly like an absent Scalar member.
                       val children = d.children.bind(_.compounds)
 
-                      if children.length == 0 then members += Mutation.Member.Break
+                      if children.length == 0 then members += Tel.Mutation.Member.Break
                       else if children.length == 1
                       then
                         members +=
-                          Mutation.Member.Child(children.readUnchecked(0).copy(keyword = keyword))
+                          Tel.Mutation.Member.Child(children.readUnchecked(0).copy(keyword = keyword))
                       else
                         val texts = scala.collection.mutable.ListBuffer.empty[Text]
 
@@ -605,35 +605,35 @@ trait Tel2 extends Tel3:
                             ( if child.atoms.length == 0 then t""
                               else Positional.text(child.atoms.readUnchecked(0)) )
 
-                        members += Mutation.Member.Value(keyword, texts.to(List))
+                        members += Tel.Mutation.Member.Value(keyword, texts.to(List))
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
 
                   encoded.subtree match
                     case c: Tel.Compound =>
-                      members += Mutation.Member.Child(c.copy(keyword = keyword))
+                      members += Tel.Mutation.Member.Child(c.copy(keyword = keyword))
 
                     case d: Tel.Document =>
                       val children = d.children.bind(_.compounds)
 
-                      if children.length == 0 then members += Mutation.Member.Break
+                      if children.length == 0 then members += Tel.Mutation.Member.Break
                       else children.each: child =>
-                        members += Mutation.Member.Child(child.copy(keyword = keyword))
+                        members += Tel.Mutation.Member.Child(child.copy(keyword = keyword))
 
           members.toList
 
         // The canonical child form: this record's compound with its §22.2
         // leading inline run, for embedding under a keyword.
         override def constructed(value: derivation^{}): Tel =
-          Tel.make(Mutation.construct(t"", membersOf(value).to(List), '#'))
+          Tel.make(Tel.Mutation.construct(t"", membersOf(value).to(List), '#'))
 
         // The canonical document form: the root carries no atoms (§20.2),
         // so a leading `Break` suppresses the root's own run while nested
         // records keep theirs.
         override def canonicalized(value: derivation^{}): Tel =
           val compound =
-            Mutation.construct(t"", (Mutation.Member.Break :: membersOf(value)).to(List), '#')
+            Tel.Mutation.construct(t"", (Tel.Mutation.Member.Break :: membersOf(value)).to(List), '#')
 
           Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, 0, compound.children))
 
@@ -896,7 +896,7 @@ trait Tel2 extends Tel3:
   // text stays an empty inline atom: presentationally it serializes as no
   // atom, but the value level distinguishes present-empty from absent.
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", Array(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
+    Tel.make(Tel.Compound(t"", Array(Tel.Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
 
   def compound
     ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )

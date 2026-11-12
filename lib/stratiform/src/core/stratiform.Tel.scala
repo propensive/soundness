@@ -68,7 +68,7 @@ import zephyrine.*
 // Array[Block]^{}` field, so flat traversal logic can address either form
 // without case analysis.
 
-object Tel extends Tel2:
+object Tel extends Tel2, TelMutation, TelRevision:
   // A schema layer (§20.3 of the TEL specification), declared once as a singleton object whose
   // name is part of its type, `object song extends Tel.Layer("song")`, so that the name can be
   // read from the type alone: `Tel.Name[song.type]` is `"song"`. `@assign` and `@retract` refer to

@@ -511,7 +511,6 @@ lib/stratiform/src/binaryStaged/stratiform.bintelInternal.scala	1	0	0	0	0	0	0	0	
 lib/stratiform/src/checked/stratiform.CheckedTests.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
 lib/stratiform/src/core/stratiform.Bintel.scala	0	0	0	0	1	0	0	0	1	3	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.BintelReader.scala	0	0	0	0	0	0	0	0	2	1	0	0	0	0	0	0	0
-lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Patterns.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/stratiform/src/core/stratiform.Positional.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.SchemaResolver.scala	0	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0	0
@@ -521,6 +520,7 @@ lib/stratiform/src/core/stratiform.Tel.scala	4	0	2	0	3	4	0	0	15	18	9	0	1	0	2	0	0
 lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0	2	0	2	0	2	0	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	0	0	0	0	0	0	0	0	6	0	6	0	0	0	0
+lib/stratiform/src/core/stratiform.TelMutation.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.TelReader.scala	0	0	0	0	0	0	0	0	2	1	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	0	0	0	0	19	0	9	0	1	0	0
 lib/stratiform/src/core/stratiform.Tels2.scala	0	0	0	0	0	0	0	0	0	0	5	0	5	0	0	0	0

@@ -197,13 +197,13 @@ lib/sibylline/src/core/sibylline.Llm.scala	1	0	0
 lib/spectacular/src/core/spectacular.Inspectable.scala	2	1	2
 lib/stratiform/src/core/stratiform.Bintel.scala	15	18	0
 lib/stratiform/src/core/stratiform.BintelParser.scala	1	0	0
-lib/stratiform/src/core/stratiform.Mutation.scala	28	45	15
 lib/stratiform/src/core/stratiform.Positional.scala	3	5	0
 lib/stratiform/src/core/stratiform.SchemaResolver.scala	1	4	0
 lib/stratiform/src/core/stratiform.SchemaSignature.scala	5	5	0
 lib/stratiform/src/core/stratiform.Tel.scala	107	64	17
 lib/stratiform/src/core/stratiform.Tel2.scala	1	4	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	1
+lib/stratiform/src/core/stratiform.TelMutation.scala	28	45	15
 lib/stratiform/src/core/stratiform.Telp.scala	4	5	2
 lib/stratiform/src/core/stratiform.Tels.scala	12	23	2
 lib/stratiform/src/core/stratiform.Varint.scala	2	1	0
