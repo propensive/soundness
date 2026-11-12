@@ -473,8 +473,7 @@ lib/rudiments/src/core/rudiments.sorting.scala	0	0	0	0	0	0	0	0	3	1	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments_core.scala	1	0	0	1	0	1	0	2	0	0	4	0	0	0	1	0	0
 lib/rudiments/src/core/soundness_rudiments_core.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/test/rudiments_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-lib/savagery/src/core/savagery.Figure.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
-lib/savagery/src/core/savagery.Svg.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/savagery/src/core/savagery.Svg.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0
 lib/savagery/src/test/savagery_test.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/scintillate/src/bench/scintillate.Benchmarks.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/scintillate/src/server/scintillate.Connections.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0

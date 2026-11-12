@@ -46,6 +46,7 @@ import savagery.*
 import spectacular.*
 import vacuous.*
 import xylophone.Xml
+import savagery.Svg.{Figure, Lettering, Polyline, Rectangle}
 
 object Chart:
   enum Legend:

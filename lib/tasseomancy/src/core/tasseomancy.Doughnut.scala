@@ -47,6 +47,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group, Outline}
 
 object Doughnut:
   // A node's place in its band: the angles its sector starts and ends at, clockwise from north in

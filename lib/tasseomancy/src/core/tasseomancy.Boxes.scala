@@ -45,6 +45,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group, Polyline, Rectangle}
 
 object Boxes:
   object Summary:

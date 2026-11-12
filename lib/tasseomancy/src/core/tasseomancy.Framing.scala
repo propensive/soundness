@@ -44,6 +44,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group}
 
 // The layout shared by every chart kind with an abscissa and an ordinate: the plot rectangle
 // after room is taken for labels, titles and the legend; the grid, the two axes with their

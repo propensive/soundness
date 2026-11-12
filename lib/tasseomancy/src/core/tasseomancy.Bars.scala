@@ -41,6 +41,7 @@ import rudiments.*
 import savagery.*
 import symbolism.*
 import vacuous.*
+import savagery.Svg.{Figure, Group, Rectangle}
 
 object Bars:
   case class Fit(bands: Bands, ordinate: Scale)

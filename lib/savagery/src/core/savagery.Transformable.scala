@@ -33,6 +33,7 @@
 package savagery
 
 import prepositional.*
+import savagery.Svg.{Ellipse, Group, Lettering, Outline, Polyline, Rectangle}
 
 object Transformable:
   def apply[value]

@@ -38,6 +38,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
 import denominative.dysasymptotics.linearSize
+import savagery.Svg.{Ellipse, Group, Lettering, Outline, Polyline, Rectangle}
 
 object Tests extends Suite("svg", m"Savagery tests"):
   def run(): Unit =

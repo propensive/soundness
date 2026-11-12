@@ -31,7 +31,10 @@ results:
 import soundness.*
 import strategies.throwUnsafely
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+import Svg.{Ellipse, Figure, Group, Lettering, Outline, Polyline, Rectangle}
 ```
+
+The shapes are nested in `Svg`, as `Svg.Rectangle` and so on, and imported from it above.
 
 ### Shapes
 

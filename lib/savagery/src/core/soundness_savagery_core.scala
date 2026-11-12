@@ -34,8 +34,8 @@ package soundness
 
 export
   savagery
-  . { Circle, Delta, Ellipse, Figure, Group, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, unary_+,
+  . { Circle, Delta, Orientation, Point,
+      Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, unary_+,
       transform, translate, scale, rotate, skew }
 
 package construables:
