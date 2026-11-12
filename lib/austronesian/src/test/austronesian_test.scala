@@ -36,7 +36,7 @@ import soundness.*
 
 
 case class Person(name: Text, age: Int)
-case class Group(persons: List[Person], size: Int)
+case class Troupe(players: List[Person], size: Int)
 
 // Recursion through a collection (#1431).
 case class Tree(value: Text, children: List[Tree]) derives CanEqual
@@ -46,25 +46,25 @@ enum Color:
 
 object Tests extends Suite("pojo", m"Austronesian tests"):
   def run(): Unit =
-    test(m"Serialize a case class")(Person("John", 30).pojo)
-    . assert(_ === Pojo(scala.Array("John", java.lang.Integer.valueOf(30).nn)))
+    test(m"Serialize a case class")(Person("Hamlet", 30).pojo)
+    . assert(_ === Pojo(scala.Array("Hamlet", java.lang.Integer.valueOf(30).nn)))
 
     test(m"Serialize a list of longs")((List(1L, 99L, 203L): List[Long]).pojo)
     . assert(_ === Pojo(scala.Array[Object](java.lang.Long.valueOf(1L).nn, java.lang.Long.valueOf(99L).nn, java.lang.Long.valueOf(203L).nn)))
 
     test(m"Serialize a list of case classes")
-      ((List(Person("John", 12), Person("Jane", 93)): List[Person]).pojo)
-    . assert(_ === Pojo(scala.Array(scala.Array("John", java.lang.Integer.valueOf(12).nn), scala.Array("Jane", java.lang.Integer.valueOf(93).nn))))
+      ((List(Person("Juliet", 13), Person("Lear", 80)): List[Person]).pojo)
+    . assert(_ === Pojo(scala.Array(scala.Array("Juliet", java.lang.Integer.valueOf(13).nn), scala.Array("Lear", java.lang.Integer.valueOf(80).nn))))
 
     test(m"Serialize a nested case class structure"):
-      Group(List(Person("John", 30), Person("Jane", 25)), 2).pojo
-    . assert(_ === Pojo(scala.Array(scala.Array(scala.Array("John", 30), scala.Array("Jane", 25)), java.lang.Integer.valueOf(2).nn)))
+      Troupe(List(Person("Bottom", 40), Person("Flute", 20)), 2).pojo
+    . assert(_ === Pojo(scala.Array(scala.Array(scala.Array("Bottom", 40), scala.Array("Flute", 20)), java.lang.Integer.valueOf(2).nn)))
 
-    val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
+    val troupe = Troupe(List(Person("Bottom", 40), Person("Flute", 20)), 2)
 
     test(m"Roundtrip a nested case class"):
-      unsafely(group.pojo.as[Group])
-    . assert(_ == group)
+      unsafely(troupe.pojo.as[Troupe])
+    . assert(_ == troupe)
 
     test(m"Encode an enum"):
       val color: Color = Color.Green

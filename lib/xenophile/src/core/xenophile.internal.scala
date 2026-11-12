@@ -207,7 +207,7 @@ object Xenophile:
 
   // Reads the definitions resource at `path` and parses it with the grammar for `origin`.
   // Parsed definitions are cached by resource path for the lifetime of a compilation run, so that
-  // navigating a chain like `foo.bar.qux` parses each resource only once instead of per access.
+  // navigating a chain like `play.scene.play` parses each resource once instead of per access.
   private val parsed: scala.collection.mutable.HashMap[Text, Map[Text, Map[Text, Prototype]]] =
     scala.collection.mutable.HashMap()
 

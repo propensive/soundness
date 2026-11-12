@@ -44,8 +44,8 @@ final case class ref(x: Int) extends StaticAnnotation
 final case class marker[topic](id: Int) extends StaticAnnotation
 
 case class Marked
-  ( @marker[Person](1) @marker[Company](2) one: Int,
-    @marker[Company](3)                    two: Int )
+  ( @marker[Person](1) @marker[Play](2) one: Int,
+    @marker[Play](3)                    two: Int )
 
 // A bare `@marker(…)` (no explicit type argument) infers `marker[Any]`, so it is
 // read by a `marker[Any]` query alongside an explicit `@marker[Any]`, but not by
@@ -58,15 +58,15 @@ case class Tagged
 case class Person(name: Text, @ident email: Text)
 
 @number(10)
-case class Company(name: Text)
+case class Play(title: Text)
 
-case class Employee(person: Person, @ident @unique code: Long)
+case class Part(player: Person, @ident @unique lines: Long)
 case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
 
 object Example1:
-  val foo: Int = 42
-  val bar: String = "BAR"
-  val baz: 12 = 12
+  val lines: Int = 42
+  val title: String = "TWELFTH NIGHT"
+  val night: 12 = 12
 
 sealed trait Colored
 

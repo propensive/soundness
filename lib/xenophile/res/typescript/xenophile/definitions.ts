@@ -1,9 +1,9 @@
-interface Foo {
-  bar: Bar;
-  baz: string;
+interface Play {
+  scene: Scene;
+  script: string;
   greet(name: string): string;
   ping(): string;
-  link(other: Bar): Foo;
+  link(other: Scene): Play;
   tags: string[];
   counts: number[];
   nickname?: string;
@@ -11,7 +11,7 @@ interface Foo {
   lookup: Map<number, string>;
 }
 
-interface Bar {
-  qux: Foo;
+interface Scene {
+  play: Play;
   count: number;
 }

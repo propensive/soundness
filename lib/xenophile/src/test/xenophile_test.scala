@@ -364,36 +364,38 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
         ran
       . assert(_ == true)
 
-    val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
+    val play: Foreign of "Play" from Typescript = Foreign["Play", Typescript]
 
     suite(m"Foreign type navigation"):
       test(m"a member access has the precise refined static type"):
-        val bar: Foreign of "Bar" from Typescript = foo.bar
-        bar.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo"))
+        val scene: Foreign of "Scene" from Typescript = play.scene
+        scene.expr
+      . assert:
+          _ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Play"), t"scene", t"Play")
 
       test(m"navigate a cyclic foreign type graph"):
-        val cyclic: Foreign of "Foo" from Typescript = foo.bar.qux
+        val cyclic: Foreign of "Play" from Typescript = play.scene.play
         cyclic.expr
       . assert: expr =>
-          val inner = Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo")
-          expr == Foreign.Expression.Select(inner, t"qux", t"Bar")
+          val root = Foreign.Expression.Reference(t"Play")
+          val inner = Foreign.Expression.Select(root, t"scene", t"Play")
+          expr == Foreign.Expression.Select(inner, t"play", t"Scene")
 
     suite(m"Function application"):
       test(m"applyDynamic builds an `Apply` node typed by the method's result"):
-        val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
+        val greeting: Foreign of "string" from Typescript = play.greet(t"hello")
         greeting.expr
       . assert:
           case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args) if args.length == 1 => m == t"greet"
           case _                                                                      => false
 
       test(m"a Foreign argument of the declared parameter type is accepted"):
-        val linked: Foreign of "Foo" from Typescript = foo.link(foo.bar)
+        val linked: Foreign of "Play" from Typescript = play.link(play.scene)
         linked.expr
       . assert:
           case Foreign.Expression.Apply(_, args__) if args__.length == 1 =>
             args__.head match
-              case Foreign.Expression.Select(_, b, _) => b == t"bar"
+              case Foreign.Expression.Select(_, b, _) => b == t"scene"
               case _                                  => false
           case _                                                                      => false
 
@@ -406,7 +408,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
           case _                             => false
 
       test(m"a Scala argument is converted to a `Foreign` literal upon application"):
-        foo.greet(t"hi").expr
+        play.greet(t"hi").expr
       . assert:
           case Foreign.Expression.Apply(_, args__) if args__.length == 1 =>
             args__.head match
@@ -423,12 +425,13 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
     suite(m"Foreign type composition"):
       test(m"an array field is read as `Array<T>`"):
-        val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+        val tags: Foreign of ("Array" over "string") from Typescript = play.tags
         tags.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"tags", t"Foo"))
+      . assert:
+          _ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Play"), t"tags", t"Play")
 
       test(m"indexing an array value yields the element's foreign type"):
-        val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+        val tags: Foreign of ("Array" over "string") from Typescript = play.tags
         val tag: Foreign of "string" from Typescript = tags(0)
         tag.expr
       . assert:
@@ -436,21 +439,21 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
           case _                                                               => false
 
       test(m"an optional field is a union with `undefined`"):
-        val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
+        val nickname: Foreign of ("string" | "undefined") from Typescript = play.nickname
         nickname.expr
       . assert:
           case Foreign.Expression.Select(_, m, _) => m == t"nickname"
           case _                                   => false
 
       test(m"a union field has a bare-union foreign type"):
-        val id: Foreign of ("string" | "number") from Typescript = foo.id
+        val id: Foreign of ("string" | "number") from Typescript = play.id
         id.expr
       . assert:
           case Foreign.Expression.Select(_, m, _) => m == t"id"
           case _                                   => false
 
       test(m"a generic field has an `over` foreign type"):
-        val lookup: Foreign of ("Map" over ("number", "string")) from Typescript = foo.lookup
+        val lookup: Foreign of ("Map" over ("number", "string")) from Typescript = play.lookup
         lookup.expr
       . assert:
           case Foreign.Expression.Select(_, m, _) => m == t"lookup"
@@ -458,15 +461,15 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
     suite(m"Compile-time safety"):
       test(m"selecting an undefined member is a compile error"):
-        demilitarize(foo.nonexistent).map(_.message.tt)
-      . assert(_ == List(t"xenophile: the foreign type Foo has no member nonexistent"))
+        demilitarize(play.nonexistent).map(_.message.tt)
+      . assert(_ == List(t"xenophile: the foreign type Play has no member nonexistent"))
 
       test(m"calling a method with the wrong arity is a compile error"):
-        demilitarize(foo.greet(t"a", t"b")).map(_.message.tt)
+        demilitarize(play.greet(t"a", t"b")).map(_.message.tt)
       . assert(_ == List(t"xenophile: greet expects 1 arguments, not 2"))
 
       test(m"passing an argument of the wrong foreign type is a compile error"):
-        demilitarize(foo.greet(42)).map(_.message.tt)
+        demilitarize(play.greet(42)).map(_.message.tt)
       . assert(_ == List(t"xenophile: greet expects an argument of foreign type string"))
 
     suite(m"Native (C headers)"):
@@ -781,19 +784,20 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       val header = t"import xenophile.*\nimport xenophile.tsInterface\n"
 
       test(m"a partial member on a Foreign receiver completes from the definitions"):
-        completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.ba").map(_.name)
-      . assert(_ == List(t"bar", t"baz"))
+        completionsAt(t"${header}val play = Foreign[\"Play\", Typescript]\nval x = play.sc")
+        . map(_.name)
+      . assert(_ == List(t"scene", t"script"))
 
       test(m"a method member completes as a method with its signature"):
-        completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.gre")
+        completionsAt(t"${header}val play = Foreign[\"Play\", Typescript]\nval x = play.gre")
       . assert: items =>
           items.map { item => (item.name, item.kind) } ==
             List((t"greet", prophesy.Completion.Kind.Method))
 
       test(m"completion works on a navigated (non-root) receiver"):
-        completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.bar.qu")
+        completionsAt(t"${header}val play = Foreign[\"Play\", Typescript]\nval x = play.scene.pl")
         . map(_.name)
-      . assert(_ == List(t"qux"))
+      . assert(_ == List(t"play"))
 
     typescriptParserTests()
 
@@ -903,10 +907,10 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
     . assert(_ == scala.List(t"string[][]"))
 
     test(m"a type predicate is read"):
-      declarations(t"declare function isFoo(x: unknown): x is Foo;").stdlib
+      declarations(t"declare function isPlay(x: unknown): x is Play;").stdlib
       . collect { case function: Typescript.Declaration.Function => function }
       . flatMap(_.signatures.stdlib).map(_.text)
-    . assert(_ == scala.List(t"(x: unknown) => x is Foo"))
+    . assert(_ == scala.List(t"(x: unknown) => x is Play"))
 
     test(m"a rest parameter is marked as such"):
       declarations(t"declare function f(...args: string[]): void;").stdlib

@@ -65,15 +65,15 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
 
   def run(): Unit =
     test(m"access field annotations"):
-      summon[Employee is Annotated on "code"]()
+      summon[Part is Annotated on "lines"]()
     . assert(_ == Set(ident(), unique()))
 
     test(m"access specific field annotation"):
-      summon[Employee is Annotated by unique on "code"]()
+      summon[Part is Annotated by unique on "lines"]()
     . assert(_ == Set(unique()))
 
     test(m"access type annotations"):
-      summon[Company is Annotated]()
+      summon[Play is Annotated]()
     . assert(_.has(number(10)))
 
     test(m"access type annotations with no annotations"):
@@ -81,7 +81,7 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     . assert(_ == Set())
 
     test(m"exclude type annotations"):
-      summon[Company is Annotated by unique].annotations
+      summon[Play is Annotated by unique].annotations
     . assert(_ == Set())
 
     test(m"unique annotation"):
@@ -103,8 +103,8 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     . assert(_ == Map("one" -> Set(marker[Person](1)), "two" -> Set()))
 
     test(m"a different type argument selects different annotations"):
-      summon[Marked is Annotated by marker[Company]].fields
-    . assert(_ == Map("one" -> Set(marker[Company](2)), "two" -> Set(marker[Company](3))))
+      summon[Marked is Annotated by marker[Play]].fields
+    . assert(_ == Map("one" -> Set(marker[Play](2)), "two" -> Set(marker[Play](3))))
 
     test(m"fieldAnnotations drops fields without the queried annotation"):
       fieldAnnotations[Marked, marker[Person]]
@@ -127,7 +127,7 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     . assert(_ == Map(t"Accept" -> t"yes", t"Reject" -> t"no"))
 
     test(m"variantRelabelling for another format reads only the bare renames"):
-      variantRelabelling[Decision, Company]
+      variantRelabelling[Decision, Play]
     . assert(_ == Map(t"Reject" -> t"no"))
 
     test(m"relabelling merges per-format and bare field renames"):
@@ -135,11 +135,11 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     . assert(_ == Map(t"a" -> t"first", t"b" -> t"second"))
 
     test(m"relabelling for another format reads only the bare renames"):
-      relabelling[Renamed, Company]
+      relabelling[Renamed, Play]
     . assert(_ == Map(t"b" -> t"second"))
 
     test(m"relabelling is empty for a type without renames"):
-      relabelling[Employee, Person]
+      relabelling[Part, Person]
     . assert(_ == Map())
 
     test(m"relabelling reads a rename which is not a literal"):
@@ -151,11 +151,11 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     . assert(_ == Set(t"alpha", t"beta", t"delta"))
 
     test(m"annotatedFields is empty when no field carries the annotation"):
-      annotatedFields[Employee, number]
+      annotatedFields[Part, number]
     . assert(_ == Set())
 
     test(m"typeAnnotation reads the annotation on the type itself"):
-      typeAnnotation[Company, number]
+      typeAnnotation[Play, number]
     . assert(_ == number(10))
 
     test(m"typeAnnotation is Unset for an unannotated type"):
@@ -163,12 +163,12 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
     . assert(_ == Unset)
 
     test(m"typeAnnotation is Unset for a type annotated with something else"):
-      typeAnnotation[Company, unique]
+      typeAnnotation[Play, unique]
     . assert(_ == Unset)
 
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)
-    . assert(_ == Map(t"foo" -> 42, t"baz" -> 12))
+    . assert(_ == Map(t"lines" -> 42, t"night" -> 12))
 
     test(m"Get all members of a particular type"):
       Example1.membersOfType[Int].to[Set]
@@ -212,37 +212,37 @@ object Tests extends Suite("annotations", m"Adversaria tests"):
       // An object's `val`s are not constructor parameters, so there is nothing to write: they
       // remain readable, and simply have no lens.
       test(m"a field which is not a constructor parameter is readable"):
-        summon[Example1.type is Dereferenceable to Int].select(Example1, t"foo")
+        summon[Example1.type is Dereferenceable to Int].select(Example1, t"lines")
       . assert(_ == 42)
 
       test(m"a field which is not a constructor parameter has no lens"):
-        summon[Example1.type is Dereferenceable to Int].lens(t"foo")
+        summon[Example1.type is Dereferenceable to Int].lens(t"lines")
       . assert(_ == Unset)
 
       // A heterogeneous record dereferenced `to Any` (#1954): every field is readable, but none
       // can be written, since a `Person` or a `Long` field cannot accept an arbitrary `Any`.
-      val heterogeneous = summon[Employee is Dereferenceable to Any]
-      val employee = Employee(Person(t"Jack", t"jack@example.com"), 7L)
+      val heterogeneous = summon[Part is Dereferenceable to Any]
+      val part = Part(Person(t"Viola", t"viola@example.com"), 7L)
 
       test(m"a heterogeneous record dereferences to Any"):
-        heterogeneous.members(employee)
-      . assert(_ == Map(t"person" -> employee.person, t"code" -> 7L))
+        heterogeneous.members(part)
+      . assert(_ == Map(t"player" -> part.player, t"lines" -> 7L))
 
       test(m"a field narrower than the yield type has no lens"):
-        heterogeneous.lens(t"code")
+        heterogeneous.lens(t"lines")
       . assert(_ == Unset)
 
       test(m"a field narrower than the yield type is not updated"):
-        heterogeneous.update(employee, t"code", 8L)
+        heterogeneous.update(part, t"lines", 8L)
       . assert(_ == Unset)
 
       // Finding an annotated field and then writing through it, which is what the name alone
       // could not do.
       test(m"an annotated field yields a lens onto itself"):
         val annotated = summon[Person is Annotated by ident]
-        annotated.lens.update(Person(t"Jack", t"jack@example.com"), t"jill@example.com")
-      . assert(_ == Person(t"Jack", t"jill@example.com"))
+        annotated.lens.update(Person(t"Viola", t"viola@example.com"), t"cesario@example.com")
+      . assert(_ == Person(t"Viola", t"cesario@example.com"))
 
       test(m"an annotated field's lens reads it"):
-        summon[Person is Annotated by ident].lens(Person(t"Jack", t"jack@example.com"))
-      . assert(_ == t"jack@example.com")
+        summon[Person is Annotated by ident].lens(Person(t"Viola", t"viola@example.com"))
+      . assert(_ == t"viola@example.com")

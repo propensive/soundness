@@ -185,16 +185,16 @@ object Tests extends Suite("show", m"Spectacular Tests"):
       . assert(_ == t"'\\\"'")
 
       test(m"serialize case class"):
-        Person(t"Simon", 72).inspect
-      . assert(_ == t"Person(name:t\"Simon\" ╱ age:72)")
+        Person(t"Lear", 80).inspect
+      . assert(_ == t"Person(name:t\"Lear\" ╱ age:80)")
 
       test(m"serialize tuple"):
-        (t"Simon", 72).inspect
-      . assert(_ == t"(t\"Simon\" ╱ 72)")
+        (t"Lear", 80).inspect
+      . assert(_ == t"(t\"Lear\" ╱ 80)")
 
       test(m"serialize named tuple"):
-        (name = t"Simon", age = 72).inspect
-      . assert(_ == t"(name:t\"Simon\" ╱ age:72)")
+        (name = t"Lear", age = 80).inspect
+      . assert(_ == t"(name:t\"Lear\" ╱ age:80)")
 
       test(m"serialize empty tuple"):
         EmptyTuple.inspect
@@ -205,12 +205,12 @@ object Tests extends Suite("show", m"Spectacular Tests"):
       . assert(_ == t"(72)")
 
       test(m"serialize named tuple nested in a tuple"):
-        (t"Simon", (width = 3, height = 4)).inspect
-      . assert(_ == t"(t\"Simon\" ╱ (width:3 ╱ height:4))")
+        (t"Lear", (width = 3, height = 4)).inspect
+      . assert(_ == t"(t\"Lear\" ╱ (width:3 ╱ height:4))")
 
       test(m"serialize tuple nested in a named tuple"):
-        (name = t"Simon", size = (3, 4)).inspect
-      . assert(_ == t"(name:t\"Simon\" ╱ size:(3 ╱ 4))")
+        (name = t"Lear", size = (3, 4)).inspect
+      . assert(_ == t"(name:t\"Lear\" ╱ size:(3 ╱ 4))")
 
       // Only the *element* carries the marker: the surrounding named tuple still renders, and
       // every other element still reaches its own instance.
@@ -219,15 +219,15 @@ object Tests extends Suite("show", m"Spectacular Tests"):
       . assert(_ == t"(item:“Underived(7)” ╱ count:3)")
 
       test(m"a fully-covered named tuple inspects natively"):
-        Inspectable.fallbacks((name = t"Simon", age = 72).inspect)
+        Inspectable.fallbacks((name = t"Lear", age = 80).inspect)
       . assert(_ == Nil)
 
       // The element types of a value typed as a bare `Tuple` cannot be walked, so the whole
       // value falls back to its `toString`, marked as such.
       test(m"a tuple of unknown shape falls back to toString"):
-        val opaqueTuple: Tuple = (t"Simon", 72)
+        val opaqueTuple: Tuple = (t"Lear", 80)
         Inspectable.fallbacks(opaqueTuple.inspect)
-      . assert(_ == List(t"“(Simon,72)”"))
+      . assert(_ == List(t"“(Lear,80)”"))
 
       test(m"serialize list of strings"):
         (List(t"one", t"two", t"three"): List[Text]).inspect
@@ -405,7 +405,7 @@ object Tests extends Suite("show", m"Spectacular Tests"):
            Ordinal.zerary(0).inspect,
            Interval().inspect,
            Span.empty.inspect,
-           Person(t"Simon", 72).inspect,
+           Person(t"Lear", 80).inspect,
            Colour.Red.inspect,
            Shape.Circle(5).inspect )
       . assert(_ == Nil)
@@ -563,8 +563,8 @@ object Tests extends Suite("show", m"Spectacular Tests"):
 
     suite(m"Sum-type derivation tests"):
       test(m"derive sealed trait product case"):
-        (Dog(t"Rex"): Animal).inspect
-      . assert(_ == t"""Dog(name:t"Rex")""")
+        (Dog(t"Tray"): Animal).inspect
+      . assert(_ == t"""Dog(name:t"Tray")""")
 
       test(m"derive sealed trait case object (no trailing parens)"):
         (Cat: Animal).inspect
