@@ -748,8 +748,8 @@ entry .Colorable   the typeclass which assigns a value a foreground colour, so i
       given Level is Showable = _.toString.tt
 
       given Level is Colorable = Colorable[Level]: level => level match
-          case Level.Info => WebColors.SteelBlue
-          case Level.Warn => WebColors.Orange
+          case Log.Level.Info => WebColors.SteelBlue
+          case Log.Level.Warn => WebColors.Orange
       ```
   refer escapade.Teletypeable
   refer escapade.Fg
