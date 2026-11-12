@@ -210,7 +210,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   // Named `filesize` (not `size`): a same-named export beside the collections' `size` at the
   // `soundness` umbrella makes extension resolution commit to the wrong candidate.
-  def filesize()(using plane is Explorable, FilesystemBackend on plane): Bytes raises Io.Error =
+  def filesize()(using plane is Explorable, FilesystemBackend on plane): Memory raises Io.Error =
     import filesystemOptions.preserveSymlinks
     given TraversalOrder = TraversalOrder.PreOrder
 

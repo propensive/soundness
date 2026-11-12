@@ -708,7 +708,7 @@ entry .Commensurable   the compile-time comparison typeclass behind `<`, `<=`, `
       `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`.
       Its `compare` is a macro which inspects the `Boolean` for a comparison of the same
       primitive type, and halts with error 966 if the expression is not one.
-  entry .bytes   `Bytes is Orderable`: memory sizes compare by their byte count
+  entry .memory   `Memory is Orderable`: memory sizes compare by their byte count
   entry .ordinal   `Ordinal is Orderable`: `Prim < Sec`
   entry .orderable   any `Comparable` type is `Orderable`, so `<` and `max` work on it
       `[value: Comparable] => value is Orderable`: the runtime three-way `compare` confers

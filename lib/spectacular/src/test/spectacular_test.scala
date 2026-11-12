@@ -370,7 +370,7 @@ object Tests extends Suite("show", m"Spectacular Tests"):
 
     suite(m"Quantity and message tests"):
       test(m"inspect a byte count"):
-        Bytes(4194304L).inspect
+        Memory(4194304L).inspect
       . assert(_ == t"4194304B")
 
       test(m"inspect a digit"):
@@ -400,7 +400,7 @@ object Tests extends Suite("show", m"Spectacular Tests"):
            BigInt(42).inspect,
            BigDecimal("1.5").inspect,
            Unset.inspect,
-           Bytes(1024L).inspect,
+           Memory(1024L).inspect,
            m"a message".inspect,
            Ordinal.zerary(0).inspect,
            Interval().inspect,

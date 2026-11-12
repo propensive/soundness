@@ -37,7 +37,7 @@ import java.lang.management as jlm
 import rudiments.*
 
 object Heap:
-  def used: Bytes = Bytes:
+  def used: Memory = Memory:
     jlm.ManagementFactory.getMemoryPoolMXBeans().nn.stream().nn
     . filter(_.nn.getType() == jlm.MemoryType.HEAP).nn
     . mapToLong(_.nn.getUsage().nn.getUsed()).nn

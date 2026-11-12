@@ -133,8 +133,8 @@ object Installer:
         if safely(scriptPath.as[Path on Linux]) == resident.executable && !force
         then Result.AlreadyOnPath(command, resident.executable.encode)
         else
-          val payloadSize: Bytes = Bytes(System.properties.ethereal.payloadSize[Int]())
-          val jarSize: Bytes = Bytes(System.properties.ethereal.jarSize[Int]())
+          val payloadSize: Memory = Memory(System.properties.ethereal.payloadSize[Int]())
+          val jarSize: Memory = Memory(System.properties.ethereal.jarSize[Int]())
           val fileSize = resident.executable.filesize()
           val prefixSize = fileSize - payloadSize - jarSize
 

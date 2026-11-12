@@ -51,13 +51,8 @@ import turbulence.*
 import vacuous.*
 
 object Benchmarks extends Suite("html-bench", m"Honeycomb benchmarks"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
 
   // Auto-scale byte sizes (B → kB → MB → GB → TB) and byte rates so the
   // table prints "1.3 MB·s¯¹" instead of "1.3×10⁶ B·s¯¹".

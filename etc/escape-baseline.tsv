@@ -600,9 +600,8 @@ lib/turbulence/src/test/turbulence_test.scala	5	4	1	0	2	1	0	0	11	5	2	0	0	0	2	0	0
 lib/turbulence/src/wasi/turbulence_wasi.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.FlowExtent.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.Focus.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/ultimatum/src/core/ultimatum.Frame.scala	0	0	0	0	0	0	0	0	0	0	5	0	2	0	1	0	0
-lib/ultimatum/src/core/ultimatum.Panes.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/ultimatum/src/core/ultimatum.ScrollFixture.scala	2	0	4	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+lib/ultimatum/src/core/ultimatum.Tui.scala	1	0	0	0	0	0	0	0	0	0	5	0	2	0	1	0	0
 lib/ultimatum/src/core/ultimatum_core.scala	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/demo/ultimatum_demo.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
 lib/ultimatum/src/gauges/ultimatum.Facet.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
@@ -657,7 +656,7 @@ lib/xylophone/src/bench/xylophone.Benchmarks.scala	0	0	0	0	5	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.XPath.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.XPathEngine.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0
 lib/xylophone/src/core/xylophone.XPathReader.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/xylophone/src/core/xylophone.Xml.scala	9	1	0	0	4	3	0	0	16	4	0	0	0	0	4	0	0
+lib/xylophone/src/core/xylophone.Xml.scala	9	1	0	0	4	3	0	0	15	4	0	0	0	0	4	0	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.Xml4.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/xylophone/src/core/xylophone.XmlSchema.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0

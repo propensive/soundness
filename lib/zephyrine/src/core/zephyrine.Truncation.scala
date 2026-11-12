@@ -40,5 +40,5 @@ import rudiments.*
 // and `Sink` all report it, so none of them owns it; it sits with `Stream` and `Spring`.
 object Truncation:
   // StreamError → Truncation.Error
-  case class Error(total: Bytes)(using Diagnostics)
+  case class Error(total: Memory)(using Diagnostics)
   extends fulminate.Error(264, 0)(m"the stream was cut prematurely after $total")

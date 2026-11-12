@@ -58,6 +58,9 @@ object Amount:
   erased given luminosity: Amount[Units[1, Luminosity], "luminosity"] =
     Amount.Evidence[Units[1, Luminosity], "luminosity"]()
 
+  erased given information: Amount[Units[1, Information], "information"] =
+    Amount.Evidence[Units[1, Information], "information"]()
+
   inline def apply[units <: Measure]: Text = ${quantitative.internal.amount[units]}
 
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities

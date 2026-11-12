@@ -2300,7 +2300,7 @@ entry .Transfer   bytes moved against bytes to move, with the time it has taken
       gaugeLine(transfer, 20)   // the figures alone: the estimate goes first, then the rate
       ```
   refer ultimatum.counters
-  refer ultimatum.Byte
+  refer quantitative.Byte
   entry #moved   the bytes moved so far
   entry #total   the bytes to move, or `Unset` while unknown
   entry #elapsed   the time taken so far
@@ -2309,28 +2309,6 @@ entry .Transfer   bytes moved against bytes to move, with the time it has taken
   entry #estimate   how long the rest should take at the rate so far
       `Unset` while nothing has moved (when any estimate would be a fabrication) or while
       the total is unknown.
-
-entry .Information   the dimension of information, for byte quantities
-    A `quantitative.Dimension`, declared here because the transfer statuses need it:
-    `quantitative` declares the seven SI base dimensions and no more. `Bytes[1]` is its
-    unit, `Byte` the `MetricUnit` which makes quantities of it, and `informationDesignation`
-    gives it the symbol `B`.
-
-entry .Bytes   the units of information: `Bytes[1]` is the byte, `Bytes[-1]` its reciprocal
-    A `quantitative.Units[power, Information]`. A byte count is a `Quantity[Bytes[1]]`, made
-    as `512.0*Byte` or `14.2*Mebi(Byte)`, and a rate a `Quantity[Bytes[1] & Seconds[-1]]`,
-    which is what `Transfer#rate` has.
-
-entry .Byte   the byte, as a `MetricUnit[Bytes[1]]`: `512.0*Byte`, `4.0*Mebi(Byte)`
-    The unit every `Transfer` is counted in. The metric prefixes compose with it as with
-    any `quantitative` unit; `informationPrefixes.binaryBytes` and `decimalBytes` choose
-    which family a byte quantity is written in.
-
-entry .informationDesignation   the given which writes the byte's symbol as `B`
-    The `Designation[Bytes[1]]` a byte quantity renders with. A top-level given: the
-    subject is declared here but the typeclass belongs to `quantitative`, so it has no
-    companion to live in, and it is named for the library so it can be imported by name
-    (`import soundness.informationDesignation`) where it is needed.
 
 entry .internal   the opaque status types `Fraction` and `Countdown`, and their companions
   hidden
@@ -2918,7 +2896,7 @@ entry .informationPrefixes   how a byte quantity is scaled for display: binary o
 
       val size: Quantity[Bytes[1]] = 1500000.0*Byte
       ```
-  refer ultimatum.Byte
-  refer ultimatum.Bytes
+  refer quantitative.Byte
+  refer quantitative.Bytes
   entry .binaryBytes   the 1024-based prefixes `Ki`, `Mi`, `Gi`, `Ti`: the convention for blocks on a disk or a wire
   entry .decimalBytes   the 1000-based prefixes `k`, `M`, `G`, `T`: the convention of drive manufacturers and network operators

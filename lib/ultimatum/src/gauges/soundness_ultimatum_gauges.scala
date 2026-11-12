@@ -34,9 +34,9 @@ package soundness
 
 export
   ultimatum
-  . { Bar, Byte, Bytes, CaptionLayout, Captioned, Checklist, Countdown, Dial, Facet,
+  . { Bar, CaptionLayout, Captioned, Checklist, Countdown, Dial, Facet,
       Fraction, gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, Gradient,
-      Information, Inlay, Magnitude, Meter, Reading, Reckoning, Sparkline,
+      Inlay, Magnitude, Meter, Reading, Reckoning, Sparkline,
       Spinner, Standing, Step, Stopwatch, Transfer, whilst }
 
 // Every given is exported by name: a wildcard would silently drop them, since `import p.*` does not

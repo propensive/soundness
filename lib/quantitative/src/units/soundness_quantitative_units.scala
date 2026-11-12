@@ -38,7 +38,7 @@ package soundness
 // silently drops the other. The extension remains available via `import quantitative.*`.
 export
   quantitative
-  . { Acre, Ampere, Are, Barye, Becquerel, Biot, Calorie, Candela, Coulomb, Darcy, Days,
+  . { Acre, Ampere, Are, Barye, Becquerel, Biot, Byte, Calorie, Candela, Coulomb, Darcy, Days,
       Debye,
       Drams, Dyne, Em, Ems, Emu, Erg, Farad, Feet, FluidOunce, Foot, Franklin, Furlong, Furlongs,
       Galileo, Gallon, Gauss, Gilbert, Grain, Grains, Gram, Gray, Henry, Hertz, Hours,

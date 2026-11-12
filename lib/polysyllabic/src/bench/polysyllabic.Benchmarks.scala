@@ -57,14 +57,9 @@ import denominative.dysasymptotics.linearSize
 import denominative.*
 
 object Benchmarks extends Suite("hyphenation-bench", m"Polysyllabic benchmarks"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
+  given prefixes:    Prefixes        = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   // The full text of `War and Peace` (Project Gutenberg #2600), with the
   // header/footer stripped and every run of whitespace collapsed to a single

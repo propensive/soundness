@@ -87,14 +87,9 @@ import pneumatic.*
 //     fan-in (`collectAll`) and fan-out (`broadcast3`).
 
 object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundness vs ZIO / FS2 / Kyo"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
+  given decimalizer: Decimalizer     = Decimalizer(2)
+  given device:      BenchmarkDevice = LocalhostDevice
+  given prefixes:    Prefixes        = Prefixes(List(Kilo, Mega, Giga, Tera))
   given Buffering                               = Buffering.standard
 
   // ── Corpora (forced once in warmup; referenced by fully-qualified name in the
