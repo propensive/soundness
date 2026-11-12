@@ -116,11 +116,11 @@ row  `Delta + Delta`, `Delta - Delta`, `-Delta`  `Delta`
 row  `Delta*n`, `n*Delta`  `Delta`
 ```
 
-The named directions `Up`, `Down`, `Left` and `Right` make arithmetic on displacements read
-plainly. The y-axis of SVG points down, so `Up` is a negative change in y:
+The named directions `Delta.Up`, `Delta.Down`, `Delta.Left` and `Delta.Right` make arithmetic on
+displacements read plainly. The y-axis of SVG points down, so `Up` is a negative change in y:
 
 ```scala
-val step: Delta = 7*Up + 3*Right
+val step: Delta = 7*Delta.Up + 3*Delta.Right
 ```
 
 ```scala fuel

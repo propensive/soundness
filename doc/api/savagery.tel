@@ -329,8 +329,8 @@ entry .Outline   a `<path>`, built step by step: absolute steps suffixed `To`, r
       `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` and their `move…` twins take one
       length each; note that, as implemented, `lineUp(v)` draws `Delta(v, 0)` (an `h` step)
       and `lineLeft(v)` draws `Delta(0, -v)` (a `v` step) — the names are rotated a quarter
-      turn from SVG's axes, so for a predictable direction write `line(v*Up)` with the named
-      directions instead.
+      turn from SVG's axes, so for a predictable direction write `line(v*Delta.Up)` with the
+      named directions instead.
   refer savagery.Stroke
   refer savagery.Point
   refer savagery.Delta
@@ -655,13 +655,13 @@ entry .Delta   a displacement: a `dx` and a `dy`, as `Float`s
       ```scala
       import soundness.*
 
-      val step: Delta = 7*Up + 3*Right   // Delta(3.0, -7.0): SVG's y-axis points down
+      val step: Delta = 7*Delta.Up + 3*Delta.Right   // Delta(3.0, -7.0): SVG's y-axis points down
       -Delta(3, 4)                       // Delta(-3.0, -4.0)
       Delta(1, 2) + Delta(3, 4)          // Delta(4.0, 6.0)
       Delta(1, -2).inspect               // t"Delta(dx:1.0F ╱ dy:-2.0F)"
       ```
   refer savagery.Point
-  refer savagery.Up
+  refer savagery.Delta.Up
   entry .apply   `Delta(dx, dy)` from two `Float`s
   entry .showable   the two components separated by a space, as path data writes a relative step
   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`, labelled to distinguish it from a `Point`
@@ -678,14 +678,11 @@ entry .Delta   a displacement: a `dx` and a `dy`, as `Float`s
   entry #dx   the horizontal component
   entry #dy   the vertical component, positive downward
 
-entry .Up   the unit delta upward: `Delta(0, -1)`, since SVG's y-axis points down
-    `7*Up` is `Delta(0, -7)`.
-
-entry .Down   the unit delta downward: `Delta(0, 1)`
-
-entry .Left   the unit delta leftward: `Delta(-1, 0)`
-
-entry .Right   the unit delta rightward: `Delta(1, 0)`
+  entry .Up   the unit delta upward: `Delta(0, -1)`, since SVG's y-axis points down
+      `7*Up` is `Delta(0, -7)`.
+  entry .Down   the unit delta downward: `Delta(0, 1)`
+  entry .Left   the unit delta leftward: `Delta(-1, 0)`
+  entry .Right   the unit delta rightward: `Delta(1, 0)`
 
 entry .unary_+   a tuple of two numbers as a `Delta`: `+(3, 4)` is `Delta(3, 4)`
     An extension on any pair of numeric types, so a displacement can be written without the
