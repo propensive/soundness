@@ -41,7 +41,7 @@ export
       fuzzy, Grapheme, init, join, Joinable, kebab, length, lines, lower,
       Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
       Range, reversibleTextual, traversableTextual, Rtl, search, offsetOf, SimpleTExtractor, slices,
-      snake,
+      snake, dotted,
       spaced, starts, sub, subscripts, superscripts, sysData, t, text,
       TextBuilder,
       Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, urlDecode,
