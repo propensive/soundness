@@ -57,7 +57,7 @@ object FilesystemBackend:
   // A file's content mapped into memory, read-only, until `unmap` is called: what a backend's
   // `mapping` answers. The view must not be used after `unmap`; the user-facing `mapped`
   // scope, which calls it, is what guarantees that it is not.
-  trait Mapping extends zephyrine.Mapped:
+  trait Mapping extends zephyrine.Terrain:
     def unmap(): Unit
 
 trait FilesystemBackend extends Planar:
@@ -121,11 +121,11 @@ trait FilesystemBackend extends Planar:
   // passes a positional view, valid for the scope of the call, to `lambda`. Reads are
   // pread-style — each independent of any sequential position, and no whole-file mapping is
   // taken; `mapping`, below, is the zero-copy alternative.
-  def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
+  def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse^ => result)
     ( using Tactic[Io.Error] )
   :   result
 
-  // Maps the whole of a file into memory, read-only (issue #2471): a `zephyrine.Mapped` whose
+  // Maps the whole of a file into memory, read-only (issue #2471): a `zephyrine.Terrain` whose
   // loads are served from the page cache with no copy, where `expanse`'s reads each copy into
   // a fresh array. The mapping lasts until its `unmap` is called, independently of any open
   // descriptor, and addresses files of any size. A backend with no memory mapping (WASI)

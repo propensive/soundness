@@ -45,7 +45,7 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
-import zephyrine.Mapped
+import zephyrine.Terrain
 import Io.Error.{Operation, Reason}
 
 // Sharing a file between processes through the page cache (issue #2472): one process *owns* a
@@ -69,7 +69,7 @@ import Io.Error.{Operation, Reason}
 // Two editions are the same version exactly when they are equal; they carry no order.
 case class Edition(identity: Stat.Identity, modified: Long) derives CanEqual
 
-// Ownership of a name, for the scope of `path.own`: the capability to publish versions of
+// Ownership of a name, for the scope of `path.claim`: the capability to publish versions of
 // `record` under it. Confined to its scope, at whose end the name is released.
 trait Owner[record] extends caps.ExclusiveCapability:
   // Replaces the published file with the encoding of `value`, atomically, and answers the new
@@ -86,7 +86,7 @@ trait Published[record] extends caps.SharedCapability:
   // Lends a view of the mapped version for the length of `lambda`. A `refresh` meanwhile, on
   // this or another thread, does not disturb it: the version stays mapped until the last such
   // scope over it has ended.
-  def map[result](lambda: Mapped^ => result): result
+  def map[result](lambda: Terrain^ => result): result
 
   // Maps the version the name now leads to, if it is not the one already mapped, and answers
   // whether it did.
@@ -158,7 +158,7 @@ object Published:
 
     def edition: Edition = synchronized(current.nn.edition)
 
-    def map[result](lambda: Mapped^ => result): result =
+    def map[result](lambda: Terrain^ => result): result =
       val version: Version = synchronized:
         val held = current.nn
         held.readers.incrementAndGet()

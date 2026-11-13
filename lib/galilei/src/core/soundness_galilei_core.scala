@@ -35,7 +35,7 @@ package soundness
 export
   galilei
   . { accessed, Apfs, attribute, attributes, Attributed, BlockDevice, Btrfs, C, CharDevice,
-      canonical, Cas, children, CopyAttributes, copyInto, copyTo, created, CreateFlag,
+      canonical, Cas, children, claim, CopyAttributes, copyInto, copyTo, created, CreateFlag,
       CreateNonexistentParents,
       Creation, creation, CreationTimed,
       D, delete, Edition, Ext4,
@@ -46,7 +46,7 @@ export
       glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local, locations,
       dataSearch, configSearch, destination, listing, search,
       MacOs, mapped, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
-      OverwritePreexisting, own, Owner, p, Platform, Posix, Published, published, Fdtable, readable, filesize, Sock, Stat,
+      OverwritePreexisting, Owner, p, Platform, Posix, Published, published, Fdtable, readable, filesize, Sock, Stat,
       Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, subvolume,
       subvolumeRoot, Symlink, symlinkInto, symlinkTo, touch,
       TraversalOrder,

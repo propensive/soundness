@@ -779,6 +779,45 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         zephyrine.Words.load(bytes(9, 9, 1, 2, 3, 4, 5, 6, 7, 8), 2)
       . assert(_ == 0x0807060504030201L)
 
+    suite(m"A view of data as mapped memory"):
+      // f1 f2 f3 … fc, as below: every byte has its high bit set.
+      val sample: Data = Data.fill(12)(index => (index + 0xf1).toByte)
+      val view: Terrain = Terrain(sample)
+
+      test(m"the view is as large as the data"):
+        view.size
+      . assert(_ == 12L)
+
+      test(m"loads are little-endian, as from the data"):
+        (view.u8(2L), view.u16(0L), view.u32(1L), view.i32(1L), view.u64(4L))
+      . assert(_ == (0xf3, 0xf2f1, 0xf5f4f3f2L, 0xf5f4f3f2, 0xfcfbfaf9f8f7f6f5L))
+
+      test(m"a slice is addressed from its own start"):
+        val slice = view.slice(4L, 4L)
+        (slice.size, slice.u8(0L), slice.u16(2L))
+      . assert(_ == (4L, 0xf5, 0xf8f7))
+
+      test(m"a load beyond the end of a slice is refused"):
+        try view.slice(4L, 4L).u32(2L) catch case _: IndexOutOfBoundsException => -1L
+      . assert(_ == -1L)
+
+      test(m"a copy is the bytes it covers"):
+        view.read(10L, 2).u16(0)
+      . assert(_ == 0xfcfb)
+
+      test(m"bytes are compared with data for equality"):
+        (view.same(10L, view.read(10L, 2)), view.same(9L, view.read(10L, 2)), view.same(11L, sample))
+      . assert(_ == (true, false, false))
+
+      test(m"bytes are ordered against data, unsigned"):
+        val low: Data = Data.fill(2)(index => 0x7f.toByte)
+        (view.compare(0L, 2L, view.read(0L, 2)), view.compare(0L, 2L, low).sign, view.compare(0L, 2L, view.read(1L, 2)).sign)
+      . assert(_ == (0, 1, -1))
+
+      test(m"a proper prefix sorts before what it is a prefix of"):
+        (view.compare(0L, 2L, view.read(0L, 3)).sign, view.compare(0L, 3L, view.read(0L, 2)).sign)
+      . assert(_ == (-1, 1))
+
     suite(m"Integer loads from data"):
       // f1 f2 f3 … fc: every byte has its high bit set, so a stray sign extension shows.
       val sample: Data = Data.fill(12)(index => (index + 0xf1).toByte)

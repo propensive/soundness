@@ -138,7 +138,7 @@ private[octogenarian] object Packfile:
     case RefDelta(base: Git.Hash, size: Long, data: Long)
 
   // Reads an entry header from the pack through a positional view.
-  def header(view: Expanse, offset: Long)(using Tactic[Git.Error]): Entry =
+  def header(view: Expanse^, offset: Long)(using Tactic[Git.Error]): Entry =
     val bytes = view.read(offset, 32).asInstanceOf[scala.Array[Byte]]
     val first = bytes(0) & 0xff
     val typeCode = (first >> 4) & 7
@@ -174,7 +174,7 @@ private[octogenarian] object Packfile:
 
   // Inflates the zlib stream lying between `from` and `until` in the pack: the slice is exactly
   // the entry's compressed data, since the next entry begins where it ends.
-  def inflate(view: Expanse, from: Long, until: Long): Data =
+  def inflate(view: Expanse^, from: Long, until: Long): Data =
     view.read(from, (until - from).toInt).decompress[Zlib]
 
   // Applies a delta to its base: a source size, a target size, then copy and insert instructions.

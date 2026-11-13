@@ -30,94 +30,96 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
-
-import scala.scalanative.posix.fcntl
-import scala.scalanative.posix.sys.mman
-import scala.scalanative.posix.unistd
-import scala.scalanative.unsafe.*
-import scala.scalanative.unsigned.*
+package zephyrine
 
 import anticipation.*
-import vacuous.*
 
-// A `zephyrine.Mapped` over `extent` bytes of memory at `base`: the Scala Native twin of the
-// JVM's `SegmentMapped`. Loads are composed bytewise, so they are little-endian and free of
-// alignment requirements whatever the target; each is bounds-checked first, since a stray
-// load here is a segmentation fault rather than an exception.
-private[galilei] class PointerMapped(base: Ptr[Byte], extent: Long) extends zephyrine.Mapped:
-  def size: Long = extent
+// An `Expanse` whose bytes are in memory -- those of a memory-mapped file, above all -- so that
+// values are *loaded* from it in place, where an expanse can only `read` a copy onto the heap.
+// Formats designed for random access (an index, a table of fixed-width rows) are parsed
+// directly out of a `Terrain`, so that several processes mapping one file share a single copy of
+// it in the page cache. It is read-only.
+//
+// Integers are little-endian, whatever the platform, and may be loaded from any offset; no
+// alignment is required. An offset or extent outside `0` to `size` is a programming error, and
+// is met with an exception rather than an out-of-bounds load.
+//
+// A view is lent, not given: whoever provides one owns the memory behind it, and passes the
+// view as a tracked `Terrain^` for a scope, at whose end the memory is unmapped. Capture
+// checking keeps the view -- and every `slice` of it, which captures it -- from outliving that
+// scope; code which receives one declares it as `Terrain^` likewise. Being read-only, a view
+// may be shared between threads.
+//
+// The bytes are as stable as their source: a file which is replaced by renaming a new one over
+// it (and never rewritten in place) presents the same bytes for as long as it stays mapped, and
+// a provider need not defend against anything else.
+trait Terrain extends Expanse:
 
-  private inline def check(offset: Long, width: Long): Unit =
-    if offset < 0L || width < 0L || offset > extent - width
-    then throw IndexOutOfBoundsException(s"$width bytes at $offset of $extent")
+  def u8(offset: Long): Int
+  def u16(offset: Long): Int
+  def u32(offset: Long): Long
+  def u64(offset: Long): Long
 
-  private inline def byte(offset: Long): Int = !(base + offset) & 0xff
+  // The 32-bit word at `offset` as a signed `Int`: `u32` without the widening.
+  def i32(offset: Long): Int
 
-  def u8(offset: Long): Int =
-    check(offset, 1L)
-    byte(offset)
+  // A view of `length` bytes from `offset`, sharing this view's memory and its lifetime.
+  def slice(offset: Long, length: Long): Terrain^{this}
 
-  def u16(offset: Long): Int =
-    check(offset, 2L)
-    byte(offset) | byte(offset + 1L) << 8
+  // `read`, an expanse's one operation, copies `length` bytes from `offset` onto the heap, for
+  // when they must become a value which outlives the view -- a `Text`, say.
 
-  def i32(offset: Long): Int =
-    check(offset, 4L)
-    byte(offset) | byte(offset + 1L) << 8 | byte(offset + 2L) << 16 | byte(offset + 3L) << 24
+  // Whether the bytes from `offset` are those of `data`, compared in place.
+  def same(offset: Long, data: Data): Boolean
 
-  def u32(offset: Long): Long = i32(offset) & 0xffffffffL
-  def u64(offset: Long): Long = u32(offset) | u32(offset + 4L) << 32
+  // The order of the `length` bytes from `offset` relative to `data`, compared in place as
+  // unsigned bytes, lexicographically: negative if the view's bytes sort first, positive if
+  // `data` does, and zero if they are the same bytes. A proper prefix sorts before what it is
+  // a prefix of. This is the comparison a binary search over sorted keys makes at each step,
+  // without copying a key onto the heap.
+  def compare(offset: Long, length: Long, data: Data): Int
 
-  def slice(offset: Long, length: Long): zephyrine.Mapped^{this} =
-    check(offset, length)
-    new PointerMapped(base + offset, length)
+object Terrain:
+  // A view of bytes which are already on the heap, for reading a format designed for mapped
+  // memory out of `Data` -- a message, a fixture, an image not yet written to a file. It
+  // captures nothing, since `Data` is immutable and owned by nobody.
+  def apply(data: Data): Terrain = Heap(data, 0, data.length)
 
-  def copy(offset: Long, length: Int): Data =
-    check(offset, length.toLong)
-    val array = Array.allocate[Byte](length)
-    val raw = array.raw
-    var index = 0
+  private final class Heap(data: Data, start: Int, extent: Int) extends Terrain:
+    def size: Long = extent.toLong
 
-    while index < length do
-      raw(index) = !(base + (offset + index))
-      index += 1
+    private inline def at(offset: Long, width: Long): Int =
+      if offset < 0L || width < 0L || offset > extent - width
+      then throw IndexOutOfBoundsException(s"$width bytes at $offset of $extent")
 
-    Array.freeze(array)
+      start + offset.toInt
 
-  def same(offset: Long, data: Data): Boolean =
-    val length = data.length
+    def u8(offset: Long): Int = data.u8(at(offset, 1L))
+    def u16(offset: Long): Int = data.u16(at(offset, 2L))
+    def u32(offset: Long): Long = data.u32(at(offset, 4L))
+    def u64(offset: Long): Long = data.u64(at(offset, 8L))
+    def i32(offset: Long): Int = data.i32(at(offset, 4L))
 
-    offset >= 0L && offset <= extent - length && {
-      var index = 0
-      while index < length && !(base + (offset + index)) == data.readUnchecked(index) do index += 1
-      index == length
-    }
+    def slice(offset: Long, length: Long): Terrain^{this} =
+      Heap(data, at(offset, length), length.toInt)
 
-// A whole-file, read-only mapping, from `mmap` until `munmap`.
-private[galilei] class PointerMapping(base: Ptr[Byte], extent: Long)
-extends PointerMapped(base, extent), FilesystemBackend.Mapping:
-  def unmap(): Unit = if extent > 0L then mman.munmap(base, extent.toCSize)
+    def read(offset: Long, length: Int): Data =
+      val base = at(offset, length.toLong)
+      Array.tabulate[Byte](length) { index => data.u8(base + index).toByte }
 
-private[galilei] object PointerMapping:
-  // Maps all `extent` bytes of the named file, or answers `Unset` if the file cannot be opened
-  // or mapped. The descriptor is needed only to establish the mapping, which outlives it. An
-  // empty file is not mapped at all: `mmap` refuses a length of zero, and there is nothing to
-  // load.
-  def apply(name: String, extent: Long): Optional[PointerMapping] =
-    val nowhere = null.asInstanceOf[Ptr[Byte]]
-    val failed = mman.MAP_FAILED.asInstanceOf[Ptr[Byte]]
+    def same(offset: Long, data2: Data): Boolean =
+      offset >= 0L && offset <= extent - data2.length
+      && compare(offset, data2.length.toLong, data2) == 0
 
-    if extent == 0L then new PointerMapping(nowhere, 0L) else
-      // The mapping is made within the zone which holds the C string, but the capability over
-      // it is made outside, so that it does not appear to depend on the zone.
-      val base: Ptr[Byte] = Zone.acquire: zone =>
-        given Zone = zone
-        val descriptor = fcntl.open(toCString(name), fcntl.O_RDONLY, 0.toUInt)
+    def compare(offset: Long, length: Long, data2: Data): Int =
+      val base = at(offset, length)
+      val common = length.toInt.min(data2.length)
 
-        if descriptor < 0 then failed else
-          val length = extent.toCSize
-          try mman.mmap(nowhere, length, mman.PROT_READ, mman.MAP_SHARED, descriptor, 0.toSize)
-          finally unistd.close(descriptor)
+      @scala.annotation.tailrec
+      def recur(index: Int): Int =
+        if index == common then java.lang.Long.compare(length, data2.length.toLong) else
+          val left = data.u8(base + index)
+          val right = data2.u8(index)
+          if left == right then recur(index + 1) else left - right
 
-      if base == failed then Unset else new PointerMapping(base, extent)
+      recur(0)

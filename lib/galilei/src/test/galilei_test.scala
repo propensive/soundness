@@ -626,7 +626,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == -1L)
 
       test(m"Copying from a mapped view yields the bytes as data"):
-        unsafely(viewFile.mapped(_.copy(4L, 6).utf8))
+        unsafely(viewFile.mapped(_.read(4L, 6).utf8))
       . assert(_ == t"456789")
 
       test(m"A mapped view compares its bytes with data in place"):
@@ -638,6 +638,25 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A comparison running past the end of the view is false"):
         unsafely(viewFile.mapped(_.same(14L, t"EFG".in[Data])))
       . assert(_ == false)
+
+      test(m"A mapped view orders its bytes against data in place"):
+        unsafely:
+          viewFile.mapped: view =>
+            ( view.compare(10L, 3L, t"ABC".in[Data]),
+              view.compare(10L, 3L, t"ABD".in[Data]).sign,
+              view.compare(10L, 3L, t"ABB".in[Data]).sign )
+      . assert(_ == (0, -1, 1))
+
+      test(m"A proper prefix sorts before what it is a prefix of"):
+        unsafely:
+          viewFile.mapped: view =>
+            (view.compare(10L, 2L, t"ABC".in[Data]).sign, view.compare(10L, 4L, t"ABC".in[Data]).sign)
+      . assert(_ == (-1, 1))
+
+      test(m"Bytes are ordered as unsigned"):
+        val high: Data = Array[Byte](0x80.toByte)
+        unsafely(viewFile.mapped(_.compare(0L, 1L, high).sign))
+      . assert(_ == -1)
 
       test(m"An empty file maps to an empty view"):
         val emptyFileLeaf: Text = Uuid().show
@@ -672,13 +691,13 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
                 java.nio.file.Path.of("/tmp", oldLeaf.s),
                 java.nio.file.StandardCopyOption.ATOMIC_MOVE )
 
-            (view.copy(0L, 5).utf8, replaced.read[Text])
+            (view.read(0L, 5).utf8, replaced.read[Text])
       . assert(_ == (t"first", t"second"))
 
       test(m"A mapped view cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped: Mapped^ = viewFile.mapped(identity(_))
+          val escaped: Terrain^ = viewFile.mapped(identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 
@@ -712,11 +731,11 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       val otherFile: Path on Linux = unsafely((% / "tmp" / publishDir / "other").on[Linux])
       val absentFile: Path on Linux = unsafely((% / "tmp" / publishDir / "absent").on[Linux])
 
-      def text(view: Mapped^): Text = view.copy(0L, view.size.toInt).utf8
+      def text(view: Terrain^): Text = view.read(0L, view.size.toInt).utf8
 
       test(m"Publishing writes the encoded value under the name"):
         unsafely:
-          indexFile.own[Text](_.publish(t"first"))
+          indexFile.claim[Text](_.publish(t"first"))
           indexFile.read[Text]
       . assert(_ == t"first")
 
@@ -730,8 +749,8 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"A name which is owned cannot be owned again"):
         unsafely:
-          indexFile.own[Text]: owner =>
-            capture[Io.Error](indexFile.own[Text](_.publish(t"usurped"))).reason
+          indexFile.claim[Text]: owner =>
+            capture[Io.Error](indexFile.claim[Text](_.publish(t"usurped"))).reason
       . assert(_ == Io.Error.Reason.Busy)
 
       test(m"A refused owner publishes nothing"):
@@ -740,20 +759,20 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"Ownership is released when its scope ends"):
         unsafely:
-          indexFile.own[Text](_.publish(t"second"))
+          indexFile.claim[Text](_.publish(t"second"))
           indexFile.read[Text]
       . assert(_ == t"second")
 
       test(m"Two names are owned independently"):
         unsafely:
-          indexFile.own[Text]: owner =>
-            otherFile.own[Text](_.publish(t"other"))
+          indexFile.claim[Text]: owner =>
+            otherFile.claim[Text](_.publish(t"other"))
             otherFile.read[Text]
       . assert(_ == t"other")
 
       test(m"Each publication has an edition of its own"):
         unsafely:
-          indexFile.own[Text]: owner =>
+          indexFile.claim[Text]: owner =>
             owner.publish(t"third") == owner.publish(t"fourth")
       . assert(_ == false)
 
@@ -763,7 +782,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"A reader's edition is the edition which was published"):
         unsafely:
-          indexFile.own[Text]: owner =>
+          indexFile.claim[Text]: owner =>
             val edition = owner.publish(t"fifth")
             indexFile.published[Text](_.edition == edition)
       . assert(_ == true)
@@ -772,7 +791,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         unsafely:
           indexFile.published[Text]: reader =>
             val before = reader.map(text)
-            indexFile.own[Text](_.publish(t"sixth"))
+            indexFile.claim[Text](_.publish(t"sixth"))
             val unrefreshed = reader.map(text)
             val refreshed = reader.refresh()
             (before, unrefreshed, refreshed, reader.map(text))
@@ -786,7 +805,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         unsafely:
           indexFile.published[Text]: reader =>
             reader.map: view =>
-              indexFile.own[Text](_.publish(t"seventh"))
+              indexFile.claim[Text](_.publish(t"seventh"))
               reader.refresh()
               (text(view), reader.map(text))
       . assert(_ == (t"sixth", t"seventh"))
@@ -794,7 +813,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A reader does not prevent the owner publishing, nor take the lock"):
         unsafely:
           indexFile.published[Text]: reader =>
-            indexFile.own[Text](_.publish(t"eighth"))
+            indexFile.claim[Text](_.publish(t"eighth"))
             indexFile.read[Text]
       . assert(_ == t"eighth")
 
@@ -805,7 +824,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"An owner cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = indexFile.own[Text](identity(_))
+          val escaped = indexFile.claim[Text](identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 

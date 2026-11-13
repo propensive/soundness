@@ -191,13 +191,6 @@ object Scribe:
       System.arraycopy(target, 0, bigger, 0, core.mark)
       core.buffer = bigger.asInstanceOf[AnyRef]
 
-  private[rudiments] inline def over[element, result](buffer: scala.Array[element]^)
-    ( inline lambda: (scribe: Scribe[element]) => (Interval in scribe.type) => result )
-  :   result =
-
-    val scribe = Scribe[element](buffer)
-    lambda(scribe)(Interval.initial(buffer.length).asInstanceOf[Interval in scribe.type])
-
   extension [element](scribe: Scribe[element])
     inline def update(index: Ordinal in scribe.type, value: element): Unit =
       val ordinal: Ordinal = index
@@ -329,10 +322,15 @@ extension (companion: Array.type)
 
   // Allocate, lend, freeze: `lambda` receives the scribe and its branded extent, and the
   // frozen result is returned once the only writer has been retired.
-  inline def scribe[element: ClassTag](size: Int)
-    ( inline lambda: (scribe: Scribe[element]) => (Interval in scribe.type) => Unit )
+  //
+  // A plain `def`, as `collect` is: Proscala 1.1.1 casts the arguments of an inline call to the
+  // representation of an opaque type they mention, so an inlined `scribe` asks its caller's
+  // lambda for a `Scribe.Core`, and no call compiles. The lambda runs once, so little is lost.
+  def scribe[element: ClassTag](size: Int)
+    ( lambda: (scribe: Scribe[element]) => (Interval in scribe.type) => Unit )
   :   Array[element]^{} =
 
     val buffer: scala.Array[element]^ = new scala.Array[element](size.max(0))
-    Scribe.over[element, Unit](buffer)(lambda)
+    val scribe = Scribe[element](buffer)
+    lambda(scribe)(Interval.initial(buffer.length).asInstanceOf[Interval in scribe.type])
     buffer.asInstanceOf[Array[element]^{}]

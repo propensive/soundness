@@ -181,6 +181,19 @@ object Platform:
   =>  ( FileOpenable[filesystem, path]^{tactic} ) =
     FileOpenable[filesystem, path]
 
+  // A path is `Viewable`: its file is mapped for the length of the block which is lent the
+  // view. Anchored here, as the `Openable` instances are, so that a format read in place is
+  // opened from a path with no import.
+  given viewable: [filesystem: Filesystem, path <: Path on filesystem]
+  =>  ( backend: FilesystemBackend on filesystem,
+        tactic:  Tactic[Io.Error] )
+  =>  ( (path is zephyrine.Viewable)^{tactic} ) =
+    new zephyrine.Viewable:
+      type Self = path
+
+      def view[result](value: path)(lambda: zephyrine.Terrain^ => result): result =
+        value.mapped(lambda)
+
   // The `Openable` instance for the `Directory` form: anchored here for the same reason as
   // the `File` instance above. With both in scope, a bare `path.open(...)` is ambiguous, and
   // the form must be stated: `path.open[File](...)` or `path.open[Directory](...)`.

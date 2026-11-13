@@ -1905,6 +1905,13 @@ object Tel extends Tel2, TelMutation, TelRevision:
         case "schema-signature" => schemaSignature
         case _                  => Unset
 
+      // The fixed-width, order-preserving codecs of the Standard Codecs Specification:
+      // `u8`–`u64`, `i8`–`i64`, `f64`, `uuid` and `blake3-256`. RaTEL binds all of them.
+      val standard: Bindings = StandardCodecs(_)
+
+      // Every codec this module defines: the standard codecs, and the two of BinTEL.
+      val all: Bindings = name => builtins(name).or(standard(name))
+
       extension (bindings: Bindings)
         // The bindings resolving through `bindings` first, then `other`.
         def orElse(other: Bindings): Bindings = name => bindings(name).or(other(name))

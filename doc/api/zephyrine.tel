@@ -869,7 +869,8 @@ entry .Expanse   a random-access view of an expanse of bytes, for formats whose 
       offset, not sequentially; an `Expanse` is `size` and `read(offset, length)` over any
       medium which can serve ranged reads — a file channel, an in-memory buffer, an HTTP
       resource accepting `Range` requests. An implementation states its own lifetime
-      discipline (holding a resource open for a scope, or re-acquiring it per read).
+      discipline (holding a resource open for a scope, or re-acquiring it per read). One
+      which stands for an open resource is lent as a tracked `Expanse^`.
       `streamOf(expanse, offset, length)` reads a range of it as a stream, a transfer block
       at a time.
   refer zephyrine.Malleable

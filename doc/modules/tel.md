@@ -468,6 +468,106 @@ row  `Bintel.decodeDocument`  one document, reporting where its continuation beg
 row  `Bintel.decodeWholeDocument`  one document, insisting that nothing follows
 ```
 
+### RaTEL
+
+BinTEL is read from front to back. *RaTEL*, the random-access encoding, is read in place: it
+lays a document out as tables of fixed-width rows, one table for each record type, with sorted
+indexes beside them. A program which [maps the file](filesystem.md#positional-access) finds one
+record by touching that record and nothing else, and several programs which map it share one
+copy. It is the form for a large document which one program writes and others consult.
+
+A schema says how its records are found. A record's `key` field gives the records of a
+repeatable field a *primary index*, and an `index` beneath the field declares another, over one
+or more paths into each record. A scalar with a standard encoding, such as `u32`, is stored in
+its row at a fixed width, and one marked `intern` has each distinct value stored once:
+
+```scala
+val castSchema = t"""
+  tel 1.0 specification.tel/tels:2.1.0
+
+  name cast
+
+  scalar Count
+    encoding u32
+
+  record Role
+    field name String key
+    field play String
+    field lines Count optional
+
+  document
+    field role Role repeatable
+      index /play
+""".read[Tel].as[Tels]
+
+val cast = t"role Hamlet\n  play Hamlet\n  lines 1506\nrole Viola\n  play Twelfth Night\n".read[Tel]
+```
+
+`ratel` encodes a document under its schema as a `Ratel`, an image which carries the schema
+with it. An image is `Encodable in Data`, so it is
+[published](filesystem.md#publishing-versions) like any other value:
+
+```scala
+val image: Ratel = cast.ratel(castSchema)
+file.claim[Ratel](_.publish(image))
+```
+
+A file is opened as `Ratel`, like a file in any other form. It is mapped for the length of
+the block, and the block is given a reader, `ratel`. Opening checks only what decides how the
+rest is read: the header, the schema and its signature, and the directories of tables and
+indexes. Records are then read as they are asked for. `/` gives the records of a repeatable
+field, `find` looks one up by its key with a binary search of the primary index, and `where`
+gives those with a value at an indexed path:
+
+```scala
+file.open[Ratel]():
+  val roles = ratel.root / t"role"
+  val hamlet = roles.find(t"Hamlet")
+  val lines = hamlet.let(_.text(t"lines"))
+  val twelfth = roles.where(t"/play", t"Twelfth Night")
+```
+
+An image in memory, and a `Terrain` view which is already in hand, such as the one a
+[published](filesystem.md#publishing-versions) reader lends, are opened the same way, as
+`image.open[Ratel]()` and `view.open[Ratel]()`.
+
+A `Ratel.Row` reads its members by keyword:
+
+```tabular
+column  Method
+column  Reads
+row  `text`  a scalar, as its text, or `Unset` if it is absent
+row  `data`  a scalar, as the bytes which are stored
+row  `texts`  the values of a repeatable scalar
+row  `flag`, `count`  whether a flag is present, and how many times
+row  `record`  a struct which is not repeatable, as another row
+row  `/`  the records of a repeatable struct, as a `Ratel.Rows`
+row  `has`  whether an optional member is present
+row  `as`  the whole record, decoded as a value
+```
+
+A `Ratel.Rows` has a `size`, is read by position or with `each`, and has `find`, `where` and
+`sorted`, which gives its records in the order of their keys. A row is a plain value which
+says where a record lies, and is read through the reader which its block is given, so it is
+read only while its image is open. Its type, `Ratel.Row of brand`, carries the brand of that
+reader, and a row which is taken to the block of another reader does not compile there. `as` decodes one record, and whatever it holds, through the
+same typeclasses as a TEL document:
+
+```scala
+case class Role(name: Text, play: Text, lines: Optional[Int])
+
+val role = file.open[Ratel]():
+  (ratel.root / t"role").find(t"Hamlet").let(_.as[Role])
+```
+
+A reader which opens a file it did not write trusts nothing in it: every offset is checked
+before it is followed, and a fault is raised as a `Ratel.Error`, by the access which meets it,
+while other records remain readable. The reader's `verify` checks the whole image at once, its
+digests, its indexes against its rows and its value hash, and opening with `Ratel.Flag.Verify`
+does so before the block runs. `materialise` gives the whole document back as the model it was
+written from, so the three encodings convert between one another without loss. An encoding
+which is the application's own is bound to its codec with `Ratel.Flag.Codecs`.
+
 ### Acceptances
 
 Two peers may hold different libraries of schemas. A reader then tells a writer what it can

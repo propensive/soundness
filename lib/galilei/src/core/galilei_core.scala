@@ -144,7 +144,7 @@ extension [plane: Filesystem](path: Path on plane)
   // 2 GiB are addressable.
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the `lambda` parameter, which the separation checker rejects (as on `write` above).
-  def expanse[result](lambda: zephyrine.Expanse => result)
+  def expanse[result](lambda: zephyrine.Expanse^ => result)
     ( using backend: FilesystemBackend on plane )
     ( using Tactic[Io.Error]^ )
   :   result =
@@ -152,12 +152,12 @@ extension [plane: Filesystem](path: Path on plane)
     backend.expanse(path)(lambda)
 
   // Scoped zero-copy reading (issue #2471): maps the whole file into memory, read-only, and
-  // passes a `zephyrine.Mapped` view of it, from which integers are loaded and slices taken
+  // passes a `zephyrine.Terrain` view of it, from which integers are loaded and slices taken
   // in place. The file is unmapped when the scope ends, and the view is a capability which
   // capture checking confines to the scope, so nothing can load from memory that has gone.
   // Processes which map the same file share one copy of it, in the page cache. Supported by
   // the JVM and Scala Native backends; WASI, having no memory mapping, raises `Unsupported`.
-  def mapped[result](lambda: zephyrine.Mapped^ => result)
+  def mapped[result](lambda: zephyrine.Terrain^ => result)
     ( using backend: FilesystemBackend on plane )
     ( using Tactic[Io.Error]^ )
   :   result =
@@ -165,12 +165,12 @@ extension [plane: Filesystem](path: Path on plane)
     val mapping = backend.mapping(path)
     try lambda(mapping) finally mapping.unmap()
 
-  // Takes ownership of this name for the scope of `lambda` (issue #2472): an exclusive
+  // Claims ownership of this name for the scope of `lambda` (issue #2472): an exclusive
   // operating-system lock on the sibling `<name>.lock` is held throughout, so one process at
   // a time -- and one scope within it -- can publish under the name. `Busy` if it is already
   // owned. The `Owner` publishes each version of `record` by writing a temporary sibling and
   // moving it over the name atomically; see `Published`.
-  def own[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
+  def claim[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
     ( using backend: FilesystemBackend on plane, umask: Umask )
     ( using Tactic[Io.Error]^ )
   :   result =

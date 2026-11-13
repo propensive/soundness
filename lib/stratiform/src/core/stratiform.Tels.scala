@@ -1107,14 +1107,7 @@ object Tels extends Tels2:
 
     // The fixed widths, in bytes, of the standard codecs (Standard Codecs §9); a codec which
     // is not among them has no width to contradict.
-    private def codecWidth(encoding: Text): Optional[Int] = encoding.s match
-      case "u8" | "i8"            => 1
-      case "u16" | "i16"          => 2
-      case "u32" | "i32"          => 4
-      case "u64" | "i64" | "f64"  => 8
-      case "uuid"                 => 16
-      case "blake3-256"           => 32
-      case _                      => Unset
+    private def codecWidth(encoding: Text): Optional[Int] = StandardCodecs.width(encoding)
 
     // E228–E230: the indexes of one field of the composed schema. The field must be
     // effectively repeatable, and of a Struct or a Scalar type. Over a Scalar the only path

@@ -102,6 +102,7 @@ refer stratiform.Tel
 refer stratiform.Tels
 refer stratiform.Telp
 refer stratiform.Bintel
+refer stratiform.Ratel
 refer stratiform.Tel.Mutation
 refer stratiform.Tel.Revision
 
@@ -1730,6 +1731,15 @@ entry .bintel   a document, element or value as BinTEL body bytes, guided by a s
     val body: Data = document.bintel(schema)
     Person(t"Percy", 30).bintel == body   // true
     ```
+
+entry .ratel   a document, element or value as a RaTEL image, under a schema which the image carries; or the reader an `open[Ratel]` block has open
+    Three extensions, as `bintel` has. `tel.ratel(schema)` composes the schema, type-assigns
+    the document against it and writes the image; `element.ratel(schema)` writes an already
+    typed `Tel.Element`; and `value.ratel` writes a value under the schema derived from its
+    type. The first two have an overload taking `Tel.Codec.Bindings`; without it the codecs
+    are `Tel.Codec.Bindings.all`. Raises `Tel.Error` for a document which does not conform and
+    `Ratel.Error` for a schema or a value which cannot be laid out. With no receiver, inside an
+    `open[Ratel]` block, `ratel` is the `Ratel.Reader` which the block was given.
 
 entry .valueHash   the BLAKE3 digest of a document's, element's or acceptance's BinTEL body: a hash of content, not bytes
     `tel.valueHash(schema)`, `element.valueHash(schema)` (each with a `Tel.Codec.Bindings`
@@ -3490,6 +3500,88 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
           renders as a message through `.communicable`.
       entry .communicable   renders each reason as its message, as in _a keyword index exceeds the parent's flat-keyword count_
     entry #reason   which B-code the bytes failed
+
+entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random access from a mapped file
+  detail
+      RaTEL is TEL's random-access encoding. Where BinTEL is read front to back, a RaTEL image
+      is read in place: every struct type has a fixed-width *row* with a *slot* for each member
+      at an offset the schema determines, the instances of a record type form a *table*,
+      variable-width values lie in regions addressed by offset, and sorted *indexes* over keyed
+      and `index`-declared members make a lookup a binary search. A `Ratel` is the image as a
+      value — its bytes, `data` — and is `Encodable in Data`, so galilei's `claim` publishes it.
+      The object `Ratel` writes one (`encode`); one is read by opening whatever holds it as
+      `Ratel`, with aperture's `open`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val image: Ratel = document.ratel(schema)
+      file.claim[Ratel](_.publish(image))
+
+      file.open[Ratel]():
+        (ratel.root / t"role").find(t"Hamlet").let(_.text(t"play"))
+      ```
+
+      An image always carries its composed schema, with its signature, and may carry the
+      document's value hash and a digest of each section. It is not byte-deterministic: the
+      value hash, not the bytes, is a document's identity.
+  entry .encode   a type-assigned `Tel.Element` root as a RaTEL image, by the specification's canonical writer
+      `Ratel.encode(element, schema, codecs, digests)` lays the document out under `schema`,
+      which is given as it is declared — with its layers — and is embedded as BinTEL beside
+      its signature. `codecs` defaults to `Tel.Codec.Bindings.all`; `digests` (by default
+      `true`) adds the digests section. It raises `Ratel.Error`: `SchemaUnlayoutable` (R11),
+      `CodecUnresolved` (R19), `WidthMismatch` (R22) for a value whose bytes are not the width
+      its scalar declares, `Unencodable` for a model the schema does not describe, and
+      `Oversized` for an image of 2 GiB or more; and `Tel.Error(EncodingRejected)` for a value
+      its codec rejects. The extensions `tel.ratel(schema)`, `element.ratel(schema)` and
+      `value.ratel` call this.
+  entry .openable   opens anything `Viewable` — a path, an image, a `Terrain` in hand — as `Ratel`, for reading in place
+      `source.open[Ratel]()` lends a `Terrain` view of the source through its `zephyrine.Viewable`
+      instance, copies and checks the header, decodes the embedded schema, recomputes its
+      signature, derives the layout and checks the table and index directories against it
+      (R01–R13, R19), and gives the block a `Ratel.Reader`, which the accessor `ratel` names. It
+      reads nothing else until it is asked. The reader captures the view, and cannot outlive
+      the block. A `Write` mode is refused with `Unwritable`: an image is replaced, by
+      publishing another, and never changed. The flags are `Ratel.Flag`s.
+  entry .Flag   what may be asked of `open[Ratel]`: `Verify`, and `Codecs(bindings)`
+      `Verify` runs the reader's `verify` before the block, making it a verifying reader in
+      the specification's sense. `Codecs(bindings)` binds codecs for encodings this module does
+      not define, ahead of `Tel.Codec.Bindings.all`.
+  entry .viewable   an image as a view of its bytes where they lie on the heap, so that it is opened as a file is
+  entry .Reader   an open image: its schema, its root row, and whole-document operations
+    entry #Topic   this reader's brand: a type of its own, which every row it gives carries
+    entry #root   the document's root, as a `Ratel.Row of reader.Topic`
+    entry #schema   the composed schema the image carries
+    entry #signature   the schema signature the image carries, which a reader requiring a trusted schema compares
+    entry #valueHash   the document's value hash, if the header carries it
+    entry #materialise   the semantic model the image encodes, as `Bintel.decode` would give it
+    entry #verify   checks the digests, the whole document, every index against its rows, and the value hash
+  entry .Row   one record, read in place: `text`, `data`, `texts`, `flag`, `count`, `record`, `/`, `has`, `holds`, `as`
+      A plain value — a table and a record index — which says where a record lies. Every
+      accessor takes the `Ratel.Reader` contextually, as the block of `open[Ratel]` gives it,
+      so a row may be kept, collected or returned, but is read only where a reader is given.
+      Its type is `Ratel.Row of brand`, where the brand is the `Topic` of the reader it came
+      from, and each accessor asks for evidence that the reader in context has that brand:
+      a row cannot be read through the reader of another image, nor once its block has ended.
+    entry #Topic   the brand of the reader this row came from
+  entry .Rows   the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`
+  entry .Error   raised when an image cannot be read or written, with the specification's R-code as its reason
+    detail
+        Error 615: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
+        numbers its cases 1 to 27 by the R-code of the RaTEL specification — `BadMagic`,
+        `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`, `SectionsOverlap`,
+        `DigestMismatch`, `BadSignature`, `SchemaUndecodable`, `SignatureMismatch`,
+        `SchemaUnlayoutable`, `BadTableDirectory`, `BadRootTable`, `BadRef`, `BadRecordIndex`,
+        `RowRevisited`, `BadTag`, `BadUtf8`, `CodecUnresolved`, `CodecDecodeFailed`,
+        `CodecNoncanonical`, `WidthMismatch`, `BadIndex`, `IndexUnsorted`, `IndexDisagrees`,
+        `NonzeroPadding`, `ValueHashMismatch` — and continues with those outside that taxonomy:
+        `NestingLimitExceeded` (28), `Unencodable` (29), `Oversized` (30), `Unindexed` (31) for
+        a lookup no index answers, and `Unknown` (32), `Inapplicable` (33) and `Absent` (34)
+        for a member which a row does not have, has in another kind, or has not got a value
+        for, and `Unwritable` (35) for an image opened for writing. R01–R13 and R19 are raised
+        as an image is opened; the others by the access which meets them, or by `verify`. `CodecNoncanonical` and `NonzeroPadding`, the specification's optional
+        checks, are not yet raised.
 
 entry .BintelReader   the restricted rim of the BinTEL body parser a `Bintel.Parsable` reads through
   detail

@@ -328,7 +328,7 @@ package filesystemBackends:
 
           if !success then abort(Io.Error(path, Operation.Metadata, Reason.PermissionDenied))
 
-      def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
+      def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse^ => result)
         ( using Tactic[Io.Error] )
       :   result =
 
