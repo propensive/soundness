@@ -381,8 +381,11 @@ is available on the JVM and on Scala Native; WASI has no memory mapping, and rep
 `Unsupported`.
 
 `Mapped(data)` is a view of bytes which are already in memory, for reading a format which is
-designed for a mapped file from `Data` instead. [RaTEL](tel.md#ratel) is such a format: a TEL
-document laid out so that one record is found without reading the rest.
+designed for a mapped file from `Data` instead. A path is `Viewable`, the typeclass of a value
+which can lend a view of its bytes, so a format which is read in place is opened straight from
+its file. [RaTEL](tel.md#ratel) is such a format, a TEL document laid out so that one record is
+found without reading the rest, and `file.open[Ratel]()` maps the file for the length of its
+block.
 
 ### Publishing versions
 

@@ -39,7 +39,7 @@ package soundness
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
     Duct, Ductile, Expanse, Malleable, Mapped, Pace,
     Format, Formatting, Intake, Lineation, Parse, PositionTracking, Producer, Positionable,
-    Records, records, Regulation, Spring, Stream, Substrate, Truncation, chunks,
+    Records, records, Regulation, Spring, Stream, Substrate, Truncation, Viewable, chunks,
     discard, drain, gather, locate,
     locateKey, memoize, pump, ingest, stream, streamOf, chain, truncate,
     viaDuct, acceptingDuct,

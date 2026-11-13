@@ -35,6 +35,7 @@ package stratiform
 import scala.language.unsafeNulls
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -73,12 +74,77 @@ object Ratel:
 
     Ratel(RatelWriter.write(element, schema, codecs, digests))
 
-  // Opens a view of an image for reading in place (§7.1). Everything which decides how the
-  // rest is read -- the header, the schema and its signature, the directories of tables and
-  // indexes -- is checked here, and nothing else is read until it is asked for.
-  def open(view: Mapped^, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.all)
+  // An image is `Viewable`, as the view of its bytes where they lie on the heap, so it is
+  // opened as a file which holds it is.
+  given viewable: Ratel is Viewable:
+    def view[result](value: Ratel)(lambda: Mapped^ => result): result = lambda(value.mapped)
+
+  // Anything `Viewable` -- a path, an image, a view -- is opened as `Ratel` for reading in
+  // place: `file.open[Ratel]()`. The reader is given to the block, and to nothing beyond it.
+  given openable: [source]
+  =>  ( viewable: (source is Viewable)^,
+        tactic:   Tactic[Ratel.Error] )
+  =>  ( Ratel.Openable[source]^{viewable, tactic} ) =
+    Ratel.Openable[source]()
+
+  // What may be asked of `open[Ratel]`: `Verify` makes it a verifying reader (§7.2), which
+  // checks the whole image before the block runs, and `Codecs` binds the codecs of encodings
+  // which this module does not define, ahead of those it does.
+  enum Flag:
+    case Verify
+    case Codecs(bindings: Tel.Codec.Bindings)
+
+  class Openable[source]
+    ( using viewable: (source is Viewable)^, tactic: Tactic[Ratel.Error] )
+  extends aperture.Openable:
+    type Self = source
+    type Form = Ratel
+    type Operand = Ratel.Flag
+    type Result = Reader
+
+    def open[grants <: Grant, result]
+      ( value: source, mode: Mode granting grants, flags: List[Ratel.Flag] )
+      ( block: ((Reader & Granting[grants])^) ?=> result )
+    :   result =
+
+      // An image is never changed where it lies: a new one is published over it.
+      if mode.atoms.has(Write) then fail(Error.Reason.Unwritable)
+
+      val codecs = flags.fuse(Tel.Codec.Bindings.all):
+        next match
+          case Flag.Codecs(bindings) => bindings.orElse(state)
+          case Flag.Verify           => state
+
+      viewable.view(value): view =>
+        val reader = new Reader(view, inspect(view, codecs)) with Granting[grants] {}
+        if flags.has(Flag.Verify) then reader.verify()
+        block(using reader)
+
+  // What `open` learns of an image before anything is read from it: its schema and layout,
+  // and where its sections, tables and indexes lie.
+  private[stratiform] case class Opening
+    ( schema:    Tels,
+      signature: Data,
+      valueHash: Optional[Digest in Blake3],
+      layout:    Layout,
+      codecs:    Tel.Codec.Bindings,
+      sections:  Array[Extent]^{},
+      tables:    Array[Extent]^{},
+      indexes:   Array[Extent]^{} )
+
+  private[stratiform] def open
+    ( view: Mapped^, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.all )
     ( using Tactic[Ratel.Error] )
   :   Reader^{view} =
+
+    new Reader(view, inspect(view, codecs))
+
+  // §7.1: everything which decides how the rest of an image is read -- the header, the schema
+  // and its signature, the directories of tables and indexes -- is checked here, and nothing
+  // else is read until it is asked for.
+  private[stratiform] def inspect(view: Mapped^, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Ratel.Error] )
+  :   Opening =
 
     import Error.Reason
 
@@ -205,8 +271,8 @@ object Ratel:
     val hash: Optional[Digest in Blake3] =
       if (flags & 2) != 0 then Digest[Blake3](header.segment(112.z till 144.z)) else Unset
 
-    new Reader
-      ( view, schema, signature, hash, layout, codecs, extents.to[Array], tables.to[Array],
+    Opening
+      ( schema, signature, hash, layout, codecs, extents.to[Array], tables.to[Array],
         indexes.to[Array] )
 
   private[stratiform] def error(reason: Error.Reason): Error =
@@ -223,18 +289,17 @@ object Ratel:
 
   // An open image. It serves reads for as long as the view it was opened on is mapped, and
   // may be shared between threads.
-  final class Reader private[stratiform]
-    ( view:       Mapped^,
-      val schema: Tels,
-      val signature: Data,
-      val valueHash: Optional[Digest in Blake3],
-      layout:     Layout,
-      codecs:     Tel.Codec.Bindings,
-      sections:   Array[Extent]^{},
-      tables:     Array[Extent]^{},
-      indexes:    Array[Extent]^{} ):
-
+  class Reader private[stratiform](view: Mapped^, opening: Opening):
     import Error.Reason
+    import opening.{codecs, indexes, layout, sections, tables}
+
+    // The composed schema which the image carries, and the signature it carries it under. A
+    // reader which requires a schema it trusts compares the signature with those it knows.
+    def schema: Tels = opening.schema
+    def signature: Data = opening.signature
+
+    // The document's value hash, if the header carries it.
+    def valueHash: Optional[Digest in Blake3] = opening.valueHash
 
     private def section(number: Int): Extent = sections.at(number.z).or(Extent(0L, 0L))
 
@@ -296,8 +361,7 @@ object Ratel:
         case _                     => fail(Reason.Inapplicable(slot.keyword))
 
     // The document's root: the one row of table 0.
-    def root(using Tactic[Ratel.Error]): Row^{this} =
-      new Row(this, 0, 0L, plan(0).entries, plan(0).struct)
+    def root(using Tactic[Ratel.Error]): Row = new Row(0, 0L, plan(0).entries, plan(0).struct)
 
     // §8: the semantic model which the image encodes, from which it may be written again as
     // text or as BinTEL. Every row is visited once, and at most once.
@@ -605,17 +669,18 @@ object Ratel:
 
   // One record, read in place: a row of a table, or a struct whose members are flattened
   // into the row of the struct which holds it. A member is named by its keyword; one which
-  // is a variant of a select is present if it is the variant chosen.
+  // is a variant of a select is present if it is the variant chosen. A row is a plain value,
+  // which says where a record lies: it is read through the reader of the image it came from,
+  // which the block that opened the image is given, and so can be read nowhere else.
   final class Row private[stratiform]
-    ( reader:  Reader^,
-      table:   Int,
+    ( table:   Int,
       val index: Long,
       entries: List[Entry],
       struct:  Tels.Struct ):
 
     import Error.Reason
 
-    private def address(using Tactic[Ratel.Error]): Long = reader.address(table, index)
+    private def address(using reader: Reader^, tactic: Tactic[Ratel.Error]): Long = reader.address(table, index)
 
     // What a keyword names in this record: a member with a slot, a flattened struct, or a
     // variant of a select, together with the slot of the select.
@@ -624,7 +689,7 @@ object Ratel:
       case Inner(entry: Entry.Flattened)
       case Choice(slot: Slot, variant: RatelLayout.Variant)
 
-    private def lookup(keyword: Text)(using Tactic[Ratel.Error]): Found =
+    private def lookup(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Found =
       val found: List[Found] = entries.bind:
         case entry: Entry.Flattened =>
           if entry.keyword == keyword then List(Found.Inner(entry)) else Nil
@@ -642,7 +707,7 @@ object Ratel:
       found.head.or(fail(Reason.Unknown(keyword)))
 
     // The payload of a select's slot, if `variant` is the one chosen.
-    private def chosen(slot: Slot, variant: RatelLayout.Variant)(using Tactic[Ratel.Error])
+    private def chosen(slot: Slot, variant: RatelLayout.Variant)(using reader: Reader^, tactic: Tactic[Ratel.Error])
     :   Optional[Long] =
 
       val at = address + slot.offset
@@ -651,13 +716,13 @@ object Ratel:
       else reader.word(at + 4)
 
     // Whether a member which is not repeatable is present: always, if it is required.
-    def has(keyword: Text)(using Tactic[Ratel.Error]): Boolean = lookup(keyword) match
+    def has(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Boolean = lookup(keyword) match
       case Found.Member(slot)          => reader.present(address, slot)
       case Found.Choice(slot, variant) => chosen(slot, variant).present
       case Found.Inner(entry)          => true
 
     // The bytes of a scalar member, as they are stored: UTF-8, or the bytes of its codec.
-    def data(keyword: Text)(using Tactic[Ratel.Error]): Data = lookup(keyword) match
+    def data(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Data = lookup(keyword) match
       case Found.Member(slot) =>
         if !reader.present(address, slot) then fail(Reason.Absent(keyword))
         else reader.load(address, slot)
@@ -672,7 +737,7 @@ object Ratel:
       case Found.Inner(entry) =>
         fail(Reason.Inapplicable(keyword))
 
-    private def scalar(keyword: Text)(using Tactic[Ratel.Error]): Tels.Scalar =
+    private def scalar(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Tels.Scalar =
       lookup(keyword) match
         case Found.Member(slot) => slot.kind match
           case Kind.Inline(scalar, _) => scalar
@@ -689,11 +754,11 @@ object Ratel:
           fail(Reason.Inapplicable(keyword))
 
     // The text of a scalar member, if it is present.
-    def text(keyword: Text)(using Tactic[Ratel.Error]): Optional[Text] =
+    def text(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Optional[Text] =
       if !has(keyword) then Unset else reader.text(scalar(keyword), data(keyword))
 
     // The texts of a repeatable scalar member, in the order they were written.
-    def texts(keyword: Text)(using Tactic[Ratel.Error]): List[Text] =
+    def texts(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): List[Text] =
       val slot = lookup(keyword) match
         case Found.Member(slot) => slot
         case _                  => fail(Reason.Inapplicable(keyword))
@@ -725,7 +790,7 @@ object Ratel:
 
     // Whether a repeatable scalar member has `value` among its values: by its index, if the
     // schema declares one, and by reading each value otherwise.
-    def holds(keyword: Text, value: Text)(using Tactic[Ratel.Error]): Boolean =
+    def holds(keyword: Text, value: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Boolean =
       val slot = lookup(keyword) match
         case Found.Member(slot) => slot
         case _                  => fail(Reason.Inapplicable(keyword))
@@ -742,7 +807,7 @@ object Ratel:
             !reader.search(number, probe).nil
 
     // How many times a flag occurs: for one which is not repeatable, once or not at all.
-    def count(keyword: Text)(using Tactic[Ratel.Error]): Long = lookup(keyword) match
+    def count(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Long = lookup(keyword) match
       case Found.Member(slot) => slot.kind match
         case Kind.Always    => 1L
         case Kind.Flag      => if reader.present(address, slot) then 1L else 0L
@@ -756,20 +821,20 @@ object Ratel:
       case Found.Inner(entry) =>
         fail(Reason.Inapplicable(keyword))
 
-    def flag(keyword: Text)(using Tactic[Ratel.Error]): Boolean = count(keyword) > 0L
+    def flag(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Boolean = count(keyword) > 0L
 
     // A struct member which is not repeatable, if it is present.
-    def record(keyword: Text)(using Tactic[Ratel.Error]): Optional[Row^{reader}] =
+    def record(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Optional[Row] =
       lookup(keyword) match
         case Found.Inner(entry) =>
-          new Row(reader, table, index, entry.entries, entry.struct)
+          new Row(table, index, entry.entries, entry.struct)
 
         case Found.Member(slot) => slot.kind match
           case Kind.Record(table, struct) =>
             if !reader.present(address, slot) then Unset else
               val row = reader.word(address + slot.offset)
               reader.address(table, row)
-              new Row(reader, table, row, reader.plan(table).entries, struct)
+              new Row(table, row, reader.plan(table).entries, struct)
 
           case _ =>
             fail(Reason.Inapplicable(keyword))
@@ -780,19 +845,19 @@ object Ratel:
 
             if row.absent then Unset else
               reader.address(table, row.or(0L))
-              new Row(reader, table, row.or(0L), reader.plan(table).entries, struct)
+              new Row(table, row.or(0L), reader.plan(table).entries, struct)
 
           case _ =>
             fail(Reason.Inapplicable(keyword))
 
     // The records of a repeatable struct member. Nothing of them is read until one is.
-    def / (keyword: Text)(using Tactic[Ratel.Error]): Rows^{reader} = lookup(keyword) match
+    def / (keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Rows = lookup(keyword) match
       case Found.Member(slot) => slot.kind match
         case Kind.Range(child, struct) =>
           val start = reader.word(address + slot.offset)
           val size = reader.word(address + slot.offset + 4)
           if start + size > reader.count(child) then fail(Reason.BadRecordIndex)
-          new Rows(reader, table, index, slot, child, struct, start, size)
+          new Rows(table, index, slot, child, struct, start, size)
 
         case _ =>
           fail(Reason.Inapplicable(keyword))
@@ -801,20 +866,19 @@ object Ratel:
         fail(Reason.Inapplicable(keyword))
 
     // The semantic model of this record alone, and of whatever it holds.
-    def materialise()(using Tactic[Ratel.Error]): Tel.Element.Node =
+    def materialise()(using reader: Reader^, tactic: Tactic[Ratel.Error]): Tel.Element.Node =
       val visited: java.util.HashMap[Int, java.util.BitSet] = java.util.HashMap()
       Tel.Element.Node(Unset, struct, reader.members(address, entries, visited, 0))
 
     // This record as a value of a type which is read from TEL. Only this record's rows, and
     // those it refers to, are read.
-    def as[value: Tel.Decodable](using Tactic[Ratel.Error], Tactic[Tel.Error]): value =
+    def as[value: Tel.Decodable](using reader: Reader^, tactic: Tactic[Ratel.Error], decoding: Tactic[Tel.Error]): value =
       Bintel.present(materialise(), reader.schema.copy(document = struct)).as[value]
 
   // The records of a repeatable member of one record: a run of consecutive rows of a table,
   // in the order they were written, with the indexes which the schema declares over them.
   final class Rows private[stratiform]
-    ( reader: Reader^,
-      host:   Int,
+    ( host:   Int,
       parent: Long,
       slot:   Slot,
       table:  Int,
@@ -824,18 +888,18 @@ object Ratel:
 
     import Error.Reason
 
-    private def row(number: Long)(using Tactic[Ratel.Error]): Row^{reader} =
-      new Row(reader, table, number, reader.plan(table).entries, struct)
+    private def row(number: Long)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Row =
+      new Row(table, number, reader.plan(table).entries, struct)
 
-    private def child(number: Long)(using Tactic[Ratel.Error]): Row^{reader} =
+    private def child(number: Long)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Row =
       if number < start || number >= start + size then fail(Reason.BadRecordIndex)
       row(number)
 
-    def apply(ordinal: Ordinal)(using Tactic[Ratel.Error]): Row^{reader} =
+    def apply(ordinal: Ordinal)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Row =
       if ordinal.n0 >= size then fail(Reason.BadRecordIndex)
       row(start + ordinal.n0)
 
-    def each(lambda: Row^{reader} => Unit)(using Tactic[Ratel.Error]): Unit =
+    def each(lambda: Row => Unit)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Unit =
       @scala.annotation.tailrec
       def recur(number: Long): Unit = if number < size then
         lambda(row(start + number))
@@ -852,11 +916,11 @@ object Ratel:
         RatelBytes.u32be(out, parent)
         RatelBytes.component(out, bytes, fixed)
 
-    private def primary(using Tactic[Ratel.Error]): (RatelLayout.Index, Int) =
+    private def primary(using reader: Reader^, tactic: Tactic[Ratel.Error]): (RatelLayout.Index, Int) =
       reader.indexesAt(host, slot).seek(_(0).primary).or(fail(Reason.Unindexed))
 
     private def lookup(index: RatelLayout.Index, number: Int, value: Text)
-      ( using Tactic[Ratel.Error] )
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
     :   List[Long] =
 
       val component = index.components.head.or(fail(Reason.Unindexed))
@@ -869,7 +933,7 @@ object Ratel:
 
     // The record whose key field has the value `key`, found by a binary search of the
     // primary index (§9.4).
-    def find(key: Text)(using Tactic[Ratel.Error]): Optional[Row^{reader}] =
+    def find(key: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Optional[Row] =
       val (index, number) = primary
 
       lookup(index, number, key) match
@@ -877,12 +941,12 @@ object Ratel:
         case Nil           => Unset
 
     // The records in the order of their keys.
-    def sorted(using Tactic[Ratel.Error]): List[Row^{reader}] =
+    def sorted(using reader: Reader^, tactic: Tactic[Ratel.Error]): List[Row] =
       reader.search(primary(1), prefix).map(child(_))
 
     // The records for which the scalar at `path` has the value `value`, found through the
     // first index declared over the member whose first path it is.
-    def where(path: Text, value: Text)(using Tactic[Ratel.Error]): List[Row^{reader}] =
+    def where(path: Text, value: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): List[Row] =
       def telp(path: Text): Telp = safely(Telp.parse(path)).or(Telp(List(path)))
 
       val (index, number) =
@@ -929,6 +993,7 @@ object Ratel:
         case Unindexed             => m"the schema declares no index which can answer the lookup"
         case Unknown(keyword)      => m"the record has no member $keyword"
         case Absent(keyword)       => m"the member $keyword is absent"
+        case Unwritable            => m"an image is read-only, and is replaced by publishing another"
         case Inapplicable(keyword) => m"the member $keyword is not of the kind which was asked for"
 
     // The conditions of RaTEL §14, each numbered as its R-code is, followed by those which
@@ -968,6 +1033,7 @@ object Ratel:
       case Unknown(keyword: Text)      extends Reason(32)
       case Inapplicable(keyword: Text) extends Reason(33)
       case Absent(keyword: Text)       extends Reason(34)
+      case Unwritable                  extends Reason(35)
 
   case class Error(reason: Ratel.Error.Reason)(using Diagnostics)
   extends fulminate.Error(615, reason.number)(m"the RaTEL image cannot be used because $reason")

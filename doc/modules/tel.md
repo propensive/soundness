@@ -512,19 +512,24 @@ val image: Ratel = cast.ratel(castSchema)
 file.own[Ratel](_.publish(image))
 ```
 
-`Ratel.open` takes a `Mapped` view, and checks only what decides how the rest is read: the
-header, the schema and its signature, and the directories of tables and indexes. Records are
-then read as they are asked for. `/` gives the records of a repeatable field, `find` looks one
-up by its key with a binary search of the primary index, and `where` gives those with a value
-at an indexed path:
+A file is opened as `Ratel`, like a file in any other form. It is mapped for the length of
+the block, and the block is given a reader, `ratel`. Opening checks only what decides how the
+rest is read: the header, the schema and its signature, and the directories of tables and
+indexes. Records are then read as they are asked for. `/` gives the records of a repeatable
+field, `find` looks one up by its key with a binary search of the primary index, and `where`
+gives those with a value at an indexed path:
 
 ```scala
-file.mapped: view =>
-  val roles = Ratel.open(view).root / t"role"
+file.open[Ratel]():
+  val roles = ratel.root / t"role"
   val hamlet = roles.find(t"Hamlet")
   val lines = hamlet.let(_.text(t"lines"))
   val twelfth = roles.where(t"/play", t"Twelfth Night")
 ```
+
+An image in memory, and a `Mapped` view which is already in hand, such as the one a
+[published](filesystem.md#publishing-versions) reader lends, are opened the same way, as
+`image.open[Ratel]()` and `view.open[Ratel]()`.
 
 A `Ratel.Row` reads its members by keyword:
 
@@ -542,23 +547,25 @@ row  `as`  the whole record, decoded as a value
 ```
 
 A `Ratel.Rows` has a `size`, is read by position or with `each`, and has `find`, `where` and
-`sorted`, which gives its records in the order of their keys. A row and its records are views
-of the mapped file, and are confined to the block which maps it. `as` decodes one record, and
-whatever it holds, through the same typeclasses as a TEL document:
+`sorted`, which gives its records in the order of their keys. A row is a plain value which
+says where a record lies, and is read through the reader which its block is given, so it is
+read only while its image is open. `as` decodes one record, and whatever it holds, through the
+same typeclasses as a TEL document:
 
 ```scala
 case class Role(name: Text, play: Text, lines: Optional[Int])
 
-val role = file.mapped: view =>
-  (Ratel.open(view).root / t"role").find(t"Hamlet").let(_.as[Role])
+val role = file.open[Ratel]():
+  (ratel.root / t"role").find(t"Hamlet").let(_.as[Role])
 ```
 
 A reader which opens a file it did not write trusts nothing in it: every offset is checked
 before it is followed, and a fault is raised as a `Ratel.Error`, by the access which meets it,
-while other records remain readable. `verify` checks the whole image at once, its digests, its
-indexes against its rows and its value hash, and `materialise` gives the whole document back
-as the model it was written from, so the three encodings convert between one another without
-loss. An image may also be read from memory, with `Ratel.open(image.mapped)`.
+while other records remain readable. The reader's `verify` checks the whole image at once, its
+digests, its indexes against its rows and its value hash, and opening with `Ratel.Flag.Verify`
+does so before the block runs. `materialise` gives the whole document back as the model it was
+written from, so the three encodings convert between one another without loss. An encoding
+which is the application's own is bound to its codec with `Ratel.Flag.Codecs`.
 
 ### Acceptances
 

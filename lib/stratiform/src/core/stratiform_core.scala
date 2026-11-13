@@ -218,6 +218,9 @@ extension (element: Tel.Element)
 
     element.bintel(schema, codecs).digest[Blake3]
 
+// The reader of the image which the enclosing `open[Ratel]` block has open.
+transparent inline def ratel(using reader: Ratel.Reader^): reader.type = reader
+
 extension (tel: Tel)
   // This document as a RaTEL image (RaTEL §10), for reading in place from a mapped file. The
   // schema is given as it is declared, layers and all, and is carried in the image. Scalars

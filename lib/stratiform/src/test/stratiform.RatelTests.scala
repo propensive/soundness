@@ -70,7 +70,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
   // The condition a verifying reader reports for an image.
   private def reason(image: Data): Ratel.Error.Reason =
-    capture[Ratel.Error](Ratel.open(Mapped(image)).verify()).reason
+    capture[Ratel.Error](Ratel(image).open[Ratel](Ratel.Flag.Verify)(())).reason
 
   private def plain(document: Tel, schema: Tels): Data =
     val element = Tel.Type.assign(document, schema, Tel.Validator.Registry.builtins, Tel.Codec.Bindings.all)
@@ -255,17 +255,18 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == hex(catalogue.valueHash(catalogueSchema).data))
 
       test(m"a record is found by its key"):
-        val entries = Ratel.open(Mapped(image)).root / t"entry"
-        entries.find(t"beta").let { row => (row.index, row.text(t"name"), row.text(t"info")) }
+        Ratel(image).open[Ratel]():
+          (ratel.root / t"entry").find(t"beta").let: row =>
+            (row.index, row.text(t"name"), row.text(t"info"))
+
       . assert(_ == (1L, t"beta", Unset))
 
       test(m"a key which no record has finds nothing"):
-        (Ratel.open(Mapped(image)).root / t"entry").find(t"gamma").absent
+        Ratel(image).open[Ratel]()((ratel.root / t"entry").find(t"gamma").absent)
       . assert(_ == true)
 
       test(m"an optional member which is present is read"):
-        val entries = Ratel.open(Mapped(image)).root / t"entry"
-        entries.find(t"alpha").let(_.text(t"info"))
+        Ratel(image).open[Ratel]()((ratel.root / t"entry").find(t"alpha").let(_.text(t"info")))
       . assert(_ == t"First letter")
 
       test(m"the image passes verification"):
@@ -276,6 +277,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       val element = Tel.Type.assign(folio, folioSchema, Tel.Validator.Registry.builtins, Tel.Codec.Bindings.all)
       val image: Ratel = folio.ratel(folioSchema)
       val reader = Ratel.open(image.mapped)
+      given Ratel.Reader = reader
       val plays = reader.root / t"play"
       def play(title: Text): Ratel.Row = plays.find(title).or(throw IllegalArgumentException(title.s))
 
@@ -413,6 +415,65 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         hex(play(t"Hamlet").record(t"stage").let(_.materialise()).let(_.bintel(folioSchema.copy(document = Tels.Struct(Array.empty, Array.empty)))).or(Array.empty[Byte])).length > 0
       . assert(_ == true)
 
+    suite(m"Opening an image"):
+      val image: Ratel = folio.ratel(folioSchema)
+
+      test(m"an image is opened where it lies in memory"):
+        image.open[Ratel]()(ratel.root.text(t"name"))
+      . assert(_ == t"First Folio")
+
+      test(m"the reader may be named in the block"):
+        image.open[Ratel]() { reader ?=> (reader.root / t"play").size }
+      . assert(_ == 3L)
+
+      test(m"a view of an image is opened"):
+        Mapped(image.data).open[Ratel]()(ratel.schema.name)
+      . assert(_ == t"folio")
+
+      test(m"an image is verified as it is opened"):
+        image.open[Ratel](Ratel.Flag.Verify)(ratel.valueHash.present)
+      . assert(_ == true)
+
+      test(m"an image is not opened for writing"):
+        capture[Ratel.Error](image.open[Ratel](Read & Write)(ratel.schema.name)).reason
+      . assert(_ == Ratel.Error.Reason.Unwritable)
+
+      test(m"a codec of the application's is bound as an image is opened"):
+        val schema = schemaOf:
+          Text("""|tel 1.0 specification.tel/tels:2.1.0
+              |
+              |name ledger
+              |
+              |scalar Amount
+              |  encoding decimal-varint
+              |
+              |document
+              |  field amount Amount
+              |""".stripMargin)
+
+        val codecs = CodecTests.bindings.orElse(Tel.Codec.Bindings.all)
+        val ledger = t"tel 1.0\n\namount 300\n".read[Tel].ratel(schema, codecs)
+        ledger.open[Ratel](Ratel.Flag.Codecs(CodecTests.bindings))(ratel.root.text(t"amount"))
+      . assert(_ == t"300")
+
+      test(m"an encoding with no codec bound to it is refused"):
+        val schema = schemaOf:
+          Text("""|tel 1.0 specification.tel/tels:2.1.0
+              |
+              |name ledger
+              |
+              |scalar Amount
+              |  encoding decimal-varint
+              |
+              |document
+              |  field amount Amount
+              |""".stripMargin)
+
+        val codecs = CodecTests.bindings.orElse(Tel.Codec.Bindings.all)
+        val ledger = t"tel 1.0\n\namount 300\n".read[Tel].ratel(schema, codecs)
+        capture[Ratel.Error](ledger.open[Ratel]()(ratel.root.text(t"amount"))).reason
+      . assert(_ == Ratel.Error.Reason.CodecUnresolved)
+
     suite(m"Losslessness over the conformance corpus (P5)"):
       val codecs = CodecTests.bindings.orElse(Tel.Codec.Bindings.all)
 
@@ -545,8 +606,13 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"a lazy reader still serves the records which are sound"):
         val damaged = patched(image, tables + 0x4c, little(2, 4))
-        val entries = Ratel.open(Mapped(damaged)).root / t"entry"
-        (entries.find(t"alpha").let(_.text(t"info")), capture[Ratel.Error](entries(Sec).text(t"name")).reason)
+
+        Ratel(damaged).open[Ratel]():
+          val entries = ratel.root / t"entry"
+
+          ( entries.find(t"alpha").let(_.text(t"info")),
+            capture[Ratel.Error](entries(Sec).text(t"name")).reason )
+
       . assert(_ == (t"First letter", Reason.BadRef))
 
       test(m"R16: a row which is reached twice is refused"):
@@ -659,17 +725,29 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         t"tel 1.0\n\nentry\n  name alpha\n\nentry\n  name beta\n  info  Second letter\n".read[Tel]
 
       def info(view: Mapped, key: Text): Optional[Text] =
-        (Ratel.open(view).root / t"entry").find(key).let(_.text(t"info"))
+        view.open[Ratel]() { (ratel.root / t"entry").find(key).let(_.text(t"info")) }
 
       test(m"an image published under a name is read in place from the file"):
         unsafely:
           file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
-          file.mapped(info(_, t"alpha"))
+          file.open[Ratel]() { (ratel.root / t"entry").find(t"alpha").let(_.text(t"info")) }
       . assert(_ == t"First letter")
 
-      test(m"a mapped image passes verification"):
-        unsafely(file.mapped(Ratel.open(_).verify()))
-      . assert(_ == ())
+      test(m"a file is verified as it is opened"):
+        unsafely(file.open[Ratel](Ratel.Flag.Verify)((ratel.root / t"entry").size))
+      . assert(_ == 2L)
+
+      test(m"a view of a mapped file is opened as it is"):
+        unsafely(file.mapped(info(_, t"alpha")))
+      . assert(_ == t"First letter")
+
+      test(m"a file which is not an image is refused as it is opened"):
+        val other: Path on Linux = unsafely((% / "tmp" / directory / "prologue").on[Linux])
+
+        unsafely:
+          other.write(t"Two households, both alike in dignity")
+          capture[Ratel.Error](other.open[Ratel]()(ratel.schema.name)).reason
+      . assert(_ == Ratel.Error.Reason.BadLength)
 
       test(m"a reader sees a new edition once it refreshes"):
         unsafely:
@@ -685,8 +763,9 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         unsafely:
           file.published[Ratel]: reader =>
             reader.map: view =>
-              val entries = Ratel.open(view).root / t"entry"
-              file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
-              reader.refresh()
-              entries.find(t"beta").let(_.text(t"info"))
+              view.open[Ratel]():
+                val entries = ratel.root / t"entry"
+                file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+                reader.refresh()
+                entries.find(t"beta").let(_.text(t"info"))
       . assert(_ == t"Second letter")

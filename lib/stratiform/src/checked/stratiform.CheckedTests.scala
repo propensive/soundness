@@ -105,3 +105,42 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
         . read[Tel].as[Tree]
 
       . assert(_ == Tree(t"root", List(Tree(t"a"), Tree(t"b", List(Tree(t"c"))))))
+
+    // RaTEL from a capture-checked module: an image, and a view which is a capability, are
+    // opened, and rows are found, read and decoded within the block which lends the reader.
+    suite(m"reading a RaTEL image in place"):
+      val schema: Tels =
+        t"name troupe\n\nrecord Player\n  field name String key\n  field part String optional\n\ndocument\n  field player Player repeatable\n"
+        . read[Tel].as[Tels]
+
+      val troupe: Tel = t"player Bottom\n  part Pyramus\nplayer Snug\n".read[Tel]
+      val image: Ratel = troupe.ratel(schema)
+
+      case class Player(name: Text, part: Optional[Text])
+
+      // A view as a file lends it: tracked, and confined to whoever was lent it.
+      def parts(view: Mapped^): List[Optional[Text]] =
+        view.open[Ratel]():
+          (ratel.root / t"player").sorted.map(_.text(t"part"))
+
+      test(m"an image is opened and a record found by its key"):
+        image.open[Ratel]()((ratel.root / t"player").find(t"Bottom").let(_.text(t"part")))
+
+      . assert(_ == t"Pyramus")
+
+      test(m"a tracked view is opened"):
+        parts(image.mapped)
+
+      . assert(_ == List(t"Pyramus", Unset))
+
+      test(m"a record is decoded from its row"):
+        image.open[Ratel](Ratel.Flag.Verify):
+          (ratel.root / t"player").find(t"Snug").let(_.as[Player])
+
+      . assert(_ == Player(t"Snug", Unset))
+
+      test(m"a row is a value which outlives the block, but is read only within one"):
+        val row = image.open[Ratel]()((ratel.root / t"player").find(t"Snug"))
+        image.open[Ratel]()(row.let(_.text(t"name")))
+
+      . assert(_ == t"Snug")
