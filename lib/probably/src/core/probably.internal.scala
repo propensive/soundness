@@ -103,9 +103,19 @@ object internal:
         val locals: scala.collection.mutable.LinkedHashMap[String, Term] =
           scala.collection.mutable.LinkedHashMap()
 
-        def inside(symbol: Symbol): Boolean = symbol.pos.exists: definition =>
-          definition.sourceFile == position.sourceFile && definition.start >= position.start &&
-            definition.end <= position.end
+        // What the predicate itself defines — including the bindings of any inline call
+        // already expanded within it, which are positioned in the inline method's source,
+        // not here — is not free in it.
+        val defined: scala.collection.mutable.Set[Symbol] = scala.collection.mutable.Set()
+
+        object define extends TreeTraverser:
+          override def traverseTree(tree: Tree)(owner: Symbol): Unit =
+            tree match
+              case definition: Definition => defined += definition.symbol
+              case bind: Bind             => defined += bind.symbol
+              case _                      => ()
+
+            super.traverseTree(tree)(owner)
 
         def local(symbol: Symbol): Boolean =
           symbol.isTerm && !symbol.flags.is(Flags.Method) && !symbol.flags.is(Flags.Module) &&
@@ -115,7 +125,7 @@ object internal:
         object gather extends TreeTraverser:
           override def traverseTree(tree: Tree)(owner: Symbol): Unit =
             tree match
-              case ident@Ident(name) if local(ident.symbol) && !inside(ident.symbol) =>
+              case ident@Ident(name) if local(ident.symbol) && !defined.contains(ident.symbol) =>
                 if !locals.contains(name) then locals(name) = Ref(ident.symbol)
 
               case _ =>
@@ -123,7 +133,9 @@ object internal:
 
             super.traverseTree(tree)(owner)
 
-        if located then gather.traverseTree(lambda)(Symbol.spliceOwner)
+        if located then
+          define.traverseTree(lambda)(Symbol.spliceOwner)
+          gather.traverseTree(lambda)(Symbol.spliceOwner)
 
         val names: Expr[String] = Expr(locals.keys.mkString(","))
 

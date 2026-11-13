@@ -232,7 +232,9 @@ object Dissector extends Diagnostician:
 
       List.from(comparison ++ dissection)
 
-  private def compile(site: Diagnosis.Site, shown: Boolean, contrasted: Boolean): Optional[Compiled] =
+  private def compile(site: Diagnosis.Site, shown: Boolean, contrasted: Boolean)
+  :   Optional[Compiled] =
+
     def attempt(depth: Depth): Optional[Compiled] =
       try stage(site, shown, contrasted, depth)
       catch case error: Throwable =>
@@ -266,8 +268,8 @@ object Dissector extends Diagnostician:
       val owner: String = site.owner.s
 
       val ownerClass: Symbol =
-        if owner.endsWith("$") then Symbol.requiredModule(owner.substring(0, owner.length - 1).nn).moduleClass
-        else Symbol.requiredClass(owner)
+        if !owner.endsWith("$") then Symbol.requiredClass(owner)
+        else Symbol.requiredModule(owner.substring(0, owner.length - 1).nn).moduleClass
 
       // The public `Symbol#tree` of a class loaded from TASTy has no method bodies; the
       // compiler's own `rootTree` unpickles the whole class.
@@ -289,11 +291,16 @@ object Dissector extends Diagnostician:
 
         override def traverseTree(tree: Tree)(owner: Symbol): Unit =
           if found.isEmpty then tree match
-            case Block(scala.List(DefDef(_, scala.List(TermParamClause(scala.List(parameter))), _, Some(body))), Closure(_, _))
+            case Block(scala.List(DefDef(_, scala.List(clause), _, Some(body))), Closure(_, _))
               if spanned(tree) =>
 
-              found = Some((parameter, body))
-              enclosing = path
+              clause match
+                case TermParamClause(scala.List(parameter)) =>
+                  found = Some((parameter, body))
+                  enclosing = path
+
+                case _ =>
+                  ()
 
             case _ =>
               path = tree :: path
@@ -327,7 +334,8 @@ object Dissector extends Diagnostician:
           val reference = Ref(symbol).asInstanceOf[tpd.Tree]
           given dotty.tools.dotc.util.SourceFile = context2.source
           val selector = untpd.ImportSelector(untpd.Ident(nme.EMPTY))
-          scala.List(tpd.Import(reference, scala.List(selector))(using context2).asInstanceOf[Statement])
+          val importing = tpd.Import(reference, scala.List(selector))(using context2)
+          scala.List(importing.asInstanceOf[Statement])
 
         enclosing.reverse.flatMap:
           case tree@PackageClause(_, statements) =>
@@ -430,15 +438,18 @@ object Dissector extends Diagnostician:
                       val arguments2: scala.List[Term] =
                         if inlined && depth != Depth.Full then arguments
                         else
-                          arguments.zip(byName.padTo(arguments.length, false)).map: (argument, lazily) =>
-                            if lazily then argument else instrument.transformTerm(argument)(owner)
+                          arguments.zip(byName.padTo(arguments.length, false)).map:
+                            (argument, lazily) =>
+                              if lazily then argument
+                              else instrument.transformTerm(argument)(owner)
 
                       Apply(function2, arguments2)
 
                     case _ =>
                       Instrument(id).descendInto(term, owner)
 
-                  def descendInto(term: Term, owner: Symbol): Term = super.transformTerm(term)(owner)
+                  def descendInto(term: Term, owner: Symbol): Term =
+                    super.transformTerm(term)(owner)
 
                   override def transformTerm(term: Term)(owner: Symbol): Term = term match
                     case Literal(_) =>
@@ -461,7 +472,8 @@ object Dissector extends Diagnostician:
                       else throw Unsupported("the predicate refers to an enclosing instance")
 
                     case Ident(_) if term.symbol == parameterSymbol =>
-                      if depth == Depth.Value then live(term) else record(fresh(parent, term), live(term))
+                      if depth == Depth.Value then live(term)
+                      else record(fresh(parent, term), live(term))
 
                     case Ident(_) if local(term.symbol) && !within(term.symbol) =>
                       if term.symbol.flags.is(Flags.Method)
@@ -499,7 +511,9 @@ object Dissector extends Diagnostician:
                   else unwrap(body2) match
                     // An equality is evaluated one side at a time, so that the two sides can be
                     // contrasted, as values of the type of whichever side is the wider.
-                    case equality@Apply(select@Select(left, "=="), scala.List(right)) if contrasted =>
+                    case equality@Apply(select@Select(left, "=="), scala.List(right))
+                      if contrasted =>
+
                       val id = fresh(-1, equality)
                       val instrument = Instrument(id)
                       val left2 = instrument.transformTerm(left)(Symbol.spliceOwner)
@@ -516,19 +530,24 @@ object Dissector extends Diagnostician:
                                 val rightValue: r = ${right2.asExprOf[r]}
 
                                 $ {
+                                    // The side which is not the predicate's parameter is the
+                                    // expected one; the comparison is made at the wider type.
+                                    def sides[t: Type](left: Expr[t], right: Expr[t]): Expr[Unit] =
+                                      if reversed
+                                      then '{Dissector.contrast[t](recorder, $left, $right)}
+                                      else '{Dissector.contrast[t](recorder, $right, $left)}
+
                                     val contrast: Expr[Unit] =
-                                      if rightType <:< leftType then
-                                        val expected = if reversed then 'leftValue else '{rightValue.asInstanceOf[l]}
-                                        val found = if reversed then '{rightValue.asInstanceOf[l]} else 'leftValue
-                                        '{Dissector.contrast[l](recorder, $expected, $found)}
-                                      else if leftType <:< rightType then
-                                        val expected = if reversed then '{leftValue.asInstanceOf[r]} else 'rightValue
-                                        val found = if reversed then 'rightValue else '{leftValue.asInstanceOf[r]}
-                                        '{Dissector.contrast[r](recorder, $expected, $found)}
+                                      if rightType <:< leftType
+                                      then sides[l]('leftValue, '{rightValue.asInstanceOf[l]})
+                                      else if leftType <:< rightType
+                                      then sides[r]('{leftValue.asInstanceOf[r]}, 'rightValue)
                                       else '{()}
 
                                     val test: Expr[Boolean] =
-                                      Apply(Select('leftValue.asTerm, select.symbol), scala.List('rightValue.asTerm))
+                                      Apply
+                                        ( Select('leftValue.asTerm, select.symbol),
+                                          scala.List('rightValue.asTerm) )
                                       . asExprOf[Boolean]
 
                                     '{$contrast; $test}
