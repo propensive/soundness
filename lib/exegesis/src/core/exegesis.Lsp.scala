@@ -2056,6 +2056,7 @@ object Lsp:
       case Reason.ContentModified      => m"the document content was modified during the request"
       case Reason.ServerCancelled      => m"the request was cancelled by the server"
       case Reason.RequestFailed        => m"the request failed"
+      case Reason.Unstarted            => m"the language server could not be started"
 
   case class Error(reason: Lsp.Error.Reason, details: Optional[Text] = Unset)(using Diagnostics)
   extends fulminate.Error(147, reason.number)(m"the LSP operation failed because $reason"):
