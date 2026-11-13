@@ -32,8 +32,6 @@
                                                                                                   */
 package adversaria
 
-import java.lang as jl
-
 import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
@@ -46,56 +44,6 @@ import rudiments.*
 import vacuous.*
 
 object internal:
-  private def rebuild(using Quotes)(term: quotes.reflect.Term): Optional[quotes.reflect.Term] =
-    import quotes.reflect.*
-
-    object Mapper extends TreeMap:
-      override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree =
-        tree match
-          case ident: TypeIdent => TypeIdent(tree.symbol)
-          case _                => throw jl.Error()
-
-      override def transformTerm(tree: Term)(sym: Symbol): Term =
-        tree match
-          case Inlined(_, Nil, expr)   => transformTerm(expr)(sym)
-          case Ident(id)               => Ident(tree.symbol.termRef)
-          case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
-          case New(tpt)                => New(transformTypeTree(tpt)(sym))
-          case Literal(constant)       => Literal(constant)
-
-          // A type-parameterized annotation constructor, e.g. `new name[Xml](…)`
-          // — or a bare `new name(…)`, whose type argument is inferred. Both
-          // carry their type arguments in a `TypeApply` around the constructor.
-          // Rebuild the constructor application from the fully-resolved
-          // annotation type, so an inferred argument (no syntactic tree) or one
-          // loaded from another unit's TASTy (no source position) is
-          // resynthesised cleanly and positioned.
-          case Apply(TypeApply(Select(New(_), _), _), arguments) =>
-            tree.tpe match
-              case AppliedType(constructor, typeArguments) =>
-                val newTree = New(TypeTree.ref(constructor.typeSymbol))
-                val typeTrees = typeArguments.map: argument => TypeTree.of(using argument.asType)
-
-                Apply
-                  ( TypeApply(Select(newTree, tree.symbol), typeTrees),
-                    transformTerms(arguments)(sym) )
-
-              case _ =>
-                throw jl.Error()
-
-          case Apply(fn, arguments) =>
-            Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
-
-          // A named argument, `@xmlns("urn:x", qualified = false)`
-          case NamedArg(name, argument) =>
-            NamedArg(name, transformTerm(argument)(sym))
-
-          case _ =>
-            throw jl.Error()
-
-    try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: jl.Error => Unset
-
-
   def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
   :   Macro[self is Annotated by operand on plane under limit] =
 
@@ -108,9 +56,14 @@ object internal:
     val paramss = self.classSymbol.get.primaryConstructor.paramSymss
     val params = paramss.find(_.headOption.fold(false)(_.isTerm)).getOrElse(Nil)
 
+    // `@experimental` is on every definition compiled with an experimental language feature
+    // enabled, put there by the compiler; it is nobody's annotation, so it is never reported.
+    val experimental = TypeRepr.of[scala.annotation.experimental].typeSymbol
+
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
-        annotations.filter(_.tpe <:< operand).flatMap(rebuild(_).option).map(_.asExprOf[operand])
+        annotations.filter(_.tpe <:< operand).filter(_.tpe.typeSymbol != experimental)
+        . map(_.asExprOf[operand])
         . reverse
 
     if limit =:= TypeRepr.of[Any] then
@@ -221,7 +174,11 @@ object internal:
             case _ =>
               Unset
 
-          literal.or(rebuild(annotation).let(term => '{${term.asExprOf[name[?]]}.name}))
+          // Not written as `or`'s argument: a quote passed directly to an inline method defined
+          // in another file crashes the compiler before Scala 3.10.1.
+          def spliced: Expr[Text] = '{${annotation.asExprOf[name[?]]}.name}
+
+          literal.or(spliced)
 
     val pairs: List[Expr[(Text, Text)]] = symbols.flatMap: symbol =>
       val label: Expr[String] = Expr(symbol.name)
@@ -260,7 +217,7 @@ object internal:
     val operand = TypeRepr.of[annotation]
     val found = classOf(TypeRepr.of[self]).annotations.filter(_.tpe <:< operand).reverse
 
-    found.headOption.flatMap(rebuild(_).option) match
+    found.headOption match
       case Some(term) => '{${term.asExprOf[annotation]}: Optional[annotation]}
       case None       => '{Unset: Optional[annotation]}
 
