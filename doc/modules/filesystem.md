@@ -367,6 +367,7 @@ row  `u64`  a 64-bit integer, as a `Long`
 row  `slice`  a view of part of the memory, with no copy
 row  `copy`  some of the bytes as `Data`, for a value which must outlive the view
 row  `same`  whether the bytes at an offset are those of some `Data`, compared in place
+row  `compare`  the order of some bytes relative to some `Data`, compared in place
 ```
 
 The file is unmapped when the block ends. The view, and every slice of it, is a [capability]
@@ -378,6 +379,10 @@ A mapped file should be replaced, by moving a new file onto its name, and not re
 place: a view goes on seeing the file it mapped, unchanged, for as long as it is held. Mapping
 is available on the JVM and on Scala Native; WASI has no memory mapping, and reports
 `Unsupported`.
+
+`Mapped(data)` is a view of bytes which are already in memory, for reading a format which is
+designed for a mapped file from `Data` instead. [RaTEL](tel.md#ratel) is such a format: a TEL
+document laid out so that one record is found without reading the rest.
 
 ### Publishing versions
 
