@@ -2435,8 +2435,8 @@ object Lsp:
 
     // The raw hooks' types, named because each is written three times — registered, read out of
     // the erased rim, and applied — and must be spelled identically at all three.
-    private[exegesis] type OutboundHook = (Text, Json) => Transit
-    private[exegesis] type InboundHook = (Optional[Text], Json) => Transit
+    type OutboundHook = (Text, Json) => Transit
+    type InboundHook = (Optional[Text], Json) => Transit
 
     // The session a proxy holds with the server upstream, which `upstream` reads and `run` fills
     // in. A cell, and a parameter of the proxy rather than a slot on it, for two reasons: the
