@@ -629,7 +629,8 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   // classpath transitively via `chiaroscuro`, but chiaroscuro no longer depends on it (so it can
   // cross-compile to Scala.js), so the dependency is now explicit here.
   def moduleDeps: Seq[JavaModule] =
-    larceny.plugin +: probably.cli +: probably.events +: proscenium.core +: dependencies
+    larceny.plugin +: probably.cli +: probably.events +: probably.diagnosis +: proscenium.core +:
+      dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -645,7 +646,8 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   // `probably.events` rides along for the same reason it does in `Tests`: a host process (fume)
   // streams a benchmark run's `TestEvent`s out of the suite's classloader world via
   // `probably.Streamer`, which therefore has to be ON the benchmark assembly's classpath.
-  def moduleDeps: Seq[PublishModule] = probably.cli +: probably.events +: sedentary.core +: dependencies
+  def moduleDeps: Seq[PublishModule] =
+    probably.cli +: probably.events +: probably.diagnosis +: sedentary.core +: dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -874,7 +876,7 @@ object soundness extends Fork:
 
   object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
     tarantula.image,
-    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core):
+    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, probably.diagnosis, superlunary.jvm, mandible.core):
     def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core, degustation.tasty,
@@ -2993,7 +2995,7 @@ object probably extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object test extends Tests(cli, diagnosis):
+  object test extends Tests(cli):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

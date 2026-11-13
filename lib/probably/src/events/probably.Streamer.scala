@@ -60,6 +60,22 @@ object Streamer:
   // nothing, so a host must not pass it blindly.
   def queued: Boolean = true
 
+  // Whether suites on this classpath understand `--diagnose=<presentations>` (see
+  // `Diagnosis`), and so whether their failures can be diagnosed at all. Probed reflectively
+  // like `reentrant`: an older Probably would take the term for a name glob.
+  def diagnostic: Boolean = true
+
+  // Installs the engine which diagnoses failed assertions, if the `probably.diagnosis`
+  // component is on this classpath: it is found by name, because this module cannot depend
+  // on one that brings a compiler with it. Without it a failure is reported as the value
+  // prints itself.
+  private def equip(): Unit =
+    safely:
+      val module = Class.forName("probably.Dissector$", true, getClass.getClassLoader).nn
+
+      module.getField("MODULE$").nn.get(null).nn.absolve match
+        case diagnostician: Diagnostician => Diagnostician.install(diagnostician)
+
   // The derived BinTEL schema for `TestEvent`, computed once; every event encodes under it.
   // Deriving it cannot fail: no two of `TestEvent`'s types share a simple name.
   private lazy val schema: Tels = unsafely(Tels.tels[TestEvent](t"test-event"))
@@ -140,6 +156,7 @@ object Streamer:
     val status: Int =
       safely:
         send(fingerprint)
+        equip()
 
         val moduleClass = Class.forName(suite.s + "$", true, getClass.getClassLoader).nn
         val instance = moduleClass.getField("MODULE$").nn.get(null).nn

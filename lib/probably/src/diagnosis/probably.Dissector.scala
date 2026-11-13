@@ -281,18 +281,70 @@ object Dissector extends Diagnostician:
 
       var found: Option[(ValDef, Term)] = None
 
+      // The trees which enclose the predicate, innermost first, once it is found.
+      var enclosing: scala.List[Tree] = scala.Nil
+
       object finder extends TreeTraverser:
+        private var path: scala.List[Tree] = scala.Nil
+
         override def traverseTree(tree: Tree)(owner: Symbol): Unit =
           if found.isEmpty then tree match
             case Block(scala.List(DefDef(_, scala.List(TermParamClause(scala.List(parameter))), _, Some(body))), Closure(_, _))
               if spanned(tree) =>
 
               found = Some((parameter, body))
+              enclosing = path
 
             case _ =>
+              path = tree :: path
               try super.traverseTree(tree)(owner) catch case error: MatchError => ()
+              path = path.drop(1)
 
       finder.traverseTree(root)(Symbol.spliceOwner)
+
+      // The instances which render a value are searched for when the diagnosis is compiled,
+      // from inside it — so what was in scope where the predicate is written has to be put
+      // in scope there: every import which precedes it in a scope enclosing it, and the
+      // givens of each object and package it is written in. Givens which are local to a
+      // method, or members of a class rather than an object, cannot be reached and are not seen.
+      def scope(owner: Symbol): scala.List[Statement] =
+        import dotty.tools.dotc.ast.{tpd, untpd}
+        import dotty.tools.dotc.core.StdNames.nme
+
+        val context2 = context.withOwner(owner.asInstanceOf[dotty.tools.dotc.core.Symbols.Symbol])
+
+        def before(tree: Tree): Boolean =
+          try tree.pos.end <= site.start catch case error: Throwable => false
+
+        def imports(statements: scala.List[Tree]): scala.List[Statement] =
+          statements.collect:
+            case tree@Import(_, _) if before(tree) =>
+              val original = tree.asInstanceOf[tpd.Import]
+
+              tpd.Import(original.expr, original.selectors)(using context2).asInstanceOf[Statement]
+
+        def givens(symbol: Symbol): scala.List[Statement] =
+          val reference = Ref(symbol).asInstanceOf[tpd.Tree]
+          given dotty.tools.dotc.util.SourceFile = context2.source
+          val selector = untpd.ImportSelector(untpd.Ident(nme.EMPTY))
+          scala.List(tpd.Import(reference, scala.List(selector))(using context2).asInstanceOf[Statement])
+
+        enclosing.reverse.flatMap:
+          case tree@PackageClause(_, statements) =>
+            givens(tree.symbol) ++ imports(statements)
+
+          case tree@ClassDef(_, _, _, _, statements) =>
+            val own: scala.List[Statement] =
+              if tree.symbol.flags.is(Flags.Module) then givens(tree.symbol.companionModule)
+              else scala.Nil
+
+            own ++ imports(statements)
+
+          case Block(statements, _) =>
+            imports(statements)
+
+          case _ =>
+            scala.Nil
 
       val (parameter, body) = found.getOrElse(throw Unsupported("the predicate was not found"))
       val parameterSymbol: Symbol = parameter.symbol
@@ -488,7 +540,7 @@ object Dissector extends Diagnostician:
                     case other =>
                       Instrument(-1).transformTerm(other)(Symbol.spliceOwner)
 
-                instrumented.asExprOf[Boolean]
+                Block(scope(Symbol.spliceOwner), instrumented).asExprOf[Boolean]
               }
         }
 

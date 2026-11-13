@@ -217,18 +217,20 @@ object Tests extends Suite("testing", m"Probably Tests"):
 
     suite(m"Diagnosis of failures"):
       // The details of every failed test of `Dissected`, by the test's name.
-      def details(terms: Text): scala.List[(Text, TestEvent)] =
+      def details(terms: Text, suite: Suite[?] = Dissected()): scala.List[(Text, TestEvent)] =
         Diagnostician.install(Dissector)
         val events: juc.ConcurrentLinkedQueue[TestEvent] = juc.ConcurrentLinkedQueue()
-        Dissected().invoke(terms, event => events.add(event))
+        suite.invoke(terms, event => events.add(event))
 
         events.asScala.toList.collect:
           case event@TestEvent.DetailDissection(ref, _, _, _) => ref.name -> event
           case event@TestEvent.DetailCompare(ref, _, _, _)    => ref.name -> event
           case event@TestEvent.DetailMessage(ref, _)          => ref.name -> event
 
-      def rows(terms: Text, name: Text): scala.List[(Int, Text, Text)] =
-        details(terms).collect:
+      def rows(terms: Text, name: Text, suite: Suite[?] = Dissected())
+      :   scala.List[(Int, Text, Text)] =
+
+        details(terms, suite).collect:
           case (`name`, TestEvent.DetailDissection(_, _, rows, _)) =>
             rows.stdlib.map: row => (row.depth, row.code, row.value)
 
@@ -267,6 +269,24 @@ object Tests extends Suite("testing", m"Probably Tests"):
       test(m"a rendering supplied by a companion is found without the suite naming it"):
         rows(t"--diagnose=dissect,inspect", t"companion").map(_(2))
       . assert(_.contains(t"the ghost of Hamlet's father"))
+
+      test(m"a rendering imported where the predicate is written is found"):
+        rows(t"--diagnose=dissect,inspect", t"imported").map(_(2))
+      . assert(_.contains(t"the spectre of Caesar"))
+
+      test(m"a rendering which is a member of the enclosing object is found"):
+        rows(t"--diagnose=dissect,inspect", t"member", Heath.Coven()).map(_(2))
+      . assert(_.contains(t"the weird sister Hecate"))
+
+      test(m"a predicate which uses a private member is diagnosed by its value alone"):
+        details(t"--diagnose=dissect,inspect", Heath.Coven()).collect:
+          case (t"private", TestEvent.DetailMessage(_, message)) => message
+      . assert(_ == scala.List(t"2"))
+
+      test(m"a predicate which does not fail again is reported as irreproducible"):
+        details(t"--diagnose=dissect,inspect").collect:
+          case (t"fickle", TestEvent.DetailDissection(_, _, _, reproducible)) => reproducible
+      . assert(_ == scala.List(false))
 
       test(m"a predicate which throws is reported as far as it got"):
         rows(t"--diagnose=dissect,inspect", t"throwing").map(_(1))
