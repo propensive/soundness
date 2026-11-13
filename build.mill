@@ -2978,7 +2978,22 @@ object probably extends Library:
     // `stratiform.test`, which exercises them, stays off `sep`). Tracked by `safety-6`.
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(cli):
+  // The engine which diagnoses a failed assertion: it reads the predicate from the suite's own
+  // TASTy and compiles an instrumented copy of it with the staging compiler, in the suite's
+  // classloader (see `probably.Dissector`). Nothing in it runs unless an assertion fails, but
+  // it is what brings the compiler onto a test classpath, so it is a component of its own.
+  object diagnosis extends Component(core):
+    override def scalaJs = false // runtime multi-stage compilation
+    // Not `sep`-checked: its code is compiler-reflection trees and inline recorders whose
+    // expansions happen in the staged code, not here.
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+
+  object test extends Tests(cli, diagnosis):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

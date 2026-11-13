@@ -32,7 +32,7 @@
                                                                                                   */
 package probably
 
-import chiaroscuro.*
+import anticipation.*
 import denominative.*
 import rudiments.each
 import vacuous.*
@@ -83,18 +83,22 @@ object Spread:
         val coordinates = List(axis.coordinate(value))
         val test = Test[result](id, action(_)(value))
 
-        probably.internal.assertion[result, result, report, Unit]
+        probably.internal.assertion[result, report, Unit]
           ( runner,
             test,
             predicate(value, _),
             { _ => () },
-            Unset,
             inclusion,
             details,
-            Decomposable.any[result],
             coordinates,
             true,
-            false )
+            false,
+            "".tt,
+            -1,
+            -1,
+            "".tt,
+            "".tt,
+            Unset )
 
 // A test spread over the domain of one axis: its body runs once per axis value, and each
 // verdict is recorded at that value’s coordinate of a single named test. A partial body
@@ -158,18 +162,22 @@ object Spread2:
           val coordinates = List(first.coordinate(left), second.coordinate(right))
           val test = Test[result](id, action(_)((left, right)))
 
-          probably.internal.assertion[result, result, report, Unit]
+          probably.internal.assertion[result, report, Unit]
             ( runner,
               test,
               predicate(left, right, _),
               { _ => () },
-              Unset,
               inclusion,
               details,
-              Decomposable.any[result],
               coordinates,
               true,
-              false )
+              false,
+              "".tt,
+              -1,
+              -1,
+              "".tt,
+              "".tt,
+              Unset )
 
 // A test spread over the domains of two axes: one cell per combination the body defines,
 // rendered as a grid with gaps at undefined combinations.

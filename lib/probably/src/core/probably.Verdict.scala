@@ -44,6 +44,11 @@ object Verdict:
     case Compare(expected: Text, found: Text, juxtaposition: Juxtaposition)
     case Message(message: Text)
 
+    // The intermediate values of a failed predicate, written as `source`. `reproducible` is
+    // false when the predicate, evaluated again on the same value for its diagnosis, did not
+    // fail again.
+    case Dissection(source: Text, rows: List[TestEvent.DissectRow], reproducible: Boolean)
+
 enum Verdict:
   case Pass(duration: Long)
   case Fail(duration: Long)

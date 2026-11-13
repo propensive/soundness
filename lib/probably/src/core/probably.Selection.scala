@@ -91,6 +91,10 @@ object Selection:
       else if argument.starts(t"--workers=") then
         number(argument.skip(10)).lay(selection): count =>
           if count >= 0.0 then selection.copy(workers = count.toInt) else selection
+      // `--diagnose=<presentations>` asks for each failed assertion to be diagnosed, and says
+      // how its values are to be presented (see `Diagnosis`); without it nothing is.
+      else if argument.starts(t"--diagnose=") then
+        selection.copy(diagnosis = Diagnosis.Request.parse(argument.skip(11)))
       else if argument.starts(t"kind:") then
         val kinds = argument.skip(5) match
           case t"test"    => List(Entry.Kind.Check)
@@ -168,7 +172,10 @@ case class Selection
     scale:       Double,
     // How many workers execute the queued assertions, 0 meaning none are queued: every test
     // runs inline, in declaration order, as the traversal reaches it.
-    workers:     Int ):
+    workers:     Int,
+    // How a failed assertion is to be diagnosed; `Diagnosis.Request.none`, the default, not
+    // at all.
+    diagnosis:   Diagnosis.Request = Diagnosis.Request.none ):
 
   def trivial: Boolean =
     terms.nil && kinds.nil && constraints.nil && tags.nil && exclusions.nil

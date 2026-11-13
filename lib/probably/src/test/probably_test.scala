@@ -215,6 +215,68 @@ object Tests extends Suite("testing", m"Probably Tests"):
         (captured.result, out.contains(t"[pass] "), out.contains(t"[fail] "), out.contains(t" passed, "))
       . assert(_ == (1, true, true, true))
 
+    suite(m"Diagnosis of failures"):
+      // The details of every failed test of `Dissected`, by the test's name.
+      def details(terms: Text): scala.List[(Text, TestEvent)] =
+        Diagnostician.install(Dissector)
+        val events: juc.ConcurrentLinkedQueue[TestEvent] = juc.ConcurrentLinkedQueue()
+        Dissected().invoke(terms, event => events.add(event))
+
+        events.asScala.toList.collect:
+          case event@TestEvent.DetailDissection(ref, _, _, _) => ref.name -> event
+          case event@TestEvent.DetailCompare(ref, _, _, _)    => ref.name -> event
+          case event@TestEvent.DetailMessage(ref, _)          => ref.name -> event
+
+      def rows(terms: Text, name: Text): scala.List[(Int, Text, Text)] =
+        details(terms).collect:
+          case (`name`, TestEvent.DetailDissection(_, _, rows, _)) =>
+            rows.stdlib.map: row => (row.depth, row.code, row.value)
+
+        . flatten
+
+      test(m"--diagnose parses, and defaults to nothing"):
+        scala.List(t"--diagnose=dissect,contrast", t"--diagnose=nonsense", t"**").map: term =>
+          Selection.parse(List(term)).diagnosis.presentations.size
+      . assert(_ == scala.List(2, 0, 0))
+
+      test(m"without --diagnose a failure has no details"):
+        details(t"")
+      . assert(_ == scala.Nil)
+
+      test(m"a failed predicate is dissected into its intermediate values"):
+        rows(t"--diagnose=dissect,inspect", t"arithmetic")
+      . assert: rows =>
+          rows == scala.List
+            ( (0, t"x*2 < 9 && x*y > 4", t"false"),
+              (1, t"x*2 < 9", t"true"),
+              (2, t"x*2", t"4"),
+              (3, t"x", t"2"),
+              (1, t"x*y > 4", t"false"),
+              (2, t"x*y", t"4"),
+              (3, t"x", t"2"),
+              (3, t"y", t"2") )
+
+      test(m"a failed equality is contrasted, with the expected side closed over"):
+        details(t"--diagnose=contrast,inspect").collect:
+          case (t"equality", TestEvent.DetailCompare(_, _, _, rows)) =>
+            rows.stdlib.filter(_.kind == t"different").map: row => (row.label, row.left, row.right)
+
+        . flatten
+      . assert(_ == scala.List((t"age", t"30", t"31")))
+
+      test(m"a rendering supplied by a companion is found without the suite naming it"):
+        rows(t"--diagnose=dissect,inspect", t"companion").map(_(2))
+      . assert(_.contains(t"the ghost of Hamlet's father"))
+
+      test(m"a predicate which throws is reported as far as it got"):
+        rows(t"--diagnose=dissect,inspect", t"throwing").map(_(1))
+      . assert(_.contains(t"x"))
+
+      test(m"a site which fails repeatedly is diagnosed each time"):
+        scala.List(t"repeated 1", t"repeated 2", t"repeated 3").map: name =>
+          rows(t"--diagnose=dissect,inspect", name).headOption.map(_(1))
+      . assert(_ == scala.List.fill(3)(Some(t"x + y > 10")))
+
     suite(m"Queued execution"):
       test(m"--workers parses, and defaults to none"):
         scala.List(t"--workers=2", t"--workers=0", t"--workers=-1", t"--workers=many", t"**")
