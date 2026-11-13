@@ -610,16 +610,19 @@ object Cbor extends Cbor1, Dynamic:
           val text = cbor.asInstanceOf[String]
           var index = 0
 
-          while index < text.length do builder.append:
-            text.charAt(index) match
+          // The escaped form is bound before it is appended: written as the block argument of
+          // `append`, the increment was the block's value, and `()` was appended instead.
+          while index < text.length do
+            val escaped: String = text.charAt(index) match
               case '"'                 => "\\\""
               case '\\'                => "\\\\"
               case '\n'                => "\\n"
               case '\r'                => "\\r"
               case '\t'                => "\\t"
               case char if char < 0x20 => f"\\u${char.toInt}%04x"
-              case char                => char
+              case char                => char.toString
 
+            builder.append(escaped)
             index += 1
 
           builder.append('"')
