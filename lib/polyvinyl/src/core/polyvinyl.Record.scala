@@ -44,8 +44,10 @@ object Record:
   // say — captures nothing.
   type Field[result, failure <: Hazard] = Tactic[failure]^ ?-> result
 
-  // A member which is read in a context, as well as with a tactic.
-  type Bound[result, context, failure <: Hazard] = (context, Tactic[failure]^) ?-> result
+  // A member which is read in a context, as well as with a tactic. The context is tracked
+  // here, whatever it is: a type which says so itself cannot be carried across a quote, so a
+  // specification names its context without, and what is given for it may be a capability.
+  type Bound[result, context, failure <: Hazard] = (context^, Tactic[failure]^) ?-> result
 
   // Pure functions (`->`): the record retains the accessor, and a capturing one would make the
   // record itself a capability, which its pure self type (rightly) forbids.

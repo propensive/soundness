@@ -178,6 +178,9 @@ object Specification:
 
     import quotes.reflect.*
 
+    // Within the code generated, a context is passed as a value like any other. It is tracked
+    // where that code meets what is written by hand: in the type of a member, `Record.Bound`,
+    // and in the specification's hooks.
     private type Reading = Expr[(origin, context, Tactic[failure]) -> Any]
     private case class Field(name: Text, tpe: TypeRepr, reading: Reading)
 
@@ -544,8 +547,14 @@ object Specification:
 
             if !contextual then halt(m"the field $name is a series, which is read in a context")
 
-            val each: Expr[(origin, context, Tactic[failure]) -> result] =
-              '{(value, context, tactic) => $reading(value, context, tactic).asInstanceOf[result]}
+            // The cast is of the context alone, from a value to one which is tracked: the
+            // collection is given its context as a capability, and passes it back to this.
+            val each: Expr[Any] =
+              ' {
+                  ((value: origin, context: context, tactic: Tactic[failure]) =>
+                    $reading(value, context, tactic).asInstanceOf[result])
+                  . asInstanceOf[(origin, context^, Tactic[failure]) -> result]
+                }
 
             val series =
               TypeSelect(target.asTerm, "Series").tpe
@@ -681,16 +690,17 @@ trait Specification extends Original:
   // values it reads: an open file, say, which a record only says where to look in. A record
   // made by `recordWith` asks for one wherever a member is selected, and passes it to the
   // hooks below, which stand for `access`, `repeated` and `entries`. A specification without
-  // one leaves all of this alone.
+  // one leaves all of this alone. The context is tracked wherever it is passed, so the type
+  // named here need not say that it is a capability, and may be one.
   type Context
 
-  def accessWith(name: Text, value: Origin)(using Context, Tactic[Failure]): Origin =
+  def accessWith(name: Text, value: Origin)(using Context^, Tactic[Failure]): Origin =
     access(name, value)
 
-  def repeatedWith(name: Text, value: Origin)(using Context, Tactic[Failure]): List[Origin] =
+  def repeatedWith(name: Text, value: Origin)(using Context^, Tactic[Failure]): List[Origin] =
     repeated(name, value)
 
-  def entriesWith(name: Text, value: Origin)(using Context, Tactic[Failure])
+  def entriesWith(name: Text, value: Origin)(using Context^, Tactic[Failure])
   :   List[(Text, Origin)] =
 
     entries(name, value)
@@ -702,8 +712,8 @@ trait Specification extends Original:
   type Series[context <: Context, +element]
 
   def series[context <: Context, element]
-    ( name: Text, value: Origin, read: (Origin, context, Tactic[Failure]) -> element )
-    ( using context, Tactic[Failure] )
+    ( name: Text, value: Origin, read: (Origin, context^, Tactic[Failure]) -> element )
+    ( using context^, Tactic[Failure] )
   :   Series[context, element] =
 
     panic(m"this specification has no series")

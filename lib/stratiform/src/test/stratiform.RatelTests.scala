@@ -363,7 +363,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"a provider refuses an image written with another schema"):
         val other: Ratel = catalogue.ratel(catalogueSchema)
-        capture[Ratel.Error](other.open[Ratel]()(FolioRecords().row.index)).reason
+        capture[Ratel.Error](other.open[Ratel]() { FolioRecords(); () }).reason
       . assert(_ == Ratel.Error.Reason.Mismatched)
 
       test(m"a row may not be read through another reader"):
