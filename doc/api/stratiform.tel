@@ -3566,6 +3566,29 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       a row cannot be read through the reader of another image, nor once its block has ended.
     entry #Topic   the brand of the reader this row came from
   entry .Rows   the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`
+  entry .Record   one record as a `Ratel.Provider` types it, each member read in place when it is selected
+      A structural record over a `Ratel.Row`: `record.name` reads the member `name`, at the type
+      the provider's schema gives it. Like a row it is a plain value, branded as
+      `Ratel.Record of brand`, and is read through the reader of the image it came from.
+    entry #Topic   the brand of the reader this record came from
+    entry #row   the row this record reads, for whatever a provider does not type
+  entry .Table   the records of a repeatable struct, as a `Ratel.Provider` types them
+      `size`, `each`, `sorted` and `where`, as `Ratel.Rows` has them, giving records; applied
+      to a key it gives the record with that key, if there is one, and to an ordinal the
+      record at that position.
+    entry #Topic   the brand of the reader these records came from
+    entry #rows   the rows these records read
+  entry .Provider   a type provider over a RaTEL schema: `object Cast extends Ratel.Provider(schema)`
+      `Cast()`, in the block of `open[Ratel]`, is the root of the image as a `Ratel.Record`
+      whose members are those of the schema's document: a scalar as `Text`, or as `Int`, `Long`
+      or `Double` for a standard codec one of them holds exactly; a flag as `Boolean`, or a
+      `Long` count if repeatable; a struct as a nested record; a repeatable scalar as a `List`;
+      a repeatable struct as a `Ratel.Table`; each variant of a select, and each optional
+      member, as an `Optional`. A struct which contains itself is a record without members,
+      read through its `row`, and a repeatable select is not a member. The image must have
+      been written with the schema, or `Mismatched` is raised. The object is compiled before
+      the code which calls it.
+    entry #schema   the schema the provider reads by
   entry .Error   raised when an image cannot be read or written, with the specification's R-code as its reason
     detail
         Error 615: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
@@ -3579,7 +3602,8 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
         `NestingLimitExceeded` (28), `Unencodable` (29), `Oversized` (30), `Unindexed` (31) for
         a lookup no index answers, and `Unknown` (32), `Inapplicable` (33) and `Absent` (34)
         for a member which a row does not have, has in another kind, or has not got a value
-        for, and `Unwritable` (35) for an image opened for writing. R01–R13 and R19 are raised
+        for, `Unwritable` (35) for an image opened for writing, and `Mismatched` (36) for one a
+        `Ratel.Provider` is asked to read which was written with another schema. R01–R13 and R19 are raised
         as an image is opened; the others by the access which meets them, or by `verify`. `CodecNoncanonical` and `NonzeroPadding`, the specification's optional
         checks, are not yet raised.
 

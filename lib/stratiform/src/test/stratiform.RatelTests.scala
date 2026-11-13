@@ -92,118 +92,8 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
   private val catalogue: Tel =
     t"tel 1.0\n\nentry\n  name alpha\n  info  First letter\n\nentry\n  name beta\n".read[Tel]
 
-  private val folioSchema: Tels = schemaOf:
-    Text("""|tel 1.0 specification.tel/tels:2.1.0
-        |
-        |name folio
-        |
-        |scalar Count
-        |  encoding u32
-        |
-        |scalar Genre
-        |  intern
-        |
-        |scalar Id
-        |  encoding uuid
-        |
-        |record Author
-        |  field name String
-        |  field born Count optional
-        |
-        |record Stage
-        |  field theatre String
-        |  field city String optional
-        |
-        |select Ending
-        |  variant death Flag
-        |  variant marriage String
-        |  variant staged Stage
-        |
-        |select Mark
-        |  variant starred Flag
-        |  variant note String
-        |
-        |record Play
-        |  field title String key
-        |  field id Id
-        |  field genre Genre
-        |  field acts Count
-        |  field lines Count optional
-        |  field author Author
-        |  field stage Stage optional
-        |  field lost Flag optional
-        |  field revised Flag optional repeatable
-        |  field canon Flag
-        |  field role String optional repeatable
-        |    index /
-        |  field year Count optional repeatable
-        |    index /
-        |  select Ending optional
-        |  select Mark optional repeatable
-        |
-        |document
-        |  field name String
-        |  field play Play optional repeatable
-        |    index /genre /acts
-        |    index .stage.city
-        |    index /author/born
-        |""".stripMargin)
-
-  private val folio: Tel =
-    Text("""|tel 1.0
-        |
-        |name  First Folio
-        |
-        |play
-        |  title Hamlet
-        |  id 0192b1c2-3d4e-7f5a-8b6c-9d0e1f2a3b4c
-        |  genre tragedy
-        |  acts 5
-        |  lines 4024
-        |  author
-        |    name  William Shakespeare
-        |    born 1564
-        |  stage
-        |    theatre Globe
-        |    city London
-        |  revised
-        |  revised
-        |  canon
-        |  role Hamlet
-        |  role Ophelia
-        |  year 1603
-        |  year 1623
-        |  death
-        |  starred
-        |  note quarto
-        |
-        |play
-        |  title  Twelfth Night
-        |  id 00000000-0000-0000-0000-000000000001
-        |  genre comedy
-        |  acts 5
-        |  author
-        |    name  William Shakespeare
-        |  canon
-        |  role Viola
-        |  marriage Orsino
-        |
-        |play
-        |  title Cardenio
-        |  id 00000000-0000-0000-0000-000000000002
-        |  genre tragedy
-        |  acts 4
-        |  author
-        |    name  Nick Bottom
-        |    born 1579
-        |  stage
-        |    theatre Blackfriars
-        |  lost
-        |  canon
-        |  staged
-        |    theatre Whitehall
-        |    city London
-        |""".stripMargin).read[Tel]
+  private val folioSchema: Tels = RatelFixture.folioSchema
+  private val folio: Tel = RatelFixture.folio
 
   case class Author(name: Text, born: Int)
 
@@ -422,6 +312,59 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       test(m"an image is opened where it lies in memory"):
         image.open[Ratel]()(ratel.root.text(t"name"))
       . assert(_ == t"First Folio")
+
+      test(m"a provider types the root of an image by its schema"):
+        image.open[Ratel]():
+          val folio = FolioRecords()
+          val name: Text = folio.name
+          name
+      . assert(_ == t"First Folio")
+
+      test(m"a provider finds a record by its key, and reads its members"):
+        image.open[Ratel]():
+          val hamlet = FolioRecords().play(t"Hamlet")
+          hamlet.let { play => (play.genre: Text, play.acts: Long, play.lines: Optional[Long]) }
+      . assert(_ == (t"tragedy", 5L, 4024L))
+
+      test(m"a provider reads a struct as a record of its own"):
+        image.open[Ratel]():
+          val cardenio = FolioRecords().play(t"Cardenio")
+          cardenio.let { play => (play.author.name: Text, play.author.born: Optional[Long]) }
+      . assert(_ == (t"Nick Bottom", 1579L))
+
+      test(m"a provider reads an optional struct which is absent as unset"):
+        image.open[Ratel]():
+          FolioRecords().play(t"Twelfth Night").let(_.stage).absent
+      . assert(_ == true)
+
+      test(m"a provider reads flags, and repeatable flags and scalars"):
+        image.open[Ratel]():
+          FolioRecords().play(t"Hamlet").let: play =>
+            (play.canon: Boolean, play.lost: Boolean, play.revised: Long, play.role: List[Text])
+      . assert(_ == (true, false, 2L, List(t"Hamlet", t"Ophelia")))
+
+      test(m"a provider reads each variant of a select as an optional member"):
+        image.open[Ratel]():
+          FolioRecords().play(t"Twelfth Night").let: play =>
+            (play.marriage: Optional[Text], play.death: Boolean)
+      . assert(_ == (t"Orsino", false))
+
+      test(m"a provider's table is sized, ordered and searched"):
+        image.open[Ratel]():
+          val plays = FolioRecords().play
+          (plays.size, plays.sorted.map(_.title: Text), plays.where(t"/genre", t"comedy").size)
+      . assert(_ == (3L, List(t"Cardenio", t"Hamlet", t"Twelfth Night"), 1))
+
+      test(m"a member the schema does not declare is not a member of the record"):
+        demilitarize:
+          image.open[Ratel]()(FolioRecords().playwright)
+        . nil
+      . assert(_ == false)
+
+      test(m"a provider refuses an image written with another schema"):
+        val other: Ratel = catalogue.ratel(catalogueSchema)
+        capture[Ratel.Error](other.open[Ratel]()(FolioRecords().row.index)).reason
+      . assert(_ == Ratel.Error.Reason.Mismatched)
 
       test(m"a row may not be read through another reader"):
         demilitarize:

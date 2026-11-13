@@ -959,6 +959,43 @@ object Ratel:
       val visited: java.util.HashMap[Int, java.util.BitSet] = java.util.HashMap()
       Tel.Element.Node(Unset, struct, reader.members(address, entries, visited, 0))
 
+    // A member as a `Ratel.Provider` types it (see `RatelShape`): a scalar as its number or
+    // its text, a struct as a record, a repeatable struct as a table of records.
+    private[stratiform] def member(keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   Any =
+
+      def one(scalar: Tels.Scalar, required: Boolean): Any =
+        if required then RatelShape.value(scalar, text(keyword).or(fail(Reason.Absent(keyword))))
+        else text(keyword).let(RatelShape.value(scalar, _))
+
+      def many(scalar: Tels.Scalar): Any = texts(keyword).map(RatelShape.value(scalar, _))
+
+      def inner(required: Boolean): Any =
+        val found = record(keyword).let(Record[Topic](_))
+        if required then found.or(fail(Reason.Absent(keyword))) else found
+
+      lookup(keyword) match
+        case Found.Inner(_) => inner(true)
+
+        case Found.Member(slot) => slot.kind match
+          case Kind.Always            => true
+          case Kind.Flag              => flag(keyword)
+          case Kind.FlagCount         => count(keyword)
+          case Kind.Inline(scalar, _) => one(scalar, slot.required)
+          case Kind.Ref(scalar, _)    => one(scalar, slot.required)
+          case Kind.Packed(scalar, _) => many(scalar)
+          case Kind.Refs(scalar, _)   => many(scalar)
+          case Kind.Record(_, _)      => inner(slot.required)
+          case Kind.Range(_, _)       => Table[Topic](this / keyword)
+          case _                      => fail(Reason.Inapplicable(keyword))
+
+        case Found.Choice(_, variant) => variant.payload match
+          case Payload.Flag             => has(keyword)
+          case Payload.Value(scalar, _) => one(scalar, false)
+          case Payload.Record(_, _)     => inner(false)
+
     // This record as a value of a type which is read from TEL. Only this record's rows, and
     // those it refers to, are read.
     def as[value: Tel.Decodable]
@@ -1094,6 +1131,136 @@ object Ratel:
 
       lookup(index, number, value).map(child(_))
 
+  object Record:
+    private[stratiform] def apply[brand](row0: Row of brand): Record of brand =
+      new Record:
+        type Topic = brand
+        def row: Row of brand = row0
+
+  // One record, as a `Ratel.Provider` types it: each member of the struct is a member of the
+  // record, of the type its schema gives it, and is read from the image when it is selected.
+  // It is a plain value, as the row it stands for is, and is read through the reader it came
+  // from, whose brand it carries.
+  abstract class Record private[stratiform]() extends Selectable:
+    // The brand of the reader this record came from.
+    type Topic
+
+    // The row this record reads, for whatever a provider does not type.
+    def row: Row of Topic
+
+    def selectDynamic(name: String)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   Any =
+
+      row.member(scala.reflect.NameTransformer.decode(name).nn.tt)
+
+  object Table:
+    private[stratiform] def apply[brand](rows0: Rows of brand): Table[Any] of brand =
+      new Table[Any]:
+        type Topic = brand
+        def rows: Rows of brand = rows0
+
+  // The records of a repeatable struct, as a `Ratel.Provider` types them: `Ratel.Rows`, giving
+  // records where it gives rows.
+  abstract class Table[+entry] private[stratiform]():
+    // The brand of the reader these records came from.
+    type Topic
+
+    // The rows these records read.
+    def rows: Rows of Topic
+
+    // Sound because a provider gives `entry` as the type of the records of this table's struct,
+    // every one of which is a `Record` and nothing more at runtime.
+    private def entry(row: Row of Topic): entry = Record[Topic](row).asInstanceOf[entry]
+
+    def size: Long = rows.size
+
+    def apply(ordinal: Ordinal)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   entry =
+
+      entry(rows(ordinal))
+
+    // The record whose key is `key`, by the primary index.
+    def apply(key: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   Optional[entry] =
+
+      rows.find(key).let(entry(_))
+
+    def each(lambda: entry => Unit)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   Unit =
+
+      rows.each { row => lambda(entry(row)) }
+
+    // The records in the order of their keys.
+    def sorted
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   List[entry] =
+
+      rows.sorted.map(entry(_))
+
+    // The records for which the scalar at `path` has the value `value`, by a secondary index.
+    def where(path: Text, value: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   List[entry] =
+
+      rows.where(path, value).map(entry(_))
+
+  object Provider:
+    // The root of an open image as a record, once the image is known to have been written
+    // with the provider's schema: the macro behind `Provider#apply` gives the result its type.
+    def root(provider: Provider)(using reader: Reader^, tactic: Tactic[Ratel.Error])
+    :   Record of reader.Topic =
+
+      val expected = provider.signature.or(fail(Error.Reason.Unencodable))
+      if RatelBytes.order(expected, reader.signature) != 0 then fail(Error.Reason.Mismatched)
+      Record[reader.Topic](reader.root)
+
+  // A type provider over a RaTEL schema. An object which extends it gives the root of an open
+  // image as a record whose members are those of the schema's document, typed as the schema
+  // types them, each read in place when it is selected:
+  //
+  //     object Folio extends Ratel.Provider(schema)
+  //
+  //     file.open[Ratel]():
+  //       val folio = Folio()
+  //       folio.name                    // Text
+  //       folio.role(t"Hamlet")         // an optional record, by its key
+  //
+  // A scalar reads as `Text`, or as `Int`, `Long` or `Double` where its encoding is a standard
+  // codec whose every value one of them holds; a flag as `Boolean`, or as a `Long` count if it
+  // is repeatable; a struct as a nested record; a repeatable scalar as a `List`; a repeatable
+  // struct as a `Ratel.Table` of records; and each variant of a select as an optional member.
+  // An optional member is `Optional`. The object must be compiled before it is used, as any
+  // object a macro consults must.
+  abstract class Provider(val schema: Tels):
+    // The signature an image written with this schema carries.
+    private[stratiform] lazy val signature: Optional[Data] =
+      given Diagnostics = Diagnostics.omit
+      val axiom = Tels.Axiom.tels
+      safely(SchemaSignature.fromElement(Tels.Renderer.element(schema, axiom), axiom))
+
+    // What the members of the schema's document read as: asked for by the macro, when a
+    // record is given its type, of a schema which must compose and be laid out.
+    private[stratiform] def shape(using Tactic[Ratel.Error]): List[(Text, RatelShape.Shape)] =
+      given Diagnostics = Diagnostics.omit
+      val composed = safely(Tels.Layers.compose(schema)).or(fail(Error.Reason.SchemaUnlayoutable))
+      RatelShape(RatelLayout(composed))
+
+    transparent inline def apply()
+      ( using inline reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Record =
+
+      ${stratiform.ratelInternal.ratelRecord[this.type]('reader, 'tactic)}
+
   object Error:
     object Reason:
       given communicable: Reason is Communicable =
@@ -1131,6 +1298,7 @@ object Ratel:
         case Unknown(keyword)      => m"the record has no member $keyword"
         case Absent(keyword)       => m"the member $keyword is absent"
         case Unwritable            => m"an image is read-only and is replaced by publishing another"
+        case Mismatched            => m"the image was not written with the schema it is read by"
         case Inapplicable(keyword) => m"the member $keyword is not of the kind which was asked for"
 
     // The conditions of RaTEL §14, each numbered as its R-code is, followed by those which
@@ -1171,6 +1339,7 @@ object Ratel:
       case Inapplicable(keyword: Text) extends Reason(33)
       case Absent(keyword: Text)       extends Reason(34)
       case Unwritable                  extends Reason(35)
+      case Mismatched                  extends Reason(36)
 
   case class Error(reason: Ratel.Error.Reason)(using Diagnostics)
   extends fulminate.Error(615, reason.number)(m"the RaTEL image cannot be used because $reason")

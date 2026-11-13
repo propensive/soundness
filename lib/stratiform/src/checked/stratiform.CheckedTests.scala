@@ -109,9 +109,7 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
     // RaTEL from a capture-checked module: an image, and a view which is a capability, are
     // opened, and rows are found, read and decoded within the block which lends the reader.
     suite(m"reading a RaTEL image in place"):
-      val schema: Tels =
-        val player = t"record Player\n  field name String key\n  field part String optional\n"
-        t"name troupe\n\n$player\ndocument\n  field player Player repeatable\n".read[Tel].as[Tels]
+      val schema: Tels = CheckedTroupeFixture.schema
 
       val troupe: Tel = t"player Bottom\n  part Pyramus\nplayer Snug\n".read[Tel]
       val image: Ratel = troupe.ratel(schema)
@@ -138,6 +136,23 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
           (ratel.root / t"player").find(t"Snug").let(_.as[Player])
 
       . assert(_ == Player(t"Snug", Unset))
+
+      test(m"a provider's records are read within the block"):
+        image.open[Ratel]():
+          val players = CheckedTroupe().player
+          (players(t"Bottom").let(_.part: Optional[Text]), players.sorted.map(_.name: Text))
+
+      . assert(_ == (t"Pyramus", List(t"Bottom", t"Snug")))
+
+      test(m"a provider's records are read from a tracked view"):
+        def names(view: Terrain^): List[Text] =
+          view.open[Ratel]():
+            val players = CheckedTroupe().player
+            players.sorted.map(_.name: Text)
+
+        names(image.terrain)
+
+      . assert(_ == List(t"Bottom", t"Snug"))
 
       test(m"a row is held as a value, and read later in the block"):
         image.open[Ratel]():
