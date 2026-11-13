@@ -194,6 +194,7 @@ row  `One`  the value  `access`, then `required`
 row  `Optional`  an `Optional`, `Unset` where `absent`  `access` and `absent`
 row  `Many`  a `List`  `repeated`
 row  `Keyed`  a `Map[Text, _]`  `entries`
+row  `Series`  the provider's own collection  `series`
 ```
 
 The provider says nothing more about optionality or repetition. The macro applies the
@@ -224,6 +225,20 @@ so that every field fails in one way. An instance which raises anything else is 
 The instances live in the companion of the provider, so they are found without an import. A
 provider over XML, for instance, would fetch a child element by its label, find a field absent
 where no such child exists, and repeat over every child with the label.
+
+Some sources are not in the values which are read from them. A record over a file which is
+mapped into memory holds only where to look, and the file itself is open for a while, and
+closed. A provider for such a source names a `Context`, and makes its records with
+`Specification.recordWith`, giving the type of the context each is to be read in. A member of
+such a record is read only where a value of that type is [given], beside its tactic, so a
+record cannot be read once its source has gone, and the type may say which of several sources
+a record came from. The provider's `accessWith`, `repeatedWith` and `entriesWith` are given the
+context, and stand for `access`, `repeated` and `entries`.
+
+A `Series` is for such a provider too. It reads as the provider's `Series` type, a collection
+of its own, which `series` makes from a function which reads one element. The collection reads
+an element when it is asked for one, in the context it is then given, so a field of a hundred
+thousand records costs nothing until one is looked up.
 
 Every specification object gets `record` and `tuple` from `Specification` itself. Nothing need
 be declared in the object beyond its schema. Both methods are `transparent inline`. They are

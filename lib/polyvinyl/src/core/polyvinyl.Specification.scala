@@ -410,7 +410,10 @@ object Specification:
               Expr.summon[label is Instance].absolve match
                 case
                   Some('{$accessor: label `is` Instance `to` result}) =>
-                    (TypeRepr.of[result], '{(value, _, _) => $accessor.transform(value, $paramsExpr)})
+                    val reading: Reading =
+                      '{(value, _, _) => $accessor.transform(value, $paramsExpr)}
+
+                    (TypeRepr.of[result], reading)
 
                 case _ =>
                   Expr.summon[label is FallibleInstance].absolve match

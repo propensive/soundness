@@ -82,7 +82,9 @@ private[stratiform] object RatelShape:
           case Kind.Ref(scalar, _)     => List(slot.keyword -> value(scalar, arity))
           case Kind.Packed(scalar, _)  => List(slot.keyword -> value(scalar, Multiplicity.Many))
           case Kind.Refs(scalar, _)    => List(slot.keyword -> value(scalar, Multiplicity.Many))
-          case Kind.Record(table, _)   => List(slot.keyword -> struct(layout, table, visited, arity))
+
+          case Kind.Record(table, _) =>
+            List(slot.keyword -> struct(layout, table, visited, arity))
 
           case Kind.Range(table, _) =>
             List(slot.keyword -> struct(layout, table, visited, Multiplicity.Series))

@@ -3566,26 +3566,34 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       a row cannot be read through the reader of another image, nor once its block has ended.
     entry #Topic   the brand of the reader this row came from
   entry .Rows   the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`
-  entry .Record   one record as a `Ratel.Provider` types it, each member read in place when it is selected
-      A structural record over a `Ratel.Row`: `record.name` reads the member `name`, at the type
-      the provider's schema gives it. Like a row it is a plain value, branded as
-      `Ratel.Record of brand`, and is read through the reader of the image it came from.
-    entry #Topic   the brand of the reader this record came from
-    entry #row   the row this record reads, for whatever a provider does not type
+  entry .Cell   what a record of a `Ratel.Provider` is made over, and what its members are read from
+      A struct's row, the text of a scalar, the number of times a flag occurs, or nothing. It
+      is the `Origin` of the provider, and what an `Intensional` instance for one of its
+      scalars reads.
+    entry .Struct   a struct, as its row
+    entry .Value   a scalar, as the text its codec gives
+    entry .Flag   a flag, as the number of times it occurs
+    entry .Absent   a member which is not there
+  entry .Access   what the records of a `Ratel.Provider` are read in: the reader of an open image, with its brand
+      `Ratel.Access[brand]` is given wherever the reader with that brand is, so a record, each
+      of whose members asks for the access it was made with, is read only through the reader
+      it came from, and only while its image is open.
+    entry .access   the access of a reader which is in scope
   entry .Table   the records of a repeatable struct, as a `Ratel.Provider` types them
       `size`, `each`, `sorted` and `where`, as `Ratel.Rows` has them, giving records; applied
       to a key it gives the record with that key, if there is one, and to an ordinal the
-      record at that position.
-    entry #Topic   the brand of the reader these records came from
-    entry #rows   the rows these records read
+      record at that position. No record is read until it is asked for.
   entry .Provider   a type provider over a RaTEL schema: `object Cast extends Ratel.Provider(schema)`
-      `Cast()`, in the block of `open[Ratel]`, is the root of the image as a `Ratel.Record`
-      whose members are those of the schema's document: a scalar as `Text`, or as `Int`, `Long`
-      or `Double` for a standard codec one of them holds exactly; a flag as `Boolean`, or a
-      `Long` count if repeatable; a struct as a nested record; a repeatable scalar as a `List`;
-      a repeatable struct as a `Ratel.Table`; each variant of a select, and each optional
-      member, as an `Optional`. A struct which contains itself is a record without members,
-      read through its `row`, and a repeatable select is not a member. The image must have
+      A polyvinyl `Specification`, as `Tel.Provider` is. `Cast()`, in the block of
+      `open[Ratel]`, is the root of the image as a `polyvinyl.Record` whose members are those of
+      the schema's document, each read in place when it is selected, in the context of the
+      image's reader. A scalar is read through the `Intensional` instance named by its
+      encoding, or by its first validator: the companion's give `Text`, or `Int`, `Long` or
+      `Double` for a standard codec one of them holds exactly, and a caller's own may give
+      another type. A flag is a `Boolean`, or a `Long` count if repeatable; a struct a nested
+      record; a repeatable scalar a `List`; a repeatable struct a `Ratel.Table`; each variant
+      of a select, and each optional member, an `Optional`. A struct which contains itself is
+      read as its `Ratel.Cell`, and a repeatable select is not a member. The image must have
       been written with the schema, or `Mismatched` is raised. The object is compiled before
       the code which calls it.
     entry #schema   the schema the provider reads by

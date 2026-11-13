@@ -355,6 +355,27 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
           (plays.size, plays.sorted.map(_.title: Text), plays.where(t"/genre", t"comedy").size)
       . assert(_ == (3L, List(t"Cardenio", t"Hamlet", t"Twelfth Night"), 1))
 
+      test(m"a scalar is read through an instance of the caller's own"):
+        given ("u32" is Intensional in Ratel.Provider from Ratel.Cell to Text) = Intensional:
+          case Ratel.Cell.Value(text) => t"$text acts"
+          case _                      => t""
+
+        image.open[Ratel]()(FolioRecords().play(t"Hamlet").let(_.acts: Text))
+      . assert(_ == t"5 acts")
+
+      test(m"a record which contains itself is read as far as its type goes"):
+        val lineage: Ratel = LineageFixture.lineage.ratel(LineageFixture.schema)
+
+        lineage.open[Ratel]():
+          val root = LineageRecords()
+          (root.house: Text, root.heir.let(_.name: Text), root.heir.let(_.heir: Optional[Ratel.Cell]).absent)
+      . assert(_ == (t"Lancaster", t"Hal", false))
+
+      test(m"a TEL record which contains itself is read as far as its type goes"):
+        val root = LineageTelRecords.record(LineageFixture.lineage)
+        (root.house: Text, root.heir.let(_.name: Text), root.heir.let(_.heir: Optional[Tel]).absent)
+      . assert(_ == (t"Lancaster", t"Hal", false))
+
       test(m"a member the schema does not declare is not a member of the record"):
         demilitarize:
           image.open[Ratel]()(FolioRecords().playwright)

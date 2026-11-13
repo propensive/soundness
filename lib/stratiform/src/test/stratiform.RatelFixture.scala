@@ -157,3 +157,25 @@ object RatelFixture:
         |""".stripMargin).read[Tel]
 
 object FolioRecords extends Ratel.Provider(RatelFixture.folioSchema)
+
+// A schema whose record contains itself, and a provider of each kind over it.
+object LineageFixture:
+  val schema: Tels = Tels.Validation.validate:
+    Text("""|tel 1.0 specification.tel/tels:2.1.0
+        |
+        |name lineage
+        |
+        |record Heir
+        |  field name String
+        |  field heir Heir optional
+        |
+        |document
+        |  field house String
+        |  field heir Heir optional
+        |""".stripMargin).read[Tel].as[Tels]
+
+  val lineage: Tel =
+    t"tel 1.0\n\nhouse Lancaster\nheir\n  name Hal\n  heir\n    name Harry\n".read[Tel]
+
+object LineageRecords extends Ratel.Provider(LineageFixture.schema)
+object LineageTelRecords extends Tel.Provider(LineageFixture.schema)
