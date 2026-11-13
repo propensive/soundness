@@ -59,7 +59,26 @@ object Specification:
     given Tactic[Specification.Error] = HaltTactic[Specification.Error, Any]()
 
     val (refined, transform) =
-      Expansion[origin, form, failure](target).record(specification.fields)
+      Expansion[origin, Unit, form, failure](target, false).record(specification.fields)
+
+    refined.absolve match
+      case '[type refined <: Record; refined] =>
+        '{$target.build($value, $transform).asInstanceOf[refined]}
+
+  // As `record`, for a specification whose members are read in a context: each member of the
+  // record is read only where a `context` is given, as well as a `Tactic`. The context's type
+  // is the caller's to choose, within the specification's `Context`, so that it may say more
+  // than the specification can: which of several sources a record was read from, say.
+  def recordWith[self: Type, origin: Type, context: Type, form: Type, failure <: Hazard: Type]
+    ( value: Expr[origin] )
+    ( using Quotes )
+  :   Expr[Record] =
+
+    val (target, specification) = locate[self, origin, form, failure]
+    given Tactic[Specification.Error] = HaltTactic[Specification.Error, Any]()
+
+    val (refined, transform) =
+      Expansion[origin, context, form, failure](target, true).record(specification.fields)
 
     refined.absolve match
       case '[type refined <: Record; refined] =>
@@ -71,7 +90,8 @@ object Specification:
 
     val (target, specification) = locate[self, origin, form, failure]
     given Tactic[Specification.Error] = HaltTactic[Specification.Error, Any]()
-    val (tuple, make) = Expansion[origin, form, failure](target).tuple(specification.fields)
+    val (tuple, make) =
+      Expansion[origin, Unit, form, failure](target, false).tuple(specification.fields)
 
     tuple.absolve match
       case '[type tuple <: NamedTuple.AnyNamedTuple; tuple] => '{$make($value).asInstanceOf[tuple]}
@@ -85,14 +105,14 @@ object Specification:
     ( using Quotes )
   :   (Type[?], Expr[Text -> origin -> Any]) =
 
-    Expansion[origin, form, failure](target).record(fields)
+    Expansion[origin, Unit, form, failure](target, false).record(fields)
 
   def tupleExpansion[origin: Type, form: Type, failure <: Hazard: Type]
     ( target: Expr[Raising[form, origin, failure]], fields: List[(Text, Member)] )
     ( using Quotes )
   :   (Type[?], Expr[origin -> Any]) =
 
-    Expansion[origin, form, failure](target).tuple(fields)
+    Expansion[origin, Unit, form, failure](target, false).tuple(fields)
 
   // The specification object whose type is `self`: as a reference for the generated code, and as
   // an instance, loaded through the macro's own classloader, for its `fields`
@@ -149,20 +169,40 @@ object Specification:
   // function from a value and the tactic, which is applied by beta-reduction wherever it is
   // used, rather than called: a record is expanded at every call site, so its code is kept to
   // one function per record (and one per repeated member) however many fields it has.
-  private class Expansion[origin: Type, form: Type, failure <: Hazard: Type]
-    ( target: Expr[Raising[form, origin, failure]] )
+  //
+  // `contextual` is whether members are read in a `context`, as `recordWith` asks: if not, the
+  // context is `Unit`, nothing asks for one, and the code generated is what it always was.
+  private class Expansion[origin: Type, context: Type, form: Type, failure <: Hazard: Type]
+    ( target: Expr[Raising[form, origin, failure]], contextual: Boolean )
     ( using Quotes ):
 
     import quotes.reflect.*
 
-    private type Reading = Expr[(origin, Tactic[failure]) -> Any]
+    private type Reading = Expr[(origin, context, Tactic[failure]) -> Any]
     private case class Field(name: Text, tpe: TypeRepr, reading: Reading)
 
-    // The code reading `value` with `reading`, under `tactic`
-    private def read(reading: Reading, value: Expr[origin], tactic: Expr[Tactic[failure]])
+    // The code reading `value` with `reading`, in `context` and under `tactic`
+    private def read
+      ( reading: Reading,
+        value:   Expr[origin],
+        context: Expr[context],
+        tactic:  Expr[Tactic[failure]] )
     :   Expr[Any] =
 
-      Expr.betaReduce('{$reading($value, $tactic)})
+      Expr.betaReduce('{$reading($value, $context, $tactic)})
+
+    // The context of a specification which has none
+    private def vacant: Expr[context] = '{()}.asExprOf[context]
+
+    // A call of one of the specification's contextual hooks, made as a tree: the context has
+    // the caller's type, which only the expansion can check against the specification's.
+    private def hook(name: String, types: scala.List[TypeRepr], arguments: scala.List[Term])
+      ( context: Expr[context], tactic: Expr[Tactic[failure]] )
+    :   Term =
+
+      val method = Select.unique(target.asTerm, name)
+      val applied = if types.isEmpty then method else method.appliedToTypes(types)
+      applied.appliedToArgs(arguments).appliedToArgs(scala.List(context.asTerm, tactic.asTerm))
 
     private type Instance = Intensional in form from origin
     private type FallibleInstance = Intensional.Fallible in form from origin
@@ -178,8 +218,13 @@ object Specification:
     def tuple(fields: List[(Text, Member)]): (Type[?], Expr[origin -> Any]) =
       val (tuple, reading) = expandTuple(fields)
 
+      val context: Expr[context] =
+        if !contextual then vacant else Expr.summon[context].getOrElse:
+          val needed = TypeRepr.of[context].show.tt
+          halt(m"the tuple's fields are read in a context, but no $needed is in scope")
+
       Expr.summon[Tactic[failure]] match
-        case Some(tactic) => (tuple.asType, '{data => ${read(reading, 'data, tactic)}})
+        case Some(tactic) => (tuple.asType, '{data => ${read(reading, 'data, context, tactic)}})
 
         case None =>
           val hazard = TypeRepr.of[failure].show.tt
@@ -204,11 +249,15 @@ object Specification:
       val refined = members.foldLeft(TypeRepr.of[Record from origin]): (refined, field) =>
         Refinement(refined, field.name.s, raising(field.tpe, TypeRepr.of[failure]))
 
-      def select(name: Expr[Text], data: Expr[origin], tactic: Expr[Tactic[failure]])
+      def select
+        ( name:    Expr[Text],
+          data:    Expr[origin],
+          context: Expr[context],
+          tactic:  Expr[Tactic[failure]] )
       :   Expr[Any] =
 
         val caseDefs = members.map: field =>
-          val reading = read(field.reading, data, tactic)
+          val reading = read(field.reading, data, context, tactic)
           CaseDef(Literal(StringConstant(field.name.s)), None, reading.asTerm)
 
         // Unreachable through a refined record, whose fields are exactly the cases; reachable
@@ -222,17 +271,23 @@ object Specification:
         Match(name.asTerm, caseDefs :+ CaseDef(Wildcard(), None, missing.asTerm)).asExprOf[Any]
 
       val transform: Expr[Text -> origin -> Any] =
-        ' {
-            (name: Text) => (data: origin) => (tactic: Tactic[failure]) ?=>
-              ${select('name, 'data, 'tactic)}
-          }
+        if contextual then
+          ' {
+              (name: Text) => (data: origin) => (context: context, tactic: Tactic[failure]) ?=>
+                ${select('name, 'data, 'context, 'tactic)}
+            }
+        else
+          ' {
+              (name: Text) => (data: origin) => (tactic: Tactic[failure]) ?=>
+                ${select('name, 'data, vacant, 'tactic)}
+            }
 
       (refined, transform)
 
     // A nested record: built like a top-level one, from the nested origin value
     private def nested(fields: List[(Text, Member)]): (TypeRepr, Reading) =
       val (refined, transform) = expandRecord(fields)
-      (refined, '{(value, _) => $target.build(value, $transform)})
+      (refined, '{(value, _, _) => $target.build(value, $transform)})
 
     // A tuple, nested or not, read from a value under the tactic in hand
     private def expandTuple(fields: List[(Text, Member)]): (TypeRepr, Reading) =
@@ -241,14 +296,20 @@ object Specification:
       val values = tupleType(members.map(_.tpe))
       val tuple = TypeRepr.of[NamedTuple.NamedTuple].appliedTo(scala.List(names, values))
 
-      def elements(data: Expr[origin], tactic: Expr[Tactic[failure]]): Expr[scala.Seq[Object]] =
+      def elements
+        ( data: Expr[origin], context: Expr[context], tactic: Expr[Tactic[failure]] )
+      :   Expr[scala.Seq[Object]] =
+
         Varargs:
-          members.map: field => '{${read(field.reading, data, tactic)}.asInstanceOf[Object]}
+          members.map: field =>
+            '{${read(field.reading, data, context, tactic)}.asInstanceOf[Object]}
 
       val reading: Reading =
         ' {
-            (data, tactic) =>
-              val array: scala.Array[Object] = scala.Array(${elements('data, 'tactic)}*)
+            (data, context, tactic) =>
+              val array: scala.Array[Object] =
+                scala.Array(${elements('data, 'context, 'tactic)}*)
+
               scala.runtime.Tuples.fromArray(array)
           }
 
@@ -261,30 +322,58 @@ object Specification:
       case Held
 
     private def fetch
-      ( source: Source, data: Expr[origin], required: Boolean, tactic: Expr[Tactic[failure]] )
+      ( source:   Source,
+        data:     Expr[origin],
+        required: Boolean,
+        context:  Expr[context],
+        tactic:   Expr[Tactic[failure]] )
     :   Expr[origin] =
 
       source match
         case Source.Named(name) =>
           val nameExpr = Expr(name)
-          val value = '{$target.access($nameExpr, $data)(using $tactic)}
+
+          val value =
+            if !contextual then '{$target.access($nameExpr, $data)(using $tactic)} else
+              hook("accessWith", scala.Nil, scala.List(nameExpr.asTerm, data.asTerm))
+                ( context, tactic )
+              . asExprOf[origin]
+
           if required then '{$target.required($nameExpr, $value)(using $tactic)} else value
 
         case Source.Held => data
 
-    private def fetchMany(source: Source, data: Expr[origin], tactic: Expr[Tactic[failure]])
+    private def fetchMany
+      ( source:  Source,
+        data:    Expr[origin],
+        context: Expr[context],
+        tactic:  Expr[Tactic[failure]] )
     :   Expr[List[origin]] =
 
       source match
-        case Source.Named(name) => '{$target.repeated(${Expr(name)}, $data)(using $tactic)}
-        case Source.Held        => '{$target.elements($data)(using $tactic)}
+        case Source.Held => '{$target.elements($data)(using $tactic)}
 
-    private def fetchKeyed(source: Source, data: Expr[origin], tactic: Expr[Tactic[failure]])
+        case Source.Named(name) =>
+          if !contextual then '{$target.repeated(${Expr(name)}, $data)(using $tactic)} else
+            hook("repeatedWith", scala.Nil, scala.List(Expr(name).asTerm, data.asTerm))
+              ( context, tactic )
+            . asExprOf[List[origin]]
+
+    private def fetchKeyed
+      ( source:  Source,
+        data:    Expr[origin],
+        context: Expr[context],
+        tactic:  Expr[Tactic[failure]] )
     :   Expr[List[(Text, origin)]] =
 
       source match
-        case Source.Named(name) => '{$target.entries(${Expr(name)}, $data)(using $tactic)}
-        case Source.Held        => '{$target.pairs($data)(using $tactic)}
+        case Source.Held => '{$target.pairs($data)(using $tactic)}
+
+        case Source.Named(name) =>
+          if !contextual then '{$target.entries(${Expr(name)}, $data)(using $tactic)} else
+            hook("entriesWith", scala.Nil, scala.List(Expr(name).asTerm, data.asTerm))
+              ( context, tactic )
+            . asExprOf[List[(Text, origin)]]
 
     // Expands one field to its value's type and its reading from the enclosing value. `nested`
     // expands a nested record's fields in this mode. The member's reading of a single value
@@ -318,7 +407,7 @@ object Specification:
               Expr.summon[label is Instance].absolve match
                 case
                   Some('{$accessor: label `is` Instance `to` result}) =>
-                    (TypeRepr.of[result], '{(value, _) => $accessor.transform(value, $paramsExpr)})
+                    (TypeRepr.of[result], '{(value, _, _) => $accessor.transform(value, $paramsExpr)})
 
                 case _ =>
                   Expr.summon[label is FallibleInstance].absolve match
@@ -346,7 +435,7 @@ object Specification:
                       // cannot
                       val reading: Reading =
                         ' {
-                            (value, tactic) =>
+                            (value, _, tactic) =>
                               val own = tactic.asInstanceOf[Tactic[error]]
                               $fallible.transform(value, $paramsExpr)(using own)
                           }
@@ -367,9 +456,13 @@ object Specification:
           val union = readings.map(_(1)).reduce(OrType(_, _))
           val kinds = readings.map(_(0).s)
 
-          def dispatch(value: Expr[origin], tactic: Expr[Tactic[failure]]): Expr[Any] =
+          def dispatch
+            ( value: Expr[origin], context: Expr[context], tactic: Expr[Tactic[failure]] )
+          :   Expr[Any] =
+
             val caseDefs = readings.map: (kind, _, reading) =>
-              CaseDef(Literal(StringConstant(kind.s)), None, read(reading, value, tactic).asTerm)
+              val chosen = read(reading, value, context, tactic)
+              CaseDef(Literal(StringConstant(kind.s)), None, chosen.asTerm)
 
             val unknown: Expr[Nothing] =
               ' {
@@ -380,7 +473,7 @@ object Specification:
             val fallback = CaseDef(Wildcard(), None, unknown.asTerm)
             Match('{$target.kind($value)}.asTerm, caseDefs :+ fallback).asExprOf[Any]
 
-          (union, '{(value, tactic) => ${dispatch('value, 'tactic)}})
+          (union, '{(value, context, tactic) => ${dispatch('value, 'context, 'tactic)}})
 
     // Reads a value under a multiplicity, fetched as `source` says: one value; an optional value,
     // `Unset` where the format finds it absent; every value of a repeated field, as a `List`; or
@@ -396,16 +489,24 @@ object Specification:
         case '[result] => multiplicity match
           case Multiplicity.One =>
             val multiplied: Reading =
-              '{(data, tactic) => ${read(reading, fetch(source, 'data, true, 'tactic), 'tactic)}}
+              ' {
+                  (data, context, tactic) =>
+                    $ {
+                        val value = fetch(source, 'data, true, 'context, 'tactic)
+                        read(reading, value, 'context, 'tactic)
+                      }
+                }
 
             (result, multiplied)
 
           case Multiplicity.Optional =>
             val multiplied: Reading =
               ' {
-                  (data, tactic) =>
-                    val value = ${fetch(source, 'data, false, 'tactic)}
-                    if $target.absent(value) then Unset else ${read(reading, 'value, 'tactic)}
+                  (data, context, tactic) =>
+                    val value = ${fetch(source, 'data, false, 'context, 'tactic)}
+
+                    if $target.absent(value) then Unset
+                    else ${read(reading, 'value, 'context, 'tactic)}
                 }
 
             (TypeRepr.of[Optional[result]], multiplied)
@@ -413,9 +514,9 @@ object Specification:
           case Multiplicity.Many =>
             val multiplied: Reading =
               ' {
-                  (data, tactic) =>
-                    ${fetchMany(source, 'data, 'tactic)}.map: value =>
-                      ${read(reading, 'value, 'tactic)}.asInstanceOf[result]
+                  (data, context, tactic) =>
+                    ${fetchMany(source, 'data, 'context, 'tactic)}.map: value =>
+                      ${read(reading, 'value, 'context, 'tactic)}.asInstanceOf[result]
                 }
 
             (TypeRepr.of[List[result]], multiplied)
@@ -423,14 +524,47 @@ object Specification:
           case Multiplicity.Keyed =>
             val multiplied: Reading =
               ' {
-                  (data, tactic) =>
-                    val pairs = ${fetchKeyed(source, 'data, 'tactic)}.stdlib.map: (key, value) =>
-                      (key, ${read(reading, 'value, 'tactic)}.asInstanceOf[result])
+                  (data, context, tactic) =>
+                    val pairs =
+                      ${fetchKeyed(source, 'data, 'context, 'tactic)}.stdlib.map: (key, value) =>
+                        (key, ${read(reading, 'value, 'context, 'tactic)}.asInstanceOf[result])
 
                     Map.from(pairs)
                 }
 
             (TypeRepr.of[Map[Text, result]], multiplied)
+
+          // The specification's own collection, which is given how to read each of its
+          // elements and reads none until it is asked: the reading is passed as it is, to be
+          // applied to a context and a tactic of the collection's own.
+          case Multiplicity.Series =>
+            val name = source match
+              case Source.Named(name) => name
+              case Source.Held        => halt(m"a series cannot be an alternative of a union")
+
+            if !contextual then halt(m"the field $name is a series, which is read in a context")
+
+            val each: Expr[(origin, context, Tactic[failure]) -> result] =
+              '{(value, context, tactic) => $reading(value, context, tactic).asInstanceOf[result]}
+
+            val series =
+              TypeSelect(target.asTerm, "Series").tpe
+              . appliedTo(scala.List(TypeRepr.of[context], result))
+
+            val multiplied: Reading =
+              ' {
+                  (data, context, tactic) =>
+                    $ {
+                        hook
+                          ( "series",
+                            scala.List(TypeRepr.of[context], result),
+                            scala.List(Expr(name).asTerm, 'data.asTerm, each.asTerm) )
+                          ( 'context, 'tactic )
+                        . asExprOf[Any]
+                      }
+                }
+
+            (series, multiplied)
 
     // `Record.Field[result, error]`, as an application of the alias itself, found by its symbol:
     // its expansion names a context function over a capability, which a `Type` cannot carry
@@ -438,8 +572,12 @@ object Specification:
     private val fieldAlias: TypeRepr =
       Symbol.requiredModule("polyvinyl.Record").typeMember("Field").typeRef
 
+    private val boundAlias: TypeRepr =
+      Symbol.requiredModule("polyvinyl.Record").typeMember("Bound").typeRef
+
     private def raising(result: TypeRepr, error: TypeRepr): TypeRepr =
-      fieldAlias.appliedTo(scala.List(result, error))
+      if contextual then boundAlias.appliedTo(scala.List(result, TypeRepr.of[context], error))
+      else fieldAlias.appliedTo(scala.List(result, error))
 
   // How many values a field carries: exactly one, at most one (read as `Optional`), any number
   // (read as a `List`), or any number each under a name (read as a `Map[Text, _]`). The
@@ -448,7 +586,7 @@ object Specification:
   enum Multiplicity:
     import anticipation.*
 
-    case One, Optional, Many, Keyed
+    case One, Optional, Many, Keyed, Series
 
   // A specification's description of one field. A `Value`'s `fieldType` is the label by which its
   // `Intensional` instance is found; a `Record` nests further fields, read from the field's own
@@ -477,6 +615,7 @@ object Specification:
     def optional: Member = of(Multiplicity.Optional)
     def many: Member = of(Multiplicity.Many)
     def keyed: Member = of(Multiplicity.Keyed)
+    def series: Member = of(Multiplicity.Series)
 
 // A type provider over one document format: a schema, as `fields`, and the format's reading
 // primitives. The `build` and `tuple` macros manufacture a record or named tuple type from the
@@ -537,6 +676,37 @@ trait Specification extends Original:
   // A value of a union whose kind, `kind`, is none of those the union `offered`
   def unoffered(kind: Text, offered: List[Text])(using Tactic[Failure]): Nothing =
     panic(m"the value's kind, $kind, is none the union offers")
+
+  // What the members of a record are read in, for a specification whose source is not in the
+  // values it reads: an open file, say, which a record only says where to look in. A record
+  // made by `recordWith` asks for one wherever a member is selected, and passes it to the
+  // hooks below, which stand for `access`, `repeated` and `entries`. A specification without
+  // one leaves all of this alone.
+  type Context
+
+  def accessWith(name: Text, value: Origin)(using Context, Tactic[Failure]): Origin =
+    access(name, value)
+
+  def repeatedWith(name: Text, value: Origin)(using Context, Tactic[Failure]): List[Origin] =
+    repeated(name, value)
+
+  def entriesWith(name: Text, value: Origin)(using Context, Tactic[Failure])
+  :   List[(Text, Origin)] =
+
+    entries(name, value)
+
+  // What a member whose multiplicity is `Series` reads as: a collection of the specification's
+  // own, of the values `name` has in `value`, which reads each with `read` when it is asked
+  // for, in whatever context it is then given. `context` is the context a record was made
+  // with, which a collection keeps in its type so as to ask for the same.
+  type Series[context <: Context, +element]
+
+  def series[context <: Context, element]
+    ( name: Text, value: Origin, read: (Origin, context, Tactic[Failure]) -> element )
+    ( using context, Tactic[Failure] )
+  :   Series[context, element] =
+
+    panic(m"this specification has no series")
 
   // A pure function (`->`): the built Record retains the transform, and a capturing one would
   // make the record itself a capability, which Record's pure self type (rightly) forbids.
