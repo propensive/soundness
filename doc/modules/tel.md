@@ -549,7 +549,8 @@ row  `as`  the whole record, decoded as a value
 A `Ratel.Rows` has a `size`, is read by position or with `each`, and has `find`, `where` and
 `sorted`, which gives its records in the order of their keys. A row is a plain value which
 says where a record lies, and is read through the reader which its block is given, so it is
-read only while its image is open. `as` decodes one record, and whatever it holds, through the
+read only while its image is open. Its type, `Ratel.Row of brand`, carries the brand of that
+reader, and a row which is taken to the block of another reader does not compile there. `as` decodes one record, and whatever it holds, through the
 same typeclasses as a TEL document:
 
 ```scala

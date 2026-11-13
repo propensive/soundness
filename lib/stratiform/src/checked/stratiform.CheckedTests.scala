@@ -139,8 +139,9 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
 
       . assert(_ == Player(t"Snug", Unset))
 
-      test(m"a row is a value which outlives the block, but is read only within one"):
-        val row = image.open[Ratel]()((ratel.root / t"player").find(t"Snug"))
-        image.open[Ratel]()(row.let(_.text(t"name")))
+      test(m"a row is held as a value, and read later in the block"):
+        image.open[Ratel]():
+          val row = (ratel.root / t"player").find(t"Snug")
+          row.let(_.text(t"name"))
 
       . assert(_ == t"Snug")

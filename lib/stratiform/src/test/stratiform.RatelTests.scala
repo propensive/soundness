@@ -276,10 +276,11 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
     suite(m"Reading in place"):
       val element = Tel.Type.assign(folio, folioSchema, Tel.Validator.Registry.builtins, Tel.Codec.Bindings.all)
       val image: Ratel = folio.ratel(folioSchema)
-      val reader = Ratel.open(image.terrain)
-      given Ratel.Reader = reader
+      val reader: Ratel.Reader = Ratel.open(image.terrain)
+      given reader.type = reader
       val plays = reader.root / t"play"
-      def play(title: Text): Ratel.Row = plays.find(title).or(throw IllegalArgumentException(title.s))
+      def play(title: Text): Ratel.Row of reader.Topic =
+        plays.find(title).or(throw IllegalArgumentException(title.s))
 
       test(m"the document materialises to the model which was written"):
         hex(reader.materialise().bintel(folioSchema, Tel.Codec.Bindings.all))
@@ -421,6 +422,13 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       test(m"an image is opened where it lies in memory"):
         image.open[Ratel]()(ratel.root.text(t"name"))
       . assert(_ == t"First Folio")
+
+      test(m"a row may not be read through another reader"):
+        demilitarize:
+          val first = image.open[Ratel]()((ratel.root / t"play")(Prim))
+          image.open[Ratel]()(first.text(t"title"))
+        . nil
+      . assert(_ == false)
 
       test(m"the reader may be named in the block"):
         image.open[Ratel]() { reader ?=> (reader.root / t"play").size }

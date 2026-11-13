@@ -3550,7 +3550,8 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       not define, ahead of `Tel.Codec.Bindings.all`.
   entry .viewable   an image as a view of its bytes where they lie on the heap, so that it is opened as a file is
   entry .Reader   an open image: its schema, its root row, and whole-document operations
-    entry #root   the document's root, as a `Ratel.Row`
+    entry #Topic   this reader's brand: a type of its own, which every row it gives carries
+    entry #root   the document's root, as a `Ratel.Row of reader.Topic`
     entry #schema   the composed schema the image carries
     entry #signature   the schema signature the image carries, which a reader requiring a trusted schema compares
     entry #valueHash   the document's value hash, if the header carries it
@@ -3559,8 +3560,11 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
   entry .Row   one record, read in place: `text`, `data`, `texts`, `flag`, `count`, `record`, `/`, `has`, `holds`, `as`
       A plain value — a table and a record index — which says where a record lies. Every
       accessor takes the `Ratel.Reader` contextually, as the block of `open[Ratel]` gives it,
-      so a row may be kept, collected or returned, but is read only where a reader is given;
-      it should be read through the reader of the image it came from.
+      so a row may be kept, collected or returned, but is read only where a reader is given.
+      Its type is `Ratel.Row of brand`, where the brand is the `Topic` of the reader it came
+      from, and each accessor asks for evidence that the reader in context has that brand:
+      a row cannot be read through the reader of another image, nor once its block has ended.
+    entry #Topic   the brand of the reader this row came from
   entry .Rows   the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`
   entry .Error   raised when an image cannot be read or written, with the specification's R-code as its reason
     detail
