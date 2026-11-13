@@ -228,13 +228,14 @@ object Tests extends Suite("testing", m"Probably Tests"):
           case event@TestEvent.DetailMessage(ref, _)          => ref.name -> event
 
       def rows(terms: Text, name: Text, suite: Suite[?] = Dissected())
-      :   scala.List[(Int, Text, Text)] =
+      :   List[(Int, Text, Text)] =
 
-        details(terms, suite).collect:
+        List.from(details(terms, suite).iterator).flatMap:
           case (`name`, TestEvent.DetailDissection(_, _, rows, _)) =>
-            rows.stdlib.map: row => (row.depth, row.code, row.value)
+            rows.map: row => (row.depth, row.code, row.value)
 
-        . flatten
+          case _ =>
+            Nil
 
       test(m"--diagnose parses, and defaults to nothing"):
         scala.List(t"--diagnose=dissect,contrast", t"--diagnose=nonsense", t"**").map: term =>
@@ -248,7 +249,7 @@ object Tests extends Suite("testing", m"Probably Tests"):
       test(m"a failed predicate is dissected into its intermediate values"):
         rows(t"--diagnose=dissect,inspect", t"arithmetic")
       . assert: rows =>
-          rows == scala.List
+          rows == List
             ( (0, t"x*2 < 9 && x*y > 4", t"false"),
               (1, t"x*2 < 9", t"true"),
               (2, t"x*2", t"4"),
@@ -259,24 +260,25 @@ object Tests extends Suite("testing", m"Probably Tests"):
               (3, t"y", t"2") )
 
       test(m"a failed equality is contrasted, with the expected side closed over"):
-        details(t"--diagnose=contrast,inspect").collect:
+        List.from(details(t"--diagnose=contrast,inspect").iterator).flatMap:
           case (t"equality", TestEvent.DetailCompare(_, _, _, rows)) =>
-            rows.stdlib.filter(_.kind == t"different").map: row => (row.label, row.left, row.right)
+            rows.filter(_.kind == t"different").map: row => (row.label, row.left, row.right)
 
-        . flatten
-      . assert(_ == scala.List((t"age", t"30", t"31")))
+          case _ =>
+            Nil
+      . assert(_ == List((t"age", t"30", t"31")))
 
       test(m"a rendering supplied by a companion is found without the suite naming it"):
         rows(t"--diagnose=dissect,inspect", t"companion").map(_(2))
-      . assert(_.contains(t"the ghost of Hamlet's father"))
+      . assert(_.has(t"the ghost of Hamlet's father"))
 
       test(m"a rendering imported where the predicate is written is found"):
         rows(t"--diagnose=dissect,inspect", t"imported").map(_(2))
-      . assert(_.contains(t"the spectre of Caesar"))
+      . assert(_.has(t"the spectre of Caesar"))
 
       test(m"a rendering which is a member of the enclosing object is found"):
         rows(t"--diagnose=dissect,inspect", t"member", Heath.Coven()).map(_(2))
-      . assert(_.contains(t"the weird sister Hecate"))
+      . assert(_.has(t"the weird sister Hecate"))
 
       test(m"a predicate which uses a private member is diagnosed by its value alone"):
         details(t"--diagnose=dissect,inspect", Heath.Coven()).collect:
@@ -290,12 +292,12 @@ object Tests extends Suite("testing", m"Probably Tests"):
 
       test(m"a predicate which throws is reported as far as it got"):
         rows(t"--diagnose=dissect,inspect", t"throwing").map(_(1))
-      . assert(_.contains(t"x"))
+      . assert(_.has(t"x"))
 
       test(m"a site which fails repeatedly is diagnosed each time"):
         scala.List(t"repeated 1", t"repeated 2", t"repeated 3").map: name =>
-          rows(t"--diagnose=dissect,inspect", name).headOption.map(_(1))
-      . assert(_ == scala.List.fill(3)(Some(t"x + y > 10")))
+          rows(t"--diagnose=dissect,inspect", name).keep(1).map(_(1))
+      . assert(_ == scala.List.fill(3)(List(t"x + y > 10")))
 
     suite(m"Queued execution"):
       test(m"--workers parses, and defaults to none"):

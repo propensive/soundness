@@ -186,10 +186,11 @@ object Dissector extends Diagnostician:
   :   List[Verdict.Detail] =
 
     val recorder: Recorder = Recorder()
-    val available: scala.collection.immutable.Map[String, Any] = captures.stdlib.map(_.s -> _).toMap
+    val available: java.util.HashMap[String, Any] = java.util.HashMap()
+    captures.each: (name, value) => available.put(name.s, value)
 
-    if !compiled.locals.forall(available.contains(_)) then Nil else
-      val locals: scala.Array[Any] = compiled.locals.map(available(_)).toArray
+    if !compiled.locals.forall(available.containsKey(_)) then Nil else
+      val locals: scala.Array[Any] = compiled.locals.map(available.get(_)).toArray
       val root: Int = compiled.nodes.headOption.map(_.id).getOrElse(0)
 
       // Whether the predicate, evaluated again, did what it did the first time: fail, or throw.
