@@ -143,6 +143,19 @@ object TestEvent:
       right:      Text,
       difference: Optional[Text] )
 
+  // One intermediate value of a dissected predicate, pre-order with depth, so that the tree of
+  // subexpressions can be rebuilt. `start` and `end` are offsets into the predicate's source
+  // (the `source` of the `DetailDissection` it belongs to), of which `code` is that slice;
+  // `kind` is `value`, or `thrown` for a subexpression which threw, whose `value` is then the
+  // exception.
+  case class DissectRow
+    ( depth: Int,
+      code:  Text,
+      start: Int,
+      end:   Int,
+      value: Text,
+      kind:  Text )
+
   object Coordinate:
     def of(spec: Axis.Spec, value: Axis.Value): Coordinate =
       val domain = spec.domain match
@@ -253,6 +266,12 @@ enum TestEvent:
       expected: Text,
       found:    Text,
       rows:     List[TestEvent.CompareRow] )
+
+  case DetailDissection
+    ( test:         TestEvent.Ref,
+      source:       Text,
+      rows:         List[TestEvent.DissectRow],
+      reproducible: Boolean )
 
   case DetailMessage(test: TestEvent.Ref, message: Text)
   case DetailThrows(test: TestEvent.Ref, check: Boolean, stack: TestEvent.Trace)

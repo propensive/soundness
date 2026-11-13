@@ -35,10 +35,10 @@ package probably
 import scala.quoted.*
 
 import anticipation.*
-import chiaroscuro.*
 import denominative.*
 import fulminate.*
 import gigantism.*
+import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -66,92 +66,104 @@ object internal:
         val inclusion2 = Expr.summon[Inclusion[report, Verdict.Detail]].getOrElse:
           halt(m"Can't embed test details in ${Type.of[report].show}")
 
-        def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
-          case Inlined(_, _, predicate) => lift(predicate.asExpr)
+        // Nothing about how a failure would be rendered is resolved here: that would be paid
+        // for at every assertion on every compilation, to serve the few which ever fail. The
+        // site records only WHERE its predicate is written — the top-level class enclosing
+        // it and the predicate's offsets in the source, which are its offsets in that class's
+        // TASTy — and the predicate's text. A `Diagnostician` recovers the rest, if the
+        // assertion fails (see `Diagnosis`).
+        def unwrap(term: Term): Term = term match
+          case Inlined(_, Nil, term) => unwrap(term)
+          case term                  => term
 
-          case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
-            // Only lift when one side of the `==` is exactly the lambda parameter, so the other
-            // side (the expected value) is a closed term safe to splice. A projection such as
-            // `_.field == x` matches neither case and yields no contrast.
-            expression match
-              case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) =>
-                Some(term.asExpr)
+        val lambda: Term = unwrap(predicate.asTerm)
+        val position: Position = lambda.pos
 
-              case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) =>
-                Some(term.asExpr)
+        def enclosing(symbol: Symbol): Symbol =
+          if symbol.maybeOwner.isNoSymbol || symbol.maybeOwner.isPackageDef then symbol
+          else enclosing(symbol.maybeOwner)
 
-              case other =>
-                None
+        val owner: Symbol = enclosing(Symbol.spliceOwner)
 
-          case other =>
-            None
+        // A predicate which is not written at the assertion — `assert()`'s — has no site.
+        val located: Boolean =
+          owner.isClassDef && owner.pos.exists: ownerPosition =>
+            ownerPosition.sourceFile == position.sourceFile && position.end > position.start
 
-        val exp: Option[Expr[Any]] = lift(predicate)
+        val ownerName: Expr[String] = Expr(if located then owner.fullName else "")
+        val start: Expr[Int] = Expr(if located then position.start else -1)
+        val end: Expr[Int] = Expr(if located then position.end else -1)
+        val source: Expr[String] = Expr(if located then position.sourceCode.getOrElse("") else "")
 
-        val analyse = Expr.summon[Autopsy].absolve match
-          case None =>
-            Unset
+        // The locals the predicate closes over — values defined in an enclosing method, and
+        // so not reachable from anywhere else — are what a diagnosis cannot recover from the
+        // class alone. They are gathered by a thunk which only a failure calls, keyed by
+        // name: no two free locals of one predicate can share a name. A predicate with none,
+        // which is most of them, gets no thunk.
+        val locals: scala.collection.mutable.LinkedHashMap[String, Term] =
+          scala.collection.mutable.LinkedHashMap()
 
-          case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
-            TypeRepr.of[analyse].literal[Boolean]
+        // What the predicate itself defines — including the bindings of any inline call
+        // already expanded within it, which are positioned in the inline method's source,
+        // not here — is not free in it.
+        val defined: scala.collection.mutable.Set[Symbol] = scala.collection.mutable.Set()
 
-        // The non-contrast assertion, used whenever contrast expectations are disabled or no
-        // `Contrastable` instance can be derived for the expected value's type (e.g. when the
-        // test body carries an effect type, or the type is otherwise not contrastable).
-        // The non-contrast assertion passes no expectation (`Unset`), so it constructs no
-        // `Contrastable` at all. This avoids both the capture-checking box that the `inline`
-        // `Contrastable.nothing[test]` mints when `test` is a pure type (`left.decompose.text:
-        // Text` inlined into the splice) and the out-of-scope-given failure that summoning a
-        // *derived* `Contrastable` (e.g. a sum type's) would cause at the splice site.
-        val plain: Expr[result] =
-          ' {
-              assertion[test, test, report, result]
-                ( $runner,
-                  $test,
-                  $predicate,
-                  $action,
-                  Unset,
-                  $inclusion,
-                  $inclusion2,
-                  Decomposable.any[test],
-                  Nil,
-                  $discardExpr,
-                  $verifiedExpr )
-            }
+        object define extends TreeTraverser:
+          override def traverseTree(tree: Tree)(owner: Symbol): Unit =
+            tree match
+              case definition: Definition => defined += definition.symbol
+              case bind: Bind             => defined += bind.symbol
+              case _                      => ()
 
-        if analyse.or(false) then exp match
-          // Only emit the contrast path when a `Contrastable` can actually be derived for the
-          // expected value's type; `Expr.summon` is used purely to test derivability, while the
-          // instance itself is summoned by `infer` *inside* the quote so its captured givens stay
-          // in scope at the splice site.
-          case Some('{type testType >: test; $expr: testType})
-            if Expr.summon[testType is Contrastable].isDefined =>
+            super.traverseTree(tree)(owner)
 
-            val decomposable: Expr[testType is Decomposable] =
-              Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
+        def local(symbol: Symbol): Boolean =
+          symbol.isTerm && !symbol.flags.is(Flags.Method) && !symbol.flags.is(Flags.Module) &&
+            !symbol.flags.is(Flags.Lazy) && !symbol.maybeOwner.isNoSymbol &&
+            (symbol.maybeOwner.isDefDef || symbol.maybeOwner.isValDef)
 
-            ' {
-                given decompose: testType is Decomposable = $decomposable
-                val contrast = infer[testType is Contrastable]
+        object gather extends TreeTraverser:
+          override def traverseTree(tree: Tree)(owner: Symbol): Unit =
+            tree match
+              case ident@Ident(name) if local(ident.symbol) && !defined.contains(ident.symbol) =>
+                if !locals.contains(name) then locals(name) = Ref(ident.symbol)
 
-                assertion[testType, test, report, result]
-                  ( $runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    ($expr, contrast),
-                    $inclusion,
-                    $inclusion2,
-                    decompose,
-                    Nil,
-                    $discardExpr,
-                    $verifiedExpr )
-              }
+              case _ =>
+                ()
 
-          case _ =>
-            plain
+            super.traverseTree(tree)(owner)
 
-        else plain
+        if located then
+          define.traverseTree(lambda)(Symbol.spliceOwner)
+          gather.traverseTree(lambda)(Symbol.spliceOwner)
+
+        val names: Expr[String] = Expr(locals.keys.mkString(","))
+
+        val captures: Expr[Optional[() => List[Any]]] =
+          if locals.isEmpty then '{Unset} else
+            val values: Expr[List[Any]] =
+              '{List[Any](${Varargs(locals.values.map(_.asExpr).toSeq)}*)}
+
+            '{() => $values}
+
+        ' {
+            assertion[test, report, result]
+              ( $runner,
+                $test,
+                $predicate,
+                $action,
+                $inclusion,
+                $inclusion2,
+                Nil,
+                $discardExpr,
+                $verifiedExpr,
+                $ownerName.tt,
+                $start,
+                $end,
+                $source.tt,
+                $names.tt,
+                $captures )
+          }
 
 
   // `check` returns its value into subsequent test code, so an unselected `check` still
@@ -183,24 +195,53 @@ object internal:
   def succeed: Any => Boolean = (value: Any) => true
 
 
-  def assertion[test, test2 <: test, report, result]
+  def assertion[test, report, result]
     ( runner:       Runner[report],
-      test:         Test[test2]^,
-      predicate:    test2 => Boolean,
-      result:       Trial[test2] => result,
-      expectation:  Optional[(test, test is Contrastable)],
+      test:         Test[test]^,
+      predicate:    test => Boolean,
+      result:       Trial[test] => result,
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
-      decomposable: test is Decomposable,
       coordinates:  List[(Axis.Spec, Axis.Value)],
       discard:      Boolean,
-      verified:     Boolean )
+      verified:     Boolean,
+      owner:        Text,
+      start:        Int,
+      end:          Int,
+      source:       Text,
+      names:        Text,
+      captures:     Optional[() => List[Any]] )
   :   result =
 
     val selected = !runner.skip(test.id, Entry.Kind.Check, coordinates)
 
     // Within an `aspirationally` block, every verdict is recorded as an aspiration.
     val aspirational = runner.aspirational
+
+    // What a failure of the predicate on `value` is found to be, when the host asked for
+    // failures to be diagnosed: the installed `Diagnostician`'s account of it, or, with no
+    // engine to ask (or none that could say anything), the value as it prints itself.
+    def diagnose(value: test): Unit =
+      val request = runner.diagnosis
+
+      if !request.nil then
+        val site = Diagnosis.Site(owner, start, end, source)
+
+        val details: List[Verdict.Detail] =
+          try
+            Diagnostician().lay(Nil): diagnostician =>
+              val locals: List[(Text, Any)] = captures.lay(Nil): thunk =>
+                names.cut(",".tt).zip(thunk())
+
+              diagnostician.diagnose(site, value, locals, request)
+
+          catch case error: Throwable => Nil
+
+        val details2: List[Verdict.Detail] =
+          if !details.nil then details
+          else List(Verdict.Detail.Message(java.lang.String.valueOf(value).nn.tt))
+
+        details2.each: detail => inc2.include(runner.report, test.id, coordinates, detail)
 
     // A discardable, unselected assertion never runs; an unselected `check` must still run
     // (its value flows onward) but records nothing. The cast is sound: `discard` is true
@@ -224,17 +265,7 @@ object internal:
                 if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
               else
                 if selected then
-                  expectation.let: pair =>
-                    val (exp, contrast) = pair
-
-                    inc2.include
-                      ( runner.report,
-                        test.id,
-                        coordinates,
-                        Verdict.Detail.Compare
-                          ( decomposable.decomposition(exp).text,
-                            decomposable.decomposition(value).text,
-                            contrast.juxtaposition(exp, value) ) )
+                  diagnose(value)
 
                   if !map.nil
                   then
@@ -242,6 +273,8 @@ object internal:
 
                 if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
             catch case error: Exception =>
+              if selected then diagnose(value)
+
               if aspirational then Verdict.AspireFail(duration)
               else Verdict.CheckThrows(error, duration)
 

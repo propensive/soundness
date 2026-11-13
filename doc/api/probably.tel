@@ -48,8 +48,9 @@ detail
       the `Inclusion`s for its report type, run the body, and record a `Verdict`. `assert`
       demands a **pure** body (one closing over no capability), which is what lets a queued
       runner (`--workers=<n>`) run it on a worker thread; `check` takes any body, runs it
-      inline and returns the value. A failed `== expected` assertion is contrasted when the
-      `Autopsy` in scope says so (`Autopsy.contrastByDefault` does).
+      inline and returns the value. Neither resolves anything about how a failure would be
+      shown: a failed assertion is diagnosed afterwards, and only if the host asked
+      (`--diagnose=…`; see `Diagnosis`).
     - **Spreading**: `Test.Id#over` runs one test once per value of an `Axis` (or per
       combination of two), recording each verdict at that coordinate of a single named test.
     - **Running**: a `Runner` is built from a `Selection` (parsed from command-line terms:
@@ -61,14 +62,15 @@ detail
       kinds (benchmarks, stress tests, profiles, declared through the sedentary library), each
       with an `Inclusion[Report, …]` which records it as metrics at a coordinate.
 
-    The library has three components. `probably.core` (JVM, Scala.js and Scala Native) holds
-    everything but `Suite` and the wire format; `probably.cli` adds `Suite`; and
+    The library has four components. `probably.core` (JVM, Scala.js and Scala Native) holds
+    everything but `Suite` and the wire format; `probably.cli` adds `Suite`;
     `probably.events` adds `Streamer` and `Standalone`, the BinTEL framing of the event stream
-    for a host. Everything is exported to the `soundness` umbrella except `probably.Tag`, whose
+    for a host; and `probably.diagnosis` (JVM only) adds `Dissector`, the engine which
+    diagnoses a failed assertion, and with it a dependency on the compiler. Everything is exported to the `soundness` umbrella except `probably.Tag`, whose
     name is honeycomb's HTML tag there: write `probably.Tag` when the type must be named (tags
     are usually written as `n"…"` literals). The hypotenuse checking vocabulary — `===`,
     `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — is re-exported here so that `import
-    probably.*` still provides it. The choice packages `harnesses`, `autopsies` and
+    probably.*` still provides it. The choice packages `harnesses` and
     `decimalizers` hold givens which are imported by name, since `import probably.*` does not
     import givens.
 
@@ -451,18 +453,21 @@ entry .Test   a declared test with its body, ready to be asserted, checked or ma
 
       Both `assert` and `check` are macros which find the `Runner` in scope (a compile error,
       _No `Runner` instance is available_, otherwise) and the `Inclusion[report, Verdict]`
-      and `Inclusion[report, Verdict.Detail]` for its report type. When the predicate has the
-      shape `_ == expected` (or `expected == _`) and the `Autopsy` in scope analyses
-      failures, the expected value is lifted out and, on failure, contrasted with the
-      observed one through a derived `Contrastable`, recorded as `Verdict.Detail.Compare`
-      and emitted as `TestEvent.DetailCompare`. A body which throws records
+      and `Inclusion[report, Verdict.Detail]` for its report type. Nothing else is resolved
+      at the assertion: it records where its predicate is written and gathers, only on
+      failure, the locals the predicate closes over. A failed predicate is then handed to
+      the installed `Diagnostician`, when the run was asked to diagnose failures, whose
+      account of it — a `Verdict.Detail.Dissection` of the predicate's intermediate values,
+      and for an equality a `Verdict.Detail.Compare` of its two sides — is recorded and
+      emitted as `TestEvent.DetailDissection` and `TestEvent.DetailCompare`. A body which
+      throws records
       `Verdict.Throws`; a predicate which throws, `Verdict.CheckThrows`. Values captured
       with `Harness#capture` during a failed test are recorded as `Verdict.Detail.Captures`.
   refer probably.test
   refer probably.Runner
   refer probably.Verdict
-  refer probably.Autopsy
-  refer chiaroscuro.Contrastable
+  refer probably.Diagnosis
+  refer probably.Dissector
   entry .assert   runs a pure test and records whether its predicate held; `assert()` records that it ran
       An extension on `Test[test]`. `assert(predicate)` records `Pass` or `Fail` (or, inside
       `aspirationally`, `AspirePass`/`AspireFail`); `assert()` with no predicate passes
@@ -631,30 +636,64 @@ entry .Harness   what a test body runs under: a place to capture named values fo
       Needs a `Decomposable` for the value's type (derived for case classes, collections and
       anything `Inspectable`); the rendering is the decomposition's `inspect`.
 
-entry .Autopsy   whether a failed equality is analysed into a contrast
+entry .Diagnosis   how a failed assertion is diagnosed after the fact: the request, and the site
   detail
-      The `assert`/`check` macros consult the `Autopsy` in scope: when its `#Analyse` type
-      is `true` and the predicate has the shape `_ == expected`, a failure records a
-      structural `Verdict.Detail.Compare` through chiaroscuro's `Contrastable`; when
-      `false`, only the verdict is recorded. The companion's `.contrastByDefault` analyses,
-      so a suite which wants plain failures imports `autopsies.noAutopsy`.
-  refer probably.autopsies
-  refer chiaroscuro.Contrastable
-  entry .contrastByDefault   the given in implicit scope: failures are contrasted
-  entry #Analyse   `true` to contrast a failed equality, `false` to record the verdict alone
+      An assertion site holds no rendering logic. When its predicate fails, and the run was
+      started with `--diagnose=<presentations>`, the installed `Diagnostician` is given the
+      site, the value which failed and the locals the predicate closes over, and answers
+      with `Verdict.Detail`s. The test's body is not run again; the predicate is evaluated
+      once more, on the same value.
 
-entry .autopsies   the two `Autopsy` policies, each a given to import by name
-  detail
-      `import probably.*` imports neither; the companion's `Autopsy.contrastByDefault`
-      applies unless one of these is imported, since a lexically-scoped given outranks a
-      companion one.
-
-      ```scala
-      import soundness.*
-      import autopsies.noAutopsy
       ```
-  entry .contrastAutopsy   analyse a failed `_ == expected` into a `Juxtaposition`
-  entry .noAutopsy   record only the verdict of a failed assertion
+      fume run --diagnose=dissect,contrast,inspect
+      ```
+
+      Because the rendering is chosen when the diagnosis is made, a suite contributes
+      `Inspectable`, `Showable` and `Contrastable` instances — in a companion, by an import
+      which precedes the assertion, or as a member of the object the suite is written in —
+      without knowing whether any front-end will ask for them. A given which is local to a
+      method, or a member of a class rather than an object, is not seen.
+  refer probably.Dissector
+  refer probably.Selection
+  entry .Presentation   one way to present a failure: `Inspect`, `Show`, `Contrast` or `Dissect`
+      `Inspect` renders each value through `Inspectable`, and `Show` through `Showable`
+      (each falling back to the other); `Contrast` compares the two sides of a failed
+      equality structurally; `Dissect` gives every intermediate value of the predicate.
+  entry .Request   the presentations a host asked for
+    entry .none   no diagnosis at all, the default
+    entry .parse   reads a comma-separated list of `inspect`, `show`, `contrast` and `dissect`, ignoring other words
+    entry #nil   whether nothing was asked for
+    entry #has   whether a presentation was asked for
+  entry .Site   where a predicate is written: its enclosing top-level class, its source offsets and its text
+      The offsets are those of the predicate's tree in the class's TASTy, which is how the
+      engine finds it again. `#known` is false for a predicate not written at the assertion,
+      such as `assert()`'s.
+
+entry .Diagnostician   an engine which can account for a failed predicate
+  detail
+      `#diagnose` answers the details of a failure, or `Nil` when it can say nothing; it
+      never throws. One is installed for a classloader with `.install`, which
+      `Streamer.stream` does when `probably.diagnosis` is on the classpath. With none
+      installed, a diagnosed failure records the value's `toString` as a message.
+  refer probably.Dissector
+  entry .install   makes an engine the one failed assertions are taken to
+  entry .apply   the installed engine, if any
+
+entry .Dissector   the engine which reads a failed predicate from TASTy and compiles an instrumented copy of it
+  detail
+      In `probably.diagnosis`, which depends on the compiler. For each failing site, once:
+      the predicate's tree is read from the TASTy of the class which encloses it (TASTy is
+      pickled before inlining, so it is there as written); each subexpression is wrapped in
+      an inline recorder, the parameter becomes the failed value and each free local the
+      value the site captured; and the result is compiled by the staging compiler in the
+      suite's classloader. Which typeclass renders a value is resolved only then.
+
+      A predicate which cannot be instrumented — it uses a private member or a local
+      method, or its instrumented copy does not compile — is diagnosed less finely: without
+      descending into the arguments of inline calls, then by the failed value alone. Setting
+      the `probably.diagnosis.debug` system property prints why.
+  refer probably.Diagnosis
+  entry #diagnose   the details of one failure, from the site's cached diagnosis
 
 entry .harnesses   the `Harness` policies, each a given to import by name
   detail
@@ -686,7 +725,9 @@ entry .Verdict   the outcome of one run of a check: pass, fail, throws, or an as
       `Throws(stack)` and `CheckThrows(stack)` carry the `StackTrace`; `Captures(values)` the
       values captured with `Harness#capture`, by name; `Compare(expected, found,
       juxtaposition)` the decomposed texts of both sides of a failed equality and their
-      `Juxtaposition`; and `Message(message)` free text. Each is recorded through
+      `Juxtaposition`; `Dissection(source, rows, reproducible)` the intermediate values of a
+      failed predicate, and whether it failed again when evaluated for its diagnosis; and
+      `Message(message)` free text. Each is recorded through
       `Inclusion[Report, Verdict.Detail]` and emitted as the matching `TestEvent.Detail…`.
   entry #timestamp   when the verdict was made, in milliseconds since the epoch
   entry #duration   how long the body took, in nanoseconds
@@ -1223,6 +1264,7 @@ entry .Selection   which tests, and which of their cells, a run admits, parsed f
       Geometric: 2.0 runs each measurement twice as long, 0.25 a quarter as long. Latency
       thresholds are not scaled, being pass/fail criteria rather than durations.
   entry #workers   how many workers execute queued assertions; 0 queues nothing
+  entry #diagnosis   how failed assertions are to be diagnosed (`--diagnose=…`); not at all by default
   entry #trivial   whether the selection selects nothing in particular: no terms, kinds, constraints, tags or exclusions
   entry #admits   whether a test, of a kind, at coordinates, with tags, is admitted
 
@@ -1279,6 +1321,7 @@ entry .TestEvent   the typed event stream a run produces, for a host which rende
       - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` — a check's
         result, following `TestEnded`.
       - `DetailCaptures(test, values)`, `DetailCompare(test, expected, found, rows)`,
+        `DetailDissection(test, source, rows, reproducible)`,
         `DetailMessage(test, message)` and `DetailThrows(test, check, stack)` — a failure's
         supporting information (`check` is whether the predicate, rather than the body,
         threw).
@@ -1345,6 +1388,11 @@ entry .TestEvent   the typed event stream a run produces, for a host which rende
     entry #outcome   the outcome word
     entry #duration   the body's duration
     entry #stack   the trace, for the throwing outcomes
+  entry .DissectRow   one intermediate value of a dissected predicate, pre-order with depth
+    detail
+        `start` and `end` are offsets into the predicate's source, of which `code` is that
+        slice, so a renderer can set each value under the subexpression it belongs to.
+        `kind` is `value`, or `thrown` for the root of a predicate which threw.
   entry .CompareRow   one row of a flattened `Juxtaposition`, pre-order with depth
     detail
         `kind` is `same`, `different` or `collation`; a collation's type name travels in
@@ -1423,6 +1471,8 @@ entry .Streamer   writes a run's `TestEvent`s as length-prefixed BinTEL frames t
   entry .queued   `true`: suites on this classpath understand `--workers=<n>`
       Probed reflectively like `.reentrant`; to an older Probably the term is a name glob
       which admits nothing, so a host must not pass it blindly.
+  entry .diagnostic   `true`: suites on this classpath understand `--diagnose=<presentations>`
+      Probed reflectively like `.reentrant`.
   entry .fingerprint   the BLAKE3 hash of the derived `TestEvent` schema's structure
       A fingerprint of the wire layout: two versions whose `TestEvent`s differ in any field,
       order or case produce different fingerprints.

@@ -132,6 +132,9 @@ object Report:
             val rows = TestEvent.CompareRow.flatten(juxtaposition)
             TestEvent.DetailCompare(ref, expected, found, rows)
 
+          case Verdict.Detail.Dissection(source, rows, reproducible) =>
+            TestEvent.DetailDissection(ref, source, rows, reproducible)
+
           case Verdict.Detail.Message(message) =>
             TestEvent.DetailMessage(ref, message)
 

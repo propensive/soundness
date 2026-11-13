@@ -121,7 +121,7 @@ polyvinyl	yes	yes	yes	js
 praxinoscope	yes	yes	yes	js		
 prepositional	yes	yes	yes	js		
 prescience	yes	no	no	no		expansion-time instance evaluation via the macro classloader
-probably	yes	yes	yes	js		
+probably	yes	yes	yes	js	JVM-only: diagnosis	`diagnosis` compiles a failed predicate at run time with the staging compiler
 profanity	yes	yes	yes	js		
 prophesy	yes	yes	yes	js		
 proscenium	yes	yes	yes	js		

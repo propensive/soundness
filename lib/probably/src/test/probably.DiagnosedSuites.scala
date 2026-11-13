@@ -32,9 +32,64 @@
                                                                                                   */
 package probably
 
-object Autopsy:
-  given contrastByDefault: Autopsy:
-    type Analyse = true
+import scala.language.experimental.captureChecking
 
-trait Autopsy:
-  type Analyse <: Boolean
+import soundness.*
+
+import apparitions.spectral
+
+case class Courtier(name: Text, age: Int)
+case class Tragedy(title: Text, hero: Courtier, cast: List[Courtier])
+
+// A type whose rendering is supplied by its companion: the suite which fails on one says
+// nothing about how it is to be shown.
+case class Ghost(name: Text)
+
+object Ghost:
+  given inspectable: Ghost is Inspectable = ghost => t"the ghost of ${ghost.name}"
+
+// Two more, rendered by instances which are NOT in their implicit scope: one imported at the
+// top of this file, and one a member of the object its suite is written in.
+case class Spectre(name: Text)
+case class Witch(name: Text)
+
+object apparitions:
+  given spectral: Spectre is Inspectable = spectre => t"the spectre of ${spectre.name}"
+
+object Heath:
+  given witching: Witch is Inspectable = witch => t"the weird sister ${witch.name}"
+
+  private def secret: Int = 3
+
+  class Coven extends Suite(m"coven"):
+    def run(): Unit =
+      test(m"member")(Witch(t"Hecate")).assert(_ == Witch(t"Graymalkin"))
+      test(m"private")(2).assert(x => x > secret)
+
+// Suites which fail on purpose, driven through `invoke` by the diagnosis tests: classes, not
+// objects, so the suite index does not list them. Capture checked, so the locals a predicate
+// closes over are gathered under the checker.
+class Dissected extends Suite(m"dissected"):
+  def run(): Unit =
+    val y: Int = 2
+    test(m"arithmetic")(2).assert(x => x*2 < 9 && x*y > 4)
+
+    val hero: Courtier = Courtier(t"Hamlet", 30)
+
+    test(m"equality")(Tragedy(t"Hamlet", Courtier(t"Hamlet", 31), Nil))
+    . assert(_ == Tragedy(t"Hamlet", hero, Nil))
+
+    test(m"passing")(1).assert(_ == 1)
+    test(m"throwing")(0).assert(x => 1/x > 0)
+    test(m"companion")(Ghost(t"Hamlet's father")).assert(_ == Ghost(t"Banquo"))
+    test(m"imported")(Spectre(t"Caesar")).assert(_ == Spectre(t"Banquo"))
+
+    // A predicate which fails the first time it is asked — by the assertion — and not the
+    // second, when the diagnosis asks again.
+    val asked: java.util.concurrent.atomic.AtomicInteger =
+      java.util.concurrent.atomic.AtomicInteger(0)
+
+    test(m"fickle")(1).assert(x => x > 0 && asked.getAndIncrement() > 0)
+
+    List(1, 2, 3).each: n =>
+      test(m"repeated $n")(n).assert(x => x + y > 10)

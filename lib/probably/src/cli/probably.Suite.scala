@@ -100,6 +100,11 @@ object Suite:
           Out.println(t"    expected: $expected")
           Out.println(t"    found:    $found")
 
+        case TestEvent.DetailDissection(_, _, rows, _) =>
+          rows.each: row =>
+            val indent: Text = ("  "*(row.depth + 2)).tt
+            Out.println(t"$indent${row.code}  ${row.value}")
+
         case TestEvent.RunTerminated(error, _, _) =>
           Out.println(t"suite threw: ${error.components.map(_.message).join(t"; ")}")
 

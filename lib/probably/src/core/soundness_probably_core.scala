@@ -34,8 +34,8 @@ package soundness
 
 export
   probably
-  . { Anchor, aspirationally, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
-      Derived, Harness, Hotspots, impromptu, Impromptu, Inclusion,
+  . { Anchor, aspirationally, Axable, Axis, Baseline, Benchmark, Cadential,
+      Derived, Diagnosis, Diagnostician, Harness, Hotspots, impromptu, Impromptu, Inclusion,
       Max, Mean, Metric, Min, nominative, Probing, Report, Reporter, Run, Runner, Spread,
       Spread2, Strain, suite, Tagging, taggingNominative, Tally, Temporal, Test, test,
       Testable, Trial, Verdict }
@@ -46,9 +46,6 @@ export
 
 package harnesses:
   export probably.harnesses.threadLocalHarness
-
-package autopsies:
-  export probably.autopsies.{contrastAutopsy, noAutopsy}
 
 package decimalizers:
   export probably.decimalizers.fourDecimalPlaces

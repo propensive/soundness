@@ -128,10 +128,3 @@ package harnesses:
   given threadLocalHarness: Harness:
     override def capture[value: Decomposable](name: Text, value: value): value =
       Runner.harness().let(_.capture[value](name, value)).or(value)
-
-package autopsies:
-  given contrastAutopsy: Autopsy:
-    type Analyse = true
-
-  given noAutopsy: Autopsy:
-    type Analyse = false

@@ -72,6 +72,7 @@ object Runner:
     def defer(id: Test.Id, thunk: Runnable^): Unit = base.defer(id, thunk)
     def drain(): Unit = base.drain()
     def scale: Double = base.scale
+    def diagnosis: Diagnosis.Request = base.diagnosis
 
     def skip
       ( id:          Test.Id,
@@ -228,6 +229,9 @@ object Runner:
     // the point where a measurement's length is decided.
     def scale: Double = selection.scale
 
+    // How the host asked for failed assertions to be diagnosed (`--diagnose=…`).
+    def diagnosis: Diagnosis.Request = selection.diagnosis
+
     // Whether a test (or one cell of an axial test) is excluded by the selection, given the
     // caller's estimate of how many NANOSECONDS the test will spend measuring — declared
     // metadata, not a promise — recorded against the schedule so a host can budget a whole run
@@ -372,6 +376,7 @@ trait Runner[report] extends Findable:
   def defer(id: Test.Id, thunk: Runnable^): Unit
   def drain(): Unit
   def scale: Double
+  def diagnosis: Diagnosis.Request
 
   def skip
     ( id:          Test.Id,

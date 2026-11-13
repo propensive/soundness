@@ -629,7 +629,8 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   // classpath transitively via `chiaroscuro`, but chiaroscuro no longer depends on it (so it can
   // cross-compile to Scala.js), so the dependency is now explicit here.
   def moduleDeps: Seq[JavaModule] =
-    larceny.plugin +: probably.cli +: probably.events +: proscenium.core +: dependencies
+    larceny.plugin +: probably.cli +: probably.events +: probably.diagnosis +: proscenium.core +:
+      dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -645,7 +646,8 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   // `probably.events` rides along for the same reason it does in `Tests`: a host process (fume)
   // streams a benchmark run's `TestEvent`s out of the suite's classloader world via
   // `probably.Streamer`, which therefore has to be ON the benchmark assembly's classpath.
-  def moduleDeps: Seq[PublishModule] = probably.cli +: probably.events +: sedentary.core +: dependencies
+  def moduleDeps: Seq[PublishModule] =
+    probably.cli +: probably.events +: probably.diagnosis +: sedentary.core +: dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -874,7 +876,7 @@ object soundness extends Fork:
 
   object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
     tarantula.image,
-    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core):
+    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, probably.diagnosis, superlunary.jvm, mandible.core):
     def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core, degustation.tasty,
@@ -2978,6 +2980,36 @@ object probably extends Library:
     // `stratiform.test`, which exercises them, stays off `sep`). Tracked by `safety-6`.
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // The engine which diagnoses a failed assertion: it reads the predicate from the suite's own
+  // TASTy and compiles an instrumented copy of it with the staging compiler, in the suite's
+  // classloader (see `probably.Dissector`). Nothing in it runs unless an assertion fails, but
+  // it is what brings the compiler onto a test classpath, so it is a component of its own.
+  object diagnosis extends Component(core):
+    override def scalaJs = false // runtime multi-stage compilation
+    // Not `sep`-checked: its code is compiler-reflection trees and inline recorders whose
+    // expansions happen in the staged code, not here.
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+    // The staged compilation of a diagnosis expands inline methods written for this build's
+    // compiler options — the fork's opt-in behaviours and the language features — so it must
+    // run with them: without `-Zdiagnostic-givens`, for one, a derivation which resolves here
+    // does not resolve there. They are compiled in, so the engine and the libraries cannot
+    // disagree; warnings, and options which name a path, are left out.
+    def generatedSources = Task:
+      val options = settings.scalaOptions.filter: option =>
+        option.startsWith("-Z") || option.startsWith("-language:") ||
+          Set("-experimental", "-preview", "-Yno-flexible-types", "-Yexplicit-nulls")(option)
+      val literals = options.map("\"" + _ + "\"").mkString("scala.List(\n    ", ",\n    ", ")\n")
+      val source =
+        "package probably\n\nprivate[probably] object DissectorOptions:\n" +
+          "  val options: scala.List[String] =\n    " + literals
+      os.write.over(Task.dest / "probably" / "probably.DissectorOptions.scala", source, createFolders = true)
+      Seq(PathRef(Task.dest))
+
   object test extends Tests(cli):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
