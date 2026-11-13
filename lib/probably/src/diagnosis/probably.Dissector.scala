@@ -399,9 +399,18 @@ object Dissector extends Diagnostician:
         case AppliedType(_, arguments) => arguments.exists(vague(_))
         case other                     => other =:= TypeRepr.of[Nothing]
 
+      // The type a value is rendered at: its widened type without refinements. An instance
+      // for `List[element]` is not one for `List[element] { type Occupied = true }`, the type
+      // of a list literal, since `Self` is invariant.
+      def plain(tpe: TypeRepr): TypeRepr = tpe.widen.dealias match
+        case Refinement(parent, _, _)    => plain(parent)
+        case AnnotatedType(underlying, _) => plain(underlying)
+        case other                        => other
+
+      // A reference to an object is not a value worth showing.
       def recordable(term: Term): Boolean =
         !methodic(term.tpe) && !(term.tpe.widen =:= TypeRepr.of[Unit]) &&
-          !vague(term.tpe.widen) && !term.symbol.flags.is(Flags.Module) &&
+          !vague(term.tpe.widen) && !term.tpe.widen.typeSymbol.flags.is(Flags.Module) && !term.symbol.flags.is(Flags.Module) &&
           !term.symbol.flags.is(Flags.Package)
 
       var counter: Int = 0
@@ -420,7 +429,7 @@ object Dissector extends Diagnostician:
       ' {
           (value: Any, captures: scala.Array[Any], recorder: Recorder) =>
             $ {
-                def record(id: Int, term: Term): Term = term.tpe.widen.asType match
+                def record(id: Int, term: Term): Term = plain(term.tpe).asType match
                   case '[t] =>
                     val expr = term.asExprOf[t]
 
@@ -546,8 +555,8 @@ object Dissector extends Diagnostician:
                       val left2 = instrument.transformTerm(left)(Symbol.spliceOwner)
                       val right2 = instrument.transformTerm(right)(Symbol.spliceOwner)
                       val reversed: Boolean = right.symbol == parameterSymbol
-                      val leftType = left.tpe.widen
-                      val rightType = right.tpe.widen
+                      val leftType = plain(left.tpe)
+                      val rightType = plain(right.tpe)
 
                       (leftType.asType, rightType.asType) match
                         case ('[l], '[r]) =>
