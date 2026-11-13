@@ -38,6 +38,8 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize // the suite reads list sizes; the cost is irrelevant here
+import filesystemBackends.javaBaseFilesystem
+import providers.javaBaseProvider
 
 // RaTEL (spec/ratel.md): the layout of rows, the canonical writer's bytes for the worked
 // example of §13, reading in place, the indexes, losslessness (P5) over the conformance
@@ -53,16 +55,26 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
     image.segment(offset.z till (offset + image.u64(24 + 16*number).toInt).z)
 
   // An image with the bytes from `offset` replaced.
-  private def patched(image: Data, offset: Int, bytes: Int*): Data =
-    val replacement: List[Int] = bytes.to[List]
-
+  private def patched(image: Data, offset: Int, bytes: List[Int]): Data =
     Array.tabulate[Byte](image.length): index =>
-      if index < offset || index >= offset + replacement.size then image.u8(index).toByte
-      else replacement.zip(List.range(offset, offset + replacement.size)).fuse(0.toByte):
+      if index < offset || index >= offset + bytes.size then image.u8(index).toByte
+      else bytes.zip(List.range(offset, offset + bytes.size)).fuse(0.toByte):
         if next(1) == index then next(0).toByte else state
 
+  // The bytes of a little-endian integer.
+  private def little(value: Long, width: Int): List[Int] =
+    List.range(0, width).map { index => ((value >>> 8*index) & 0xff).toInt }
+
+  // Where a section begins.
+  private def start(image: Data, number: Int): Int = image.u64(16 + 16*number).toInt
+
+  // The condition a verifying reader reports for an image.
   private def reason(image: Data): Ratel.Error.Reason =
     capture[Ratel.Error](Ratel.open(Mapped(image)).verify()).reason
+
+  private def plain(document: Tel, schema: Tels): Data =
+    val element = Tel.Type.assign(document, schema, Tel.Validator.Registry.builtins, Tel.Codec.Bindings.all)
+    Ratel.encode(element, schema, digests = false).data
 
   private val catalogueSchema: Tels = schemaOf:
     Text("""|tel 1.0 specification.tel/tels:2.1.0
@@ -421,3 +433,260 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
             reader.verify()
             hex(reader.materialise().bintel(schema, codecs)) == hex(element.bintel(schema, codecs))
           . assert(_ == true)
+
+    suite(m"Reader error conditions (§14)"):
+      import Ratel.Error.Reason
+      val image: Data = plain(catalogue, catalogueSchema)
+      val variable = start(image, 2)
+      val tables = start(image, 3)
+      val indexes = start(image, 4)
+
+      test(m"an untouched image is sound"):
+        Ratel.open(Mapped(image)).verify()
+      . assert(_ == ())
+
+      test(m"R01: another magic number is refused"):
+        reason(patched(image, 0, List(0xb2)))
+      . assert(_ == Reason.BadMagic)
+
+      test(m"R02: another version is refused"):
+        reason(patched(image, 4, List(2)))
+      . assert(_ == Reason.UnsupportedVersion)
+
+      test(m"R03: a reserved byte which is set is refused"):
+        reason(patched(image, 5, List(1)))
+      . assert(_ == Reason.ReservedSet)
+
+      test(m"R03: a reserved flag which is set is refused"):
+        reason(patched(image, 6, List(6)))
+      . assert(_ == Reason.ReservedSet)
+
+      test(m"R04: a file shorter than a header is refused"):
+        reason(image.segment(Prim till 100.z))
+      . assert(_ == Reason.BadLength)
+
+      test(m"R04: a committed length beyond the file is refused"):
+        reason(patched(image, 8, little(image.length + 8, 8)))
+      . assert(_ == Reason.BadLength)
+
+      test(m"R05: a misaligned section is refused"):
+        reason(patched(image, 48, little(variable + 4, 8)))
+      . assert(_ == Reason.BadDirectory)
+
+      test(m"R05: a section beyond the committed length is refused"):
+        reason(patched(image, 56, little(image.length, 8)))
+      . assert(_ == Reason.BadDirectory)
+
+      test(m"R06: sections which overlap are refused"):
+        reason(patched(image, 64, little(variable, 8)))
+      . assert(_ == Reason.SectionsOverlap)
+
+      test(m"R07: a digests flag with no digests is refused"):
+        reason(patched(image, 6, List(3)))
+      . assert(_ == Reason.DigestMismatch)
+
+      test(m"R07: a section which does not match its digest fails verification"):
+        val digested = catalogue.ratel(catalogueSchema).data
+        reason(patched(digested, start(digested, 2) + 4, List(0x62)))
+      . assert(_ == Reason.DigestMismatch)
+
+      test(m"R08: a signature which is not structurally one is refused"):
+        reason(patched(image, 145, List(image.u8(145) ^ 1)))
+      . assert(_ == Reason.BadSignature)
+
+      test(m"R09: a schema which does not decode is refused"):
+        reason(patched(image, 178, List(0)))
+      . assert(_ == Reason.SchemaUndecodable)
+
+      test(m"R10: a schema which does not have its signature is refused"):
+        reason(patched(image, 145, List(image.u8(145) ^ 1, image.u8(146) ^ 1)))
+      . assert(_ == Reason.SignatureMismatch)
+
+      test(m"R11: a schema which interns a fixed-width scalar cannot be laid out"):
+        val schema = schemaOf:
+          Text("""|tel 1.0 specification.tel/tels:2.1.0
+              |
+              |name census
+              |
+              |scalar Count
+              |  encoding u32
+              |  intern
+              |
+              |document
+              |  field players Count
+              |""".stripMargin)
+
+        capture[Ratel.Error](t"tel 1.0\n\nplayers 6\n".read[Tel].ratel(schema)).reason
+      . assert(_ == Reason.SchemaUnlayoutable)
+
+      test(m"R12: a table whose rows are not the size of its layout is refused"):
+        reason(patched(image, tables + 36, little(24, 4)))
+      . assert(_ == Reason.BadTableDirectory)
+
+      test(m"R12: a table whose rows run beyond the section is refused"):
+        reason(patched(image, tables + 32, little(3, 4)))
+      . assert(_ == Reason.BadTableDirectory)
+
+      test(m"R13: a root table of two rows is refused"):
+        reason(patched(image, tables + 8, little(2, 4)))
+      . assert(_ == Reason.BadRootTable)
+
+      test(m"R14: a ref which is not a multiple of four fails its access"):
+        reason(patched(image, tables + 0x4c, little(2, 4)))
+      . assert(_ == Reason.BadRef)
+
+      test(m"R14: an item which runs beyond its region fails its access"):
+        reason(patched(image, variable + 0x1c, little(400, 4)))
+      . assert(_ == Reason.BadRef)
+
+      test(m"R15: a range which runs beyond its table fails its access"):
+        reason(patched(image, tables + 0x34, little(3, 4)))
+      . assert(_ == Reason.BadRecordIndex)
+
+      test(m"a lazy reader still serves the records which are sound"):
+        val damaged = patched(image, tables + 0x4c, little(2, 4))
+        val entries = Ratel.open(Mapped(damaged)).root / t"entry"
+        (entries.find(t"alpha").let(_.text(t"info")), capture[Ratel.Error](entries(Sec).text(t"name")).reason)
+      . assert(_ == (t"First letter", Reason.BadRef))
+
+      test(m"R16: a row which is reached twice is refused"):
+        val schema = schemaOf:
+          Text("""|tel 1.0 specification.tel/tels:2.1.0
+              |
+              |name cast
+              |
+              |record Player
+              |  field name String key
+              |
+              |document
+              |  field player Player repeatable
+              |  field lead Player optional
+              |""".stripMargin)
+
+        val cast = plain(t"tel 1.0\n\nplayer Bottom\nplayer Flute\nlead Snug\n".read[Tel], schema)
+        reason(patched(cast, start(cast, 3) + 60, little(0, 4)))
+      . assert(_ == Reason.RowRevisited)
+
+      val verdictSchema = schemaOf:
+        Text("""|tel 1.0 specification.tel/tels:2.1.0
+            |
+            |name verdict
+            |
+            |select Ending
+            |  variant death Flag
+            |  variant marriage String
+            |
+            |document
+            |  field title String
+            |  select Ending
+            |""".stripMargin)
+
+      test(m"R17: a tag which is no variant's keyword index fails its access"):
+        val verdict = plain(t"tel 1.0\n\ntitle Hamlet\ndeath\n".read[Tel], verdictSchema)
+        reason(patched(verdict, start(verdict, 3) + 28, little(7, 4)))
+      . assert(_ == Reason.BadTag)
+
+      test(m"R18: a text which is not UTF-8 fails its access"):
+        reason(patched(image, variable + 4, List(0xff)))
+      . assert(_ == Reason.BadUtf8)
+
+      test(m"R19: an encoding with no codec bound to it is refused"):
+        val folioImage = folio.ratel(folioSchema)
+        capture[Ratel.Error](Ratel.open(folioImage.mapped, Tel.Codec.Bindings.none)).reason
+      . assert(_ == Reason.CodecUnresolved)
+
+      test(m"R20: bytes which a codec rejects fail their access"):
+        val schema = schemaOf:
+          Text("""|tel 1.0 specification.tel/tels:2.1.0
+              |
+              |name measure
+              |
+              |scalar Reading
+              |  encoding f64
+              |
+              |document
+              |  field reading Reading
+              |""".stripMargin)
+
+        val measure = plain(t"tel 1.0\n\nreading 0.5\n".read[Tel], schema)
+        reason(patched(measure, start(measure, 3) + 24, List(0xff, 0xf8, 0, 0, 0, 0, 0, 0)))
+      . assert(_ == Reason.CodecDecodeFailed)
+
+      test(m"R22: a value which does not have its declared width is not written"):
+        val schema = schemaOf:
+          Text("""|tel 1.0 specification.tel/tels:2.1.0
+              |
+              |name seal
+              |
+              |scalar Mark
+              |  encoding base-256
+              |  width 4
+              |
+              |document
+              |  field mark Mark
+              |""".stripMargin)
+
+        val mark = Base256.encode(Array[Byte](1, 2))
+        capture[Ratel.Error](t"tel 1.0\n\nmark $mark\n".read[Tel].ratel(schema)).reason
+      . assert(_ == Reason.WidthMismatch)
+
+      test(m"R23: an index whose offsets run beyond it is malformed"):
+        reason(patched(image, indexes + 20, little(0xffff, 4)))
+      . assert(_ == Reason.BadIndex)
+
+      test(m"R24: entries which are out of order fail verification"):
+        val beta = List(0, 0, 0, 0, 1, 0x62, 0x65, 0x74, 0x61, 0, 0, 0, 0, 0, 1)
+        val alpha = List(0, 0, 0, 0, 1, 0x61, 0x6c, 0x70, 0x68, 0x61, 0, 0, 0, 0, 0, 0)
+        val swapped = little(0, 4) + little(15, 4) + little(31, 4) + beta + alpha
+        reason(patched(image, indexes + 16, swapped))
+      . assert(_ == Reason.IndexUnsorted)
+
+      test(m"R25: an entry which names the wrong child fails verification"):
+        reason(patched(image, indexes + 0x3a, List(0)))
+      . assert(_ == Reason.IndexDisagrees)
+
+      test(m"R27: a document which does not have its value hash fails verification"):
+        reason(patched(image, 112, List(image.u8(112) ^ 1)))
+      . assert(_ == Reason.ValueHashMismatch)
+
+    suite(m"Sharing a published image between readers"):
+      val directory: Text = Uuid().show
+      val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
+      unsafely(root.create[Directory]())
+      val file: Path on Linux = unsafely((% / "tmp" / directory / "catalogue.ratel").on[Linux])
+
+      val revised: Tel =
+        t"tel 1.0\n\nentry\n  name alpha\n\nentry\n  name beta\n  info  Second letter\n".read[Tel]
+
+      def info(view: Mapped, key: Text): Optional[Text] =
+        (Ratel.open(view).root / t"entry").find(key).let(_.text(t"info"))
+
+      test(m"an image published under a name is read in place from the file"):
+        unsafely:
+          file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+          file.mapped(info(_, t"alpha"))
+      . assert(_ == t"First letter")
+
+      test(m"a mapped image passes verification"):
+        unsafely(file.mapped(Ratel.open(_).verify()))
+      . assert(_ == ())
+
+      test(m"a reader sees a new edition once it refreshes"):
+        unsafely:
+          file.published[Ratel]: reader =>
+            val before = reader.map(info(_, t"beta"))
+            file.own[Ratel](_.publish(revised.ratel(catalogueSchema)))
+            val stale = reader.map(info(_, t"beta"))
+            val moved = reader.refresh()
+            (before, stale, moved, reader.map(info(_, t"beta")))
+      . assert(_ == (Unset, Unset, true, t"Second letter"))
+
+      test(m"a view of an old edition outlives its replacement"):
+        unsafely:
+          file.published[Ratel]: reader =>
+            reader.map: view =>
+              val entries = Ratel.open(view).root / t"entry"
+              file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+              reader.refresh()
+              entries.find(t"beta").let(_.text(t"info"))
+      . assert(_ == t"Second letter")

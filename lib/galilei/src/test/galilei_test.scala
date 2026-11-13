@@ -639,6 +639,25 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         unsafely(viewFile.mapped(_.same(14L, t"EFG".in[Data])))
       . assert(_ == false)
 
+      test(m"A mapped view orders its bytes against data in place"):
+        unsafely:
+          viewFile.mapped: view =>
+            ( view.compare(10L, 3L, t"ABC".in[Data]),
+              view.compare(10L, 3L, t"ABD".in[Data]).sign,
+              view.compare(10L, 3L, t"ABB".in[Data]).sign )
+      . assert(_ == (0, -1, 1))
+
+      test(m"A proper prefix sorts before what it is a prefix of"):
+        unsafely:
+          viewFile.mapped: view =>
+            (view.compare(10L, 2L, t"ABC".in[Data]).sign, view.compare(10L, 4L, t"ABC".in[Data]).sign)
+      . assert(_ == (-1, 1))
+
+      test(m"Bytes are ordered as unsigned"):
+        val high: Data = Array[Byte](0x80.toByte)
+        unsafely(viewFile.mapped(_.compare(0L, 1L, high).sign))
+      . assert(_ == -1)
+
       test(m"An empty file maps to an empty view"):
         val emptyFileLeaf: Text = Uuid().show
         val emptyFile: Path on Linux = unsafely((% / "tmp" / emptyFileLeaf).on[Linux])
