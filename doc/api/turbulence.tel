@@ -623,7 +623,7 @@ entry .lineSeparation   the standard line-ending policies, each a given to impor
       and `a\r\nb` two.
   entry .linefeedLineSeparation   LF ends a line; a bare CR is dropped; CRLF and LFCR are one break; writes LF
       `a\rb` is the one line `ab`.
-  entry .strictLinefeedsLineSeparation   a bare CR ends a line and an LF stays in the text; writes LF
+  entry .strictLinefeedsLineSeparation   a bare LF ends a line and a CR stays in the text; writes LF
       The action table as it stands is `cr = Nl, lf = Lf, crlf = NlLf, lfcr = LfNl` — the
       same as `strictCarriageReturnLineSeparation` — so `a\nb` is the one line `a\nb` and
       `a\rb` is two; only the written newline (LF) differs.

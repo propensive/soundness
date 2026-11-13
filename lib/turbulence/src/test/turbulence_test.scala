@@ -688,14 +688,11 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       suite(m"strict linefeeds"):
         import lineSeparation.strictLinefeedsLineSeparation
 
-        // NOTE: the packaged policy's action table is (cr = Nl, lf = Lf, ...) —
-        // identical to strictCarriageReturn's, which looks inverted for a
-        // "linefeeds" policy, but the duct must match the table as it stands.
         check(t"strict linefeed", List(
-          (t"a\nb", List(t"a\nb")),
-          (t"a\rb", List(t"a", t"b")),
-          (t"a\r\nb", List(t"a", t"\nb")),
-          (t"a\n\rb", List(t"a\n", t"b"))))
+          (t"a\nb", List(t"a", t"b")),
+          (t"a\rb", List(t"a\rb")),
+          (t"a\r\nb", List(t"a\r", t"b")),
+          (t"a\n\rb", List(t"a", t"\rb"))))
 
       suite(m"carriage returns"):
         import lineSeparation.carriageReturnLineSeparation

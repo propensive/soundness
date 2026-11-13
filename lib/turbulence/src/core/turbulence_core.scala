@@ -273,7 +273,7 @@ package lineSeparation:
   :   LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
 
   given strictLinefeedsLineSeparation
-  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
+  :   LineSeparation(NewlineSeq.Lf, Action.Cr, Action.Nl, Action.CrNl, Action.NlCr)
 
   given carriageReturnLinefeedLineSeparation
   :   LineSeparation(NewlineSeq.CrLf, Action.Skip, Action.Lf, Action.Nl, Action.LfNl)
