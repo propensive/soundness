@@ -182,6 +182,11 @@ object Tests extends Suite("diff", m"Dissonance tests"):
         reverseChanges.serialize.to[List]
       . assert(_ == List(t"2,3c2", t"< Edgar", t"< Edmund", t"---", t"> Fool"))
 
+      test(m"Serialize an insertion followed directly by a deletion"):
+        Diff(Diff.Del(0, t"a"), Diff.Par(1, 0, t"b"), Diff.Ins(1, t"c"), Diff.Del(2, t"d"))
+        . serialize.to[List]
+      . assert(_ == List(t"1d0", t"< a", t"2a2", t"> c", t"3d2", t"< d"))
+
       test(m"Experimental diff"):
         diff(Sequence(t"one"), Sequence(t"two")).serialize.to[List]
       . assert(_ == List(t"1c1", t"< one", t"---", t"> two"))

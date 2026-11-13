@@ -90,9 +90,11 @@ object internal:
           val sourceCode = sources.establish(position.source.toString.tt):
             Scala.highlight(new String(position.source.content()).tt)
 
-          val lineContent: Text = sourceCode.lines.readUnchecked(position.line).map(_.show).join
-
-          try lineContent.segment(position.startColumn.z thru position.endColumn.u)
+          // An inlined tree may be positioned in a source whose content is unavailable, so the
+          // line may not exist at all: the read is inside the `try` as well as the segment.
+          try
+            val lineContent: Text = sourceCode.lines.readUnchecked(position.line).map(_.show).join
+            lineContent.segment(position.startColumn.z thru position.endColumn.u)
           catch case e: Exception => t""
 
         ((t" "*(position.startColumn - init.n0))+content)

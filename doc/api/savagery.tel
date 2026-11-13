@@ -325,10 +325,8 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
 
         A relative line along one axis is written as `h` or `v`. The directional steps
         `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` and their `move…` twins take one
-        length each; note that, as implemented, `lineUp(v)` draws `Delta(v, 0)` (an `h` step)
-        and `lineLeft(v)` draws `Delta(0, -v)` (a `v` step) — the names are rotated a quarter
-        turn from SVG's axes, so for a predictable direction write `line(v*Delta.Up)` with the
-        named directions instead.
+        length each, in SVG's axes, whose `y` grows downwards: `lineUp(v)` draws `Delta(0, -v)`
+        (a `v` step) and `lineLeft(v)` draws `Delta(-v, 0)` (an `h` step).
     refer savagery.Stroke
     refer savagery.Point
     refer savagery.Delta
@@ -346,14 +344,14 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
     entry #curveTo   `C` or `S`: an absolute cubic curve, with both control points or only the second
     entry #quadCurve   `q` or `t`: a relative quadratic curve, with its control point or continuing smoothly
     entry #quadCurveTo   `Q` or `T`: an absolute quadratic curve, with its control point or continuing smoothly
-    entry #moveUp   a relative move written as `Move(Delta(value, 0))`: along the x-axis, as implemented
-    entry #moveDown   a relative move written as `Move(Delta(-value, 0))`
-    entry #moveLeft   a relative move written as `Move(Delta(0, -value))`: along the y-axis, as implemented
-    entry #moveRight   a relative move written as `Move(Delta(0, value))`
-    entry #lineUp   a relative line written as `Draw(Delta(value, 0))`, rendered `h value`
-    entry #lineDown   a relative line written as `Draw(Delta(-value, 0))`, rendered `h -value`
-    entry #lineLeft   a relative line written as `Draw(Delta(0, -value))`, rendered `v -value`
-    entry #lineRight   a relative line written as `Draw(Delta(0, value))`, rendered `v value`
+    entry #moveUp   a relative move written as `Move(Delta(0, -value))`
+    entry #moveDown   a relative move written as `Move(Delta(0, value))`
+    entry #moveLeft   a relative move written as `Move(Delta(-value, 0))`
+    entry #moveRight   a relative move written as `Move(Delta(value, 0))`
+    entry #lineUp   a relative line written as `Draw(Delta(0, -value))`, rendered `v -value`
+    entry #lineDown   a relative line written as `Draw(Delta(0, value))`, rendered `v value`
+    entry #lineLeft   a relative line written as `Draw(Delta(-value, 0))`, rendered `h -value`
+    entry #lineRight   a relative line written as `Draw(Delta(value, 0))`, rendered `h value`
     entry #closed   `Z`: closes the current subpath back to its start
   entry .Ellipse   an `<ellipse>`, or a `<circle>` when its radii are equal
     detail

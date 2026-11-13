@@ -39,8 +39,8 @@ export
       Plottable, Progressive, Ruler, Samples, Scale, Scatter, Series, StackedBars, Weighted, chart }
 
 package calibrations:
-  export tasseomancy.calibrations.{adaptiveCalibration, linearCalibration, logarithmicCalibration,
-      tightCalibration}
+  export tasseomancy.calibrations.{adaptiveCalibration, exponentialCalibration, linearCalibration,
+      logarithmicCalibration, tightCalibration}
 
 package palettes:
   export tasseomancy.palettes.{slateChartPalette, solarizedDarkChartPalette,

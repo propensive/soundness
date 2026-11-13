@@ -308,13 +308,13 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
       t"application/thing+json-seq".as[MediaType].suffixes
     . assert(_ == List(Media.Suffix.JsonSeq))
 
-    test(m"parse a multi-word suffix"):
-      t"application/thing+fast-infoset".as[MediaType].suffixes
+    test(m"parse a multi-word suffix registered without a hyphen"):
+      t"application/soap+fastinfoset".as[MediaType].suffixes
     . assert(_ == List(Media.Suffix.FastInfoset))
 
     test(m"a suffix shows as it is written in a media type"):
       (Media.Suffix.JsonSeq.show, Media.Suffix.FastInfoset.show, Media.Suffix.Zip.show)
-    . assert(_ == (t"json-seq", t"fast-infoset", t"zip"))
+    . assert(_ == (t"json-seq", t"fastinfoset", t"zip"))
 
     test(m"parse several suffixes"):
       t"application/thing+xml+gzip".as[MediaType].suffixes

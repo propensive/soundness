@@ -142,13 +142,13 @@ row  `Base32`  `base32StrictUpperCase`  standard, upper-case  yes
 row  `Base32`  `base32StrictLowerCase`  standard, lower-case  yes
 row  `Base32`  `base32UpperCase`  standard, upper-case  yes  lower case
 row  `Base32`  `base32LowerCase`  standard, lower-case  yes  upper case
-row  `Base32`  `base32ExtendedHexUpperCase`  extended hex, upper-case  yes  standard lower-case Base32
-row  `Base32`  `base32ExtendedHexLowerCase`  extended hex, lower-case  yes  standard upper-case Base32
+row  `Base32`  `base32ExtendedHexUpperCase`  extended hex, upper-case  yes  lower case
+row  `Base32`  `base32ExtendedHexLowerCase`  extended hex, lower-case  yes  upper case
 row  `Base32`  `base32ZBase32`  z-base-32  yes
 row  `Base32`  `base32ZBase32Unpadded`  z-base-32, unpadded  no
 row  `Base32`  `base32Geohash`  Geohash  no
 row  `Base32`  `base32WordSafe`  word-safe  no
-row  `Base32`  `base32Crockford`  Crockford  no  lower case; `o` and `O` as `0`; `i`, `I` and `L` as `1`
+row  `Base32`  `base32Crockford`  Crockford  no  lower case; `o` and `O` as `0`; `i`, `I`, `l` and `L` as `1`
 row  `Hex`  `hexStrictUpperCase`  upper-case  no
 row  `Hex`  `hexStrictLowerCase`  lower-case  no
 row  `Hex`  `hexUpperCase`  upper-case  no  lower case

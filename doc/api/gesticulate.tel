@@ -243,11 +243,11 @@ entry .Media   a type's own media type, and the grammar of media types: groups, 
         The suffixes IANA registers: `Xml`, `Json`, `Ber`, `Cbor`, `Der`, `FastInfoset`,
         `Wbxml`, `Zip`, `Tlv`, `JsonSeq`, `Sqlite3`, `Jwt`, `Gzip`, `CborSeq` and `Zstd`. A
         media type may carry several, in order (`application/thing+xml+gzip`). `#name` is the
-        kebab-case form written in a media type — `json-seq`, `fast-infoset` — and the parser
+        registered form written in a media type — `json-seq`, `fastinfoset` — and the parser
         reads that form back case-insensitively; a suffix not in this list fails to parse with
         `MediaType.Error.Reason.InvalidSuffix`.
     entry .showable   renders a suffix as written in a media type: `json-seq`, not `JsonSeq`
-    entry #name   the suffix in kebab case, as written after the `+`
+    entry #name   the suffix in its registered spelling, as written after the `+`
   entry .unsafeParse   parses a literal the `media"…"` macro has already checked
       For the interpolator's expansion, which re-parses at runtime text verified at compile
       time, and so takes the `Unsafe` token in place of a tactic. Not for application code:

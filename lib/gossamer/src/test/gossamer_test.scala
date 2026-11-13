@@ -50,6 +50,11 @@ case class Person(name: Text, age: Int)
 
 object Tests extends Suite("text", m"Gossamer Tests"):
   def run(): Unit =
+    suite(m"ASCII text"):
+      test(m"an ASCII literal has the length of its text"):
+        a"hello".length
+      . assert(_ == 5)
+
     suite(m"Minimum Edit Distance"):
       import proximities.levenshteinProximity
 

@@ -118,7 +118,8 @@ object Media:
 
   object Suffix:
     // `name`, not the enum's own name: `JsonSeq` is written `json-seq`, and a rendering which
-    // dropped the hyphen could not be parsed back.
+    // dropped the hyphen could not be parsed back; `FastInfoset` is registered (RFC 6839) as
+    // `fastinfoset`, with none.
     given showable: Suffix is Showable = _.name
 
   enum Suffix:
@@ -127,9 +128,10 @@ object Media:
       CborSeq, Zstd
 
     def name: Text = this match
-      case JsonSeq => t"json-seq"
-      case CborSeq => t"cbor-seq"
-      case other   => other.toString.tt.uncamel.kebab
+      case JsonSeq     => t"json-seq"
+      case CborSeq     => t"cbor-seq"
+      case FastInfoset => t"fastinfoset"
+      case other       => other.toString.tt.uncamel.kebab
 
   // For the `media"…"` interpolator, which has parsed the literal at expansion: the gate asserts
   // that, so the runtime re-parse cannot fail.
@@ -151,12 +153,15 @@ object Media:
           case _ =>
             abort(MediaType.Error(string, MediaType.Error.Reason.MissingParam))
 
-    // Suffixes are written in kebab-case (`json-seq`, `fast-infoset`) but named in camel-case,
+    // Suffixes are written in kebab-case (`json-seq`, `cbor-seq`) but named in camel-case,
     // so each hyphenated word is capitalized before the enum is looked up; capitalizing the
-    // whole suffix instead left `Json-seq`, which no enum case is called.
+    // whole suffix instead left `Json-seq`, which no enum case is called. `fastinfoset` is the
+    // one registered suffix whose two words are not hyphenated, so it is named outright.
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.bind: suffix =>
-        val name = suffix.lower.cut(t"-").map(_.capitalize).join
+        val name =
+          if suffix.lower == t"fastinfoset" then t"FastInfoset"
+          else suffix.lower.cut(t"-").map(_.capitalize).join
 
         try List(Suffix.valueOf(name.s)) catch IllegalArgumentException =>
           abort(MediaType.Error(string, MediaType.Error.Reason.InvalidSuffix(suffix)))

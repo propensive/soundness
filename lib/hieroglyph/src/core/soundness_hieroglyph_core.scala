@@ -48,12 +48,12 @@ package textMetrics:
   export hieroglyph.textMetrics.{eastAsianScriptsMetric, wideCharacterWidthMetric, uniformMetric}
 
 package charsets:
-  export hieroglyph.charsets.{asciiCharset, utf16Charset, utf16BeCharset, utf16LeCharset,
-      utf8Charset}
+  export hieroglyph.charsets.{asciiCharset, iso88591Charset, utf16Charset, utf16BeCharset,
+      utf16LeCharset, utf8Charset}
 
 package codepages:
-  export hieroglyph.codepages.{asciiCodepage, utf16Codepage, utf16BeCodepage, utf16LeCodepage,
-      utf8Codepage}
+  export hieroglyph.codepages.{asciiCodepage, iso88591Codepage, utf16Codepage, utf16BeCodepage,
+      utf16LeCodepage, utf8Codepage}
 
 package communication:
   export hieroglyph.communication.unicodeCharNamesCommunicable

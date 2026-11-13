@@ -80,6 +80,10 @@ object Tests extends Suite("uuid", m"Inimitable Tests"):
         unsafely(capture[Uuid.Error](Uuid.parse(t"not-a-uuid")))
       . assert(_ == Uuid.Error(t"not-a-uuid"))
 
+      test(m"A UUID one hexadecimal digit short is not parsed"):
+        Uuid.extract(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8")
+      . assert(_ == Unset)
+
       val uuid1 = Uuid()
       val uuid2 = Uuid()
 

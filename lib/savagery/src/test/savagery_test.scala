@@ -91,7 +91,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
       test(m"Plus sign path"):
         Outline().moveTo((0, 0)).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
             .lineDown(2).lineRight(2).lineDown(1).lineLeft(2).lineDown(2).closed.in[Xml].show
-      .assert(_ == t"""<path d="M 0.0 0.0 h 2.0 v -2.0 h 1.0 v 2.0 h 2.0 v 1.0 h -2.0 v 2.0 h -1.0 v -2.0 h -2.0 Z"/>""")
+      .assert(_ == t"""<path d="M 0.0 0.0 v -2.0 h -2.0 v -1.0 h 2.0 v -2.0 h 1.0 v 2.0 h 2.0 v 1.0 h -2.0 v 2.0 Z"/>""")
 
     suite(m"Transform encoding"):
       test(m"Translate"):

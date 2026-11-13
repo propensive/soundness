@@ -270,6 +270,10 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
         Cbor.Ast.parse(hex("83010203")).show
       . assert(_ == t"[1, 2, 3]")
 
+      test(m"Render a text string, escaping its quotes"):
+        Cbor.Ast.parse(hex("6548616c2221")).show
+      . assert(_ == t"\"Hal\\\"!\"")
+
       test(m"Render byte string as hex"):
         Cbor.Ast.parse(hex("4401020304")).show
       . assert(_ == t"h'01020304'")

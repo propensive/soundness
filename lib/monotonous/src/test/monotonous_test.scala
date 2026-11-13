@@ -144,6 +144,22 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
         t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == Serialization.Error(0, 'A'))
 
+    test(m"Extended-hex BASE32 reads the other case as the same digits"):
+      import alphabets.base32ExtendedHexUpperCase
+      (t"vvvvvvvv".deserialize[Base32].to[List], t"VVVVVVVV".deserialize[Base32].to[List])
+    . assert { (lower, upper) => lower == upper }
+
+    test(m"Crockford BASE32 reads a lower-case L as one"):
+      import alphabets.base32Crockford
+      (t"llllllll".deserialize[Base32].to[List], t"11111111".deserialize[Base32].to[List])
+    . assert { (letters, digits) => letters == digits }
+
+    test(m"Octal does not read a padding character as a digit"):
+      capture[Serialization.Error]:
+        import alphabets.octalStandard
+        t"01=".deserialize[Octal].to[List]
+    . assert(_ == Serialization.Error(2, '='))
+
     test(m"Bad character offset"):
       capture[Serialization.Error]:
         import alphabets.base32LowerCase
@@ -160,7 +176,8 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
         locally:
           import alphabets.given
           for alphabet <- List(base64Standard, base64Unpadded, base64Url, base64Xml,
-              base64Imap, base64Yui, base64Radix64, base64Bcrypt, base64Sasl) do
+              base64Imap, base64Yui, base64Radix64, base64Bcrypt, base64Sasl,
+              base64Uuencoding) do
             test(m"Roundtrip BASE64 tests"):
               given Alphabet[Base64] = alphabet
               arb.serialize[Base64].deserialize[Base64].to[List]

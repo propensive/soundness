@@ -64,9 +64,12 @@ object Uuid extends Extractor[Text, Uuid]:
   def parse(text: Text): Uuid raises Uuid.Error =
     extract(text).lest(Uuid.Error(text))
 
-  def extract(text: Text): Optional[Uuid] = safely:
-    ju.UUID.fromString(text.s).nn.pipe: uuid =>
-      Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+  // `UUID.fromString` reads each group as a number, so it accepts one with digits missing; the
+  // canonical 8-4-4-4-12 shape is checked first.
+  def extract(text: Text): Optional[Uuid] =
+    if !text.s.matches("\\p{XDigit}{8}(-\\p{XDigit}{4}){3}-\\p{XDigit}{12}") then Unset else safely:
+      ju.UUID.fromString(text.s).nn.pipe: uuid =>
+        Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
 
   def apply(): Uuid = ju.UUID.randomUUID().nn.pipe: uuid =>
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)

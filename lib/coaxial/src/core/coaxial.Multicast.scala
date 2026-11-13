@@ -68,8 +68,9 @@ object Multicast:
     def send(data: Data, destination: Ipv4 | Ipv6, port: Udp.Port): Unit raises Socket.Error
 
   // The subscription `subscribe` lends: a named class rather than an anonymous one, so the
-  // `transparent inline` loan does not duplicate it at each call site.
-  private[coaxial] final class Joined(subscribable: Subscribable)
+  // `transparent inline` loan does not duplicate it at each call site. Public because that loan
+  // is expanded in the caller's code, which must be able to name it.
+  final class Joined(subscribable: Subscribable)
     ( binding: subscribable.Binding, stopServer: () => Unit )
   extends Subscription(stopServer):
 
