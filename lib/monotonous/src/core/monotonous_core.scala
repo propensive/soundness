@@ -45,7 +45,7 @@ package alphabets:
   given quaternaryStandard: Alphabet[Quaternary] = Alphabet(t"0123", false)
   given quaternaryDnaNucleotide: Alphabet[Quaternary] = Alphabet(t"ATCG", false)
 
-  given octalStandard: Alphabet[Octal] = Alphabet(t"01234567=", false)
+  given octalStandard: Alphabet[Octal] = Alphabet(t"01234567", false)
 
   given hexStrictUpperCase: Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", false)
   given hexStrictLowerCase: Alphabet[Hex] = Alphabet(t"0123456789abcdef", false)
@@ -127,7 +127,7 @@ package alphabets:
     Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
 
   given base64Uuencoding: Alphabet[Base64] =
-    Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
+    Alphabet(t"""`!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 extension (value: Text)
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
