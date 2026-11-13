@@ -42,7 +42,7 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   object Efi extends BaseLayout[Mono["efi"]](t"efi", readOnly = true)
   object Etc extends BaseLayout[Mono["etc"]](t"etc")
   object Home extends BaseLayout[Mono["home"]](t"home")
-  object Root extends BaseLayout[Mono["roto"]](t"root")
+  object Root extends BaseLayout[Mono["root"]](t"root")
   object Srv extends BaseLayout[Mono["srv"]](t"srv")
   object Tmp extends BaseLayout[Mono["tmp"]](t"tmp")
 
