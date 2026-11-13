@@ -165,12 +165,12 @@ extension [plane: Filesystem](path: Path on plane)
     val mapping = backend.mapping(path)
     try lambda(mapping) finally mapping.unmap()
 
-  // Takes ownership of this name for the scope of `lambda` (issue #2472): an exclusive
+  // Claims ownership of this name for the scope of `lambda` (issue #2472): an exclusive
   // operating-system lock on the sibling `<name>.lock` is held throughout, so one process at
   // a time -- and one scope within it -- can publish under the name. `Busy` if it is already
   // owned. The `Owner` publishes each version of `record` by writing a temporary sibling and
   // moving it over the name atomically; see `Published`.
-  def own[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
+  def claim[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
     ( using backend: FilesystemBackend on plane, umask: Umask )
     ( using Tactic[Io.Error]^ )
   :   result =

@@ -509,7 +509,7 @@ with it. An image is `Encodable in Data`, so it is
 
 ```scala
 val image: Ratel = cast.ratel(castSchema)
-file.own[Ratel](_.publish(image))
+file.claim[Ratel](_.publish(image))
 ```
 
 A file is opened as `Ratel`, like a file in any other form. It is mapped for the length of

@@ -69,7 +69,7 @@ import Io.Error.{Operation, Reason}
 // Two editions are the same version exactly when they are equal; they carry no order.
 case class Edition(identity: Stat.Identity, modified: Long) derives CanEqual
 
-// Ownership of a name, for the scope of `path.own`: the capability to publish versions of
+// Ownership of a name, for the scope of `path.claim`: the capability to publish versions of
 // `record` under it. Confined to its scope, at whose end the name is released.
 trait Owner[record] extends caps.ExclusiveCapability:
   // Replaces the published file with the encoding of `value`, atomically, and answers the new

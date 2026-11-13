@@ -3508,7 +3508,7 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       at an offset the schema determines, the instances of a record type form a *table*,
       variable-width values lie in regions addressed by offset, and sorted *indexes* over keyed
       and `index`-declared members make a lookup a binary search. A `Ratel` is the image as a
-      value — its bytes, `data` — and is `Encodable in Data`, so galilei's `own` publishes it.
+      value — its bytes, `data` — and is `Encodable in Data`, so galilei's `claim` publishes it.
       The object `Ratel` writes one (`encode`); one is read by opening whatever holds it as
       `Ratel`, with aperture's `open`.
 
@@ -3517,7 +3517,7 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       import strategies.throwUnsafely
 
       val image: Ratel = document.ratel(schema)
-      file.own[Ratel](_.publish(image))
+      file.claim[Ratel](_.publish(image))
 
       file.open[Ratel]():
         (ratel.root / t"role").find(t"Hamlet").let(_.text(t"play"))

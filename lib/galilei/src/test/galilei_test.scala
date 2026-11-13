@@ -735,7 +735,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"Publishing writes the encoded value under the name"):
         unsafely:
-          indexFile.own[Text](_.publish(t"first"))
+          indexFile.claim[Text](_.publish(t"first"))
           indexFile.read[Text]
       . assert(_ == t"first")
 
@@ -749,8 +749,8 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"A name which is owned cannot be owned again"):
         unsafely:
-          indexFile.own[Text]: owner =>
-            capture[Io.Error](indexFile.own[Text](_.publish(t"usurped"))).reason
+          indexFile.claim[Text]: owner =>
+            capture[Io.Error](indexFile.claim[Text](_.publish(t"usurped"))).reason
       . assert(_ == Io.Error.Reason.Busy)
 
       test(m"A refused owner publishes nothing"):
@@ -759,20 +759,20 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"Ownership is released when its scope ends"):
         unsafely:
-          indexFile.own[Text](_.publish(t"second"))
+          indexFile.claim[Text](_.publish(t"second"))
           indexFile.read[Text]
       . assert(_ == t"second")
 
       test(m"Two names are owned independently"):
         unsafely:
-          indexFile.own[Text]: owner =>
-            otherFile.own[Text](_.publish(t"other"))
+          indexFile.claim[Text]: owner =>
+            otherFile.claim[Text](_.publish(t"other"))
             otherFile.read[Text]
       . assert(_ == t"other")
 
       test(m"Each publication has an edition of its own"):
         unsafely:
-          indexFile.own[Text]: owner =>
+          indexFile.claim[Text]: owner =>
             owner.publish(t"third") == owner.publish(t"fourth")
       . assert(_ == false)
 
@@ -782,7 +782,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"A reader's edition is the edition which was published"):
         unsafely:
-          indexFile.own[Text]: owner =>
+          indexFile.claim[Text]: owner =>
             val edition = owner.publish(t"fifth")
             indexFile.published[Text](_.edition == edition)
       . assert(_ == true)
@@ -791,7 +791,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         unsafely:
           indexFile.published[Text]: reader =>
             val before = reader.map(text)
-            indexFile.own[Text](_.publish(t"sixth"))
+            indexFile.claim[Text](_.publish(t"sixth"))
             val unrefreshed = reader.map(text)
             val refreshed = reader.refresh()
             (before, unrefreshed, refreshed, reader.map(text))
@@ -805,7 +805,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         unsafely:
           indexFile.published[Text]: reader =>
             reader.map: view =>
-              indexFile.own[Text](_.publish(t"seventh"))
+              indexFile.claim[Text](_.publish(t"seventh"))
               reader.refresh()
               (text(view), reader.map(text))
       . assert(_ == (t"sixth", t"seventh"))
@@ -813,7 +813,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A reader does not prevent the owner publishing, nor take the lock"):
         unsafely:
           indexFile.published[Text]: reader =>
-            indexFile.own[Text](_.publish(t"eighth"))
+            indexFile.claim[Text](_.publish(t"eighth"))
             indexFile.read[Text]
       . assert(_ == t"eighth")
 
@@ -824,7 +824,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"An owner cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = indexFile.own[Text](identity(_))
+          val escaped = indexFile.claim[Text](identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 

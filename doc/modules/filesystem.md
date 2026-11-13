@@ -396,16 +396,16 @@ the next when they choose to. Nothing arbitrates between them, because two rules
 
 - A published file never changes. Each version is written beside the name and moved over it
   in one step, so a reader which has mapped a version goes on seeing it, whole.
-- A name has one owner. `own` holds an operating-system lock on `<name>.lock` for as long as
+- A name has one owner. `claim` holds an operating-system lock on `<name>.lock` for as long as
   its block runs, and a second owner, in this process or another, is refused with `Busy`.
 
-`own` gives an `Owner`, whose `publish` writes a value in whatever form its `Encodable in Data`
+`claim` gives an `Owner`, whose `publish` writes a value in whatever form its `Encodable in Data`
 instance gives, and returns the `Edition` it published:
 
 ```scala fuel
 run
 ##
-val edition = file.own[Text]: owner =>
+val edition = file.claim[Text]: owner =>
   owner.publish(t"first edition")
 
 Out.println(file.read[Text])
@@ -418,10 +418,10 @@ there was one:
 ```scala fuel
 run
 ##
-file.own[Text](_.publish(t"one"))
+file.claim[Text](_.publish(t"one"))
 
 file.published[Text]: reader =>
-  file.own[Text](_.publish(t"two"))
+  file.claim[Text](_.publish(t"two"))
   val before = reader.map(_.u8(0L))
   val moved = reader.refresh()
   val after = reader.map(_.u8(0L))

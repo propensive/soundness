@@ -729,7 +729,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"an image published under a name is read in place from the file"):
         unsafely:
-          file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+          file.claim[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
           file.open[Ratel]() { (ratel.root / t"entry").find(t"alpha").let(_.text(t"info")) }
       . assert(_ == t"First letter")
 
@@ -753,7 +753,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         unsafely:
           file.published[Ratel]: reader =>
             val before = reader.map(info(_, t"beta"))
-            file.own[Ratel](_.publish(revised.ratel(catalogueSchema)))
+            file.claim[Ratel](_.publish(revised.ratel(catalogueSchema)))
             val stale = reader.map(info(_, t"beta"))
             val moved = reader.refresh()
             (before, stale, moved, reader.map(info(_, t"beta")))
@@ -765,7 +765,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
             reader.map: view =>
               view.open[Ratel]():
                 val entries = ratel.root / t"entry"
-                file.own[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+                file.claim[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
                 reader.refresh()
                 entries.find(t"beta").let(_.text(t"info"))
       . assert(_ == t"Second letter")
