@@ -508,7 +508,7 @@ lib/stratiform/src/base256/stratiform.Base256.scala	0	0	0	0	0	0	0	0	0	4	0	0	0	0	
 lib/stratiform/src/bench/stratiform.Benchmarks.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/binaryStaged/stratiform.bintelInternal.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0
 lib/stratiform/src/checked/stratiform.CheckedTests.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-lib/stratiform/src/checked/stratiform.TroupeRecords.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+lib/stratiform/src/checked/stratiform.CheckedTroupe.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
 lib/stratiform/src/core/stratiform.Bintel.scala	0	0	0	0	1	0	0	0	1	3	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.BintelReader.scala	0	0	0	0	0	0	0	0	2	1	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Patterns.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0

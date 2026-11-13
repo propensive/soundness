@@ -37,9 +37,9 @@ import codepages.utf8Codepage
 
 // The schema of the capture-checked RaTEL tests, and a provider over it: apart from the suite,
 // since an object a macro consults is compiled before whatever uses it.
-object TroupeFixture:
+object CheckedTroupeFixture:
   val schema: Tels =
     val player = t"record Player\n  field name String key\n  field part String optional\n"
     t"name troupe\n\n$player\ndocument\n  field player Player repeatable\n".read[Tel].as[Tels]
 
-object TroupeRecords extends Ratel.Provider(TroupeFixture.schema)
+object CheckedTroupe extends Ratel.Provider(CheckedTroupeFixture.schema)
