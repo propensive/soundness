@@ -782,7 +782,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
     suite(m"A view of data as mapped memory"):
       // f1 f2 f3 … fc, as below: every byte has its high bit set.
       val sample: Data = Data.fill(12)(index => (index + 0xf1).toByte)
-      val view: Mapped = Mapped(sample)
+      val view: Terrain = Terrain(sample)
 
       test(m"the view is as large as the data"):
         view.size
@@ -802,20 +802,20 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == -1L)
 
       test(m"a copy is the bytes it covers"):
-        view.copy(10L, 2).u16(0)
+        view.read(10L, 2).u16(0)
       . assert(_ == 0xfcfb)
 
       test(m"bytes are compared with data for equality"):
-        (view.same(10L, view.copy(10L, 2)), view.same(9L, view.copy(10L, 2)), view.same(11L, sample))
+        (view.same(10L, view.read(10L, 2)), view.same(9L, view.read(10L, 2)), view.same(11L, sample))
       . assert(_ == (true, false, false))
 
       test(m"bytes are ordered against data, unsigned"):
         val low: Data = Data.fill(2)(index => 0x7f.toByte)
-        (view.compare(0L, 2L, view.copy(0L, 2)), view.compare(0L, 2L, low).sign, view.compare(0L, 2L, view.copy(1L, 2)).sign)
+        (view.compare(0L, 2L, view.read(0L, 2)), view.compare(0L, 2L, low).sign, view.compare(0L, 2L, view.read(1L, 2)).sign)
       . assert(_ == (0, 1, -1))
 
       test(m"a proper prefix sorts before what it is a prefix of"):
-        (view.compare(0L, 2L, view.copy(0L, 3)).sign, view.compare(0L, 3L, view.copy(0L, 2)).sign)
+        (view.compare(0L, 2L, view.read(0L, 3)).sign, view.compare(0L, 3L, view.read(0L, 2)).sign)
       . assert(_ == (-1, 1))
 
     suite(m"Integer loads from data"):

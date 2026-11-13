@@ -914,7 +914,7 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
       intake.fail(error)
 
 // Fixed-width integers loaded from a position in `Data`, shared by every binary format reader:
-// little-endian by default, as `Mapped`'s loads of the same names are, with a big-endian
+// little-endian by default, as `Terrain`'s loads of the same names are, with a big-endian
 // (`…be`) twin of each multi-byte load for network-order formats. `u8` and `u16` are `Int`s;
 // `u32` widens to a `Long` so that it stays unsigned, and `i32` is the same word as a signed
 // `Int`. A load beyond the end of the data throws, as indexing does.

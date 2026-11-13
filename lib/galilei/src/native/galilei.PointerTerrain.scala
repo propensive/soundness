@@ -32,68 +32,105 @@
                                                                                                   */
 package galilei
 
-import java.lang.foreign as jlf
-import java.nio as jn
+import scala.scalanative.posix.fcntl
+import scala.scalanative.posix.sys.mman
+import scala.scalanative.posix.unistd
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import anticipation.*
-import zephyrine.u8
+import vacuous.*
 
-private[galilei] object SegmentMapped:
-  private val littleEndian: jn.ByteOrder = jn.ByteOrder.LITTLE_ENDIAN.nn
+// A `zephyrine.Terrain` over `extent` bytes of memory at `base`: the Scala Native twin of the
+// JVM's `SegmentTerrain`. Loads are composed bytewise, so they are little-endian and free of
+// alignment requirements whatever the target; each is bounds-checked first, since a stray
+// load here is a segmentation fault rather than an exception.
+private[galilei] class PointerTerrain(base: Ptr[Byte], extent: Long) extends zephyrine.Terrain:
+  def size: Long = extent
 
-  // Unaligned layouts: a format decides where its integers lie, not the platform's ABI.
-  val Byte: jlf.ValueLayout.OfByte = jlf.ValueLayout.JAVA_BYTE.nn
+  private inline def check(offset: Long, width: Long): Unit =
+    if offset < 0L || width < 0L || offset > extent - width
+    then throw IndexOutOfBoundsException(s"$width bytes at $offset of $extent")
 
-  val Short: jlf.ValueLayout.OfShort =
-    jlf.ValueLayout.JAVA_SHORT_UNALIGNED.nn.withOrder(littleEndian).nn
+  private inline def byte(offset: Long): Int = !(base + offset) & 0xff
 
-  val Int: jlf.ValueLayout.OfInt =
-    jlf.ValueLayout.JAVA_INT_UNALIGNED.nn.withOrder(littleEndian).nn
+  def u8(offset: Long): Int =
+    check(offset, 1L)
+    byte(offset)
 
-  val Long: jlf.ValueLayout.OfLong =
-    jlf.ValueLayout.JAVA_LONG_UNALIGNED.nn.withOrder(littleEndian).nn
+  def u16(offset: Long): Int =
+    check(offset, 2L)
+    byte(offset) | byte(offset + 1L) << 8
 
-// A `zephyrine.Mapped` over a `MemorySegment`: every load is the segment's own, so it is
-// bounds-checked, and fails once the arena which owns the memory has been closed.
-private[galilei] class SegmentMapped(segment: jlf.MemorySegment) extends zephyrine.Mapped:
-  def size: Long = segment.byteSize
+  def i32(offset: Long): Int =
+    check(offset, 4L)
+    byte(offset) | byte(offset + 1L) << 8 | byte(offset + 2L) << 16 | byte(offset + 3L) << 24
 
-  def u8(offset: Long): Int = segment.get(SegmentMapped.Byte, offset) & 0xff
-  def u16(offset: Long): Int = segment.get(SegmentMapped.Short, offset) & 0xffff
-  def i32(offset: Long): Int = segment.get(SegmentMapped.Int, offset)
-  def u32(offset: Long): Long = segment.get(SegmentMapped.Int, offset) & 0xffffffffL
-  def u64(offset: Long): Long = segment.get(SegmentMapped.Long, offset)
+  def u32(offset: Long): Long = i32(offset) & 0xffffffffL
+  def u64(offset: Long): Long = u32(offset) | u32(offset + 4L) << 32
 
-  def slice(offset: Long, length: Long): zephyrine.Mapped =
-    new SegmentMapped(segment.asSlice(offset, length).nn)
+  def slice(offset: Long, length: Long): zephyrine.Terrain^{this} =
+    check(offset, length)
+    new PointerTerrain(base + offset, length)
 
-  def copy(offset: Long, length: Int): Data =
+  def read(offset: Long, length: Int): Data =
+    check(offset, length.toLong)
     val array = Array.allocate[Byte](length)
-    jlf.MemorySegment.copy(segment, SegmentMapped.Byte, offset, array.raw, 0, length)
+    val raw = array.raw
+    var index = 0
+
+    while index < length do
+      raw(index) = !(base + (offset + index))
+      index += 1
+
     Array.freeze(array)
 
-  // [java-boundary] the heap side of a comparison is read, never written or retained
-  private def heap(data: Data): jlf.MemorySegment =
-    jlf.MemorySegment.ofArray(Array.unsafeJvm(data)).nn
-
   def same(offset: Long, data: Data): Boolean =
-    val length = data.length.toLong
+    val length = data.length
 
-    offset >= 0L && offset + length <= size
-    && jlf.MemorySegment.mismatch(segment, offset, offset + length, heap(data), 0L, length) == -1L
+    offset >= 0L && offset <= extent - length && {
+      var index = 0
+      while index < length && !(base + (offset + index)) == data.readUnchecked(index) do index += 1
+      index == length
+    }
 
   def compare(offset: Long, length: Long, data: Data): Int =
-    val other = data.length.toLong
+    check(offset, length)
+    val other = data.length
+    val common = if length < other then length.toInt else other
+    var index = 0
+    var order = 0
 
-    val differ =
-      jlf.MemorySegment.mismatch(segment, offset, offset + length, heap(data), 0L, other)
+    while order == 0 && index < common do
+      order = byte(offset + index) - (data.readUnchecked(index) & 0xff)
+      index += 1
 
-    if differ == -1L then 0
-    else if differ == length || differ == other then java.lang.Long.compare(length, other)
-    else u8(offset + differ) - data.u8(differ.toInt)
+    if order != 0 then order else java.lang.Long.compare(length, other.toLong)
 
-// A whole-file, read-only mapping: the segment's memory belongs to `arena`, and is unmapped
-// -- deterministically, rather than whenever the garbage collector notices -- by closing it.
-private[galilei] class SegmentMapping(arena: jlf.Arena, segment: jlf.MemorySegment)
-extends SegmentMapped(segment), FilesystemBackend.Mapping:
-  def unmap(): Unit = arena.close()
+// A whole-file, read-only mapping, from `mmap` until `munmap`.
+private[galilei] class PointerMapping(base: Ptr[Byte], extent: Long)
+extends PointerTerrain(base, extent), FilesystemBackend.Mapping:
+  def unmap(): Unit = if extent > 0L then mman.munmap(base, extent.toCSize)
+
+private[galilei] object PointerMapping:
+  // Maps all `extent` bytes of the named file, or answers `Unset` if the file cannot be opened
+  // or mapped. The descriptor is needed only to establish the mapping, which outlives it. An
+  // empty file is not mapped at all: `mmap` refuses a length of zero, and there is nothing to
+  // load.
+  def apply(name: String, extent: Long): Optional[PointerMapping] =
+    val nowhere = null.asInstanceOf[Ptr[Byte]]
+    val failed = mman.MAP_FAILED.asInstanceOf[Ptr[Byte]]
+
+    if extent == 0L then new PointerMapping(nowhere, 0L) else
+      // The mapping is made within the zone which holds the C string, but the capability over
+      // it is made outside, so that it does not appear to depend on the zone.
+      val base: Ptr[Byte] = Zone.acquire: zone =>
+        given Zone = zone
+        val descriptor = fcntl.open(toCString(name), fcntl.O_RDONLY, 0.toUInt)
+
+        if descriptor < 0 then failed else
+          val length = extent.toCSize
+          try mman.mmap(nowhere, length, mman.PROT_READ, mman.MAP_SHARED, descriptor, 0.toSize)
+          finally unistd.close(descriptor)
+
+      if base == failed then Unset else new PointerMapping(base, extent)

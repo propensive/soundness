@@ -191,7 +191,7 @@ object Platform:
     new zephyrine.Viewable:
       type Self = path
 
-      def view[result](value: path)(lambda: zephyrine.Mapped^ => result): result =
+      def view[result](value: path)(lambda: zephyrine.Terrain^ => result): result =
         value.mapped(lambda)
 
   // The `Openable` instance for the `Directory` form: anchored here for the same reason as

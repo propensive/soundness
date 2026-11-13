@@ -40,6 +40,10 @@ import anticipation.*
 // file channel, an in-memory buffer, or an HTTP resource supporting `Range` requests.
 // Implementations state their own lifetime discipline: some hold a resource open for a scope,
 // while others re-acquire it per read.
+//
+// An expanse which stands for a resource is lent as a tracked `Expanse^`, so that capture
+// checking keeps it from outliving the scope which holds the resource open; code which
+// receives one declares it likewise.
 trait Expanse:
   def size: Long
   def read(offset: Long, length: Int): Data

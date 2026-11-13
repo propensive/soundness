@@ -334,8 +334,9 @@ Out.println(middle.utf8)
 Out.println(file.read[Text])
 ```
 
-`mapped` maps a whole file for reading, and lends a `Mapped` view of it for the length of a
-block. Nothing is copied: integers are loaded from the mapped memory in place, little-endian
+`mapped` maps a whole file for reading, and lends a `Terrain` view of it for the length of a
+block. A `Terrain` is an `Expanse`, with its `size` and its copying `read`, whose bytes are in
+memory. Nothing is copied: integers are loaded from the mapped memory in place, little-endian
 and at any offset, and a `slice` is a narrower view of the same memory. Several processes
 which map one file share a single copy of it, in the operating system's page cache, which is
 what makes a mapped file a way of sharing a large index between programs:
@@ -349,7 +350,7 @@ val word = file.mapped(_.u32(0L))
 
 val letters = file.mapped: view =>
   val tail = view.slice(10L, 6L)
-  tail.copy(0L, 3).utf8
+  tail.read(0L, 3).utf8
 
 Out.println(word.show)
 Out.println(letters)
@@ -365,13 +366,14 @@ row  `u32`  an unsigned 32-bit integer, as a `Long`
 row  `i32`  the same 32 bits as a signed `Int`
 row  `u64`  a 64-bit integer, as a `Long`
 row  `slice`  a view of part of the memory, with no copy
-row  `copy`  some of the bytes as `Data`, for a value which must outlive the view
+row  `read`  some of the bytes as `Data`, for a value which must outlive the view
 row  `same`  whether the bytes at an offset are those of some `Data`, compared in place
 row  `compare`  the order of some bytes relative to some `Data`, compared in place
 ```
 
 The file is unmapped when the block ends. The view, and every slice of it, is a [capability]
-confined to the block, so a load from memory which is no longer mapped cannot be written. A method which receives a view declares it as `Mapped^`. The same loads are
+confined to the block, so a load from memory which is no longer mapped cannot be written. A
+method which receives a view declares it as `Terrain^`. The same loads are
 available on `Data`, with a big-endian `u16be`, `i32be`, `u32be` and `u64be` beside them, so a
 parser reads a format the same way from either.
 
@@ -380,7 +382,7 @@ place: a view goes on seeing the file it mapped, unchanged, for as long as it is
 is available on the JVM and on Scala Native; WASI has no memory mapping, and reports
 `Unsupported`.
 
-`Mapped(data)` is a view of bytes which are already in memory, for reading a format which is
+`Terrain(data)` is a view of bytes which are already in memory, for reading a format which is
 designed for a mapped file from `Data` instead. A path is `Viewable`, the typeclass of a value
 which can lend a view of its bytes, so a format which is read in place is opened straight from
 its file. [RaTEL](tel.md#ratel) is such a format, a TEL document laid out so that one record is
@@ -411,7 +413,7 @@ val edition = file.claim[Text]: owner =>
 Out.println(file.read[Text])
 ```
 
-`published` gives a reader, a `Published`. Its `map` lends a `Mapped` view of the version it
+`published` gives a reader, a `Published`. Its `map` lends a `Terrain` view of the version it
 holds, and its `refresh` moves it to the version which the name now leads to, and says whether
 there was one:
 

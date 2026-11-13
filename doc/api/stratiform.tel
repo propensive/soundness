@@ -3536,8 +3536,8 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       `Oversized` for an image of 2 GiB or more; and `Tel.Error(EncodingRejected)` for a value
       its codec rejects. The extensions `tel.ratel(schema)`, `element.ratel(schema)` and
       `value.ratel` call this.
-  entry .openable   opens anything `Viewable` — a path, an image, a `Mapped` view — as `Ratel`, for reading in place
-      `source.open[Ratel]()` lends a `Mapped` view of the source through its `zephyrine.Viewable`
+  entry .openable   opens anything `Viewable` — a path, an image, a `Terrain` in hand — as `Ratel`, for reading in place
+      `source.open[Ratel]()` lends a `Terrain` view of the source through its `zephyrine.Viewable`
       instance, copies and checks the header, decodes the embedded schema, recomputes its
       signature, derives the layout and checks the table and index directories against it
       (R01–R13, R19), and gives the block a `Ratel.Reader`, which the accessor `ratel` names. It

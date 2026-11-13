@@ -34,14 +34,14 @@ package zephyrine
 
 import prepositional.*
 
-// A value whose bytes can be lent as a `Mapped` view for the length of a block: a file, which
-// is mapped into memory for it and unmapped after; a published name, which lends the version
-// it holds; or a view which is already in hand. A format which is read in place is opened from any
-// of them alike, through this typeclass, without knowing which it has.
+// A value whose bytes can be lent as a `Terrain` for the length of a block: a file, which is
+// mapped into memory for it and unmapped after; an image which is already on the heap; or a
+// terrain which is already in hand. A format which is read in place is opened from any of them
+// alike, through this typeclass, without knowing which it has.
 trait Viewable extends Typeclass:
-  def view[result](value: Self)(lambda: Mapped^ => result): result
+  def view[result](value: Self)(lambda: Terrain^ => result): result
 
 object Viewable:
-  // A view is lent as it is: whoever holds it has already mapped it.
-  given mapped: [captures^, mapped <: Mapped^{captures}] => mapped is Viewable:
-    def view[result](value: mapped)(lambda: Mapped^ => result): result = lambda(value)
+  // A terrain is lent as it is: whoever holds it has already mapped it.
+  given terrain: [captures^, terrain <: Terrain^{captures}] => terrain is Viewable:
+    def view[result](value: terrain)(lambda: Terrain^ => result): result = lambda(value)

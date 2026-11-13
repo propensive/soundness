@@ -270,13 +270,13 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == t"First letter")
 
       test(m"the image passes verification"):
-        Ratel.open(Mapped(image)).verify()
+        Ratel.open(Terrain(image)).verify()
       . assert(_ == ())
 
     suite(m"Reading in place"):
       val element = Tel.Type.assign(folio, folioSchema, Tel.Validator.Registry.builtins, Tel.Codec.Bindings.all)
       val image: Ratel = folio.ratel(folioSchema)
-      val reader = Ratel.open(image.mapped)
+      val reader = Ratel.open(image.terrain)
       given Ratel.Reader = reader
       val plays = reader.root / t"play"
       def play(title: Text): Ratel.Row = plays.find(title).or(throw IllegalArgumentException(title.s))
@@ -427,7 +427,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == 3L)
 
       test(m"a view of an image is opened"):
-        Mapped(image.data).open[Ratel]()(ratel.schema.name)
+        Terrain(image.data).open[Ratel]()(ratel.schema.name)
       . assert(_ == t"folio")
 
       test(m"an image is verified as it is opened"):
@@ -490,7 +490,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
             val element =
               Tel.Type.assign(testcase.source.read[Tel], schema, Tel.Validator.Registry.builtins, codecs)
 
-            val reader = Ratel.open(Mapped(Ratel.encode(element, schema, codecs).data), codecs)
+            val reader = Ratel.open(Terrain(Ratel.encode(element, schema, codecs).data), codecs)
             reader.verify()
             hex(reader.materialise().bintel(schema, codecs)) == hex(element.bintel(schema, codecs))
           . assert(_ == true)
@@ -503,7 +503,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       val indexes = start(image, 4)
 
       test(m"an untouched image is sound"):
-        Ratel.open(Mapped(image)).verify()
+        Ratel.open(Terrain(image)).verify()
       . assert(_ == ())
 
       test(m"R01: another magic number is refused"):
@@ -658,7 +658,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"R19: an encoding with no codec bound to it is refused"):
         val folioImage = folio.ratel(folioSchema)
-        capture[Ratel.Error](Ratel.open(folioImage.mapped, Tel.Codec.Bindings.none)).reason
+        capture[Ratel.Error](Ratel.open(folioImage.terrain, Tel.Codec.Bindings.none)).reason
       . assert(_ == Reason.CodecUnresolved)
 
       test(m"R20: bytes which a codec rejects fail their access"):
@@ -724,7 +724,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       val revised: Tel =
         t"tel 1.0\n\nentry\n  name alpha\n\nentry\n  name beta\n  info  Second letter\n".read[Tel]
 
-      def info(view: Mapped, key: Text): Optional[Text] =
+      def info(view: Terrain, key: Text): Optional[Text] =
         view.open[Ratel]() { (ratel.root / t"entry").find(key).let(_.text(t"info")) }
 
       test(m"an image published under a name is read in place from the file"):

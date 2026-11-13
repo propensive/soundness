@@ -55,7 +55,7 @@ import RatelLayout.{Component, Entry, Kind, Layout, Payload, Slot}
 // any number of processes may map.
 case class Ratel(data: Data):
   // A view of the image where it lies on the heap, for reading it without a file.
-  def mapped: Mapped = Mapped(data)
+  def terrain: Terrain = Terrain(data)
 
 object Ratel:
   given encodable: Ratel is Encodable in Data = _.data
@@ -77,7 +77,7 @@ object Ratel:
   // An image is `Viewable`, as the view of its bytes where they lie on the heap, so it is
   // opened as a file which holds it is.
   given viewable: Ratel is Viewable:
-    def view[result](value: Ratel)(lambda: Mapped^ => result): result = lambda(value.mapped)
+    def view[result](value: Ratel)(lambda: Terrain^ => result): result = lambda(value.terrain)
 
   // Anything `Viewable` -- a path, an image, a view -- is opened as `Ratel` for reading in
   // place: `file.open[Ratel]()`. The reader is given to the block, and to nothing beyond it.
@@ -107,18 +107,25 @@ object Ratel:
       ( block: ((Reader & Granting[grants])^) ?=> result )
     :   result =
 
-      // An image is never changed where it lies: a new one is published over it.
-      if mode.atoms.has(Write) then fail(Error.Reason.Unwritable)
+      viewable.view(value)(reading(_, mode, flags)(block))
 
-      val codecs = flags.fuse(Tel.Codec.Bindings.all):
-        next match
-          case Flag.Codecs(bindings) => bindings.orElse(state)
-          case Flag.Verify           => state
+  private def reading[grants <: Grant, result]
+    ( view: Terrain^, mode: Mode granting grants, flags: List[Ratel.Flag] )
+    ( block: ((Reader & Granting[grants])^) ?=> result )
+    ( using tactic: Tactic[Ratel.Error] )
+  :   result =
 
-      viewable.view(value): view =>
-        val reader = new Reader(view, inspect(view, codecs)) with Granting[grants] {}
-        if flags.has(Flag.Verify) then reader.verify()
-        block(using reader)
+    // An image is never changed where it lies: a new one is published over it.
+    if mode.atoms.has(Write) then fail(Error.Reason.Unwritable)
+
+    val codecs = flags.fuse(Tel.Codec.Bindings.all):
+      next match
+        case Flag.Codecs(bindings) => bindings.orElse(state)
+        case Flag.Verify           => state
+
+    val reader = new Reader(view, inspect(view, codecs)) with Granting[grants] {}
+    if flags.has(Flag.Verify) then reader.verify()
+    block(using reader)
 
   // What `open` learns of an image before anything is read from it: its schema and layout,
   // and where its sections, tables and indexes lie.
@@ -133,7 +140,7 @@ object Ratel:
       indexes:   Array[Extent]^{} )
 
   private[stratiform] def open
-    ( view: Mapped^, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.all )
+    ( view: Terrain^, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.all )
     ( using Tactic[Ratel.Error] )
   :   Reader^{view} =
 
@@ -142,7 +149,7 @@ object Ratel:
   // §7.1: everything which decides how the rest of an image is read -- the header, the schema
   // and its signature, the directories of tables and indexes -- is checked here, and nothing
   // else is read until it is asked for.
-  private[stratiform] def inspect(view: Mapped^, codecs: Tel.Codec.Bindings)
+  private[stratiform] def inspect(view: Terrain^, codecs: Tel.Codec.Bindings)
     ( using Tactic[Ratel.Error] )
   :   Opening =
 
@@ -151,7 +158,7 @@ object Ratel:
     if view.size < RatelBytes.header then fail(Reason.BadLength)
 
     // The header is copied before it is acted on: a mapped file may change beneath a reader.
-    val header: Data = view.copy(0L, RatelBytes.header)
+    val header: Data = view.read(0L, RatelBytes.header)
     val magic: Data = header.segment(Prim till Quin)
     if RatelBytes.order(magic, RatelBytes.magic) != 0 then fail(Reason.BadMagic)
     if header.u8(4) != 1 then fail(Reason.UnsupportedVersion)
@@ -193,7 +200,7 @@ object Ratel:
     if schemaExtent.length > Int.MaxValue then fail(Reason.SchemaUndecodable)
 
     // The schema section is a signature and a schema body, each behind its length (§5.2).
-    val section: Data = view.copy(schemaExtent.offset, schemaExtent.length.toInt)
+    val section: Data = view.read(schemaExtent.offset, schemaExtent.length.toInt)
 
     def varint(offset: Int, reason: Reason): Varint.Decoded =
       mitigate:
@@ -288,7 +295,7 @@ object Ratel:
 
   // An open image. It serves reads for as long as the view it was opened on is mapped, and
   // may be shared between threads.
-  class Reader private[stratiform](view: Mapped^, opening: Opening):
+  class Reader private[stratiform](view: Terrain^, opening: Opening):
     import Error.Reason
     import opening.{codecs, indexes, layout, sections, tables}
 
@@ -337,9 +344,9 @@ object Ratel:
     private[stratiform] def bytes(strings: Boolean, ref: Long)(using Tactic[Ratel.Error]): Data =
       val extent = item(strings, ref, 1L)
       if extent.length > Int.MaxValue then fail(Reason.BadRef)
-      view.copy(extent.offset, extent.length.toInt)
+      view.read(extent.offset, extent.length.toInt)
 
-    private[stratiform] def copy(address: Long, length: Int): Data = view.copy(address, length)
+    private[stratiform] def copy(address: Long, length: Int): Data = view.read(address, length)
 
     // The text of a scalar's bytes: UTF-8, or whatever the codec of its encoding makes of
     // them.
@@ -355,7 +362,7 @@ object Ratel:
     // The bytes of the value in a scalar's slot of a row, where the member is present.
     private[stratiform] def load(address: Long, slot: Slot)(using Tactic[Ratel.Error]): Data =
       slot.kind match
-        case Kind.Inline(_, width) => view.copy(address + slot.offset, width)
+        case Kind.Inline(_, width) => view.read(address + slot.offset, width)
         case Kind.Ref(_, intern)   => bytes(intern, word(address + slot.offset))
         case _                     => fail(Reason.Inapplicable(slot.keyword))
 
@@ -431,7 +438,7 @@ object Ratel:
             case Kind.FlagCount => repeat(word(at))(_ => flag())
 
             case Kind.Inline(scalar, width) => if present(address, slot) then
-              val value = text(scalar, view.copy(at, width))
+              val value = text(scalar, view.read(at, width))
               out.add(Tel.Element.Value(slot.keywordIndex, scalar, value))
 
             case Kind.Ref(scalar, intern) => if present(address, slot) then
@@ -442,7 +449,7 @@ object Ratel:
               val array = item(false, word(at), width)
 
               repeat(array.length): number =>
-                val value = text(scalar, view.copy(array.offset + number*width, width))
+                val value = text(scalar, view.read(array.offset + number*width, width))
                 out.add(Tel.Element.Value(slot.keywordIndex, scalar, value))
 
             case Kind.Refs(scalar, intern) =>
@@ -511,7 +518,7 @@ object Ratel:
           val extent = entry(index, number)
 
           if extent.length < probe.length || !view.same(extent.offset, probe) then found.reverse
-          else matches(number + 1, view.copy(extent.end - 4, 4).u32be(0) :: found)
+          else matches(number + 1, view.read(extent.end - 4, 4).u32be(0) :: found)
 
       matches(bound(0L, count), Nil)
 
@@ -557,10 +564,10 @@ object Ratel:
         List.range(0, 5).each: number =>
           val extent = section(number)
           if extent.length > Int.MaxValue then fail(Reason.Oversized)
-          val digest = Blake3.hashOf(view.copy(extent.offset, extent.length.toInt), 32)
+          val digest = Blake3.hashOf(view.read(extent.offset, extent.length.toInt), 32)
           if !view.same(digests.offset + 32*number, digest) then fail(Reason.DigestMismatch)
 
-        val digest = Blake3.hashOf(view.copy(0L, RatelBytes.header), 32)
+        val digest = Blake3.hashOf(view.read(0L, RatelBytes.header), 32)
         if !view.same(digests.offset + 160, digest) then fail(Reason.DigestMismatch)
 
       val document = materialise()
@@ -630,7 +637,7 @@ object Ratel:
 
           case Kind.Packed(_, width) =>
             val array = item(false, word(address(index.table, host) + slot.offset), width)
-            RatelBytes.component(out, view.copy(array.offset + child*width, width), true)
+            RatelBytes.component(out, view.read(array.offset + child*width, width), true)
 
           case Kind.Refs(_, intern) =>
             val array = item(false, word(address(index.table, host) + slot.offset), 4L)
@@ -644,7 +651,7 @@ object Ratel:
       def recur(position: Long, previous: Data): Unit = if position < count then
         val extent = entry(number, position)
         if extent.length > Int.MaxValue then fail(Reason.BadIndex)
-        val stored = view.copy(extent.offset, extent.length.toInt)
+        val stored = view.read(extent.offset, extent.length.toInt)
         if !parses(stored, widths) then fail(Reason.BadIndex)
         if position > 0 && RatelBytes.order(previous, stored) >= 0 then fail(Reason.IndexUnsorted)
         val host = stored.u32be(0)

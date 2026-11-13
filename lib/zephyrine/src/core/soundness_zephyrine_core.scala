@@ -37,9 +37,9 @@ package soundness
 // hand-written `via`/`accepting` forwarders below for the same problem). Consumers import
 // them from `zephyrine` directly.
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
-    Duct, Ductile, Expanse, Malleable, Mapped, Pace,
+    Duct, Ductile, Expanse, Malleable, Pace,
     Format, Formatting, Intake, Lineation, Parse, PositionTracking, Producer, Positionable,
-    Records, records, Regulation, Spring, Stream, Substrate, Truncation, Viewable, chunks,
+    Records, records, Regulation, Spring, Stream, Substrate, Terrain, Truncation, Viewable, chunks,
     discard, drain, gather, locate,
     locateKey, memoize, pump, ingest, stream, streamOf, chain, truncate,
     viaDuct, acceptingDuct,

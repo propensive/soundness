@@ -626,7 +626,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == -1L)
 
       test(m"Copying from a mapped view yields the bytes as data"):
-        unsafely(viewFile.mapped(_.copy(4L, 6).utf8))
+        unsafely(viewFile.mapped(_.read(4L, 6).utf8))
       . assert(_ == t"456789")
 
       test(m"A mapped view compares its bytes with data in place"):
@@ -691,13 +691,13 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
                 java.nio.file.Path.of("/tmp", oldLeaf.s),
                 java.nio.file.StandardCopyOption.ATOMIC_MOVE )
 
-            (view.copy(0L, 5).utf8, replaced.read[Text])
+            (view.read(0L, 5).utf8, replaced.read[Text])
       . assert(_ == (t"first", t"second"))
 
       test(m"A mapped view cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped: Mapped^ = viewFile.mapped(identity(_))
+          val escaped: Terrain^ = viewFile.mapped(identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 
@@ -731,7 +731,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       val otherFile: Path on Linux = unsafely((% / "tmp" / publishDir / "other").on[Linux])
       val absentFile: Path on Linux = unsafely((% / "tmp" / publishDir / "absent").on[Linux])
 
-      def text(view: Mapped^): Text = view.copy(0L, view.size.toInt).utf8
+      def text(view: Terrain^): Text = view.read(0L, view.size.toInt).utf8
 
       test(m"Publishing writes the encoded value under the name"):
         unsafely:

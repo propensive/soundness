@@ -119,7 +119,7 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
       case class Player(name: Text, part: Optional[Text])
 
       // A view as a file lends it: tracked, and confined to whoever was lent it.
-      def parts(view: Mapped^): List[Optional[Text]] =
+      def parts(view: Terrain^): List[Optional[Text]] =
         view.open[Ratel]():
           (ratel.root / t"player").sorted.map(_.text(t"part"))
 
@@ -129,7 +129,7 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
       . assert(_ == t"Pyramus")
 
       test(m"a tracked view is opened"):
-        parts(image.mapped)
+        parts(image.terrain)
 
       . assert(_ == List(t"Pyramus", Unset))
 

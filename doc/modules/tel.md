@@ -527,7 +527,7 @@ file.open[Ratel]():
   val twelfth = roles.where(t"/play", t"Twelfth Night")
 ```
 
-An image in memory, and a `Mapped` view which is already in hand, such as the one a
+An image in memory, and a `Terrain` view which is already in hand, such as the one a
 [published](filesystem.md#publishing-versions) reader lends, are opened the same way, as
 `image.open[Ratel]()` and `view.open[Ratel]()`.
 
