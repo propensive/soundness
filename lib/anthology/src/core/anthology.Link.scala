@@ -58,7 +58,7 @@ object Link:
 
     given communicable: Reason is Communicable =
       case Reason.Failed(_)       => m"the linker terminated abnormally"
-      case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
+      case Reason.NoEntryPoint    => m"the artifact requires exactly one entry point"
       case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
 
       case Reason.NoPath(source, target) =>

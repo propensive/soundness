@@ -883,7 +883,7 @@ entry .Link   the namespace of `Link.Error`, the failure of linking, path search
           column  Message
           column  Note
           row  `Failed(trace)`  1  _the linker terminated abnormally_  a tool threw; the `StackTrace` is kept
-          row  `NoEntryPoint`  3  _a native executable requires exactly one entry point_  also raised by the APK tool, which needs its launcher activity
+          row  `NoEntryPoint`  3  _the artifact requires exactly one entry point_  raised for a native binary and for an APK, which needs its launcher activity
           row  `ManyEntryPoints`  4  _an executable JAR permits at most one entry point_
           row  `NoPath(source, target)`  5  _the toolchain has no path from `source` to `target`_
           row  `AmbiguousPath(source, target)`  6  _the toolchain has several shortest paths from `source` to `target`, so an intermediate format must be produced explicitly_
