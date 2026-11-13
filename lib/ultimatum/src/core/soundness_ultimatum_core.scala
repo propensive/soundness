@@ -34,7 +34,7 @@ package soundness
 
 export
   ultimatum
-  . { BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent, conduct, Focus,
+  . { border, BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent, conduct, Focus,
       Form, grid, layout, menu,
       MenuField, paint, panel, scrolling, ScrollFixture, stack, strip, Tui }
 
