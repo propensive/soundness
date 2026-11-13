@@ -70,11 +70,19 @@ package alphabets:
   given base32LowerCase: Alphabet[Base32] =
     Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true, base32StrictUpperCase.inverse)
 
+  // The tolerance of each extended-hex alphabet is the same alphabet in the other case, which
+  // neither given can supply to the other without a cycle.
+  private val base32ExtendedHexStrictUpperCase: Alphabet[Base32] =
+    Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true)
+
+  private val base32ExtendedHexStrictLowerCase: Alphabet[Base32] =
+    Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true)
+
   given base32ExtendedHexUpperCase: Alphabet[Base32] =
-    Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true, base32StrictLowerCase.inverse)
+    Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true, base32ExtendedHexStrictLowerCase.inverse)
 
   given base32ExtendedHexLowerCase: Alphabet[Base32] =
-    Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true, base32StrictUpperCase.inverse)
+    Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true, base32ExtendedHexStrictUpperCase.inverse)
 
   given base32ZBase32: Alphabet[Base32] = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
 
@@ -86,7 +94,7 @@ package alphabets:
 
   private val crockfordAlternatives =
     Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse +
-      Map('o' -> 0, 'O' -> 0, 'i' -> 1, 'I' -> 1, 'L' -> 1)
+      Map('o' -> 0, 'O' -> 0, 'i' -> 1, 'I' -> 1, 'l' -> 1, 'L' -> 1)
 
   given base32Crockford: Alphabet[Base32] =
     Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)

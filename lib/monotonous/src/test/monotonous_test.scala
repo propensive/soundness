@@ -144,6 +144,16 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
         t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == Serialization.Error(0, 'A'))
 
+    test(m"Extended-hex BASE32 reads the other case as the same digits"):
+      import alphabets.base32ExtendedHexUpperCase
+      (t"vvvvvvvv".deserialize[Base32].to[List], t"VVVVVVVV".deserialize[Base32].to[List])
+    . assert { (lower, upper) => lower == upper }
+
+    test(m"Crockford BASE32 reads a lower-case L as one"):
+      import alphabets.base32Crockford
+      (t"llllllll".deserialize[Base32].to[List], t"11111111".deserialize[Base32].to[List])
+    . assert { (letters, digits) => letters == digits }
+
     test(m"Bad character offset"):
       capture[Serialization.Error]:
         import alphabets.base32LowerCase
