@@ -69,7 +69,11 @@ object TestEvent:
       moniker: Optional[Text],
       path:    List[Text],
       file:    Text,
-      line:    Int )
+      line:    Int ):
+
+    // What the test is known by wherever its path and its id are all there is to go on: the
+    // name its coverage is recorded under (see `Coverage`).
+    def key: Text = t"${path.join(t"/")}#$id"
 
   case class Frame(className: Text, method: Text, file: Text, line: Optional[Int])
 
