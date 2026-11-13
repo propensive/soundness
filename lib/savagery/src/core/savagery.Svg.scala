@@ -894,14 +894,14 @@ object Svg:
 
     def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
     def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-    def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
-    def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
-    def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
-    def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
-    def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
-    def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
-    def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
-    def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
+    def moveUp(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
+    def moveDown(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
+    def moveLeft(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
+    def moveRight(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
+    def lineUp(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
+    def lineDown(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
+    def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
+    def lineRight(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
     def closed: Outline = copy(ops = Close :: ops)
 
   case class Ellipse
