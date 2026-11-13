@@ -205,7 +205,10 @@ object internal:
         def apply(text: Text): Ascii = text.sysData
         def single(operand: Byte): Ascii = Array(operand)
         def fromChar(char: Char): Byte = char.toByte
-        def length(ascii: Ascii): Int = ascii.size
+
+        // Read from the underlying JVM array: `ascii.length` and `ascii.size` are both the
+        // extensions this instance provides, so neither can be defined by the other.
+        def length(ascii: Ascii): Int = ascii.asInstanceOf[scala.Array[Byte]].length
 
         def text(ascii: Ascii): Text =
           String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
@@ -214,7 +217,7 @@ object internal:
           ascii.readUnchecked(index.n0)
 
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
-        def size(ascii: Ascii): Int = ascii.length
+        def size(ascii: Ascii): Int = length(ascii)
 
         def map(ascii: Ascii)(lambda: Byte => Byte): Ascii = ascii.map(lambda)
 
