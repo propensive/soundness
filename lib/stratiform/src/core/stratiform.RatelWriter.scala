@@ -32,9 +32,9 @@
                                                                                                   */
 package stratiform
 
-import scala.language.unsafeNulls
-
 import java.nio as jn
+
+import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
@@ -56,8 +56,7 @@ import RatelLayout.{Component, Entry, Kind, Payload, Slot}
 // items are appended as they are met; and the indexes are sorted once every row is known.
 private[stratiform] object RatelWriter:
   private def fail(reason: Ratel.Error.Reason)(using Tactic[Ratel.Error]): Nothing =
-    import errorDiagnostics.emptyDiagnostics
-    abort(Ratel.Error(reason))
+    Ratel.fail(reason)
 
   private def index(element: Tel.Element): Int = element match
     case Tel.Element.Node(index, _, _)  => index.or(0)
@@ -89,8 +88,8 @@ private[stratiform] object RatelWriter:
 
     val (signature, schemaBody, valueHash) =
       mitigate:
-        case _: Bintel.Error         => Ratel.Error(Reason.Unencodable)(using errorDiagnostics.emptyDiagnostics)
-        case _: Tels.Renderer.Error  => Ratel.Error(Reason.Unencodable)(using errorDiagnostics.emptyDiagnostics)
+        case _: Bintel.Error        => Ratel.error(Reason.Unencodable)
+        case _: Tels.Renderer.Error => Ratel.error(Reason.Unencodable)
 
       . protect:
           val schemaRoot = Tels.Renderer.element(declared, axiom)
@@ -100,17 +99,20 @@ private[stratiform] object RatelWriter:
             Blake3.hashOf(Bintel.encode(root, schema, codecs), 32) )
 
     val rows: java.util.ArrayList[java.util.ArrayList[Data]] = java.util.ArrayList()
-    layout.tables.each { table => rows.add(java.util.ArrayList()) }
+    layout.tables.each(table => rows.add(java.util.ArrayList()))
 
     val entries: java.util.ArrayList[java.util.ArrayList[Sortable]] = java.util.ArrayList()
-    layout.indexes.each { index => entries.add(java.util.ArrayList()) }
+    layout.indexes.each(index => entries.add(java.util.ArrayList()))
 
     // The indexes at each site, by table and slot.
     val sites: java.util.HashMap[Long, List[(RatelLayout.Index, Int)]] = java.util.HashMap()
 
     layout.indexes.to[List].zip(List.range(0, layout.indexes.length)).each: (index, number) =>
       val site = index.table.toLong << 32 | index.slot.number
-      val before: List[(RatelLayout.Index, Int)] = if sites.containsKey(site) then sites.get(site) else Nil
+
+      val before: List[(RatelLayout.Index, Int)] =
+        if sites.containsKey(site) then sites.get(site) else Nil
+
       sites.put(site, before + List((index, number)))
 
     val strings: java.util.ArrayList[Data] = java.util.ArrayList()
@@ -251,7 +253,10 @@ private[stratiform] object RatelWriter:
 
             case Kind.Inline(scalar, width) => mine.head.let: element =>
               val value = bytes(scalar, text(element))
-              List.range(0, width).each { index => buffer.put(slot.offset + index, value.u8(index).toByte) }
+
+              List.range(0, width).each: index =>
+                buffer.put(slot.offset + index, value.u8(index).toByte)
+
               mark(slot)
 
             case Kind.Ref(scalar, intern) => mine.head.let: element =>
@@ -259,7 +264,7 @@ private[stratiform] object RatelWriter:
               mark(slot)
 
             case Kind.Packed(scalar, width) =>
-              val values = mine.map { element => bytes(scalar, text(element)) }
+              val values = mine.map(element => bytes(scalar, text(element)))
 
               indexes.each: (index, number) =>
                 mine.zip(List.range(0, mine.size)).each: (element, position) =>
@@ -268,7 +273,7 @@ private[stratiform] object RatelWriter:
                     RatelBytes.component(out, bytes(scalar, text(element)), true)
                     RatelBytes.u32be(out, position)
 
-              val body = Array.collect[Byte](width*values.size + 8) { out => values.each(out.append(_)) }
+              val body = Array.collect[Byte](width*values.size + 8)(out => values.each(out.append(_)))
               buffer.putInt(slot.offset, vary(values.size, body).toInt)
 
             case Kind.Refs(scalar, intern) =>
@@ -279,8 +284,11 @@ private[stratiform] object RatelWriter:
                     RatelBytes.component(out, bytes(scalar, text(element)), false)
                     RatelBytes.u32be(out, position)
 
-              val refs = mine.map { element => value(scalar, text(element)) }
-              val body = Array.collect[Byte](4*refs.size + 8) { out => refs.each(RatelBytes.u32(out, _)) }
+              val refs = mine.map(element => value(scalar, text(element)))
+
+              val body = Array.collect[Byte](4*refs.size + 8): out =>
+                refs.each(RatelBytes.u32(out, _))
+
               buffer.putInt(slot.offset, vary(refs.size, body).toInt)
 
             case Kind.Record(table, _) => mine.head.let: element =>
@@ -319,6 +327,7 @@ private[stratiform] object RatelWriter:
 
       fill(plan.entries, children)
       rows.get(table).set(row, Array.tabulate[Byte](plan.rowSize)(buffer.get(_)))
+
       List.range(0, pending.size).each: number =>
         val next = pending.get(number)
         emit(next.table, next.row, next.children, depth + 1)
@@ -383,7 +392,7 @@ private[stratiform] object RatelWriter:
         RatelBytes.zeros(out, 4)
         state + block.length
 
-      blocks.each { (count, block) => out.append(block) }
+      blocks.each((count, block) => out.append(block))
 
     val sections: List[Data] =
       List
@@ -416,7 +425,7 @@ private[stratiform] object RatelWriter:
       sections.each(out.append(_))
 
       if digests then
-        sections.each { section => out.append(Blake3.hashOf(section, 32)) }
+        sections.each(section => out.append(Blake3.hashOf(section, 32)))
         out.append(Blake3.hashOf(header, 32))
 
   private def node0(root: Tel.Element)(using Tactic[Ratel.Error]): Array[Tel.Element]^{} =

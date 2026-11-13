@@ -37,7 +37,6 @@ import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
 import denominative.*
-import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gastronomy.*
@@ -87,7 +86,8 @@ object Ratel:
 
     // The header is copied before it is acted on: a mapped file may change beneath a reader.
     val header: Data = view.copy(0L, RatelBytes.header)
-    if RatelBytes.order(header.segment(Prim till Quin), RatelBytes.magic) != 0 then fail(Reason.BadMagic)
+    val magic: Data = header.segment(Prim till Quin)
+    if RatelBytes.order(magic, RatelBytes.magic) != 0 then fail(Reason.BadMagic)
     if header.u8(4) != 1 then fail(Reason.UnsupportedVersion)
     val flags = header.u16(6)
     if header.u8(5) != 0 || (flags & ~3) != 0 then fail(Reason.ReservedSet)
@@ -100,9 +100,9 @@ object Ratel:
       val offset = header.u64(16 + 16*number)
       val length = header.u64(24 + 16*number)
 
-      if offset%8 != 0 || length%8 != 0 || offset < RatelBytes.header || length < 0
-         || offset > committed || length > committed - offset
-      then fail(Reason.BadDirectory)
+      val aligned = offset%8 == 0 && length%8 == 0 && offset >= RatelBytes.header
+      val within = length >= 0 && offset <= committed && length <= committed - offset
+      if !aligned || !within then fail(Reason.BadDirectory)
 
       Extent(offset, length)
 
@@ -118,12 +118,13 @@ object Ratel:
 
     extents.each: left =>
       extents.each: right =>
-        if !(left eq right) && left.length > 0 && right.length > 0 && left.offset < right.end
-           && right.offset < left.end
-        then fail(Reason.SectionsOverlap)
+        val occupied = !(left eq right) && left.length > 0 && right.length > 0
+        val overlap = left.offset < right.end && right.offset < left.end
+        if occupied && overlap then fail(Reason.SectionsOverlap)
 
 
-    if digestsExtent.length != (if (flags & 1) != 0 then RatelBytes.digests else 0) then fail(Reason.DigestMismatch)
+    val digests = if (flags & 1) != 0 then RatelBytes.digests else 0
+    if digestsExtent.length != digests then fail(Reason.DigestMismatch)
     if schemaExtent.length > Int.MaxValue then fail(Reason.SchemaUndecodable)
 
     // The schema section is a signature and a schema body, each behind its length (§5.2).
@@ -131,27 +132,28 @@ object Ratel:
 
     def varint(offset: Int, reason: Reason): Varint.Decoded =
       mitigate:
-        case _: Varint.Error => Error(reason)(using errorDiagnostics.emptyDiagnostics)
+        case _: Varint.Error => error(reason)
 
       . protect(Varint.decode(section, offset))
 
     val signatureLength = varint(0, Reason.BadSignature)
 
-    if signatureLength.value > section.length - signatureLength.next
-    then fail(Reason.BadSignature)
+    val signatureSpace = section.length - signatureLength.next
+    if signatureLength.value > signatureSpace then fail(Reason.BadSignature)
 
     val signatureEnd = signatureLength.next + signatureLength.value.toInt
     val signature: Data = section.segment(signatureLength.next.z till signatureEnd.z)
     if Tel.Codec.signatureComponents(signature).absent then fail(Reason.BadSignature)
     val bodyLength = varint(signatureEnd, Reason.SchemaUndecodable)
     if bodyLength.value > section.length - bodyLength.next then fail(Reason.SchemaUndecodable)
-    val body: Data = section.segment(bodyLength.next.z till (bodyLength.next + bodyLength.value.toInt).z)
+    val bodyEnd = bodyLength.next + bodyLength.value.toInt
+    val body: Data = section.segment(bodyLength.next.z till bodyEnd.z)
     val axiom = Tels.Axiom.tels
 
     val (schema, recomputed) =
       mitigate:
-        case _: Tel.Error    => Error(Reason.SchemaUndecodable)(using errorDiagnostics.emptyDiagnostics)
-        case _: Bintel.Error => Error(Reason.SchemaUndecodable)(using errorDiagnostics.emptyDiagnostics)
+        case _: Tel.Error    => error(Reason.SchemaUndecodable)
+        case _: Bintel.Error => error(Reason.SchemaUndecodable)
 
       . protect:
           Bintel.decode(body, axiom) match
@@ -173,10 +175,10 @@ object Ratel:
         val offset = view.u64(entry)
         val count = view.u32(entry + 8)
 
-        if view.u32(entry + 12) != table.rowSize || view.u64(entry + 16) != 0L || offset%8 != 0
-           || offset < 0 || offset > tablesExtent.length
-           || count*table.rowSize > tablesExtent.length - offset
-        then fail(Reason.BadTableDirectory)
+        val described = view.u32(entry + 12) == table.rowSize && view.u64(entry + 16) == 0L
+        val within = offset%8 == 0 && offset >= 0 && offset <= tablesExtent.length
+        val fits = count*table.rowSize <= tablesExtent.length - offset
+        if !described || !within || !fits then fail(Reason.BadTableDirectory)
 
         Extent(tablesExtent.offset + offset, count)
 
@@ -188,9 +190,9 @@ object Ratel:
       val offset = view.u64(entry)
       val count = view.u32(entry + 8)
 
-      if view.u32(entry + 12) != 0L || offset%8 != 0 || offset < 0
-         || offset > indexesExtent.length || 4*(count + 1) > indexesExtent.length - offset
-      then fail(Reason.BadIndex)
+      val within = offset%8 == 0 && offset >= 0 && offset <= indexesExtent.length
+      val fits = 4*(count + 1) <= indexesExtent.length - offset
+      if view.u32(entry + 12) != 0L || !within || !fits then fail(Reason.BadIndex)
 
       val entries = view.u32(indexesExtent.offset + offset + 4*count)
       if entries > indexesExtent.length - offset - 4*(count + 1) then fail(Reason.BadIndex)
@@ -207,9 +209,12 @@ object Ratel:
       ( view, schema, signature, hash, layout, codecs, extents.to[Array], tables.to[Array],
         indexes.to[Array] )
 
-  private[stratiform] def fail(reason: Error.Reason)(using Tactic[Ratel.Error]): Nothing =
+  private[stratiform] def error(reason: Error.Reason): Error =
     import errorDiagnostics.emptyDiagnostics
-    abort(Error(reason))
+    Error(reason)
+
+  private[stratiform] def fail(reason: Error.Reason)(using Tactic[Ratel.Error]): Nothing =
+    abort(error(reason))
 
   // A range of a file: a section, or a table's rows, or an index. For a table or an index,
   // `length` counts its rows or its entries.
@@ -247,8 +252,8 @@ object Ratel:
       extent.offset + row*plan(table).rowSize
 
     private[stratiform] def present(address: Long, slot: Slot): Boolean =
-      slot.presence < 0
-      || (view.u8(address + (slot.presence >> 3)) & 1 << (slot.presence & 7)) != 0
+      val bit = slot.presence
+      bit < 0 || (view.u8(address + (bit >> 3)) & 1 << (bit & 7)) != 0
 
     private[stratiform] def word(address: Long): Long = view.u32(address)
 
@@ -335,7 +340,8 @@ object Ratel:
             node(chosen.keywordIndex, table, struct, payload)
 
           case Payload.Value(scalar, intern) =>
-            out.add(Tel.Element.Value(chosen.keywordIndex, scalar, text(scalar, bytes(intern, payload))))
+            val value = text(scalar, bytes(intern, payload))
+            out.add(Tel.Element.Value(chosen.keywordIndex, scalar, value))
 
           case Payload.Flag =>
             out.add(Tel.Element.Node(chosen.keywordIndex, Tels.Flag, Array.empty))
@@ -362,10 +368,12 @@ object Ratel:
             case Kind.FlagCount => repeat(word(at))(_ => flag())
 
             case Kind.Inline(scalar, width) => if present(address, slot) then
-              out.add(Tel.Element.Value(slot.keywordIndex, scalar, text(scalar, view.copy(at, width))))
+              val value = text(scalar, view.copy(at, width))
+              out.add(Tel.Element.Value(slot.keywordIndex, scalar, value))
 
             case Kind.Ref(scalar, intern) => if present(address, slot) then
-              out.add(Tel.Element.Value(slot.keywordIndex, scalar, text(scalar, bytes(intern, word(at)))))
+              val value = text(scalar, bytes(intern, word(at)))
+              out.add(Tel.Element.Value(slot.keywordIndex, scalar, value))
 
             case Kind.Packed(scalar, width) =>
               val array = item(false, word(at), width)
@@ -388,7 +396,7 @@ object Ratel:
               val start = word(at)
               val size = word(at + 4)
               if start + size > count(table) then fail(Reason.BadRecordIndex)
-              repeat(size) { number => node(slot.keywordIndex, table, struct, start + number) }
+              repeat(size)(number => node(slot.keywordIndex, table, struct, start + number))
 
             case Kind.Select(variants) =>
               if present(address, slot) then variant(variants, word(at), word(at + 4))
@@ -449,7 +457,9 @@ object Ratel:
     private[stratiform] def key(scalar: Tels.Scalar, text: Text)(using Tactic[Ratel.Error])
     :   Tel.Codec.Encoded =
 
-      scalar.encoding.lay(Tel.Codec.Encoded.Bytes(RatelBytes.utf8(text)): Tel.Codec.Encoded): name =>
+      val plain: Tel.Codec.Encoded = Tel.Codec.Encoded.Bytes(RatelBytes.utf8(text))
+
+      scalar.encoding.lay(plain): name =>
         codecs(name).or(fail(Reason.CodecUnresolved)).encode(text)
 
     // Appends a component of an index key, as it is found by following its path from a
@@ -498,8 +508,8 @@ object Ratel:
       valueHash.let: hash =>
         val recomputed =
           mitigate:
-            case _: Tel.Error    => Error(Reason.ValueHashMismatch)(using errorDiagnostics.emptyDiagnostics)
-            case _: Bintel.Error => Error(Reason.ValueHashMismatch)(using errorDiagnostics.emptyDiagnostics)
+            case _: Tel.Error    => error(Reason.ValueHashMismatch)
+            case _: Bintel.Error => error(Reason.ValueHashMismatch)
 
           . protect(Blake3.hashOf(Bintel.encode(document, schema, codecs), 32))
 
@@ -700,7 +710,9 @@ object Ratel:
       slot.kind match
         case Kind.Packed(scalar, width) =>
           val array = reader.item(false, reader.word(at), width)
-          collect(array.length) { number => reader.text(scalar, reader.copy(array.offset + number*width, width)) }
+
+          collect(array.length): number =>
+            reader.text(scalar, reader.copy(array.offset + number*width, width))
 
         case Kind.Refs(scalar, intern) =>
           val array = reader.item(false, reader.word(at), 4L)
@@ -884,39 +896,39 @@ object Ratel:
   object Error:
     object Reason:
       given communicable: Reason is Communicable =
-        case BadMagic             => m"the file does not begin with the RaTEL magic number"
-        case UnsupportedVersion   => m"the version of the format is not one this reader supports"
-        case ReservedSet          => m"a reserved byte or flag of the header is set"
-        case BadLength            => m"the committed length is not one the file can have"
-        case BadDirectory         => m"a section lies outside the committed length, or is misaligned"
-        case SectionsOverlap      => m"two sections overlap"
-        case DigestMismatch       => m"a section does not match its digest"
-        case BadSignature         => m"the schema signature is not structurally one"
-        case SchemaUndecodable    => m"the embedded schema does not decode"
-        case SignatureMismatch    => m"the embedded schema does not have the signature it carries"
-        case SchemaUnlayoutable   => m"the schema cannot be laid out"
-        case BadTableDirectory    => m"the table directory disagrees with the schema's layout"
-        case BadRootTable         => m"the root table does not have exactly one row"
-        case BadRef               => m"a ref does not denote an item within its region"
-        case BadRecordIndex       => m"a record index lies beyond the end of its table"
-        case RowRevisited         => m"a row is reached twice"
-        case BadTag               => m"a select's tag is not the keyword index of one of its variants"
-        case BadUtf8              => m"a text value is not valid UTF-8"
-        case CodecUnresolved      => m"an encoding which the schema names is not bound to a codec"
-        case CodecDecodeFailed    => m"a codec rejects the bytes of a value"
-        case CodecNoncanonical    => m"the bytes of a value are not those its text encodes to"
-        case WidthMismatch        => m"a value does not have the width its scalar declares"
-        case BadIndex             => m"an index is malformed"
-        case IndexUnsorted        => m"the entries of an index are not in increasing order"
-        case IndexDisagrees       => m"an index disagrees with the rows it indexes"
-        case NonzeroPadding       => m"padding, or the slot of an absent member, is not zero"
-        case ValueHashMismatch    => m"the document does not have the value hash the header carries"
-        case NestingLimitExceeded => m"the document is nested more deeply than a reader will follow"
-        case Unencodable          => m"the document is not one its schema describes"
-        case Oversized            => m"the image is larger than can be held in memory"
-        case Unindexed            => m"the schema declares no index which can answer the lookup"
-        case Unknown(keyword)     => m"the record has no member $keyword"
-        case Absent(keyword)      => m"the member $keyword is absent"
+        case BadMagic              => m"the file does not begin with the RaTEL magic number"
+        case UnsupportedVersion    => m"the version of the format is not one this reader supports"
+        case ReservedSet           => m"a reserved byte or flag of the header is set"
+        case BadLength             => m"the committed length is not one the file can have"
+        case BadDirectory          => m"a section is misaligned, or lies beyond the committed length"
+        case SectionsOverlap       => m"two sections overlap"
+        case DigestMismatch        => m"a section does not match its digest"
+        case BadSignature          => m"the schema signature is not structurally one"
+        case SchemaUndecodable     => m"the embedded schema does not decode"
+        case SignatureMismatch     => m"the embedded schema does not have the signature it carries"
+        case SchemaUnlayoutable    => m"the schema cannot be laid out"
+        case BadTableDirectory     => m"the table directory disagrees with the schema's layout"
+        case BadRootTable          => m"the root table does not have exactly one row"
+        case BadRef                => m"a ref does not denote an item within its region"
+        case BadRecordIndex        => m"a record index lies beyond the end of its table"
+        case RowRevisited          => m"a row is reached twice"
+        case BadTag                => m"a select's tag is not the keyword index of a variant"
+        case BadUtf8               => m"a text value is not valid UTF-8"
+        case CodecUnresolved       => m"an encoding which the schema names is not bound to a codec"
+        case CodecDecodeFailed     => m"a codec rejects the bytes of a value"
+        case CodecNoncanonical     => m"the bytes of a value are not those its text encodes to"
+        case WidthMismatch         => m"a value does not have the width its scalar declares"
+        case BadIndex              => m"an index is malformed"
+        case IndexUnsorted         => m"the entries of an index are not in increasing order"
+        case IndexDisagrees        => m"an index disagrees with the rows it indexes"
+        case NonzeroPadding        => m"padding, or the slot of an absent member, is not zero"
+        case ValueHashMismatch     => m"the document does not have the value hash the header carries"
+        case NestingLimitExceeded  => m"the document is nested more deeply than a reader will follow"
+        case Unencodable           => m"the document is not one its schema describes"
+        case Oversized             => m"the image is larger than can be held in memory"
+        case Unindexed             => m"the schema declares no index which can answer the lookup"
+        case Unknown(keyword)      => m"the record has no member $keyword"
+        case Absent(keyword)       => m"the member $keyword is absent"
         case Inapplicable(keyword) => m"the member $keyword is not of the kind which was asked for"
 
     // The conditions of RaTEL §14, each numbered as its R-code is, followed by those which

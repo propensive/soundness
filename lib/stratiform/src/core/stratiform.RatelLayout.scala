@@ -39,7 +39,6 @@ import contingency.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
 import fulminate.*
-import gossamer.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -151,8 +150,8 @@ private[stratiform] object RatelLayout:
     scalar.encoding.let(StandardCodecs.width(_)).or(scalar.width)
 
   private def builtin(name: Text): Boolean =
-    name == Tels.Builtin.String || name == Tels.Builtin.Identifier
-    || name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
+    val textual = name == Tels.Builtin.String || name == Tels.Builtin.Identifier
+    textual || name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
 
   // A member's type, resolved through the composed namespace.
   private enum Resolved:
@@ -175,19 +174,21 @@ private[stratiform] object RatelLayout:
       case Tels.Flag           => Resolved.Flag
 
       case Tels.Reference(name) =>
-        numbered.seek(_(0).name == name).lay
-          ( schema.scalars.seek(_.name == name).lay
-              ( if builtin(name) then Resolved.Value(Tels.Scalar(Array.empty))
-                else if name == Tels.Builtin.Flag then Resolved.Flag
-                else unlayoutable )
-              ( definition => Resolved.Value(definition.scalar) ) )
-          ( (record, table) =>
-              Resolved.Record(table, record.name, Tels.Struct(record.members, record.validators)) )
+        def predefined: Resolved =
+          if builtin(name) then Resolved.Value(Tels.Scalar(Array.empty))
+          else if name == Tels.Builtin.Flag then Resolved.Flag
+          else unlayoutable
+
+        def scalar: Resolved =
+          schema.scalars.seek(_.name == name).lay(predefined): definition =>
+            Resolved.Value(definition.scalar)
+
+        numbered.seek(_(0).name == name).lay(scalar): (record, table) =>
+          Resolved.Record(table, record.name, Tels.Struct(record.members, record.validators))
 
     // `intern` has no meaning for a value of fixed width (R11).
     def fixed(scalar: Tels.Scalar): Optional[Int] =
-      width(scalar).let: width =>
-        if scalar.intern || width < 1 then unlayoutable else width
+      width(scalar).let { width => if scalar.intern || width < 1 then unlayoutable else width }
 
     def variants(reference: Text, base: Int): List[Variant] =
       val select = schema.selects.seek(_.name == reference).or(unlayoutable)
@@ -197,8 +198,11 @@ private[stratiform] object RatelLayout:
         val payload = resolve(variant.variantType) match
           case Resolved.Record(table, _, struct) => Payload.Record(table, struct)
           case Resolved.Anonymous(_)             => unlayoutable
-          case Resolved.Value(scalar)            => fixed(scalar); Payload.Value(scalar, scalar.intern)
           case Resolved.Flag                     => Payload.Flag
+
+          case Resolved.Value(scalar) =>
+            fixed(scalar)
+            Payload.Value(scalar, scalar.intern)
 
         Variant(keywordIndex, variant.keyword, payload)
 
@@ -243,12 +247,13 @@ private[stratiform] object RatelLayout:
                 else slot(Kind.Flag, true)
 
               case Resolved.Value(scalar) =>
-                fixed(scalar).lay
-                  ( if repeatable then slot(Kind.Refs(scalar, scalar.intern), false)
-                    else slot(Kind.Ref(scalar, scalar.intern), optional) )
-                  ( width =>
-                      if repeatable then slot(Kind.Packed(scalar, width), false)
-                      else slot(Kind.Inline(scalar, width), optional) )
+                def variable: Sketch =
+                  if repeatable then slot(Kind.Refs(scalar, scalar.intern), false)
+                  else slot(Kind.Ref(scalar, scalar.intern), optional)
+
+                fixed(scalar).lay(variable): width =>
+                  if repeatable then slot(Kind.Packed(scalar, width), false)
+                  else slot(Kind.Inline(scalar, width), optional)
 
               case Resolved.Record(table, name, inner) =>
                 if repeatable then slot(Kind.Range(table, inner), false)
@@ -283,7 +288,7 @@ private[stratiform] object RatelLayout:
       val presences: List[Int] = numbers.filter(drafts.get(_).optional)
       val bitmapBytes = (presences.size + 7)/8
       val bits: java.util.HashMap[Int, Int] = java.util.HashMap()
-      presences.zip(List.range(0, presences.size)).each { (number, bit) => bits.put(number, bit) }
+      presences.zip(List.range(0, presences.size)).each(bits.put(_, _))
 
       // Slots are packed by descending alignment, each pass in slot order.
       val offsets: java.util.HashMap[Int, Int] = java.util.HashMap()
@@ -368,8 +373,9 @@ private[stratiform] object RatelLayout:
           slot.kind match
             case Kind.Range(childNumber, _) =>
               val child = arranged.at(childNumber.z).or(unlayoutable)
-              val primary: List[Index] =
-                key(child).lay(Nil)(key => List(Index(number, slot, true, Nil, List(key))))
+
+              val primary: List[Index] = key(child).lay(Nil): key =>
+                List(Index(number, slot, true, Nil, List(key)))
 
 
               val secondary = slot.indexes.map: index =>

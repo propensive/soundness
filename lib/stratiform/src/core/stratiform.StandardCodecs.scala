@@ -85,8 +85,7 @@ private[stratiform] object StandardCodecs:
 
   // The low `width` bytes of a word, most significant first.
   private def bigEndian(word: Long, width: Int): Data =
-    Array.tabulate[Byte](width): index =>
-      (word >>> 8*(width - 1 - index)).toByte
+    Array.tabulate[Byte](width)(index => (word >>> 8*(width - 1 - index)).toByte)
 
   private def digit(char: Char): Boolean = char >= '0' && char <= '9'
 
@@ -124,7 +123,9 @@ private[stratiform] object StandardCodecs:
     def decode(bytes: Data): Decoded =
       if bytes.length != width then Decoded.Failure(t"$name is $width bytes, not ${bytes.length}")
       else
-        val value = bytes.fuse(BigInteger.ZERO)(state.shiftLeft(8).add(BigInteger.valueOf(next & 0xff)))
+        val value = bytes.fuse(BigInteger.ZERO):
+          state.shiftLeft(8).add(BigInteger.valueOf(next & 0xff))
+
         Decoded.Value(value.subtract(bias).toString.tt)
 
   // §6: an IEEE 754 binary64, as its bit pattern with the sign bit inverted, and a negative
@@ -230,6 +231,7 @@ private[stratiform] object StandardCodecs:
       def placed: String =
         plain.indices.map: index =>
           (if hyphens(index) then "-" else "")+plain.substring(index, index + 1)
+
         . mkString
 
       if plain.length != 2*count || !plain.forall(hexadecimal) || placed != string

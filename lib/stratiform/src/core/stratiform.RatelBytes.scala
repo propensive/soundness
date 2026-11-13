@@ -34,7 +34,6 @@ package stratiform
 
 import anticipation.*
 import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // The byte-level vocabulary RaTEL's reader and writer share: its structural integers, its
@@ -127,19 +126,15 @@ private[stratiform] object RatelBytes:
         else if lead >= 0xe0 && lead < 0xf0 then
           val second = if index + 1 < length then data.u8(index + 1) else 0
 
-          val sound =
-            continuation(index + 1) && continuation(index + 2)
-            && (lead != 0xe0 || second >= 0xa0) && (lead != 0xed || second < 0xa0)
-
-          sound && recur(index + 3)
+          val shortest = (lead != 0xe0 || second >= 0xa0) && (lead != 0xed || second < 0xa0)
+          continuation(index + 1) && continuation(index + 2) && shortest && recur(index + 3)
         else if lead >= 0xf0 && lead < 0xf5 then
           val second = if index + 1 < length then data.u8(index + 1) else 0
 
-          val sound =
-            continuation(index + 1) && continuation(index + 2) && continuation(index + 3)
-            && (lead != 0xf0 || second >= 0x90) && (lead != 0xf4 || second < 0x90)
-
-          sound && recur(index + 4)
-        else false
+          val shortest = (lead != 0xf0 || second >= 0x90) && (lead != 0xf4 || second < 0x90)
+          val continued = continuation(index + 1) && continuation(index + 2)
+          continued && continuation(index + 3) && shortest && recur(index + 4)
+        else
+          false
 
     recur(0)
