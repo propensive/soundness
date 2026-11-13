@@ -80,6 +80,16 @@ private[galilei] class SegmentMapped(segment: jlf.MemorySegment) extends zephyri
       jlf.MemorySegment.mismatch(segment, offset, offset + length, heap, 0L, length) == -1L
     }
 
+  def compare(offset: Long, length: Long, data: Data): Int =
+    val other = data.length.toLong
+    // [java-boundary] the heap side of the comparison is read, never written or retained
+    val heap = jlf.MemorySegment.ofArray(Array.unsafeJvm(data)).nn
+    val differ = jlf.MemorySegment.mismatch(segment, offset, offset + length, heap, 0L, other)
+
+    if differ == -1L then 0
+    else if differ == length || differ == other then java.lang.Long.compare(length, other)
+    else u8(offset + differ) - (data.readUnchecked(differ.toInt) & 0xff)
+
 // A whole-file, read-only mapping: the segment's memory belongs to `arena`, and is unmapped
 // -- deterministically, rather than whenever the garbage collector notices -- by closing it.
 private[galilei] class SegmentMapping(arena: jlf.Arena, segment: jlf.MemorySegment)

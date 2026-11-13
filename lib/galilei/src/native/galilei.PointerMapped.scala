@@ -94,6 +94,19 @@ private[galilei] class PointerMapped(base: Ptr[Byte], extent: Long) extends zeph
       index == length
     }
 
+  def compare(offset: Long, length: Long, data: Data): Int =
+    check(offset, length)
+    val other = data.length
+    val common = if length < other then length.toInt else other
+    var index = 0
+    var order = 0
+
+    while order == 0 && index < common do
+      order = byte(offset + index) - (data.readUnchecked(index) & 0xff)
+      index += 1
+
+    if order != 0 then order else java.lang.Long.compare(length, other.toLong)
+
 // A whole-file, read-only mapping, from `mmap` until `munmap`.
 private[galilei] class PointerMapping(base: Ptr[Byte], extent: Long)
 extends PointerMapped(base, extent), FilesystemBackend.Mapping:
