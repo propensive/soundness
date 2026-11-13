@@ -106,7 +106,7 @@ object Mapped:
 
     def copy(offset: Long, length: Int): Data =
       val base = at(offset, length.toLong)
-      Array.tabulate[Byte](length) { index => data.readUnchecked(base + index) }
+      Array.tabulate[Byte](length) { index => data.u8(base + index).toByte }
 
     def same(offset: Long, data2: Data): Boolean =
       offset >= 0L && offset <= extent - data2.length

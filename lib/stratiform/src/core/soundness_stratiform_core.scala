@@ -34,10 +34,10 @@ package soundness
 
 export
   stratiform
-  . { Bintel, SchemaResolver, SchemaSignature,
+  . { Bintel, Ratel, SchemaResolver, SchemaSignature,
       Stratiform, Tel, Telp, Tel2, Tel3, Tel4, TelReader, Tels, Tels2, Varint, bintel,
       bintelDocument, documents,
-      fulfil, retract, tel, telp, valueHash }
+      fulfil, ratel, retract, tel, telp, valueHash }
 
 // The `@assign` annotation as a type alone: an export of the class would also export its
 // constructor proxy, a term `assign`, which would hide anamnesis's `assign` method in `soundness`.

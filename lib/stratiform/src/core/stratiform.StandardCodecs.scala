@@ -38,6 +38,7 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 import zephyrine.*
 
@@ -91,7 +92,7 @@ private[stratiform] object StandardCodecs:
 
   // `"0" | [1-9][0-9]*`: the one rendering of a natural number.
   private def natural(string: String): Boolean =
-    string == "0" || !string.isEmpty && string.charAt(0) != '0' && string.forall(digit)
+    string == "0" || !string.isEmpty && !string.startsWith("0") && string.forall(digit)
 
   // §4 and §5: an integer of `width` bytes, big-endian, a signed one offset by half its range
   // so that the negative values sort below the others.
@@ -122,7 +123,9 @@ private[stratiform] object StandardCodecs:
 
     def decode(bytes: Data): Decoded =
       if bytes.length != width then Decoded.Failure(t"$name is $width bytes, not ${bytes.length}")
-      else Decoded.Value(BigInteger(1, Array.unsafeJvm(bytes)).subtract(bias).toString.tt)
+      else
+        val value = bytes.fuse(BigInteger.ZERO)(state.shiftLeft(8).add(BigInteger.valueOf(next & 0xff)))
+        Decoded.Value(value.subtract(bias).toString.tt)
 
   // §6: an IEEE 754 binary64, as its bit pattern with the sign bit inverted, and a negative
   // value's other bits inverted too, so that the bytes sort numerically.
@@ -200,7 +203,7 @@ private[stratiform] object StandardCodecs:
   private def shortest(value: Double, digits: String, n: Int): (String, Int) =
     if digits.length != 2 then (digits, n) else
       val exact = java.math.BigDecimal(value)
-      val low = digits.charAt(0) - '0'
+      val low = Integer.parseInt(digits.substring(0, 1))
 
       def candidate(digit: Int): Optional[(java.math.BigDecimal, (String, Int))] =
         val single: (String, Int) = if digit == 10 then ("1", n + 1) else (digit.toString, n)
@@ -215,7 +218,6 @@ private[stratiform] object StandardCodecs:
           if order < 0 || order == 0 && low%2 == 0 then lower(1) else upper(1)
 
   private def hexadecimal(char: Char): Boolean = digit(char) || char >= 'a' && char <= 'f'
-  private val alphabet: String = "0123456789abcdef"
 
   // Lowercase hexadecimal digits, with a hyphen before each of the digit positions in
   // `hyphens`, as `count` bytes in the order they are written.
@@ -224,21 +226,17 @@ private[stratiform] object StandardCodecs:
       val string = text.s
       val plain = string.filter(_ != '-')
 
-      def placed: Boolean =
-        val rebuilt = StringBuilder()
+      // The digits as they are written, a hyphen before each position which takes one.
+      def placed: String =
+        plain.indices.map: index =>
+          (if hyphens(index) then "-" else "")+plain.substring(index, index + 1)
+        . mkString
 
-        plain.indices.foreach: index =>
-          if hyphens(index) then rebuilt.append('-')
-          rebuilt.append(plain.charAt(index))
-
-        rebuilt.toString == string
-
-      if plain.length != 2*count || !plain.forall(hexadecimal) || !placed
+      if plain.length != 2*count || !plain.forall(hexadecimal) || placed != string
       then Encoded.Invalid(t"the text is not a canonical $name")
       else Encoded.Bytes:
         Array.tabulate[Byte](count): index =>
-          val high = alphabet.indexOf(plain.charAt(2*index))
-          (high << 4 | alphabet.indexOf(plain.charAt(2*index + 1))).toByte
+          Integer.parseInt(plain.substring(2*index, 2*index + 2), 16).toByte
 
     def decode(bytes: Data): Decoded =
       if bytes.length != count
@@ -249,7 +247,7 @@ private[stratiform] object StandardCodecs:
         (0 until count).foreach: index =>
           if hyphens(2*index) then builder.append('-')
           val byte = bytes.u8(index)
-          builder.append(alphabet.charAt(byte >> 4)).append(alphabet.charAt(byte & 15))
+          builder.append(Integer.toHexString(byte | 0x100).substring(1))
 
         Decoded.Value(builder.toString.tt)
 

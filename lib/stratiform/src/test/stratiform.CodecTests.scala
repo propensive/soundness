@@ -354,7 +354,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
 
 
       def hex(data: Data): Text =
-        data.stdlib.map { byte => "%02X".format(byte & 0xff) }.mkString.tt
+        data.fuse("")(state+"%02X".format(next & 0xff)).tt
 
       def encoded(name: Text, text: Text): Text = codec(name).encode(text) match
         case Tel.Codec.Encoded.Bytes(data)      => hex(data)
@@ -454,8 +454,8 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
 
       test(m"the bytes of integers sort as the integers do"):
         val texts = List(t"-9223372036854775808", t"-300", t"-1", t"0", t"1", t"255", t"256")
-        val bytes = texts.map(encoded(t"i64", _)).stdlib
-        bytes.zip(bytes.tail).forall { (left, right) => left.s.compareTo(right.s) < 0 }
+        val bytes = texts.map(encoded(t"i64", _))
+        bytes.fuse((t"", true))((next, state(1) && state(0).s.compareTo(next.s) < 0))(1)
       . assert(_ == true)
 
       test(m"a name which is not a standard codec does not resolve"):

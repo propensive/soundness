@@ -218,6 +218,42 @@ extension (element: Tel.Element)
 
     element.bintel(schema, codecs).digest[Blake3]
 
+extension (tel: Tel)
+  // This document as a RaTEL image (RaTEL §10), for reading in place from a mapped file. The
+  // schema is given as it is declared, layers and all, and is carried in the image. Scalars
+  // with a declared encoding are stored as the bytes of a codec: one of those this module
+  // defines, or one which `codecs` binds.
+  def ratel(schema: Tels)(using Tactic[Tel.Error], Tactic[Ratel.Error]): Ratel =
+    tel.ratel(schema, Tel.Codec.Bindings.all)
+
+  def ratel(schema: Tels, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Tel.Error], Tactic[Ratel.Error] )
+  :   Ratel =
+
+    val composed = Tels.Layers.compose(schema)
+    val element = Tel.Type.assign(tel, composed, Tel.Validator.Registry.builtins, codecs)
+    Ratel.encode(element, schema, codecs)
+
+extension (element: Tel.Element)
+  // A semantic model, already assigned under the composed form of `schema`, as a RaTEL image.
+  def ratel(schema: Tels)(using Tactic[Tel.Error], Tactic[Ratel.Error]): Ratel =
+    Ratel.encode(element, schema)
+
+  def ratel(schema: Tels, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Tel.Error], Tactic[Ratel.Error] )
+  :   Ratel =
+
+    Ratel.encode(element, schema, codecs)
+
+extension [value: Tel.Encodable](value: value)
+  // Any value as a RaTEL image, under the schema derived from its type.
+  def ratel
+    ( using value is TelSchematic over Tels.Type )
+    ( using Tactic[Tel.Error], Tactic[Ratel.Error] )
+  :   Ratel =
+
+    value.encode.ratel(Tels.tels[value](t"root"))
+
 extension [value: Tel.Encodable](value: value)
   // Encode any value to BinTEL body bytes, deriving the schema from its type:
   // `value.bintel` is `value.encode.bintel(Tels.tels[value](…))`. The schema name is

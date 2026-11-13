@@ -36,6 +36,7 @@ import java.lang.foreign as jlf
 import java.nio as jn
 
 import anticipation.*
+import zephyrine.u8
 
 private[galilei] object SegmentMapped:
   private val littleEndian: jn.ByteOrder = jn.ByteOrder.LITTLE_ENDIAN.nn
@@ -71,24 +72,25 @@ private[galilei] class SegmentMapped(segment: jlf.MemorySegment) extends zephyri
     jlf.MemorySegment.copy(segment, SegmentMapped.Byte, offset, array.raw, 0, length)
     Array.freeze(array)
 
+  // [java-boundary] the heap side of a comparison is read, never written or retained
+  private def heap(data: Data): jlf.MemorySegment =
+    jlf.MemorySegment.ofArray(Array.unsafeJvm(data)).nn
+
   def same(offset: Long, data: Data): Boolean =
     val length = data.length.toLong
 
-    offset >= 0L && offset + length <= size && {
-      // [java-boundary] the heap side of the comparison is read, never written or retained
-      val heap = jlf.MemorySegment.ofArray(Array.unsafeJvm(data)).nn
-      jlf.MemorySegment.mismatch(segment, offset, offset + length, heap, 0L, length) == -1L
-    }
+    offset >= 0L && offset + length <= size
+    && jlf.MemorySegment.mismatch(segment, offset, offset + length, heap(data), 0L, length) == -1L
 
   def compare(offset: Long, length: Long, data: Data): Int =
     val other = data.length.toLong
-    // [java-boundary] the heap side of the comparison is read, never written or retained
-    val heap = jlf.MemorySegment.ofArray(Array.unsafeJvm(data)).nn
-    val differ = jlf.MemorySegment.mismatch(segment, offset, offset + length, heap, 0L, other)
+
+    val differ =
+      jlf.MemorySegment.mismatch(segment, offset, offset + length, heap(data), 0L, other)
 
     if differ == -1L then 0
     else if differ == length || differ == other then java.lang.Long.compare(length, other)
-    else u8(offset + differ) - (data.readUnchecked(differ.toInt) & 0xff)
+    else u8(offset + differ) - data.u8(differ.toInt)
 
 // A whole-file, read-only mapping: the segment's memory belongs to `arena`, and is unmapped
 // -- deterministically, rather than whenever the garbage collector notices -- by closing it.
