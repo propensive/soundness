@@ -110,8 +110,8 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
     // opened, and rows are found, read and decoded within the block which lends the reader.
     suite(m"reading a RaTEL image in place"):
       val schema: Tels =
-        t"name troupe\n\nrecord Player\n  field name String key\n  field part String optional\n\ndocument\n  field player Player repeatable\n"
-        . read[Tel].as[Tels]
+        val player = t"record Player\n  field name String key\n  field part String optional\n"
+        t"name troupe\n\n$player\ndocument\n  field player Player repeatable\n".read[Tel].as[Tels]
 
       val troupe: Tel = t"player Bottom\n  part Pyramus\nplayer Snug\n".read[Tel]
       val image: Ratel = troupe.ratel(schema)

@@ -188,7 +188,6 @@ object Ratel:
         val overlap = left.offset < right.end && right.offset < left.end
         if occupied && overlap then fail(Reason.SectionsOverlap)
 
-
     val digests = if (flags & 1) != 0 then RatelBytes.digests else 0
     if digestsExtent.length != digests then fail(Reason.DigestMismatch)
     if schemaExtent.length > Int.MaxValue then fail(Reason.SchemaUndecodable)
@@ -460,7 +459,7 @@ object Ratel:
               val start = word(at)
               val size = word(at + 4)
               if start + size > count(table) then fail(Reason.BadRecordIndex)
-              repeat(size)(number => node(slot.keywordIndex, table, struct, start + number))
+              repeat(size) { number => node(slot.keywordIndex, table, struct, start + number) }
 
             case Kind.Select(variants) =>
               if present(address, slot) then variant(variants, word(at), word(at + 4))
@@ -680,7 +679,11 @@ object Ratel:
 
     import Error.Reason
 
-    private def address(using reader: Reader^, tactic: Tactic[Ratel.Error]): Long = reader.address(table, index)
+    private def address
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Long =
+
+      reader.address(table, index)
 
     // What a keyword names in this record: a member with a slot, a flattened struct, or a
     // variant of a select, together with the slot of the select.
@@ -707,7 +710,8 @@ object Ratel:
       found.head.or(fail(Reason.Unknown(keyword)))
 
     // The payload of a select's slot, if `variant` is the one chosen.
-    private def chosen(slot: Slot, variant: RatelLayout.Variant)(using reader: Reader^, tactic: Tactic[Ratel.Error])
+    private def chosen(slot: Slot, variant: RatelLayout.Variant)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
     :   Optional[Long] =
 
       val at = address + slot.offset
@@ -716,13 +720,21 @@ object Ratel:
       else reader.word(at + 4)
 
     // Whether a member which is not repeatable is present: always, if it is required.
-    def has(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Boolean = lookup(keyword) match
+    def has(keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Boolean =
+
+      lookup(keyword) match
       case Found.Member(slot)          => reader.present(address, slot)
       case Found.Choice(slot, variant) => chosen(slot, variant).present
       case Found.Inner(entry)          => true
 
     // The bytes of a scalar member, as they are stored: UTF-8, or the bytes of its codec.
-    def data(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Data = lookup(keyword) match
+    def data(keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Data =
+
+      lookup(keyword) match
       case Found.Member(slot) =>
         if !reader.present(address, slot) then fail(Reason.Absent(keyword))
         else reader.load(address, slot)
@@ -737,7 +749,10 @@ object Ratel:
       case Found.Inner(entry) =>
         fail(Reason.Inapplicable(keyword))
 
-    private def scalar(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Tels.Scalar =
+    private def scalar(keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Tels.Scalar =
+
       lookup(keyword) match
         case Found.Member(slot) => slot.kind match
           case Kind.Inline(scalar, _) => scalar
@@ -790,7 +805,10 @@ object Ratel:
 
     // Whether a repeatable scalar member has `value` among its values: by its index, if the
     // schema declares one, and by reading each value otherwise.
-    def holds(keyword: Text, value: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Boolean =
+    def holds(keyword: Text, value: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Boolean =
+
       val slot = lookup(keyword) match
         case Found.Member(slot) => slot
         case _                  => fail(Reason.Inapplicable(keyword))
@@ -807,7 +825,11 @@ object Ratel:
             !reader.search(number, probe).nil
 
     // How many times a flag occurs: for one which is not repeatable, once or not at all.
-    def count(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Long = lookup(keyword) match
+    def count(keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Long =
+
+      lookup(keyword) match
       case Found.Member(slot) => slot.kind match
         case Kind.Always    => 1L
         case Kind.Flag      => if reader.present(address, slot) then 1L else 0L
@@ -821,7 +843,11 @@ object Ratel:
       case Found.Inner(entry) =>
         fail(Reason.Inapplicable(keyword))
 
-    def flag(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Boolean = count(keyword) > 0L
+    def flag(keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Boolean =
+
+      count(keyword) > 0L
 
     // A struct member which is not repeatable, if it is present.
     def record(keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Optional[Row] =
@@ -851,7 +877,11 @@ object Ratel:
             fail(Reason.Inapplicable(keyword))
 
     // The records of a repeatable struct member. Nothing of them is read until one is.
-    def / (keyword: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): Rows = lookup(keyword) match
+    def / (keyword: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   Rows =
+
+      lookup(keyword) match
       case Found.Member(slot) => slot.kind match
         case Kind.Range(child, struct) =>
           val start = reader.word(address + slot.offset)
@@ -872,7 +902,10 @@ object Ratel:
 
     // This record as a value of a type which is read from TEL. Only this record's rows, and
     // those it refers to, are read.
-    def as[value: Tel.Decodable](using reader: Reader^, tactic: Tactic[Ratel.Error], decoding: Tactic[Tel.Error]): value =
+    def as[value: Tel.Decodable]
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error], decoding: Tactic[Tel.Error] )
+    :   value =
+
       Bintel.present(materialise(), reader.schema.copy(document = struct)).as[value]
 
   // The records of a repeatable member of one record: a run of consecutive rows of a table,
@@ -916,7 +949,10 @@ object Ratel:
         RatelBytes.u32be(out, parent)
         RatelBytes.component(out, bytes, fixed)
 
-    private def primary(using reader: Reader^, tactic: Tactic[Ratel.Error]): (RatelLayout.Index, Int) =
+    private def primary
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   (RatelLayout.Index, Int) =
+
       reader.indexesAt(host, slot).seek(_(0).primary).or(fail(Reason.Unindexed))
 
     private def lookup(index: RatelLayout.Index, number: Int, value: Text)
@@ -946,7 +982,10 @@ object Ratel:
 
     // The records for which the scalar at `path` has the value `value`, found through the
     // first index declared over the member whose first path it is.
-    def where(path: Text, value: Text)(using reader: Reader^, tactic: Tactic[Ratel.Error]): List[Row] =
+    def where(path: Text, value: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+    :   List[Row] =
+
       def telp(path: Text): Telp = safely(Telp.parse(path)).or(Telp(List(path)))
 
       val (index, number) =
@@ -964,7 +1003,7 @@ object Ratel:
         case UnsupportedVersion    => m"the version of the format is not one this reader supports"
         case ReservedSet           => m"a reserved byte or flag of the header is set"
         case BadLength             => m"the committed length is not one the file can have"
-        case BadDirectory          => m"a section is misaligned, or lies beyond the committed length"
+        case BadDirectory          => m"a section is misaligned or lies beyond the committed length"
         case SectionsOverlap       => m"two sections overlap"
         case DigestMismatch        => m"a section does not match its digest"
         case BadSignature          => m"the schema signature is not structurally one"
@@ -986,14 +1025,14 @@ object Ratel:
         case IndexUnsorted         => m"the entries of an index are not in increasing order"
         case IndexDisagrees        => m"an index disagrees with the rows it indexes"
         case NonzeroPadding        => m"padding, or the slot of an absent member, is not zero"
-        case ValueHashMismatch     => m"the document does not have the value hash the header carries"
-        case NestingLimitExceeded  => m"the document is nested more deeply than a reader will follow"
+        case ValueHashMismatch     => m"the document does not have the value hash in its header"
+        case NestingLimitExceeded  => m"the document is nested more deeply than a reader may follow"
         case Unencodable           => m"the document is not one its schema describes"
         case Oversized             => m"the image is larger than can be held in memory"
         case Unindexed             => m"the schema declares no index which can answer the lookup"
         case Unknown(keyword)      => m"the record has no member $keyword"
         case Absent(keyword)       => m"the member $keyword is absent"
-        case Unwritable            => m"an image is read-only, and is replaced by publishing another"
+        case Unwritable            => m"an image is read-only and is replaced by publishing another"
         case Inapplicable(keyword) => m"the member $keyword is not of the kind which was asked for"
 
     // The conditions of RaTEL §14, each numbered as its R-code is, followed by those which
