@@ -112,12 +112,14 @@ object Dissector extends Diagnostician:
   // within the predicate's source.
   private case class Node(id: Int, parent: Int, start: Int, end: Int)
 
-  // A site's compiled diagnosis: the function, the subexpressions it records, and the names of
-  // the captured locals it takes, in the order it takes them.
+  // A site's compiled diagnosis: the function, the subexpressions it records, the names of the
+  // captured locals it takes, in the order it takes them, and the number of the subexpression
+  // which is the predicate's parameter — the value which failed.
   private case class Compiled
     ( function: (Any, scala.Array[Any], Recorder) => Boolean,
       nodes:    scala.List[Node],
-      locals:   scala.List[String] )
+      locals:   scala.List[String],
+      subject:  Int )
 
   private class Unsupported(val reason: String) extends java.lang.RuntimeException(reason)
 
@@ -130,13 +132,16 @@ object Dissector extends Diagnostician:
 
   // `-Yretain-trees` is what makes the compiler keep the trees of the classes it loads from
   // TASTy: without it a class's `rootTree` is empty.
+  // The rest are the options this build compiles with (see `diagnosis` in `build.mill`):
+  // the inline methods a diagnosis expands were written for them.
   // The loader which defined this class is the suite's own (or one that sees everything it
   // sees), which is where the diagnosis must be compiled and loaded: the values it is applied
   // to are instances of that loader's classes.
   // A compiler which has failed to compile a diagnosis is not used again.
   private def makeCompiler(): staging.Compiler =
     staging.Compiler.make(getClass.getClassLoader.nn)
-      ( using staging.Compiler.Settings.make(None, scala.List("-experimental", "-Yretain-trees")) )
+      ( using staging.Compiler.Settings.make
+                (None, "-Yretain-trees" :: DissectorOptions.options) )
 
   private var compiler: staging.Compiler | Null = null
 
@@ -222,13 +227,17 @@ object Dissector extends Diagnostician:
                   TestEvent.DissectRow
                     ( depth(node), code(node), node.start, node.end, text, "value".tt )
 
-      val dissection: scala.List[Verdict.Detail] =
-        if rows.isEmpty then scala.Nil
-        else if request.has(Diagnosis.Presentation.Dissect) && rows.length > 1
-        then scala.List(Verdict.Detail.Dissection(site.source, List.from(rows), reproducible))
-        else scala.List(Verdict.Detail.Message(rows.last.value))
-
       val comparison: scala.List[Verdict.Detail] = recorder.comparison.lay(scala.Nil)(scala.List(_))
+
+      // Without a dissection, and with no comparison to show it, the value which failed is
+      // given on its own.
+      val dissection: scala.List[Verdict.Detail] =
+        if request.has(Diagnosis.Presentation.Dissect) && rows.length > 1
+        then scala.List(Verdict.Detail.Dissection(site.source, List.from(rows), reproducible))
+        else if !comparison.isEmpty then scala.Nil
+        else recorder.values.get(compiled.subject) match
+          case null       => scala.Nil
+          case text: Text => scala.List(Verdict.Detail.Message(text))
 
       List.from(comparison ++ dissection)
 
@@ -257,12 +266,14 @@ object Dissector extends Diagnostician:
 
     var nodes: scala.List[Node] = scala.Nil
     var locals: scala.List[String] = scala.Nil
+    var subject: Int = -1
 
     val function = staging.run[(Any, scala.Array[Any], Recorder) => Boolean]:
       import quotes.reflect.*
 
       nodes = scala.Nil
       locals = scala.Nil
+      subject = -1
 
       val context = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
       val owner: String = site.owner.s
@@ -323,12 +334,24 @@ object Dissector extends Diagnostician:
         def before(tree: Tree): Boolean =
           try tree.pos.end <= site.start catch case error: Throwable => false
 
+        // A wildcard selector is not replayed. It imports no givens, which are all that is
+        // wanted here; what it does import are old-style implicits, and one of those — the
+        // umbrella's diagnostic catch-all — outranks every instance in implicit scope and
+        // cannot be expanded where a diagnosis is compiled.
         def imports(statements: scala.List[Tree]): scala.List[Statement] =
-          statements.collect:
+          statements.flatMap:
             case tree@Import(_, _) if before(tree) =>
               val original = tree.asInstanceOf[tpd.Import]
 
-              tpd.Import(original.expr, original.selectors)(using context2).asInstanceOf[Statement]
+              val selectors = original.selectors.filter: selector =>
+                selector.isGiven || !selector.isWildcard
+
+              if selectors.isEmpty then scala.Nil else
+                scala.List:
+                  tpd.Import(original.expr, selectors)(using context2).asInstanceOf[Statement]
+
+            case _ =>
+              scala.Nil
 
         def givens(symbol: Symbol): scala.List[Statement] =
           val reference = Ref(symbol).asInstanceOf[tpd.Tree]
@@ -472,8 +495,10 @@ object Dissector extends Diagnostician:
                       else throw Unsupported("the predicate refers to an enclosing instance")
 
                     case Ident(_) if term.symbol == parameterSymbol =>
-                      if depth == Depth.Value then live(term)
-                      else record(fresh(parent, term), live(term))
+                      if depth == Depth.Value then live(term) else
+                        val id = fresh(parent, term)
+                        if subject < 0 then subject = id
+                        record(id, live(term))
 
                     case Ident(_) if local(term.symbol) && !within(term.symbol) =>
                       if term.symbol.flags.is(Flags.Method)
@@ -506,6 +531,7 @@ object Dissector extends Diagnostician:
                 val instrumented: Term =
                   if depth == Depth.Value then
                     val id = fresh(-1, parameter)
+                    subject = id
                     val identity: Term = Ref(parameterSymbol)
                     Block(scala.List(record(id, live(identity))), Literal(BooleanConstant(false)))
                   else unwrap(body2) match
@@ -563,4 +589,4 @@ object Dissector extends Diagnostician:
               }
         }
 
-    Compiled(function, nodes.reverse, locals)
+    Compiled(function, nodes.reverse, locals, subject)

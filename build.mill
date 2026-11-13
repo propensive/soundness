@@ -2994,6 +2994,21 @@ object probably extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
+    // The staged compilation of a diagnosis expands inline methods written for this build's
+    // compiler options — the fork's opt-in behaviours and the language features — so it must
+    // run with them: without `-Zdiagnostic-givens`, for one, a derivation which resolves here
+    // does not resolve there. They are compiled in, so the engine and the libraries cannot
+    // disagree; warnings, and options which name a path, are left out.
+    def generatedSources = Task:
+      val options = settings.scalaOptions.filter: option =>
+        option.startsWith("-Z") || option.startsWith("-language:") ||
+          Set("-experimental", "-preview", "-Yno-flexible-types", "-Yexplicit-nulls")(option)
+      val literals = options.map("\"" + _ + "\"").mkString("scala.List(\n    ", ",\n    ", ")\n")
+      val source =
+        "package probably\n\nprivate[probably] object DissectorOptions:\n" +
+          "  val options: scala.List[String] =\n    " + literals
+      os.write.over(Task.dest / "probably" / "probably.DissectorOptions.scala", source, createFolders = true)
+      Seq(PathRef(Task.dest))
 
   object test extends Tests(cli):
     override def scalacOptions = Task:
