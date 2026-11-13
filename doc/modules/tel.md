@@ -560,6 +560,34 @@ val role = file.open[Ratel]():
   (ratel.root / t"role").find(t"Hamlet").let(_.as[Role])
 ```
 
+An object which extends `Ratel.Provider` with a schema reads the records of an image without
+a case class for each. It gives the root of an open image as a record whose members are those
+of the schema's document, each typed as the schema types it, and each read in place when it is
+selected:
+
+<!-- doccheck: skip -->
+```scala
+object Cast extends Ratel.Provider(castSchema)
+
+file.open[Ratel]():
+  val cast = Cast()
+  val hamlet = cast.role(t"Hamlet")            // an optional record, by its key
+  val play: Optional[Text] = hamlet.let(_.play)
+  val lines: Optional[Long] = hamlet.let(_.lines)
+  val comedy = cast.role.where(t"/play", t"Twelfth Night")
+```
+
+A scalar reads as `Text`, or as `Int`, `Long` or `Double` if its encoding is a standard codec
+whose every value one of them holds exactly, as `u32` is by `Long`. A flag is a `Boolean`, and
+a repeatable flag the `Long` number of times it occurs. A struct is a nested record, a
+repeatable scalar a `List`, and a repeatable struct a `Ratel.Table`, which has the `size`,
+`each`, `sorted` and `where` of a `Ratel.Rows`, and is applied to a key or a position. Each
+variant of a select is a member which is absent unless it is the one chosen, and a member
+which is optional is an `Optional`. A member the schema does not declare is not a member of
+the record, and does not compile. The provider's object must be compiled before the code
+which uses it, so it is written in a file of its own. Opening an image which was written with
+another schema raises a `Ratel.Error`, of `Mismatched`.
+
 A reader which opens a file it did not write trusts nothing in it: every offset is checked
 before it is followed, and a fault is raised as a `Ratel.Error`, by the access which meets it,
 while other records remain readable. The reader's `verify` checks the whole image at once, its

@@ -86,6 +86,9 @@ private[stratiform] object RatelShape:
     if visited.has(table) then Unset
     else layout.table(table).let { plan => fields(layout, plan.entries, table :: visited) }
 
+  private def one(scalar: Tels.Scalar, arity: Arity): Shape =
+    Shape.Value(primitive(scalar), arity)
+
   private def fields(layout: Layout, entries: List[Entry], visited: List[Int])
   :   List[(Text, Shape)] =
 
@@ -99,14 +102,10 @@ private[stratiform] object RatelShape:
         slot.kind match
           case Kind.Always | Kind.Flag => List(slot.keyword -> Shape.Flag)
           case Kind.FlagCount          => List(slot.keyword -> Shape.Count)
-          case Kind.Inline(scalar, _)  => List(slot.keyword -> Shape.Value(primitive(scalar), arity))
-          case Kind.Ref(scalar, _)     => List(slot.keyword -> Shape.Value(primitive(scalar), arity))
-
-          case Kind.Packed(scalar, _) =>
-            List(slot.keyword -> Shape.Value(primitive(scalar), Arity.Many))
-
-          case Kind.Refs(scalar, _) =>
-            List(slot.keyword -> Shape.Value(primitive(scalar), Arity.Many))
+          case Kind.Inline(scalar, _)  => List(slot.keyword -> one(scalar, arity))
+          case Kind.Ref(scalar, _)     => List(slot.keyword -> one(scalar, arity))
+          case Kind.Packed(scalar, _)  => List(slot.keyword -> one(scalar, Arity.Many))
+          case Kind.Refs(scalar, _)    => List(slot.keyword -> one(scalar, Arity.Many))
 
           case Kind.Record(table, _) =>
             List(slot.keyword -> Shape.Nested(struct(layout, table, visited), !slot.required))

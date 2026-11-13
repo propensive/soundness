@@ -39,6 +39,7 @@ import contingency.*
 import fulminate.*
 import prepositional.*
 import proscenium.List
+import rudiments.*
 import vacuous.*
 
 // The macro behind `Ratel.Provider`, apart from `internal`, whose imports are the standard
@@ -107,8 +108,7 @@ object ratelInternal:
 
     def record(fields: Optional[List[(Text, Shape)]]): TypeRepr =
       fields.lay(plain): fields =>
-        fields.stdlib.foldLeft(plain): (refined, field) =>
-          Refinement(refined, field(0).s, typeOf(field(1)))
+        fields.fuse(plain)(Refinement(state, next(0).s, typeOf(next(1))))
 
     def typeOf(shape: Shape): TypeRepr = shape match
       case Shape.Flag  => TypeRepr.of[Boolean]
