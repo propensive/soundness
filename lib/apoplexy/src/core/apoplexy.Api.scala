@@ -66,9 +66,11 @@ object Api:
   transparent inline def apply(inline resource: Resource, base: HttpUrl): Any =
     ${Apoplexy.rootAt('resource, 'base)}
 
-  // A relative server URL (`/api/v3`) appended to a caller's base
+  // A relative server URL (`/api/v3`) appended to a caller's base; the server begins with the
+  // one `/` that joins them, so a base which ends in its own gives that one up.
   def extend(base: HttpUrl, server: Text): HttpUrl =
-    Url(base.origin, t"${base.location}$server", base.query, base.fragment)
+    val location = if base.location.ends(t"/") then base.location.skip(1, Rtl) else base.location
+    Url(base.origin, t"$location$server", base.query, base.fragment)
 
   def make(apiRequest: Api.Request): Api = new Api:
     def request: Api.Request = apiRequest
