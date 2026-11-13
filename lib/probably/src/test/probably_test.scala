@@ -204,6 +204,99 @@ object Tests extends Suite("testing", m"Probably Tests"):
         == String.format("%06x", Int.box(hash & 0xffffff)).nn.tt
       . assert(_ == true)
 
+    suite(m"Coverage"):
+      test(m"a unit is recompiled from its TASTy without problems"):
+        Probed.plan.problems.map(_.tt).to(List)
+      . assert(_ == Nil)
+
+      test(m"a probe goes at each kind of branch"):
+        Probed.kinds.map(_.tt).to(List)
+      . assert(_ == List(t"and", t"case", t"catch", t"class", t"else", t"loop", t"method", t"then"))
+
+      test(m"a unit is found by the source file it was compiled from"):
+        Probed.sourced.units.map(_.name.tt).to(List)
+      . assert(_ == List(t"probably.Casket", t"probably.Lottery"))
+
+      test(m"a second plan for the same units finds the same probes"):
+        Probed.sourced.units.flatMap(_.probes) == Probed.probes
+      . assert(_ == true)
+
+      test(m"a term which names nothing is a problem"):
+        Probed.absent.problems.map(_.tt).to(List)
+      . assert(_ == List(t"no class or source file on the classpath matches probably.Nerissa"))
+
+      // Coverage is on from here: the tests below read what they themselves reached, so they
+      // open the collectors a host would leave to the runner, and drain first what anything
+      // before them left behind.
+      test(m"a test is credited with what it reaches and nothing else"):
+        Instrumenter.activate(getClass.getClassLoader.nn)
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+        val portia = Coverage.enter("portia")
+        casket.choose(1)
+        Coverage.exit(portia)
+        val bassanio = Coverage.enter("bassanio")
+        casket.risky(0)
+        casket.sum(2)
+        Coverage.exit(bassanio)
+        val reached = Probed.drained()
+        (reached("portia").map(_.tt).to(List), reached("bassanio").map(_.tt).to(List))
+      . assert: reached =>
+          reached ==
+            ( List(t"case:choose", t"else:choose", t"method:choose"),
+              List(t"catch:risky", t"loop:sum", t"method:risky", t"method:sum") )
+
+      test(m"a thread started by a test is credited to the test"):
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+        val nerissa = Coverage.enter("nerissa")
+        casket.delegate(3)
+        Coverage.exit(nerissa)
+        Probed.drained()("nerissa").map(_.tt).to(List)
+      . assert(_.has(t"case:choose"))
+
+      // Nothing a test does on its own thread is outside a test — this one's body is inside
+      // the bracket of the runner which is running it — so what is credited to no test is
+      // seen here, on a thread which has outlived the test which started it.
+      test(m"a thread which outlives its test is credited to none"):
+        val casket: Lottery = Probed.make(5)
+        val gate: juc.CountDownLatch = juc.CountDownLatch(1)
+        val done: juc.CountDownLatch = juc.CountDownLatch(1)
+        Probed.drained()
+        val gratiano = Coverage.enter("gratiano")
+        casket.defer(3, gate, done)
+        Coverage.exit(gratiano)
+        gate.countDown()
+        done.await()
+        val reached = Probed.drained()
+
+        ( reached("gratiano").map(_.tt).to(List).has(t"case:choose"),
+          reached("").map(_.tt).to(List).has(t"case:choose") )
+      . assert(_ == (false, true))
+
+      test(m"a test run twice is credited with the union"):
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+
+        List(1, 6).each: value =>
+          val shylock = Coverage.enter("shylock")
+          casket.choose(value)
+          Coverage.exit(shylock)
+
+        Probed.drained()("shylock").map(_.tt).to(List)
+      . assert: reached =>
+          reached ==
+            List(t"and:choose", t"case:choose", t"else:choose", t"method:choose", t"then:choose")
+
+      test(m"the runner credits a test's body to the test, by its key"):
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+        Chooser(() => casket.choose(1)).invoke(t"", event => ())
+
+        Probed.drained().toList.filter(_(0).startsWith("chooser/lead#"))
+        . map(_(1).map(_.tt).to(List)).to(List)
+      . assert(_ == List(List(t"case:choose", t"else:choose", t"method:choose")))
+
     suite(m"The plain runner"):
       // `Probe` fails two of its tests on purpose, so the status is 1.
       test(m"A suite's tests are printed one per line, with a summary, and the status answered"):

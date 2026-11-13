@@ -440,6 +440,7 @@ lib/probably/src/core/probably.Report.scala	0	0	4	0	0	0	0	0	0	0	3	0	0	0	2	0	0
 lib/probably/src/core/probably.Runner.scala	1	0	8	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/probably/src/core/probably.Tag.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/probably/src/events/probably.Streamer.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
+lib/probably/src/instrument/probably.Instrumenter.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/profanity/src/core/profanity.Interaction.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/profanity/src/core/profanity.Keyboard.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0
 lib/profanity/src/core/profanity.Terminal.scala	1	0	3	0	0	0	0	0	1	0	0	0	0	0	0	0	0

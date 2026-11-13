@@ -46,6 +46,11 @@ import vacuous.*
 object Runner:
   private[probably] val harness: Scoped[Harness] = Scoped()
 
+  // The name a test's coverage is recorded under: the path of its `TestEvent.Ref`, and its id.
+  private def coverageName(id: Test.Id): String =
+    if !Coverage.enabled then "" else
+      TestEvent.Ref.of(id).key.s
+
   // `workers` overrides the selection's count (see `Suite.workers`): a suite may ask for more
   // than the host offered, never for queueing the host did not ask for.
   def apply[report](selection: Selection = Selection.all, workers0: Optional[Int] = Unset)
@@ -311,6 +316,12 @@ object Runner:
       reporter.started(report, test.id, false)
 
       val context = Harness()
+
+      // Whatever instrumented code this thread reaches, and the threads it starts reach, until
+      // the bracket closes is this test's (see `Coverage`). The name is the one a host derives
+      // from the test's `TestEvent.Ref`; unless a host has asked for coverage, it is not even
+      // computed.
+      val coverage: Coverage.Collector | Null = Coverage.enter(Runner.coverageName(test.id))
       val ns0 = System.nanoTime
 
       Runner.harness(context):
@@ -331,6 +342,7 @@ object Runner:
         // The bracket closes whatever escaped — an `Error` in the body must not leave the test
         // among the active ones that a termination reports.
         finally
+          Coverage.exit(coverage)
           mutex { active = active.filter(_ != test.id) }
           reporter.ended(report, test.id, false)
 

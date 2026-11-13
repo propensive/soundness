@@ -876,7 +876,8 @@ object soundness extends Fork:
 
   object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
     tarantula.image,
-    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, probably.diagnosis, superlunary.jvm, mandible.core):
+    superlunary.core, yossarian.core, probably.coverage, probably.core, probably.cli,
+    probably.events, probably.diagnosis, probably.instrument, superlunary.jvm, mandible.core):
     def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core, degustation.tasty,
@@ -2960,7 +2961,12 @@ object proscenium extends Library:
       settings.sep(super.scalacOptions())
 
 object probably extends Library:
-  object core extends Component(hypotenuse.check, chiaroscuro.core, digression.core,
+  // What coverage-instrumented classes write to (`probably.Coverage`): beneath proscenium, and
+  // written against the JDK alone, because the classes which call it may be any at all,
+  // including those every other component is built on.
+  object coverage extends BareComponent()
+
+  object core extends Component(coverage, hypotenuse.check, chiaroscuro.core, digression.core,
       kaleidoscope.core, nomenclature.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3010,7 +3016,29 @@ object probably extends Library:
       os.write.over(Task.dest / "probably" / "probably.DissectorOptions.scala", source, createFolders = true)
       Seq(PathRef(Task.dest))
 
-  object test extends Tests(cli):
+  // What recompiles classes from their TASTy with coverage probes (`probably.Instrumenter`),
+  // for a host which runs tests. It depends on the compiler and on nothing else, `coverage`
+  // included: the probes it writes are calls a classpath resolves, not ones it links to.
+  object instrument extends BareComponent():
+    override def scalaJs = false // drives the compiler
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+    // A recompiled class must be what the original compilation would have generated, so the
+    // recompilation runs with this build's options, compiled in as `diagnosis` compiles its
+    // own in: every option which can change generated code or how an inline method expands.
+    def generatedSources = Task:
+      val options = settings.scalaOptions.filter: option =>
+        option.startsWith("-Z") || option.startsWith("-language:") ||
+          Set("-experimental", "-preview", "-Yno-flexible-types", "-Yexplicit-nulls")(option)
+      val literals =
+        (options ++ Seq("-Xmax-inlines", "64")).map("\"" + _ + "\"").mkString("List(\n    ", ",\n    ", ")\n")
+      val source =
+        "package probably\n\nprivate[probably] object InstrumenterOptions:\n" +
+          "  val options: List[String] =\n    " + literals
+      os.write.over(Task.dest / "probably" / "probably.InstrumenterOptions.scala", source, createFolders = true)
+      Seq(PathRef(Task.dest))
+
+  object test extends Tests(cli, instrument):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
