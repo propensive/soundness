@@ -348,6 +348,120 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         (invoice.amount.value, invoice.memo)
       . assert(_ == (300L, t"lunch"))
 
+    suite(m"Standard codecs"):
+      def codec(name: Text): Tel.Codec =
+        Tel.Codec.Bindings.standard(name).or(throw IllegalArgumentException(name.s))
+
+
+      def hex(data: Data): Text =
+        data.stdlib.map { byte => "%02X".format(byte & 0xff) }.mkString.tt
+
+      def encoded(name: Text, text: Text): Text = codec(name).encode(text) match
+        case Tel.Codec.Encoded.Bytes(data)      => hex(data)
+        case Tel.Codec.Encoded.Invalid(message) => t"invalid"
+
+      def decoded(name: Text, text: Text): Text = codec(name).encode(text) match
+        case Tel.Codec.Encoded.Invalid(message) => t"invalid"
+
+        case Tel.Codec.Encoded.Bytes(data) => codec(name).decode(data) match
+          case Tel.Codec.Decoded.Value(text)      => text
+          case Tel.Codec.Decoded.Failure(message) => t"failure"
+
+      val vectors: List[(Text, Text, Text)] = List
+        ( (t"u8", t"0", t"00"),
+          (t"u8", t"255", t"FF"),
+          (t"u16", t"256", t"0100"),
+          (t"u32", t"4294967295", t"FFFFFFFF"),
+          (t"u64", t"1", t"0000000000000001"),
+          (t"u64", t"18446744073709551615", t"FFFFFFFFFFFFFFFF"),
+          (t"i8", t"-128", t"00"),
+          (t"i8", t"-1", t"7F"),
+          (t"i8", t"0", t"80"),
+          (t"i8", t"127", t"FF"),
+          (t"i16", t"-32768", t"0000"),
+          (t"i16", t"32767", t"FFFF"),
+          (t"i64", t"-9223372036854775808", t"0000000000000000"),
+          (t"i64", t"-1", t"7FFFFFFFFFFFFFFF"),
+          (t"i64", t"0", t"8000000000000000"),
+          (t"i64", t"9223372036854775807", t"FFFFFFFFFFFFFFFF"),
+          (t"f64", t"0", t"8000000000000000"),
+          (t"f64", t"-0", t"7FFFFFFFFFFFFFFF"),
+          (t"f64", t"1", t"BFF0000000000000"),
+          (t"f64", t"-1", t"400FFFFFFFFFFFFF"),
+          (t"f64", t"0.1", t"BFB999999999999A"),
+          (t"f64", t"0.5", t"BFE0000000000000"),
+          (t"f64", t"100", t"C059000000000000"),
+          (t"f64", t"0.000001", t"BEB0C6F7A0B5ED8D"),
+          (t"f64", t"1e-7", t"BE7AD7F29ABCAF48"),
+          (t"f64", t"1e+21", t"C44B1AE4D6E2EF50"),
+          (t"f64", t"123456789012345680000", t"C41AC53A7E04BCDA"),
+          (t"f64", t"3.141592653589793", t"C00921FB54442D18"),
+          (t"f64", t"5e-324", t"8000000000000001"),
+          (t"f64", t"1.7976931348623157e+308", t"FFEFFFFFFFFFFFFF"),
+          (t"f64", t"Infinity", t"FFF0000000000000"),
+          (t"f64", t"-Infinity", t"000FFFFFFFFFFFFF"),
+          (t"uuid", t"00000000-0000-0000-0000-000000000000", t"00000000000000000000000000000000"),
+          (t"uuid", t"0192b1c2-3d4e-7f5a-8b6c-9d0e1f2a3b4c", t"0192B1C23D4E7F5A8B6C9D0E1F2A3B4C"),
+          (t"uuid", t"ffffffff-ffff-ffff-ffff-ffffffffffff", t"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+          ( t"blake3-256",
+            t"ed8e981cd770b7d75067e05dfd87d8b5c37e97763872febf513c125ab1a8b245",
+            t"ED8E981CD770B7D75067E05DFD87D8B5C37E97763872FEBF513C125AB1A8B245" ) )
+
+      test(m"every normative vector encodes to its bytes"):
+        vectors.map { (name, text, bytes) => encoded(name, text) }
+      . assert(_ == vectors.map(_(2)))
+
+      test(m"every normative vector decodes back to its text"):
+        vectors.map { (name, text, bytes) => decoded(name, text) }
+      . assert(_ == vectors.map(_(1)))
+
+      val rejected: List[(Text, Text)] = List
+        ( (t"u8", t"256"), (t"u8", t"007"), (t"u8", t"+1"), (t"u8", t"-0"), (t"u8", t"1 "),
+          (t"u8", t""), (t"u64", t"18446744073709551616"), (t"i8", t"-0"), (t"i8", t"128"),
+          (t"i8", t"-129"), (t"i16", t"--1"), (t"f64", t"1.0"), (t"f64", t"01"), (t"f64", t"1e5"),
+          (t"f64", t".5"), (t"f64", t"1E5"), (t"f64", t"+1"), (t"f64", t"1e+05"),
+          (t"f64", t"0.10"), (t"f64", t"100000.0"), (t"f64", t"NaN"), (t"f64", t"1e999"),
+          (t"uuid", t"0192B1C2-3D4E-7F5A-8B6C-9D0E1F2A3B4C"),
+          (t"uuid", t"0192b1c23d4e7f5a8b6c9d0e1f2a3b4c"),
+          (t"uuid", t"0192b1c2-3d4e7f5a-8b6c-9d0e-1f2a3b4c"),
+          ( t"blake3-256",
+            t"ED8E981CD770B7D75067E05DFD87D8B5C37E97763872FEBF513C125AB1A8B245" ),
+          (t"blake3-256", t"ed8e98") )
+
+      test(m"a text which is not canonical is rejected"):
+        rejected.map(encoded(_, _))
+      . assert(_ == rejected.map { pair => t"invalid" })
+
+      test(m"plain renderings of binary64 values are accepted"):
+        List(t"1", t"100000", t"0.5", t"0.1").map(decoded(t"f64", _))
+      . assert(_ == List(t"1", t"100000", t"0.5", t"0.1"))
+
+      test(m"a subnormal value rounds up into the next power of ten"):
+        decoded(t"f64", t"1e-323")
+      . assert(_ == t"1e-323")
+
+      test(m"bytes of the wrong width are rejected"):
+        codec(t"u32").decode(bytesOf(0x00, 0x01)) match
+          case Tel.Codec.Decoded.Failure(message) => true
+          case Tel.Codec.Decoded.Value(text)      => false
+      . assert(_ == true)
+
+      test(m"the bytes of a NaN are rejected"):
+        codec(t"f64").decode(bytesOf(0xff, 0xf8, 0, 0, 0, 0, 0, 0)) match
+          case Tel.Codec.Decoded.Failure(message) => true
+          case Tel.Codec.Decoded.Value(text)      => false
+      . assert(_ == true)
+
+      test(m"the bytes of integers sort as the integers do"):
+        val texts = List(t"-9223372036854775808", t"-300", t"-1", t"0", t"1", t"255", t"256")
+        val bytes = texts.map(encoded(t"i64", _)).stdlib
+        bytes.zip(bytes.tail).forall { (left, right) => left.s.compareTo(right.s) < 0 }
+      . assert(_ == true)
+
+      test(m"a name which is not a standard codec does not resolve"):
+        Tel.Codec.Bindings.standard(t"u128").absent
+      . assert(_ == true)
+
 // Fixtures for the staged encoded-scalar tests: a scalar type whose BinTEL
 // form is the `decimal-varint` codec's bytes, declared once via the
 // `Tel.Encoded` marker — the schema derivation and the staged parser both
