@@ -36,8 +36,8 @@ detail
     substitution broken down to the field which changed. `Similarity` is the pluggable notion
     of "similar enough to pair up" for that refinement.
 
-    The probably test framework calls `contrast` on the two sides of a failed `_ == expected`
-    assertion, records the `Juxtaposition` as a `Verdict.Detail.Compare`, and flattens it to
+    The probably test framework's diagnosis engine calls `contrast` on the two sides of a
+    failed equality, when a host asks for one, records the `Juxtaposition` as a `Verdict.Detail.Compare`, and flattens it to
     `TestEvent.CompareRow`s for a host; `Harness#capture` records a `decompose`d value.
 
     The library has two components. `chiaroscuro.core` (JVM, Scala.js and Scala Native) is

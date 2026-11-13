@@ -221,6 +221,39 @@ a different name, or a record with the same identifier and a changed field. Wher
 the two are shown as one substitution, broken down to the field which changed, and not as
 two unrelated entries which the reader must pair up.
 
+### Diagnosing a failure
+
+Nothing about how a failure will be shown is decided when a test is compiled. Most
+assertions pass, so working out how to render each one's value, on every compilation, would
+be paid for thousands of times to serve the few which fail. An assertion records only where
+its predicate is written.
+
+When a predicate fails, the runner reads it back from the compiled suite, and evaluates it
+once more on the value which failed, recording each intermediate value on the way. The
+test's body is not run again. For a predicate such as `x => x*2 < 9 && x*y > 4`, with `x`
+and `y` both 2, the report is the tree of its subexpressions:
+
+```
+x*2 < 9 && x*y > 4   false
+x*2 < 9              true
+x*2                  4
+x                    2
+           x*y > 4   false
+           x*y       4
+           x         2
+             y       2
+```
+
+This is what makes a failing property legible: the counterexample is shown together with
+everything that was computed from it. A predicate which is an equality is also shown as a
+contrast of its two sides.
+
+Each value is rendered by whichever instance is found for its type at that moment, an
+`Inspectable` or a `Showable`. A suite supplies one in the type's companion, by an import
+above the assertion, or as a given of the object which the suite is written in, and need
+not know whether a runner will ask for it. A suite is asked for a diagnosis with the
+selection term `--diagnose=dissect,contrast,inspect`.
+
 ### Asserting that code does not compile
 
 `demilitarize` compiles the code which it encloses and, instead of failing the build,
