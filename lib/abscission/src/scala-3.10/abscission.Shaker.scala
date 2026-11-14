@@ -1,0 +1,878 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package abscission
+
+import scala.collection.mutable
+
+import dotty.tools.dotc.*
+import ast.tpd, tpd.*
+import core.*, Constants.*, Contexts.*, Decorators.*, Denotations.staticRef
+import core.DenotTransformers.IdentityDenotTransformer
+import core.Flags.*, NameKinds.*, NameOps.*, Names.*, Phases.Phase, StdNames.*, Symbols.*, Types.*
+import fromtasty.{TASTYCompilationUnit, TASTYCompiler, TASTYRun}
+import reporting.{Diagnostic, Reporter, StoreReporter}
+import transform.{MegaPhase, ResolveSuper}
+import dotty.tools.io.AbstractFile
+
+// Recompiles a closed world of classes from the TASTy a classpath holds for them, leaving out
+// whatever nothing can reach from a set of roots. It is ProGuard's job, done where the compiler
+// still knows what the code means: before the phases which generate a trait's forwarders, a
+// lazy value's plumbing or a bridge, so that none of those is generated for a member which is
+// not kept, and none needs a rule to keep it.
+//
+// TASTy is what the compiler had before it inlined anything, so a recompilation inlines again
+// and runs every macro again; what can be reached is only known afterwards. The analysis
+// therefore sits between the phases which do that and the ones which transform the trees, and
+// it reads units as it finds it needs them: a unit nothing reaches is never read, and the
+// macros in it never run.
+object Shaker:
+  // Something to keep, as bytecode would name it: `owner` is a class's binary name with dots
+  // (`fume.Selection$`, or `fume.Selection` for the static side of an object), and `member` the
+  // name of a method or field of it — empty for the class itself, which is then one that may
+  // be instantiated by reflection. `whole` keeps every member of the class.
+  final case class Root(owner: String, member: String, whole: Boolean)
+
+  final case class Problem(file: String, line: Int, message: String)
+
+  // What a run did: the units it read, of those it could have; the classes it left trees for,
+  // and how many of those are only shells, with no initialization code; and the members it
+  // kept and removed in those classes.
+  final case class Tally
+    ( units:      Int,
+      classes:    Int,
+      shells:     Int,
+      discarded:  Int,
+      members:    Int,
+      removed:    Int )
+
+  // `dynamic` are the classes named in `Class.forName` calls the analysis reached, which
+  // bytecode does not otherwise refer to.
+  final case class Outcome(problems: List[Problem], tally: Tally, dynamic: List[String])
+
+  // The compiler this is: what a TASTy file's `tooling` must equal for the file to be one this
+  // can recompile compatibly.
+  def compiler: String = "Scala "+config.Properties.simpleVersionString
+
+  // Recompiles every unit, removing nothing.
+  def recompile
+    ( units: List[String], classpath: List[String], output: String, options: List[String] )
+  :   Outcome =
+
+    drive(new Plan(units.toSet, Nil, false), units, classpath, output, options)
+
+  // Recompiles what the roots reach, of the units in `universe`: each is the name of a
+  // top-level class with TASTy on the classpath (`fume.Selection` for `fume/Selection.tasty`).
+  def shake
+    ( universe:  List[String],
+      roots:     List[Root],
+      classpath: List[String],
+      output:    String,
+      options:   List[String] )
+  :   Outcome =
+
+    drive(new Plan(universe.toSet, roots, true), Nil, classpath, output, options)
+
+  private def drive
+    ( plan:      Plan,
+      initial:   List[String],
+      classpath: List[String],
+      output:    String,
+      options:   List[String] )
+  :   Outcome =
+
+    val reporter: StoreReporter = new StoreReporter(null)
+    java.nio.file.Files.createDirectories(java.nio.file.Path.of(output))
+
+    val driver: Driver = new Driver:
+      override protected def sourcesRequired: Boolean = false
+
+      override protected def newCompiler(using Context): Compiler = new ShakeCompiler(plan, initial)
+
+      // The units are named by class, not by file, so there are no files to ask for.
+      override protected def doCompile(compiler: Compiler, files: List[AbstractFile])
+        ( using Context )
+      :   Reporter =
+
+        super.doCompile(compiler, List(new dotty.tools.io.VirtualFile("units", new Array[Byte](0))))
+
+    val arguments: List[String] =
+      List("-from-tasty", "-nowarn", "-d", output, "-classpath")
+      ::: List(classpath.mkString(java.io.File.pathSeparator.nn))
+      ::: ShakerOptions.options
+      ::: options
+
+    // The compiler recurses deeply, and whichever thread a host calls from was not sized for it.
+    var failure: Throwable | Null = null
+
+    val compilation: Runnable = () =>
+      try driver.process(arguments.toArray, reporter)
+      catch case error: Throwable => failure = error
+
+    val thread: Thread = new Thread(null, compilation, "abscission-shaker", 512L*1024*1024)
+
+    thread.start()
+    thread.join()
+
+    val crashed: Throwable | Null = failure
+
+    val problems: List[Problem] =
+      reporter.allErrors.map(describe) ++
+        (if crashed == null then Nil else List(Problem("", 0, "the compiler failed: "+trace(crashed))))
+
+    Outcome(problems, plan.tally, plan.dynamic.toList.sorted)
+
+  private def trace(error: Throwable): String =
+    val writer: java.io.StringWriter = new java.io.StringWriter()
+    error.printStackTrace(new java.io.PrintWriter(writer))
+    writer.toString
+
+  private def describe(diagnostic: Diagnostic): Problem =
+    val position = diagnostic.pos
+
+    if position.exists then Problem(position.source.path, position.line + 1, diagnostic.message)
+    else Problem("", 0, diagnostic.message)
+
+  // What the phases of one run share: what was asked for, and what the analysis found.
+  private class Plan(val universe: Set[String], val roots: List[Root], val prune: Boolean):
+    val kept: mutable.HashSet[Symbol] = mutable.HashSet()
+    val deleted: mutable.HashSet[Symbol] = mutable.HashSet()
+    val dynamic: mutable.HashSet[String] = mutable.HashSet()
+    var tally: Tally = Tally(0, 0, 0, 0, 0, 0)
+
+    private val tiers: mutable.HashMap[Symbol, Boolean] = mutable.HashMap()
+
+    // The name of the unit which defines a top-level class, as its TASTy file has it: with
+    // whatever a file name cannot hold encoded, as the dot is in the name of the object which
+    // holds the top-level definitions of a file `proscenium.List.scala`.
+    def unit(top: Symbol)(using Context): String = top.fullName.mangledString.stripSuffix("$")
+
+    // Whether a symbol is defined in a unit which this run may read and recompile.
+    def loadable(symbol: Symbol)(using Context): Boolean =
+      symbol.exists && !symbol.is(Package) && locally:
+        val top: Symbol = symbol.topLevelClass
+        top.exists && tiers.getOrElseUpdate(top, universe.contains(unit(top)))
+
+  private class ShakeCompiler(plan: Plan, initial: List[String]) extends TASTYCompiler:
+    // The checks of overriding are of source: a class which is kept without a member it once
+    // had to define would fail them, and no class can be newly wrong.
+    override protected def transformPhases: List[List[Phase]] =
+      val phases: List[List[Phase]] = super.transformPhases.map: group =>
+        group.map:
+          case _: typer.RefChecks => new Unchecked
+          case phase              => phase
+
+      if plan.prune then List(new Shake(plan)) :: phases else List(new Bare) :: phases
+
+    override protected def backendPhases: List[List[Phase]] =
+      if plan.prune then List(new Verify(plan)) :: super.backendPhases else super.backendPhases
+
+    override protected def frontendPhases: List[List[Phase]] =
+      super.frontendPhases :+ List(new Restore)
+
+    override def newRun(using Context): Run =
+      reset()
+      new ShakeRun(this, ctx.addMode(Mode.ReadPositions), initial)
+
+  private class ShakeRun(compiler: Compiler, context: Context, initial: List[String])
+  extends TASTYRun(compiler, context):
+    override def compile(files: List[AbstractFile]): Unit =
+      compileUnits(initial.map(new TASTYCompilationUnit(_)))
+
+  private class Unchecked extends MegaPhase.MiniPhase:
+    override def phaseName: String = typer.RefChecks.name
+    override def description: String = "the place of the checks of overriding, which are of source"
+    override def runsAfter: Set[String] = Set(transform.ElimRepeated.name)
+
+  // Proscala 1.1.3 marks the sequence wildcard of a pattern read from TASTy as a backquoted
+  // identifier (propensive/proscala#43), which the pattern matcher then compares the scrutinee
+  // with; this takes the mark off again. It is wanted after inlining, since a pattern may
+  // have come from the body of an inline method of another unit.
+  private val unmarking: TreeTraverser = new TreeTraverser:
+    def traverse(tree: Tree)(using Context): Unit = tree match
+      case tree: Ident if tree.name == nme.WILDCARD_STAR => tree.removeAttachment(ast.Trees.Backquoted)
+      case _                                             => traverseChildren(tree)
+
+  // A unit which was compiled with capture checking is one the later phases generate different
+  // code for, and TASTy records that it was, where a compilation from source would have found
+  // it in the unit's imports or the options. Restoring it for each unit lets one run recompile
+  // units which were checked beside units which were not. One decision is made for a whole
+  // run, though: a given alias is not simplified to a method if any unit of the run is checked,
+  // so a unit which was not checked, and is recompiled beside one that was, keeps a cached
+  // alias where it had a method. The two behave alike.
+  private def restore(unit: CompilationUnit)(using Context): Unit =
+    unit.tastyInfo.foreach: info =>
+      if info.attributes.captureChecked then
+        unit.needsCaptureChecking = true
+        ctx.run.nn.ccEnabledSomewhere = true
+
+      if info.attributes.withPureFuns then unit.knowsPureFuns = true
+
+  // Has no class written with its TASTy: what is emitted is for running, not for compiling
+  // against.
+  private class Bare extends Phase:
+    def phaseName: String = "bare"
+
+    protected def run(using Context): Unit =
+      unmarking.traverse(ctx.compilationUnit.tpdTree)
+      ctx.compilationUnit.pickled = Map.empty
+
+  // Restores what TASTy records of how a unit was compiled, before anything is inlined into it.
+  private class Restore extends Phase:
+    def phaseName: String = "restore"
+
+    protected def run(using Context): Unit = restore(ctx.compilationUnit)
+
+  private class Shake(plan: Plan) extends Phase, IdentityDenotTransformer:
+    def phaseName: String = "shake"
+    override def changesMembers: Boolean = true
+
+    protected def run(using Context): Unit = ()
+
+    override def runOn(units: List[CompilationUnit])(using Context): List[CompilationUnit] =
+      new Analysis(plan, this).run(units)
+
+  // Fails the compilation if anything which is left refers to a member that was removed, or to
+  // a member of a class that was: a later phase wrote a reference the analysis did not foresee,
+  // which would otherwise be a `NoSuchMethodError` when the code ran.
+  private class Verify(plan: Plan) extends Phase:
+    def phaseName: String = "shakeVerify"
+
+    protected def run(using Context): Unit = ()
+
+    override def runOn(units: List[CompilationUnit])(using Context): List[CompilationUnit] =
+      val emitted: mutable.HashSet[Symbol] = mutable.HashSet()
+
+      val collector: TreeTraverser = new TreeTraverser:
+        def traverse(tree: Tree)(using Context): Unit = tree match
+          case tree: TypeDef if tree.isClassDef =>
+            emitted += tree.symbol
+            traverseChildren(tree)
+
+          case _: PackageDef | _: Template | _: Block | _: DefDef | _: ValDef =>
+            traverseChildren(tree)
+
+          case _ =>
+            ()
+
+      val checker: TreeTraverser = new TreeTraverser:
+        private var within: Symbol = NoSymbol
+
+        private def check(tree: Tree)(using Context): Unit =
+          val symbol: Symbol = tree.symbol
+
+          if symbol.exists && symbol.isTerm then
+            val owner: Symbol = symbol.owner
+
+            val lost: Boolean =
+              plan.deleted.contains(symbol) ||
+                owner.isClass && !owner.is(Package) && !emitted.contains(owner) &&
+                  plan.loadable(owner)
+
+            if lost then
+              report.error
+                ( em"""${within.showLocated} refers to ${symbol.showLocated}, which was removed:
+                      |a phase after the analysis wrote the reference, and the analysis has no
+                      |rule which foresees it""",
+                  tree.srcPos )
+
+        def traverse(tree: Tree)(using Context): Unit = tree match
+          case tree: (DefDef | TypeDef) =>
+            val within0: Symbol = within
+            within = tree.symbol
+            try traverseChildren(tree) finally within = within0
+
+          case tree: (Ident | Select) =>
+            if tree.isTerm then check(tree)
+            traverseChildren(tree)
+
+          case _ =>
+            traverseChildren(tree)
+
+      units.foreach { unit => collector.traverse(unit.tpdTree) }
+      units.foreach { unit => checker.traverse(unit.tpdTree)(using ctx.fresh.setCompilationUnit(unit)) }
+      units
+
+  // The names the pattern matcher selects from the result of an extractor.
+  private val extractions: List[String] =
+    List("isEmpty", "get", "lengthCompare", "length", "apply", "drop", "toSeq", "toList")
+
+  // The names which serialization finds by reflection.
+  private val serializations: List[String] =
+    List("writeReplace", "readResolve", "writeObject", "readObject", "readObjectNoData")
+
+  private class Analysis(plan: Plan, phase: Shake):
+    // What each class and member is defined by, in the units read so far. A class which is
+    // local to a method is defined by neither: it is part of the method's body.
+    private val templates: mutable.HashMap[Symbol, TypeDef] = mutable.HashMap()
+    private val definitions: mutable.HashMap[Symbol, ValOrDefDef] = mutable.HashMap()
+    private val units: mutable.ArrayBuffer[CompilationUnit] = mutable.ArrayBuffer()
+    private val read: mutable.HashSet[String] = mutable.HashSet()
+    private val wanted: mutable.LinkedHashSet[String] = mutable.LinkedHashSet()
+
+    // Members whose bodies run, and classes whose initialization does.
+    private val live: mutable.HashSet[Symbol] = mutable.HashSet()
+    private val instantiated: mutable.HashSet[Symbol] = mutable.HashSet()
+    private val initialized: mutable.HashSet[Symbol] = mutable.HashSet()
+    private val pending: mutable.ArrayDeque[Symbol] = mutable.ArrayDeque()
+    private val parked: mutable.ArrayBuffer[Symbol] = mutable.ArrayBuffer()
+
+    // For each class, the classes instantiated which inherit from it, and the members of it
+    // which are called and may be overridden; and likewise the classes kept, and the super
+    // accessors, which each class that mixes a trait in must implement.
+    private val instances: mutable.HashMap[Symbol, mutable.ArrayBuffer[Symbol]] = mutable.HashMap()
+    private val targets: mutable.HashMap[Symbol, mutable.ArrayBuffer[Symbol]] = mutable.HashMap()
+    private val called: mutable.HashSet[Symbol] = mutable.HashSet()
+    private val mixers: mutable.HashMap[Symbol, mutable.ArrayBuffer[Symbol]] = mutable.HashMap()
+    private val accessors: mutable.HashMap[Symbol, mutable.ArrayBuffer[Symbol]] = mutable.HashMap()
+
+    private val foreign: mutable.HashMap[Symbol, Set[Name]] = mutable.HashMap()
+    private val candidates: mutable.HashMap[Symbol, List[Symbol]] = mutable.HashMap()
+    private val reflective: mutable.HashSet[Name] = mutable.HashSet()
+
+    def run(initial: List[CompilationUnit])(using Context): List[CompilationUnit] =
+      initial.foreach(index)
+      plan.roots.foreach(seed)
+      drain()
+
+      if ctx.reporter.hasErrors then units.toList else
+        val pruned: List[CompilationUnit] = units.toList.filter(prune)
+
+        plan.tally =
+          plan.tally.copy
+            ( units   = read.size,
+              classes = templates.keysIterator.count(plan.kept.contains),
+              shells  =
+                templates.keysIterator.count: symbol =>
+                  plan.kept.contains(symbol) && !initialized.contains(symbol),
+              discarded = templates.keysIterator.count(!plan.kept.contains(_)) )
+
+        pruned
+
+    // Units
+
+    private def index(unit: CompilationUnit)(using Context): Unit =
+      units += unit
+      unmarking.traverse(unit.tpdTree)
+
+      def member(tree: Tree): Unit = tree match
+        case tree: PackageDef =>
+          tree.stats.foreach(member)
+
+        case tree: TypeDef if tree.isClassDef =>
+          templates(tree.symbol) = tree
+          val template: Template = tree.rhs.asInstanceOf[Template]
+          definitions(template.constr.symbol) = template.constr
+          template.body.foreach(member)
+
+        case tree: ValOrDefDef =>
+          definitions(tree.symbol) = tree
+
+        case _ =>
+          ()
+
+      def top(tree: Tree): Unit = tree match
+        case tree: PackageDef                  => tree.stats.foreach(top)
+        case tree: TypeDef if tree.isClassDef  => read += plan.unit(tree.symbol)
+        case _                                 => ()
+
+      top(unit.tpdTree)
+      member(unit.tpdTree)
+
+    // The unit which defines a top-level class and its companion, read from its TASTy.
+    private def unit(name: String)(using Context): Option[CompilationUnit] =
+      def made(symbol: Symbol): Option[CompilationUnit] = symbol match
+        case symbol: ClassSymbol if symbol.exists =>
+          val tree: Tree = symbol.rootTree
+          if tree.isEmpty then None else Some(CompilationUnit(symbol.classDenot, tree, forceTrees = true))
+
+        case _ =>
+          None
+
+      staticRef(name.toTypeName, generateStubs = false) match
+        case denotation: SymDenotations.ClassDenotation =>
+          made(denotation.symbol).orElse(made(denotation.symbol.linkedClass))
+
+        case _ =>
+          staticRef(name.toTypeName.moduleClassName, generateStubs = false) match
+            case denotation: SymDenotations.ClassDenotation => made(denotation.symbol)
+            case _                                          => None
+
+    // Reads the units which are wanted, and takes them through the phases the first units
+    // have been through: the ones which inline, and so run macros.
+    private def load()(using Context): Unit =
+      val names: List[String] = wanted.toList.filterNot(read.contains)
+      wanted.clear()
+      read ++= names
+
+      var fresh: List[CompilationUnit] = names.flatMap: name =>
+        val found: Option[CompilationUnit] = unit(name)
+        if found.isEmpty then report.error(em"the unit $name could not be read from its TASTy")
+        found.foreach(restore)
+        found
+
+      val earlier: List[Phase] =
+        ctx.base.allPhases.toList.takeWhile(_ ne phase).filter: earlier =>
+          earlier.phaseName != "readTasty" && earlier.phaseName != "restore"
+
+      earlier.foreach: earlier =>
+        if earlier.isRunnable then fresh = earlier.runOn(fresh)
+
+      fresh.foreach(index)
+
+    private def drain()(using Context): Unit =
+      var continue: Boolean = true
+
+      while continue do
+        while pending.nonEmpty do
+          val symbol: Symbol = pending.removeHead()
+
+          if !read.contains(plan.unit(symbol.topLevelClass)) then
+            parked += symbol
+            wanted += plan.unit(symbol.topLevelClass)
+          else if symbol.isClass then initialize(symbol)
+          else body(symbol)
+
+        if wanted.nonEmpty && !ctx.reporter.hasErrors then
+          load()
+          pending ++= parked
+          parked.clear()
+        else continue = false
+
+    // Roots
+
+    // The classes a binary name may stand for: a class, and the class of an object, whose
+    // static side has the name without the `$`.
+    private def named(binary: String)(using Context): List[Symbol] =
+      def top(name: String): List[Symbol] =
+        List(staticRef(name.toTypeName, generateStubs = false).symbol)
+        . filter { symbol => symbol.exists && symbol.isClass && !symbol.is(Package) }
+
+      def module(name: String): List[Symbol] =
+        List(staticRef(name.toTypeName.moduleClassName, generateStubs = false).symbol)
+        . filter { symbol => symbol.exists && symbol.isClass }
+
+      def nested(name: String): List[Symbol] =
+        val cut: Int = name.lastIndexOf('$', name.length - 2)
+
+        if cut <= 0 then Nil else
+          val inner: String = name.substring(cut + 1).nn
+
+          named(name.substring(0, cut).nn).flatMap: outer =>
+            val simple: TermName = inner.stripSuffix("$").toTermName.decode.toTermName
+            val member: Symbol = outer.info.decl(simple.toTypeName).symbol
+            val value: Symbol = outer.info.decl(simple).symbol
+
+            List(member).filter { symbol => symbol.exists && symbol.isClass && !inner.endsWith("$") } :::
+              List(value).filter(_.is(Module)).map(_.moduleClass)
+
+      val direct: List[Symbol] =
+        if binary.endsWith("$") then module(binary.dropRight(1)) else top(binary) ::: module(binary)
+
+      // A classpath gives every class file a symbol in its package, so a nested class is
+      // found by its binary name too, as a class which is nothing; only one which turns out
+      // to be defined in a unit is of any use, and that is for the caller to tell.
+      (direct ::: nested(binary)).distinct
+
+    // Whether a member may be compiled to something of a given name: itself, or one of the
+    // members the compiler derives from it, whose names begin or end with its own.
+    private def compiles(symbol: Symbol, name: String)(using Context): Boolean =
+      val own: String = symbol.name.mangledString
+
+      name == own || name.startsWith(own+"$") || name.endsWith("$$"+own) ||
+        name.contains("$$"+own+"$") || name == own+"_$eq"
+
+    private def seed(root: Shaker.Root)(using Context): Unit =
+      named(root.owner).filter(plan.loadable).foreach: owner =>
+        if root.whole then
+          instantiate(owner)
+          owner.info.decls.toList.foreach { member => if member.isTerm then refer(member) }
+        else if root.member.isEmpty || root.member == "<init>" || root.member == "$init$" ||
+          root.member == "MODULE$"
+        then
+          instantiate(owner)
+          owner.info.decls.toList.foreach { member => if member.isConstructor then refer(member) }
+        else
+          keep(owner)
+          if owner.is(ModuleClass) then instantiate(owner)
+
+          owner.asClass.baseClasses.filter(plan.loadable).foreach: base =>
+            base.info.decls.toList.foreach: member =>
+              if member.isTerm && compiles(member, root.member) then refer(member)
+
+    // Liveness
+
+    private def keep(symbol: Symbol)(using Context): Unit =
+      if plan.loadable(symbol) && plan.kept.add(symbol) then
+        wanted += plan.unit(symbol.topLevelClass)
+        val owner: Symbol = symbol.owner
+        if owner.isClass && !owner.is(Package) then keep(owner)
+        val bases: List[Symbol] = symbol.asClass.baseClasses.tail
+        bases.foreach(keep)
+
+        // The methods of a value class are compiled as methods of its companion.
+        if symbol.isDerivedValueClass then instantiate(symbol.companionModule.moduleClass)
+
+        // A class is compiled with a static method for each method its companion still has,
+        // which the companion must be there to be asked.
+        if !symbol.is(ModuleClass) then
+          val companion: Symbol = symbol.companionModule
+          if companion.exists && companion.isStatic then keep(companion.moduleClass)
+
+        if !symbol.is(Trait) then
+          bases.foreach: base =>
+            mixers.getOrElseUpdate(base, mutable.ArrayBuffer()) += symbol
+            accessors.get(base).foreach(_.toList.foreach(rebind(symbol, _)))
+
+    private def rebind(symbol: Symbol, accessor: Symbol)(using Context): Unit =
+      refer(ResolveSuper.rebindSuper(symbol, accessor))
+
+    // The names of the members a class inherits from classes this run does not recompile:
+    // whatever is defined with one of them may be called from there.
+    private def inherited(symbol: Symbol)(using Context): Set[Name] =
+      foreign.getOrElseUpdate
+        ( symbol,
+          symbol.info.decls.toList.filter { member => member.isTerm && !member.isConstructor }
+          . map(_.name).toSet )
+
+    private def instantiate(symbol: Symbol)(using Context): Unit =
+      if symbol.exists && symbol.isClass && plan.loadable(symbol) && instantiated.add(symbol) then
+        keep(symbol)
+        val bases: List[Symbol] = symbol.asClass.baseClasses
+        val foreigners: List[Symbol] = bases.filterNot(plan.loadable)
+        val serializable: Boolean = symbol.derivesFrom(defn.JavaSerializableClass)
+
+        bases.foreach: base =>
+          instances.getOrElseUpdate(base, mutable.ArrayBuffer()) += symbol
+
+          if plan.loadable(base) then
+            if initialized.add(base) then
+              keep(base)
+              pending += base
+
+            val members: List[Symbol] =
+              candidates.getOrElseUpdate
+                ( base,
+                  base.info.decls.toList.filter { member => member.isTerm && !member.isConstructor } )
+
+            members.foreach: member =>
+              val name: Name = member.name
+
+              val external: Boolean =
+                foreigners.exists(inherited(_).contains(name)) || reflective.contains(name) ||
+                  serializable && serializations.contains(name.toString)
+
+              if external then refer(member)
+
+          targets.get(base).foreach(_.toList.foreach(resolve(symbol, _)))
+
+    private def resolve(symbol: Symbol, target: Symbol)(using Context): Unit =
+      val member: Symbol = target.matchingMember(symbol.thisType)
+      if member.exists && (member ne target) then refer(member)
+
+    // A term which code that runs refers to.
+    private def refer(symbol: Symbol)(using Context): Unit =
+      if symbol.exists && symbol.isTerm then
+        val owner: Symbol = symbol.owner
+
+        if symbol.is(Module) then
+          instantiate(symbol.moduleClass)
+          if owner.isClass && !owner.is(Package) then keep(owner)
+        else if owner.isClass && !owner.is(Package) then
+          if symbol.isConstructor then
+            instantiate(owner)
+            if !symbol.isPrimaryConstructor then enliven(symbol)
+          else if symbol.is(Method) || symbol.is(Lazy) then
+            // A method which is always inlined is not there to call.
+            if !(symbol.is(Inline) && !symbol.isRetainedInline) then
+              enliven(symbol)
+              dispatch(symbol)
+          else if symbol.is(ParamAccessor) then keep(owner)
+          else instantiate(owner)
+
+    private def enliven(symbol: Symbol)(using Context): Unit =
+      if plan.loadable(symbol) && live.add(symbol) then
+        keep(symbol.owner)
+        pending += symbol
+
+        if symbol.name.is(SuperAccessorName) then
+          accessors.getOrElseUpdate(symbol.owner, mutable.ArrayBuffer()) += symbol
+          mixers.get(symbol.owner).foreach(_.toList.foreach(rebind(_, symbol)))
+
+        if symbol.isRetainedInlineMethod then
+          symbol.owner.info.decls.toList.foreach: member =>
+            if member.name.is(BodyRetainerName) &&
+              member.name.asTermName.exclude(BodyRetainerName) == symbol.name
+            then enliven(member)
+
+    // A call may be to whatever overrides its target, in a class which is instantiated.
+    private def dispatch(symbol: Symbol)(using Context): Unit =
+      if !symbol.is(Private) && called.add(symbol) then
+        val owner: Symbol = symbol.owner
+        targets.getOrElseUpdate(owner, mutable.ArrayBuffer()) += symbol
+        instances.get(owner).foreach(_.toList.foreach(resolve(_, symbol)))
+
+    // Traversal
+
+    private def body(symbol: Symbol)(using Context): Unit =
+      definitions.get(symbol).foreach: definition =>
+        // The body of a method which is inlined, and yet is called, is in its retainer.
+        if !symbol.isRetainedInlineMethod then walker.traverse(definition.rhs)(using ctx.withOwner(symbol))
+
+    // The code which runs when a class is instantiated: the arguments to its parents'
+    // constructors, its fields' initial values and the statements of its body.
+    private def initialize(symbol: Symbol)(using Context): Unit =
+      templates.get(symbol).foreach: definition =>
+        val template: Template = definition.rhs.asInstanceOf[Template]
+        given Context = ctx.withOwner(template.symbol)
+        template.parents.foreach { parent => if parent.isTerm then walker.traverse(parent) }
+
+        template.body.foreach:
+          case field: ValDef  => if !field.symbol.is(Lazy) then walker.traverse(field.rhs)
+          case _: MemberDef   => ()
+          case _: Import      => ()
+          case statement      => walker.traverse(statement)
+
+    private def singletons(tpe: Type)(using Context): Unit = tpe.dealias match
+      case tpe: TermRef       => refer(tpe.symbol)
+      case tpe: AndOrType     => singletons(tpe.tp1); singletons(tpe.tp2)
+      case tpe: AnnotatedType => singletons(tpe.parent)
+      case tpe: RefinedType   => singletons(tpe.parent)
+      case _                  => ()
+
+    // The members the pattern matcher will select from an extractor's result, which no tree
+    // refers to until it has.
+    private def extracted(tpe: Type, depth: Int)(using Context): Unit =
+      if depth < 3 then
+        tpe.classSymbols.filter(plan.loadable).foreach: symbol =>
+          keep(symbol)
+
+          symbol.asClass.baseClasses.filter(plan.loadable).foreach: base =>
+            base.info.decls.toList.foreach: member =>
+              val name: String = member.name.toString
+
+              val selected: Boolean =
+                member.isTerm &&
+                  (member.is(CaseAccessor) || extractions.contains(name) ||
+                    name.startsWith("_") && name.drop(1).forall(_.isDigit) && name.length > 1)
+
+              if selected then refer(member)
+
+        val get: Denotations.Denotation = tpe.member(nme.get)
+        if get.exists then extracted(get.info.finalResultType, depth + 1)
+
+    private def path(tree: Tree)(using Context): Boolean = tree match
+      case tree: Ident  => tree.symbol.is(Module) && tree.symbol.isStatic || tree.symbol.is(Package)
+      case tree: Select => (tree.symbol.is(Module) && tree.symbol.isStatic || tree.symbol.is(Package)) && path(tree.qualifier)
+      case tree: This   => tree.symbol.is(ModuleClass) && tree.symbol.isStatic || tree.symbol.is(Package)
+      case _            => false
+
+    private val walker: TreeTraverser = new TreeTraverser:
+      def traverse(tree: Tree)(using Context): Unit = tree match
+        case tree if tree.isType =>
+          singletons(tree.tpe)
+
+        case tree: Ident =>
+          refer(tree.symbol)
+
+        case tree: Select =>
+          refer(tree.symbol)
+          // A reference to an object which is nested in others, all the way out, loads it
+          // without loading those.
+          if !(tree.symbol.is(Module) && tree.symbol.isStatic && path(tree.qualifier))
+          then traverse(tree.qualifier)
+
+        case tree: This =>
+          if tree.symbol.is(ModuleClass) then instantiate(tree.symbol)
+
+        case tree: Inlined =>
+          tree.bindings.foreach(traverse)
+          traverse(tree.expansion)
+
+        case tree: Closure =>
+          // A lambda of a type other than a function's is an instance of that type.
+          if !tree.tpt.isEmpty then
+            val symbol: Symbol = tree.tpt.tpe.classSymbol
+            instantiate(symbol)
+
+            if plan.loadable(symbol) then
+              tree.tpt.tpe.possibleSamMethods.foreach { method => refer(method.symbol) }
+
+          traverseChildren(tree)
+
+        case tree: UnApply =>
+          extracted(tree.fun.tpe.widen.finalResultType, 0)
+          traverseChildren(tree)
+
+        case Literal(constant) =>
+          if constant.tag == Constants.ClazzTag then
+            val symbol: Symbol = constant.typeValue.classSymbol
+            instantiate(symbol)
+            symbol.info.decls.toList.foreach { member => if member.isConstructor then refer(member) }
+
+        case tree: Apply =>
+          val symbol: Symbol = tree.fun.symbol
+
+          tree.args match
+            case Literal(Constant(name: String)) :: _ if symbol.exists =>
+              val owner: String = symbol.owner.fullName.toString
+              val method: String = symbol.name.toString
+
+              if owner == "scala.reflect.Selectable" &&
+                (method == "selectDynamic" || method == "applyDynamic")
+              then reflect(name.toTermName)
+              else if owner == "java.lang.Class" && method == "forName" then
+                plan.dynamic += name
+                named(name).foreach(instantiate)
+
+            case _ =>
+              ()
+
+          traverseChildren(tree)
+
+        case tree: TypeDef if tree.isClassDef =>
+          // A class which is local to code that runs is kept whole.
+          instantiate(tree.symbol)
+          traverseChildren(tree)
+
+        case _: Import =>
+          ()
+
+        case _ =>
+          traverseChildren(tree)
+
+    // A member selected by name, through `reflectiveSelectable`, may be any member of that name.
+    private def reflect(name: Name)(using Context): Unit =
+      if reflective.add(name) then
+        instantiated.toList.foreach: symbol =>
+          symbol.asClass.baseClasses.filter(plan.loadable).foreach: base =>
+            base.info.decl(name).alternatives.foreach { member => refer(member.symbol) }
+
+    // Pruning
+
+    // In place of an argument to the constructor of a parent of a class which is never
+    // instantiated.
+    private def absent(tree: Tree)(using Context): Tree =
+      Throw(Literal(Constant(null)).withSpan(tree.span)).withSpan(tree.span)
+
+    private def unparented(tree: Tree)(using Context): Tree = tree match
+      case tree: Apply     => cpy.Apply(tree)(unparented(tree.fun), tree.args.map(absent))
+      case tree: TypeApply => cpy.TypeApply(tree)(unparented(tree.fun), tree.args)
+      case tree: Block     => unparented(tree.expr)
+      case _               => tree
+
+    // Whether a definition of a class's body stays: `whole` is whether the class is ever
+    // instantiated, and `fields` are the names of the fields of it which stay, whose setters
+    // must, since an assignment refers to the field and is compiled to a call of the setter.
+    private def retained(tree: Tree, whole: Boolean, fields: Set[Name])(using Context): Boolean =
+      tree match
+        case tree: TypeDef =>
+          !tree.isClassDef || plan.kept.contains(tree.symbol)
+
+        case tree: ValDef =>
+          val symbol: Symbol = tree.symbol
+
+          if symbol.is(Module) then plan.kept.contains(symbol.moduleClass)
+          else if symbol.is(Lazy) then live.contains(symbol)
+          else whole || symbol.is(ParamAccessor)
+
+        case tree: DefDef =>
+          val symbol: Symbol = tree.symbol
+
+          if symbol.is(Accessor) && symbol.name.isSetterName
+          then fields.contains(symbol.name.asTermName.getterName)
+          else live.contains(symbol) || symbol.isErased
+
+        case _: Import =>
+          true
+
+        case _ =>
+          whole
+
+    private def pruned(tree: Tree)(using Context): Tree = tree match
+      case tree: PackageDef =>
+        cpy.PackageDef(tree)(tree.pid, tree.stats.filter(retained(_, true, Set())).map(pruned))
+
+      case tree: TypeDef if tree.isClassDef =>
+        val symbol: Symbol = tree.symbol
+        val template: Template = tree.rhs.asInstanceOf[Template]
+        val whole: Boolean = initialized.contains(symbol)
+        val fields: Set[Name] =
+          template.body.collect:
+            case field: ValDef if retained(field, whole, Set()) => field.symbol.name
+          . toSet
+
+        val (stays, goes) = template.body.partition(retained(_, whole, fields))
+        var removed: Int = 0
+
+        goes.foreach:
+          case member: ValOrDefDef =>
+            plan.deleted += member.symbol
+            member.symbol.dropAfter(phase)
+            removed += 1
+
+          case _ =>
+            ()
+
+        plan.tally =
+          plan.tally.copy
+            ( members = plan.tally.members + stays.count(_.isInstanceOf[ValOrDefDef]),
+              removed = plan.tally.removed + removed )
+
+        val body: List[Tree] = stays.map:
+          case member: DefDef if member.symbol.isRetainedInlineMethod =>
+            cpy.DefDef(member)(rhs = absent(member.rhs))
+
+          case member =>
+            pruned(member)
+
+        val parents: List[Tree] = if whole then template.parents else template.parents.map(unparented)
+
+        cpy.TypeDef(tree)
+          ( rhs = cpy.Template(template)(template.constr, parents, Nil, template.self, body) )
+
+      case _ =>
+        tree
+
+    // Whether anything of a unit is left, once what is not kept has been taken out of it.
+    private def prune(unit: CompilationUnit)(using Context): Boolean =
+      given Context = ctx.fresh.setCompilationUnit(unit)
+      unit.tpdTree = pruned(unit.tpdTree)
+      unit.pickled = Map.empty
+
+      // A unit's classes may be within several packages, one inside another.
+      def classes(tree: Tree): Boolean = tree match
+        case tree: PackageDef => tree.stats.exists(classes)
+        case tree: TypeDef    => tree.isClassDef
+        case _                => false
+
+      classes(unit.tpdTree)

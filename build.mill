@@ -890,7 +890,8 @@ object soundness extends Fork:
     anthology.`scala`, exegesis.core, espionage.core, hellenism.jvm, delicious.core,
     delicious.`scala`, delicious.compiler, harlequin.compiler,
     delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks,
-    vivisection.core, vivisection.eval, vivisection.dap):
+    vivisection.core, vivisection.eval, vivisection.dap, abscission.engine, abscission.core,
+    abscission.linker):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, coaxial.dns, susurration.core, syndesis.core, cosmopolite.core, gesticulate.core,
@@ -1150,6 +1151,52 @@ object abacist extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
+// Shrinks a classpath to the closed world its entry points reach: ProGuard's job, done on
+// TASTy instead of on bytecode.
+object abscission extends Library:
+  // What recompiles a closed world from its TASTy without the members nothing reaches (`Shaker`),
+  // and what follows the references of the bytecode which results to decide which classes go
+  // with it (`Shrinker`). It reaches into the compiler, so its sources are chosen by stream
+  // (see `Shim`), and it is written against the compiler and the JDK alone, as
+  // `probably.instrument` is: a host hands it paths and names, and gets numbers back.
+  object engine extends BareComponent():
+    override def sources = Task.Sources(shimSources(moduleDir))
+    override def scalaJs = false // drives the compiler
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+    // A recompiled class must be what the original compilation would have generated, so the
+    // recompilation starts from this build's options, compiled in as `probably.instrument`
+    // compiles its own in: every option which can change generated code or how an inline
+    // method expands. A caller adds the options of whatever else its classpath holds.
+    def generatedSources = Task:
+      val options = settings.scalaOptions.filter: option =>
+        option.startsWith("-Z") || option.startsWith("-language:") ||
+          Set("-experimental", "-preview", "-Yno-flexible-types", "-Yexplicit-nulls")(option)
+      val literals =
+        (options ++ Seq("-Xmax-inlines", "64")).map("\"" + _ + "\"").mkString("List(\n    ", ",\n    ", ")\n")
+      val source =
+        "package abscission\n\nprivate[abscission] object ShakerOptions:\n" +
+          "  val options: List[String] =\n    " + literals
+      os.write.over(Task.dest / "abscission" / "abscission.ShakerOptions.scala", source, createFolders = true)
+      Seq(PathRef(Task.dest))
+
+  object core extends Component(engine, hellenism.jvm, digression.core):
+    override def scalaJs = false // drives the compiler, through `engine`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  // The edges which make shrinking a step of a toolchain: classfiles to a closed world, and
+  // a closed world to an executable JAR.
+  object linker extends Component(core, anthology.linker, anthology.`scala`):
+    override def scalaJs = false // extends `anthology.linker`
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(core, linker, hellenism.jvm, galilei.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3880,7 +3927,7 @@ object zeppelin extends Library:
 // `groupCheck.validate` task verifies this list against the on-disk `lib/*/src`
 // directories.
 val allLibraries: Seq[Library] = Seq(
-  abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
+  abacist, abscission, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
   aperture, apoplexy, archimedes, austronesian, aviation, baroque, beneficence, bitumen,
   breviloquence,
   burdock,
