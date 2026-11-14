@@ -259,7 +259,7 @@ object Css:
       case InvalidName(name: Text) extends Reason(9)
 
   case class Error(reason: Css.Error.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
-  extends fulminate.Error(251, reason.number)
+  extends fulminate.Error(90, 1, reason.number)
     ( m"invalid CSS at line ${line.n1} column ${column.n1}: $reason" )
 
   // CssErrors → Css.Errors

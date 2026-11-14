@@ -41,4 +41,4 @@ import rudiments.*
 object Truncation:
   // StreamError → Truncation.Error
   case class Error(total: Memory)(using Diagnostics)
-  extends fulminate.Error(264, 0)(m"the stream was cut prematurely after $total")
+  extends fulminate.Error(60, 1, 0)(m"the stream was cut prematurely after $total")

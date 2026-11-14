@@ -59,7 +59,7 @@ object protointernal:
               startPosition.start + index,
               startPosition.start + index + 1 )
 
-        halt(118, m"a binary value can only contain characters '0' or '1'", position)
+        halt(27, 2, m"a binary value can only contain characters '0' or '1'", position)
 
     val bits2 = bits.filter(_ != ' ')
     val long: Long = java.lang.Long.parseUnsignedLong(bits2, 2)
@@ -69,7 +69,7 @@ object protointernal:
       case 16 => Expr[Short](long.toShort)
       case 32 => Expr[Int](long.toInt)
       case 64 => Expr[Long](long)
-      case _  => halt(167, m"a binary literal must be 8, 16, 32 or 64 bits long")
+      case _  => halt(27, 5, m"a binary literal must be 8, 16, 32 or 64 bits long")
 
   def hex(expr: Expr[StringContext]): Macro[Array[Byte]^{}] =
     import quotes.reflect.*
@@ -91,13 +91,13 @@ object protointernal:
                 startPosition.start + index,
                 startPosition.start + index + 1 )
 
-          halt(148, m"${nibbles(index)} is not a valid hexadecimal character", position)
+          halt(27, 4, m"${nibbles(index)} is not a valid hexadecimal character", position)
 
     val nibbles3 = nibbles2.filterNot: ch => ch == ' ' || ch == '\n'
 
     if nibbles3.length%2 != 0
     then halt
-      ( 137,
+      ( 27, 3,
         m"a hexadecimal value must have an even number of digits",
         Position.ofMacroExpansion )
 
@@ -130,8 +130,8 @@ object protointernal:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < 0 then halt(764, m"a U16 may not be less than ${0}")
-      if int > 0xffff then halt(772, m"a U16 may not be greater than ${0xffff}")
+      if int < 0 then halt(27, 12, m"a U16 may not be less than ${0}")
+      if int > 0xffff then halt(27, 14, m"a U16 may not be greater than ${0xffff}")
 
       Expr(int.toShort)
 
@@ -140,10 +140,11 @@ object protointernal:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Short.MinValue then halt(46, m"an S16 may not be less than ${Short.MinValue.toInt}")
+      if int < Short.MinValue then
+        halt(27, 1, m"an S16 may not be less than ${Short.MinValue.toInt}")
 
       if int > Short.MaxValue
-      then halt(461, m"an S16 may not be greater than ${Short.MaxValue.toInt}")
+      then halt(27, 7, m"an S16 may not be greater than ${Short.MaxValue.toInt}")
 
       Expr(int.toShort)
 
@@ -152,8 +153,8 @@ object protointernal:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < 0 then halt(689, m"a U8 may not be less than ${0}")
-      if int > 0xffff then halt(709, m"a U8 may not be greater than ${0xffff}")
+      if int < 0 then halt(27, 8, m"a U8 may not be less than ${0}")
+      if int > 0xffff then halt(27, 9, m"a U8 may not be greater than ${0xffff}")
 
       Expr(int.toByte)
 
@@ -162,8 +163,9 @@ object protointernal:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Byte.MinValue then halt(287, m"an S8 may not be less than ${Byte.MinValue.toInt}")
-      if int > Byte.MaxValue then halt(768, m"an S8 may not be greater than ${Byte.MaxValue.toInt}")
+      if int < Byte.MinValue then halt(27, 6, m"an S8 may not be less than ${Byte.MinValue.toInt}")
+      if int > Byte.MaxValue then
+        halt(27, 13, m"an S8 may not be greater than ${Byte.MaxValue.toInt}")
 
       Expr(int.toByte)
 
@@ -193,7 +195,7 @@ object protointernal:
         case '{($bound: Long) >= ($value: Long)}     => value
         case '{($bound: Float) > ($value: Float)}    => value
         case '{($bound: Float) >= ($value: Float)}   => value
-        case _                                       => halt(966, errorMessage)
+        case _                                       => halt(27, 16, errorMessage)
 
       else expr match
         case '{($bound: Int) < ($value: Int)}        => value
@@ -210,7 +212,7 @@ object protointernal:
         case '{($bound: Long) <= ($value: Long)}     => value
         case '{($bound: Float) < ($value: Float)}    => value
         case '{($bound: Float) <= ($value: Float)}   => value
-        case _                                       => halt(966, errorMessage)
+        case _                                       => halt(27, 16, errorMessage)
 
     val (lessStrict, less) =
       (if greaterThan.valueOrAbort then (bound, value) else (value, bound)) match
@@ -221,6 +223,6 @@ object protointernal:
         case ('{$left: Char}, '{$right: Char})     => ('{$left < $right}, '{$left <= $right})
         case ('{$left: Byte}, '{$right: Byte})     => ('{$left < $right}, '{$left <= $right})
         case ('{$left: Short}, '{$right: Short})   => ('{$left < $right}, '{$left <= $right})
-        case _                                     => halt(966, errorMessage)
+        case _                                     => halt(27, 16, errorMessage)
 
     '{$expr && ${if strict.valueOrAbort then lessStrict else less}}

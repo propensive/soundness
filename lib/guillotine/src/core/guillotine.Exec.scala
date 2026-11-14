@@ -44,7 +44,7 @@ object Exec:
   // ExecError → Exec.Error
   case class Error(command: Command, stdout: Data = Data(), stderr: Data = Data())
     ( using Diagnostics )
-  extends fulminate.Error(691, 0)(m"execution of the command $command failed")
+  extends fulminate.Error(84, 1, 0)(m"execution of the command $command failed")
 
   // ExecEvent → Exec.Event
   object Event:

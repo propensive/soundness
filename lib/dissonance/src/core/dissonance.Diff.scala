@@ -149,7 +149,7 @@ object Diff:
 
   // DiffError → Diff.Error
   case class Error(lineNo: Int, line: Text)(using Diagnostics)
-  extends fulminate.Error(39, 0)(m"could not read the diff at line $lineNo: $line")
+  extends fulminate.Error(78, 1, 0)(m"could not read the diff at line $lineNo: $line")
 
   sealed trait Change[+element] extends Product:
     import vacuous.*

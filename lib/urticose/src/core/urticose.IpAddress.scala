@@ -88,4 +88,4 @@ object IpAddress:
       case Ipv6WrongNumberOfBytes(count: Int)       extends Reason(14)
 
   case class Error(reason: IpAddress.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(77, reason.number)(m"the IP address is not valid because $reason")
+  extends fulminate.Error(100, 2, reason.number)(m"the IP address is not valid because $reason")

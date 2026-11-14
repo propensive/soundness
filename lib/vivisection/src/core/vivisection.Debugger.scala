@@ -172,6 +172,6 @@ object Debugger:
       case Other(code0: Int) extends Reason(code0)
 
   case class Error(reason: Error.Reason, detail: Text)(using Diagnostics)
-  extends fulminate.Error(601, reason.number)(m"the JDWP action failed because $reason: $detail")
+  extends fulminate.Error(145, 1, reason.number)(m"the JDWP action failed because $reason: $detail")
 
 class Debugger[endpoint](val endpoint: endpoint)

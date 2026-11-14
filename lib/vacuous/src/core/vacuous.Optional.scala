@@ -56,4 +56,4 @@ object Optional:
 
   // UnsetError → Optional.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(591, 0)(m"the value was not set")
+  extends fulminate.Error(20, 4, 0)(m"the value was not set")

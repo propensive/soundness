@@ -92,4 +92,4 @@ object Moniker:
       case Reason.UnknownWord(word) => m"the word $word does not appear in the vocabulary"
 
   case class Error(reason: Moniker.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(80, reason.number)(m"the moniker is not valid because $reason")
+  extends fulminate.Error(68, 2, reason.number)(m"the moniker is not valid because $reason")

@@ -245,7 +245,7 @@ object Llm:
     def structured: Boolean = false
 
   object Error:
-    // The numbers are the `SN-990.e` subcodes, and are frozen: codes added later append.
+    // The numbers are the `↯/s.126.1.e` subcodes, and are frozen: codes added later append.
     enum Reason(val number: Int) extends Clarification:
       case Unreachable          extends Reason(1)
       case Unauthorized         extends Reason(2)
@@ -281,7 +281,7 @@ object Llm:
       status: Optional[Int]  = Unset,
       retry:  Optional[Long] = Unset )
     ( using Diagnostics )
-  extends fulminate.Error(990, reason.number)
+  extends fulminate.Error(126, 1, reason.number)
     ( m"the model request failed because $reason: $detail" )
 
   // A free function of the companion, not a method: a method would carry its instance in its

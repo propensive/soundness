@@ -148,7 +148,7 @@ object YamlPath extends Root(""):
   // detected; consumers (e.g. the `yp"…"` interpolator) use it to position a
   // compile-time error precisely.
   case class Error(reason: YamlPath.Error.Reason, offset: Int)(using Diagnostics)
-  extends fulminate.Error(546, reason.number)(m"the YAML path was not valid because $reason")
+  extends fulminate.Error(134, 2, reason.number)(m"the YAML path was not valid because $reason")
 
 case class YamlPath(path: Path on YamlPath = YamlPath):
   def apply(ordinal: Ordinal): YamlPath = YamlPath(path / ordinal)

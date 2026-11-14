@@ -915,4 +915,4 @@ object Dns:
       case Mismatch(id: Int)                  extends Reason(13)
 
   case class Error(reason: Dns.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(53, reason.number)(m"the DNS message is not valid because $reason")
+  extends fulminate.Error(100, 1, reason.number)(m"the DNS message is not valid because $reason")

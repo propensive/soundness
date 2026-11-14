@@ -5256,7 +5256,7 @@ object Xml extends Tag.Container
         m"$discriminant does not name a variant of $sum"
 
   case class Error(reason: Xml.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(149, reason.number)(m"the XML could not be read because $reason")
+  extends fulminate.Error(128, 1, reason.number)(m"the XML could not be read because $reason")
 
   // XmlReader → Xml.Reader
   object Reader:

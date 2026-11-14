@@ -915,4 +915,5 @@ object Mdns:
       case NoInterface       extends Reason(2)
 
   case class Error(reason: Mdns.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(55, reason.number)(m"the mDNS responder could not start because $reason")
+  extends fulminate.Error(102, 2, reason.number)
+    ( m"the mDNS responder could not start because $reason" )

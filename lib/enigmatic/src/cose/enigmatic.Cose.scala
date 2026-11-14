@@ -294,7 +294,8 @@ object Cose:
       case DetachedPayloadRequired                         extends Reason(8)
 
   case class Error(reason: Cose.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(596, reason.number)(m"could not process the COSE message because $reason")
+  extends fulminate.Error(105, 6, reason.number)
+    ( m"could not process the COSE message because $reason" )
 
   // CoseRecipient → Cose.Recipient
   case class Recipient(protectedHeader: Data, unprotectedHeader: Cbor, authentication: Data)

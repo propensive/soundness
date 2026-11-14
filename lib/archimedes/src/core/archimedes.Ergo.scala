@@ -550,5 +550,5 @@ object Ergo:
   // `offset` is the character position within the parsed input at which the error was detected,
   // or -1 when unavailable (the serialization path, which has no cursor).
   case class Error(reason: Ergo.Error.Reason, offset: Int = -1)(using Diagnostics)
-  extends fulminate.Error(431, reason.number)
+  extends fulminate.Error(129, 2, reason.number)
     ( m"the ergo expression could not be parsed because $reason" )

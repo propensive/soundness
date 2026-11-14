@@ -89,7 +89,7 @@ object Pty:
       case BadFeEscape(char: Char)                extends Reason(8)
 
   case class Error(reason: Pty.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(537, reason.number)
+  extends fulminate.Error(132, 1, reason.number)
     ( m"an ANSI escape code could not be handled because $reason" )
 
   // PtyState → Pty.State

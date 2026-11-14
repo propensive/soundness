@@ -1373,7 +1373,8 @@ object Cbor extends Cbor1, Dynamic:
       case Absent extends Reason(11)
 
   case class Error(reason: Cbor.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(595, reason.number)(m"could not process the CBOR value because $reason")
+  extends fulminate.Error(104, 1, reason.number)
+    ( m"could not process the CBOR value because $reason" )
 
   // CborReader → Cbor.Reader
   object Reader:

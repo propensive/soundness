@@ -173,7 +173,7 @@ object protointernal:
           if acc.exists(_ =:= self) then acc else self :: acc
 
     if planes.isEmpty
-    then halt(876, m"the name $name is not a valid identifier in any namespace in scope")
+    then halt(68, 8, m"the name $name is not a valid identifier in any namespace in scope")
     else planes.reduce(AndType(_, _)).asType.absolve match
       case '[type plane; plane] => '{${Expr(name)}.asInstanceOf[Name[plane]]}
 
@@ -199,7 +199,7 @@ object protointernal:
         '{$checks; $name.asInstanceOf[Name[system]]}
 
       case None =>
-        halt(89, m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
+        halt(68, 3, m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
 
 
   def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
@@ -224,7 +224,8 @@ object protointernal:
   def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
       case module: `companion` => module
-      case _                   => halt(704, m"The companion object did not have the expected type.")
+      case _ =>
+        halt(68, 6, m"The companion object did not have the expected type.")
 
   def parse[plane: Type, name <: String: Type]: Macro[Name[plane]] =
     import quotes.reflect.*
@@ -245,17 +246,17 @@ object protointernal:
             case AppliedType(_, List(param)) =>
               param.asMatchable match
                 case ConstantType(StringConstant(text)) => text.tt
-                case _                                  => halt(487, m"Bad type")
+                case _                                  => halt(68, 4, m"Bad type")
 
             case _ =>
-              halt(487, m"Bad type")
+              halt(68, 4, m"Bad type")
 
           val rule = companion[Rule](repr.typeSymbol)
 
           if !rule.check(name, text)
-          then halt(789, m"the name is not valid because it ${rule.describe(text)}")
+          then halt(68, 7, m"the name is not valid because it ${rule.describe(text)}")
 
       case _ =>
-        halt(613, m"Could not access constraint")
+        halt(68, 5, m"Could not access constraint")
 
     '{${Expr(name)}.asInstanceOf[Name[plane]]}

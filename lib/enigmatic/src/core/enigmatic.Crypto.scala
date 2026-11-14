@@ -139,7 +139,7 @@ object Crypto:
 
   case class Error(reason: Crypto.Error.Reason, detail: Optional[Text] = Unset)
     ( using Diagnostics )
-  extends fulminate.Error(521, reason.number)(m"could not decrypt the data because $reason")
+  extends fulminate.Error(105, 2, reason.number)(m"could not decrypt the data because $reason")
 
 trait Crypto:
   def random: Crypto.Random

@@ -54,9 +54,9 @@ object IpAddressError:
 Note that a reason may carry data of its own — the byte that was out of range, the number
 of groups actually found — so the diagnosis is specific rather than categorical.
 
-The numbers are the error's identity. An error type has a globally-unique `SN-NNN` code
-and each reason a number within it, and every code has a page in `doc/errors` explaining
-the cause and the usual remedies — so `SN-077` in a user's report can be looked up rather
+The numbers are the error's identity. An error type has a bolt code — the number
+of its module and its own within the module — and each reason a number within it, and every code has a page in `doc/errors` explaining
+the cause and the usual remedies — so `↯/s.100.2` in a user's report can be looked up rather
 than guessed at.
 
 Three further properties follow from the shape, and each is worth having.

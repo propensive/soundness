@@ -1059,7 +1059,7 @@ object Protobuf extends Protobuf1:
       case MissingField(number: Int)
 
   case class Error(reason: Protobuf.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(700, 0)(m"the protobuf data was not valid: $reason")
+  extends fulminate.Error(111, 1, 0)(m"the protobuf data was not valid: $reason")
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a

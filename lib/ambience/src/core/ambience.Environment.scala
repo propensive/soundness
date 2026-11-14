@@ -70,7 +70,7 @@ object Environment extends Dynamic:
 
   // EnvironmentError → Environment.Error
   case class Error(variable: Text)(using Diagnostics)
-  extends fulminate.Error(869, 0)(m"the environment variable ${variable} was not defined")
+  extends fulminate.Error(62, 2, 0)(m"the environment variable ${variable} was not defined")
 
 trait Environment extends Findable:
   def variable(name: Text): Optional[Text]

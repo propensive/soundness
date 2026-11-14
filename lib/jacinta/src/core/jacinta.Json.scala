@@ -3336,7 +3336,7 @@ object Json extends Json1, Dynamic:
       case Absent     extends Reason(3)
 
   case class Error(reason: Json.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(337, reason.number)(m"could not access the value because $reason")
+  extends fulminate.Error(106, 1, reason.number)(m"could not access the value because $reason")
 
   // JsonPrimitive → Json.Primitive
   object Primitive:

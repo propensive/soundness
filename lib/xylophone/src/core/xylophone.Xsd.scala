@@ -241,7 +241,8 @@ object Xsd:
         m"the $kind $name is declared more than once"
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(992, reason.number)(m"the XML Schema could not be read because $reason")
+  extends fulminate.Error(128, 3, reason.number)
+    ( m"the XML Schema could not be read because $reason" )
 
   def parse(xml: Xml)(using Tactic[Error]): Xsd = Reader(root(xml)).schema()
 

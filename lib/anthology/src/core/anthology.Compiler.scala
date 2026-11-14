@@ -51,7 +51,7 @@ import zephyrine.*
 object Compiler:
   // CompilerError → Compiler.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(779, 0)(m"there was a problem with the compiler configuration")
+  extends fulminate.Error(137, 3, 0)(m"there was a problem with the compiler configuration")
 
   object Event:
     given communicable: Event is Communicable =

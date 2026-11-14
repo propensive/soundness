@@ -119,4 +119,4 @@ object Varint:
       case Overlong  extends Reason(3)
 
   case class Error(reason: Varint.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(608, reason.number)(m"the varint is invalid because $reason")
+  extends fulminate.Error(118, 4, reason.number)(m"the varint is invalid because $reason")

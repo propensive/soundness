@@ -250,7 +250,7 @@ object Certificate:
       case BadValidity extends Reason(4)
 
   case class Error(reason: Certificate.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(524, reason.number)(m"could not build the certificate because $reason")
+  extends fulminate.Error(105, 5, reason.number)(m"could not build the certificate because $reason")
 
 case class Certificate(asn1: Asn1):
   // The armored form, which is how certificates are almost always exchanged.

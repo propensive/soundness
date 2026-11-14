@@ -39,4 +39,4 @@ import fulminate.*
 object Range:
   // RangeError → Range.Error
   case class Error(index: Int, from: Int, to: Int)(using Diagnostics)
-  extends fulminate.Error(151, 0)(m"the index $index is outside the range $from-$to")
+  extends fulminate.Error(42, 1, 0)(m"the index $index is outside the range $from-$to")

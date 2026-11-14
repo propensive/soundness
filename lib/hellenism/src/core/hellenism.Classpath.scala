@@ -123,7 +123,7 @@ object Classpath extends Root(t""):
 
   // ClasspathError → Classpath.Error
   case class Error(resource: Text)(using Diagnostics)
-  extends fulminate.Error(540, 0)(m"the resource $resource was not on the classpath")
+  extends fulminate.Error(67, 1, 0)(m"the resource $resource was not on the classpath")
 
   // ClasspathEvent → Classpath.Event
   object Event:

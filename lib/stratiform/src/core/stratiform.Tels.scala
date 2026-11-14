@@ -550,7 +550,7 @@ object Tels extends Tels2:
           m"signature verification failed: $detail"
 
     case class Error(reason: Resolution.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(611, reason.ordinal + 1)
+    extends fulminate.Error(118, 7, reason.ordinal + 1)
       ( m"the schema does not resolve because $reason" )
 
   // Layer composition per §20.3. Takes a base schema and applies its
@@ -2058,7 +2058,7 @@ object Tels extends Tels2:
         case InlineScalar(keyword: Text) extends Reason(2)
 
     case class Error(reason: Renderer.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(613, reason.number)(m"the schema cannot be rendered because $reason")
+    extends fulminate.Error(118, 9, reason.number)(m"the schema cannot be rendered because $reason")
 
   // §20.3 atoms: the canonical decomposition of a schema's components into the smallest
   // modifications that can appear on their own in a composition. Every atom but the base's head

@@ -83,7 +83,7 @@ object Font:
         m"$typeface does not implement the layout feature ${feature.show}"
 
   case class Error(reason: Font.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(564, reason.number)(m"the font could not be used because $reason")
+  extends fulminate.Error(89, 1, reason.number)(m"the font could not be used because $reason")
 
   // Pairs a face with the provision in scope for its typeface, in the medium the expected type
   // names. The medium is a type member, so an expected type of `Font in Web` or

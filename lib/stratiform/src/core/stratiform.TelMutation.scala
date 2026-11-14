@@ -1169,4 +1169,4 @@ trait TelMutation:
         case WriteUnsupported    extends Reason(5)
 
     case class Error(reason: Mutation.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(606, reason.ordinal)(m"the mutation failed because $reason")
+    extends fulminate.Error(118, 2, reason.ordinal)(m"the mutation failed because $reason")

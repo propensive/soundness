@@ -90,4 +90,4 @@ object TextEscapes:
 
   // TextEscapes.Error → TextEscapes.Error
   case class Error(initMessage: Message)(using Diagnostics)
-  extends fulminate.Error(421, 0)(initMessage)
+  extends fulminate.Error(15, 2, 0)(initMessage)

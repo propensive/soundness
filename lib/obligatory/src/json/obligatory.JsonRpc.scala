@@ -236,7 +236,7 @@ object JsonRpc:
       code:   Optional[Int]  = Unset,
       detail: Optional[Text] = Unset )
     ( using Diagnostics )
-  extends fulminate.Error(721, reason.number)(m"the JSON-RPC operation failed because $reason")
+  extends fulminate.Error(112, 7, reason.number)(m"the JSON-RPC operation failed because $reason")
 
 trait JsonRpc extends Original:
   private val channel: Relay[Json] = Relay()

@@ -226,7 +226,7 @@ object Pdf:
         m"the document has no page $page"
 
   case class Error(reason: Pdf.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(280, reason.number)(m"the PDF could not be read because $reason")
+  extends fulminate.Error(110, 1, reason.number)(m"the PDF could not be read because $reason")
 
   // PdfFont → Pdf.Font
   object Font:

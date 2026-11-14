@@ -55,7 +55,7 @@ object Database:
       case Reason.UnknownReference => m"the value has not been stored in the database"
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(229, reason.number)(m"the database operation failed because $reason")
+  extends fulminate.Error(26, 1, reason.number)(m"the database operation failed because $reason")
 
 class Database(size: Int) extends Findable:
   import Database.Relation

@@ -804,7 +804,7 @@ trait Xml4:
             m"the text $value is not a valid $expected"
 
     case class Error(reason: Xml.Provider.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(993, reason.number)
+    extends fulminate.Error(128, 4, reason.number)
       ( m"the XML did not conform to its schema because $reason" )
 
   abstract class Provider(schema0: into[Xml.Provider.Schema], root: Optional[Text] = Unset)

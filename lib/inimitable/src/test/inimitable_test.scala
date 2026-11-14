@@ -99,7 +99,7 @@ object Tests extends Suite("uuid", m"Inimitable Tests"):
         demilitarize:
           uuid"not-a-uuid"
         .map(_.message)
-      . assert(_ == List(t"[↯SN-349] not-a-uuid is not a valid UUID"))
+      . assert(_ == List(t"[↯/s.47.1] not-a-uuid is not a valid UUID"))
 
     suite(m"Native-rendering coverage"):
       test(m"inimitable's types inspect natively"):

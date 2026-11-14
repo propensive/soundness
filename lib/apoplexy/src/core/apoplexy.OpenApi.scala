@@ -430,7 +430,8 @@ object OpenApi:
       case BadParameterLocation(value: Text) extends Reason(5)
 
   case class Error(reason: OpenApi.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(846, reason.number)(m"the OpenAPI document was not valid because $reason")
+  extends fulminate.Error(135, 1, reason.number)
+    ( m"the OpenAPI document was not valid because $reason" )
 
 case class OpenApi
   ( openapi:    Text,

@@ -305,7 +305,7 @@ object Redraft:
       case Unanchored extends Reason(3)
 
   case class Error(line: Int, text: Text, reason: Redraft.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(472, reason.number)
+  extends fulminate.Error(78, 2, reason.number)
     ( m"the redraft could not be applied at line $line ($text) because $reason" )
 
 case class Redraft(directives: Redraft.Directive*):

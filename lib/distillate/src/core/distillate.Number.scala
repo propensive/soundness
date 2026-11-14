@@ -51,5 +51,5 @@ object Number:
   case class Error
     ( text: Text, specializable: Specializable, reason: Error.Reason )
     ( using Diagnostics )
-  extends fulminate.Error(405, reason.number)
+  extends fulminate.Error(25, 1, reason.number)
     ( m"$text is not a valid $specializable because $reason" )

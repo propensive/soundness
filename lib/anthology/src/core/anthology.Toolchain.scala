@@ -90,7 +90,7 @@ object Toolchain:
 
   // ToolchainError → Toolchain.Error
   case class Error(tool: Text)(using Diagnostics)
-  extends fulminate.Error(586, 0)(m"the native tool $tool is not available on the PATH")
+  extends fulminate.Error(137, 2, 0)(m"the native tool $tool is not available on the PATH")
 
   object Setting:
     def apply[settings](applies: Artifact -> Boolean)(edit0: settings -> settings): Setting =

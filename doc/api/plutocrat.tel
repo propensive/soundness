@@ -369,7 +369,7 @@ entry .internal   the opaque types `Money` and `Isin`, their companions and exte
           compile error by `isin"…"`.
       entry .Reason   which rule an invalid ISIN broke
         detail
-            Numbered as the error's subnumber (`SN-515.3` for the wrong length):
+            Numbered as the error's subnumber (`↯/s.50.1.3` for the wrong length):
 
             ```tabular
             column  Case

@@ -51,7 +51,7 @@ object WorkingDirectory:
 
   // WorkingDirectoryError → WorkingDirectory.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(913, 0)(m"there is no working directory")
+  extends fulminate.Error(62, 3, 0)(m"there is no working directory")
 
 trait WorkingDirectory extends Findable:
   def directory(): Text

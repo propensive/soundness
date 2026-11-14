@@ -23,10 +23,12 @@ detail
     PortError(80).message.text   // t"the port 80 is not available"
     ```
 
-    An error type has a number — `Error(405, 0)` is `SN-405` — which is stable across releases,
-    never reused, and documented at `doc/errors/405.md`; its distinct causes are the cases of
-    a `Reason` enum extending `Clarification`, each numbered within the error (`SN-405.1`), and
-    each rendered through its own `Communicable`. A full error, grown step by step:
+    An error type has a bolt code — `Error(25, 1, 0)`, the first error of the twenty-fifth
+    module, is `↯/s.25.1` — which is stable across releases, never reused, and documented at
+    `doc/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+    `Clarification`, each numbered within the error (`↯/s.25.1.1`), and each rendered through
+    its own `Communicable`. A full error, grown step by step (900 stands for the number of
+    the module the error is in):
 
     ```scala fuel
     frame
@@ -44,10 +46,10 @@ detail
           import errorDiagnostics.stackTracesDiagnostics
 
           case class PortError(port: Int)(using Diagnostics)
-          extends Error(917, 0)(m"the port $port is not available")
+          extends Error(900, 1, 0)(m"the port $port is not available")
 
-          PortError(80).errorCode    // t"SN-917"
-          PortError(80).getMessage   // "[↯SN-917] the port 80 is not available"
+          PortError(80).errorCode    // t"↯/s.900.1"
+          PortError(80).getMessage   // "[↯/s.900.1] the port 80 is not available"
     frame
       label With a reason, numbered within it
       code
@@ -64,9 +66,9 @@ detail
                 case Privileged => m"it is below 1024 and needs privilege"
 
           case class PortError(port: Int, reason: PortError.Reason)(using Diagnostics)
-          extends Error(917, reason.number)(m"the port $port is not available because $reason")
+          extends Error(900, 1, reason.number)(m"the port $port is not available because $reason")
 
-          PortError(80, PortError.Reason.Privileged).errorCode   // t"SN-917.2"
+          PortError(80, PortError.Reason.Privileged).errorCode   // t"↯/s.900.1.2"
           PortError(80, PortError.Reason.Privileged).message.text
           // t"the port 80 is not available because it is below 1024 and needs privilege"
     ##
@@ -82,7 +84,7 @@ detail
     handled: a `java.lang.Error` which says why a situation was believed impossible.
 
     For macros, `halt` and `warn` report a `Message` as a compile-time diagnostic, with the
-    same `SN-` prefix, and a foreign `Throwable` is wrapped as an `Error.Unchecked` to make it
+    same bolt code as its prefix, and a foreign `Throwable` is wrapped as an `Error.Unchecked` to make it
     a `Hazard`. How to *raise* and *handle* an error — `raises`, `Tactic`, `safely`,
     `recover`… — is `contingency`, which builds on this library.
 
@@ -123,15 +125,17 @@ entry .Error   the base of every Soundness error: a number, a structured message
       error.getStackTrace.nn.length > 0   // true, under stackTracesDiagnostics
       ```
 
-      `d` is the error's number, a three-digit code unique across every Soundness library:
-      it is allocated when the error type is written, never reused (a retired number's page
-      stays, saying what became of it), and documented at `doc/errors/<d>.md` with its cause
-      and the usual remedies, so that `SN-405` in a user's report can be looked up rather
-      than guessed at. `e` is the number of the error's reason — the `number` of its `Reason`
-      case, an enum extending `Clarification` — or 0 when the error has no reasons. An error
-      written `Error(message)` has `d = 0`: no code, and `getMessage` prefixes its component
-      instead. The code renders in the `[↯SN-ddd.e]` prefix of `#labelled`, of `getMessage`
-      and of a compile-time `halt`.
+      An error is identified by three numbers, which make its bolt code. `module` is the
+      number of the library the error is in, as the `bolt` registry's `s.tel` records it;
+      `number` is the error's own within that library, the next free one when the error type
+      is written, and never reused (a retired number stays in the registry, marked so); and
+      `variant` is the number of the error's reason — the `number` of its `Reason` case, an
+      enum extending `Clarification` — or 0 when the error has no reasons. The error is
+      documented at `doc/errors/<module>.<number>.md` with its cause and the usual remedies,
+      so that `↯/s.25.1` in a user's report can be looked up rather than guessed at. An error
+      written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
+      component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
+      `getMessage` and of a compile-time `halt`.
 
       An `Error` is `caps.Pure`: it may never hold a live capability, because `throw` is the
       one channel capture checking cannot see, and an exception caught outside a scope
@@ -146,6 +150,7 @@ entry .Error   the base of every Soundness error: a number, a structured message
       and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
       a handler deconstructs the case class and its `Reason`, never its text.
   refer fulminate.Message
+  refer fulminate.Bolt
   refer fulminate.Clarification
   refer fulminate.Diagnostics
   refer fulminate.Hazard
@@ -154,8 +159,13 @@ entry .Error   the base of every Soundness error: a number, a structured message
       `Error(throwable)` passes an `Error` through unchanged and wraps any other `Throwable`
       in an `Error.Unchecked`, which keeps its message and stack trace. This is how a JDK
       exception becomes a `Hazard` which can be raised.
-  entry #d   the error's number: the `ddd` of `SN-ddd`, or 0 for an unnumbered error
-  entry #e   the reason's number within the error: the `e` of `SN-ddd.e`, or 0
+  entry #module   the number of the error's library: the `25` of `↯/s.25.1.2`, or 0 for an unnumbered error
+  entry #number   the error's number within its library: the `1` of `↯/s.25.1.2`
+  entry #variant   the reason's number within the error: the `2` of `↯/s.25.1.2`, or 0
+  entry #bolt   the error's bolt code; `Bolt.Uncoded` for an unnumbered error
+      An error which is reported on account of another project's overrides this to carry
+      that error's code: Stratiform's `Tel.Error` for a reason the TEL Specification numbers
+      is `↯/s.118.1/t.1.7`.
   entry #message   the error's message, as a structured `Message`
   entry #diagnostics   the `Diagnostics` the error was built with
       Available so that a translated error can be built with the original's choice:
@@ -166,9 +176,9 @@ entry .Error   the base of every Soundness error: a number, a structured message
       The first segment of the class's fully-qualified name, which is the top-level package
       for a Soundness error. It is the prefix of `getMessage` for an error with no number, so
       a message such as `galilei: the path is not a directory` says where the error came from.
-  entry #errorCode   the code as text, `SN-ddd` or `SN-ddd.e`; empty for an unnumbered error
-  entry #colourCode   the code as `[↯SN-ddd.e]`, with ANSI colours; empty for an unnumbered error
-  entry #labelled   the message with its code prefixed: `[↯SN-ddd.e] message`
+  entry #errorCode   the code as text, `↯/s.25.1` or `↯/s.25.1.2`; empty for an unnumbered error
+  entry #colourCode   the code as `[↯/s.25.1.2]`, with ANSI colours; empty for an unnumbered error
+  entry #labelled   the message with its code prefixed: `[↯/s.25.1.2] message`
       The message alone when the error has no number. This is what `HaltTactic` reports when
       an error becomes a compile error.
 
@@ -187,6 +197,45 @@ entry .Error   the base of every Soundness error: a number, a structured message
     entry .apply   wraps a `Throwable`, keeping its message and stack trace
     entry #text   the original's message, or empty text
     entry #stackTrace   the original's stack trace, as the JVM array
+
+entry .Bolt   a bolt code: the name of a diagnostic, such as `↯/s.25.1.2` or `↯/s.118.1/t.1.7`
+  detail
+      A bolt code names a diagnostic of one of Propensive's projects in one form across all
+      of them: `↯`, and one or more groups, each begun by `/`. A group is the letter of a
+      project (`s` is Soundness) and its numbers: a subdivision of the project — for
+      Soundness, a library — an error in it, and optionally a variant of the error and a
+      site it is reported from. A code of several groups is a compound: the first is the
+      error which was reported, and those after it are the `cause` it was reported on account
+      of, which is a code in its own right.
+
+      ```scala
+      val code = Bolt('s', 118, 1).carrying(Bolt('t', 1, 7))
+      code.text           // t"↯/s.118.1/t.1.7"
+      code.cause.nn.text  // t"↯/t.1.7"
+      Bolt.parse(t"↯/s.25.1.2").variant   // 2
+      ```
+
+      The record of what each code means is the
+      [bolt](https://github.com/propensive/bolt) repository.
+  refer fulminate.Error
+  entry .Soundness   the letter by which bolt codes name Soundness, `s`
+  entry .Uncoded   the code of a diagnostic which has none
+  entry .prefix   the code a text begins with, bracketed or not, and how many characters it occupies
+      `Uncoded` and zero if the text does not begin with a code. The count includes a space
+      which follows the code, so that dropping that many characters leaves the message.
+  entry .parse   the code a text consists of; `Uncoded` if it is not exactly a code
+  entry #project   the letter of the project
+  entry #subdivision   the number of the part of the project: for Soundness, of the library
+  entry #error   the number of the error within the subdivision
+  entry #variant   the number of the error's variant, or 0
+  entry #site   the number of the site the error is reported from, or 0
+  entry #cause   the code this error was reported on account of, or `null`
+  entry #coded   whether this is a code at all: false only for `Uncoded`
+  entry #carrier   the error which was reported, without its cause
+  entry #carrying   this code carrying another, which goes innermost in a compound
+  entry #text   the code as it is written, `↯/s.25.1.2`; empty for `Uncoded`
+  entry #label   the code in brackets, as it is written before a message
+  entry #colorLabel   the bracketed code with ANSI colours
 
 entry .Hazard   the domain of raisable values: any pure `Exception`
     `type Hazard = Exception & caps.Pure`. `Error` is pure by inheritance, so every Soundness
@@ -338,7 +387,7 @@ entry .communicate   `value.communicate`: the value as a `Message`, through its 
 entry .Clarification   the trait a `Reason` enum extends: a number for each distinct cause of an error
     `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
     `Reason` enum extending `Clarification`, each with a number unique within the error, so
-    that `Error(405, reason.number)` renders as `SN-405.1`, `SN-405.2`… and each has a
+    that `Error(25, 1, reason.number)` renders as `↯/s.25.1.1`, `↯/s.25.1.2`… and each has a
     sub-section of the error's page in `doc/errors`. A `Reason` carries data of its own where
     the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
     `Communicable` instance phrasing each case, which the error's message interpolates. A
@@ -429,9 +478,10 @@ entry .halt   reports a compile error from a macro and aborts the expansion
     `Message`'s text (coloured, through `Message#colorText`, when the compiler's `-color`
     setting is on) with `report.errorAndAbort`; `halt(message, position)` attaches a
     position. The numbered overloads prefix the diagnostic with the error's code as
-    `[↯SN-ddd] ` — `halt(d, message)`, `halt(d, message, position)` — or with its reason's
-    number as `[↯SN-ddd.e] `: `halt(d, reason, message)` and `halt(d, reason, message,
-    position)`, where `reason` is a `Clarification`. The position parameter of the numbered
+    `[↯/s.25.1] ` — `halt(module, number, message)`, `halt(module, number, message,
+    position)` — or with its reason's number as `[↯/s.25.1.2] `: `halt(module, number,
+    reason, message)` and `halt(module, number, reason, message, position)`, where `reason`
+    is a `Clarification`. The position parameter of the numbered
     forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
     reports without one. Every macro-raised code has a page in `doc/errors`, like a runtime
     error's.

@@ -999,4 +999,4 @@ object Mcp:
       case Reason.MissingParameter => m"a required parameter was not present in the input"
 
   case class Error(reason: Mcp.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(630, reason.number)(m"the MCP operation failed because $reason")
+  extends fulminate.Error(124, 1, reason.number)(m"the MCP operation failed because $reason")

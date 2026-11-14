@@ -321,7 +321,7 @@ object Api:
   // ranges (and for a status telekinesis does not name); `OtherError` for `default`.
   sealed abstract class Error[+payload](val status: Http.Status, val payload: payload)
     ( using Diagnostics )
-  extends fulminate.Error(914, 1)(m"the server responded with an unsuccessful status, $status")
+  extends fulminate.Error(135, 2, 1)(m"the server responded with an unsuccessful status, $status")
 
   case class Continue[+payload](override val payload: payload)(using Diagnostics)
   extends Error[payload](Http.Continue, payload)
@@ -486,7 +486,7 @@ object Api:
   // A response with a status the specification does not declare: the server has broken its
   // contract, which every call may meet and must handle apart from the declared errors
   case class Violation(status: Http.Status, body: Data)(using Diagnostics)
-  extends fulminate.Error(914, 2)(m"the server responded with an undeclared status, $status")
+  extends fulminate.Error(135, 2, 2)(m"the server responded with an undeclared status, $status")
 
 trait Api extends Dynamic, Locative, Transportive:
   def request: Api.Request

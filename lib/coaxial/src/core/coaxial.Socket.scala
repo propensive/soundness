@@ -261,4 +261,4 @@ object Socket:
       case Reason.Unsupported => m"the kind of socket is not supported on this platform"
 
   case class Error(reason: Socket.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")
+  extends fulminate.Error(101, 2, reason.number)(m"the connection failed because $reason")

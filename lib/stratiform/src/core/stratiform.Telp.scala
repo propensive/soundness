@@ -92,7 +92,7 @@ object Telp:
   // `index` is the 0-based index of the component at which
   // resolution or parsing failed (§7).
   case class Error(reason: Error.Reason, index: Int)(using Diagnostics)
-  extends fulminate.Error(610, reason.ordinal + 1)(m"the TELP does not resolve because $reason")
+  extends fulminate.Error(118, 6, reason.ordinal + 1)(m"the TELP does not resolve because $reason")
 
   // A resolution outcome (§4): a single element, or one keyword's
   // ordered — possibly empty — occurrence sequence.

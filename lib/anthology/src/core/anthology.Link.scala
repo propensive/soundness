@@ -93,4 +93,4 @@ object Link:
       case Reason.CompilerUnusable(detail)  => m"the compiler could not be run: $detail"
 
   case class Error(reason: Link.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(443, reason.number)(m"linking failed because $reason")
+  extends fulminate.Error(137, 1, reason.number)(m"linking failed because $reason")

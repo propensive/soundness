@@ -41,4 +41,4 @@ import fulminate.*
 object Expectation:
   // ExpectationError → Expectation.Error
   case class Error[result](result: result)(using Diagnostics)
-  extends fulminate.Error(841, 0)(m"the expression was expected to fail, but succeeded")
+  extends fulminate.Error(24, 16, 0)(m"the expression was expected to fail, but succeeded")

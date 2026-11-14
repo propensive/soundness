@@ -149,7 +149,7 @@ object Geolocation:
       case Reason.BadUncertainty      => m"the `uncertainty` parameter was not a valid number"
 
   case class Error(reason: Geolocation.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(420, reason.number)
+  extends fulminate.Error(46, 1, reason.number)
     ( m"the geo URI is not in the correct format because $reason" )
 
 case class Geolocation

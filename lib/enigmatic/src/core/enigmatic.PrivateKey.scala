@@ -64,7 +64,7 @@ object PrivateKey:
       case PublicKeyAbsent extends Reason(5)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(597, reason.number)(m"could not read the private key because $reason")
+  extends fulminate.Error(105, 7, reason.number)(m"could not read the private key because $reason")
 
   // A key in PKCS#8 form (RFC 5958's `PrivateKeyInfo`), checked against the cipher the caller
   // named: the document's algorithm identifier and the key material's size must be those of

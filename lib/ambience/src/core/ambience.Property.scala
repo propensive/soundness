@@ -146,7 +146,7 @@ object Property:
 
   // PropertyError → Property.Error
   case class Error(property: Text)(using Diagnostics)
-  extends fulminate.Error(815, 0)(m"the system property $property was not defined")
+  extends fulminate.Error(62, 1, 0)(m"the system property $property was not defined")
 
 trait Property extends Typeclass, Topical:
   type Self <: String

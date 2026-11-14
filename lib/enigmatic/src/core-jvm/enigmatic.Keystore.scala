@@ -118,7 +118,7 @@ object Keystore:
       case WriteUnsupported extends Reason(2)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(522, reason.number)(m"the keystore operation failed because $reason")
+  extends fulminate.Error(105, 3, reason.number)(m"the keystore operation failed because $reason")
 
 // The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
 // passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call

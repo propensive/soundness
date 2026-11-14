@@ -170,7 +170,7 @@ object Sse:
         m"the requested replay range exceeded the source buffer capacity"
 
   case class Error(reason: Sse.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(350, reason.number)
+  extends fulminate.Error(112, 5, reason.number)
     ( m"the server-sent event was not valid because $reason" )
 
   // SseSource → Sse.Source

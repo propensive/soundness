@@ -411,7 +411,7 @@ object Zip:
       case Reason.CannotWrite(detail)     => m"the archive could not be written: $detail"
 
   case class Error(reason: Zip.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(751, reason.number)(m"the ZIP operation failed because $reason")
+  extends fulminate.Error(136, 1, reason.number)(m"the ZIP operation failed because $reason")
 
   // ZipEvent -> Zip.Event
   object Event:

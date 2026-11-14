@@ -115,6 +115,6 @@ object Hostname:
       case InitialDash(label: Text)  extends Reason(5)
 
   case class Error(text: Text, reason: Hostname.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(892, reason.number)(m"the hostname is not valid because $reason")
+  extends fulminate.Error(100, 10, reason.number)(m"the hostname is not valid because $reason")
 
 case class Hostname(dnsLabels: DnsLabel*)

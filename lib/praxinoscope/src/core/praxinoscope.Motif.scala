@@ -577,7 +577,7 @@ object Motif:
       case UnknownUnicodeClass  extends Reason(21)
 
   case class Error(index: Int, reason: Motif.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(500, reason.number)
+  extends fulminate.Error(33, 1, reason.number)
     ( m"the regular expression could not be compiled because $reason at $index" )
 
   object Program:

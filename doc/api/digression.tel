@@ -163,7 +163,7 @@ entry .Fqcn   a fully-qualified JVM class name: dot-separated segments, each val
   entry .encodable   encodes an `Fqcn` as its dotted text
   entry .Error   raised when text is not a valid class name: an empty segment, a keyword or a bad character
     detail
-        Error `SN-017`: _the class name `name` is not valid because `reason`_. Raised by
+        Error `↯/s.63.1`: _the class name `name` is not valid because `reason`_. Raised by
         `Fqcn.apply` and by decoding text `as[Fqcn]`; `fqcn"…"` reports the same reasons as a
         compile error.
 

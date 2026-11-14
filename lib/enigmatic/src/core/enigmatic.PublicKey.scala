@@ -62,7 +62,7 @@ object PublicKey:
       case Unsupported(detail: Text) extends Reason(3)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(598, reason.number)(m"could not read the public key because $reason")
+  extends fulminate.Error(105, 8, reason.number)(m"could not read the public key because $reason")
 
   // A key in X.509 `SubjectPublicKeyInfo` form, checked against the cipher the caller named, as
   // `PrivateKey.derDecodable` checks a `PrivateKeyInfo`.

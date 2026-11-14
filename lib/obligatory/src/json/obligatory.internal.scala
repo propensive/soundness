@@ -287,14 +287,14 @@ object internal:
                             found
                           """
 
-                case _ => halt(593, m"a contextual `Online` instance is required")
+                case _ => halt(112, 6, m"a contextual `Online` instance is required")
 
-              case _ => halt(169, m"a contextual `Probate` instance is required")
+              case _ => halt(112, 3, m"a contextual `Probate` instance is required")
 
-            case _ => halt(323, m"a contextual `Monitor` instance is required")
+            case _ => halt(112, 4, m"a contextual `Monitor` instance is required")
 
         case _ =>
-          halt(69, m"the method ${method.name} must have exactly one parameter list")
+          halt(112, 1, m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
@@ -421,7 +421,7 @@ object internal:
                 halt(m"a contextual `Monitor` instance is required")
 
         case _ =>
-          halt(69, m"the method ${method.name} must have exactly one parameter list")
+          halt(112, 1, m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)

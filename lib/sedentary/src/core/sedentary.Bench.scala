@@ -488,7 +488,7 @@ object Bench:
 
   // BenchError → Bench.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(794, 0)(m"unable to run benchmarks")
+  extends fulminate.Error(10, 1, 0)(m"unable to run benchmarks")
 
 // `heap`, `cpus` and `gc` size and pin the measurement JVM exactly as for `Stress` (see the
 // notes on `BenchmarkDevice#invoke`): the defaults are a fixed 1 GB heap and the Serial collector,

@@ -125,12 +125,12 @@ build.
 
 Horizon: mid
 
-synesthesia exposes the platform's knowledge to agents: module documentation, `SN-` error
+synesthesia exposes the platform's knowledge to agents: module documentation, error
 pages, roadmap status from `status.tel`, and migration instructions. An agent should never
-need to clone the repository to answer "what does SN-042 mean?" Today synesthesia is the
+need to clone the repository to answer "what does ↯/s.42.1 mean?" Today synesthesia is the
 generic MCP library — tools, resources and prompts — and none of those resources exists.
 
-Done when: a scripted MCP session resolves an `SN-` code to its page, a module to its topic
+Done when: a scripted MCP session resolves a bolt code to its page, a module to its topic
 guide, and a roadmap item to its status, in CI.
 
 ## tool-6: the property-testing question is settled

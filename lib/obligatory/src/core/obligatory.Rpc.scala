@@ -37,4 +37,4 @@ import fulminate.*
 object Rpc:
   // RpcError → Rpc.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(983, 0)(m"the remote procedure call failed")
+  extends fulminate.Error(112, 8, 0)(m"the remote procedure call failed")

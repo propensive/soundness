@@ -97,7 +97,7 @@ object Terminal:
 
   // TerminalError → Terminal.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(493, 0)(m"STDIN is not attached to a TTY")
+  extends fulminate.Error(95, 2, 0)(m"STDIN is not attached to a TTY")
 
   // TerminalFeature → Terminal.Feature
   // A terminal mode that can be turned on and off with a pair of escape sequences —

@@ -157,7 +157,7 @@ entry .Localhost   the hostname `localhost`, as a value
 
 entry .host   the `host"…"` interpolator: a hostname, checked as the code compiles
     `host"www.example.com"` is a `Hostname`, and text which is not a valid hostname is a
-    compile error carrying the `Hostname.Error` message (`[↯SN-892.4] the hostname is not
+    compile error carrying the `Hostname.Error` message (`[↯/s.100.10.4] the hostname is not
     valid because a DNS label cannot be empty` for `host"www..com"`). The interpolator takes
     no substitutions. Declared in `urticose.url`.
 
@@ -345,7 +345,7 @@ entry .subnet   the `subnet"…"` interpolator: an IPv4 or IPv6 subnet, checked 
     `subnet"192.168.0.0/24"` is an `Ipv4Subnet` and `subnet"2001:db8::/32"` an `Ipv6Subnet`:
     the interpolator is transparent and takes its family from whether the address contains a
     dot. The prefix is checked against the family's range (0–32 or 0–128), so an impossible
-    mask is a compile error (`[↯SN-077.9] … the prefix length 40 is not in the range 0-32`),
+    mask is a compile error (`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`),
     and host bits below the prefix are masked away. It takes no substitutions.
 
     ```scala
@@ -385,7 +385,7 @@ entry .MacAddress   a 48-bit hardware address, as an opaque type over `Long`
 entry .mac   the `mac"…"` interpolator: a MAC address, checked as the code compiles
     `mac"01-23-45-ab-cd-ef"` is a `MacAddress`; text which is not six dashed pairs of
     hexadecimal digits is a compile error carrying the `MacAddress.Error` message
-    (`[↯SN-532.2] the MAC address is not valid because group 5 should be two hex digits, but
+    (`[↯/s.100.7.2] the MAC address is not valid because group 5 should be two hex digits, but
     its length is 1`). It takes no substitutions.
 
 entry .Port   a port number whose type records its transport and, for a literal, its number
@@ -428,8 +428,8 @@ entry .tcp   the `tcp"…"` interpolator: a TCP port by number or IANA service n
     `tcp"443"` is a `Port over Tcp of 443` and `tcp"smtp"` a `Port over Tcp of 25`: a name is
     looked up in the IANA service-names registry bundled with the library, for the TCP
     transport specifically, so a service registered only over UDP, or an unknown name, is a
-    compile error (`[↯SN-915] abcdef is not a valid TCP port`), as is a number outside
-    1–65535 (`[↯SN-340]`). It takes no substitutions.
+    compile error (`[↯/s.100.11] abcdef is not a valid TCP port`), as is a number outside
+    1–65535 (`[↯/s.100.5]`). It takes no substitutions.
 
     ```scala
     import soundness.*
@@ -440,7 +440,7 @@ entry .tcp   the `tcp"…"` interpolator: a TCP port by number or IANA service n
 
 entry .udp   the `udp"…"` interpolator: a UDP port by number or IANA service name, checked as the code compiles
     As `tcp"…"`, for the UDP transport: `udp"53"` and `udp"domain"` are each a `Port over Udp
-    of 53`, and a name registered only over TCP does not compile (`[↯SN-915] docker is not a
+    of 53`, and a name registered only over TCP does not compile (`[↯/s.100.11] docker is not a
     valid UDP port`).
 
     ```scala

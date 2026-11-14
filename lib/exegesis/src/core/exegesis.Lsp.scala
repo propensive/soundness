@@ -2015,8 +2015,8 @@ object Lsp:
   // LspError → Lsp.Error
   object Error:
     // Each reason carries its JSON-RPC wire code (`code`), alongside the sequential `number` used
-    // for the SN-147 diagnostic. A fault raised in a handler is converted by `Lsp.listen` into an
-    // error response whose `error.code` is the reason's wire code.
+    // for the ↯/s.114.1 diagnostic. A fault raised in a handler is converted by `Lsp.listen` into
+    // an error response whose `error.code` is the reason's wire code.
     enum Reason(val number: Int, val code: Int) extends Clarification:
       case Parse                extends Reason(1, -32700)
       case InvalidRequest       extends Reason(2, -32600)
@@ -2059,7 +2059,7 @@ object Lsp:
       case Reason.Unstarted            => m"the language server could not be started"
 
   case class Error(reason: Lsp.Error.Reason, details: Optional[Text] = Unset)(using Diagnostics)
-  extends fulminate.Error(147, reason.number)(m"the LSP operation failed because $reason"):
+  extends fulminate.Error(114, 1, reason.number)(m"the LSP operation failed because $reason"):
     // The message sent to the client in the error response: the given details, or the reason's
     // standard description.
     def response: Text = details.or(reason.communicate.text)

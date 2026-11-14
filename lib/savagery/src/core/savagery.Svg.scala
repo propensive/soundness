@@ -161,7 +161,7 @@ object Svg:
   case class ViewBox(x: Float, y: Float, width: Float, height: Float)
 
   case class Error(reason: Svg.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(122, reason.number)(m"the SVG could not be parsed because $reason")
+  extends fulminate.Error(130, 1, reason.number)(m"the SVG could not be parsed because $reason")
 
   // SvgParser → Svg.Parser
   object Parser:

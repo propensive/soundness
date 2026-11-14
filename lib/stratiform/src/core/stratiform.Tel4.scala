@@ -109,7 +109,7 @@ trait Tel4:
     // A document which does not conform to the schema a `Tel.Provider` reads it by, as one of a
     // record's fields is read
     case class Error(reason: Tel.Provider.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(614, reason.number)
+    extends fulminate.Error(118, 10, reason.number)
       ( m"the TEL did not conform to its schema because $reason" )
 
     // Walk a Tels.Struct to produce the polyvinyl `Member` map. Each Field at the top level

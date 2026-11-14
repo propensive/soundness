@@ -444,7 +444,7 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
         ```
     refer xylophone.Xml.Focus
     entry .Reason   why the XML could not be read, each with its number
-        The cases, each extending `Reason(n)` so the error reads as `SN-149.n`:
+        The cases, each extending `Reason(n)` so the error reads as `↯/s.128.1.n`:
 
         ```tabular
         column  Case

@@ -191,4 +191,4 @@ object Upgrade:
       case CannotResolveName  extends Reason(3)
 
   case class Error(reason: Upgrade.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(631, reason.number)(m"could not stage the upgrade because $reason")
+  extends fulminate.Error(140, 1, reason.number)(m"could not stage the upgrade because $reason")

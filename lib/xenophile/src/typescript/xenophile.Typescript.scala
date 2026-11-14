@@ -186,7 +186,7 @@ object Typescript:
   // recognise reports a smaller contract than the file declares — which would make any
   // compatibility claim computed from it unsound.
   case class Error(reason: Typescript.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(643, reason.number)
+  extends fulminate.Error(59, 1, reason.number)
     ( m"the TypeScript declarations could not be read because $reason" )
 
   // TypescriptMember → Typescript.Member

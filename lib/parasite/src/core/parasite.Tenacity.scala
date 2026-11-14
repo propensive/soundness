@@ -56,7 +56,7 @@ object Tenacity:
 
   // RetryError → Tenacity.Error
   case class Error(count: Int)(using Diagnostics)
-  extends fulminate.Error(552, 0)(m"aborted repeated evaluation after $count attempts")
+  extends fulminate.Error(69, 1, 0)(m"aborted repeated evaluation after $count attempts")
 
 // A `Tenacity` is a pure retry policy (it holds no capabilities), so it extends `Pure`; this keeps
 // `this` out of capture sets when combinators like `limit` return a fresh policy delegating to it.

@@ -88,7 +88,7 @@ object MediaType:
           txt"the type must be one of: ${list.join(t", ", t" or ")}"
 
   case class Error(value: Text, reason: MediaType.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(353, reason.number)
+  extends fulminate.Error(81, 1, reason.number)
     ( m"the value $value is not a valid media type; ${reason.message}" )
 
 case class MediaType

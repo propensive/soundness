@@ -725,7 +725,8 @@ object Asn1:
       case NotConstructed(offset: Long, tag: Int) extends Reason(19)
 
   case class Error(reason: Asn1.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(523, reason.number)(m"could not process the ASN.1 value because $reason")
+  extends fulminate.Error(105, 4, reason.number)
+    ( m"could not process the ASN.1 value because $reason" )
 
 enum Asn1 derives CanEqual:
   case Boolean(value: scala.Boolean)

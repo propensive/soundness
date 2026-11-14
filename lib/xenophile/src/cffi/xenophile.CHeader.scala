@@ -83,7 +83,7 @@ object CHeader:
   // a silent skip: a partially-read header understates the contract, and every claim computed
   // from it would be unsound.
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(646, reason.number)(m"the C header could not be read because $reason")
+  extends fulminate.Error(59, 4, reason.number)(m"the C header could not be read because $reason")
 
   // CHeaderDialect → CHeader.Dialect
   // The C grammar for foreign navigation: a *projection* of `Parser`'s declaration model

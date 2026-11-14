@@ -63,7 +63,7 @@ object OAuth:
         m"could not connect to the OAuth provider at $url because $reason"
 
   case class Error(reason: OAuth.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(840, reason.number)(m"OAuth failed because $reason")
+  extends fulminate.Error(117, 1, reason.number)(m"OAuth failed because $reason")
 
   case class Scope(names: Text*):
     import anticipation.*

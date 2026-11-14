@@ -45,7 +45,7 @@ import vacuous.*
 object Internet:
   // OfflineError → Internet.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(770, 0)(m"an Internet connection is not available")
+  extends fulminate.Error(100, 9, 0)(m"an Internet connection is not available")
 
 // `Durable`, as the log sinks are: network access is used from every task at once, and the
 // capability carries no state of its own.

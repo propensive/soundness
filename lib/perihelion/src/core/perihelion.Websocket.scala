@@ -120,7 +120,7 @@ object Websocket:
       case Reason.Truncated         => m"the connection closed before the frame was complete"
 
   case class Error(reason: Websocket.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(368, reason.number)
+  extends fulminate.Error(115, 1, reason.number)
     ( m"the WebSocket protocol was violated because $reason" )
 
   // WebsocketEvent → Websocket.Event
