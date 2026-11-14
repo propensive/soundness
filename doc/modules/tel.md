@@ -577,16 +577,20 @@ file.open[Ratel]():
   val comedy = cast.role.where(t"/play", t"Twelfth Night")
 ```
 
-A scalar reads as `Text`, or as `Int`, `Long` or `Double` if its encoding is a standard codec
-whose every value one of them holds exactly, as `u32` is by `Long`. A flag is a `Boolean`, and
-a repeatable flag the `Long` number of times it occurs. A struct is a nested record, a
-repeatable scalar a `List`, and a repeatable struct a `Ratel.Table`, which has the `size`,
-`each`, `sorted` and `where` of a `Ratel.Rows`, and is applied to a key or a position. Each
-variant of a select is a member which is absent unless it is the one chosen, and a member
-which is optional is an `Optional`. A member the schema does not declare is not a member of
-the record, and does not compile. The provider's object must be compiled before the code
-which uses it, so it is written in a file of its own. Opening an image which was written with
-another schema raises a `Ratel.Error`, of `Mismatched`.
+A `Ratel.Provider` is a [specification](records.md#defining-a-specification), as
+`Tel.Provider` is, whose records are read in the context of an open image. A scalar is read
+through the `Intensional` instance named by its encoding, or by its first validator if it has
+none: as `Text`, or as `Int`, `Long` or `Double` if its encoding is a standard codec whose
+every value one of them holds exactly, as `u32` is by `Long`, or as a type of your own, by an
+instance of your own. A flag is a `Boolean`, and a repeatable flag the `Long` number of times
+it occurs. A struct is a nested record, a repeatable scalar a `List`, and a repeatable struct
+a `Ratel.Table`, which has the `size`, `each`, `sorted` and `where` of a `Ratel.Rows`, and is
+applied to a key or a position. Each variant of a select is a member which is absent unless
+it is the one chosen, and a member which is optional is an `Optional`. A member the schema
+does not declare is not a member of the record, and does not compile. The provider's object
+must be compiled before the code which uses it, so it is written in a file of its own.
+Opening an image which was written with another schema raises a `Ratel.Error`, of
+`Mismatched`.
 
 A reader which opens a file it did not write trusts nothing in it: every offset is checked
 before it is followed, and a fault is raised as a `Ratel.Error`, by the access which meets it,

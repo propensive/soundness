@@ -211,6 +211,24 @@ entry .Specification   a type provider over one document format: a schema as `#f
       Receives the value's kind and the kinds offered. A specification overrides it to raise
       its `#Failure`; by default it panics with _the value's kind, `kind`, is none the union
       offers_.
+  entry #Context   what the members of a record are read in, for a specification whose source is not in its values
+      An open file, say, which a record only says where to look in. A record made by
+      `Specification.recordWith` asks for a context wherever a member is selected, as well as
+      a `Tactic`, and passes it to `#accessWith`, `#repeatedWith`, `#entriesWith` and `#series`.
+      The context is tracked wherever it is passed, so the type named need not say that it is
+      a capability, and may be one. A specification without a context leaves it undefined.
+  entry #accessWith   `#access`, in a context
+      What a record made by `recordWith` fetches a field with. By default it is `#access`.
+  entry #repeatedWith   `#repeated`, in a context
+  entry #entriesWith   `#entries`, in a context
+  entry #Series   the collection a member of multiplicity `Series` reads as
+      A type of the specification's own, of the context a record was made with and of the
+      type of an element.
+  entry #series   makes the collection of a `Series` member, from a function which reads one element
+      The function is applied to a value, a context and a tactic, and is what the macro would
+      have applied to each element of a `Many` member. A collection keeps it and reads an
+      element when it is asked for one, in whatever context it is then given. By default it
+      panics with _this specification has no series_.
   entry #build   wraps a value and a field transform as a `Record`
       Called by the generated code for each record and nested record; by default
       `Record(data, transform)`. The transform is a pure function, since a record retains it.
@@ -329,11 +347,15 @@ entry .Specification   a type provider over one document format: a schema as `#f
     entry #optional   this member read as `Optional`, `Unset` where the value is absent
     entry #many   this member read as a `List` of any number of values
     entry #keyed   this member read as a `Map[Text, _]` of values each under a name
+    entry #series   this member read as the specification's own collection, element by element
   entry .Multiplicity   how many values a field carries: one, at most one, any number, or any number by name
       `One` reads exactly one value, through `Specification#access` and `Specification#required`;
       `Optional` reads at most one, as an `Optional` which is `Unset` where `Specification#absent`
       is true; `Many` reads any number, as a `List`, through `Specification#repeated`; and `Keyed`
       reads any number each under a name, as a `Map[Text, _]`, through `Specification#entries`.
+      `Series` reads any number as a collection of the specification's own, its `#Series`, made
+      by `Specification#series`, which reads an element only when it is asked for one; it is
+      for a specification which is read in a `#Context`.
 
       The macro applies the multiplicity itself, so an `Intensional` instance describes a single
       value only, and a specification says nothing more about optionality or repetition. A

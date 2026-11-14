@@ -117,9 +117,12 @@ trait Tel4:
     // member absent from `base` — the struct as the schema's base declares it, before any layer
     // — was introduced by a layer, and is optional whatever the layer declares: a document
     // composed without that layer omits it.
+    //
+    // `within` names the records this struct lies within. A record which contains itself is
+    // not described again, since a type cannot go on for ever: it reads as its `Tel`.
     def fieldsOf
       ( struct: Tels.Struct, schema: Tels, base: Optional[Tels] = Unset,
-        baseStruct: Optional[Tels.Struct] = Unset )
+        baseStruct: Optional[Tels.Struct] = Unset, within: List[Text] = Nil )
     :   List[(Text, Member)] =
 
       val declared: Set[Text] =
@@ -129,7 +132,7 @@ trait Tel4:
       struct.members.stdlib.toList.flatMap:
         case field: Tels.Field =>
           val layered = base.present && !declared.has(field.keyword)
-          scala.List(field.keyword -> memberOf(field, schema, base, layered))
+          scala.List(field.keyword -> memberOf(field, schema, base, layered, within))
 
         // A select member is one of its definition's variants, each a field of its own
         // keyword, optional since any one of them may be the one present
@@ -140,7 +143,8 @@ trait Tel4:
                 if select.repeatable == Tels.Polarity.Loose then Multiplicity.Many
                 else Multiplicity.Optional
 
-              variant.keyword -> typeMember(variant.variantType, schema, base, multiplicity)
+              variant.keyword ->
+                typeMember(variant.variantType, schema, base, multiplicity, within)
 
         case _ => scala.Nil
 
@@ -155,7 +159,12 @@ trait Tel4:
     // Since §21.8 made `validate` optional, a scalar may be constrained by patterns alone; it
     // then has no validator name to key on and falls back to `string`, which is right — a
     // pattern narrows the accepted text but does not change its Scala representation.
-    private def memberOf(field: Tels.Field, schema: Tels, base: Optional[Tels], layered: Boolean)
+    private def memberOf
+      ( field:   Tels.Field,
+        schema:  Tels,
+        base:    Optional[Tels],
+        layered: Boolean,
+        within:  List[Text] )
     :   Member =
 
       val multiplicity =
@@ -163,12 +172,16 @@ trait Tel4:
         else if layered || field.required == Tels.Polarity.Loose then Multiplicity.Optional
         else Multiplicity.One
 
-      typeMember(field.fieldType, schema, base, multiplicity)
+      typeMember(field.fieldType, schema, base, multiplicity, within)
 
     // The member reading a value of a TEL type. A flag is never optional: it reads `false` when
     // absent. An inline struct, or a reference to a record definition, is a nested record.
     private def typeMember
-      ( fieldType: Tels.Type, schema: Tels, base: Optional[Tels], multiplicity: Multiplicity )
+      ( fieldType:    Tels.Type,
+        schema:       Tels,
+        base:         Optional[Tels],
+        multiplicity: Multiplicity,
+        within:       List[Text] )
     :   Member =
 
       def scalar(validators: Array[Text]^{}): Member =
@@ -177,6 +190,9 @@ trait Tel4:
       fieldType match
         case s: Tels.Scalar => scalar(s.validators)
         case Tels.Flag      => Member.Value(t"flag")
+
+        case Tels.Reference(name) if within.has(name) =>
+          Member.Value(t"tel", Nil, multiplicity)
 
         case Tels.Reference(name) =>
           schema.scalars.seek(_.name == name).lay:
@@ -190,11 +206,13 @@ trait Tel4:
                   . or(Tels.Struct(Array.empty, Array.empty))
 
                 val members = Tels.Struct(rec.members, rec.validators)
-                Member.Record(fieldsOf(members, schema, base, baseRecord), multiplicity)
+                val fields = fieldsOf(members, schema, base, baseRecord, name :: within)
+                Member.Record(fields, multiplicity)
 
           . apply: sc => scalar(sc.validators)
 
-        case struct: Tels.Struct => Member.Record(fieldsOf(struct, schema, base), multiplicity)
+        case struct: Tels.Struct =>
+          Member.Record(fieldsOf(struct, schema, base, Unset, within), multiplicity)
 
   abstract class Provider(val tels: Tels) extends Specification:
     type Origin = Tel
