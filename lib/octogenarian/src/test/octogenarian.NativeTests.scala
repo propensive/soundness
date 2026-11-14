@@ -430,6 +430,19 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         gitOut(dir, t"status", t"--porcelain")
       .assert(_ == t" M a")
 
+      // A working file a second older than the index is taken for unchanged if the entry holds
+      // its stat data, so the entry must not, when the file is left as it is. The test above
+      // passes regardless whenever both are written within the same second.
+      test(m"restore with staged does not vouch for an older working file"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"changed\n")
+        sh"git -C $dir add a".exec[Exit]()
+        Thread.sleep(1100)
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.restore(Operations.planePath(worktree, t"a"))(staged = true) }
+        gitOut(dir, t"status", t"--porcelain")
+      .assert(_ == t" M a")
+
       test(m"clean removes untracked files and reports them"):
         val dir = gitRepo()
         gitCommit(dir, t"a", t"a\n", t"first")
