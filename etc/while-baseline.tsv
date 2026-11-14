@@ -227,7 +227,7 @@ lib/ultimatum/src/core/ultimatum.GridSurface.scala	7	0	0
 lib/ultimatum/src/core/ultimatum.ScrollFixture.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.Tui.scala	13	0	1
 lib/ultimatum/src/core/ultimatum_core.scala	2	0	0
-lib/ulysses/src/core/ulysses.Bibliography.scala	0	8	0
+lib/ulysses/src/core/ulysses.Bibliography.scala	0	9	0
 lib/ulysses/src/core/ulysses.BloomFilter.scala	0	2	0
 lib/ulysses/src/core/ulysses.Cadence.scala	0	1	0
 lib/ulysses/src/core/ulysses.Palimpsest.scala	7	5	0
