@@ -373,19 +373,19 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"a search by a member the record does not have does not compile"):
         demilitarize:
-          image.open[Ratel]()(FolioRecords().play.where(_.playwright = t"Fletcher"))
+          image.open[Ratel]() { FolioRecords().play.where(_.playwright = t"Fletcher"); () }
         . map(_.message.tt)
       . assert(_.exists(_.contains(t"the record has no member playwright")))
 
       test(m"a search for a value of another type does not compile"):
         demilitarize:
-          image.open[Ratel]()(FolioRecords().play.where(_.author.born = t"1564"))
+          image.open[Ratel]() { FolioRecords().play.where(_.author.born = t"1564"); () }
         . map(_.message.tt)
       . assert(_.exists(_.contains(t"the member born is read as")))
 
       test(m"a path does not go through a member which is not a record"):
         demilitarize:
-          image.open[Ratel]()(FolioRecords().play.where(_.title.length = 6))
+          image.open[Ratel]() { FolioRecords().play.where(_.title.length = 6); () }
         . map(_.message.tt)
       . assert(_.exists(_.contains(t"the member title is not a record")))
 
@@ -425,8 +425,24 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         demilitarize:
           val first = image.open[Ratel]()((ratel.root / t"play")(Prim))
           image.open[Ratel]()(first.text(t"title"))
-        . nil
-      . assert(_ == false)
+        . map(_.message.tt)
+      . assert(_.exists(_.contains(t"is read through the reader of that image")))
+
+      test(m"a row is read through its own reader within another's block"):
+        val other: Ratel = catalogue.ratel(catalogueSchema)
+
+        image.open[Ratel](): outer ?=>
+          val first = (outer.root / t"play")(Prim)
+          other.open[Ratel]()(first.text(t"title"))
+      . assert(_ == t"Hamlet")
+
+      test(m"a record is read through its own reader within another's block"):
+        val other: Ratel = catalogue.ratel(catalogueSchema)
+
+        image.open[Ratel]():
+          val hamlet = FolioRecords().play(t"Hamlet")
+          other.open[Ratel]()(hamlet.let(_.title: Text))
+      . assert(_ == t"Hamlet")
 
       test(m"the reader may be named in the block"):
         image.open[Ratel]() { reader ?=> (reader.root / t"play").size }

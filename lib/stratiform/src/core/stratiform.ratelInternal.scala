@@ -43,8 +43,8 @@ import prepositional.*
 // The macro behind `Ratel.Provider#apply`.
 object ratelInternal:
   // The root of an open image as a record of the provider `self`. The record is polyvinyl's;
-  // what is decided here is the context its members are read in, which is access to the
-  // image with its reader's brand, so that a record is read through the reader it came from.
+  // what is decided here is the context its members are read in, which is a reader with the
+  // brand of the one given, so that a record is read through the reader it came from.
   def record[self: Type]
     ( provider: Expr[Ratel.Provider],
       reader:   Expr[Ratel.Reader],
@@ -65,7 +65,7 @@ object ratelInternal:
     brand.asType.absolve match
       case '[brand] =>
         Specification.recordWith
-          [ self, Ratel.Cell, Ratel.Access[brand], Ratel.Provider, Ratel.Error ]
+          [ self, Ratel.Cell, Ratel.Reader of brand, Ratel.Provider, Ratel.Error ]
           ( '{Ratel.Provider.root($provider)(using $reader, $tactic)} )
 
   // The type a member of a record is read as, without the context it is read in, and without
