@@ -33,11 +33,9 @@
 package ulysses
 
 import murmuration.Iterator
+import rudiments.iterator
 import anticipation.*
 import beneficence.*
-import denominative.*
-import rudiments.*
-import vacuous.*
 
 object Bibliography:
   def apply(data: List[Data]): Bibliography =
@@ -69,9 +67,7 @@ object Bibliography:
     if low >= high then low else
       val middle = (low + high) >>> 1
 
-      // Read with `at`, not `readUnchecked`: Proscala 1.1.1 does not see that the element the
-      // inline read gives, when it is itself an array, is the `Array` the caller names.
-      if sorted.at(middle.z).lay(false)(prefixOrder(_, prefix) < 0)
+      if prefixOrder(sorted.readUnchecked(middle), prefix) < 0
       then lowerBound(sorted, prefix, middle + 1, high)
       else lowerBound(sorted, prefix, low, middle)
 
