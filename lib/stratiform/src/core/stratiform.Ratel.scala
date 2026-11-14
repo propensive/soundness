@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import scala.language.dynamics
 import scala.language.unsafeNulls
 
 import anticipation.*
@@ -1008,6 +1009,9 @@ object Ratel:
   // The records of a repeatable member of one record: a run of consecutive rows of a table,
   // in the order they were written, with the indexes which the schema declares over them.
   object Rows:
+    private[stratiform] def telp(path: Text): Telp =
+      safely(Telp.parse(path)).or(Telp(List(path)))
+
     private[stratiform] def apply[brand]
       ( host: Int, parent: Long, slot: Slot, table: Int, struct: Tels.Struct, start: Long,
         size: Long )
@@ -1121,11 +1125,16 @@ object Ratel:
       ( using reader.Topic =:= Topic )
     :   List[Row of Topic] =
 
-      def telp(path: Text): Telp = safely(Telp.parse(path)).or(Telp(List(path)))
+      where(Rows.telp(path), value)
+
+    private[stratiform] def where(path: Telp, value: Text)
+      ( using reader: Reader^, tactic: Tactic[Ratel.Error] )
+      ( using reader.Topic =:= Topic )
+    :   List[Row of Topic] =
 
       val (index, number) =
         reader.indexesAt(host, slot).seek: (index, number) =>
-          !index.primary && index.paths.head.let(telp(_) == telp(path)).or(false)
+          !index.primary && index.paths.head.let(Rows.telp(_) == path).or(false)
 
         . or(fail(Reason.Unindexed))
 
@@ -1194,14 +1203,40 @@ object Ratel:
       rows.sorted(using reader, tactic)(using Provider.bound(reader, rows))
       . map { row => read(Cell.Struct(row), access, tactic) }
 
-    // The records for which the scalar at `path` has the value `value`, by a secondary index.
-    def where(path: Text, value: Text)(using access: context^, tactic: Tactic[Ratel.Error])
+    // The records for which a scalar has a value, by a secondary index. The scalar is named as
+    // a lens names what it updates, by a path from a record which ends in an assignment:
+    //
+    //     cast.role.where(_.play = t"Hamlet")
+    //
+    // The path is checked against the type of the record, and the value against the type of
+    // the member it ends at.
+    def where(query: Path[element] => Query)(using access: context^, tactic: Tactic[Ratel.Error])
     :   List[element] =
 
       val reader: Reader^{access} = access
+      val sought = query(Path(Nil))
 
-      rows.where(path, value)(using reader, tactic)(using Provider.bound(reader, rows))
+      rows.where(sought.path, sought.value)(using reader, tactic)
+        ( using Provider.bound(reader, rows) )
+
       . map { row => read(Cell.Struct(row), access, tactic) }
+
+  // A path from a record of a `Ratel.Provider` to one of its members, written as a selection
+  // of each member on the way, and ended by the assignment of the value which is sought.
+  // `keywords` are those of the members passed, from the last to the first.
+  final class Path[+record](val keywords: List[Text]) extends Dynamic:
+    transparent inline def selectDynamic(inline name: String): Path[Any] =
+      ${stratiform.ratelInternal.descend[record]('this, 'name)}
+
+    inline def updateDynamic[value](inline name: String)(value: value): Query =
+      ${stratiform.ratelInternal.query[record, value]('this, 'name, 'value)}
+
+  // The scalar at a path, and the value it is to have, as text.
+  final class Query private[stratiform](val path: Telp, val value: Text)
+
+  object Query:
+    // `keywords` are the path's, from its end to the record.
+    def apply(keywords: List[Text], value: Text): Query = new Query(Telp(keywords.reverse), value)
 
   object Provider:
     // A record is read with the access of a reader which has its brand, as the type of each of

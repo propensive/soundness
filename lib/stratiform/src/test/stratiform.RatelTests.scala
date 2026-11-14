@@ -352,8 +352,42 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       test(m"a provider's table is sized, ordered and searched"):
         image.open[Ratel]():
           val plays = FolioRecords().play
-          (plays.size, plays.sorted.map(_.title: Text), plays.where(t"/genre", t"comedy").size)
+          (plays.size, plays.sorted.map(_.title: Text), plays.where(_.genre = t"comedy").size)
       . assert(_ == (3L, List(t"Cardenio", t"Hamlet", t"Twelfth Night"), 1))
+
+      test(m"a table is searched by a path through a record"):
+        image.open[Ratel]():
+          FolioRecords().play.where(_.stage.city = t"London").map(_.title: Text)
+      . assert(_ == List(t"Hamlet"))
+
+      test(m"a table is searched for a value of the type its member has"):
+        image.open[Ratel]():
+          FolioRecords().play.where(_.author.born = 1564L).map(_.title: Text)
+      . assert(_ == List(t"Hamlet"))
+
+      test(m"a search by a member which is not indexed is refused"):
+        capture[Ratel.Error]:
+          image.open[Ratel]() { FolioRecords().play.where(_.title = t"Hamlet"); () }
+        . reason
+      . assert(_ == Ratel.Error.Reason.Unindexed)
+
+      test(m"a search by a member the record does not have does not compile"):
+        demilitarize:
+          image.open[Ratel]()(FolioRecords().play.where(_.playwright = t"Fletcher"))
+        . map(_.message.tt)
+      . assert(_.exists(_.contains(t"the record has no member playwright")))
+
+      test(m"a search for a value of another type does not compile"):
+        demilitarize:
+          image.open[Ratel]()(FolioRecords().play.where(_.author.born = t"1564"))
+        . map(_.message.tt)
+      . assert(_.exists(_.contains(t"the member born is read as")))
+
+      test(m"a path does not go through a member which is not a record"):
+        demilitarize:
+          image.open[Ratel]()(FolioRecords().play.where(_.title.length = 6))
+        . map(_.message.tt)
+      . assert(_.exists(_.contains(t"the member title is not a record")))
 
       test(m"a scalar is read through an instance of the caller's own"):
         given ("u32" is Intensional in Ratel.Provider from Ratel.Cell to Text) = Intensional:
