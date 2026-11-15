@@ -5024,8 +5024,15 @@ object Tel extends Tel2:
       // A word at a time while the window allows: indent runs are short, so
       // one load usually decides.
       while pos + 8 <= bufEnd && {
+        // The lanes which are not a space, exactly. `Words.matches` is exact only in its
+        // lowest flagged lane, so inverting it would let a lane just above a run of spaces
+        // pass for one when its byte is a space plus one — `!` — and `    ! a` would be
+        // indented by six. Here no borrow crosses a lane: each lane's low seven bits are
+        // added to 0x7F, which carries into its own high bit if any of them is set.
+        val other = Words.load(cells, pos) ^ Parser.SpRepl
+
         val nonSpace =
-          ~Words.matches(Words.load(cells, pos), Parser.SpRepl) & Words.HighBits
+          (((other & 0x7F7F7F7F7F7F7F7FL) + 0x7F7F7F7F7F7F7F7FL) | other) & Words.HighBits
 
         if nonSpace == 0L then
           pos += 8

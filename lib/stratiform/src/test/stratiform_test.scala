@@ -198,6 +198,25 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
     // The byte-level writer copies parsed atoms from the parser's arena rather than rendering
     // them as text, so every fixture checks that it writes exactly the encoding of `show`.
+    suite(m"Leading spaces"):
+      def source(text: Text): Text =
+        import strategies.throwUnsafely
+        text.read[Tel].childCompounds.to[List].head.let(_.atoms.to[List].last).lay(t""):
+          case Tel.Atom.Source(text) => text
+          case _                     => t""
+
+      test(m"a `!` after a source atom's indentation is its content"):
+        source(t"title\n    - a\n    ! b\n")
+      . assert(_ == t"- a\n! b")
+
+      test(m"a source atom may begin with a `!`"):
+        source(t"title\n    ! a\n    - b\n")
+      . assert(_ == t"! a\n- b")
+
+      test(m"a `!` alone is a source atom's content"):
+        source(t"title\n    - a\n    !\n")
+      . assert(_ == t"- a\n!")
+
     suite(m"Byte-level serialization"):
       def lent(tel: Tel): scala.Array[Byte] =
         val out = new java.io.ByteArrayOutputStream()
