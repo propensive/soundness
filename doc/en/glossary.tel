@@ -36,7 +36,7 @@ define capability
       network request. A method that needs one says so in its signature, so what a method may
       do is visible in its type.
 
-define capture checking
+define  capture checking
   link  /doc/philosophy/capture-checking.md
   definition
       An experimental check of the Scala 3 compiler which tracks the [capabilities][capability]
@@ -50,9 +50,9 @@ define carrier
       a given media type, such as `Json` for `application/json`; or a thread which runs, in
       turn, the tasks handed to it, as in a pool.
 
-define choice package
+define  choice package
   link  /doc/philosophy/declarative-context.md
-  keyword policy import
+  keyword  policy import
   definition
       A package of alternative [givens][given] for one decision, such as `strategies`,
       `alphabets` or `httpBackends`. Importing one member by name makes that choice for
@@ -76,12 +76,12 @@ define classloader
       The JVM object which finds and loads compiled classes and resources, from a classpath or
       elsewhere. Resources and services are looked up through the `Classloader` in scope.
 
-define clock tick
+define  clock tick
   definition
       One step of a clock which drives repeated work, such as a frame of an animation or an event
       reporting progress. It is a different thing from a [tick] on the axis of a chart.
 
-define command-line flag
+define  command-line flag
   link  /doc/soundness/modules/cli.md#flags
   definition
       A named argument to a command-line program, written with a leading `--`, such as
@@ -92,14 +92,14 @@ define compiletime
       While the program is being compiled. A check made at compiletime rejects wrong code
       before it can run; a compiletime error is reported by the compiler.
 
-define contextual value
+define  contextual value
   link  /doc/philosophy/declarative-context.md
   keyword implicit
   definition
       A value the compiler finds in scope and passes to a method without it being written as
       an argument. One is declared with `given` and requested with `using`.
 
-define cooked mode
+define  cooked mode
   link  /doc/soundness/modules/daemons.md#asking-for-a-cooked-terminal
   definition
       The ordinary mode of a terminal, in which input is delivered a line at a time, with echo
@@ -131,7 +131,7 @@ define digest
       The fixed-length value which a hash algorithm, such as SHA-256, computes from any data or
       any value. Its type names the algorithm, and equal inputs always give equal digests.
 
-define direct style
+define  direct style
   link  /doc/philosophy/direct-style.md
   definition
       Code written as ordinary statements and expressions whose values are used directly,
@@ -232,7 +232,7 @@ define grant
       `Exclusive`. Grants are carried in the handle's type, so an operation which was not
       granted does not compile.
 
-define grapheme cluster
+define  grapheme cluster
   link  /doc/soundness/modules/characters.md#grapheme-clusters
   definition
       A sequence of one or more Unicode characters which a reader perceives as a single
@@ -257,7 +257,7 @@ define harness
       The code which runs other code under controlled conditions and observes it, such as the
       `Harness` which runs a test and records what it captures, or a benchmark harness.
 
-define honest signature
+define  honest signature
   link  /doc/philosophy/honest-signatures.md
   definition
       A method signature that states everything the method needs and every way it can fail,
@@ -269,7 +269,7 @@ define immutable
       Never changing after construction. An operation that appears to alter an immutable
       value returns a new value and leaves the original as it was.
 
-define impossible state
+define  impossible state
   link  /doc/philosophy/impossible-states.md
   definition
       A value that would be meaningless or invalid, and which the types are designed to make
@@ -330,7 +330,7 @@ define logger
       somewhere, such as a terminal, a file or the system log. With no logger in scope, logging
       is silent and costs nothing.
 
-define media type
+define  media type
   link  /doc/soundness/modules/media-types.md
   definition
       The standard name for the format of some data, such as `text/html` or `application/json`,
@@ -343,7 +343,7 @@ define one-shot
       operation, such as `gzip` on `Data`, processes a whole value in one call rather than
       incrementally.
 
-define opaque type
+define  opaque type
   definition
       A type that is represented at runtime by another type, such as a `Long`, but which the
       compiler treats as distinct from it, so only the operations defined for it are allowed.
@@ -371,7 +371,7 @@ define park
       To suspend a thread or [strand], without consuming processor time, until another unparks
       it, as a writer does when its reader falls behind.
 
-define pattern match
+define  pattern match
   definition
       Testing a value, in a `match` expression or a pattern elsewhere, against the shape of each
       case in turn, and extracting parts of the first one which fits.
@@ -467,7 +467,7 @@ define setter
       [immutable] value it returns a new value with that part replaced. Paired with a [getter],
       it makes a lens.
 
-define singleton type
+define  singleton type
   definition
       The type of exactly one value, such as the type of a particular [enumeration] case. A
       parameter of singleton type must be given a value the compiler can identify, not one
@@ -485,13 +485,13 @@ define span
       of inline code in Markdown, a cell extending over several columns, or a range of a
       sequence.
 
-define stack frame
+define  stack frame
   link  /doc/soundness/modules/stack-traces.md#resolving-frames-to-their-source
   definition
       One entry of a [stack trace]: a method which was executing, with its class, and the file
       and line it had reached.
 
-define stack trace
+define  stack trace
   link  /doc/soundness/modules/stack-traces.md
   definition
       The list of method calls which were in progress at one moment, innermost first, as
@@ -513,7 +513,7 @@ define strand
 
 define strategy
   link  /doc/soundness/modules/errors.md#choosing-a-strategy
-  keyword error handling
+  keyword  error handling
   definition
       A choice, in scope, of what happens when an operation fails: `throwUnsafely` throws an
       exception, `safely` gives `Unset`, `capture` returns the error. A strategy supplies the
@@ -541,12 +541,12 @@ define tag
       such as the name of an HTML element, the type of a YAML node or of an ASN.1 value, or the
       name given to a Git commit.
 
-define tagged union
+define  tagged union
   definition
       A type whose values are each one of several cases, with a [tag] saying which case it is,
       such as a sealed trait or an enumeration, or a JSON object with a field naming its case.
 
-define text wrapping
+define  text wrapping
   definition
       Breaking text into lines which fit a given width, at spaces or at permitted hyphenation
       points, as when text is set in a terminal or a table.
@@ -611,7 +611,7 @@ define viewport
       The rectangle in which something is shown, such as the visible area of a browser window,
       which CSS units like `Vw` are fractions of, or the area an SVG image is drawn in.
 
-define wire form
+define  wire form
   definition
       The form a value takes when it is sent between programs, in a protocol or a serialized
       format, as distinct from its form in Scala: the name a field is sent under, the code an

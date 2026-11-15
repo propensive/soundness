@@ -53,8 +53,8 @@ define capability
       + pour une requête réseau. Une méthode qui en a besoin le dit dans sa signature, si bien que ce
       + qu'une méthode peut faire se voit dans son type.
 
-define capture checking
-  term contrôle des captures
+define  capture checking
+  term  contrôle des captures
   definition
       - An experimental check of the Scala 3 compiler which tracks the [capabilities][capability]
       - each value captures, so that one lent to a scope cannot escape it, for example by being
@@ -73,9 +73,9 @@ define carrier
       + média donné, comme `Json` pour `application/json` ; ou un thread porteur qui exécute, à tour
       + de rôle, les tâches qui lui sont confiées, comme dans un pool.
 
-define choice package
-  term package de choix
-  keyword import de politique
+define  choice package
+  term  package de choix
+  keyword  import de politique
   definition
       - A package of alternative [givens][given] for one decision, such as `strategies`,
       - `alphabets` or `httpBackends`. Importing one member by name makes that choice for
@@ -95,7 +95,7 @@ define chunk
       + morceaux.
 
 define cipher
-  term algorithme de chiffrement
+  term  algorithme de chiffrement
   definition
       - An algorithm which encrypts and decrypts data with a key, such as AES or RSA. The type of
       - a key names its cipher, so a key cannot be used with another.
@@ -104,7 +104,7 @@ define cipher
       + avec un autre.
 
 define classloader
-  term chargeur de classes
+  term  chargeur de classes
   definition
       - The JVM object which finds and loads compiled classes and resources, from a classpath or
       - elsewhere. Resources and services are looked up through the `Classloader` in scope.
@@ -112,7 +112,7 @@ define classloader
       + classpath ou ailleurs. Les ressources et les services sont recherchés au moyen du
       + `Classloader` dans la portée.
 
-define clock tick
+define  clock tick
   term tic
   definition
       - One step of a clock which drives repeated work, such as a frame of an animation or an event
@@ -121,7 +121,7 @@ define clock tick
       + événement qui signale une progression. Ce n'est pas la même chose qu'une [graduation] sur l'axe
       + d'un graphique.
 
-define command-line flag
+define  command-line flag
   term option
   definition
       - A named argument to a command-line program, written with a leading `--`, such as
@@ -131,7 +131,7 @@ define command-line flag
 
 define compiletime
   term compilation
-  keyword temps de compilation
+  keyword  temps de compilation
   definition
       - While the program is being compiled. A check made at compiletime rejects wrong code
       - before it can run; a compiletime error is reported by the compiler.
@@ -139,8 +139,8 @@ define compiletime
       + code erroné avant qu'il puisse s'exécuter ; une erreur de compilation est signalée par le
       + compilateur.
 
-define contextual value
-  term valeur contextuelle
+define  contextual value
+  term  valeur contextuelle
   keyword implicite
   definition
       - A value the compiler finds in scope and passes to a method without it being written as
@@ -148,8 +148,8 @@ define contextual value
       + Une valeur que le compilateur trouve dans la portée et passe à une méthode sans qu'elle soit
       + écrite comme argument. Elle se déclare avec `given` et se demande avec `using`.
 
-define cooked mode
-  term mode canonique
+define  cooked mode
+  term  mode canonique
   definition
       - The ordinary mode of a terminal, in which input is delivered a line at a time, with echo
       - and with line editing, such as Backspace, handled by the terminal driver. Its opposite,
@@ -195,8 +195,8 @@ define digest
       + données ou d'une valeur quelconque. Son type nomme l'algorithme, et des entrées égales
       + donnent toujours des condensés égaux.
 
-define direct style
-  term style direct
+define  direct style
+  term  style direct
   definition
       - Code written as ordinary statements and expressions whose values are used directly,
       - without wrapping results in a monad such as `Either`, `Try` or `Future`.
@@ -259,7 +259,7 @@ define fingerprint
       + même contenu sans comparer le contenu lui-même.
 
 define fire-and-forget
-  term sans suivi
+  term  sans suivi
   definition
       - Describes work which is started without waiting for it to finish or for any response, such
       - as a notification in RPC, a datagram, or a task spawned with `daemon`.
@@ -350,8 +350,8 @@ define grant
       + `Exclusive`. Les droits sont portés par le type de la poignée, si bien qu'une opération qui
       + n'a pas été accordée ne compile pas.
 
-define grapheme cluster
-  term grappe de graphèmes
+define  grapheme cluster
+  term  grappe de graphèmes
   definition
       - A sequence of one or more Unicode characters which a reader perceives as a single
       - character, such as a letter with combining accents, or an emoji built from several code
@@ -388,8 +388,8 @@ define harness
       + Le code qui exécute un autre code dans des conditions contrôlées et l'observe, comme le
       + `Harness` qui exécute un test et enregistre ce qu'il capture, ou un harnais de benchmark.
 
-define honest signature
-  term signature honnête
+define  honest signature
+  term  signature honnête
   definition
       - A method signature that states everything the method needs and every way it can fail,
       - so that nothing about calling it is left to documentation.
@@ -404,8 +404,8 @@ define immutable
       + Qui ne change jamais après sa construction. Une opération qui semble modifier une valeur
       + immuable renvoie une nouvelle valeur et laisse l'originale telle qu'elle était.
 
-define impossible state
-  term état impossible
+define  impossible state
+  term  état impossible
   definition
       - A value that would be meaningless or invalid, and which the types are designed to make
       - unrepresentable, so that no code needs to check for it.
@@ -430,7 +430,7 @@ define interpolator
       + contenu du littéral [à la compilation][compilation] et donne une valeur d'un type précis.
 
 define keypress
-  term frappe de touche
+  term  frappe de touche
   definition
       - One key, or combination of keys, pressed at a terminal, which is received as a `Keypress`
       - value, such as a character, Enter or an arrow key.
@@ -495,8 +495,8 @@ define logger
       + écrit quelque part, comme un terminal, un fichier ou le journal système. Sans logger dans la
       + portée, la journalisation est silencieuse et ne coûte rien.
 
-define media type
-  term type de média
+define  media type
+  term  type de média
   definition
       - The standard name for the format of some data, such as `text/html` or `application/json`,
       - which accompanies it in an HTTP header or an email, so that the receiver knows how to read
@@ -506,7 +506,7 @@ define media type
       + lire.
 
 define one-shot
-  term à usage unique
+  term  à usage unique
   definition
       - Usable, or done, only once: a one-shot iterator can be traversed only once, and a one-shot
       - operation, such as `gzip` on `Data`, processes a whole value in one call rather than
@@ -515,8 +515,8 @@ define one-shot
       + qu'une fois, et une opération à usage unique, comme `gzip` sur `Data`, traite une valeur
       + entière en un seul appel plutôt que de façon incrémentale.
 
-define opaque type
-  term type opaque
+define  opaque type
+  term  type opaque
   definition
       - A type that is represented at runtime by another type, such as a `Long`, but which the
       - compiler treats as distinct from it, so only the operations defined for it are allowed.
@@ -551,15 +551,15 @@ define pane
       + s'imbriquent en un arbre, résolu en fonction de la taille du terminal.
 
 define park
-  term mettre en attente
+  term  mettre en attente
   definition
       - To suspend a thread or [strand], without consuming processor time, until another unparks
       - it, as a writer does when its reader falls behind.
       + Suspendre un thread ou un [brin], sans consommer de temps processeur, jusqu'à ce qu'un autre
       + le réveille, comme le fait un écrivain quand son lecteur prend du retard.
 
-define pattern match
-  term filtrage par motif
+define  pattern match
+  term  filtrage par motif
   definition
       - Testing a value, in a `match` expression or a pattern elsewhere, against the shape of each
       - case in turn, and extracting parts of the first one which fits.
@@ -567,7 +567,7 @@ define pattern match
       + chaque cas tour à tour, et l'extraction de parties du premier qui convient.
 
 define payload
-  term charge utile
+  term  charge utile
   definition
       - The data which a message or request carries, as distinct from the envelope around it, such
       - as its method name, its identifier or its headers.
@@ -631,7 +631,7 @@ define receiver
       + dans un protocole, la partie qui reçoit un message.
 
 define remote
-  term dépôt distant
+  term  dépôt distant
   definition
       - Another copy of a Git repository, named in the local one, such as `origin`, which commits
       - are fetched from and pushed to.
@@ -666,7 +666,7 @@ define scratch
       + test.
 
 define scrutinee
-  term valeur filtrée
+  term  valeur filtrée
   definition
       - The value being examined by a `match` expression or an extractor, which the pattern of
       - each case is tested against.
@@ -701,8 +701,8 @@ define setter
       + valeur [immuable], elle renvoie une nouvelle valeur où cette partie est remplacée. Associé à
       + un [accesseur], un mutateur forme une lentille.
 
-define singleton type
-  term type singleton
+define  singleton type
+  term  type singleton
   definition
       - The type of exactly one value, such as the type of a particular [enumeration] case. A
       - parameter of singleton type must be given a value the compiler can identify, not one
@@ -730,16 +730,16 @@ define span
       + code en ligne en Markdown, une cellule qui s'étend sur plusieurs colonnes, ou une plage
       + d'une séquence.
 
-define stack frame
-  term cadre de pile
+define  stack frame
+  term  cadre de pile
   definition
       - One entry of a [stack trace]: a method which was executing, with its class, and the file
       - and line it had reached.
       + Une entrée d'une [trace de pile] : une méthode en cours d'exécution, avec sa classe, ainsi
       + que le fichier et la ligne qu'elle avait atteints.
 
-define stack trace
-  term trace de pile
+define  stack trace
+  term  trace de pile
   definition
       - The list of method calls which were in progress at one moment, innermost first, as
       - recorded when an exception or error is created. Each entry is a [stack frame].
@@ -748,7 +748,7 @@ define stack trace
       + un [cadre de pile].
 
 define staging
-  term mise en étapes
+  term  mise en étapes
   definition
       - Running a program in stages, where code quoted as `'{…}` in one stage is compiled and run
       - in a later one. Soundness generalizes it, so that quoted code can run in another
@@ -771,7 +771,7 @@ define strand
 
 define strategy
   term stratégie
-  keyword gestion des erreurs
+  keyword  gestion des erreurs
   definition
       - A choice, in scope, of what happens when an operation fails: `throwUnsafely` throws an
       - exception, `safely` gives `Unset`, `capture` returns the error. A strategy supplies the
@@ -815,16 +815,16 @@ define tag
       + comment elle s'appelle, comme le nom d'un élément HTML, le type d'un nœud YAML ou d'une
       + valeur ASN.1, ou le nom donné à un commit Git.
 
-define tagged union
-  term union étiquetée
+define  tagged union
+  term  union étiquetée
   definition
       - A type whose values are each one of several cases, with a [tag] saying which case it is,
       - such as a sealed trait or an enumeration, or a JSON object with a field naming its case.
       + Un type dont chaque valeur est l'un de plusieurs cas, avec un [tag] qui indique de quel cas il
       + s'agit, comme un trait scellé ou une énumération, ou un objet JSON dont un champ nomme le cas.
 
-define text wrapping
-  term retour à la ligne
+define  text wrapping
+  term  retour à la ligne
   definition
       - Breaking text into lines which fit a given width, at spaces or at permitted hyphenation
       - points, as when text is set in a terminal or a table.
@@ -841,7 +841,7 @@ define tick
       + d'une étiquette qui donne cette valeur.
 
 define timeline
-  term ligne de temps
+  term  ligne de temps
   definition
       - A physical scale of time, such as Unix time or TAI, on which an instant is placed. The
       - type of an instant names its timeline, as in `Instant over Unix`.
@@ -849,7 +849,7 @@ define timeline
       + placé. Le type d'un instant nomme sa ligne de temps, comme dans `Instant over Unix`.
 
 define timespan
-  term durée calendaire
+  term  durée calendaire
   definition
       - A quantity of calendar time, in years, months, weeks, days, hours and minutes, whose
       - length in seconds depends on when it is applied. A `Duration`, by contrast, is a fixed
@@ -859,7 +859,7 @@ define timespan
       + est un nombre fixe de secondes.
 
 define tokenizer
-  term analyseur lexical
+  term  analyseur lexical
   definition
       - The first stage of parsing, which splits source text into tokens, such as keywords,
       - identifiers, literals and punctuation, before their structure is analyzed.
@@ -887,7 +887,7 @@ define trailer
       + à la fin d'une archive ZIP ou d'un fichier PDF.
 
 define typeclass
-  term classe de types
+  term  classe de types
   keyword typeclass
   definition
       - A trait describing an ability a type may have, such as being shown, encoded or
@@ -900,7 +900,7 @@ define typeclass
       + `Color is Showable` est l'instance qui rend `Color` affichable.
 
 define typeface
-  term famille de polices
+  term  famille de polices
   definition
       - A font family, such as Inter, named by a `Typeface`, independently of any weight, slant or
       - file. A [face] chooses one style from it.
@@ -916,7 +916,7 @@ define variant
       + un dialecte de texte délimité, ou une alternative d'une sélection TEL.
 
 define viewport
-  term zone d'affichage
+  term  zone d'affichage
   definition
       - The rectangle in which something is shown, such as the visible area of a browser window,
       - which CSS units like `Vw` are fractions of, or the area an SVG image is drawn in.
@@ -924,8 +924,8 @@ define viewport
       + navigateur, dont les unités CSS telles que `Vw` sont des fractions, ou la zone d'affichage
       + dans laquelle une image SVG est dessinée.
 
-define wire form
-  term forme de transmission
+define  wire form
+  term  forme de transmission
   definition
       - The form a value takes when it is sent between programs, in a protocol or a serialized
       - format, as distinct from its form in Scala: the name a field is sent under, the code an
