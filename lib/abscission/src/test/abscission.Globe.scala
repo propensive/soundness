@@ -128,7 +128,88 @@ class Troupe:
   lazy val patron: String = "Lord Chamberlain"
   lazy val rival: String = Prompter.interval(15)
 
+trait Herald:
+  def title: String = "herald"
+  def announce: String = "Hear ye, ".concat(title).nn
+
+// Reached only through an import of its members, which no tree shows a path to.
+object Chorus extends Herald:
+  val verse: String = "O for a Muse of fire"
+  override def title: String = "chorus"
+  def lines: Int = verse.length
+
+trait Verse:
+  def scan: String = "verse"
+
+trait Blank extends Verse:
+  override def scan: String = "blank verse"
+
+// A lambda of this type is compiled as a class, since it has a field; and the class calls
+// whichever `scan` comes next after its own.
+trait Rhymed extends Blank:
+  val foot: String = "iambs"
+  override def scan: String = super.scan.concat(" in ").nn.concat(foot).nn
+  def stress(syllable: Int): Int
+
+trait Scene:
+  val setting: AnyRef
+
+// Its field is implemented by an object.
+class Heath extends Scene:
+  object setting:
+    override def toString: String = "a heath"
+
+// Made by reflection alone, with a constructor which is not its first.
+class Prop(val name: String):
+  def this() = this("skull")
+
+class Mask:
+  override def toString: String = "mask"
+
+// An enumeration of Java's, whose values the JDK asks its class for.
+enum Season extends java.lang.Enum[Season]:
+  case Winter, Summer
+
+class Tally(val count: Int):
+  def +(more: Int): Int = count + more
+
+class Role(val lines: Int):
+  def this() = this(7)
+
+// Never cast, though something asks whether one is ready.
+class Understudy extends Role():
+  def ready: String = "ready"
+
+class Tiring:
+  class Costume
+
+  def fits(garment: Any): Boolean = garment match
+    case _: Costume => true
+    case _          => false
+
+// What is written of it is its seal, which only a method nothing calls refers to by name.
+class Letter(seal: String) extends java.io.Serializable:
+  @transient lazy val opened: String = seal.concat(", opened").nn
+  def wax: String = seal
+
+class Bell
+
+object Bell:
+  @scala.annotation.static def toll(times: Int): Int = times + 1
+
+class Guest:
+  def name: String = "guest"
+
+object Door:
+  import scala.language.unsafeNulls
+
+  def greet(guest: Guest | Null): String = guest.name
+
 object Globe extends Runnable:
+  def call(understudy: Understudy | Null): String =
+    if understudy == null then "nobody" else understudy.ready
+
+
   inline def twice(inline value: Int): Int = value + value
 
   def words(part: Part): Int = part match
@@ -166,10 +247,31 @@ object Globe extends Runnable:
     say(Troupe().patron)
     say(twice(21).toString)
     say(seats(500)().toString)
+    import Chorus.*
+    say(lines.toString)
+    say(announce)
+    val rhymed: Rhymed = syllable => syllable%2
+    say(rhymed.scan)
+    val scene: Scene = Heath()
+    say(scene.setting.toString)
+    val property: Class[?] = Class.forName("abscission.Prop").nn
+    val prop: Any = property.getDeclaredConstructor().nn.newInstance()
+    say(prop.asInstanceOf[Prop].name)
+    say(classOf[Mask].getDeclaredConstructor().nn.newInstance().nn.toString)
+    say(java.util.EnumSet.of(Season.Winter, Season.Summer).nn.toString)
+    val tally: { def +(more: Int): Int } = Tally(1)
+    say((tally + 1).toString)
+    say(call(null))
+    say(Tiring().fits("doublet").toString)
+    say(Bell.toll(11).toString)
+    say(Door.greet(Guest()))
     val bytes: java.io.ByteArrayOutputStream = java.io.ByteArrayOutputStream()
     val output: java.io.ObjectOutputStream = java.io.ObjectOutputStream(bytes)
     output.writeObject(Humour.Phlegmatic)
     output.writeObject(Cue(5, 2))
+    val letter: Letter = Letter("a seal")
+    say(letter.opened)
+    output.writeObject(letter)
     output.close()
 
     val input: java.io.ObjectInputStream =
@@ -177,6 +279,7 @@ object Globe extends Runnable:
 
     say((input.readObject().nn eq Humour.Phlegmatic).toString)
     say(input.readObject().nn.toString)
+    say(input.readObject().nn.asInstanceOf[Letter].opened)
     transcript.toString
 
   // What a test calls the closed world's own `Globe` through, since `Runnable` is the JDK's,

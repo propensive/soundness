@@ -354,10 +354,17 @@ and in the bytecode afterwards, and raises a `Shrink.Error` naming both ends; wh
 been a `NoSuchMethodError` when the application ran is an error when it is built. A unit which
 cannot be recompiled is pinned, and `report.notes` says why.
 
+What reflection sees of a class is changed by shrinking it, as it must be. A class which has
+lost members has another default `serialVersionUID`, so a class whose instances one build
+writes and another reads should be given one with `@SerialVersionUID`; within one closed world,
+serialization is unaffected. The classes and methods which reflection lists are those which
+were kept, and a generic signature may name a class which was not.
+
 Two things are beyond it. Code which is compiled at run time, by a staging compiler, needs the
 TASTy of everything it refers to, which a closed world does not hold, so the classes it uses
 must be pinned and their TASTy supplied apart. And the recompilation runs with one set of
-options for the whole classpath: Soundness's own, with those of the `Scalac` added.
+options for the whole classpath: Soundness's own, with those of the `Scalac` added, though
+whether each unit was capture-checked is read from its TASTy.
 
 ### WASI components
 

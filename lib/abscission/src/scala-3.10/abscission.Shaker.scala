@@ -38,7 +38,8 @@ import dotty.tools.dotc.*
 import ast.tpd, tpd.*
 import core.*, Constants.*, Contexts.*, Decorators.*, Denotations.staticRef
 import core.DenotTransformers.IdentityDenotTransformer
-import core.Flags.*, NameKinds.*, NameOps.*, Names.*, Phases.Phase, StdNames.*, Symbols.*, Types.*
+import core.Flags.*, NameKinds.*, NameOps.*, Names.*, NullOpsDecorator.*, Phases.Phase
+import core.StdNames.*, Symbols.*, Types.*
 import fromtasty.{TASTYCompilationUnit, TASTYCompiler, TASTYRun}
 import reporting.{Diagnostic, Reporter, StoreReporter}
 import transform.{MegaPhase, ResolveSuper}
@@ -88,7 +89,7 @@ object Shaker:
     ( units: List[String], classpath: List[String], output: String, options: List[String] )
   :   Outcome =
 
-    drive(new Plan(units.toSet, Nil, false), units, classpath, output, options)
+    drive(new Plan(units.toSet, Nil, false, _ => ()), units, classpath, output, options)
 
   // Recompiles what the roots reach, of the units in `universe`: each is the name of a
   // top-level class with TASTy on the classpath (`fume.Selection` for `fume/Selection.tasty`).
@@ -97,10 +98,11 @@ object Shaker:
       roots:     List[Root],
       classpath: List[String],
       output:    String,
-      options:   List[String] )
+      options:   List[String],
+      progress:  String => Unit = _ => () )
   :   Outcome =
 
-    drive(new Plan(universe.toSet, roots, true), Nil, classpath, output, options)
+    drive(new Plan(universe.toSet, roots, true, progress), Nil, classpath, output, options)
 
   private def drive
     ( plan:      Plan,
@@ -164,7 +166,12 @@ object Shaker:
     else Problem("", 0, diagnostic.message)
 
   // What the phases of one run share: what was asked for, and what the analysis found.
-  private class Plan(val universe: Set[String], val roots: List[Root], val prune: Boolean):
+  private class Plan
+    ( val universe: Set[String],
+      val roots:    List[Root],
+      val prune:    Boolean,
+      val progress: String => Unit ):
+
     val kept: mutable.HashSet[Symbol] = mutable.HashSet()
     val deleted: mutable.HashSet[Symbol] = mutable.HashSet()
     val dynamic: mutable.HashSet[String] = mutable.HashSet()
@@ -353,6 +360,10 @@ object Shaker:
     private val pending: mutable.ArrayDeque[Symbol] = mutable.ArrayDeque()
     private val parked: mutable.ArrayBuffer[Symbol] = mutable.ArrayBuffer()
 
+    // Classes which are kept, whose parents have yet to be looked at.
+    private val outlines: mutable.ArrayDeque[Symbol] = mutable.ArrayDeque()
+    private val shelved: mutable.ArrayBuffer[Symbol] = mutable.ArrayBuffer()
+
     // For each class, the classes instantiated which inherit from it, and the members of it
     // which are called and may be overridden; and likewise the classes kept, and the super
     // accessors, which each class that mixes a trait in must implement.
@@ -441,6 +452,7 @@ object Shaker:
       val names: List[String] = wanted.toList.filterNot(read.contains)
       wanted.clear()
       read ++= names
+      plan.progress(s"reading ${names.length} units, after ${read.size - names.length}")
 
       var fresh: List[CompilationUnit] = names.flatMap: name =>
         val found: Option[CompilationUnit] = unit(name)
@@ -458,22 +470,33 @@ object Shaker:
       fresh.foreach(index)
 
     private def drain()(using Context): Unit =
+      def unread(symbol: Symbol): Boolean = !read.contains(plan.unit(symbol.topLevelClass))
       var continue: Boolean = true
 
       while continue do
-        while pending.nonEmpty do
-          val symbol: Symbol = pending.removeHead()
+        while pending.nonEmpty || outlines.nonEmpty do
+          if pending.nonEmpty then
+            val symbol: Symbol = pending.removeHead()
 
-          if !read.contains(plan.unit(symbol.topLevelClass)) then
-            parked += symbol
-            wanted += plan.unit(symbol.topLevelClass)
-          else if symbol.isClass then initialize(symbol)
-          else body(symbol)
+            if unread(symbol) then
+              parked += symbol
+              wanted += plan.unit(symbol.topLevelClass)
+            else if symbol.isClass then initialize(symbol)
+            else body(symbol)
+          else
+            val symbol: Symbol = outlines.removeHead()
+
+            if unread(symbol) then
+              shelved += symbol
+              wanted += plan.unit(symbol.topLevelClass)
+            else outline(symbol)
 
         if wanted.nonEmpty && !ctx.reporter.hasErrors then
           load()
           pending ++= parked
+          outlines ++= shelved
           parked.clear()
+          shelved.clear()
         else continue = false
 
     // Roots
@@ -523,15 +546,20 @@ object Shaker:
         name.contains("$$"+own+"$") || name == own+"_$eq"
 
     private def seed(root: Shaker.Root)(using Context): Unit =
-      named(root.owner).filter(plan.loadable).foreach: owner =>
+      val owners: List[Symbol] = named(root.owner)
+
+      // A class which is not recompiled, but is on the classpath to be instantiated, is an
+      // instance of whatever it inherits from that is.
+      if root.member.isEmpty && !root.whole then
+        owners.filterNot(plan.loadable).foreach(instantiate(_, true))
+
+      owners.filter(plan.loadable).foreach: owner =>
         if root.whole then
           instantiate(owner)
           owner.info.decls.toList.foreach { member => if member.isTerm then refer(member) }
         else if root.member.isEmpty || root.member == "<init>" || root.member == "$init$" ||
           root.member == "MODULE$"
-        then
-          instantiate(owner)
-          owner.info.decls.toList.foreach { member => if member.isConstructor then refer(member) }
+        then reflected(owner)
         else
           keep(owner)
           if owner.is(ModuleClass) then instantiate(owner)
@@ -558,11 +586,41 @@ object Shaker:
         if !symbol.is(ModuleClass) then
           val companion: Symbol = symbol.companionModule
           if companion.exists && companion.isStatic then keep(companion.moduleClass)
+        else
+          // And an object's `@static` members are compiled as members of its companion class.
+          val statics: Boolean =
+            symbol.info.decls.toList.exists(_.hasAnnotation(defn.ScalaStaticAnnot))
 
-        if !symbol.is(Trait) then
-          bases.foreach: base =>
-            mixers.getOrElseUpdate(base, mutable.ArrayBuffer()) += symbol
-            accessors.get(base).foreach(_.toList.foreach(rebind(symbol, _)))
+          if statics then keep(symbol.companionClass)
+
+        if !symbol.is(Trait) then mix(symbol, bases)
+        outlines += symbol
+
+    // A class implements the super accessors of the traits it mixes in, each with a call to
+    // whichever member comes next in the class's own order of inheritance.
+    private def mix(symbol: Symbol, bases: List[Symbol])(using Context): Unit =
+      bases.foreach: base =>
+        val mixed: mutable.ArrayBuffer[Symbol] = mixers.getOrElseUpdate(base, mutable.ArrayBuffer())
+
+        if !mixed.contains(symbol) then
+          mixed += symbol
+          accessors.get(base).foreach(_.toList.foreach(rebind(symbol, _)))
+
+    // The constructor a parent of a class is called with.
+    private def constructor(tree: Tree)(using Context): Symbol = tree match
+      case tree: Apply     => constructor(tree.fun)
+      case tree: TypeApply => constructor(tree.fun)
+      case tree: Block     => constructor(tree.expr)
+      case tree: Select    => if tree.symbol.isConstructor then tree.symbol else NoSymbol
+      case _               => NoSymbol
+
+    // A class which is kept, though never instantiated, still names the constructors of its
+    // parents, and one which is not a class's first is a method like any other.
+    private def outline(symbol: Symbol)(using Context): Unit =
+      templates.get(symbol).foreach: definition =>
+        definition.rhs.asInstanceOf[Template].parents.foreach: parent =>
+          val called: Symbol = constructor(parent)
+          if called.exists && !called.isPrimaryConstructor then enliven(called)
 
     private def rebind(symbol: Symbol, accessor: Symbol)(using Context): Unit =
       refer(ResolveSuper.rebindSuper(symbol, accessor))
@@ -575,12 +633,17 @@ object Shaker:
           symbol.info.decls.toList.filter { member => member.isTerm && !member.isConstructor }
           . map(_.name).toSet )
 
-    private def instantiate(symbol: Symbol)(using Context): Unit =
-      if symbol.exists && symbol.isClass && plan.loadable(symbol) && instantiated.add(symbol) then
+    // `foreign` is for a class which is not recompiled: it is not kept, and has no code to
+    // run here, but what it inherits from classes which are recompiled is as for any other.
+    private def instantiate(symbol: Symbol, foreign: Boolean = false)(using Context): Unit =
+      val known: Boolean = symbol.exists && symbol.isClass && (plan.loadable(symbol) || foreign)
+
+      if known && instantiated.add(symbol) then
         keep(symbol)
         val bases: List[Symbol] = symbol.asClass.baseClasses
         val foreigners: List[Symbol] = bases.filterNot(plan.loadable)
         val serializable: Boolean = symbol.derivesFrom(defn.JavaSerializableClass)
+        val externalizable: Boolean = symbol.derivesFrom(requiredClass("java.io.Externalizable"))
 
         bases.foreach: base =>
           instances.getOrElseUpdate(base, mutable.ArrayBuffer()) += symbol
@@ -605,7 +668,43 @@ object Shaker:
 
               if external then refer(member)
 
+            // Deserialization makes an instance with the constructor, of no parameters, of
+            // the nearest class it inherits from which is not serializable; and of the
+            // class itself, if it reads and writes its own state.
+            val constructed: Boolean =
+              serializable && !base.derivesFrom(defn.JavaSerializableClass) ||
+                externalizable && (base eq symbol)
+
+            if constructed then
+              base.info.decls.toList.foreach: member =>
+                if member.isConstructor && member.info.firstParamTypes.isEmpty then refer(member)
+
           targets.get(base).foreach(_.toList.foreach(resolve(symbol, _)))
+
+        // A lambda of a trait's type is compiled as a class which mixes the trait in.
+        if symbol.is(Trait) then mix(symbol, bases)
+
+        // The JDK finds the values of an enumeration of Java's by calling the static `values`
+        // of its class, which is compiled from the companion's.
+        if symbol.derivesFrom(defn.JavaEnumClass) then enumerated(symbol)
+
+    private def enumerated(symbol: Symbol)(using Context): Unit =
+      symbol.asClass.baseClasses.filter(plan.loadable).foreach: base =>
+        val companion: Symbol = base.companionModule
+
+        if companion.exists && base.derivesFrom(defn.JavaEnumClass) then
+          refer(companion)
+
+          companion.moduleClass.info.decls.toList.foreach: member =>
+            val name: String = member.name.toString
+            if member.isTerm && (name == "values" || name == "valueOf") then refer(member)
+
+    // A class which reflection may make an instance of, with any of its constructors.
+    private def reflected(symbol: Symbol)(using Context): Unit =
+      instantiate(symbol)
+
+      if plan.loadable(symbol) then
+        symbol.info.decls.toList.foreach { member => if member.isConstructor then refer(member) }
 
     private def resolve(symbol: Symbol, target: Symbol)(using Context): Unit =
       val member: Symbol = target.matchingMember(symbol.thisType)
@@ -618,7 +717,10 @@ object Shaker:
 
         if symbol.is(Module) then
           instantiate(symbol.moduleClass)
-          if owner.isClass && !owner.is(Package) then keep(owner)
+
+          if owner.isClass && !owner.is(Package) then
+            keep(owner)
+            dispatch(symbol)
         else if owner.isClass && !owner.is(Package) then
           if symbol.isConstructor then
             instantiate(owner)
@@ -628,8 +730,20 @@ object Shaker:
             if !(symbol.is(Inline) && !symbol.isRetainedInline) then
               enliven(symbol)
               dispatch(symbol)
-          else if symbol.is(ParamAccessor) then keep(owner)
-          else instantiate(owner)
+
+              // A member of an object is reached through the object, whose prefix a tree
+              // read from TASTy need not show: it is not there after `import Globe.*`.
+              if owner.is(ModuleClass) then instantiate(owner)
+          else
+            if symbol.is(ParamAccessor) then keep(owner) else instantiate(owner)
+
+            // What implements an abstract field need not be a field: it may be an object, or
+            // a method, and for a variable a method to set it with.
+            dispatch(symbol)
+
+            if symbol.is(Mutable) then
+              val setter: Symbol = symbol.setter
+              if setter.exists then dispatch(setter)
 
     private def enliven(symbol: Symbol)(using Context): Unit =
       if plan.loadable(symbol) && live.add(symbol) then
@@ -674,6 +788,28 @@ object Shaker:
           case _: MemberDef   => ()
           case _: Import      => ()
           case statement      => walker.traverse(statement)
+
+        // Whether a parameter of a class is a field of it, and whether a field is cleared
+        // once the one lazy value which reads it has been computed, are decided later by
+        // what refers to it, which taking a method out would change; and for a class which
+        // is serializable, the fields are what is written.
+        if symbol.derivesFrom(defn.JavaSerializableClass) then
+          template.body.foreach:
+            case member: ValOrDefDef if member.symbol.is(Method) || member.symbol.is(Lazy) =>
+              if confides(member.rhs, symbol) then refer(member.symbol)
+
+            case _ =>
+              ()
+
+    // Whether a tree refers to a field which is private to an instance of a class.
+    private def confides(tree: Tree, owner: Symbol)(using Context): Boolean =
+      tree.existsSubTree: tree =>
+        val symbol: Symbol = tree match
+          case tree: (Ident | Select) => tree.symbol
+          case _                      => NoSymbol
+
+        symbol.exists && symbol.isTerm && (symbol.owner eq owner) && !symbol.is(Method) &&
+          symbol.is(Private)
 
     private def singletons(tpe: Type)(using Context): Unit = tpe.dealias match
       case tpe: TermRef       => refer(tpe.symbol)
@@ -720,11 +856,21 @@ object Shaker:
         case tree if tree.isType =>
           singletons(tree.tpe)
 
+          // A test for a class which is nested in an instance of another is compiled as a
+          // test of that instance too, through the nested class's own reference to it.
+          tree.tpe.classSymbols.foreach: symbol =>
+            if symbol.owner.isClass && !symbol.isStatic then keep(symbol)
+
         case tree: Ident =>
           refer(tree.symbol)
 
         case tree: Select =>
-          refer(tree.symbol)
+          // A member of a type which may be null has no one symbol, where selecting it was
+          // allowed: it is whatever has its name, in what the type is when it is not null.
+          if tree.symbol.exists then refer(tree.symbol) else
+            tree.qualifier.tpe.widenDealias.stripNull().member(tree.name).alternatives.foreach:
+              member => refer(member.symbol)
+
           // A reference to an object which is nested in others, all the way out, loads it
           // without loading those.
           if !(tree.symbol.is(Module) && tree.symbol.isStatic && path(tree.qualifier))
@@ -753,26 +899,27 @@ object Shaker:
           traverseChildren(tree)
 
         case Literal(constant) =>
-          if constant.tag == Constants.ClazzTag then
-            val symbol: Symbol = constant.typeValue.classSymbol
-            instantiate(symbol)
-            symbol.info.decls.toList.foreach: member =>
-              if member.isConstructor then refer(member)
+          if constant.tag == Constants.ClazzTag then reflected(constant.typeValue.classSymbol)
+
+        // `classOf`, as it is written, is not yet the constant it becomes.
+        case tree: TypeApply if tree.fun.symbol == defn.Predef_classOf =>
+          tree.args.foreach { argument => reflected(argument.tpe.classSymbol) }
 
         case tree: Apply =>
           val symbol: Symbol = tree.fun.symbol
 
           tree.args match
             case Literal(Constant(name: String)) :: _ if symbol.exists =>
-              val owner: String = symbol.owner.fullName.toString
+              // A static method of a Java class is a member of the class's companion.
+              val owner: String = symbol.owner.fullName.toString.stripSuffix("$")
               val method: String = symbol.name.toString
 
               if owner == "scala.reflect.Selectable" &&
                 (method == "selectDynamic" || method == "applyDynamic")
-              then reflect(name.toTermName)
+              then reflect(name.toTermName.decode)
               else if owner == "java.lang.Class" && method == "forName" then
                 plan.dynamic += name
-                named(name).foreach(instantiate)
+                named(name).foreach(reflected)
 
             case _ =>
               ()

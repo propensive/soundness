@@ -289,14 +289,67 @@ object Shrinker:
       described(descriptor)
       method.code.nn.ifPresent { code => coded(code.nn) }
 
+      method.findAttribute(jlc.Attributes.exceptions).nn.ifPresent: thrown =>
+        thrown.nn.exceptions.nn.asScala.foreach(classed)
+
     model.findAttribute(jlc.Attributes.nestHost).nn.ifPresent: host =>
       classed(host.nn.nestHost.nn)
 
     val name: String = model.thisClass.nn.asInternalName.nn
 
+    // A class which is nested in another is asked for that one by `getSimpleName`.
+    model.findAttribute(jlc.Attributes.innerClasses).nn.ifPresent: inner =>
+      inner.nn.classes.nn.asScala.foreach: info =>
+        if info.innerClass.nn.asInternalName == name
+        then info.outerClass.nn.ifPresent { outer => classed(outer.nn) }
+
     Refs
       ( name, model.flags.nn.flagsMask, model.majorVersion, model.minorVersion, superclass,
         interfaces, classes.toSet - name, members.toSet, declared.toSet )
+
+  // A class file which says nothing of classes that are not there to be asked for: the classes
+  // nested in it, its nest and its permitted subclasses are all loaded by reflection which
+  // asks for them.
+  private def trimmed(bytes: Array[Byte], present: String => Boolean): Array[Byte] =
+    val file: jlc.ClassFile = jlc.ClassFile.of().nn
+    val model: jlc.ClassModel = file.parse(bytes).nn
+    val name: String = model.thisClass.nn.asInternalName.nn
+    def absent(entry: jlcc.ClassEntry): Boolean = !present(entry.asInternalName.nn)
+
+    def nested(info: jlca.InnerClassInfo): Boolean =
+      val outer = info.outerClass.nn
+      outer.isPresent && outer.get.nn.asInternalName == name && absent(info.innerClass.nn)
+
+    val inner = model.findAttribute(jlc.Attributes.innerClasses).nn
+    val nest = model.findAttribute(jlc.Attributes.nestMembers).nn
+    val permitted = model.findAttribute(jlc.Attributes.permittedSubclasses).nn
+
+    val stale: Boolean =
+      inner.isPresent && inner.get.nn.classes.nn.asScala.exists(nested) ||
+        nest.isPresent && nest.get.nn.nestMembers.nn.asScala.exists(absent) ||
+        permitted.isPresent && permitted.get.nn.permittedSubclasses.nn.asScala.exists(absent)
+
+    if !stale then bytes else
+      val transform: jlc.ClassTransform = (builder, element) =>
+        element match
+          case attribute: jlca.InnerClassesAttribute =>
+            val kept = attribute.classes.nn.asScala.filterNot(nested).asJava
+            builder.nn.`with`(jlca.InnerClassesAttribute.of(kept))
+
+          case attribute: jlca.NestMembersAttribute =>
+            val kept = attribute.nestMembers.nn.asScala.filterNot(absent).asJava
+            builder.nn.`with`(jlca.NestMembersAttribute.of(kept))
+
+          case attribute: jlca.PermittedSubclassesAttribute =>
+            val kept = attribute.permittedSubclasses.nn.asScala.filterNot(absent).asJava
+            builder.nn.`with`(jlca.PermittedSubclassesAttribute.of(kept))
+
+          case element =>
+            builder.nn.`with`(element)
+
+        ()
+
+      file.transformClass(model, transform).nn
 
   // A class of the same name, flags and parents, with nothing in it.
   private def shell(refs: Refs): Array[Byte] =
@@ -312,13 +365,35 @@ object Shrinker:
           builder.nn.withInterfaceSymbols(refs.interfaces.map(described)*) )
     . nn
 
-  // Whether a class file names any of a set of classes at all, which is cheap to tell.
-  private def mentions(bytes: Array[Byte], names: Set[String]): Boolean =
+  // Whether a class file names a class which is of interest at all, as a class or within a
+  // descriptor, which is cheap to tell.
+  private def mentions(bytes: Array[Byte], interesting: String => Boolean): Boolean =
     val pool = jlc.ClassFile.of().nn.parse(bytes).nn.constantPool.nn
 
+    def described(text: String): Boolean =
+      var index: Int = text.indexOf('L')
+      var found: Boolean = false
+
+      while !found && index >= 0 do
+        val end: Int = text.indexOf(';', index)
+
+        if end < 0 then index = -1 else
+          found = interesting(text.substring(index + 1, end).nn)
+          index = text.indexOf('L', index + 1)
+
+      found
+
     pool.iterator.nn.asScala.exists:
-      case entry: jlcc.ClassEntry => names.contains(entry.asInternalName.nn)
+      case entry: jlcc.ClassEntry => interesting(entry.asInternalName.nn)
+      case entry: jlcc.Utf8Entry  => described(entry.stringValue.nn)
       case _                      => false
+
+  // The classes a class file says it inherits from.
+  private def parents(bytes: Array[Byte]): List[String] =
+    val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(bytes).nn
+    val parent = model.superclass.nn
+    val interfaces: List[String] = model.interfaces.nn.asScala.toList.map(_.asInternalName.nn)
+    if parent.isPresent then parent.get.nn.asInternalName.nn :: interfaces else interfaces
 
   // The resources which are for a compiler, or for the archive they came in.
   private def discarded(name: String): Boolean =
@@ -339,16 +414,19 @@ object Shrinker:
       System.getProperty("java.class.path").nn.split(java.io.File.pathSeparator).nn.toList
       . map { entry => jnf.Path.of(entry.nn).nn.toAbsolutePath.nn.toString }
 
-  def shrink(request: Request): Report =
+  // Shrinks a classpath. `progress` is told what is being done, as it is begun: a large
+  // classpath takes minutes, most of them in the compiler.
+  def shrink(request: Request, progress: String => Unit = _ => ()): Report =
     val sources: List[Source] = request.classpath.map(new Source(_))
-    try shrink(request, sources, Nil, Nil, 0) finally sources.foreach(_.close())
+    try shrink(request, sources, Nil, Nil, 0, progress) finally sources.foreach(_.close())
 
   private def shrink
-    ( request: Request,
-      sources: List[Source],
-      unfit:   List[String],
-      notes:   List[String],
-      attempt: Int )
+    ( request:  Request,
+      sources:  List[Source],
+      unfit:    List[String],
+      notes:    List[String],
+      attempt:  Int,
+      progress: String => Unit )
   :   Report =
 
     // The first entry to hold a name is the one a classloader would read it from.
@@ -446,15 +524,55 @@ object Shrinker:
     // then be kept whether or not anything reaches the class itself.
     val foreign: List[String] = classes.filterNot(recompilable.contains)
 
+    // The classes of the classpath which a class inherits from, itself among them.
+    val ancestries: mutable.HashMap[String, Set[String]] = mutable.HashMap()
+
+    def ancestry(name: String): Set[String] =
+      def recur(name: String, seen: mutable.HashSet[String]): Unit =
+        if seen.add(name) then original(name).foreach(_.parents.foreach(recur(_, seen)))
+
+      ancestries.getOrElseUpdate
+        ( name,
+          locally:
+            val seen: mutable.HashSet[String] = mutable.HashSet()
+            recur(name, seen)
+            seen.toSet )
+
+    // Whether a class is one which is recompiled, or inherits from one: what refers to it
+    // may be referring to something of a class which is recompiled.
+    val descents: mutable.HashMap[String, Boolean] = mutable.HashMap()
+
+    def descends(name: String): Boolean =
+      recompilable.contains(name) || descents.get(name).getOrElse:
+        // Until it is known, a class does not descend from itself.
+        descents(name) = false
+
+        val result: Boolean =
+          holders.get(name+classSuffix).exists: source =>
+            parents(source.read(name+classSuffix)).exists(descends)
+
+        descents(name) = result
+        result
+
     if recompilable.nonEmpty then
       foreign.foreach: name =>
         holders.get(name+classSuffix).foreach: source =>
           // Most classes of a library name nothing of the application.
-          if mentions(source.read(name+classSuffix), recompilable) then
+          if mentions(source.read(name+classSuffix), descends) then
             original(name).foreach: found =>
+              // A member may be named as one of a class which only inherits it.
               found.members.foreach: (owner, member, _) =>
-                if recompilable.contains(owner)
-                then roots += Shaker.Root(dotted(owner), member, false)
+                ancestry(owner).foreach: ancestor =>
+                  if recompilable.contains(ancestor)
+                  then roots += Shaker.Root(dotted(ancestor), member, false)
+
+              // A class which is named may be instantiated, and a class which inherits from
+              // one that is recompiled is an instance of it which no tree shows.
+              found.classes.foreach: named =>
+                if recompilable.contains(named) then roots += Shaker.Root(dotted(named), "", false)
+
+              if (ancestry(name) - name).exists(recompilable.contains)
+              then roots += Shaker.Root(dotted(name), "", false)
 
     val absent: List[String] =
       request.mains.filterNot { main => holders.contains(main.replace('.', '/').nn+classSuffix) }
@@ -479,9 +597,11 @@ object Shrinker:
           Shaker.Outcome(problems, Shaker.Tally(0, 0, 0, 0, 0, 0), Nil)
         else if units.isEmpty then Shaker.Outcome(Nil, Shaker.Tally(0, 0, 0, 0, 0, 0), Nil)
         else
+          progress(s"recompiling what ${roots.size} roots reach, of ${units.size} units")
+
           Shaker.shake
             ( units.toList.sorted.map(dotted), roots.toList, request.classpath, staging.toString,
-              request.options )
+              request.options, progress )
 
       def emitted(): Map[String, jnf.Path] =
         val walk = jnf.Files.walk(staging).nn
@@ -512,12 +632,14 @@ object Shrinker:
         else s"${problem.file}:${problem.line}: ${problem.message}"
 
       if failed.nonEmpty then
-        shrink(request, sources, unfit ::: failed, notes ::: described, attempt + 1)
+        progress(s"pinning ${failed.mkString(", ")}, which could not be recompiled")
+        shrink(request, sources, unfit ::: failed, notes ::: described, attempt + 1, progress)
       else if outcome.problems.nonEmpty then
         failure(described, outcome.tally.units)
       else
         val output: jnf.Path = jnf.Path.of(request.output).nn
         val produced: Map[String, jnf.Path] = emitted()
+        progress(s"following the references of ${produced.size} recompiled classes")
         val reasons: mutable.HashMap[String, String] = mutable.HashMap()
         val included: mutable.LinkedHashMap[String, Refs] = mutable.LinkedHashMap()
         val contents: mutable.HashMap[String, Array[Byte]] = mutable.HashMap()
@@ -609,9 +731,9 @@ object Shrinker:
 
           follow()
 
-        // Every member which is named, of a class which was recompiled, must be there: declared
-        // by a class of the closed world which the named class inherits from, unless it was
-        // never declared by a class of the classpath at all, and so is the JDK's.
+        // Every member which is named must be there: declared by a class of the closed world
+        // which the named class inherits from, unless it was never declared by a class of the
+        // classpath at all, and so is the JDK's.
         type Member = (String, String)
 
         def declares(name: String, member: Member, seen: mutable.HashSet[String]): Boolean =
@@ -623,16 +745,19 @@ object Shrinker:
           seen.add(name) && original(name).exists: found =>
             found.declared.contains(member) || found.parents.exists(declared(_, member, seen))
 
+        val missing: mutable.HashMap[(String, String, String), Boolean] = mutable.HashMap()
+
         included.foreach: (name, found) =>
           found.members.foreach: (owner, member, descriptor) =>
-            if recompilable.contains(owner) && included.contains(owner) then
-              val signature: (String, String) = (member, descriptor)
+            if included.contains(owner) then
+              val signature: Member = (member, descriptor)
 
-              val missing: Boolean =
-                !declares(owner, signature, mutable.HashSet()) &&
-                  (shells.contains(owner) || declared(owner, signature, mutable.HashSet()))
+              val lost: Boolean = missing.getOrElseUpdate
+                ( (owner, member, descriptor),
+                  !declares(owner, signature, mutable.HashSet()) &&
+                    (shells.contains(owner) || declared(owner, signature, mutable.HashSet())) )
 
-              if missing then
+              if lost then
                 val referent: String = s"$member$descriptor of ${dotted(owner)}"
                 problems += s"${dotted(name)} refers to $referent, which was removed"
 
@@ -646,13 +771,15 @@ object Shrinker:
             jnf.Files.write(file, bytes)
             written += bytes.length
 
-          included.keysIterator.foreach { name => write(name+classSuffix, contents(name)) }
+          included.keysIterator.foreach: name =>
+            write(name+classSuffix, trimmed(contents(name), included.contains))
 
           // The resources of every entry which has given a class, or which holds classes that
-          // were recompiled.
+          // were recompiled, or which has no classes to give and is there for its resources.
           val givers: Set[Source] =
             included.keysIterator.flatMap { name => holders.get(name+classSuffix) }.toSet ++
-              units.iterator.flatMap { unit => holders.get(unit+tastySuffix) }
+              units.iterator.flatMap { unit => holders.get(unit+tastySuffix) } ++
+              sources.filterNot(_.names.exists(_.endsWith(classSuffix)))
 
           var resources: Long = 0L
 
