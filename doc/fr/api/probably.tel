@@ -1,0 +1,3449 @@
+tel 1.0
+
+base probably
+import soundness
+
+info
+    - the test framework: suites of tests as values, assertions with structural contrasts, and a typed event stream for a host
+    + le framework de test : suites de tests en tant que valeurs, assertions à contrastes
+    + structurels et flux d'événements typé pour un hôte
+detail
+    - _Probably_ is Soundness's test framework. A test is a **value**: `test(m"…")` names it,
+    - the block beneath produces a result, and `assert`, `check` or `matches` states what must
+    - hold of that result. A failed equality assertion is reported not as two `toString`s but as
+    - a structural **contrast** of the expected and observed values (chiaroscuro's
+    - `Juxtaposition`), and every result leaves the suite as a typed `TestEvent`, so a host
+    - renders the run however it likes.
+    + _Probably_ est le framework de test de Soundness. Un test est une **valeur** : `test(m"…")` le
+    + nomme, le bloc qui suit produit un résultat, et `assert`, `check` ou `matches` énonce ce qui
+    + doit être vrai de ce résultat. Une assertion d'égalité en échec n'est pas signalée par deux
+    + `toString`, mais par un **contraste** structurel entre les valeurs attendue et observée (la
+    + `Juxtaposition` de chiaroscuro), et chaque résultat quitte la suite sous forme de `TestEvent`
+    + typé, si bien qu'un hôte rend l'exécution comme il l'entend.
+
+    ```scala
+    import soundness.*
+
+    object Tests extends Suite("parser", m"Parser tests"):
+      def run(): Unit =
+        suite(m"Numbers"):
+          test(m"a decimal integer parses"):
+            safely(t"42".as[Int])
+          . assert(_ == 42)
+
+        aspirationally:
+          test(m"a hexadecimal integer parses"):
+            safely(t"0x2a".as[Int])
+          . assert(_ == 42)
+    ```
+
+    - A `Suite` is **not a main class** and the tests have no `main`: the beneficence compiler
+    - plugin lists every `Suite` object in `META-INF/services/probably.Suite`, and every test in
+    - `META-INF/probably/tests`, and the `fume` runner discovers suites from those indexes on a
+    - built classpath, drives each through `Suite#invoke` with an event sink, and renders the
+    - `TestEvent`s. The `events` component carries them across a classloader boundary as
+    - length-prefixed BinTEL frames (`Streamer`), or out of a separate JVM (`Standalone`). A
+    - repository which wants a plain `java` entry point for CI writes `Suite.main(arguments,
+    - Tests)`, which prints one line per completed test and exits with the suites' status.
+    + Une `Suite` n'est **pas une classe principale** et les tests n'ont pas de `main` : le plugin
+    + de compilateur beneficence liste chaque objet `Suite` dans `META-INF/services/probably.Suite`,
+    + et chaque test dans `META-INF/probably/tests`, et le runner `fume` découvre les suites à
+    + partir de ces index sur un classpath construit, pilote chacune par `Suite#invoke` avec un
+    + récepteur d'événements, et rend les `TestEvent`. Le composant `events` les transporte à
+    + travers une frontière de classloader sous forme de trames BinTEL préfixées par leur longueur
+    + (`Streamer`), ou hors d'une JVM distincte (`Standalone`). Un dépôt qui veut un simple point
+    + d'entrée `java` pour la CI écrit `Suite.main(arguments, Tests)`, qui affiche une ligne par
+    + test terminé et termine avec le statut des suites.
+
+    - The pieces, from the surface down:
+    + Les éléments, de la surface vers le fond :
+
+    - - **Declaring**: `test`, `suite`, `impromptu` and `aspirationally` are package-level
+    -   functions; each needs a `Testable` in scope (a `Suite`'s own, a `suite` block's, or an
+    -   `impromptu` block's) and, to assert, a `Runner`. A test may carry a stable moniker
+    -   (`n"square"`) and tags (`n"slow"`), both `n"…"` literals checked at compile time
+    -   against the `Probing` and `Tagging` naming planes.
+    - - **Asserting**: `Test#assert` and `Test#check` are macros which find the `Runner` and
+    -   the `Inclusion`s for its report type, run the body, and record a `Verdict`. `assert`
+    -   demands a **pure** body (one closing over no capability), which is what lets a queued
+    -   runner (`--workers=<n>`) run it on a worker thread; `check` takes any body, runs it
+    -   inline and returns the value. Neither resolves anything about how a failure would be
+    -   shown: a failed assertion is diagnosed afterwards, and only if the host asked
+    -   (`--diagnose=…`; see `Diagnosis`).
+    - - **Spreading**: `Test.Id#over` runs one test once per value of an `Axis` (or per
+    -   combination of two), recording each verdict at that coordinate of a single named test.
+    - - **Running**: a `Runner` is built from a `Selection` (parsed from command-line terms:
+    -   hashes, monikers, globs, `kind:`, `tag:`, `not:`, axis constraints, `--list`,
+    -   `--scale=`, `--workers=`) and a `Reporter`; `Reporter.report` accumulates a `Report`, a
+    -   tree of `Entry`s whose cells hold `Run`s of `Metric`s, and emits every datum as a
+    -   `TestEvent`.
+    - - **Measuring**: `Benchmark`, `Strain` and `Hotspots` are the results of the three timed
+    -   kinds (benchmarks, stress tests, profiles, declared through the sedentary library), each
+    -   with an `Inclusion[Report, …]` which records it as metrics at a coordinate.
+    + - **Déclaration** : `test`, `suite`, `impromptu` et `aspirationally` sont des fonctions de
+    +   niveau package ; chacune a besoin d'un `Testable` dans la portée (celui d'une `Suite`, celui
+    +   d'un bloc `suite` ou celui d'un bloc `impromptu`) et, pour faire une assertion, d'un
+    +   `Runner`. Un test peut porter un surnom stable (`n"square"`) et des étiquettes (`n"slow"`),
+    +   tous deux des littéraux `n"…"` vérifiés à la compilation par rapport aux plans de nommage
+    +   `Probing` et `Tagging`.
+    + - **Assertion** : `Test#assert` et `Test#check` sont des macros qui trouvent le `Runner` et
+    +   les `Inclusion` pour son type de rapport, exécutent le corps et enregistrent un `Verdict`.
+    +   `assert` exige un corps **pur** (qui ne capture aucune capacité), ce qui permet à un runner
+    +   à file d'attente (`--workers=<n>`) de l'exécuter sur un thread de travail ; `check` accepte
+    +   n'importe quel corps, l'exécute sur place et renvoie la valeur. Aucun des deux ne résout
+    +   quoi que ce soit concernant la façon dont un échec serait montré : une assertion en échec
+    +   est diagnostiquée après coup, et seulement si l'hôte l'a demandé (`--diagnose=…` ; voir
+    +   `Diagnosis`).
+    + - **Déploiement** : `Test.Id#over` exécute un test une fois par valeur d'un `Axis` (ou par
+    +   combinaison de deux), en enregistrant chaque verdict à cette coordonnée d'un unique test
+    +   nommé.
+    + - **Exécution** : un `Runner` se construit à partir d'une `Selection` (analysée à partir de
+    +   termes de ligne de commande : hachages, surnoms, motifs glob, `kind:`, `tag:`, `not:`,
+    +   contraintes d'axes, `--list`, `--scale=`, `--workers=`) et d'un `Reporter` ;
+    +   `Reporter.report` accumule un `Report`, un arbre d'`Entry` dont les cellules contiennent des
+    +   `Run` de `Metric`, et émet chaque donnée sous forme de `TestEvent`.
+    + - **Mesure** : `Benchmark`, `Strain` et `Hotspots` sont les résultats des trois types
+    +   chronométrés (benchmarks, tests de stress, profils, déclarés par la bibliothèque sedentary),
+    +   chacun avec une `Inclusion[Report, …]` qui l'enregistre sous forme de métriques à une
+    +   coordonnée.
+
+    - The library has four components. `probably.core` (JVM, Scala.js and Scala Native) holds
+    - everything but `Suite` and the wire format; `probably.cli` adds `Suite`;
+    - `probably.events` adds `Streamer` and `Standalone`, the BinTEL framing of the event stream
+    - for a host; and `probably.diagnosis` (JVM only) adds `Dissector`, the engine which
+    - diagnoses a failed assertion, and with it a dependency on the compiler. Everything is exported to the `soundness` umbrella except `probably.Tag`, whose
+    - name is honeycomb's HTML tag there: write `probably.Tag` when the type must be named (tags
+    - are usually written as `n"…"` literals). The hypotenuse checking vocabulary — `===`,
+    - `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — is re-exported here so that `import
+    - probably.*` still provides it. The choice packages `harnesses` and
+    - `decimalizers` hold givens which are imported by name, since `import probably.*` does not
+    - import givens.
+    + La bibliothèque comporte quatre composants. `probably.core` (JVM, Scala.js et Scala Native)
+    + contient tout sauf `Suite` et le format de transmission ; `probably.cli` ajoute `Suite` ;
+    + `probably.events` ajoute `Streamer` et `Standalone`, le découpage en trames BinTEL du flux
+    + d'événements pour un hôte ; et `probably.diagnosis` (JVM uniquement) ajoute `Dissector`, le
+    + moteur qui diagnostique une assertion en échec, et avec lui une dépendance au compilateur.
+    + Tout est exporté vers le package parapluie `soundness` sauf `probably.Tag`, dont le nom y est
+    + celui de la balise HTML de honeycomb : écrivez `probably.Tag` lorsque le type doit être nommé
+    + (les étiquettes s'écrivent généralement sous forme de littéraux `n"…"`). Le vocabulaire de
+    + vérification de hypotenuse — `===`, `!==`, `+/-`, `±`, `Checkable` et `Tolerance` — est
+    + réexporté ici afin que `import probably.*` le fournisse toujours. Les packages de choix
+    + `harnesses` et `decimalizers` contiennent des givens qui s'importent par leur nom, puisque
+    + `import probably.*` n'importe pas les givens.
+
+    - A listing (`--list`, which is how a host budgets a run before staging anything)
+    - executes the whole of `run()`: `assert` bodies are skipped when
+    - unselected, but every `check` body runs, as does every statement between tests, so a
+    - `val` consumed only inside test bodies is best made `lazy`.
+    + Un listage (`--list`, qui permet à un hôte d'évaluer le budget d'une exécution avant de
+    + préparer quoi que ce soit) exécute l'intégralité de `run()` : les corps d'`assert` non
+    + sélectionnés sont sautés, mais chaque corps de `check` s'exécute, de même que chaque
+    + instruction entre les tests ; il vaut donc mieux rendre `lazy` une `val` consommée uniquement
+    + dans des corps de tests.
+
+refer probably.Suite
+refer probably.test
+refer probably.Test
+refer probably.Runner
+refer probably.Selection
+refer probably.TestEvent
+refer chiaroscuro.Juxtaposition
+
+entry .test
+  info
+      - declares a test by its description, with optional moniker and tags
+      + déclare un test par sa description, avec un surnom et des étiquettes facultatifs
+  detail
+      - `test(m"…")` makes a `Test.Id` from a description, the `Testable` in scope (which says
+      - which suite the test belongs to) and the call's `Codepoint`; applying the id to a block
+      - makes a `Test`, which `assert`, `check` or `matches` then runs. The description may
+      - carry tags after it, `test(m"fetches", n"slow", n"network")`, by which a selection
+      - admits or excludes the test; each is an `n"…"` literal checked against the `Tagging`
+      - rule (identifier characters and `-`).
+      + `test(m"…")` crée un `Test.Id` à partir d'une description, du `Testable` dans la portée (qui
+      + indique à quelle suite appartient le test) et du `Codepoint` de l'appel ; appliquer l'id à
+      + un bloc crée un `Test`, que `assert`, `check` ou `matches` exécute ensuite. La description
+      + peut être suivie d'étiquettes, `test(m"fetches", n"slow", n"network")`, grâce auxquelles une
+      + sélection admet ou exclut le test ; chacune est un littéral `n"…"` vérifié par rapport à la
+      + règle `Tagging` (caractères d'identifiant et `-`).
+
+      - The second form names the test with a **moniker** first, `test(n"square", m"square a
+      - number")`: a compile-time-checked Java identifier which addresses the test in selections
+      - and charts stably, however its description is reworded.
+      + La seconde forme nomme d'abord le test par un **surnom**,
+      + `test(n"square", m"square a number")` : un identifiant Java vérifié à la compilation qui
+      + désigne le test de façon stable dans les sélections et les graphiques, quelle que soit la
+      + reformulation de sa description.
+
+      ```scala
+      import soundness.*
+      import soundness.{nominative, taggingNominative}
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"square a number")(3*3).assert(_ == 9)
+      test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
+      ```
+
+      - A `test` with no `Testable` in scope is a compile error, _a test must be declared for a
+      - Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` —
+      - or inside an `impromptu` block_. A method which declares tests for a suite names it by
+      - its id, `def numbers()(using Testable of "parser"): Unit`, or is generic in the topic,
+      - `[topic <: Label](using Testable of topic)`.
+      + Un `test` sans `Testable` dans la portée est une erreur de compilation, _a test must be
+      + declared for a Suite — in its body, or in a method taking
+      + `(using Testable of "<the suite's name>")` — or inside an `impromptu` block_. Une méthode
+      + qui déclare des tests pour une suite la nomme par son id,
+      + `def numbers()(using Testable of "parser"): Unit`, ou est générique dans le sujet,
+      + `[topic <: Label](using Testable of topic)`.
+  refer probably.Test
+  refer probably.Testable
+  refer probably.suite
+
+entry .suite
+  info
+      - groups tests under a name, as a nested suite of the one in scope
+      + regroupe des tests sous un nom, en tant que suite imbriquée de celle qui est dans la portée
+  detail
+      - `suite(m"Numbers") { … }` declares a group: the block runs with a new `Testable` of the
+      - same topic as the enclosing one, so the tests within belong to the group, which belongs
+      - to the suite, and their paths (`parser/Numbers/a decimal integer parses`) and ids
+      - reflect it. It needs the enclosing `Testable`, a `Runner` (which enters the group and
+      - reports its start and end) and a `Codepoint`. The second form gives the group a
+      - moniker, `suite(n"numbers", m"Numbers")`.
+      + `suite(m"Numbers") { … }` déclare un groupe : le bloc s'exécute avec un nouveau `Testable`
+      + de même sujet que celui qui l'englobe, si bien que les tests qu'il contient appartiennent au
+      + groupe, qui appartient à la suite, et que leurs chemins
+      + (`parser/Numbers/a decimal integer parses`) et leurs ids le reflètent. Il a besoin du
+      + `Testable` englobant, d'un `Runner` (qui entre dans le groupe et signale son début et sa
+      + fin) et d'un `Codepoint`. La seconde forme donne un surnom au groupe,
+      + `suite(n"numbers", m"Numbers")`.
+
+      - A group is always entered, whatever the selection: its body is cheap, and pruning by
+      - name would defeat selection by hash or moniker of the tests within it. With a queued
+      - runner, the group's `SuiteEnded` event is held back until the last assertion queued
+      - within it has completed.
+      + On entre toujours dans un groupe, quelle que soit la sélection : son corps est peu coûteux,
+      + et l'élaguer par nom ferait échouer la sélection par hachage ou par surnom des tests qu'il
+      + contient. Avec un runner à file d'attente, l'événement `SuiteEnded` du groupe est retenu
+      + jusqu'à ce que la dernière assertion mise en file en son sein soit terminée.
+  refer probably.test
+  refer probably.Testable
+
+entry .impromptu
+  info
+      - admits tests which no `Suite` declares statically
+      + admet des tests qu'aucune `Suite` ne déclare statiquement
+  detail
+      - Tests a program makes up as it runs — one per file of a conformance corpus — or tests
+      - run on a `Runner` of the caller's own, outside any suite, are declared inside an
+      - `impromptu` block. Within it `test`, `suite` and the rest work as usual, attributed to
+      - the position of the surrounding `Testable` if there is one (`Testable.detached`
+      - otherwise), but their `Testable`'s topic is `Impromptu`, so the beneficence plugin
+      - leaves them out of the index of tests it writes, and a host learns of them only as they
+      - run.
+      + Les tests qu'un programme crée au fil de son exécution — un par fichier d'un corpus de
+      + conformité — ou les tests exécutés sur un `Runner` propre à l'appelant, hors de toute suite,
+      + se déclarent dans un bloc `impromptu`. À l'intérieur, `test`, `suite` et le reste
+      + fonctionnent comme d'habitude, attribués à la position du `Testable` environnant s'il y en a
+      + un (`Testable.detached` sinon), mais le sujet de leur `Testable` est `Impromptu`, si bien
+      + que le plugin beneficence les laisse hors de l'index des tests qu'il écrit, et qu'un hôte
+      + n'en a connaissance qu'au moment où ils s'exécutent.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      impromptu:
+        List(t"1", t"22", t"333").each: digits =>
+          test(m"$digits parses")(safely(digits.as[Int])).assert(_.present)
+      ```
+
+      - The block's result is returned, so `impromptu(test(m"probe"))` is a `Test.Id`.
+      + Le résultat du bloc est renvoyé, si bien que `impromptu(test(m"probe"))` est un `Test.Id`.
+  refer probably.Impromptu
+  refer probably.Testable
+
+entry .aspirationally
+  info
+      - records every assertion in the block as an aspiration, neither failing nor forgotten
+      + enregistre chaque assertion du bloc comme une aspiration, ni en échec ni oubliée
+  detail
+      - A test which *should* pass but is known not to yet is written like any other, inside an
+      - `aspirationally` block. Every verdict within is recorded as `Verdict.AspirePass` or
+      - `Verdict.AspireFail` (and an exception as `AspireFail`), so the run does not fail on it,
+      - and a host reports it distinctly once it starts to pass. The block sees a
+      - `Runner.Aspirational` view of the contextual runner, which shares its state and report
+      - and differs only in how verdicts are recorded; a pure aspiration is queued like any
+      - other assertion under `--workers`.
+      + Un test qui *devrait* réussir mais dont on sait qu'il ne réussit pas encore s'écrit comme
+      + n'importe quel autre, à l'intérieur d'un bloc `aspirationally`. Chaque verdict qu'il
+      + contient est enregistré comme `Verdict.AspirePass` ou `Verdict.AspireFail` (et une exception
+      + comme `AspireFail`), si bien que l'exécution n'échoue pas à cause de lui, et qu'un hôte le
+      + signale de façon distincte dès qu'il commence à réussir. Le bloc voit une vue
+      + `Runner.Aspirational` du runner contextuel, qui partage son état et son rapport et ne
+      + diffère que par la façon dont les verdicts sont enregistrés ; une aspiration pure est mise
+      + en file comme toute autre assertion avec `--workers`.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      aspirationally:
+        test(m"a hexadecimal integer parses"):
+          safely(t"0x2a".as[Int])
+        . assert(_ == 42)
+      ```
+  refer probably.Verdict
+  refer probably.Runner
+
+entry .Suite
+  info
+      - a suite of tests: an object with a title, an id and a `run()` body, driven by a host through `invoke`
+      + une suite de tests : un objet avec un titre, un id et un corps `run()`, piloté par un hôte
+      + au moyen d'`invoke`
+  detail
+      - A `Suite` is the unit a host runs. It is an `object` extending `Suite(id, title)` or
+      - `Suite(title)` whose `#run` body declares tests, and it is **not a main class**: the
+      - beneficence plugin records every `Suite` object in the jar's
+      - `META-INF/services/probably.Suite` index, and the fume runner discovers suites there,
+      - drives each through `#invoke` with an event sink, and renders the stream of `TestEvent`s.
+      - The suite itself renders nothing.
+      + Une `Suite` est l'unité qu'exécute un hôte. C'est un `object` qui étend `Suite(id, title)`
+      + ou `Suite(title)` et dont le corps `#run` déclare des tests, et ce n'est **pas une classe
+      + principale** : le plugin beneficence enregistre chaque objet `Suite` dans l'index
+      + `META-INF/services/probably.Suite` du jar, et le runner fume y découvre les suites, pilote
+      + chacune par `#invoke` avec un récepteur d'événements, et rend le flux de `TestEvent`. La
+      + suite elle-même ne rend rien.
+
+      ```scala fuel
+      typecheck
+      ##
+      object Tests extends Suite("parser", m"Parser tests"):   // `fume run parser`
+        def run(): Unit =
+          suite(m"Numbers"):
+            test(m"a decimal integer parses"):
+              safely(t"42".as[Int])
+            . assert(_ == 42)
+      ```
+
+      - A suite has a **title** and an **id**. The id is what a selection and a path know it
+      - by, and is either given as a string literal before the title, or derived from the title
+      - by `.derive`: `Suite(m"Honeycomb Tests")` has the id `honeycomb-tests`. A given id is
+      - also the suite's `Topic` type: within its body the contextual `Testable` is a `Testable
+      - of "parser"`, each `suite` block passes the topic on, and a method which declares tests
+      - for the suite says so with `(using Testable of "parser")`. A suite with a derived id has
+      - the topic `Derived`, which no literal equals, so its tests are written in its body or in
+      - a method generic in the topic.
+      + Une suite a un **titre** et un **id**. L'id est ce par quoi une sélection et un chemin la
+      + connaissent ; il est soit donné sous forme de littéral de chaîne avant le titre, soit dérivé
+      + du titre par `.derive` : `Suite(m"Honeycomb Tests")` a pour id `honeycomb-tests`. Un id
+      + donné est aussi le type `Topic` de la suite : dans son corps, le `Testable` contextuel est
+      + un `Testable of "parser"`, chaque bloc `suite` transmet le sujet, et une méthode qui déclare
+      + des tests pour la suite l'indique avec `(using Testable of "parser")`. Une suite dont l'id
+      + est dérivé a pour sujet `Derived`, auquel aucun littéral n'est égal ; ses tests s'écrivent
+      + donc dans son corps ou dans une méthode générique dans le sujet.
+
+      - A suite is a `Testable` (its name is the title, its `key` the id) and provides two
+      - givens to its body: `#testable`, a pure view of itself, and `#runner`, the runner of
+      - the current invocation. A host may invoke a suite any number of times through one
+      - classloader: each `#invoke` installs a fresh runner, and `#runner` is `inline` so every
+      - assertion reads the current one.
+      + Une suite est un `Testable` (son nom est le titre, sa `key` l'id) et fournit deux givens à
+      + son corps : `#testable`, une vue pure d'elle-même, et `#runner`, le runner de l'invocation
+      + en cours. Un hôte peut invoquer une suite autant de fois qu'il le souhaite par un même
+      + classloader : chaque `#invoke` installe un nouveau runner, et `#runner` est `inline` afin
+      + que chaque assertion lise le runner actuel.
+
+      - For CI, or a host too old to read the jar's event schema, `.main` and `.run` are a
+      - plain entry point: a test object's own `main` is `Suite.main(arguments, Tests)`.
+      + Pour la CI, ou pour un hôte trop ancien pour lire le schéma d'événements du jar, `.main` et
+      + `.run` forment un simple point d'entrée : le `main` propre à un objet de test est
+      + `Suite.main(arguments, Tests)`.
+  refer probably.Testable
+  refer probably.TestEvent
+  refer probably.Streamer
+  refer probably.Selection
+  entry .Derivation
+    info
+        - the evidence that fixes a title-only suite's topic as `Derived`
+        + la preuve qui fixe à `Derived` le sujet d'une suite qui n'a qu'un titre
+    detail
+        - `Suite(title)` has a type parameter nothing else constrains; the one instance of
+        - `Derivation`, `.derivation`, is `Derivation[Derived]`, which is what gives such a suite
+        - the topic `Derived`. Not something a user writes.
+        + `Suite(title)` a un paramètre de type que rien d'autre ne contraint ; l'unique instance de
+        + `Derivation`, `.derivation`, est `Derivation[Derived]`, et c'est ce qui donne à une telle
+        + suite le sujet `Derived`. Ce n'est pas quelque chose qu'un utilisateur écrit.
+  entry .derivation
+    info
+        - the given `Derivation[Derived]`, in implicit scope
+        + le given `Derivation[Derived]`, dans la portée implicite
+  entry .derive
+    info
+        - the id derived from a title: lower-case letters and digits, with `-` between runs
+        + l'id dérivé d'un titre : lettres minuscules et chiffres, avec `-` entre les séquences
+    detail
+        - Each run of anything other than a letter or digit becomes one `-`, with none at either
+        - end, and `suite` if that leaves nothing: `Suite.derive(t"Honeycomb Tests")` is
+        - `honeycomb-tests`, and `Suite.derive(t"  y\"…\" interpolator (v2) ")` is
+        - `y-interpolator-v2`.
+        + Chaque séquence de caractères autres que des lettres ou des chiffres devient un unique
+        + `-`, sans aucun aux extrémités, et `suite` s'il ne reste rien :
+        + `Suite.derive(t"Honeycomb Tests")` vaut `honeycomb-tests`, et
+        + `Suite.derive(t"  y\"…\" interpolator (v2) ")` vaut `y-interpolator-v2`.
+  entry .run
+    info
+        - runs suites with a plain text report on the `Stdio` in scope, answering their status
+        + exécute des suites avec un rapport en texte brut sur le `Stdio` dans la portée, et renvoie
+        + leur statut
+    detail
+        - `Suite.run(arguments, suites*)` invokes each suite with the arguments (selection terms,
+        - space- or newline-separated; the empty text means all), printing `[pass] parser /
+        - Numbers / a decimal integer parses` per completed test, a `DetailMessage` or the
+        - `expected:`/`found:` of a `DetailCompare` beneath it, `suite threw: …` for a terminated
+        - run, and finally `3 passed, 1 failed`. It returns the worst status: 0 passed, 1
+        - failures, 2 a suite threw. It needs a `Stdio`, such as `stdios.javaLangSystemStdio`.
+        + `Suite.run(arguments, suites*)` invoque chaque suite avec les arguments (termes de
+        + sélection, séparés par des espaces ou des sauts de ligne ; le texte vide signifie tout),
+        + en affichant `[pass] parser / Numbers / a decimal integer parses` par test terminé, un
+        + `DetailMessage` ou les `expected:`/`found:` d'un `DetailCompare` en dessous,
+        + `suite threw: …` pour une exécution interrompue, et enfin `3 passed, 1 failed`. Elle
+        + renvoie le pire statut : 0 pour réussi, 1 pour des échecs, 2 si une suite a levé une
+        + exception. Elle a besoin d'un `Stdio`, comme `stdios.javaLangSystemStdio`.
+
+        ```scala
+        import soundness.*
+        import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
+
+        object Probe extends Suite(m"probe"):
+          def run(): Unit = test(m"one")(1).assert(_ == 1)
+
+        Suite.run(t"", Probe)
+        ```
+  entry .main
+    info
+        - the `java` entry point for a test object: runs the suites, then exits with their status
+        + le point d'entrée `java` d'un objet de test : exécute les suites, puis termine avec leur
+        + statut
+    detail
+        - `Suite.main(arguments, Tests)` is `.run` over the standard `Stdio`, followed by
+        - `Exit(status).terminate()`. A test object which wants to be launched as `java -cp …
+        - Tests` defines `def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)`;
+        - a host such as fume never needs it.
+        + `Suite.main(arguments, Tests)` équivaut à `.run` sur le `Stdio` standard, suivi de
+        + `Exit(status).terminate()`. Un objet de test qui veut être lancé par `java -cp … Tests`
+        + définit `def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)` ; un
+        + hôte tel que fume n'en a jamais besoin.
+  entry #Topic
+    info
+        - the suite's topic: its id as a literal type, or `Derived`
+        + le sujet de la suite : son id sous forme de type littéral, ou `Derived`
+  entry #workers
+    info
+        - how many workers this suite's queued assertions may run on, when the host queues at all
+        + le nombre de workers sur lesquels les assertions mises en file de cette suite peuvent
+        + s'exécuter, si tant est que l'hôte utilise une file
+    detail
+        - With `--workers=<n>` the runner uses the larger of the host's count and this; the
+        - default, 1, keeps declaration order. Override it in a suite whose pure assertions may
+        - run beside one another. Only assertions the compiler has verified pure are queued, so
+        - nothing scoped by the suite's blocks can be shared between workers, but effects the
+        - checker does not track (raw JDK I/O, system properties, a thread-affine library)
+        - remain the suite's own responsibility.
+        + Avec `--workers=<n>`, le runner utilise la plus grande des deux valeurs entre le nombre de
+        + l'hôte et celui-ci ; la valeur par défaut, 1, conserve l'ordre de déclaration.
+        + Redéfinissez-la dans une suite dont les assertions pures peuvent s'exécuter côte à côte.
+        + Seules les assertions dont le compilateur a vérifié qu'elles sont pures sont mises en
+        + file, si bien que rien de ce que délimitent les blocs de la suite ne peut être partagé
+        + entre workers, mais les effets que le vérificateur ne suit pas (E/S brutes du JDK,
+        + propriétés système, bibliothèque liée à un thread) restent sous la responsabilité de la
+        + suite.
+
+        ```scala fuel
+        typecheck
+        ##
+        class Parallel extends Suite(m"parallel"):
+          override def workers: Int = 4
+          def run(): Unit = ()
+        ```
+  entry #runner0
+    info
+        - the runner of the current invocation, replaced by every `invoke`
+        + le runner de l'invocation en cours, remplacé à chaque `invoke`
+    detail
+        - The per-run state. It is a public `var` only so that `#runner` can be an `inline given`
+        - reading it; a suite's body reaches the runner through `#runner`, and a host through
+        - `#invoke`.
+        + L'état propre à chaque exécution. C'est une `var` publique uniquement pour que `#runner`
+        + puisse être un `inline given` qui la lit ; le corps d'une suite atteint le runner par
+        + `#runner`, et un hôte par `#invoke`.
+  entry #runner
+    info
+        - the given `Runner[Report]` a suite's body asserts through
+        + le given `Runner[Report]` par lequel le corps d'une suite fait ses assertions
+    detail
+        - Inline, so every summons reads the *current* runner: a memoized alias would keep the
+        - first runner a suite ever saw, which is wrong for a suite invoked more than once in one
+        - classloader, by a host running several suites through one loader, or by another suite
+        - which invokes it as a nested suite.
+        + Inline, afin que chaque invocation lise le runner *actuel* : un alias mémoïsé conserverait
+        + le premier runner qu'ait vu une suite, ce qui est faux pour une suite invoquée plus d'une
+        + fois dans un même classloader, par un hôte exécutant plusieurs suites par un même
+        + chargeur, ou par une autre suite qui l'invoque comme suite imbriquée.
+  entry #testable
+    info
+        - the given `Testable of Topic` the suite's body declares tests for
+        + le given `Testable of Topic` pour lequel le corps de la suite déclare des tests
+    detail
+        - A pure `Testable` view of the suite rather than the suite itself, which captures its
+        - runner and so is a capability. `Testable` equality is structural (name and parent), so
+        - the view is interchangeable with the suite wherever tests are grouped or reported.
+        + Une vue `Testable` pure de la suite plutôt que la suite elle-même, qui capture son runner
+        + et est donc une capacité. L'égalité des `Testable` est structurelle (nom et parent), si
+        + bien que la vue est interchangeable avec la suite partout où des tests sont regroupés ou
+        + signalés.
+  entry #run
+    info
+        - the suite's body: where its tests are declared
+        + le corps de la suite : là où ses tests sont déclarés
+    detail
+        - Abstract; every statement in it runs on every invocation, including a `--list` one, so
+        - a value consumed only inside test bodies is best declared `lazy`.
+        + Abstrait ; chaque instruction qu'il contient s'exécute à chaque invocation, y compris une
+        + invocation `--list` ; il vaut donc mieux déclarer `lazy` une valeur consommée uniquement
+        + dans des corps de tests.
+  entry #apply
+    info
+        - runs the suite's body as a nested suite of the runner in scope
+        + exécute le corps de la suite comme suite imbriquée du runner dans la portée
+    detail
+        - `Tests()` within another suite's body enters this suite as a group of that one, on the
+        - caller's runner, which becomes this suite's `#runner` for the duration.
+        + `Tests()` dans le corps d'une autre suite fait entrer cette suite comme groupe de
+        + celle-là, sur le runner de l'appelant, qui devient le `#runner` de cette suite pendant ce
+        + temps.
+  entry #invoke
+    info
+        - runs the suite with an event sink and returns its exit status
+        + exécute la suite avec un récepteur d'événements et renvoie son statut de sortie
+    detail
+        - `invoke(arguments, sink)` parses the arguments as a `Selection` (terms separated by
+        - newlines in one `Text`, the empty text meaning none), installs a fresh runner whose
+        - report emits every datum as a `TestEvent` through `sink`, runs `#run`, drains any
+        - queued assertions, and returns 0 (passed), 1 (failures) or 2 (the suite threw, after a
+        - `RunTerminated` event). The stream ends with `RunCompleted`; a selection which admits
+        - nothing emits `NothingMatched` first.
+        + `invoke(arguments, sink)` analyse les arguments en une `Selection` (termes séparés par des
+        + sauts de ligne dans un même `Text`, le texte vide signifiant aucun), installe un nouveau
+        + runner dont le rapport émet chaque donnée sous forme de `TestEvent` par `sink`, exécute
+        + `#run`, vide les assertions en file, et renvoie 0 (réussi), 1 (échecs) ou 2 (la suite a
+        + levé une exception, après un événement `RunTerminated`). Le flux se termine par
+        + `RunCompleted` ; une sélection qui n'admet rien émet d'abord `NothingMatched`.
+
+        - With `--list` among the arguments nothing runs: the traversal records what the
+        - selection admits and emits one `TestScheduled` per admitted test, with its kind,
+        - expected measuring time, tags and axes, which is how a host budgets a run before
+        - staging anything.
+        + Avec `--list` parmi les arguments, rien ne s'exécute : le parcours enregistre ce qu'admet
+        + la sélection et émet un `TestScheduled` par test admis, avec son type, son temps de mesure
+        + prévu, ses étiquettes et ses axes, ce qui permet à un hôte d'évaluer le budget d'une
+        + exécution avant de préparer quoi que ce soit.
+
+        ```scala
+        import soundness.*
+
+        object Probe extends Suite(m"probe"):
+          def run(): Unit =
+            test(m"one")(1).assert(_ == 1)
+            test(m"two")(2).assert(_ == 3)
+
+        val events: scala.collection.mutable.ListBuffer[TestEvent] = scala.collection.mutable.ListBuffer()
+        val status: Int = Probe.invoke(t"", event => events.append(event))
+        ```
+
+        - The sink is a pure function (`TestEvent -> Unit`) and may be called from a worker
+        - thread under `--workers`, so it must be safe to call concurrently.
+        + Le récepteur est une fonction pure (`TestEvent -> Unit`) et peut être appelé depuis un
+        + thread de travail avec `--workers` ; il doit donc pouvoir être appelé de façon concurrente
+        + sans risque.
+
+entry .Testable
+  info
+      - what tests are attached to: a `Suite`, a `suite` group or an `impromptu` block
+      + ce à quoi sont rattachés les tests : une `Suite`, un groupe `suite` ou un bloc `impromptu`
+  detail
+      - Every `test` and `suite` declaration takes a `Testable` as a contextual parameter, which
+      - says where the test belongs; its `#Topic` says so **statically**: the literal id of the
+      - `Suite` the test is declared for (`Testable of "parser"`), which every `suite` group
+      - within it passes on; `Derived` for a suite whose id is derived from its title; or
+      - `Impromptu` for tests only known by running them. The compiler therefore refuses a test
+      - which belongs nowhere, and the beneficence plugin, reading the topic from each
+      - declaration it compiles, lists every suite's tests without running anything.
+      + Chaque déclaration `test` et `suite` prend un `Testable` comme paramètre contextuel, qui
+      + indique où le test se range ; son `#Topic` l'indique **statiquement** : l'id littéral de la
+      + `Suite` pour laquelle le test est déclaré (`Testable of "parser"`), que chaque groupe
+      + `suite` en son sein transmet ; `Derived` pour une suite dont l'id est dérivé de son titre ;
+      + ou `Impromptu` pour les tests connus seulement en les exécutant. Le compilateur refuse donc
+      + un test qui n'appartient à rien, et le plugin beneficence, en lisant le sujet de chaque
+      + déclaration qu'il compile, liste les tests de chaque suite sans rien exécuter.
+
+      - A `Testable` has a `#name` (a `Message`), an optional `#parent`, an optional `#moniker`
+      - and, for a suite, a `#key` (its id). Equality is structural — the name and the parent —
+      - so two values built on different lines for the same position in the hierarchy are
+      - equal, and `Test.Id#id` is a function of the texts of the names alone.
+      + Un `Testable` a un `#name` (un `Message`), un `#parent` facultatif, un `#moniker` facultatif
+      + et, pour une suite, une `#key` (son id). L'égalité est structurelle — le nom et le parent —
+      + si bien que deux valeurs construites sur des lignes différentes pour la même position dans
+      + la hiérarchie sont égales, et que `Test.Id#id` est une fonction des seuls textes des noms.
+
+      ```scala
+      import soundness.*
+
+      val group: Testable of Impromptu = Testable.of[Impromptu](m"group", Testable.detached)
+      group.parent.let(_.name.text)
+      group.id.ids
+      ```
+  refer probably.Suite
+  refer probably.test
+  refer probably.Impromptu
+  refer probably.Derived
+  entry .orphan
+    info
+        - the compile error for a `test` with no `Testable` in scope
+        + l'erreur de compilation pour un `test` sans `Testable` dans la portée
+    detail
+        - The text of the `@missingContext` annotation on every declaration's parameter: _a test
+        - must be declared for a Suite — in its body, or in a method taking `(using Testable of
+        - "<the suite's name>")` — or inside an `impromptu` block_.
+        + Le texte de l'annotation `@missingContext` sur le paramètre de chaque déclaration : _a
+        + test must be declared for a Suite — in its body, or in a method taking
+        + `(using Testable of "<the suite's name>")` — or inside an `impromptu` block_.
+  entry .of
+    info
+        - makes a `Testable of topic` from a name, with an optional parent, moniker and key
+        + crée un `Testable of topic` à partir d'un nom, avec un parent, un surnom et une clé
+        + facultatifs
+    detail
+        - `Testable.of[topic](name, parent, moniker, key)` needs a `Codepoint`, which marks where
+        - it was declared. `suite` uses it to make each group's `Testable` from the enclosing one.
+        + `Testable.of[topic](name, parent, moniker, key)` a besoin d'un `Codepoint`, qui marque
+        + l'endroit où il a été déclaré. `suite` s'en sert pour créer le `Testable` de chaque groupe
+        + à partir de celui qui l'englobe.
+  entry .impromptu
+    info
+        - the same position in the hierarchy as a `Testable`, with the topic `Impromptu`
+        + la même position dans la hiérarchie qu'un `Testable`, avec le sujet `Impromptu`
+    detail
+        - For tests not statically attributed to the given `Testable`: `impromptu` builds the
+        - block's context this way, so an impromptu test is reported at the surrounding suite's
+        - position but is absent from the index.
+        + Pour les tests qui ne sont pas attribués statiquement au `Testable` donné : `impromptu`
+        + construit ainsi le contexte du bloc, si bien qu'un test impromptu est signalé à la
+        + position de la suite environnante mais est absent de l'index.
+  entry .detached
+    info
+        - where `impromptu` tests go when no `Testable` surrounds the block
+        + là où vont les tests `impromptu` lorsqu'aucun `Testable` n'entoure le bloc
+    detail
+        - A root `Testable of Impromptu` named `impromptu`, and the value to bind as a given where
+        - tests are run outside any suite, as a REPL or a tutorial does.
+        + Un `Testable of Impromptu` racine nommé `impromptu`, et la valeur à lier comme given là où
+        + des tests sont exécutés hors de toute suite, comme le font un REPL ou un tutoriel.
+  entry #Topic
+    info
+        - the suite the tests belong to, as a type: a literal id, `Derived` or `Impromptu`
+        + la suite à laquelle appartiennent les tests, sous forme de type : un id littéral,
+        + `Derived` ou `Impromptu`
+  entry #name
+    info
+        - the suite's or group's title
+        + le titre de la suite ou du groupe
+  entry #moniker
+    info
+        - the group's stable moniker, if it was given one
+        + le surnom stable du groupe, s'il en a reçu un
+  entry #key
+    info
+        - a suite's id, as text; `Unset` for a group
+        + l'id d'une suite, sous forme de texte ; `Unset` pour un groupe
+    detail
+        - Unlike a moniker, an id need not be a Java identifier (`html-5` is one), so it is plain
+        - text, and a selection naming it may be parsed as a glob.
+        + Contrairement à un surnom, un id n'a pas besoin d'être un identifiant Java (`html-5` en
+        + est un) ; c'est donc du texte brut, et une sélection qui le nomme peut être analysée comme
+        + un motif glob.
+  entry #parent
+    info
+        - the group or suite this one is within, or `Unset` for a root
+        + le groupe ou la suite dans lequel se trouve celui-ci, ou `Unset` pour une racine
+  entry #id
+    info
+        - the `Test.Id` of the suite or group itself: what a path and a report node know it by
+        + le `Test.Id` de la suite ou du groupe lui-même : ce par quoi un chemin et un nœud de
+        + rapport le connaissent
+
+entry .Impromptu
+  info
+      - the topic of a `Testable` whose tests are not attributed to a `Suite` at compile time
+      + le sujet d'un `Testable` dont les tests ne sont pas attribués à une `Suite` à la compilation
+  detail
+      - An opaque `Label` which no literal equals: tests declared under a `Testable of Impromptu`
+      - (inside an `impromptu` block, or for a method taking `(using Testable of Impromptu)`) are
+      - known only by running them, and no listing made without running the suite includes them.
+      + Un `Label` opaque auquel aucun littéral n'est égal : les tests déclarés sous un
+      + `Testable of Impromptu` (à l'intérieur d'un bloc `impromptu`, ou pour une méthode prenant
+      + `(using Testable of Impromptu)`) ne sont connus qu'en les exécutant, et aucun listage fait
+      + sans exécuter la suite ne les inclut.
+
+entry .Derived
+  info
+      - the topic of a suite whose id is derived from its title
+      + le sujet d'une suite dont l'id est dérivé de son titre
+  detail
+      - An opaque `Label` which no literal equals, like `Impromptu`, so the tests of
+      - `Suite(m"Jacinta tests")` can only be declared where its own `Testable` is in scope — its
+      - body — or in a method generic in the topic, `[topic <: Label](using Testable of topic)`.
+      - A suite given an id has that id for its topic instead.
+      + Un `Label` opaque auquel aucun littéral n'est égal, comme `Impromptu`, si bien que les tests
+      + de `Suite(m"Jacinta tests")` ne peuvent être déclarés que là où son propre `Testable` est
+      + dans la portée — son corps — ou dans une méthode générique dans le sujet,
+      + `[topic <: Label](using Testable of topic)`. Une suite à laquelle on a donné un id a plutôt
+      + cet id pour sujet.
+
+entry .Test
+  info
+      - a declared test with its body, ready to be asserted, checked or matched
+      + un test déclaré avec son corps, prêt à faire l'objet d'une assertion, d'une vérification ou
+      + d'une correspondance
+  detail
+      - A `Test[result]` pairs a `Test.Id` with an `#action`, the body as a function of the
+      - `Harness` which runs it, and is made by applying a `Test.Id` to a block:
+      - `test(m"…")(body)`. The companion's extensions are the three ways to run one:
+      + Un `Test[result]` associe un `Test.Id` à une `#action`, le corps en tant que fonction du
+      + `Harness` qui l'exécute, et se crée en appliquant un `Test.Id` à un bloc :
+      + `test(m"…")(body)`. Les extensions du compagnon sont les trois façons d'en exécuter un :
+
+      - - `.assert(predicate)` runs the body, applies the predicate, records a `Verdict`, and
+      -   returns `Unit`. Its body must be **pure** — it may close over no capability (a
+      -   `Monitor` from an enclosing `supervise`, an `Online`, a started server) — since a
+      -   queued runner may run it on a worker after the block which scoped the capability has
+      -   exited. A body which needs one creates it inside itself, or the test becomes a
+      -   `check`. An unselected `assert` never runs at all.
+      - - `.check(predicate)` accepts any body, runs it inline, records the verdict, and
+      -   **returns the value**, so later tests can build on it. An unselected `check` still
+      -   runs (its value flows onward) but records nothing.
+      - - `.matches { case … }` asserts that the value fits a pattern.
+      + - `.assert(predicate)` exécute le corps, applique le prédicat, enregistre un `Verdict` et
+      +   renvoie `Unit`. Son corps doit être **pur** — il ne peut capturer aucune capacité (un
+      +   `Monitor` venant d'un `supervise` englobant, un `Online`, un serveur démarré) — puisqu'un
+      +   runner à file d'attente peut l'exécuter sur un worker après la sortie du bloc qui
+      +   délimitait la capacité. Un corps qui en a besoin la crée en lui-même, ou le test devient
+      +   un `check`. Un `assert` non sélectionné ne s'exécute jamais.
+      + - `.check(predicate)` accepte n'importe quel corps, l'exécute sur place, enregistre le
+      +   verdict et **renvoie la valeur**, si bien que les tests ultérieurs peuvent s'appuyer
+      +   dessus. Un `check` non sélectionné s'exécute tout de même (sa valeur se propage) mais
+      +   n'enregistre rien.
+      + - `.matches { case … }` affirme que la valeur correspond à un motif.
+
+      ```scala fuel
+      frame
+        label A test is a named value
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            val probe: Test[Person] = test(m"the oldest person")(Person(t"Lear", 82))
+      frame
+        label An assertion records a verdict and returns nothing
+        substitute given..Runner()  ...
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            test(m"the oldest person")(Person(t"Lear", 82)).assert(_.age > 40)
+      frame
+        label A check returns the value for a later test to build on
+        substitute given..Runner()  ...
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            val oldest: Person = test(m"the oldest person")(Person(t"Lear", 82)).check(_.age > 40)
+            test(m"the oldest person is named")(oldest.name).assert(_ == t"Lear")
+      frame
+        label A failed equality is reported as a contrast, field by field
+        substitute given..Runner()  ...
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            test(m"the oldest person")(Person(t"Lear", 82)).assert(_ == Person(t"Lear", 80))
+            // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), …)
+      ##
+      ```
+
+      - Both `assert` and `check` are macros which find the `Runner` in scope (a compile error,
+      - _No `Runner` instance is available_, otherwise) and the `Inclusion[report, Verdict]`
+      - and `Inclusion[report, Verdict.Detail]` for its report type. Nothing else is resolved
+      - at the assertion: it records where its predicate is written and gathers, only on
+      - failure, the locals the predicate closes over. A failed predicate is then handed to
+      - the installed `Diagnostician`, when the run was asked to diagnose failures, whose
+      - account of it — a `Verdict.Detail.Dissection` of the predicate's intermediate values,
+      - and for an equality a `Verdict.Detail.Compare` of its two sides — is recorded and
+      - emitted as `TestEvent.DetailDissection` and `TestEvent.DetailCompare`. A body which
+      - throws records
+      - `Verdict.Throws`; a predicate which throws, `Verdict.CheckThrows`. Values captured
+      - with `Harness#capture` during a failed test are recorded as `Verdict.Detail.Captures`.
+      + `assert` et `check` sont tous deux des macros qui trouvent le `Runner` dans la portée
+      + (sinon, erreur de compilation, _No `Runner` instance is available_) ainsi que
+      + l'`Inclusion[report, Verdict]` et l'`Inclusion[report, Verdict.Detail]` pour son type de
+      + rapport. Rien d'autre n'est résolu au niveau de l'assertion : elle enregistre l'endroit où
+      + son prédicat est écrit et rassemble, uniquement en cas d'échec, les variables locales que
+      + capture le prédicat. Un prédicat en échec est ensuite remis au `Diagnostician` installé,
+      + lorsque l'exécution a été invitée à diagnostiquer les échecs, dont l'analyse — une
+      + `Verdict.Detail.Dissection` des valeurs intermédiaires du prédicat et, pour une égalité, une
+      + `Verdict.Detail.Compare` de ses deux côtés — est enregistrée et émise sous forme de
+      + `TestEvent.DetailDissection` et `TestEvent.DetailCompare`. Un corps qui lève une exception
+      + enregistre `Verdict.Throws` ; un prédicat qui en lève une, `Verdict.CheckThrows`. Les
+      + valeurs capturées avec `Harness#capture` pendant un test en échec sont enregistrées sous
+      + forme de `Verdict.Detail.Captures`.
+  refer probably.test
+  refer probably.Runner
+  refer probably.Verdict
+  refer probably.Diagnosis
+  refer probably.Dissector
+  entry .assert
+    info
+        - runs a pure test and records whether its predicate held; `assert()` records that it ran
+        + exécute un test pur et enregistre si son prédicat est vérifié ; `assert()` enregistre
+        + qu'il s'est exécuté
+    detail
+        - An extension on `Test[test]`. `assert(predicate)` records `Pass` or `Fail` (or, inside
+        - `aspirationally`, `AspirePass`/`AspireFail`); `assert()` with no predicate passes
+        - whenever the body returns. The body must be pure: in a capture-checked unit, a `Test`
+        - which captures a capability is rejected at the call site by the capture checker, since
+        - the expansion passes it to a parameter typed as the pure `Test[test]`. Only an
+        - assertion the compiler has verified pure is queued
+        - under `--workers`; one from a unit compiled without capture checking runs inline, in
+        - order.
+        + Une extension sur `Test[test]`. `assert(predicate)` enregistre `Pass` ou `Fail` (ou, à
+        + l'intérieur d'`aspirationally`, `AspirePass`/`AspireFail`) ; `assert()` sans prédicat
+        + réussit dès lors que le corps se termine. Le corps doit être pur : dans une unité soumise
+        + à la vérification des captures, un `Test` qui capture une capacité est rejeté au point
+        + d'appel par le vérificateur de captures, puisque l'expansion le passe à un paramètre typé
+        + comme le `Test[test]` pur. Seule une assertion dont le compilateur a vérifié qu'elle est
+        + pure est mise en file avec `--workers` ; une assertion venant d'une unité compilée sans
+        + vérification des captures s'exécute sur place, dans l'ordre.
+  entry .matches
+    info
+        - asserts that the value fits a partial function's pattern
+        + affirme que la valeur correspond au motif d'une fonction partielle
+    detail
+        - `test(m"…")(value).matches { case Some(_) => }` is `assert(pf.isDefinedAt(_))`.
+        + `test(m"…")(value).matches { case Some(_) => }` équivaut à `assert(pf.isDefinedAt(_))`.
+  entry .check
+    info
+        - runs any test inline, records the verdict, and returns the value
+        + exécute n'importe quel test sur place, enregistre le verdict et renvoie la valeur
+    detail
+        - An extension on `Test[test]^`, so the body may close over capabilities. The value is
+        - returned for later tests to use; a body which throws rethrows after recording
+        - `Verdict.Throws`, since there is no value to return. A `check` runs even when the
+        - selection does not admit it, and under `--list`, so a long computation which is only
+        - needed by later assertions costs every listing.
+        + Une extension sur `Test[test]^`, si bien que le corps peut capturer des capacités. La
+        + valeur est renvoyée pour que des tests ultérieurs l'utilisent ; un corps qui lève une
+        + exception la relève après avoir enregistré `Verdict.Throws`, puisqu'il n'y a aucune valeur
+        + à renvoyer. Un `check` s'exécute même lorsque la sélection ne l'admet pas, ainsi qu'avec
+        + `--list`, si bien qu'un long calcul dont seules des assertions ultérieures ont besoin
+        + coûte à chaque listage.
+  entry .Id
+    info
+        - a test's identity: its name, its suite, where it was declared, and its moniker, tags and key
+        + l'identité d'un test : son nom, sa suite, l'endroit où il a été déclaré, ainsi que son
+        + surnom, ses étiquettes et sa clé
+    detail
+        - A `Test.Id` is what `test(m"…")` returns before a body is given, and what every
+        - report line, event and selection is keyed by. Its `#id` is six hex digits computed
+        - from the **text** of the name and of the suites' names alone, so a host reading the
+        - beneficence plugin's index arrives at the same id without constructing the test. It
+        - is `Comparable` lexicographically on the path of ids from the root.
+        + Un `Test.Id` est ce que renvoie `test(m"…")` avant qu'un corps soit donné, et ce qui sert
+        + de clé à chaque ligne de rapport, à chaque événement et à chaque sélection. Son `#id` est
+        + formé de six chiffres hexadécimaux calculés uniquement à partir du **texte** du nom et des
+        + noms des suites, si bien qu'un hôte qui lit l'index du plugin beneficence aboutit au même
+        + id sans construire le test. Il est `Comparable` lexicographiquement selon le chemin des
+        + ids depuis la racine.
+
+        - Applying an id to a block makes a `Test`; `#over` spreads it across one or two axes
+        - instead.
+        + Appliquer un id à un bloc crée un `Test` ; `#over` le répartit plutôt sur un ou deux axes.
+    refer probably.Test
+    refer probably.Axis
+    entry .comparable
+      info
+          - orders ids by their path of hashes from the root suite
+          + ordonne les ids selon leur chemin de hachages depuis la suite racine
+    entry #name
+      info
+          - the description, as a `Message`
+          + la description, sous forme de `Message`
+    entry #suite
+      info
+          - the `Testable` the test was declared for, or `Unset` for a root
+          + le `Testable` pour lequel le test a été déclaré, ou `Unset` pour une racine
+    entry #codepoint
+      info
+          - where the test was declared: source file and line
+          + l'endroit où le test a été déclaré : fichier source et ligne
+    entry #moniker
+      info
+          - the stable `n"…"` identifier, if one was given
+          + l'identifiant stable `n"…"`, s'il en a été donné un
+    entry #tags
+      info
+          - the declared tags, in declaration order
+          + les étiquettes déclarées, dans l'ordre de déclaration
+    entry #key
+      info
+          - a suite's id; `Unset` for a test or group
+          + l'id d'une suite ; `Unset` pour un test ou un groupe
+    entry #timestamp
+      info
+          - when the id was constructed, in milliseconds since the epoch
+          + le moment de construction de l'id, en millisecondes depuis l'epoch
+    entry #id
+      info
+          - six hex digits: the low 24 bits of the names' hash
+          + six chiffres hexadécimaux : les 24 bits de poids faible du hachage des noms
+      detail
+          - With `h(suite)` the sum of the `String#hashCode`s of the texts of the suite's name
+          - and its ancestors' names, the id is the low 24 bits of `h(suite) ^ name.text.hashCode`
+          - in hex, so `a quoted name` under `Probably Tests/group` has an id any reader of the
+          - names can compute.
+          + Si `h(suite)` désigne la somme des `String#hashCode` des textes du nom de la suite et
+          + des noms de ses ancêtres, l'id est formé des 24 bits de poids faible de
+          + `h(suite) ^ name.text.hashCode` en hexadécimal, si bien que `a quoted name` sous
+          + `Probably Tests/group` a un id que tout lecteur des noms peut calculer.
+    entry #ids
+      info
+          - the ids from this entry up to the root, this one first
+          + les ids depuis cette entrée jusqu'à la racine, celle-ci en premier
+    entry #label
+      info
+          - what addresses this entry besides its hash and name: a moniker, or a suite's id
+          + ce qui désigne cette entrée en plus de son hachage et de son nom : un surnom, ou l'id
+          + d'une suite
+    entry #apply
+      info
+          - makes a `Test` from a body, which may use the `Harness` in scope
+          + crée un `Test` à partir d'un corps, qui peut utiliser le `Harness` dans la portée
+      detail
+          - `test(m"…")(body)`: the body is a `Harness ?=> result`, so it may call `capture`.
+          - The capture of any capability by the body lands on the returned `Test`
+          - (`Test[result]^{body}`), not on `result`, so a test which asserts a pure value
+          - computed through a capability does not stamp that capability on the value's type.
+          + `test(m"…")(body)` : le corps est un `Harness ?=> result`, si bien qu'il peut appeler
+          + `capture`. La capture d'une capacité par le corps porte sur le `Test` renvoyé
+          + (`Test[result]^{body}`), et non sur `result`, si bien qu'un test qui fait une assertion
+          + sur une valeur pure calculée au moyen d'une capacité n'imprime pas cette capacité sur le
+          + type de la valeur.
+    entry #over
+      info
+          - spreads the test over one or two axes, one cell per value the body defines
+          + répartit le test sur un ou deux axes, une cellule par valeur que le corps définit
+      detail
+          - `over(axis)(body)` is a `Spread`: the body runs once per value of the `Axis`, and each
+          - verdict is recorded at that value's coordinate of this one named test. A partial body
+          - (`{ case … }`) leaves gaps at the values it does not define. An enum's companion
+          - object may stand in for an axis, `over(Codec)`, with the enum's cases as its values.
+          - `over(first, second)` is a `Spread2` over the grid of two axes.
+          + `over(axis)(body)` est un `Spread` : le corps s'exécute une fois par valeur de l'`Axis`,
+          + et chaque verdict est enregistré à la coordonnée de cette valeur dans cet unique test
+          + nommé. Un corps partiel (`{ case … }`) laisse des trous aux valeurs qu'il ne définit
+          + pas. L'objet compagnon d'une énumération peut tenir lieu d'axe, `over(Codec)`, avec les
+          + cas de l'énumération comme valeurs. `over(first, second)` est un `Spread2` sur la grille
+          + de deux axes.
+
+          ```scala
+          import soundness.*
+
+          given tutorial: (Testable of Impromptu) = Testable.detached
+          given runner: Runner[Report] = Runner()
+
+          test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
+            n*2
+          . assert((n, result) => result == n*2)
+
+          test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
+            case (x, y) if x + y != 23 => x*y
+          . assert((x, y, result) => result == x*y)
+          ```
+    entry #depth
+      info
+          - how many levels down from the root this entry is
+          + le nombre de niveaux qui séparent cette entrée de la racine
+  entry #id
+    info
+        - the test's `Test.Id`
+        + le `Test.Id` du test
+  entry #action
+    info
+        - the body, as a function of the `Harness` which runs it
+        + le corps, en tant que fonction du `Harness` qui l'exécute
+
+entry .Tag
+  info
+      - a label on a test, orthogonal to its name: `slow`, `network`, `nightly`
+      + une étiquette sur un test, indépendante de son nom : `slow`, `network`, `nightly`
+  detail
+      - A tag is written as an `n"…"` literal after a test's description, `test(m"fetches",
+      - n"slow", n"network")`, checked at compile time against the `Tagging` rule
+      - (`[A-Za-z_][A-Za-z0-9_-]*`, so it can be typed unquoted on a command line and completed
+      - by a shell). A selection admits by tag (`tag:slow,network`: any of) and excludes by tag
+      - (`not:tag:slow`), and a host can enumerate the tags a classpath carries from the index.
+      + Une étiquette s'écrit sous forme de littéral `n"…"` après la description d'un test,
+      + `test(m"fetches", n"slow", n"network")`, vérifié à la compilation par rapport à la règle
+      + `Tagging` (`[A-Za-z_][A-Za-z0-9_-]*`, afin de pouvoir être tapée sans guillemets sur une
+      + ligne de commande et complétée par un shell). Une sélection admet par étiquette
+      + (`tag:slow,network` : l'une quelconque) et exclut par étiquette (`not:tag:slow`), et un hôte
+      + peut énumérer à partir de l'index les étiquettes que porte un classpath.
+
+      - `Tag` is its own type rather than `Text`, so a declaration cannot mistake a description
+      - for a tag, and an `into` type, so a `Name[Tagging]` literal is accepted directly. It is
+      - **not** exported to the `soundness` umbrella, where `Tag` is honeycomb's HTML tag: name
+      - it as `probably.Tag` when the type must be written.
+      + `Tag` est un type à part entière plutôt que `Text`, si bien qu'une déclaration ne peut pas
+      + confondre une description avec une étiquette, et un type `into`, si bien qu'un littéral
+      + `Name[Tagging]` est accepté directement. Il n'est **pas** exporté vers le package parapluie
+      + `soundness`, où `Tag` est la balise HTML de honeycomb : nommez-le `probably.Tag` lorsque le
+      + type doit être écrit.
+  refer probably.Tagging
+  refer probably.Selection
+  entry .showable
+    info
+        - renders a tag as its text
+        + rend une étiquette sous forme de son texte
+  entry .inspectable
+    info
+        - renders a tag as `Tag(slow)`
+        + rend une étiquette sous la forme `Tag(slow)`
+  entry .conversion
+    info
+        - the `Conversion[Name[Tagging], Tag]` which lets an `n"…"` literal be a tag
+        + la `Conversion[Name[Tagging], Tag]` qui permet à un littéral `n"…"` d'être une étiquette
+    detail
+        - With `Probing`'s plane also in scope, a literal which is a valid Java identifier infers
+        - to the intersection of the two planes and is a `Name[Tagging]` by covariance; one with
+        - a `-` is a tag alone.
+        + Lorsque le plan de `Probing` est également dans la portée, un littéral qui est un
+        + identifiant Java valide est inféré comme l'intersection des deux plans et est un
+        + `Name[Tagging]` par covariance ; un littéral contenant un `-` n'est qu'une étiquette.
+  entry #name
+    info
+        - the tag as a validated `Name[Tagging]`
+        + l'étiquette sous forme de `Name[Tagging]` validé
+  entry #text
+    info
+        - the tag's text
+        + le texte de l'étiquette
+
+entry .Tagging
+  info
+      - the naming plane of tags: `Name[Tagging]`
+      + le plan de nommage des étiquettes : `Name[Tagging]`
+  detail
+      - A sealed trait with no values of its own, used as the plane of nomenclature names for
+      - tags. Its `.nominative` rule is `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`, and is exported
+      - at package level as `taggingNominative`, so `n"no-network"` is valid wherever
+      - `probably` is imported.
+      + Un trait scellé sans valeurs propres, utilisé comme plan de noms de nomenclature pour les
+      + étiquettes. Sa règle `.nominative` est `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`, et elle est
+      + exportée au niveau du package sous le nom `taggingNominative`, si bien que `n"no-network"`
+      + est valide partout où `probably` est importé.
+  entry .nominative
+    info
+        - the rule a tag's name must match: identifier characters and `-`
+        + la règle que doit respecter le nom d'une étiquette : caractères d'identifiant et `-`
+
+entry .Probing
+  info
+      - the naming plane of monikers: `Name[Probing]`
+      + le plan de nommage des surnoms : `Name[Probing]`
+  detail
+      - A sealed trait with no values of its own, used as the plane of stable test, suite and
+      - axis identifiers. Its `.nominative` rule is `JavaIdentifier`, and is exported at package
+      - level as `nominative`, so `n"square"` is valid wherever `probably` is imported; a
+      - moniker addresses a test in selections, charts and historical comparisons
+      - independently of its description.
+      + Un trait scellé sans valeurs propres, utilisé comme plan des identifiants stables de tests,
+      + de suites et d'axes. Sa règle `.nominative` est `JavaIdentifier`, et elle est exportée au
+      + niveau du package sous le nom `nominative`, si bien que `n"square"` est valide partout où
+      + `probably` est importé ; un surnom désigne un test dans les sélections, les graphiques et
+      + les comparaisons historiques indépendamment de sa description.
+  entry .nominative
+    info
+        - the rule a moniker must match: a valid Java identifier
+        + la règle que doit respecter un surnom : un identifiant Java valide
+
+entry .nominative
+  info
+      - `Probing.nominative`, exported so that `n"…"` monikers work with `import probably.*`
+      + `Probing.nominative`, exporté afin que les surnoms `n"…"` fonctionnent avec
+      + `import probably.*`
+  detail
+      - Both this and `taggingNominative` are in scope together, so a literal valid in both
+      - planes (`n"slow"`) infers to their intersection and is usable as either a moniker or a
+      - tag; one with a `-` is a tag alone. The `soundness` umbrella exports it under the same
+      - name, so a suite using `n"…"` literals imports `soundness.nominative` by name.
+      + Celui-ci et `taggingNominative` sont tous deux dans la portée en même temps, si bien qu'un
+      + littéral valide dans les deux plans (`n"slow"`) est inféré comme leur intersection et peut
+      + servir de surnom ou d'étiquette ; un littéral contenant un `-` n'est qu'une étiquette. Le
+      + package parapluie `soundness` l'exporte sous le même nom, si bien qu'une suite qui utilise
+      + des littéraux `n"…"` importe `soundness.nominative` par son nom.
+
+entry .taggingNominative
+  info
+      - `Tagging.nominative`, exported so that `n"…"` tags work with `import probably.*`
+      + `Tagging.nominative`, exporté afin que les étiquettes `n"…"` fonctionnent avec
+      + `import probably.*`
+
+entry .Checkable
+  info
+      - hypotenuse's `Checkable`, re-exported: how `===` compares a value against another
+      + le `Checkable` de hypotenuse, réexporté : la façon dont `===` compare une valeur à une autre
+  detail
+      - The checking vocabulary — `===`, `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — lives in
+      - `hypotenuse.check`, so that modules which only compare values need not depend on the test
+      - framework, and is re-exported here so that `import probably.*` still provides it.
+      - `left === right` needs a `left is Checkable against right`: equal frozen arrays, chains
+      - element by element, any `Commensurable` value, or a value against a `Tolerance`.
+      + Le vocabulaire de vérification — `===`, `!==`, `+/-`, `±`, `Checkable` et `Tolerance` — se
+      + trouve dans `hypotenuse.check`, afin que les modules qui ne font que comparer des valeurs
+      + n'aient pas à dépendre du framework de test, et il est réexporté ici afin que
+      + `import probably.*` le fournisse toujours. `left === right` a besoin d'un
+      + `left is Checkable against right` : des tableaux figés égaux, des chaînes élément par
+      + élément, toute valeur `Commensurable`, ou une valeur comparée à une `Tolerance`.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"the mean converges")(0.005).assert(_ === 0.0 +/- 0.02)
+      ```
+
+entry .Tolerance
+  info
+      - hypotenuse's `Tolerance`, re-exported: a value with a margin, made by `+/-` or `±`
+      + la `Tolerance` de hypotenuse, réexportée : une valeur avec une marge, créée par `+/-` ou `±`
+  detail
+      - `base +/- tolerance` (or `base ± tolerance`) is a `Tolerance[value]` which `covers` any
+      - value strictly within the margin, for `===` in a numeric assertion where exact equality is
+      - wrong.
+      + `base +/- tolerance` (ou `base ± tolerance`) est une `Tolerance[value]` qui `covers` toute
+      + valeur strictement comprise dans la marge, pour `===` dans une assertion numérique où
+      + l'égalité exacte n'est pas appropriée.
+
+entry .Harness
+  info
+      - what a test body runs under: a place to capture named values for a failure report
+      + ce sous quoi s'exécute le corps d'un test : un endroit où capturer des valeurs nommées pour
+      + un rapport d'échec
+  detail
+      - Every test body is a `Harness ?=> result`; the runner supplies a fresh `Harness` per
+      - run, and `#capture` records a named value on it. When the test fails, the captured
+      - values are recorded as `Verdict.Detail.Captures` and emitted as
+      - `TestEvent.DetailCaptures`, so the report shows the intermediate values beside the
+      - verdict. The `harnesses.threadLocalHarness` given captures through the runner's
+      - current harness from code which has no `Harness` of its own.
+      + Chaque corps de test est un `Harness ?=> result` ; le runner fournit un nouveau `Harness` à
+      + chaque exécution, et `#capture` y enregistre une valeur nommée. Lorsque le test échoue, les
+      + valeurs capturées sont enregistrées sous forme de `Verdict.Detail.Captures` et émises sous
+      + forme de `TestEvent.DetailCaptures`, si bien que le rapport montre les valeurs
+      + intermédiaires à côté du verdict. Le given `harnesses.threadLocalHarness` capture par le
+      + harnais actuel du runner depuis du code qui n'a pas de `Harness` propre.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"a captured intermediate"):
+        val parsed: Optional[Int] = safely(t"42".as[Int])
+        summon[Harness].capture(t"parsed", parsed)
+        parsed.or(0)*2
+      . assert(_ == 84)
+      ```
+  entry #capture
+    info
+        - records a named value, decomposed for the report, and returns it unchanged
+        + enregistre une valeur nommée, décomposée pour le rapport, et la renvoie inchangée
+    detail
+        - Needs a `Decomposable` for the value's type (derived for case classes, collections and
+        - anything `Inspectable`); the rendering is the decomposition's `inspect`.
+        + A besoin d'un `Decomposable` pour le type de la valeur (dérivé pour les case classes, les
+        + collections et tout ce qui est `Inspectable`) ; le rendu est l'`inspect` de la
+        + décomposition.
+
+entry .Diagnosis
+  info
+      - how a failed assertion is diagnosed after the fact: the request, and the site
+      + la façon dont une assertion en échec est diagnostiquée après coup : la demande, et le site
+  detail
+      - An assertion site holds no rendering logic. When its predicate fails, and the run was
+      - started with `--diagnose=<presentations>`, the installed `Diagnostician` is given the
+      - site, the value which failed and the locals the predicate closes over, and answers
+      - with `Verdict.Detail`s. The test's body is not run again; the predicate is evaluated
+      - once more, on the same value.
+      + Un site d'assertion ne contient aucune logique de rendu. Lorsque son prédicat échoue, et que
+      + l'exécution a été lancée avec `--diagnose=<presentations>`, le `Diagnostician` installé
+      + reçoit le site, la valeur en échec et les variables locales que capture le prédicat, et
+      + répond par des `Verdict.Detail`. Le corps du test n'est pas réexécuté ; le prédicat est
+      + évalué une fois de plus, sur la même valeur.
+
+      ```
+      fume run --diagnose=dissect,contrast,inspect
+      ```
+
+      - Because the rendering is chosen when the diagnosis is made, a suite contributes
+      - `Inspectable`, `Showable` and `Contrastable` instances — in a companion, by an import
+      - which precedes the assertion, or as a member of the object the suite is written in —
+      - without knowing whether any front-end will ask for them. A given which is local to a
+      - method, or a member of a class rather than an object, is not seen.
+      + Comme le rendu est choisi au moment où le diagnostic est établi, une suite fournit des
+      + instances `Inspectable`, `Showable` et `Contrastable` — dans un compagnon, par un import qui
+      + précède l'assertion, ou comme membre de l'objet dans lequel la suite est écrite — sans
+      + savoir si une interface utilisateur les demandera. Un given local à une méthode, ou membre
+      + d'une classe plutôt que d'un objet, n'est pas vu.
+  refer probably.Dissector
+  refer probably.Selection
+  entry .Presentation
+    info
+        - one way to present a failure: `Inspect`, `Show`, `Contrast` or `Dissect`
+        + une façon de présenter un échec : `Inspect`, `Show`, `Contrast` ou `Dissect`
+    detail
+        - `Inspect` renders each value through `Inspectable`, and `Show` through `Showable`
+        - (each falling back to the other); `Contrast` compares the two sides of a failed
+        - equality structurally; `Dissect` gives every intermediate value of the predicate.
+        + `Inspect` rend chaque valeur par `Inspectable`, et `Show` par `Showable` (chacun se
+        + repliant sur l'autre) ; `Contrast` compare structurellement les deux côtés d'une égalité
+        + en échec ; `Dissect` donne chaque valeur intermédiaire du prédicat.
+  entry .Request
+    info
+        - the presentations a host asked for
+        + les présentations qu'a demandées un hôte
+    entry .none
+      info
+          - no diagnosis at all, the default
+          + aucun diagnostic, la valeur par défaut
+    entry .parse
+      info
+          - reads a comma-separated list of `inspect`, `show`, `contrast` and `dissect`, ignoring other words
+          + lit une liste de `inspect`, `show`, `contrast` et `dissect` séparés par des virgules, en
+          + ignorant les autres mots
+    entry #nil
+      info
+          - whether nothing was asked for
+          + si rien n'a été demandé
+    entry #has
+      info
+          - whether a presentation was asked for
+          + si une présentation a été demandée
+  entry .Site
+    info
+        - where a predicate is written: its enclosing top-level class, its source offsets and its text
+        + l'endroit où un prédicat est écrit : sa classe de premier niveau englobante, ses positions
+        + dans le code source et son texte
+    detail
+        - The offsets are those of the predicate's tree in the class's TASTy, which is how the
+        - engine finds it again. `#known` is false for a predicate not written at the assertion,
+        - such as `assert()`'s.
+        + Les positions sont celles de l'arbre du prédicat dans le TASTy de la classe, ce qui permet
+        + au moteur de le retrouver. `#known` est faux pour un prédicat qui n'est pas écrit au
+        + niveau de l'assertion, comme celui d'`assert()`.
+
+entry .Diagnostician
+  info
+      - an engine which can account for a failed predicate
+      + un moteur capable de rendre compte d'un prédicat en échec
+  detail
+      - `#diagnose` answers the details of a failure, or `Nil` when it can say nothing; it
+      - never throws. One is installed for a classloader with `.install`, which
+      - `Streamer.stream` does when `probably.diagnosis` is on the classpath. With none
+      - installed, a diagnosed failure records the value's `toString` as a message.
+      + `#diagnose` répond par les détails d'un échec, ou par `Nil` lorsqu'il n'a rien à dire ; il
+      + ne lève jamais d'exception. On en installe un pour un classloader avec `.install`, ce que
+      + fait `Streamer.stream` lorsque `probably.diagnosis` est sur le classpath. Si aucun n'est
+      + installé, un échec diagnostiqué enregistre le `toString` de la valeur comme message.
+  refer probably.Dissector
+  entry .install
+    info
+        - makes an engine the one failed assertions are taken to
+        + fait d'un moteur celui auquel sont confiées les assertions en échec
+  entry .apply
+    info
+        - the installed engine, if any
+        + le moteur installé, s'il y en a un
+
+entry .Dissector
+  info
+      - the engine which reads a failed predicate from TASTy and compiles an instrumented copy of it
+      + le moteur qui lit un prédicat en échec dans le TASTy et en compile une copie instrumentée
+  detail
+      - In `probably.diagnosis`, which depends on the compiler. For each failing site, once:
+      - the predicate's tree is read from the TASTy of the class which encloses it (TASTy is
+      - pickled before inlining, so it is there as written); each subexpression is wrapped in
+      - an inline recorder, the parameter becomes the failed value and each free local the
+      - value the site captured; and the result is compiled by the staging compiler in the
+      - suite's classloader. Which typeclass renders a value is resolved only then.
+      + Dans `probably.diagnosis`, qui dépend du compilateur. Pour chaque site en échec, une seule
+      + fois : l'arbre du prédicat est lu dans le TASTy de la classe qui l'englobe (le TASTy est
+      + sérialisé avant l'inlining, si bien qu'il s'y trouve tel qu'il a été écrit) ; chaque
+      + sous-expression est enveloppée dans un enregistreur inline, le paramètre devient la valeur
+      + en échec et chaque variable locale libre la valeur que le site a capturée ; et le résultat
+      + est compilé par le compilateur de staging dans le classloader de la suite. Ce n'est qu'à ce
+      + moment qu'est résolue la classe de types qui rend une valeur.
+
+      - A predicate which cannot be instrumented — it uses a private member or a local
+      - method, or its instrumented copy does not compile — is diagnosed less finely: without
+      - descending into the arguments of inline calls, then by the failed value alone. Setting
+      - the `probably.diagnosis.debug` system property prints why.
+      + Un prédicat qui ne peut pas être instrumenté — il utilise un membre privé ou une méthode
+      + locale, ou sa copie instrumentée ne compile pas — est diagnostiqué moins finement : sans
+      + descendre dans les arguments des appels inline, puis d'après la seule valeur en échec.
+      + Définir la propriété système `probably.diagnosis.debug` affiche pourquoi.
+  refer probably.Diagnosis
+  entry #diagnose
+    info
+        - the details of one failure, from the site's cached diagnosis
+        + les détails d'un échec, tirés du diagnostic mis en cache du site
+
+entry .harnesses
+  info
+      - the `Harness` policies, each a given to import by name
+      + les politiques de `Harness`, chacune un given à importer par son nom
+  detail
+      - A `Harness` is normally the one a test body receives contextually. The one given here
+      - serves code which has no harness in hand but runs within a test.
+      + Un `Harness` est normalement celui que reçoit contextuellement le corps d'un test. Celui qui
+      + est donné ici sert au code qui n'a pas de harnais sous la main mais qui s'exécute dans un
+      + test.
+  entry .threadLocalHarness
+    info
+        - a `Harness` which captures through whichever test is running on this thread
+        + un `Harness` qui capture par le test, quel qu'il soit, qui s'exécute sur ce thread
+    detail
+        - `capture` delegates to the runner's current harness for the thread (`Runner.run`
+        - installs one for the duration of each test body), and returns the value unchanged when
+        - no test is running.
+        + `capture` délègue au harnais actuel du runner pour le thread (`Runner.run` en installe un
+        + pendant la durée de chaque corps de test), et renvoie la valeur inchangée lorsqu'aucun
+        + test ne s'exécute.
+
+entry .decimalizers
+  info
+      - the default rendering of decimals in numeric comparisons, a given to import by name
+      + le rendu par défaut des décimaux dans les comparaisons numériques, un given à importer par
+      + son nom
+  detail
+      - `Axable.double` labels an axis value with `show`, which needs a `Decimalizer`; this
+      - package supplies the default rather than `import probably.*` silently doing so.
+      + `Axable.double` étiquette une valeur d'axe avec `show`, qui a besoin d'un `Decimalizer` ; ce
+      + package fournit la valeur par défaut plutôt que de laisser `import probably.*` le faire en
+      + silence.
+  entry .fourDecimalPlaces
+    info
+        - a `Decimalizer(4)`
+        + un `Decimalizer(4)`
+
+entry .Verdict
+  info
+      - the outcome of one run of a check: pass, fail, throws, or an aspiration
+      + l'issue d'une exécution d'une vérification : réussite, échec, exception, ou aspiration
+  detail
+      - `Pass(duration)` and `Fail(duration)` are the predicate's answer; `Throws(exception,
+      - duration)` means the body threw, and `CheckThrows(exception, duration)` the predicate;
+      - `AspirePass` and `AspireFail` are the verdicts within an `aspirationally` block, where
+      - an exception is also an `AspireFail`. Durations are in nanoseconds. A test with several
+      - cells passes when its verdicts are uniformly `Pass`, uniformly `AspirePass` or
+      - uniformly `AspireFail`; any failure, exception or mixture fails it. On the wire a
+      - verdict is a `TestEvent.Outcome`, with the exception rendered as a `TestEvent.Trace`.
+      + `Pass(duration)` et `Fail(duration)` sont la réponse du prédicat ;
+      + `Throws(exception, duration)` signifie que le corps a levé une exception, et
+      + `CheckThrows(exception, duration)` que c'est le prédicat ; `AspirePass` et `AspireFail` sont
+      + les verdicts dans un bloc `aspirationally`, où une exception est aussi un `AspireFail`. Les
+      + durées sont en nanosecondes. Un test à plusieurs cellules réussit lorsque ses verdicts sont
+      + uniformément `Pass`, uniformément `AspirePass` ou uniformément `AspireFail` ; tout échec,
+      + toute exception ou tout mélange le fait échouer. Sur le réseau, un verdict est un
+      + `TestEvent.Outcome`, l'exception étant rendue sous forme de `TestEvent.Trace`.
+  refer probably.Trial
+  refer probably.TestEvent
+  entry .Detail
+    info
+        - a failure's supporting information: a stack trace, captures, a contrast or a message
+        + les informations à l'appui d'un échec : une trace de pile, des captures, un contraste ou
+        + un message
+    detail
+        - `Throws(stack)` and `CheckThrows(stack)` carry the `StackTrace`; `Captures(values)` the
+        - values captured with `Harness#capture`, by name; `Compare(expected, found,
+        - juxtaposition)` the decomposed texts of both sides of a failed equality and their
+        - `Juxtaposition`; `Dissection(source, rows, reproducible)` the intermediate values of a
+        - failed predicate, and whether it failed again when evaluated for its diagnosis; and
+        - `Message(message)` free text. Each is recorded through
+        - `Inclusion[Report, Verdict.Detail]` and emitted as the matching `TestEvent.Detail…`.
+        + `Throws(stack)` et `CheckThrows(stack)` portent la `StackTrace` ; `Captures(values)` les
+        + valeurs capturées avec `Harness#capture`, par nom ;
+        + `Compare(expected, found, juxtaposition)` les textes décomposés des deux côtés d'une
+        + égalité en échec et leur `Juxtaposition` ; `Dissection(source, rows, reproducible)` les
+        + valeurs intermédiaires d'un prédicat en échec, et s'il a échoué de nouveau lors de son
+        + évaluation pour le diagnostic ; et `Message(message)` du texte libre. Chacun est
+        + enregistré par `Inclusion[Report, Verdict.Detail]` et émis sous forme du
+        + `TestEvent.Detail…` correspondant.
+  entry #timestamp
+    info
+        - when the verdict was made, in milliseconds since the epoch
+        + le moment où le verdict a été rendu, en millisecondes depuis l'epoch
+  entry #duration
+    info
+        - how long the body took, in nanoseconds
+        + la durée du corps, en nanosecondes
+
+entry .Trial
+  info
+      - the raw result of running a test body: its value or its exception, timed, with its captures
+      + le résultat brut de l'exécution d'un corps de test : sa valeur ou son exception,
+      + chronométrée, avec ses captures
+  detail
+      - `Runner#run` returns a `Trial`: `Returns(result, duration, context)` or
+      - `Throws(exception, duration, context)`, where `context` is the map of names to
+      - captured values and the exception is a thunk which rethrows it. `assert` and `check`
+      - turn a trial into a `Verdict`.
+      + `Runner#run` renvoie un `Trial` : `Returns(result, duration, context)` ou
+      + `Throws(exception, duration, context)`, où `context` est la map des noms vers les valeurs
+      + capturées et l'exception une fonction différée qui la relève. `assert` et `check`
+      + transforment un essai en `Verdict`.
+  entry #get
+    info
+        - the result, or rethrows the exception
+        + le résultat, ou relève l'exception
+
+entry .Runner
+  info
+      - runs tests under a selection, reporting through a `Reporter`
+      + exécute des tests selon une sélection, en rapportant par un `Reporter`
+  detail
+      - A `Runner[report]` is what `assert`, `check`, `suite` and the measuring kinds summon
+      - to record results: it holds the `Selection` which decides what runs, the `#report`
+      - accumulated so far, and the queue of workers when the selection asked for them. A
+      - `Suite` makes one per invocation and provides it as a given; outside a suite,
+      - `Runner()` makes one over `Selection.all` with the `Reporter[Report]` in implicit
+      - scope.
+      + Un `Runner[report]` est ce qu'invoquent `assert`, `check`, `suite` et les types de mesure
+      + pour enregistrer des résultats : il contient la `Selection` qui décide de ce qui s'exécute,
+      + le `#report` accumulé jusqu'ici, et la file des workers lorsque la sélection en a demandé.
+      + Une `Suite` en crée un par invocation et le fournit comme given ; hors d'une suite,
+      + `Runner()` en crée un sur `Selection.all` avec le `Reporter[Report]` de la portée implicite.
+
+      ```scala
+      import soundness.*
+      import soundness.{nominative, taggingNominative}
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner(Selection.parse(List(t"--list")))
+
+      impromptu:
+        test(m"spread", n"axial").over(Axis(t"n")(1, 2, 3)) { n => n }.assert(_ > 0)
+
+      runner.listed.map(_.id.name.text)
+      ```
+
+      - **Queued execution.** With `--workers=<n>` (`Selection#workers`), a pure assertion is
+      - not run where the traversal meets it: its thunk is queued, announced to the reporter,
+      - and run by one of `n` virtual-thread workers while the traversal carries on, so the
+      - suite's code between tests runs exactly once and the schedule is known as fast as the
+      - bodies run. Only assertions the compiler has verified pure are queued, so a worker can
+      - never reach a resource the traversal has released; `check`s and everything else run
+      - inline. `#drain` waits for every worker before `#complete` decides whether the run
+      - passed, and a `Throwable` which escapes a worker is rethrown on the traversal's thread.
+      + **Exécution en file.** Avec `--workers=<n>` (`Selection#workers`), une assertion pure n'est
+      + pas exécutée là où le parcours la rencontre : sa fonction différée est mise en file,
+      + annoncée au rapporteur, et exécutée par l'un des `n` workers en threads virtuels pendant que
+      + le parcours se poursuit, si bien que le code de la suite entre les tests s'exécute
+      + exactement une fois et que le planning est connu aussi vite que s'exécutent les corps.
+      + Seules les assertions dont le compilateur a vérifié qu'elles sont pures sont mises en file,
+      + si bien qu'un worker ne peut jamais atteindre une ressource que le parcours a libérée ; les
+      + `check` et tout le reste s'exécutent sur place. `#drain` attend chaque worker avant que
+      + `#complete` ne décide si l'exécution a réussi, et un `Throwable` qui s'échappe d'un worker
+      + est relevé sur le thread du parcours.
+
+      - **Listing.** With `--list` (`Selection#listOnly`), `#skip` records every admitted test
+      - instead of running it, and `#listed` is the schedule: one row per test with its kind,
+      - expected measuring time and axes.
+      + **Listage.** Avec `--list` (`Selection#listOnly`), `#skip` enregistre chaque test admis au
+      + lieu de l'exécuter, et `#listed` est le planning : une ligne par test avec son type, son
+      + temps de mesure prévu et ses axes.
+  refer probably.Selection
+  refer probably.Reporter
+  refer probably.Report
+  refer probably.Suite
+  entry .apply
+    info
+        - a root runner over a selection, with an optional worker count, reporting to the `Reporter` in scope
+        + un runner racine sur une sélection, avec un nombre de workers facultatif, qui rapporte au
+        + `Reporter` dans la portée
+    detail
+        - `Runner(selection, workers)` is a `Runner.Root`. The worker count overrides the
+        - selection's (a suite may ask for more than the host offered, never for queueing the
+        - host did not ask for).
+        + `Runner(selection, workers)` est un `Runner.Root`. Le nombre de workers remplace celui de
+        + la sélection (une suite peut en demander plus que l'hôte n'en a offert, mais jamais une
+        + mise en file que l'hôte n'a pas demandée).
+  entry .Scheduled
+    info
+        - one row of a listing: a test, its kind, its expected time and its axes
+        + une ligne d'un listage : un test, son type, son temps prévu et ses axes
+    detail
+        - What `--list` produces per admitted test. An axial spread's cells each call `#skip`,
+        - but they are one test with coordinates, not many tests, so the row's `#expected` is
+        - the sum over its admitted cells and its `#axes` carry the distinct values seen, in
+        - first-appearance order, followed by any declared emergent axes.
+        + Ce que produit `--list` pour chaque test admis. Les cellules d'une répartition axiale
+        + appellent chacune `#skip`, mais elles forment un seul test avec des coordonnées, et non
+        + plusieurs tests, si bien que l'`#expected` de la ligne est la somme sur ses cellules
+        + admises et que ses `#axes` portent les valeurs distinctes rencontrées, dans l'ordre de
+        + première apparition, suivies des éventuels axes émergents déclarés.
+    entry #id
+      info
+          - the test's id
+          + l'id du test
+    entry #kind
+      info
+          - check, bench, stress or profile
+          + check, bench, stress ou profile
+    entry #expected
+      info
+          - the nanoseconds the test will spend measuring, summed over its cells; absent for untimed kinds
+          + les nanosecondes que le test passera à mesurer, sommées sur ses cellules ; absent pour
+          + les types non chronométrés
+    entry #axes
+      info
+          - the test's axes with the values, or declared bounds, of its admitted cells
+          + les axes du test avec les valeurs, ou les bornes déclarées, de ses cellules admises
+    entry #tags
+      info
+          - the test's own tags
+          + les étiquettes propres au test
+  entry .Aspirational
+    info
+        - the runner within an `aspirationally` block: the base runner, recording verdicts as aspirations
+        + le runner au sein d'un bloc `aspirationally` : le runner de base, qui enregistre les
+        + verdicts comme des aspirations
+    detail
+        - Shares the base runner's state and report; only `#aspirational` differs.
+        + Partage l'état et le rapport du runner de base ; seul `#aspirational` diffère.
+  entry .Root
+    info
+        - the runner `Runner.apply` makes: selection, listing, queue and report in one
+        + le runner que crée `Runner.apply` : sélection, listage, file et rapport réunis
+  entry #aspirational
+    info
+        - whether verdicts are recorded as `AspirePass`/`AspireFail`; `false` except in `Runner.Aspirational`
+        + si les verdicts sont enregistrés comme `AspirePass`/`AspireFail` ; `false` sauf dans
+        + `Runner.Aspirational`
+  entry #report
+    info
+        - the report accumulated so far
+        + le rapport accumulé jusqu'ici
+  entry #queued
+    info
+        - whether pure assertions are queued for workers rather than run inline
+        + si les assertions pures sont mises en file pour des workers plutôt qu'exécutées sur place
+  entry #defer
+    info
+        - queues the rest of an assertion for a worker, announcing it as scheduled
+        + met en file le reste d'une assertion pour un worker, en l'annonçant comme planifiée
+    detail
+        - The workers start on the first deferral, so a run which queues nothing has no threads.
+        + Les workers démarrent au premier report, si bien qu'une exécution qui ne met rien en file
+        + n'a aucun thread.
+  entry #drain
+    info
+        - waits for every queued assertion, rethrowing any `Throwable` a worker let escape
+        + attend chaque assertion en file, en relevant tout `Throwable` qu'un worker a laissé
+        + s'échapper
+  entry #scale
+    info
+        - the selection's duration multiplier, which the timed kinds apply to their targets
+        + le multiplicateur de durée de la sélection, que les types chronométrés appliquent à leurs
+        + cibles
+  entry #skip
+    info
+        - whether a test, or one cell of an axial test, is excluded by the selection
+        + si un test, ou une cellule d'un test axial, est exclu par la sélection
+    detail
+        - `skip(id, kind, coordinates, expected)` consults `Selection#admits` with the test's
+        - tags; in listing mode every test is skipped, and an admitted one is noted for
+        - `#listed` with `expected`, the caller's estimate in nanoseconds of how long it will
+        - measure (declared metadata, not a promise; `Unset` for a plain check). The shorter
+        - forms `skip(id)` and `skip(id, kind, coordinates)` pass `Check` and `Unset`.
+        + `skip(id, kind, coordinates, expected)` consulte `Selection#admits` avec les étiquettes du
+        + test ; en mode listage, chaque test est sauté, et un test admis est noté pour `#listed`
+        + avec `expected`, l'estimation par l'appelant, en nanosecondes, de la durée de sa mesure
+        + (métadonnée déclarée, et non une promesse ; `Unset` pour une simple vérification). Les
+        + formes plus courtes `skip(id)` et `skip(id, kind, coordinates)` passent `Check` et
+        + `Unset`.
+  entry #declare
+    info
+        - announces, for a listing, an emergent axis of a test with the bounds its values will lie within
+        + annonce, pour un listage, un axe émergent d'un test avec les bornes entre lesquelles ses
+        + valeurs se situeront
+    detail
+        - A stress sweep's `N` acquires its values only as the run produces them; declaring it
+        - with `least` and `most` lets a host offer a range of it without iterating cells which
+        - do not yet exist. A no-op outside listing mode, and reported only if the test itself is
+        - listed.
+        + Le `N` d'un balayage de stress n'acquiert ses valeurs qu'à mesure que l'exécution les
+        + produit ; le déclarer avec `least` et `most` permet à un hôte d'en proposer une plage sans
+        + itérer sur des cellules qui n'existent pas encore. Sans effet hors du mode listage, et
+        + signalé uniquement si le test lui-même est listé.
+  entry #listed
+    info
+        - the schedule a `--list` run produced: one `Runner.Scheduled` per admitted test, in first-appearance order
+        + le planning produit par une exécution `--list` : un `Runner.Scheduled` par test admis,
+        + dans l'ordre de première apparition
+  entry #admitted
+    info
+        - how many tests or cells the selection admitted, for the `NothingMatched` event
+        + le nombre de tests ou de cellules que la sélection a admis, pour l'événement
+        + `NothingMatched`
+  entry #run
+    info
+        - runs a test body under a fresh `Harness`, timing it, bracketed by the reporter's `started` and `ended`
+        + exécute le corps d'un test sous un nouveau `Harness`, en le chronométrant, encadré par
+        + `started` et `ended` du rapporteur
+    detail
+        - Returns a `Trial`: the value, or the `Exception` the body threw, with the duration and
+        - the captures. An `Error` is not caught, but the bracket still closes, so a termination
+        - does not report the test as active.
+        + Renvoie un `Trial` : la valeur, ou l'`Exception` levée par le corps, avec la durée et les
+        + captures. Une `Error` n'est pas interceptée, mais l'encadrement se ferme tout de même, si
+        + bien qu'une interruption ne signale pas le test comme actif.
+  entry #suite
+    info
+        - enters a group: declares it, runs its block with its `Testable`, and ends it
+        + entre dans un groupe : le déclare, exécute son bloc avec son `Testable`, et le termine
+    detail
+        - A group is always entered, whatever the selection. With assertions still queued from
+        - within the block, the group's end is reported when the last of them completes.
+        + On entre toujours dans un groupe, quelle que soit la sélection. Si des assertions venant
+        + du bloc sont encore en file, la fin du groupe est signalée lorsque la dernière d'entre
+        + elles se termine.
+  entry #terminate
+    info
+        - abandons what is queued, waits for what is in flight, and reports the run as terminated
+        + abandonne ce qui est en file, attend ce qui est en cours, et signale l'exécution comme
+        + interrompue
+    detail
+        - Called by `Suite#invoke` when `run()` throws: the reporter's `fail` receives the error
+        - and the tests active at the time, and `complete` follows.
+        + Appelée par `Suite#invoke` lorsque `run()` lève une exception : le `fail` du rapporteur
+        + reçoit l'erreur et les tests actifs à ce moment-là, et `complete` suit.
+  entry #complete
+    info
+        - settles the run: `Report#passed` is decided here and `RunCompleted` emitted
+        + conclut l'exécution : `Report#passed` est décidé ici et `RunCompleted` émis
+  entry #maybeRun
+    info
+        - runs a test unless the selection skips it, returning the `Trial` or `Unset`
+        + exécute un test sauf si la sélection le saute, en renvoyant le `Trial` ou `Unset`
+
+entry .Reporter
+  info
+      - how a runner declares, brackets and settles the results it records, for a report type
+      + la façon dont un runner déclare, encadre et conclut les résultats qu'il enregistre, pour un
+      + type de rapport
+  detail
+      - A `Reporter[report]` makes the `#report` a `Runner` accumulates into and receives the
+      - run's lifecycle: `#declare` for each group, `#started`/`#ended` around each test and
+      - group, `#scheduled` for each queued assertion, `#fail` for a terminated run and
+      - `#complete` at the end. Verdicts and measurements reach the report through
+      - `Inclusion[report, …]` givens instead. `.report` is the standard reporter over `Report`;
+      - a `Suite` installs one of its own whose report emits every datum as a `TestEvent`, and
+      - a host which only wants a listing may report to `Unit`.
+      + Un `Reporter[report]` crée le `#report` dans lequel accumule un `Runner` et reçoit le cycle
+      + de vie de l'exécution : `#declare` pour chaque groupe, `#started`/`#ended` autour de chaque
+      + test et de chaque groupe, `#scheduled` pour chaque assertion mise en file, `#fail` pour une
+      + exécution interrompue et `#complete` à la fin. Les verdicts et les mesures parviennent au
+      + rapport par des givens `Inclusion[report, …]`. `.report` est le rapporteur standard sur
+      + `Report` ; une `Suite` installe son propre rapporteur dont le rapport émet chaque donnée
+      + sous forme de `TestEvent`, et un hôte qui ne veut qu'un listage peut rapporter vers `Unit`.
+
+      ```scala
+      import soundness.*
+
+      given reporter: Reporter[Unit] = new Reporter[Unit]:
+        def report(): Unit = ()
+        def fail(report: Unit, error: Throwable, active: Set[Test.Id]): Unit = ()
+        def declare(report: Unit, suite: Testable): Unit = ()
+        def complete(report: Unit): Unit = ()
+
+      val listing: Runner[Unit] = Runner(Selection.parse(List(t"--list")))
+      ```
+  refer probably.Runner
+  refer probably.Report
+  refer probably.Inclusion
+  entry .report
+    info
+        - the given `Reporter[Report]`, in implicit scope: a fresh `Report` per run
+        + le given `Reporter[Report]`, dans la portée implicite : un nouveau `Report` par exécution
+  entry #report
+    info
+        - makes the report a run accumulates into
+        + crée le rapport dans lequel une exécution accumule
+  entry #fail
+    info
+        - the run terminated with an error while the given tests were active
+        + l'exécution s'est interrompue sur une erreur alors que les tests donnés étaient actifs
+  entry #declare
+    info
+        - a group or suite was entered
+        + on est entré dans un groupe ou une suite
+  entry #complete
+    info
+        - the run is over; the report decides whether it passed
+        + l'exécution est terminée ; le rapport décide si elle a réussi
+  entry #started
+    info
+        - a test (or, when `suite` is true, a group) has begun; defaulted to nothing
+        + un test (ou, lorsque `suite` vaut vrai, un groupe) a commencé ; ne fait rien par défaut
+  entry #ended
+    info
+        - a test or group has ended; defaulted to nothing
+        + un test ou un groupe s'est terminé ; ne fait rien par défaut
+  entry #scheduled
+    info
+        - a pure assertion was queued for a worker; it starts and ends later, in the worker's brackets
+        + une assertion pure a été mise en file pour un worker ; elle commence et se termine plus
+        + tard, dans l'encadrement du worker
+
+entry .Report
+  info
+      - the accumulated results of a run: a tree of suites whose leaves are `Entry`s of cells
+      + les résultats accumulés d'une exécution : un arbre de suites dont les feuilles sont des
+      + `Entry` de cellules
+  detail
+      - The report's intermediate representation. Suites are namespacing only; each leaf is an
+      - `Entry` — one per named test of any kind — holding the test's axes and a sparse map of
+      - cells, each a `Tally` of `Run`s. Rendering is the consumer's business: with a sink
+      - installed (as `Suite#invoke` does), every recorded datum also leaves as a `TestEvent`,
+      - and `#complete` emits `RunCompleted` instead of rendering anything.
+      + La représentation intermédiaire du rapport. Les suites ne servent qu'à l'espace de noms ;
+      + chaque feuille est une `Entry` — une par test nommé, de quelque type que ce soit — contenant
+      + les axes du test et une map clairsemée de cellules, chacune étant un `Tally` de `Run`. Le
+      + rendu est l'affaire du consommateur : lorsqu'un récepteur est installé (comme le fait
+      + `Suite#invoke`), chaque donnée enregistrée part aussi sous forme de `TestEvent`, et
+      + `#complete` émet `RunCompleted` au lieu de rendre quoi que ce soit.
+
+      - Verdicts, details and measurements enter through the `Inclusion` givens in the
+      - companion (`.verdict`, `.detail`, `.anchor`) and in `Benchmark`, `Strain` and
+      - `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
+      + Les verdicts, les détails et les mesures entrent par les givens `Inclusion` du compagnon
+      + (`.verdict`, `.detail`, `.anchor`) et de `Benchmark`, `Strain` et `Hotspots`, chacun
+      + enregistrant un `Run` à une coordonnée et émettant l'événement correspondant.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"one")(1).assert(_ == 1)
+      runner.complete()
+      runner.report.passed
+      ```
+
+      - A run in which nothing was counted has not passed: a check counts once it has a
+      - verdict, and a measurement counts by having run at all.
+      + Une exécution dans laquelle rien n'a été compté n'a pas réussi : une vérification compte dès
+      + qu'elle a un verdict, et une mesure compte du seul fait d'avoir été exécutée.
+  refer probably.Entry
+  refer probably.Run
+  refer probably.Inclusion
+  refer probably.TestEvent
+  entry .verdict
+    info
+        - the `Inclusion[Report, Verdict]`: records a verdict as a `Run` with its duration, and emits `TestCompleted`
+        + l'`Inclusion[Report, Verdict]` : enregistre un verdict sous forme de `Run` avec sa durée,
+        + et émet `TestCompleted`
+    detail
+        - A `Throws` or `CheckThrows` verdict also records its stack trace as a detail and emits
+        - `DetailThrows`.
+        + Un verdict `Throws` ou `CheckThrows` enregistre aussi sa trace de pile comme détail et
+        + émet `DetailThrows`.
+  entry .anchor
+    info
+        - the `Inclusion[Report, Anchor]`: sets a test's comparison anchor and emits `AnchorRecorded`
+        + l'`Inclusion[Report, Anchor]` : fixe l'ancre de comparaison d'un test et émet
+        + `AnchorRecorded`
+  entry .detail
+    info
+        - the `Inclusion[Report, Verdict.Detail]`: records a detail and emits the matching `Detail…` event
+        + l'`Inclusion[Report, Verdict.Detail]` : enregistre un détail et émet l'événement `Detail…`
+        + correspondant
+  entry #passed
+    info
+        - whether the run passed: no termination, something counted, and no failing entry
+        + si l'exécution a réussi : aucune interruption, quelque chose de compté, et aucune entrée
+        + en échec
+    detail
+        - Decided by `#complete`; `false` before it.
+        + Décidé par `#complete` ; `false` avant.
+  entry #resolve
+    info
+        - the `ReportLine.Suite` node of a `Testable`, from the root
+        + le nœud `ReportLine.Suite` d'un `Testable`, depuis la racine
+  entry #declare
+    info
+        - records a suite or group, emitting `SuiteStarted`; a second declaration of the same id merges
+        + enregistre une suite ou un groupe, en émettant `SuiteStarted` ; une seconde déclaration du
+        + même id fusionne
+    detail
+        - Two distinct suites can share a `Test.Id` (identity is name and parent, and every
+        - top-level suite of the same name has the same id), so declaring merges into the
+        - existing node rather than replacing its subtree.
+        + Deux suites distinctes peuvent partager un `Test.Id` (l'identité est formée du nom et du
+        + parent, et toutes les suites de premier niveau portant le même nom ont le même id) ; la
+        + déclaration fusionne donc avec le nœud existant plutôt que de remplacer son sous-arbre.
+  entry #fail
+    info
+        - records a termination: the error, and the tests active when it happened; emits `RunTerminated`
+        + enregistre une interruption : l'erreur, et les tests actifs au moment où elle s'est
+        + produite ; émet `RunTerminated`
+  entry #record
+    info
+        - records one `Run` at one coordinate of one test, creating the entry on first sight
+        + enregistre un `Run` à une coordonnée d'un test, en créant l'entrée la première fois
+        + qu'elle est rencontrée
+    detail
+        - Repeated runs of the same coordinates accumulate in the cell; `headline`, when given,
+        - designates the entry's headline metric.
+        + Les exécutions répétées des mêmes coordonnées s'accumulent dans la cellule ; `headline`,
+        + lorsqu'il est donné, désigne la métrique principale de l'entrée.
+  entry #addDetail
+    info
+        - appends a `Verdict.Detail` to a test's details
+        + ajoute un `Verdict.Detail` aux détails d'un test
+  entry #anchor
+    info
+        - sets the comparison anchor of a test's entry; a no-op if the test recorded no cells
+        + fixe l'ancre de comparaison de l'entrée d'un test ; sans effet si le test n'a enregistré
+        + aucune cellule
+  entry #complete
+    info
+        - settles the run: decides `#passed` and emits `RunCompleted`
+        + conclut l'exécution : décide de `#passed` et émet `RunCompleted`
+
+entry .ReportLine
+  info
+      - a node of a `Report`: a suite with its children, or an item holding an `Entry`
+      + un nœud d'un `Report` : une suite avec ses enfants, ou un élément contenant une `Entry`
+  detail
+      - `ReportLine.Suite(suite, tests)` is a namespace node whose `tests` is a `TestsMap` of
+      - its children, keyed by `Test.Id`; `ReportLine.Item(entry)` is a leaf. The root is a
+      - `Suite` with no `Testable`.
+      + `ReportLine.Suite(suite, tests)` est un nœud d'espace de noms dont `tests` est une
+      + `TestsMap` de ses enfants, indexée par `Test.Id` ; `ReportLine.Item(entry)` est une feuille.
+      + La racine est une `Suite` sans `Testable`.
+
+entry .TestsMap
+  info
+      - the insertion-ordered, mutex-guarded map of report lines within one suite node
+      + la map des lignes de rapport au sein d'un nœud de suite, ordonnée par insertion et protégée
+      + par un mutex
+  entry #list
+    info
+        - the lines in insertion order, with their ids
+        + les lignes dans l'ordre d'insertion, avec leurs ids
+  entry #apply
+    info
+        - the line of a test id, or `Unset`
+        + la ligne d'un id de test, ou `Unset`
+  entry #update
+    info
+        - sets the line of a test id
+        + fixe la ligne d'un id de test
+  entry #getOrElseUpdate
+    info
+        - the line of a test id, inserting the given one if absent
+        + la ligne d'un id de test, en insérant celle donnée si elle est absente
+
+entry .Inclusion
+  info
+      - how a piece of test data is included in a report, at a test's coordinates
+      + la façon dont une donnée de test est incluse dans un rapport, aux coordonnées d'un test
+  detail
+      - `Inclusion[report, data]` is the typeclass the `assert`/`check` macros and the
+      - measuring kinds summon to record a `Verdict`, a `Verdict.Detail`, a `Benchmark`, a
+      - `Strain`, a `Hotspots` or an `Anchor` in a report of type `report`. `Report` has
+      - givens for each; a report type of the caller's own supplies its own. Data recorded
+      - without coordinates belongs to the test's single cell.
+      + `Inclusion[report, data]` est la classe de types qu'invoquent les macros `assert`/`check` et
+      + les types de mesure pour enregistrer un `Verdict`, un `Verdict.Detail`, un `Benchmark`, un
+      + `Strain`, un `Hotspots` ou une `Anchor` dans un rapport de type `report`. `Report` a des
+      + givens pour chacun ; un type de rapport propre à l'appelant fournit les siens. Une donnée
+      + enregistrée sans coordonnées appartient à l'unique cellule du test.
+
+      ```scala
+      import soundness.*
+
+      given verdicts: Inclusion[Unit, Verdict] = (_, _, _, _) => ()
+      given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
+      ```
+  refer probably.Report
+  entry #include
+    info
+        - records the datum at the given coordinates of the given test, returning the report
+        + enregistre la donnée aux coordonnées données du test donné, en renvoyant le rapport
+    detail
+        - The three-argument form records at `Nil`, the single cell of a test with no axes.
+        + La forme à trois arguments enregistre à `Nil`, l'unique cellule d'un test sans axes.
+
+entry .Entry
+  info
+      - one named test and its results: an ordered list of axes and a sparse map of cells
+      + un test nommé et ses résultats : une liste ordonnée d'axes et une map clairsemée de cellules
+  detail
+      - A leaf of the `Report`. Its `#axes` may grow during the run, as emergent axes acquire
+      - coordinates; its `#cells` are keyed by coordinates in axis space, positionally aligned
+      - with the axes, each a `Tally` of the runs at that address. A test with no axes has
+      - exactly one cell, at `Nil`; combinations of axis values without a cell are gaps,
+      - rendered as empty positions in a grid.
+      + Une feuille du `Report`. Ses `#axes` peuvent croître au cours de l'exécution, à mesure que
+      + des axes émergents acquièrent des coordonnées ; ses `#cells` sont indexées par des
+      + coordonnées dans l'espace des axes, alignées positionnellement sur les axes, chacune étant
+      + un `Tally` des exécutions à cette adresse. Un test sans axes a exactement une cellule, à
+      + `Nil` ; les combinaisons de valeurs d'axes sans cellule sont des trous, rendus comme des
+      + positions vides dans une grille.
+  refer probably.Report
+  refer probably.Axis
+  refer probably.Tally
+  entry .Kind
+    info
+        - the four kinds of entry: `Check`, `Bench`, `Stress` and `Profile`
+        + les quatre types d'entrée : `Check`, `Bench`, `Stress` et `Profile`
+    detail
+        - What `kind:test`, `kind:bench`, `kind:stress` and `kind:profile` select, and the
+        - `kind` field of a `TestCompleted` event (`check`, `bench`, `stress`, `profile`).
+        + Ce que sélectionnent `kind:test`, `kind:bench`, `kind:stress` et `kind:profile`, et le
+        + champ `kind` d'un événement `TestCompleted` (`check`, `bench`, `stress`, `profile`).
+  entry #id
+    info
+        - the test's id
+        + l'id du test
+  entry #kind
+    info
+        - the entry's kind
+        + le type de l'entrée
+  entry #headline
+    info
+        - the metric a grid or comparison shows for this entry, if one was designated
+        + la métrique qu'affiche une grille ou une comparaison pour cette entrée, si l'une a été
+        + désignée
+  entry #anchor
+    info
+        - the comparison anchor, if `Report#anchor` set one
+        + l'ancre de comparaison, si `Report#anchor` en a fixé une
+  entry #axes
+    info
+        - the axes seen so far, in first-appearance order
+        + les axes rencontrés jusqu'ici, dans l'ordre de première apparition
+  entry #cells
+    info
+        - every cell with its coordinate values
+        + chaque cellule avec ses valeurs de coordonnées
+  entry #cell
+    info
+        - the `Tally` at the given coordinates, created if absent
+        + le `Tally` aux coordonnées données, créé s'il est absent
+    detail
+        - Appends any not-yet-seen axes and registers each axis's values in first-appearance
+        - order.
+        + Ajoute tout axe pas encore rencontré et enregistre les valeurs de chaque axe dans l'ordre
+        + de première apparition.
+  entry #values
+    info
+        - the coordinate values of one axis in presentation order
+        + les valeurs de coordonnées d'un axe dans l'ordre de présentation
+    detail
+        - First-appearance order for a discrete axis, numeric order for an integral or decimal
+        - one.
+        + L'ordre de première apparition pour un axe discret, l'ordre numérique pour un axe entier
+        + ou décimal.
+
+entry .Run
+  info
+      - one execution of one cell: a verdict, recorded metrics, failure details and any payload
+      + une exécution d'une cellule : un verdict, des métriques enregistrées, des détails d'échec et
+      + une éventuelle charge utile
+  detail
+      - For a check, `#verdict` is present and `#metrics` holds `Metric.Duration`; for a
+      - measurement the verdict is absent and the metrics carry the figures (insertion order is
+      - presentation order). `#payload` holds structure a number cannot: a profile's hot
+      - frames, or a benchmark's operation-size units. In a capacity search, `#sustained`
+      - marks the winning run.
+      + Pour une vérification, `#verdict` est présent et `#metrics` contient `Metric.Duration` ;
+      + pour une mesure, le verdict est absent et les métriques portent les chiffres (l'ordre
+      + d'insertion est l'ordre de présentation). `#payload` contient une structure qu'un nombre ne
+      + peut pas porter : les frames chauds d'un profil, ou les unités de taille d'opération d'un
+      + benchmark. Dans une recherche de capacité, `#sustained` marque l'exécution gagnante.
+  entry .Payload
+    info
+        - structure a numeric metric cannot carry
+        + une structure qu'une métrique numérique ne peut pas porter
+    detail
+        - `Frames(hotspots)` is a profile's `Hotspots`; `Sizing(operationSize, operationRate)` a
+        - benchmark's preformatted units.
+        + `Frames(hotspots)` est le `Hotspots` d'un profil ; `Sizing(operationSize, operationRate)`
+        + les unités préformatées d'un benchmark.
+  entry #verdict
+    info
+        - the verdict, for a check
+        + le verdict, pour une vérification
+  entry #metrics
+    info
+        - the recorded metrics, in presentation order
+        + les métriques enregistrées, dans l'ordre de présentation
+  entry #details
+    info
+        - failure details attached to this run
+        + les détails d'échec rattachés à cette exécution
+  entry #payload
+    info
+        - the structural payload, if any
+        + la charge utile structurelle, s'il y en a une
+  entry #sustained
+    info
+        - whether this run is the winning row of a capacity search
+        + si cette exécution est la ligne gagnante d'une recherche de capacité
+
+entry .Tally
+  info
+      - the accumulated runs at one coordinate of a test
+      + les exécutions accumulées à une coordonnée d'un test
+  detail
+      - Repeated executions of the same cell gather here, which generalises repeated-verdict
+      - accumulation to every test kind. Mutex-guarded, since a queued runner's workers record
+      - concurrently.
+      + Les exécutions répétées d'une même cellule se rassemblent ici, ce qui généralise
+      + l'accumulation de verdicts répétés à tous les types de tests. Protégé par un mutex, puisque
+      + les workers d'un runner à file d'attente enregistrent de façon concurrente.
+  entry #record
+    info
+        - appends a run
+        + ajoute une exécution
+  entry #runs
+    info
+        - the runs so far
+        + les exécutions jusqu'ici
+
+entry .Axis
+  info
+      - one input variable of a test: a labelled domain of values, each a coordinate of the test's cells
+      + une variable d'entrée d'un test : un domaine de valeurs étiqueté, chacune étant une
+      + coordonnée des cellules du test
+  detail
+      - Most tests have no axes. Given one, `Test.Id#over` runs the body once per value and
+      - records each verdict at that value's coordinate of a single named test; a comparative
+      - benchmark has a discrete axis of implementations, and input data of different sizes
+      - forms a numeric axis. An axis is built from a label and values, `Axis(t"n")(1, 2, 3)`,
+      - from a label and a range, `Axis(t"n")(1 to 64)`, or from an enum's companion object,
+      - `Axis(Codec)`, whose label is the lower-cased enum name and whose values are its cases.
+      - `Axis` is an `into` type, so an enum companion is accepted directly wherever a concrete
+      - axis is expected (`.companion`).
+      + La plupart des tests n'ont pas d'axes. S'il en a un, `Test.Id#over` exécute le corps une
+      + fois par valeur et enregistre chaque verdict à la coordonnée de cette valeur d'un unique
+      + test nommé ; un benchmark comparatif a un axe discret d'implémentations, et des données
+      + d'entrée de différentes tailles forment un axe numérique. Un axe se construit à partir d'une
+      + étiquette et de valeurs, `Axis(t"n")(1, 2, 3)`, d'une étiquette et d'un intervalle,
+      + `Axis(t"n")(1 to 64)`, ou de l'objet compagnon d'une énumération, `Axis(Codec)`, dont
+      + l'étiquette est le nom de l'énumération en minuscules et dont les valeurs sont ses cas.
+      + `Axis` est un type `into`, si bien qu'un compagnon d'énumération est accepté directement
+      + partout où un axe concret est attendu (`.companion`).
+
+      ```scala
+      import soundness.*
+
+      enum Codec:
+        case Zip, Tar, Cpio
+
+      val sizes: Axis[Int] = Axis(t"n")(1, 2, 4, 8)
+      val codecs: Axis[Codec] = Axis(Codec)
+      sizes.coordinate(4)
+      codecs.spec
+      ```
+
+      - The values' type needs an `Axable`, which gives each value a stable label and, for
+      - numeric domains, a number, which makes the axis orderable and chartable.
+      + Le type des valeurs a besoin d'un `Axable`, qui donne à chaque valeur une étiquette stable
+      + et, pour les domaines numériques, un nombre, ce qui rend l'axe ordonnable et représentable
+      + dans un graphique.
+  refer probably.Axable
+  refer probably.Axis.Value
+  refer probably.Test
+  entry .Domain
+    info
+        - the kind of an axis: `Discrete` labels in declaration order, or `Integral`/`Decimal` coordinates in numeric order
+        + le type d'un axe : étiquettes `Discrete` dans l'ordre de déclaration, ou coordonnées
+        + `Integral`/`Decimal` dans l'ordre numérique
+  entry .Spec
+    info
+        - the erased description of an axis as a report records it: its label, domain and whether it is emergent
+        + la description effacée d'un axe telle que l'enregistre un rapport : son étiquette, son
+        + domaine et s'il est émergent
+    detail
+        - What selection, rendering and charting consume. An emergent axis acquires its
+        - coordinate values from the run itself (a stress sweep's `N`) rather than from a
+        - declared domain.
+        + Ce que consomment la sélection, le rendu et les graphiques. Un axe émergent acquiert ses
+        + valeurs de coordonnées de l'exécution elle-même (le `N` d'un balayage de stress) plutôt
+        + que d'un domaine déclaré.
+    entry #label
+      info
+          - the axis's label, which an axis constraint such as `N<32` names
+          + l'étiquette de l'axe, que nomme une contrainte d'axe comme `N<32`
+    entry #domain
+      info
+          - discrete, integral or decimal
+          + discret, entier ou décimal
+    entry #emergent
+      info
+          - whether the run, not a declaration, produces the values
+          + si c'est l'exécution, et non une déclaration, qui produit les valeurs
+  entry .Schedule
+    info
+        - what a listing knows of one axis of a test before anything runs
+        + ce que sait un listage d'un axe d'un test avant que quoi que ce soit ne s'exécute
+    detail
+        - The spec, the distinct values of the cells the selection admits in first-appearance
+        - order (none for an emergent axis), and, for an emergent axis whose producer declared
+        - them, the bounds its values will lie within. A host completes axis constraints from
+        - these.
+        + La spécification, les valeurs distinctes des cellules qu'admet la sélection dans l'ordre
+        + de première apparition (aucune pour un axe émergent) et, pour un axe émergent dont le
+        + producteur les a déclarées, les bornes entre lesquelles ses valeurs se situeront. Un hôte
+        + complète les contraintes d'axes à partir de ces informations.
+    entry #spec
+      info
+          - the axis
+          + l'axe
+    entry #values
+      info
+          - the admitted cells' values; empty for an emergent axis
+          + les valeurs des cellules admises ; vide pour un axe émergent
+    entry #least
+      info
+          - the least value an emergent axis will produce, if declared
+          + la plus petite valeur que produira un axe émergent, si elle est déclarée
+    entry #most
+      info
+          - the greatest value an emergent axis will produce, if declared
+          + la plus grande valeur que produira un axe émergent, si elle est déclarée
+  entry .apply
+    info
+        - an axis from a label and values, a label and a `Range`, or an enum's companion object
+        + un axe à partir d'une étiquette et de valeurs, d'une étiquette et d'un `Range`, ou de
+        + l'objet compagnon d'une énumération
+    detail
+        - `Axis(label)(values*)` needs an `Axable` for the values' type; `Axis(label)(range)` is
+        - an `Axis[Int]`; `Axis(companion)` takes an enum's companion (anything with `valueOf`)
+        - with an `Enumerable`, labelled with the enum's simple name in lower case.
+        + `Axis(label)(values*)` a besoin d'un `Axable` pour le type des valeurs ;
+        + `Axis(label)(range)` est un `Axis[Int]` ; `Axis(companion)` prend le compagnon d'une
+        + énumération (tout ce qui a un `valueOf`) avec un `Enumerable`, étiqueté par le nom simple
+        + de l'énumération en minuscules.
+  entry .emergent
+    info
+        - an axis with no declared values, which the run populates
+        + un axe sans valeurs déclarées, que l'exécution remplit
+    detail
+        - `Axis.emergent[Int](t"N")`: the spec is marked emergent, and `Entry#cell` extends the
+        - axis's values as coordinates arrive.
+        + `Axis.emergent[Int](t"N")` : la spécification est marquée comme émergente, et `Entry#cell`
+        + étend les valeurs de l'axe à mesure que des coordonnées arrivent.
+  entry .companion
+    info
+        - the `Conversion` which lets an enum's companion object stand for an axis
+        + la `Conversion` qui permet à l'objet compagnon d'une énumération de tenir lieu d'axe
+    detail
+        - Generic positions such as `over` cannot drive this conversion, so they take explicit
+        - companion overloads instead.
+        + Les positions génériques comme `over` ne peuvent pas déclencher cette conversion ; elles
+        + prennent donc à la place des surcharges explicites pour les compagnons.
+  entry #label
+    info
+        - the axis's label
+        + l'étiquette de l'axe
+  entry #values
+    info
+        - the declared values, in declaration order
+        + les valeurs déclarées, dans l'ordre de déclaration
+  entry #emergent
+    info
+        - whether the values come from the run
+        + si les valeurs viennent de l'exécution
+  entry #axable
+    info
+        - the `Axable` for the values' type
+        + l'`Axable` pour le type des valeurs
+  entry #spec
+    info
+        - the erased `Axis.Spec`
+        + l'`Axis.Spec` effacée
+  entry #point
+    info
+        - one value as a `Value`
+        + une valeur sous forme de `Value`
+  entry #coordinate
+    info
+        - one value as the `(Axis.Spec, Value)` pair a cell is addressed by
+        + une valeur sous forme de la paire `(Axis.Spec, Value)` par laquelle une cellule est
+        + adressée
+
+  entry .Value
+    info
+        - one coordinate on one axis: a discrete label, an integer or a decimal
+        + une coordonnée sur un axe : une étiquette discrète, un entier ou un décimal
+    detail
+        - A cell of a test is addressed by a list of values positionally aligned with the test's
+        - axes; a test with no axes has the single address `Nil`. `Value(x)` makes one through
+        - the `Axable` in scope: `Discrete(label)` for a discrete domain, `Integral(number)` or
+        - `Decimal(number)` for the numeric ones.
+        + Une cellule d'un test est adressée par une liste de valeurs alignées positionnellement sur
+        + les axes du test ; un test sans axes a pour unique adresse `Nil`. `Value(x)` en crée une
+        + par l'`Axable` dans la portée : `Discrete(label)` pour un domaine discret,
+        + `Integral(number)` ou `Decimal(number)` pour les domaines numériques.
+    entry .apply
+      info
+          - a value from a domain value, through its `Axable`
+          + une valeur à partir d'une valeur du domaine, par son `Axable`
+    entry #text
+      info
+          - the label a selection matches: the discrete label, or the number shown
+          + l'étiquette à laquelle correspond une sélection : l'étiquette discrète, ou le nombre
+          + affiché
+    entry #numeric
+      info
+          - the number, or `Unset` for a discrete value
+          + le nombre, ou `Unset` pour une valeur discrète
+
+entry .Axable
+  info
+      - how a domain value becomes a point on an axis: a stable label and, for numeric domains, a number
+      + la façon dont une valeur du domaine devient un point sur un axe : une étiquette stable et,
+      + pour les domaines numériques, un nombre
+  detail
+      - The typeclass behind `Axis`. The companion covers `Int` and `Long` (integral),
+      - `Double` (decimal, labelled with the `Decimalizer` in scope), `Text` (discrete) and
+      - every `reflect.Enum` with an `Enumerable` (discrete, labelled by case name). A type of
+      - the caller's own supplies `label`, and `domain`/`numeric` when it is numeric.
+      + La classe de types derrière `Axis`. Le compagnon couvre `Int` et `Long` (entiers), `Double`
+      + (décimal, étiqueté avec le `Decimalizer` dans la portée), `Text` (discret) et chaque
+      + `reflect.Enum` doté d'un `Enumerable` (discret, étiqueté par le nom du cas). Un type propre
+      + à l'appelant fournit `label`, et `domain`/`numeric` lorsqu'il est numérique.
+  refer probably.Axis
+  refer probably.Axis.Value
+  entry .int
+    info
+        - `Int` on an integral axis
+        + `Int` sur un axe entier
+  entry .long
+    info
+        - `Long` on an integral axis
+        + `Long` sur un axe entier
+  entry .double
+    info
+        - `Double` on a decimal axis
+        + `Double` sur un axe décimal
+  entry .text
+    info
+        - `Text` on a discrete axis, labelled by itself
+        + `Text` sur un axe discret, étiqueté par lui-même
+  entry .enumerable
+    info
+        - any enum with an `Enumerable`, on a discrete axis labelled by case name
+        + toute énumération dotée d'un `Enumerable`, sur un axe discret étiqueté par le nom du cas
+  entry #domain
+    info
+        - the axis domain of the type; `Discrete` by default
+        + le domaine d'axe du type ; `Discrete` par défaut
+  entry #label
+    info
+        - the stable text of a value, used in reports and matched by `axis=value` selections
+        + le texte stable d'une valeur, utilisé dans les rapports et mis en correspondance par les
+        + sélections `axis=value`
+  entry #numeric
+    info
+        - the value as a number, for numeric domains; `Unset` by default
+        + la valeur sous forme de nombre, pour les domaines numériques ; `Unset` par défaut
+
+entry .Anchor
+  info
+      - the distinguished comparison point of a test: one value on one axis, with `Baseline` settings
+      + le point de comparaison distingué d'un test : une valeur sur un axe, avec des réglages
+      + `Baseline`
+  detail
+      - A comparative benchmark anchors one axis value, and every other cell along that axis
+      - renders relative to it. Recorded through `Report.anchor` and emitted as
+      - `TestEvent.AnchorRecorded`.
+      + Un benchmark comparatif ancre une valeur d'axe, et toutes les autres cellules le long de cet
+      + axe se rendent relativement à elle. Enregistrée par `Report.anchor` et émise sous forme de
+      + `TestEvent.AnchorRecorded`.
+  entry #axis
+    info
+        - the axis the anchor is on
+        + l'axe sur lequel se trouve l'ancre
+  entry #value
+    info
+        - the anchored value
+        + la valeur ancrée
+  entry #baseline
+    info
+        - how the other cells compare to it
+        + la façon dont les autres cellules lui sont comparées
+
+entry .Baseline
+  info
+      - how cells are compared to an anchor: which statistic, which metric, and which mean
+      + la façon dont les cellules sont comparées à une ancre : quelle statistique, quelle métrique
+      + et quelle moyenne
+  detail
+      - `Baseline(compare, metric, mode)` defaults to the `Mean` of the `Cadential` metric
+      - under the `Geometric` mode. The three enums' cases are exported at package level, so
+      - `Baseline(Min, Temporal, Arithmetic)` reads without qualification.
+      + `Baseline(compare, metric, mode)` vaut par défaut la `Mean` de la métrique `Cadential` avec
+      + le mode `Geometric`. Les cas des trois énumérations sont exportés au niveau du package, si
+      + bien que `Baseline(Min, Temporal, Arithmetic)` se lit sans qualification.
+  entry .Compare
+    info
+        - which statistic of a cell is compared: `Min`, `Mean` or `Max`
+        + la statistique d'une cellule qui est comparée : `Min`, `Mean` ou `Max`
+  entry .Metric
+    info
+        - which figure is compared: `Cadential` (throughput) or `Temporal` (time)
+        + le chiffre qui est comparé : `Cadential` (débit) ou `Temporal` (temps)
+  entry .Mode
+    info
+        - which mean summarises a comparison: `Geometric` or `Arithmetic`
+        + la moyenne qui résume une comparaison : `Geometric` ou `Arithmetic`
+  entry #compare
+    info
+        - the statistic
+        + la statistique
+  entry #metric
+    info
+        - the figure
+        + le chiffre
+  entry #mode
+    info
+        - the mean
+        + la moyenne
+
+entry .Min
+  info
+      - `Baseline.Compare.Min`, exported at package level
+      + `Baseline.Compare.Min`, exporté au niveau du package
+entry .Mean
+  info
+      - `Baseline.Compare.Mean`, exported at package level
+      + `Baseline.Compare.Mean`, exporté au niveau du package
+entry .Max
+  info
+      - `Baseline.Compare.Max`, exported at package level
+      + `Baseline.Compare.Max`, exporté au niveau du package
+entry .Cadential
+  info
+      - `Baseline.Metric.Cadential`, exported at package level
+      + `Baseline.Metric.Cadential`, exporté au niveau du package
+entry .Temporal
+  info
+      - `Baseline.Metric.Temporal`, exported at package level
+      + `Baseline.Metric.Temporal`, exporté au niveau du package
+entry .Arithmetic
+  info
+      - `Baseline.Mode.Arithmetic`, exported at package level
+      + `Baseline.Mode.Arithmetic`, exporté au niveau du package
+entry .Geometric
+  info
+      - `Baseline.Mode.Geometric`, exported at package level
+      + `Baseline.Mode.Geometric`, exporté au niveau du package
+
+entry .Benchmark
+  info
+      - the measured result of a benchmark: iterations, timings, confidence and allocation
+      + le résultat mesuré d'un benchmark : itérations, temps, confiance et allocation
+  detail
+      - What the sedentary library's `Bench` produces for one cell and records through
+      - `.inclusion`: `#nanoseconds` of measurement over `#iterations` in `#runs` batches, the
+      - `#mean`, `#min`, `#max` and standard deviation `#sd` of the per-operation time in
+      - nanoseconds, the `#confidence` percentile of the interval, and the optional
+      - `#operationSize`, `#operationRate`, `#operationQuantity` and bytes of `#allocation` per
+      - operation. Times are nanoseconds; the headline metric is `Throughput` when an operation
+      - size was declared, `Mean` otherwise.
+      + Ce que produit le `Bench` de la bibliothèque sedentary pour une cellule et enregistre par
+      + `.inclusion` : `#nanoseconds` de mesure sur `#iterations` en `#runs` lots, la moyenne
+      + `#mean`, le minimum `#min`, le maximum `#max` et l'écart type `#sd` du temps par opération
+      + en nanosecondes, le centile `#confidence` de l'intervalle, et les valeurs facultatives
+      + `#operationSize`, `#operationRate`, `#operationQuantity` et les octets d'`#allocation` par
+      + opération. Les temps sont en nanosecondes ; la métrique principale est `Throughput`
+      + lorsqu'une taille d'opération a été déclarée, `Mean` sinon.
+  refer probably.Metric
+  refer probably.Strain
+  refer probably.Hotspots
+  entry .inclusion
+    info
+        - the `Inclusion[Report, Benchmark]`: records the figures as metrics at a coordinate, and emits `BenchmarkRecorded`
+        + l'`Inclusion[Report, Benchmark]` : enregistre les chiffres sous forme de métriques à une
+        + coordonnée, et émet `BenchmarkRecorded`
+    detail
+        - The metrics are `Iterations`, `Mean`, `Least`, `Most`, `Deviation`, `Percentile`,
+        - `Confidence` (the interval's half-width as a fraction of the mean), `Throughput` and,
+        - when measured, `Allocation`; declared units travel as a `Run.Payload.Sizing`.
+        + Les métriques sont `Iterations`, `Mean`, `Least`, `Most`, `Deviation`, `Percentile`,
+        + `Confidence` (la demi-largeur de l'intervalle en fraction de la moyenne), `Throughput` et,
+        + si elle est mesurée, `Allocation` ; les unités déclarées voyagent sous forme de
+        + `Run.Payload.Sizing`.
+  entry .Percentiles
+    info
+        - the confidence levels a benchmark may report: `80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
+        + les niveaux de confiance qu'un benchmark peut indiquer :
+        + `80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
+  entry #nanoseconds
+    info
+        - the total measuring time
+        + le temps total de mesure
+  entry #iterations
+    info
+        - how many operations were timed
+        + le nombre d'opérations chronométrées
+  entry #runs
+    info
+        - how many independent measurement runs the statistics are over
+        + le nombre d'exécutions de mesure indépendantes sur lesquelles portent les statistiques
+  entry #mean
+    info
+        - the mean time per operation, in nanoseconds
+        + le temps moyen par opération, en nanosecondes
+  entry #min
+    info
+        - the fastest run's mean
+        + la moyenne de l'exécution la plus rapide
+  entry #max
+    info
+        - the slowest run's mean
+        + la moyenne de l'exécution la plus lente
+  entry #sd
+    info
+        - the standard deviation of the runs' means
+        + l'écart type des moyennes des exécutions
+  entry #confidence
+    info
+        - the percentile of the confidence interval
+        + le centile de l'intervalle de confiance
+  entry #operationSize
+    info
+        - the preformatted size of one operation, if declared
+        + la taille préformatée d'une opération, si elle est déclarée
+  entry #operationRate
+    info
+        - the preformatted rate unit, if declared
+        + l'unité de débit préformatée, si elle est déclarée
+  entry #operationQuantity
+    info
+        - the size of one operation as a number, in the unit `operationSize` names
+        + la taille d'une opération sous forme de nombre, dans l'unité que nomme `operationSize`
+    detail
+        - Not yet carried by `TestEvent.BenchmarkRecorded`, so a host does not see it.
+        + Pas encore transportée par `TestEvent.BenchmarkRecorded` ; un hôte ne la voit donc pas.
+  entry #allocation
+    info
+        - bytes allocated per operation, when the harness measured it
+        + les octets alloués par opération, lorsque le harnais les a mesurés
+  entry #tQuantile
+    info
+        - the one-sided Student's t quantile for a percentile and degrees of freedom
+        + le quantile unilatéral de Student pour un centile et un nombre de degrés de liberté
+    detail
+        - Tabulated for df up to 29 (rounding an out-of-table df down, for a slightly wider
+        - interval) and the normal quantile beyond.
+        + Tabulé pour des degrés de liberté jusqu'à 29 (un nombre hors table étant arrondi à
+        + l'inférieur, pour un intervalle légèrement plus large), et le quantile de la loi normale
+        + au-delà.
+  entry #confidenceInterval
+    info
+        - the half-width of the confidence interval, in nanoseconds
+        + la demi-largeur de l'intervalle de confiance, en nanosecondes
+  entry #throughput
+    info
+        - operations per second, from the mean
+        + les opérations par seconde, d'après la moyenne
+
+entry .Strain
+  info
+      - the measured response to a stress test: throughput, memory and latency under concurrency
+      + la réponse mesurée à un test de stress : débit, mémoire et latence en situation de
+      + concurrence
+  detail
+      - The memory and scaling counterpart of `Benchmark`, produced by sedentary's `Stress`
+      - for one cell: `#concurrency` workers ran a body repeatedly for a wall-clock window of
+      - `#nanoseconds`, completing `#operations` in total; `#allocation` is the heap allocated
+      - over the window, `#peakHeap` the high-water mark, `#retained` the live set after a
+      - post-run collection (a bounded-memory design shows a flat, small value), and
+      - `#gcCount`/`#gcTime` the collector deltas (time in milliseconds). The optional `#p50`,
+      - `#p90`, `#p99` and `#p999` are per-operation latency percentiles in nanoseconds. In a
+      - capacity search, `#compliance` is the fraction of operations within the latency
+      - threshold and `#sustained` marks the winning row.
+      + Le pendant de `Benchmark` pour la mémoire et le passage à l'échelle, produit par le `Stress`
+      + de sedentary pour une cellule : `#concurrency` workers ont exécuté un corps de façon répétée
+      + pendant une fenêtre de temps réel de `#nanoseconds`, en terminant `#operations` au total ;
+      + `#allocation` est le tas alloué pendant la fenêtre, `#peakHeap` le maximum atteint,
+      + `#retained` l'ensemble vivant après un ramasse-miettes consécutif à l'exécution (une
+      + conception à mémoire bornée montre une valeur faible et stable), et `#gcCount`/`#gcTime` les
+      + écarts du ramasse-miettes (temps en millisecondes). Les valeurs facultatives `#p50`, `#p90`,
+      + `#p99` et `#p999` sont des centiles de latence par opération en nanosecondes. Dans une
+      + recherche de capacité, `#compliance` est la fraction d'opérations sous le seuil de latence
+      + et `#sustained` marque la ligne gagnante.
+  refer probably.Benchmark
+  refer probably.Metric
+  entry .inclusion
+    info
+        - the `Inclusion[Report, Strain]`: records the figures as metrics on the emergent `N` axis, and emits `StrainRecorded`
+        + l'`Inclusion[Report, Strain]` : enregistre les chiffres sous forme de métriques sur l'axe
+        + émergent `N`, et émet `StrainRecorded`
+    detail
+        - Concurrency is a coordinate, not a metric: every strain lands on an emergent integral
+        - axis `N` (unless the producer supplied one), so a sweep's steps accumulate as cells of
+        - one entry. The headline metric is `Throughput`.
+        + La concurrence est une coordonnée, et non une métrique : chaque mesure de stress aboutit
+        + sur un axe entier émergent `N` (sauf si le producteur en a fourni un), si bien que les
+        + étapes d'un balayage s'accumulent comme cellules d'une même entrée. La métrique principale
+        + est `Throughput`.
+  entry #concurrency
+    info
+        - how many workers ran the body
+        + le nombre de workers qui ont exécuté le corps
+  entry #operations
+    info
+        - how many operations completed
+        + le nombre d'opérations terminées
+  entry #nanoseconds
+    info
+        - the window's length
+        + la durée de la fenêtre
+  entry #allocation
+    info
+        - total heap allocation over the window, in bytes
+        + l'allocation totale du tas pendant la fenêtre, en octets
+  entry #peakHeap
+    info
+        - the high-water mark of the heap pools, in bytes
+        + le maximum atteint par les pools du tas, en octets
+  entry #retained
+    info
+        - the live set after a post-run collection, in bytes
+        + l'ensemble vivant après un ramasse-miettes consécutif à l'exécution, en octets
+  entry #gcCount
+    info
+        - collections during the window
+        + les passages du ramasse-miettes pendant la fenêtre
+  entry #gcTime
+    info
+        - time in collection, in milliseconds
+        + le temps passé dans le ramasse-miettes, en millisecondes
+  entry #p50
+    info
+        - the median per-operation latency, in nanoseconds, if measured
+        + la latence médiane par opération, en nanosecondes, si elle est mesurée
+  entry #p90
+    info
+        - the 90th-percentile latency, if measured
+        + la latence au 90e centile, si elle est mesurée
+  entry #p99
+    info
+        - the 99th-percentile latency, if measured
+        + la latence au 99e centile, si elle est mesurée
+  entry #p999
+    info
+        - the 99.9th-percentile latency, if measured
+        + la latence au 99,9e centile, si elle est mesurée
+  entry #compliance
+    info
+        - the fraction of operations within the latency threshold, in a capacity search
+        + la fraction d'opérations sous le seuil de latence, dans une recherche de capacité
+  entry #sustained
+    info
+        - whether this is the winning row of a capacity search
+        + s'il s'agit de la ligne gagnante d'une recherche de capacité
+  entry #throughput
+    info
+        - operations per second over the window
+        + les opérations par seconde sur la fenêtre
+  entry #allocationRate
+    info
+        - bytes allocated per operation
+        + les octets alloués par opération
+
+entry .Hotspots
+  info
+      - the measured response to a profile: execution samples and the hottest methods
+      + la réponse mesurée à un profil : échantillons d'exécution et méthodes les plus chaudes
+  detail
+      - Produced by sedentary's `Profile` from JFR execution samples: `#total` samples were
+      - taken over the profiling window, and `#frames` are the hottest methods in descending
+      - order of sample count, by self time. A host renders them as a histogram, coloured by
+      - package.
+      + Produit par le `Profile` de sedentary à partir d'échantillons d'exécution JFR : `#total`
+      + échantillons ont été prélevés sur la fenêtre de profilage, et `#frames` sont les méthodes
+      + les plus chaudes par ordre décroissant du nombre d'échantillons, en temps propre. Un hôte
+      + les rend sous forme d'histogramme, coloré par package.
+  refer probably.Benchmark
+  entry .inclusion
+    info
+        - the `Inclusion[Report, Hotspots]`: records `Samples` as the metric with the frames as payload, and emits `HotspotsRecorded`
+        + l'`Inclusion[Report, Hotspots]` : enregistre `Samples` comme métrique avec les frames
+        + comme charge utile, et émet `HotspotsRecorded`
+  entry .Frame
+    info
+        - one hot method: its demangled class and method names, and how many samples landed in it
+        + une méthode chaude : ses noms de classe et de méthode démanglés, et le nombre
+        + d'échantillons qui y sont tombés
+    entry #className
+      info
+          - the class, demangled
+          + la classe, démanglée
+    entry #method
+      info
+          - the method
+          + la méthode
+    entry #samples
+      info
+          - samples whose top frame was this method
+          + les échantillons dont le frame du sommet était cette méthode
+  entry #total
+    info
+        - how many samples were taken
+        + le nombre d'échantillons prélevés
+  entry #frames
+    info
+        - the hottest methods, most samples first
+        + les méthodes les plus chaudes, les plus échantillonnées en premier
+
+entry .Metric
+  info
+      - the closed set of quantities a run can record, each with a dimension, a sense and a label
+      + l'ensemble fermé des quantités qu'une exécution peut enregistrer, chacune avec une
+      + dimension, un sens et une étiquette
+  detail
+      - Each cell of a test stores a map of these to values, and one of them (or, for a check,
+      - the verdict) is the test's headline. Times are nanoseconds, memory bytes, rates
+      - operations per second and fractions in the unit interval. The cases are `Duration`,
+      - `Mean`, `Least`, `Most`, `Deviation`, `Percentile`, `Confidence`, `Iterations`,
+      - `Throughput`, `Operations`, `Allocation`, `PeakHeap`, `Retained`, `GcCount`, `GcTime`,
+      - `P50`, `P90`, `P99`, `P999`, `Compliance` and `Samples`. On the wire a metric is keyed
+      - by its case name, which is stable where its label is not.
+      + Chaque cellule d'un test stocke une map de celles-ci vers des valeurs, et l'une d'elles (ou,
+      + pour une vérification, le verdict) est la valeur principale du test. Les temps sont en
+      + nanosecondes, la mémoire en octets, les débits en opérations par seconde et les fractions
+      + dans l'intervalle unité. Les cas sont `Duration`, `Mean`, `Least`, `Most`, `Deviation`,
+      + `Percentile`, `Confidence`, `Iterations`, `Throughput`, `Operations`, `Allocation`,
+      + `PeakHeap`, `Retained`, `GcCount`, `GcTime`, `P50`, `P90`, `P99`, `P999`, `Compliance` et
+      + `Samples`. Sur le réseau, une métrique est identifiée par le nom de son cas, qui est stable
+      + là où son étiquette ne l'est pas.
+  entry .Dimension
+    info
+        - the physical interpretation of a value: `Time`, `Memory`, `Rate`, `Count` or `Fraction`
+        + l'interprétation physique d'une valeur : `Time`, `Memory`, `Rate`, `Count` ou `Fraction`
+  entry .Sense
+    info
+        - whether smaller or larger is better: `LowerIsBetter`, `HigherIsBetter` or `Neutral`
+        + si une valeur plus petite ou plus grande est meilleure : `LowerIsBetter`, `HigherIsBetter`
+        + ou `Neutral`
+  entry #dimension
+    info
+        - the metric's dimension, which chooses its formatting
+        + la dimension de la métrique, qui détermine sa mise en forme
+  entry #sense
+    info
+        - which direction is an improvement, for comparisons and chart orientation
+        + le sens qui constitue une amélioration, pour les comparaisons et l'orientation des
+        + graphiques
+  entry #label
+    info
+        - the display label: `μ`, `σ`, `p99`, `Alloc·op¯¹`, …
+        + l'étiquette d'affichage : `μ`, `σ`, `p99`, `Alloc·op¯¹`, …
+
+entry .Selection
+  info
+      - which tests, and which of their cells, a run admits, parsed from command-line terms
+      + les tests, et lesquelles de leurs cellules, qu'admet une exécution, analysés à partir de
+      + termes de ligne de commande
+  detail
+      - `Selection.parse(terms)` reads the terms a host passes to `Suite#invoke`. Identity
+      - terms — six-hex-digit hashes, monikers and name globs — union with each other;
+      - `kind:test|bench|stress|profile` terms, `tag:a,b` terms (any of the listed tags; a
+      - second `tag:` term intersects) and axis constraints (`parser=jacinta`, `N<32`, `N>=4`,
+      - `N=4..64`, `N=4..`, `N=..64`) intersect with that union; and `not:<term>` terms are
+      - subtracted last, each removing whatever its term would admit. An unrecognised term is a
+      - name glob. Globs follow kaleidoscope's rules: `*` matches within one `/`-joined link
+      - of a path, so spanning a suite takes `**`, as in `jacinta/**` or `**/parseJson`; a
+      - suite's id (which may hold a `-`) matches too. An empty selection admits everything.
+      + `Selection.parse(terms)` lit les termes qu'un hôte passe à `Suite#invoke`. Les termes
+      + d'identité — hachages à six chiffres hexadécimaux, surnoms et motifs glob de noms —
+      + s'unissent entre eux ; les termes `kind:test|bench|stress|profile`, les termes `tag:a,b`
+      + (l'une quelconque des étiquettes listées ; un second terme `tag:` fait une intersection) et
+      + les contraintes d'axes (`parser=jacinta`, `N<32`, `N>=4`, `N=4..64`, `N=4..`, `N=..64`) font
+      + une intersection avec cette union ; et les termes `not:<term>` sont soustraits en dernier,
+      + chacun retirant ce que son terme admettrait. Un terme non reconnu est un motif glob de nom.
+      + Les motifs glob suivent les règles de kaleidoscope : `*` correspond au sein d'un seul
+      + maillon d'un chemin joint par `/`, si bien qu'enjamber une suite exige `**`, comme dans
+      + `jacinta/**` ou `**/parseJson` ; l'id d'une suite (qui peut contenir un `-`) correspond
+      + également. Une sélection vide admet tout.
+
+      ```scala
+      import soundness.*
+      import soundness.taggingNominative
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+
+      val selection: Selection = Selection.parse(List(t"**", t"not:tag:slow", t"N=4.."))
+      val slow: Test.Id = impromptu(test(m"slow one", n"slow"))
+      val quick: Test.Id = impromptu(test(m"quick one"))
+      selection.admits(slow, Entry.Kind.Check, Nil, slow.tags)    // false
+      selection.admits(quick, Entry.Kind.Check, Nil, quick.tags)  // true
+      ```
+
+      - Three further terms are not selections but arrive on the same command line:
+      - `--list` (enumerate, run nothing), `--scale=<factor>` (multiply every declared
+      - measuring duration; a non-positive or unparseable factor is ignored) and
+      - `--workers=<n>` (queue pure assertions on `n` workers; 0, the default, runs everything
+      - inline).
+      + Trois autres termes ne sont pas des sélections mais arrivent sur la même ligne de commande :
+      + `--list` (énumérer, ne rien exécuter), `--scale=<factor>` (multiplier chaque durée de mesure
+      + déclarée ; un facteur non positif ou illisible est ignoré) et `--workers=<n>` (mettre en
+      + file les assertions pures sur `n` workers ; 0, la valeur par défaut, exécute tout sur
+      + place).
+  refer probably.Runner
+  refer probably.Tag
+  refer probably.Axis
+  entry .Term
+    info
+        - an identity term: an `Identifier` (a moniker or hash) or a `Glob` (matched against names and paths)
+        + un terme d'identité : un `Identifier` (un surnom ou un hachage) ou un `Glob` (mis en
+        + correspondance avec les noms et les chemins)
+  entry .Constraint
+    info
+        - an axis constraint: `Membership`, `Least`, `Most` or `Interval`
+        + une contrainte d'axe : `Membership`, `Least`, `Most` ou `Interval`
+    detail
+        - `Membership(axis, values)` is `N=4,8`; `Least(axis, limit, inclusive)` is `N>4` or
+        - `N>=4` (and `N=4..`); `Most` the mirror; `Interval(axis, least, most)` is `N=4..64`,
+        - inclusive at both ends. A constraint on an axis a cell does not have admits the cell,
+        - but as a `not:` term removes nothing.
+        + `Membership(axis, values)` correspond à `N=4,8` ; `Least(axis, limit, inclusive)` à `N>4`
+        + ou `N>=4` (et `N=4..`) ; `Most` en est le miroir ; `Interval(axis, least, most)`
+        + correspond à `N=4..64`, inclusif aux deux extrémités. Une contrainte sur un axe qu'une
+        + cellule n'a pas admet la cellule, mais, en tant que terme `not:`, ne retire rien.
+    entry #axis
+      info
+          - the axis label the constraint names
+          + l'étiquette d'axe que nomme la contrainte
+  entry .all
+    info
+        - the empty selection, which admits everything
+        + la sélection vide, qui admet tout
+  entry .parse
+    info
+        - a selection from command-line terms
+        + une sélection à partir de termes de ligne de commande
+  entry #terms
+    info
+        - the identity terms, unioned
+        + les termes d'identité, réunis
+  entry #kinds
+    info
+        - the admitted kinds; empty means all
+        + les types admis ; vide signifie tous
+  entry #constraints
+    info
+        - the axis constraints, intersected
+        + les contraintes d'axes, intersectées
+  entry #tags
+    info
+        - each `tag:` term as a set of alternatives; the sets intersect
+        + chaque terme `tag:` sous forme d'ensemble d'alternatives ; les ensembles s'intersectent
+  entry #exclusions
+    info
+        - the `not:` terms, each a one-term selection, subtracted after admission
+        + les termes `not:`, chacun étant une sélection à un terme, soustraits après l'admission
+  entry #listOnly
+    info
+        - whether `--list` was given
+        + si `--list` a été donné
+  entry #scale
+    info
+        - the multiplier on every declared measuring duration; 1.0 by default
+        + le multiplicateur appliqué à chaque durée de mesure déclarée ; 1.0 par défaut
+    detail
+        - Geometric: 2.0 runs each measurement twice as long, 0.25 a quarter as long. Latency
+        - thresholds are not scaled, being pass/fail criteria rather than durations.
+        + Géométrique : 2.0 exécute chaque mesure deux fois plus longtemps, 0.25 quatre fois moins
+        + longtemps. Les seuils de latence ne sont pas mis à l'échelle, puisque ce sont des critères
+        + de réussite ou d'échec plutôt que des durées.
+  entry #workers
+    info
+        - how many workers execute queued assertions; 0 queues nothing
+        + le nombre de workers qui exécutent les assertions mises en file ; 0 ne met rien en file
+  entry #diagnosis
+    info
+        - how failed assertions are to be diagnosed (`--diagnose=…`); not at all by default
+        + la façon dont les assertions en échec doivent être diagnostiquées (`--diagnose=…`) ; pas
+        + du tout par défaut
+  entry #trivial
+    info
+        - whether the selection selects nothing in particular: no terms, kinds, constraints, tags or exclusions
+        + si la sélection ne sélectionne rien en particulier : aucun terme, type, contrainte,
+        + étiquette ni exclusion
+  entry #admits
+    info
+        - whether a test, of a kind, at coordinates, with tags, is admitted
+        + si un test, d'un type donné, à des coordonnées, avec des étiquettes, est admis
+
+entry .Spread
+  info
+      - a test spread over the domain of one axis, awaiting its assertion
+      + un test réparti sur le domaine d'un axe, en attente de son assertion
+  detail
+      - `test(m"…").over(axis)(body)` is a `Spread[value, result]`. Its `.assert` runs the body
+      - once per axis value the body defines and records each verdict at that value's
+      - coordinate of the one named test; a value the partial body does not define is a gap.
+      - The body is pure, as `Test.assert`'s is, and the assertion sees either the result
+      - alone or the axis value and the result together.
+      + `test(m"…").over(axis)(body)` est un `Spread[value, result]`. Son `.assert` exécute le corps
+      + une fois par valeur d'axe que le corps définit et enregistre chaque verdict à la coordonnée
+      + de cette valeur dans l'unique test nommé ; une valeur que le corps partiel ne définit pas
+      + est un trou. Le corps est pur, comme celui de `Test.assert`, et l'assertion voit soit le
+      + résultat seul, soit la valeur d'axe et le résultat ensemble.
+  refer probably.Axis
+  refer probably.Test
+  entry .assert
+    info
+        - asserts every cell: with no predicate, with one over the result, or with one over the value and result
+        + fait une assertion sur chaque cellule : sans prédicat, avec un prédicat sur le résultat,
+        + ou avec un prédicat sur la valeur et le résultat
+    detail
+        - Needs a `Runner` and the `Inclusion`s for verdicts and details in scope, as `Test.assert`
+        - does.
+        + A besoin d'un `Runner` et des `Inclusion` pour les verdicts et les détails dans la portée,
+        + comme `Test.assert`.
+  entry #id
+    info
+        - the test's id
+        + l'id du test
+  entry #axis
+    info
+        - the axis
+        + l'axe
+  entry #action
+    info
+        - the body: a partial function over the axis's values, per harness
+        + le corps : une fonction partielle sur les valeurs de l'axe, par harnais
+
+entry .Spread2
+  info
+      - a test spread over the domains of two axes: one cell per combination the body defines
+      + un test réparti sur les domaines de deux axes : une cellule par combinaison que le corps
+      + définit
+  detail
+      - `test(m"…").over(first, second)(body)` is a `Spread2[left, right, result]`, rendered as
+      - a grid with gaps at undefined combinations. The predicate given to `.assert` may take
+      - the result alone or both axis values and the result.
+      + `test(m"…").over(first, second)(body)` est un `Spread2[left, right, result]`, rendu sous
+      + forme de grille avec des trous aux combinaisons non définies. Le prédicat donné à `.assert`
+      + peut prendre le résultat seul ou les deux valeurs d'axes et le résultat.
+  refer probably.Spread
+  entry .assert
+    info
+        - asserts every defined cell of the grid
+        + fait une assertion sur chaque cellule définie de la grille
+  entry #id
+    info
+        - the test's id
+        + l'id du test
+  entry #first
+    info
+        - the first axis
+        + le premier axe
+  entry #second
+    info
+        - the second axis
+        + le second axe
+  entry #action
+    info
+        - the body: a partial function over pairs of values, per harness
+        + le corps : une fonction partielle sur des paires de valeurs, par harnais
+
+entry .TestEvent
+  info
+      - the typed event stream a run produces, for a host which renders results itself
+      + le flux d'événements typé que produit une exécution, pour un hôte qui rend lui-même les
+      + résultats
+  detail
+      - The low-level counterpart of the `Report` accumulator: every datum a run records also
+      - leaves, through the sink `Suite#invoke` installs, as one of these events, and a host
+      - (fume, or `Suite.run`) renders them as a terminal display, HTML or anything else.
+      - Events are rich but **wire-safe**: every payload is a flat case class of scalars,
+      - `Optional`s, `List`s and `Map[Text, Text]`, so the whole enum derives a BinTEL schema
+      - and codec with no hand-written instances, and `Streamer` carries it across a
+      - classloader boundary. Recursive structures are flattened structurally: a stack trace
+      - becomes its cause chain in order (`Trace`), a `Juxtaposition` becomes depth-indexed
+      - rows (`CompareRow`) from which a renderer rebuilds the tree, and a metrics ledger a
+      - list of labelled values (`MetricValue`). A `Message` is rendered to `Text` at this
+      - boundary.
+      + Le pendant de bas niveau de l'accumulateur `Report` : chaque donnée qu'enregistre une
+      + exécution part aussi, par le récepteur qu'installe `Suite#invoke`, sous la forme de l'un de
+      + ces événements, et un hôte (fume, ou `Suite.run`) les rend sous forme d'affichage en
+      + terminal, de HTML ou de toute autre chose. Les événements sont riches mais **sûrs pour la
+      + transmission** : chaque charge utile est une case class plate composée de scalaires,
+      + d'`Optional`, de `List` et de `Map[Text, Text]`, si bien que l'énumération entière dérive un
+      + schéma et un codec BinTEL sans instance écrite à la main, et que `Streamer` la transporte à
+      + travers une frontière de classloader. Les structures récursives sont aplaties
+      + structurellement : une trace de pile devient sa chaîne de causes dans l'ordre (`Trace`), une
+      + `Juxtaposition` devient des lignes indexées par profondeur (`CompareRow`) à partir
+      + desquelles un moteur de rendu reconstruit l'arbre, et un registre de métriques une liste de
+      + valeurs étiquetées (`MetricValue`). Un `Message` est rendu en `Text` à cette frontière.
+
+      - The cases, in the order a run emits them:
+      + Les cas, dans l'ordre où une exécution les émet :
+
+      - - `TestScheduled(test, kind, expected, tags, axes)` — the schedule: one per test a
+      -   `--list` selection admits, or per assertion a queued runner defers, before it runs.
+      - - `SuiteStarted(suite, timestamp)` and `SuiteEnded(suite, timestamp)` — around a suite
+      -   or group; the end is held back until the group's last queued assertion completes.
+      - - `TestStarted(test, timestamp)` and `TestEnded(test, timestamp)` — progress only,
+      -   bracketing a test's execution for a live display.
+      - - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` — a check's
+      -   result, following `TestEnded`.
+      - - `DetailCaptures(test, values)`, `DetailCompare(test, expected, found, rows)`,
+      -   `DetailDissection(test, source, rows, reproducible)`,
+      -   `DetailMessage(test, message)` and `DetailThrows(test, check, stack)` — a failure's
+      -   supporting information (`check` is whether the predicate, rather than the body,
+      -   threw).
+      - - `BenchmarkRecorded`, `StrainRecorded`, `HotspotsRecorded` — the measuring kinds'
+      -   figures at a coordinate, field for field as `Benchmark`, `Strain` and `Hotspots`.
+      - - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)` — a
+      -   comparison anchor.
+      - - `NothingMatched(admitted)` — a non-trivial selection admitted nothing.
+      - - `RunTerminated(error, active, timestamp)` — the suite threw, with the tests active.
+      - - `RunCompleted(passed, timestamp)` — always last.
+      + - `TestScheduled(test, kind, expected, tags, axes)` — le planning : un par test qu'admet une
+      +   sélection `--list`, ou par assertion qu'un runner à file d'attente diffère, avant son
+      +   exécution.
+      + - `SuiteStarted(suite, timestamp)` et `SuiteEnded(suite, timestamp)` — autour d'une suite ou
+      +   d'un groupe ; la fin est retenue jusqu'à ce que la dernière assertion mise en file du
+      +   groupe soit terminée.
+      + - `TestStarted(test, timestamp)` et `TestEnded(test, timestamp)` — progression uniquement,
+      +   encadrant l'exécution d'un test pour un affichage en direct.
+      + - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` — le résultat d'une
+      +   vérification, à la suite de `TestEnded`.
+      + - `DetailCaptures(test, values)`, `DetailCompare(test, expected, found, rows)`,
+      +   `DetailDissection(test, source, rows, reproducible)`, `DetailMessage(test, message)` et
+      +   `DetailThrows(test, check, stack)` — les informations à l'appui d'un échec (`check`
+      +   indique si c'est le prédicat, plutôt que le corps, qui a levé une exception).
+      + - `BenchmarkRecorded`, `StrainRecorded`, `HotspotsRecorded` — les chiffres des types de
+      +   mesure à une coordonnée, champ pour champ comme `Benchmark`, `Strain` et `Hotspots`.
+      + - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)` — une
+      +   ancre de comparaison.
+      + - `NothingMatched(admitted)` — une sélection non triviale n'a rien admis.
+      + - `RunTerminated(error, active, timestamp)` — la suite a levé une exception, avec les tests
+      +   actifs.
+      + - `RunCompleted(passed, timestamp)` — toujours en dernier.
+
+      ```scala
+      import soundness.*
+
+      object Probe extends Suite(m"probe"):
+        def run(): Unit = test(m"one")(1).assert(_ == 2)
+
+      val failures: scala.collection.mutable.ListBuffer[Text] = scala.collection.mutable.ListBuffer()
+
+      Probe.invoke(t"", {
+        case TestEvent.TestCompleted(test, _, _, outcome, _, _) if outcome.outcome == t"fail" =>
+          failures.append(test.path.join(t"/"))
+        case _ => () })
+      ```
+
+      - Any change to a case's fields changes the stream's layout and `Streamer.fingerprint`,
+      - so a host built against another version reports the suite as incompatible rather than
+      - misreading it.
+      + Toute modification des champs d'un cas change la disposition du flux et
+      + `Streamer.fingerprint`, si bien qu'un hôte construit avec une autre version signale la suite
+      + comme incompatible plutôt que de la lire de travers.
+  refer probably.Streamer
+  refer probably.Suite
+  refer probably.Report
+  entry .Ref
+    info
+        - a test's or suite's identity on the wire: hash, name, moniker, path and declaration site
+        + l'identité d'un test ou d'une suite dans la transmission : hachage, nom, surnom, chemin et
+        + site de déclaration
+    detail
+        - `path` is the full name-or-moniker path from the root suite to the entry, including
+        - the entry itself, so a tree can be rebuilt from refs alone. For a suite, `name` is
+        - its title and `moniker` its id.
+        + `path` est le chemin complet de noms ou de surnoms depuis la suite racine jusqu'à
+        + l'entrée, l'entrée comprise, si bien qu'un arbre peut être reconstruit à partir des seules
+        + références. Pour une suite, `name` est son titre et `moniker` son id.
+    entry .of
+      info
+          - the ref of a `Test.Id`
+          + la référence d'un `Test.Id`
+    entry #id
+      info
+          - the six-hex-digit hash
+          + le hachage à six chiffres hexadécimaux
+    entry #name
+      info
+          - the display name
+          + le nom d'affichage
+    entry #moniker
+      info
+          - the moniker, or a suite's id, if any
+          + le surnom, ou l'id d'une suite, s'il y en a un
+    entry #path
+      info
+          - the labels from the root suite to this entry
+          + les étiquettes depuis la suite racine jusqu'à cette entrée
+    entry #file
+      info
+          - the declaring source file
+          + le fichier source de déclaration
+    entry #line
+      info
+          - the declaring line
+          + la ligne de déclaration
+  entry .Frame
+    info
+        - one stack frame: class, method, file and line
+        + un frame de pile : classe, méthode, fichier et ligne
+    entry #className
+      info
+          - the frame's class
+          + la classe du frame
+    entry #method
+      info
+          - the method
+          + la méthode
+    entry #file
+      info
+          - the source file
+          + le fichier source
+    entry #line
+      info
+          - the line, if known
+          + la ligne, si elle est connue
+  entry .Hotspot
+    info
+        - one hot method of a profile: class, method and samples
+        + une méthode chaude d'un profil : classe, méthode et échantillons
+    entry #className
+      info
+          - the class, demangled
+          + la classe, démanglée
+    entry #method
+      info
+          - the method
+          + la méthode
+    entry #samples
+      info
+          - samples whose top frame was this method
+          + les échantillons dont le frame du sommet était cette méthode
+  entry .TraceComponent
+    info
+        - one exception of a flattened cause chain: its class name, message and frames
+        + une exception d'une chaîne de causes aplatie : son nom de classe, son message et ses
+        + frames
+    entry #className
+      info
+          - the exception's class name
+          + le nom de classe de l'exception
+    entry #message
+      info
+          - its rendered message
+          + son message rendu
+    entry #frames
+      info
+          - its stack frames
+          + ses frames de pile
+  entry .Trace
+    info
+        - a stack trace flattened to its cause chain, outermost first
+        + une trace de pile aplatie en sa chaîne de causes, la plus externe en premier
+    entry .of
+      info
+          - the trace of a `StackTrace`
+          + la trace d'une `StackTrace`
+    entry #components
+      info
+          - the chain, outermost exception first
+          + la chaîne, l'exception la plus externe en premier
+  entry .Outcome
+    info
+        - a verdict without its live exception: `pass`, `fail`, `throws`, `check-throws`, `aspire-pass` or `aspire-fail`
+        + un verdict sans son exception vivante : `pass`, `fail`, `throws`, `check-throws`,
+        + `aspire-pass` ou `aspire-fail`
+    detail
+        - The two throwing outcomes carry the `stack`; `duration` is in nanoseconds.
+        + Les deux issues avec exception portent la `stack` ; `duration` est en nanosecondes.
+    entry .of
+      info
+          - the outcome of a `Verdict`
+          + l'issue d'un `Verdict`
+    entry #outcome
+      info
+          - the outcome word
+          + le mot qui désigne l'issue
+    entry #duration
+      info
+          - the body's duration
+          + la durée du corps
+    entry #stack
+      info
+          - the trace, for the throwing outcomes
+          + la trace, pour les issues avec exception
+  entry .DissectRow
+    info
+        - one intermediate value of a dissected predicate, pre-order with depth
+        + une valeur intermédiaire d'un prédicat disséqué, en ordre préfixe avec sa profondeur
+    detail
+        - `start` and `end` are offsets into the predicate's source, of which `code` is that
+        - slice, so a renderer can set each value under the subexpression it belongs to.
+        - `kind` is `value`, or `thrown` for the root of a predicate which threw.
+        + `start` et `end` sont des positions dans le code source du prédicat, dont `code` est la
+        + tranche correspondante, si bien qu'un moteur de rendu peut placer chaque valeur sous la
+        + sous-expression à laquelle elle appartient. `kind` vaut `value`, ou `thrown` pour la
+        + racine d'un prédicat qui a levé une exception.
+  entry .CompareRow
+    info
+        - one row of a flattened `Juxtaposition`, pre-order with depth
+        + une ligne d'une `Juxtaposition` aplatie, en ordre préfixe avec sa profondeur
+    detail
+        - `kind` is `same`, `different` or `collation`; a collation's type name travels in
+        - `difference`, and its children follow at `depth + 1`, so a renderer can rebuild the
+        - tree.
+        + `kind` vaut `same`, `different` ou `collation` ; le nom de type d'une collation voyage
+        + dans `difference`, et ses enfants suivent à `depth + 1`, si bien qu'un moteur de rendu
+        + peut reconstruire l'arbre.
+    entry .flatten
+      info
+          - the rows of a `Juxtaposition`
+          + les lignes d'une `Juxtaposition`
+    entry #depth
+      info
+          - the row's depth in the tree
+          + la profondeur de la ligne dans l'arbre
+    entry #label
+      info
+          - the field name or sequence index
+          + le nom de champ ou l'indice dans la séquence
+    entry #kind
+      info
+          - `same`, `different` or `collation`
+          + `same`, `different` ou `collation`
+    entry #left
+      info
+          - the expected side
+          + le côté attendu
+    entry #right
+      info
+          - the observed side
+          + le côté observé
+    entry #difference
+      info
+          - the difference, or a collation's type name
+          + la différence, ou le nom de type d'une collation
+  entry .Coordinate
+    info
+        - an axis coordinate on the wire: the spec's fields, and the value as one of three `Optional`s
+        + une coordonnée d'axe dans la transmission : les champs de la spécification, et la valeur
+        + sous la forme de l'un de trois `Optional`
+    detail
+        - Exactly one of `discrete`, `integral` and `decimal` is present, according to
+        - `domain`.
+        + Exactement l'un de `discrete`, `integral` et `decimal` est présent, selon `domain`.
+    entry .of
+      info
+          - a coordinate from a spec and value, or a list from coordinates
+          + une coordonnée à partir d'une spécification et d'une valeur, ou une liste à partir de
+          + coordonnées
+    entry #axis
+      info
+          - the axis label
+          + l'étiquette de l'axe
+    entry #domain
+      info
+          - `discrete`, `integral` or `decimal`
+          + `discrete`, `integral` ou `decimal`
+    entry #emergent
+      info
+          - whether the axis is emergent
+          + si l'axe est émergent
+    entry #discrete
+      info
+          - the label, for a discrete axis
+          + l'étiquette, pour un axe discret
+    entry #integral
+      info
+          - the integer, for an integral axis
+          + l'entier, pour un axe entier
+    entry #decimal
+      info
+          - the number, for a decimal axis
+          + le nombre, pour un axe décimal
+  entry .MetricValue
+    info
+        - one metric of a result, keyed by the `Metric` case's name
+        + une métrique d'un résultat, identifiée par le nom du cas de `Metric`
+    entry .of
+      info
+          - the values of a metrics ledger
+          + les valeurs d'un registre de métriques
+    entry #metric
+      info
+          - the case name, stable across versions where its label is not
+          + le nom du cas, stable d'une version à l'autre là où son étiquette ne l'est pas
+    entry #value
+      info
+          - the value
+          + la valeur
+  entry .AxisSchedule
+    info
+        - one axis of a scheduled test: its spec, the admitted values' labels, and declared bounds
+        + un axe d'un test planifié : sa spécification, les étiquettes des valeurs admises et les
+        + bornes déclarées
+    entry .of
+      info
+          - the wire form of an `Axis.Schedule`
+          + la forme de transmission d'un `Axis.Schedule`
+    entry #axis
+      info
+          - the axis label
+          + l'étiquette de l'axe
+    entry #domain
+      info
+          - `discrete`, `integral` or `decimal`
+          + `discrete`, `integral` ou `decimal`
+    entry #emergent
+      info
+          - whether the axis is emergent
+          + si l'axe est émergent
+    entry #values
+      info
+          - the labels of the admitted cells' values; none for an emergent axis
+          + les étiquettes des valeurs des cellules admises ; aucune pour un axe émergent
+    entry #least
+      info
+          - the least value an emergent axis will produce, if declared
+          + la plus petite valeur que produira un axe émergent, si elle est déclarée
+    entry #most
+      info
+          - the greatest, if declared
+          + la plus grande, si elle est déclarée
+  entry .kindName
+    info
+        - the wire name of an `Entry.Kind`: `check`, `bench`, `stress` or `profile`
+        + le nom de transmission d'un `Entry.Kind` : `check`, `bench`, `stress` ou `profile`
+
+entry .internal
+  info
+      - the macro implementations behind `Test.assert` and `Test.check`
+      + les implémentations de macros derrière `Test.assert` et `Test.check`
+  hidden
+  detail
+      - Not for direct use. The object exists so that the assertion macros have a stable home;
+      - `assertion` is the runtime they both expand to, which `Spread` and `Spread2` call
+      - directly.
+      + Pas destiné à un usage direct. L'objet existe pour que les macros d'assertion aient un foyer
+      + stable ; `assertion` est le code d'exécution vers lequel elles s'expansent toutes deux, et
+      + que `Spread` et `Spread2` appellent directement.
+  entry .check
+    info
+        - the macro behind `Test.check`: a `Trial` whose value is returned
+        + la macro derrière `Test.check` : un `Trial` dont la valeur est renvoyée
+  entry .assert
+    info
+        - the macro behind `Test.assert`: passes the test through `pure`, and records whether the unit was capture checked
+        + la macro derrière `Test.assert` : fait passer le test par `pure`, et enregistre si l'unité
+        + a été soumise à la vérification des captures
+  entry .pure
+    info
+        - an identity on `Test[test]` which the capture checker holds to its pure parameter type
+        + une identité sur `Test[test]` que le vérificateur de captures soumet à son type de
+        + paramètre pur
+  entry .succeed
+    info
+        - the predicate which always holds, for `assert()` and `check()`
+        + le prédicat toujours vrai, pour `assert()` et `check()`
+  entry .assertion
+    info
+        - runs, judges and records one assertion, inline or queued
+        + exécute, juge et enregistre une assertion, sur place ou en file
+    detail
+        - Skips an unselected `assert`, runs an unselected `check` without recording, queues a
+        - selected pure `assert` when the runner has workers, and otherwise runs it inline;
+        - records the verdict, the contrast of a failed equality when an expectation was lifted,
+        - and the captures.
+        + Saute un `assert` non sélectionné, exécute un `check` non sélectionné sans enregistrer,
+        + met en file un `assert` pur sélectionné lorsque le runner a des workers, et sinon
+        + l'exécute sur place ; enregistre le verdict, le contraste d'une égalité en échec
+        + lorsqu'une attente a été extraite, et les captures.
+
+entry .Streamer
+  info
+      - writes a run's `TestEvent`s as length-prefixed BinTEL frames to a host's `OutputStream`
+      + écrit les `TestEvent` d'une exécution sous forme de trames BinTEL préfixées par leur
+      + longueur dans l'`OutputStream` d'un hôte
+  detail
+      - The one JDK-typed surface of the `events` component, because the host (a test-running
+      - tool such as fume) may call `.stream` reflectively from **another classloader world**,
+      - whose Soundness classes are not this one's: it erases to `stream(String, String,
+      - OutputStream): int`. The first frame is a schema **fingerprint**: both ends derive the
+      - BinTEL schema from their own `TestEvent` and compare, so a version skew which changes
+      - the wire layout is detected before any event is decoded. Each frame is a 4-byte
+      - big-endian length then the payload, flushed as written.
+      + L'unique surface du composant `events` typée avec les types du JDK, car l'hôte (un outil
+      + d'exécution de tests comme fume) peut appeler `.stream` par réflexion depuis **un autre
+      + monde de classloader**, dont les classes Soundness ne sont pas celles-ci : elle s'efface en
+      + `stream(String, String, OutputStream): int`. La première trame est une **empreinte** du
+      + schéma : les deux extrémités dérivent le schéma BinTEL de leur propre `TestEvent` et les
+      + comparent, si bien qu'un décalage de versions qui modifie la disposition de transmission est
+      + détecté avant qu'aucun événement ne soit décodé. Chaque trame est une longueur de 4 octets
+      + en big-endian suivie de la charge utile, vidée dès son écriture.
+
+      ```scala fuel
+      typecheck
+      ##
+      val output: java.io.OutputStream = java.io.ByteArrayOutputStream()
+      val status: Int = Streamer.stream(t"parser.Tests", t"--list", output)
+      ```
+  refer probably.TestEvent
+  refer probably.Suite
+  refer probably.Standalone
+  entry .reentrant
+    info
+        - `true`: suites on this classpath may be invoked repeatedly through one classloader
+        + `true` : les suites de ce classpath peuvent être invoquées de façon répétée par un même
+        + classloader
+    detail
+        - A host probes for this method reflectively; its absence means an older Probably whose
+        - suites memoized their first runner and needed a fresh loader each time.
+        + Un hôte sonde cette méthode par réflexion ; son absence signale un Probably plus ancien
+        + dont les suites mémoïsaient leur premier runner et exigeaient un nouveau chargeur à chaque
+        + fois.
+  entry .queued
+    info
+        - `true`: suites on this classpath understand `--workers=<n>`
+        + `true` : les suites de ce classpath comprennent `--workers=<n>`
+    detail
+        - Probed reflectively like `.reentrant`; to an older Probably the term is a name glob
+        - which admits nothing, so a host must not pass it blindly.
+        + Sondé par réflexion comme `.reentrant` ; pour un Probably plus ancien, le terme est un
+        + motif glob de nom qui n'admet rien, si bien qu'un hôte ne doit pas le passer aveuglément.
+  entry .diagnostic
+    info
+        - `true`: suites on this classpath understand `--diagnose=<presentations>`
+        + `true` : les suites de ce classpath comprennent `--diagnose=<presentations>`
+    detail
+        - Probed reflectively like `.reentrant`.
+        + Sondé par réflexion comme `.reentrant`.
+  entry .fingerprint
+    info
+        - the BLAKE3 hash of the derived `TestEvent` schema's structure
+        + le hachage BLAKE3 de la structure du schéma `TestEvent` dérivé
+    detail
+        - A fingerprint of the wire layout: two versions whose `TestEvent`s differ in any field,
+        - order or case produce different fingerprints.
+        + Une empreinte de la disposition de transmission : deux versions dont les `TestEvent`
+        + diffèrent par un champ, un ordre ou un cas, quel qu'il soit, produisent des empreintes
+        + différentes.
+  entry .read
+    info
+        - decodes one frame's payload back to a `TestEvent`
+        + décode la charge utile d'une trame en un `TestEvent`
+    detail
+        - The decode inverse, for a host whose own modules are separation-checked and cannot
+        - expand the derived decoder themselves. A decode failure throws; wrap calls in `safely`.
+        + L'inverse du décodage, pour un hôte dont les propres modules sont soumis à la vérification
+        + de séparation et ne peuvent pas expanser eux-mêmes le décodeur dérivé. Un échec de
+        + décodage lève une exception ; enveloppez les appels dans `safely`.
+  entry .stream
+    info
+        - runs a named suite with selection terms, writing the fingerprint and then one frame per event
+        + exécute une suite nommée avec des termes de sélection, en écrivant l'empreinte puis une
+        + trame par événement
+    detail
+        - `stream(suite, arguments, output)` loads the `Suite` object named (`parser.Tests`,
+        - from this classloader), invokes it with the newline-separated terms, writes every
+        - event under a mutex, closes the stream, and returns the suite's status: 0 passed, 1
+        - failures, 2 the suite or the machinery threw.
+        + `stream(suite, arguments, output)` charge l'objet `Suite` nommé (`parser.Tests`, depuis ce
+        + classloader), l'invoque avec les termes séparés par des sauts de ligne, écrit chaque
+        + événement sous un mutex, ferme le flux, et renvoie le statut de la suite : 0 pour réussi,
+        + 1 pour des échecs, 2 si la suite ou la machinerie a levé une exception.
+
+entry .Standalone
+  info
+      - the entry point for running one suite in a JVM of its own
+      + le point d'entrée pour exécuter une suite dans une JVM qui lui est propre
+  detail
+      - `java -cp <classpath> probably.Standalone <suite> <term>…` is what a host launches
+      - when a suite must not share its process. The run is streamed exactly as
+      - `Streamer.stream` streams it, on standard output, which is reserved for the frames:
+      - whatever the suite itself prints to standard output is sent to standard error. The JVM
+      - exits with the suite's status (0 passed, 1 failures, 2 threw; 2 also for no suite
+      - named).
+      + `java -cp <classpath> probably.Standalone <suite> <term>…` est ce que lance un hôte
+      + lorsqu'une suite ne doit pas partager son processus. L'exécution est transmise exactement
+      + comme le fait `Streamer.stream`, sur la sortie standard, qui est réservée aux trames : tout
+      + ce que la suite elle-même affiche sur la sortie standard est envoyé sur l'erreur standard.
+      + La JVM termine avec le statut de la suite (0 pour réussi, 1 pour des échecs, 2 pour une
+      + exception ; 2 également lorsqu'aucune suite n'est nommée).
+  refer probably.Streamer
+  entry .main
+    info
+        - runs the suite named by the first argument with the rest as terms, and exits with its status
+        + exécute la suite nommée par le premier argument avec le reste comme termes, et termine
+        + avec son statut

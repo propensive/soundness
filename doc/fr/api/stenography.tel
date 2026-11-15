@@ -1,0 +1,971 @@
+tel 1.0
+
+base stenography
+import soundness
+
+info
+    - Scala types rendered as the source text a user would write, abbreviated against the imports in scope
+    + les types Scala rendus sous la forme du texte source qu'écrirait un utilisateur, abrégés selon
+    + les imports dans la portée
+detail
+    - _Stenography_ turns a Scala type into the text a programmer would have written for it at a
+    - given point in their code: `Int | String & Double`, `Addable by Int to Double`,
+    - `(e: Enumeration) => e.Value`, `Text^{alpha}`. A compiler's own rendering of a type is
+    - fully qualified, dealiased and full of encodings — `scala.collection.immutable.List`,
+    - `Addable { type Operand = Int; type Result = Double }`, `ImpureFunction1` — which is the
+    - wrong thing to put in an error message, a generated source file, a completion or a
+    - diagnostic. Stenography writes the type back in its source form, qualifying each name only
+    - as far as the imports in scope require, and preferring the infix and arrow notations the
+    - language offers.
+    + _Stenography_ transforme un type Scala en le texte qu'un programmeur aurait écrit pour lui
+    + à un endroit donné de son code : `Int | String & Double`, `Addable by Int to Double`,
+    + `(e: Enumeration) => e.Value`, `Text^{alpha}`. Le rendu d'un type par le compilateur
+    + lui-même est pleinement qualifié, sans alias et plein d'encodages —
+    + `scala.collection.immutable.List`, `Addable { type Operand = Int; type Result = Double }`,
+    + `ImpureFunction1` — ce qui n'est pas ce qu'il faut placer dans un message d'erreur, un
+    + fichier source généré, une complétion ou un diagnostic. Stenography réécrit le type sous sa
+    + forme source, en ne qualifiant chaque nom qu'autant que l'exigent les imports dans la
+    + portée, et en privilégiant les notations infixes et fléchées qu'offre le langage.
+
+    - The simplest use is the `Syntax.name` macro, which renders a type against the imports at
+    - the point where it is called:
+    + L'usage le plus simple est la macro `Syntax.name`, qui rend un type selon les imports à
+    + l'endroit où elle est appelée :
+
+    ```scala
+    import soundness.*
+
+    Syntax.name[Int | String & Double]                     // t"Int | String & Double"
+    Syntax.name[(e: Enumeration) => e.Value]               // t"(e: Enumeration) => e.Value"
+    Syntax.name[Addable { type Operand = Int }]            // t"Addable by Int"
+    Syntax.name[scala.collection.immutable.List[Int]]      // t"collection.immutable.List[Int]"
+    ```
+
+    - Rendering happens in two steps, so that the second can be repeated against different
+    - scopes. First, `Syntax(repr)` converts a compiler `TypeRepr` into a `Syntax` tree, which
+    - depends only on the type: each named entity in it is a `Designator`, a path of term and
+    - type selections such as `scala.collection.immutable.List`. Second, `Syntax#text` writes the
+    - tree as text against an `Imports`, which says which scopes are imported (so their members
+    - are written unqualified), which types are reachable by their leaf name through an `export`,
+    - which infix type aliases may be used, and whether pure functions are enabled (so which
+    - arrow, `->` or `=>`, an unannotated function type is written with). The same tree written
+    - under `Imports.empty` is fully qualified; `Syntax#qualified` is that shorthand.
+    + Le rendu se fait en deux étapes, afin que la seconde puisse être répétée dans différentes
+    + portées. D'abord, `Syntax(repr)` convertit un `TypeRepr` du compilateur en un arbre
+    + `Syntax`, qui ne dépend que du type : chaque entité nommée qu'il contient est un
+    + `Designator`, un chemin de sélections de termes et de types tel que
+    + `scala.collection.immutable.List`. Ensuite, `Syntax#text` écrit l'arbre sous forme de texte
+    + selon un `Imports`, qui indique quelles portées sont importées (de sorte que leurs membres
+    + sont écrits sans qualification), quels types sont accessibles par leur nom terminal au
+    + moyen d'un `export`, quels alias de types infixes peuvent être utilisés, et si les
+    + fonctions pures sont activées (et donc avec quelle flèche, `->` ou `=>`, s'écrit un type
+    + fonction non annoté). Le même arbre écrit sous `Imports.empty` est pleinement qualifié ;
+    + `Syntax#qualified` en est le raccourci.
+
+    - The library covers the whole type grammar of Scala 3: unions and intersections with
+    - minimal parentheses, applied, projected, refined and structural types, named and unnamed
+    - tuples, function, context-function, dependent and polymorphic function types, type
+    - lambdas, match types, by-name types, singleton and constant types, wildcards with bounds,
+    - `into` types, recursive types (whose binder is given a name by `Bindings`), skolems, and
+    - capture sets with every refinement of a capability (`*`, `.rd`, `.only[…]`,
+    - `.except[…]`).
+    + La bibliothèque couvre toute la grammaire des types de Scala 3 : unions et intersections
+    + avec un minimum de parenthèses, types appliqués, projetés, raffinés et structurels, tuples
+    + nommés et non nommés, types fonction, fonction contextuelle, dépendants et polymorphes,
+    + lambdas de types, types match, types par nom, types singleton et constants, jokers avec
+    + bornes, types `into`, types récursifs (dont le lieur reçoit un nom par `Bindings`),
+    + skolems, et ensembles de captures avec chaque raffinement d'une capacité (`*`, `.rd`,
+    + `.only[…]`, `.except[…]`).
+
+    - A `Syntax` tree is built inside a macro, since a `TypeRepr` exists only where a `Quotes`
+    - does; it can then be carried out of the macro, written in several scopes, or inspected as
+    - an ordinary enum. Libraries which explain errors in terms of types (frontier's
+    - missing-given diagnostics, spectacular's `Showable` fallback, hyperbole's tree viewer) call
+    - `stenography.internal.name` from their own macros, and a REPL which renders types outside
+    - any macro builds its `Imports` with `Imports.resolve`.
+    + Un arbre `Syntax` est construit à l'intérieur d'une macro, puisqu'un `TypeRepr` n'existe
+    + que là où existe un `Quotes` ; il peut ensuite être emporté hors de la macro, écrit dans
+    + plusieurs portées, ou inspecté comme une énumération ordinaire. Les bibliothèques qui
+    + expliquent les erreurs en termes de types (les diagnostics de given manquant de frontier,
+    + le repli `Showable` de spectacular, le visualiseur d'arbres de hyperbole) appellent
+    + `stenography.internal.name` depuis leurs propres macros, et un REPL qui rend des types en
+    + dehors de toute macro construit son `Imports` avec `Imports.resolve`.
+
+    - The library has a single source set, `stenography.core`, which depends on the Scala
+    - compiler itself (`dotty.tools.dotc`) and so is only for use in macros and tools which run
+    - alongside a compiler. `Bindings`, `Designator`, `Imports` and `Syntax` are exported to the
+    - `soundness` umbrella.
+    + La bibliothèque a un unique ensemble de sources, `stenography.core`, qui dépend du
+    + compilateur Scala lui-même (`dotty.tools.dotc`) et n'est donc destiné qu'aux macros et aux
+    + outils qui s'exécutent aux côtés d'un compilateur. `Bindings`, `Designator`, `Imports` et
+    + `Syntax` sont exportés vers le package parapluie `soundness`.
+
+refer stenography.Syntax
+refer stenography.Designator
+refer stenography.Imports
+refer stenography.Bindings
+
+entry .Syntax
+  info
+      - a Scala type as a tree in its source form, written as text against an `Imports`
+      + un type Scala sous forme d'arbre dans sa forme source, écrit sous forme de texte selon un
+      + `Imports`
+  detail
+      - A `Syntax` is the source form of a type, as an enum whose cases are the shapes of Scala's
+      - type grammar. It is built from a compiler `TypeRepr` by `Syntax(repr)` inside a macro,
+      - and depends only on the type; `#text` writes it against an `Imports`, which decides how
+      - far each name is qualified, which infix aliases are used and which function arrow is
+      - written. The macro `Syntax.name[T]` does both steps at once, against the imports where
+      - it is called.
+      + Un `Syntax` est la forme source d'un type, sous forme d'une énumération dont les cas sont
+      + les formes de la grammaire des types de Scala. Il est construit à partir d'un `TypeRepr` du
+      + compilateur par `Syntax(repr)` à l'intérieur d'une macro, et ne dépend que du type ;
+      + `#text` l'écrit selon un `Imports`, qui décide jusqu'où chaque nom est qualifié, quels
+      + alias infixes sont utilisés et quelle flèche de fonction est écrite. La macro
+      + `Syntax.name[T]` effectue les deux étapes à la fois, selon les imports à l'endroit où elle
+      + est appelée.
+
+      ```scala
+      import soundness.*
+
+      Syntax.name[Text is Showable]                            // t"Text is Showable"
+      Syntax.name[(Text, Double) ?=> Int]                      // t"(Text, Double) ?=> Int"
+      Syntax.name[[T] =>> Option[T]]                           // t"[T] =>> Option[T]"
+      Syntax.name[(Addable { type Q = Int })#Result]           // t"(Addable { type Q = Int })#Result"
+      ```
+
+      - A tree may also be built by hand, which is how code outside a macro writes a type
+      - known only by name:
+      + Un arbre peut aussi être construit à la main, et c'est ainsi que du code en dehors d'une
+      + macro écrit un type connu seulement par son nom :
+
+      ```scala
+      import soundness.*
+
+      val list = Designator.member(Designator(t"scala.collection.immutable"), t"List")
+      val text = Designator.member(Designator(t"anticipation"), t"Text")
+      val syntax = Syntax.Application(Syntax.Simple(list), List(Syntax.Simple(text)), false)
+
+      syntax.qualified   // t"scala.collection.immutable.List[anticipation.Text]"
+      ```
+
+      - The same tree is abbreviated further as more of its scopes are imported:
+      + Le même arbre est davantage abrégé à mesure que davantage de ses portées sont importées :
+
+      ```scala fuel
+      frame
+        label Nothing imported: every name is fully qualified
+        code
+            locally:
+              given Imports = Imports.empty
+              syntax.text   // t"scala.collection.immutable.List[anticipation.Text]"
+      frame
+        label The `scala` package imported, as it always is in source
+        code
+            locally:
+              given Imports =
+                Imports(scala.collection.immutable.Set(Designator(t"scala")), scala.collection.immutable.Set())
+              syntax.text   // t"collection.immutable.List[anticipation.Text]"
+      frame
+        label `anticipation` imported too: `Text` loses its prefix
+        code
+            locally:
+              given Imports =
+                Imports
+                  ( scala.collection.immutable.Set(Designator(t"scala"), Designator(t"anticipation")),
+                    scala.collection.immutable.Set() )
+              syntax.text   // t"collection.immutable.List[Text]"
+      frame
+        label `scala.collection.immutable` imported: the type as a user would write it
+        code
+            locally:
+              given Imports =
+                Imports
+                  ( scala.collection.immutable.Set
+                      ( Designator(t"scala"),
+                        Designator(t"anticipation"),
+                        Designator(t"scala.collection.immutable") ),
+                    scala.collection.immutable.Set() )
+              syntax.text   // t"List[Text]"
+      ##
+      ```
+
+      - The cases of the enum, each a node of the tree:
+      + Les cas de l'énumération, chacun un nœud de l'arbre :
+
+      - - `Simple(designator)`, a named type, written as `designator.text`, and
+      -   `Value(designator)`, a singleton type of a stable path, written with `.type`.
+      - - `Symbolic(text)` and `Primitive(text)`, text written verbatim: a type parameter, a
+      -   capture root, `?`, a constant type such as `42L` or `"hello"`.
+      - - `Application(left, elements, infix)`, an applied type, `List[Int]`; where `infix` is
+      -   set (the type constructor is declared `infix`) and its name is reachable unqualified,
+      -   it is written `A op B` instead.
+      - - `Infix(left, middle, right)`, a binary operator type: `|`, `&`, `is`, `<:`, `>:`, `=>`
+      -   and `=>>` between type parameters and a body, and any infix alias.
+      - - `Prefix(middle, right)` and `Suffix(left, suffix)`: `into T`, the by-name types
+      -   `=> T` and `-> T`, `case P => R`, a repeated `T *`, a flexible `T?`, a reach
+      -   capability `c*` and a read-only `c.rd`.
+      - - `Projection(base, text)`, a type projection `A#B`, parenthesising a refined or infix
+      -   base; and `Selection(left, right)`, a path selection `a.B`.
+      - - `Structural(syntax, types, terms)`, a refinement `Play { type A = X; def f: Y }`, whose
+      -   alias members may be written with an infix alias instead: `Play { type Form = Json }`
+      -   as `Play in Json`. A member which only bounds its type, `type A <: X`, stays a
+      -   `Declaration` and is never written with an alias.
+      - - `Named(isUsing, name, syntax)`, a named parameter or named-tuple element, `x: Int`, or
+      -   `using x: Int`.
+      - - `Sequence(style, syntaxes)`, a comma-separated list in `(`, `[` or `{` brackets: a
+      -   tuple, type parameters, a capture set.
+      - - `Declaration(method, syntaxes, result)`, a member's signature, `(x: Int): String`, as
+      -   `Syntax.signature` makes it.
+      - - `Compound(syntaxes)`, several trees written one after another.
+      - - `Match(scrutinee, cases)`, a match type, written on one line as
+      -   `T match { case A => B; case C => D }`.
+      - - `Capturing(base, refs)`, a type with a capture set: `T^{a, b}`, `T^{}` for an empty
+      -   `refs`, and `T^` for `Unset`, the universal set.
+      - - `Function(parameters, contextual, impure, refs, result)`, a function type, whose arrow
+      -   records whether it is a context function (`?=>`), whether it is impure (`=>` rather
+      -   than `->`), and its capture set (`->{a}`).
+      + - `Simple(designator)`, un type nommé, écrit `designator.text`, et `Value(designator)`, un
+      +   type singleton d'un chemin stable, écrit avec `.type`.
+      + - `Symbolic(text)` et `Primitive(text)`, du texte écrit tel quel : un paramètre de type,
+      +   une racine de capture, `?`, un type constant tel que `42L` ou `"hello"`.
+      + - `Application(left, elements, infix)`, un type appliqué, `List[Int]` ; lorsque `infix`
+      +   est positionné (le constructeur de type est déclaré `infix`) et que son nom est
+      +   accessible sans qualification, il s'écrit plutôt `A op B`.
+      + - `Infix(left, middle, right)`, un type opérateur binaire : `|`, `&`, `is`, `<:`, `>:`,
+      +   `=>` et `=>>` entre des paramètres de type et un corps, et tout alias infixe.
+      + - `Prefix(middle, right)` et `Suffix(left, suffix)` : `into T`, les types par nom `=> T`
+      +   et `-> T`, `case P => R`, un `T *` répété, un `T?` flexible, une capacité d'atteinte
+      +   `c*` et un `c.rd` en lecture seule.
+      + - `Projection(base, text)`, une projection de type `A#B`, qui met entre parenthèses une
+      +   base raffinée ou infixe ; et `Selection(left, right)`, une sélection de chemin `a.B`.
+      + - `Structural(syntax, types, terms)`, un raffinement `Play { type A = X; def f: Y }`, dont
+      +   les membres alias peuvent plutôt s'écrire avec un alias infixe :
+      +   `Play { type Form = Json }` sous la forme `Play in Json`. Un membre qui ne fait que
+      +   borner son type, `type A <: X`, reste une `Declaration` et ne s'écrit jamais avec un
+      +   alias.
+      + - `Named(isUsing, name, syntax)`, un paramètre nommé ou un élément de tuple nommé,
+      +   `x: Int`, ou `using x: Int`.
+      + - `Sequence(style, syntaxes)`, une liste séparée par des virgules entre crochets `(`, `[`
+      +   ou `{` : un tuple, des paramètres de type, un ensemble de captures.
+      + - `Declaration(method, syntaxes, result)`, la signature d'un membre, `(x: Int): String`,
+      +   telle que la produit `Syntax.signature`.
+      + - `Compound(syntaxes)`, plusieurs arbres écrits l'un après l'autre.
+      + - `Match(scrutinee, cases)`, un type match, écrit sur une ligne sous la forme
+      +   `T match { case A => B; case C => D }`.
+      + - `Capturing(base, refs)`, un type avec un ensemble de captures : `T^{a, b}`, `T^{}` pour
+      +   des `refs` vides, et `T^` pour `Unset`, l'ensemble universel.
+      + - `Function(parameters, contextual, impure, refs, result)`, un type fonction, dont la
+      +   flèche indique s'il s'agit d'une fonction contextuelle (`?=>`), s'il est impur (`=>`
+      +   plutôt que `->`), et son ensemble de captures (`->{a}`).
+
+      - The cases are ordinary enum cases, so a tree can be matched, rewritten and rebuilt, as
+      - delicious does to substitute placeholders in a rendered diagnostic.
+      + Les cas sont des cas d'énumération ordinaires ; un arbre peut donc être filtré, réécrit et
+      + reconstruit, comme le fait delicious pour substituer des marqueurs dans un diagnostic
+      + rendu.
+  refer stenography.Designator
+  refer stenography.Imports
+  refer stenography.Bindings
+  entry .name
+    info
+        - `Syntax.name[T]`: a type rendered as source text against the imports where it is called
+        + `Syntax.name[T]` : un type rendu sous forme de texte source selon les imports à l'endroit
+        + où il est appelé
+    detail
+        - A macro which renders the type `T` (of any kind, so a type constructor or type lambda
+        - may be given) as the text a user would write at the call site. The imports it renders
+        - against are `scala` and `scala.Predef`, every import in scope at the call (including
+        - those a REPL has accumulated over earlier lines), the enclosing compilation unit's
+        - package and its top-level imports. Within those scopes it also collects the targets of
+        - `export` aliases, so that a type re-exported through `soundness` is written by its leaf
+        - name under `import soundness.*`, and the infix type aliases which refine a single type
+        - member, so that `Addable { type Operand = Int }` is written `Addable by Int` where `by`
+        - is in scope. An unannotated function type is written with `->` where pure functions are
+        - enabled at the call site, and with `=>` where they are not.
+        + Une macro qui rend le type `T` (de n'importe quelle sorte, de sorte qu'un constructeur de
+        + type ou une lambda de type peut être fourni) sous la forme du texte qu'écrirait un
+        + utilisateur sur le site d'appel. Les imports selon lesquels elle rend sont `scala` et
+        + `scala.Predef`, chaque import dans la portée lors de l'appel (y compris ceux qu'un REPL a
+        + accumulés au fil des lignes précédentes), le package de l'unité de compilation englobante
+        + et ses imports de premier niveau. Dans ces portées, elle recueille aussi les cibles des
+        + alias `export`, de sorte qu'un type réexporté par `soundness` s'écrit par son nom terminal
+        + sous `import soundness.*`, ainsi que les alias de types infixes qui raffinent un unique
+        + membre de type, de sorte que `Addable { type Operand = Int }` s'écrit `Addable by Int` là
+        + où `by` est dans la portée. Un type fonction non annoté s'écrit avec `->` là où les
+        + fonctions pures sont activées sur le site d'appel, et avec `=>` là où elles ne le sont
+        + pas.
+
+        ```scala
+        import soundness.*
+
+        Syntax.name[Addable { type Operand = Int; type Result = Double }]   // t"Addable by Int to Double"
+        Syntax.name[Addable { type Operand <: Int }]    // t"Addable { type Operand = ? <: Int }"
+        Syntax.name[(name: String, age: Int)]           // t"(name: String, age: Int)"
+        Syntax.name[Enumeration#Value]                  // t"Enumeration#Value"
+        Syntax.name[None.type]                          // t"None.type"
+        ```
+
+        - The result is a literal `Text`, computed while the code compiles. Within one
+        - compilation run the trees of types already rendered and the summaries of the scopes
+        - searched are cached, so the cost of rendering many types against a large scope is paid
+        - once.
+        + Le résultat est un `Text` littéral, calculé pendant la compilation du code. Au sein d'une
+        + même exécution de compilation, les arbres des types déjà rendus et les résumés des portées
+        + parcourues sont mis en cache, de sorte que le coût du rendu de nombreux types selon une
+        + grande portée n'est payé qu'une fois.
+  entry .apply
+    info
+        - `Syntax(repr)`: a compiler type converted to a `Syntax` tree, inside a macro
+        + `Syntax(repr)` : un type du compilateur converti en arbre `Syntax`, à l'intérieur d'une
+        + macro
+    detail
+        - Takes a `quotes.reflect.TypeRepr`, with a `Quotes` and a `Bindings` in scope (a fresh
+        - `Bindings()` is the default), and returns its tree. The tree depends only on the type,
+        - not on where it will be written: no name is abbreviated, no infix alias is substituted
+        - and no arrow is chosen until `#text`. Results are cached in the `Bindings`, keyed by the
+        - type, so a tree converted twice with one `Bindings` is built once. A type of a shape the
+        - method does not recognise is retried as its type symbol's reference, and otherwise
+        - becomes `Primitive("<unknown>")`, so conversion never fails.
+        + Prend un `quotes.reflect.TypeRepr`, avec un `Quotes` et un `Bindings` dans la portée (un
+        + nouveau `Bindings()` par défaut), et renvoie son arbre. L'arbre ne dépend que du type, et
+        + non de l'endroit où il sera écrit : aucun nom n'est abrégé, aucun alias infixe n'est
+        + substitué et aucune flèche n'est choisie avant `#text`. Les résultats sont mis en cache
+        + dans le `Bindings`, indexés par le type, de sorte qu'un arbre converti deux fois avec un
+        + même `Bindings` n'est construit qu'une fois. Un type d'une forme que la méthode ne
+        + reconnaît pas est réessayé sous forme de référence à son symbole de type, et devient sinon
+        + `Primitive("<unknown>")`, de sorte que la conversion n'échoue jamais.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import scala.quoted.*
+
+        def rendered[T: Type](using Quotes): Text =
+          Syntax(quotes.reflect.TypeRepr.of[T]).qualified
+        ```
+
+        - A skolem, the compiler's `?1` for the unstable argument of a dependent method, is
+        - written as the type it stands for, and a type member selected from one as the member's
+        - alias where that type aliases it, or as a projection on the type where it only bounds
+        - it.
+        + Un skolem, le `?1` du compilateur pour l'argument instable d'une méthode dépendante,
+        + s'écrit comme le type qu'il représente, et un membre de type sélectionné à partir de lui
+        + comme l'alias du membre lorsque ce type en est un alias, ou comme une projection sur le
+        + type lorsqu'il ne fait que le borner.
+  entry .term
+    info
+        - the `Designator` of a term reference, inside a macro
+        + le `Designator` d'une référence de terme, à l'intérieur d'une macro
+    detail
+        - Converts a `quotes.reflect.TermRef` with `Syntax(…)` and returns the designator of the
+        - `Value` it becomes, such as the designator of a package or object named in an import.
+        - Panics if the reference does not convert to a `Value`.
+        + Convertit un `quotes.reflect.TermRef` avec `Syntax(…)` et renvoie le désignateur de la
+        + `Value` qu'il devient, tel que le désignateur d'un package ou d'un objet nommé dans un
+        + import. Panique si la référence ne se convertit pas en `Value`.
+  entry .signature
+    info
+        - a member's declared type as a `Syntax.Declaration`, for writing a member's signature
+        + le type déclaré d'un membre sous forme de `Syntax.Declaration`, pour écrire la signature
+        + d'un membre
+    detail
+        - Takes a member's name and its info as a `TypeRepr`, with a `Quotes` and `Bindings` in
+        - scope. A method type becomes its parameter list and result, `(x: Int): String`; a
+        - parameterless or by-name member just its result, `: Int`; a bounded type member its
+        - bounds, `? <: Int`; and a type lambda its type parameters and body. The result's
+        - `method` flag says whether it is a term member (`def`) or a type member (`type`).
+        + Prend le nom d'un membre et son info sous forme de `TypeRepr`, avec un `Quotes` et un
+        + `Bindings` dans la portée. Un type de méthode devient sa liste de paramètres et son
+        + résultat, `(x: Int): String` ; un membre sans paramètres ou par nom seulement son
+        + résultat, `: Int` ; un membre de type borné ses bornes, `? <: Int` ; et une lambda de type
+        + ses paramètres de type et son corps. Le drapeau `method` du résultat indique s'il s'agit
+        + d'un membre terme (`def`) ou d'un membre de type (`type`).
+  entry .clause
+    info
+        - a parameter clause as source text: `(x: Int, y: Text)`, `(using Play)` or `[T <: U: Bound]`
+        + une clause de paramètres sous forme de texte source : `(x: Int, y: Text)`, `(using Play)`
+        + ou `[T <: U: Bound]`
+    detail
+        - Renders one `quotes.reflect.ParamClause`. For a term clause, each parameter is written
+        - with its name and type, `inline` where it is declared so, and with `using` before a
+        - contextual parameter when `showUsing` is set; an anonymous contextual parameter is
+        - written as its type alone, and a single unnamed one without parentheses. Parameters
+        - named `evidence$…`, the desugaring of context bounds, are omitted, since they are
+        - written as bounds on the type parameters instead. For a type clause, each parameter is
+        - written with its bounds and with the context bound given for its name in `context`,
+        - the map `.contextBounds` makes.
+        + Rend une `quotes.reflect.ParamClause`. Pour une clause de termes, chaque paramètre s'écrit
+        + avec son nom et son type, `inline` là où il est déclaré ainsi, et avec `using` avant un
+        + paramètre contextuel lorsque `showUsing` est positionné ; un paramètre contextuel anonyme
+        + s'écrit par son seul type, et un unique paramètre sans nom sans parenthèses. Les
+        + paramètres nommés `evidence$…`, issus du désucrage des bornes de contexte, sont omis,
+        + puisqu'ils s'écrivent plutôt comme bornes sur les paramètres de type. Pour une clause de
+        + types, chaque paramètre s'écrit avec ses bornes et avec la borne de contexte donnée pour
+        + son nom dans `context`, la map que produit `.contextBounds`.
+  entry .contextBounds
+    info
+        - the context bounds of a method, recovered from its `evidence$` parameters
+        + les bornes de contexte d'une méthode, reconstituées à partir de ses paramètres `evidence$`
+    detail
+        - Takes a method's parameter clauses and returns a map from each type parameter's name to
+        - the bound it was declared with: `T is Showable` or `Showable[T]` becomes the bound
+        - `Showable` on `T`, and several bounds on one parameter become a `{A, B}` sequence. It is
+        - what `.clause` needs to write `[T: Showable]` rather than an `evidence$1` parameter.
+        + Prend les clauses de paramètres d'une méthode et renvoie une map du nom de chaque
+        + paramètre de type vers la borne avec laquelle il a été déclaré : `T is Showable` ou
+        + `Showable[T]` devient la borne `Showable` sur `T`, et plusieurs bornes sur un même
+        + paramètre deviennent une séquence `{A, B}`. C'est ce dont `.clause` a besoin pour écrire
+        + `[T: Showable]` plutôt qu'un paramètre `evidence$1`.
+  entry .typeBounds
+    info
+        - a type with its bounds, `T <: U`, `T >: L` or both, omitting those which are trivial
+        + un type avec ses bornes, `T <: U`, `T >: L` ou les deux, en omettant celles qui sont
+        + triviales
+    detail
+        - Takes the `Syntax` of the bounded name and its lower and upper bounds. A lower bound of
+        - `Nothing` and an upper bound of `Any` are left out, equal bounds are written as the
+        - type they fix, and a capture-set parameter, which the compiler encodes as the bounds
+        - `>: CapSet <: CapSet^`, is written as it was declared, `cap^`, with only its nontrivial
+        - bounds: `cap^ >: {alpha}`.
+        + Prend le `Syntax` du nom borné et ses bornes inférieure et supérieure. Une borne
+        + inférieure `Nothing` et une borne supérieure `Any` sont omises, des bornes égales
+        + s'écrivent comme le type qu'elles fixent, et un paramètre d'ensemble de captures, que le
+        + compilateur encode par les bornes `>: CapSet <: CapSet^`, s'écrit tel qu'il a été déclaré,
+        + `cap^`, avec seulement ses bornes non triviales : `cap^ >: {alpha}`.
+  entry .symbolic
+    info
+        - a name as a `Syntax.Symbolic`, without the `_$` prefix of a compiler-synthesised name
+        + un nom sous forme de `Syntax.Symbolic`, sans le préfixe `_$` d'un nom synthétisé par le
+        + compilateur
+    detail
+        - For a type parameter or other bare name read from the compiler, whose synthesised form
+        - such as `_$1` should not reach the user as written.
+        + Pour un paramètre de type ou un autre nom nu lu depuis le compilateur, dont la forme
+        + synthétisée telle que `_$1` ne devrait pas parvenir telle quelle à l'utilisateur.
+  entry .Space
+    info
+        - the `Syntax.Symbolic` for a single space, for assembling token sequences
+        + le `Syntax.Symbolic` pour une espace unique, pour assembler des suites de jetons
+  entry .Colon
+    info
+        - the `Syntax.Symbolic` for `: `, between a name and its type
+        + le `Syntax.Symbolic` pour `: `, entre un nom et son type
+  entry .Comma
+    info
+        - the `Syntax.Symbolic` for `, `, between the elements of a list
+        + le `Syntax.Symbolic` pour `, `, entre les éléments d'une liste
+  entry .Open
+    info
+        - the `Syntax.Symbolic` for `(`, opening a parameter list or tuple
+        + le `Syntax.Symbolic` pour `(`, qui ouvre une liste de paramètres ou un tuple
+  entry .Close
+    info
+        - the `Syntax.Symbolic` for `)`, closing a parameter list or tuple
+        + le `Syntax.Symbolic` pour `)`, qui ferme une liste de paramètres ou un tuple
+  entry .OpenType
+    info
+        - the `Syntax.Symbolic` for `[`, opening a type parameter or argument list
+        + le `Syntax.Symbolic` pour `[`, qui ouvre une liste de paramètres ou d'arguments de type
+  entry .CloseType
+    info
+        - the `Syntax.Symbolic` for `]`, closing a type parameter or argument list
+        + le `Syntax.Symbolic` pour `]`, qui ferme une liste de paramètres ou d'arguments de type
+  entry .Plus
+    info
+        - the `Syntax.Symbolic` for `+`, a covariance marker
+        + le `Syntax.Symbolic` pour `+`, un marqueur de covariance
+  entry .Minus
+    info
+        - the `Syntax.Symbolic` for `-`, a contravariance marker
+        + le `Syntax.Symbolic` pour `-`, un marqueur de contravariance
+  entry #text
+    info
+        - the tree written as source text, qualified and abbreviated as an `Imports` directs
+        + l'arbre écrit sous forme de texte source, qualifié et abrégé comme l'indique un `Imports`
+    detail
+        - Needs an `Imports` in scope. Each `Designator` is written as `Designator#text` writes
+        - it, unqualified where it or its owner is imported; an infix type constructor is written
+        - `A op B` where its name is reachable unqualified; a refinement member which an infix
+        - alias in `Imports#aliases` refines is written with that alias; and a function type with
+        - no capture set is written `->` where `Imports#pureFuns` is set, and `=>` where it is
+        - not, as is a pure by-name type.
+        + Nécessite un `Imports` dans la portée. Chaque `Designator` s'écrit comme l'écrit
+        + `Designator#text`, sans qualification là où lui-même ou son propriétaire est importé ; un
+        + constructeur de type infixe s'écrit `A op B` là où son nom est accessible sans
+        + qualification ; un membre de raffinement que raffine un alias infixe de `Imports#aliases`
+        + s'écrit avec cet alias ; et un type fonction sans ensemble de captures s'écrit `->` là où
+        + `Imports#pureFuns` est positionné, et `=>` là où il ne l'est pas, de même qu'un type par
+        + nom pur.
+
+        - Parentheses are added only where precedence requires them, by `#precedence`: `|` binds
+        - loosest, then `&`, then the arrows, and a function type to the left of an arrow is
+        - parenthesised where one to the right is not, since function types associate to the
+        - right. Alphabetic infix operators such as `is` and `by` score lowest of all, so a
+        - function type whose parameter is one is written `(Addable by Int) => String`, with
+        - parentheses Scala would not strictly need.
+        + Des parenthèses ne sont ajoutées que là où la précédence l'exige, d'après `#precedence` :
+        + `|` lie le plus faiblement, puis `&`, puis les flèches, et un type fonction à gauche d'une
+        + flèche est mis entre parenthèses alors qu'un type fonction à droite ne l'est pas, puisque
+        + les types fonction sont associatifs à droite. Les opérateurs infixes alphabétiques tels
+        + que `is` et `by` ont le score le plus bas de tous, de sorte qu'un type fonction dont le
+        + paramètre en est un s'écrit `(Addable by Int) => String`, avec des parenthèses dont Scala
+        + n'aurait pas strictement besoin.
+
+        ```scala
+        import soundness.*
+
+        val function = Syntax.Function
+          ( Syntax.Simple(Designator(t"scala#Int")), false, false, Nil,
+            Syntax.Simple(Designator(t"anticipation#Text")) )
+
+        val scope = scala.collection.immutable.Set(Designator(t"scala"), Designator(t"anticipation"))
+        val none = scala.collection.immutable.Set[Designator]()
+
+        function.text(using Imports(scope, none))                                         // t"Int -> Text"
+        function.text(using Imports(scope, none, scala.collection.immutable.Map(), false))  // t"Int => Text"
+        ```
+  entry #qualified
+    info
+        - the tree written fully qualified: `#text` against `Imports.empty`
+        + l'arbre écrit pleinement qualifié : `#text` selon `Imports.empty`
+    detail
+        - Every name with its full path, no infix aliases, and pure functions assumed, so
+        - `->` and `=>` stay distinct. The form for a log, a cache key or a comparison, where
+        - the reader's imports are unknown.
+        + Chaque nom avec son chemin complet, sans alias infixes, et avec fonctions pures supposées,
+        + de sorte que `->` et `=>` restent distincts. La forme pour un journal, une clé de cache ou
+        + une comparaison, là où les imports du lecteur sont inconnus.
+  entry #precedence
+    info
+        - how tightly the node binds, from 0 (loosest) to 10, deciding where `#text` puts parentheses
+        + la force de liaison du nœud, de 0 (la plus faible) à 10, qui décide où `#text` place des
+        + parenthèses
+    detail
+        - Named types, applications, sequences and other atoms are 10; a projection or capturing
+        - type 9; an infix operator type scores by its operator's first character as Scala's
+        - operators do (`|` 1, `^` 2, `&` 3, `=` and `!` 4, `<` and `>` 5, `:` 6, `+` and `-` 7,
+        - `*`, `/` and `%` 8, a letter 0); a function type 4; and a refinement, prefix, suffix or
+        - named node 0, so it is parenthesised wherever it is enclosed.
+        + Les types nommés, les applications, les séquences et les autres atomes valent 10 ; une
+        + projection ou un type capturant 9 ; un type opérateur infixe est noté d'après le premier
+        + caractère de son opérateur, comme le sont les opérateurs de Scala (`|` 1, `^` 2, `&` 3,
+        + `=` et `!` 4, `<` et `>` 5, `:` 6, `+` et `-` 7, `*`, `/` et `%` 8, une lettre 0) ; un
+        + type fonction 4 ; et un nœud de raffinement, préfixe, suffixe ou nommé 0, de sorte qu'il
+        + est mis entre parenthèses partout où il est englobé.
+
+entry .Designator
+  info
+      - a path to a named type or term, such as `scala.collection.immutable.List`, as a tree of selections
+      + un chemin vers un type ou un terme nommé, tel que `scala.collection.immutable.List`, sous
+      + forme d'arbre de sélections
+  detail
+      - A `Designator` names a type or a term by the path of selections which reaches it from a
+      - top-level name: `Top(name)` for the first segment, `Term(parent, name)` for a term
+      - selected from its parent, and `Type(parent, name)` for a type selected from it. A
+      - `Syntax.Simple` or `Syntax.Value` holds one, and `#text` writes it against an `Imports`,
+      - leaving out as much of the path as the imports make unnecessary.
+      + Un `Designator` désigne un type ou un terme par le chemin de sélections qui l'atteint à
+      + partir d'un nom de premier niveau : `Top(name)` pour le premier segment,
+      + `Term(parent, name)` pour un terme sélectionné à partir de son parent, et
+      + `Type(parent, name)` pour un type sélectionné à partir de celui-ci. Un `Syntax.Simple` ou
+      + un `Syntax.Value` en contient un, et `#text` l'écrit selon un `Imports`, en omettant autant
+      + du chemin que les imports le rendent inutile.
+
+      ```scala
+      import soundness.*
+
+      val list = Designator.member(Designator(t"scala.collection.immutable"), t"List")
+      list.qualified                     // t"scala.collection.immutable.List"
+      list.parent                        // the designator of `scala.collection.immutable`
+      list.companionObject.qualified     // t"scala.collection.immutable.List", as a term
+
+      Designator(t"immutable.List#Value") ==
+        Designator.Term(Designator.Type(Designator.Top(t"immutable"), t"List"), t"Value")
+      ```
+
+      - In the text form `Designator(text)` reads, a segment followed by `.` is a term and one
+      - followed by `#` is a type, as Scala writes a projection, `List#Value`; the last segment
+      - is always a term, so a type is made from its parent with `.member`. `#text` writes the
+      - same separators.
+      + Dans la forme textuelle que lit `Designator(text)`, un segment suivi de `.` est un terme et
+      + un segment suivi de `#` est un type, comme Scala écrit une projection, `List#Value` ; le
+      + dernier segment est toujours un terme, de sorte qu'un type se construit à partir de son
+      + parent avec `.member`. `#text` écrit les mêmes séparateurs.
+
+      - Every designator made through `.top`, `.term`, `.member`, `.apply`, `#child`,
+      - `#companionObject` and `#companionType` is interned, so equal designators made that way
+      - are the same instance and compare by reference first. Equality is still structural, and
+      - a designator built with the case constructors equals the interned one; the hash is
+      - computed once. The intern table holds its entries weakly, so it keeps no designator
+      - alive.
+      + Chaque désignateur construit au moyen de `.top`, `.term`, `.member`, `.apply`, `#child`,
+      + `#companionObject` et `#companionType` est interné, de sorte que des désignateurs égaux
+      + construits ainsi sont la même instance et se comparent d'abord par référence. L'égalité
+      + reste structurelle, et un désignateur construit avec les constructeurs de cas est égal à
+      + celui qui est interné ; le hachage n'est calculé qu'une fois. La table d'internement
+      + détient ses entrées faiblement, de sorte qu'elle ne maintient en vie aucun désignateur.
+  refer stenography.Syntax
+  refer stenography.Imports
+  entry .apply
+    info
+        - `Designator(text)`: a designator parsed from its dotted, `#`-separated text form
+        + `Designator(text)` : un désignateur analysé à partir de sa forme textuelle séparée par des
+        + points et des `#`
+    detail
+        - The first segment becomes a `Top`, each segment followed by `.` a `Term` and each
+        - followed by `#` a `Type`; the last segment is a `Term`. `Designator(t"scala")` is the
+        - designator of the `scala` package, as an `Imports` names an imported scope.
+        + Le premier segment devient un `Top`, chaque segment suivi de `.` un `Term` et chaque
+        + segment suivi de `#` un `Type` ; le dernier segment est un `Term`. `Designator(t"scala")`
+        + est le désignateur du package `scala`, tel qu'un `Imports` nomme une portée importée.
+  entry .top
+    info
+        - a top-level designator, `Top(name)`, interned
+        + un désignateur de premier niveau, `Top(name)`, interné
+  entry .term
+    info
+        - a term selected from a parent designator, `Term(parent, name)`, interned
+        + un terme sélectionné à partir d'un désignateur parent, `Term(parent, name)`, interné
+  entry .member
+    info
+        - a type selected from a parent designator, `Type(parent, name)`, interned
+        + un type sélectionné à partir d'un désignateur parent, `Type(parent, name)`, interné
+    detail
+        - The way to make the designator of a type such as `List` within the package
+        - `scala.collection.immutable`, since `Designator(text)` makes its last segment a term.
+        + La façon de construire le désignateur d'un type tel que `List` dans le package
+        + `scala.collection.immutable`, puisque `Designator(text)` fait de son dernier segment un
+        + terme.
+  entry #name
+    info
+        - the last segment of the path: `List` for `scala.collection.immutable.List`
+        + le dernier segment du chemin : `List` pour `scala.collection.immutable.List`
+  entry #parent
+    info
+        - the designator this one is selected from, or `Unset` for a `Top`
+        + le désignateur à partir duquel celui-ci est sélectionné, ou `Unset` pour un `Top`
+  entry #child
+    info
+        - a designator selected from this one: a type if `isType`, otherwise a term
+        + un désignateur sélectionné à partir de celui-ci : un type si `isType`, sinon un terme
+  entry #companionObject
+    info
+        - the term of the same name as a type designator, or the designator itself if it is not a type
+        + le terme de même nom qu'un désignateur de type, ou le désignateur lui-même s'il n'est pas
+        + un type
+  entry #companionType
+    info
+        - the type of the same name as a term designator, or the designator itself if it is not a term
+        + le type de même nom qu'un désignateur de terme, ou le désignateur lui-même s'il n'est pas
+        + un terme
+  entry #qualified
+    info
+        - the full path as text, `scala.collection.immutable.List`: `#text` against `Imports.empty`
+        + le chemin complet sous forme de texte, `scala.collection.immutable.List` : `#text` selon
+        + `Imports.empty`
+  entry #text
+    info
+        - the shortest form of the path an `Imports` allows
+        + la forme la plus courte du chemin que permet un `Imports`
+    detail
+        - Needs an `Imports` in scope. The designator is written by its name alone if
+        - `Imports#direct` holds it (it is reachable through an `export`) or if its parent is
+        - imported; otherwise its parent is written, recursively, followed by `#` if the parent
+        - is a type and `.` if it is a term, and then the name. So with `scala` imported,
+        - `scala.collection.immutable.List` is written `collection.immutable.List`.
+        + Nécessite un `Imports` dans la portée. Le désignateur s'écrit par son seul nom si
+        + `Imports#direct` le contient (il est accessible au moyen d'un `export`) ou si son parent
+        + est importé ; sinon son parent est écrit, récursivement, suivi de `#` si le parent est un
+        + type et de `.` si c'est un terme, puis du nom. Ainsi, avec `scala` importé,
+        + `scala.collection.immutable.List` s'écrit `collection.immutable.List`.
+  entry #symbol
+    info
+        - the separator between this designator's parent and its name
+        + le séparateur entre le parent de ce désignateur et son nom
+    detail
+        - `typeSymbol` (default `#`) if the parent is a type, `termSymbol` (default `.`) if it is a
+        - term or a `Top`, and empty text for a `Top`, which has no parent.
+        + `typeSymbol` (par défaut `#`) si le parent est un type, `termSymbol` (par défaut `.`) si
+        + c'est un terme ou un `Top`, et un texte vide pour un `Top`, qui n'a pas de parent.
+  entry #render
+    info
+        - the full path with `⌗` after a type, for display where `#` would be misread
+        + le chemin complet avec `⌗` après un type, pour un affichage où `#` serait mal lu
+    detail
+        - As `#qualified`, but with the selection of a member from a type written `⌗` rather
+        - than `#`, for a rendering which must not be confused with a Scala projection or a URL
+        - fragment.
+        + Comme `#qualified`, mais avec la sélection d'un membre à partir d'un type écrite `⌗`
+        + plutôt que `#`, pour un rendu qui ne doit pas être confondu avec une projection Scala ou
+        + un fragment d'URL.
+
+entry .Imports
+  info
+      - which names are in scope where a type is written: imported scopes, exports, infix aliases, arrows
+      + quels noms sont dans la portée là où un type est écrit : portées importées, exports, alias
+      + infixes, flèches
+  detail
+      - An `Imports` is what `Syntax#text` and `Designator#text` consult to decide how to write a
+      - type at a particular point in source code. It is a case class of four fields:
+      + Un `Imports` est ce que consultent `Syntax#text` et `Designator#text` pour décider comment
+      + écrire un type à un endroit particulier du code source. C'est une case class de quatre
+      + champs :
+
+      - - `#designators`, the scopes whose members are reachable unqualified: the designators of
+      -   the packages and objects wildcard-imported, and of the enclosing package.
+      - - `#direct`, designators reachable by their leaf name although their owner is not
+      -   imported, as the target of an `export` alias is: `jacinta.Json` is written `Json`
+      -   under `import soundness.*` because `soundness` exports it.
+      - - `#aliases`, a map from the name of a refined type member to the infix type alias in
+      -   scope which refines it, `"Form" -> t"in"`, so that `Play { type Form = Json }` can be
+      -   written `Play in Json`.
+      - - `#pureFuns`, whether the code being written to has pure functions enabled, which
+      -   capture checking implies. It decides whether an unannotated function type is written
+      -   `->` or `=>`.
+      + - `#designators`, les portées dont les membres sont accessibles sans qualification : les
+      +   désignateurs des packages et objets importés par import joker, et du package englobant.
+      + - `#direct`, les désignateurs accessibles par leur nom terminal bien que leur propriétaire
+      +   ne soit pas importé, comme l'est la cible d'un alias `export` : `jacinta.Json` s'écrit
+      +   `Json` sous `import soundness.*` parce que `soundness` l'exporte.
+      + - `#aliases`, une map du nom d'un membre de type raffiné vers l'alias de type infixe dans
+      +   la portée qui le raffine, `"Form" -> t"in"`, de sorte que `Play { type Form = Json }`
+      +   puisse s'écrire `Play in Json`.
+      + - `#pureFuns`, si le code dans lequel on écrit a les fonctions pures activées, ce
+      +   qu'implique le contrôle des captures. Il décide si un type fonction non annoté s'écrit
+      +   `->` ou `=>`.
+
+      ```scala
+      import soundness.*
+
+      val refined = Syntax.Structural
+        ( Syntax.Simple(Designator(t"Addable")),
+          Ledger((t"Operand", Syntax.Simple(Designator(t"Int")))),
+          Ledger() )
+
+      val none = scala.collection.immutable.Set[Designator]()
+
+      refined.text(using Imports(none, none))                                                    // t"Addable { type Operand = Int }"
+      refined.text(using Imports(none, none, scala.collection.immutable.Map("Operand" -> t"by")))  // t"Addable by Int"
+      ```
+
+      - Inside a macro, `Syntax.name` and `stenography.internal.name` build the `Imports` of the
+      - call site themselves. Code which renders types outside any macro — a REPL abbreviating
+      - a diagnostic against its session's imports, a documentation tool — must build one by
+      - hand, and should do so with `.resolve` rather than the constructor, since only then are
+      - the exports and infix aliases of each imported scope included. The fields are standard
+      - library `Set` and `Map`s, written `scala.collection.immutable.Set`, since they are
+      - shared with compiler code.
+      + À l'intérieur d'une macro, `Syntax.name` et `stenography.internal.name` construisent
+      + eux-mêmes l'`Imports` du site d'appel. Du code qui rend des types en dehors de toute macro —
+      + un REPL qui abrège un diagnostic selon les imports de sa session, un outil de
+      + documentation — doit en construire un à la main, et devrait le faire avec `.resolve`
+      + plutôt qu'avec le constructeur, puisque ce n'est qu'ainsi que les exports et les alias
+      + infixes de chaque portée importée sont inclus. Les champs sont des `Set` et des `Map` de la
+      + bibliothèque standard, écrits `scala.collection.immutable.Set`, puisqu'ils sont partagés
+      + avec du code du compilateur.
+  refer stenography.Syntax
+  refer stenography.Designator
+  entry .empty
+    info
+        - no scopes, exports or aliases, with pure functions: everything fully qualified
+        + aucune portée, aucun export ni alias, avec fonctions pures : tout est pleinement qualifié
+    detail
+        - The `Imports` which `Syntax#qualified` and `Designator#qualified` write against.
+        + L'`Imports` selon lequel écrivent `Syntax#qualified` et `Designator#qualified`.
+  entry .resolve
+    info
+        - an `Imports` of imported scopes, extended by each scope's exports and infix aliases
+        + un `Imports` de portées importées, étendu par les exports et les alias infixes de chaque
+        + portée
+    detail
+        - `Imports.resolve(designators, direct)` is `Imports(designators, direct)` with `direct`
+        - extended by `.exports` of every one of `designators`, and `aliases` filled from
+        - `.infixAliases` of each, so that a type reached through a wildcard-imported prelude
+        - such as `soundness` renders as the user would write it. It needs the compiler's
+        - `dotty.tools.dotc.core.Contexts.Context`, and that context must have the quote cache
+        - installed, as a macro's context does and as `delicious.Reifier` installs on a
+        - standalone one. Where two scopes offer an infix alias for the same member, the alias
+        - first by name is chosen, so the result does not depend on the order of the scopes.
+        + `Imports.resolve(designators, direct)` est `Imports(designators, direct)` avec `direct`
+        + étendu par les `.exports` de chacun des `designators`, et `aliases` rempli à partir des
+        + `.infixAliases` de chacun, de sorte qu'un type atteint au moyen d'un prélude importé par
+        + import joker tel que `soundness` se rende comme l'écrirait l'utilisateur. Il nécessite le
+        + `dotty.tools.dotc.core.Contexts.Context` du compilateur, et ce contexte doit avoir le
+        + cache de quotes installé, comme c'est le cas du contexte d'une macro et comme
+        + `delicious.Reifier` l'installe sur un contexte autonome. Lorsque deux portées proposent un
+        + alias infixe pour le même membre, c'est le premier alias par ordre de nom qui est choisi,
+        + de sorte que le résultat ne dépend pas de l'ordre des portées.
+  entry .exports
+    info
+        - the designators reachable by their leaf name through the `export` aliases of a scope
+        + les désignateurs accessibles par leur nom terminal au moyen des alias `export` d'une
+        + portée
+    detail
+        - Takes the designator of a package or object, such as `Designator(t"soundness")`, and
+        - a compiler `Context`, and returns the target of every exported type alias declared in
+        - it, together with that target's companion: under `import soundness.*`, `Textual` and
+        - `Textual.text` are both written unqualified. Only an alias which renames its target, or
+        - applies it to exactly its own type parameters in order, counts; an alias which reshapes
+        - its parameters (a tuple type, `Some`, `<:<`) does not make its target reachable by
+        - name. A scope which does not resolve, or whose declarations cannot be read, contributes
+        - nothing, since rendering must never throw.
+        + Prend le désignateur d'un package ou d'un objet, tel que `Designator(t"soundness")`, et un
+        + `Context` du compilateur, et renvoie la cible de chaque alias de type exporté qui y est
+        + déclaré, accompagnée de l'objet compagnon de cette cible : sous `import soundness.*`,
+        + `Textual` et `Textual.text` s'écrivent tous deux sans qualification. Seul compte un alias
+        + qui renomme sa cible, ou qui l'applique exactement à ses propres paramètres de type dans
+        + l'ordre ; un alias qui remanie ses paramètres (un type tuple, `Some`, `<:<`) ne rend pas
+        + sa cible accessible par son nom. Une portée qui ne se résout pas, ou dont les déclarations
+        + ne peuvent être lues, n'apporte rien, puisque le rendu ne doit jamais lever d'exception.
+  entry .infixAliases
+    info
+        - the infix type aliases declared in a scope which each refine a single type member
+        + les alias de types infixes déclarés dans une portée qui raffinent chacun un unique membre
+        + de type
+    detail
+        - Takes a scope's designator and a compiler `Context`, and returns a map from the refined
+        - member's name to the alias: for `infix type in[refined, form] = refined { type Form =
+        - form }`, the pair `"Form" -> t"in"`. The alias must take exactly two type parameters,
+        - the first as the refinement's parent and the second as the member's alias; any other
+        - infix alias has no two-operand form and is skipped. Where two aliases in the scope
+        - refine the same member, the one first by name wins. Never throws.
+        + Prend le désignateur d'une portée et un `Context` du compilateur, et renvoie une map du
+        + nom du membre raffiné vers l'alias : pour
+        + `infix type in[refined, form] = refined { type Form = form }`, la paire `"Form" -> t"in"`.
+        + L'alias doit prendre exactement deux paramètres de type, le premier comme parent du
+        + raffinement et le second comme alias du membre ; tout autre alias infixe n'a pas de forme
+        + à deux opérandes et est ignoré. Lorsque deux alias de la portée raffinent le même membre,
+        + c'est le premier par ordre de nom qui l'emporte. Ne lève jamais d'exception.
+  entry #designators
+    info
+        - the scopes whose members are written unqualified
+        + les portées dont les membres s'écrivent sans qualification
+  entry #direct
+    info
+        - the designators written by their leaf name, as the targets of `export` aliases are
+        + les désignateurs écrits par leur nom terminal, comme le sont les cibles des alias `export`
+  entry #aliases
+    info
+        - the infix type alias to write for each refined member name, as `"Form" -> t"in"`
+        + l'alias de type infixe à écrire pour chaque nom de membre raffiné, comme `"Form" -> t"in"`
+  entry #pureFuns
+    info
+        - whether pure functions are enabled where the type is written, so `->` is distinct from `=>`
+        + si les fonctions pures sont activées là où le type est écrit, de sorte que `->` se
+        + distingue de `=>`
+    detail
+        - With it set (the default, and the case wherever capture checking is on), a function
+        - type with no capture set is written `A -> B` and an impure one `A => B`. With it unset,
+        - every function arrow is written `=>`, since `A => B` then means the unannotated
+        - `FunctionN`.
+        + Lorsqu'il est positionné (par défaut, et c'est le cas partout où le contrôle des captures
+        + est actif), un type fonction sans ensemble de captures s'écrit `A -> B` et un type impur
+        + `A => B`. Lorsqu'il ne l'est pas, chaque flèche de fonction s'écrit `=>`, puisque `A => B`
+        + désigne alors la `FunctionN` non annotée.
+  entry #has
+    info
+        - whether a designator is one of the imported scopes in `#designators`
+        + si un désignateur fait partie des portées importées de `#designators`
+  entry #hasDirect
+    info
+        - whether a designator is in `#direct`, reachable by its leaf name
+        + si un désignateur est dans `#direct`, accessible par son nom terminal
+
+entry .Bindings
+  info
+      - the names given to recursive types' binders, and the cache of trees, shared while types are converted
+      + les noms donnés aux lieurs des types récursifs, et le cache des arbres, partagés pendant la
+      + conversion des types
+  detail
+      - `Syntax(repr)` takes a `Bindings` as a contextual parameter. It holds two things which
+      - depend on nothing but the types converted: the name given to the binder of each
+      - recursive type, so that a self-reference in a refinement is written consistently, and a
+      - cache of the trees already built. Nothing in it depends on where a tree will be written,
+      - so one `Bindings` may be shared by every conversion in a compilation run, as
+      - `stenography.internal.name` shares one; `Bindings()` makes a fresh one, and is the
+      - default when none is given.
+      + `Syntax(repr)` prend un `Bindings` comme paramètre contextuel. Il contient deux choses qui
+      + ne dépendent que des types convertis : le nom donné au lieur de chaque type récursif, afin
+      + qu'une autoréférence dans un raffinement s'écrive de façon cohérente, et un cache des
+      + arbres déjà construits. Rien en lui ne dépend de l'endroit où un arbre sera écrit, de sorte
+      + qu'un même `Bindings` peut être partagé par toutes les conversions d'une exécution de
+      + compilation, comme `stenography.internal.name` en partage un ; `Bindings()` en crée un
+      + nouveau, et c'est la valeur par défaut lorsqu'aucun n'est fourni.
+
+      - Since the names are shared, the binder of a recursive type may be numbered, `self2`,
+      - where a type converted earlier with the same `Bindings` used the same candidate name.
+      + Comme les noms sont partagés, le lieur d'un type récursif peut être numéroté, `self2`, là où
+      + un type converti plus tôt avec le même `Bindings` a utilisé le même nom candidat.
+  refer stenography.Syntax
+  entry #nameFor
+    info
+        - the name for a binder, the candidate or a numbered variant, the same each time it is asked
+        + le nom d'un lieur, le candidat ou une variante numérotée, le même à chaque demande
+    detail
+        - Takes the binder, compared by reference, and a by-name candidate, derived from the
+        - recursive type's base type with its first letter lowered. The first binder to ask for a
+        - candidate is given it as it is, and later ones the candidate followed by `2`, `3`, ….
+        - Asking again for the same binder returns the name it was first given.
+        + Prend le lieur, comparé par référence, et un candidat passé par nom, dérivé du type de
+        + base du type récursif avec sa première lettre en minuscule. Le premier lieur à demander un
+        + candidat le reçoit tel quel, et les suivants le candidat suivi de `2`, `3`, …. Redemander
+        + pour le même lieur renvoie le nom qui lui a d'abord été donné.
+
+entry .internal
+  info
+      - the macro-side entry points: a type rendered against the imports at a macro's expansion site
+      + les points d'entrée côté macro : un type rendu selon les imports au site d'expansion d'une
+      + macro
+  detail
+      - `internal.name` is what a library's own macro calls to render a type for its users: it
+      - is how frontier writes the types in a missing-given diagnostic, how spectacular's
+      - `Showable` names a type it cannot show, and how hyperbole labels a tree. It does
+      - everything `Syntax.name` does, but takes the type as a `TypeRepr` or a `Type` within an
+      - existing macro rather than as a type argument at the call site.
+      + `internal.name` est ce qu'appelle la propre macro d'une bibliothèque pour rendre un type à
+      + ses utilisateurs : c'est ainsi que frontier écrit les types dans un diagnostic de given
+      + manquant, que le `Showable` de spectacular nomme un type qu'il ne peut afficher, et que
+      + hyperbole étiquette un arbre. Il fait tout ce que fait `Syntax.name`, mais prend le type
+      + sous forme de `TypeRepr` ou de `Type` au sein d'une macro existante plutôt que sous forme
+      + d'argument de type sur le site d'appel.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import scala.quoted.*
+
+      def explain[T: Type](using Quotes): Text = t"no instance for ${stenography.internal.name[T]}"
+      ```
+
+      - The imports are those at the macro's expansion site, gathered as `Syntax.name` gathers
+      - them, with the exports and infix aliases of every wildcard-imported scope and of the
+      - unit's own package. Within one compilation run, the converted trees, each scope's
+      - summary and the union of the summaries for each list of scopes are cached, one cache
+      - per compiler, holding only the latest run and held softly so that a discarded compiler
+      - is not kept alive. Outside a compiler-backed `Quotes`, `name` falls back to the
+      - imports alone.
+      + Les imports sont ceux du site d'expansion de la macro, recueillis comme `Syntax.name` les
+      + recueille, avec les exports et les alias infixes de chaque portée importée par import joker
+      + et du propre package de l'unité. Au sein d'une même exécution de compilation, les arbres
+      + convertis, le résumé de chaque portée et l'union des résumés pour chaque liste de portées
+      + sont mis en cache, un cache par compilateur, ne conservant que la dernière exécution et
+      + détenu par référence souple afin qu'un compilateur abandonné ne soit pas maintenu en vie.
+      + En dehors d'un `Quotes` adossé à un compilateur, `name` se replie sur les seuls imports.
+  refer stenography.Syntax
+  entry .name
+    info
+        - a type rendered as source text against the imports at the current macro expansion
+        + un type rendu sous forme de texte source selon les imports de l'expansion de macro en
+        + cours
+    detail
+        - Takes a `quotes.reflect.TypeRepr`, or a type argument with a `Quotes` in scope, and
+        - returns the text `Syntax.name` would have produced at the expansion site.
+        + Prend un `quotes.reflect.TypeRepr`, ou un argument de type avec un `Quotes` dans la
+        + portée, et renvoie le texte qu'aurait produit `Syntax.name` au site d'expansion.
+  entry .designator
+    info
+        - the macro behind `Syntax.name`: the rendered type as a `Text` literal
+        + la macro derrière `Syntax.name` : le type rendu sous forme de littéral `Text`

@@ -1,0 +1,653 @@
+- ## Colors
++ ## Couleurs
+
+- ### About
++ ### Présentation
+
+- [Colors](https://en.wikipedia.org/wiki/Color_model) are represented in the models which are
+- used to describe them, and are converted between those models. A color written in one model
+- converts to any other with a single method: sRGB for a screen, CIELAB for perceptual
+- distance, HSL for intuitive adjustment, or CMYK for print. Each model is a distinct type, so
+- the compiler knows which model a value is in.
++ Les [couleurs](https://en.wikipedia.org/wiki/Color_model) sont représentées dans les modèles
++ qui servent à les décrire, et sont converties d'un modèle à l'autre. Une couleur écrite dans
++ un modèle se convertit dans n'importe quel autre par une seule méthode : sRGB pour un écran,
++ CIELAB pour la distance perceptuelle, HSL pour un réglage intuitif, ou CMYK pour
++ l'impression. Chaque modèle est un type distinct, si bien que le compilateur sait dans quel
++ modèle se trouve une valeur.
+
+- About 140 named web colors are built in. A color can be mixed with another, lightened or
+- darkened, saturated, or rotated around the color wheel. Where a conversion depends on the
+- conditions of viewing, since the same coordinates look different under daylight and under a
+- tungsten bulb, the conditions are supplied as a color profile in scope.
++ Environ 140 couleurs web nommées sont fournies. Une couleur peut être mélangée à une autre,
++ éclaircie ou assombrie, saturée, ou tournée sur le cercle chromatique. Lorsqu'une conversion
++ dépend des conditions d'observation, puisque les mêmes coordonnées paraissent différentes à
++ la lumière du jour et sous une ampoule à filament de tungstène, ces conditions sont fournies
++ sous la forme d'un profil colorimétrique dans la portée.
+
+- ### On color
++ ### À propos de la couleur
+
+- A color has no single true representation. A monitor mixes red, green and blue. A printer
+- lays down cyan, magenta, yellow and black. A designer thinks in hue, saturation and
+- lightness. And measuring how *different* two colors look calls for a model, CIELAB, which is
+- built so that equal distances correspond to equal perceived differences. Each model suits a
+- different task, and moving between them is arithmetic which is easy to get subtly wrong.
++ Une couleur n'a pas de représentation unique et vraie. Un écran mélange du rouge, du vert et
++ du bleu. Une imprimante dépose du cyan, du magenta, du jaune et du noir. Un graphiste pense en
++ teinte, saturation et luminosité. Et mesurer à quel point deux couleurs paraissent
++ *différentes* exige un modèle, CIELAB, conçu pour que des distances égales correspondent à
++ des différences perçues égales. Chaque modèle convient à une tâche différente, et passer de
++ l'un à l'autre relève d'une arithmétique dans laquelle il est facile de se tromper
++ subtilement.
+
+- Most libraries settle on one model, usually RGB, and leave the rest to the programmer. Here
+- each model has a type of its own, and one operation converts between them. A value's model
+- is therefore always known, and a conversion which needs a profile cannot be written without
+- one. A color's space living in its type is a small instance of
+- [impossible states](../../philosophy/impossible-states.md): mixing two spaces without
+- converting cannot be written.
++ La plupart des bibliothèques s'en tiennent à un seul modèle, généralement RGB, et laissent le
++ reste au programmeur. Ici, chaque modèle a son propre type, et une seule opération convertit
++ de l'un à l'autre. Le modèle d'une valeur est donc toujours connu, et une conversion qui
++ exige un profil ne peut pas s'écrire sans lui. Le fait que l'espace d'une couleur figure dans
++ son type est un petit exemple d'[états impossibles](../../philosophy/impossible-states.md) :
++ mélanger deux espaces sans conversion ne peut pas s'écrire.
+
+- Profiles exist because some models are anchored to human perception, not to a device, and
+- perception depends on the light. CIELAB and XYZ describe a color relative to a
+- *reference white*, which is the color of the illumination which the eye has adapted to. That
+- reference differs between daylight, a tungsten bulb and a fluorescent tube. The same surface
+- reflects the same physics under each, yet looks different, so a conversion into or out of
+- these models must be told which conditions it assumes.
++ Les profils existent parce que certains modèles sont ancrés dans la perception humaine, et non
++ dans un périphérique, et que la perception dépend de la lumière. CIELAB et XYZ décrivent une
++ couleur relativement à un *blanc de référence*, qui est la couleur de l'éclairage auquel l'œil
++ s'est adapté. Cette référence diffère entre la lumière du jour, une ampoule à filament de
++ tungstène et un tube fluorescent. Une même surface obéit sous chacun à la même physique, et
++ pourtant paraît différente ; une conversion vers ou depuis ces modèles doit donc savoir quelles
++ conditions elle suppose.
+
+- Everything comes from the `soundness` package. A color profile is chosen in scope, and the
+- other imports let the samples print their results:
++ Tout provient du package `soundness`. Un profil colorimétrique est choisi dans la portée, et
++ les autres imports permettent aux exemples d'afficher leurs résultats :
+
+```scala
+import soundness.*
+import stdios.javaLangSystemStdio, termcapDefinitions.xtermTrueColorTermcap
+
+given daylight: Colorimetry = colorimetry.daylightColorimetry
+```
+
+- ### Color spaces
++ ### Espaces colorimétriques
+
+- Each model is a type whose fields are its coordinates. They are given as fractions between
+- 0 and 1, except hue, which is a point on a circle, and is given as an `Angle`. A color is
+- constructed directly in whichever model is convenient:
++ Chaque modèle est un type dont les champs sont ses coordonnées. Elles sont données sous forme
++ de fractions entre 0 et 1, sauf la teinte, qui est un point sur un cercle, et qui est donnée
++ sous forme d'`Angle`. Une couleur se construit directement dans le modèle le plus commode :
+
+```scala
+val red = Srgb(0.8, 0.2, 0.2)
+val slate = Hsl(208.8.deg, 0.3, 0.4)
+```
+
+- Seven models are available, and a value in any of them is a `Color`:
++ Sept modèles sont disponibles, et une valeur dans n'importe lequel d'entre eux est une
++ `Color` :
+
+```tabular
+- column  Model
+- column  Coordinates
+- column  Suits
+- row  `Srgb`  `red`, `green`, `blue`  a screen
+- row  `Hsl`  `hue`, `saturation`, `lightness`  intuitive adjustment
+- row  `Hsv`  `hue`, `saturation`, `value`  intuitive adjustment, and tints and shades
+- row  `Cielab`  `lightness`, `blueYellow`, `greenRed`  perceptual distance and mixing
+- row  `Xyz`  `x`, `y`, `z`  a device-independent reference
+- row  `Cmy`  `cyan`, `magenta`, `yellow`  print
+- row  `Cmyk`  `cyan`, `magenta`, `yellow`, `key`  print, with a black ink
++ column  Modèle
++ column  Coordonnées
++ column  Convient à
++ row  `Srgb`  `red`, `green`, `blue`  un écran
++ row  `Hsl`  `hue`, `saturation`, `lightness`  un réglage intuitif
++ row  `Hsv`  `hue`, `saturation`, `value`  un réglage intuitif, ainsi que teintes et nuances
++ row  `Cielab`  `lightness`, `blueYellow`, `greenRed`  la distance perceptuelle et le mélange
++ row  `Xyz`  `x`, `y`, `z`  une référence indépendante du périphérique
++ row  `Cmy`  `cyan`, `magenta`, `yellow`  l'impression
++ row  `Cmyk`  `cyan`, `magenta`, `yellow`, `key`  l'impression, avec une encre noire
+```
+
+- ### Converting between spaces
++ ### Conversion entre espaces
+
+- The `to` method converts a color to another model:
++ La méthode `to` convertit une couleur dans un autre modèle :
+
+```scala
+val lab = red.to[Cielab]
+val back = lab.to[Srgb]
+```
+
+```scala fuel
+run
+##
+Out.println(lab.inspect)
+Out.println(back.inspect)
+Out.println(slate.to[Srgb].inspect)
+```
+
+- Converting to CIELAB and back gives the original red, to within rounding.
++ Une conversion vers CIELAB puis retour redonne le rouge d'origine, aux arrondis près.
+
+- Conversions compose. A color reaches any model from any other, passing through the spaces
+- between without the caller arranging it. Converting from sRGB to CIELAB or XYZ draws on the
+- `Colorimetry` in scope, since those models are defined relative to a reference white.
++ Les conversions se composent. Une couleur atteint n'importe quel modèle depuis n'importe quel
++ autre, en passant par les espaces intermédiaires sans que l'appelant ait à s'en charger. La
++ conversion de sRGB vers CIELAB ou XYZ s'appuie sur la `Colorimetry` dans la portée, puisque
++ ces modèles sont définis relativement à un blanc de référence.
+
+- ### Named colors
++ ### Couleurs nommées
+
+- The named web colors live on `WebColors`, and each is a `Color in Srgb`:
++ Les couleurs web nommées se trouvent dans `WebColors`, et chacune est une `Color in Srgb` :
+
+```scala fuel
+run
+##
+Out.println(WebColors.Ivory.inspect)
+Out.println(WebColors.DeepPink.inspect)
+Out.println(WebColors.SteelBlue.inspect)
+```
+
+- `WebColors.colors` is the whole list, which is useful for iterating over the palette.
++ `WebColors.colors` est la liste complète, utile pour parcourir la palette.
+
+- ### Mixing
++ ### Mélange
+
+- Two colors mix into one. By default the result is halfway between them, and any other ratio
+- may be given:
++ Deux couleurs se mélangent en une seule. Par défaut, le résultat se situe à mi-chemin entre
++ elles, et toute autre proportion peut être donnée :
+
+```scala fuel
+run
+##
+Out.println(Srgb(0.2, 0.4, 0.6).mix(Srgb(0.8, 0.6, 0.4)).inspect)
+Out.println(WebColors.Ivory.to[Cielab].mix(WebColors.DeepPink.to[Cielab]).to[Srgb].inspect)
+```
+
+- Mixing in sRGB blends the values on the screen. Mixing in CIELAB blends what the eye
+- perceives, which gives a more natural midpoint between two colors.
++ Mélanger en sRGB mélange les valeurs à l'écran. Mélanger en CIELAB mélange ce que l'œil
++ perçoit, ce qui donne un point médian plus naturel entre deux couleurs.
+
+- ### Mixing by parts
++ ### Mélange par parts
+
+- `mix` takes two colors at a time. To combine several, multiply each by the number of parts
+- of it which go into the mixture, and add them up, as a painter measures paint onto a
+- palette. A mode of mixing is chosen by importing one:
++ `mix` prend deux couleurs à la fois. Pour en combiner plusieurs, on multiplie chacune par le
++ nombre de parts qui en entrent dans le mélange, et on les additionne, comme un peintre dose sa
++ peinture sur une palette. Un mode de mélange se choisit en l'important :
+
+```scala fuel
+run
+##
+locally:
+  import mixing.proportionalMixing
+
+  val mixture = 5*WebColors.Red + 3*WebColors.Yellow
+
+  Out.println(mixture.to[Srgb].inspect)
+  Out.println(mixture.to[Hsl].hue.degrees.inspect)
+  Out.println((1*WebColors.Red + 1*WebColors.Lime + 1*WebColors.Blue).to[Srgb].inspect)
+```
+
+- `5*Red` is a `Daub`: an amount of a color, which is still that color. One part of red and
+- five parts of red are both red. A `Daub` is a `Color`, so a mixture is converted, displayed
+- and measured like any other color, and the parts matter only when more paint is added.
++ `5*Red` est un `Daub` : une quantité d'une couleur, qui reste cette couleur. Une part de rouge
++ et cinq parts de rouge sont toutes deux du rouge. Un `Daub` est une `Color` ; un mélange se
++ convertit, s'affiche et se mesure donc comme n'importe quelle autre couleur, et les parts ne
++ comptent que lorsqu'on ajoute de la peinture.
+
+- Parts are proportions. `5*Red + 3*Yellow` and `50*Red + 30*Yellow` are the same color, and a
+- third daub is weighted against the total so far, not against its neighbor, so the last line
+- is an even third of each.
++ Les parts sont des proportions. `5*Red + 3*Yellow` et `50*Red + 30*Yellow` sont la même
++ couleur, et une troisième touche est pondérée par rapport au total accumulé, non par rapport à
++ sa voisine ; la dernière ligne contient donc exactement un tiers de chacune.
+
+- ### Mixing modes
++ ### Modes de mélange
+
+- `proportionalMixing` averages the colors, which is what `mix` does. The other modes are the
+- blend modes of Photoshop and GIMP, as the W3C compositing specification defines them. Each
+- computes a channel from the backdrop, *b*, and the layer, *l*:
++ `proportionalMixing` fait la moyenne des couleurs, ce que fait `mix`. Les autres modes sont
++ les modes de fusion de Photoshop et de GIMP, tels que les définit la spécification de
++ composition du W3C. Chacun calcule un canal à partir de l'arrière-plan, *b*, et du calque,
++ *l* :
+
+```tabular
+- column  Mode
+- column  Each channel becomes
+- row  `proportionalMixing`  *l*, so the result is a weighted average
+- row  `multiplyMixing`  *b*·*l*
+- row  `screenMixing`  *b* + *l* − *b*·*l*
+- row  `overlayMixing`  2·*b*·*l* where *b* ≤ ½, otherwise 1 − 2·(1 − *b*)·(1 − *l*)
+- row  `hardLightMixing`  as overlay, with *l* rather than *b* deciding
+- row  `softLightMixing`  a gentler hard light, darkening where *l* ≤ ½ and lightening above
+- row  `darkenMixing`  the lesser of *b* and *l*
+- row  `lightenMixing`  the greater of *b* and *l*
+- row  `colorDodgeMixing`  *b*/(1 − *l*), at most 1
+- row  `colorBurnMixing`  1 − (1 − *b*)/*l*, at least 0
+- row  `differenceMixing`  the absolute difference of *b* and *l*
+- row  `exclusionMixing`  *b* + *l* − 2·*b*·*l*
+- row  `linearDodgeMixing`  *b* + *l*, at most 1
+- row  `linearBurnMixing`  *b* + *l* − 1, at least 0
++ column  Mode
++ column  Chaque canal devient
++ row  `proportionalMixing`  *l*, si bien que le résultat est une moyenne pondérée
++ row  `multiplyMixing`  *b*·*l*
++ row  `screenMixing`  *b* + *l* − *b*·*l*
++ row  `overlayMixing`  2·*b*·*l* lorsque *b* ≤ ½, sinon 1 − 2·(1 − *b*)·(1 − *l*)
++ row  `hardLightMixing`  comme la superposition, mais c'est *l* et non *b* qui décide
++ row  `softLightMixing`  lumière crue adoucie : assombrit si *l* ≤ ½, éclaircit au-delà
++ row  `darkenMixing`  le plus petit de *b* et *l*
++ row  `lightenMixing`  le plus grand de *b* et *l*
++ row  `colorDodgeMixing`  *b*/(1 − *l*), au plus 1
++ row  `colorBurnMixing`  1 − (1 − *b*)/*l*, au moins 0
++ row  `differenceMixing`  la différence absolue de *b* et *l*
++ row  `exclusionMixing`  *b* + *l* − 2·*b*·*l*
++ row  `linearDodgeMixing`  *b* + *l*, au plus 1
++ row  `linearBurnMixing`  *b* + *l* − 1, au moins 0
+```
+
+- Each is imported in the same way, from the package `mixing`. Multiplying yellow by cyan
+- gives a green, as mixing paint does:
++ Chacun s'importe de la même façon, depuis le package `mixing`. Multiplier du jaune par du
++ cyan donne un vert, comme le fait le mélange de peintures :
+
+```scala fuel
+run
+##
+locally:
+  import mixing.multiplyMixing
+
+  Out.println((1*WebColors.Yellow + 1*WebColors.Cyan).to[Srgb].inspect)
+```
+
+- A daub's share of the total parts acts as its opacity. The mode is applied at full strength,
+- and the result is mixed back in that proportion, exactly as the opacity slider of a layer
+- works. Only proportional mixing is therefore commutative. Under any other mode,
+- `5*Red + 3*Yellow` differs from `3*Yellow + 5*Red`, just as reordering two layers does.
++ La part d'une touche dans le total des parts tient lieu d'opacité. Le mode est appliqué à
++ pleine intensité, puis le résultat est remélangé dans cette proportion, exactement comme
++ fonctionne le curseur d'opacité d'un calque. Seul le mélange proportionnel est donc
++ commutatif. Sous tout autre mode, `5*Red + 3*Yellow` diffère de `3*Yellow + 5*Red`, tout
++ comme lorsqu'on intervertit deux calques.
+
+- Every mode but the proportional one reads coordinates as fractions of full intensity, so
+- those modes are offered only for sRGB, CMY and CMYK. Asking for `multiplyMixing` in CIELAB,
+- where lightness runs to 100, does not compile, instead of quietly meaning something else.
++ Tous les modes sauf le mode proportionnel lisent les coordonnées comme des fractions de
++ l'intensité maximale ; ces modes ne sont donc proposés que pour sRGB, CMY et CMYK. Demander
++ `multiplyMixing` en CIELAB, où la luminosité va jusqu'à 100, ne compile pas, plutôt que de
++ signifier silencieusement autre chose.
+
+- ### Adjusting
++ ### Réglages
+
+- Hue, saturation and lightness are what a person reaches for to adjust a color, so those
+- operations live on `Hsl` and `Hsv`. Convert into one, adjust, and convert back:
++ La teinte, la saturation et la luminosité sont ce qu'on utilise naturellement pour régler une
++ couleur ; ces opérations se trouvent donc sur `Hsl` et `Hsv`. On convertit vers l'un d'eux, on
++ règle, puis on reconvertit :
+
+```scala
+val tomato = WebColors.Tomato.to[Hsl]
+```
+
+```scala fuel
+run
+##
+Out.println(tomato.rotate(180.deg).to[Srgb].inspect)
+Out.println(tomato.lighten(0.2).to[Srgb].inspect)
+Out.println(tomato.desaturate.to[Srgb].inspect)
+```
+
+- The three are the complementary color, a color one fifth of the way toward white, and a
+- gray of the same lightness.
++ Les trois sont la couleur complémentaire, une couleur rapprochée d'un cinquième du blanc, et
++ un gris de même luminosité.
+
+- `rotate` turns the hue by an `Angle`, so the unit is written down, not assumed: `180.deg`
+- and `π.rad` are the same half-turn. The adjustments are:
++ `rotate` tourne la teinte d'un `Angle` ; l'unité est donc écrite, et non supposée : `180.deg`
++ et `π.rad` sont le même demi-tour. Les réglages sont :
+
+```tabular
+- column  Operation
+- column  On
+- column  Gives
+- row  `rotate(angle)`  `Hsl`, `Hsv`  the hue turned by an angle
+- row  `complement`  `Hsl`, `Hsv`  the hue turned by a half-turn
+- row  `saturate`, `desaturate`  `Hsl`, `Hsv`  full saturation, or none
+- row  `pure`  `Hsl`, `Hsv`  the hue at full saturation and middle lightness, or full value
+- row  `lighten(amount)`  `Hsl`  lightness moved that fraction of the way toward white
+- row  `darken(amount)`  `Hsl`  lightness moved that fraction of the way toward black
+- row  `tint(white)`  `Hsv`  saturation reduced by a fraction, toward white
+- row  `shade(black)`  `Hsv`  value reduced by a fraction, toward black
+- row  `tone(black, white)`  `Hsv`  both
+- row  `mix(other, ratio)`  `Srgb`, `Cielab`  a blend of two colors, halfway by default
+- row  `delta(other)`  `Cielab`  the perceptual distance between two colors
++ column  Opération
++ column  Sur
++ column  Donne
++ row  `rotate(angle)`  `Hsl`, `Hsv`  la teinte tournée d'un angle
++ row  `complement`  `Hsl`, `Hsv`  la teinte tournée d'un demi-tour
++ row  `saturate`, `desaturate`  `Hsl`, `Hsv`  une saturation maximale, ou nulle
++ row  `pure`  `Hsl`, `Hsv`  la teinte saturée au maximum, à luminosité moyenne ou valeur maximale
++ row  `lighten(amount)`  `Hsl`  la luminosité rapprochée du blanc de cette fraction de l'écart
++ row  `darken(amount)`  `Hsl`  la luminosité rapprochée du noir de cette fraction de l'écart
++ row  `tint(white)`  `Hsv`  la saturation réduite d'une fraction, vers le blanc
++ row  `shade(black)`  `Hsv`  la valeur réduite d'une fraction, vers le noir
++ row  `tone(black, white)`  `Hsv`  les deux
++ row  `mix(other, ratio)`  `Srgb`, `Cielab`  un mélange de deux couleurs, à mi-chemin par défaut
++ row  `delta(other)`  `Cielab`  la distance perceptuelle entre deux couleurs
+```
+
+- A hue is a point on a circle, not a quantity, so a rotation always lands back in the range
+- which the eye reads as a color. Turning past a full circle, or backwards past zero, wraps
+- round, and the hue is never negative:
++ Une teinte est un point sur un cercle, et non une quantité ; une rotation retombe donc toujours
++ dans la plage que l'œil lit comme une couleur. Dépasser un tour complet, ou repasser zéro en
++ arrière, fait reboucler, et la teinte n'est jamais négative :
+
+```scala fuel
+run
+##
+Out.println(tomato.hue.degrees.inspect)
+Out.println(tomato.rotate((-30).deg).hue.degrees.inspect)
+```
+
+- ### Perceptual distance
++ ### Distance perceptuelle
+
+- CIELAB exists so that the distance between two colors matches how different they look.
+- `delta` gives that distance:
++ CIELAB existe pour que la distance entre deux couleurs corresponde à leur différence
++ apparente. `delta` donne cette distance :
+
+```scala fuel
+run
+##
+Out.println(WebColors.DeepPink.to[Cielab].delta(WebColors.Tomato.to[Cielab]).inspect)
+Out.println(WebColors.DeepPink.to[Cielab].delta(WebColors.SteelBlue.to[Cielab]).inspect)
+```
+
+- A small delta means that two colors are hard to tell apart, and a large one means that they
+- contrast. This is the right measure for choosing a readable foreground against a
+- background, where comparing raw RGB values would mislead.
++ Un petit delta signifie que deux couleurs sont difficiles à distinguer, et un grand qu'elles
++ contrastent. C'est la bonne mesure pour choisir un premier plan lisible sur un arrière-plan,
++ là où comparer des valeurs RGB brutes induirait en erreur.
+
+- ### Hex and the terminal
++ ### Hexadécimal et terminal
+
+- The `rgb"…"` [interpolator] reads a
+- [hexadecimal](https://en.wikipedia.org/wiki/Web_colors) color, with or without a leading
+- hash, and checks it at [compiletime]:
++ L'[interpolateur] `rgb"…"` lit une couleur
++ [hexadécimale](https://en.wikipedia.org/wiki/Web_colors), avec ou sans dièse initial, et la
++ vérifie [à la compilation][compilation] :
+
+```scala fuel
+run
+##
+Out.println(rgb"#abcdef".inspect)
+Out.println(rgb"ffffff".inspect)
+Out.println(rgb"#abcdef".color.inspect)
+```
+
+```scala fuel
+compile
+errors show
+##
+rgb"#abcdeg"
+```
+
+- The result is a `Chroma`: a color whose channels are whole numbers from 0 to 255. That is
+- the form which a terminal expects, so a color is displayed as
+- [styled terminal output](terminal.md#styled-text):
++ Le résultat est une `Chroma` : une couleur dont les canaux sont des nombres entiers de 0 à
++ 255. C'est la forme qu'attend un terminal ; une couleur s'affiche donc sous forme de
++ [sortie stylée dans le terminal](terminal.md#styled-text) :
+
+```scala fuel
+run
+##
+Out.println(e"${Bg(WebColors.Tomato)}( tomato ) ${Bg(WebColors.SteelBlue)}( steel blue ) ${Bg(rgb"#abcdef")}( #abcdef )")
+```
+
+- `color` converts the other way, to the `Color in Srgb` which every perceptual conversion,
+- `Palette` role and `Daub` accepts. A hex literal is therefore a starting point for
+- everything above, as well as an endpoint.
++ `color` convertit dans l'autre sens, vers la `Color in Srgb` qu'acceptent toutes les
++ conversions perceptuelles, tous les rôles de `Palette` et tous les `Daub`. Un littéral
++ hexadécimal est donc un point de départ pour tout ce qui précède, autant qu'un point
++ d'arrivée.
+
+- ### Color profiles
++ ### Profils colorimétriques
+
+- A `Colorimetry` describes the illuminant and the observer which a conversion that depends on
+- a profile assumes. `colorimetry.daylightColorimetry` suits most work for a screen. Others
+- model incandescent and fluorescent light, and the standard illuminants. The profile is a
+- [given], so every conversion within its scope uses it, and none has to name it:
++ Une `Colorimetry` décrit l'illuminant et l'observateur que suppose une conversion dépendant
++ d'un profil. `colorimetry.daylightColorimetry` convient à la plupart des travaux destinés à
++ un écran. D'autres modélisent la lumière incandescente et fluorescente, ainsi que les
++ illuminants standard. Le profil est un [given] ; chaque conversion dans sa portée l'utilise
++ donc, sans qu'aucune ait à le nommer :
+
+```scala fuel
+run
+##
+Out.println(WebColors.Ivory.to[Cielab].inspect)
+
+locally:
+  given tungsten: Colorimetry = colorimetry.incandescentTungstenColorimetry
+
+  Out.println(WebColors.Ivory.to[Cielab].inspect)
+```
+
+- The same color has different CIELAB coordinates under daylight and under tungsten light.
++ La même couleur a des coordonnées CIELAB différentes à la lumière du jour et sous une lumière
++ de tungstène.
+
+- The package `colorimetry` names each profile after its CIE standard illuminant, or after a
+- lamp which approximates one:
++ Le package `colorimetry` nomme chaque profil d'après son illuminant standard de la CIE, ou
++ d'après une lampe qui en donne une approximation :
+
+```tabular
+- column  Given
+- column  Illuminant
+- column  Also named
+- row  `incandescentTungstenColorimetry`  A
+- row  `oldDirectSunlightAtNoonColorimetry`  B
+- row  `oldDaylightColorimetry`  C
+- row  `iccProfilePcsColorimetry`  D50
+- row  `midMorningDaylightColorimetry`  D55
+- row  `daylightColorimetry`  D65  `srgbColorimetry`, `adobeRgbColorimetry`
+- row  `northSkyDaylightColorimetry`  D75
+- row  `equalEnergyColorimetry`  E
+- row  `daylightFluorescentF1Colorimetry`  F1
+- row  `coolFluorescentColorimetry`  F2
+- row  `whiteFluorescentColorimetry`  F3
+- row  `warmWhiteFluorescentColorimetry`  F4
+- row  `daylightFluorescentF5Colorimetry`  F5
+- row  `liteWhiteFluorescentColorimetry`  F6
+- row  `daylightFluorescentF7Colorimetry`  F7  `d65SimulatorColorimetry`
+- row  `sylvaniaF40Colorimetry`  F8  `d50SimulatorColorimetry`
+- row  `coolWhiteFluorescentColorimetry`  F9
+- row  `philipsTl85Colorimetry`  F10  `ultralume50Colorimetry`
+- row  `philipsTl84Colorimetry`  F11  `ultralume40Colorimetry`
+- row  `philipsTl83Colorimetry`  F12  `ultralume30Colorimetry`
++ column  Given
++ column  Illuminant
++ column  Autre nom
++ row  `incandescentTungstenColorimetry`  A
++ row  `oldDirectSunlightAtNoonColorimetry`  B
++ row  `oldDaylightColorimetry`  C
++ row  `iccProfilePcsColorimetry`  D50
++ row  `midMorningDaylightColorimetry`  D55
++ row  `daylightColorimetry`  D65  `srgbColorimetry`, `adobeRgbColorimetry`
++ row  `northSkyDaylightColorimetry`  D75
++ row  `equalEnergyColorimetry`  E
++ row  `daylightFluorescentF1Colorimetry`  F1
++ row  `coolFluorescentColorimetry`  F2
++ row  `whiteFluorescentColorimetry`  F3
++ row  `warmWhiteFluorescentColorimetry`  F4
++ row  `daylightFluorescentF5Colorimetry`  F5
++ row  `liteWhiteFluorescentColorimetry`  F6
++ row  `daylightFluorescentF7Colorimetry`  F7  `d65SimulatorColorimetry`
++ row  `sylvaniaF40Colorimetry`  F8  `d50SimulatorColorimetry`
++ row  `coolWhiteFluorescentColorimetry`  F9
++ row  `philipsTl85Colorimetry`  F10  `ultralume50Colorimetry`
++ row  `philipsTl84Colorimetry`  F11  `ultralume40Colorimetry`
++ row  `philipsTl83Colorimetry`  F12  `ultralume30Colorimetry`
+```
+
+- ### Themes and palettes
++ ### Thèmes et palettes
+
+- A `Theme` names a coordinated set of colors: a background, a foreground, a list of accents,
+- and whether it is a light theme or a dark one. A `Palette` selects from one by role, and
+- offers `subdue` and `accent`, to push a color toward the background or away from it. The
+- Solarized theme is built in, and is chosen by import:
++ Un `Theme` nomme un ensemble coordonné de couleurs : un arrière-plan, un premier plan, une
++ liste de couleurs d'accentuation, et le fait qu'il s'agit d'un thème clair ou sombre. Une
++ `Palette` y fait son choix par rôle, et propose `subdue` et `accent`, pour rapprocher une
++ couleur de l'arrière-plan ou l'en éloigner. Le thème Solarized est fourni, et se choisit par
++ un import :
+
+```scala
+import luminosity.darkBrightness
+import themes.solarizedTheme
+```
+
+```scala fuel
+run
+##
+Out.println(summon[Theme].background.inspect)
+Out.println(summon[Theme].luminosity.inspect)
+```
+
+- `luminosity.darkBrightness` and `luminosity.lightBrightness` select the variant of a theme
+- which offers both, so that terminal output which is styled through a palette adapts to the
+- terminal's background.
++ `luminosity.darkBrightness` et `luminosity.lightBrightness` choisissent la variante d'un thème
++ qui propose les deux, afin que la sortie de terminal stylée au moyen d'une palette s'adapte à
++ l'arrière-plan du terminal.
+
+- A palette's roles are of the type `Color in Srgb`, so a palette which is written from hex
+- literals gives each role an `rgb"…".color`.
++ Les rôles d'une palette sont du type `Color in Srgb` ; une palette écrite à partir de
++ littéraux hexadécimaux donne donc à chaque rôle un `rgb"…".color`.
+
+- ### Pixel layouts
++ ### Disposition des pixels
+
+- A color on a screen is not usually a triple of doubles, but a packed integer, and how it is
+- packed varies: eight bits for each channel, with or without alpha, five-six-five for a
+- 16-bit display, ten bits for each channel for high dynamic range, or a single channel for
+- grayscale. A *layout* states that packing as a tuple of channel types, with the most
+- significant first, and the compiler works out the rest:
++ À l'écran, une couleur n'est généralement pas un triplet de doubles, mais un entier compacté,
++ et la manière de le compacter varie : huit bits par canal, avec ou sans alpha, cinq-six-cinq
++ pour un affichage 16 bits, dix bits par canal pour la haute dynamique, ou un canal unique pour
++ les niveaux de gris. Une *disposition* énonce ce compactage sous forme de tuple de types de
++ canaux, le plus significatif en premier, et le compilateur déduit le reste :
+
+```scala
+import Channel.{Blue, Green, Grey, Red}
+
+type Rgb565 = (Red[5], Green[6], Blue[5])
+
+val bits = scala.compiletime.constValue[Channel.TotalBits[Rgb]]
+val narrowest = summon[Channel.Storage[Rgb565] =:= Short]
+val grey = summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+```
+
+- `Rgb` takes 24 bits, and the narrowest types which hold an `Rgb565` and an eight-bit gray
+- are `Short` and `Byte`. Three layouts are predefined:
++ `Rgb` occupe 24 bits, et les types les plus étroits pouvant contenir un `Rgb565` et un gris
++ sur huit bits sont `Short` et `Byte`. Trois dispositions sont prédéfinies :
+
+```tabular
+- column  Layout
+- column  Channels
+- column  Bits
+- row  `Rgb`  `(Red[8], Green[8], Blue[8])`  24
+- row  `Rgba`  `(Red[8], Green[8], Blue[8], Alpha[8])`  32
+- row  `Cmyk8`  `(Cyan[8], Magenta[8], Yellow[8], Key[8])`  32
++ column  Disposition
++ column  Canaux
++ column  Bits
++ row  `Rgb`  `(Red[8], Green[8], Blue[8])`  24
++ row  `Rgba`  `(Red[8], Green[8], Blue[8], Alpha[8])`  32
++ row  `Cmyk8`  `(Cyan[8], Magenta[8], Yellow[8], Key[8])`  32
+```
+
+- `Channel` is reached through its library's package here, because `import soundness.*`
+- already supplies a `Channel` of its own, the WebSocket channel.
++ `Channel` est atteint ici par le package de sa bibliothèque, car `import soundness.*` fournit
++ déjà son propre `Channel`, le canal WebSocket.
+
+- Each channel's shift and mask follow from its position in the tuple, and are computed as the
+- code compiles. Reading a channel from a packed pixel is therefore a single instruction to
+- shift and mask, with no dispatch at runtime. A `Pixel[layout]` is an unboxed integer which
+- holds the packed value. It converts to and from `Chroma`, `Srgb` and `Cmyk` exactly where
+- its layout supports it: a layout with no alpha channel has no alpha to read.
++ Le décalage et le masque de chaque canal découlent de sa position dans le tuple, et sont
++ calculés lors de la compilation du code. Lire un canal dans un pixel compacté se réduit donc à
++ une seule instruction de décalage et de masquage, sans aucune répartition à l'exécution. Un
++ `Pixel[layout]` est un entier non boxé qui contient la valeur compactée. Il se convertit vers
++ et depuis `Chroma`, `Srgb` et `Cmyk` exactement là où sa disposition le permet : une
++ disposition sans canal alpha n'a pas d'alpha à lire.
+
+- [Images](images.md) use this to give a raster typed access to its pixels, and it is where a
+- color which was computed in one of the perceptual spaces above ends up when it reaches a
+- screen. [Numbers](numbers.md#bit-manipulation) describes the bit patterns beneath.
++ Les [images](images.md) s'en servent pour donner à un raster un accès typé à ses pixels, et
++ c'est là qu'aboutit une couleur calculée dans l'un des espaces perceptuels ci-dessus lorsqu'elle
++ atteint un écran. [Nombres](numbers.md#bit-manipulation) décrit les motifs de bits sous-jacents.
+
+- ### Related
++ ### Voir aussi
+
+- - [Terminal](terminal.md#styled-text) styles text with these colors.
+- - [CSS](css.md) and [SVG](svg.md) write them into stylesheets and drawings.
+- - [Charts](charts.md) picks series colors from a palette.
+- - [Images](images.md) reads and writes rasters of pixels.
+- - [Gauges](gauges.md) and [syntax highlighting](syntax-highlighting.md) color their output, and [geography](geography.md) turns hues by its angles.
++ - [Terminal](terminal.md#styled-text) stylise du texte avec ces couleurs.
++ - [CSS](css.md) et [SVG](svg.md) les écrivent dans des feuilles de style et des dessins.
++ - [Graphiques](charts.md) choisit les couleurs des séries dans une palette.
++ - [Images](images.md) lit et écrit des rasters de pixels.
++ - [Jauges](gauges.md) et [coloration syntaxique](syntax-highlighting.md) colorent leur sortie, et
++   [géographie](geography.md) fait tourner les teintes selon ses angles.

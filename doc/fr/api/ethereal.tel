@@ -1,0 +1,2419 @@
+tel 1.0
+
+base ethereal
+import soundness
+
+info
+    - daemonized command-line applications: one warm JVM serving every invocation through a native launcher
+    + des applications en ligne de commande transformées en démons : une JVM chaude qui sert chaque
+    + invocation via un lanceur natif
+detail
+    - _Ethereal_ turns a command-line application into a **daemon**: a JVM which starts on the
+    - first invocation and stays resident, so that every later invocation is dispatched to it by
+    - a small native **launcher** and returns at native-tool speed, with the JVM's startup cost
+    - and its just-in-time compiler's warm-up paid once rather than on every run. The
+    - application's code is the same as a plain CLI's: the body of an `application` block,
+    - wrapped in `cli` instead.
+    + _Ethereal_ transforme une application en ligne de commande en **démon** : une JVM qui démarre
+    + à la première invocation et reste résidente, si bien que chaque invocation ultérieure lui est
+    + transmise par un petit **lanceur** natif et se termine à la vitesse d'un outil natif, le coût
+    + de démarrage de la JVM et la mise en température de son compilateur à la volée n'étant payés
+    + qu'une fois plutôt qu'à chaque exécution. Le code de l'application est le même que celui
+    + d'une CLI ordinaire : le corps d'un bloc `application`, enveloppé dans `cli` à la place.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    import backstops.stackTraceBackstop
+    import executives.completionsExecutive
+    import interpreters.posixInterpreter
+    import threads.virtualThreads
+
+    @main
+    def mytool(): Unit = cli:
+      execute:
+        Out.println(t"Hello world")
+        Exit.Ok
+    ```
+
+    - What differs is the process model. A plain `application` is one process per invocation,
+    - and its arguments, environment, working directory, standard streams and signals are the
+    - process's own. Under `cli`, one process — the daemon — serves many invocations at once,
+    - and *none* of those things is global: each invocation arrives on its own connection, with
+    - its own arguments, its own `Environment`, its own working directory, its own stdin, stdout
+    - and stderr, its own exit status and its own signals, all forwarded by the launcher and
+    - all read through the same `arguments`, `Out`, `Err`, `Exit`, `trap` and `Environment` as a
+    - plain application uses. Scala's own `println` writes to the daemon's `System.out`, which
+    - reaches no user: output goes through `Out` and `Err`, which resolve the invocation's
+    - `Stdio`, and a library that writes `System.out` is redirected with `Stdio.divert`, which
+    - follows the thread and the tasks spawned under it rather than the JVM.
+    + Ce qui diffère, c'est le modèle de processus. Une `application` ordinaire est un processus
+    + par invocation, et ses arguments, son environnement, son répertoire de travail, ses flux
+    + standard et ses signaux sont ceux du processus. Sous `cli`, un seul processus — le démon —
+    + sert de nombreuses invocations à la fois, et *aucun* de ces éléments n'est global : chaque
+    + invocation arrive sur sa propre connexion, avec ses propres arguments, son propre
+    + `Environment`, son propre répertoire de travail, ses propres stdin, stdout et stderr, son
+    + propre statut de sortie et ses propres signaux, tous transmis par le lanceur et tous lus par
+    + les mêmes `arguments`, `Out`, `Err`, `Exit`, `trap` et `Environment` qu'utilise une
+    + application ordinaire. Le propre `println` de Scala écrit sur le `System.out` du démon, qui
+    + n'atteint aucun utilisateur : la sortie passe par `Out` et `Err`, qui résolvent le `Stdio` de
+    + l'invocation, et une bibliothèque qui écrit sur `System.out` est redirigée avec
+    + `Stdio.divert`, qui suit le thread et les tâches lancées sous lui plutôt que la JVM.
+
+    - The launcher is the Rust runner published by `propensive/xek`
+    - (`curl -fsSL https://propensive.dev/xek | sh` installs it), and `xek build mytool.jar`
+    - joins the platform's stub, a configuration record and the application JAR into one
+    - executable. An invocation of that executable is one connection to the daemon over a
+    - Unix domain socket, carrying BinTEL documents of the `ethereal-launcher` TEL schema
+    - (`Launcher.schemaText`, the resource `ethereal/ethereal-launcher.tel`): an `init`
+    - document with the invocation's arguments, environment, working directory, user, terminal
+    - flags and descriptors, then `data` chunks of every stream under per-stream credit,
+    - `signal`/`signal-ack`, `mode`, `run`/`exited` and `closed`, until the daemon's
+    - `exit-status` ends the session. Every document carries the schema's 33-byte signature, so
+    - a launcher and a daemon built against different contracts refuse each other at the first
+    - document rather than misread each other; `Launcher.Message` is the enum which mirrors the
+    - schema, and `Launcher.encode`/`Launcher.decode` its codec.
+    + Le lanceur est l'exécuteur Rust publié par `propensive/xek`
+    + (`curl -fsSL https://propensive.dev/xek | sh` l'installe), et `xek build mytool.jar` réunit
+    + l'amorce de la plateforme, un enregistrement de configuration et le JAR de l'application en
+    + un seul exécutable. Une invocation de cet exécutable est une connexion au démon par un
+    + socket de domaine Unix, transportant des documents BinTEL du schéma TEL `ethereal-launcher`
+    + (`Launcher.schemaText`, la ressource `ethereal/ethereal-launcher.tel`) : un document `init`
+    + avec les arguments, l'environnement, le répertoire de travail, l'utilisateur, les indicateurs
+    + de terminal et les descripteurs de l'invocation, puis des morceaux `data` de chaque flux sous
+    + un crédit par flux, `signal`/`signal-ack`, `mode`, `run`/`exited` et `closed`, jusqu'à ce que
+    + l'`exit-status` du démon mette fin à la session. Chaque document porte la signature de
+    + 33 octets du schéma, si bien qu'un lanceur et un démon construits selon des contrats
+    + différents se refusent mutuellement dès le premier document au lieu de mal se comprendre ;
+    + `Launcher.Message` est l'énumération qui reflète le schéma, et
+    + `Launcher.encode`/`Launcher.decode` son codec.
+
+    - The **daemon** is started by the launcher with a sanitized environment of its own, in `/`,
+    - under umask `077`, so that nothing about the daemon's state depends on who happened to
+    - start it: code which reads `environments.javaBaseEnvironment` or
+    - `workingDirectories.javaBaseWorkingDirectory` sees that state, not the invocation's. The
+    - invocation's own environment and working directory are the givens
+    - `environments.daemonClientEnvironment` and `workingDirectories.daemonClientWorkingDirectory`
+    - (imported by name — `import soundness.*` imports no givens), and the environment the
+    - daemon was itself launched with is `DaemonEnvironment`, the given
+    - `environments.daemonEnvironment`. The daemon keeps its state under
+    - `$XDG_RUNTIME_DIR/<name>/` (or the state home): a `socket`, a `pid` file, a `build` file
+    - recording the launcher it was started from and an `acceptance` file naming the schema it
+    - speaks; it logs `DaemonLogEvent`s to syslog under `ethereal`, retires itself after six
+    - idle hours, when a state file is removed, when its launcher is rebuilt, or when asked, and
+    - the built-in `'{admin}'` subcommand reports its pid (`pid`), ends it (`kill`) or drains it
+    - (`shutdown`: no further invocation is served, those in flight finish, then it exits). Set
+    - `ETHEREAL_DEBUG=1` in the shell to make the launcher trace what it does to stderr.
+    + Le **démon** est démarré par le lanceur avec un environnement assaini qui lui est propre,
+    + dans `/`, sous l'umask `077`, si bien que rien dans l'état du démon ne dépend de qui l'a
+    + démarré : du code qui lit `environments.javaBaseEnvironment` ou
+    + `workingDirectories.javaBaseWorkingDirectory` voit cet état, et non celui de l'invocation.
+    + L'environnement et le répertoire de travail propres à l'invocation sont les givens
+    + `environments.daemonClientEnvironment` et
+    + `workingDirectories.daemonClientWorkingDirectory` (importés par leur nom —
+    + `import soundness.*` n'importe aucun given), et l'environnement avec lequel le démon a
+    + lui-même été lancé est `DaemonEnvironment`, le given `environments.daemonEnvironment`. Le
+    + démon conserve son état sous `$XDG_RUNTIME_DIR/<name>/` (ou le répertoire d'état) : un
+    + `socket`, un fichier `pid`, un fichier `build` qui enregistre le lanceur à partir duquel il
+    + a été démarré et un fichier `acceptance` qui nomme le schéma qu'il parle ; il journalise des
+    + `DaemonLogEvent` dans syslog sous `ethereal`, se retire de lui-même après six heures
+    + d'inactivité, lorsqu'un fichier d'état est supprimé, lorsque son lanceur est reconstruit, ou
+    + lorsqu'on le lui demande, et la sous-commande intégrée `'{admin}'` indique son pid (`pid`),
+    + y met fin (`kill`) ou le vide (`shutdown` : plus aucune invocation n'est servie, celles en
+    + cours se terminent, puis il quitte). Définissez `ETHEREAL_DEBUG=1` dans le shell pour que le
+    + lanceur trace ce qu'il fait sur stderr.
+
+    - Inside the block, `resident` is the invocation's handle on the daemon, a `Resident`: which
+    - streams are terminals (`cliInput`, `cliOutput`, `cliError`), the name the executable was
+    - invoked as, the umask, the terminal's live size, a typed message `bus` between concurrent
+    - invocations, `cooked` and `concealed` blocks which ask the launcher for canonical terminal
+    - mode, `terminal` to run an editor or `sudo` on the client's terminal, and `retire()` to
+    - drain the daemon. `Installer.install` copies the executable onto the `PATH`, and `Upgrade`
+    - stages a signed replacement which the launcher verifies and swaps into place at the start
+    - of the next invocation, leaving the running daemon's clients undisturbed.
+    + À l'intérieur du bloc, `resident` est la poignée de l'invocation sur le démon, un
+    + `Resident` : quels flux sont des terminaux (`cliInput`, `cliOutput`, `cliError`), le nom sous
+    + lequel l'exécutable a été invoqué, l'umask, la taille courante du terminal, un `bus` de
+    + messages typés entre invocations concurrentes, des blocs `cooked` et `concealed` qui
+    + demandent au lanceur le mode canonique du terminal, `terminal` pour exécuter un éditeur ou
+    + `sudo` sur le terminal du client, et `retire()` pour vider le démon. `Installer.install`
+    + copie l'exécutable dans le `PATH`, et `Upgrade` prépare un remplaçant signé que le lanceur
+    + vérifie et met en place au début de l'invocation suivante, sans perturber les clients du
+    + démon en cours d'exécution.
+
+    - The library is one source set, `ethereal.core`, for the JVM; it builds on `exoskeleton`
+    - (the CLI machinery: `Cli`, `Executive`, `arguments`, `execute`, `Help`), `coaxial` (the
+    - domain socket), `stratiform` (the BinTEL protocol), `surveillance` (watching the state
+    - files), `galilei`, `guillotine`, `profanity` and `turbulence`. A second source set,
+    - `ethereal.example`, holds the `run` and `fixture` entry points the tests and the tutorial
+    - use. Everything is exported to the `soundness` umbrella, and the `environments` and
+    - `workingDirectories` choice packages merge with the umbrella's own.
+    + La bibliothèque est un seul ensemble de sources, `ethereal.core`, pour la JVM ; elle
+    + s'appuie sur `exoskeleton` (la mécanique CLI : `Cli`, `Executive`, `arguments`, `execute`,
+    + `Help`), `coaxial` (le socket de domaine), `stratiform` (le protocole BinTEL),
+    + `surveillance` (la surveillance des fichiers d'état), `galilei`, `guillotine`, `profanity` et
+    + `turbulence`. Un second ensemble de sources, `ethereal.example`, contient les points d'entrée
+    + `run` et `fixture` qu'utilisent les tests et le tutoriel. Tout est exporté vers le package
+    + parapluie `soundness`, et les packages de choix `environments` et `workingDirectories`
+    + fusionnent avec ceux du package parapluie.
+
+refer ethereal.cli
+refer ethereal.Resident
+refer ethereal.Launcher
+refer ethereal.Upgrade
+refer ethereal.DaemonLogEvent
+
+entry .cli
+  info
+      - runs the body as a daemon: one resident JVM, serving each launcher invocation on its own connection
+      + exécute le corps en tant que démon : une JVM résidente, qui sert chaque invocation du
+      + lanceur sur sa propre connexion
+  detail
+      - `cli` is the daemonized counterpart of `application`: the same body, the same
+      - completions structure and the same `execute`, `arguments`, `Out` and `Exit`, but run by a
+      - process which stays resident and serves every invocation of the executable until it
+      - retires. It takes no arguments of its own — the launcher forwards the invocation's
+      - arguments, environment, working directory, standard streams, terminal size and signals —
+      - and the block runs once per client connection, with the invocation's `Resident over bus`,
+      - the executive's `Interface` (the `Cli`), its `Environment` and a `Monitor` as contextual
+      - values, so `resident`, `arguments`, `execute`, `Environment[Text](t"HOME")` and `task` all
+      - resolve inside it.
+      + `cli` est l'équivalent en démon d'`application` : le même corps, la même structure de
+      + complétions et les mêmes `execute`, `arguments`, `Out` et `Exit`, mais exécutés par un
+      + processus qui reste résident et sert chaque invocation de l'exécutable jusqu'à ce qu'il se
+      + retire. Il ne prend aucun argument propre — le lanceur transmet les arguments,
+      + l'environnement, le répertoire de travail, les flux standard, la taille du terminal et les
+      + signaux de l'invocation — et le bloc s'exécute une fois par connexion client, avec le
+      + `Resident over bus` de l'invocation, l'`Interface` de l'exécutif (le `Cli`), son
+      + `Environment` et un `Monitor` comme valeurs contextuelles, si bien que `resident`,
+      + `arguments`, `execute`, `Environment[Text](t"HOME")` et `task` se résolvent tous à
+      + l'intérieur.
+
+      ```scala fuel
+      typecheck
+      frame
+        label A plain command-line application
+        code
+            import soundness.*
+
+            import backstops.stackTraceBackstop
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+            import threads.virtualThreads
+
+            @main
+            def mytool(): Unit = application:
+              execute:
+                Out.println(t"Hello world")
+                Exit.Ok
+      frame
+        label The same body, resident: `cli` in place of `application`
+        code
+            import soundness.*
+
+            import backstops.stackTraceBackstop
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+            import threads.virtualThreads
+
+            @main
+            def mytool(): Unit = cli:
+              execute:
+                Out.println(t"Hello world")
+                Exit.Ok
+      frame
+        label What the invocation knows about its client, through `resident`
+        code
+            import soundness.*
+
+            import backstops.stackTraceBackstop
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+            import threads.virtualThreads
+
+            @main
+            def mytool(): Unit = cli:
+              execute:
+                if resident.cliOutput == Terminus.Terminal
+                then Out.println(t"Hello, ${resident.invokedAs.or(t"world")}")
+                else Out.println(t"Hello world")
+                Exit.Ok
+      frame
+        label A typed bus between the daemon's concurrent invocations
+        code
+            import soundness.*
+
+            import backstops.stackTraceBackstop
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+            import threads.virtualThreads
+
+            enum Message:
+              case ConfigChanged
+
+            @main
+            def mytool(): Unit = cli[Message]:
+              execute:
+                resident.broadcast(Message.ConfigChanged)
+                Out.println(t"Hello world")
+                Exit.Ok
+      ##
+      ```
+
+      - The type argument `bus` is the type of the messages the daemon's invocations exchange
+      - through `resident.bus` and `resident.broadcast`; it is `Matchable` and left unapplied
+      - for a daemon which exchanges none. The contextual values `cli` needs are the same as
+      - `application`'s — an `Executive` (`executives.completionsExecutive` for tab completions,
+      - the only executive which can produce `resident.help()`'s tree), an `Interpreter`, a
+      - `Threading` and a `Backstop` — plus a `Watcher`, with which it watches its state files
+      - (the default comes from `Watcher`'s companion). The block runs on the connection's task,
+      - so it may capture only *durable* capabilities — the daemon's monitor, logger and standard
+      - streams; an exclusive resource is opened and owned inside the block.
+      + L'argument de type `bus` est le type des messages qu'échangent les invocations du démon par
+      + `resident.bus` et `resident.broadcast` ; il est `Matchable` et laissé non appliqué pour un
+      + démon qui n'en échange aucun. Les valeurs contextuelles dont `cli` a besoin sont les mêmes
+      + que pour `application` — un `Executive` (`executives.completionsExecutive` pour les
+      + complétions par tabulation, le seul exécutif capable de produire l'arbre de
+      + `resident.help()`), un `Interpreter`, un `Threading` et un `Backstop` — plus un `Watcher`,
+      + avec lequel il surveille ses fichiers d'état (la valeur par défaut vient du compagnon de
+      + `Watcher`). Le bloc s'exécute sur la tâche de la connexion ; il ne peut donc capturer que
+      + des capacités *durables* — le moniteur, le journaliseur et les flux standard du démon ; une
+      + ressource exclusive est ouverte et possédée à l'intérieur du bloc.
+
+      - The first invocation starts the daemon: the launcher starts the JVM with the properties
+      - `ethereal.name` (the executable's name), `ethereal.script` (its path),
+      - `ethereal.user.id`/`ethereal.user.name`, `ethereal.startTime`, `build.id` and
+      - `ethereal.environment=stdin`, and `cli` reads `DaemonEnvironment` from its standard
+      - input, writes its `acceptance` file, binds the socket, writes the `build` and `pid`
+      - files (the launcher waits for them before connecting) and starts a task which watches
+      - them and the launcher itself, so that a deleted state file or a rewritten executable
+      - ends the daemon promptly rather than leaving it serving broken no-ops. A JVM run
+      - without a launcher — `java -jar mytool.jar` — has no `ethereal.name`, prints _This
+      - application must be invoked through its XEK launcher_ with the `xek build` line to run,
+      - and exits with status 1.
+      + La première invocation démarre le démon : le lanceur démarre la JVM avec les propriétés
+      + `ethereal.name` (le nom de l'exécutable), `ethereal.script` (son chemin),
+      + `ethereal.user.id`/`ethereal.user.name`, `ethereal.startTime`, `build.id` et
+      + `ethereal.environment=stdin`, et `cli` lit `DaemonEnvironment` sur son entrée standard,
+      + écrit son fichier `acceptance`, lie le socket, écrit les fichiers `build` et `pid` (le
+      + lanceur les attend avant de se connecter) et démarre une tâche qui les surveille, ainsi que
+      + le lanceur lui-même, si bien qu'un fichier d'état supprimé ou un exécutable réécrit met fin
+      + rapidement au démon au lieu de le laisser servir des opérations vides défectueuses. Une JVM
+      + exécutée sans lanceur — `java -jar mytool.jar` — n'a pas d'`ethereal.name`, affiche _This
+      + application must be invoked through its XEK launcher_ avec la ligne `xek build` à exécuter,
+      + et quitte avec le statut 1.
+
+      - Each connection then opens with one `Launcher.Message`: an `Init` starts a `Session`
+      - and runs the block with a `Resident` built for it; `Shutdown` drains the daemon;
+      - `Verify` answers whether the launcher file still has the content the daemon was started
+      - from, and drains it if not; a document of another schema is logged as
+      - `DaemonLogEvent.ProtocolMismatch` and the connection closed, and a peer who is not the
+      - socket's owner, or an `Init` from another user, is refused (`PeerRefused`). An
+      - invocation which arrives while the daemon is draining is refused with exit status 2.
+      + Chaque connexion s'ouvre ensuite par un `Launcher.Message` : un `Init` démarre une `Session`
+      + et exécute le bloc avec un `Resident` construit pour elle ; `Shutdown` vide le démon ;
+      + `Verify` indique si le fichier du lanceur a toujours le contenu à partir duquel le démon a
+      + été démarré, et le vide sinon ; un document d'un autre schéma est journalisé comme
+      + `DaemonLogEvent.ProtocolMismatch` et la connexion fermée, et un pair qui n'est pas le
+      + propriétaire du socket, ou un `Init` venant d'un autre utilisateur, est refusé
+      + (`PeerRefused`). Une invocation qui arrive pendant que le démon se vide est refusée avec le
+      + statut de sortie 2.
+
+      - Whatever the block does, the session ends with an exit status: an `Egress.Error` (a
+      - write to a stream whose reader has gone, `mytool | head -1` once `head` has exited)
+      - ends the invocation with status 141, as `SIGPIPE` would end a process; any other
+      - throwable — a `java.lang.Error` included — is logged as `DaemonLogEvent.Failure` and
+      - given to the `Backstop`, which reports it on the invocation's stderr and chooses the
+      - status. The daemon retires after six idle hours (`DaemonLogEvent.IdleTimeout`), and a
+      - drain — from `'{admin}' shutdown`, a stale verdict or `resident.retire()` — waits for the
+      - invocations in flight and at most thirty seconds, then exits. Arguments and environment
+      - entries which are not valid UTF-8 arrive with U+FFFD in place of the offending bytes,
+      - as the JVM itself would deliver them, and their original bytes are `resident.rawArgument`
+      - and `resident.rawEnvironment`.
+      + Quoi que fasse le bloc, la session se termine par un statut de sortie : une `Egress.Error`
+      + (une écriture sur un flux dont le lecteur est parti, `mytool | head -1` une fois que `head`
+      + a quitté) termine l'invocation avec le statut 141, comme `SIGPIPE` terminerait un
+      + processus ; tout autre throwable — y compris une `java.lang.Error` — est journalisé comme
+      + `DaemonLogEvent.Failure` et confié au `Backstop`, qui le signale sur le stderr de
+      + l'invocation et choisit le statut. Le démon se retire après six heures d'inactivité
+      + (`DaemonLogEvent.IdleTimeout`), et un vidage — par `'{admin}' shutdown`, un verdict périmé
+      + ou `resident.retire()` — attend les invocations en cours, trente secondes au plus, puis
+      + quitte. Les arguments et les entrées d'environnement qui ne sont pas de l'UTF-8 valide
+      + arrivent avec U+FFFD à la place des octets fautifs, comme la JVM elle-même les fournirait,
+      + et leurs octets d'origine sont `resident.rawArgument` et `resident.rawEnvironment`.
+  refer ethereal.resident
+  refer ethereal.Resident
+  refer ethereal.Launcher
+  refer ethereal.DaemonLogEvent
+  refer ethereal.Egress
+
+entry .resident
+  info
+      - the invocation's `Resident`, the handle on the daemon serving it, inside a `cli` block
+      + le `Resident` de l'invocation, la poignée sur le démon qui la sert, à l'intérieur d'un bloc
+      + `cli`
+  detail
+      - `resident` summons the `Resident over bus` which `cli` provides for the current
+      - invocation, so that `resident.cliInput`, `resident.invokedAs`, `resident.cooked`,
+      - `resident.broadcast` and the rest read naturally inside the block. It is a capability, so
+      - the result retains it: it cannot be stored past the invocation or passed to another.
+      + `resident` invoque le `Resident over bus` que `cli` fournit pour l'invocation courante, si
+      + bien que `resident.cliInput`, `resident.invokedAs`, `resident.cooked`, `resident.broadcast`
+      + et les autres se lisent naturellement à l'intérieur du bloc. C'est une capacité, que le
+      + résultat retient donc : il ne peut pas être conservé au-delà de l'invocation ni passé à une
+      + autre.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      import backstops.stackTraceBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import threads.virtualThreads
+
+      @main
+      def mytool(): Unit = cli:
+        execute:
+          Out.println(t"served by the daemon ${resident.pid.value.show}, started from ${resident.executable.encode}")
+          Exit.Ok
+      ```
+
+entry .Resident
+  info
+      - an invocation's handle on the daemon: what the launcher told it about the client, and the daemon's controls
+      + la poignée d'une invocation sur le démon : ce que le lanceur lui a dit du client, et les
+      + commandes du démon
+  detail
+      - A `Resident` is the capability `cli` builds for each invocation and `resident` summons
+      - inside the block. It holds everything the daemon knows about the client — which it can
+      - only know from the launcher's `init` document, since the daemon holds a socket and not
+      - the client's process — together with the daemon's own controls: a typed message bus
+      - between concurrent invocations, the terminal-mode and run-on-terminal requests which
+      - travel back over the session, and `retire()`, which drains the daemon.
+      + Un `Resident` est la capacité que `cli` construit pour chaque invocation et que `resident`
+      + invoque à l'intérieur du bloc. Il contient tout ce que le démon sait du client — qu'il ne
+      + peut savoir que par le document `init` du lanceur, puisque le démon détient un socket et non
+      + le processus du client — ainsi que les propres commandes du démon : un bus de messages typés
+      + entre invocations concurrentes, les requêtes de mode de terminal et d'exécution sur le
+      + terminal qui repassent par la session, et `retire()`, qui vide le démon.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      import backstops.stackTraceBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import threads.virtualThreads
+
+      @main
+      def mytool(): Unit = cli:
+        execute:
+          resident.invokedAs.let(_.cut(t"/").last) match
+            case t"gunzip" => Out.println(t"decompressing")
+            case _         => Out.println(t"compressing")
+
+          resident.windowSize.let:
+            case (columns, rows) =>
+              Out.println(t"a terminal of $columns×$rows")
+
+          Exit.Ok
+      ```
+
+      - It is an `Entrypoint` (`#script`, `#executable`, `#retire`), a `Umask.Provider` (its
+      - `#umask` is what the filesystem library applies to whatever the invocation creates) and
+      - a `Fdtable.Provider` (its `#fdtable` is how `/dev/stdin` or `/dev/fd/63` from
+      - `mytool <(…)` opens the *client's* descriptor, carried over the session, rather than the
+      - daemon's own). The type member `#Transport` is the bus's message type, written
+      - `Resident over Message`; the type `cli[Message]` provides. As an exclusive capability it
+      - cannot be stored past the invocation.
+      + C'est un `Entrypoint` (`#script`, `#executable`, `#retire`), un `Umask.Provider` (son
+      + `#umask` est ce que la bibliothèque de système de fichiers applique à tout ce que crée
+      + l'invocation) et un `Fdtable.Provider` (son `#fdtable` est la manière dont `/dev/stdin` ou
+      + `/dev/fd/63` issu de `mytool <(…)` ouvre le descripteur *du client*, transporté par la
+      + session, plutôt que celui du démon). Le membre de type `#Transport` est le type de message
+      + du bus, écrit `Resident over Message` ; le type que fournit `cli[Message]`. En tant que
+      + capacité exclusive, il ne peut pas être conservé au-delà de l'invocation.
+
+      - Most of its constructor parameters are public `val`s the daemon fills in from the `init`
+      - document; the thunks among them (`#shutdown`, `#helpThunk`, `#setMode`, `#run`,
+      - `#sizeThunk`) are the raw hooks behind `#retire`, `#help`, `#cooked`, `#terminal` and
+      - `#windowSize`, which are the methods to call.
+      + La plupart de ses paramètres de constructeur sont des `val` publics que le démon renseigne à
+      + partir du document `init` ; les thunks parmi eux (`#shutdown`, `#helpThunk`, `#setMode`,
+      + `#run`, `#sizeThunk`) sont les points d'accroche bruts derrière `#retire`, `#help`,
+      + `#cooked`, `#terminal` et `#windowSize`, qui sont les méthodes à appeler.
+  refer ethereal.cli
+  refer ethereal.resident
+  refer ethereal.Terminus
+  refer ethereal.Tty
+  entry #Transport
+    info
+        - the type of the messages this daemon's invocations exchange over the bus
+        + le type des messages qu'échangent les invocations de ce démon sur le bus
+    detail
+        - Abstract, bounded by `Matchable`, and fixed by the type argument to `cli`: inside
+        - `cli[Message]` the resident is a `Resident over Message`, so `#broadcast` takes a
+        - `Message` and `#bus` yields them. A daemon with no type argument exchanges nothing.
+        + Abstrait, borné par `Matchable`, et fixé par l'argument de type de `cli` : à l'intérieur
+        + de `cli[Message]`, le résident est un `Resident over Message`, si bien que `#broadcast`
+        + prend un `Message` et que `#bus` en produit. Un démon sans argument de type n'échange
+        + rien.
+  entry #bus
+    info
+        - the messages broadcast by the daemon's other invocations, as they arrive
+        + les messages diffusés par les autres invocations du démon, à mesure qu'ils arrivent
+    detail
+        - A `Chain[Transport]` which grows as other invocations call `#broadcast`: reading it
+        - blocks until the next message. An invocation's own broadcasts are not delivered to it.
+        + Une `Chain[Transport]` qui s'allonge à mesure que d'autres invocations appellent
+        + `#broadcast` : sa lecture bloque jusqu'au message suivant. Les propres diffusions d'une
+        + invocation ne lui sont pas remises.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        import backstops.stackTraceBackstop
+        import executives.completionsExecutive
+        import interpreters.posixInterpreter
+        import threads.virtualThreads
+
+        enum Message:
+          case ConfigChanged
+
+        @main
+        def watch(): Unit = cli[Message]:
+          execute:
+            resident.bus.each:
+              case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
+
+            Exit.Ok
+        ```
+  entry #broadcast
+    info
+        - sends a message to every other invocation of the daemon
+        + envoie un message à toutes les autres invocations du démon
+    detail
+        - Delivers the message to the `#bus` of every invocation currently connected except the
+        - sender's. This is how a running `watch` learns that another invocation just changed the
+        - configuration.
+        + Remet le message au `#bus` de chaque invocation actuellement connectée, sauf celle de
+        + l'expéditeur. C'est ainsi qu'un `watch` en cours apprend qu'une autre invocation vient de
+        + modifier la configuration.
+  entry #retire
+    info
+        - asks the daemon to go once this invocation has finished
+        + demande au démon de partir une fois cette invocation terminée
+    detail
+        - The daemon stops accepting invocations, lets those in flight finish (for at most thirty
+        - seconds), and exits; the next invocation starts a fresh daemon. The `'{admin}' shutdown`
+        - subcommand does the same from the shell. It overrides `Entrypoint#retire`, which does
+        - nothing for a plain application, so a tool written against `Entrypoint` works under
+        - both.
+        + Le démon cesse d'accepter des invocations, laisse se terminer celles en cours (pendant
+        + trente secondes au plus), et quitte ; l'invocation suivante démarre un nouveau démon. La
+        + sous-commande `'{admin}' shutdown` fait de même depuis le shell. Elle redéfinit
+        + `Entrypoint#retire`, qui ne fait rien pour une application ordinaire, si bien qu'un outil
+        + écrit pour `Entrypoint` fonctionne dans les deux cas.
+  entry #shutdown
+    info
+        - the thunk `#retire` calls: the daemon's drain
+        + le thunk qu'appelle `#retire` : le vidage du démon
+  entry #pid
+    info
+        - the client process's pid, as the launcher reported it
+        + le pid du processus client, tel que l'a indiqué le lanceur
+    detail
+        - The pid of the *launcher* process serving the user's shell, not the daemon's; it keys
+        - the daemon's table of connected clients, and `DaemonLogEvent.Init` and `CloseConnection`
+        - carry it.
+        + Le pid du processus *lanceur* qui sert le shell de l'utilisateur, et non celui du démon ;
+        + il sert de clé à la table des clients connectés du démon, et `DaemonLogEvent.Init` et
+        + `CloseConnection` le portent.
+  entry #cliInput
+    info
+        - whether the client's stdin is a terminal or a pipe
+        + si le stdin du client est un terminal ou un tube
+    detail
+        - A `Terminus`: `Terminal` when the launcher reported stdin attached to a terminal, `Pipe`
+        - otherwise. The daemon cannot tell for itself — its streams are the launcher's socket —
+        - so this is the launcher's report and nothing else. `#cooked` and `#concealed` are no-ops
+        - unless this is `Terminal`.
+        + Un `Terminus` : `Terminal` lorsque le lanceur a indiqué que stdin est attaché à un
+        + terminal, `Pipe` sinon. Le démon ne peut pas le savoir par lui-même — ses flux sont le
+        + socket du lanceur — ; il s'agit donc du rapport du lanceur et de rien d'autre. `#cooked`
+        + et `#concealed` sont sans effet à moins que ce ne soit `Terminal`.
+  entry #cliOutput
+    info
+        - whether the client's stdout is a terminal or a pipe
+        + si le stdout du client est un terminal ou un tube
+    detail
+        - Reported separately from stdin, since they genuinely differ: `mytool > file` run from a
+        - terminal has stdin on the terminal and stdout on a file. When stdout is not a terminal
+        - the invocation's `Termcap` has no width, so nothing wraps.
+        + Indiqué séparément de stdin, car ils diffèrent réellement : `mytool > file` exécuté depuis
+        + un terminal a stdin sur le terminal et stdout sur un fichier. Lorsque stdout n'est pas un
+        + terminal, le `Termcap` de l'invocation n'a pas de largeur ; rien n'est donc renvoyé à la
+        + ligne.
+  entry #cliError
+    info
+        - whether the client's stderr is a terminal or a pipe
+        + si le stderr du client est un terminal ou un tube
+  entry #executable
+    info
+        - the path of the launcher executable the invocation ran
+        + le chemin de l'exécutable lanceur qu'a exécuté l'invocation
+    detail
+        - The `script` field of the `init` document, as a `Path on Local`: the canonical path of
+        - the executable. `Installer.install` copies this file onto the `PATH`.
+        + Le champ `script` du document `init`, sous forme de `Path on Local` : le chemin canonique
+        + de l'exécutable. `Installer.install` copie ce fichier dans le `PATH`.
+  entry #script
+    info
+        - the executable's name, as the daemon was given it
+        + le nom de l'exécutable, tel qu'il a été donné au démon
+    detail
+        - The `ethereal.name` property the launcher starts the daemon with: the command's name,
+        - which also names the daemon's state directory and its data directory.
+        + La propriété `ethereal.name` avec laquelle le lanceur démarre le démon : le nom de la
+        + commande, qui nomme aussi le répertoire d'état du démon et son répertoire de données.
+  entry #startTime
+    info
+        - when the daemon started, in epoch milliseconds
+        + le moment où le démon a démarré, en millisecondes depuis l'époque
+    detail
+        - From the `ethereal.startTime` property, or the JVM's clock when there is no launcher.
+        - `#started` and `#uptime` read it as typed values.
+        + Issu de la propriété `ethereal.startTime`, ou de l'horloge de la JVM lorsqu'il n'y a pas
+        + de lanceur. `#started` et `#uptime` le lisent sous forme de valeurs typées.
+  entry #helpThunk
+    info
+        - the thunk behind `#help`: the executive's help tree, or `Unset`
+        + le thunk derrière `#help` : l'arbre d'aide de l'exécutif, ou `Unset`
+  entry #setMode
+    info
+        - the hook behind `#cooked` and `#concealed`: asks the launcher for a `Tty` mode
+        + le point d'accroche derrière `#cooked` et `#concealed` : demande au lanceur un mode `Tty`
+    detail
+        - Sends a `Launcher.Message.Mode` over the session. Only the launcher can change the
+        - client's terminal, and a launcher whose stdin is not a terminal it owns ignores the
+        - request. Prefer `#cooked` and `#concealed`, which restore raw mode afterwards.
+        + Envoie un `Launcher.Message.Mode` par la session. Seul le lanceur peut modifier le
+        + terminal du client, et un lanceur dont le stdin n'est pas un terminal qu'il possède ignore
+        + la requête. Préférez `#cooked` et `#concealed`, qui restaurent ensuite le mode brut.
+  entry #run
+    info
+        - the hook behind `#terminal`: a command, its arguments and a directory, to the status it ended with
+        + le point d'accroche derrière `#terminal` : une commande, ses arguments et un répertoire,
+        + vers le statut avec lequel elle s'est terminée
+  entry #invokedAs
+    info
+        - the name the executable was invoked by: `argv[0]` as the caller supplied it
+        + le nom sous lequel l'exécutable a été invoqué : `argv[0]` tel que l'appelant l'a fourni
+    detail
+        - `Unset` under a launcher which did not report it. One executable installed under
+        - several names by symbolic links can dispatch on this, while every alias shares one warm
+        - daemon; the path is as the caller wrote it, so take its last segment for the bare name.
+        + `Unset` sous un lanceur qui ne l'a pas indiqué. Un exécutable installé sous plusieurs noms
+        + par des liens symboliques peut répartir selon ce nom, tandis que tous les alias partagent
+        + un même démon chaud ; le chemin est tel que l'appelant l'a écrit, prenez donc son dernier
+        + segment pour obtenir le nom seul.
+  entry #sizeThunk
+    info
+        - the thunk behind `#windowSize`: the terminal's size as last measured
+        + le thunk derrière `#windowSize` : la taille du terminal telle que mesurée en dernier
+  entry #umask
+    info
+        - the invocation's file-creation mask, if the launcher reported it
+        + le masque de création de fichiers de l'invocation, si le lanceur l'a indiqué
+    detail
+        - A galilei `Umask`, parsed from the octal `umask` field of the `init` document. Through
+        - `Umask.Provider` the filesystem library applies it to whatever the invocation creates,
+        - so a file made by the daemon has the mode the client's shell would have given it, not
+        - the daemon's own `077`.
+        + Un `Umask` de galilei, analysé à partir du champ octal `umask` du document `init`. Par
+        + `Umask.Provider`, la bibliothèque de système de fichiers l'applique à tout ce que crée
+        + l'invocation, si bien qu'un fichier créé par le démon a le mode que lui aurait donné le
+        + shell du client, et non le `077` propre au démon.
+  entry #fdtable
+    info
+        - the client's descriptor table, for paths which name a descriptor
+        + la table des descripteurs du client, pour les chemins qui nomment un descripteur
+    detail
+        - An `Fdtable` the filesystem library consults before it opens anything: `/dev/stdin`,
+        - `/dev/stdout`, `/dev/stderr`, `/dev/fd/N` and `/proc/self/fd/N` name the *client's*
+        - descriptors — the session's own streams for 0, 1 and 2; a regular file behind a
+        - descriptor by its real path; a pipe such as `mytool <(…)` carried as a stream once the
+        - launcher is asked for it — and a descriptor the client did not advertise names nothing,
+        - whatever the daemon's own table holds at that number. `Unset` without a launcher.
+        + Un `Fdtable` que la bibliothèque de système de fichiers consulte avant d'ouvrir quoi que
+        + ce soit : `/dev/stdin`, `/dev/stdout`, `/dev/stderr`, `/dev/fd/N` et `/proc/self/fd/N`
+        + nomment les descripteurs *du client* — les propres flux de la session pour 0, 1 et 2 ; un
+        + fichier ordinaire derrière un descripteur par son chemin réel ; un tube comme
+        + `mytool <(…)` transporté sous forme de flux dès qu'on le demande au lanceur — et un
+        + descripteur que le client n'a pas annoncé ne nomme rien, quoi que contienne à ce numéro la
+        + propre table du démon. `Unset` sans lanceur.
+  entry #raws
+    info
+        - the native bytes of each argument, environment entry or working directory whose text lost something
+        + les octets natifs de chaque argument, entrée d'environnement ou répertoire de travail dont
+        + le texte a perdu quelque chose
+    detail
+        - The `Launcher.Raw` records of the `init` document: empty in the ordinary case, where
+        - every value was valid UTF-8. `#rawArgument`, `#rawEnvironment` and
+        - `#rawWorkingDirectory` look them up.
+        + Les enregistrements `Launcher.Raw` du document `init` : vides dans le cas ordinaire, où
+        + chaque valeur était de l'UTF-8 valide. `#rawArgument`, `#rawEnvironment` et
+        + `#rawWorkingDirectory` les consultent.
+  entry #windowSize
+    info
+        - the client terminal's size as (columns, rows), as the launcher last measured it
+        + la taille du terminal du client en (colonnes, lignes), telle que le lanceur l'a mesurée en
+        + dernier
+    detail
+        - Measured at connection and again with every `WINCH` and `CONT`, so it is live; the
+        - invocation's `Termcap` reads the same measurement, so tables and wrapped text fit the
+        - terminal as it is now. `Unset` when the client's stdout is not a terminal, or no size
+        - was reported.
+        + Mesurée à la connexion puis à chaque `WINCH` et `CONT`, elle est donc à jour ; le
+        + `Termcap` de l'invocation lit la même mesure, si bien que les tableaux et le texte renvoyé
+        + à la ligne s'adaptent au terminal tel qu'il est maintenant. `Unset` lorsque le stdout du
+        + client n'est pas un terminal, ou qu'aucune taille n'a été indiquée.
+  entry #cooked
+    info
+        - runs a block with the client's terminal in canonical mode, with echo
+        + exécute un bloc avec le terminal du client en mode canonique, avec écho
+    detail
+        - The launcher puts the terminal into raw mode before it connects, so that keypresses can
+        - be forwarded to an interactive session; that is wrong for a command which just wants a
+        - line of input, since there is no echo and Backspace arrives as a byte inside the line.
+        - `cooked` asks the launcher for canonical mode for the duration of the block — the
+        - terminal driver then provides echo and line editing — and restores raw mode afterwards,
+        - in a `finally`. A no-op when `#cliInput` is not a terminal, and silently ineffective
+        - under a launcher too old to offer the control channel.
+        + Le lanceur met le terminal en mode brut avant de se connecter, afin que les frappes de
+        + touches puissent être transmises à une session interactive ; c'est inadapté pour une
+        + commande qui veut simplement une ligne de saisie, puisqu'il n'y a pas d'écho et que Retour
+        + arrière arrive comme un octet au sein de la ligne. `cooked` demande au lanceur le mode
+        + canonique pour la durée du bloc — le pilote du terminal fournit alors l'écho et l'édition
+        + de ligne — et restaure ensuite le mode brut, dans un `finally`. Sans effet lorsque
+        + `#cliInput` n'est pas un terminal, et silencieusement inopérant sous un lanceur trop
+        + ancien pour offrir le canal de contrôle.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        import backstops.stackTraceBackstop
+        import executives.completionsExecutive
+        import interpreters.posixInterpreter
+        import threads.virtualThreads
+
+        @main
+        def ask(): Unit = cli:
+          execute:
+            val name = resident.cooked:
+              Out.println(t"Name?")
+              java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
+
+            Out.println(t"Hello, $name")
+            Exit.Ok
+        ```
+  entry #concealed
+    info
+        - runs a block in canonical mode with nothing echoed: how a password is read
+        + exécute un bloc en mode canonique sans aucun écho : la manière de lire un mot de passe
+    detail
+        - As `#cooked`, with the terminal driver's line editing but no echo, for the duration of
+        - the block; raw mode is restored afterwards. A no-op when stdin is not a terminal.
+        + Comme `#cooked`, avec l'édition de ligne du pilote du terminal mais sans écho, pour la
+        + durée du bloc ; le mode brut est restauré ensuite. Sans effet lorsque stdin n'est pas un
+        + terminal.
+  entry #terminal
+    info
+        - runs a command on the client's terminal, and gives the status it ended with
+        + exécute une commande sur le terminal du client, et donne le statut avec lequel elle s'est
+        + terminée
+    detail
+        - For an editor, a pager, `ssh` or `sudo`: programs which need the terminal, which the
+        - daemon's process, detached from any terminal, cannot reach. The launcher stops
+        - forwarding the terminal's input and holds the invocation's output, restores the
+        - terminal's saved state, runs the command with the client's environment and standard
+        - streams — in `pwd` if given — and, when it ends, puts the terminal back and reports
+        - the status: the exit code, 128 plus the signal it died of, or 127 if it could not be
+        - run, which is also the answer when the client's stdin is not a terminal. One command
+        - runs at a time. Its output goes to the terminal, not the invocation; to capture a
+        - program's output, run it in this process with `sh"…".exec`.
+        + Pour un éditeur, un paginateur, `ssh` ou `sudo` : des programmes qui ont besoin du
+        + terminal, que le processus du démon, détaché de tout terminal, ne peut pas atteindre. Le
+        + lanceur cesse de transmettre l'entrée du terminal et retient la sortie de l'invocation,
+        + restaure l'état sauvegardé du terminal, exécute la commande avec l'environnement et les
+        + flux standard du client — dans `pwd` s'il est donné — et, lorsqu'elle se termine, remet le
+        + terminal en place et indique le statut : le code de sortie, 128 plus le signal dont elle
+        + est morte, ou 127 si elle n'a pas pu être exécutée, ce qui est aussi la réponse lorsque le
+        + stdin du client n'est pas un terminal. Une seule commande s'exécute à la fois. Sa sortie
+        + va au terminal, et non à l'invocation ; pour capturer la sortie d'un programme,
+        + exécutez-le dans ce processus avec `sh"…".exec`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        import backstops.stackTraceBackstop
+        import executives.completionsExecutive
+        import interpreters.posixInterpreter
+        import threads.virtualThreads
+
+        @main
+        def edit(): Unit = cli:
+          execute:
+            val status: Int = resident.terminal(t"vi", List(t"-R", t"notes.txt"))
+            if status == 0 then Exit.Ok else Exit.Fail(status)
+        ```
+  entry #rawArgument
+    info
+        - the operating system's own bytes of the argument at an index, where its text lost something
+        + les octets propres au système d'exploitation de l'argument à un indice, là où son texte a
+        + perdu quelque chose
+    detail
+        - An argument which is not valid UTF-8 reaches `arguments` with U+FFFD in place of the
+        - offending bytes, as the JVM would deliver it; this gives the bytes as given — on Unix
+        - the bytes themselves, on Windows the UTF-16 code units, little-endian — for the
+        - argument at `index`, counted from 0. `Unset` for an argument its text carries exactly,
+        - which is the ordinary case, so a caller falls back to the text.
+        + Un argument qui n'est pas de l'UTF-8 valide atteint `arguments` avec U+FFFD à la place des
+        + octets fautifs, comme la JVM le fournirait ; ceci donne les octets tels quels — sous Unix
+        + les octets eux-mêmes, sous Windows les unités de code UTF-16, en petit-boutiste — pour
+        + l'argument à `index`, compté à partir de 0. `Unset` pour un argument que son texte porte
+        + exactement, ce qui est le cas ordinaire ; un appelant se rabat donc sur le texte.
+  entry #rawEnvironment
+    info
+        - the operating system's own bytes of the environment entry (`NAME=value`) at an index
+        + les octets propres au système d'exploitation de l'entrée d'environnement (`NAME=value`) à
+        + un indice
+    detail
+        - As `#rawArgument`, for the entry at `index` of the environment the launcher forwarded;
+        - `Unset` for an entry whose text is exact.
+        + Comme `#rawArgument`, pour l'entrée à `index` de l'environnement transmis par le lanceur ;
+        + `Unset` pour une entrée dont le texte est exact.
+  entry #rawWorkingDirectory
+    info
+        - the working directory's bytes, where its text could not carry them
+        + les octets du répertoire de travail, là où son texte n'a pas pu les porter
+  entry #help
+    info
+        - the structured help tree for this command, from the completions executive
+        + l'arbre d'aide structuré de cette commande, issu de l'exécutif de complétions
+    detail
+        - Generated lazily and memoized by the daemon: the application's pure portion is re-run
+        - in tab-completion mode to discover its subcommand and flag tree. Only
+        - `executives.completionsExecutive` can produce the tree; under another executive this
+        - is a root `Help` with the command's name and nothing beneath it.
+        + Généré paresseusement et mémoïsé par le démon : la partie pure de l'application est
+        + réexécutée en mode de complétion par tabulation pour découvrir son arbre de sous-commandes
+        + et d'options. Seul `executives.completionsExecutive` peut produire l'arbre ; sous un autre
+        + exécutif, c'est un `Help` racine portant le nom de la commande et rien en dessous.
+  entry #localHelp
+    info
+        - the help tree narrowed to the subcommands this invocation has matched so far
+        + l'arbre d'aide restreint aux sous-commandes que cette invocation a reconnues jusqu'ici
+    detail
+        - Needs the invocation's `Cli`: `help().local(cli.matches)`, so that a section of the
+        - application documents only itself, falling back to the full tree when nothing has
+        - been matched or the matched path is absent from it.
+        + Nécessite le `Cli` de l'invocation : `help().local(cli.matches)`, pour qu'une section de
+        + l'application ne documente qu'elle-même, en se rabattant sur l'arbre complet lorsque rien
+        + n'a été reconnu ou que le chemin reconnu en est absent.
+  entry #buildId
+    info
+        - the build id of the executable the daemon was started from; zero without a launcher
+        + l'identifiant de build de l'exécutable à partir duquel le démon a été démarré ; zéro sans
+        + lanceur
+    detail
+        - The 64-bit `build.id` property the launcher passes (xek's `--build-id`), or a
+        - `build.id` classpath resource when there is no launcher, or zero. Compare it with the
+        - build id of a release on offer before staging an `Upgrade`.
+        + La propriété `build.id` sur 64 bits que passe le lanceur (le `--build-id` de xek), ou une
+        + ressource `build.id` du classpath lorsqu'il n'y a pas de lanceur, ou zéro. Comparez-la à
+        + l'identifiant de build d'une version proposée avant de préparer un `Upgrade`.
+  entry #started
+    info
+        - when the daemon started, as any instant type made from epoch milliseconds
+        + le moment où le démon a démarré, sous n'importe quel type d'instant créé à partir de
+        + millisecondes depuis l'époque
+    detail
+        - `resident.started[Instant]`, for any `Instantiable across Instants from Long`.
+        + `resident.started[Instant]`, pour tout `Instantiable across Instants from Long`.
+  entry #uptime
+    info
+        - how long the daemon has been running, as any duration type made from nanoseconds
+        + depuis combien de temps le démon s'exécute, sous n'importe quel type de durée créé à
+        + partir de nanosecondes
+    detail
+        - `resident.uptime[Duration]`, for any `Instantiable across Durations from Long`; never
+        - negative.
+        + `resident.uptime[Duration]`, pour tout `Instantiable across Durations from Long` ; jamais
+        + négatif.
+
+entry .Launcher
+  info
+      - the launcher-to-daemon protocol: the `ethereal-launcher` TEL schema, its messages and their BinTEL codec
+      + le protocole du lanceur vers le démon : le schéma TEL `ethereal-launcher`, ses messages et
+      + leur codec BinTEL
+  detail
+      - `Launcher` is the contract between an Ethereal launcher — the Rust runner published by
+      - `propensive/xek` — and its daemon. An invocation is one connection: it opens with an
+      - `init` document and then carries, in both directions, the documents of a session —
+      - `data` chunks of every stream, `end`, `credit`, `open`, `signal`/`signal-ack`, `mode`,
+      - `run`/`exited` and `closed` — until the daemon's `exit-status` ends it; `verify` and
+      - `shutdown` are asked on short connections of their own. The TEL schema is the
+      - specification: its text is the resource `ethereal/ethereal-launcher.tel` in ethereal's
+      - own jar, byte for byte xek's `spec/ethereal-launcher.tel`, and `.Message` mirrors it
+      - variant for variant. Each document on the wire is one framed BinTEL document — magic,
+      - length, the schema's 33-byte `.signature`, body — and both sides compare the signature
+      - before reading a field, so a launcher and a daemon built against different schemas
+      - refuse each other at the first document (`DaemonLogEvent.ProtocolMismatch`) rather than
+      - misread fields. The daemon reads from an untrusted peer, so a declared length over
+      - `.maximumLength` is refused before it is acted on.
+      + `Launcher` est le contrat entre un lanceur Ethereal — l'exécuteur Rust publié par
+      + `propensive/xek` — et son démon. Une invocation est une connexion : elle s'ouvre par un
+      + document `init` puis transporte, dans les deux sens, les documents d'une session — des
+      + morceaux `data` de chaque flux, `end`, `credit`, `open`, `signal`/`signal-ack`, `mode`,
+      + `run`/`exited` et `closed` — jusqu'à ce que l'`exit-status` du démon y mette fin ; `verify`
+      + et `shutdown` sont demandés sur de courtes connexions qui leur sont propres. Le schéma TEL
+      + est la spécification : son texte est la ressource `ethereal/ethereal-launcher.tel` dans le
+      + propre jar d'ethereal, identique octet pour octet au `spec/ethereal-launcher.tel` de xek, et
+      + `.Message` le reflète variante pour variante. Chaque document sur le réseau est un document
+      + BinTEL tramé — nombre magique, longueur, la `.signature` de 33 octets du schéma, corps — et
+      + les deux côtés comparent la signature avant de lire le moindre champ, si bien qu'un lanceur
+      + et un démon construits selon des schémas différents se refusent mutuellement dès le premier
+      + document (`DaemonLogEvent.ProtocolMismatch`) au lieu de mal lire les champs. Le démon lit
+      + depuis un pair non fiable ; une longueur déclarée supérieure à `.maximumLength` est donc
+      + refusée avant d'être prise en compte.
+
+      ```scala
+      import soundness.*
+
+      val frame: Data = Launcher.encode(Launcher.Message.ExitStatus(42))
+      Launcher.decode(frame)   // Launcher.Message.ExitStatus(42)
+      Launcher.signature.length   // 33
+      ```
+
+      - An application never speaks the protocol itself: `cli` and `Session` do. The object is
+      - public so that a tool which drives a daemon directly, or a test which pins the wire
+      - bytes against the runner's, can build and read the same documents.
+      + Une application ne parle jamais le protocole elle-même : `cli` et `Session` s'en chargent.
+      + L'objet est public pour qu'un outil qui pilote directement un démon, ou un test qui compare
+      + les octets transmis à ceux de l'exécuteur, puisse construire et lire les mêmes documents.
+  refer ethereal.cli
+  refer ethereal.Session
+  entry .schemaText
+    info
+        - the text of the `ethereal-launcher` TEL schema, read from ethereal's own jar
+        + le texte du schéma TEL `ethereal-launcher`, lu dans le propre jar d'ethereal
+    detail
+        - The resource `ethereal/ethereal-launcher.tel`, read once through ethereal's own
+        - classloader (`Classloader[Launcher.type]`), so the first thread to need it may carry
+        - any context classloader. Its absence is a packaging error and throws.
+        + La ressource `ethereal/ethereal-launcher.tel`, lue une seule fois par le propre chargeur
+        + de classes d'ethereal (`Classloader[Launcher.type]`), si bien que le premier thread qui en
+        + a besoin peut porter n'importe quel chargeur de classes de contexte. Son absence est une
+        + erreur d'empaquetage et lève une exception.
+  entry .schema
+    info
+        - the parsed and validated `Tels` schema the codec encodes against
+        + le schéma `Tels` analysé et validé selon lequel le codec encode
+    detail
+        - Parsed once from `.schemaText`; a malformed schema is a programming error, not a runtime
+        - condition.
+        + Analysé une seule fois à partir de `.schemaText` ; un schéma mal formé est une erreur de
+        + programmation, et non une condition d'exécution.
+  entry .signature
+    info
+        - the schema's 33-byte palimpsest signature, carried by every document
+        + la signature palimpsest de 33 octets du schéma, portée par chaque document
+    detail
+        - Compared byte for byte on receipt: `.decode` gives `Unset` for a document carrying
+        - another signature. The daemon also writes it into its `acceptance` state file, for a
+        - launcher to consult before it connects.
+        + Comparée octet pour octet à la réception : `.decode` donne `Unset` pour un document
+        + portant une autre signature. Le démon l'écrit aussi dans son fichier d'état `acceptance`,
+        + pour qu'un lanceur la consulte avant de se connecter.
+  entry .maximumLength
+    info
+        - the longest document the daemon will read: one mebibyte
+        + le plus long document que le démon lira : un mébioctet
+    detail
+        - A declared length beyond it makes `.readDocument` give `Unset` without reading the body.
+        - A chunk is at most `.maximumChunk`, and an invocation's environment and arguments fit
+        - comfortably.
+        + Une longueur déclarée au-delà fait que `.readDocument` donne `Unset` sans lire le corps.
+        + Un morceau fait au plus `.maximumChunk`, et l'environnement et les arguments d'une
+        + invocation y tiennent largement.
+  entry .maximumChunk
+    info
+        - the most bytes one `data` document carries: 65536
+        + le nombre maximal d'octets que porte un document `data` : 65536
+    detail
+        - Also the credit each stream opens with in each direction (`Session.window`).
+        + C'est aussi le crédit avec lequel chaque flux s'ouvre dans chaque sens (`Session.window`).
+  entry .encode
+    info
+        - a message as one framed BinTEL document
+        + un message sous forme d'un document BinTEL tramé
+    detail
+        - Magic, length varint, `.signature`, body. A `Data` message is framed by hand, its bytes
+        - going straight into the frame with no BASE-256 text in between, since every chunk of
+        - every stream passes this way. Cannot fail: the elements are built against the
+        - library's own schema.
+        + Nombre magique, varint de longueur, `.signature`, corps. Un message `Data` est tramé à la
+        + main, ses octets allant directement dans la trame sans texte BASE-256 intermédiaire,
+        + puisque chaque morceau de chaque flux passe par là. Ne peut pas échouer : les éléments
+        + sont construits selon le propre schéma de la bibliothèque.
+  entry .decode
+    info
+        - the message a framed document carries, or `Unset`
+        + le message que porte un document tramé, ou `Unset`
+    detail
+        - `Unset` when the document is malformed, carries another schema's signature, or does
+        - not fit `.Message`; a `Data` document is read by hand, as `.encode` writes it.
+        + `Unset` lorsque le document est mal formé, porte la signature d'un autre schéma, ou ne
+        + correspond pas à `.Message` ; un document `Data` est lu à la main, comme `.encode`
+        + l'écrit.
+
+        ```scala
+        import soundness.*
+
+        Launcher.decode(Launcher.encode(Launcher.Message.Mode(true, true)))   // Launcher.Message.Mode(true, true)
+        ```
+  entry .readDocument
+    info
+        - reads exactly one framed document from a `java.io.InputStream`
+        + lit exactement un document tramé depuis un `java.io.InputStream`
+    detail
+        - Reads the four-byte magic, the length varint and then the declared number of bytes,
+        - leaving whatever follows unread, and gives the whole frame for `.decode`. `Unset` at
+        - end of input, on a malformed header, on a length over `.maximumLength`, or when the
+        - stream ends before the declared length.
+        + Lit le nombre magique de quatre octets, le varint de longueur puis le nombre d'octets
+        + déclaré, en laissant non lu ce qui suit, et donne la trame entière pour `.decode`. `Unset`
+        + en fin d'entrée, sur un en-tête mal formé, sur une longueur supérieure à `.maximumLength`,
+        + ou lorsque le flux se termine avant la longueur déclarée.
+  entry .Descriptor
+    info
+        - a file descriptor the client holds, as the `init` document advertises it
+        + un descripteur de fichier que détient le client, tel que l'annonce le document `init`
+    detail
+        - The client's descriptors are numbered as the client sees them (0, 1 and 2 among
+        - them), each with its direction, its kind and, for a regular file, the real path the
+        - daemon may open directly; anything else is reached by opening the descriptor as a
+        - stream named by its number, with a `Launcher.Message.Open`. `Resident#fdtable`
+        - consults these.
+        + Les descripteurs du client sont numérotés comme le client les voit (0, 1 et 2 parmi eux),
+        + chacun avec sa direction, son genre et, pour un fichier ordinaire, le chemin réel que le
+        + démon peut ouvrir directement ; tout le reste s'atteint en ouvrant le descripteur comme un
+        + flux nommé par son numéro, avec un `Launcher.Message.Open`. `Resident#fdtable` les
+        + consulte.
+    entry #fd
+      info
+          - the descriptor's number, as the client holds it
+          + le numéro du descripteur, tel que le détient le client
+    entry #direction
+      info
+          - `r`, `w` or `rw`, as the descriptor was opened
+          + `r`, `w` ou `rw`, selon la manière dont le descripteur a été ouvert
+    entry #kind
+      info
+          - `file`, `pipe`, `tty`, `socket` or `other`
+          + `file`, `pipe`, `tty`, `socket` ou `other`
+    entry #path
+      info
+          - the real path, for a regular file; `Unset` otherwise
+          + le chemin réel, pour un fichier ordinaire ; `Unset` sinon
+  entry .Raw
+    info
+        - a value of the `init` document as the operating system gave it, where its text lost something
+        + une valeur du document `init` telle que l'a donnée le système d'exploitation, là où son
+        + texte a perdu quelque chose
+    detail
+        - An argument or environment entry which is not valid UTF-8 (or on Windows holds an
+        - unpaired surrogate), or the working directory, is sent as text with U+FFFD in place
+        - of what could not be carried, and again as a `Raw`: the platform's own bytes — bytes
+        - on Unix, UTF-16 code units, little-endian, on Windows. `Resident#rawArgument`,
+        - `Resident#rawEnvironment` and `Resident#rawWorkingDirectory` look them up.
+        + Un argument ou une entrée d'environnement qui n'est pas de l'UTF-8 valide (ou qui, sous
+        + Windows, contient un demi-codet isolé), ou le répertoire de travail, est envoyé sous forme
+        + de texte avec U+FFFD à la place de ce qui n'a pas pu être transporté, et une seconde fois
+        + sous forme de `Raw` : les octets propres à la plateforme — des octets sous Unix, des
+        + unités de code UTF-16, en petit-boutiste, sous Windows. `Resident#rawArgument`,
+        + `Resident#rawEnvironment` et `Resident#rawWorkingDirectory` les consultent.
+    entry #kind
+      info
+          - `argument`, `environment` or `pwd`
+          + `argument`, `environment` ou `pwd`
+    entry #index
+      info
+          - the position among the arguments or environment entries, from 0; `Unset` for `pwd`
+          + la position parmi les arguments ou les entrées d'environnement, à partir de 0 ; `Unset`
+          + pour `pwd`
+    entry #bytes
+      info
+          - the platform's own bytes of the value
+          + les octets propres à la plateforme de la valeur
+  entry .Message
+    info
+        - the documents of the protocol, one case per variant of the schema
+        + les documents du protocole, un cas par variante du schéma
+    detail
+        - The fifteen variants of the schema's root `select`, in its order, so that each case's
+        - index is its variant index on the wire. The launcher sends `Init`, `Data`, `End`,
+        - `Credit`, `Signal`, `Closed`, `Exited`, `Verify` and `Shutdown`; the daemon sends
+        - `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus`
+        - and `Verdict`. `Verify` and `Shutdown` carry no fields.
+        + Les quinze variantes du `select` racine du schéma, dans son ordre, si bien que l'indice de
+        + chaque cas est son indice de variante sur le réseau. Le lanceur envoie `Init`, `Data`,
+        + `End`, `Credit`, `Signal`, `Closed`, `Exited`, `Verify` et `Shutdown` ; le démon envoie
+        + `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus` et
+        + `Verdict`. `Verify` et `Shutdown` ne portent aucun champ.
+
+        ```scala
+        import soundness.*
+
+        val messages: List[Launcher.Message] =
+          List
+            ( Launcher.Message.Data(t"stdout", t"hello".in[Data]),
+              Launcher.Message.Credit(t"stdin", 65536L),
+              Launcher.Message.Signal(t"WINCH", 80, 24),
+              Launcher.Message.Mode(canonical = true, echo = false),
+              Launcher.Message.ExitStatus(0) )
+
+        messages.map(Launcher.encode).map(Launcher.decode)
+        ```
+
+        - `Verify` asks, on a connection of its own, whether the launcher file the daemon
+        - started from still has the content it remembers (sent when the file's mtime disagrees
+        - with the daemon's `build` file); the daemon answers with a `Verdict` and, if stale,
+        - drains itself so that the launcher's fresh daemon can take its place. `Shutdown` asks
+        - the daemon to accept no further invocations, let those in flight finish, and end; it
+        - is not answered.
+        + `Verify` demande, sur une connexion qui lui est propre, si le fichier du lanceur à partir
+        + duquel le démon a démarré a toujours le contenu dont il se souvient (envoyé lorsque le
+        + mtime du fichier ne concorde pas avec le fichier `build` du démon) ; le démon répond par
+        + un `Verdict` et, s'il est périmé, se vide pour que le nouveau démon du lanceur puisse
+        + prendre sa place. `Shutdown` demande au démon de n'accepter plus aucune invocation, de
+        + laisser se terminer celles en cours, puis de s'arrêter ; il ne reçoit pas de réponse.
+    entry .Init
+      info
+          - a new invocation, opening the session which carries it
+          + une nouvelle invocation, qui ouvre la session qui la transporte
+      detail
+          - The first document of every invocation's connection. The three tty flags say which
+          - of the client's streams are attached to a terminal, which the daemon cannot
+          - determine for itself; the user is the platform's identifier (numeric on Unix, a SID
+          - on Windows), and an `Init` from a user other than the daemon's own is refused with
+          - exit status 2. A daemon which is draining refuses it the same way.
+          + Le premier document de la connexion de chaque invocation. Les trois indicateurs tty
+          + disent lesquels des flux du client sont attachés à un terminal, ce que le démon ne peut
+          + pas déterminer par lui-même ; l'utilisateur est l'identifiant de la plateforme
+          + (numérique sous Unix, un SID sous Windows), et un `Init` venant d'un utilisateur autre
+          + que celui du démon est refusé avec le statut de sortie 2. Un démon en cours de vidage le
+          + refuse de la même manière.
+      entry #pid
+        info
+            - the client process's pid
+            + le pid du processus client
+      entry #uid
+        info
+            - the platform's identifier for the user: numeric on Unix, a SID on Windows
+            + l'identifiant de l'utilisateur pour la plateforme : numérique sous Unix, un SID sous
+            + Windows
+      entry #username
+        info
+            - the user's login name
+            + le nom de connexion de l'utilisateur
+      entry #script
+        info
+            - the canonical path of the executable
+            + le chemin canonique de l'exécutable
+      entry #pwd
+        info
+            - the invocation's working directory
+            + le répertoire de travail de l'invocation
+      entry #stdinTty
+        info
+            - whether the client's stdin is a terminal
+            + si le stdin du client est un terminal
+      entry #stdoutTty
+        info
+            - whether the client's stdout is a terminal
+            + si le stdout du client est un terminal
+      entry #stderrTty
+        info
+            - whether the client's stderr is a terminal
+            + si le stderr du client est un terminal
+      entry #arguments
+        info
+            - the invocation's arguments, as text
+            + les arguments de l'invocation, sous forme de texte
+      entry #environment
+        info
+            - the invocation's environment, each entry as `NAME=value`
+            + l'environnement de l'invocation, chaque entrée sous la forme `NAME=value`
+      entry #invokedAs
+        info
+            - `argv[0]` as the caller supplied it, for a multi-call binary to dispatch on
+            + `argv[0]` tel que l'appelant l'a fourni, pour qu'un binaire multi-appel puisse
+            + répartir selon lui
+      entry #umask
+        info
+            - the invocation's umask, in octal, if reported
+            + l'umask de l'invocation, en octal, s'il est indiqué
+      entry #columns
+        info
+            - the terminal's width when stdout is a terminal
+            + la largeur du terminal lorsque stdout est un terminal
+      entry #rows
+        info
+            - the terminal's height when stdout is a terminal
+            + la hauteur du terminal lorsque stdout est un terminal
+      entry #inputCodepage
+        info
+            - the Windows console's input code page, if any
+            + la page de code d'entrée de la console Windows, le cas échéant
+      entry #outputCodepage
+        info
+            - the Windows console's output code page, if any
+            + la page de code de sortie de la console Windows, le cas échéant
+      entry #descriptors
+        info
+            - the descriptors the client holds, which the daemon may open as streams
+            + les descripteurs que détient le client, que le démon peut ouvrir comme flux
+      entry #raws
+        info
+            - the values whose text form lost something, as the operating system gave them
+            + les valeurs dont la forme texte a perdu quelque chose, telles que les a données le
+            + système d'exploitation
+    entry .Data
+      info
+          - one chunk of a stream, of at most `Launcher.maximumChunk` bytes
+          + un morceau d'un flux, d'au plus `Launcher.maximumChunk` octets
+      detail
+          - Sent in both directions. The stream is `stdin`, `stdout`, `stderr` or the number of
+          - an open descriptor, and a sender never has more bytes outstanding on a stream than
+          - the credit it holds for it.
+          + Envoyé dans les deux sens. Le flux est `stdin`, `stdout`, `stderr` ou le numéro d'un
+          + descripteur ouvert, et un expéditeur n'a jamais plus d'octets en attente sur un flux que
+          + le crédit qu'il détient pour lui.
+      entry #stream
+        info
+            - `stdin`, `stdout`, `stderr` or a descriptor's number
+            + `stdin`, `stdout`, `stderr` ou le numéro d'un descripteur
+      entry #bytes
+        info
+            - the chunk's bytes
+            + les octets du morceau
+    entry .End
+      info
+          - the named stream has ended, after every chunk sent before it
+          + le flux nommé s'est terminé, après chaque morceau envoyé avant ce document
+      detail
+          - End-of-file for the daemon's reader of stdin or of a descriptor opened to read, or
+          - the daemon's close of a descriptor opened to write. Nothing more is sent on the
+          - stream.
+          + Fin de fichier pour le lecteur de stdin du démon ou d'un descripteur ouvert en lecture,
+          + ou fermeture par le démon d'un descripteur ouvert en écriture. Plus rien n'est envoyé
+          + sur le flux.
+      entry #stream
+        info
+            - the stream which has ended
+            + le flux qui s'est terminé
+    entry .Credit
+      info
+          - the receiver of a stream can take this many more bytes of it
+          + le destinataire d'un flux peut en recevoir encore ce nombre d'octets
+      detail
+          - Flow control: each stream opens with 65536 bytes of credit in each direction, and a
+          - receiver grants more as it consumes, in halves of the window rather than per chunk.
+          - A producer whose client is slow to drain stalls only its own stream, so
+          - `mytool | less`, paused, still receives a signal.
+          + Contrôle de flux : chaque flux s'ouvre avec 65536 octets de crédit dans chaque sens, et
+          + un destinataire en accorde davantage à mesure qu'il consomme, par moitiés de fenêtre
+          + plutôt que par morceau. Un producteur dont le client tarde à vider ne bloque que son
+          + propre flux, si bien que `mytool | less`, en pause, reçoit tout de même un signal.
+      entry #stream
+        info
+            - the stream the credit is for
+            + le flux auquel s'applique le crédit
+      entry #bytes
+        info
+            - how many more bytes may be sent, in addition to any credit granted before
+            + combien d'octets supplémentaires peuvent être envoyés, en plus de tout crédit accordé
+            + auparavant
+    entry .Open
+      info
+          - asks the launcher to start carrying a descriptor the client advertised
+          + demande au lanceur de commencer à transporter un descripteur annoncé par le client
+      detail
+          - Sent by the daemon when the invocation opens `/dev/fd/N`: as `Data` documents from
+          - the client if the descriptor was opened to read, or by writing `Data` documents the
+          - daemon sends if opened to write. Not answered; the stream simply begins. A
+          - descriptor the daemon did not advertise, or opens again while open, is ignored.
+          + Envoyé par le démon lorsque l'invocation ouvre `/dev/fd/N` : sous forme de documents
+          + `Data` venant du client si le descripteur a été ouvert en lecture, ou en écrivant les
+          + documents `Data` qu'envoie le démon s'il a été ouvert en écriture. Sans réponse ; le
+          + flux commence simplement. Un descripteur que le démon n'a pas annoncé, ou qu'il rouvre
+          + alors qu'il est ouvert, est ignoré.
+      entry #stream
+        info
+            - the descriptor's number
+            + le numéro du descripteur
+    entry .Signal
+      info
+          - a signal the client received, or a Windows console control event
+          + un signal qu'a reçu le client, ou un événement de contrôle de la console Windows
+      detail
+          - Named without its `SIG` prefix. `WINCH` and `CONT` carry the terminal's current
+          - size; a Windows close, logoff or shutdown carries the milliseconds the system allows
+          - before it ends the client regardless. The daemon dispatches it to the invocation's
+          - traps as a profanity `Signal` and answers with `SignalAck`; the launcher sends no
+          - further signal until it has the answer.
+          + Nommé sans son préfixe `SIG`. `WINCH` et `CONT` portent la taille courante du terminal ;
+          + une fermeture, une déconnexion ou un arrêt Windows porte les millisecondes que le
+          + système accorde avant de mettre fin au client quoi qu'il arrive. Le démon le transmet
+          + aux traps de l'invocation sous forme de `Signal` de profanity et répond par
+          + `SignalAck` ; le lanceur n'envoie pas d'autre signal tant qu'il n'a pas la réponse.
+      entry #name
+        info
+            - the signal's name without its `SIG` prefix, or the Windows event
+            + le nom du signal sans son préfixe `SIG`, ou l'événement Windows
+      entry #columns
+        info
+            - the terminal's width, with `WINCH` and `CONT`
+            + la largeur du terminal, avec `WINCH` et `CONT`
+      entry #rows
+        info
+            - the terminal's height, with `WINCH` and `CONT`
+            + la hauteur du terminal, avec `WINCH` et `CONT`
+      entry #deadline
+        info
+            - the milliseconds a Windows close, logoff or shutdown allows
+            + les millisecondes qu'accorde une fermeture, une déconnexion ou un arrêt Windows
+    entry .SignalAck
+      info
+          - whether the invocation accepted the signal last sent
+          + si l'invocation a accepté le dernier signal envoyé
+      detail
+          - `accept` is true when a trap answered `SignalResponse.Accept`; false — a trap which
+          - rejected or deferred it, no trap, or a trap too slow to answer — lets the launcher
+          - fall back to the operating system's default for the signal.
+          + `accept` est vrai lorsqu'un trap a répondu `SignalResponse.Accept` ; faux — un trap qui
+          + l'a rejeté ou différé, aucun trap, ou un trap trop lent à répondre — laisse le lanceur
+          + se rabattre sur le comportement par défaut du système d'exploitation pour ce signal.
+      entry #accept
+        info
+            - whether the invocation accepted the signal
+            + si l'invocation a accepté le signal
+    entry .Mode
+      info
+          - asks the launcher to put the client's terminal into canonical or raw mode
+          + demande au lanceur de mettre le terminal du client en mode canonique ou brut
+      detail
+          - `canonical` asks for cooked mode, with echo if `echo` is also set; canonical
+          - without echo is how a password is read; neither flag is raw mode. The launcher
+          - answers nothing, and leaves a terminal it does not own as it is.
+          - `Resident#cooked` and `Resident#concealed` send it.
+          + `canonical` demande le mode cuit (cooked), avec écho si `echo` est aussi défini ; le
+          + mode canonique sans écho est la manière de lire un mot de passe ; l'absence des deux
+          + indicateurs correspond au mode brut. Le lanceur ne répond rien, et laisse tel quel un
+          + terminal qu'il ne possède pas. `Resident#cooked` et `Resident#concealed` l'envoient.
+      entry #canonical
+        info
+            - cooked mode, or raw when false
+            + le mode cuit, ou brut lorsque faux
+      entry #echo
+        info
+            - whether the terminal echoes what is typed
+            + si le terminal fait l'écho de ce qui est tapé
+    entry .Closed
+      info
+          - the named stream has lost its reader
+          + le flux nommé a perdu son lecteur
+      detail
+          - From the launcher: the client's stdout or stderr, or a descriptor opened to write,
+          - could not be written; the invocation's further writes to that stream raise
+          - `Egress.Error`, as a broken pipe would. From the daemon: the invocation closed a
+          - descriptor it opened to read before reading it to its end, and the launcher stops
+          - carrying it.
+          + Venant du lanceur : le stdout ou le stderr du client, ou un descripteur ouvert en
+          + écriture, n'a pas pu être écrit ; les écritures ultérieures de l'invocation sur ce flux
+          + lèvent `Egress.Error`, comme le ferait un tube rompu. Venant du démon : l'invocation a
+          + fermé un descripteur ouvert en lecture avant de l'avoir lu jusqu'au bout, et le lanceur
+          + cesse de le transporter.
+      entry #stream
+        info
+            - the stream whose reader is gone
+            + le flux dont le lecteur est parti
+    entry .ExitStatus
+      info
+          - the invocation's exit status, ending the session
+          + le statut de sortie de l'invocation, qui met fin à la session
+      detail
+          - The last document the daemon writes, after every chunk of every stream; the
+          - connection closes once the launcher has it.
+          + Le dernier document qu'écrit le démon, après chaque morceau de chaque flux ; la
+          + connexion se ferme une fois que le lanceur l'a reçu.
+      entry #code
+        info
+            - the exit status
+            + le statut de sortie
+    entry .Verdict
+      info
+          - the daemon's answer to `Verify`: whether its launcher file is unchanged
+          + la réponse du démon à `Verify` : si son fichier lanceur est inchangé
+      detail
+          - `fresh` when the launcher file's content is what the daemon was started from (a
+          - metadata-only change such as `touch`, which the daemon remembers so the hash is not
+          - repeated); otherwise the daemon drains itself and the launcher, awaiting its death,
+          - starts a fresh one.
+          + `fresh` lorsque le contenu du fichier lanceur est celui à partir duquel le démon a
+          + démarré (une modification des seules métadonnées, comme `touch`, dont le démon se
+          + souvient pour ne pas recalculer le hachage) ; sinon le démon se vide et le lanceur,
+          + attendant sa mort, en démarre un nouveau.
+      entry #fresh
+        info
+            - whether the launcher file still has the content the daemon remembers
+            + si le fichier lanceur a toujours le contenu dont se souvient le démon
+    entry .Run
+      info
+          - asks the launcher to run a command on the client's terminal
+          + demande au lanceur d'exécuter une commande sur le terminal du client
+      detail
+          - For an editor, a pager, `ssh` or `sudo`. The launcher stops carrying the terminal's
+          - input, holds the invocation's output, restores the terminal's saved state, runs the
+          - command with the client's environment and streams — in `pwd`, if given — and
+          - answers with `Exited` when it ends. A client whose stdin is not a terminal it owns
+          - answers `Exited(127)` at once. `Resident#terminal` sends it.
+          + Pour un éditeur, un paginateur, `ssh` ou `sudo`. Le lanceur cesse de transporter
+          + l'entrée du terminal, retient la sortie de l'invocation, restaure l'état sauvegardé du
+          + terminal, exécute la commande avec l'environnement et les flux du client — dans `pwd`,
+          + s'il est donné — et répond par `Exited` lorsqu'elle se termine. Un client dont le stdin
+          + n'est pas un terminal qu'il possède répond aussitôt `Exited(127)`. `Resident#terminal`
+          + l'envoie.
+      entry #command
+        info
+            - the command to run
+            + la commande à exécuter
+      entry #arguments
+        info
+            - its arguments
+            + ses arguments
+      entry #pwd
+        info
+            - the directory to run it in, if not the invocation's
+            + le répertoire dans lequel l'exécuter, si ce n'est pas celui de l'invocation
+    entry .Exited
+      info
+          - the status the command the daemon asked to run ended with
+          + le statut avec lequel s'est terminée la commande que le démon a demandé d'exécuter
+      detail
+          - The exit code, 128 plus the signal it died of, or 127 if the command could not be
+          - run.
+          + Le code de sortie, 128 plus le signal dont elle est morte, ou 127 si la commande n'a pas
+          + pu être exécutée.
+      entry #code
+        info
+            - the status
+            + le statut
+
+entry .Session
+  info
+      - the daemon's half of an invocation's session: one connection, a reader thread and a writer thread
+      + la moitié côté démon de la session d'une invocation : une connexion, un thread lecteur et un
+      + thread écrivain
+  hidden
+  detail
+      - Not for direct use: `cli` makes one per `Init` and the invocation's `Stdio` is built on
+      - its streams. It carries every stream of the invocation as `Launcher.Message.Data`
+      - documents under per-stream credit, with the control traffic in between: the reader
+      - never waits on anything but the socket — it deposits each chunk with its stream, acts
+      - on each control document at once, and hands a signal to a thread of its own, since a
+      - trap may sleep — and the writer is the only thread which writes the connection, control
+      - documents ahead of data. A stream's producer waits for credit outside any lock, so a
+      - stream the client is slow to drain stalls only its own producer. Its companion holds
+      - the protocol's figures, `.window` and `.chunk`, and `.governed`, which says which of a
+      - process's own descriptor paths name a descriptor.
+      + Pas destiné à un usage direct : `cli` en crée une par `Init`, et le `Stdio` de l'invocation
+      + est construit sur ses flux. Elle transporte chaque flux de l'invocation sous forme de
+      + documents `Launcher.Message.Data` sous un crédit par flux, avec le trafic de contrôle
+      + intercalé : le lecteur n'attend jamais rien d'autre que le socket — il dépose chaque morceau
+      + auprès de son flux, traite chaque document de contrôle sur-le-champ, et confie un signal à
+      + un thread qui lui est propre, puisqu'un trap peut dormir — et l'écrivain est le seul thread
+      + qui écrit sur la connexion, les documents de contrôle passant avant les données. Le
+      + producteur d'un flux attend du crédit en dehors de tout verrou, si bien qu'un flux que le
+      + client tarde à vider ne bloque que son propre producteur. Son compagnon contient les
+      + chiffres du protocole, `.window` et `.chunk`, ainsi que `.governed`, qui indique lesquels
+      + des chemins de descripteurs propres à un processus nomment un descripteur.
+  refer ethereal.Launcher
+  entry .window
+    info
+        - the credit each stream opens with in each direction: 65536 bytes
+        + le crédit avec lequel chaque flux s'ouvre dans chaque sens : 65536 octets
+  entry .chunk
+    info
+        - the most bytes one `data` document carries: `Launcher.maximumChunk`
+        + le nombre maximal d'octets que porte un document `data` : `Launcher.maximumChunk`
+  entry .governed
+    info
+        - the descriptor number a path such as `/dev/stdin` or `/dev/fd/63` names, if it names one
+        + le numéro de descripteur que nomme un chemin comme `/dev/stdin` ou `/dev/fd/63`, s'il en
+        + nomme un
+    detail
+        - `/dev/stdin`, `/dev/stdout` and `/dev/stderr` are 0, 1 and 2; `/dev/fd/N` and
+        - `/proc/self/fd/N` are `N`, for a decimal of fewer than eight digits; any other path
+        - is `Unset`. Any such path is the client's table to answer for, whether or not the
+        - client holds the descriptor, so the daemon's own table is never reached through it.
+        + `/dev/stdin`, `/dev/stdout` et `/dev/stderr` valent 0, 1 et 2 ; `/dev/fd/N` et
+        + `/proc/self/fd/N` valent `N`, pour un nombre décimal de moins de huit chiffres ; tout
+        + autre chemin donne `Unset`. Un tel chemin relève toujours de la table du client, que le
+        + client détienne ou non le descripteur, si bien que la propre table du démon n'est jamais
+        + atteinte par ce biais.
+  entry #send
+    info
+        - queues a control document for the writer, ahead of any data
+        + met en file un document de contrôle pour l'écrivain, avant toute donnée
+  entry #finish
+    info
+        - ends the session from this side: `exit-status` behind everything queued before it
+        + met fin à la session de ce côté : `exit-status` derrière tout ce qui a été mis en file
+        + avant
+  entry #awaitWritten
+    info
+        - waits for the writer's queue to drain after `#finish`, so the status reaches the launcher
+        + attend que la file de l'écrivain se vide après `#finish`, pour que le statut atteigne le
+        + lanceur
+  entry #stdin
+    info
+        - the invocation's stdin, a `SessionInput` fed by the launcher's `data` documents
+        + le stdin de l'invocation, une `SessionInput` alimentée par les documents `data` du lanceur
+  entry #stdout
+    info
+        - the invocation's stdout, a `SessionOutput` sent under credit
+        + le stdout de l'invocation, une `SessionOutput` envoyée sous crédit
+  entry #stderr
+    info
+        - the invocation's stderr, a `SessionOutput` sent under credit
+        + le stderr de l'invocation, une `SessionOutput` envoyée sous crédit
+  entry #windowSize
+    info
+        - the client terminal's size as the launcher last measured it, as an `Atomic.Ref`
+        + la taille du terminal du client telle que le lanceur l'a mesurée en dernier, sous forme
+        + d'`Atomic.Ref`
+  entry #terminal
+    info
+        - runs a command on the client's terminal with a `Run` document, and waits for `Exited`
+        + exécute une commande sur le terminal du client avec un document `Run`, et attend `Exited`
+    detail
+        - One at a time; 127 if the launcher is gone or never answers.
+        + Une à la fois ; 127 si le lanceur est parti ou ne répond jamais.
+  entry #start
+    info
+        - starts the writer and reader threads
+        + démarre les threads écrivain et lecteur
+  entry #fdtable
+    info
+        - the client's descriptors as an `Fdtable`, consulted for `/dev/stdin`-style paths
+        + les descripteurs du client sous forme de `Fdtable`, consulté pour les chemins de type
+        + `/dev/stdin`
+
+entry .SessionInput
+  info
+      - the chunks of one stream the launcher sends, as a `java.io.InputStream`
+      + les morceaux d'un flux qu'envoie le lanceur, sous forme de `java.io.InputStream`
+  hidden
+  detail
+      - Not for direct use: the stream behind an invocation's stdin, or a descriptor opened to
+      - read. Chunks are deposited by the session's reader with `#push` and taken by whatever
+      - reads the invocation's stdin; the stream grants the launcher more credit in halves of
+      - the window as it consumes, so no more of the client's input is taken than the
+      - invocation asked for.
+      + Pas destiné à un usage direct : le flux derrière le stdin d'une invocation, ou un
+      + descripteur ouvert en lecture. Les morceaux sont déposés par le lecteur de la session avec
+      + `#push` et pris par ce qui lit le stdin de l'invocation ; le flux accorde au lanceur
+      + davantage de crédit par moitiés de fenêtre à mesure qu'il consomme, si bien qu'on ne prend
+      + pas plus de l'entrée du client que ce que l'invocation a demandé.
+  entry #push
+    info
+        - deposits a chunk; ignored once the stream has ended
+        + dépose un morceau ; ignoré une fois le flux terminé
+  entry #end
+    info
+        - marks the stream ended: a read past the deposited chunks gives end-of-file
+        + marque le flux comme terminé : une lecture au-delà des morceaux déposés donne une fin de
+        + fichier
+  entry #isEnded
+    info
+        - whether the launcher has sent `end` for the stream
+        + si le lanceur a envoyé `end` pour le flux
+  entry #read
+    info
+        - blocks until a chunk is available or the stream has ended
+        + bloque jusqu'à ce qu'un morceau soit disponible ou que le flux soit terminé
+  entry #available
+    info
+        - the bytes deposited and not yet read
+        + les octets déposés et pas encore lus
+
+entry .SessionOutput
+  info
+      - a stream the daemon sends, buffered up to a chunk and sent under credit
+      + un flux qu'envoie le démon, mis en tampon jusqu'à un morceau et envoyé sous crédit
+  hidden
+  detail
+      - Not for direct use: the stream behind an invocation's stdout or stderr, or a descriptor
+      - opened to write. Bytes are buffered up to `Session.chunk` and sent on `flush` — which
+      - the invocation's `PrintStream`s do after every write — or when full, each chunk once
+      - the launcher has granted credit for it. Once the launcher reports the stream closed, or
+      - is gone, a write raises `Egress.Error`.
+      + Pas destiné à un usage direct : le flux derrière le stdout ou le stderr d'une invocation, ou
+      + un descripteur ouvert en écriture. Les octets sont mis en tampon jusqu'à `Session.chunk` et
+      + envoyés sur `flush` — ce que font les `PrintStream` de l'invocation après chaque écriture —
+      + ou lorsque le tampon est plein, chaque morceau une fois que le lanceur a accordé du crédit
+      + pour lui. Dès que le lanceur signale le flux comme fermé, ou est parti, une écriture lève
+      + `Egress.Error`.
+  entry #severed
+    info
+        - set once the stream's reader at the client is gone: every later write raises `Egress.Error`
+        + défini dès que le lecteur du flux côté client est parti : chaque écriture ultérieure lève
+        + `Egress.Error`
+  entry #write
+    info
+        - buffers bytes, flushing each full chunk
+        + met des octets en tampon, en vidant chaque morceau plein
+  entry #flush
+    info
+        - sends the buffered bytes as chunks, waiting for credit on each
+        + envoie les octets en tampon sous forme de morceaux, en attendant du crédit pour chacun
+  entry #close
+    info
+        - flushes; the connection is closed by the session, not the stream
+        + vide le tampon ; la connexion est fermée par la session, et non par le flux
+
+entry .Client
+  info
+      - what the daemon keeps of an invocation outside its session: its bus and its `Cli`
+      + ce que le démon conserve d'une invocation en dehors de sa session : son bus et son `Cli`
+  hidden
+  detail
+      - Not for direct use: the daemon's record of a connected client, keyed by the client's
+      - pid, which holds the client's place on the message bus and the promise of its `Cli`,
+      - which the session's signal dispatch may need before the invocation has made it.
+      - `Client[bus](pid)` makes one whose `Topic` is the bus's message type.
+      + Pas destiné à un usage direct : l'enregistrement par le démon d'un client connecté, indexé
+      + par le pid du client, qui contient la place du client sur le bus de messages et la promesse
+      + de son `Cli`, dont la répartition des signaux de la session peut avoir besoin avant que
+      + l'invocation ne l'ait créé. `Client[bus](pid)` en crée un dont le `Topic` est le type de
+      + message du bus.
+  entry .apply
+    info
+        - a client record for a pid, typed to the daemon's bus
+        + un enregistrement client pour un pid, typé selon le bus du démon
+  entry #pid
+    info
+        - the client process's pid
+        + le pid du processus client
+  entry #Topic
+    info
+        - the bus's message type
+        + le type de message du bus
+  entry #invocation
+    info
+        - the promise of the invocation's `Cli`, completed once the invocation has made it
+        + la promesse du `Cli` de l'invocation, tenue une fois que l'invocation l'a créé
+  entry #bus
+    info
+        - the relay the client's broadcasts from other invocations arrive on
+        + le relais par lequel arrivent les diffusions des autres invocations destinées au client
+  entry #receive
+    info
+        - delivers a message broadcast by another invocation
+        + remet un message diffusé par une autre invocation
+
+entry .DaemonEnvironment
+  info
+      - the environment the daemon was launched with, as the launcher sent it
+      + l'environnement avec lequel le démon a été lancé, tel que l'a envoyé le lanceur
+  detail
+      - The launcher starts a daemon with a sanitized environment of its own — only `PATH`,
+      - `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, the `XDG_*` base
+      - directories, the JVM's option variables and `ETHEREAL_DEBUG` — so that the daemon's
+      - state does not depend on who happened to start it, and sends the environment it was
+      - itself started with on the daemon's standard input, each entry `NAME=value` ended by a
+      - NUL byte, as the property `ethereal.environment=stdin` announces. `DaemonEnvironment`
+      - is that environment, held in memory and never written anywhere; without the property
+      - (an older launcher, or a JVM run directly) it is the JVM's own environment, which is
+      - then the launching one.
+      + Le lanceur démarre un démon avec un environnement assaini qui lui est propre — seulement
+      + `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, les répertoires
+      + de base `XDG_*`, les variables d'options de la JVM et `ETHEREAL_DEBUG` — pour que l'état du
+      + démon ne dépende pas de qui l'a démarré, et envoie l'environnement avec lequel il a lui-même
+      + été démarré sur l'entrée standard du démon, chaque entrée `NAME=value` terminée par un
+      + octet NUL, comme l'annonce la propriété `ethereal.environment=stdin`. `DaemonEnvironment`
+      + est cet environnement, conservé en mémoire et jamais écrit nulle part ; sans la propriété
+      + (un lanceur plus ancien, ou une JVM exécutée directement), c'est le propre environnement de
+      + la JVM, qui est alors celui du lancement.
+
+      - Few things want this rather than the *invocation's* environment, which arrives with
+      - each invocation and is the `Environment` given inside a `cli` block (and the choice
+      - `environments.daemonClientEnvironment`); it is chosen explicitly, as the given
+      - `environments.daemonEnvironment`, imported by name.
+      + Peu de choses en ont besoin plutôt que de l'environnement de *l'invocation*, qui arrive
+      + avec chaque invocation et est le given `Environment` à l'intérieur d'un bloc `cli` (et le
+      + choix `environments.daemonClientEnvironment`) ; on le choisit explicitement, sous forme du
+      + given `environments.daemonEnvironment`, importé par son nom.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.daemonEnvironment
+
+      safely(Environment.home[Text])
+      ```
+  refer ethereal.cli
+  refer ethereal.LazyEnvironment
+  entry .capture
+    info
+        - reads the environment the launcher sent, if it has not been read already
+        + lit l'environnement envoyé par le lanceur, s'il n'a pas déjà été lu
+    detail
+        - `cli` calls it as the daemon starts, before the socket is bound: the launcher sends the
+        - environment only while it waits for the socket to appear, and the daemon's standard
+        - input is read to its end.
+        + `cli` l'appelle au démarrage du démon, avant que le socket ne soit lié : le lanceur
+        + n'envoie l'environnement que pendant qu'il attend l'apparition du socket, et l'entrée
+        + standard du démon est lue jusqu'au bout.
+  entry .variable
+    info
+        - the value of one variable, or `Unset`
+        + la valeur d'une variable, ou `Unset`
+  entry .entries
+    info
+        - every variable, as a `Map`
+        + toutes les variables, sous forme de `Map`
+
+entry .LazyEnvironment
+  info
+      - an `Environment` over a list of `NAME=value` entries, parsed on first use
+      + un `Environment` sur une liste d'entrées `NAME=value`, analysées à la première utilisation
+  detail
+      - The `Environment` of an invocation inside a `cli` block: the entries the launcher
+      - forwarded in the `init` document, split on the first `=` when the environment is first
+      - consulted (an entry with no `=` is dropped). It is what the given
+      - `environments.daemonClientEnvironment` resolves to, and what `Environment[Text](name)`
+      - reads inside the block.
+      + L'`Environment` d'une invocation à l'intérieur d'un bloc `cli` : les entrées que le lanceur
+      + a transmises dans le document `init`, découpées au premier `=` lors de la première
+      + consultation de l'environnement (une entrée sans `=` est écartée). C'est ce vers quoi se
+      + résout le given `environments.daemonClientEnvironment`, et ce que lit
+      + `Environment[Text](name)` à l'intérieur du bloc.
+
+      ```scala
+      import soundness.*
+
+      val environment: Environment = LazyEnvironment(List(t"HOME=/home/hamlet", t"SHELL=/bin/zsh"))
+      environment.variable(t"HOME")   // t"/home/hamlet"
+      ```
+  entry #variable
+    info
+        - the value of one variable, or `Unset`
+        + la valeur d'une variable, ou `Unset`
+  entry #entries
+    info
+        - every variable, as a `Map`
+        + toutes les variables, sous forme de `Map`
+
+entry .DaemonLogEvent
+  info
+      - what the daemon logs to syslog as it serves, drains and retires
+      + ce que le démon journalise dans syslog à mesure qu'il sert, se vide et se retire
+  detail
+      - Every event the daemon logs under the `ethereal` syslog identity, each tagged with the
+      - `Log` category it belongs to (`Log.Process`, `Log.Network`, `Log.Protocol`,
+      - `Log.Filesystem`, `Log.Scheduler` or `Log.Runtime`). The companion gives the
+      - `Communicable` which renders each as a message and the `Message transcribes
+      - DaemonLogEvent` which lets a logger take them, both in implicit scope.
+      + Chaque événement que le démon journalise sous l'identité syslog `ethereal`, chacun étiqueté
+      + avec la catégorie `Log` à laquelle il appartient (`Log.Process`, `Log.Network`,
+      + `Log.Protocol`, `Log.Filesystem`, `Log.Scheduler` ou `Log.Runtime`). Le compagnon fournit le
+      + `Communicable` qui rend chacun sous forme de message et le
+      + `Message transcribes DaemonLogEvent` qui permet à un journaliseur de les recevoir, tous deux
+      + dans la portée implicite.
+
+      - The singleton cases: `Shutdown` (shutting down); `Termination` (terminating the client
+      - connection: the launcher was rewritten or a stale verdict given, logged as a warning
+      - before the daemon exits); `IdleTimeout` (shutting down after six idle hours);
+      - `NewCli` (instantiating a new CLI, at `fine`); `UnrecognizedMessage` (a document that
+      - is not a launcher message, or one which belongs inside a session arriving outside
+      - one); `ProtocolMismatch` (a document of another launcher protocol schema: a launcher
+      - built against a different contract); and `Draining` (accepting no further invocations;
+      - exiting when those in flight end). `Installer.install` logs `WriteExecutable`, and
+      - `cli` logs the rest.
+      + Les cas singletons : `Shutdown` (arrêt) ; `Termination` (fin de la connexion client : le
+      + lanceur a été réécrit ou un verdict périmé a été rendu, journalisé comme avertissement avant
+      + que le démon ne quitte) ; `IdleTimeout` (arrêt après six heures d'inactivité) ; `NewCli`
+      + (instanciation d'une nouvelle CLI, au niveau `fine`) ; `UnrecognizedMessage` (un document
+      + qui n'est pas un message du lanceur, ou un document appartenant à une session arrivé hors
+      + de celle-ci) ; `ProtocolMismatch` (un document d'un autre schéma de protocole de lanceur :
+      + un lanceur construit selon un contrat différent) ; et `Draining` (plus aucune invocation
+      + acceptée ; sortie lorsque celles en cours se terminent). `Installer.install` journalise
+      + `WriteExecutable`, et `cli` journalise le reste.
+  refer ethereal.cli
+  entry .transcribable
+    info
+        - lets a `Logger` take daemon events as `Message`s
+        + permet à un `Logger` de recevoir les événements du démon sous forme de `Message`
+  entry .communicable
+    info
+        - renders each event as a message
+        + rend chaque événement sous forme de message
+  entry .WriteExecutable
+    info
+        - the installer is writing the executable: _writing the executable to `location`_
+        + l'installateur écrit l'exécutable : _writing the executable to `location`_
+    entry #location
+      info
+          - the path being written
+          + le chemin en cours d'écriture
+  entry .Failure
+    info
+        - an invocation threw: _the invocation failed: `error`_
+        + une invocation a levé une exception : _the invocation failed: `error`_
+    detail
+        - Logged as a failure before the throwable is given to the `Backstop`, which reports
+        - it on the invocation's stderr and chooses the exit status.
+        + Journalisé comme échec avant que le throwable ne soit confié au `Backstop`, qui le signale
+        + sur le stderr de l'invocation et choisit le statut de sortie.
+    entry #error
+      info
+          - the throwable, rendered as text
+          + le throwable, rendu sous forme de texte
+  entry .ReceivedSignal
+    info
+        - the launcher forwarded a signal: _received signal `signal`_
+        + le lanceur a transmis un signal : _received signal `signal`_
+    entry #signal
+      info
+          - the `UnixSignal` or `WindowsSignal` received
+          + le `UnixSignal` ou le `WindowsSignal` reçu
+  entry .CloseConnection
+    info
+        - an invocation ended: _closing the connection from `pid`_
+        + une invocation s'est terminée : _closing the connection from `pid`_
+    entry #pid
+      info
+          - the client's pid
+          + le pid du client
+  entry .Init
+    info
+        - an invocation began: _initialising `pid`_
+        + une invocation a commencé : _initialising `pid`_
+    entry #pid
+      info
+          - the client's pid
+          + le pid du client
+  entry .PeerRefused
+    info
+        - a connection from another user was refused: _refusing a connection from another user: `user`_
+        + une connexion venant d'un autre utilisateur a été refusée : _refusing a connection from
+        + another user: `user`_
+    detail
+        - The socket admits only its owner: a peer whose kernel-reported user is not the
+        - daemon's, or an `Init` claiming another user id, is refused without being read.
+        + Le socket n'admet que son propriétaire : un pair dont l'utilisateur indiqué par le noyau
+        + n'est pas celui du démon, ou un `Init` revendiquant un autre identifiant d'utilisateur,
+        + est refusé sans être lu.
+    entry #user
+      info
+          - the peer's user
+          + l'utilisateur du pair
+  entry .Refused
+    info
+        - an invocation arrived while the daemon was draining: _refusing invocation `pid`: the daemon is shutting down_
+        + une invocation est arrivée pendant le vidage du démon : _refusing invocation `pid`: the
+        + daemon is shutting down_
+    entry #pid
+      info
+          - the client's pid
+          + le pid du client
+  entry .Closed
+    info
+        - a stream's reader at the client has gone: _the invocation's `stream` has no reader_
+        + le lecteur d'un flux côté client est parti : _the invocation's `stream` has no reader_
+    entry #stream
+      info
+          - `stdout`, `stderr` or a descriptor's number
+          + `stdout`, `stderr` ou le numéro d'un descripteur
+
+entry .Egress
+  info
+      - an invocation's stdout or stderr: a stream which fails once the launcher reports its reader gone
+      + le stdout ou le stderr d'une invocation : un flux qui échoue dès que le lanceur signale le
+      + départ de son lecteur
+  detail
+      - The `java.io.OutputStream` behind an invocation's `Out` and `Err`: it delegates to the
+      - session's stream until the launcher sends `closed` for it — `mytool | head -1`, once
+      - `head` has exited — after which every write raises `.Error`, so that a program which
+      - writes until it cannot ends, as it would were it writing a pipe. `cli` catches the
+      - error and ends the invocation with status 141, as `SIGPIPE` would end a process (128
+      - plus 13), without consulting the `Backstop`, which would write to the same stream.
+      + Le `java.io.OutputStream` derrière les `Out` et `Err` d'une invocation : il délègue au flux
+      + de la session jusqu'à ce que le lanceur envoie `closed` pour lui — `mytool | head -1`, une
+      + fois que `head` a quitté — après quoi chaque écriture lève `.Error`, si bien qu'un programme
+      + qui écrit jusqu'à ne plus pouvoir se termine, comme il le ferait s'il écrivait dans un tube.
+      + `cli` intercepte l'erreur et termine l'invocation avec le statut 141, comme `SIGPIPE`
+      + terminerait un processus (128 plus 13), sans consulter le `Backstop`, qui écrirait sur le
+      + même flux.
+  refer ethereal.cli
+  entry .Error
+    info
+        - raised by a write to an invocation's stdout or stderr whose reader has gone
+        + levée par une écriture sur le stdout ou le stderr d'une invocation dont le lecteur est
+        + parti
+    detail
+        - _the invocation's `stream` has no reader_: the daemon's equivalent of the `EPIPE` a
+        - process writing a pipe would get. It is deliberately not an `IOException`, which
+        - `java.io.PrintStream` would swallow: it must reach the invocation, which `cli` ends
+        - with exit status 141. An invocation which wants to survive the loss of its output
+        - catches it as `case error: Egress.Error`.
+        + _the invocation's `stream` has no reader_ : l'équivalent pour le démon de l'`EPIPE` que
+        + recevrait un processus écrivant dans un tube. Ce n'est délibérément pas une `IOException`,
+        + que `java.io.PrintStream` avalerait : elle doit atteindre l'invocation, que `cli` termine
+        + avec le statut de sortie 141. Une invocation qui veut survivre à la perte de sa sortie
+        + l'intercepte avec `case error: Egress.Error`.
+    entry #stream
+      info
+          - `stdout` or `stderr`
+          + `stdout` ou `stderr`
+  entry #write
+    info
+        - writes to the underlying stream, or raises `Egress.Error` once the reader is gone
+        + écrit sur le flux sous-jacent, ou lève `Egress.Error` dès que le lecteur est parti
+
+entry .Installer
+  info
+      - copies the running executable onto the `PATH`, from inside the daemon
+      + copie l'exécutable en cours d'exécution dans le `PATH`, depuis l'intérieur du démon
+  detail
+      - An application built with `xek build` is one file — the native launcher stub, a
+      - configuration record and the JAR — and `Installer.install` puts a copy of it where the
+      - shell will find it: the first writable directory on the `PATH`, preferring the XDG
+      - `bin` directory, `/usr/local/bin` and `/usr/bin`, or a `target` of the caller's
+      - choosing. It is what the built-in `'{admin}' install` subcommand runs, and an
+      - application may offer it under a name of its own.
+      + Une application construite avec `xek build` est un seul fichier — l'amorce native du
+      + lanceur, un enregistrement de configuration et le JAR — et `Installer.install` en place une
+      + copie là où le shell la trouvera : le premier répertoire accessible en écriture du `PATH`,
+      + en privilégiant le répertoire `bin` XDG, `/usr/local/bin` et `/usr/bin`, ou une `target`
+      + choisie par l'appelant. C'est ce qu'exécute la sous-commande intégrée `'{admin}' install`,
+      + et une application peut l'offrir sous un nom qui lui est propre.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.daemonClientEnvironment
+      import logging.silentLogging
+
+      import backstops.stackTraceBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import threads.virtualThreads
+
+      @main
+      def mytool(): Unit = cli:
+        arguments match
+          case Argument("install") :: Nil =>
+            execute:
+              recover:
+                case Install.Error(reason) =>
+                  Err.println(m"could not install: $reason")
+                  Exit.Fail(1)
+              . protect:
+                  Out.println(Installer.install().communicate)
+                  Exit.Ok
+
+          case _ =>
+            execute(Exit.Ok)
+      ```
+
+      - The copy omits the launcher's embedded payload (the runner stubs for other platforms,
+      - whose sizes the launcher passes as `ethereal.payloadSize` and `ethereal.jarSize`) and
+      - rebases the JAR's ZIP64 locator to its new offset, so the installed file is a plain
+      - launcher for the platform it runs on. It is written to a hidden sibling and renamed
+      - over the target, which gives the target a fresh inode: on macOS the code-signing
+      - cache is per-vnode, and overwriting a previously-executed binary's content in place
+      - poisons it so that every later exec is killed with `SIGKILL` — the same trap awaits a
+      - `cp new old` over an installed launcher by hand; use `mv`, or remove it first.
+      + La copie omet la charge utile intégrée du lanceur (les amorces de l'exécuteur pour d'autres
+      + plateformes, dont le lanceur passe les tailles dans `ethereal.payloadSize` et
+      + `ethereal.jarSize`) et recale le localisateur ZIP64 du JAR sur son nouveau décalage, si bien
+      + que le fichier installé est un simple lanceur pour la plateforme sur laquelle il s'exécute.
+      + Il est écrit dans un fichier voisin caché puis renommé par-dessus la cible, ce qui donne à
+      + la cible un nouvel inode : sous macOS, le cache de signature de code est par vnode, et
+      + écraser sur place le contenu d'un binaire déjà exécuté l'empoisonne, si bien que chaque exec
+      + ultérieur est tué par `SIGKILL` — le même piège attend un `cp new old` fait à la main
+      + par-dessus un lanceur installé ; utilisez `mv`, ou supprimez-le d'abord.
+  refer ethereal.Resident
+  entry .Result
+    info
+        - what `Installer.install` did
+        + ce qu'a fait `Installer.install`
+    detail
+        - `Installed(script, path)` — _The `script` command was installed to `path`._;
+        - `AlreadyOnPath(script, path)` — _The `script` command is already installed at
+        - `path`._, when `command -v` already resolves the name to the running executable and
+        - `force` was not given; and `PathNotWritable` — _No directory on the PATH environment
+        - variable was writable_, when the temporary file could not be created. The
+        - companion's `Communicable` renders each as a message.
+        + `Installed(script, path)` — _The `script` command was installed to `path`._ ;
+        + `AlreadyOnPath(script, path)` — _The `script` command is already installed at `path`._,
+        + lorsque `command -v` résout déjà le nom vers l'exécutable en cours d'exécution et que
+        + `force` n'a pas été donné ; et `PathNotWritable` — _No directory on the PATH environment
+        + variable was writable_, lorsque le fichier temporaire n'a pas pu être créé. Le
+        + `Communicable` du compagnon rend chacun sous forme de message.
+    entry .communicable
+      info
+          - renders a result as a message
+          + rend un résultat sous forme de message
+    entry .AlreadyOnPath
+      info
+          - the command already resolves to the running executable
+          + la commande se résout déjà vers l'exécutable en cours d'exécution
+      entry #script
+        info
+            - the command's name
+            + le nom de la commande
+      entry #path
+        info
+            - the path it is installed at
+            + le chemin où elle est installée
+    entry .Installed
+      info
+          - the executable was copied to a directory on the `PATH`
+          + l'exécutable a été copié dans un répertoire du `PATH`
+      entry #script
+        info
+            - the command's name
+            + le nom de la commande
+      entry #path
+        info
+            - the path it was installed to
+            + le chemin où elle a été installée
+  entry .candidateTargets
+    info
+        - the writable directories on the `PATH`, best first
+        + les répertoires du `PATH` accessibles en écriture, le meilleur en premier
+    detail
+        - Every existing, writable directory of the `PATH` variable (read from the `Environment`
+        - in scope — the invocation's, inside a `cli` block), ordered with the XDG `bin`
+        - directory first, then `/usr/local/bin`, `/usr/bin`, `/usr/local/sbin`, `/opt/bin` and
+        - `/bin`, and any other in `PATH` order after them. Needs a `Resident`, a `System`, a
+        - `Tactic[Install.Error]` (raised with reason `Environment` for an unreadable `PATH` or
+        - an invalid path in it, or `Io` for a filesystem failure) and a `DaemonLogEvent is
+        - Loggable`.
+        + Chaque répertoire existant et accessible en écriture de la variable `PATH` (lue dans
+        + l'`Environment` de la portée — celui de l'invocation, à l'intérieur d'un bloc `cli`), avec
+        + le répertoire `bin` XDG en premier, puis `/usr/local/bin`, `/usr/bin`, `/usr/local/sbin`,
+        + `/opt/bin` et `/bin`, et tous les autres dans l'ordre du `PATH` après eux. Nécessite un
+        + `Resident`, un `System`, une `Tactic[Install.Error]` (levée avec la raison `Environment`
+        + pour un `PATH` illisible ou un chemin invalide qu'il contient, ou `Io` pour un échec du
+        + système de fichiers) et un `DaemonLogEvent is Loggable`.
+  entry .install
+    info
+        - installs the running executable onto the `PATH`, or to a chosen directory
+        + installe l'exécutable en cours d'exécution dans le `PATH`, ou dans un répertoire choisi
+    detail
+        - `install(force, target)`: `target` is the directory to install into, by default the
+        - first of `.candidateTargets`; `force` installs even when the command already resolves
+        - to the running executable. Needs a `Resident` (for `executable` and `script`), the
+        - `Environment` to read `PATH` from, an `Effectful` (it is a side effect on the
+        - filesystem), `Diagnostics`, a `Tactic[Install.Error]` and a `DaemonLogEvent is
+        - Loggable`, and logs `DaemonLogEvent.WriteExecutable` as it writes. `Install.Error` is
+        - raised with reason `Environment` when the name, path, `PATH` or the launcher's size
+        - properties cannot be read, and `Io` when the copy, the ZIP rebase or the rename
+        - fails.
+        + `install(force, target)` : `target` est le répertoire d'installation, par défaut le
+        + premier de `.candidateTargets` ; `force` installe même lorsque la commande se résout déjà
+        + vers l'exécutable en cours d'exécution. Nécessite un `Resident` (pour `executable` et
+        + `script`), l'`Environment` dans lequel lire `PATH`, un `Effectful` (c'est un effet de bord
+        + sur le système de fichiers), `Diagnostics`, une `Tactic[Install.Error]` et un
+        + `DaemonLogEvent is Loggable`, et journalise `DaemonLogEvent.WriteExecutable` pendant
+        + l'écriture. `Install.Error` est levée avec la raison `Environment` lorsque le nom, le
+        + chemin, `PATH` ou les propriétés de taille du lanceur ne peuvent pas être lus, et `Io`
+        + lorsque la copie, le recalage du ZIP ou le renommage échoue.
+
+entry .Upgrade
+  info
+      - stages a signed replacement executable for the launcher to verify and apply
+      + prépare un exécutable de remplacement signé que le lanceur vérifiera et appliquera
+  detail
+      - Self-upgrade, from the daemon's side. An application stages the bytes of a complete
+      - signed executable — a release built with `xek build --build-id … --public-key …
+      - --app-id …` and signed with `xek sign` — as `.pending` in its data directory
+      - (`$XDG_DATA_HOME/<name>/`, or `~/.local/share/<name>/`; `%LOCALAPPDATA%\<name>\` on
+      - Windows), and the launcher does the rest at the start of the command's **next**
+      - invocation: it verifies the candidate against the keys and application identifier in
+      - the *running* executable's record, requires its build id to be newer, swaps it into
+      - place, keeps the replaced executable beside it, re-execs, and records what it did in
+      - `.upgrade-result`. Its staleness check then displaces the running daemon by itself, so
+      - nothing here exits or respawns anything and the clients the daemon is serving carry
+      - on undisturbed. The Scala side verifies nothing: verification happens in the launcher,
+      - before the JVM starts, so no application code sits on the trust boundary.
+      + La mise à jour automatique, côté démon. Une application dépose les octets d'un exécutable
+      + signé complet — une version construite avec `xek build --build-id … --public-key …
+      + --app-id …` et signée avec `xek sign` — sous le nom `.pending` dans son répertoire de
+      + données (`$XDG_DATA_HOME/<name>/`, ou `~/.local/share/<name>/` ; `%LOCALAPPDATA%\<name>\`
+      + sous Windows), et le lanceur fait le reste au début de la **prochaine** invocation de la
+      + commande : il vérifie le candidat par rapport aux clés et à l'identifiant d'application de
+      + l'enregistrement de l'exécutable *en cours*, exige que son identifiant de build soit plus
+      + récent, le met en place, garde l'exécutable remplacé à côté, se réexécute, et consigne ce
+      + qu'il a fait dans `.upgrade-result`. Sa vérification de péremption déloge alors d'elle-même
+      + le démon en cours, si bien que rien ici ne quitte ni ne relance quoi que ce soit, et que les
+      + clients que sert le démon poursuivent sans être perturbés. Le côté Scala ne vérifie rien :
+      + la vérification a lieu dans le lanceur, avant le démarrage de la JVM, si bien qu'aucun code
+      + applicatif ne se trouve sur la frontière de confiance.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.daemonClientEnvironment
+      import systems.javaBaseSystem
+      import errorDiagnostics.stackTracesDiagnostics
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import strategies.throwUnsafely
+
+      def upgrade(): Text raises Upgrade.Error =
+        if !Upgrade.enabled then t"this build cannot be upgraded"
+        else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
+        else
+          Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
+          t"the upgrade will be applied the next time the command is run"
+      ```
+
+      - Every method needs an `Environment` and a `System` (the invocation's environment,
+      - `environments.daemonClientEnvironment`, inside a `cli` block) to find the data
+      - directory and the `ethereal.name` property. `.outcome` reads what the launcher did with
+      - the last candidate, and `.acknowledge` clears it so that each outcome is reported once;
+      - `.enabled` says whether the running executable's launcher would accept a signed
+      - candidate at all, and `Resident#buildId` is the running build's identifier, to compare
+      - with a release on offer.
+      + Chaque méthode nécessite un `Environment` et un `System` (l'environnement de l'invocation,
+      + `environments.daemonClientEnvironment`, à l'intérieur d'un bloc `cli`) pour trouver le
+      + répertoire de données et la propriété `ethereal.name`. `.outcome` lit ce que le lanceur a
+      + fait du dernier candidat, et `.acknowledge` l'efface pour que chaque résultat ne soit
+      + signalé qu'une fois ; `.enabled` indique si le lanceur de l'exécutable en cours accepterait
+      + seulement un candidat signé, et `Resident#buildId` est l'identifiant du build en cours, à
+      + comparer avec une version proposée.
+  refer ethereal.Resident
+  refer ethereal.cli
+  entry .stage
+    info
+        - writes a candidate executable as `.pending`, for the launcher to apply next time
+        + écrit un exécutable candidat sous le nom `.pending`, que le lanceur appliquera la
+        + prochaine fois
+    detail
+        - Takes any source which is `Readable to Data` — a file, an HTTP response, a stream —
+        - reads it whole, writes it to a temporary file beside `.pending` and renames it into
+        - place, so a launcher starting concurrently never reads a partial candidate. It returns
+        - normally: the upgrade takes effect the next time the command is run, which the
+        - application should tell the user. Raises `Upgrade.Error` with reason
+        - `CannotResolveName` when the daemon was not given its name by a launcher,
+        - `CannotWritePending` when the data directory or the file cannot be written, and
+        - `CannotReadSource` when the source cannot be read.
+        + Prend n'importe quelle source `Readable to Data` — un fichier, une réponse HTTP, un flux
+        + —, la lit entièrement, l'écrit dans un fichier temporaire à côté de `.pending` et le
+        + renomme pour le mettre en place, si bien qu'un lanceur démarrant en même temps ne lit
+        + jamais un candidat partiel. Elle retourne normalement : la mise à jour prend effet à la
+        + prochaine exécution de la commande, ce que l'application devrait indiquer à l'utilisateur.
+        + Lève `Upgrade.Error` avec la raison `CannotResolveName` lorsque le démon n'a pas reçu son
+        + nom d'un lanceur, `CannotWritePending` lorsque le répertoire de données ou le fichier ne
+        + peut pas être écrit, et `CannotReadSource` lorsque la source ne peut pas être lue.
+  entry .pending
+    info
+        - whether a staged candidate is waiting for the launcher
+        + si un candidat préparé attend le lanceur
+    detail
+        - Whether `.pending` exists in the data directory; false when the directory cannot be
+        - resolved.
+        + Si `.pending` existe dans le répertoire de données ; faux lorsque le répertoire ne peut
+        + pas être résolu.
+  entry .outcome
+    info
+        - what the launcher last did with a staged candidate, until acknowledged
+        + ce que le lanceur a fait en dernier d'un candidat préparé, jusqu'à ce que ce soit acquitté
+    detail
+        - Reads `.upgrade-result` from the data directory: the result word, the candidate's and
+        - the previous executable's build ids and when it happened. `Unset` when there is no
+        - record, it cannot be read, or it names an outcome this version does not know.
+        + Lit `.upgrade-result` dans le répertoire de données : le mot de résultat, les identifiants
+        + de build du candidat et de l'exécutable précédent, et le moment où cela s'est produit.
+        + `Unset` lorsqu'il n'y a pas d'enregistrement, qu'il ne peut pas être lu, ou qu'il nomme un
+        + résultat que cette version ne connaît pas.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import environments.daemonClientEnvironment
+        import systems.javaBaseSystem
+
+        def report(): Optional[Message] =
+          Upgrade.outcome.let: outcome =>
+            Upgrade.acknowledge()
+            m"${outcome.result} (build ${outcome.candidate.show})"
+        ```
+  entry .acknowledge
+    info
+        - forgets the last outcome, so that an application reports each one once
+        + oublie le dernier résultat, pour qu'une application signale chacun une seule fois
+    detail
+        - Removes `.upgrade-result`; a failure to do so is ignored.
+        + Supprime `.upgrade-result` ; un échec de cette suppression est ignoré.
+  entry .enabled
+    info
+        - whether the running executable's launcher would accept a signed upgrade at all
+        + si le lanceur de l'exécutable en cours accepterait seulement une mise à jour signée
+    detail
+        - The `ethereal.upgradable` property the launcher sets: false for an executable built
+        - without a release key and application identifier — a development build, whose launcher
+        - refuses every candidate — and false when the property is absent (an older launcher, or
+        - no launcher). Needs a `System`.
+        + La propriété `ethereal.upgradable` que définit le lanceur : faux pour un exécutable
+        + construit sans clé de version ni identifiant d'application — un build de développement,
+        + dont le lanceur refuse tout candidat — et faux lorsque la propriété est absente (un
+        + lanceur plus ancien, ou pas de lanceur). Nécessite un `System`.
+  entry .Outcome
+    info
+        - what the launcher did with a staged candidate: the result, the build ids and when
+        + ce que le lanceur a fait d'un candidat préparé : le résultat, les identifiants de build et
+        + le moment
+    detail
+        - Read back by `Upgrade.outcome` from the record the launcher writes. `candidate` is
+        - the staged executable's build id (zero if it had no record) and `previous` that of
+        - the executable which checked it, so a report can say which build replaced which.
+        + Relu par `Upgrade.outcome` à partir de l'enregistrement qu'écrit le lanceur. `candidate`
+        + est l'identifiant de build de l'exécutable préparé (zéro s'il n'avait pas
+        + d'enregistrement) et `previous` celui de l'exécutable qui l'a vérifié, si bien qu'un
+        + rapport peut dire quel build en a remplacé un autre.
+    entry .Result
+      info
+          - the launcher's verdict on a candidate
+          + le verdict du lanceur sur un candidat
+      detail
+          - `Applied` — _the upgrade was applied_; `Disabled` — _the running executable does
+          - not accept upgrades_ (no key or application id built in); `NoRecord` — _the
+          - candidate is not an XEK executable_; `WrongApplication` — _the candidate was built
+          - for another application_, even if signed with the same key; `BadSignature` — _the
+          - candidate's signature does not verify_, which an unsigned or tampered file gives;
+          - `NotNewer` — _the candidate is not newer than the running executable_, unless the
+          - release was signed with `--allow-downgrade`; `SwapFailed` — _the candidate could
+          - not be swapped into place_. A release signed with the recovery key is applied as
+          - one signed with the release key is.
+          + `Applied` — _the upgrade was applied_ ; `Disabled` — _the running executable does
+          + not accept upgrades_ (aucune clé ni identifiant d'application intégrés) ; `NoRecord` —
+          + _the candidate is not an XEK executable_ ; `WrongApplication` — _the candidate was built
+          + for another application_, même s'il est signé avec la même clé ; `BadSignature` — _the
+          + candidate's signature does not verify_, ce que donne un fichier non signé ou altéré ;
+          + `NotNewer` — _the candidate is not newer than the running executable_, à moins que la
+          + version n'ait été signée avec `--allow-downgrade` ; `SwapFailed` — _the candidate could
+          + not be swapped into place_. Une version signée avec la clé de récupération est appliquée
+          + comme l'est une version signée avec la clé de version.
+      entry .communicable
+        info
+            - renders each result as a message
+            + rend chaque résultat sous forme de message
+      entry .parse
+        info
+            - the result the launcher's word names, or `Unset` for a word this version does not know
+            + le résultat que nomme le mot du lanceur, ou `Unset` pour un mot que cette version ne
+            + connaît pas
+        detail
+            - `applied`, `disabled`, `no-record`, `wrong-application`, `bad-signature`,
+            - `not-newer` and `swap-failed`.
+            + `applied`, `disabled`, `no-record`, `wrong-application`, `bad-signature`,
+            + `not-newer` et `swap-failed`.
+    entry #result
+      info
+          - the launcher's verdict
+          + le verdict du lanceur
+    entry #candidate
+      info
+          - the staged executable's build id, or zero if it had no record
+          + l'identifiant de build de l'exécutable préparé, ou zéro s'il n'avait pas
+          + d'enregistrement
+    entry #previous
+      info
+          - the build id of the executable which checked the candidate
+          + l'identifiant de build de l'exécutable qui a vérifié le candidat
+    entry #time
+      info
+          - when it happened, in epoch milliseconds
+          + le moment où cela s'est produit, en millisecondes depuis l'époque
+    entry #when
+      info
+          - when it happened, as any instant type made from epoch milliseconds
+          + le moment où cela s'est produit, sous n'importe quel type d'instant créé à partir de
+          + millisecondes depuis l'époque
+      detail
+          - `outcome.when[Instant]`, for any `Instantiable across Instants from Long`.
+          + `outcome.when[Instant]`, pour tout `Instantiable across Instants from Long`.
+  entry .Error
+    info
+        - raised when a candidate cannot be staged
+        + levée lorsqu'un candidat ne peut pas être préparé
+    detail
+        - Error 631: _could not stage the upgrade because `reason`_, raised by `Upgrade.stage`.
+        - The reason is a `Clarification`, so the full code is `SN-631.1` to `SN-631.3`:
+        - `CannotReadSource` (1) — _the upgrade source could not be read_; `CannotWritePending`
+        - (2) — _the .pending file could not be written_; `CannotResolveName` (3) — _the
+        - running application's name is not available_, which is the case for a JVM run
+        - without a launcher.
+        + Erreur 631 : _could not stage the upgrade because `reason`_, levée par `Upgrade.stage`. La
+        + raison est une `Clarification`, si bien que le code complet va de `SN-631.1` à
+        + `SN-631.3` : `CannotReadSource` (1) — _the upgrade source could not be read_ ;
+        + `CannotWritePending` (2) — _the .pending file could not be written_ ; `CannotResolveName`
+        + (3) — _the running application's name is not available_, ce qui est le cas pour une JVM
+        + exécutée sans lanceur.
+    entry .Reason
+      info
+          - why the candidate could not be staged
+          + pourquoi le candidat n'a pas pu être préparé
+      detail
+          - `CannotReadSource`, `CannotWritePending` or `CannotResolveName`, numbered 1 to 3;
+          - the companion's `Communicable` renders each.
+          + `CannotReadSource`, `CannotWritePending` ou `CannotResolveName`, numérotées de 1 à 3 ;
+          + le `Communicable` du compagnon rend chacune.
+      entry .communicable
+        info
+            - renders each reason as a message
+            + rend chaque raison sous forme de message
+      entry #number
+        info
+            - the reason's number within error 631
+            + le numéro de la raison au sein de l'erreur 631
+    entry #reason
+      info
+          - why the candidate could not be staged
+          + pourquoi le candidat n'a pas pu être préparé
+
+entry .Terminus
+  info
+      - what one of the client's standard streams is attached to: a terminal or a pipe
+      + ce à quoi est attaché l'un des flux standard du client : un terminal ou un tube
+  detail
+      - `Terminal` or `Pipe`. The daemon cannot tell for itself — its streams are the
+      - launcher's socket, not the client's terminal — so each of `Resident#cliInput`,
+      - `Resident#cliOutput` and `Resident#cliError` is whatever the launcher reported in the
+      - `init` document, and the three genuinely differ: `mytool > file` run from a terminal
+      - has stdin on the terminal and stdout on a file. A file, a socket or the null device
+      - counts as `Pipe`. It encodes to and decodes from the lowercase text `terminal` and
+      - `pipe`.
+      + `Terminal` ou `Pipe`. Le démon ne peut pas le savoir par lui-même — ses flux sont le socket
+      + du lanceur, et non le terminal du client — si bien que `Resident#cliInput`,
+      + `Resident#cliOutput` et `Resident#cliError` sont chacun ce que le lanceur a indiqué dans le
+      + document `init`, et les trois diffèrent réellement : `mytool > file` exécuté depuis un
+      + terminal a stdin sur le terminal et stdout sur un fichier. Un fichier, un socket ou le
+      + périphérique nul comptent comme `Pipe`. Il s'encode vers et se décode depuis le texte en
+      + minuscules `terminal` et `pipe`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      import backstops.stackTraceBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import threads.virtualThreads
+
+      @main
+      def mytool(): Unit = cli:
+        execute:
+          resident.cliOutput match
+            case Terminus.Terminal => Out.println(e"$Bold(a terminal)")
+            case Terminus.Pipe     => Out.println(t"a pipe")
+
+          Exit.Ok
+      ```
+  refer ethereal.Resident
+  entry .decoder
+    info
+        - reads `terminal` or `pipe` (in any case) as a `Terminus`
+        + lit `terminal` ou `pipe` (sans tenir compte de la casse) en un `Terminus`
+  entry .encodable
+    info
+        - writes a `Terminus` as `terminal` or `pipe`
+        + écrit un `Terminus` sous la forme `terminal` ou `pipe`
+
+entry .Tty
+  info
+      - the mode asked of the client's terminal: raw, canonical with echo, or canonical without
+      + le mode demandé au terminal du client : brut, canonique avec écho, ou canonique sans
+  detail
+      - The launcher raw-modes a terminal stdin before it connects, so that individual
+      - keypresses can be forwarded to an interactive session. A command which wants ordinary
+      - line input asks, over the session, for `Canonical` — the terminal driver then provides
+      - echo and line editing itself — or for `Concealed`, canonical mode with nothing echoed,
+      - which is how a password is read; `Raw` puts it back. `Resident#cooked` and
+      - `Resident#concealed` make the requests and restore `Raw` afterwards; `#canonical` and
+      - `#echo` are the two flags of the `Launcher.Message.Mode` document each becomes.
+      + Le lanceur met en mode brut un stdin de terminal avant de se connecter, afin que les
+      + frappes de touches individuelles puissent être transmises à une session interactive. Une
+      + commande qui veut une saisie ordinaire par lignes demande, par la session, `Canonical` — le
+      + pilote du terminal fournit alors lui-même l'écho et l'édition de ligne — ou `Concealed`, le
+      + mode canonique sans aucun écho, qui est la manière de lire un mot de passe ; `Raw` rétablit
+      + le mode brut. `Resident#cooked` et `Resident#concealed` font les requêtes et restaurent
+      + `Raw` ensuite ; `#canonical` et `#echo` sont les deux indicateurs du document
+      + `Launcher.Message.Mode` que devient chacune.
+  refer ethereal.Resident
+  entry #canonical
+    info
+        - whether the mode is cooked: true for `Canonical` and `Concealed`
+        + si le mode est cuit : vrai pour `Canonical` et `Concealed`
+  entry #echo
+    info
+        - whether the terminal echoes what is typed: true only for `Canonical`
+        + si le terminal fait l'écho de ce qui est tapé : vrai seulement pour `Canonical`
+
+entry .Transcoder
+  info
+      - re-encodes a Windows console's input from its code page to UTF-8, a character at a time
+      + réencode l'entrée d'une console Windows de sa page de code vers l'UTF-8, un caractère à la
+      + fois
+  detail
+      - A `java.io.InputStream` over another, decoding bytes in the console's input code page
+      - (which the `init` document reports as `inputCodepage`, when it is not 65001, UTF-8) and
+      - delivering their UTF-8 encoding, so that the rest of the daemon reads the invocation's
+      - input as UTF-8. It reads one character at a time — a surrogate pair as one — so that no
+      - more of the client's input is taken from the connection than the invocation asked for.
+      - `cli` wraps the session's stdin in one when the code page calls for it; `available()`
+      - is the pending bytes of the last character, and `close()` closes the underlying reader.
+      + Un `java.io.InputStream` sur un autre, qui décode les octets dans la page de code d'entrée
+      + de la console (que le document `init` indique dans `inputCodepage`, lorsqu'elle n'est pas
+      + 65001, UTF-8) et fournit leur encodage UTF-8, si bien que le reste du démon lit l'entrée de
+      + l'invocation en UTF-8. Il lit un caractère à la fois — une paire de substitution comptant
+      + pour un — si bien qu'on ne prend pas plus de l'entrée du client sur la connexion que ce que
+      + l'invocation a demandé. `cli` enveloppe le stdin de la session dans l'un d'eux lorsque la
+      + page de code l'exige ; `available()` donne les octets en attente du dernier caractère, et
+      + `close()` ferme le lecteur sous-jacent.

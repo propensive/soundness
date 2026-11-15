@@ -1,0 +1,872 @@
+tel 1.0
+
+base cartouche
+import soundness
+
+info
+    - label placement: finds a position for every piece of text on a picture, clear of the rest
+    + placement d'étiquettes : trouve une position pour chaque texte d'une image, à l'écart du reste
+detail
+    - _Cartouche_ decides where each label on a picture goes. Text is set beside the thing it
+    - names — a note by a point, a name by a town, a percentage in a wedge — and when two things
+    - are close their labels collide. Cartouche takes every label (a `Caption`: its measured
+    - size, the point it describes, and the sides it may lie on), together with everything on the
+    - page that text must not cover (each an `Obstacle`), and finds a `Caption.Position` for each
+    - one. Charts use it for their labels; a map would use it for its place names. The engine sees
+    - only geometry, in a y-down frame as SVG has it: whoever draws the text measures it.
+    + _Cartouche_ décide où va chaque étiquette d'une image. Un texte se place à côté de ce
+    + qu'il nomme — une note près d'un point, un nom près d'une ville, un pourcentage dans un
+    + secteur — et quand deux éléments sont proches, leurs étiquettes entrent en collision.
+    + Cartouche prend chaque étiquette (une `Caption` : sa taille mesurée, le point qu'elle
+    + décrit et les côtés où elle peut se placer), ainsi que tout ce que le texte ne doit pas
+    + recouvrir sur la page (chacun étant un `Obstacle`), et trouve une `Caption.Position` pour
+    + chacune. Les graphiques l'utilisent pour leurs étiquettes ; une carte l'utiliserait pour
+    + ses noms de lieux. Le moteur ne voit que de la géométrie, dans un repère où l'axe y est
+    + orienté vers le bas, comme en SVG : c'est à celui qui dessine le texte de le mesurer.
+
+    - The code which builds a picture knows what each label says but not where the others will
+    - end up, so `arrange` runs that code twice. The first run records each `position`, `avoid`
+    - and `canvas` call and answers every `position` provisionally; the `Arranger` in scope then
+    - solves the whole arrangement; and the second run answers each `position` with its solved
+    - place. The value of `arrange` is that of the second run.
+    + Le code qui construit une image sait ce que dit chaque étiquette, mais pas où les autres
+    + se retrouveront ; `arrange` exécute donc ce code deux fois. La première exécution
+    + enregistre chaque appel à `position`, `avoid` et `canvas` et répond provisoirement à
+    + chaque `position` ; l'`Arranger` dans la portée résout alors l'ensemble de la
+    + disposition ; et la seconde exécution répond à chaque `position` avec la place calculée.
+    + La valeur d'`arrange` est celle de la seconde exécution.
+
+    ```scala
+    import soundness.*
+
+    val picture = arrange:
+      val first = position(60.0, 12.0, 100.0, 100.0)
+      val second = position(60.0, 12.0, 100.0, 100.0)
+      (first.attachment, second.attachment)   // (East, West)
+    ```
+
+    - The body must therefore be **repeatable**: the same `position` calls in the same order each
+    - time, with nothing done that should not happen twice. A counter that numbers the labels
+    - belongs inside the body, where it starts again with the second run.
+    + Le corps doit donc être **répétable** : les mêmes appels à `position` dans le même ordre à
+    + chaque fois, sans rien faire qui ne devrait pas se produire deux fois. Un compteur qui
+    + numérote les étiquettes a sa place dans le corps, où il repart de zéro à la seconde
+    + exécution.
+
+    - Which algorithm arranges is the `Arranger` in scope: the greedy default, from `Arranger`'s
+    - companion, or one imported by name from the `arrangers` package (`import soundness.*` does
+    - not import givens), or a configured `Arranger.Greedy` or `Arranger.Annealing` bound as a
+    - local given.
+    + L'algorithme de disposition est l'`Arranger` dans la portée : celui par défaut, glouton,
+    + fourni par le compagnon d'`Arranger`, ou un autre importé par son nom depuis le package
+    + `arrangers` (`import soundness.*` n'importe pas les givens), ou encore un
+    + `Arranger.Greedy` ou un `Arranger.Annealing` configuré et lié comme given local.
+
+    - The library has one source set, `cartouche.core`, which compiles for every platform.
+    - Everything is exported to the `soundness` umbrella, and the `arrangers` choice package
+    - merges with the umbrella's own.
+    + La bibliothèque a un seul ensemble de sources, `cartouche.core`, qui compile pour toutes
+    + les plateformes. Tout est exporté vers le package parapluie `soundness`, et le package de
+    + choix `arrangers` fusionne avec celui du package parapluie.
+
+refer cartouche.arrange
+refer cartouche.position
+refer cartouche.Caption
+refer cartouche.Obstacle
+refer cartouche.Arranger
+
+entry .arrange
+  info
+      - runs a picture-building body twice, answering its `position` calls with an arrangement
+      + exécute deux fois un corps qui construit une image, en répondant à ses appels `position` par
+      + une disposition
+  detail
+      - `arrange(body)` runs `body` once with a recording `Arranger.Pass`, in which every
+      - `position` answers with `Caption.provisional` — the label where it was asked for, on its
+      - first-choice side — and every `avoid` and `canvas` is noted; that run's result is
+      - discarded. The `Arranger` in scope then places all the recorded captions against the
+      - recorded obstacles and canvas, and the body is run again, each `position` call answered
+      - by its solved `Caption.Position`, matched to the first run's calls by their order. The
+      - second run's result is `arrange`'s.
+      + `arrange(body)` exécute `body` une première fois avec un `Arranger.Pass` d'enregistrement,
+      + dans lequel chaque `position` répond par `Caption.provisional` — l'étiquette là où elle a
+      + été demandée, sur son côté préféré — et chaque `avoid` et `canvas` est noté ; le résultat
+      + de cette exécution est ignoré. L'`Arranger` dans la portée place alors toutes les captions
+      + enregistrées par rapport aux obstacles et au canevas enregistrés, et le corps est exécuté
+      + à nouveau, chaque appel à `position` recevant sa `Caption.Position` calculée, associée aux
+      + appels de la première exécution selon leur ordre. Le résultat de la seconde exécution est
+      + celui d'`arrange`.
+
+      ```scala fuel
+      frame
+        label Nothing in the way: the label lies to the east
+        code
+            import soundness.*
+
+            arrange:
+              position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // East
+      frame
+        label A box to the east: the label moves to the west
+        code
+            import soundness.*
+
+            arrange:
+              avoid(Obstacle.Box(100.0, 90.0, 40.0, 20.0))
+              position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // West
+      frame
+        label Only south allowed, and blocked: the label is displaced, with a leader
+        code
+            import soundness.*
+
+            arrange:
+              avoid(Obstacle.Box(0.0, 0.0, 200.0, 110.0))
+              position(60.0, 12.0, 100.0, 100.0,
+                  attachments = List(Caption.Attachment.South), reach = 40.0).leader
+      ##
+      ```
+
+      - The body must make the same calls in the same order in both runs and have no other
+      - effects. A second-run call that the first did not make, or one with a different caption,
+      - is answered provisionally and recorded as `Arranger.Pass#diverged`.
+      + Le corps doit faire les mêmes appels dans le même ordre lors des deux exécutions, et
+      + n'avoir aucun autre effet. Un appel de la seconde exécution que la première n'a pas fait,
+      + ou un appel avec une caption différente, reçoit une réponse provisoire et est enregistré
+      + comme `Arranger.Pass#diverged`.
+  refer cartouche.position
+  refer cartouche.avoid
+  refer cartouche.canvas
+  refer cartouche.Arranger
+
+entry .position
+  info
+      - asks for a place for a label, inside an `arrange` body
+      + demande une place pour une étiquette, dans le corps d'un `arrange`
+  detail
+      - Needs the `Arranger.Pass` which `arrange` provides. It takes a `Caption`, or the caption's
+      - parts directly: `width` and `height` (the measured label), `x` and `y` (the target point),
+      - and optionally `attachments` (the sides it may lie on, best first; by default
+      - `Caption.Attachment.compass`), `standoff`, `reach`, `padding`, `priority` and `fallback`,
+      - each as `Caption` describes. In the first run of the body the answer is provisional; in the
+      - second it is the solved `Caption.Position`.
+      + Requiert l'`Arranger.Pass` que fournit `arrange`. Elle prend une `Caption`, ou directement
+      + les éléments de la caption : `width` et `height` (l'étiquette mesurée), `x` et `y` (le
+      + point cible) et, en option, `attachments` (les côtés où elle peut se placer, du meilleur
+      + au moins bon ; par défaut `Caption.Attachment.compass`), `standoff`, `reach`, `padding`,
+      + `priority` et `fallback`, chacun tel que le décrit `Caption`. Lors de la première
+      + exécution du corps, la réponse est provisoire ; lors de la seconde, c'est la
+      + `Caption.Position` calculée.
+
+      ```scala
+      import soundness.*
+
+      val caption = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0)
+      val placed: Caption.Position = arrange(position(caption))
+      ```
+
+entry .avoid
+  info
+      - declares obstacles no label may be set over, inside an `arrange` body
+      + déclare des obstacles sur lesquels aucune étiquette ne peut être placée, dans le corps d'un
+      + `arrange`
+  detail
+      - Takes any number of `Obstacle`s — a `Obstacle.Box` for a bar or legend, an `Obstacle.Line`
+      - for each segment of a plotted line, an `Obstacle.Disc` for a marker — and adds them to the
+      - arrangement. Needs the `Arranger.Pass` which `arrange` provides; only the first run's calls
+      - count.
+      + Prend un nombre quelconque d'`Obstacle`s — un `Obstacle.Box` pour une barre ou une
+      + légende, un `Obstacle.Line` pour chaque segment d'une ligne tracée, un `Obstacle.Disc`
+      + pour un marqueur — et les ajoute à la disposition. Requiert l'`Arranger.Pass` que fournit
+      + `arrange` ; seuls les appels de la première exécution comptent.
+
+      ```scala
+      import soundness.*
+
+      arrange:
+        avoid(Obstacle.Line(0.0, 100.0, 300.0, 100.0), Obstacle.Disc(100.0, 100.0, 3.0))
+        position(60.0, 12.0, 100.0, 100.0)
+      ```
+
+entry .canvas
+  info
+      - declares the area labels must stay within, inside an `arrange` body
+      + déclare la zone dans laquelle les étiquettes doivent rester, dans le corps d'un `arrange`
+  detail
+      - Takes an `Obstacle.Box`; a label's area outside it counts as a collision. Without a canvas
+      - the page is unbounded, and if the body declares more than one, the last wins.
+      + Prend un `Obstacle.Box` ; la partie d'une étiquette située à l'extérieur compte comme une
+      + collision. Sans canevas, la page est illimitée, et si le corps en déclare plusieurs, le
+      + dernier l'emporte.
+
+      ```scala
+      import soundness.*
+
+      arrange:
+        canvas(Obstacle.Box(0.0, 0.0, 120.0, 120.0))
+        position(60.0, 12.0, 110.0, 100.0).attachment   // West: east would run off the edge
+      ```
+
+entry .Caption
+  info
+      - a request to place a label: its size, the point it describes, and how it may be set
+      + une demande de placement d'étiquette : sa taille, le point qu'elle décrit et la façon dont
+      + elle peut être placée
+  detail
+      - A case class of the geometry of one label. `width` and `height` are its measured size;
+      - `x` and `y` the target it describes. `attachments` lists the sides of the target it may
+      - lie on, best first (by default `Caption.Attachment.compass`); a caption with none is
+      - treated as one which may lie to the east. `standoff` is the gap between the target and the
+      - label's near edge, for a label beside a marker rather than on its centre. `reach` is how
+      - far the label's anchor may be moved from its target when every side is blocked; the
+      - default, zero, pins it. `padding` is clearance demanded around the label. Captions with a
+      - higher `priority` are placed first, and so keep their targets. `fallback` says what
+      - becomes of a label which collides wherever it is put.
+      + Une case class de la géométrie d'une étiquette. `width` et `height` sont sa taille
+      + mesurée ; `x` et `y` la cible qu'elle décrit. `attachments` liste les côtés de la cible
+      + où elle peut se placer, du meilleur au moins bon (par défaut
+      + `Caption.Attachment.compass`) ; une caption qui n'en a aucun est traitée comme pouvant se
+      + placer à l'est. `standoff` est l'écart entre la cible et le bord proche de l'étiquette,
+      + pour une étiquette placée à côté d'un marqueur plutôt qu'en son centre. `reach` est la
+      + distance dont l'ancre de l'étiquette peut être éloignée de sa cible quand tous les côtés
+      + sont bloqués ; la valeur par défaut, zéro, la fixe. `padding` est le dégagement exigé
+      + autour de l'étiquette. Les captions de `priority` plus élevée sont placées en premier, et
+      + conservent donc leur cible. `fallback` dit ce qu'il advient d'une étiquette qui entre en
+      + collision où qu'on la place.
+
+      ```scala
+      import soundness.*
+
+      val note = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0, priority = 1,
+          fallback = Caption.Fallback.Hide)
+      ```
+
+      - A caption with one side and no reach is placed exactly where it asks, whatever is there,
+      - and everything after it steers around it: that is how a chart's tick labels and legend
+      - hold still while its point labels move.
+      + Une caption avec un seul côté et sans portée de déplacement est placée exactement où elle
+      + le demande, quoi qu'il s'y trouve, et tout ce qui suit la contourne : c'est ainsi que les
+      + étiquettes de graduation et la légende d'un graphique restent immobiles pendant que les
+      + étiquettes de ses points se déplacent.
+  refer cartouche.Caption.Position
+  refer cartouche.Caption.Attachment
+  refer cartouche.position
+  entry #width
+    info
+        - the label's measured width
+        + la largeur mesurée de l'étiquette
+  entry #height
+    info
+        - the label's measured height
+        + la hauteur mesurée de l'étiquette
+  entry #x
+    info
+        - the horizontal coordinate of the target the label describes
+        + la coordonnée horizontale de la cible que décrit l'étiquette
+  entry #y
+    info
+        - the vertical coordinate of the target, increasing downwards
+        + la coordonnée verticale de la cible, croissant vers le bas
+  entry #attachments
+    info
+        - the sides of the target the label may lie on, best first
+        + les côtés de la cible où l'étiquette peut se placer, du meilleur au moins bon
+  entry #standoff
+    info
+        - the gap between the target and the label's near edge
+        + l'écart entre la cible et le bord proche de l'étiquette
+  entry #reach
+    info
+        - how far the label may be moved from its target when every side is blocked
+        + la distance dont l'étiquette peut être éloignée de sa cible quand tous les côtés sont
+        + bloqués
+  entry #padding
+    info
+        - the clearance demanded around the label's box
+        + le dégagement exigé autour du rectangle de l'étiquette
+  entry #priority
+    info
+        - the placement order: a higher priority is placed earlier and keeps its target
+        + l'ordre de placement : une priorité plus élevée est placée plus tôt et conserve sa cible
+  entry #fallback
+    info
+        - whether a label which collides everywhere is drawn anyway or hidden
+        + indique si une étiquette en collision partout est tout de même dessinée, ou masquée
+  entry #sides
+    info
+        - the sides to try: `#attachments`, or `East` alone if that is empty
+        + les côtés à essayer : `#attachments`, ou `East` seul si c'est vide
+  entry #anchor
+    info
+        - the label's anchor point on one side of its target, displaced by an offset
+        + le point d'ancrage de l'étiquette sur un côté de sa cible, déplacé d'un décalage
+    detail
+        - `caption.anchor(attachment, dx, dy)` is the target moved by (`dx`, `dy`) and then by
+        - `#standoff` in the direction of the attachment.
+        + `caption.anchor(attachment, dx, dy)` est la cible déplacée de (`dx`, `dy`), puis de
+        + `#standoff` dans la direction de l'attachement.
+  entry #footprint
+    info
+        - the box the label occupies when anchored at a point on one side
+        + le rectangle qu'occupe l'étiquette lorsqu'elle est ancrée en un point d'un côté
+    detail
+        - `Obstacle.Box.around` with the caption's size.
+        + `Obstacle.Box.around` avec la taille de la caption.
+  entry .provisional
+    info
+        - the answer before arrangement: the label at its target, on its first side
+        + la réponse avant disposition : l'étiquette sur sa cible, de son côté préféré
+    detail
+        - What every `position` call receives in the first run of an `arrange` body, and what a
+        - call that diverges from the first run receives in the second.
+        + Ce que reçoit chaque appel à `position` lors de la première exécution du corps d'un
+        + `arrange`, et ce que reçoit lors de la seconde un appel qui diverge de la première.
+  entry .Attachment
+    info
+        - which side of its target a label lies on: the eight compass points or `Center`
+        + le côté de sa cible où se place une étiquette : les huit points cardinaux et
+        + intermédiaires, ou `Center`
+    detail
+        - An enum, in a y-down frame, so `North` is above the target. Its cases are `North`,
+        - `Northeast`, `East`, `Southeast`, `South`, `Southwest`, `West`, `Northwest` and
+        - `Center`. The anchor of a label is its edge nearest the target: for `East` the middle
+        - of its left edge, for `North` the middle of its bottom edge, for `Center` its centre, so
+        - a renderer derives its own alignment from the attachment (an SVG `text` element's
+        - `text-anchor` and `dominant-baseline`).
+        + Une énumération, dans un repère où l'axe y est orienté vers le bas, de sorte que `North`
+        + est au-dessus de la cible. Ses cas sont `North`, `Northeast`, `East`, `Southeast`,
+        + `South`, `Southwest`, `West`, `Northwest` et `Center`. L'ancre d'une étiquette est son
+        + bord le plus proche de la cible : pour `East`, le milieu de son bord gauche ; pour
+        + `North`, le milieu de son bord inférieur ; pour `Center`, son centre ; un moteur de rendu
+        + déduit donc son propre alignement de l'attachement (le `text-anchor` et le
+        + `dominant-baseline` d'un élément SVG `text`).
+
+        ```scala
+        import soundness.*
+
+        arrange:
+          position(60.0, 12.0, 100.0, 100.0, attachments = Caption.Attachment.cardinal)
+        ```
+    entry .compass
+      info
+          - the cartographic preference: east, west, the four diagonals, then north and south
+          + la préférence cartographique : est, ouest, les quatre diagonales, puis nord et sud
+    entry .cardinal
+      info
+          - east, west, north and south, in that order
+          + est, ouest, nord et sud, dans cet ordre
+    entry #dx
+      info
+          - the horizontal unit offset from the target to the label's near edge: -1, 0 or 1
+          + le décalage horizontal unitaire de la cible au bord proche de l'étiquette : -1, 0 ou 1
+    entry #dy
+      info
+          - the vertical unit offset from the target to the label's near edge: -1, 0 or 1
+          + le décalage vertical unitaire de la cible au bord proche de l'étiquette : -1, 0 ou 1
+  entry .Fallback
+    info
+        - what becomes of a label which overlaps something wherever it is put
+        + ce qu'il advient d'une étiquette qui chevauche quelque chose où qu'on la place
+    detail
+        - An enum of two cases. `Overlap`, the default, draws the label at the position where it
+        - overlaps least. `Hide` does not draw it: its `Caption.Position#visible` is `false`, the
+        - body draws nothing for it, and it blocks nothing for the labels placed after it.
+        + Une énumération à deux cas. `Overlap`, la valeur par défaut, dessine l'étiquette à la
+        + position où elle chevauche le moins. `Hide` ne la dessine pas : sa
+        + `Caption.Position#visible` vaut `false`, le corps ne dessine rien pour elle, et elle ne
+        + bloque rien pour les étiquettes placées après elle.
+
+        ```scala
+        import soundness.*
+
+        val hidden = arrange:
+          avoid(Obstacle.Box(0.0, 0.0, 300.0, 300.0))
+          position(60.0, 12.0, 100.0, 100.0, fallback = Caption.Fallback.Hide)
+
+        hidden.visible   // false
+        ```
+  entry .Leader
+    info
+        - a line from a displaced label's edge back to the target it describes
+        + une ligne qui relie le bord d'une étiquette déplacée à la cible qu'elle décrit
+    detail
+        - Drawn for a label moved further from its target than the arranger's leader threshold.
+        - It runs from the nearest point on the label's box to the target. Later labels avoid a
+        - leader as they avoid the label it belongs to; a leader may cross a fixed obstacle, since
+        - pointing past a marker to the target is what it is for, but not another label.
+        + Tracée pour une étiquette éloignée de sa cible au-delà du seuil de ligne de rappel de
+        + l'arrangeur. Elle va du point du rectangle de l'étiquette le plus proche de la cible
+        + jusqu'à celle-ci. Les étiquettes suivantes évitent une ligne de rappel comme elles évitent
+        + l'étiquette à laquelle elle appartient ; une ligne de rappel peut traverser un obstacle
+        + fixe, puisque pointer au-delà d'un marqueur vers la cible est sa raison d'être, mais pas
+        + une autre étiquette.
+    entry #x1
+      info
+          - the horizontal coordinate of the end on the label's edge
+          + la coordonnée horizontale de l'extrémité sur le bord de l'étiquette
+    entry #y1
+      info
+          - the vertical coordinate of the end on the label's edge
+          + la coordonnée verticale de l'extrémité sur le bord de l'étiquette
+    entry #x2
+      info
+          - the horizontal coordinate of the end at the target
+          + la coordonnée horizontale de l'extrémité sur la cible
+    entry #y2
+      info
+          - the vertical coordinate of the end at the target
+          + la coordonnée verticale de l'extrémité sur la cible
+  entry .Position
+    info
+        - the arranged place of a label: anchor point, side, footprint, leader and visibility
+        + la place attribuée à une étiquette : point d'ancrage, côté, emprise, ligne de rappel et
+        + visibilité
+    detail
+        - What `position` answers. The text is set at (`#x`, `#y`) with the alignment its
+        - `#attachment` implies, occupying `#box`; `#leader` is the line to draw back to the
+        - target, if the label was displaced far enough to need one; and `#visible` is `false`
+        - for a `Caption.Fallback.Hide` label which could not be placed clear.
+        + Ce que répond `position`. Le texte est placé en (`#x`, `#y`) avec l'alignement
+        + qu'implique son `#attachment`, et occupe `#box` ; `#leader` est la ligne à tracer jusqu'à
+        + la cible, si l'étiquette a été suffisamment déplacée pour en avoir besoin ; et `#visible`
+        + vaut `false` pour une étiquette `Caption.Fallback.Hide` qui n'a pas pu être placée à
+        + l'écart.
+
+        ```scala
+        import soundness.*
+
+        val placed = arrange(position(60.0, 12.0, 100.0, 100.0))
+        (placed.x, placed.y, placed.attachment, placed.leader, placed.visible)
+        ```
+    entry #x
+      info
+          - the horizontal coordinate of the label's anchor point
+          + la coordonnée horizontale du point d'ancrage de l'étiquette
+    entry #y
+      info
+          - the vertical coordinate of the label's anchor point
+          + la coordonnée verticale du point d'ancrage de l'étiquette
+    entry #attachment
+      info
+          - the side of the target the label lies on, from which its alignment follows
+          + le côté de la cible où se place l'étiquette, dont découle son alignement
+    entry #box
+      info
+          - the box the label occupies
+          + le rectangle qu'occupe l'étiquette
+    entry #leader
+      info
+          - the leader line to draw back to the target, or `Unset` if none is needed
+          + la ligne de rappel à tracer jusqu'à la cible, ou `Unset` si aucune n'est nécessaire
+    entry #visible
+      info
+          - whether the label is to be drawn at all
+          + indique si l'étiquette doit être dessinée
+
+entry .Obstacle
+  info
+      - something no label may be set over: a box, a stroked line or a disc
+      + une chose sur laquelle aucune étiquette ne peut être placée : un rectangle, une ligne tracée
+      + ou un disque
+  detail
+      - A sealed trait of three shapes, each of which answers `#overlap` — how much of a box it
+      - covers, in area units. The answer is exactly zero when the two are disjoint, and its
+      - magnitude only ranks candidate positions against each other, so a disc's is an estimate.
+      - Obstacles are declared in an `arrange` body with `avoid`, and the canvas with `canvas`;
+      - each placed label's footprint and leader become obstacles for the labels after it.
+      + Un trait scellé à trois formes, chacune répondant à `#overlap` — la part d'un rectangle
+      + qu'elle recouvre, en unités d'aire. La réponse est exactement zéro quand les deux sont
+      + disjoints, et sa grandeur ne sert qu'à classer les positions candidates entre elles ;
+      + celle d'un disque est donc une estimation. Les obstacles sont déclarés dans le corps d'un
+      + `arrange` avec `avoid`, et le canevas avec `canvas` ; l'emprise et la ligne de rappel de
+      + chaque étiquette placée deviennent des obstacles pour les étiquettes suivantes.
+  refer cartouche.avoid
+  refer cartouche.canvas
+  entry #overlap
+    info
+        - how much of a box this obstacle covers: zero exactly when they are disjoint
+        + la part d'un rectangle que recouvre cet obstacle : zéro exactement quand ils sont
+        + disjoints
+  entry .Box
+    info
+        - an axis-aligned rectangle in a y-down frame: a bar, a legend, a label's footprint
+        + un rectangle aligné sur les axes, dans un repère orienté vers le bas : une barre, une
+        + légende, l'emprise d'une étiquette
+    detail
+        - Given by its `#left` and `#top` edges and its `#width` and `#height`. As an obstacle,
+        - its overlap with another box is the area they share.
+        + Défini par ses bords `#left` et `#top` et par ses `#width` et `#height`. En tant
+        + qu'obstacle, son chevauchement avec un autre rectangle est l'aire qu'ils ont en commun.
+
+        ```scala
+        import soundness.*
+
+        val box = Obstacle.Box(10.0, 20.0, 40.0, 10.0)
+        (box.right, box.bottom, box.overlap(Obstacle.Box(30.0, 25.0, 40.0, 10.0)))   // (50.0, 30.0, 100.0)
+        ```
+    entry .around
+      info
+          - the footprint of a label anchored at a point on one side of its target
+          + l'emprise d'une étiquette ancrée en un point d'un côté de sa cible
+      detail
+          - `Obstacle.Box.around(x, y, width, height, attachment)`: for `East` the anchor is the
+          - box's left-middle, for `North` its bottom-centre, for `Center` its centre.
+          + `Obstacle.Box.around(x, y, width, height, attachment)` : pour `East`, l'ancre est le
+          + milieu gauche du rectangle ; pour `North`, le milieu de son bas ; pour `Center`, son
+          + centre.
+    entry #left
+      info
+          - the box's left edge
+          + le bord gauche du rectangle
+    entry #top
+      info
+          - the box's top edge
+          + le bord supérieur du rectangle
+    entry #width
+      info
+          - the box's width
+          + la largeur du rectangle
+    entry #height
+      info
+          - the box's height
+          + la hauteur du rectangle
+    entry #right
+      info
+          - the box's right edge
+          + le bord droit du rectangle
+    entry #bottom
+      info
+          - the box's bottom edge
+          + le bord inférieur du rectangle
+    entry #area
+      info
+          - the box's area
+          + l'aire du rectangle
+    entry #centerX
+      info
+          - the horizontal coordinate of the box's centre
+          + la coordonnée horizontale du centre du rectangle
+    entry #centerY
+      info
+          - the vertical coordinate of the box's centre
+          + la coordonnée verticale du centre du rectangle
+    entry #pad
+      info
+          - the box grown by an amount on every side
+          + le rectangle agrandi d'une certaine quantité de chaque côté
+    entry #excess
+      info
+          - how much of this box's area lies outside another box, such as the canvas
+          + la part de l'aire de ce rectangle située hors d'un autre rectangle, tel que le canevas
+    entry #contains
+      info
+          - whether a point lies in the box, edges included
+          + indique si un point se trouve dans le rectangle, bords compris
+    entry #nearest
+      info
+          - the point on the box's perimeter nearest a given point, where a leader meets it
+          + le point du périmètre du rectangle le plus proche d'un point donné, où une ligne de
+          + rappel le rejoint
+  entry .Line
+    info
+        - a stroked segment: one edge of a plotted polyline, or a leader
+        + un segment tracé : un côté d'une polyligne tracée, ou une ligne de rappel
+    detail
+        - From (`#x1`, `#y1`) to (`#x2`, `#y2`), with a stroke `#width` defaulting to 1. Its
+        - overlap with a box is the length of the segment inside the box, found by Liang–Barsky
+        - clipping, times its width, so a label may not touch it. A polyline is avoided as its
+        - segments.
+        + De (`#x1`, `#y1`) à (`#x2`, `#y2`), avec une épaisseur de trait `#width` valant 1 par
+        + défaut. Son chevauchement avec un rectangle est la longueur du segment à l'intérieur du
+        + rectangle, obtenue par découpage de Liang–Barsky, multipliée par son épaisseur, de sorte
+        + qu'une étiquette ne peut pas le toucher. Une polyligne est évitée segment par segment.
+    entry #x1
+      info
+          - the horizontal coordinate of the segment's start
+          + la coordonnée horizontale du début du segment
+    entry #y1
+      info
+          - the vertical coordinate of the segment's start
+          + la coordonnée verticale du début du segment
+    entry #x2
+      info
+          - the horizontal coordinate of the segment's end
+          + la coordonnée horizontale de la fin du segment
+    entry #y2
+      info
+          - the vertical coordinate of the segment's end
+          + la coordonnée verticale de la fin du segment
+    entry #width
+      info
+          - the stroke width, by which the clipped length is multiplied
+          + l'épaisseur du trait, par laquelle la longueur découpée est multipliée
+    entry #length
+      info
+          - the segment's length
+          + la longueur du segment
+  entry .Disc
+    info
+        - a filled circle, such as a scatter plot's marker
+        + un cercle plein, tel que le marqueur d'un nuage de points
+    detail
+        - Centred at (`#x`, `#y`). A box is clear of it exactly when the box's nearest point is
+        - at least `#radius` from the centre; otherwise the overlap is estimated as the box's
+        - overlap with the disc's bounding square, scaled by π/4.
+        + Centré en (`#x`, `#y`). Un rectangle en est dégagé exactement quand son point le plus
+        + proche est à une distance au moins égale à `#radius` du centre ; sinon, le chevauchement
+        + est estimé comme celui du rectangle avec le carré englobant du disque, multiplié par π/4.
+    entry #x
+      info
+          - the horizontal coordinate of the centre
+          + la coordonnée horizontale du centre
+    entry #y
+      info
+          - the vertical coordinate of the centre
+          + la coordonnée verticale du centre
+    entry #radius
+      info
+          - the disc's radius
+          + le rayon du disque
+
+entry .Arranger
+  info
+      - an algorithm which finds a position for every caption, given everything else on the page
+      + un algorithme qui trouve une position pour chaque caption, compte tenu de tout le reste de
+      + la page
+  detail
+      - A single-method trait: `#arrange` takes the captions, the obstacles and the optional
+      - canvas, and answers with a `Caption.Position` for each caption, in the captions' order.
+      - `arrange` uses the one in scope: `.greedy`, from the companion, unless another is
+      - imported from the `arrangers` package or bound as a local given.
+      + Un trait à une seule méthode : `#arrange` prend les captions, les obstacles et le canevas
+      + optionnel, et répond par une `Caption.Position` pour chaque caption, dans l'ordre des
+      + captions. `arrange` utilise celui qui est dans la portée : `.greedy`, du compagnon, à
+      + moins qu'un autre ne soit importé du package `arrangers` ou lié comme given local.
+
+      ```scala
+      import soundness.*
+
+      given Arranger = Arranger.Greedy(step = 2.0, rings = 12)
+
+      arrange:
+        position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
+      ```
+
+      - Both built-in arrangers try a finite list of candidates for each caption, least
+      - displaced first: each side at the target, then each side at each of eight directions one
+      - `step` away, then two steps, and so on out to the caption's `reach` or `rings` steps.
+      - A candidate's collision is the area of its padded footprint under each fixed obstacle,
+      - each placed label and each placed leader, plus its area outside the canvas and the length
+      - of its own leader across placed labels.
+      + Les deux arrangeurs intégrés essaient une liste finie de candidats pour chaque caption,
+      + du moins déplacé au plus déplacé : chaque côté sur la cible, puis chaque côté dans
+      + chacune des huit directions à un `step` de distance, puis à deux pas, et ainsi de suite
+      + jusqu'au `reach` de la caption ou à `rings` pas. La collision d'un candidat est l'aire
+      + de son emprise avec dégagement sous chaque obstacle fixe, chaque étiquette placée et
+      + chaque ligne de rappel placée, plus son aire hors du canevas et la longueur de sa propre
+      + ligne de rappel qui traverse des étiquettes placées.
+  refer cartouche.arrangers
+  refer cartouche.arrange
+  entry #arrange
+    info
+        - positions for the captions, in their order, given the obstacles and canvas
+        + les positions des captions, dans leur ordre, compte tenu des obstacles et du canevas
+  entry .greedy
+    info
+        - the default arranger: `Arranger.Greedy()` with its default parameters
+        + l'arrangeur par défaut : `Arranger.Greedy()` avec ses paramètres par défaut
+    detail
+        - In implicit scope, so `arrange` needs no import; a given imported from `arrangers` or
+        - declared locally takes precedence.
+        + Dans la portée implicite, de sorte qu'`arrange` ne requiert aucun import ; un given
+        + importé depuis `arrangers` ou déclaré localement a la précédence.
+  entry .Pass
+    info
+        - one run of an `arrange` body: records requests in the first, answers in the second
+        + une exécution du corps d'un `arrange` : enregistre les demandes dans la première, répond
+        + dans la seconde
+    detail
+        - The contextual value `arrange` provides to its body, and which `position`, `avoid`
+        - and `canvas` need. It is mutable and made by `arrange` for one run, never shared, and
+        - cannot be constructed elsewhere.
+        + La valeur contextuelle qu'`arrange` fournit à son corps, et dont `position`, `avoid` et
+        + `canvas` ont besoin. Elle est mutable, créée par `arrange` pour une seule exécution,
+        + jamais partagée, et ne peut pas être construite ailleurs.
+    entry #solved
+      info
+          - whether this is the second run, whose answers are the solved positions
+          + indique s'il s'agit de la seconde exécution, dont les réponses sont les positions
+          + calculées
+    entry #diverged
+      info
+          - whether the second run asked for something the first did not
+          + indique si la seconde exécution a demandé quelque chose que la première n'a pas demandé
+      detail
+          - A call beyond those recorded, or one whose caption differs from the first run's at the
+          - same position in the order, is answered provisionally and sets this flag: the body was
+          - not repeatable.
+          + Un appel au-delà de ceux enregistrés, ou un appel dont la caption diffère de celle de la
+          + première exécution à la même place dans l'ordre, reçoit une réponse provisoire et
+          + positionne ce drapeau : le corps n'était pas répétable.
+  entry .Greedy
+    info
+        - places each caption in priority order at its best spot given those already placed
+        + place chaque caption par ordre de priorité au meilleur endroit, compte tenu de celles déjà
+        + placées
+    detail
+        - Each caption, highest `priority` first and otherwise in order, takes the least
+        - displaced candidate clear of everything placed before it, or the least colliding one
+        - if none is clear. Deterministic, and bounded by the number of candidates: at most
+        - 1 + 8 × `rings` per side. A caption placed early is never moved to make room for one
+        - placed later, which on a dense picture can leave collisions a different order would
+        - have avoided; `Arranger.Annealing` addresses that.
+        + Chaque caption, par `priority` décroissante et sinon dans l'ordre, prend le candidat le
+        + moins déplacé qui soit dégagé de tout ce qui a été placé avant elle, ou celui qui entre
+        + le moins en collision si aucun n'est dégagé. Déterministe, et borné par le nombre de
+        + candidats : au plus 1 + 8 × `rings` par côté. Une caption placée tôt n'est jamais
+        + déplacée pour faire de la place à une caption placée plus tard, ce qui, sur une image
+        + dense, peut laisser des collisions qu'un autre ordre aurait évitées ;
+        + `Arranger.Annealing` y remédie.
+
+        - The parameters: `step` (default 4) is the distance between rings of candidates,
+        - `rings` (default 8) how many rings out to search, `leaderThreshold` (default 6) the
+        - displacement beyond which a leader is drawn, and `leaderWidth` (default 1) the stroke a
+        - leader is given as an obstacle.
+        + Les paramètres : `step` (4 par défaut) est la distance entre les anneaux de candidats,
+        + `rings` (8 par défaut) le nombre d'anneaux à explorer, `leaderThreshold` (6 par défaut)
+        + le déplacement au-delà duquel une ligne de rappel est tracée, et `leaderWidth` (1 par
+        + défaut) l'épaisseur attribuée à une ligne de rappel en tant qu'obstacle.
+    entry #step
+      info
+          - the distance between successive rings of candidate positions
+          + la distance entre anneaux successifs de positions candidates
+    entry #rings
+      info
+          - how many rings of candidates to search, before the caption's reach
+          + le nombre d'anneaux de candidats à explorer, avant la portée de déplacement de la
+          + caption
+    entry #leaderThreshold
+      info
+          - the displacement beyond which a label gets a leader
+          + le déplacement au-delà duquel une étiquette reçoit une ligne de rappel
+    entry #leaderWidth
+      info
+          - the stroke width of a leader, as an obstacle to other labels
+          + l'épaisseur d'une ligne de rappel, en tant qu'obstacle pour les autres étiquettes
+    entry #arrange
+      info
+          - places the captions greedily, hiding those which collide and ask to hide
+          + place les captions de façon gloutonne, en masquant celles qui sont en collision et
+          + demandent à être masquées
+  entry .Annealing
+    info
+        - refines the greedy arrangement by simulated annealing, from a fixed seed
+        + affine la disposition gloutonne par recuit simulé, à partir d'une graine fixe
+    detail
+        - Starts from the greedy arrangement, then repeatedly moves a random caption to a random
+        - one of its candidates, accepting a move that lowers the total collision and weighted
+        - displacement, and one that raises it with a probability that falls as the temperature
+        - cools. Unlike the greedy sweep, a caption placed early can be moved to make room for one
+        - placed later. The random moves are drawn from `seed` through capricious, so the same
+        - input arranges the same way every time, and `iterations` bounds the work exactly.
+        - Captions that still collide and ask to hide are hidden, least important first.
+        + Part de la disposition gloutonne, puis déplace à répétition une caption choisie au hasard
+        + vers l'un de ses candidats choisi au hasard, en acceptant un déplacement qui diminue la
+        + collision totale et le déplacement pondéré, et un déplacement qui les augmente avec une
+        + probabilité qui décroît à mesure que la température baisse. Contrairement au balayage
+        + glouton, une caption placée tôt peut être déplacée pour faire de la place à une caption
+        + placée plus tard. Les déplacements aléatoires sont tirés de `seed` via capricious, de
+        + sorte que la même entrée est disposée de la même façon à chaque fois, et `iterations`
+        + borne exactement le travail. Les captions encore en collision qui demandent à être
+        + masquées le sont, les moins importantes en premier.
+
+        ```scala
+        import soundness.*
+
+        given Arranger = Arranger.Annealing(seed = Seed(42L), iterations = 10000)
+        ```
+
+        - Parameters, with their defaults: `seed` (`Seed(0L)`), `iterations` (4000),
+        - `temperature` (1.0), `cooling` (0.995, the factor applied each move),
+        - `displacementWeight` (0.05, how much displacement counts against collision), and
+        - `step`, `rings`, `leaderThreshold` and `leaderWidth` as for `Arranger.Greedy`.
+        + Les paramètres, avec leurs valeurs par défaut : `seed` (`Seed(0L)`), `iterations`
+        + (4000), `temperature` (1.0), `cooling` (0.995, le facteur appliqué à chaque
+        + déplacement), `displacementWeight` (0.05, le poids du déplacement par rapport à la
+        + collision), et `step`, `rings`, `leaderThreshold` et `leaderWidth` comme pour
+        + `Arranger.Greedy`.
+    entry #seed
+      info
+          - the seed the random moves are drawn from
+          + la graine dont sont tirés les déplacements aléatoires
+    entry #iterations
+      info
+          - the exact number of moves to try
+          + le nombre exact de déplacements à essayer
+    entry #temperature
+      info
+          - the starting temperature, scaling how readily a worse move is accepted
+          + la température initiale, qui règle la facilité avec laquelle un déplacement moins bon
+          + est accepté
+    entry #cooling
+      info
+          - the factor the temperature is multiplied by after each move
+          + le facteur par lequel la température est multipliée après chaque déplacement
+    entry #step
+      info
+          - the distance between successive rings of candidate positions
+          + la distance entre anneaux successifs de positions candidates
+    entry #rings
+      info
+          - how many rings of candidates to search, before the caption's reach
+          + le nombre d'anneaux de candidats à explorer, avant la portée de déplacement de la
+          + caption
+    entry #leaderThreshold
+      info
+          - the displacement beyond which a label gets a leader
+          + le déplacement au-delà duquel une étiquette reçoit une ligne de rappel
+    entry #leaderWidth
+      info
+          - the stroke width of a leader, as an obstacle to other labels
+          + l'épaisseur d'une ligne de rappel, en tant qu'obstacle pour les autres étiquettes
+    entry #displacementWeight
+      info
+          - how heavily a label's distance from its target counts against it
+          + le poids avec lequel la distance d'une étiquette à sa cible compte contre elle
+    entry #arrange
+      info
+          - anneals the arrangement from the greedy start, then hides what must hide
+          + applique le recuit à la disposition à partir du départ glouton, puis masque ce qui doit
+          + l'être
+
+entry .arrangers
+  info
+      - the built-in arrangers, each a given to import by name
+      + les arrangeurs intégrés, chacun étant un given à importer par son nom
+  detail
+      - The `Arranger` in scope decides how `arrange` places labels. `Arranger`'s companion
+      - supplies the greedy one by default; importing one of these by name, or binding a
+      - configured `Arranger.Greedy` or `Arranger.Annealing` as a local given, overrides it.
+      - `import soundness.*` does not import givens, so each is imported by name.
+      + L'`Arranger` dans la portée décide de la façon dont `arrange` place les étiquettes. Le
+      + compagnon d'`Arranger` fournit par défaut l'arrangeur glouton ; importer l'un de ceux-ci
+      + par son nom, ou lier un `Arranger.Greedy` ou un `Arranger.Annealing` configuré comme
+      + given local, le remplace. `import soundness.*` n'importe pas les givens ; chacun
+      + s'importe donc par son nom.
+
+      ```scala
+      import soundness.*
+      import arrangers.annealingArranger
+
+      arrange:
+        position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
+        position(60.0, 12.0, 102.0, 101.0, reach = 20.0)
+        position(60.0, 12.0, 98.0, 99.0, reach = 20.0)
+      ```
+  entry .greedyArranger
+    info
+        - `Arranger.Greedy()`: deterministic, priority-ordered, never revisits a label
+        + `Arranger.Greedy()` : déterministe, ordonné par priorité, ne revient jamais sur une
+        + étiquette
+  entry .annealingArranger
+    info
+        - `Arranger.Annealing()`: simulated annealing from the greedy start, seed 0
+        + `Arranger.Annealing()` : recuit simulé à partir du départ glouton, graine 0

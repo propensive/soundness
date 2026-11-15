@@ -1,0 +1,1837 @@
+tel 1.0
+
+base ambience
+import soundness
+
+info
+    - a program's surroundings — environment variables, system properties, directories, the platform — as typed contextual values
+    + l'environnement d'un programme — variables d'environnement, propriétés système, répertoires,
+    + plateforme — en valeurs contextuelles typées
+detail
+    - _Ambience_ represents the things a program inherits from wherever it was started — its
+    - **environment variables**, the JVM's **system properties**, the **working directory**, a
+    - **temporary directory**, the **terminal**'s capabilities, the **operating system** and
+    - **processor** it runs on — as typed, contextual values, in place of the raw platform's
+    - nullable strings reached through global static calls.
+    + _Ambience_ représente ce dont un programme hérite de l'endroit où il a été lancé — ses
+    + **variables d'environnement**, les **propriétés système** de la JVM, le **répertoire de
+    + travail**, un **répertoire temporaire**, les capacités du **terminal**, le **système
+    + d'exploitation** et le **processeur** sur lesquels il s'exécute — sous forme de valeurs
+    + contextuelles typées, à la place des chaînes potentiellement nulles de la plateforme brute,
+    + atteintes par des appels statiques globaux.
+
+    - Each source is a small trait: an `Environment` answers a variable's name with its optional
+    - text, a `System` answers a property's name, a `WorkingDirectory` and a `TemporaryDirectory`
+    - each name one directory. A method which reads from one takes it as a `using` parameter, so
+    - its dependence on its surroundings is visible in its signature, and a test, a sandbox or a
+    - daemon serving many shells can supply a different one. Reading is typed: a variable is read
+    - as a member of `Environment` (`Environment.editor[Text]`, where the camel-case name becomes
+    - `EDITOR`), a property as a dotted member path of `System.properties`
+    - (`System.properties.user.home[Text]()`), and each decodes to the type asked for, raising
+    - `Environment.Error` or `Property.Error` when the value is not set.
+    + Chaque source est un petit trait : un `Environment` associe au nom d'une variable son texte
+    + optionnel, un `System` associe une valeur au nom d'une propriété, un `WorkingDirectory` et un
+    + `TemporaryDirectory` nomment chacun un répertoire. Une méthode qui lit l'une de ces sources la
+    + prend en paramètre `using`, de sorte que sa dépendance à son environnement est visible dans sa
+    + signature, et qu'un test, un bac à sable ou un démon servant de nombreux shells peut en
+    + fournir une autre. La lecture est typée : une variable se lit comme un membre
+    + d'`Environment` (`Environment.editor[Text]`, où le nom en camel case devient `EDITOR`), une
+    + propriété comme un chemin de membres pointé de `System.properties`
+    + (`System.properties.user.home[Text]()`), et chacune est décodée dans le type demandé, en
+    + levant `Environment.Error` ou `Property.Error` quand la valeur n'est pas définie.
+
+    ```scala
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+
+    val editor: Text = Environment.editor[Text]
+    val columns: Int = Environment.columns[Int]
+    val separator: Char = System.properties.file.separator[Char]()
+    val platform: (Os, Architecture) = (System.os, System.architecture)
+    ```
+
+    - The real environment and properties are never in scope by themselves: each is a given in
+    - a choice package, imported by name, because `import soundness.*` does not import givens.
+    - The packages are `environments` (`javaBaseEnvironment`, `emptyEnvironment`, and the daemon
+    - and WASI ones other libraries add), `systems` (`javaBaseSystem`, `emptySystem`),
+    - `workingDirectories`, `temporaryDirectories`, `termcaps` and `wasiApis`. An `Environment`
+    - is a single function from a name to an `Optional[Text]`, so one built for a block is a
+    - lambda, and `variables(name = value)` lays one variable over the environment in scope.
+    + L'environnement et les propriétés réels ne sont jamais dans la portée d'eux-mêmes : chacun est
+    + un given d'un package de choix, importé par son nom, car `import soundness.*` n'importe pas
+    + les givens. Les packages sont `environments` (`javaBaseEnvironment`, `emptyEnvironment`, et
+    + ceux pour les démons et WASI qu'ajoutent d'autres bibliothèques), `systems` (`javaBaseSystem`,
+    + `emptySystem`), `workingDirectories`, `temporaryDirectories`, `termcaps` et `wasiApis`. Un
+    + `Environment` est une simple fonction d'un nom vers un `Optional[Text]` ; celui construit pour
+    + un bloc est donc une lambda, et `variables(name = value)` superpose une variable à
+    + l'environnement dans la portée.
+
+    - On top of the raw sources, `Xdg` and `Directories` give the standard directories of the
+    - XDG base directory specification (and their Windows equivalents) as paths of any type, a
+    - `Configurator` reads an application's settings from properties and variables under one
+    - prefix, and `Searchpath` is the marker for a path plane which searches a list of
+    - directories, such as the XDG data and config directories.
+    + Au-dessus des sources brutes, `Xdg` et `Directories` donnent les répertoires standard de la
+    + spécification XDG des répertoires de base (et leurs équivalents Windows) sous forme de chemins
+    + de n'importe quel type, un `Configurator` lit les réglages d'une application dans les
+    + propriétés et les variables sous un même préfixe, et `Searchpath` est le marqueur d'un plan de
+    + chemins qui cherche dans une liste de répertoires, comme les répertoires XDG de données et de
+    + configuration.
+
+    - The library has two source sets. `ambience.core` has everything above and compiles for
+    - the JVM, Scala.js and Scala Native, where the `javaBase…` givens read `java.lang.System`.
+    - `ambience.wasi` adds `environments.wasiEnvironment` and
+    - `workingDirectories.wasiWorkingDirectory`, which read the `wasi:cli/environment`
+    - interface of a Wasm component. Other libraries add to the choice packages: `ethereal`
+    - ships `environments.daemonEnvironment` and `workingDirectories.daemonClientWorkingDirectory`,
+    - and `exoskeleton` ships `environments.daemonClientEnvironment`.
+    + La bibliothèque a deux ensembles de sources. `ambience.core` contient tout ce qui précède et
+    + se compile pour la JVM, Scala.js et Scala Native, où les givens `javaBase…` lisent
+    + `java.lang.System`. `ambience.wasi` ajoute `environments.wasiEnvironment` et
+    + `workingDirectories.wasiWorkingDirectory`, qui lisent l'interface `wasi:cli/environment` d'un
+    + composant Wasm. D'autres bibliothèques complètent les packages de choix : `ethereal` fournit
+    + `environments.daemonEnvironment` et `workingDirectories.daemonClientWorkingDirectory`, et
+    + `exoskeleton` fournit `environments.daemonClientEnvironment`.
+
+    - Everything is exported to the `soundness` umbrella, which has one consequence to know:
+    - `soundness.System` is this library's `System`, and shadows `java.lang.System` in any file
+    - which imports `soundness.*`. A bare `System.nanoTime`, `System.out` or `System.arraycopy`
+    - in such a file fails with _value nanoTime is not a member of object ambience.System_; write
+    - `java.lang.System.nanoTime`, or `import java.lang as jl` and `jl.System.nanoTime`.
+    + Tout est exporté vers le package parapluie `soundness`, ce qui a une conséquence à connaître :
+    + `soundness.System` est le `System` de cette bibliothèque, et masque `java.lang.System` dans
+    + tout fichier qui importe `soundness.*`. Un simple `System.nanoTime`, `System.out` ou
+    + `System.arraycopy` dans un tel fichier échoue avec _value nanoTime is not a member of object
+    + ambience.System_ ; écrivez `java.lang.System.nanoTime`, ou `import java.lang as jl` et
+    + `jl.System.nanoTime`.
+
+refer ambience.Environment
+refer ambience.System
+refer ambience.Property
+refer ambience.WorkingDirectory
+refer ambience.Xdg
+refer ambience.environments
+refer ambience.systems
+
+entry .Environment
+  info
+      - the environment variables, as a contextual value read by typed member access
+      + les variables d'environnement, en valeur contextuelle lue par accès typé à un membre
+  detail
+      - An `Environment` is the source of a program's environment variables: `#variable` answers
+      - a name with its text, or `Unset` if it is not defined, and `#entries` enumerates every
+      - variable where the environment can. The real one is `environments.javaBaseEnvironment`,
+      - imported by name; `environments.emptyEnvironment` defines nothing; and since the trait
+      - has a single abstract method, a lambda from name to `Optional[Text]` is an environment
+      - for a test or a block.
+      + Un `Environment` est la source des variables d'environnement d'un programme : `#variable`
+      + associe à un nom son texte, ou `Unset` s'il n'est pas défini, et `#entries` énumère toutes
+      + les variables quand l'environnement le peut. L'environnement réel est
+      + `environments.javaBaseEnvironment`, importé par son nom ; `environments.emptyEnvironment` ne
+      + définit rien ; et comme le trait n'a qu'une seule méthode abstraite, une lambda d'un nom
+      + vers un `Optional[Text]` est un environnement pour un test ou un bloc.
+
+      - The companion is the way to read a variable. `Environment.editor[Text]` reads `EDITOR`:
+      - a member name in camel case becomes the conventional upper-snake-case variable name
+      - (`xdgConfigHome` is `XDG_CONFIG_HOME`), and the type argument says what the value
+      - should decode to, through a `Variable` instance for that name and type. `Variable`'s
+      - companion has instances for the well-known variables (`home`, `path`, `shell`, the XDG
+      - ones) typed as paths, `columns` as an `Int`, and a generic fallback for any name as
+      - `Text` or as any type `Decodable in Text`. A name which is not a valid identifier, or
+      - which is only known at runtime, is read with `Environment[Text](t"NAME")`.
+      + L'objet compagnon est le moyen de lire une variable. `Environment.editor[Text]` lit
+      + `EDITOR` : un nom de membre en camel case devient le nom de variable conventionnel en
+      + majuscules séparées par des tirets bas (`xdgConfigHome` donne `XDG_CONFIG_HOME`), et
+      + l'argument de type indique dans quel type la valeur doit être décodée, par une instance de
+      + `Variable` pour ce nom et ce type. Le compagnon de `Variable` contient des instances pour
+      + les variables bien connues (`home`, `path`, `shell`, celles de XDG) typées comme des
+      + chemins, `columns` comme un `Int`, et un repli générique pour n'importe quel nom en `Text`
+      + ou en tout type `Decodable in Text`. Un nom qui n'est pas un identifiant valide, ou qui
+      + n'est connu qu'à l'exécution, se lit avec `Environment[Text](t"NAME")`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import strategies.throwUnsafely
+
+      val lang: Text = Environment.lang[Text]
+      val width: Int = Environment.columns[Int]
+      val custom: Text = Environment[Text](t"MY_SETTING")
+      ```
+
+      - Both forms need an `Environment` in scope and raise `Environment.Error` when the variable
+      - is not defined; a `safely(…)` around the read turns a missing variable into `Unset`.
+      + Les deux formes requièrent un `Environment` dans la portée et lèvent `Environment.Error`
+      + quand la variable n'est pas définie ; un `safely(…)` autour de la lecture transforme une
+      + variable manquante en `Unset`.
+
+      - The environment is a capability, so a block can run against a different one, and a given
+      - in a narrower scope wins:
+      + L'environnement est une capacité : un bloc peut donc s'exécuter avec un autre environnement,
+      + et un given dans une portée plus étroite l'emporte :
+
+      ```scala fuel
+      alternative The JVM
+        code
+            locally:
+              import environments.javaBaseEnvironment
+              safely(Environment.editor[Text])   // whatever EDITOR is in the shell which started the JVM
+      alternative Empty
+        code
+            locally:
+              import environments.emptyEnvironment
+              safely(Environment.editor[Text])   // Unset
+      alternative For a test
+        code
+            locally:
+              given Environment = name => if name == t"EDITOR" then t"vim" else Unset
+              safely(Environment.editor[Text])   // t"vim"
+      alternative Overlaid
+        code
+            locally:
+              import environments.javaBaseEnvironment
+              variables(editor = t"nano"):
+                safely(Environment.editor[Text])   // t"nano"; every other variable as before
+      ##
+      ```
+
+      - A resident daemon serves invocations from many shells, each with its own environment,
+      - and the JVM's global one belongs to whichever shell started the daemon: in a daemon the
+      - invocation's environment is `environments.daemonClientEnvironment` (from `exoskeleton`),
+      - and the launching one `environments.daemonEnvironment` (from `ethereal`).
+      + Un démon résident sert des invocations provenant de nombreux shells, chacun avec son propre
+      + environnement, et celui, global, de la JVM appartient au shell qui a lancé le démon : dans
+      + un démon, l'environnement de l'invocation est `environments.daemonClientEnvironment` (de
+      + `exoskeleton`), et celui du lancement `environments.daemonEnvironment` (de `ethereal`).
+
+      - An `Environment` is `Findable`, so a `Path` can be resolved relative to it where a
+      - filesystem library offers that.
+      + Un `Environment` est `Findable`, de sorte qu'un `Path` peut être résolu par rapport à lui là
+      + où une bibliothèque de système de fichiers le propose.
+  refer ambience.Variable
+  refer ambience.variables
+  refer ambience.environments
+  refer ambience.System
+  entry .apply
+    info
+        - reads a variable by its runtime name, decoded to the type asked for
+        + lit une variable par son nom à l'exécution, décodée dans le type demandé
+    detail
+        - `Environment[Text](t"HOME")` reads the variable named by the text, through the
+        - `Variable[Label, T]` instance for the type (`Text`, or any type `Decodable in Text`), and
+        - raises `Environment.Error` if it is not defined. It needs an `Environment` in scope. This
+        - is the form for a name which is not known until runtime or which is not an identifier;
+        - a well-known variable is more simply a member access, `Environment.home[Text]`.
+        + `Environment[Text](t"HOME")` lit la variable nommée par le texte, par l'instance
+        + `Variable[Label, T]` pour le type (`Text`, ou tout type `Decodable in Text`), et lève
+        + `Environment.Error` si elle n'est pas définie. Elle requiert un `Environment` dans la
+        + portée. C'est la forme qui convient à un nom inconnu avant l'exécution ou qui n'est pas un
+        + identifiant ; une variable bien connue se lit plus simplement par accès à un membre,
+        + `Environment.home[Text]`.
+  entry .selectDynamic
+    info
+        - the member-access form: `Environment.xdgConfigHome[Text]` reads `XDG_CONFIG_HOME`
+        + la forme par accès à un membre : `Environment.xdgConfigHome[Text]` lit `XDG_CONFIG_HOME`
+    detail
+        - Any identifier is a member of `Environment`: the camel-case name is translated to
+        - upper-snake-case (`xdgConfigHome` to `XDG_CONFIG_HOME`, `term` to `TERM`) by the
+        - `Variable` instance's `defaultName`, the variable is read from the `Environment` in
+        - scope, and its text is decoded by the instance for the name and the type argument.
+        - `Environment.Error` is raised, through the `Tactic` in scope, when the variable is not
+        - defined. The type argument is usually needed: `Environment.home[Text]`, or
+        - `Environment.home[Path on Linux]` where the `Variable.home` instance reads a path of
+        - any type `Instantiable across Paths from Text`.
+        + Tout identifiant est un membre d'`Environment` : le nom en camel case est traduit en
+        + majuscules séparées par des tirets bas (`xdgConfigHome` en `XDG_CONFIG_HOME`, `term` en
+        + `TERM`) par le `defaultName` de l'instance de `Variable`, la variable est lue dans
+        + l'`Environment` dans la portée, et son texte est décodé par l'instance correspondant au
+        + nom et à l'argument de type. `Environment.Error` est levée, par la `Tactic` dans la
+        + portée, quand la variable n'est pas définie. L'argument de type est généralement
+        + nécessaire : `Environment.home[Text]`, ou `Environment.home[Path on Linux]` où l'instance
+        + `Variable.home` lit un chemin de n'importe quel type
+        + `Instantiable across Paths from Text`.
+  entry .provided
+    info
+        - an `Environment` from any `Environment.Provider` in scope
+        + un `Environment` à partir de tout `Environment.Provider` dans la portée
+    detail
+        - A given in the companion, so it needs no import: wherever a `Provider` — such as a CLI
+        - invocation, which carries the environment it was called from — is a given, an
+        - `Environment` is summonable directly.
+        + Un given de l'objet compagnon, qui ne requiert donc aucun import : partout où un
+        + `Provider` — comme une invocation en ligne de commande, qui porte l'environnement depuis
+        + lequel elle a été appelée — est un given, un `Environment` peut être invoqué directement.
+  entry .Provider
+    info
+        - something which carries a canonical environment, such as a CLI invocation
+        + quelque chose qui porte un environnement canonique, comme une invocation en ligne de
+        + commande
+    detail
+        - A trait with one member, `#environment`. A type which has an environment of its own
+        - (an invocation of a daemon, say) extends it, and `Environment.provided` makes that
+        - environment the one in scope wherever the provider is a given.
+        + Un trait à un seul membre, `#environment`. Un type qui a son propre environnement (une
+        + invocation d'un démon, par exemple) l'étend, et `Environment.provided` fait de cet
+        + environnement celui qui est dans la portée partout où le fournisseur est un given.
+    entry #environment
+      info
+          - the environment this provider carries
+          + l'environnement que porte ce fournisseur
+  entry .Error
+    info
+        - raised when a variable which was read is not defined
+        + levée quand une variable lue n'est pas définie
+    detail
+        - Error 869: _the environment variable `variable` was not defined_. Raised by
+        - `Environment.apply` and the member-access form through the `Tactic[Environment.Error]`
+        - in scope; `safely(Environment.editor[Text])` reads as `Unset` instead.
+        + Erreur 869 : _the environment variable `variable` was not defined_. Levée par
+        + `Environment.apply` et la forme par accès à un membre, par la `Tactic[Environment.Error]`
+        + dans la portée ; `safely(Environment.editor[Text])` donne `Unset` à la place.
+    entry #variable
+      info
+          - the name of the variable which was not defined, as it was looked up (`EDITOR`)
+          + le nom de la variable qui n'était pas définie, tel qu'il a été recherché (`EDITOR`)
+  entry #variable
+    info
+        - the value of a variable by name, or `Unset` if it is not defined
+        + la valeur d'une variable par son nom, ou `Unset` si elle n'est pas définie
+    detail
+        - The one abstract method: the raw text of the variable, undecoded. `Environment.apply`
+        - and the member-access form call this and decode the result.
+        + L'unique méthode abstraite : le texte brut de la variable, non décodé. `Environment.apply`
+        + et la forme par accès à un membre l'appellent et décodent le résultat.
+  entry #entries
+    info
+        - every variable, where the environment can enumerate them; `Unset` where it cannot
+        + toutes les variables, quand l'environnement peut les énumérer ; `Unset` quand il ne le
+        + peut pas
+    detail
+        - The JVM's environment and the empty environment can list themselves; one built from a
+        - lambda cannot, and answers `Unset`. A child process started under an environment which
+        - can be enumerated is given exactly these variables, which is why `variables(…)` adds its
+        - overrides to the entries as well as to lookups.
+        + L'environnement de la JVM et l'environnement vide savent se lister ; un environnement
+        + construit à partir d'une lambda ne le sait pas, et répond `Unset`. Un processus enfant
+        + lancé sous un environnement énumérable reçoit exactement ces variables, c'est pourquoi
+        + `variables(…)` ajoute ses redéfinitions aux entrées autant qu'aux recherches.
+
+entry .Variable
+  info
+      - how one environment variable is named and decoded, by its camel-case label
+      + la façon dont une variable d'environnement est nommée et décodée, d'après son étiquette en
+      + camel case
+  detail
+      - `Variable[alias, T]` is the typeclass behind `Environment.alias[T]`: for a label such as
+      - `"xdgConfigHome"` it knows the variable's real name (`#defaultName`, which is `#name` if
+      - the instance overrides it and otherwise the label in upper-snake-case) and how to
+      - `#read` its text as a `T`.
+      + `Variable[alias, T]` est la classe de types derrière `Environment.alias[T]` : pour une
+      + étiquette comme `"xdgConfigHome"`, elle connaît le vrai nom de la variable (`#defaultName`,
+      + qui est `#name` si l'instance le redéfinit, et sinon l'étiquette en majuscules séparées par
+      + des tirets bas) et sait comment lire (`#read`) son texte en tant que `T`.
+
+      - The companion has instances for the well-known variables, each keyed by its label:
+      - `home`, `mail`, `shell`, `oldpwd`, `windowid`, `editor`, `pager`, `manpager`,
+      - `sshAuthSock`, `xdgDataHome`, `xdgConfigHome`, `xdgBinHome`, `xdgStateHome`,
+      - `xdgCacheHome` and `xdgRuntimeDir` read a single path of any type `Instantiable across
+      - Paths from Text`; `path`, `xdgDataDirs` and `xdgConfigDirs` read a list of paths, split
+      - on the `path.separator` property of the `System` in scope (or `:` where it has none);
+      - `columns` reads an `Int`; and `lang`, `display` and `term` read `Text`. From the
+      - `Protovariable` parent come the two fallbacks for any label: `generic` reads the text as
+      - it is, and `decoder` reads it as any type `Decodable in Text`.
+      + L'objet compagnon contient des instances pour les variables bien connues, chacune indexée
+      + par son étiquette : `home`, `mail`, `shell`, `oldpwd`, `windowid`, `editor`, `pager`,
+      + `manpager`, `sshAuthSock`, `xdgDataHome`, `xdgConfigHome`, `xdgBinHome`, `xdgStateHome`,
+      + `xdgCacheHome` et `xdgRuntimeDir` lisent un seul chemin de n'importe quel type
+      + `Instantiable across Paths from Text` ; `path`, `xdgDataDirs` et `xdgConfigDirs` lisent une
+      + liste de chemins, découpée selon la propriété `path.separator` du `System` dans la portée
+      + (ou `:` s'il n'en a pas) ; `columns` lit un `Int` ; et `lang`, `display` et `term` lisent du
+      + `Text`. Du parent `Protovariable` viennent les deux replis pour n'importe quelle étiquette :
+      + `generic` lit le texte tel quel, et `decoder` le lit en tout type `Decodable in Text`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+
+      val home: Path on Linux = Environment.home[Path on Linux]
+      val searchpath: List[Path on Linux] = Environment.path[List[Path on Linux]]
+      summon[Variable["xdgDataHome", Text]].defaultName   // t"XDG_DATA_HOME"
+      ```
+
+      - A program may declare its own instance for a variable, as a given `Variable["myVar",
+      - MyType]`, and `Environment.myVar[MyType]` reads it.
+      + Un programme peut déclarer sa propre instance pour une variable, sous la forme d'un given
+      + `Variable["myVar", MyType]`, et `Environment.myVar[MyType]` la lit.
+  refer ambience.Environment
+  refer ambience.Protovariable
+  entry .path
+    info
+        - `PATH`, as a list of paths split on the platform's path separator
+        + `PATH`, sous forme de liste de chemins découpée selon le séparateur de chemins de la
+        + plateforme
+    detail
+        - Needs a `System` for the `path.separator` property, falling back to `:`.
+        + Requiert un `System` pour la propriété `path.separator`, avec `:` comme repli.
+  entry .xdgDataDirs
+    info
+        - `XDG_DATA_DIRS`, as a list of paths
+        + `XDG_DATA_DIRS`, sous forme de liste de chemins
+  entry .xdgConfigDirs
+    info
+        - `XDG_CONFIG_DIRS`, as a list of paths
+        + `XDG_CONFIG_DIRS`, sous forme de liste de chemins
+  entry .xdgDataHome
+    info
+        - `XDG_DATA_HOME`, as a path
+        + `XDG_DATA_HOME`, sous forme de chemin
+  entry .xdgConfigHome
+    info
+        - `XDG_CONFIG_HOME`, as a path
+        + `XDG_CONFIG_HOME`, sous forme de chemin
+  entry .xdgBinHome
+    info
+        - `XDG_BIN_HOME`, as a path
+        + `XDG_BIN_HOME`, sous forme de chemin
+  entry .xdgStateHome
+    info
+        - `XDG_STATE_HOME`, as a path
+        + `XDG_STATE_HOME`, sous forme de chemin
+  entry .xdgCacheHome
+    info
+        - `XDG_CACHE_HOME`, as a path
+        + `XDG_CACHE_HOME`, sous forme de chemin
+  entry .xdgRuntimeDir
+    info
+        - `XDG_RUNTIME_DIR`, as a path
+        + `XDG_RUNTIME_DIR`, sous forme de chemin
+  entry .home
+    info
+        - `HOME`, as a path
+        + `HOME`, sous forme de chemin
+  entry .mail
+    info
+        - `MAIL`, as a path
+        + `MAIL`, sous forme de chemin
+  entry .shell
+    info
+        - `SHELL`, as a path
+        + `SHELL`, sous forme de chemin
+  entry .oldpwd
+    info
+        - `OLDPWD`, as a path
+        + `OLDPWD`, sous forme de chemin
+  entry .windowid
+    info
+        - `WINDOWID`, as a path
+        + `WINDOWID`, sous forme de chemin
+  entry .editor
+    info
+        - `EDITOR`, as a path
+        + `EDITOR`, sous forme de chemin
+  entry .pager
+    info
+        - `PAGER`, as a path
+        + `PAGER`, sous forme de chemin
+  entry .manpager
+    info
+        - `MANPAGER`, as a path
+        + `MANPAGER`, sous forme de chemin
+  entry .sshAuthSock
+    info
+        - `SSH_AUTH_SOCK`, as a path
+        + `SSH_AUTH_SOCK`, sous forme de chemin
+  entry .columns
+    info
+        - `COLUMNS`, as an `Int`
+        + `COLUMNS`, sous forme d'`Int`
+  entry .lang
+    info
+        - `LANG`, as text
+        + `LANG`, sous forme de texte
+  entry .display
+    info
+        - `DISPLAY`, as text
+        + `DISPLAY`, sous forme de texte
+  entry .term
+    info
+        - `TERM`, as text
+        + `TERM`, sous forme de texte
+  entry #defaultName
+    info
+        - the variable's real name: `#name` if set, otherwise the label in upper-snake-case
+        + le vrai nom de la variable : `#name` s'il est défini, sinon l'étiquette en majuscules
+        + séparées par des tirets bas
+    detail
+        - `"xdgDataHome"` becomes `XDG_DATA_HOME` and `"term"` becomes `TERM`.
+        + `"xdgDataHome"` devient `XDG_DATA_HOME` et `"term"` devient `TERM`.
+  entry #name
+    info
+        - an explicit variable name, overriding the derived one; `Unset` by default
+        + un nom de variable explicite, qui remplace le nom dérivé ; `Unset` par défaut
+  entry #read
+    info
+        - decodes the variable's text to the instance's type
+        + décode le texte de la variable dans le type de l'instance
+
+entry .Protovariable
+  info
+      - the fallback `Variable` instances for any label: as text, or as any decodable type
+      + les instances de repli de `Variable` pour n'importe quelle étiquette : en texte, ou en tout
+      + type décodable
+  detail
+      - The parent of the `Variable` companion, holding the two instances which apply to every
+      - label, at lower priority than the named ones in `Variable` itself: so
+      - `Environment.anything[Text]` reads any variable as text, and `Environment.anything[Int]`
+      - decodes it with the `Int is Decodable in Text` instance. Not normally referred to
+      - directly.
+      + Le parent de l'objet compagnon de `Variable`, qui contient les deux instances valables pour
+      + toute étiquette, avec une priorité inférieure à celle des instances nommées de `Variable`
+      + lui-même : ainsi `Environment.anything[Text]` lit n'importe quelle variable en texte, et
+      + `Environment.anything[Int]` la décode avec l'instance `Int is Decodable in Text`. On n'y
+      + fait normalement pas référence directement.
+  entry #generic
+    info
+        - any variable, as its raw text
+        + n'importe quelle variable, sous forme de son texte brut
+  entry #decoder
+    info
+        - any variable, decoded to a type which is `Decodable in Text`
+        + n'importe quelle variable, décodée dans un type `Decodable in Text`
+
+entry .variables
+  info
+      - runs a block with named variables laid over the environment in scope
+      + exécute un bloc avec des variables nommées superposées à l'environnement dans la portée
+  detail
+      - `variables(name = value, …)(block)` names each variable in camel case and sets it in the
+      - conventional upper-snake-case form — `gitIndexFile` is `GIT_INDEX_FILE` — on top of the
+      - `Environment` in scope, for the duration of the block, which takes the new environment as
+      - a context parameter. Lookups of other names fall through to the outer environment, and
+      - the overrides are added to `Environment#entries` too, so a subprocess started within the
+      - block inherits them.
+      + `variables(name = value, …)(block)` nomme chaque variable en camel case et la définit sous
+      + la forme conventionnelle en majuscules séparées par des tirets bas — `gitIndexFile` donne
+      + `GIT_INDEX_FILE` — par-dessus l'`Environment` dans la portée, pour la durée du bloc, qui
+      + reçoit le nouvel environnement en paramètre contextuel. Les recherches d'autres noms
+      + retombent sur l'environnement extérieur, et les redéfinitions sont aussi ajoutées à
+      + `Environment#entries`, de sorte qu'un sous-processus lancé dans le bloc en hérite.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import strategies.throwUnsafely
+
+      variables(gitIndexFile = t"/tmp/index", home = t"/home/juliet"):
+        (Environment.gitIndexFile[Text], Environment.home[Text])   // (t"/tmp/index", t"/home/juliet")
+      ```
+
+      - The values are `Text`; an outer `Environment` is required.
+      + Les valeurs sont du `Text` ; un `Environment` extérieur est requis.
+  entry .applyDynamicNamed
+    info
+        - the named-argument application behind `variables(name = value)(block)`
+        + l'application à arguments nommés derrière `variables(name = value)(block)`
+    detail
+        - Not called by name: the compiler rewrites `variables(gitIndexFile = t"…")` to it. Each
+        - argument name is converted from camel case to upper snake case, and the block receives
+        - the extended `Environment` as a context parameter.
+        + On ne l'appelle pas par son nom : le compilateur réécrit `variables(gitIndexFile = t"…")`
+        + en un appel à celle-ci. Chaque nom d'argument est converti du camel case en majuscules
+        + séparées par des tirets bas, et le bloc reçoit l'`Environment` étendu en paramètre
+        + contextuel.
+
+entry .System
+  info
+      - the system properties, as a contextual value, and the platform read from them
+      + les propriétés système, en valeur contextuelle, et la plateforme qu'on en déduit
+  detail
+      - A `System` answers a property's name with its text, or `Unset`; the JVM's own is
+      - `systems.javaBaseSystem`, imported by name, and `systems.emptySystem` defines nothing.
+      - A lambda from name to `Optional[Text]` is a `System` for a test.
+      + Un `System` associe au nom d'une propriété son texte, ou `Unset` ; celui de la JVM est
+      + `systems.javaBaseSystem`, importé par son nom, et `systems.emptySystem` ne définit rien. Une
+      + lambda d'un nom vers un `Optional[Text]` est un `System` pour un test.
+
+      - Properties are read through `.properties`, with the dotted name written as a path of
+      - members ending in an application whose type argument says what the value decodes to:
+      - `System.properties.user.home[Text]()`, `System.properties.file.separator[Char]()`. The
+      - companion's `Property` instances know the types of the standard properties (`java.home`
+      - and `user.home` as paths, `os.arch` as an `Architecture`, `java.class.version` as an
+      - `Int`), and any other property reads as `Text` or as any type `Decodable in Text`. A
+      - property which is not defined raises `Property.Error`.
+      + Les propriétés se lisent par `.properties`, le nom pointé s'écrivant comme un chemin de
+      + membres terminé par une application dont l'argument de type indique dans quel type la valeur
+      + est décodée : `System.properties.user.home[Text]()`,
+      + `System.properties.file.separator[Char]()`. Les instances de `Property` de l'objet compagnon
+      + connaissent les types des propriétés standard (`java.home` et `user.home` comme chemins,
+      + `os.arch` comme `Architecture`, `java.class.version` comme `Int`), et toute autre propriété
+      + se lit en `Text` ou en tout type `Decodable in Text`. Une propriété non définie lève
+      + `Property.Error`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+
+      val user: Text = System.properties.user.name[Text]()
+      val tmp: Text = System.properties.java.io.tmpdir[Text]()
+      val os: Os = System.os
+      val arch: Architecture = System.architecture
+      ```
+
+      - Properties and environment variables are alike in being textual key/value data, and
+      - differ in where they come from: a property is passed as a `-D` argument to the JVM and
+      - named in dotted lower case, a variable is inherited from the shell and named in upper
+      - snake case. Each is decoded at the point of reading rather than passed inward as text.
+      + Propriétés et variables d'environnement se ressemblent en tant que données textuelles
+      + clé/valeur, et diffèrent par leur provenance : une propriété est passée à la JVM en argument
+      + `-D` et nommée en minuscules pointées, une variable est héritée du shell et nommée en
+      + majuscules séparées par des tirets bas. Chacune est décodée au moment de la lecture plutôt
+      + que transmise vers l'intérieur sous forme de texte.
+
+      - In a file which imports `soundness.*`, this `System` shadows `java.lang.System`: write
+      - `java.lang.System.nanoTime` for the Java one.
+      + Dans un fichier qui importe `soundness.*`, ce `System` masque `java.lang.System` : écrivez
+      + `java.lang.System.nanoTime` pour celui de Java.
+  refer ambience.Property
+  refer ambience.systems
+  refer ambience.Os
+  refer ambience.Architecture
+  entry .os
+    info
+        - the running operating system, decoded from the `os.name` property
+        + le système d'exploitation en cours, décodé à partir de la propriété `os.name`
+    detail
+        - `System.os` reads `os.name` from the `System` in scope and decodes it as an `Os`, so a
+        - program matches on `Os.MacOs` rather than on the many spellings the property takes. It
+        - panics, rather than raising, if the property is not defined, as the typed property reads
+        - do; a lenient check is `system(t"os.name").let(_.as[Os])`.
+        + `System.os` lit `os.name` dans le `System` dans la portée et le décode en `Os`, de sorte
+        + qu'un programme filtre sur `Os.MacOs` plutôt que sur les nombreuses graphies que prend la
+        + propriété. Il provoque une panique, au lieu de lever une erreur, si la propriété n'est pas
+        + définie, comme le font les lectures de propriétés typées ; une vérification tolérante
+        + s'écrit `system(t"os.name").let(_.as[Os])`.
+  entry .architecture
+    info
+        - the running processor architecture, decoded from the `os.arch` property
+        + l'architecture du processeur en cours, décodée à partir de la propriété `os.arch`
+    detail
+        - `System.architecture` reads `os.arch` and decodes it as an `Architecture`, `Arm(64)` for
+        - `aarch64` or `arm64`. Panics if the property is not defined.
+        + `System.architecture` lit `os.arch` et le décode en `Architecture`, `Arm(64)` pour
+        + `aarch64` ou `arm64`. Provoque une panique si la propriété n'est pas définie.
+  entry .properties
+    info
+        - the root of the dotted-name path for reading a property
+        + la racine du chemin de noms pointés servant à lire une propriété
+    detail
+        - `System.properties.a.b.c[T]()` reads the property `a.b.c`: each member access extends
+        - a `Property.Access` with one more segment, and the final application reads the
+        - property from the `System` in scope through the `Property` instance for that name and
+        - type. `System.properties[T](t"a.b.c")` reads a property by its runtime name.
+        + `System.properties.a.b.c[T]()` lit la propriété `a.b.c` : chaque accès à un membre étend
+        + un `Property.Access` d'un segment supplémentaire, et l'application finale lit la propriété
+        + dans le `System` dans la portée par l'instance de `Property` pour ce nom et ce type.
+        + `System.properties[T](t"a.b.c")` lit une propriété par son nom à l'exécution.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+
+        System.properties.java.version[Text]()
+        System.properties.path.separator[Char]()
+        System.properties[Text](t"java.vendor")
+        ```
+    entry .apply
+      info
+          - reads a property by its runtime name, decoded to the type asked for
+          + lit une propriété par son nom à l'exécution, décodée dans le type demandé
+      detail
+          - Needs a `System`, and a `Property` instance for the type: `Text`, or any type
+          - `Decodable in Text`. Raises `Property.Error` if the property is not defined.
+          + Requiert un `System`, et une instance de `Property` pour le type : `Text`, ou tout type
+          + `Decodable in Text`. Lève `Property.Error` si la propriété n'est pas définie.
+    entry .selectDynamic
+      info
+          - begins a dotted property name: `System.properties.user` is a `Property.Access["user"]`
+          + commence un nom de propriété pointé : `System.properties.user` est un
+          + `Property.Access["user"]`
+  entry #apply
+    info
+        - the value of a property by name, or `Unset` if it is not defined
+        + la valeur d'une propriété par son nom, ou `Unset` si elle n'est pas définie
+    detail
+        - The one abstract method, the raw text. The typed reads call this and decode the result.
+        + L'unique méthode abstraite, le texte brut. Les lectures typées l'appellent et décodent le
+        + résultat.
+
+entry .Property
+  info
+      - how one system property, by its dotted name, is decoded to a type
+      + la façon dont une propriété système, d'après son nom pointé, est décodée dans un type
+  detail
+      - `name is Property of T` is the typeclass behind `System.properties.<name>[T]()`: for the
+      - literal property name it knows how to `#read` the optional text as a `T`, and what to do
+      - when the property is missing. The companion has instances for the standard JVM
+      - properties, so each reads as its natural type: `java.home`, `user.home` and `user.dir`
+      - as a path of any type `Instantiable across Paths from Text`; `file.separator` and
+      - `path.separator` as a `Char`; `os.arch` as an `Architecture`; `java.class.version` as an
+      - `Int` (`65` for Java 21); and `java.version`, `java.vendor`, `java.vendor.url`,
+      - `java.runtime.version`, `line.separator`, `user.name`, `os.name` and `os.version` as
+      - `Text`. Any other property reads as `Text` (`.generic`) or as any type `Decodable in
+      - Text` (`.decoder`), each raising `Property.Error` through the `Tactic` in scope if it is
+      - not defined.
+      + `name is Property of T` est la classe de types derrière `System.properties.<name>[T]()` :
+      + pour le nom littéral de la propriété, elle sait comment lire (`#read`) le texte optionnel en
+      + tant que `T`, et que faire quand la propriété manque. L'objet compagnon contient des
+      + instances pour les propriétés standard de la JVM, de sorte que chacune se lit dans son type
+      + naturel : `java.home`, `user.home` et `user.dir` comme chemin de n'importe quel type
+      + `Instantiable across Paths from Text` ; `file.separator` et `path.separator` comme `Char` ;
+      + `os.arch` comme `Architecture` ; `java.class.version` comme `Int` (`65` pour Java 21) ; et
+      + `java.version`, `java.vendor`, `java.vendor.url`, `java.runtime.version`, `line.separator`,
+      + `user.name`, `os.name` et `os.version` comme `Text`. Toute autre propriété se lit en `Text`
+      + (`.generic`) ou en tout type `Decodable in Text` (`.decoder`), chacune levant
+      + `Property.Error` par la `Tactic` dans la portée si elle n'est pas définie.
+
+      - The standard instances with a fixed type panic rather than raise on a missing property,
+      - since a JVM always defines them; the generic ones, and `javaRuntimeVersion` and
+      - `javaClassVersion`, need a `Tactic[Property.Error]`.
+      + Les instances standard à type fixe provoquent une panique plutôt que de lever une erreur
+      + pour une propriété manquante, puisqu'une JVM les définit toujours ; les instances
+      + génériques, ainsi que `javaRuntimeVersion` et `javaClassVersion`, requièrent une
+      + `Tactic[Property.Error]`.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+
+      val home: Path on Linux = System.properties.user.home[Path on Linux]()
+      val classVersion: Int = System.properties.java.`class`.version[Int]()
+      val custom: Int = System.properties.myapp.port[Int]()
+      ```
+
+      - A property name which is a Scala keyword, such as `class` in `java.class.path`, is
+      - written in backticks.
+      + Un nom de propriété qui est un mot-clé Scala, comme `class` dans `java.class.path`, s'écrit
+      + entre backticks.
+  refer ambience.System
+  entry .apply
+    info
+        - makes a `Property` instance from a function on the property's text
+        + crée une instance de `Property` à partir d'une fonction sur le texte de la propriété
+    detail
+        - `Property[name, T](text => …)` is the instance which decodes a defined property with the
+        - function and panics if it is undefined; it is how the companion's fixed-type instances
+        - are written, and how a program declares the type of a property of its own.
+        + `Property[name, T](text => …)` est l'instance qui décode une propriété définie avec la
+        + fonction et provoque une panique si elle n'est pas définie ; c'est ainsi que sont écrites
+        + les instances à type fixe de l'objet compagnon, et ainsi qu'un programme déclare le type
+        + d'une propriété qui lui est propre.
+  entry .generic
+    info
+        - any property, as its raw text; raises `Property.Error` if undefined
+        + n'importe quelle propriété, sous forme de son texte brut ; lève `Property.Error` si elle
+        + n'est pas définie
+  entry .decoder
+    info
+        - any property, decoded to a type which is `Decodable in Text`; raises `Property.Error` if undefined
+        + n'importe quelle propriété, décodée dans un type `Decodable in Text` ; lève
+        + `Property.Error` si elle n'est pas définie
+  entry .javaHome
+    info
+        - `java.home`, as a path of any type
+        + `java.home`, sous forme de chemin de n'importe quel type
+  entry .javaVersion
+    info
+        - `java.version`, as text
+        + `java.version`, sous forme de texte
+  entry .javaVendor
+    info
+        - `java.vendor`, as text
+        + `java.vendor`, sous forme de texte
+  entry .javaVendorUrl
+    info
+        - `java.vendor.url`, as text
+        + `java.vendor.url`, sous forme de texte
+  entry .javaRuntimeVersion
+    info
+        - `java.runtime.version`, as text (`21.0.2+13-LTS`); raises `Property.Error` if undefined
+        + `java.runtime.version`, sous forme de texte (`21.0.2+13-LTS`) ; lève `Property.Error` si
+        + elle n'est pas définie
+  entry .javaClassVersion
+    info
+        - `java.class.version`, as the major class-file version (`65` for Java 21)
+        + `java.class.version`, sous forme de version majeure du format de fichier class (`65` pour
+        + Java 21)
+    detail
+        - The property is a decimal such as `65.0`; its integer part is what is wanted. Raises
+        - `Property.Error` if the property is undefined or does not parse.
+        + La propriété est un nombre décimal comme `65.0` ; c'est sa partie entière qui est voulue.
+        + Lève `Property.Error` si la propriété n'est pas définie ou ne s'analyse pas.
+  entry .fileSeparator
+    info
+        - `file.separator`, as a `Char`
+        + `file.separator`, sous forme de `Char`
+  entry .pathSeparator
+    info
+        - `path.separator`, as a `Char`
+        + `path.separator`, sous forme de `Char`
+  entry .lineSeparator
+    info
+        - `line.separator`, as text
+        + `line.separator`, sous forme de texte
+  entry .userName
+    info
+        - `user.name`, as text
+        + `user.name`, sous forme de texte
+  entry .userHome
+    info
+        - `user.home`, as a path of any type
+        + `user.home`, sous forme de chemin de n'importe quel type
+  entry .userDir
+    info
+        - `user.dir`, as a path of any type
+        + `user.dir`, sous forme de chemin de n'importe quel type
+  entry .osName
+    info
+        - `os.name`, as text; `System.os` decodes it as an `Os`
+        + `os.name`, sous forme de texte ; `System.os` le décode en `Os`
+  entry .osVersion
+    info
+        - `os.version`, as text
+        + `os.version`, sous forme de texte
+  entry .osArch
+    info
+        - `os.arch`, as an `Architecture`
+        + `os.arch`, sous forme d'`Architecture`
+  entry .Access
+    info
+        - a partly-written dotted property name, extended by member access and read by application
+        + un nom de propriété pointé partiellement écrit, étendu par accès à un membre et lu par
+        + application
+    detail
+        - `System.properties.user` is a `Property.Access["user"]`; `.home` extends it to
+        - `Property.Access["user.home"]`, and `[Text]()` reads it. The name is carried in the
+        - type, so the `Property` instance is chosen by the full dotted name at compile time.
+        + `System.properties.user` est un `Property.Access["user"]` ; `.home` l'étend en
+        + `Property.Access["user.home"]`, et `[Text]()` le lit. Le nom est porté dans le type, de
+        + sorte que l'instance de `Property` est choisie d'après le nom pointé complet à la
+        + compilation.
+    entry #selectDynamic
+      info
+          - extends the name by one dotted segment
+          + étend le nom d'un segment pointé
+    entry #applyDynamic
+      info
+          - extends the name by one segment and reads the property in a single step
+          + étend le nom d'un segment et lit la propriété en une seule étape
+    entry #property
+      info
+          - the dotted property name written so far, as a string
+          + le nom de propriété pointé écrit jusqu'ici, sous forme de chaîne
+    entry #apply
+      info
+          - reads the named property from the `System` in scope, decoded to the type argument
+          + lit la propriété nommée dans le `System` dans la portée, décodée dans l'argument de type
+  entry .Error
+    info
+        - raised when a property which was read is not defined
+        + levée quand une propriété lue n'est pas définie
+    detail
+        - Error 815: _the system property `property` was not defined_. Raised by the `generic`
+        - and `decoder` instances, and by `javaRuntimeVersion` and `javaClassVersion`, through
+        - the `Tactic[Property.Error]` in scope; also by other libraries which read a property
+        - they need, such as `LocalClasspath` reading `path.separator`.
+        + Erreur 815 : _the system property `property` was not defined_. Levée par les instances
+        + `generic` et `decoder`, et par `javaRuntimeVersion` et `javaClassVersion`, par la
+        + `Tactic[Property.Error]` dans la portée ; également par d'autres bibliothèques qui lisent
+        + une propriété dont elles ont besoin, comme `LocalClasspath` qui lit `path.separator`.
+    entry #property
+      info
+          - the dotted name of the property which was not defined
+          + le nom pointé de la propriété qui n'était pas définie
+  entry #read
+    info
+        - decodes a property's optional text, given its name, to the instance's type
+        + décode le texte optionnel d'une propriété, d'après son nom, dans le type de l'instance
+  entry #Self
+    info
+        - the property's name, as a literal string type
+        + le nom de la propriété, sous forme de type chaîne littéral
+
+entry .Os
+  info
+      - the operating system a program runs on, as a value decoded from `os.name`
+      + le système d'exploitation sur lequel s'exécute un programme, sous forme de valeur décodée à
+      + partir de `os.name`
+  detail
+      - An enum of the operating systems the JVM reports — `Linux`, `MacOs`, `Windows`,
+      - `FreeBsd`, `OpenBsd`, `NetBsd`, `Solaris`, `Aix` — and `Other(name)` for one it does not
+      - know, keeping the name. `System.os` reads the running one from the `System` in scope,
+      - and `text.as[Os]` decodes any `os.name` text, matching on the lowercased prefix so that
+      - `Mac OS X`, `Windows Server 2022` and `SunOS` each decode as expected.
+      + Une énumération des systèmes d'exploitation que signale la JVM — `Linux`, `MacOs`,
+      + `Windows`, `FreeBsd`, `OpenBsd`, `NetBsd`, `Solaris`, `Aix` — et `Other(name)` pour un
+      + système qu'elle ne connaît pas, en conservant le nom. `System.os` lit celui en cours dans le
+      + `System` dans la portée, et `text.as[Os]` décode n'importe quel texte `os.name`, en filtrant
+      + sur le préfixe en minuscules de sorte que `Mac OS X`, `Windows Server 2022` et `SunOS` se
+      + décodent chacun comme prévu.
+
+      ```scala
+      import soundness.*
+      import systems.javaBaseSystem
+
+      t"Mac OS X".as[Os]              // Os.MacOs
+      t"Windows Server 2022".as[Os]   // Os.Windows
+      t"Plan 9".as[Os]                // Os.Other(t"Plan 9")
+
+      val asset: Optional[Text] = (System.os, System.architecture) match
+        case (Os.Linux, Architecture.X86(64)) => t"linux-x64"
+        case (Os.MacOs, Architecture.Arm(64)) => t"macos-arm64"
+        case _                                => Unset
+      ```
+
+      - `Os` is not the target of `Vm.intercept`; the virtual machine's events are intercepted
+      - through `Vm`.
+      + `Os` n'est pas la cible de `Vm.intercept` ; les événements de la machine virtuelle
+      + s'interceptent par `Vm`.
+  refer ambience.System
+  refer ambience.Architecture
+  entry .decodable
+    info
+        - reads an `os.name` text as an `Os`, by its lowercased prefix
+        + lit un texte `os.name` en tant qu'`Os`, d'après son préfixe en minuscules
+    detail
+        - `linux`; `mac` or `darwin`; `windows`; `freebsd`; `openbsd`; `netbsd`; `sunos` or
+        - `solaris`; `aix`; anything else is `Other(name)`. Decoding never fails.
+        + `linux` ; `mac` ou `darwin` ; `windows` ; `freebsd` ; `openbsd` ; `netbsd` ; `sunos` ou
+        + `solaris` ; `aix` ; tout le reste donne `Other(name)`. Le décodage n'échoue jamais.
+
+entry .Architecture
+  info
+      - the processor architecture, as a value decoded from `os.arch`
+      + l'architecture du processeur, sous forme de valeur décodée à partir de `os.arch`
+  detail
+      - An enum of processor families with their word size: `X86(32 | 64)`, `Arm(32 | 64)`,
+      - `Ppc(32 | 64, littleEndian)`, `Sparc(32 | 64)`, `Mips(32 | 64)`, `S390(31 | 64)`,
+      - `RiscV`, and `Other(name)` for one it does not know. `System.architecture` reads the
+      - running one from the `System` in scope, so code which chooses a native library or a code
+      - path by architecture matches on a value rather than on a string whose spelling varies by
+      - platform.
+      + Une énumération des familles de processeurs avec leur taille de mot : `X86(32 | 64)`,
+      + `Arm(32 | 64)`, `Ppc(32 | 64, littleEndian)`, `Sparc(32 | 64)`, `Mips(32 | 64)`,
+      + `S390(31 | 64)`, `RiscV`, et `Other(name)` pour une famille qu'elle ne connaît pas.
+      + `System.architecture` lit celle en cours dans le `System` dans la portée, de sorte que le
+      + code qui choisit une bibliothèque native ou un chemin d'exécution selon l'architecture
+      + filtre sur une valeur plutôt que sur une chaîne dont la graphie varie selon la plateforme.
+
+      ```scala
+      import soundness.*
+
+      t"amd64".as[Architecture]     // Architecture.X86(64)
+      t"aarch64".as[Architecture]   // Architecture.Arm(64)
+      t"ppc64le".as[Architecture]   // Architecture.Ppc(64, true)
+      ```
+  refer ambience.System
+  refer ambience.Os
+  entry .decodable
+    info
+        - reads an `os.arch` text as an `Architecture`
+        + lit un texte `os.arch` en tant qu'`Architecture`
+    detail
+        - Decoding never fails; an unrecognised name is kept as `Other(name)`:
+        + Le décodage n'échoue jamais ; un nom non reconnu est conservé sous la forme
+        + `Other(name)` :
+
+        ```tabular
+        - column  `os.arch`
+        - column  Architecture
+        - row  `x86`, `i386`  `X86(32)`
+        - row  `x86_64`, `amd64`  `X86(64)`
+        - row  `arm`  `Arm(32)`
+        - row  `aarch64`, `arm64`  `Arm(64)`
+        - row  `ppc`  `Ppc(32)`
+        - row  `ppc64`  `Ppc(64)`
+        - row  `ppc64le`  `Ppc(64, true)`, little-endian
+        - row  `sparc`  `Sparc(32)`
+        - row  `sparcv9`  `Sparc(64)`
+        - row  `mips`  `Mips(32)`
+        - row  `mips64`  `Mips(64)`
+        - row  `riscv64`  `RiscV`
+        - row  `s390`  `S390(31)`
+        - row  `s390x`  `S390(64)`
+        - row  any other name  `Other(name)`
+        + column  `os.arch`
+        + column  Architecture
+        + row  `x86`, `i386`  `X86(32)`
+        + row  `x86_64`, `amd64`  `X86(64)`
+        + row  `arm`  `Arm(32)`
+        + row  `aarch64`, `arm64`  `Arm(64)`
+        + row  `ppc`  `Ppc(32)`
+        + row  `ppc64`  `Ppc(64)`
+        + row  `ppc64le`  `Ppc(64, true)`, petit-boutiste
+        + row  `sparc`  `Sparc(32)`
+        + row  `sparcv9`  `Sparc(64)`
+        + row  `mips`  `Mips(32)`
+        + row  `mips64`  `Mips(64)`
+        + row  `riscv64`  `RiscV`
+        + row  `s390`  `S390(31)`
+        + row  `s390x`  `S390(64)`
+        + row  tout autre nom  `Other(name)`
+        ```
+
+entry .Vm
+  info
+      - the virtual machine the program runs in: the target of `Vm.intercept`
+      + la machine virtuelle dans laquelle s'exécute le programme : la cible de `Vm.intercept`
+  detail
+      - An object with no members of its own. It is where the events the virtual machine raises —
+      - its shutdown, an uncaught exception, a garbage collection — are intercepted, through
+      - `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]` and `Vm.intercept[GarbageCollection]` in
+      - the `parasite` library, which declares those events as interceptable on this target. Only
+      - the JVM provides the events today, but none of them is JVM-specific in principle, which is
+      - why the target is `Vm` and not the staging rig `Jvm`.
+      + Un objet sans membres propres. C'est là que s'interceptent les événements que lève la
+      + machine virtuelle — son arrêt, une exception non interceptée, un passage du ramasse-miettes
+      + — par `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]` et `Vm.intercept[GarbageCollection]`
+      + dans la bibliothèque `parasite`, qui déclare ces événements interceptables sur cette cible.
+      + Seule la JVM fournit ces événements aujourd'hui, mais aucun n'est en principe propre à la
+      + JVM, c'est pourquoi la cible est `Vm` et non le banc de mise en étapes `Jvm`.
+
+      ```scala
+      import soundness.*
+
+      Vm.intercept[Shutdown]:
+        ()   // runs as the virtual machine shuts down
+      ```
+
+entry .WorkingDirectory
+  info
+      - the directory a program was launched in, as a contextual value
+      + le répertoire dans lequel un programme a été lancé, en valeur contextuelle
+  detail
+      - A `WorkingDirectory` names one directory, as `#directory()` text; a method which
+      - resolves a relative path against the working directory takes one as a `using`
+      - parameter, rather than reading `user.dir` from a global. The ones to import by name are
+      - in the `workingDirectories` package: `javaBaseWorkingDirectory` is the JVM's `user.dir`,
+      - `systemWorkingDirectory` reads `user.dir` from the `System` in scope,
+      - `wasiWorkingDirectory` a Wasm component's initial directory, and
+      - `daemonClientWorkingDirectory` (from `ethereal`) the directory each invocation of a
+      - daemon was made from. `WorkingDirectory(path)` makes one from any path value, and the
+      - top-level `workingDirectory[Path on Linux]` resolves the one in scope to a path type.
+      + Un `WorkingDirectory` nomme un répertoire, sous forme de texte `#directory()` ; une méthode
+      + qui résout un chemin relatif par rapport au répertoire de travail en prend un en paramètre
+      + `using`, plutôt que de lire `user.dir` dans une variable globale. Ceux à importer par leur
+      + nom se trouvent dans le package `workingDirectories` : `javaBaseWorkingDirectory` est le
+      + `user.dir` de la JVM, `systemWorkingDirectory` lit `user.dir` dans le `System` dans la
+      + portée, `wasiWorkingDirectory` le répertoire initial d'un composant Wasm, et
+      + `daemonClientWorkingDirectory` (de `ethereal`) le répertoire depuis lequel chaque invocation
+      + d'un démon a été faite. `WorkingDirectory(path)` en crée un à partir de n'importe quelle
+      + valeur de chemin, et la fonction de premier niveau `workingDirectory[Path on Linux]` résout
+      + celui qui est dans la portée en un type de chemin.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.pathOnLinux
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val cwd: Path on Linux = workingDirectory[Path on Linux]
+      val fixed: WorkingDirectory = WorkingDirectory(t"/tmp/work")
+      fixed.directory()   // t"/tmp/work"
+      ```
+  refer ambience.workingDirectories
+  refer ambience.workingDirectory
+  entry .apply
+    info
+        - a working directory from any path type which is `Abstractable across Paths to Text`
+        + un répertoire de travail à partir de tout type de chemin
+        + `Abstractable across Paths to Text`
+  entry .provided
+    info
+        - a `WorkingDirectory` from any `WorkingDirectory.Provider` in scope
+        + un `WorkingDirectory` à partir de tout `WorkingDirectory.Provider` dans la portée
+    detail
+        - A given in the companion, so it needs no import: wherever a provider, such as a CLI
+        - invocation, is a given, its working directory is summonable directly.
+        + Un given de l'objet compagnon, qui ne requiert donc aucun import : partout où un
+        + fournisseur, comme une invocation en ligne de commande, est un given, son répertoire de
+        + travail peut être invoqué directement.
+  entry .Provider
+    info
+        - something which carries a canonical working directory, such as a CLI invocation
+        + quelque chose qui porte un répertoire de travail canonique, comme une invocation en ligne
+        + de commande
+    detail
+        - A trait with one member, `#workingDirectory`. Each client of a daemon has a working
+        - directory of its own, so the invocation type provides it, and `WorkingDirectory.provided`
+        - makes it the one in scope.
+        + Un trait à un seul membre, `#workingDirectory`. Chaque client d'un démon a son propre
+        + répertoire de travail ; le type d'invocation le fournit donc, et
+        + `WorkingDirectory.provided` en fait celui qui est dans la portée.
+    entry #workingDirectory
+      info
+          - the working directory this provider carries
+          + le répertoire de travail que porte ce fournisseur
+  entry .Error
+    info
+        - raised when a working directory is needed and there is none
+        + levée quand un répertoire de travail est nécessaire et qu'il n'y en a aucun
+    detail
+        - Error 913: _there is no working directory_. Raised by code which must resolve a
+        - relative path and has no `WorkingDirectory` to resolve it against, such as a daemon
+        - invocation whose client could not report one.
+        + Erreur 913 : _there is no working directory_. Levée par du code qui doit résoudre un
+        + chemin relatif et n'a aucun `WorkingDirectory` par rapport auquel le faire, comme une
+        + invocation de démon dont le client n'a pas pu en signaler un.
+  entry #directory
+    info
+        - the working directory, as text
+        + le répertoire de travail, sous forme de texte
+
+entry .TemporaryDirectory
+  info
+      - a directory for temporary files, as a contextual value
+      + un répertoire pour les fichiers temporaires, en valeur contextuelle
+  detail
+      - A `TemporaryDirectory` names one directory as `#directory()` text, and `#path[T]`
+      - instantiates it as any path type. The ones to import by name are in the
+      - `temporaryDirectories` package: `javaBaseTemporaryDirectory` reads the JVM's
+      - `java.io.tmpdir`, `systemTemporaryDirectory` the same property from the `System` in
+      - scope, and `environmentTemporaryDirectory` the first of `TMPDIR`, `TMP` and `TEMP` from
+      - the `Environment` in scope. The top-level `temporaryDirectory[Path on Linux]` resolves
+      - the one in scope to a path type.
+      + Un `TemporaryDirectory` nomme un répertoire sous forme de texte `#directory()`, et
+      + `#path[T]` l'instancie en n'importe quel type de chemin. Ceux à importer par leur nom se
+      + trouvent dans le package `temporaryDirectories` : `javaBaseTemporaryDirectory` lit le
+      + `java.io.tmpdir` de la JVM, `systemTemporaryDirectory` la même propriété dans le `System`
+      + dans la portée, et `environmentTemporaryDirectory` la première de `TMPDIR`, `TMP` et `TEMP`
+      + dans l'`Environment` dans la portée. La fonction de premier niveau
+      + `temporaryDirectory[Path on Linux]` résout celui qui est dans la portée en un type de
+      + chemin.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.pathOnLinux
+      import temporaryDirectories.javaBaseTemporaryDirectory
+
+      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+      ```
+  refer ambience.temporaryDirectories
+  refer ambience.temporaryDirectory
+  entry #directory
+    info
+        - the temporary directory, as text
+        + le répertoire temporaire, sous forme de texte
+  entry #path
+    info
+        - the temporary directory as a path of any type `Instantiable across Paths from Text`
+        + le répertoire temporaire sous forme de chemin de n'importe quel type
+        + `Instantiable across Paths from Text`
+
+entry .workingDirectory
+  info
+      - the `WorkingDirectory` in scope, resolved to a path type: `workingDirectory[Path on Linux]`
+      + le `WorkingDirectory` dans la portée, résolu en un type de chemin :
+      + `workingDirectory[Path on Linux]`
+  detail
+      - Needs a `WorkingDirectory` and a path type which is `Representative of Paths`. The text
+      - is instantiated through the type's trusted instantiation where it has one — a working
+      - directory comes from the operating system, so it is not validated — and otherwise from
+      - plain text. The method is `inline`, so it can be expanded inside a daemon's `cli` block.
+      + Requiert un `WorkingDirectory` et un type de chemin `Representative of Paths`. Le texte est
+      + instancié par l'instanciation de confiance du type quand il en a une — un répertoire de
+      + travail provient du système d'exploitation, il n'est donc pas validé — et sinon à partir du
+      + texte brut. La méthode est `inline`, de sorte qu'elle peut être développée à l'intérieur du
+      + bloc `cli` d'un démon.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.pathOnLinux
+      import workingDirectories.javaBaseWorkingDirectory
+
+      workingDirectory[Path on Linux]
+      ```
+
+entry .temporaryDirectory
+  info
+      - the `TemporaryDirectory` in scope, resolved to a path type: `temporaryDirectory[Path on Linux]`
+      + le `TemporaryDirectory` dans la portée, résolu en un type de chemin :
+      + `temporaryDirectory[Path on Linux]`
+  detail
+      - Needs a `TemporaryDirectory` and a path type which is `Representative of Paths`; the text
+      - is instantiated through the type's trusted instantiation, as `workingDirectory` does.
+      + Requiert un `TemporaryDirectory` et un type de chemin `Representative of Paths` ; le texte
+      + est instancié par l'instanciation de confiance du type, comme le fait `workingDirectory`.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.pathOnLinux
+      import temporaryDirectories.javaBaseTemporaryDirectory
+
+      temporaryDirectory[Path on Linux]
+      ```
+
+entry .Xdg
+  info
+      - the XDG base directories, from the environment where set and the specification's defaults where not
+      + les répertoires de base XDG, tirés de l'environnement quand ils y sont définis, et des
+      + valeurs par défaut de la spécification sinon
+  detail
+      - The XDG base directory specification says where a program's data, configuration, cache
+      - and state belong, honouring the user's environment (`XDG_DATA_HOME`, `XDG_CONFIG_DIRS`,
+      - …) where it is set and falling back to the specification's defaults beneath the home
+      - directory (from the `user.home` property) where it is not. Each method takes the path
+      - type to return as a type argument, and needs an `Environment` and a `System` in scope.
+      - `Directories` is the same set of directories with the Windows locations substituted on
+      - Windows.
+      + La spécification XDG des répertoires de base indique où doivent se trouver les données, la
+      + configuration, le cache et l'état d'un programme, en respectant l'environnement de
+      + l'utilisateur (`XDG_DATA_HOME`, `XDG_CONFIG_DIRS`, …) quand il est défini et en se repliant
+      + sur les valeurs par défaut de la spécification sous le répertoire personnel (tiré de la
+      + propriété `user.home`) quand il ne l'est pas. Chaque méthode prend en argument de type le
+      + type de chemin à renvoyer, et requiert un `Environment` et un `System` dans la portée.
+      + `Directories` est le même ensemble de répertoires, avec les emplacements Windows substitués
+      + sous Windows.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import pathInterfaces.pathOnLinux
+      import systems.javaBaseSystem
+
+      Xdg.configHome[Path on Linux]   // $XDG_CONFIG_HOME, or ~/.config
+      Xdg.cacheHome[Path on Linux]    // $XDG_CACHE_HOME, or ~/.cache
+      Xdg.dataDirs[Path on Linux]     // $XDG_DATA_DIRS, or /usr/local/share and /usr/share
+      ```
+
+      - Using these rather than a hard-coded `~/.myapp` is what makes a program's files land
+      - where the user's backup, sync and cleanup tools expect them.
+      + C'est en utilisant ces répertoires plutôt qu'un `~/.myapp` codé en dur qu'on fait atterrir
+      + les fichiers d'un programme là où les outils de sauvegarde, de synchronisation et de
+      + nettoyage de l'utilisateur les attendent.
+
+      - `Xdg.Data` and `Xdg.Config` are the two XDG searchpath planes: a `Path on Xdg.Data`
+      - denotes a subpath searched across `dataHome` and every entry of `dataDirs`, in that
+      - order of precedence, and `Path on Xdg.Config` likewise across `configHome` and
+      - `configDirs`. The searching itself is in the `galilei` library.
+      + `Xdg.Data` et `Xdg.Config` sont les deux plans de chemins de recherche XDG : un
+      + `Path on Xdg.Data` désigne un sous-chemin recherché dans `dataHome` puis dans chaque entrée
+      + de `dataDirs`, dans cet ordre de précédence, et `Path on Xdg.Config` de même dans
+      + `configHome` et `configDirs`. La recherche elle-même se trouve dans la bibliothèque
+      + `galilei`.
+  refer ambience.Directories
+  refer ambience.Searchpath
+  refer ambience.Environment
+  entry .Data
+    info
+        - the searchpath plane over `dataHome` and `dataDirs`, a `Searchpath`
+        + le plan de chemins de recherche sur `dataHome` et `dataDirs`, un `Searchpath`
+    detail
+        - A `Path on Xdg.Data` is a subpath such as `myapp/schema.json`, resolved by searching the
+        - data home and then each data directory. The resolution lives in `galilei`.
+        + Un `Path on Xdg.Data` est un sous-chemin comme `myapp/schema.json`, résolu en cherchant
+        + dans le répertoire personnel de données puis dans chaque répertoire de données. La
+        + résolution se trouve dans `galilei`.
+  entry .Config
+    info
+        - the searchpath plane over `configHome` and `configDirs`, a `Searchpath`
+        + le plan de chemins de recherche sur `configHome` et `configDirs`, un `Searchpath`
+  entry .dataHome
+    info
+        - `$XDG_DATA_HOME`, or `~/.local/share`
+        + `$XDG_DATA_HOME`, ou `~/.local/share`
+  entry .configHome
+    info
+        - `$XDG_CONFIG_HOME`, or `~/.config`
+        + `$XDG_CONFIG_HOME`, ou `~/.config`
+  entry .cacheHome
+    info
+        - `$XDG_CACHE_HOME`, or `~/.cache`
+        + `$XDG_CACHE_HOME`, ou `~/.cache`
+  entry .stateHome
+    info
+        - `$XDG_STATE_HOME`, or `~/.local/state`
+        + `$XDG_STATE_HOME`, ou `~/.local/state`
+  entry .runtimeDir
+    info
+        - `$XDG_RUNTIME_DIR`, or `Unset`: the specification gives it no default
+        + `$XDG_RUNTIME_DIR`, ou `Unset` : la spécification ne lui donne aucune valeur par défaut
+  entry .bin
+    info
+        - `$XDG_BIN_HOME`, or `~/.local/bin`
+        + `$XDG_BIN_HOME`, ou `~/.local/bin`
+  entry .dataDirs
+    info
+        - `$XDG_DATA_DIRS` split on the path separator, or `/usr/local/share` and `/usr/share`
+        + `$XDG_DATA_DIRS` découpé selon le séparateur de chemins, ou `/usr/local/share` et
+        + `/usr/share`
+  entry .configDirs
+    info
+        - `$XDG_CONFIG_DIRS` split on the path separator, or `/etc/xdg`
+        + `$XDG_CONFIG_DIRS` découpé selon le séparateur de chemins, ou `/etc/xdg`
+
+entry .Directories
+  info
+      - the standard user directories, with the Windows locations on Windows and XDG's elsewhere
+      + les répertoires standard de l'utilisateur, avec les emplacements Windows sous Windows et
+      + ceux de XDG ailleurs
+  detail
+      - The same directories as `Xdg`, chosen by platform: where the `System` in scope reports
+      - an `os.name` which decodes as `Os.Windows`, the data, config, cache and state homes are
+      - the roaming or local `AppData` directories (from `APPDATA` and `LOCALAPPDATA`, with the
+      - conventional defaults under the home directory where they are unset), the runtime
+      - directory and `bin` sit under local `AppData`, and the data and config directories are
+      - `PROGRAMDATA`; on every other platform, or where `os.name` is absent, each is the `Xdg`
+      - directory of the same name. Each method takes the path type as a type argument and
+      - needs an `Environment` and a `System`.
+      + Les mêmes répertoires que `Xdg`, choisis selon la plateforme : quand le `System` dans la
+      + portée signale un `os.name` qui se décode en `Os.Windows`, les répertoires personnels de
+      + données, de configuration, de cache et d'état sont les répertoires `AppData` itinérant ou
+      + local (tirés de `APPDATA` et `LOCALAPPDATA`, avec les valeurs par défaut conventionnelles
+      + sous le répertoire personnel quand elles ne sont pas définies), le répertoire d'exécution et
+      + `bin` se trouvent sous l'`AppData` local, et les répertoires de données et de configuration
+      + sont `PROGRAMDATA` ; sur toute autre plateforme, ou quand `os.name` est absent, chacun est
+      + le répertoire `Xdg` du même nom. Chaque méthode prend le type de chemin en argument de type
+      + et requiert un `Environment` et un `System`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import pathInterfaces.pathOnLinux
+      import systems.javaBaseSystem
+
+      Directories.configHome[Path on Linux]
+      Directories.homeText   // the user.home property
+      ```
+  refer ambience.Xdg
+  entry .home
+    info
+        - the user's home directory, from `user.home`, as a path of any type
+        + le répertoire personnel de l'utilisateur, tiré de `user.home`, sous forme de chemin de
+        + n'importe quel type
+    detail
+        - Needs only a `System`; panics if `user.home` is not set, as a JVM always sets it.
+        + Ne requiert qu'un `System` ; provoque une panique si `user.home` n'est pas défini, ce
+        + qu'une JVM fait toujours.
+  entry .homeText
+    info
+        - the user's home directory, from `user.home`, as text
+        + le répertoire personnel de l'utilisateur, tiré de `user.home`, sous forme de texte
+  entry .dataHome
+    info
+        - roaming `AppData` on Windows; `Xdg.dataHome` elsewhere
+        + l'`AppData` itinérant sous Windows ; `Xdg.dataHome` ailleurs
+  entry .configHome
+    info
+        - roaming `AppData` on Windows; `Xdg.configHome` elsewhere
+        + l'`AppData` itinérant sous Windows ; `Xdg.configHome` ailleurs
+  entry .cacheHome
+    info
+        - local `AppData` on Windows; `Xdg.cacheHome` elsewhere
+        + l'`AppData` local sous Windows ; `Xdg.cacheHome` ailleurs
+  entry .stateHome
+    info
+        - local `AppData` on Windows; `Xdg.stateHome` elsewhere
+        + l'`AppData` local sous Windows ; `Xdg.stateHome` ailleurs
+  entry .runtimeDir
+    info
+        - `Temp` under local `AppData` on Windows; `Xdg.runtimeDir` elsewhere, which may be `Unset`
+        + `Temp` sous l'`AppData` local sous Windows ; `Xdg.runtimeDir` ailleurs, qui peut être
+        + `Unset`
+  entry .bin
+    info
+        - `Programs` under local `AppData` on Windows; `Xdg.bin` elsewhere
+        + `Programs` sous l'`AppData` local sous Windows ; `Xdg.bin` ailleurs
+  entry .dataDirs
+    info
+        - `PROGRAMDATA` (or `C:\ProgramData`) on Windows; `Xdg.dataDirs` elsewhere
+        + `PROGRAMDATA` (ou `C:\ProgramData`) sous Windows ; `Xdg.dataDirs` ailleurs
+  entry .configDirs
+    info
+        - `PROGRAMDATA` (or `C:\ProgramData`) on Windows; `Xdg.configDirs` elsewhere
+        + `PROGRAMDATA` (ou `C:\ProgramData`) sous Windows ; `Xdg.configDirs` ailleurs
+
+entry .Searchpath
+  info
+      - the marker for a path plane which searches an ordered list of real directories
+      + le marqueur d'un plan de chemins qui cherche dans une liste ordonnée de répertoires réels
+  detail
+      - A _searchpath plane_ joins an ordered list of directories into a single searchable view
+      - — the XDG data directories, or `$PATH` — so that a `Path on Xdg.Data` names a subpath
+      - found in whichever directory has it first. A plane extends `Searchpath` to opt in, as
+      - `Xdg.Data` and `Xdg.Config` do; the companion then supplies the `serpentine` givens every
+      - such plane needs, in implicit scope: paths are rooted at `%`, the root encodes as
+      - nothing (so a path reads as `myapp/config.json`), and each segment is held to `.Rules`.
+      + Un _plan de chemins de recherche_ réunit une liste ordonnée de répertoires en une seule vue
+      + où l'on peut chercher — les répertoires de données XDG, ou `$PATH` — de sorte qu'un
+      + `Path on Xdg.Data` nomme un sous-chemin trouvé dans le premier répertoire qui le contient.
+      + Un plan étend `Searchpath` pour y adhérer, comme le font `Xdg.Data` et `Xdg.Config` ;
+      + l'objet compagnon fournit alors les givens de `serpentine` dont tout plan de ce genre a
+      + besoin, dans la portée implicite : les chemins ont pour racine `%`, la racine s'encode comme
+      + rien (de sorte qu'un chemin se lit `myapp/config.json`), et chaque segment est soumis à
+      + `.Rules`.
+
+      - Deliberately, a searchpath plane has no `Filesystem` instance: the absolute-path
+      - operations of `galilei`, bounded by a `Filesystem`, must not apply to a virtual path,
+      - which they would resolve as a literal platform path. The joining machinery — the ordered
+      - stems a plane resolves onto, first-match resolution and merged, shadowed listings — is
+      - `galilei`'s `Searchpaths`.
+      + Délibérément, un plan de chemins de recherche n'a pas d'instance de `Filesystem` : les
+      + opérations sur les chemins absolus de `galilei`, bornées par un `Filesystem`, ne doivent pas
+      + s'appliquer à un chemin virtuel, qu'elles résoudraient comme un chemin littéral de la
+      + plateforme. La mécanique de réunion — les racines ordonnées sur lesquelles un plan se
+      + résout, la résolution au premier trouvé et les listages fusionnés et masqués — se trouve
+      + dans les `Searchpaths` de `galilei`.
+  refer ambience.Xdg
+  entry .Rules
+    info
+        - what a segment of a searchpath path may be
+        + ce que peut être un segment d'un chemin de recherche
+    detail
+        - A segment must not contain `/`, and must not be `.`, `..` or empty.
+        + Un segment ne doit pas contenir `/`, et ne doit être ni `.`, ni `..`, ni vide.
+  entry .nominative
+    info
+        - the given which holds searchpath paths to `.Rules`
+        + le given qui soumet les chemins de recherche à `.Rules`
+  entry .submissible
+    info
+        - the given which lets a path on any searchpath plane be built from the root `%`
+        + le given qui permet de construire un chemin sur n'importe quel plan de chemins de
+        + recherche à partir de la racine `%`
+  entry .radical
+    info
+        - how the root `%` of a searchpath plane is written: as nothing
+        + la façon dont s'écrit la racine `%` d'un plan de chemins de recherche : comme rien
+    detail
+        - The root is implicit in every entry's text, so a path on the plane encodes as its
+        - segments alone.
+        + La racine est implicite dans le texte de chaque entrée, de sorte qu'un chemin sur le plan
+        + s'encode par ses seuls segments.
+  entry .eradicable
+    info
+        - how the root `%` of a searchpath plane is read: always `%`, consuming no text
+        + la façon dont se lit la racine `%` d'un plan de chemins de recherche : toujours `%`, sans
+        + consommer de texte
+    detail
+        - Reading the root cannot fail, so this given is pure and takes no tactic.
+        + La lecture de la racine ne peut pas échouer ; ce given est donc pur et ne prend aucune
+        + tactique.
+
+entry .Configurator
+  info
+      - a source of an application's settings, keyed by camel-case name, composed by priority
+      + une source de réglages d'une application, indexée par nom en camel case, composée par
+      + priorité
+  detail
+      - A `Configurator` reads a setting by its canonical camel-case name (`logLevel`) from one
+      - source, which owns the mapping into its native namespace: `Configurator.environment`
+      - reads `MYAPP_LOG_LEVEL` from the `Environment` in scope and `Configurator.properties`
+      - reads `myapp.log.level` from the `System`, each under the application's
+      - `Configurator.Prefix`. Configurators compose with `#++`, and composition order is
+      - priority order: the left source is consulted first, and a name it does not have falls
+      - through to the right.
+      + Un `Configurator` lit un réglage par son nom canonique en camel case (`logLevel`) dans une
+      + source, qui gère la correspondance avec son espace de noms natif :
+      + `Configurator.environment` lit `MYAPP_LOG_LEVEL` dans l'`Environment` dans la portée et
+      + `Configurator.properties` lit `myapp.log.level` dans le `System`, chacun sous le
+      + `Configurator.Prefix` de l'application. Les configurateurs se composent avec `#++`, et
+      + l'ordre de composition est l'ordre de priorité : la source de gauche est consultée en
+      + premier, et un nom qu'elle n'a pas retombe sur celle de droite.
+
+      - Declaring a `Prefix` given is what activates the standard cascade, `.default`: system
+      - properties take priority over environment variables, and the command line, which beats
+      - both, is handled by whichever type consults the configurator. A `Configurator` given in
+      - lexical scope overrides the default, so a configuration file in any format joins the
+      - cascade as a lambda from name to `Optional[Text]`.
+      + C'est la déclaration d'un given `Prefix` qui active la cascade standard, `.default` : les
+      + propriétés système ont priorité sur les variables d'environnement, et la ligne de commande,
+      + qui l'emporte sur les deux, est traitée par le type, quel qu'il soit, qui consulte le
+      + configurateur. Un given `Configurator` dans la portée lexicale remplace la valeur par
+      + défaut, de sorte qu'un fichier de configuration de n'importe quel format rejoint la cascade
+      + sous la forme d'une lambda d'un nom vers un `Optional[Text]`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import systems.javaBaseSystem
+
+      given Configurator.Prefix = Configurator.Prefix(t"myapp")
+      val file: Configurator = name => if name == t"port" then t"7070" else Unset
+
+      (Configurator.properties ++ Configurator.environment ++ file).read(t"port")
+      ```
+
+      - A configurator is a capability: it reaches outside the program, so the type is tracked
+      - wherever it appears, and a method which reads settings takes `using Configurator`. It is
+      - shared, not exclusive, since reading is free of side effects.
+      + Un configurateur est une capacité : il atteint l'extérieur du programme, si bien que le type
+      + est suivi partout où il apparaît, et qu'une méthode qui lit des réglages prend
+      + `using Configurator`. Il est partagé, non exclusif, puisque la lecture est sans effet de
+      + bord.
+  refer ambience.Environment
+  refer ambience.System
+  entry .Prefix
+    info
+        - the application's name, which prefixes its variables (`MYAPP_`) and properties (`myapp.`)
+        + le nom de l'application, qui préfixe ses variables (`MYAPP_`) et ses propriétés (`myapp.`)
+    detail
+        - Declared once as a given, `given Configurator.Prefix = Configurator.Prefix(t"myapp")`:
+        - it is upper-cased for the environment and lower-cased for properties.
+        + Déclaré une seule fois sous forme de given,
+        + `given Configurator.Prefix = Configurator.Prefix(t"myapp")` : il est mis en majuscules
+        + pour l'environnement et en minuscules pour les propriétés.
+    entry #name
+      info
+          - the application's name
+          + le nom de l'application
+  entry .environment
+    info
+        - the configurator over the `Environment` in scope: `logLevel` reads `MYAPP_LOG_LEVEL`
+        + le configurateur sur l'`Environment` dans la portée : `logLevel` lit `MYAPP_LOG_LEVEL`
+    detail
+        - The camel-case name is converted to upper snake case and prefixed with the upper-cased
+        - `Prefix` and an underscore. Needs a `Prefix` and an `Environment`.
+        + Le nom en camel case est converti en majuscules séparées par des tirets bas et préfixé par
+        + le `Prefix` en majuscules suivi d'un tiret bas. Requiert un `Prefix` et un `Environment`.
+  entry .properties
+    info
+        - the configurator over the `System` in scope: `logLevel` reads `myapp.log.level`
+        + le configurateur sur le `System` dans la portée : `logLevel` lit `myapp.log.level`
+    detail
+        - The camel-case name is converted to dotted lower case and prefixed with the lower-cased
+        - `Prefix` and a dot. Needs a `Prefix` and a `System`.
+        + Le nom en camel case est converti en minuscules pointées et préfixé par le `Prefix` en
+        + minuscules suivi d'un point. Requiert un `Prefix` et un `System`.
+  entry .default
+    info
+        - the standard cascade, properties before environment, activated by a `Prefix` given
+        + la cascade standard, les propriétés avant l'environnement, activée par un given `Prefix`
+    detail
+        - `properties ++ environment`. A given in the companion, so it is summoned wherever a
+        - `Prefix`, an `Environment` and a `System` are in scope; a `Configurator` given in lexical
+        - scope outranks it.
+        + `properties ++ environment`. Un given de l'objet compagnon, qui est donc invoqué partout
+        + où un `Prefix`, un `Environment` et un `System` sont dans la portée ; un given
+        + `Configurator` dans la portée lexicale l'emporte sur lui.
+  entry #read
+    info
+        - the setting's text by its camel-case name, or `Unset` if this source does not have it
+        + le texte du réglage d'après son nom en camel case, ou `Unset` si cette source ne l'a pas
+  entry #++
+    info
+        - composes two configurators, this one taking priority
+        + compose deux configurateurs, celui-ci ayant la priorité
+    detail
+        - `this ++ that` reads from `this` and falls through to `that` for a name it does not have.
+        - The result is a fresh configurator capturing both.
+        + `this ++ that` lit dans `this` et retombe sur `that` pour un nom qu'il n'a pas. Le
+        + résultat est un nouveau configurateur qui capture les deux.
+
+entry .WasiEnvironmentApi
+  info
+      - the WIT interface type of `wasi:cli/environment`, as `ambience.wasi` binds it
+      + le type d'interface WIT de `wasi:cli/environment`, tel que `ambience.wasi` le lie
+  detail
+      - `Interface in Wit at "/ambience/environment.wit"`: the type of the `wasiApis.wasiEnvironmentApi`
+      - given, against which `environments.wasiEnvironment` and
+      - `workingDirectories.wasiWorkingDirectory` are typechecked. Only in the `ambience.wasi`
+      - source set.
+      + `Interface in Wit at "/ambience/environment.wit"` : le type du given
+      + `wasiApis.wasiEnvironmentApi`, par rapport auquel `environments.wasiEnvironment` et
+      + `workingDirectories.wasiWorkingDirectory` sont vérifiés à la compilation. Uniquement dans
+      + l'ensemble de sources `ambience.wasi`.
+
+entry .environments
+  info
+      - the environments to import by name: the JVM's, the empty one, a daemon's, a Wasm component's
+      + les environnements à importer par leur nom : celui de la JVM, l'environnement vide, celui
+      + d'un démon, celui d'un composant Wasm
+  detail
+      - Which environment `Environment.editor[Text]` reads from is the `Environment` given in
+      - scope, and the choice is never implicit: `import soundness.*` brings none of these in,
+      - and one is imported by name.
+      + L'environnement dans lequel lit `Environment.editor[Text]` est le given `Environment` dans
+      + la portée, et le choix n'est jamais implicite : `import soundness.*` n'en apporte aucun, et
+      + l'on en importe un par son nom.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      ```
+
+      - `javaBaseEnvironment` suits an ordinary program. `emptyEnvironment` is for tests and
+      - sandboxes. The two daemon environments, shipped by other libraries, distinguish the
+      - invocation's environment from the one the daemon was launched with. An `Environment` is
+      - a single function from name to `Optional[Text]`, so a custom one is a lambda bound as a
+      - local given.
+      + `javaBaseEnvironment` convient à un programme ordinaire. `emptyEnvironment` sert aux tests
+      + et aux bacs à sable. Les deux environnements de démon, fournis par d'autres bibliothèques,
+      + distinguent l'environnement de l'invocation de celui avec lequel le démon a été lancé. Un
+      + `Environment` est une simple fonction d'un nom vers un `Optional[Text]` ; un environnement
+      + personnalisé est donc une lambda liée comme given local.
+  entry .javaBaseEnvironment
+    info
+        - the environment the JVM was started with, from `java.lang.System.getenv`
+        + l'environnement avec lequel la JVM a été démarrée, tiré de `java.lang.System.getenv`
+    detail
+        - Enumerable: `entries` is the whole environment. In a daemon this is not any invocation's
+        - environment: the launcher starts the daemon with a sanitized environment, and each
+        - invocation's own arrives with it as `daemonClientEnvironment`.
+        + Énumérable : `entries` est l'environnement complet. Dans un démon, ce n'est
+        + l'environnement d'aucune invocation : le lanceur démarre le démon avec un environnement
+        + assaini, et celui de chaque invocation arrive avec elle sous la forme de
+        + `daemonClientEnvironment`.
+  entry .emptyEnvironment
+    info
+        - an environment which defines nothing; `entries` is the empty map
+        + un environnement qui ne définit rien ; `entries` est la map vide
+    detail
+        - For a test or a sandbox: every read is `Unset`, so every typed read raises
+        - `Environment.Error`.
+        + Pour un test ou un bac à sable : chaque lecture donne `Unset`, de sorte que chaque lecture
+        + typée lève `Environment.Error`.
+  entry .wasiEnvironment
+    info
+        - a Wasm component's environment, from `wasi:cli/environment`'s `get-environment`
+        + l'environnement d'un composant Wasm, tiré du `get-environment` de `wasi:cli/environment`
+    detail
+        - In the `ambience.wasi` source set. An `inline` given, so that the Wasm Component import
+        - materialises at the site which summons it, in code compiled for a Wasm target; a
+        - WASI-linked application summons it once. It cannot enumerate: `entries` is `Unset`.
+        + Dans l'ensemble de sources `ambience.wasi`. Un given `inline`, de sorte que l'import du
+        + composant Wasm se matérialise à l'endroit qui l'invoque, dans du code compilé pour une
+        + cible Wasm ; une application liée à WASI l'invoque une seule fois. Il ne peut pas
+        + s'énumérer : `entries` vaut `Unset`.
+  entry .daemonEnvironment
+    info
+        - the environment of the invocation which started the daemon; shipped by `ethereal`
+        + l'environnement de l'invocation qui a démarré le démon ; fourni par `ethereal`
+    detail
+        - The launcher starts a daemon with a sanitized environment of its own, so that the
+        - daemon's state does not depend on who happened to start it, and sends the environment
+        - it was itself started with on the daemon's standard input. This given is that
+        - environment, held in memory. Few things want it rather than the current invocation's
+        - environment, which is `daemonClientEnvironment`; without a launcher (a JVM run
+        - directly) it is the JVM's own environment.
+        + Le lanceur démarre un démon avec son propre environnement assaini, afin que l'état du
+        + démon ne dépende pas de qui l'a démarré, et envoie l'environnement avec lequel il a
+        + lui-même été démarré sur l'entrée standard du démon. Ce given est cet environnement,
+        + conservé en mémoire. Peu de choses le veulent plutôt que l'environnement de l'invocation
+        + en cours, qui est `daemonClientEnvironment` ; sans lanceur (une JVM exécutée directement),
+        + c'est l'environnement propre de la JVM.
+  entry .daemonClientEnvironment
+    info
+        - the environment of the current invocation of a daemon; shipped by `exoskeleton`
+        + l'environnement de l'invocation en cours d'un démon ; fourni par `exoskeleton`
+    detail
+        - Needs a `Cli` in scope, the invocation, and is its environment: the variables of the
+        - shell which ran the command, not of the shell which started the daemon. This is the
+        - environment a daemon's command handler should read.
+        + Requiert un `Cli` dans la portée, l'invocation, et en est l'environnement : les variables
+        + du shell qui a exécuté la commande, et non du shell qui a démarré le démon. C'est
+        + l'environnement que le gestionnaire de commandes d'un démon doit lire.
+
+entry .systems
+  info
+      - the system-property sources to import by name: the JVM's, or an empty one
+      + les sources de propriétés système à importer par leur nom : celle de la JVM, ou une source
+      + vide
+  detail
+      - The `System` in scope is where `System.properties.user.home[Text]()`, `System.os` and
+      - the standard directories read from. `import soundness.*` does not bring one in; one is
+      - imported by name, or a lambda from name to `Optional[Text]` is bound as a local given
+      - for a test.
+      + Le `System` dans la portée est là où lisent `System.properties.user.home[Text]()`,
+      + `System.os` et les répertoires standard. `import soundness.*` n'en apporte aucun ; on en
+      + importe un par son nom, ou l'on lie une lambda d'un nom vers un `Optional[Text]` comme given
+      + local pour un test.
+
+      ```scala
+      import soundness.*
+      import systems.javaBaseSystem
+      ```
+  entry .javaBaseSystem
+    info
+        - the JVM's properties, from `java.lang.System.getProperty`
+        + les propriétés de la JVM, tirées de `java.lang.System.getProperty`
+  entry .emptySystem
+    info
+        - a system which defines no properties
+        + un système qui ne définit aucune propriété
+    detail
+        - For a test which must not depend on the JVM it runs under: every read is `Unset`, so
+        - every typed read raises `Property.Error` or, for the fixed-type standard properties,
+        - panics.
+        + Pour un test qui ne doit pas dépendre de la JVM sous laquelle il s'exécute : chaque
+        + lecture donne `Unset`, de sorte que chaque lecture typée lève `Property.Error` ou, pour
+        + les propriétés standard à type fixe, provoque une panique.
+
+entry .workingDirectories
+  info
+      - the working directories to import by name: the JVM's, the `System`'s, a daemon client's, a Wasm component's
+      + les répertoires de travail à importer par leur nom : celui de la JVM, celui du `System`,
+      + celui d'un client de démon, celui d'un composant Wasm
+  detail
+      - The `WorkingDirectory` in scope is what `workingDirectory[Path on Linux]` resolves, and
+      - what a relative path is resolved against. One is imported by name:
+      + Le `WorkingDirectory` dans la portée est ce que résout `workingDirectory[Path on Linux]`, et
+      + ce par rapport à quoi un chemin relatif est résolu. On en importe un par son nom :
+
+      ```scala
+      import soundness.*
+      import workingDirectories.javaBaseWorkingDirectory
+      ```
+
+      - In a daemon, the directory each invocation was made from is
+      - `daemonClientWorkingDirectory`, not the JVM's.
+      + Dans un démon, le répertoire depuis lequel chaque invocation a été faite est
+      + `daemonClientWorkingDirectory`, et non celui de la JVM.
+  entry .javaBaseWorkingDirectory
+    info
+        - the JVM's `user.dir` property
+        + la propriété `user.dir` de la JVM
+    detail
+        - `systemWorkingDirectory` specialised to `systems.javaBaseSystem`.
+        + `systemWorkingDirectory` spécialisé pour `systems.javaBaseSystem`.
+  entry .systemWorkingDirectory
+    info
+        - `user.dir` read from the `System` in scope
+        + `user.dir` lu dans le `System` dans la portée
+    detail
+        - Needs a `System`, which lets a test fix the working directory by fixing the system;
+        - panics if the property is not set.
+        + Requiert un `System`, ce qui permet à un test de fixer le répertoire de travail en fixant
+        + le système ; provoque une panique si la propriété n'est pas définie.
+  entry .wasiWorkingDirectory
+    info
+        - a Wasm component's initial directory, from `wasi:cli/environment`'s `initial-cwd`
+        + le répertoire initial d'un composant Wasm, tiré du `initial-cwd` de `wasi:cli/environment`
+    detail
+        - In the `ambience.wasi` source set; an `inline` given, materialised where it is summoned.
+        - A component with no initial directory falls back to `/`.
+        + Dans l'ensemble de sources `ambience.wasi` ; un given `inline`, matérialisé là où il est
+        + invoqué. Un composant sans répertoire initial se replie sur `/`.
+  entry .daemonClientWorkingDirectory
+    info
+        - the directory the current daemon invocation was made from; shipped by `ethereal`
+        + le répertoire depuis lequel l'invocation en cours du démon a été faite ; fourni par
+        + `ethereal`
+    detail
+        - Needs a `Cli` in scope, the invocation, and is its working directory. Each client of a
+        - daemon has its own, which the JVM's `user.dir` — the directory the daemon was started
+        - in — says nothing about.
+        + Requiert un `Cli` dans la portée, l'invocation, et en est le répertoire de travail. Chaque
+        + client d'un démon a le sien, dont le `user.dir` de la JVM — le répertoire dans lequel le
+        + démon a été démarré — ne dit rien.
+
+entry .temporaryDirectories
+  info
+      - the temporary directories to import by name: by property, by `System`, or by environment
+      + les répertoires temporaires à importer par leur nom : par propriété, par `System` ou par
+      + environnement
+  detail
+      - The `TemporaryDirectory` in scope is what `temporaryDirectory[Path on Linux]` resolves.
+      - One is imported by name:
+      + Le `TemporaryDirectory` dans la portée est ce que résout
+      + `temporaryDirectory[Path on Linux]`. On en importe un par son nom :
+
+      ```scala
+      import soundness.*
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      ```
+  entry .javaBaseTemporaryDirectory
+    info
+        - the JVM's `java.io.tmpdir` property
+        + la propriété `java.io.tmpdir` de la JVM
+    detail
+        - Panics if the property is not set, which a JVM always sets.
+        + Provoque une panique si la propriété n'est pas définie, ce qu'une JVM fait toujours.
+  entry .systemTemporaryDirectory
+    info
+        - `java.io.tmpdir`, requiring a `System` in scope
+        + `java.io.tmpdir`, qui requiert un `System` dans la portée
+    detail
+        - Takes a `System` so that the dependence is declared, though the value read is the
+        - JVM's own `java.io.tmpdir` property.
+        + Prend un `System` afin que la dépendance soit déclarée, bien que la valeur lue soit la
+        + propriété `java.io.tmpdir` propre à la JVM.
+  entry .environmentTemporaryDirectory
+    info
+        - the first of `TMPDIR`, `TMP` and `TEMP` in the `Environment` in scope
+        + la première de `TMPDIR`, `TMP` et `TEMP` dans l'`Environment` dans la portée
+    detail
+        - Needs an `Environment`; panics if none of the three variables is set.
+        + Requiert un `Environment` ; provoque une panique si aucune des trois variables n'est
+        + définie.
+
+entry .termcaps
+  info
+      - the terminal capabilities read from the environment, as a given to import by name
+      + les capacités du terminal lues dans l'environnement, sous forme de given à importer par son
+      + nom
+  detail
+      - A `Termcap` says what the terminal can do — whether it takes ANSI escapes, its colour
+      - depth, its width and height — and styled output is rendered to fit it. The fixed ones
+      - (`basicTermcap`, `xterm256Termcap`, `xtermTrueColorTermcap`) are in the
+      - `anticipation` library's `termcapDefinitions` package; this package's
+      - `environmentTermcap` works the capabilities out from the environment.
+      + Un `Termcap` indique ce que sait faire le terminal — s'il accepte les séquences
+      + d'échappement ANSI, sa profondeur de couleur, sa largeur et sa hauteur — et la sortie stylée
+      + est rendue en conséquence. Les termcaps fixes (`basicTermcap`, `xterm256Termcap`,
+      + `xtermTrueColorTermcap`) se trouvent dans le package `termcapDefinitions` de la bibliothèque
+      + `anticipation` ; l'`environmentTermcap` de ce package déduit les capacités de
+      + l'environnement.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import termcaps.environmentTermcap
+      ```
+  entry .environmentTermcap
+    info
+        - a terminal described by `COLUMNS` and `COLORTERM`, or by `tput colors`
+        + un terminal décrit par `COLUMNS` et `COLORTERM`, ou par `tput colors`
+    detail
+        - Needs an `Environment`. ANSI escapes are assumed. The width is `COLUMNS` where the
+        - invoking context set it; where it is absent or malformed — output redirected to a file
+        - or a pipe, say — the width is unbounded and nothing wraps. The colour depth is
+        - `TrueColor` where `COLORTERM` is `truecolor`, and otherwise is read by running `tput
+        - colors`, falling back to `NoColor` if that fails. Both are computed once, lazily, when
+        - first asked for.
+        + Requiert un `Environment`. Les séquences d'échappement ANSI sont supposées prises en
+        + charge. La largeur est `COLUMNS` là où le contexte appelant l'a définie ; là où elle est
+        + absente ou mal formée — sortie redirigée vers un fichier ou un tube, par exemple — la
+        + largeur est illimitée et rien ne s'enroule. La profondeur de couleur est `TrueColor` quand
+        + `COLORTERM` vaut `truecolor`, et sinon est lue en exécutant `tput colors`, avec `NoColor`
+        + comme repli si cela échoue. Les deux sont calculées une seule fois, paresseusement, à la
+        + première demande.
+
+entry .wasiApis
+  info
+      - the WIT interface definitions of `ambience.wasi`, as givens to import by name
+      + les définitions d'interfaces WIT d'`ambience.wasi`, sous forme de givens à importer par leur
+      + nom
+  detail
+      - The `call` materialiser of a WASI import consults the interface in scope for the
+      - function's module id. Only in the `ambience.wasi` source set.
+      + Le matérialiseur `call` d'un import WASI consulte l'interface dans la portée pour obtenir
+      + l'identifiant de module de la fonction. Uniquement dans l'ensemble de sources
+      + `ambience.wasi`.
+  entry .wasiEnvironmentApi
+    info
+        - the `wasi:cli/environment` interface, from the bundled `/ambience/environment.wit`
+        + l'interface `wasi:cli/environment`, tirée du fichier inclus `/ambience/environment.wit`
+    detail
+        - A `WasiEnvironmentApi`, read from the classpath resource. Import it by name where
+        - `environments.wasiEnvironment` or `workingDirectories.wasiWorkingDirectory` is used.
+        + Un `WasiEnvironmentApi`, lu dans la ressource du classpath. Importez-le par son nom là où
+        + `environments.wasiEnvironment` ou `workingDirectories.wasiWorkingDirectory` est utilisé.

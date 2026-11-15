@@ -1,0 +1,1653 @@
+tel 1.0
+
+base punctuation
+import soundness
+
+info
+    - CommonMark Markdown as a typed syntax tree, with HTML, terminal and Markdown-source renderings
+    + le Markdown CommonMark sous forme d'arbre syntaxique typé, avec des rendus HTML, terminal et
+    + source Markdown
+detail
+    - _Punctuation_ parses [CommonMark](https://commonmark.org/) Markdown — the plain-text prose
+    - format of readmes, comments and documentation — into a typed syntax tree, and renders that
+    - tree three ways: to HTML through honeycomb, back to Markdown source, and to styled text for
+    - a terminal through escapade. The parser passes every example of the CommonMark
+    - specification, both over a whole text and when the same text arrives as a stream one
+    - character at a time.
+    + _Punctuation_ analyse le Markdown [CommonMark](https://commonmark.org/) — le format de
+    + prose en texte brut des readmes, des commentaires et de la documentation — en un arbre
+    + syntaxique typé, et rend cet arbre de trois façons : en HTML au moyen de honeycomb, de
+    + nouveau en source Markdown, et en texte stylé pour un terminal au moyen d'escapade.
+    + L'analyseur passe tous les exemples de la spécification CommonMark, aussi bien sur un texte
+    + entier que lorsque le même texte arrive sous forme de flux, un caractère à la fois.
+
+    - The tree keeps Markdown's two levels apart in the types. **Block** structure — headings,
+    - paragraphs, lists, block quotes, code blocks, thematic breaks and raw HTML blocks — is the
+    - `Layout` enumeration, and **inline** structure — text, emphasis, strong emphasis, code
+    - spans, links, images, line breaks and inline HTML — is the `Prose` enumeration. A
+    - `Markdown` value records which it holds as its `Topic`: a `Markdown of Layout` is a whole
+    - document and a `Markdown of Prose` is a run of inline content, and the two cannot be
+    - confused. Each renders to the kind of HTML which is valid in its place: flow content for a
+    - document, phrasing content for prose.
+    + L'arbre maintient séparés dans les types les deux niveaux de Markdown. La structure de
+    + **bloc** — titres, paragraphes, listes, citations, blocs de code, séparateurs thématiques
+    + et blocs HTML bruts — est l'énumération `Layout`, et la structure **en ligne** — texte,
+    + emphase, emphase forte, segments de code, liens, images, sauts de ligne et HTML en ligne —
+    + est l'énumération `Prose`. Une valeur `Markdown` enregistre ce qu'elle contient sous forme
+    + de son `Topic` : un `Markdown of Layout` est un document entier et un `Markdown of Prose`
+    + une suite de contenu en ligne, et les deux ne peuvent pas être confondus. Chacun se rend
+    + dans le type de HTML valide à sa place : du contenu de flux pour un document, du contenu
+    + phrastique pour de la prose.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val document: Markdown of Layout = Parser.parse(t"# Title\n\nSome **bold** text.")
+
+    document.children.head match
+      case Layout.Heading(_, level, Prose.Textual(text)) => (level, text)   // (1, t"Title")
+      case _                                             => (0, t"")
+
+    document.html.show   // t"<h1>Title</h1>\n<p>Some <strong>bold</strong> text.</p>\n"
+    document.show        // the document as CommonMark source again
+    ```
+
+    - `Parser.parse` is the way in, from a `Text`, a `Chain[Text]`, an `Iterator[Text]` of
+    - chunks, or a zephyrine `Stream[Text]`, and because `Markdown of Layout` is `Aggregable by
+    - Text` a document also reads directly from any source with `read[Markdown of Layout]`.
+    - Parsing is total: there is no parse error, since every text is some Markdown document,
+    - and a Markdown document has no notion of a syntax error.
+    + `Parser.parse` est le point d'entrée, à partir d'un `Text`, d'une `Chain[Text]`, d'un
+    + `Iterator[Text]` de morceaux ou d'un `Stream[Text]` de zephyrine, et comme
+    + `Markdown of Layout` est `Aggregable by
+    + Text`, un document se lit aussi directement depuis n'importe quelle source avec
+    + `read[Markdown of Layout]`. L'analyse est totale : il n'y a pas d'erreur d'analyse, puisque
+    + tout texte est un document Markdown, et qu'un document Markdown n'a pas de notion d'erreur
+    + de syntaxe.
+
+    ```scala fuel
+    alternative Syntax tree
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+
+          document.inspect
+          // Markdown(linkRefs:[] ╱ children:[Heading(1ˢᵗ ╱ 1 ╱ [Textual(t"Title")]),
+          //   Paragraph(3ʳᵈ ╱ [Textual(t"A "), Emphasis([Textual(t"word")]), Textual(t" and a "),
+          //   Link(t"https://example.org/" ╱ ○ ╱ [Textual(t"link")]), Textual(t".")]),
+          //   BulletList(5ᵗʰ ╱ true ╱ [[Paragraph(5ᵗʰ ╱ [Textual(t"one")])], [Paragraph(6ᵗʰ ╱ [Textual(t"two")])]])])
+    alternative HTML
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+
+          document.html.show
+          // <h1>Title</h1>
+          // <p>A <em>word</em> and a <a href="https://example.org/">link</a>.</p>
+          // <ul>
+          // <li>one</li>
+          // <li>two</li>
+          // </ul>
+    alternative Terminal
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import hyphenations.englishHyphenation
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+
+          document.terminal(width = 40)
+          // a bold, coloured "Title" over a ━━━ rule; "word" in italics; "link" underlined,
+          // coloured and wrapped in an OSC 8 hyperlink; "• one" and "• two"
+    ##
+    ```
+
+    - The library is split into components by what each depends on:
+    + La bibliothèque est découpée en composants selon ce dont chacun dépend :
+
+    - - `punctuation.core` — `Markdown`, `Layout`, `Prose`, `Parser`, `Formattable` and
+    -   `Translator`, the HTML `Renderable` givens, the `Showable` givens which write Markdown
+    -   source back, the `Aggregable` given which reads a document from a stream, and the
+    -   `formatting` and `construables` choice packages. It depends on honeycomb and is
+    -   platform-neutral.
+    - - `punctuation.ansi` — the terminal renderer: `Renderer`, `MarkdownPalette`,
+    -   `TeletypeFormattable`, the `terminal` extension, the `markdownPrintable` given and the
+    -   `teletypeFormattables` choice package. It depends on escapade, polysyllabic (for
+    -   hyphenation at wrap points), tessellate (for width-aware wrapping) and harlequin (for
+    -   syntax-highlighted code blocks), so it is JVM-only.
+    - - `harlequin.md`, part of the harlequin library, contributes the `formattables` package
+    -   to this package: `scalaFormattable` and `javaFormattable` syntax-highlight fenced
+    -   `scala` and `java` code blocks when a document is rendered to HTML.
+    + - `punctuation.core` — `Markdown`, `Layout`, `Prose`, `Parser`, `Formattable` et
+    +   `Translator`, les givens `Renderable` HTML, les givens `Showable` qui réécrivent la
+    +   source Markdown, le given `Aggregable` qui lit un document depuis un flux, et les
+    +   packages de choix `formatting` et `construables`. Il dépend de honeycomb et est
+    +   indépendant de la plateforme.
+    + - `punctuation.ansi` — le moteur de rendu pour terminal : `Renderer`, `MarkdownPalette`,
+    +   `TeletypeFormattable`, l'extension `terminal`, le given `markdownPrintable` et le
+    +   package de choix `teletypeFormattables`. Il dépend d'escapade, de polysyllabic (pour la
+    +   césure aux points de retour à la ligne), de tessellate (pour le retour à la ligne
+    +   tenant compte de la largeur) et de harlequin (pour les blocs de code avec coloration
+    +   syntaxique), et ne fonctionne donc que sur la JVM.
+    + - `harlequin.md`, qui fait partie de la bibliothèque harlequin, apporte le package
+    +   `formattables` à ce package : `scalaFormattable` et `javaFormattable` colorent
+    +   syntaxiquement les blocs de code délimités `scala` et `java` lorsqu'un document est
+    +   rendu en HTML.
+
+    - Everything is exported to the `soundness` umbrella. The choice packages — `formatting`,
+    - `construables`, `teletypeFormattables` and `formattables` — hold givens which are imported
+    - by name, since `import soundness.*` (like any wildcard import) does not import givens; the
+    - givens a reader needs without an import, such as `Markdown.Formatting.unbounded` and
+    - `MarkdownPalette.default`, live in companions and resolve through implicit scope.
+    + Tout est exporté dans le package parapluie `soundness`. Les packages de choix —
+    + `formatting`, `construables`, `teletypeFormattables` et `formattables` — contiennent des
+    + givens qui s'importent par leur nom, puisque `import soundness.*` (comme tout import
+    + joker) n'importe pas les givens ; les givens dont un lecteur a besoin sans import, tels
+    + que `Markdown.Formatting.unbounded` et `MarkdownPalette.default`, vivent dans les objets
+    + compagnons et se résolvent par la portée implicite.
+
+    - Rendering a document to HTML (`html`) needs no imports; writing it back as source
+    - (`show`) wraps paragraphs at the width of the `Markdown.Formatting` in scope, which is
+    - unbounded unless `Markdown.Formatting.bounded(columns)` is given; and rendering it for a
+    - terminal (`terminal`) hyphenates words at line ends by the `Hyphenation` in scope, which
+    - hyphenates nothing unless one such as `hyphenations.englishHyphenation` is imported.
+    + Rendre un document en HTML (`html`) ne nécessite aucun import ; le réécrire sous forme de
+    + source (`show`) coupe les paragraphes à la largeur du `Markdown.Formatting` dans la
+    + portée, qui est illimitée sauf si `Markdown.Formatting.bounded(columns)` est fourni ; et le
+    + rendre pour un terminal (`terminal`) applique la césure aux mots en fin de ligne selon la
+    + `Hyphenation` dans la portée, qui ne coupe rien sauf si l'on en importe une telle que
+    + `hyphenations.englishHyphenation`.
+
+refer punctuation.Markdown
+refer punctuation.Layout
+refer punctuation.Prose
+refer punctuation.Parser
+refer punctuation.Renderer
+refer punctuation.Formattable
+refer punctuation.TeletypeFormattable
+
+entry .Markdown
+  info
+      - a parsed Markdown document or run of inline content: a list of nodes and the link references
+      + un document Markdown analysé ou une suite de contenu en ligne : une liste de nœuds et les
+      + références de liens
+  detail
+      - A `Markdown` value is a list of `#children`, each a `Markdown.Node`, and the
+      - `#linkRefs` — the `[label]: destination "title"` definitions collected from the whole
+      - input — which the parser has already resolved into the links which used them. Its
+      - `#Topic` type member says what kind of node it holds, and is how the two kinds of
+      - Markdown are told apart: a `Markdown of Layout` is a whole document, whose children are
+      - blocks, and a `Markdown of Prose` is a run of inline content.
+      + Une valeur `Markdown` est une liste de `#children`, chacun un `Markdown.Node`, et les
+      + `#linkRefs` — les définitions `[label]: destination "title"` collectées dans toute
+      + l'entrée — que l'analyseur a déjà résolues dans les liens qui les utilisaient. Son membre
+      + de type `#Topic` indique quelle sorte de nœud elle contient, et c'est ainsi qu'on
+      + distingue les deux sortes de Markdown : un `Markdown of Layout` est un document entier,
+      + dont les enfants sont des blocs, et un `Markdown of Prose` est une suite de contenu en
+      + ligne.
+
+      - Documents come from `Parser.parse`, from `read[Markdown of Layout]` on any streamable
+      - source (`.aggregable`), or from `.apply` over nodes built by hand; inline runs come from
+      - `Markdown(prose*)`.
+      + Les documents proviennent de `Parser.parse`, de `read[Markdown of Layout]` sur toute
+      + source diffusable en flux (`.aggregable`), ou de `.apply` sur des nœuds construits à la
+      + main ; les suites en ligne proviennent de `Markdown(prose*)`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val document: Markdown of Layout = Parser.parse(t"# Title\n\nHello, *world*.\n")
+      val prose: Markdown of Prose = Markdown(Prose.Textual(t"Hello, "), Prose.Emphasis(Prose.Textual(t"world")))
+
+      document.html.show   // t"<h1>Title</h1>\n<p>Hello, <em>world</em>.</p>\n"
+      prose.html.show      // t"Hello, <em>world</em>"
+      document.show        // t"# Title\n\nHello, *world*.\n"
+      prose.show           // t"Hello, *world*"
+      ```
+
+      - Three renderings are available on any `Markdown`. `html` (honeycomb's `Renderable`,
+      - through `.layout` and `.prose`) gives `Html of Flow` for a document and `Html of
+      - Phrasing` for prose, so each is well-formed in its place; `show` (`.layoutShowable` and
+      - `.proseShowable`) writes CommonMark source which re-parses to an equal tree, wrapped at
+      - the width of the `Markdown.Formatting` in scope; and `inspect` (`.inspectable`) shows
+      - the tree itself, node by node, with the line each block came from. In
+      - `punctuation.ansi`, `terminal` renders a document for a terminal.
+      + Trois rendus sont disponibles sur tout `Markdown`. `html` (le `Renderable` de honeycomb,
+      + au moyen de `.layout` et `.prose`) donne un `Html of Flow` pour un document et un
+      + `Html of
+      + Phrasing` pour de la prose, si bien que chacun est bien formé à sa place ; `show`
+      + (`.layoutShowable` et `.proseShowable`) écrit une source CommonMark qui se réanalyse en un
+      + arbre égal, coupée à la largeur du `Markdown.Formatting` dans la portée ; et `inspect`
+      + (`.inspectable`) montre l'arbre lui-même, nœud par nœud, avec la ligne dont provient chaque
+      + bloc. Dans `punctuation.ansi`, `terminal` rend un document pour un terminal.
+
+      - Two `Markdown` values are equal when their children are equal: the link references
+      - take no part, since they have already been resolved into the tree.
+      + Deux valeurs `Markdown` sont égales quand leurs enfants sont égaux : les références de
+      + liens n'y jouent aucun rôle, puisqu'elles ont déjà été résolues dans l'arbre.
+  refer punctuation.Layout
+  refer punctuation.Prose
+  refer punctuation.Parser
+  refer punctuation.terminal
+  entry .Formatting
+    info
+        - how a document is written back as source: the column at which paragraphs wrap
+        + la façon dont un document est réécrit sous forme de source : la colonne à laquelle les
+        + paragraphes sont coupés
+    detail
+        - The contextual value `show` on a `Markdown` consults. Its one setting is `#width`,
+        - the column at which paragraph text is word-wrapped, or `Unset` to leave each
+        - paragraph on a single line. The companion's `.unbounded` given is the default, in
+        - implicit scope, so `show` works with no import; a bounded formatting,
+        - `Markdown.Formatting.bounded(columns)`, is bound as a local given where wrapped
+        - output is wanted. The same default is `formatting.unboundedMarkdownFormatting`, for
+        - importing by name to override a bounded one in an enclosing scope.
+        + La valeur contextuelle que consulte `show` sur un `Markdown`. Son unique réglage est
+        + `#width`, la colonne à laquelle le texte des paragraphes est coupé entre les mots, ou
+        + `Unset` pour laisser chaque paragraphe sur une seule ligne. Le given `.unbounded` de
+        + l'objet compagnon est la valeur par défaut, dans la portée implicite, si bien que `show`
+        + fonctionne sans import ; un formatage borné, `Markdown.Formatting.bounded(columns)`, se
+        + lie comme given local là où une sortie coupée est voulue. La même valeur par défaut est
+        + `formatting.unboundedMarkdownFormatting`, à importer par son nom pour remplacer un
+        + formatage borné dans une portée englobante.
+
+        ```scala
+        import soundness.*
+
+        val document = Parser.parse(t"alpha beta gamma delta epsilon zeta eta theta iota kappa\n")
+
+        document.show   // one line
+        locally:
+          given Markdown.Formatting = Markdown.Formatting.bounded(20)
+          document.show   // the same words over several lines, none longer than 20 columns
+        ```
+
+        - Wrapping changes only the whitespace between words — a softbreak is a space to the
+        - parser either way — so a wrapped document parses to the same tree as its unwrapped
+        - source. `Markdown.Formatting` is a zephyrine `Formatting`, so it sits alongside the
+        - formatting values of the other serializers.
+        + Le retour à la ligne ne modifie que les espaces entre les mots — un saut de ligne souple
+        + est de toute façon une espace pour l'analyseur — si bien qu'un document coupé s'analyse en
+        + le même arbre que sa source non coupée. `Markdown.Formatting` est un `Formatting` de
+        + zephyrine : il se range donc aux côtés des valeurs de formatage des autres sérialiseurs.
+    entry .apply
+      info
+          - a formatting with the given width, or `Unset` for no wrapping
+          + un formatage de la largeur donnée, ou `Unset` pour aucun retour à la ligne
+    entry .bounded
+      info
+          - a formatting which wraps paragraphs at a column: `Markdown.Formatting.bounded(80)`
+          + un formatage qui coupe les paragraphes à une colonne : `Markdown.Formatting.bounded(80)`
+    entry .unbounded
+      info
+          - the default formatting given: paragraphs stay on one line
+          + le given de formatage par défaut : les paragraphes restent sur une ligne
+      detail
+          - In implicit scope through the companion, so `markdown.show` needs no import. The
+          - same value is `formatting.unboundedMarkdownFormatting`, for importing by name to
+          - override a bounded formatting in an enclosing scope.
+          + Dans la portée implicite par l'objet compagnon, si bien que `markdown.show` ne nécessite
+          + aucun import. La même valeur est `formatting.unboundedMarkdownFormatting`, à importer
+          + par son nom pour remplacer un formatage borné dans une portée englobante.
+    entry #width
+      info
+          - the wrap column, or `Unset` for no wrapping
+          + la colonne de coupure, ou `Unset` pour aucun retour à la ligne
+  entry .Node
+    info
+        - the common supertype of `Layout` and `Prose`
+        + le supertype commun de `Layout` et `Prose`
+    detail
+        - An open trait which the two enumerations extend, and the upper bound of a `Markdown`'s
+        - `Topic`. A `Markdown` is normally a `Markdown of Layout` or a `Markdown of Prose`; a
+        - node which is neither is inspected as a quoted `toString`.
+        + Un trait ouvert qu'étendent les deux énumérations, et la borne supérieure du `Topic` d'un
+        + `Markdown`. Un `Markdown` est normalement un `Markdown of Layout` ou un
+        + `Markdown of Prose` ; un nœud qui n'est ni l'un ni l'autre s'inspecte sous forme de
+        + `toString` entre guillemets.
+  entry .LinkRef
+    info
+        - a link-reference definition: `[label]: destination "title"`
+        + une définition de référence de lien : `[label]: destination "title"`
+    detail
+        - A reference-style link definition, as the parser collected it from the input. The
+        - definitions a document declares are kept in `Markdown#linkRefs` after the links which
+        - referred to them have been resolved — a reference may appear before its definition,
+        - which is why a streamed document is complete only at the end of its input — and
+        - `show` writes them back at the end of the document.
+        + Une définition de lien par référence, telle que l'analyseur l'a collectée dans l'entrée.
+        + Les définitions que déclare un document sont conservées dans `Markdown#linkRefs` après la
+        + résolution des liens qui y faisaient référence — une référence peut apparaître avant sa
+        + définition, ce qui explique pourquoi un document diffusé en flux n'est complet qu'à la fin
+        + de son entrée — et `show` les réécrit à la fin du document.
+    entry #label
+      info
+          - the label the reference is looked up by, as written
+          + le libellé par lequel la référence est recherchée, tel qu'écrit
+    entry #title
+      info
+          - the link's title, or `Unset` if the definition gave none
+          + le titre du lien, ou `Unset` si la définition n'en donnait pas
+    entry #destination
+      info
+          - the URL the label stands for
+          + l'URL que représente le libellé
+  entry .aggregable
+    info
+        - reads a `Markdown of Layout` from any stream of text
+        + lit un `Markdown of Layout` depuis n'importe quel flux de texte
+    detail
+        - The `Aggregable by Text` given which lets a document be read from a file, a resource or
+        - any other streamable source with `read[Markdown of Layout]`, and which `construables.markdownConstruable`
+        - builds on. It is unconditional, since parsing is total, and its streaming path parses
+        - the chunks as they arrive, retaining only the tree and each open paragraph's text, so a
+        - long document is never held whole.
+        + Le given `Aggregable by Text` qui permet de lire un document depuis un fichier, une
+        + ressource ou toute autre source diffusable en flux avec `read[Markdown of Layout]`, et sur
+        + lequel s'appuie `construables.markdownConstruable`. Il est inconditionnel, puisque
+        + l'analyse est totale, et sa voie en flux analyse les morceaux à mesure qu'ils arrivent, en
+        + ne conservant que l'arbre et le texte de chaque paragraphe ouvert, si bien qu'un long
+        + document n'est jamais tenu en entier.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import dysasymptotics.linearSize
+
+        val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+        readme.read[Markdown of Layout].children.size   // 3
+        ```
+  entry .layoutShowable
+    info
+        - writes a document back as CommonMark source, wrapped per `Markdown.Formatting`
+        + réécrit un document sous forme de source CommonMark, coupée selon `Markdown.Formatting`
+    detail
+        - The `Showable` given for `Markdown of Layout`. The output is not the text the parser
+        - consumed — it is regenerated from the tree, with conservative backslash escapes before
+        - any character which could otherwise open an inline or block construct — but it parses
+        - back to an equal tree. Paragraph text is wrapped at the `#width` of the
+        - `Markdown.Formatting` in scope, unbounded by default, and link references are written
+        - after the blocks. It is in implicit scope through the companion.
+        + Le given `Showable` pour `Markdown of Layout`. La sortie n'est pas le texte qu'a consommé
+        + l'analyseur — elle est régénérée à partir de l'arbre, avec des échappements prudents par
+        + barre oblique inverse devant tout caractère qui pourrait sinon ouvrir une construction en
+        + ligne ou de bloc — mais elle se réanalyse en un arbre égal. Le texte des paragraphes est
+        + coupé à la `#width` du `Markdown.Formatting` dans la portée, illimitée par défaut, et les
+        + références de liens sont écrites après les blocs. Il est dans la portée implicite par
+        + l'objet compagnon.
+  entry .proseShowable
+    info
+        - writes a run of inline content back as CommonMark source
+        + réécrit une suite de contenu en ligne sous forme de source CommonMark
+    detail
+        - The `Showable` given for `Markdown of Prose`: as `.layoutShowable`, for inline content
+        - alone, so `Markdown(Prose.Strong(Prose.Textual(t"x"))).show` is `t"**x**"`.
+        + Le given `Showable` pour `Markdown of Prose` : comme `.layoutShowable`, pour du contenu en
+        + ligne seul, si bien que `Markdown(Prose.Strong(Prose.Textual(t"x"))).show` vaut
+        + `t"**x**"`.
+  entry .inspectable
+    info
+        - shows a `Markdown` as its tree, node by node, with the line of each block
+        + montre un `Markdown` sous forme de son arbre, nœud par nœud, avec la ligne de chaque bloc
+    detail
+        - The `Inspectable` given, for any `Markdown`. Where `show` gives source again, which says
+        - nothing about how it was parsed, `inspect` gives the tree in product form, which is what
+        - a programmer looks at to see what the parser made of an input: each node by its case
+        - name, with its fields separated by `╱`, an absent `Optional` as `○`, and each block
+        - with the `Ordinal` line it began on.
+        + Le given `Inspectable`, pour tout `Markdown`. Là où `show` redonne une source, qui ne dit
+        + rien de la manière dont elle a été analysée, `inspect` donne l'arbre sous forme de
+        + produit, ce que regarde un programmeur pour voir ce que l'analyseur a fait d'une entrée :
+        + chaque nœud par son nom de cas, ses champs séparés par `╱`, un `Optional` absent sous la
+        + forme `○`, et chaque bloc avec l'`Ordinal` de la ligne où il commençait.
+
+        ```scala
+        import soundness.*
+
+        Parser.parse(t"# Title\n").inspect
+        // t"Markdown(linkRefs:[] ╱ children:[Heading(1ˢᵗ ╱ 1 ╱ [Textual(t\"Title\")])])"
+        ```
+  entry .prose
+    info
+        - renders a `Markdown of Prose` as HTML phrasing content
+        + rend un `Markdown of Prose` sous forme de contenu phrastique HTML
+    detail
+        - The `Renderable` given which gives `prose.html` as an `Html of Phrasing`. Text becomes
+        - a text node, `Emphasis` an `em`, `Strong` a `strong`, `Code` a `code`, `Link` an `a`
+        - with its `href` (and `title`, if it has one), `Image` an `img` with its `src`, `alt`
+        - (the plain text of its content) and `title`, `Linebreak` a `br`, `Softbreak` a newline,
+        - and `HtmlInline` is passed through as it was written. A link's destination is
+        - percent-encoded as the CommonMark specification requires.
+        + Le given `Renderable` qui donne `prose.html` sous forme d'`Html of Phrasing`. Le texte
+        + devient un nœud texte, `Emphasis` un `em`, `Strong` un `strong`, `Code` un `code`, `Link`
+        + un `a` avec son `href` (et son `title`, s'il en a un), `Image` un `img` avec son `src`,
+        + son `alt` (le texte brut de son contenu) et son `title`, `Linebreak` un `br`, `Softbreak`
+        + un saut de ligne, et `HtmlInline` est transmis tel qu'il a été écrit. La destination d'un
+        + lien est encodée en pourcentage comme l'exige la spécification CommonMark.
+  entry .layout
+    info
+        - renders a `Markdown of Layout` as HTML flow content, with code blocks formatted by the `Formattable`s in scope
+        + rend un `Markdown of Layout` sous forme de contenu de flux HTML, avec des blocs de code
+        + formatés par les `Formattable` dans la portée
+    detail
+        - The `Renderable` given which gives `document.html` as an `Html of Flow`. Headings become
+        - `h1` to `h6`, paragraphs `p`, block quotes `blockquote`, lists `ul` or `ol` (with a
+        - `start` attribute when the list does not start at 1), thematic breaks `hr`, and HTML
+        - blocks are passed through. A tight list's items hold their paragraphs' phrasing content
+        - directly, without `p` elements; a loose list's keep them, as the specification says.
+        + Le given `Renderable` qui donne `document.html` sous forme d'`Html of Flow`. Les titres
+        + deviennent `h1` à `h6`, les paragraphes `p`, les citations `blockquote`, les listes `ul`
+        + ou `ol` (avec un attribut `start` quand la liste ne commence pas à 1), les séparateurs
+        + thématiques `hr`, et les blocs HTML sont transmis tels quels. Les éléments d'une liste
+        + serrée contiennent directement le contenu phrastique de leurs paragraphes, sans éléments
+        + `p` ; ceux d'une liste lâche les conservent, comme le dit la spécification.
+
+        - A code block is offered to every `Formattable` given visible at the call site (summoned
+        - together as an `Every[Formattable]`), in turn, until one accepts its info string; with
+        - none, or none that accepts, it becomes `pre` and `code`, with a `language-…` class from
+        - the info string's first word. `formattables.scalaFormattable` and
+        - `formattables.javaFormattable` (from `harlequin.md`) are the standard ones, and are
+        - imported by name.
+        + Un bloc de code est proposé à chaque given `Formattable` visible au site d'appel
+        + (invoqués ensemble sous forme d'`Every[Formattable]`), tour à tour, jusqu'à ce que l'un
+        + d'eux accepte sa chaîne d'information ; s'il n'y en a aucun, ou qu'aucun n'accepte, il
+        + devient `pre` et `code`, avec une classe `language-…` tirée du premier mot de la chaîne
+        + d'information. `formattables.scalaFormattable` et `formattables.javaFormattable` (issus de
+        + `harlequin.md`) sont les instances standard, et s'importent par leur nom.
+
+        ```scala
+        import soundness.*
+        import formattables.scalaFormattable
+
+        Parser.parse(t"```scala\nval x = 1\n```\n").html.show   // highlighted, as spans in a `pre`
+        ```
+  entry .apply
+    info
+        - a document from link references and blocks, or an inline run from prose
+        + un document à partir de références de liens et de blocs, ou une suite en ligne à partir de
+        + prose
+    detail
+        - `Markdown(linkRefs, layout*)` builds a `Markdown of Layout` from a list of
+        - `Markdown.LinkRef`s and any number of `Layout` blocks; `Markdown(prose*)` builds a
+        - `Markdown of Prose` from inline nodes, with no link references. These are the way to
+        - construct a tree by hand — for generating Markdown with `show`, or for a transformation
+        - which rebuilds a parsed document from its `#children`.
+        + `Markdown(linkRefs, layout*)` construit un `Markdown of Layout` à partir d'une liste de
+        + `Markdown.LinkRef` et d'un nombre quelconque de blocs `Layout` ; `Markdown(prose*)`
+        + construit un `Markdown of Prose` à partir de nœuds en ligne, sans références de liens.
+        + C'est ainsi qu'on construit un arbre à la main — pour générer du Markdown avec `show`, ou
+        + pour une transformation qui reconstruit un document analysé à partir de ses `#children`.
+
+        ```scala
+        import soundness.*
+
+        val document = Markdown(Nil, Layout.Heading(Prim, 1, Prose.Textual(t"Title")))
+        document.show   // t"# Title\n"
+        ```
+  entry .sections
+    info
+        - splits a document at its thematic breaks into a list of documents
+        + découpe un document à ses séparateurs thématiques en une liste de documents
+    detail
+        - An extension on `Markdown of Layout`. The blocks between one `Layout.ThematicBreak` and
+        - the next become a document of their own, without the break; the result has one document
+        - per section, each with no link references of its own. A document with no breaks is one
+        - section.
+        + Une extension sur `Markdown of Layout`. Les blocs compris entre un `Layout.ThematicBreak`
+        + et le suivant deviennent un document à part entière, sans le séparateur ; le résultat
+        + contient un document par section, chacun sans références de liens propres. Un document
+        + sans séparateur forme une seule section.
+
+        ```scala
+        import soundness.*
+
+        Parser.parse(t"one\n\n---\n\ntwo\n").sections.size   // 2
+        ```
+  entry #Topic
+    info
+        - the kind of node this holds: `Layout` for a document, `Prose` for inline content
+        + la sorte de nœud contenue : `Layout` pour un document, `Prose` pour du contenu en ligne
+    detail
+        - The type member which `Markdown of Layout` and `Markdown of Prose` refine. It is bounded
+        - by `Markdown.Node`.
+        + Le membre de type que raffinent `Markdown of Layout` et `Markdown of Prose`. Il est borné
+        + par `Markdown.Node`.
+  entry #Domain
+    info
+        - a label type member, unrefined by the parser
+        + un membre de type étiquette, non raffiné par l'analyseur
+  entry #linkRefs
+    info
+        - the link-reference definitions declared in the document
+        + les définitions de références de liens déclarées dans le document
+    detail
+        - The `[label]: destination "title"` definitions the parser collected, already resolved
+        - into the links which used them. `show` writes them back at the end of the document; a
+        - `Markdown of Prose` has none.
+        + Les définitions `[label]: destination "title"` qu'a collectées l'analyseur, déjà résolues
+        + dans les liens qui les utilisaient. `show` les réécrit à la fin du document ; un
+        + `Markdown of Prose` n'en a aucune.
+  entry #children
+    info
+        - the nodes, in order: `Layout` blocks for a document, `Prose` for inline content
+        + les nœuds, dans l'ordre : des blocs `Layout` pour un document, de la `Prose` pour du
+        + contenu en ligne
+
+entry .Layout
+  info
+      - the block-level nodes of a document: headings, paragraphs, lists, quotes, code, breaks, HTML
+      + les nœuds de niveau bloc d'un document : titres, paragraphes, listes, citations, code,
+      + séparateurs, HTML
+  detail
+      - The enumeration of CommonMark's block structure. A `Markdown of Layout`'s children are
+      - `Layout`s, and each case carries the `Ordinal` `#line` of the input it began on, so a
+      - tool can report the position of a block it objects to. Where a block holds inline
+      - content, it holds it as `Prose` nodes; where it holds other blocks, as `Layout`s.
+      + L'énumération de la structure de blocs de CommonMark. Les enfants d'un
+      + `Markdown of Layout` sont des `Layout`, et chaque cas porte l'`Ordinal` `#line` de la
+      + ligne de l'entrée où il commençait, si bien qu'un outil peut signaler la position d'un bloc
+      + qu'il conteste. Lorsqu'un bloc contient du contenu en ligne, il le contient sous forme de
+      + nœuds `Prose` ; lorsqu'il contient d'autres blocs, sous forme de `Layout`.
+
+      ```tabular
+      - column  Case
+      - column  Block
+      - column  Notes
+      - row  `BlockQuote(line, layout*)`  a `>` quote  holds blocks
+      - row  `OrderedList(line, start, tight, delimiter, items*)`  a numbered list  `start` is the first item's number; `tight` is whether the items render without paragraph wrappers (no blank line between them); `delimiter` is the `.` or `)` after each number; each item is a `List[Layout]` of blocks
+      - row  `BulletList(line, tight, items*)`  a `-`, `*` or `+` list  items as for `OrderedList`
+      - row  `CodeBlock(line, info, content)`  a fenced or indented code block  `info` is the fence's info string cut at whitespace (`List(t"scala")` for a `scala` fence, `Nil` for an indented block); `content` is the raw code, with a trailing newline
+      - row  `Paragraph(line, prose*)`  a paragraph of inline content
+      - row  `Heading(line, level, prose*)`  an ATX or setext heading  `level` is typed as `1 | 2 | 3 | 4 | 5 | 6`
+      - row  `ThematicBreak(line)`  a `---`, `***` or `___` rule
+      - row  `HtmlBlock(line, html)`  a block of raw HTML  kept as written
+      + column  Cas
+      + column  Bloc
+      + column  Remarques
+      + row  `BlockQuote(line, layout*)`  une citation `>`  contient des blocs
+      + row  `OrderedList(line, start, tight, delimiter, items*)`  une liste numérotée  `start` est le numéro du premier élément ; `tight` indique si les éléments se rendent sans enveloppe de paragraphe (pas de ligne vide entre eux) ; `delimiter` est le `.` ou la `)` qui suit chaque numéro ; chaque élément est une `List[Layout]` de blocs
+      + row  `BulletList(line, tight, items*)`  une liste à `-`, `*` ou `+`  éléments comme pour `OrderedList`
+      + row  `CodeBlock(line, info, content)`  un bloc de code délimité ou indenté  `info` est la chaîne d'information de la clôture coupée aux espaces (`List(t"scala")` pour une clôture `scala`, `Nil` pour un bloc indenté) ; `content` est le code brut, avec un saut de ligne final
+      + row  `Paragraph(line, prose*)`  un paragraphe de contenu en ligne
+      + row  `Heading(line, level, prose*)`  un titre ATX ou setext  `level` est typé `1 | 2 | 3 | 4 | 5 | 6`
+      + row  `ThematicBreak(line)`  un trait `---`, `***` ou `___`
+      + row  `HtmlBlock(line, html)`  un bloc de HTML brut  conservé tel qu'écrit
+      ```
+
+      ```scala
+      import soundness.*
+
+      Parser.parse(t"1. one\n2. two\n").children.head match
+        case Layout.OrderedList(_, start, tight, delimiter, items*) => (start, tight, items.size)   // (1, true, 2)
+        case _                                                      => (0, false, 0)
+      ```
+
+      - A `Layout` renders to HTML flow content as part of a `Markdown of Layout` (through
+      - `Markdown.layout`); one is inspected, within its document, as its case name and fields.
+      + Un `Layout` se rend en contenu de flux HTML en tant que partie d'un `Markdown of Layout`
+      + (au moyen de `Markdown.layout`) ; il s'inspecte, au sein de son document, sous forme de
+      + son nom de cas et de ses champs.
+  refer punctuation.Markdown
+  refer punctuation.Prose
+  entry #line
+    info
+        - the line of the input this block began on, as an `Ordinal`
+        + la ligne de l'entrée où ce bloc commençait, sous forme d'`Ordinal`
+    detail
+        - `Prim` for the first line. Lines are counted at `\n` alone, and a `\r` before it is
+        - kept as part of the line. Two trees which differ only in their lines are equal, since
+        - the `Markdown` which holds them compares children by value.
+        + `Prim` pour la première ligne. Les lignes sont comptées au seul `\n`, et un `\r` qui le
+        + précède est conservé comme partie de la ligne. Deux arbres qui ne diffèrent que par leurs
+        + lignes sont égaux, puisque le `Markdown` qui les contient compare ses enfants par valeur.
+  entry #children
+    info
+        - the inline content of a paragraph, heading or block quote; `Nil` for other blocks
+        + le contenu en ligne d'un paragraphe, d'un titre ou d'une citation ; `Nil` pour les autres
+        + blocs
+    detail
+        - A `Paragraph` or `Heading` gives its own `Prose`; a `BlockQuote` gives the inline
+        - content of the blocks it holds, flattened; a list, code block, thematic break or HTML
+        - block gives `Nil`, since its content is either blocks or not prose at all.
+        + Un `Paragraph` ou un `Heading` donne sa propre `Prose` ; un `BlockQuote` donne le contenu
+        + en ligne des blocs qu'il contient, aplati ; une liste, un bloc de code, un séparateur
+        + thématique ou un bloc HTML donne `Nil`, puisque son contenu est soit des blocs, soit pas
+        + du tout de la prose.
+
+entry .Prose
+  info
+      - the inline nodes of Markdown: text, emphasis, code spans, links, images, line breaks, HTML
+      + les nœuds en ligne de Markdown : texte, emphase, segments de code, liens, images, sauts de
+      + ligne, HTML
+  detail
+      - The enumeration of CommonMark's inline structure, which a `Layout.Paragraph` or
+      - `Layout.Heading` holds and a `Markdown of Prose` lists. Its cases are:
+      + L'énumération de la structure en ligne de CommonMark, que contient un
+      + `Layout.Paragraph` ou un `Layout.Heading` et que liste un `Markdown of Prose`. Ses cas
+      + sont :
+
+      ```tabular
+      - column  Case
+      - column  Inline
+      - column  Notes
+      - row  `Textual(text)`  plain text  escapes and entity references already decoded, so `\*` is `*` and `&amp;` is `&`
+      - row  `Softbreak`  a line ending inside a paragraph  renders as a newline in HTML and as a space in a terminal
+      - row  `Linebreak`  a hard break: two trailing spaces, or a backslash before the line end  renders as `br`
+      - row  `Code(code)`  a backtick code span
+      - row  `Emphasis(prose*)`  `*text*` or `_text_`
+      - row  `Strong(prose*)`  `**text**` or `__text__`
+      - row  `Link(destination, title, prose*)`  an inline, reference or automatic link  the reference already resolved to its destination and optional title
+      - row  `Image(destination, title, prose*)`  `![alt](src "title")`  its content is the alternative text
+      - row  `HtmlInline(html)`  a raw inline HTML tag  kept as written
+      + column  Cas
+      + column  En ligne
+      + column  Remarques
+      + row  `Textual(text)`  texte brut  échappements et références d'entités déjà décodés, si bien que `\*` est `*` et `&amp;` est `&`
+      + row  `Softbreak`  une fin de ligne à l'intérieur d'un paragraphe  se rend comme un saut de ligne en HTML et comme une espace dans un terminal
+      + row  `Linebreak`  un saut dur : deux espaces finales, ou une barre oblique inverse avant la fin de ligne  se rend comme `br`
+      + row  `Code(code)`  un segment de code entre accents graves
+      + row  `Emphasis(prose*)`  `*text*` ou `_text_`
+      + row  `Strong(prose*)`  `**text**` ou `__text__`
+      + row  `Link(destination, title, prose*)`  un lien en ligne, par référence ou automatique  la référence déjà résolue en sa destination et son titre optionnel
+      + row  `Image(destination, title, prose*)`  `![alt](src "title")`  son contenu est le texte alternatif
+      + row  `HtmlInline(html)`  une balise HTML brute en ligne  conservée telle qu'écrite
+      ```
+
+      ```scala
+      import soundness.*
+
+      Parser.parse(t"See [docs](https://example.org \"Docs\").\n").children.head match
+        case Layout.Paragraph(_, _, Prose.Link(destination, title, _*), _*) => (destination, title)
+        case _                                                              => (t"", Unset)
+      // (t"https://example.org", t"Docs")
+      ```
+
+      - A run of `Prose` renders to HTML phrasing content as a `Markdown of Prose` (through
+      - `Markdown.prose`), and to source with `show`.
+      + Une suite de `Prose` se rend en contenu phrastique HTML en tant que `Markdown of Prose`
+      + (au moyen de `Markdown.prose`), et en source avec `show`.
+  refer punctuation.Markdown
+  refer punctuation.Layout
+  entry #children
+    info
+        - the content of a link or image; `Nil` for every other node
+        + le contenu d'un lien ou d'une image ; `Nil` pour tout autre nœud
+    detail
+        - Only `Link` and `Image` expose their content here: `Emphasis` and `Strong` hold theirs
+        - as their varargs field, matched as `Prose.Emphasis(prose*)`.
+        + Seuls `Link` et `Image` exposent ici leur contenu : `Emphasis` et `Strong` contiennent le
+        + leur dans leur champ varargs, filtré sous la forme `Prose.Emphasis(prose*)`.
+
+entry .Parser
+  info
+      - the CommonMark parser: `Parser.parse` from text, a chain, an iterator or a stream
+      + l'analyseur CommonMark : `Parser.parse` à partir d'un texte, d'une chaîne, d'un itérateur ou
+      + d'un flux
+  detail
+      - The entry point to parsing. `Parser.parse` takes a whole `Text`, or input in chunks as
+      - a `Chain[Text]`, an `Iterator[Text]`, or a zephyrine `Stream[Text] over Credit` (which
+      - additionally needs a `Buffering`), and returns a `Markdown of Layout`. Parsing is
+      - total — every text is some document — so nothing is raised, and no `Tactic` is needed.
+      + Le point d'entrée de l'analyse. `Parser.parse` prend un `Text` entier, ou une entrée par
+      + morceaux sous forme de `Chain[Text]`, d'`Iterator[Text]` ou de `Stream[Text] over Credit`
+      + de zephyrine (qui exige en plus un `Buffering`), et renvoie un `Markdown of Layout`.
+      + L'analyse est totale — tout texte est un document — si bien que rien n'est levé, et
+      + qu'aucune `Tactic` n'est nécessaire.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dysasymptotics.linearSize
+
+      val document = Parser.parse(t"# Title\n\nSome **bold** text.")
+      Parser.parse(t"# Readme\n\nThe first paragraph.\n\nThe second.".stream).children.size   // 3
+      ```
+
+      - The chunked forms consume their input incrementally, line by line, retaining only the
+      - tree and each open paragraph's text, so a long document is parsed without being held
+      - whole. The result is still a whole tree: a link reference may be defined after the
+      - link which uses it, so no block is final until the input ends. The whole CommonMark
+      - conformance suite passes through the streaming entry one character per chunk, so a
+      - document split anywhere parses as the whole text does. Reading a document straight
+      - from a source with `read[Markdown of Layout]` (`Markdown.aggregable`) uses the same
+      - streaming parser.
+      + Les formes par morceaux consomment leur entrée de façon incrémentale, ligne par ligne, en
+      + ne conservant que l'arbre et le texte de chaque paragraphe ouvert, si bien qu'un long
+      + document est analysé sans être tenu en entier. Le résultat reste un arbre entier : une
+      + référence de lien peut être définie après le lien qui l'utilise, si bien qu'aucun bloc
+      + n'est définitif avant la fin de l'entrée. Toute la suite de conformité CommonMark passe
+      + par l'entrée en flux à raison d'un caractère par morceau, si bien qu'un document découpé
+      + n'importe où s'analyse comme le texte entier. Lire un document directement depuis une
+      + source avec `read[Markdown of Layout]` (`Markdown.aggregable`) utilise le même analyseur
+      + en flux.
+
+      - Lines are split at `\n` alone; a `\r` before it stays in the line. Tabs count as
+      - advancing to the next four-column boundary for indentation, as the specification says.
+      + Les lignes sont découpées au seul `\n` ; un `\r` qui le précède reste dans la ligne. Les
+      + tabulations comptent comme une avance jusqu'à la prochaine limite de quatre colonnes pour
+      + l'indentation, comme le dit la spécification.
+  refer punctuation.Markdown
+  refer punctuation.Layout
+  entry .parse
+    info
+        - parses Markdown to a `Markdown of Layout`, from text or from chunks
+        + analyse du Markdown en un `Markdown of Layout`, à partir d'un texte ou de morceaux
+    detail
+        - Four overloads: `parse(text: Text)`, `parse(chain: Chain[Text])`,
+        - `parse(iterator: Iterator[Text])` and `parse(stream: Stream[Text] over Credit)(using
+        - Buffering)`, the last of which consumes its stream. The text form scans with the
+        - JVM's vectorised line search and is fastest for text already in memory; the others
+        - read incrementally. All four produce the same tree for the same input.
+        + Quatre surcharges : `parse(text: Text)`, `parse(chain: Chain[Text])`,
+        + `parse(iterator: Iterator[Text])` et `parse(stream: Stream[Text] over Credit)(using
+        + Buffering)`, la dernière consommant son flux. La forme texte effectue son balayage avec la
+        + recherche de lignes vectorisée de la JVM et est la plus rapide pour un texte déjà en
+        + mémoire ; les autres lisent de façon incrémentale. Les quatre produisent le même arbre
+        + pour la même entrée.
+
+entry .Formattable
+  info
+      - renders a fenced code block to HTML, for the languages it knows
+      + rend un bloc de code délimité en HTML, pour les langages qu'il connaît
+  detail
+      - A typeclass for the HTML renderer's code blocks. When a `Markdown of Layout` is
+      - rendered (`Markdown.layout`), every `Formattable` given visible at the call site is
+      - collected into an `Every[Formattable]`, and each `Layout.CodeBlock` is offered to them
+      - in turn: `#format` gets the block's info string (cut at whitespace) and its content,
+      - and returns the HTML to use or `Unset` to decline, in which case the next is asked, and
+      - finally the block becomes a plain `pre` and `code`. `Self` is the language's label
+      - type, so a given reads as `"scala" is Formattable`.
+      + Une classe de types pour les blocs de code du moteur de rendu HTML. Lorsqu'un
+      + `Markdown of Layout` est rendu (`Markdown.layout`), chaque given `Formattable` visible au
+      + site d'appel est collecté dans un `Every[Formattable]`, et chaque `Layout.CodeBlock` leur
+      + est proposé tour à tour : `#format` reçoit la chaîne d'information du bloc (coupée aux
+      + espaces) et son contenu, et renvoie le HTML à utiliser ou `Unset` pour refuser, auquel cas
+      + le suivant est sollicité, et pour finir le bloc devient un simple `pre` et `code`. `Self`
+      + est le type étiquette du langage, si bien qu'un given se lit `"scala" is Formattable`.
+
+      - The standard instances are in the `formattables` package, contributed by
+      - `harlequin.md`: `scalaFormattable` and `javaFormattable` highlight Scala and Java
+      - through harlequin's tokenizer, and are imported by name. A `Formattable` for another
+      - language is a given of this trait in scope where `html` is called.
+      + Les instances standard se trouvent dans le package `formattables`, apporté par
+      + `harlequin.md` : `scalaFormattable` et `javaFormattable` colorent Scala et Java au moyen
+      + de l'analyseur lexical de harlequin, et s'importent par leur nom. Un `Formattable` pour un
+      + autre langage est un given de ce trait dans la portée là où `html` est appelé.
+
+      ```scala
+      import soundness.*
+
+      given ("mermaid" is Formattable):
+        def format(language: List[Text], content: Text): Optional[Html of Flow] =
+          if language.head != t"mermaid" then Unset else Pre(`class` = t"mermaid")(content)
+      ```
+
+      - The terminal renderer's counterpart is `TeletypeFormattable`, in `punctuation.ansi`.
+      + Le pendant pour le moteur de rendu terminal est `TeletypeFormattable`, dans
+      + `punctuation.ansi`.
+  refer punctuation.formattables
+  refer punctuation.TeletypeFormattable
+  entry #Self
+    info
+        - the label type of the language this formattable handles
+        + le type étiquette du langage que traite ce formattable
+  entry #format
+    info
+        - the HTML for a code block with this info string and content, or `Unset` to decline
+        + le HTML d'un bloc de code ayant cette chaîne d'information et ce contenu, ou `Unset` pour
+        + refuser
+    detail
+        - `language` is the info string cut at whitespace, so a block opened with
+        - ` ```scala title ` gives `List(t"scala", t"title")` and an indented block `Nil`;
+        - `content` is the code, with its trailing newline. An implementation checks the first
+        - word and returns `Unset` for a language it does not handle.
+        + `language` est la chaîne d'information coupée aux espaces, si bien qu'un bloc ouvert par
+        + ` ```scala title ` donne `List(t"scala", t"title")` et un bloc indenté `Nil` ; `content`
+        + est le code, avec son saut de ligne final. Une implémentation vérifie le premier mot et
+        + renvoie `Unset` pour un langage qu'elle ne traite pas.
+
+entry .Translator
+  info
+      - a strategy for translating `Markdown` nodes to HTML, for a custom renderer
+      + une stratégie de traduction des nœuds `Markdown` en HTML, pour un moteur de rendu
+      + personnalisé
+  detail
+      - An interface for a renderer which maps a list of `Markdown` values to HTML flow content
+      - (`#translate`) and a run of inline content to phrasing content (`#phrasing`). Nothing in
+      - the library calls it: the standard HTML rendering is the `Renderable` givens
+      - `Markdown.layout` and `Markdown.prose`, and the trait is a contract a program's own
+      - translation can implement to be swapped in by its callers.
+      + Une interface pour un moteur de rendu qui fait correspondre une liste de valeurs `Markdown`
+      + à du contenu de flux HTML (`#translate`) et une suite de contenu en ligne à du contenu
+      + phrastique (`#phrasing`). Rien dans la bibliothèque ne l'appelle : le rendu HTML standard
+      + est assuré par les givens `Renderable` `Markdown.layout` et `Markdown.prose`, et le trait
+      + est un contrat que la propre traduction d'un programme peut implémenter pour être
+      + substituée par ses appelants.
+  entry #translate
+    info
+        - HTML flow content for a list of `Markdown` values
+        + le contenu de flux HTML d'une liste de valeurs `Markdown`
+  entry #phrasing
+    info
+        - HTML phrasing content for a `Markdown of Prose`
+        + le contenu phrastique HTML d'un `Markdown of Prose`
+
+entry .formatting
+  info
+      - the `Markdown.Formatting` to import by name, for writing Markdown back as source
+      + le `Markdown.Formatting` à importer par son nom, pour réécrire du Markdown sous forme de
+      + source
+  detail
+      - The choice package for `show` on a `Markdown`. Its one member restates the default —
+      - no wrapping — as a named given, for importing over a bounded formatting an enclosing
+      - scope has set. A bounded width is not a package member: it takes a parameter, so it is
+      - bound locally as `given Markdown.Formatting = Markdown.Formatting.bounded(80)`.
+      + Le package de choix pour `show` sur un `Markdown`. Son unique membre reformule la valeur
+      + par défaut — aucun retour à la ligne — sous forme de given nommé, à importer par-dessus un
+      + formatage borné qu'a fixé une portée englobante. Une largeur bornée n'est pas un membre du
+      + package : elle prend un paramètre, et se lie donc localement sous la forme
+      + `given Markdown.Formatting = Markdown.Formatting.bounded(80)`.
+  entry .unboundedMarkdownFormatting
+    info
+        - paragraphs are written on one line each, however long
+        + les paragraphes sont écrits chacun sur une ligne, quelle que soit leur longueur
+    detail
+        - The same value as `Markdown.Formatting.unbounded`, which is in implicit scope already;
+        - this name exists to be imported where a bounded formatting would otherwise be found.
+        + La même valeur que `Markdown.Formatting.unbounded`, qui est déjà dans la portée
+        + implicite ; ce nom existe pour être importé là où un formatage borné serait sinon trouvé.
+
+entry .construables
+  info
+      - the media-type mapping which makes `text/markdown` responses a `Markdown of Layout`
+      + la correspondance de types de médias qui fait des réponses `text/markdown` un
+      + `Markdown of Layout`
+  detail
+      - A choice package for apoplexy's OpenAPI client, whose generated operations decode a
+      - response body by its media type through the `Construable` givens in scope. Importing
+      - `markdownConstruable` by name maps `text/markdown` to a document, read through
+      - `Markdown.aggregable`.
+      + Un package de choix pour le client OpenAPI d'apoplexy, dont les opérations générées
+      + décodent le corps d'une réponse selon son type de média au moyen des givens `Construable`
+      + dans la portée. Importer `markdownConstruable` par son nom fait correspondre
+      + `text/markdown` à un document, lu au moyen de `Markdown.aggregable`.
+  entry .markdownConstruable
+    info
+        - `text/markdown` is construed as a `Markdown of Layout`
+        + `text/markdown` est interprété comme un `Markdown of Layout`
+
+entry .Renderer
+  info
+      - renders a document as styled terminal text: `Renderer.render(markdown, width)`
+      + rend un document sous forme de texte de terminal stylé : `Renderer.render(markdown, width)`
+  detail
+      - The terminal renderer in `punctuation.ansi`, which the `terminal` extension and the
+      - `markdownPrintable` given drive. It turns a `Markdown of Layout` into an escapade
+      - `Teletype` of a given column width: headings are bold and coloured, with a `━` rule
+      - under a level-1 heading, a `─` rule under a level-2 heading, and a subdued `###` prefix
+      - for the rest; paragraphs are wrapped at the width, measuring wide characters as two
+      - cells and hyphenating long words at line ends through the `Hyphenation` in scope;
+      - emphasis is italic and strong is bold; a code span is coloured on a background; a link
+      - is underlined, coloured and wrapped in an OSC 8 hyperlink to its destination, as is an
+      - image, shown as its alternative text in brackets; a block quote is indented behind a
+      - `▎` bar; list items hang off a `•` or their number; a thematic break is a `─` rule of
+      - the full width; and a code block is indented two columns, syntax-highlighted by the
+      - first `TeletypeFormattable` in scope which accepts its language, or subdued if none
+      - does. Blocks are separated by a blank line, and a tight list's items are not.
+      + Le moteur de rendu pour terminal de `punctuation.ansi`, que pilotent l'extension
+      + `terminal` et le given `markdownPrintable`. Il transforme un `Markdown of Layout` en un
+      + `Teletype` d'escapade d'une largeur de colonnes donnée : les titres sont en gras et en
+      + couleur, avec un trait `━` sous un titre de niveau 1, un trait `─` sous un titre de
+      + niveau 2, et un préfixe `###` atténué pour les autres ; les paragraphes sont coupés à la
+      + largeur, en comptant les caractères larges comme deux cellules et en appliquant la césure
+      + aux mots longs en fin de ligne au moyen de la `Hyphenation` dans la portée ; l'emphase est
+      + en italique et l'emphase forte en gras ; un segment de code est coloré sur un fond ; un
+      + lien est souligné, coloré et enveloppé dans un hyperlien OSC 8 vers sa destination, tout
+      + comme une image, montrée sous forme de son texte alternatif entre crochets ; une citation
+      + est indentée derrière une barre `▎` ; les éléments de liste pendent à un `•` ou à leur
+      + numéro ; un séparateur thématique est un trait `─` de toute la largeur ; et un bloc de
+      + code est indenté de deux colonnes, coloré syntaxiquement par le premier
+      + `TeletypeFormattable` dans la portée qui accepte son langage, ou atténué si aucun ne
+      + l'accepte. Les blocs sont séparés par une ligne vide, mais pas les éléments d'une liste
+      + serrée.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+
+      val document = Parser.parse(t"# Hello\n\nsupercalifragilisticexpialidocious is a word.\n")
+      Renderer.render(document, width = 20).plain   // "Hello" over a rule, the long word broken with a ‐
+      ```
+
+      - The colours come from the `MarkdownPalette` in scope, whose companion default suits a
+      - true-colour terminal on a light or dark background; a `Hyphenation` is required, and
+      - the companion's fallback hyphenates nothing, so `hyphenations.englishHyphenation` is
+      - imported for English text; and the `TeletypeFormattable`s are whichever are visible at
+      - the call site, `teletypeFormattables.scalaTeletypeFormattable` and
+      - `teletypeFormattables.javaTeletypeFormattable` being the standard two.
+      + Les couleurs proviennent de la `MarkdownPalette` dans la portée, dont la valeur par défaut
+      + de l'objet compagnon convient à un terminal en couleurs vraies sur fond clair ou sombre ;
+      + une `Hyphenation` est requise, et le repli de l'objet compagnon ne coupe rien, si bien
+      + qu'on importe `hyphenations.englishHyphenation` pour un texte anglais ; et les
+      + `TeletypeFormattable` sont ceux qui sont visibles au site d'appel,
+      + `teletypeFormattables.scalaTeletypeFormattable` et
+      + `teletypeFormattables.javaTeletypeFormattable` étant les deux standard.
+  refer punctuation.terminal
+  refer punctuation.markdownPrintable
+  refer punctuation.MarkdownPalette
+  refer punctuation.TeletypeFormattable
+  entry .render
+    info
+        - a document as a `Teletype` of the given width, with the palette, hyphenation and formattables in scope
+        + un document sous forme de `Teletype` de la largeur donnée, avec la palette, la césure et
+        + les formattables dans la portée
+    detail
+        - `Renderer.render(markdown, width)(using Hyphenation, Every[TeletypeFormattable],
+        - MarkdownPalette)`. The width is in terminal columns; a block quote's or list item's
+        - content is wrapped to what remains after its bar or marker. The result is a `Teletype`
+        - whose `plain` is the text without styling and whose `render(termcap)` is the text with
+        - the escapes a terminal understands.
+        + `Renderer.render(markdown, width)(using Hyphenation, Every[TeletypeFormattable],
+        + MarkdownPalette)`. La largeur est en colonnes de terminal ; le contenu d'une citation ou
+        + d'un élément de liste est coupé à ce qui reste après sa barre ou son marqueur. Le résultat
+        + est un `Teletype` dont le `plain` est le texte sans style et dont le `render(termcap)` est
+        + le texte avec les séquences d'échappement que comprend un terminal.
+
+entry .terminal
+  info
+      - renders a document for a terminal: `markdown.terminal(width = 80)`
+      + rend un document pour un terminal : `markdown.terminal(width = 80)`
+  detail
+      - An extension on `Markdown of Layout` in `punctuation.ansi`, and the usual way to show a
+      - document in a console: `Renderer.render` with the width defaulting to 80 columns. It
+      - needs a `Hyphenation` (the companion's fallback hyphenates nothing;
+      - `hyphenations.englishHyphenation` is imported for English), a `MarkdownPalette`
+      - (defaulted by its companion) and the `TeletypeFormattable`s in scope for code blocks.
+      + Une extension sur `Markdown of Layout` dans `punctuation.ansi`, et la façon habituelle de
+      + montrer un document dans une console : `Renderer.render` avec une largeur de 80 colonnes
+      + par défaut. Elle exige une `Hyphenation` (le repli de l'objet compagnon ne coupe rien ; on
+      + importe `hyphenations.englishHyphenation` pour l'anglais), une `MarkdownPalette` (fournie
+      + par défaut par son objet compagnon) et les `TeletypeFormattable` dans la portée pour les
+      + blocs de code.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+      import termcapDefinitions.xtermTrueColorTermcap
+
+      val document = Parser.parse(t"See [home](https://example.org/) here.\n")
+      document.terminal(width = 60).render(xtermTrueColorTermcap)   // carries an OSC 8 hyperlink
+      document.terminal().plain                                      // t"See home here."
+      ```
+
+      - Printing a document to the terminal directly, with the width read from the terminal's
+      - `Termcap`, is `markdownPrintable`'s job.
+      + Afficher directement un document dans le terminal, avec la largeur lue dans le `Termcap`
+      + du terminal, est le rôle de `markdownPrintable`.
+  refer punctuation.Renderer
+  refer punctuation.markdownPrintable
+
+entry .markdownPrintable
+  info
+      - prints a document to a terminal at the width its `Termcap` reports
+      + affiche un document dans un terminal à la largeur qu'indique son `Termcap`
+  detail
+      - The `Printable` given for `Markdown of Layout` in `punctuation.ansi`, which lets a
+      - document be written to a terminal `Out` directly, rendered by `Renderer` at the width
+      - of the `Termcap` in scope and converted to ANSI escapes by escapade's `Teletype is
+      - Printable`. A termcap which does not know its width (the built-in
+      - `termcapDefinitions` report `Int.MaxValue`) renders at 80 columns, rather than drawing
+      - rules the width of the integers. It needs the same `Hyphenation`, `MarkdownPalette`
+      - and `TeletypeFormattable`s as `terminal`.
+      + Le given `Printable` pour `Markdown of Layout` dans `punctuation.ansi`, qui permet
+      + d'écrire directement un document sur un `Out` de terminal, rendu par `Renderer` à la
+      + largeur du `Termcap` dans la portée et converti en séquences d'échappement ANSI par le
+      + `Teletype is
+      + Printable` d'escapade. Un termcap qui ne connaît pas sa largeur (les `termcapDefinitions`
+      + intégrées indiquent `Int.MaxValue`) effectue le rendu sur 80 colonnes, plutôt que de
+      + dessiner des traits de la largeur des entiers. Il exige les mêmes `Hyphenation`,
+      + `MarkdownPalette` et `TeletypeFormattable` que `terminal`.
+
+      - It is a top-level given rather than a companion member because its subject,
+      - `Printable`, and its topic are both owned elsewhere, so it is imported by name:
+      - `import soundness.markdownPrintable`.
+      + C'est un given de plus haut niveau plutôt qu'un membre d'objet compagnon, parce que son
+      + sujet, `Printable`, et son objet appartiennent tous deux à d'autres bibliothèques ; il
+      + s'importe donc par son nom : `import soundness.markdownPrintable`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import soundness.markdownPrintable
+      import hyphenations.englishHyphenation
+      import termcapDefinitions.xtermTrueColorTermcap
+
+      Out.println(Parser.parse(t"# Title\n\nHello, *world*.\n"))
+      ```
+  refer punctuation.Renderer
+  refer punctuation.terminal
+
+entry .MarkdownPalette
+  info
+      - the colours the terminal renderer uses, as a case class with a default
+      + les couleurs qu'utilise le moteur de rendu pour terminal, sous forme de case class avec une
+      + valeur par défaut
+  detail
+      - Seven 24-bit `Chroma` colours, each a field with a default chosen to read on both light
+      - and dark backgrounds in a true-colour terminal:
+      + Sept couleurs `Chroma` 24 bits, chacune un champ dont la valeur par défaut est choisie pour
+      + être lisible sur fond clair comme sombre dans un terminal en couleurs vraies :
+
+      ```tabular
+      - column  Field
+      - column  Colours
+      - column  Default
+      - row  `#heading`  heading text, and the rules under level-1 and level-2 headings  `Chroma(0x82, 0xaa, 0xff)`
+      - row  `#link`  link text  `Chroma(0x80, 0xcb, 0xc4)`
+      - row  `#code`  a code span's foreground  `Chroma(0xff, 0xcb, 0x6b)`
+      - row  `#codeBg`  a code span's background  `Chroma(0x2a, 0x2a, 0x2a)`
+      - row  `#quoteBar`  the `▎` beside a block quote  `Chroma(0x82, 0xaa, 0xff)`
+      - row  `#rule`  a thematic break  `Chroma(0x60, 0x60, 0x60)`
+      - row  `#subdued`  list markers, heading prefixes, image labels, inline and block HTML, and unhighlighted code blocks  `Chroma(0x80, 0x80, 0x80)`
+      + column  Champ
+      + column  Colore
+      + column  Valeur par défaut
+      + row  `#heading`  le texte des titres, et les traits sous les titres de niveau 1 et 2  `Chroma(0x82, 0xaa, 0xff)`
+      + row  `#link`  le texte des liens  `Chroma(0x80, 0xcb, 0xc4)`
+      + row  `#code`  le premier plan d'un segment de code  `Chroma(0xff, 0xcb, 0x6b)`
+      + row  `#codeBg`  le fond d'un segment de code  `Chroma(0x2a, 0x2a, 0x2a)`
+      + row  `#quoteBar`  le `▎` à côté d'une citation  `Chroma(0x82, 0xaa, 0xff)`
+      + row  `#rule`  un séparateur thématique  `Chroma(0x60, 0x60, 0x60)`
+      + row  `#subdued`  les marqueurs de liste, les préfixes de titres, les libellés d'images, le HTML en ligne et de bloc, et les blocs de code non colorés  `Chroma(0x80, 0x80, 0x80)`
+      ```
+
+      - The companion's `.default` given is in implicit scope, so `terminal` needs no palette
+      - import; another is bound as a local given, usually by copying the default with one field
+      - changed.
+      + Le given `.default` de l'objet compagnon est dans la portée implicite, si bien que
+      + `terminal` ne nécessite aucun import de palette ; une autre palette se lie comme given
+      + local, généralement en copiant la valeur par défaut avec un champ modifié.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+
+      given MarkdownPalette = MarkdownPalette(heading = Chroma(0xff, 0x80, 0x80))
+      Parser.parse(t"# Red\n").terminal(width = 20)
+      ```
+  refer punctuation.Renderer
+  entry .default
+    info
+        - the standard palette, in implicit scope
+        + la palette standard, dans la portée implicite
+  entry #heading
+    info
+        - heading text and the rules beneath level-1 and level-2 headings
+        + le texte des titres et les traits sous les titres de niveau 1 et 2
+  entry #link
+    info
+        - link text
+        + le texte des liens
+  entry #code
+    info
+        - a code span's text
+        + le texte d'un segment de code
+  entry #codeBg
+    info
+        - a code span's background
+        + le fond d'un segment de code
+  entry #quoteBar
+    info
+        - the `▎` bar beside a block quote
+        + la barre `▎` à côté d'une citation
+  entry #rule
+    info
+        - a thematic break
+        + un séparateur thématique
+  entry #subdued
+    info
+        - list markers, heading prefixes, image labels, raw HTML and unhighlighted code
+        + les marqueurs de liste, les préfixes de titres, les libellés d'images, le HTML brut et le
+        + code non coloré
+
+entry .TeletypeFormattable
+  info
+      - renders a fenced code block as styled terminal text, for the languages it knows
+      + rend un bloc de code délimité sous forme de texte de terminal stylé, pour les langages qu'il
+      + connaît
+  detail
+      - The terminal counterpart of `Formattable`. When `Renderer` meets a `Layout.CodeBlock`,
+      - every `TeletypeFormattable` given visible at the call site is collected into an
+      - `Every[TeletypeFormattable]` and each is offered the block's info string and content
+      - in turn; `#format` returns the `Teletype` to show, or `Unset` to decline, and a block
+      - no formattable accepts is shown in the palette's subdued colour. `Self` is the
+      - language's label type, so a given reads as `"scala" is TeletypeFormattable`.
+      + Le pendant pour terminal de `Formattable`. Lorsque `Renderer` rencontre un
+      + `Layout.CodeBlock`, chaque given `TeletypeFormattable` visible au site d'appel est
+      + collecté dans un `Every[TeletypeFormattable]`, et la chaîne d'information et le contenu du
+      + bloc sont proposés à chacun tour à tour ; `#format` renvoie le `Teletype` à montrer, ou
+      + `Unset` pour refuser, et un bloc qu'aucun formattable n'accepte est montré dans la couleur
+      + atténuée de la palette. `Self` est le type étiquette du langage, si bien qu'un given se lit
+      + `"scala" is TeletypeFormattable`.
+
+      - The standard instances are `teletypeFormattables.scalaTeletypeFormattable` and
+      - `teletypeFormattables.javaTeletypeFormattable`, which highlight through harlequin and
+      - need a `ScalaSyntaxPalette` in scope; they are imported by name.
+      + Les instances standard sont `teletypeFormattables.scalaTeletypeFormattable` et
+      + `teletypeFormattables.javaTeletypeFormattable`, qui colorent au moyen de harlequin et
+      + exigent une `ScalaSyntaxPalette` dans la portée ; elles s'importent par leur nom.
+
+      ```scala
+      import soundness.*
+
+      given ("text" is TeletypeFormattable):
+        def format(language: List[Text], content: Text): Optional[Teletype] =
+          if language.head != t"text" then Unset else e"$Italic($content)"
+      ```
+  refer punctuation.teletypeFormattables
+  refer punctuation.Formattable
+  entry #Self
+    info
+        - the label type of the language this formattable handles
+        + le type étiquette du langage que traite ce formattable
+  entry #format
+    info
+        - the styled text for a code block with this info string and content, or `Unset` to decline
+        + le texte stylé d'un bloc de code ayant cette chaîne d'information et ce contenu, ou
+        + `Unset` pour refuser
+    detail
+        - `language` is the fence's info string cut at whitespace (`Nil` for an indented block)
+        - and `content` the code with its trailing newline. An implementation checks the first
+        - word and declines any other language with `Unset`.
+        + `language` est la chaîne d'information de la clôture coupée aux espaces (`Nil` pour un
+        + bloc indenté) et `content` le code avec son saut de ligne final. Une implémentation
+        + vérifie le premier mot et refuse tout autre langage avec `Unset`.
+
+entry .teletypeFormattables
+  info
+      - syntax highlighting for `scala` and `java` code blocks in terminal output, to import by name
+      + la coloration syntaxique des blocs de code `scala` et `java` dans la sortie terminal, à
+      + importer par son nom
+  detail
+      - The choice package of `TeletypeFormattable` givens for `Renderer` and `terminal`. Each
+      - claims one language by the first word of a fence's info string, runs the block through
+      - harlequin's tokenizer, and colours the tokens by the `ScalaSyntaxPalette` given in
+      - scope — an iridescence `Palette` with a colour for each accent (`scalaKeyword`,
+      - `scalaString`, `scalaType`, …) — so a palette must be provided alongside the import.
+      - Without any import, code blocks are shown unhighlighted in the subdued colour.
+      + Le package de choix des givens `TeletypeFormattable` pour `Renderer` et `terminal`.
+      + Chacun revendique un langage d'après le premier mot de la chaîne d'information d'une
+      + clôture, fait passer le bloc par l'analyseur lexical de harlequin, et colore les jetons
+      + selon le given `ScalaSyntaxPalette` dans la portée — une `Palette` d'iridescence dotée
+      + d'une couleur pour chaque accent (`scalaKeyword`, `scalaString`, `scalaType`, …) — si bien
+      + qu'une palette doit être fournie en même temps que l'import. Sans aucun import, les blocs
+      + de code sont montrés non colorés, dans la couleur atténuée.
+
+      ```scala
+      import soundness.*
+      import teletypeFormattables.{scalaTeletypeFormattable, javaTeletypeFormattable}
+      import hyphenations.englishHyphenation
+
+      given ScalaSyntaxPalette = new Palette:
+        type Form = Srgb
+        def background: Color in Srgb       = WebColors.Black
+        def foreground: Color in Srgb       = WebColors.White
+        def scalaError: Color in Srgb       = WebColors.Red
+        def scalaNumber: Color in Srgb      = WebColors.Gold
+        def scalaString: Color in Srgb      = WebColors.LimeGreen
+        def scalaTerm: Color in Srgb        = WebColors.Silver
+        def scalaType: Color in Srgb        = WebColors.Turquoise
+        def scalaKeyword: Color in Srgb     = WebColors.Orange
+        def scalaSymbol: Color in Srgb      = WebColors.Gray
+        def scalaParenthesis: Color in Srgb = WebColors.Gray
+        def scalaModifier: Color in Srgb    = WebColors.Orchid
+        def scalaComment: Color in Srgb     = WebColors.DimGray
+        def subdued: Color in Srgb          = WebColors.DimGray
+        def accented: Color in Srgb         = WebColors.White
+        def margin: Color in Srgb           = WebColors.DimGray
+
+      Parser.parse(t"```scala\nval x = 1\n```\n").terminal(width = 60)
+      ```
+
+      - No standard `ScalaSyntaxPalette` given ships with the library, so a palette is always
+      - the caller's.
+      + Aucun given `ScalaSyntaxPalette` standard n'est livré avec la bibliothèque : la palette
+      + est donc toujours celle de l'appelant.
+  refer punctuation.TeletypeFormattable
+  refer punctuation.Renderer
+  entry .scalaTeletypeFormattable
+    info
+        - highlights a `scala` code block with harlequin, coloured by the `ScalaSyntaxPalette` in scope
+        + colore un bloc de code `scala` avec harlequin, selon la `ScalaSyntaxPalette` dans la
+        + portée
+    detail
+        - Accepts a block whose info string begins `scala` and declines any other. Needs a
+        - `ScalaSyntaxPalette` given.
+        + Accepte un bloc dont la chaîne d'information commence par `scala` et refuse tout autre.
+        + Exige un given `ScalaSyntaxPalette`.
+  entry .javaTeletypeFormattable
+    info
+        - highlights a `java` code block with harlequin, coloured by the `ScalaSyntaxPalette` in scope
+        + colore un bloc de code `java` avec harlequin, selon la `ScalaSyntaxPalette` dans la portée
+    detail
+        - Accepts a block whose info string begins `java` and declines any other. Needs a
+        - `ScalaSyntaxPalette` given.
+        + Accepte un bloc dont la chaîne d'information commence par `java` et refuse tout autre.
+        + Exige un given `ScalaSyntaxPalette`.
+
+entry .formattables
+  info
+      - syntax highlighting for `scala` and `java` code blocks in HTML output, to import by name
+      + la coloration syntaxique des blocs de code `scala` et `java` dans la sortie HTML, à importer
+      + par son nom
+  detail
+      - The choice package of `Formattable` givens for `html` on a `Markdown of Layout`,
+      - contributed to this package by the harlequin library's `harlequin.md` component. Each
+      - claims one language by the first word of a fence's info string, tokenizes the block
+      - with harlequin, and emits a `div` of class `amok` holding a `pre` of one `span.line`
+      - per line, each token a `code` element whose classes name its accent (`keyword`,
+      - `string`, `type`, …) and, for a term or type, its role (`binding` or `usage`), so a
+      - stylesheet decides the colours. Both are `CommonFormattable`s, harlequin's base for
+      - such HTML formattables. Without the import, a code block renders as a plain `pre` and
+      - `code` with a `language-scala` class.
+      + Le package de choix des givens `Formattable` pour `html` sur un `Markdown of Layout`,
+      + apporté à ce package par le composant `harlequin.md` de la bibliothèque harlequin. Chacun
+      + revendique un langage d'après le premier mot de la chaîne d'information d'une clôture,
+      + découpe le bloc en jetons avec harlequin, et émet un `div` de classe `amok` contenant un
+      + `pre` avec un `span.line` par ligne, chaque jeton étant un élément `code` dont les classes
+      + nomment son accent (`keyword`, `string`, `type`, …) et, pour un terme ou un type, son rôle
+      + (`binding` ou `usage`), si bien que c'est une feuille de style qui décide des couleurs.
+      + Tous deux sont des `CommonFormattable`, la base de harlequin pour de tels formattables
+      + HTML. Sans l'import, un bloc de code se rend sous forme de simples `pre` et `code` avec une
+      + classe `language-scala`.
+
+      ```scala
+      import soundness.*
+      import formattables.{scalaFormattable, javaFormattable}
+
+      Parser.parse(t"```scala\nval x = 1\n```\n").html.show
+      // <div class="amok"><pre><span class="line"><code class="keyword">val</code> …
+      ```
+  refer punctuation.Formattable
+  entry .scalaFormattable
+    info
+        - highlights a `scala` code block as classed `code` elements
+        + colore un bloc de code `scala` sous forme d'éléments `code` dotés de classes
+    detail
+        - Accepts a block whose info string begins `scala` and declines any other.
+        + Accepte un bloc dont la chaîne d'information commence par `scala` et refuse tout autre.
+  entry .javaFormattable
+    info
+        - highlights a `java` code block as classed `code` elements
+        + colore un bloc de code `java` sous forme d'éléments `code` dotés de classes
+    detail
+        - Accepts a block whose info string begins `java` and declines any other.
+        + Accepte un bloc dont la chaîne d'information commence par `java` et refuse tout autre.
+
+entry .LeafBuilder
+  info
+      - a parser-internal builder for a block which holds text: paragraph or code block
+      + un constructeur interne à l'analyseur pour un bloc qui contient du texte : paragraphe ou
+      + bloc de code
+  hidden
+  detail
+      - Not for direct use: part of the block parser's working state, which accumulates a
+      - leaf block's lines and finishes to a `Layout`. Its `finish` resolves the block against
+      - the link references seen so far. `ParagraphBuilder`, `FencedCodeBlockBuilder` and
+      - `IndentedCodeBlockBuilder` are its cases.
+      + Pas destiné à un usage direct : fait partie de l'état de travail de l'analyseur de blocs,
+      + qui accumule les lignes d'un bloc feuille et se termine en un `Layout`. Son `finish` résout
+      + le bloc par rapport aux références de liens vues jusqu'ici. `ParagraphBuilder`,
+      + `FencedCodeBlockBuilder` et `IndentedCodeBlockBuilder` en sont les cas.
+
+entry .ContainerBuilder
+  info
+      - a parser-internal builder for a block which holds other blocks
+      + un constructeur interne à l'analyseur pour un bloc qui contient d'autres blocs
+  hidden
+  detail
+      - Not for direct use: the block parser's working state for the document, a block quote,
+      - a list and a list item. It holds a buffer of finished `children`, `tryContinue` decides
+      - whether a line continues the container and strips its prefix, `finish` produces the
+      - `Layout`, and `closesOnBlank` says whether a blank line ends it.
+      + Pas destiné à un usage direct : l'état de travail de l'analyseur de blocs pour le
+      + document, une citation, une liste et un élément de liste. Il contient un tampon de
+      + `children` terminés ; `tryContinue` décide si une ligne prolonge le conteneur et en retire
+      + le préfixe, `finish` produit le `Layout`, et `closesOnBlank` indique si une ligne vide le
+      + termine.
+
+entry .DocumentBuilder
+  info
+      - the parser-internal root container, open until the end of the input
+      + le conteneur racine interne à l'analyseur, ouvert jusqu'à la fin de l'entrée
+  hidden
+  detail
+      - Not for direct use. Continues on every line and finishes to nothing: its children are
+      - the document.
+      + Pas destiné à un usage direct. Se prolonge sur chaque ligne et ne se termine en rien : ses
+      + enfants sont le document.
+
+entry .BlockQuoteBuilder
+  info
+      - the parser-internal builder of a `Layout.BlockQuote`
+      + le constructeur interne à l'analyseur d'un `Layout.BlockQuote`
+  hidden
+  detail
+      - Not for direct use. Continues on a line beginning with up to three spaces and `>`,
+      - stripping the marker and one following space, and finishes to a `Layout.BlockQuote`
+      - of its children.
+      + Pas destiné à un usage direct. Se prolonge sur une ligne commençant par jusqu'à trois
+      + espaces et `>`, en retirant le marqueur et une espace qui le suit, et se termine en un
+      + `Layout.BlockQuote` de ses enfants.
+
+entry .ListItemBuilder
+  info
+      - the parser-internal builder of one item of a list
+      + le constructeur interne à l'analyseur d'un élément de liste
+  hidden
+  detail
+      - Not for direct use. Continues on a line indented at least to the item's content
+      - column (`indent`), or on a blank line; `hadBlank` records a blank line after which an
+      - empty item closes. Its `finish` is a placeholder: the enclosing list builder collects
+      - an item's children itself.
+      + Pas destiné à un usage direct. Se prolonge sur une ligne indentée au moins jusqu'à la
+      + colonne de contenu de l'élément (`indent`), ou sur une ligne vide ; `hadBlank` enregistre
+      + une ligne vide après laquelle un élément vide se ferme. Son `finish` est un substitut : le
+      + constructeur de liste englobant collecte lui-même les enfants d'un élément.
+
+entry .BulletListBuilder
+  info
+      - the parser-internal builder of a `Layout.BulletList`
+      + le constructeur interne à l'analyseur d'une `Layout.BulletList`
+  hidden
+  detail
+      - Not for direct use. Collects `items`, each a list of blocks, for a list of one
+      - `marker` character (`-`, `*` or `+`); `loose` is set when a blank line separates items
+      - and `pendingBlank` while one is being decided. Finishes to a `Layout.BulletList`
+      - which is tight unless loose.
+      + Pas destiné à un usage direct. Collecte les `items`, chacun une liste de blocs, pour une
+      + liste d'un seul caractère `marker` (`-`, `*` ou `+`) ; `loose` est positionné quand une
+      + ligne vide sépare des éléments, et `pendingBlank` tant qu'on statue sur l'une d'elles. Se
+      + termine en une `Layout.BulletList` serrée sauf si elle est lâche.
+
+entry .OrderedListBuilder
+  info
+      - the parser-internal builder of a `Layout.OrderedList`
+      + le constructeur interne à l'analyseur d'une `Layout.OrderedList`
+  hidden
+  detail
+      - Not for direct use. As `BulletListBuilder`, for a numbered list with a `start` number
+      - and a `.` or `)` `delimiter`. Finishes to a `Layout.OrderedList`.
+      + Pas destiné à un usage direct. Comme `BulletListBuilder`, pour une liste numérotée avec
+      + un numéro `start` et un `delimiter` `.` ou `)`. Se termine en une `Layout.OrderedList`.
+
+entry .ParagraphBuilder
+  info
+      - the parser-internal builder of a `Layout.Paragraph` or setext heading
+      + le constructeur interne à l'analyseur d'un `Layout.Paragraph` ou d'un titre setext
+  hidden
+  detail
+      - Not for direct use. Accumulates lines with `addLine`, stripping leading whitespace;
+      - `isEmpty` is whether it has none. On `finish` it first extracts any link-reference
+      - definitions from the start of its text, adding them to the document's references, and
+      - produces a `Layout.Paragraph` of the remaining text — or nothing, if the paragraph was
+      - definitions alone. `toHeading(level, refs)` does the same for a setext underline,
+      - producing a `Layout.Heading`. The paragraph's text is parsed for inline content later,
+      - once the references are complete.
+      + Pas destiné à un usage direct. Accumule des lignes avec `addLine`, en retirant les espaces
+      + initiales ; `isEmpty` indique s'il n'en a aucune. Lors du `finish`, il extrait d'abord les
+      + définitions de références de liens au début de son texte, en les ajoutant aux références
+      + du document, et produit un `Layout.Paragraph` du texte restant — ou rien, si le paragraphe
+      + ne contenait que des définitions. `toHeading(level, refs)` fait de même pour un
+      + soulignement setext, en produisant un `Layout.Heading`. Le texte du paragraphe est analysé
+      + plus tard pour son contenu en ligne, une fois les références complètes.
+
+entry .FencedCodeBlockBuilder
+  info
+      - the parser-internal builder of a fenced `Layout.CodeBlock`
+      + le constructeur interne à l'analyseur d'un `Layout.CodeBlock` délimité
+  hidden
+  detail
+      - Not for direct use. Remembers the fence's character, length and indent, and the info
+      - string cut at whitespace, collects lines with `addLine`, and finishes to a
+      - `Layout.CodeBlock` whose content is the lines joined with a newline after each.
+      + Pas destiné à un usage direct. Retient le caractère, la longueur et l'indentation de la
+      + clôture, ainsi que la chaîne d'information coupée aux espaces, collecte les lignes avec
+      + `addLine`, et se termine en un `Layout.CodeBlock` dont le contenu est les lignes jointes
+      + avec un saut de ligne après chacune.
+
+entry .IndentedCodeBlockBuilder
+  info
+      - the parser-internal builder of an indented `Layout.CodeBlock`
+      + le constructeur interne à l'analyseur d'un `Layout.CodeBlock` indenté
+  hidden
+  detail
+      - Not for direct use. Collects lines with `addLine`, drops trailing blank lines on
+      - `finish`, and produces a `Layout.CodeBlock` with an empty info string.
+      + Pas destiné à un usage direct. Collecte les lignes avec `addLine`, supprime les lignes
+      + vides finales lors du `finish`, et produit un `Layout.CodeBlock` avec une chaîne
+      + d'information vide.
+
+entry .InlineData
+  info
+      - the parser-internal payload of a node in the inline parser's working list
+      + la charge utile interne à l'analyseur d'un nœud de la liste de travail de l'analyseur en
+      + ligne
+  hidden
+  detail
+      - Not for direct use: a sealed trait of the inline parser's intermediate forms. The
+      - inline parser tokenizes a paragraph into a doubly-linked list of `InlineNode`s, each
+      - holding an `InlineData` — text, a code span, inline HTML, a break, a link or image, a
+      - bracket marker or a delimiter run — then resolves emphasis by the CommonMark
+      - delimiter algorithm and converts the list to `Prose`. `TextData`, `CodeData`,
+      - `HtmlInlineData`, `SoftbreakData`, `LinebreakData`, `LinkData`, `ImageData`,
+      - `EmphasisData`, `StrongData`, `BracketData` and `DelimData` are its cases.
+      + Pas destiné à un usage direct : un trait scellé des formes intermédiaires de l'analyseur
+      + en ligne. L'analyseur en ligne découpe un paragraphe en jetons dans une liste doublement
+      + chaînée d'`InlineNode`, chacun contenant une `InlineData` — texte, segment de code, HTML en
+      + ligne, saut, lien ou image, marqueur de crochet ou suite de délimiteurs — puis résout
+      + l'emphase selon l'algorithme des délimiteurs de CommonMark et convertit la liste en
+      + `Prose`. `TextData`, `CodeData`, `HtmlInlineData`, `SoftbreakData`, `LinebreakData`,
+      + `LinkData`, `ImageData`, `EmphasisData`, `StrongData`, `BracketData` et `DelimData` en
+      + sont les cas.
+
+entry .TextData
+  info
+      - parser-internal: a run of literal text in the inline list
+      + interne à l'analyseur : une suite de texte littéral dans la liste en ligne
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Textual`.
+      + Pas destiné à un usage direct ; devient `Prose.Textual`.
+
+entry .CodeData
+  info
+      - parser-internal: a code span in the inline list
+      + interne à l'analyseur : un segment de code dans la liste en ligne
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Code`.
+      + Pas destiné à un usage direct ; devient `Prose.Code`.
+
+entry .HtmlInlineData
+  info
+      - parser-internal: a raw inline HTML tag in the inline list
+      + interne à l'analyseur : une balise HTML brute en ligne dans la liste en ligne
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.HtmlInline`.
+      + Pas destiné à un usage direct ; devient `Prose.HtmlInline`.
+
+entry .SoftbreakData
+  info
+      - parser-internal: a soft line break in the inline list
+      + interne à l'analyseur : un saut de ligne souple dans la liste en ligne
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Softbreak`.
+      + Pas destiné à un usage direct ; devient `Prose.Softbreak`.
+
+entry .LinebreakData
+  info
+      - parser-internal: a hard line break in the inline list
+      + interne à l'analyseur : un saut de ligne dur dans la liste en ligne
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Linebreak`.
+      + Pas destiné à un usage direct ; devient `Prose.Linebreak`.
+
+entry .LinkData
+  info
+      - parser-internal: a resolved link, with its destination, title and content nodes
+      + interne à l'analyseur : un lien résolu, avec sa destination, son titre et ses nœuds de
+      + contenu
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Link`.
+      + Pas destiné à un usage direct ; devient `Prose.Link`.
+
+entry .ImageData
+  info
+      - parser-internal: a resolved image, with its destination, title and content nodes
+      + interne à l'analyseur : une image résolue, avec sa destination, son titre et ses nœuds de
+      + contenu
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Image`.
+      + Pas destiné à un usage direct ; devient `Prose.Image`.
+
+entry .EmphasisData
+  info
+      - parser-internal: emphasis wrapped around a list of inline nodes
+      + interne à l'analyseur : une emphase enveloppant une liste de nœuds en ligne
+  hidden
+  detail
+      - Not for direct use; inserted by the emphasis algorithm in place of a matched pair of
+      - delimiter runs, and becomes `Prose.Emphasis`.
+      + Pas destiné à un usage direct ; insérée par l'algorithme d'emphase à la place d'une paire
+      + appariée de suites de délimiteurs, et devient `Prose.Emphasis`.
+
+entry .StrongData
+  info
+      - parser-internal: strong emphasis wrapped around a list of inline nodes
+      + interne à l'analyseur : une emphase forte enveloppant une liste de nœuds en ligne
+  hidden
+  detail
+      - Not for direct use; becomes `Prose.Strong`.
+      + Pas destiné à un usage direct ; devient `Prose.Strong`.
+
+entry .BracketData
+  info
+      - parser-internal: a `[` or `![` marker awaiting its closing bracket
+      + interne à l'analyseur : un marqueur `[` ou `![` en attente de son crochet fermant
+  hidden
+  detail
+      - Not for direct use. `isImage` is whether the bracket opened an image; once the closing
+      - bracket is seen, the marker is replaced by a link or image, left as literal text, or
+      - skipped if a containing link deactivated it.
+      + Pas destiné à un usage direct. `isImage` indique si le crochet ouvrait une image ; une
+      + fois le crochet fermant rencontré, le marqueur est remplacé par un lien ou une image,
+      + laissé comme texte littéral, ou ignoré si un lien englobant l'a désactivé.
+
+entry .DelimData
+  info
+      - parser-internal: a run of `*` or `_` delimiters, with its flanking
+      + interne à l'analyseur : une suite de délimiteurs `*` ou `_`, avec son flanquement
+  hidden
+  detail
+      - Not for direct use. Holds the delimiter `char`, the run's remaining `length` (reduced
+      - as the emphasis algorithm consumes it), and whether the run `canOpen` or `canClose`
+      - emphasis by the left- and right-flanking rules.
+      + Pas destiné à un usage direct. Contient le `char` délimiteur, la `length` restante de la
+      + suite (réduite à mesure que l'algorithme d'emphase la consomme), et l'indication que la
+      + suite peut ouvrir (`canOpen`) ou fermer (`canClose`) une emphase selon les règles de
+      + flanquement gauche et droit.
+
+entry .InlineNode
+  info
+      - parser-internal: a node of the inline parser's doubly-linked list
+      + interne à l'analyseur : un nœud de la liste doublement chaînée de l'analyseur en ligne
+  hidden
+  detail
+      - Not for direct use. Holds mutable `data`, `prev` and `next`, which the emphasis
+      - algorithm rewrites in place.
+      + Pas destiné à un usage direct. Contient les champs mutables `data`, `prev` et `next`, que
+      + l'algorithme d'emphase réécrit sur place.
+
+entry .InlineList
+  info
+      - parser-internal: the inline parser's doubly-linked list of nodes
+      + interne à l'analyseur : la liste doublement chaînée de nœuds de l'analyseur en ligne
+  hidden
+  detail
+      - Not for direct use. `first` and `last` are its ends; `append` adds a node holding some
+      - `InlineData`, `insertAfter` and `remove` splice the list, and `iterator` walks it
+      - from the first node.
+      + Pas destiné à un usage direct. `first` et `last` en sont les extrémités ; `append` ajoute
+      + un nœud contenant une `InlineData`, `insertAfter` et `remove` modifient le chaînage, et
+      + `iterator` la parcourt depuis le premier nœud.
+
+entry .BulletMarker
+  info
+      - parser-internal: a recognised bullet-list marker on a line
+      + interne à l'analyseur : un marqueur de liste à puces reconnu sur une ligne
+  hidden
+  detail
+      - Not for direct use. The marker `char`, the column at which the item's content begins
+      - (`contentIndent`) and the `rest` of the line after the marker.
+      + Pas destiné à un usage direct. Le `char` marqueur, la colonne à laquelle commence le
+      + contenu de l'élément (`contentIndent`) et le reste `rest` de la ligne après le marqueur.
+
+entry .OrderedMarker
+  info
+      - parser-internal: a recognised ordered-list marker on a line
+      + interne à l'analyseur : un marqueur de liste ordonnée reconnu sur une ligne
+  hidden
+  detail
+      - Not for direct use. The `start` number, the `.` or `)` `delimiter`, the column at
+      - which the item's content begins (`contentIndent`) and the `rest` of the line.
+      + Pas destiné à un usage direct. Le numéro `start`, le `delimiter` `.` ou `)`, la colonne à
+      + laquelle commence le contenu de l'élément (`contentIndent`) et le reste `rest` de la ligne.
+
+entry .EntityMatch
+  info
+      - parser-internal: a decoded HTML entity or numeric character reference
+      + interne à l'analyseur : une entité HTML ou une référence numérique de caractère décodée
+  hidden
+  detail
+      - Not for direct use. The `decoded` text and the `end` offset after the reference.
+      + Pas destiné à un usage direct. Le texte décodé `decoded` et le décalage `end` après la
+      + référence.
+
+entry .CodeSpanMatch
+  info
+      - parser-internal: a recognised backtick code span
+      + interne à l'analyseur : un segment de code entre accents graves reconnu
+  hidden
+  detail
+      - Not for direct use. The span's `content`, with the specification's stripping of one
+      - surrounding space applied, and the `end` offset after the closing backticks.
+      + Pas destiné à un usage direct. Le `content` du segment, après le retrait d'une espace
+      + environnante prévu par la spécification, et le décalage `end` après les accents graves
+      + fermants.
+
+entry .AutolinkMatch
+  info
+      - parser-internal: a recognised `<…>` autolink
+      + interne à l'analyseur : un autolien `<…>` reconnu
+  hidden
+  detail
+      - Not for direct use. The `Prose.Link` for the URL or email address, and the `end`
+      - offset after the closing `>`.
+      + Pas destiné à un usage direct. Le `Prose.Link` pour l'URL ou l'adresse électronique, et le
+      + décalage `end` après le `>` fermant.

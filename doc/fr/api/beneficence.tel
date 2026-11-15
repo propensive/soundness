@@ -1,0 +1,375 @@
+tel 1.0
+
+base beneficence
+import soundness
+
+info
+    - a compiler plugin which indexes givens, test suites and tests as they compile, for tools to find later
+    + un plugin de compilateur qui indexe givens, suites de tests et tests à la compilation,
+    + pour que des outils les trouvent ensuite
+detail
+    - _Beneficence_ is a Scala 3 compiler plugin with a small runtime half. As each module
+    - compiles, the plugin walks the typed trees and writes three indexes into the module's
+    - output directory, so that a tool can later learn what a classpath offers without loading
+    - or running any of it:
+    + _Beneficence_ est un plugin de compilateur Scala 3 doté d'une petite moitié d'exécution. À la
+    + compilation de chaque module, le plugin parcourt les arbres typés et écrit trois index dans le
+    + répertoire de sortie du module, pour qu'un outil puisse ensuite savoir ce qu'offre un
+    + classpath sans rien en charger ni en exécuter :
+
+    - - `META-INF/givens/<typeclass>` — every named given of a `Findable` type, by the fully
+    -   qualified name a programmer would import it by. The `frontier` library's explanation of
+    -   a missing contextual value reads this index (through `givens`) to propose the givens
+    -   which would supply it, such as `systems.javaBaseSystem` for a missing `System`.
+    - - `META-INF/services/probably.Suite` — every `probably.Suite` object, in the standard
+    -   `ServiceLoader` layout. A suite has no main class: the fume test runner discovers
+    -   suites from this index alone, so a test module compiled without the plugin has no
+    -   runnable tests.
+    - - `META-INF/probably/tests/<source>-<hash>` — one file per source, listing each test, group
+    -   and suite, its place in the hierarchy, kind, moniker, tags and line, so that a runner can
+    -   list and select tests without running a suite.
+    + - `META-INF/givens/<typeclass>` — chaque given nommé d'un type `Findable`, sous le nom
+    +   pleinement qualifié par lequel un programmeur l'importerait. L'explication d'une valeur
+    +   contextuelle manquante par la bibliothèque `frontier` lit cet index (au moyen de `givens`)
+    +   pour proposer les givens qui la fourniraient, comme `systems.javaBaseSystem` pour un
+    +   `System` manquant.
+    + - `META-INF/services/probably.Suite` — chaque objet `probably.Suite`, selon l'organisation
+    +   standard de `ServiceLoader`. Une suite n'a pas de classe principale : le lanceur de tests
+    +   fume découvre les suites à partir de ce seul index, de sorte qu'un module de tests compilé
+    +   sans le plugin n'a aucun test exécutable.
+    + - `META-INF/probably/tests/<source>-<hash>` — un fichier par source, énumérant chaque test,
+    +   groupe et suite, sa place dans la hiérarchie, sa sorte, son appellation, ses tags et sa
+    +   ligne, pour qu'un lanceur puisse énumérer et sélectionner les tests sans exécuter de suite.
+
+    - A type takes part in the givens index by extending `Findable`:
+    + Un type participe à l'index des givens en étendant `Findable` :
+
+    ```scala
+    import soundness.*
+
+    trait Renderer extends Findable:
+      def render(text: Text): Text
+
+    object renderers:
+      given plainRenderer: Renderer = text => text
+    ```
+
+    - Compiled with the plugin, this writes `renderers.plainRenderer` to
+    - `META-INF/givens/Renderer`, beneath a `# source:` line naming the file it came from.
+    + Compilé avec le plugin, ceci écrit `renderers.plainRenderer` dans `META-INF/givens/Renderer`,
+    + sous une ligne `# source:` qui nomme le fichier d'où il provient.
+
+    - The plugin is enabled with `-Xplugin:` pointing at the `beneficence.plugin` jar, and does
+    - nothing at all unless `beneficence.Findable` is on the compilation's classpath. It writes
+    - only to a directory output; compiling straight to a JAR writes no index. Compilation is
+    - incremental-safe: the entries contributed by the sources being recompiled are replaced,
+    - and those of every other source are kept, and each file is written to a unique temporary
+    - file beside it and moved into place atomically, so concurrent compilations into the same
+    - directory do not corrupt one another.
+    + Le plugin s'active avec `-Xplugin:` pointant vers le jar `beneficence.plugin`, et ne fait
+    + absolument rien si `beneficence.Findable` n'est pas dans le classpath de la compilation. Il
+    + n'écrit que dans une sortie de type répertoire ; compiler directement vers un JAR n'écrit
+    + aucun index. La compilation est sûre en mode incrémental : les entrées apportées par les
+    + sources en cours de recompilation sont remplacées, et celles de toutes les autres sources sont
+    + conservées, et chaque fichier est écrit dans un fichier temporaire unique à côté de lui puis
+    + déplacé atomiquement en place : des compilations concurrentes dans le même répertoire ne se
+    + corrompent donc pas mutuellement.
+
+    - Because each module writes its own fragment of each index, a build which merges modules
+    - into one JAR (an assembly, a fat jar) must concatenate the files under `META-INF/givens/`,
+    - `META-INF/services/` and `META-INF/probably/` rather than keep only one of them.
+    + Comme chaque module écrit son propre fragment de chaque index, un build qui fusionne des
+    + modules en un seul JAR (un assembly, un fat jar) doit concaténer les fichiers sous
+    + `META-INF/givens/`, `META-INF/services/` et `META-INF/probably/` au lieu de n'en conserver
+    + qu'un seul.
+
+    - The library has two components:
+    + La bibliothèque a deux composants :
+
+    - - `beneficence.core` — `Findable` and the `givens` lookup, a dependency of almost every
+    -   Soundness library. Exported to the `soundness` umbrella.
+    - - `beneficence.plugin` — `BeneficencePlugin` and its phase, built against the compiler
+    -   and published as a standalone artifact, since a `-Xplugin:` jar declares exactly one
+    -   plugin.
+    + - `beneficence.core` — `Findable` et la recherche `givens`, une dépendance de presque toutes
+    +   les bibliothèques Soundness. Exporté vers le package parapluie `soundness`.
+    + - `beneficence.plugin` — `BeneficencePlugin` et sa phase, construits contre le compilateur et
+    +   publiés sous forme d'artefact autonome, puisqu'un jar `-Xplugin:` déclare exactement un
+    +   plugin.
+
+refer beneficence.Findable
+refer beneficence.givens
+refer beneficence.BeneficencePlugin
+
+entry .Findable
+  info
+      - marks a type whose named givens are recorded in the `META-INF/givens` index
+      + marque un type dont les givens nommés sont enregistrés dans l'index `META-INF/givens`
+  detail
+      - `Findable` is an empty marker trait. A `given` whose type has `Findable` among its base
+      - classes is recorded by the beneficence plugin under `META-INF/givens/<typeclass>`, where
+      - the typeclass is the given's first proper base class: for `given javaBaseSystem: System`
+      - the file is `META-INF/givens/ambience.System`, and the line is
+      - `ambience.systems.javaBaseSystem`. A given declared with a refining body (`given puck: T:
+      - …`), which the compiler implements as a class of its own, is recorded under `T`.
+      + `Findable` est un trait marqueur vide. Un `given` dont le type compte `Findable` parmi ses
+      + classes de base est enregistré par le plugin beneficence sous `META-INF/givens/<typeclass>`,
+      + où la classe de types est la première classe de base propre du given : pour
+      + `given javaBaseSystem: System`, le fichier est `META-INF/givens/ambience.System`, et la
+      + ligne est `ambience.systems.javaBaseSystem`. Un given déclaré avec un corps raffinant
+      + (`given puck: T: …`), que le compilateur implémente comme une classe à part, est enregistré
+      + sous `T`.
+
+      - What the plugin records, as the declaration changes:
+      + Ce qu'enregistre le plugin, selon la déclaration :
+
+      ```scala fuel
+      frame
+        label A plain trait: nothing is recorded
+        code
+            trait Dialect:
+              def name: Text
+
+            object dialects:
+              given ansiDialect: Dialect:
+                def name: Text = t"ANSI"
+      frame
+        label Extending Findable: `dialects.ansiDialect` is written to META-INF/givens/Dialect
+        code
+            trait Dialect extends Findable:
+              def name: Text
+
+            object dialects:
+              given ansiDialect: Dialect:
+                def name: Text = t"ANSI"
+      frame
+        label A given inside a class cannot be imported, so it is not recorded
+        code
+            trait Dialect extends Findable:
+              def name: Text
+
+            class Dialects():
+              given ansiDialect: Dialect:
+                def name: Text = t"ANSI"
+      ##
+      ```
+
+      - Only givens a plain `import` could reach are recorded: every enclosing scope must be a
+      - package or an object. A given in a class, trait or method body is skipped, as is an
+      - anonymous given, which has no name to import. Many Soundness contexts are `Findable`
+      - (`System`, `Clock`, `Random`, `Timezone`, `Environment`, `Serializable`,
+      - `Deserializable`, …), which is what lets a compile error for a missing one suggest the
+      - import which would supply it.
+      + Seuls les givens qu'un simple `import` pourrait atteindre sont enregistrés : chaque portée
+      + englobante doit être un package ou un objet. Un given dans le corps d'une classe, d'un trait
+      + ou d'une méthode est ignoré, de même qu'un given anonyme, qui n'a pas de nom à importer. De
+      + nombreux contextes de Soundness sont `Findable` (`System`, `Clock`, `Random`, `Timezone`,
+      + `Environment`, `Serializable`, `Deserializable`, …), ce qui permet à une erreur de
+      + compilation pour un contexte manquant de suggérer l'import qui le fournirait.
+  refer beneficence.givens
+
+entry .givens
+  info
+      - the givens recorded on the compiler's classpath for a typeclass, for use in a macro
+      + les givens enregistrés dans le classpath du compilateur pour une classe de types, à utiliser
+      + dans une macro
+  detail
+      - `givens(typeRepr)` is a macro-time lookup: given a `TypeRepr` inside a `Quotes` context, it
+      - reads every `META-INF/givens/<typeclass>` resource on the classpath of the macro's own
+      - classloader (the class of the dealiased type names the file), skips blank lines and `#`
+      - comments, removes duplicates, and resolves each fully qualified name to the `Symbol` of the
+      - given, as a method or a field of its owning object or class. A name which no longer
+      - resolves is silently dropped, and a type with no class symbol gives `Nil`.
+      + `givens(typeRepr)` est une recherche au moment de l'expansion des macros : étant donné un
+      + `TypeRepr` dans un contexte `Quotes`, elle lit chaque ressource
+      + `META-INF/givens/<typeclass>` du classpath du propre classloader de la macro (la classe du
+      + type désaliasé nomme le fichier), ignore les lignes vides et les commentaires `#`, supprime
+      + les doublons, et résout chaque nom pleinement qualifié en le `Symbol` du given, en tant que
+      + méthode ou champ de l'objet ou de la classe qui le possède. Un nom qui ne se résout plus est
+      + abandonné en silence, et un type sans symbole de classe donne `Nil`.
+
+      ```scala
+      import scala.quoted.*
+      import soundness.*
+
+      def candidates[typeclass: Type](using Quotes): scala.collection.immutable.List[Text] =
+        import quotes.reflect.*
+        givens(TypeRepr.of[typeclass]).map(_.fullName.tt)
+      ```
+
+      - The result is the stdlib `List` of `quotes.reflect.Symbol`, since it is used only by
+      - macro code. `frontier` uses it to propose the givens that would satisfy a missing
+      - contextual parameter.
+      + Le résultat est la `List` de la bibliothèque standard de `quotes.reflect.Symbol`, puisqu'il
+      + n'est utilisé que par du code de macro. `frontier` l'utilise pour proposer les givens qui
+      + satisferaient un paramètre contextuel manquant.
+
+entry .internal
+  info
+      - the classpath reader behind `givens`
+      + le lecteur de classpath derrière `givens`
+  hidden
+  detail
+      - Not for direct use: `givens` delegates to it.
+      + Pas destiné à un usage direct : `givens` lui délègue.
+  entry .givens
+    info
+        - reads and resolves the `META-INF/givens` entries for a type; see `beneficence.givens`
+        + lit et résout les entrées `META-INF/givens` d'un type ; voir `beneficence.givens`
+
+entry .BeneficencePlugin
+  info
+      - the compiler plugin which writes the givens, suites and tests indexes
+      + le plugin de compilateur qui écrit les index des givens, des suites et des tests
+  detail
+      - The `StandardPlugin` named `beneficence`, which installs one phase, `GivensPhase`. It is
+      - enabled by passing the `beneficence.plugin` jar to the compiler as
+      - `-Xplugin:<path to the jar>`, and takes no options. The plugin writes indexes only into a directory output, and only
+      - records givens when `beneficence.Findable` is on the classpath; suites and tests are
+      - indexed only when `probably.Suite` (and `probably.Testable`) are.
+      + Le `StandardPlugin` nommé `beneficence`, qui installe une phase, `GivensPhase`. Il s'active
+      + en passant le jar `beneficence.plugin` au compilateur sous la forme
+      + `-Xplugin:<path to the jar>`, et ne prend aucune option. Le plugin n'écrit d'index que dans
+      + une sortie de type répertoire, et n'enregistre les givens que lorsque `beneficence.Findable`
+      + est dans le classpath ; les suites et les tests ne sont indexés que lorsque `probably.Suite`
+      + (et `probably.Testable`) y sont.
+  refer beneficence.GivensPhase
+  entry #name
+    info
+        - the plugin's name: `beneficence`
+        + le nom du plugin : `beneficence`
+
+entry .GivensPhase
+  info
+      - the plugin phase which collects givens, suites and tests and writes their indexes
+      + la phase du plugin qui collecte les givens, les suites et les tests et écrit leurs index
+  detail
+      - Runs after `typer` and before `pickler`, over all the compilation units of a run at once.
+      - It records:
+      + S'exécute après `typer` et avant `pickler`, sur toutes les unités de compilation d'une
+      + exécution à la fois. Elle enregistre :
+
+      - - each stably accessible named given of a `Findable` type, under its typeclass;
+      - - each top-level or object-nested `object` extending `probably.Suite`, into
+      -   `META-INF/services/probably.Suite`;
+      - - each source's tests, through `TestsIndex`, into `META-INF/probably/tests`.
+      + - chaque given nommé, accessible de façon stable, d'un type `Findable`, sous sa classe de
+      +   types ;
+      + - chaque `object` de premier niveau ou imbriqué dans un objet qui étend `probably.Suite`,
+      +   dans `META-INF/services/probably.Suite` ;
+      + - les tests de chaque source, au moyen de `TestsIndex`, dans `META-INF/probably/tests`.
+
+      - Then it merges what it found into the output directory with `GivensWriter`. The phase
+      - may also report two compile errors while indexing tests: _the suite id "…" must be a
+      - letter or `_` followed by letters, digits, `_` or `-`, so that it can be typed on a
+      - command line_, for a suite whose `Topic` is not such an identifier, and _this Testable
+      - has no topic, so a test declared in this method would not be declared for it_, for a
+      - method taking a `Testable` whose `Topic` is not fixed (write `Testable of "<suite>"`, or
+      - `Testable of topic` for a type parameter `topic <: Label`).
+      + Elle fusionne ensuite ce qu'elle a trouvé dans le répertoire de sortie avec `GivensWriter`.
+      + La phase peut aussi signaler deux erreurs de compilation pendant l'indexation des tests :
+      + _the suite id "…" must be a letter or `_` followed by letters, digits, `_` or `-`, so that
+      + it can be typed on a command line_, pour une suite dont le `Topic` n'est pas un tel
+      + identifiant, et _this Testable has no topic, so a test declared in this method would not be
+      + declared for it_, pour une méthode prenant un `Testable` dont le `Topic` n'est pas fixé
+      + (écrivez `Testable of "<suite>"`, ou `Testable of topic` pour un paramètre de type
+      + `topic <: Label`).
+  refer beneficence.GivensWriter
+  refer beneficence.TestsIndex
+  entry #phaseName
+    info
+        - the phase's name: `beneficenceGivens`
+        + le nom de la phase : `beneficenceGivens`
+
+entry .Entry
+  info
+      - one recorded name and the source file which declared it
+      + un nom enregistré et le fichier source qui l'a déclaré
+  hidden
+  detail
+      - The plugin's working record, grouped by source when an index is merged. Not for direct
+      - use.
+      + L'enregistrement de travail du plugin, regroupé par source lors de la fusion d'un index. Pas
+      + destiné à un usage direct.
+  entry #fqn
+    info
+        - the fully qualified name of the given or suite
+        + le nom pleinement qualifié du given ou de la suite
+  entry #sourceFile
+    info
+        - the path of the source file which declared it
+        + le chemin du fichier source qui l'a déclaré
+
+entry .GivensWriter
+  info
+      - merges the plugin's collected entries into the index files of the output directory
+      + fusionne les entrées collectées par le plugin dans les fichiers d'index du répertoire de
+      + sortie
+  hidden
+  detail
+      - Not for direct use. Each index file is a sequence of blocks, one per source file, each
+      - headed `# source: <path>` and followed by one fully qualified name per line. A merge
+      - drops the blocks of the sources being recompiled, keeps the others in their order, and
+      - appends the new ones, then writes a unique temporary file beside the target and moves it
+      - into place atomically. With a JAR output, nothing is written.
+      + Pas destiné à un usage direct. Chaque fichier d'index est une suite de blocs, un par fichier
+      + source, chacun intitulé `# source: <path>` et suivi d'un nom pleinement qualifié par ligne.
+      + Une fusion abandonne les blocs des sources en cours de recompilation, conserve les autres
+      + dans leur ordre, et ajoute les nouveaux, puis écrit un fichier temporaire unique à côté de
+      + la cible et le déplace atomiquement en place. Avec une sortie JAR, rien n'est écrit.
+  entry .merge
+    info
+        - merges collected givens into `META-INF/givens/<typeclass>`, one file per typeclass
+        + fusionne les givens collectés dans `META-INF/givens/<typeclass>`, un fichier par classe de
+        + types
+  entry .mergeSuites
+    info
+        - merges collected suites into `META-INF/services/probably.Suite`
+        + fusionne les suites collectées dans `META-INF/services/probably.Suite`
+    detail
+        - Skipped entirely when the compilation found no suites, leaving any earlier file as it was.
+        + Entièrement ignoré quand la compilation n'a trouvé aucune suite, ce qui laisse tout
+        + fichier antérieur tel qu'il était.
+  entry .writeTests
+    info
+        - writes each source's test index into `META-INF/probably/tests`
+        + écrit l'index des tests de chaque source dans `META-INF/probably/tests`
+    detail
+        - One file per source, named from the source's file name and the first six bytes of the
+        - SHA-256 of its path, so no two modules of an assembly write the same file. A source which
+        - now declares no tests has its file deleted.
+        + Un fichier par source, nommé d'après le nom de fichier de la source et les six premiers
+        + octets du SHA-256 de son chemin : deux modules d'un assembly n'écrivent donc jamais le
+        + même fichier. Une source qui ne déclare plus aucun test voit son fichier supprimé.
+
+entry .TestsIndex
+  info
+      - the static index of Probably tests the plugin writes for each source file
+      + l'index statique des tests Probably qu'écrit le plugin pour chaque fichier source
+  hidden
+  detail
+      - Not for direct use; the format is read by test runners such as fume. Each file begins
+      - `# probably tests <version>` and `# source: <path>`, followed by tab-separated lines of
+      - six kinds — `suite`, `group`, `test`, `nest`, `call` and `open` — which place every test
+      - declaration in its suite's hierarchy by the `probably.Testable` the compiler chose for
+      - it, rather than by where it sits in the source. A test declared inside an `impromptu`
+      - block is left out, and an `open` line marks the place as having more tests than are
+      - listed. Backslashes, tabs and newlines in a field are escaped with a backslash, and `\*`
+      - stands for a part of a name only known at runtime.
+      + Pas destiné à un usage direct ; le format est lu par des lanceurs de tests tels que fume.
+      + Chaque fichier commence par `# probably tests <version>` et `# source: <path>`, suivis de
+      + lignes séparées par des tabulations de six sortes — `suite`, `group`, `test`, `nest`, `call`
+      + et `open` — qui placent chaque déclaration de test dans la hiérarchie de sa suite selon le
+      + `probably.Testable` que le compilateur a choisi pour elle, plutôt que selon sa place dans le
+      + code source. Un test déclaré dans un bloc `impromptu` est omis, et une ligne `open` marque
+      + l'endroit comme ayant plus de tests que ceux énumérés. Les barres obliques inverses, les
+      + tabulations et les sauts de ligne dans un champ sont échappés par une barre oblique inverse,
+      + et `\*` représente une partie d'un nom connue seulement à l'exécution.
+  entry .version
+    info
+        - the version of the index format, written in each file's first line
+        + la version du format d'index, écrite sur la première ligne de chaque fichier
+  entry .index
+    info
+        - the index lines for one compilation unit
+        + les lignes d'index d'une unité de compilation

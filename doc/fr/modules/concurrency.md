@@ -1,0 +1,809 @@
+- ## Concurrency
++ ## Concurrence
+
+- ### About
++ ### Présentation
+
+- Concurrency is structured. A task is spawned inside a supervised scope, which owns it, and
+- the scope does not complete until its tasks have:
++ La concurrence est structurée. Une tâche est lancée à l'intérieur d'une portée supervisée,
++ qui la possède, et la portée ne se termine pas avant que ses tâches ne se soient
++ terminées :
+
+- - A task runs a computation on a thread, and gives a result, which is awaited.
+- - A failure in a task propagates to the scope. It does not vanish.
+- - Canceling a scope cancels everything beneath it.
++ - Une tâche exécute un calcul sur un thread et donne un résultat, que l'on attend.
++ - Un échec dans une tâche se propage à la portée. Il ne disparaît pas.
++ - Annuler une portée annule tout ce qui se trouve en dessous.
+
+- Whether tasks run on the JVM's platform threads, or on its lightweight virtual threads, is a
+- choice which is made in scope.
+- [Structured concurrency](../../philosophy/structured-concurrency.md) sets out the reasoning
+- behind this shape.
++ Que les tâches s'exécutent sur les threads de plateforme de la JVM ou sur ses threads
++ virtuels légers est un choix qui se fait dans la portée.
++ [La concurrence structurée](../../philosophy/structured-concurrency.md) expose le
++ raisonnement derrière cette forme.
+
+- ### On concurrency
++ ### À propos de la concurrence
+
+- Unstructured concurrency leaks. A thread which is started with no owner can outlive the code
+- which started it. An exception which is thrown on it disappears, unless someone thought to
+- catch it. Canceling a piece of work means tracking down every thread which it spawned. The
+- lifetimes of concurrent tasks bear no relation to the structure of the code, so it is hard
+- to reason about what is still running, and what happened to it.
++ La concurrence non structurée fuit. Un thread démarré sans propriétaire peut survivre au
++ code qui l'a démarré. Une exception levée sur ce thread disparaît, à moins que quelqu'un
++ n'ait pensé à l'intercepter. Annuler un travail implique de retrouver chaque thread qu'il a
++ lancé. La durée de vie des tâches concurrentes n'a aucun rapport avec la structure du
++ code ; il est donc difficile de raisonner sur ce qui s'exécute encore, et sur ce qu'il en
++ est advenu.
+
+- Here concurrent work has the same shape as ordinary blocks. Every task is a child of the
+- scope which spawned it, and a scope waits for its children before it finishes, so no task
+- outlives its scope. A failure travels up to the scope, and canceling the scope cancels its
+- children. A concurrent program therefore nests, and its structure is visible.
++ Ici, le travail concurrent a la même forme que les blocs ordinaires. Chaque tâche est un
++ enfant de la portée qui l'a lancée, et une portée attend ses enfants avant de se terminer,
++ si bien qu'aucune tâche ne survit à sa portée. Un échec remonte jusqu'à la portée, et
++ annuler la portée annule ses enfants. Un programme concurrent s'imbrique donc, et sa
++ structure est visible.
+
+- Everything comes from the `soundness` package. A thread model, and a policy for unfinished
+- tasks, are in scope, and the last import lets the samples print their results:
++ Tout provient du package `soundness`. Un modèle de threads et une politique pour les
++ tâches inachevées sont dans la portée, et le dernier import permet aux exemples d'afficher
++ leurs résultats :
+
+```scala
+import soundness.*
+import threads.virtualThreads
+import probates.cancelProbate
+import strategies.throwUnsafely
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+```
+
+- ### A supervised scope
++ ### Une portée supervisée
+
+- `supervise` opens a scope, which owns the tasks that are spawned within it. It does not
+- return until those tasks have settled, so concurrent work has a clear boundary. Outside one,
+- no task can be spawned:
++ `supervise` ouvre une portée, qui possède les tâches lancées en son sein. Elle ne rend la
++ main que lorsque ces tâches sont réglées, si bien que le travail concurrent a une
++ frontière claire. En dehors d'une telle portée, aucune tâche ne peut être lancée :
+
+```scala fuel
+compile
+errors show
+##
+async(1 + 1)
+```
+
+- ### Spawning a task
++ ### Lancer une tâche
+
+- `async` spawns a task, which runs concurrently. `await` waits for the task, and gives its
+- result:
++ `async` lance une tâche, qui s'exécute de manière concurrente. `await` attend la tâche et
++ donne son résultat :
+
+```scala
+def expensiveComputation(): Int = (1 to 1000000).sum
+
+val sum = supervise:
+  val task = async(expensiveComputation())
+  task.await()
+```
+
+```scala fuel
+run
+##
+Out.println(sum.show)
+```
+
+- The task belongs to the enclosing scope, so the scope accounts for it, whether or not it is
+- explicitly awaited.
++ La tâche appartient à la portée englobante, qui en tient donc compte, qu'elle soit
++ explicitement attendue ou non.
+
+- Parenthood travels through a `Monitor`. Both `supervise` and `async` introduce one into
+- their bodies, but `async` also *consumes* one, and `supervise` does not. That is what makes
+- `supervise` the root of a hierarchy, and `async` a branch beneath it, and it is why every
+- `async` must ultimately stem from a `supervise`. Where several monitors are in scope, the
+- innermost wins, so a task which is nested three deep is a child of the task which
+- immediately encloses it, not of the scope at the top.
++ La filiation passe par un `Monitor`. `supervise` et `async` en introduisent tous deux un
++ dans leur corps, mais `async` en *consomme* aussi un, ce que ne fait pas `supervise`. C'est
++ ce qui fait de `supervise` la racine d'une hiérarchie, et de `async` une branche en
++ dessous, et c'est pourquoi tout `async` doit en définitive provenir d'un `supervise`.
++ Lorsque plusieurs moniteurs sont dans la portée, le plus interne l'emporte, si bien qu'une
++ tâche imbriquée sur trois niveaux est l'enfant de la tâche qui l'englobe immédiatement, et
++ non de la portée au sommet.
+
+- ### Why a parent waits
++ ### Pourquoi un parent attend
+
+- A task may not finish, whether by producing a result or by being canceled, until its
+- children have finished. That is what makes a completed task safe to reason about. Consider a
+- parent which returns almost immediately, while a child goes on counting. What becomes of the
+- child is decided by the [probate](#cancellation-in-both-directions) in scope, and under
+- `awaitProbate` the parent waits for it:
++ Une tâche ne peut se terminer, que ce soit en produisant un résultat ou en étant annulée,
++ avant que ses enfants ne se soient terminés. C'est ce qui permet de raisonner sans risque
++ sur une tâche terminée. Prenons un parent qui rend la main presque immédiatement, pendant
++ qu'un enfant continue de compter. Le sort de l'enfant est décidé par le
++ [probate](#cancellation-in-both-directions) dans la portée, et sous `awaitProbate` le
++ parent l'attend :
+
+```scala
+var written = 0
+
+def outcome(): Text =
+  import probates.awaitProbate
+
+  supervise:
+    val parent = async:
+      async:
+        for i <- 0 to 10 do
+          snooze(0.01*Second)
+          written += 1
+
+      t"complete"
+
+    parent.await()
+```
+
+- Nothing stands between the parent and its result. Were `await` to return at once, `written`
+- would be read while the child was still counting. Instead, `parent.await()` does not return
+- until the child has settled. Under `awaitProbate` that means all eleven increments have been
+- made. Under `cancelProbate`, the child is canceled instead, and the parent still does not
+- finish until that has happened.
++ Rien ne sépare le parent de son résultat. Si `await` rendait la main tout de suite,
++ `written` serait lu pendant que l'enfant compte encore. Au lieu de cela, `parent.await()`
++ ne rend la main que lorsque l'enfant est réglé. Sous `awaitProbate`, cela signifie que les
++ onze incréments ont tous été effectués. Sous `cancelProbate`, l'enfant est plutôt annulé,
++ et le parent ne se termine toujours pas avant que ce soit fait.
+
+- That is the invariant in general. Once a task has been awaited, no further execution can
+- take place on the resources which were captured in its body, including any which escaped
+- through a child.
++ C'est l'invariant en général. Une fois qu'une tâche a été attendue, plus aucune exécution
++ ne peut avoir lieu sur les ressources capturées dans son corps, y compris celles qui se
++ sont échappées via un enfant.
+
+- ### Combining tasks
++ ### Combiner des tâches
+
+- Tasks compose. A collection of tasks is awaited together with `sequence`. The first to
+- finish is taken with `race`. `map` and `bind` derive one task from another:
++ Les tâches se composent. Une collection de tâches s'attend d'un bloc avec `sequence`. La
++ première à se terminer se récupère avec `race`. `map` et `bind` dérivent une tâche d'une
++ autre :
+
+```scala
+val together = supervise(List(async(1), async(2), async(3)).sequence.await())
+val chained = supervise(async(3).bind(n => async(n + 4)).await())
+```
+
+```scala fuel
+run
+##
+Out.println(together.inspect)
+Out.println(chained.show)
+```
+
+- `sequence` runs its tasks in parallel, and collects the results *in order*, so the order of
+- the results says nothing about the order in which the tasks finished. `race` gives the
+- result of the first to finish, and the rest are canceled, since their results were not
+- wanted.
++ `sequence` exécute ses tâches en parallèle et rassemble les résultats *dans l'ordre*, si
++ bien que l'ordre des résultats ne dit rien de l'ordre dans lequel les tâches se sont
++ terminées. `race` donne le résultat de la première à se terminer, et les autres sont
++ annulées, puisque leurs résultats ne sont pas voulus.
+
+- ### Bounded parallelism
++ ### Parallélisme borné
+
+- A task is a thread, and starting one costs a few microseconds, so a thousand cheap jobs
+- should not become a thousand tasks. `concurrently` runs numbered jobs across a fixed number
+- of tasks. Each task takes the next job from a shared counter, and the results are returned
+- in the order of the jobs, once every task has finished:
++ Une tâche est un thread, et en démarrer une coûte quelques microsecondes : mille travaux
++ peu coûteux ne devraient donc pas devenir mille tâches. `concurrently` répartit des
++ travaux numérotés sur un nombre fixe de tâches. Chaque tâche prend le travail suivant
++ depuis un compteur partagé, et les résultats sont renvoyés dans l'ordre des travaux, une
++ fois que toutes les tâches sont terminées :
+
+```scala
+val squares = supervise(concurrently(1000, 8)(i => i*i))
+```
+
+```scala fuel
+run
+##
+Out.println(squares.to[List].excerpt(0, 5).inspect)
+```
+
+- The cost of spawning is paid eight times, not a thousand. No job runs before an earlier one
+- has been claimed, so the load balances itself: a slow job simply holds its task, while the
+- others continue through the rest. An exception in a job fails the task which it ran on, and
+- is thrown again when the tasks are joined.
++ Le coût du lancement est payé huit fois, et non mille. Aucun travail ne s'exécute avant
++ qu'un travail antérieur n'ait été réclamé, si bien que la charge s'équilibre d'elle-même :
++ un travail lent occupe simplement sa tâche, pendant que les autres poursuivent avec le
++ reste. Une exception dans un travail fait échouer la tâche sur laquelle il s'exécutait, et
++ est levée à nouveau lorsque les tâches sont jointes.
+
+- ### Naming tasks
++ ### Nommer les tâches
+
+- `task` is `async` with a name. The name is checked at [compiletime] against the rules for a
+- task's [name](names.md). It has no path separators, since names compose into a hierarchy
+- which mirrors the tree of scopes. Inside the task, `monitor.name` is the task's own name,
+- and `monitor.stack` is the full path:
++ `task` est un `async` avec un nom. Le nom est vérifié [à la compilation][compilation]
++ selon les règles du [nom](names.md) d'une tâche. Il ne contient pas de séparateur de
++ chemin, puisque les noms se composent en une hiérarchie qui reflète l'arbre des portées. À
++ l'intérieur de la tâche, `monitor.name` est le nom propre de la tâche, et `monitor.stack`
++ le chemin complet :
+
+```scala
+import Async.nominative
+
+val worker = supervise(task(n"worker")(monitor.name).await())
+```
+
+```scala fuel
+run
+##
+Out.println(worker.inspect)
+```
+
+- Named tasks make a running program legible. A [stack trace](stack-traces.md), a dump of the
+- monitors or a [debugger](debugging.md) shows `server/connection-4/reader`, not an anonymous
+- thread number.
++ Les tâches nommées rendent un programme en cours d'exécution lisible. Une
++ [trace de pile](stack-traces.md), un vidage des moniteurs ou un
++ [débogueur](debugging.md) affiche `server/connection-4/reader`, et non un numéro de thread
++ anonyme.
+
+- ### Cancellation
++ ### Annulation
+
+- A task is canceled with `cancel`. A task which can be canceled cooperates, by pausing at
+- points where it can be interrupted. A `snooze` is such a point, so a task which is sleeping
+- in one wakes to its cancellation, and does not run on:
++ Une tâche s'annule avec `cancel`. Une tâche qui peut être annulée coopère, en marquant des
++ pauses aux points où elle peut être interrompue. Un `snooze` est un tel point : une tâche
++ qui y dort se réveille à son annulation, et ne continue pas :
+
+```scala
+val interrupted = supervise:
+  val task = async:
+    snooze(10.0*Second)
+    expensiveComputation()
+
+  task.cancel()
+  t"canceled without waiting ten seconds"
+```
+
+```scala fuel
+run
+##
+Out.println(interrupted)
+```
+
+- Work which does not pause has to volunteer its own cancellation points. `relent()` is such a
+- point. While the task is running normally, it does nothing. If the task has been canceled,
+- it stops there, without producing a value. A task whose body never calls `relent()`, and
+- never pauses, cannot be canceled at all, and must run to completion.
++ Un travail qui ne marque pas de pause doit proposer lui-même ses points d'annulation.
++ `relent()` est un tel point. Tant que la tâche s'exécute normalement, il ne fait rien. Si
++ la tâche a été annulée, elle s'y arrête, sans produire de valeur. Une tâche dont le corps
++ n'appelle jamais `relent()`, et qui ne marque jamais de pause, ne peut pas du tout être
++ annulée, et doit s'exécuter jusqu'au bout.
+
+```scala fuel
+typecheck
+##
+supervise:
+  val task = async:
+    for i <- 0 to 10 do
+      sleep(0.1*Second)
+      relent()
+      written += 1
+
+  task.cancel()
+```
+
+- A task which is canceled at the `relent()` never reaches the increment on the next line. It
+- does still wait out the pause first, because `sleep` cannot be interrupted, which is the
+- distinction that the next section is about.
++ Une tâche annulée au `relent()` n'atteint jamais l'incrément de la ligne suivante. Elle
++ attend tout de même la fin de la pause d'abord, car `sleep` ne peut pas être interrompu,
++ et c'est cette distinction qui fait l'objet de la section suivante.
+
+- ### Pausing
++ ### Pauses
+
+- Two methods stop the current task temporarily. They differ in one way: whether the pause can
+- end early, because the task was canceled.
++ Deux méthodes arrêtent temporairement la tâche courante. Elles diffèrent sur un point : la
++ pause peut-elle se terminer plus tôt, parce que la tâche a été annulée ?
+
+```tabular
+- column  Method
+- column  When the task is canceled during the pause
+- row  `snooze`  the task wakes at once: it is a cancellation point
+- row  `sleep`  the pause continues for the time which remains, so it always lasts its full length
++ column  Méthode
++ column  Lorsque la tâche est annulée pendant la pause
++ row  `snooze`  la tâche se réveille aussitôt : c'est un point d'annulation
++ row  `sleep`  la pause continue pour le temps restant : elle dure donc toujours sa durée complète
+```
+
+- The names are chosen to be remembered, not looked up. A *snooze* is the button on an alarm
+- clock, and can be cut short by a second alarm, while a *sleep* is slept through.
++ Les noms sont choisis pour être retenus, et non pour être consultés. Le *snooze* est le
++ bouton de répétition d'un réveil, et une seconde sonnerie peut l'écourter, tandis qu'un
++ *sleep* se dort d'une traite.
+
+- Each takes either a *duration* or an *instant*, and the type of the argument says which is
+- meant. A duration pauses for that long, and an instant pauses until it arrives:
++ Chacune prend soit une *durée*, soit un *instant*, et le type de l'argument indique lequel
++ est voulu. Une durée fait une pause de cette longueur, et un instant fait une pause
++ jusqu'à ce qu'il arrive :
+
+```scala fuel
+typecheck
+##
+supervise:
+  snooze(2.0*Second)
+  snooze(now() + 2.0*Second)
+  sleep(2.0*Second)
+  sleep(now() + 2.0*Second)
+```
+
+- The bound which both share is `Schedulable`, which any type that is
+- `Abstractable across Durations` or `Abstractable across Instants` satisfies. A
+- [quantity](quantities.md) of time, a [`Timespan`](time.md#durations-and-timespans) and an
+- [`Instant`](time.md#instants) are therefore all accepted without conversion.
++ La borne qu'elles partagent est `Schedulable`, que satisfait tout type qui est
++ `Abstractable across Durations` ou `Abstractable across Instants`. Une
++ [quantité](quantities.md) de temps, un [`Timespan`](time.md#durations-and-timespans) et un
++ [`Instant`](time.md#instants) sont donc tous acceptés sans conversion.
+
+- #### Units
++ #### Unités
+
+- Both take a *typed* duration or instant, such as `0.2*Second` or `10*Minute`, and a typed
+- value cannot be misread. A bare `Long` can, so nothing interprets one until a unit has been
+- chosen by name:
++ Les deux prennent une durée ou un instant *typé*, comme `0.2*Second` ou `10*Minute`, et
++ une valeur typée ne peut pas être mal interprétée. Un `Long` nu le peut ; rien ne
++ l'interprète donc tant qu'une unité n'a pas été choisie par son nom :
+
+```scala fuel
+compile
+errors show
+##
+supervise:
+  snooze(200L)
+```
+
+- The package `abstractables` has four readings of a `Long`:
++ Le package `abstractables` propose quatre interprétations d'un `Long` :
+
+```tabular
+- column  Given
+- column  Reads a `Long` as
+- row  `nanosecondsAbstractable`  a duration in nanoseconds
+- row  `microsecondsAbstractable`  a duration in microseconds
+- row  `millisecondsAbstractable`  a duration in milliseconds
+- row  `epochMillisecondsAbstractable`  an instant, in milliseconds since the epoch
++ column  Given
++ column  Interprète un `Long` comme
++ row  `nanosecondsAbstractable`  une durée en nanosecondes
++ row  `microsecondsAbstractable`  une durée en microsecondes
++ row  `millisecondsAbstractable`  une durée en millisecondes
++ row  `epochMillisecondsAbstractable`  un instant, en millisecondes depuis l'epoch
+```
+
+```scala
+import abstractables.millisecondsAbstractable
+```
+
+```scala fuel
+run
+##
+supervise:
+  snooze(200L)
+  Out.println(t"paused for 200 milliseconds")
+```
+
+- The three readings as a duration share a type, so exactly one of them may be imported into
+- a file. The package `instantiables` mirrors all four, for the opposite direction. A reading
+- as a duration and the reading as an instant may not both be in scope where a bare `Long` is
+- passed, because nothing at the call could then say which was meant, and the two are reported
+- as ambiguous.
++ Les trois interprétations en tant que durée partagent un type, si bien qu'une seule
++ d'entre elles peut être importée dans un fichier. Le package `instantiables` reflète les
++ quatre, pour la direction opposée. Une interprétation en tant que durée et
++ l'interprétation en tant qu'instant ne peuvent pas être toutes deux dans la portée là où
++ un `Long` nu est passé, car rien dans l'appel ne pourrait alors dire laquelle est voulue,
++ et les deux sont signalées comme ambiguës.
+
+- The distinction matters, because the underlying representation of a duration is
+- *nanoseconds*. An unqualified `snooze(200L)`, read in nanoseconds, returns almost
+- immediately, and a loop around it is a busy loop, with nothing at the call to say so.
++ La distinction compte, car la représentation sous-jacente d'une durée est en
++ *nanosecondes*. Un `snooze(200L)` non qualifié, interprété en nanosecondes, rend la main
++ presque immédiatement, et une boucle qui l'entoure est une boucle d'attente active, sans
++ que rien dans l'appel ne le signale.
+
+- ### Retrying
++ ### Nouvelles tentatives
+
+- Work which fails for a transient reason should be tried again. The *schedule* on which it is
+- retried is a value, not a loop written at each use. `retry` runs a block under the
+- `Tenacity` in scope, which decides how long to wait before each attempt, and when to stop.
+- The block is lent two operations: `persevere()` asks for another attempt, and `surrender()`
+- gives up at once.
++ Un travail qui échoue pour une raison passagère doit être retenté. Le *calendrier* selon
++ lequel il est retenté est une valeur, et non une boucle écrite à chaque utilisation.
++ `retry` exécute un bloc sous la `Tenacity` dans la portée, qui décide combien de temps
++ attendre avant chaque tentative, et quand s'arrêter. Deux opérations sont prêtées au
++ bloc : `persevere()` demande une nouvelle tentative, et `surrender()` abandonne aussitôt.
+
+```scala
+import retryTenacities.exponentialTenTimesTenacity
+
+var attempts = 0
+
+def fetchRemoteValue(): Optional[Text] =
+  attempts += 1
+  if attempts < 3 then Unset else t"payload"
+
+val fetched = supervise:
+  retry: (surrender, persevere) ?=>
+    fetchRemoteValue().or(persevere())
+```
+
+```scala fuel
+run
+##
+Out.println(fetched)
+Out.println(attempts.show)
+```
+
+- The schedules which are provided, in the package `retryTenacities`, cover the usual choices:
++ Les calendriers fournis, dans le package `retryTenacities`, couvrent les choix habituels :
+
+```tabular
+- column  Given
+- column  Delay before a retry
+- column  Attempts
+- row  `exponentialForeverTenacity`  10ms, growing by a factor of 1.2 each time  unlimited
+- row  `exponentialFiveTimesTenacity`  10ms, growing by a factor of 1.2 each time  5
+- row  `exponentialTenTimesTenacity`  10ms, growing by a factor of 1.2 each time  10
+- row  `fixedNoDelayForeverTenacity`  none  unlimited
+- row  `fixedNoDelayFiveTimesTenacity`  none  5
+- row  `fixedNoDelayTenTimesTenacity`  none  10
++ column  Given
++ column  Délai avant une nouvelle tentative
++ column  Tentatives
++ row  `exponentialForeverTenacity`  10 ms, multiplié par 1,2 à chaque fois  illimitées
++ row  `exponentialFiveTimesTenacity`  10 ms, multiplié par 1,2 à chaque fois  5
++ row  `exponentialTenTimesTenacity`  10 ms, multiplié par 1,2 à chaque fois  10
++ row  `fixedNoDelayForeverTenacity`  aucun  illimitées
++ row  `fixedNoDelayFiveTimesTenacity`  aucun  5
++ row  `fixedNoDelayTenTimesTenacity`  aucun  10
+```
+
+- `Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of
+- attempts raises a `Tenacity.Error`, which names how many were made.
++ `Tenacity.exponential` et `Tenacity.fixed`, avec `limit`, en construisent d'autres.
++ Épuiser les tentatives lève une `Tenacity.Error`, qui indique combien ont été effectuées.
+
+- A body therefore tells a failure which is worth retrying from one which never will be, and
+- the schedule decides the rest.
++ Un corps distingue donc un échec qui vaut la peine d'être retenté d'un échec qui ne le
++ vaudra jamais, et le calendrier décide du reste.
+
+- ### Promises
++ ### Promesses
+
+- A `Promise` is a value which will be supplied later, perhaps by another thread. One side
+- awaits it, and the other fulfills it, which is how work which runs elsewhere hands back a
+- result:
++ Une `Promise` est une valeur qui sera fournie plus tard, peut-être par un autre thread. Un
++ côté l'attend, et l'autre la tient, et c'est ainsi qu'un travail exécuté ailleurs renvoie
++ un résultat :
+
+```scala
+val promised = supervise:
+  val promise = Promise[Int]()
+  daemon(promise.fulfill(7))
+  promise.await()
+```
+
+```scala fuel
+run
+##
+Out.println(promised.show)
+```
+
+- ### Daemons
++ ### Démons
+
+- A `daemon` is work which is started and then left: a background loop, or a listener. The
+- scope does not wait for it, and cancels it when the scope ends. It runs for the life of its
+- scope, and no longer.
++ Un `daemon` est un travail que l'on démarre puis que l'on laisse : une boucle en
++ arrière-plan, ou un écouteur. La portée ne l'attend pas, et l'annule lorsqu'elle se
++ termine. Il s'exécute pendant la durée de vie de sa portée, et pas plus longtemps.
+
+- A daemon's body is *hygienic*: it cannot capture an error handler from the code which
+- spawned it. That is deliberate. The spawning code has already moved on, so a handler there
+- does not, in any meaningful sense, enclose the daemon, and delivering an error to it would
+- mean resuming a computation which has finished. A daemon which fails therefore escalates as
+- a `Fault`, which a program intercepts where it handles the unexpected. It never silently
+- reaches a handler which was not intended for it.
++ Le corps d'un démon est *hygiénique* : il ne peut pas capturer de gestionnaire d'erreurs
++ du code qui l'a lancé. C'est délibéré. Le code qui l'a lancé est déjà passé à autre chose,
++ si bien qu'un gestionnaire situé là n'englobe pas le démon en un sens quelconque, et lui
++ transmettre une erreur reviendrait à reprendre un calcul déjà terminé. Un démon qui échoue
++ remonte donc sous forme de `Fault`, qu'un programme intercepte là où il traite
++ l'imprévu. Il n'atteint jamais silencieusement un gestionnaire qui ne lui était pas
++ destiné.
+
+- A long-lived service is a different thing, which [Daemons](daemons.md) describes.
++ Un service de longue durée est une autre chose, que décrit [Démons](daemons.md).
+
+- ### Timeouts
++ ### Délais d'expiration
+
+- An `await` may be given a duration, after which it raises an `Async.Error` instead of
+- waiting on. A task which has taken too long is thereby abandoned, at a point which the code
+- chooses:
++ On peut donner une durée à un `await`, au-delà de laquelle il lève une `Async.Error` au
++ lieu de continuer d'attendre. Une tâche qui a pris trop de temps est ainsi abandonnée, à
++ un point que le code choisit :
+
+```scala
+def abandoned(): Optional[Unit] = supervise:
+  val slow = async(sleep(10.0*Second))
+  safely(slow.await(0.1*Second))
+```
+
+- `safely` turns the error into `Unset`, so the caller sees an absent result when the deadline
+- passes before the task finishes.
++ `safely` transforme l'erreur en `Unset`, si bien que l'appelant voit un résultat absent
++ lorsque l'échéance passe avant que la tâche ne se termine.
+
+- ### Cancellation in both directions
++ ### L'annulation dans les deux sens
+
+- Canceling a scope cancels its children. The *probate* decides what happens to a child which
+- is still running when the body of its parent completes:
++ Annuler une portée annule ses enfants. Le *probate* décide de ce qu'il advient d'un enfant
++ qui s'exécute encore lorsque le corps de son parent se termine :
+
+```tabular
+- column  Probate
+- column  An unfinished child
+- row  `cancelProbate`  is canceled
+- row  `awaitProbate`  is waited for
+- row  `failProbate`  makes the parent's `await` raise a checked `Async.Error`
+- row  `panicProbate`  makes the parent's `await` panic
++ column  Probate
++ column  Un enfant inachevé
++ row  `cancelProbate`  est annulé
++ row  `awaitProbate`  est attendu
++ row  `failProbate`  fait lever au `await` du parent une `Async.Error` vérifiée
++ row  `panicProbate`  fait paniquer le `await` du parent
+```
+
+- Which to choose follows from what the children do:
++ Le choix découle de ce que font les enfants :
+
+- - Work which changes state wants `awaitProbate`, so that every child runs to its end.
+-   Writing to a disk is an example, where a write which is half finished leaves things
+-   inconsistent.
+- - Pure work, with no side effects, can take `cancelProbate`, and stop wherever it happens to
+-   be, since nothing observes the difference.
+- - Code whose design is to await every task which it spawns wants a forgotten `await` to be
+-   an error, not a silent wait. That is what `failProbate` and `panicProbate` are for,
+-   checked or unchecked, according to how the program handles the unexpected.
++ - Un travail qui modifie un état demande `awaitProbate`, pour que chaque enfant s'exécute
++   jusqu'au bout. L'écriture sur un disque en est un exemple : une écriture à moitié
++   terminée laisse les choses dans un état incohérent.
++ - Un travail pur, sans effets de bord, peut prendre `cancelProbate`, et s'arrêter là où il
++   se trouve, puisque rien n'observe la différence.
++ - Un code conçu pour attendre chaque tâche qu'il lance veut qu'un `await` oublié soit une
++   erreur, et non une attente silencieuse. C'est à cela que servent `failProbate` et
++   `panicProbate`, vérifiée ou non vérifiée, selon la manière dont le programme traite
++   l'imprévu.
+
+- Cancellation also runs upward. A task which fails propagates its failure to the scope which
+- owns it, and the scope cancels its other children. Work which has become pointless therefore
+- stops, and does not go on consuming resources on behalf of a computation which has already
+- failed.
++ L'annulation remonte aussi. Une tâche qui échoue propage son échec à la portée qui la
++ possède, et la portée annule ses autres enfants. Un travail devenu inutile s'arrête donc,
++ et ne continue pas à consommer des ressources pour le compte d'un calcul qui a déjà
++ échoué.
+
+- ### Threads
++ ### Threads
+
+- The thread model is chosen by import, from the package `threads`:
++ Le modèle de threads se choisit par import, depuis le package `threads` :
+
+```tabular
+- column  Thread model
+- column  Runs each task on
+- row  `platformThreads`  a platform thread of its own
+- row  `virtualThreads`  a virtual thread of its own; fails at runtime before Java 21
+- row  `adaptiveThreads`  a virtual thread where they exist, and a platform thread where they do not
+- row  `pooledThreads`  a reusable carrier thread: virtual on the JVM, platform on Scala Native
+- row  `javascriptThreads`  the Scala.js event loop
++ column  Modèle de threads
++ column  Exécute chaque tâche sur
++ row  `platformThreads`  un thread de plateforme propre
++ row  `virtualThreads`  un thread virtuel propre ; échoue à l'exécution avant Java 21
++ row  `adaptiveThreads`  un thread virtuel lorsqu'ils existent, et un thread de plateforme sinon
++ row  `pooledThreads`  un thread porteur réutilisable : virtuel (JVM), de plateforme (Scala Native)
++ row  `javascriptThreads`  la boucle d'événements de Scala.js
+```
+
+- Virtual threads are cheap enough to spawn in great numbers. `adaptiveThreads` is what an
+- application which cannot dictate its JVM should import. Under `javascriptThreads`, where
+- there are no threads at all, the same code, with `supervise`, `async` and `await`, runs
+- unchanged.
++ Les threads virtuels sont assez peu coûteux pour être lancés en très grand nombre.
++ `adaptiveThreads` est ce que doit importer une application qui ne peut pas imposer sa JVM.
++ Sous `javascriptThreads`, où il n'y a aucun thread, le même code, avec `supervise`,
++ `async` et `await`, s'exécute sans modification.
+
+- `pooledThreads` hands each new task to an idle carrier, where one is waiting, and starts
+- another only where none is. Handing a task over costs a few hundred nanoseconds, where
+- starting and joining a thread costs a few microseconds, so it suits fine-grained work: a
+- task for each element, or a spawn and a join inside a loop. A task which blocks keeps its
+- carrier, and the pool grows, so it can never starve, and cancellation is delivered to the
+- task, not to the carrier. The price is that a task no longer has a thread of its own.
+- Thread-locals persist across the tasks which a carrier runs, and a thread dump shows
+- carriers, where the tree of monitors shows tasks.
++ `pooledThreads` confie chaque nouvelle tâche à un porteur inactif, s'il en attend un, et
++ n'en démarre un autre que s'il n'y en a aucun. Confier une tâche coûte quelques centaines
++ de nanosecondes, alors que démarrer et joindre un thread coûte quelques microsecondes : il
++ convient donc au travail à grain fin, une tâche par élément, ou un lancement et une
++ jointure dans une boucle. Une tâche qui bloque garde son porteur, et le pool grandit, si
++ bien qu'il ne peut jamais être affamé, et l'annulation est transmise à la tâche, et non au
++ porteur. Le prix à payer est qu'une tâche n'a plus de thread propre. Les variables locales
++ de thread persistent d'une tâche à l'autre sur un même porteur, et un vidage des threads
++ montre les porteurs, là où l'arbre des moniteurs montre les tâches.
+
+- ### Intercepting the VM
++ ### Intercepter la VM
+
+- Some events belong to no scope: the VM shutting down, an exception escaping from a thread
+- which nothing owns, the garbage collector running. These are intercepted on `Vm`, which
+- stands for the running virtual machine. The action runs each time the event occurs, until
+- the `Hook` which is returned is canceled:
++ Certains événements n'appartiennent à aucune portée : l'arrêt de la VM, une exception qui
++ s'échappe d'un thread que rien ne possède, l'exécution du ramasse-miettes. Ils
++ s'interceptent sur `Vm`, qui représente la machine virtuelle en cours d'exécution. L'action
++ s'exécute chaque fois que l'événement se produit, jusqu'à ce que le `Hook` renvoyé soit
++ annulé :
+
+```scala fuel
+typecheck
+##
+val hook = Vm.intercept[Fault]:
+  Out.println(t"A thread died")
+
+hook.cancel()
+```
+
+- `Vm.intercept[Shutdown]` runs its action once, when the VM exits, whether through
+- `System.exit`, through the last non-daemon thread ending, or on a `SIGINT` or `SIGTERM`.
+- That is where a server removes the socket file which it listened on, so that a stale one
+- never greets the next process. Shutdown actions run on threads of their own, concurrently,
+- and in no particular order. An exception in one is swallowed, so that it cannot prevent the
+- others from running:
++ `Vm.intercept[Shutdown]` exécute son action une seule fois, lorsque la VM s'arrête, que ce
++ soit par `System.exit`, par la fin du dernier thread non démon, ou sur un `SIGINT` ou un
++ `SIGTERM`. C'est là qu'un serveur supprime le fichier de socket sur lequel il écoutait,
++ pour qu'un fichier périmé n'accueille jamais le processus suivant. Les actions d'arrêt
++ s'exécutent sur leurs propres threads, de manière concurrente, et dans un ordre
++ quelconque. Une exception dans l'une d'elles est absorbée, pour qu'elle ne puisse pas
++ empêcher les autres de s'exécuter :
+
+```scala fuel
+typecheck
+##
+Vm.intercept[Shutdown]:
+  Out.println(t"Exiting")
+```
+
+- [Environment](environment.md#the-machine) describes the other facts about the machine.
++ [Environnement](environment.md#the-machine) décrit les autres caractéristiques de la
++ machine.
+
+- ### Suspension as an effect
++ ### La suspension comme effet
+
+- Waiting is not free, and it is not invisible. Awaiting a task or a promise, sleeping, and
+- yielding all *suspend* the running task, and each demands a `Monitor` [capability] in scope.
+- A method which can block therefore says so in its signature, exactly as a method which can
+- fail says so with [`raises`][raises].
++ Attendre n'est pas gratuit, et ce n'est pas invisible. Attendre une tâche ou une promesse,
++ dormir et céder la main *suspendent* tous la tâche en cours, et chacun exige une
++ [capacité] `Monitor` dans la portée. Une méthode qui peut bloquer le dit donc dans sa
++ signature, exactement comme une méthode qui peut échouer le dit avec [`raises`][raises].
+
+- That suspension is allowed to be *blocking* is itself a decision of design which is worth
+- defending, since blocking has a poor reputation. It began as a convenience: if a value is
+- not ready, wait for it, instead of failing, or writing out both the ready case and the
+- unready one. The convenience is real. Code which blocks is code written in terms of values,
+- not callbacks, which is [direct style](../../philosophy/direct-style.md).
++ Que la suspension puisse être *bloquante* est en soi un choix de conception qui mérite
++ d'être défendu, car le blocage a mauvaise réputation. Il est né comme une commodité : si
++ une valeur n'est pas prête, on l'attend, au lieu d'échouer ou d'écrire à la fois le cas
++ prêt et le cas non prêt. La commodité est réelle. Un code qui bloque est un code écrit en
++ termes de valeurs, et non de callbacks, ce qui est le
++ [style direct](../../philosophy/direct-style.md).
+
+- What earned blocking its reputation was the cost. A platform thread which is waiting is a
+- thread which is not working, and an application which holds thousands of them spends more of
+- its capacity waiting than computing.
++ Ce qui a valu au blocage sa réputation, c'est son coût. Un thread de plateforme qui attend
++ est un thread qui ne travaille pas, et une application qui en détient des milliers
++ consacre davantage de sa capacité à attendre qu'à calculer.
+
+- Virtual threads change that arithmetic. Orders of magnitude more calls can sit in a blocking
+- state at once, without meaningful overhead. The convenience can therefore be had at the
+- price which the alternatives based on callbacks were invented to avoid. Blocking where it
+- reads most clearly, on threads which are cheap enough that blocking does not matter, is the
+- shape of everything here. It is the shape of [streaming](streams.md) too, which pulls on the
+- consumer's own thread for the same reason.
++ Les threads virtuels changent ce calcul. Des appels plus nombreux de plusieurs ordres de
++ grandeur peuvent se trouver en état bloquant en même temps, sans surcoût notable. On peut
++ donc avoir la commodité au prix que les alternatives à base de callbacks avaient été
++ inventées pour éviter. Bloquer là où c'est le plus lisible, sur des threads assez peu
++ coûteux pour que le blocage n'ait pas d'importance, est la forme de tout ce qui se trouve
++ ici. C'est aussi la forme du [streaming](streams.md), qui tire les données sur le propre
++ thread du consommateur pour la même raison.
+
+- Underneath, the unit of execution is a `Strand`, not a thread. A strand is an abstraction
+- with the four operations which suspension needs: interrupt, join, park and unpark. A
+- supervisor supplies strands, and a supervisor is a value. A scheduler which is not built on
+- threads at all, such as an event loop over WebAssembly's waitable sets, is therefore plugged
+- in as a supervisor, without any change to the code which spawns and awaits.
++ En dessous, l'unité d'exécution est un `Strand`, et non un thread. Un strand est une
++ abstraction dotée des quatre opérations dont la suspension a besoin : interrompre,
++ joindre, garer et réveiller. Un superviseur fournit les strands, et un superviseur est une
++ valeur. Un ordonnanceur qui n'est pas du tout construit sur des threads, comme une boucle
++ d'événements sur les ensembles attendables de WebAssembly, se branche donc comme un
++ superviseur, sans aucune modification du code qui lance et attend.
+
+- ### Related
++ ### Voir aussi
+
+- - [Streams](streams.md#combining-and-replicating-streams) merges and replicates streams
+-   across tasks.
+- - [HTTP server](http-server.md) handles each connection on a task.
+- - [Errors](errors.md) describes how a failure in a task is handled.
+- - [Daemons](daemons.md) keeps a program running as a service.
+- - [Caching](caching.md#an-expiring-value) computes a value once for many concurrent callers.
++ - [Flux](streams.md#combining-and-replicating-streams) fusionne et réplique des flux entre
++   plusieurs tâches.
++ - [Serveur HTTP](http-server.md) traite chaque connexion sur une tâche.
++ - [Erreurs](errors.md) décrit comment un échec dans une tâche est traité.
++ - [Démons](daemons.md) maintient un programme en fonctionnement en tant que service.
++ - [Cache](caching.md#an-expiring-value) calcule une valeur une seule fois pour de nombreux
++   appelants concurrents.

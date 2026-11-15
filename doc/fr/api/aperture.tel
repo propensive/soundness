@@ -1,0 +1,940 @@
+tel 1.0
+
+base aperture
+import soundness
+
+info
+    - scoped access to resources: `open`, `create`, `archive` and `session`, with modes carried as grants in the handle's type
+    + accès délimité aux ressources : `open`, `create`, `archive` et `session`, les modes étant
+    + des droits portés par le type de la poignée
+detail
+    - _Aperture_ names one pattern which recurs across Soundness: a value says *where* something
+    - is — a path, a URL, an in-memory reference — and getting at its contents is a distinct,
+    - **scoped** act. A file is opened for streaming, a directory as a confined root, a Git
+    - repository for reading its refs, a URL for a session of requests; in each case a handle is
+    - lent to a block, and the end of the block is the end of the access.
+    + _Aperture_ nomme un motif récurrent dans Soundness : une valeur dit *où* se trouve quelque
+    + chose — un chemin, une URL, une référence en mémoire — et accéder à son contenu est un acte
+    + distinct et **délimité**. Un fichier est ouvert pour être lu en flux, un répertoire comme
+    + racine confinée, un dépôt Git pour lire ses refs, une URL pour une session de requêtes ;
+    + dans chaque cas, une poignée est prêtée à un bloc, et la fin du bloc marque la fin de
+    + l'accès.
+
+    - The library defines the typeclasses behind four verbs, and the extension methods which
+    - invoke them on any value:
+    + La bibliothèque définit les classes de types derrière quatre verbes, ainsi que les méthodes
+    + d'extension qui les invoquent sur n'importe quelle valeur :
+
+    - - `open[Form](mode, flags*)`, through `Openable`: access to something which exists, with a
+    -   `Mode` (`Read`, `Write`, `Exclusive` and their `&`-combinations) whose `Grant`s are
+    -   carried in the handle's type, so a write through a read-only handle does not compile;
+    - - `create[Form](flags*)`, through `Creatable`: bringing something into existence, either
+    -   empty or by authoring it in a scope that commits when the block completes;
+    - - `archive[Form](flags*)`, through `Archivable`: gathering something's contents into an
+    -   in-memory archive value;
+    - - `session`, through `Sessional`: a live interaction — a connection, a warm compiler, a
+    -   browser — lent to a block and disposed of when it ends.
+    + - `open[Form](mode, flags*)`, par `Openable` : l'accès à quelque chose qui existe, avec un
+    +   `Mode` (`Read`, `Write`, `Exclusive` et leurs combinaisons par `&`) dont les `Grant` sont
+    +   portés par le type de la poignée, de sorte qu'une écriture par une poignée en lecture
+    +   seule ne compile pas ;
+    + - `create[Form](flags*)`, par `Creatable` : faire exister quelque chose, soit vide, soit en
+    +   le composant dans une portée qui valide le résultat lorsque le bloc se termine ;
+    + - `archive[Form](flags*)`, par `Archivable` : rassembler le contenu de quelque chose dans
+    +   une valeur d'archive en mémoire ;
+    + - `session`, par `Sessional` : une interaction vivante — une connexion, un compilateur
+    +   chaud, un navigateur — prêtée à un bloc et libérée lorsqu'il se termine.
+
+    ```scala
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.dereferenceSymlinks
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import temporaryDirectories.javaBaseTemporaryDirectory
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+
+    val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+
+    file.open[File](Write, OpenFlag.Create): handle ?=>
+      handle.write(Chain(t"Hello, world".in[Data]))
+
+    file.open[File]()(file.read[Text])
+    ```
+
+    - The *form* — what the target is opened, created or archived *as* — is a type argument,
+    - because one target may have several instances: a path opens as a `File`, a `Directory`, a
+    - `Zip` or a `Pdf`. Where a target has exactly one instance the form may be omitted; with
+    - several, the ambiguity error lists the alternatives. Flags after the mode are of the
+    - instance's own `Operand` type, so they are specific to what is being opened and an
+    - irrelevant flag does not typecheck. Every instance is written in the prepositional style,
+    - `target is Openable in Form by Flag to Handle`.
+    + La *forme* — ce *en tant que* quoi la cible est ouverte, créée ou archivée — est un
+    + argument de type, car une même cible peut avoir plusieurs instances : un chemin s'ouvre en
+    + tant que `File`, `Directory`, `Zip` ou `Pdf`. Lorsqu'une cible a exactement une instance,
+    + la forme peut être omise ; s'il y en a plusieurs, l'erreur d'ambiguïté liste les
+    + possibilités. Les drapeaux qui suivent le mode sont du type `Operand` propre à l'instance :
+    + ils sont donc spécifiques à ce qui est ouvert, et un drapeau hors de propos ne passe pas la
+    + vérification des types. Chaque instance s'écrit dans le style prépositionnel,
+    + `target is Openable in Form by Flag to Handle`.
+
+    - Handles are capabilities, confined to their block by capture checking: neither a handle
+    - nor a closure over it nor a collection holding it can be the block's result. `Stale` is
+    - the companion idea for values read *through* a handle from state the handle does not own.
+    + Les poignées sont des capacités, confinées à leur bloc par le contrôle des captures : ni
+    + une poignée, ni une closure qui la capture, ni une collection qui la contient ne peut être
+    + le résultat du bloc. `Stale` est l'idée complémentaire pour les valeurs lues *à travers*
+    + une poignée à partir d'un état que la poignée ne possède pas.
+
+    - Aperture depends only on `prepositional`, so it sits below every library which provides
+    - instances: galilei (files, directories, scratch space), octogenarian (`Git.Repo`,
+    - `Git.Worktree`), bitumen and zeppelin (archives), facsimile (PDF documents), telekinesis
+    - and coaxial (sessions), and others. It has a single source set, `aperture.core`, for every
+    - platform, and everything is exported to the `soundness` umbrella.
+    + Aperture ne dépend que de `prepositional` ; elle se situe donc sous toutes les
+    + bibliothèques qui fournissent des instances : galilei (fichiers, répertoires, espace
+    + temporaire), octogenarian (`Git.Repo`, `Git.Worktree`), bitumen et zeppelin (archives),
+    + facsimile (documents PDF), telekinesis et coaxial (sessions), et d'autres. Elle a un seul
+    + ensemble de sources, `aperture.core`, pour toutes les plateformes, et tout est exporté vers
+    + le package parapluie `soundness`.
+
+refer aperture.Openable
+refer aperture.Creatable
+refer aperture.Sessional
+refer aperture.Mode
+refer aperture.Grant
+refer aperture.open
+
+entry .Openable
+  info
+      - a typeclass for targets which can be opened in a form, lending a granted handle to a block
+      + une classe de types pour les cibles qui peuvent être ouvertes dans une forme, en prêtant à
+      + un bloc une poignée dotée de droits
+  detail
+      - An instance is written `target is Openable in Form by Flag to Handle`: `Self` is the
+      - target (a path, a reference), `Form` is what it is opened as, `Operand` the flag type
+      - admissible for that pair, and `Result` the handle. The instance's one method, `#open`,
+      - receives the target, the `Mode` the caller asked for, and the flags, and runs the block
+      - with a handle typed `Result & Granting[grants]`, where `grants` is the mode's `Grants`.
+      + Une instance s'écrit `target is Openable in Form by Flag to Handle` : `Self` est la cible
+      + (un chemin, une référence), `Form` ce en tant que quoi elle est ouverte, `Operand` le type
+      + de drapeau admissible pour ce couple, et `Result` la poignée. L'unique méthode de
+      + l'instance, `#open`, reçoit la cible, le `Mode` demandé par l'appelant et les drapeaux, et
+      + exécute le bloc avec une poignée de type `Result & Granting[grants]`, où `grants` est le
+      + `Grants` du mode.
+
+      - Users call it through the `open` extension, never directly:
+      + Les utilisateurs l'appellent par l'extension `open`, jamais directement :
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
+
+      directory.open[Directory](Read & Write): dir ?=>
+        (dir / "greeting.txt").overwrite(t"Hello directory")
+      ```
+
+      - An instance's operations on the handle are extension methods gated on the grants, such
+      - as `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`, so the mode
+      - chosen at the call site decides what compiles inside the block. An instance translates
+      - the mode into its backend's own terms by interrogating `mode.atoms` (`mode.atoms.has(Read)`).
+      + Les opérations d'une instance sur la poignée sont des méthodes d'extension conditionnées
+      + par les droits, comme
+      + `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)` : le mode choisi
+      + au point d'appel décide donc de ce qui compile à l'intérieur du bloc. Une instance traduit
+      + le mode dans les termes propres à son backend en interrogeant `mode.atoms`
+      + (`mode.atoms.has(Read)`).
+
+      - Instances should be named classes rather than anonymous `given … = new Openable:`
+      - instances: an anonymous subclass freshens the handle's capability type in the inferred
+      - `Result` member, and the block's handle then fails to typecheck against the extension
+      - methods that gate on it.
+      + Les instances devraient être des classes nommées plutôt que des instances anonymes
+      + `given … = new Openable:` : une sous-classe anonyme rafraîchit le type de capacité de la
+      + poignée dans le membre `Result` inféré, et la poignée du bloc ne passe alors plus la
+      + vérification des types face aux méthodes d'extension conditionnées par elle.
+  refer aperture.open
+  refer aperture.Opener
+  refer aperture.Mode
+  refer aperture.Granting
+  entry #open
+    info
+        - opens a target in a mode, with flags, and runs a block with the granted handle
+        + ouvre une cible dans un mode, avec des drapeaux, et exécute un bloc avec la poignée dotée
+        + de droits
+    detail
+        - `open(value, mode, flags)(block)`: the implementation an instance provides. The block
+        - takes the handle `(Result & Granting[grants])^` as a contextual parameter, and its
+        - result is returned once the instance has closed whatever it opened. Called by
+        - `Opener#apply`; user code writes `value.open[Form](mode, flags*)` instead.
+        + `open(value, mode, flags)(block)` : l'implémentation que fournit une instance. Le bloc
+        + prend la poignée `(Result & Granting[grants])^` comme paramètre contextuel, et son
+        + résultat est renvoyé une fois que l'instance a fermé ce qu'elle a ouvert. Appelée par
+        + `Opener#apply` ; le code utilisateur écrit plutôt `value.open[Form](mode, flags*)`.
+
+entry .Opener
+  info
+      - the applier `open[Form]` returns, which takes an optional mode, the flags and the block
+      + l'applicateur que renvoie `open[Form]`, qui prend un mode optionnel, les drapeaux et le bloc
+  detail
+      - `value.open[Form]` resolves the `Openable` instance from the form alone and returns an
+      - `Opener`; its overloaded `#apply` then takes the arguments. The two steps are
+      - deliberate: overloaded extension methods do not resolve across several parameter
+      - lists, so the applier is where the optional mode can be overloaded safely.
+      + `value.open[Form]` résout l'instance `Openable` à partir de la seule forme et renvoie un
+      + `Opener` ; son `#apply` surchargé prend ensuite les arguments. Les deux étapes sont
+      + délibérées : les méthodes d'extension surchargées ne se résolvent pas à travers plusieurs
+      + listes de paramètres, et l'applicateur est donc l'endroit où le mode optionnel peut être
+      + surchargé sans risque.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+
+      file.open[File]() { handle ?=> handle.read[Text] }
+      file.open[File](Read & Write) { handle ?=> handle.write(Chain(t"more".in[Data])) }
+      ```
+
+      - The `#openable` field is `tracked`, so the instance's `Self`, `Operand` and `Result`
+      - members stay precise in the types of `#apply`.
+      + Le champ `#openable` est `tracked`, de sorte que les membres `Self`, `Operand` et `Result`
+      + de l'instance restent précis dans les types de `#apply`.
+  refer aperture.open
+  refer aperture.Openable
+  entry #openable
+    info
+        - the `Openable` instance the form resolved
+        + l'instance `Openable` résolue par la forme
+  entry #value
+    info
+        - the target to be opened
+        + la cible à ouvrir
+  entry #apply
+    info
+        - opens the target, read-only by default or in the mode given, and runs the block
+        + ouvre la cible, en lecture seule par défaut ou dans le mode donné, et exécute le bloc
+    detail
+        - Two overloads. `apply(flags*)(block)` opens with the `Read` mode, so the handle is
+        - `Granting[Grant.Read]`; `apply(mode, flags*)(block)` opens with the mode given, so the
+        - handle grants exactly `mode.Grants`. Flags are of the instance's `Operand` type and
+        - follow the mode. The handle is the block's contextual parameter (`handle ?=> …`).
+        + Deux surcharges. `apply(flags*)(block)` ouvre avec le mode `Read`, de sorte que la poignée
+        + est `Granting[Grant.Read]` ; `apply(mode, flags*)(block)` ouvre avec le mode donné, de
+        + sorte que la poignée accorde exactement `mode.Grants`. Les drapeaux sont du type `Operand`
+        + de l'instance et suivent le mode. La poignée est le paramètre contextuel du bloc
+        + (`handle ?=> …`).
+
+entry .open
+  info
+      - opens a value in a form: `path.open[File](Read & Write) { handle ?=> … }`
+      + ouvre une valeur dans une forme : `path.open[File](Read & Write) { handle ?=> … }`
+  detail
+      - An extension on any value which has an `Openable` instance in the form named. It
+      - returns an `Opener`, whose `apply` takes an optional `Mode` (the default is `Read`),
+      - then flags of the instance's `Operand` type, then a block which receives the handle as
+      - a contextual parameter.
+      + Une extension sur toute valeur qui possède une instance `Openable` dans la forme nommée.
+      + Elle renvoie un `Opener`, dont l'`apply` prend un `Mode` optionnel (par défaut `Read`),
+      + puis des drapeaux du type `Operand` de l'instance, puis un bloc qui reçoit la poignée comme
+      + paramètre contextuel.
+
+      - The mode chosen decides the handle's type, and so which of its operations compile:
+      + Le mode choisi décide du type de la poignée, et donc de celles de ses opérations qui
+      + compilent :
+
+      ```scala fuel
+      frame
+        label Opened with no mode: the handle grants only reading
+        code
+            file.open[File](): handle ?=>
+              handle.read[Text]
+              handle.write(Chain(t"more".in[Data]))   // does not compile
+      frame
+        label `Read & Write`: both kinds of operation compile
+        code
+            file.open[File](Read & Write): handle ?=>
+              handle.read[Text]
+              handle.write(Chain(t"more".in[Data]))
+      frame
+        label `Read & Write & Exclusive`: and no other handle may overlap it
+        code
+            file.open[File](Read & Write & Exclusive): handle ?=>
+              handle.read[Text]
+              handle.write(Chain(t"more".in[Data]))
+      ##
+      ```
+
+      - The form may be omitted, `value.open()`, when the target has exactly one `Openable`
+      - instance; with several, the ambiguity error lists them. The handle is a capability
+      - confined to the block: returning it, a closure over it, or a collection of it is a
+      - compile error.
+      + La forme peut être omise, `value.open()`, lorsque la cible a exactement une instance
+      + `Openable` ; s'il y en a plusieurs, l'erreur d'ambiguïté les liste. La poignée est une
+      + capacité confinée au bloc : la renvoyer, renvoyer une closure qui la capture ou une
+      + collection qui la contient est une erreur de compilation.
+  refer aperture.Openable
+  refer aperture.Opener
+  refer aperture.Mode
+
+entry .Mode
+  info
+      - which grants an `open` call confers, composable with `&`
+      + les droits qu'accorde un appel à `open`, composables avec `&`
+  detail
+      - A `Mode` is a term-level choice of grants, carried as its `#Grants` type member so that
+      - the mode written at the call site determines the handle's type inside the block. The
+      - atomic modes are `Read`, `Write` and `Exclusive` (and libraries add their own, such as
+      - galilei's `Shared`); `&` composes them dependently, so `Read & Write` has `Grants =
+      - Grant.Read & Grant.Write` with no macros or inline expansion.
+      + Un `Mode` est un choix de droits au niveau des termes, porté par son membre de type
+      + `#Grants`, de sorte que le mode écrit au point d'appel détermine le type de la poignée à
+      + l'intérieur du bloc. Les modes atomiques sont `Read`, `Write` et `Exclusive` (et des
+      + bibliothèques ajoutent les leurs, comme `Shared` de galilei) ; `&` les compose de manière
+      + dépendante, si bien que `Read & Write` a `Grants = Grant.Read & Grant.Write` sans macro ni
+      + expansion inline.
+
+      ```scala
+      import soundness.*
+
+      val mode: Mode granting (Grant.Read & Grant.Write) = Read & Write
+      (Read & Write & Exclusive).atoms == Set(Read, Write, Exclusive)
+      ```
+
+      - At runtime a composite mode is identified by `#atoms`, the set of atomic modes it was
+      - built from, which is how an `Openable` instance translates a mode into operating-system
+      - flags. Atomic modes are global values compared by reference, so a library defining a
+      - new one makes it an `object … extends Mode` or a top-level `val`.
+      + À l'exécution, un mode composite est identifié par `#atoms`, l'ensemble des modes
+      + atomiques à partir desquels il a été construit ; c'est ainsi qu'une instance `Openable`
+      + traduit un mode en drapeaux du système d'exploitation. Les modes atomiques sont des
+      + valeurs globales comparées par référence : une bibliothèque qui en définit un nouveau en
+      + fait donc un `object … extends Mode` ou une `val` de premier niveau.
+  refer aperture.Grant
+  refer aperture.granting
+  entry #Grants
+    info
+        - the grants this mode confers, as an intersection of `Grant` subtypes
+        + les droits que confère ce mode, sous forme d'intersection de sous-types de `Grant`
+  entry #atoms
+    info
+        - the atomic modes this mode was composed from
+        + les modes atomiques dont ce mode a été composé
+    detail
+        - An atomic mode's atoms are itself alone; `Read & Write` has `Set(Read, Write)`. An
+        - `Openable` instance tests membership, `mode.atoms.has(Write)`, to decide how to open
+        - its target.
+        + Les atomes d'un mode atomique se réduisent à lui-même ; `Read & Write` a
+        + `Set(Read, Write)`. Une instance `Openable` teste l'appartenance, `mode.atoms.has(Write)`,
+        + pour décider comment ouvrir sa cible.
+  entry #&
+    info
+        - composes two modes: the union of their atoms, the intersection of their grants
+        + compose deux modes : l'union de leurs atomes, l'intersection de leurs droits
+    detail
+        - `Read & Write` is a `Mode granting (Grant.Read & Grant.Write)`. The operation is
+        - associative and order-insensitive in effect, since both the grants and the atoms are
+        - sets.
+        + `Read & Write` est un `Mode granting (Grant.Read & Grant.Write)`. L'opération est
+        + associative et, dans ses effets, insensible à l'ordre, puisque les droits comme les atomes
+        + sont des ensembles.
+
+entry .Grant
+  info
+      - a phantom marker of a permitted kind of operation, composed by intersection
+      + un marqueur fantôme d'une sorte d'opération permise, composé par intersection
+  detail
+      - Grants are never instantiated: they exist only as types, intersected into a handle's
+      - type through `Granting`, where they gate which extension methods apply. Intersection
+      - makes more grants a more specific type, so an operation demanding `Grant.Write` accepts
+      - any handle whose mode included `Write`, whatever else it included.
+      + Les droits ne sont jamais instanciés : ils n'existent que sous forme de types, intégrés par
+      + intersection au type d'une poignée au moyen de `Granting`, où ils conditionnent les
+      + méthodes d'extension applicables. L'intersection fait de davantage de droits un type plus
+      + spécifique : une opération exigeant `Grant.Write` accepte donc toute poignée dont le mode
+      + incluait `Write`, quoi qu'il inclût d'autre.
+
+      - The hierarchy is open: a library defining an `Openable` instance may introduce grants
+      - particular to its domain by extending `Grant`, with a matching `Mode`.
+      + La hiérarchie est ouverte : une bibliothèque qui définit une instance `Openable` peut
+      + introduire des droits propres à son domaine en étendant `Grant`, avec un `Mode`
+      + correspondant.
+  refer aperture.Granting
+  refer aperture.Mode
+  entry .Read
+    info
+        - the grant to read a handle's contents, conferred by the `Read` mode
+        + le droit de lire le contenu d'une poignée, conféré par le mode `Read`
+  entry .Write
+    info
+        - the grant to modify a handle's contents, conferred by the `Write` mode
+        + le droit de modifier le contenu d'une poignée, conféré par le mode `Write`
+    detail
+        - Writing does not imply reading: a handle opened with `Write` alone has no read
+        - operations, and `Read & Write` is needed for both.
+        + Écrire n'implique pas lire : une poignée ouverte avec `Write` seul n'a aucune opération de
+        + lecture, et `Read & Write` est nécessaire pour les deux.
+  entry .Exclusive
+    info
+        - a guarantee that no other handle on the same entity is open at the same time
+        + la garantie qu'aucune autre poignée sur la même entité n'est ouverte en même temps
+    detail
+        - Conferred by the `Exclusive` mode. How an instance keeps the guarantee is its own
+        - affair: galilei refuses an overlapping open within the program with an `Io.Error`
+        - whose reason is `Busy`, and for a file also takes an operating-system lock.
+        + Conféré par le mode `Exclusive`. La manière dont une instance tient cette garantie la
+        + regarde : galilei refuse une ouverture concurrente au sein du programme avec une
+        + `Io.Error` dont la raison est `Busy`, et, pour un fichier, prend également un verrou du
+        + système d'exploitation.
+
+entry .Granting
+  info
+      - mixed into a handle to attach the grants its mode selected
+      + intégré à une poignée pour lui attacher les droits sélectionnés par son mode
+  detail
+      - `Granting[+grants <: Grant]` is the marker an `Openable` or `Creatable` instance mixes into
+      - the handle it lends, as `new Handle(…) with Granting[grants] {}`. It is covariant, so a
+      - handle `Granting[Grant.Read & Grant.Write]` is also a `Granting[Grant.Read]`, and an
+      - extension method written for `(Handle & Granting[Grant.Read])^` applies to it.
+      + `Granting[+grants <: Grant]` est le marqueur qu'une instance `Openable` ou `Creatable`
+      + intègre à la poignée qu'elle prête, sous la forme `new Handle(…) with Granting[grants] {}`.
+      + Il est covariant : une poignée `Granting[Grant.Read & Grant.Write]` est donc aussi un
+      + `Granting[Grant.Read]`, et une méthode d'extension écrite pour
+      + `(Handle & Granting[Grant.Read])^` s'y applique.
+
+      ```scala
+      import soundness.*
+
+      class Notebook extends caps.ExclusiveCapability:
+        def text: Text = t"notes"
+
+      extension (notebook: (Notebook & Granting[Grant.Read])^)
+        def contents: Text = notebook.text
+      ```
+
+entry .granting
+  info
+      - `Mode granting Grant.Read`: refines a type's `Grants` member to exactly those grants
+      + `Mode granting Grant.Read` : raffine le membre `Grants` d'un type pour qu'il soit
+      + exactement ces droits
+  detail
+      - An infix type alias: `refined granting grants` is `refined { type Grants = grants }`. It
+      - reads naturally in signatures, `mode: Mode granting grants`, and is the type of the atomic
+      - modes: `Read` is a `Mode granting Grant.Read`.
+      + Un alias de type infixe : `refined granting grants` est `refined { type Grants = grants }`.
+      + Il se lit naturellement dans les signatures, `mode: Mode granting grants`, et c'est le type
+      + des modes atomiques : `Read` est un `Mode granting Grant.Read`.
+
+entry .Read
+  info
+      - the mode which grants reading: the default for `open`
+      + le mode qui accorde la lecture : le mode par défaut de `open`
+  detail
+      - A `Mode granting Grant.Read`. `value.open[Form]()` with no mode uses it; pass it
+      - explicitly to combine it, as `Read & Write` or `Read & Exclusive`.
+      + Un `Mode granting Grant.Read`. `value.open[Form]()` sans mode l'utilise ; on le passe
+      + explicitement pour le combiner, comme `Read & Write` ou `Read & Exclusive`.
+
+entry .Write
+  info
+      - the mode which grants writing, without reading
+      + le mode qui accorde l'écriture, sans la lecture
+  detail
+      - A `Mode granting Grant.Write`. `Write` alone does not confer read access: open with
+      - `Read & Write` for a handle which both reads and writes.
+      + Un `Mode granting Grant.Write`. `Write` seul ne confère pas l'accès en lecture : ouvrez
+      + avec `Read & Write` pour une poignée qui lit et écrit à la fois.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val file: Path on Linux = temporaryDirectory[Path on Linux] / "log.txt"
+
+      file.open[File](Write, OpenFlag.Create): handle ?=>
+        handle.write(Chain(t"entry".in[Data]))
+      ```
+
+entry .Exclusive
+  info
+      - the mode which grants exclusivity: no other handle on the entity may be open meanwhile
+      + le mode qui accorde l'exclusivité : aucune autre poignée sur l'entité ne peut être ouverte
+      + entre-temps
+  detail
+      - A `Mode granting Grant.Exclusive`, combined with another mode, as `Read & Exclusive`. An
+      - overlapping open while the exclusive scope lasts fails, in either order; galilei reports
+      - it as an `Io.Error` whose reason is `Busy`, and for a file also takes an
+      - operating-system lock so the exclusivity holds against other processes.
+      + Un `Mode granting Grant.Exclusive`, combiné avec un autre mode, comme `Read & Exclusive`.
+      + Une ouverture concurrente pendant la durée de la portée exclusive échoue, dans un ordre
+      + comme dans l'autre ; galilei la signale par une `Io.Error` dont la raison est `Busy`, et,
+      + pour un fichier, prend également un verrou du système d'exploitation afin que
+      + l'exclusivité tienne face aux autres processus.
+
+entry .Creatable
+  info
+      - a typeclass for targets which can be brought into existence, empty or authored in a scope
+      + une classe de types pour les cibles qu'on peut faire exister, vides ou composées dans une
+      + portée
+  detail
+      - The counterpart of `Openable`, for creating rather than accessing. An instance is
+      - written `target is Creatable in Form by Flag to Handle`, and serves two kinds of
+      - creation with one verb:
+      + Le pendant d'`Openable`, pour la création plutôt que l'accès. Une instance s'écrit
+      + `target is Creatable in Form by Flag to Handle`, et sert deux sortes de création avec un
+      + seul verbe :
+
+      - - **instantiation**, `path.create[Directory]()`: the artifact is made to exist, empty,
+      -   with no scope, and the target is returned;
+      - - **scoped authoring**, `path.create[Tar]() { tar ?=> … }`: the artifact is created and
+      -   populated through a handle granted the instance's `#Grants` — write access from
+      -   birth, since a newborn artifact is unconditionally its creator's — and committed when
+      -   the block completes.
+      + - l'**instanciation**, `path.create[Directory]()` : l'artefact est amené à exister, vide,
+      +   sans portée, et la cible est renvoyée ;
+      + - la **composition délimitée**, `path.create[Tar]() { tar ?=> … }` : l'artefact est créé et
+      +   rempli au moyen d'une poignée dotée des `#Grants` de l'instance — l'accès en écriture dès
+      +   la naissance, puisqu'un artefact nouveau-né appartient inconditionnellement à son
+      +   créateur — et validé lorsque le bloc se termine.
+
+      - An exception escaping an authoring scope leaves nothing behind: instances guarantee it
+      - by staging to a temporary sibling and moving it into place atomically, or by removing
+      - what they made.
+      + Une exception qui s'échappe d'une portée de composition ne laisse rien derrière elle : les
+      + instances le garantissent en préparant le résultat dans un voisin temporaire puis en le
+      + déplaçant atomiquement à sa place, ou en supprimant ce qu'elles ont créé.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val target: Path on Linux = temporaryDirectory[Path on Linux] / "payload.bin"
+
+      target.create[File](): handle ?=>
+        handle.write(Chain(t"payload".in[Data]))
+      ```
+
+      - There is no `Mode`: what a creation scope may do is not the caller's choice, and the
+      - permissions the created entry persists with are a matter for flags. Creating something
+      - which may already exist is governed by per-form flags (galilei's `CreateFlag.Replace`),
+      - and replacement is never the default. This differs from *opening* a possibly-absent
+      - entity for writing (`OpenFlag.Create`), which accesses whatever is there.
+      + Il n'y a pas de `Mode` : ce que peut faire une portée de création ne relève pas du choix
+      + de l'appelant, et les permissions avec lesquelles l'entrée créée persiste relèvent des
+      + drapeaux. La création de quelque chose qui existe peut-être déjà est régie par des
+      + drapeaux propres à chaque forme (`CreateFlag.Replace` de galilei), et le remplacement n'est
+      + jamais le comportement par défaut. C'est différent de l'*ouverture* en écriture d'une
+      + entité peut-être absente (`OpenFlag.Create`), qui accède à ce qui s'y trouve.
+  refer aperture.create
+  refer aperture.Creator
+  refer aperture.Openable
+  entry #Grants
+    info
+        - the grants the authoring handle carries, fixed by the instance
+        + les droits que porte la poignée de composition, fixés par l'instance
+  entry #make
+    info
+        - creates the artifact, empty, with no scope
+        + crée l'artefact, vide, sans portée
+    detail
+        - The default runs `#create` with a block which does nothing, which suits builder forms
+        - whose discarded handle costs nothing. An instance holding operating-system resources
+        - overrides it to create directly — notably a FIFO, which must never be opened merely to
+        - be created, since opening one for writing blocks until a reader appears.
+        + L'implémentation par défaut exécute `#create` avec un bloc qui ne fait rien, ce qui
+        + convient aux formes de type builder dont la poignée abandonnée ne coûte rien. Une instance
+        + détenant des ressources du système d'exploitation la redéfinit pour créer directement —
+        + notamment une FIFO, qui ne doit jamais être ouverte dans le seul but d'être créée, puisque
+        + l'ouvrir en écriture bloque jusqu'à ce qu'un lecteur apparaisse.
+  entry #create
+    info
+        - creates the artifact and runs a block with a handle to author it, committing on success
+        + crée l'artefact et exécute un bloc avec une poignée pour le composer, en le validant en
+        + cas de succès
+    detail
+        - `create(value, flags)(block)`: the block takes `(Result & Granting[Grants])^` as a
+        - contextual parameter; its result is returned after the artifact is committed, and an
+        - exception from it commits nothing. Called by `Creator#apply`; user code writes
+        - `value.create[Form](flags*) { handle ?=> … }`.
+        + `create(value, flags)(block)` : le bloc prend `(Result & Granting[Grants])^` comme
+        + paramètre contextuel ; son résultat est renvoyé après la validation de l'artefact, et une
+        + exception qui en provient ne valide rien. Appelée par `Creator#apply` ; le code
+        + utilisateur écrit `value.create[Form](flags*) { handle ?=> … }`.
+
+entry .Creator
+  info
+      - the applier `create[Form]` returns, for instantiation or for scoped authoring
+      + l'applicateur que renvoie `create[Form]`, pour l'instanciation ou la composition délimitée
+  detail
+      - `value.create[Form]` resolves the `Creatable` instance from the form and returns a
+      - `Creator`. Its overloaded `#apply` takes the flags alone, to make an empty artifact and
+      - return the target, or the flags and a block, to author the artifact's contents.
+      + `value.create[Form]` résout l'instance `Creatable` à partir de la forme et renvoie un
+      + `Creator`. Son `#apply` surchargé prend soit les drapeaux seuls, pour créer un artefact
+      + vide et renvoyer la cible, soit les drapeaux et un bloc, pour composer le contenu de
+      + l'artefact.
+  refer aperture.create
+  refer aperture.Creatable
+  entry #creatable
+    info
+        - the `Creatable` instance the form resolved
+        + l'instance `Creatable` résolue par la forme
+  entry #value
+    info
+        - the target to be created
+        + la cible à créer
+  entry #apply
+    info
+        - creates the target empty and returns it, or authors it within a block
+        + crée la cible vide et la renvoie, ou la compose dans un bloc
+    detail
+        - `apply(flags*)` calls `Creatable#make` and returns the target, which now exists;
+        - `apply(flags*)(block)` calls `Creatable#create`, lending the block a handle granted the
+        - instance's `Grants`, and returns the block's result once the artifact is committed.
+        + `apply(flags*)` appelle `Creatable#make` et renvoie la cible, qui existe désormais ;
+        + `apply(flags*)(block)` appelle `Creatable#create`, en prêtant au bloc une poignée dotée
+        + des `Grants` de l'instance, et renvoie le résultat du bloc une fois l'artefact validé.
+
+entry .create
+  info
+      - creates a value in a form: `path.create[Directory]()`, or `path.create[Tar]() { … }`
+      + crée une valeur dans une forme : `path.create[Directory]()`, ou
+      + `path.create[Tar]() { … }`
+  detail
+      - An extension on any value with a `Creatable` instance in the form named, returning a
+      - `Creator`. With no block, the artifact is made empty and the target returned; with a
+      - block, the artifact is authored through a handle and committed when the block
+      - completes, and left absent if the block throws.
+      + Une extension sur toute valeur possédant une instance `Creatable` dans la forme nommée, qui
+      + renvoie un `Creator`. Sans bloc, l'artefact est créé vide et la cible renvoyée ; avec un
+      + bloc, l'artefact est composé au moyen d'une poignée et validé lorsque le bloc se termine,
+      + et reste absent si le bloc lève une exception.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
+
+      directory.create[Directory]()
+
+      (directory / "inner").create[Directory](): dir ?=>
+        (dir / "inner.txt").overwrite(t"hello")
+      ```
+
+      - Flags are of the instance's `Operand` type; galilei's are `CreateFlag`s such as
+      - `CreateFlag.Parents` and `CreateFlag.Replace`.
+      + Les drapeaux sont du type `Operand` de l'instance ; ceux de galilei sont des `CreateFlag`
+      + tels que `CreateFlag.Parents` et `CreateFlag.Replace`.
+  refer aperture.Creatable
+  refer aperture.Creator
+
+entry .Archivable
+  info
+      - a typeclass for values whose contents can be gathered into an archive value
+      + une classe de types pour les valeurs dont le contenu peut être rassemblé dans une valeur
+      + d'archive
+  detail
+      - An instance is written `target is Archivable in Form by Flag to Result`: the form is the
+      - archive format (`Tar`, `Zip`, `Ar`), `Operand` the flag type which tunes the archiving
+      - for that pair (a long-name convention, an owner to record, a compression method), and
+      - `Result` the in-memory archive produced. Unlike `Creatable`, nothing is written: the
+      - result is a value, and where it goes — streamed, compressed, written to a file — is the
+      - caller's next step.
+      + Une instance s'écrit `target is Archivable in Form by Flag to Result` : la forme est le
+      + format d'archive (`Tar`, `Zip`, `Ar`), `Operand` le type de drapeau qui règle l'archivage
+      + pour ce couple (une convention pour les noms longs, un propriétaire à enregistrer, une
+      + méthode de compression), et `Result` l'archive en mémoire produite. Contrairement à
+      + `Creatable`, rien n'est écrit : le résultat est une valeur, et sa destination — envoyée en
+      + flux, compressée, écrite dans un fichier — est l'étape suivante de l'appelant.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+      source.archive[Tar]().entries.map(_.entryName)
+      ```
+
+      - The instances for directories live in the companions of the format types (`Tar`, `Zip`,
+      - `Ar`) and walk the tree through galilei's filesystem backend, so they are in implicit
+      - scope with no import.
+      + Les instances pour les répertoires se trouvent dans les compagnons des types de format
+      + (`Tar`, `Zip`, `Ar`) et parcourent l'arbre au moyen du backend de système de fichiers de
+      + galilei : elles sont donc dans la portée implicite sans aucun import.
+  refer aperture.archive
+  refer aperture.Archiver
+  entry #archive
+    info
+        - gathers a value's contents, tuned by flags, into the archive value
+        + rassemble le contenu d'une valeur, réglé par des drapeaux, dans la valeur d'archive
+    detail
+        - `archive(value, flags)`: the implementation an instance provides. Called by
+        - `Archiver#apply`; user code writes `value.archive[Form](flags*)`.
+        + `archive(value, flags)` : l'implémentation que fournit une instance. Appelée par
+        + `Archiver#apply` ; le code utilisateur écrit `value.archive[Form](flags*)`.
+
+entry .Archiver
+  info
+      - the applier `archive[Form]` returns, which takes the flags
+      + l'applicateur que renvoie `archive[Form]`, qui prend les drapeaux
+  detail
+      - `value.archive[Form]` resolves the `Archivable` instance from the form and returns an
+      - `Archiver`, whose `#apply` takes flags of the instance's `Operand` type and returns the
+      - archive. The shape mirrors `Opener` and `Creator`.
+      + `value.archive[Form]` résout l'instance `Archivable` à partir de la forme et renvoie un
+      + `Archiver`, dont l'`#apply` prend des drapeaux du type `Operand` de l'instance et renvoie
+      + l'archive. La forme reproduit celle d'`Opener` et de `Creator`.
+  refer aperture.archive
+  entry #archivable
+    info
+        - the `Archivable` instance the form resolved
+        + l'instance `Archivable` résolue par la forme
+  entry #value
+    info
+        - the value to be archived
+        + la valeur à archiver
+  entry #apply
+    info
+        - archives the value with the flags given, returning the archive
+        + archive la valeur avec les drapeaux donnés, et renvoie l'archive
+
+entry .archive
+  info
+      - archives a value in a form: `directory.archive[Tar]()` gives the tarball of a tree
+      + archive une valeur dans une forme : `directory.archive[Tar]()` donne l'archive tar d'un
+      + arbre
+  detail
+      - An extension on any value with an `Archivable` instance in the form named, returning an
+      - `Archiver` whose `apply` takes flags of the instance's `Operand` type. The result is an
+      - in-memory archive value of the instance's `Result` type, which the format's library
+      - then serializes or compresses.
+      + Une extension sur toute valeur possédant une instance `Archivable` dans la forme nommée,
+      + qui renvoie un `Archiver` dont l'`apply` prend des drapeaux du type `Operand` de
+      + l'instance. Le résultat est une valeur d'archive en mémoire du type `Result` de
+      + l'instance, que la bibliothèque du format sérialise ou compresse ensuite.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+      val tar: Tar = source.archive[Tar]()
+      ```
+
+entry .Sessional
+  info
+      - a typeclass for targets which lend a live session to a block and dispose of it after
+      + une classe de types pour les cibles qui prêtent une session vivante à un bloc puis la
+      + libèrent
+  detail
+      - A session is a stateful interaction scope: a network connection, a warm compiler, a
+      - browser driven remotely, a device over SSH. An instance is written `target is Sessional
+      - to Handle`; its `#session` establishes the session with the target, lends the handle to
+      - the block for its duration, and disposes of it when the block ends, whether it returns
+      - or throws.
+      + Une session est une portée d'interaction avec état : une connexion réseau, un compilateur
+      + chaud, un navigateur piloté à distance, un appareil via SSH. Une instance s'écrit
+      + `target is Sessional to Handle` ; son `#session` établit la session avec la cible, prête la
+      + poignée au bloc pour sa durée, et la libère lorsque le bloc se termine, qu'il retourne
+      + normalement ou qu'il lève une exception.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import soundness.httpUrlSessional
+      import socketBackends.javaBaseSockets
+
+      val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+      url"https://example.com".session: session ?=>
+        session.fetch(request).status
+        session.fetch(request).status
+      ```
+
+      - The block's result type is quantified outside it, so a value still borrowing the
+      - session — the handle itself, a closure over it, a response streaming from the live
+      - connection — cannot be its result; a session-independent value, such as one which has
+      - been read in full, may. Instances at a transport layer (coaxial's for any
+      - `Connectable` endpoint) lend a raw connection; richer layers lend protocol-aware
+      - handles, such as telekinesis's HTTP sessions or exegesis's language-server sessions.
+      + Le type de résultat du bloc est quantifié hors de celui-ci : une valeur qui emprunte encore
+      + la session — la poignée elle-même, une closure qui la capture, une réponse diffusée en flux
+      + depuis la connexion vivante — ne peut donc pas être son résultat ; une valeur indépendante
+      + de la session, comme une valeur lue en entier, le peut. Les instances au niveau de la
+      + couche transport (celle de coaxial pour tout endpoint `Connectable`) prêtent une connexion
+      + brute ; les couches plus riches prêtent des poignées conscientes du protocole, comme les
+      + sessions HTTP de telekinesis ou les sessions de serveur de langage d'exegesis.
+
+      - Instances whose subject is owned by another library are top-level givens with
+      - library-qualified names, imported by name (`import soundness.httpUrlSessional`).
+      + Les instances dont le sujet appartient à une autre bibliothèque sont des givens de premier
+      + niveau aux noms qualifiés par la bibliothèque, importés par leur nom
+      + (`import soundness.httpUrlSessional`).
+  refer aperture.session
+  refer aperture.Openable
+  entry #session
+    info
+        - establishes a session with a target, runs a block with it, and disposes of it
+        + établit une session avec une cible, exécute un bloc avec elle, puis la libère
+    detail
+        - `session(target)(lambda)`: the implementation an instance provides. The handle is the
+        - lambda's contextual parameter, and is disposed of in every outcome. User code writes
+        - `target.session { handle ?=> … }`.
+        + `session(target)(lambda)` : l'implémentation que fournit une instance. La poignée est le
+        + paramètre contextuel de la lambda, et elle est libérée quelle que soit l'issue. Le code
+        + utilisateur écrit `target.session { handle ?=> … }`.
+
+entry .session
+  info
+      - opens a session on a value and lends its handle to a block: `url.session { s ?=> … }`
+      + ouvre une session sur une valeur et prête sa poignée à un bloc :
+      + `url.session { s ?=> … }`
+  detail
+      - An extension on any value with a `Sessional` instance in scope. The handle — of whatever
+      - type the instance provides — is the block's contextual parameter, and is disposed of
+      - when the block ends. A value borrowing the session cannot be the result: returning the
+      - handle, a closure over it, or a collection holding it, or assigning it to a variable
+      - outside the block, is a compile error (_… outlives its scope_, _… cannot flow into
+      - capture set …_).
+      + Une extension sur toute valeur possédant une instance `Sessional` dans la portée. La
+      + poignée — du type que fournit l'instance, quel qu'il soit — est le paramètre contextuel du
+      + bloc, et elle est libérée lorsque le bloc se termine. Une valeur qui emprunte la session ne
+      + peut pas être le résultat : renvoyer la poignée, une closure qui la capture ou une
+      + collection qui la contient, ou l'affecter à une variable hors du bloc, est une erreur de
+      + compilation (_… outlives its scope_, _… cannot flow into capture set …_).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import soundness.httpUrlSessional
+      import socketBackends.javaBaseSockets
+
+      val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+      url"https://example.com".session: session ?=>
+        session.fetch(request).status
+      ```
+
+      - The extension is a plain method, not inline, and the instance and the block may share
+      - capabilities (a monitor, a tactic): both take their capture sets as parameters rather
+      - than as fresh, separated ones.
+      + L'extension est une méthode ordinaire, non inline, et l'instance et le bloc peuvent
+      + partager des capacités (un moniteur, une tactique) : tous deux prennent leurs ensembles de
+      + capture en paramètre plutôt que des ensembles nouveaux et séparés.
+
+entry .Stale
+  info
+      - a value as a handle saw it, over state other processes may have changed since
+      + une valeur telle qu'une poignée l'a vue, issue d'un état que d'autres processus ont pu
+      + modifier depuis
+  detail
+      - `Stale[value]` wraps a value read through a handle from state the handle does not own:
+      - a ref in a repository other processes write, a file's size, a directory's entries. The
+      - value is immutable and pure, but what it records may have changed before the read
+      - returned. The type exists so a signature can say so: a method returning
+      - `Stale[Git.Hash]` resolved a ref, and a method taking one is conditional on the ref
+      - still holding that value, and fails with a typed error if it does not.
+      + `Stale[value]` enveloppe une valeur lue à travers une poignée à partir d'un état que la
+      + poignée ne possède pas : une ref dans un dépôt où écrivent d'autres processus, la taille
+      + d'un fichier, les entrées d'un répertoire. La valeur est immuable et pure, mais ce qu'elle
+      + enregistre a pu changer avant même le retour de la lecture. Le type existe pour qu'une
+      + signature puisse le dire : une méthode renvoyant `Stale[Git.Hash]` a résolu une ref, et une
+      + méthode qui en prend une est conditionnée au fait que la ref ait toujours cette valeur, et
+      + échoue avec une erreur typée dans le cas contraire.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val directory: Path on Linux = temporaryDirectory[Path on Linux] / "repo"
+
+      directory.open[Git.Worktree](Read & Write): worktree ?=>
+        val head: Stale[Git.Head] = worktree.head()
+        (worktree / "notes.txt").overwrite(t"Remember the milk")
+        worktree.add(worktree / "notes.txt")
+        worktree.commit(t"Add notes", head)
+      ```
+
+      - If another process moved HEAD between the read and the commit, the commit fails with
+      - `Git.Error(Moved(…))` rather than overwriting that work.
+      + Si un autre processus a déplacé HEAD entre la lecture et le commit, le commit échoue avec
+      + `Git.Error(Moved(…))` plutôt que d'écraser ce travail.
+
+      - There is deliberately no timestamp: a clock would be a dependency, and recency is not a
+      - property to reason from. The only sound use of a stale value is to hand it back to the
+      - handle which produced it, or to read its `#value` knowing it may be out of date.
+      + Il n'y a délibérément pas d'horodatage : une horloge serait une dépendance, et la
+      + fraîcheur n'est pas une propriété sur laquelle raisonner. Le seul usage correct d'une
+      + valeur périmée est de la rendre à la poignée qui l'a produite, ou de lire sa `#value` en
+      + sachant qu'elle peut être obsolète.
+  refer octogenarian.Git
+  entry #value
+    info
+        - the value as it was when it was read
+        + la valeur telle qu'elle était au moment de sa lecture
+  entry #let
+    info
+        - derives a value from a stale one, which stays exactly as stale
+        + dérive une valeur d'une valeur périmée, qui reste exactement aussi périmée
+    detail
+        - `Stale(1).let(_ + 1) == Stale(2)`. A method rather than an extension, so that vacuous's
+        - `let` on `Optional`, which is imported everywhere, does not claim the receiver.
+        + `Stale(1).let(_ + 1) == Stale(2)`. Une méthode plutôt qu'une extension, afin que le `let`
+        + de vacuous sur `Optional`, importé partout, ne s'empare pas du récepteur.

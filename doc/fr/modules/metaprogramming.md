@@ -1,0 +1,331 @@
+- ## Metaprogramming
++ ## Métaprogrammation
+
+- ### About
++ ### Présentation
+
+- Much of the machinery which runs at [compiletime] here rests on a small set of tools for writing
+- and debugging macros. They are available to any project which does the same:
++ Une grande partie de la mécanique qui s'exécute ici [à la compilation][compilation] repose
++ sur un petit ensemble d'outils pour écrire et déboguer des macros. Ils sont disponibles pour
++ tout projet qui fait de même :
+
+```tabular
+- column  Tool
+- column  Does
+- row  `every`  collects *all* the given instances of a type visible at a call site
+- row  `reify`  turns a type-level collection into a runtime value
+- row  `Syntax.name`  renders a type as it would be written under the caller's imports
+- row  `Introspect`  displays a macro expansion as an inspectable tree
+- row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
++ column  Outil
++ column  Rôle
++ row  `every`  rassemble *toutes* les instances given d'un type visibles à un point d'appel
++ row  `reify`  transforme une collection au niveau des types en valeur à l'exécution
++ row  `Syntax.name`  rend un type tel qu'il s'écrirait avec les imports de l'appelant
++ row  `Introspect`  affiche l'expansion d'une macro sous forme d'arbre inspectable
++ row  `Classfile`  relit le bytecode compilé, pour les rares travaux qui doivent voir ce qu'a produit le compilateur
+```
+
+- Collecting every given is the mechanism behind pluggable configuration throughout these
+- libraries.
++ Rassembler tous les givens est le mécanisme qui sous-tend la configuration modulaire dans
++ l'ensemble de ces bibliothèques.
+
+- ### On metaprogramming
++ ### À propos de la métaprogrammation
+
+- Scala 3's macros are principled, and short of tools. A macro author stares at expansions with
+- `println`, renders types with a `show` which ignores the caller's imports, and cannot ask an
+- innocent question, "which givens of this type are in scope?", because implicit search answers
+- with one given, or with an ambiguity. These gaps are generic, and every macro project fills them
+- again.
++ Les macros de Scala 3 sont fondées sur des principes, mais pauvres en outils. L'auteur d'une
++ macro scrute les expansions avec `println`, rend les types avec un `show` qui ignore les
++ imports de l'appelant, et ne peut pas poser une question innocente, « quels givens de ce type
++ sont dans la portée ? », car la recherche implicite répond par un seul given, ou par une
++ ambiguïté. Ces lacunes sont génériques, et chaque projet de macros les comble à nouveau.
+
+- Here they are filled once. Macros which check code as it compiles are how much of
+- [safety by construction](../../philosophy/safety-by-construction.md) is achieved elsewhere.
++ Ici, elles sont comblées une fois pour toutes. Les macros qui vérifient le code pendant sa
++ compilation sont le moyen par lequel une grande partie de la
++ [sûreté par construction](../../philosophy/safety-by-construction.md) est obtenue ailleurs.
+
+- Everything comes from the `soundness` package, and the second import lets the samples print
+- their results:
++ Tout provient du package `soundness`, et le second import permet aux exemples d'afficher
++ leurs résultats :
+
+```scala
+import soundness.*
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+```
+
+- ### Every given in scope
++ ### Tous les givens dans la portée
+
+- Implicit search finds *the* [given]. `every` finds *all of them*. It is a compiletime search
+- which returns their list, and it includes instances which would be ambiguous against each
+- other:
++ La recherche implicite trouve *le* [given]. `every` les trouve *tous*. C'est une recherche à
++ la compilation qui renvoie leur liste, et elle inclut des instances qui seraient ambiguës
++ les unes par rapport aux autres :
+
+```scala
+case class Plugin(name: Text)
+
+given alpha: Plugin = Plugin(t"alpha")
+given beta: Plugin = Plugin(t"beta")
+```
+
+```scala fuel
+run
+##
+every[Plugin].values.each(plugin => Out.println(plugin.name))
+```
+
+- This inverts the usual flow of configuration. Instead of one value which names all the options,
+- each option is declared as a given where it applies, and the consumer collects whatever is in
+- scope. It is how [socket options](sockets.md) accumulate, how every [log sink](logging.md)
+- receives events, and how [terminal features](terminal.md) are switched on.
++ Cela inverse le flux habituel de la configuration. Au lieu d'une valeur unique qui nomme
++ toutes les options, chaque option est déclarée comme un given là où elle s'applique, et le
++ consommateur rassemble tout ce qui est dans la portée. C'est ainsi que les
++ [options de socket](sockets.md) s'accumulent, que chaque
++ [puits de journalisation](logging.md) reçoit les événements, et que les
++ [fonctionnalités du terminal](terminal.md) sont activées.
+
+- ### Type-level values
++ ### Valeurs au niveau des types
+
+- A type parameter is to typechecking what an ordinary parameter is to execution: a way of passing
+- information to the place which will use it. Types are the poorer medium. Type-level operations
+- are far less expressive than those on values, and code written in them is harder to write and to
+- read. Macros close the gap. The logic is written as ordinary code over values, which happens to
+- *run* at compiletime. One thing is then missing: a way to carry a collection between the two
+- worlds.
++ Un paramètre de type est à la vérification des types ce qu'un paramètre ordinaire est à
++ l'exécution : un moyen de transmettre une information à l'endroit qui l'utilisera. Les types
++ sont le support le plus pauvre. Les opérations au niveau des types sont bien moins
++ expressives que celles sur les valeurs, et le code qui les utilise est plus difficile à
++ écrire et à lire. Les macros comblent l'écart. La logique s'écrit comme du code ordinaire
++ sur des valeurs, qui se trouve *s'exécuter* à la compilation. Il manque alors une chose : un
++ moyen de transporter une collection entre les deux mondes.
+
+- The type-level collections do that. A macro which is parameterized by static data, such as a
+- list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
++ Les collections au niveau des types font cela. Une macro paramétrée par des données
++ statiques, comme une liste de noms ou une correspondance, transporte les données dans un
++ type, et les *réifie* en une valeur à l'exécution :
+
+```scala fuel
+run
+##
+Out.println(reify[TypeList[("one", "two", "three")]].inspect)
+Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
+```
+
+- Each runtime value has a type-level form:
++ Chaque valeur à l'exécution a une forme au niveau des types :
+
+```tabular
+- column  Value
+- column  Type-level form
+- row  an `Int`, `String`, `Double` or `Boolean`  its singleton type
+- row  a `List`  a `Tuple`, under `TypeList`
+- row  a `Set`  a union, under `TypeSet`
+- row  a `Map`  a tuple of pairs, under `TypeMap`
++ column  Valeur
++ column  Forme au niveau des types
++ row  un `Int`, `String`, `Double` ou `Boolean`  son type singleton
++ row  une `List`  un `Tuple`, sous `TypeList`
++ row  un `Set`  une union, sous `TypeSet`
++ row  une `Map`  un tuple de paires, sous `TypeMap`
+```
+
+- `reify` has a second form, which takes a `Type` rather than a static type parameter, for use
+- inside a macro implementation where the type is known only abstractly. `reifyAs` fixes the type
+- of the result where inference needs the help.
++ `reify` a une seconde forme, qui prend un `Type` plutôt qu'un paramètre de type statique,
++ pour une utilisation dans l'implémentation d'une macro où le type n'est connu
++ qu'abstraitement. `reifyAs` fixe le type du résultat là où l'inférence a besoin d'aide.
+
+- The data stays in the type system, where macros can inspect it, until the moment a value is
+- needed.
++ Les données restent dans le système de types, où les macros peuvent les inspecter,
++ jusqu'au moment où une valeur est nécessaire.
+
+- ### Abstracting over containers
++ ### Abstraction sur les conteneurs
+
+- Many types are *containers* in the same sense. An [`Optional`](optional-values.md), an
+- `Attempt`, a [`Task`](concurrency.md) and a [collection](collections.md) all allow a value to be
+- put in, mapped over, and flat-mapped through. Writing an operation once over all of them needs
+- those capabilities as values, and not as methods which happen to share names.
++ De nombreux types sont des *conteneurs* au même sens. Un [`Optional`](optional-values.md), un
++ `Attempt`, une [`Task`](concurrency.md) et une [collection](collections.md) permettent tous d'y
++ placer une valeur, de la transformer, et de la transformer en aplatissant le résultat. Écrire une
++ opération une seule fois pour tous exige ces capacités sous forme de valeurs, et non de méthodes
++ qui se trouvent partager des noms.
+
+- `Functor` supplies `point`, which lifts a value into the container, and mapping. `Monad` adds
+- `bind`, which is `flatMap` under a name which does not collide with the method the container
+- already has. Instances are constructed for any type which provides the needed methods, so a
+- container written without any of this in mind takes part anyway.
++ `Functor` fournit `point`, qui élève une valeur dans le conteneur, ainsi que la
++ transformation. `Monad` ajoute `bind`, qui est `flatMap` sous un nom qui n'entre pas en
++ collision avec la méthode que possède déjà le conteneur. Des instances sont construites pour
++ tout type qui fournit les méthodes nécessaires ; un conteneur écrit sans rien de tout cela
++ en tête y participe donc quand même.
+
+- Two operations follow at once, and are the reason this is worth having. `sequence` turns a
+- collection of containers inside out:
++ Deux opérations en découlent immédiatement, et sont la raison pour laquelle cela en vaut la
++ peine. `sequence` retourne une collection de conteneurs comme un gant :
+
+```scala fuel
+run
+##
+Out.println(List[Option[Int]](Some(1), Some(2), Some(3)).sequence.inspect)
+Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
+```
+
+- `traverse` maps a function which may fail over a collection, and gathers the results in one
+- container, not in a collection of containers. This is the shape of "parse all of these, and fail
+- if any of them fails":
++ `traverse` applique une fonction susceptible d'échouer à une collection, et rassemble les
++ résultats dans un seul conteneur, et non dans une collection de conteneurs. C'est la forme
++ de « analyser tous ces éléments, et échouer si l'un d'eux échoue » :
+
+```scala
+def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+```
+
+```scala fuel
+run
+##
+Out.println(List(t"1", t"2", t"3").traverse(parseNumber).inspect)
+Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
+```
+
+- Both work on any collection, and the result keeps the shape of the collection. A `List` of
+- `Option`s sequences to an `Option` of a `List`, and a `Set` to an `Option` of a `Set`.
++ Les deux fonctionnent sur toute collection, et le résultat conserve la forme de la
++ collection. Une `List` d'`Option`s devient une `Option` de `List`, et un `Set` une `Option`
++ de `Set`.
+
+- ### Types as source text
++ ### Les types comme texte source
+
+- A type rendered in an error message or in generated code should read as the *user* would write
+- it, with their imports respected and infix syntax used where the type is infix. `Syntax.name`
+- does that, and covers the full grammar of types:
++ Un type rendu dans un message d'erreur ou dans du code généré doit se lire comme
++ l'*utilisateur* l'écrirait, en respectant ses imports et en utilisant la syntaxe infixe là
++ où le type est infixe. `Syntax.name` fait cela, et couvre toute la grammaire des types :
+
+```scala fuel
+run
+##
+Out.println(Syntax.name[Int | String & Double])
+Out.println(Syntax.name[(text: Text) => text.type])
+Out.println(Syntax.name[Addable by Int to Double])
+```
+
+- Error messages from a macro built with it read as Scala, not as compiler internals.
++ Les messages d'erreur d'une macro construite avec lui se lisent comme du Scala, et non comme
++ des détails internes du compilateur.
+
+- ### Inspecting expansions
++ ### Inspecter les expansions
+
+- `Introspect.syntax` captures the tree of an expression, as the compiler sees it, with its tags,
+- nodes and types. The result is a value which renders as a navigable diagram.
+- `Introspect.semantics` does the same for the flags and members of a symbol:
++ `Introspect.syntax` capture l'arbre d'une expression, tel que le voit le compilateur, avec
++ ses étiquettes, ses nœuds et ses types. Le résultat est une valeur qui se rend sous forme de
++ diagramme navigable. `Introspect.semantics` fait de même pour les drapeaux et les membres
++ d'un symbole :
+
+```scala
+val x = 5
+
+val tree = Introspect.syntax(true):
+  1 + x
+```
+
+- For a macro author, this replaces archaeology with `println` by a structured view of what an
+- expansion actually produced. Both work from *outside* a macro too, on any expression in ordinary
+- code, which makes them useful for answering questions about the language itself. Introspecting
+- `1 + x`, as above, shows an `Apply` of a `Select` over a `Literal` and an `Ident`. Doing the
+- same for a `val y: 5 = 5` shows a single `Literal`, because the [singleton type] let the
+- compiler fold the addition away.
++ Pour l'auteur d'une macro, cela remplace l'archéologie à coups de `println` par une vue
++ structurée de ce qu'une expansion a réellement produit. Les deux fonctionnent aussi
++ *en dehors* d'une macro, sur n'importe quelle expression de code ordinaire, ce qui les rend
++ utiles pour répondre à des questions sur le langage lui-même. Inspecter `1 + x`, comme
++ ci-dessus, montre un `Apply` d'un `Select` sur un `Literal` et un `Ident`. Faire de même
++ pour un `val y: 5 = 5` montre un seul `Literal`, car le [type singleton] a permis au
++ compilateur d'éliminer l'addition.
+
+- Inside a macro, where a `Quotes` is available, the `syntax` and `semantics` extension methods do
+- the same for an `Expr` or a `Symbol`. The result is colored through a `TastyPalette`, so it
+- reads well at a terminal.
++ À l'intérieur d'une macro, où un `Quotes` est disponible, les méthodes d'extension `syntax`
++ et `semantics` font de même pour une `Expr` ou un `Symbol`. Le résultat est coloré au moyen
++ d'une `TastyPalette`, de sorte qu'il se lit bien dans un terminal.
+
+- A macro which must fail does so with `halt`, which takes a `Message`. The compile errors of a
+- macro are therefore built from the same structured messages as [runtime errors](errors.md),
+- with their substitutions highlighted where the compiler's output supports it, and they can be
+- attached to a position in the source.
++ Une macro qui doit échouer le fait avec `halt`, qui prend un `Message`. Les erreurs de
++ compilation d'une macro sont donc construites à partir des mêmes messages structurés que
++ les [erreurs à l'exécution](errors.md), avec leurs substitutions mises en évidence là où la
++ sortie du compilateur le permet, et elles peuvent être rattachées à une position dans le
++ code source.
+
+- ### Down to bytecode
++ ### Jusqu'au bytecode
+
+- Occasionally the question is not what the compiler *typed*, but what it *emitted*: whether a
+- combinator inlines away, or what a hot path compiles to. A classfile parses into typed methods
+- and instructions, and each instruction carries the state of the operand stack, reconstructed:
++ Il arrive que la question ne soit pas ce que le compilateur a *typé*, mais ce qu'il a
++ *émis* : si un combinateur disparaît par inlining, ou en quoi se compile un chemin critique.
++ Un fichier de classe s'analyse en méthodes et instructions typées, et chaque instruction
++ porte l'état de la pile d'opérandes, reconstitué :
+
+```scala
+import classloaders.threadContextClassloader
+
+val methods = Classfile[Exit].let(_.methods.map(_.name))
+```
+
+- The `bytecode` of each method is its JVM instructions, with their stack states, ready to render.
+- A quoted expression can also be compiled and disassembled in one step. This is the foundation
+- for performance work which must verify what the optimizer did, and not assume it.
++ Le `bytecode` de chaque méthode est l'ensemble de ses instructions JVM, avec leurs états de
++ pile, prêtes à être rendues. Une expression quotée peut aussi être compilée et désassemblée
++ en une seule étape. C'est la base d'un travail de performance qui doit vérifier ce qu'a
++ fait l'optimiseur, et non le supposer.
+
+- ### Related
++ ### Voir aussi
+
+- - [Staging](staging.md) runs quoted code in another environment.
+- - [Derivation](derivation.md) generates typeclass instances from the structure of a type.
+- - [Annotations](annotations.md) reads annotations without a macro.
+- - [Compiler](compiler.md) runs the Scala compiler as a library.
+- - [Classpath](classpath.md) describes the classloaders which a classfile is read through.
+- - [Interpolation](interpolation.md) and [records](records.md) are built with these tools.
++ - [Mise en étapes](staging.md) exécute du code quoté dans un autre environnement.
++ - [Dérivation](derivation.md) génère des instances de classes de types à partir de la
++   structure d'un type.
++ - [Annotations](annotations.md) lit les annotations sans macro.
++ - [Compilateur](compiler.md) exécute le compilateur Scala comme une bibliothèque.
++ - [Classpath](classpath.md) décrit les chargeurs de classes au travers desquels un fichier
++   de classe est lu.
++ - [Interpolation](interpolation.md) et les [enregistrements](records.md) sont construits
++   avec ces outils.
