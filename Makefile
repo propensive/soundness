@@ -83,7 +83,7 @@ ci:
 wasm-e2e:
 	./etc/ci/wasm-e2e.sh
 
-# Evaluate every tutorial example in doc/modules/ through the flame REPL (`make doccheck`, or
+# Evaluate every tutorial example in doc/en/modules/ through the flame REPL (`make doccheck`, or
 # `make doccheck DOC=json` for one tutorial), and check the names the examples use against the
 # source. See etc/doccheck.py for what it needs and how it reads the results.
 doccheck:

@@ -44,7 +44,7 @@ import textMetrics.uniformMetric
 import ultimatum.Tui.{Occupancy, Pane}
 import ultimatum.Tui.{Captioned, Fraction, Reading, Reckoning, Standing, Step}
 
-// Every code example in `doc/modules/gauges.md`, compiled. Prose drifts from an API silently, and a
+// Every code example in `doc/en/modules/gauges.md`, compiled. Prose drifts from an API silently, and a
 // documented example that does not compile is worse than no example at all.
 object Examples:
   def defaults(using Stdio): Unit =

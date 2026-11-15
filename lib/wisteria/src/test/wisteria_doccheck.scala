@@ -4,7 +4,7 @@ import soundness.*
 import dysasymptotics.linearAccess
 import strategies.throwUnsafely
 
-// A compile-time mirror of doc/modules/derivation.md's samples (the ultimatum_doccheck.scala
+// A compile-time mirror of doc/en/modules/derivation.md's samples (the ultimatum_doccheck.scala
 // precedent): a documented derivation that does not compile is worse than no example at all.
 object DerivationTutorial:
   sealed trait Temporal

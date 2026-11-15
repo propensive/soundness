@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Map every library under lib/ to the tutorials in doc/modules/ that cover it, and fail if
+"""Map every library under lib/ to the tutorials in doc/en/modules/ that cover it, and fail if
 any library is covered by none (roadmap item doc-4).
 
 A tutorial never names a library — it says "Soundness" — so coverage is judged by the names
@@ -73,7 +73,7 @@ def main():
     unique = {library: {n for n in exported if len(owners[n]) == 1} for library, exported in names.items()}
 
     docs = {}
-    for path in sorted(glob.glob('doc/modules/*.md')):
+    for path in sorted(glob.glob('doc/en/modules/*.md')):
         if os.path.basename(path) == 'overview.md': continue   # an index of the others, not a topic
         docs[os.path.basename(path)] = set(re.findall(r'\b[A-Z][A-Za-z0-9]{2,}\b', open(path, encoding='utf-8').read()))
 
@@ -91,7 +91,7 @@ def main():
 
     uncovered = [l for l in libraries if not coverage[l] and l not in INTERNAL]
     for library in uncovered:
-        print(f'uncovered: lib/{library} — no tutorial in doc/modules mentions a name only it exports')
+        print(f'uncovered: lib/{library} — no tutorial in doc/en/modules mentions a name only it exports')
     missing = {doc for docs_ in COVERED_BY.values() for doc in docs_ if doc not in docs}
     for doc in sorted(missing):
         print(f'COVERED_BY names a tutorial that does not exist yet: {doc}')

@@ -84,7 +84,7 @@ types an existing operation covers, before adding an operation.
 Two forces push the other way, and both are legitimate in their place.
 
 The first is when an operation genuinely differs. `read` and `load` are two verbs for
-[XML](../modules/xml.md), because reading yields the content and loading yields the
+[XML](../en/modules/xml.md), because reading yields the content and loading yields the
 document with its header — a real distinction, not a variant. Collapsing them would
 force a flag argument, which is a worse way to say the same thing.
 

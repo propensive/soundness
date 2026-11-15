@@ -159,7 +159,7 @@ row  No `caps.unsafe` escape hatch remains in `lib/`  `safety-4`
 row  The platform manifest is enforced in CI, its exclusions carry reasons, and an Android APK is built and signed in CI  `plat-1`, `plat-2`, `plat-3`
 row  `doc/api-reduction-candidates.md` no longer exists  `api-5`
 row  Every error type has a bolt code and a documentation page, checked in CI  `doc-1`
-row  Every published module is covered by a `doc/modules/` topic  `doc-4`
+row  Every published module is covered by a `doc/en/modules/` topic  `doc-4`
 row  API documentation is generated and published for every component  `doc-5`
 row  `fury build` builds Soundness itself, attestation-equal to the Mill build  `tool-4`
 row  fume runs the full test suite, and no suite is disabled  `tool-2`

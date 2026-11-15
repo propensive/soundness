@@ -1,13 +1,30 @@
 tel 1.0
 
 # The documentation fuel compiles and serves (`fuel compile`, then `fuel serve` at
-# http://localhost:8060/): one section per directory, named by its last segment.
-document doc/modules
-document doc/philosophy
-document doc/standards
-document doc/migration
-document doc/roadmap
-document doc/errors
+# http://localhost:8060/), one section each. The section `soundness` is written in English in
+# `doc/en` — the tutorials in `modules`, the API overlays in `api`, the glossary, and the
+# section's title in `section.tel` — and translated into French in `doc/fr`, which mirrors it
+# (`fuel translate` writes what is untranslated there, and checks what is).
+section soundness doc
+  original en en section.tel
+    overlay api
+    glossary glossary.tel
+  translation fr fr
+
+section philosophy doc/philosophy
+  original en .
+
+section standards doc/standards
+  original en .
+
+section migration doc/migration
+  original en .
+
+section roadmap doc/roadmap
+  original en .
+
+section errors doc/errors
+  original en .
 
 # The classpath the fences are compiled against: the test assembly (`./mill test.assembly`,
 # which `make test` builds), carrying every JVM component and the fork's standard library.
@@ -69,14 +86,14 @@ scalac-option -Yimports:java.lang,proscenium,soundness
 session
 fixtures doc/fixtures
 
-# The API documentation: one overlay per package beneath doc/api, merged onto the model fuel
-# reads from the classpath above (every library is in the test assembly), and the package a
-# document's or an overlay's references resolve through. No `source` directories: Soundness's
+# The API documentation is one overlay per package beneath doc/en/api (the `overlay` of the
+# section `soundness`), merged onto the model fuel reads from the classpath above (every
+# library is in the test assembly); `imports` is the package a document's or an overlay's
+# references resolve through. No `source` directories: Soundness's
 # own sources need the fork compiler's syntax, which fuel's session cannot compile, so a
 # library's members come from its jar and an overlay is checked against those.
-overlay doc/api
 imports soundness
 
-# The words the documents use with a precise meaning: a term in brackets in prose shows its
-# definition when pointed at (doc/standards/style.md, "Glossary").
-glossary doc/glossary.tel
+# The words the documents use with a precise meaning, which a term in brackets in prose shows
+# the definition of when pointed at (doc/standards/style.md, "Glossary"), are
+# doc/en/glossary.tel: the `glossary` of the section `soundness`, translated with it.

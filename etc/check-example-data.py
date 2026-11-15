@@ -25,8 +25,8 @@ SETS = [
   'lib/*/src/**/*.scala',
   'lib/*/src/**/*.java',
   'src/**/*.scala',
-  'doc/modules/*.md',
-  'doc/api/*.tel',
+  'doc/en/modules/*.md',
+  'doc/en/api/*.tel',
   'doc/errors/*.md',
   'doc/philosophy/*.md',
   'doc/standards/*.md',
@@ -51,14 +51,14 @@ GENUINE = [
   ('lib/enigmatic/src/x509/enigmatic.Distinguished.scala', 'company'),   # X.509 `O=` attribute
   ('lib/scintillate/src/server/scintillate.Reactor.scala', 'company'),   # the reactor's boss thread
   ('lib/scintillate/src/bench/scintillate.RivalNetty.scala', 'company'), # Netty's boss group
-  ('doc/api/scintillate.tel', 'company'),
+  ('doc/en/api/scintillate.tel', 'company'),
   ('lib/degustation/src/tasty/degustation.Universe.scala', 'placeholder'), # `$bar` is Scala's mangling of `|`
   ('lib/digression/src/core/digression.StackTrace.scala', 'placeholder'),
   ('lib/facsimile/src/core/facsimile.PdfEncoding.scala', 'placeholder'),   # Adobe glyph name `bar`
   ('lib/archimedes/src/core/archimedes.Ergo.scala', 'placeholder'),       # the overbar accent
   ('lib/tasseomancy/src/core/tasseomancy.*.scala', 'placeholder'),        # a chart's bars
-  ('doc/api/tasseomancy.tel', 'placeholder'),
-  ('doc/modules/charts.md', 'placeholder'),
+  ('doc/en/api/tasseomancy.tel', 'placeholder'),
+  ('doc/en/modules/charts.md', 'placeholder'),
   ('lib/xylophone/src/test/xylophone.ProviderTests.scala', 'people'),   # the W3C `po.xml` sample
   ('lib/aviation/src/test/aviation_test.scala', 'people'),               # Christmas Eve, New Year's Eve
   ('lib/gossamer/src/test/gossamer_test.scala', 'people'),               # a list of dictionary words
@@ -66,7 +66,7 @@ GENUINE = [
   ('lib/gossamer/src/test/gossamer_test.scala', 'placeholder'),
   ('lib/ultimatum/src/test/*', 'placeholder'),                           # progress bars
   ('lib/burdock/src/test/*', 'placeholder'),
-  ('doc/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
+  ('doc/en/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
 ]
 
 # Released migration notes are frozen (AGENTS.md); only the unreleased one is checked.

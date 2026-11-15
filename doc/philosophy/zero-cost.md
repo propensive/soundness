@@ -70,7 +70,7 @@ def callsTypeclassOp(bytecode: Bytecode): Boolean =
       case _                                              => false
 ```
 
-The [metaprogramming](../modules/metaprogramming.md) module exists partly to make this
+The [metaprogramming](../en/modules/metaprogramming.md) module exists partly to make this
 possible: if a claim about what the compiler emitted is worth making, it is worth
 checking on every build.
 

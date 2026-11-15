@@ -263,7 +263,7 @@ that every link has a target.
 ## Glossary
 
 A word with a precise meaning in Soundness — *tactic*, *strategy*, *capability*, *choice
-package* — is defined in `doc/glossary.tel`, and written in brackets where a reader may not yet
+package* — is defined in `doc/en/glossary.tel`, and written in brackets where a reader may not yet
 know it: `[tactic]`, or `[strategies][strategy]` for an inflected form. Fuel shows the definition
 when the term is pointed at, and links it to the page named in its entry.
 
