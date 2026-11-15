@@ -505,20 +505,6 @@ object Instrumenter:
 
         case _ => None
 
-      // Proscala 1.1.3 marks the sequence wildcard of a pattern read from TASTy as a backquoted
-      // identifier (propensive/proscala#43), which the pattern matcher then compares the
-      // scrutinee with, and the backend cannot load; this takes the mark off again.
-      val unmarking: TreeTraverser = new TreeTraverser:
-        def traverse(tree: Tree)(using Context): scala.Unit = tree match
-          case tree: Ident if tree.name == nme.WILDCARD_STAR =>
-            tree.removeAttachment(ast.Trees.Backquoted)
-            ()
-
-          case _ =>
-            traverseChildren(tree)
-
-      unmarking.traverse(unit.tpdTree)
-
       names.flatMap(targets.get).headOption.foreach: target =>
         val coverage: Symbol = requiredModule("probably.Coverage")
         val probes: Symbol = coverage.requiredMethod("probes")

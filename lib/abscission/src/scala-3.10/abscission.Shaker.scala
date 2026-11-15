@@ -204,9 +204,6 @@ object Shaker:
     override protected def backendPhases: List[List[Phase]] =
       if plan.prune then List(new Verify(plan)) :: super.backendPhases else super.backendPhases
 
-    override protected def frontendPhases: List[List[Phase]] =
-      super.frontendPhases :+ List(new Restore)
-
     override def newRun(using Context): Run =
       reset()
       new ShakeRun(this, ctx.addMode(Mode.ReadPositions), initial)
@@ -221,26 +218,12 @@ object Shaker:
     override def description: String = "the place of the checks of overriding, which are of source"
     override def runsAfter: Set[String] = Set(transform.ElimRepeated.name)
 
-  // Proscala 1.1.3 marks the sequence wildcard of a pattern read from TASTy as a backquoted
-  // identifier (propensive/proscala#43), which the pattern matcher then compares the scrutinee
-  // with; this takes the mark off again. It is wanted after inlining, since a pattern may
-  // have come from the body of an inline method of another unit.
-  private val unmarking: TreeTraverser = new TreeTraverser:
-    def traverse(tree: Tree)(using Context): Unit = tree match
-      case tree: Ident if tree.name == nme.WILDCARD_STAR =>
-        tree.removeAttachment(ast.Trees.Backquoted)
-
-      case _ =>
-        traverseChildren(tree)
-
   // A unit which was compiled with capture checking is one the later phases generate different
   // code for, and TASTy records that it was, where a compilation from source would have found
-  // it in the unit's imports or the options. Restoring it for each unit lets one run recompile
-  // units which were checked beside units which were not. One decision is made for a whole
-  // run, though: a given alias is not simplified to a method if any unit of the run is checked,
-  // so a unit which was not checked, and is recompiled beside one that was, keeps a cached
-  // alias where it had a method. The two behave alike. (That the compiler does not do this
-  // itself is propensive/proscala#44.)
+  // it in the unit's imports or the options. `ReadTasty` restores it on the units it makes,
+  // which are the first ones of a run; a unit read later, as the analysis finds it needs one,
+  // is made here, so it is restored here too. With it restored for each unit, one run
+  // recompiles units which were checked beside units which were not, each to the code it had.
   private def restore(unit: CompilationUnit)(using Context): Unit =
     unit.tastyInfo.foreach: info =>
       if info.attributes.captureChecked then
@@ -254,15 +237,7 @@ object Shaker:
   private class Bare extends Phase:
     def phaseName: String = "bare"
 
-    protected def run(using Context): Unit =
-      unmarking.traverse(ctx.compilationUnit.tpdTree)
-      ctx.compilationUnit.pickled = Map.empty
-
-  // Restores what TASTy records of how a unit was compiled, before anything is inlined into it.
-  private class Restore extends Phase:
-    def phaseName: String = "restore"
-
-    protected def run(using Context): Unit = restore(ctx.compilationUnit)
+    protected def run(using Context): Unit = ctx.compilationUnit.pickled = Map.empty
 
   private class Shake(plan: Plan) extends Phase, IdentityDenotTransformer:
     def phaseName: String = "shake"
@@ -404,7 +379,6 @@ object Shaker:
 
     private def index(unit: CompilationUnit)(using Context): Unit =
       units += unit
-      unmarking.traverse(unit.tpdTree)
 
       def member(tree: Tree): Unit = tree match
         case tree: PackageDef =>
@@ -465,8 +439,7 @@ object Shaker:
         found
 
       val earlier: List[Phase] =
-        ctx.base.allPhases.toList.takeWhile(_ ne phase).filter: earlier =>
-          earlier.phaseName != "readTasty" && earlier.phaseName != "restore"
+        ctx.base.allPhases.toList.takeWhile(_ ne phase).filter(_.phaseName != "readTasty")
 
       earlier.foreach: earlier =>
         if earlier.isRunnable then fresh = earlier.runOn(fresh)
