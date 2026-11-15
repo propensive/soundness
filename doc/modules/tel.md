@@ -550,8 +550,10 @@ A `Ratel.Rows` has a `size`, is read by position or with `each`, and has `find`,
 `sorted`, which gives its records in the order of their keys. A row is a plain value which
 says where a record lies, and is read through the reader which its block is given, so it is
 read only while its image is open. Its type, `Ratel.Row of brand`, carries the brand of that
-reader, and a row which is taken to the block of another reader does not compile there. `as` decodes one record, and whatever it holds, through the
-same typeclasses as a TEL document:
+reader. Each accessor asks for the reader with that brand, so where several images are open a
+row is read through its own, and a row which is taken to where its reader is not in scope
+does not compile there. `as` decodes one record, and whatever it holds, through the same
+typeclasses as a TEL document:
 
 ```scala
 case class Role(name: Text, play: Text, lines: Optional[Int])
@@ -574,7 +576,7 @@ file.open[Ratel]():
   val hamlet = cast.role(t"Hamlet")            // an optional record, by its key
   val play: Optional[Text] = hamlet.let(_.play)
   val lines: Optional[Long] = hamlet.let(_.lines)
-  val comedy = cast.role.where(t"/play", t"Twelfth Night")
+  val comedy = cast.role.where(_.play = t"Twelfth Night")
 ```
 
 A `Ratel.Provider` is a [specification](records.md#defining-a-specification), as
@@ -584,8 +586,11 @@ none: as `Text`, or as `Int`, `Long` or `Double` if its encoding is a standard c
 every value one of them holds exactly, as `u32` is by `Long`, or as a type of your own, by an
 instance of your own. A flag is a `Boolean`, and a repeatable flag the `Long` number of times
 it occurs. A struct is a nested record, a repeatable scalar a `List`, and a repeatable struct
-a `Ratel.Table`, which has the `size`, `each`, `sorted` and `where` of a `Ratel.Rows`, and is
-applied to a key or a position. Each variant of a select is a member which is absent unless
+a `Ratel.Table`, which has the `size`, `each` and `sorted` of a `Ratel.Rows`, and is
+applied to a key or a position. Its `where` finds records by a secondary index, and names the
+indexed scalar as a [lens](optics.md) names what it updates, by a path which ends in an
+assignment, such as `_.play = t"Twelfth Night"` or `_.author.born = 1564L`: the path is
+checked against the record, and the value against the type its member is read as. Each variant of a select is a member which is absent unless
 it is the one chosen, and a member which is optional is an `Optional`. A member the schema
 does not declare is not a member of the record, and does not compile. The provider's object
 must be compiled before the code which uses it, so it is written in a file of its own.

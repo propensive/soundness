@@ -445,8 +445,14 @@ private[octogenarian] object Workspace:
       selected(origin) + selected(fromIndex).filter: path =>
         paths.has(path) && origin.at(path).absent
 
+    // An entry may take the working file's stat data only if that file is rewritten to match it.
+    // Otherwise the file may differ from the entry, and stat data which described it would let
+    // a later status take it for unchanged, once the index is a second older than the file; so
+    // the stat data is left unverified, and the next status hashes the file.
     def restored(path: Text): List[Index.Entry] =
-      origin.at(path).lay(Nil): (mode, hash) => List(Index.entryFor(worktree, path, hash, mode))
+      origin.at(path).lay(Nil): (mode, hash) =>
+        if workingFiles then List(Index.entryFor(worktree, path, hash, mode))
+        else List(Index.Entry(path, mode, hash, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     def rewrite(path: Text): Unit =
       origin.at(path).lay(()): (mode, hash) => writeFile(objects, worktree, path, mode, hash)
