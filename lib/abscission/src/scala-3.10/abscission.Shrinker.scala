@@ -45,8 +45,9 @@ import scala.jdk.CollectionConverters.*
 
 // Makes a closed world of a classpath: the classes which a set of entry points can reach, and
 // nothing else. Classes which were compiled by this compiler are recompiled from their TASTy by
-// `Shaker`, without the members nothing reaches; the rest — Java, Kotlin, the standard library —
-// are copied or left out, a class at a time, by following the references bytecode makes.
+// `Shaker`, without the members nothing reaches; the rest, which are Java, Kotlin and the
+// standard library, are copied or left out, a class at a time, by following the references
+// bytecode makes.
 //
 // A class which was compiled by this compiler, and which what is kept refers to only as a type —
 // in a signature, a cast or a test — is written as a shell: its name, its flags and its parents,
@@ -134,7 +135,8 @@ object Shrinker:
 
     def size(name: String): Long =
       val archive: juz.ZipFile | Null = zip
-      if archive != null then archive.getEntry(name).nn.getSize else jnf.Files.size(root.resolve(name))
+      if archive != null then archive.getEntry(name).nn.getSize
+      else jnf.Files.size(root.resolve(name))
 
     def close(): Unit =
       val archive: juz.ZipFile | Null = zip
@@ -154,7 +156,9 @@ object Shrinker:
     import dotty.tools.dotc.core.tasty.TastyUnpickler
     import dotty.tools.tasty.{TastyHeaderUnpickler, UnpickleException}
 
-    try new TastyHeaderUnpickler(TastyUnpickler.scala3CompilerConfig, tasty).readFullHeader().toolingVersion
+    try
+      new TastyHeaderUnpickler(TastyUnpickler.scala3CompilerConfig, tasty).readFullHeader()
+      . toolingVersion
     catch
       case _: UnpickleException          => null
       case _: IndexOutOfBoundsException  => null
@@ -217,10 +221,13 @@ object Shrinker:
       if !owner.startsWith("[") then members += ((owner, entry.name.nn.stringValue.nn, descriptor))
 
     def loadable(entry: jlcc.PoolEntry): Unit = entry match
+      case entry: jlcc.ConstantDynamicEntry =>
+        bootstrap(entry.bootstrap.nn)
+        described(entry.`type`.nn.stringValue.nn)
+
       case entry: jlcc.ClassEntry           => classed(entry)
       case entry: jlcc.MethodTypeEntry      => described(entry.descriptor.nn.stringValue.nn)
       case entry: jlcc.MethodHandleEntry    => member(entry.reference.nn)
-      case entry: jlcc.ConstantDynamicEntry => bootstrap(entry.bootstrap.nn); described(entry.`type`.nn.stringValue.nn)
       case _                                => ()
 
     def bootstrap(entry: jlc.BootstrapMethodEntry): Unit =
@@ -318,7 +325,17 @@ object Shrinker:
       name == "module-info.class" || name.startsWith("META-INF/versions/") ||
       name.startsWith("META-INF/givens/") || name.startsWith("META-INF/services/") ||
       name.startsWith("META-INF/") &&
-        (name.endsWith(".SF") || name.endsWith(".DSA") || name.endsWith(".RSA") || name.endsWith(".EC"))
+        List(".SF", ".DSA", ".RSA", ".EC").exists(name.endsWith(_))
+
+  // The entries a classloader loads from, where it says — a host which was given a classpath
+  // has no need to ask — and the JVM's own otherwise.
+  def classpath(loader: ClassLoader): List[String] = loader match
+    case loader: java.net.URLClassLoader =>
+      loader.getURLs.nn.toList.map { url => jnf.Path.of(url.nn.toURI).nn.toString }
+
+    case _ =>
+      System.getProperty("java.class.path").nn.split(java.io.File.pathSeparator).nn.toList
+      . map(_.nn)
 
   def shrink(request: Request): Report =
     val sources: List[Source] = request.classpath.map(new Source(_))
@@ -334,7 +351,9 @@ object Shrinker:
 
     // The first entry to hold a name is the one a classloader would read it from.
     val holders: mutable.LinkedHashMap[String, Source] = mutable.LinkedHashMap()
-    sources.foreach { source => source.names.foreach { name => holders.getOrElseUpdate(name, source) } }
+    sources.foreach: source =>
+      source.names.foreach { name => holders.getOrElseUpdate(name, source) }
+
 
     val keeps: List[java.util.regex.Pattern] = request.keep.map(pattern)
     val pins: List[java.util.regex.Pattern] = (request.pin ::: unfit).map(pattern)
@@ -352,8 +371,9 @@ object Shrinker:
           val unit: String = name.dropRight(tastySuffix.length)
           val standard: Boolean = unit.startsWith("scala/") || unit.startsWith("dotty/")
 
-          if standard || !holders.get(unit+classSuffix).contains(source) && !holders.get(unit+"$"+classSuffix).contains(source)
-          then None
+          def held(name: String): Boolean = holders.get(name+classSuffix).contains(source)
+
+          if standard || !held(unit) && !held(unit+"$") then None
           else if tooling(source.read(name)) != Shaker.compiler then None
           else if matched(pins, dotted(unit)) then
             pinned += dotted(unit)
@@ -383,13 +403,16 @@ object Shrinker:
         parsed.getOrElseUpdate(name, refs(source.read(name+classSuffix)))
 
     // Services: the implementations each file names, over every entry which has the file.
-    val services: mutable.LinkedHashMap[String, mutable.LinkedHashSet[String]] = mutable.LinkedHashMap()
+    val services: mutable.LinkedHashMap[String, mutable.LinkedHashSet[String]] =
+      mutable.LinkedHashMap()
 
     sources.foreach: source =>
       source.names.filter(_.startsWith("META-INF/services/")).foreach: name =>
         val lines: List[String] =
           new String(source.read(name), "UTF-8").split("\n").nn.toList.map(_.nn.trim.nn)
-          . map { line => if line.contains("#") then line.substring(0, line.indexOf('#')).nn.trim.nn else line }
+          . map: line =>
+              val comment: Int = line.indexOf('#')
+              if comment < 0 then line else line.substring(0, comment).nn.trim.nn
           . filter(_.nonEmpty)
 
         services.getOrElseUpdate(name, mutable.LinkedHashSet()) ++= lines
@@ -423,7 +446,8 @@ object Shrinker:
           if mentions(source.read(name+classSuffix), recompilable) then
             original(name).foreach: found =>
               found.members.foreach: (owner, member, _) =>
-                if recompilable.contains(owner) then roots += Shaker.Root(dotted(owner), member, false)
+                if recompilable.contains(owner)
+                then roots += Shaker.Root(dotted(owner), member, false)
 
     // Compilation
     val staging: jnf.Path = jnf.Files.createTempDirectory("abscission").nn
@@ -440,13 +464,15 @@ object Shrinker:
 
       try
         walk.iterator.nn.asScala.toList.filter(_.toString.endsWith(classSuffix)).map: file =>
-          staging.relativize(file).nn.toString.replace('\\', '/').nn.dropRight(classSuffix.length) -> file
+          val name: String = staging.relativize(file).nn.toString.replace('\\', '/').nn
+          name.dropRight(classSuffix.length) -> file
         . toMap
       finally walk.close()
 
     def cleanup(): Unit =
       val walk = jnf.Files.walk(staging).nn
-      try walk.sorted(java.util.Comparator.reverseOrder()).nn.forEach(jnf.Files.delete(_)) finally walk.close()
+      try walk.sorted(java.util.Comparator.reverseOrder()).nn.forEach(jnf.Files.delete(_))
+      finally walk.close()
 
     // A unit which fails to recompile is one to copy as it is instead; whatever it refers to
     // is then kept, and the rest is shrunk again.
@@ -458,7 +484,8 @@ object Shrinker:
           units.toList.filter: unit =>
             holders.get(unit+tastySuffix).exists: holder =>
               val recorded: String | Null = source(holder.read(unit+tastySuffix))
-              recorded != null && files.exists { file => file == recorded || file.endsWith("/"+recorded) }
+              recorded != null &&
+                files.exists { file => file == recorded || file.endsWith("/"+recorded) }
           . map(dotted)
 
     def described: List[String] = outcome.problems.map: problem =>
@@ -512,7 +539,10 @@ object Shrinker:
                 holders.get(name+classSuffix).foreach: source =>
                   if recompilable.contains(name) then
                     original(name).foreach: found =>
-                      included(name) = found.copy(classes = found.parents.toSet, members = Set(), declared = Set())
+                      included(name) =
+                        found.copy
+                          ( classes = found.parents.toSet, members = Set(), declared = Set() )
+
                       contents(name) = shell(found)
                       shells += name
                       found.parents.foreach(reach(_, name))
@@ -525,7 +555,9 @@ object Shrinker:
 
                     if !fine(source) && whole.add(source) then
                       source.names.foreach: other =>
-                        if other.endsWith(classSuffix) && !discarded(other) && holders.get(other).contains(source)
+                        val own: Boolean = holders.get(other).contains(source)
+
+                        if other.endsWith(classSuffix) && !discarded(other) && own
                         then reach(other.dropRight(classSuffix.length), name)
 
       produced.keysIterator.foreach(reach(_, ""))
@@ -533,7 +565,9 @@ object Shrinker:
       outcome.dynamic.foreach { name => reach(name.replace('.', '/').nn, "") }
       pinned.foreach: unit =>
         val prefix: String = unit.replace('.', '/').nn
-        classes.foreach { name => if name == prefix || name.startsWith(prefix+"$") then reach(name, "") }
+        classes.foreach: name =>
+          if name == prefix || name.startsWith(prefix+"$") then reach(name, "")
+
 
       follow()
 
@@ -551,9 +585,10 @@ object Shrinker:
             implementations.foreach: implementation =>
               val name: String = implementation.replace('.', '/').nn
 
-              if !included.contains(name) && !recompilable.contains(name) && holders.contains(name+classSuffix)
-                && request.services
-              then
+              val copied: Boolean =
+                !recompilable.contains(name) && holders.contains(name+classSuffix)
+
+              if !included.contains(name) && copied && request.services then
                 reach(name, service)
                 growing = true
 
@@ -581,8 +616,8 @@ object Shrinker:
                 (shells.contains(owner) || declared(owner, signature, mutable.HashSet()))
 
             if missing then
-              problems +=
-                s"${dotted(name)} refers to $member$descriptor of ${dotted(owner)}, which was removed"
+              val referent: String = s"$member$descriptor of ${dotted(owner)}"
+              problems += s"${dotted(name)} refers to $referent, which was removed"
 
       if problems.isEmpty then
         jnf.Files.createDirectories(output)
@@ -630,7 +665,8 @@ object Shrinker:
           ( Nil, units.size, outcome.tally.units, classes.length, size, included.size, written,
             produced.size, shells.size, included.size - produced.size - shells.size,
             outcome.tally.members, outcome.tally.removed, pinned.toList, notes,
-            reasons.iterator.filter(_(1).nonEmpty).map { (name, from) => dotted(name) -> dotted(from) }.toMap )
+            reasons.iterator.filter(_(1).nonEmpty)
+            . map { (name, from) => dotted(name) -> dotted(from) }.toMap )
       else
         cleanup()
         Report

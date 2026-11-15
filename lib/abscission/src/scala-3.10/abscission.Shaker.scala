@@ -147,7 +147,8 @@ object Shaker:
 
     val problems: List[Problem] =
       reporter.allErrors.map(describe) ++
-        (if crashed == null then Nil else List(Problem("", 0, "the compiler failed: "+trace(crashed))))
+        (if crashed == null then Nil
+         else List(Problem("", 0, "the compiler failed: "+trace(crashed))))
 
     Outcome(problems, plan.tally, plan.dynamic.toList.sorted)
 
@@ -219,8 +220,11 @@ object Shaker:
   // have come from the body of an inline method of another unit.
   private val unmarking: TreeTraverser = new TreeTraverser:
     def traverse(tree: Tree)(using Context): Unit = tree match
-      case tree: Ident if tree.name == nme.WILDCARD_STAR => tree.removeAttachment(ast.Trees.Backquoted)
-      case _                                             => traverseChildren(tree)
+      case tree: Ident if tree.name == nme.WILDCARD_STAR =>
+        tree.removeAttachment(ast.Trees.Backquoted)
+
+      case _ =>
+        traverseChildren(tree)
 
   // A unit which was compiled with capture checking is one the later phases generate different
   // code for, and TASTy records that it was, where a compilation from source would have found
@@ -228,7 +232,8 @@ object Shaker:
   // units which were checked beside units which were not. One decision is made for a whole
   // run, though: a given alias is not simplified to a method if any unit of the run is checked,
   // so a unit which was not checked, and is recompiled beside one that was, keeps a cached
-  // alias where it had a method. The two behave alike.
+  // alias where it had a method. The two behave alike. (That the compiler does not do this
+  // itself is propensive/proscala#44.)
   private def restore(unit: CompilationUnit)(using Context): Unit =
     unit.tastyInfo.foreach: info =>
       if info.attributes.captureChecked then
@@ -319,7 +324,9 @@ object Shaker:
             traverseChildren(tree)
 
       units.foreach { unit => collector.traverse(unit.tpdTree) }
-      units.foreach { unit => checker.traverse(unit.tpdTree)(using ctx.fresh.setCompilationUnit(unit)) }
+      units.foreach: unit =>
+        checker.traverse(unit.tpdTree)(using ctx.fresh.setCompilationUnit(unit))
+
       units
 
   // The names the pattern matcher selects from the result of an extractor.
@@ -413,7 +420,8 @@ object Shaker:
       def made(symbol: Symbol): Option[CompilationUnit] = symbol match
         case symbol: ClassSymbol if symbol.exists =>
           val tree: Tree = symbol.rootTree
-          if tree.isEmpty then None else Some(CompilationUnit(symbol.classDenot, tree, forceTrees = true))
+          if tree.isEmpty then None
+          else Some(CompilationUnit(symbol.classDenot, tree, forceTrees = true))
 
         case _ =>
           None
@@ -492,8 +500,11 @@ object Shaker:
             val member: Symbol = outer.info.decl(simple.toTypeName).symbol
             val value: Symbol = outer.info.decl(simple).symbol
 
-            List(member).filter { symbol => symbol.exists && symbol.isClass && !inner.endsWith("$") } :::
-              List(value).filter(_.is(Module)).map(_.moduleClass)
+            val classes: List[Symbol] =
+              List(member).filter: symbol =>
+                symbol.exists && symbol.isClass && !inner.endsWith("$")
+
+            classes ::: List(value).filter(_.is(Module)).map(_.moduleClass)
 
       val direct: List[Symbol] =
         if binary.endsWith("$") then module(binary.dropRight(1)) else top(binary) ::: module(binary)
@@ -582,7 +593,8 @@ object Shaker:
             val members: List[Symbol] =
               candidates.getOrElseUpdate
                 ( base,
-                  base.info.decls.toList.filter { member => member.isTerm && !member.isConstructor } )
+                  base.info.decls.toList.filter: member =>
+                    member.isTerm && !member.isConstructor )
 
             members.foreach: member =>
               val name: Name = member.name
@@ -646,7 +658,8 @@ object Shaker:
     private def body(symbol: Symbol)(using Context): Unit =
       definitions.get(symbol).foreach: definition =>
         // The body of a method which is inlined, and yet is called, is in its retainer.
-        if !symbol.isRetainedInlineMethod then walker.traverse(definition.rhs)(using ctx.withOwner(symbol))
+        if !symbol.isRetainedInlineMethod
+        then walker.traverse(definition.rhs)(using ctx.withOwner(symbol))
 
     // The code which runs when a class is instantiated: the arguments to its parents'
     // constructors, its fields' initial values and the statements of its body.
@@ -690,11 +703,17 @@ object Shaker:
         val get: Denotations.Denotation = tpe.member(nme.get)
         if get.exists then extracted(get.info.finalResultType, depth + 1)
 
-    private def path(tree: Tree)(using Context): Boolean = tree match
-      case tree: Ident  => tree.symbol.is(Module) && tree.symbol.isStatic || tree.symbol.is(Package)
-      case tree: Select => (tree.symbol.is(Module) && tree.symbol.isStatic || tree.symbol.is(Package)) && path(tree.qualifier)
-      case tree: This   => tree.symbol.is(ModuleClass) && tree.symbol.isStatic || tree.symbol.is(Package)
-      case _            => false
+    // Whether a tree is a path of packages and of objects which are nested in nothing but
+    // those: one which is not evaluated on the way to an object that it leads to.
+    private def path(tree: Tree)(using Context): Boolean =
+      def fixed(symbol: Symbol): Boolean =
+        symbol.is(Package) || symbol.isStatic && (symbol.is(Module) || symbol.is(ModuleClass))
+
+      tree match
+        case tree: Ident  => fixed(tree.symbol)
+        case tree: Select => fixed(tree.symbol) && path(tree.qualifier)
+        case tree: This   => fixed(tree.symbol)
+        case _            => false
 
     private val walker: TreeTraverser = new TreeTraverser:
       def traverse(tree: Tree)(using Context): Unit = tree match
@@ -737,7 +756,8 @@ object Shaker:
           if constant.tag == Constants.ClazzTag then
             val symbol: Symbol = constant.typeValue.classSymbol
             instantiate(symbol)
-            symbol.info.decls.toList.foreach { member => if member.isConstructor then refer(member) }
+            symbol.info.decls.toList.foreach: member =>
+              if member.isConstructor then refer(member)
 
         case tree: Apply =>
           val symbol: Symbol = tree.fun.symbol
@@ -855,7 +875,8 @@ object Shaker:
           case member =>
             pruned(member)
 
-        val parents: List[Tree] = if whole then template.parents else template.parents.map(unparented)
+        val parents: List[Tree] =
+          if whole then template.parents else template.parents.map(unparented)
 
         cpy.TypeDef(tree)
           ( rhs = cpy.Template(template)(template.constr, parents, Nil, template.self, body) )
