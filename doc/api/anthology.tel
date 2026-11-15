@@ -1774,10 +1774,9 @@ entry .sjsEdges   the Scala.js link edges: `Sjsir` to each JavaScript module sys
       and world name; the link runs `wasm-tools` and `wit-bindgen` as it goes. A WASI link
       whose native tooling is absent is not expressible, since the given cannot be made.
 
-entry .Bundler   the running application's classpath, for a build which must package itself
+entry .Bundler   the running application's classpath, and the assembly of a JAR from a classpath
   detail
-      Its one public member, `.applicationClasspath`, is the classpath the running program
-      was loaded from. A staging rig which must fold its own running classpath into the JARs
+      `.applicationClasspath` is the classpath the running program was loaded from. A staging rig which must fold its own running classpath into the JARs
       it produces pairs it with its compiled output as a `Deliverable.Emission` and packages
       the two through the `Artifact.Jar` edge, so the JAR carries the rig's own executor and
       dependencies:
@@ -1803,7 +1802,13 @@ entry .Bundler   the running application's classpath, for a build which must pac
             List(EntryPoint(executor)) )
       ```
 
-      The JAR assembly itself is not public: it is what the `jarEdges` tools run.
+      `.assemble` is the JAR assembly which the `jarEdges` tools run, for a tool which
+      packages a classpath of its own.
+  entry .assemble   writes a JAR of everything on a classpath, with a `Main-Class` if one is given
+      A directory entry's files are added, without any `MANIFEST.MF` or `plugin.properties`,
+      and a JAR entry's entries are re-emitted as they are, without its manifest; where two
+      entries have a path, the first is kept. The manifest records `Created-By: Soundness`.
+      It is what `Abscission`'s `Shrunk.Jar` edge packages a closed world with.
   entry .applicationClasspath   the classpath of the running application, read from its own classloader
       `LocalClasspath.of(Classloader[Bundler.type])`: introspected from the classloader which
       loaded this class — its own, rather than the thread's context loader, which a pooled
