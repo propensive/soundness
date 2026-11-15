@@ -155,7 +155,7 @@ object Url:
       case Colon, More, LowerCaseLetter, PortRange, Number
 
   case class Error(text: Text, offset: Ordinal, reason: Url.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(714, reason.number)
+  extends fulminate.Error(100, 8, reason.number)
     ( m"the URL $text is not valid: $reason at ${offset.n0}" )
 
   // UrlFragment → Url.Fragment

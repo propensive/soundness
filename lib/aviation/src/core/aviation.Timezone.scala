@@ -69,7 +69,7 @@ object Timezone:
 
   // TimezoneError → Timezone.Error
   case class Error(name: Text)(using Diagnostics)
-  extends fulminate.Error(929, 0)(m"the name $name does not refer to a known timezone")
+  extends fulminate.Error(73, 10, 0)(m"the name $name does not refer to a known timezone")
 
 case class Timezone private(name: Text) extends Findable:
   def stdlib: jt.ZoneId = jt.ZoneId.of(name.s).nn

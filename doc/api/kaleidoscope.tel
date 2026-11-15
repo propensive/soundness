@@ -138,9 +138,9 @@ entry .r   the `r"…"` interpolator: a regular expression as a pattern, or as a
     Inside `r"…"` a backslash is a backslash — only the regular expression's own escaping
     applies, so a literal parenthesis is `r"\("` — and `$` is written `$$` to mean itself. A
     pattern which does not parse is a compile error naming the reason and pointing at the
-    offending character, _[↯SN-397.1] the regular expression could not be parsed because a
+    offending character, _[↯/s.34.1.1] the regular expression could not be parsed because a
     capturing group was not closed at 11_; a `$name` with no group after it is
-    _[↯SN-397.2] … a capturing group was expected immediately following an extractor_. Under
+    _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Under
     `regexBackends.re2` the pattern is also checked against the RE2 subset, so a
     backreference or a lookaround is rejected at compile time rather than at its first use.
 
@@ -426,9 +426,9 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
         by `Regex.makePattern`.
   entry .Error   raised when a pattern cannot be parsed: the position and the reason
     detail
-        Error 397: _the regular expression could not be parsed because `reason` at `index`_,
+        Error `↯/s.34.1`: _the regular expression could not be parsed because `reason` at `index`_,
         with the reason's number as the error's sub-number, so an unclosed group is
-        `SN-397.1`. Raised by `Regex.apply` and `Regex.parse` through a `Tactic[Regex.Error]`,
+        `↯/s.34.1.1`. Raised by `Regex.apply` and `Regex.parse` through a `Tactic[Regex.Error]`,
         and reported as a compile error, pointing at the offending character, by `r"…"`. The
         index counts characters of the parts joined together, with nothing standing in for
         the `$name` substitutions.

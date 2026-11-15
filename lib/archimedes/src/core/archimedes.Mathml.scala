@@ -371,7 +371,7 @@ object Mathml:
       case Reason.UnknownElement(label) => m"the element <$label> is not a known MathML element"
 
   case class Error(reason: Mathml.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(430, reason.number)(m"the MathML could not be parsed because $reason")
+  extends fulminate.Error(129, 1, reason.number)(m"the MathML could not be parsed because $reason")
 
   // MathmlParser → Mathml.Parser
   // Decodes a xylophone `Xml` tree into the Archimedes model by dispatching on

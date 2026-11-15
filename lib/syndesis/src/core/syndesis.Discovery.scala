@@ -337,4 +337,4 @@ object Discovery:
       case Unavailable                extends Reason(6)
 
   case class Error(reason: Discovery.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(54, reason.number)(m"service discovery failed because $reason")
+  extends fulminate.Error(102, 1, reason.number)(m"service discovery failed because $reason")

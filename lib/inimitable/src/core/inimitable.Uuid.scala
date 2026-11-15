@@ -89,7 +89,7 @@ object Uuid extends Extractor[Text, Uuid]:
 
   // UuidError → Uuid.Error
   case class Error(badUuid: Text)(using Diagnostics)
-  extends fulminate.Error(349, 0)(m"$badUuid is not a valid UUID")
+  extends fulminate.Error(47, 1, 0)(m"$badUuid is not a valid UUID")
 
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)

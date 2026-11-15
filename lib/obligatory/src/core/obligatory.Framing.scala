@@ -53,4 +53,4 @@ object Framing:
       case Reason.UnknownHeader   => m"an unrecognized header was encountered"
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(142, reason.number)(m"could not deframe the message because $reason")
+  extends fulminate.Error(112, 2, reason.number)(m"could not deframe the message because $reason")

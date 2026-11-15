@@ -101,7 +101,7 @@ object Dag:
       case Reason.Cyclic            => m"the graph contains a cycle"
 
   case class Error(reason: Dag.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(191, reason.number)(m"the DAG operation failed because $reason")
+  extends fulminate.Error(72, 1, reason.number)(m"the DAG operation failed because $reason")
 
   given nodal: [node] => (Dag[node] is Nodal by node) = new Nodal:
     type Self = Dag[node]

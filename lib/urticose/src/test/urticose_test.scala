@@ -187,7 +187,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"Invalid IP address is compile error"):
         demilitarize(ip"192.168.0.0.0.1").map(_.message)
-      . assert(_ == List(t"[↯SN-077.3] the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
+      . assert(_ == List(t"[↯/s.100.2.3] the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
 
       test(m"IP address byte out of range"):
         capture(t"100.300.200.0".as[Ipv4])
@@ -260,7 +260,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"Invalid subnet prefix is compile error"):
         demilitarize(subnet"10.0.0.0/40").map(_.message)
-      . assert(_ == List(t"[↯SN-077.9] the IP address is not valid because the prefix length 40 is not in the range 0-32"))
+      . assert(_ == List(t"[↯/s.100.2.9] the IP address is not valid because the prefix length 40 is not in the range 0-32"))
 
     suite(m"Email address tests"):
       import EmailAddress.Error.Reason.*
@@ -711,7 +711,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"Parse bad hostname at compiletime"):
         demilitarize(host"www..com").map(_.message)
-      . assert(_ == List(t"[↯SN-892.4] the hostname is not valid because a DNS label cannot be empty"))
+      . assert(_ == List(t"[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty"))
 
     suite(m"MAC Address tests"):
       import MacAddress.Error.Reason.*
@@ -756,7 +756,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
         demilitarize:
           mac"01-23-45-ab-cd-e"
         .map(_.message)
-      . assert(_ == List(t"[↯SN-532.2] the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
+      . assert(_ == List(t"[↯/s.100.7.2] the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
 
       test(m"Create a MAC address from bytes"):
         MacAddress(1, 2, 3, 4, 5, 6).show
@@ -781,11 +781,11 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"Check Docker over UDP port is not valid"):
         demilitarize(udp"docker").map(_.message)
-      . assert(_ == List(t"[↯SN-915] docker is not a valid UDP port"))
+      . assert(_ == List(t"[↯/s.100.11] docker is not a valid UDP port"))
 
       test(m"Check Nonexistent TCP port does not compile"):
         demilitarize(tcp"abcdef").map(_.message)
-      . assert(_ == List(t"[↯SN-915] abcdef is not a valid TCP port"))
+      . assert(_ == List(t"[↯/s.100.11] abcdef is not a valid TCP port"))
 
     suite(m"Unused port allocation"):
       test(m"An unused TCP port is in the valid range"):

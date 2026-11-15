@@ -202,7 +202,7 @@ entry .Debugger   an attach target: a JVM already listening for a JDWP connectio
       In the companion; needs the same contextual values as `Debugger.Sessional` at the call.
   entry .Error   raised when a JDWP command fails, the connection is lost, or a launch does not come up
     detail
-        Error 601, with the reason's own JDWP error number as its sub-number: _the JDWP action
+        Error `↯/s.145.1`, with the reason's own JDWP error number as its sub-number: _the JDWP action
         failed because `reason`: `detail`_. Every operation on `Debug`, `Halt` and
         `Jdwp.Connection` takes a `Tactic[Debugger.Error]`; the VM's error code in a reply is
         decoded to a `Debugger.Error.Reason` and raised with the command's set and number as the

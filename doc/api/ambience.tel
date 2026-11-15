@@ -166,7 +166,7 @@ entry .Environment   the environment variables, as a contextual value read by ty
     entry #environment   the environment this provider carries
   entry .Error   raised when a variable which was read is not defined
     detail
-        Error 869: _the environment variable `variable` was not defined_. Raised by
+        Error `↯/s.62.2`: _the environment variable `variable` was not defined_. Raised by
         `Environment.apply` and the member-access form through the `Tactic[Environment.Error]`
         in scope; `safely(Environment.editor[Text])` reads as `Unset` instead.
     entry #variable   the name of the variable which was not defined, as it was looked up (`EDITOR`)
@@ -406,7 +406,7 @@ entry .Property   how one system property, by its dotted name, is decoded to a t
     entry #apply   reads the named property from the `System` in scope, decoded to the type argument
   entry .Error   raised when a property which was read is not defined
     detail
-        Error 815: _the system property `property` was not defined_. Raised by the `generic`
+        Error `↯/s.62.1`: _the system property `property` was not defined_. Raised by the `generic`
         and `decoder` instances, and by `javaRuntimeVersion` and `javaClassVersion`, through
         the `Tactic[Property.Error]` in scope; also by other libraries which read a property
         they need, such as `LocalClasspath` reading `path.separator`.
@@ -535,7 +535,7 @@ entry .WorkingDirectory   the directory a program was launched in, as a contextu
     entry #workingDirectory   the working directory this provider carries
   entry .Error   raised when a working directory is needed and there is none
     detail
-        Error 913: _there is no working directory_. Raised by code which must resolve a
+        Error `↯/s.62.3`: _there is no working directory_. Raised by code which must resolve a
         relative path and has no `WorkingDirectory` to resolve it against, such as a daemon
         invocation whose client could not report one.
   entry #directory   the working directory, as text

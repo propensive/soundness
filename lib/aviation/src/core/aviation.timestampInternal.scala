@@ -342,7 +342,7 @@ object timestampInternal:
         case Reason.BadTime   => m"a date or time component was outside the valid range"
 
     case class Error(value: Text, reason: Error.Reason)(using Diagnostics)
-    extends fulminate.Error(902, reason.number)
+    extends fulminate.Error(73, 9, reason.number)
       ( m"the time $value could not be parsed because $reason" )
 
   object Date:

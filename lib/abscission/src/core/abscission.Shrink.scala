@@ -66,7 +66,8 @@ object Shrink:
         m"the shrinker terminated abnormally"
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(737, reason.number)(m"the classpath could not be shrunk because $reason")
+  extends fulminate.Error(146, 1, reason.number)
+    ( m"the classpath could not be shrunk because $reason" )
 
   // A package of the classpath, with the number of classes it has there, and the number of
   // those which the closed world keeps.

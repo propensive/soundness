@@ -76,7 +76,7 @@ entry .Classfile   a parsed JVM class file: its methods, their bytecode and its 
   refer mandible.ClassSurface
   refer mandible.disassemble
   entry .Error   raised when a class file cannot be read
-      Error 293: _there was an error reading the classfile_. Declared for readers of class
+      Error `↯/s.88.2`: _there was an error reading the classfile_. Declared for readers of class
       files to raise; the `Classfile` constructor itself defers parsing until a member is
       first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
       have rather than raising.
@@ -373,7 +373,7 @@ entry .Bytecode   a method's instructions, each decoded, placed on its source li
         needs leaves the stack as it was.
   entry .Error   raised by `disassemble` when the compiled class file cannot be opened or read
     detail
-        Error 295, _the bytecode could not be extracted because …_, with a `#reason`:
+        Error `↯/s.88.3`, _the bytecode could not be extracted because …_, with a `#reason`:
         `ClassfileMissing` (295.1, _the generated classfile could not be opened_) when the
         staging compiler left no class file to read, and `ClassfileUnreadable` (295.2, _the
         generated classfile could not be read_) when the file was truncated or the generated

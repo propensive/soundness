@@ -465,9 +465,9 @@ entry .Install   the error raised when writing something onto the host fails: co
   detail
       Installing a completion script (`Completions.install`), a manpage
       (`Manpages.install`) or a daemon fails the same two ways, so the error belongs to the
-      act rather than to any one installer. `Install.Error` is error 822, _the installation
+      act rather than to any one installer. `Install.Error` is error `↯/s.109.3`, _the installation
       failed because `reason`_, with the reason's number as its subcode.
-  entry .Error   error 822: the installation failed, because of the environment or an I/O failure
+  entry .Error   error `↯/s.109.3`: the installation failed, because of the environment or an I/O failure
     detail
         Raised through a `Tactic[Install.Error]` by `Completions.install` and
         `Manpages.install`. `Reason.Environment` (1) means _it was not possible to get enough
@@ -1798,7 +1798,7 @@ entry .Enclave   the test rig: packages an application as a daemon-backed execut
       under test, and optionally tmux, on the host.
   refer exoskeleton.Pane
   refer exoskeleton.pane
-  entry .Error   error 347: the sandboxed tool's daemon did not report a process ID
+  entry .Error   error `↯/s.109.2`: the sandboxed tool's daemon did not report a process ID
     detail
         Raised by `Launcher#sandbox` when `tool '{admin}' pid` prints nothing. Overwhelmingly
         the cause is a protocol mismatch: the launcher the tool was packaged with and the
@@ -1933,7 +1933,7 @@ entry .Pane   a terminal pane running a shell for a test: keys are typed at it a
     entry #screenshot   the display's screen
     entry #press   types a key name or literal text
     entry #resize   resizes the display and the pseudo-terminal
-  entry .Error   error 271: the terminal could not be driven
+  entry .Error   error `↯/s.109.1`: the terminal could not be driven
     detail
         _can't drive the terminal: `reason`_. The reasons:
 

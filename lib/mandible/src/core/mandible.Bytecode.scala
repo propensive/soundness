@@ -1472,7 +1472,7 @@ object Bytecode:
       case Reason.ClassfileUnreadable => m"the generated classfile could not be read"
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(295, reason.number)
+  extends fulminate.Error(88, 3, reason.number)
     ( m"the bytecode could not be extracted because $reason" )
 
 case class Bytecode

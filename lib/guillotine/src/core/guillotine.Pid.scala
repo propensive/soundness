@@ -57,7 +57,7 @@ object Pid:
 
   // PidError → Pid.Error
   case class Error(pid: Pid)(using Diagnostics)
-  extends fulminate.Error(909, 0)(m"the process with PID ${pid.value} is not running")
+  extends fulminate.Error(84, 2, 0)(m"the process with PID ${pid.value} is not running")
 
 case class Pid(value: Long):
   override def toString(): String = "\u21af"+value

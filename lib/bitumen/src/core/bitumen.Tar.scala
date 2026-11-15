@@ -633,7 +633,7 @@ object Tar:
         m"the archive could not be written: $detail"
 
   case class Error(reason: Tar.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(284, reason.number)
+  extends fulminate.Error(93, 1, reason.number)
     ( m"the TAR archive could not be read or written because $reason" )
 
   // TarCompression → Tar.Compression

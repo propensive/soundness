@@ -656,7 +656,7 @@ entry .Socket   the socket vocabulary: the platform backend, the options, the ev
         yourself is only needed to stop the server before the block is over.
   entry .Error   raised when a connection fails after a successful bind, with a `Reason`
     detail
-        Error 266: _the connection failed because `reason`_. Raised by every backend
+        Error `↯/s.101.2`: _the connection failed because `reason`_. Raised by every backend
         operation after the bind — accepting, transmitting, closing, the TLS handshake, a
         timed-out receive, connecting, a refusal, name resolution — and by the `Unsupported`
         operations of a backend which lacks them. The extensions `transmit`, `react`,
@@ -704,7 +704,7 @@ entry .Bind   the error raised when a socket cannot be bound
   refer coaxial.listen
   entry .Error   raised by `listen` and `subscribe` when the socket cannot be bound
     detail
-        Error 265: _the socket could not be bound because `reason`_. Raised by
+        Error `↯/s.101.1`: _the socket could not be bound because `reason`_. Raised by
         `Socket.Backend#listenTcp` and `#listenDomain` (and so by `Bindable#bind`, `listen`,
         `listenOn` and `subscribe`), classified from the platform's failure: a message naming
         a permission problem is `PermissionDenied`, one naming an address in use is

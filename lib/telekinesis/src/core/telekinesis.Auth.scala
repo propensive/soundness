@@ -90,7 +90,7 @@ object Auth:
 
   // AuthError → Auth.Error
   case class Error(value: Text)(using Diagnostics)
-  extends fulminate.Error(570, 0)(m"the authentication value $value is not valid")
+  extends fulminate.Error(103, 4, 0)(m"the authentication value $value is not valid")
 
 enum Auth:
   case Basic(username: Text, password: Text)

@@ -108,8 +108,8 @@ one place per type rather than at each message. Consequences:
   interpolated `Text`.
 - A list of messages is a list, not a joined string: `List[Message]` renders as bullets, one
   per line. Do not `join` messages with commas.
-- Compile-time diagnostics raised by a macro carry their `SN-` code in the standard prefix
-  (`m"[↯$errorCode] $message"`); the message body follows this standard unchanged.
+- Compile-time diagnostics raised by a macro carry their bolt code in the standard prefix
+  (`m"${bolt.label} $message"`); the message body follows this standard unchanged.
 
 ## 6. Log events
 
@@ -121,7 +121,7 @@ completed and the present participle when it is beginning. Levels are chosen by
 
 ## 7. Checklist
 
-Before adding a message, read it as it will appear — after `[↯SN-…]`, in a list of
+Before adding a message, read it as it will appear — after `[↯/s.…]`, in a list of
 twelve, or at the end of a stack trace — and check:
 
 1. lowercase first letter, no trailing period, present tense;

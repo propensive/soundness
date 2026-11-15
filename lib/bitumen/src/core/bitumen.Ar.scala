@@ -153,7 +153,7 @@ object Ar:
         m"the entry $name is neither a regular file nor a directory, which ar cannot store"
 
   case class Error(reason: Ar.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(286, reason.number)
+  extends fulminate.Error(93, 2, reason.number)
     ( m"the ar archive could not be read or written because $reason" )
 
   object Entry:

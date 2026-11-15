@@ -54,4 +54,4 @@ object Install:
       case Io          extends Reason(2)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(822, reason.number)(m"the installation failed because $reason")
+  extends fulminate.Error(109, 3, reason.number)(m"the installation failed because $reason")

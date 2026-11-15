@@ -49,7 +49,7 @@ object Codepage:
 
   // CodepageError → Codepage.Error
   case class Error(char: Char, encoding: Encoding)(using Diagnostics)
-  extends fulminate.Error(282, 0)
+  extends fulminate.Error(35, 1, 0)
     ( m"character $char cannot be encoded with the encoding $encoding" )
 
 class Codepage(val encoding: Encoding { type CanEncode = true })

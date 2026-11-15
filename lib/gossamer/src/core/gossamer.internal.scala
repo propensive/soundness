@@ -252,7 +252,7 @@ object internal:
               ( scala.List(part).to(proscenium.List), scala.List(origin).to(proscenium.List),
                 1, ordinal.n0 )
 
-          halt(824, m"$char is not a valid ASCII character", position)
+          halt(42, 2, m"$char is not a valid ASCII character", position)
 
         Expr[Byte](char.toByte)
 

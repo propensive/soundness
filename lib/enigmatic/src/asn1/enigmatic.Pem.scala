@@ -259,7 +259,7 @@ object Pem extends Pem2:
       case EmptyFile    extends Reason(4)
 
   case class Error(reason: Pem.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(389, reason.number)(m"could not parse PEM content because $reason")
+  extends fulminate.Error(105, 1, reason.number)(m"could not parse PEM content because $reason")
 
   // PemLabel → Pem.Label
   object Label:

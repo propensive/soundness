@@ -570,7 +570,7 @@ object Dsv extends Dsv1:
   case class Error
     ( format: Dsv.Format, reason: Dsv.Error.Reason, row: Ordinal, column: Ordinal, offset: Int )
     ( using Diagnostics )
-  extends fulminate.Error(364, reason.number)
+  extends fulminate.Error(83, 1, reason.number)
     ( reason match
         case Dsv.Error.Reason.MisplacedQuote =>
           m"could not parse row data at row ${row.n1}, column ${column.n1} because $reason"

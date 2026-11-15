@@ -79,4 +79,4 @@ object internal:
             case '[type topic <: Tuple; topic] =>
               '{Path[Windows, Drive, topic](${Expr(path.root)}, $descent)}
 
-        . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))
+        . or(halt(65, 1, m"The path ${name} is not a valid Windows or POSIX path"))

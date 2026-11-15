@@ -834,7 +834,7 @@ trait Json4:
         extends Reason(6)
 
     case class Error(reason: Json.Provider.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(624, reason.number)
+    extends fulminate.Error(106, 3, reason.number)
       ( m"the JSON was not valid according to the schema because $reason" )
 
   abstract class Provider(schema0: into[Json.Provider.Schema]) extends Provider.Primitives:

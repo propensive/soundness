@@ -164,7 +164,7 @@ object Wit:
   // (`wit.md` §4): an unstable item in a published contract would be a stable claim about an
   // unstable surface.
   case class Error(reason: Wit.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(645, reason.number)(m"the WIT could not be read because $reason")
+  extends fulminate.Error(59, 3, reason.number)(m"the WIT could not be read because $reason")
 
   // WitParser → Wit.Parser
   // A declaration parser for WIT (WebAssembly Interface Types), retaining what `wit/1` atomizes:

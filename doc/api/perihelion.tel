@@ -245,7 +245,7 @@ entry .Websocket   the server-side WebSocket: the handshake response, its channe
       has closed the connection with the reason's close code.
   entry .Error   raised when the peer violates the protocol, with the close code to send
     detail
-        Error 368, with the reason's number as its detail: _the WebSocket protocol was
+        Error `↯/s.115.1`, with the reason's number as its detail: _the WebSocket protocol was
         violated because `reason`_. Raised by `Websocket.Frame.parse` and the `Reader` when a
         frame or message breaks RFC 6455, by `wsClient` when the handshake fails, and when
         the connection is cut short. The server-side loop catches it, closes the connection

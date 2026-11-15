@@ -76,4 +76,4 @@ object Connect:
       case Unknown               extends Reason(5)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(999, reason.number)(m"the TCP connection failed because $reason")
+  extends fulminate.Error(103, 5, reason.number)(m"the TCP connection failed because $reason")

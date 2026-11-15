@@ -300,7 +300,7 @@ object Pane:
       case Reason.Unconfigured(problem)    => m"the shell could not be configured: $problem"
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(271, reason.number)(m"can't drive the terminal: $reason")
+  extends fulminate.Error(109, 1, reason.number)(m"can't drive the terminal: $reason")
 
 // A terminal pane in which a shell runs for a test: keys are typed at it, and its screen is read.
 // `Shell.pane` runs the shell on a pseudo-terminal, whose output yossarian renders; `Shell.tmux`

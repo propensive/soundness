@@ -368,7 +368,7 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
     entry #instances   the instances currently known, as a `Set[Instance]`
   entry .Error   raised when a name is invalid, cannot be claimed, does not resolve, or no backend starts
     detail
-        Error `SN-054`: _service discovery failed because `reason`_. The `#reason` is one of
+        Error `↯/s.102.1`: _service discovery failed because `reason`_. The `#reason` is one of
         `Discovery.Error.Reason`'s cases, numbered 1 to 6:
 
         ```tabular
@@ -727,7 +727,7 @@ entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, c
     entry #resolve   resolves an instance from the cache, or queries for its records and waits up to the timeout
   entry .Error   raised when the responder cannot start: no interface, or a group it cannot join
     detail
-        Error `SN-055`: _the mDNS responder could not start because `reason`_. Reason
+        Error `↯/s.102.2`: _the mDNS responder could not start because `reason`_. Reason
         `NoInterface` (2) is _no interface is up and capable of multicast_; reason
         `Join(group)` (1) is _the multicast group `224.0.0.251:5353` could not be joined_,
         raised when neither group could be joined. Raised by `Mdns.Transport.sockets`; a loan

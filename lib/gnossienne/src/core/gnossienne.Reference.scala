@@ -64,7 +64,7 @@ object Reference:
       case Reason.NotFound => m"no target with that reference was found in the store"
 
   case class Error(reference: Text, reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(519, reason.number)
+  extends fulminate.Error(31, 1, reason.number)
     ( m"the reference $reference could not be resolved because $reason" )
 
 trait Reference(private val rawKey: Any):

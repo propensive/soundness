@@ -213,7 +213,7 @@ object Query extends Dynamic:
       case Reason.Missing => m"the parameter was not present in the query string"
 
   case class Error(reason: Query.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(205, reason.number)
+  extends fulminate.Error(87, 2, reason.number)
     ( m"the query parameter could not be read because $reason" )
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:

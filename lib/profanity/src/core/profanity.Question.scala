@@ -37,7 +37,7 @@ import fulminate.*
 object Question:
   // DismissError → Question.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(372, 0)(m"the user dismissed an interaction")
+  extends fulminate.Error(95, 1, 0)(m"the user dismissed an interaction")
 
 trait Question[answer]:
   def apply(keypress: Terminal.Event): Question[answer]

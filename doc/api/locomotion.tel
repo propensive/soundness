@@ -588,7 +588,7 @@ entry .Protobuf   a Protocol Buffers wire value, and the home of every codec int
     entry .disjunction   the sum decoder: the lowest-numbered variant present, or `MissingField`
   entry .Error   raised when wire bytes are not a valid message
     detail
-        Error 700: _the protobuf data was not valid: `reason`_. Raised through a
+        Error `↯/s.111.1`: _the protobuf data was not valid: `reason`_. Raised through a
         `Tactic[Protobuf.Error]` by every decoding path — the derived decoders, the scalar
         decoders, `ProtobufParser`'s reads and a generated parser — and a `.Reason` says
         what was wrong and where. The offset on a byte-level reason is the position within

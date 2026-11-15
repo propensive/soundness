@@ -1097,4 +1097,9 @@ object Bintel:
       case NestingLimitExceeded      extends Reason(17)
 
   case class Error(reason: Bintel.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")
+  extends fulminate.Error(118, 5, reason.number)(m"the BinTEL stream is invalid because $reason"):
+    // A reason the BinTEL Specification numbers is the specification's own error, ↯/t.4, which
+    // this one carries; a reason which is this implementation's own is a variant.
+    override def bolt: Bolt =
+      if reason.number > 16 then super.bolt
+      else Bolt(Bolt.Soundness, module, number).carrying(Bolt('t', 4, reason.number))

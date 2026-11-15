@@ -50,4 +50,4 @@ object Bind:
       case Reason.Unsupported        => m"the kind of socket is not supported on this platform"
 
   case class Error(reason: Bind.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(265, reason.number)(m"the socket could not be bound because $reason")
+  extends fulminate.Error(101, 1, reason.number)(m"the socket could not be bound because $reason")

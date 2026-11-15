@@ -145,7 +145,7 @@ entry .Compiler   the shape of an in-process compiler: a version, and sources pl
   refer anthology.Compiler.Process
   entry .Error   raised when a compiler cannot be set up from its options
     detail
-        Error 779: _there was a problem with the compiler configuration_. Raised when the
+        Error `↯/s.137.3`: _there was a problem with the compiler configuration_. Raised when the
         compiler's base context cannot be built from the arguments the `Scalac` was given —
         an option the embedded compiler rejects — which happens when a `Scalac.Session` is
         opened. It is a configuration fault, not a compilation failure: sources which do not
@@ -601,7 +601,7 @@ entry .Toolchain   a graph of formats and tools, over which producing one format
       which exists is therefore a DAG whose every pair of nodes has at most one direct edge.
   entry .Error   raised when a native tool a toolchain shells out to is not on the `PATH`
     detail
-        Error 586: _the native tool `tool` is not available on the PATH_. Raised by the
+        Error `↯/s.137.2`: _the native tool `tool` is not available on the PATH_. Raised by the
         probing constructors — `WasiToolchain()` for `wasm-tools` and `wit-bindgen`,
         `nativeEdges()` for `clang` and `clang++` — so that an edge whose tooling is absent
         cannot be built, and a missing tool is found when the toolchain is assembled, not
@@ -858,7 +858,7 @@ entry .Link   the namespace of `Link.Error`, the failure of linking, path search
       structural fault (no path, a duplicate edge, a setting with nothing to configure) is
       its own reason; and a compile edge's failure is `CompilationFailed`, carrying every
       `Compiler.Notice` the compiler reported.
-  entry .Error   raised by a toolchain: error 443, _linking failed because `reason`_
+  entry .Error   raised by a toolchain: error `↯/s.137.1`, _linking failed because `reason`_
     detail
         `Link.Error(reason)`; its number's detail part is the reason's own number. Match on
         `#reason` to tell the cases apart:

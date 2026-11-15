@@ -47,7 +47,7 @@ object Enumerable:
 
   // Raised when a text is decoded as an enumeration but names none of its values.
   case class Error(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
-  extends fulminate.Error(900, 0)
+  extends fulminate.Error(25, 3, 0)
     ( m"""
         the specified variant ($inputLabel) is not one of the valid variants
         (${validVariants.stdlib.mkString(", ").tt}) of the enumeration $sum

@@ -236,7 +236,7 @@ entry .Duration   a physical quantity of elapsed time: `Quantity[Seconds[1]]`
     ```
 
     `durationDecodables.compactDurationDecodable` reads `30m`, `1.5h`, `250ms` or a bare `90`
-    from text, raising `Duration.Error` (error 335, _`text` is not a recognized duration_) for
+    from text, raising `Duration.Error` (error `↯/s.73.5`, _`text` is not a recognized duration_) for
     anything else, and `durationFormats.compactDurationFormat` shows a duration as `1h 0m 5s`.
     The alias, the companion and its `Error` are under the hidden `protointernal`.
 
@@ -1124,7 +1124,7 @@ entry .Calendar   how a Julian day number is read as a year, a month and a day
       dates in its cutover gap.
   entry #jdn   the date of a year, month and day, checked, raising `Moment.Error` otherwise
       Inline, so that the `Tactic[Moment.Error]` it needs is resolved where it is called.
-      Raises `Moment.Error(_.Invalid(year, month, day, calendar))` (error 333, _`2024-2-30`
+      Raises `Moment.Error(_.Invalid(year, month, day, calendar))` (error `↯/s.73.3`, _`2024-2-30`
       does not exist in the calendar Gregorian_) and returns `#computeJdn`'s date.
   entry #monthName   a month's display name: its `Showable` rendering
   entry #format   a date as `day month-name year` in this calendar: `15 Ramadan 1445`
@@ -1659,7 +1659,7 @@ entry .Iso8601   the ISO 8601 date-time format: a parser to `Instant over Unix`,
       Iso8601.parse(t"2020-12-31")                    // midnight UTC
       ```
 
-      A fault raises `Moment.Error(_.Format(text, Iso8601, offset)(issue))` (error 333), _`text`
+      A fault raises `Moment.Error(_.Format(text, Iso8601, offset)(issue))` (error `↯/s.73.3`), _`text`
       does not conform to format ISO 8601 (a digit was expected at 7)_, with the `.Issue`
       saying what the parser wanted at the offset. Errors in the date accrue and the time is
       not parsed after one, since the fields are variable-width and the cursor would be
@@ -1800,7 +1800,7 @@ entry .protointernal   the home of `Instant` and `Duration`
         seconds, which let a duration cross to and from other libraries' duration types.
     entry .Error   raised by `durationDecodables.compactDurationDecodable` for text which is not a duration
       detail
-          Error 335: _`text` is not a recognized duration_. A negative, a word, an unknown
+          Error `↯/s.73.5`: _`text` is not a recognized duration_. A negative, a word, an unknown
           unit or an empty text.
       entry #text   the text which was not a duration
   entry .long   an instant's tick count
@@ -1876,7 +1876,7 @@ entry .timestampInternal   the home of `Timestamp`, `Date` and `Monthstamp`
     entry .monthstampTimespanSubtractable   `monthstamp - span`: the whole months and years of a `Timespan` subtracted
     entry .Error   raised by `t"…".as[Timestamp]` for text which is not a timestamp
       detail
-          Error 902: _the time `value` could not be parsed because `reason`_, with the reason's
+          Error `↯/s.73.9`: _the time `value` could not be parsed because `reason`_, with the reason's
           number as the error's second part: `BadFormat` (1), _the input did not match the
           expected timestamp format_; `BadNumber` (2), _a numeric component could not be
           parsed as an integer_; `BadTime` (3), _a date or time component was outside the
@@ -2038,7 +2038,7 @@ entry .Moment   a wall-clock reading in a timezone: a date, a time, a zone and h
       Needs a `RomanCalendar` and a `GapPolicy` in scope to find the offset.
   entry .Error   raised when a date, time or moment is not valid
     detail
-        Error 333: _the date was not valid because `reason`_, with the reason's number as the
+        Error `↯/s.73.3`: _the date was not valid because `reason`_, with the reason's number as the
         sub-code. It is the error of the whole date-and-time vocabulary, not only of `Moment`:
         `Date(year, month, day)`, `Month(index)`, `Calendar#jdn`, `WeekDate(…)`,
         `OrdinalCalendar(year, dayOfYear)`, `Rfc1123.parse` and the ISO 8601 instant decoder
@@ -2989,7 +2989,7 @@ entry .Timespan   a calendar quantity of time: years, months, weeks, days, hours
       error.
   entry .Error   raised when text is not an ISO 8601 duration
     detail
-        Error 334: _`text` is not a recognized duration_, raised by `.decodable`. A duration
+        Error `↯/s.73.4`: _`text` is not a recognized duration_, raised by `.decodable`. A duration
         is not a moment, so it has an error of its own rather than a `Moment.Error` reason.
     entry #text   the text which did not parse
   entry .addable   `span + span`: adds each component, with the radix sets intersected in the type
@@ -3135,7 +3135,7 @@ entry .Timezone   a named zone of the tz database, `Europe/London`, checked when
       no substitutions, and an unknown one is a compile error.
   entry .Error   raised for a name which is not a zone in the database
     detail
-        Error 929: _the name `name` does not refer to a known timezone_, raised by
+        Error `↯/s.73.10`: _the name `name` does not refer to a known timezone_, raised by
         `Timezone(name)` and `text.as[Timezone]`.
     entry #name   the name which was not a zone
   entry #name   the zone's tz database name, as text
@@ -3238,7 +3238,7 @@ entry .Tzdb   a parser for the tz database's own source files: `Rule`, `Zone`, `
       `logging.silentLogging`.
   entry .Error   raised when a line of the database cannot be parsed
     detail
-        Error 385: _the timezone could not be parsed at line `line`: `reason`_, with the
+        Error `↯/s.73.6`: _the timezone could not be parsed at line `line`: `reason`_, with the
         reason's number as the sub-code:
 
         ```tabular

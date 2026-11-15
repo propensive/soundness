@@ -140,7 +140,8 @@ object JsonPointer extends Root(""):
   // was detected; consumers (e.g. the `jp"…"` interpolator) use it to position a
   // compile-time error precisely.
   case class Error(reason: JsonPointer.Error.Reason, offset: Int)(using Diagnostics)
-  extends fulminate.Error(415, reason.number)(m"the JSON reference was not valid because $reason")
+  extends fulminate.Error(106, 2, reason.number)
+    ( m"the JSON reference was not valid because $reason" )
 
 case class JsonPointer(path: Path on JsonPointer = JsonPointer):
   def apply(ordinal: Ordinal): JsonPointer = JsonPointer(path / ordinal)

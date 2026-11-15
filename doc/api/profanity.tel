@@ -184,7 +184,7 @@ entry .Terminal   a live raw-mode terminal session: its event stream, its size, 
       reports this one as a `Terminal.Info.CursorPosition`.
   entry .Error   raised when standard input is not attached to a terminal
     detail
-        Error 493: _STDIN is not attached to a TTY_. Raised by `interactive` when `stty` fails
+        Error `↯/s.95.2`: _STDIN is not attached to a TTY_. Raised by `interactive` when `stty` fails
         to put the terminal in raw mode, as it does when the program's input is a pipe or a
         file.
   entry .Feature   a terminal mode turned on and off by a pair of escape sequences
@@ -707,7 +707,7 @@ entry .Question   a widget as a state machine: an event in, the next state out
   refer profanity.Interaction
   entry .Error   raised when the user dismisses a widget instead of answering it
     detail
-        Error 372: _the user dismissed an interaction_. Raised by `LineEditor#ask` and
+        Error `↯/s.95.1`: _the user dismissed an interaction_. Raised by `LineEditor#ask` and
         `SelectMenu#ask` when the user presses `Escape`, `Ctrl`+`C` or `Ctrl`+`D`, or the
         input ends, before submitting.
   entry #apply   the next state, after an event

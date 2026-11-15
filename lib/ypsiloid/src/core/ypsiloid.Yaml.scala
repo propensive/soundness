@@ -6775,7 +6775,7 @@ object Yaml extends Yaml1, Dynamic:
       case Absent extends Reason(2)
 
   case class Error(reason: Yaml.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(31, reason.number)(m"could not access the YAML value because $reason")
+  extends fulminate.Error(134, 1, reason.number)(m"could not access the YAML value because $reason")
 
   // YamlPrimitive → Yaml.Primitive
   object Primitive:

@@ -69,7 +69,7 @@ object internal:
           case _                                   => Nil
 
       case other =>
-        halt(44, m"unexpected AST: ${other.toString}")
+        halt(24, 2, m"unexpected AST: ${other.toString}")
 
 
   private def mapping[error <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
@@ -112,16 +112,16 @@ object internal:
 
         if isExhaustive then true else
           if repetition
-          then halt(304, m"the pattern (which involves repeated parameters) is not exhaustive")
-          else halt(470, m"the pattern is not exhaustive")
+          then halt(24, 6, m"the pattern (which involves repeated parameters) is not exhaustive")
+          else halt(24, 9, m"the pattern is not exhaustive")
 
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || halt(423, m"this type of pattern is not recognized")
+        params.zip(types).all(exhaustive) || halt(24, 7, m"this type of pattern is not recognized")
 
       case other =>
-        halt(454, m"bad pattern")
+        halt(24, 8, m"bad pattern")
 
     def unpack(repr: TypeRepr): sci.Set[TypeRepr] = repr.asMatchable match
       case OrType(left, right) => unpack(left) ++ unpack(right)
@@ -137,17 +137,17 @@ object internal:
       case Typed(_, matchType)   => internal.unpack(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => halt(686, m"wildcard")
+      case Wildcard()            => halt(24, 13, m"wildcard")
 
       case Unapply(select, _, _) =>
         if exhaustive(pattern, TypeRepr.of[error]) then List(TypeRepr.of[error])
-        else halt(716, m"Unapply ${select.symbol.declaredType.toString}")
+        else halt(24, 14, m"Unapply ${select.symbol.declaredType.toString}")
 
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
 
       case other =>
-        halt(514, m"this pattern could not be recognized as a distinct `Error` type")
+        halt(24, 10, m"this pattern could not be recognized as a distinct `Error` type")
 
     caseDefs(handler).flatMap:
       case CaseDef(pattern, _, rhs) => rhs.asExpr.absolve match
@@ -397,7 +397,7 @@ object internal:
     do
       if !cases.keys.exists { covered => member <:< covered.typeRef } then
         halt
-          ( 827,
+          ( 24, 15,
             m"the `$name` handler has no case for ${member.show}, which its type argument names" )
 
   // Select `apply` on a `.protect` body and pass it one tactic per context parameter.
@@ -431,7 +431,8 @@ object internal:
               '{Emit($handler)(using $diagnostics)}.asTerm
 
       case _ =>
-        halt(648, m"argument to `handle` should be a partial function implemented as match cases")
+        halt
+          ( 24, 12, m"argument to `handle` should be a partial function implemented as match cases" )
 
     applyTactics[context, result](body, emits)
 
@@ -466,11 +467,11 @@ object internal:
 
                 case None =>
                   halt
-                    ( 602,
+                    ( 24, 11,
                       m"There is no available handler for ${TypeRepr.of[errorType].show}" )
 
       case _ =>
-        halt(648, m"argument to `mitigate` should be a partial function written as match cases")
+        halt(24, 12, m"argument to `mitigate` should be a partial function written as match cases")
 
     applyTactics[context, result](body, tactics)
 
@@ -492,7 +493,7 @@ object internal:
 
                 case _ =>
                   halt
-                    ( 29,
+                    ( 24, 1,
                       m"""
                         argument to `recover` should be a partial function implemented as match
                         cases
@@ -532,7 +533,7 @@ object internal:
         mapping[Exception](matches)
 
       case _ =>
-        halt(114, m"argument to `accrue` should be a partial function implemented as match cases")
+        halt(24, 4, m"argument to `accrue` should be a partial function implemented as match cases")
 
     val errors = contextErrors[context, result]
     checkCoverage("accrue".tt, cases, errors)

@@ -226,7 +226,8 @@ object internal:
           case NotHex(group: Int, content: Text)         extends Reason(3)
 
       case class Error(reason: MacAddress.Error.Reason)(using Diagnostics)
-      extends fulminate.Error(532, reason.number)(m"the MAC address is not valid because $reason")
+      extends fulminate.Error(100, 7, reason.number)
+        ( m"the MAC address is not valid because $reason" )
 
     object Port:
       inline given underlying: Underlying[Port, Int] = !!
@@ -268,7 +269,7 @@ object internal:
 
       // PortError → Port.Error
       case class Error()(using Diagnostics)
-      extends fulminate.Error(139, 0)(m"the port is not in the valid range")
+      extends fulminate.Error(100, 3, 0)(m"the port is not in the valid range")
 
       // PortType → Port.Type
       // The structural bound of the `Port` opaque type. `Transport` distinguishes the
@@ -516,10 +517,10 @@ object internal:
             else '{Port.unsafe(${Expr(portNumber)}).asInstanceOf[Port over Udp of number]}
 
       else
-        halt(340, m"the $portType port number ${portNumber} is not in the range 1-65535")
+        halt(100, 5, m"the $portType port number ${portNumber} is not in the range 1-65535")
 
     . or:
-        serviceNames((tcp, id)).lay(halt(915, m"$id is not a valid $portType port")):
+        serviceNames((tcp, id)).lay(halt(100, 11, m"$id is not a valid $portType port")):
           case port: Int =>
             ConstantType(IntConstant(port)).asType.absolve match
               case '[type number <: Int; number] =>

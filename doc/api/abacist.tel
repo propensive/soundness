@@ -367,5 +367,5 @@ entry .internal   the macros behind `Quanta`'s construction, components, convers
   entry .multiplyQuanta   the macro behind `multiply` and `divide`
   entry .toQuantity   the macro behind `quantity`: the value in its dimension's principal unit
   entry .fromQuantity   the macro behind `Quantity#quanta`: a quantity rounded to a cascade's base unit
-  entry .get   the macro behind `value[Unit]`: one component, or error 557 if the unit is absent
+  entry .get   the macro behind `value[Unit]`: one component, or error `↯/s.54.1` if the unit is absent
   entry .collapse   the macro behind `collapse`: the same value in a cascade with fewer units

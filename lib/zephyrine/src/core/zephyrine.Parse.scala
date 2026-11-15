@@ -39,7 +39,7 @@ object Parse:
   // ParseError → Parse.Error
   case class Error(format: Format, position: format.Position, issue: format.Issue)
     ( using Diagnostics )
-  extends fulminate.Error(594, 0)
+  extends fulminate.Error(60, 2, 0)
     ( m"the ${format.name} was not valid at ${position.describe} because ${issue.describe}" ):
 
     // The internal parser `Position` rendered as a uniform `Span` for public use.

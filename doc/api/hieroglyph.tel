@@ -323,7 +323,7 @@ entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of
       are built.
   entry .Error   a character which the encoding cannot represent
     detail
-        Error 282: _character `char` cannot be encoded with the encoding `encoding`_. The
+        Error `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_. The
         error type for a character outside an encoding's repertoire. `Codepage#encoded` does
         not raise it — an unmappable character is replaced, as `String#getBytes` replaces it —
         so it is for callers which detect the condition themselves.
@@ -613,7 +613,7 @@ entry .unicode   a code point as text, as `0x1f600.unicode`
 entry .enc   the `enc"…"` interpolator: an encoding by name, checked as the code compiles
     `enc"UTF-8"` names a character encoding and checks, while the code compiles, that the
     platform has an encoding of that name (by display name or alias, case insensitively). A
-    name it does not is a compile error, _the encoding `ABCDEF` was not available_ (SN-541),
+    name it does not is a compile error, _the encoding `ABCDEF` was not available_ (↯/s.35.2),
     and a name which is not IANA-registered compiles with a warning that it may not be
     universally available. The result's `CanEncode` type member is fixed to `true` or `false`
     from the platform's table, so `enc"ISO-2022-CN".decoder` compiles and
@@ -638,7 +638,7 @@ entry .ucs   the `ucs"…"` interpolator: a character by its Unicode name, check
     U+1F600's surrogate pair: the result is `Char | Text`, a `Char` for a character in the
     Basic Multilingual Plane and a `Text` beyond it. The name is matched against
     `UnicodeData.txt` in capitals, so case does not matter, and a name the database does not
-    have is a compile error, _the unicode character `…` does not exist_ (SN-954). Takes no
+    have is a compile error, _the unicode character `…` does not exist_ (↯/s.35.3). Takes no
     `$`-substitutions.
 
     ```scala
@@ -957,7 +957,7 @@ entry .internal   the macros behind `enc"…"` and `ucs"…"`, and the `CharRang
   entry .to   the last code point of a `CharRange`
   entry .contains   whether a `CharRange` includes a character
   entry .encoding   the macro behind `enc"…"`: checks the name against the platform's encodings
-      Halts with SN-541 for a name the platform lacks, warns for one not registered with
+      Halts with ↯/s.35.2 for a name the platform lacks, warns for one not registered with
       IANA, and splices a lookup whose `CanEncode` type is fixed from the table.
   entry .char   the macro behind `ucs"…"`: a character by its Unicode name
-      Halts with SN-954 for a name `UnicodeData.txt` does not have.
+      Halts with ↯/s.35.3 for a name `UnicodeData.txt` does not have.

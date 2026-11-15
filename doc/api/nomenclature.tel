@@ -448,7 +448,7 @@ entry .internal   the opaque `Name` type and its companion, which the `nomenclat
         ```
     entry .Error   raised when text is not a valid name in its plane
       detail
-          Error 79: _the name `name` is not valid because it `must not start with 0`_. The
+          Error `↯/s.68.1`: _the name `name` is not valid because it `must not start with 0`_. The
           second half is the violated rule's own description of its parameter
           (`Rule.describe`), so the message states the precise rule the text broke, not merely
           that it was invalid. Raised by `Name[plane](text)` and by `text.as[Name[plane]]` for
@@ -587,7 +587,7 @@ entry .Moniker   a small integer with a memorable two-word name, `brilliant-leop
       ```
   entry .Error   raised when a moniker cannot be named or its text cannot be read
     detail
-        Error 80, with a sub-number for its `#reason`: _the moniker is not valid because the
+        Error `↯/s.68.2`, with a sub-number for its `#reason`: _the moniker is not valid because the
         number 100000 is outside the representable range_. Raised by `Moniker.encodable` for
         an ordinal the vocabulary cannot name, and by `Moniker.decodable` for text which is not
         `adjective-animal` or whose words the vocabulary does not have. Needs a `Diagnostics`
@@ -607,7 +607,7 @@ entry .Moniker   a small integer with a memorable two-word name, `brilliant-leop
           row  `Malformed(moniker)`  3  _`moniker` is not of the form `<adjective>-<animal>`_  text which does not split into exactly two words on `-`
           row  `UnknownWord(word)`  4  _the word `word` does not appear in the vocabulary_  a word missing from the adjective or animal list
           ```
-      entry #number   the reason's sub-number, which `Moniker.Error` reports alongside error 80
+      entry #number   the reason's sub-number, which `Moniker.Error` reports alongside error `↯/s.68.2`
     entry .communicable   renders each reason of a `Moniker.Error` as its message
 
 entry .Vocabulary   two word lists, adjectives and animals, which name the monikers of a plane

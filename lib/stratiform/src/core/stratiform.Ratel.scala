@@ -1458,4 +1458,10 @@ object Ratel:
       case Mismatched                  extends Reason(36)
 
   case class Error(reason: Ratel.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(615, reason.number)(m"the RaTEL image cannot be used because $reason")
+  extends fulminate.Error(118, 11, reason.number)
+    ( m"the RaTEL image cannot be used because $reason" ):
+    // A reason the RaTEL Specification numbers is the specification's own error, ↯/t.5, which
+    // this one carries; a reason which is this implementation's own is a variant.
+    override def bolt: Bolt =
+      if reason.number > 27 then super.bolt
+      else Bolt(Bolt.Soundness, module, number).carrying(Bolt('t', 5, reason.number))

@@ -109,7 +109,7 @@ object Permutation:
         m"the input, of size $size, is too short for the permutation of size $min"
 
   case class Error(reason: Permutation.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(427, reason.number)(m"could not construct permutation because $reason")
+  extends fulminate.Error(28, 1, reason.number)(m"could not construct permutation because $reason")
 
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand

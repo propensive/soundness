@@ -333,7 +333,7 @@ object WebDriver:
         case other                         => Other(other)
 
     // The error codes a WebDriver may report, as the driver spells them in the `error` field of
-    // the error object. The numbers are the `SN-589.e` subcodes, and are frozen: 1–8 keep the
+    // the error object. The numbers are the `↯/s.127.1.e` subcodes, and are frozen: 1–8 keep the
     // meanings they were first published with — including `Other` at 8, out of alphabetical
     // order — and every code added since appends from 9.
     enum Reason(val number: Int, val code: Text) extends Clarification:
@@ -408,7 +408,7 @@ object WebDriver:
       data:              Optional[Json] = Unset )
     ( using Diagnostics )
   extends fulminate.Error
-    ( 589, reason.number )
+    ( 127, 1, reason.number )
     ( m"the WebDriver action failed because $reason: $detail" )
 
   object Element:

@@ -304,7 +304,7 @@ entry .Zip   the ZIP form and plane: entries, compression, errors and the scoped
         ```
   entry .Error   a failure to read, write or open a ZIP archive, with the reason
     detail
-        Error 751: _the ZIP operation failed because `reason`_, with the
+        Error `↯/s.136.1`: _the ZIP operation failed because `reason`_, with the
         `Zip.Error.Reason`'s number as its subcode. Raised by `Zipfile.read`, by
         `Zipfile#entry`, by serializing a `Zipfile`, by opening an archive as `Zip` or `Jar`, and
         by `Zipfile.rebase`.

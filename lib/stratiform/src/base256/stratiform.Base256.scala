@@ -191,4 +191,4 @@ object Base256:
       extends Reason(1)
 
   case class Error(reason: Base256.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(607, reason.number)(m"the BASE-256 string is invalid because $reason")
+  extends fulminate.Error(118, 3, reason.number)(m"the BASE-256 string is invalid because $reason")

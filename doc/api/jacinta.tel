@@ -957,7 +957,7 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
     entry .boolean   the node as a `Boolean`, raising `Json.Error` for a non-boolean
   entry .Error   raised when a value cannot be read as what was asked for
     detail
-        Error 337: _could not access the value because `reason`_, where the `#reason` is a
+        Error `↯/s.106.1`: _could not access the value because `reason`_, where the `#reason` is a
         `Json.Error.Reason`: `NotType(found, expected)` (_the JSON value had type `found`
         instead of `expected`_, each a `Json.Primitive`), `Absent` (_the JSON value was not
         present_: a required field the object lacks, or a value past the end of an array under
@@ -987,7 +987,7 @@ entry .Json   an immutable JSON value, and the companion which parses, builds, c
       detail
           An enumeration with a number per case (1, 2 and 3), rendered by `.communicable`.
       entry .communicable   renders each reason as a message
-      entry #number   the reason's number within error 337
+      entry #number   the reason's number within error `↯/s.106.1`
     entry #reason   the `Json.Error.Reason`
   entry .Primitive   the six kinds of JSON value: `Array`, `Object`, `Number`, `Null`, `Boolean` and `String`
     detail
@@ -1369,7 +1369,7 @@ entry .Json4   the mixin holding `Json.Provider`
       entry #readable   any source readable as `Json` as a schema
     entry .Error   raised when a document does not conform to a provider's schema
       detail
-          Error 624: _the JSON was not valid according to the schema because `reason`_, raised
+          Error `↯/s.106.3`: _the JSON was not valid according to the schema because `reason`_, raised
           through the `Tactic` of the code reading a record field, so `attempt`, `recover`,
           `validate` and `track` all see it. The `#reason` is a `Json.Provider.Error.Reason`:
           `JsonType(expected, found)`, `MissingValue(name)` (a required property absent),
@@ -1378,7 +1378,7 @@ entry .Json4   the mixin holding `Json.Provider`
           maximum)`, `NotPermitted(value, permitted)` (not in the `enum`), `UnexpectedKind(found,
           offered)` (a union value of a kind no alternative offers) and `Unparsable(value,
           format)` (a `json-pointer` or `regex` which does not parse).
-      entry .Reason   why a document did not conform, numbered 1 to 9 within error 624
+      entry .Reason   why a document did not conform, numbered 1 to 9 within error `↯/s.106.3`
         detail
             An enumeration of the nine reasons, rendered as messages by its companion's
             anonymous `Communicable`.
@@ -1432,14 +1432,14 @@ entry .JsonPointer   an RFC 6901 JSON Pointer: a path into a document, written `
   entry .divisible2   `pointer / ordinal`: a pointer extended by an array index
   entry .Error   raised when text is not a valid JSON reference
     detail
-        Error 415: _the JSON reference was not valid because `reason`_, with the `#offset` of
+        Error `↯/s.106.2`: _the JSON reference was not valid because `reason`_, with the `#offset` of
         the character at fault, which the `jp"…"` interpolator uses to position its compile
         error. The reasons are `ExpectedHash` (_a JSON reference must begin with '#'_),
         `ExpectedSlash` (_a JSON reference fragment must begin with '/'_) and `BadEscape` (_a
         '~' in a JSON reference must be followed by '0' or '1'_).
     entry .Reason   why the reference was invalid: `ExpectedHash`, `ExpectedSlash` or `BadEscape`
       detail
-          Numbered 2, 3 and 4 within error 415, rendered by `.communicable`.
+          Numbered 2, 3 and 4 within error `↯/s.106.2`, rendered by `.communicable`.
       entry #number   the reason's number
     entry .communicable   renders each reason as a message
     entry #reason   the `JsonPointer.Error.Reason`

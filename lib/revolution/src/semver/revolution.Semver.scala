@@ -161,7 +161,7 @@ object Semver:
       case Reason.InvalidCharacter => m"an identifier contained a character outside `[0-9A-Za-z-]`"
 
   case class Error(version: Text, reason: Semver.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(250, reason.number)
+  extends fulminate.Error(97, 1, reason.number)
     ( m"$version is not a valid semantic version because $reason" )
 
 case class Semver

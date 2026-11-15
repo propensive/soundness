@@ -99,7 +99,7 @@ entry .Uuid   a 128-bit universally unique identifier, as its two 64-bit halves
       ```
   entry .Error   raised when text is not a valid UUID
     detail
-        Error 349: _`badUuid` is not a valid UUID_. Raised by `Uuid.parse` and by decoding a
+        Error `↯/s.47.1`: _`badUuid` is not a valid UUID_. Raised by `Uuid.parse` and by decoding a
         `Uuid` from text. The `uuid"…"` interpolator reports the same message as a compile
         error.
     entry #badUuid   the text which failed to parse

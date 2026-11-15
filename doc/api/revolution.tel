@@ -96,7 +96,7 @@ entry .Semver   a semantic version: major, minor and patch numbers, with prerele
       ```
   entry .Error   raised when text is not a valid semantic version
     detail
-        Error 250: _`version` is not a valid semantic version because …_, with one of four
+        Error `↯/s.97.1`: _`version` is not a valid semantic version because …_, with one of four
         reasons: `BadFormat` (_the string did not match the SemVer 2.0 grammar_, such as
         `1.2` or `1.2.3.4`), `EmptyIdentifier` (_a prerelease or build identifier was
         empty_, as in `1.2.3-`), `LeadingZero` (_a numeric identifier had a leading zero_,
@@ -105,7 +105,7 @@ entry .Semver   a semantic version: major, minor and patch numbers, with prerele
         reports the same problems as a compile error instead.
     entry .Reason   why text is not a semantic version: bad format, an empty identifier, a leading zero or a bad character
       detail
-          Each case's sub-number of error 250 is its `#number`:
+          Each case's sub-number of error `↯/s.97.1` is its `#number`:
 
           ```tabular
           column  Case
@@ -117,7 +117,7 @@ entry .Semver   a semantic version: major, minor and patch numbers, with prerele
           row  `LeadingZero`  3  _a numeric identifier had a leading zero_
           row  `InvalidCharacter`  4  _an identifier contained a character outside `[0-9A-Za-z-]`_
           ```
-      entry #number   the reason's sub-number of error 250
+      entry #number   the reason's sub-number of error `↯/s.97.1`
     entry .communicable   renders each reason as the phrase completing _… is not a valid semantic version because …_
     entry #version   the text which failed to parse
     entry #reason   why it is not a valid semantic version

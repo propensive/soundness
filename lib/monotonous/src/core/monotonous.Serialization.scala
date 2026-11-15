@@ -38,6 +38,6 @@ import fulminate.*
 object Serialization:
   // SerializationError → Serialization.Error
   case class Error(position: Int, char: Char)(using Diagnostics)
-  extends fulminate.Error(325, 0)(m"the character $char at $position was not valid")
+  extends fulminate.Error(61, 1, 0)(m"the character $char at $position was not valid")
 
 trait Serialization

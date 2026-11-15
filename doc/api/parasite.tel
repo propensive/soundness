@@ -1175,7 +1175,7 @@ entry .Tenacity   a retry schedule: how long to wait before each attempt, and wh
       `fixedNoDelay…` givens are.
   entry .Error   raised when a `retry` runs out of attempts, or its body surrenders
     detail
-        Error 552: _aborted repeated evaluation after `count` attempts_. Raised through the
+        Error `↯/s.69.1`: _aborted repeated evaluation after `count` attempts_. Raised through the
         `Tactic[Tenacity.Error]` `retry` needs, when `limit` has been reached or the body called
         `surrender()`.
     entry #count   how many attempts were made

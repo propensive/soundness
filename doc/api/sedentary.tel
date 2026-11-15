@@ -290,7 +290,7 @@ entry .Bench   a benchmark harness: times a quoted operation in its own JVM, sin
         Every cell shares the plan's `operationSize`; `#sized` gives each its own.
   entry .Error   raised when a benchmark device cannot deploy, run or remove a measurement
     detail
-        Error 794: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
+        Error `↯/s.10.1`: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
         staged JAR to the device, launching the measurement JVM, or removing the JAR fails, or
         when the measurement JVM exits with a nonzero status. `Bench`, `Stress` and `Profile`
         convert it to superlunary's `Rig.Error`, with the reason `Staging` or `Invocation`, so a

@@ -239,7 +239,8 @@ object Audio:
         case Reason.Closed                   => m"the recording has already been stopped"
 
     case class Error(feed: Text, reason: Feed.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(440, reason.number)(m"could not record from feed $feed because $reason")
+    extends fulminate.Error(82, 2, reason.number)
+      ( m"could not record from feed $feed because $reason" )
 
   case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Device:
     import javax.sound.sampled as jss
@@ -341,7 +342,8 @@ object Audio:
         case Reason.Closed                   => m"the playback has already been stopped"
 
     case class Error(outlet: Text, reason: Outlet.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(374, reason.number)(m"could not play to outlet $outlet because $reason")
+    extends fulminate.Error(82, 1, reason.number)
+      ( m"could not play to outlet $outlet because $reason" )
 
   case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Device:
     import javax.sound.sampled as jss

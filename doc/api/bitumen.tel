@@ -397,7 +397,7 @@ entry .Tar   the tar format: a marker type, the plane of entry names, and the ho
         depend on the archive's `LongNameFormat`, which `Tarfile` knows.
   entry .Error   raised when an archive cannot be read or written, with a `Reason` saying why
     detail
-        Error 284: _the TAR archive could not be read or written because `reason`_. Its
+        Error `↯/s.93.1`: _the TAR archive could not be read or written because `reason`_. Its
         `#reason` is a `Tar.Error.Reason`, each with its own number and message:
 
         ```tabular
@@ -869,7 +869,7 @@ entry .Ar   the ar format: a marker type and the home of `Ar.Entry`, `Ar.Error`,
       ```
   entry .Error   raised when an ar archive cannot be read or written, with a `Reason` saying why
     detail
-        Error 286: _the ar archive could not be read or written because `reason`_. Its
+        Error `↯/s.93.2`: _the ar archive could not be read or written because `reason`_. Its
         `#reason` is an `Ar.Error.Reason`, each with its own number and message:
 
         ```tabular

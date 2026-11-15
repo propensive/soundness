@@ -100,7 +100,7 @@ object Watch:
       case Reason.PermissionDenied => m"the user does not have permission to watch the path"
 
   case class Error(reason: Watch.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(545, reason.number)(m"the path could not be watched because $reason")
+  extends fulminate.Error(98, 1, reason.number)(m"the path could not be watched because $reason")
 
   // WatchEvent → Watch.Event
   enum Event:

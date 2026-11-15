@@ -60,7 +60,7 @@ object Validation:
       case n => m"$n messages: $joined"
 
 case class Validation(messages: List[(Pointer, Message)] = Nil)
-extends Error(59, 0)(Validation.text(messages)):
+extends Error(24, 3, 0)(Validation.text(messages)):
   private lazy val map: Map[Pointer, Message] = messages.to[Map]
 
   @targetName("add")

@@ -188,7 +188,7 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
         program containing one.
   entry .Error   raised when a pattern is not RE2 syntax, or an analysis cannot answer
     detail
-        Error 500: _the regular expression could not be compiled because `reason` at
+        Error `↯/s.33.1`: _the regular expression could not be compiled because `reason` at
         `index`_, with the reason's number as the sub-number. Raised by `Motif.parse` through
         a `Tactic[Motif.Error]` at the offset of the offending character; by `Program.compile`
         when a program exceeds `Program.maxOps`; by `Subsumption` (and so `Motif#subsumes`,

@@ -177,7 +177,7 @@ entry .Pdf   an open PDF document: the scoped capability every read and edit res
         stream raises `Pdf.Error` with `MissingEntry(EF)`.
   entry .Error   raised when a document cannot be read, decoded, decrypted or written
     detail
-        Error 280: _the PDF could not be read because `reason`_, where the reason is a
+        Error `↯/s.110.1`: _the PDF could not be read because `reason`_, where the reason is a
         `Pdf.Error.Reason` carrying its own number and message. It is raised through a
         `Tactic[Pdf.Error]`, which every reading and editing method takes, and it is the one
         error the library raises: filesystem failures when opening or committing a document
@@ -240,7 +240,7 @@ entry .Pdf   an open PDF document: the scoped capability every read and edit res
       detail
           An enum whose cases are listed on the `Pdf.Error` page, each with a `number` and a
           message; `communicable` renders the message.
-      entry #number   the reason's number, 1 to 18, the sub-number of error 280
+      entry #number   the reason's number, 1 to 18, the sub-number of error `↯/s.110.1`
     entry .communicable   renders each reason as the message in its `Pdf.Error` listing
     entry #reason   which `Pdf.Error.Reason` this error carries
   entry .Font   a font as a page's resources declare it, with its widths and its decoding of codes

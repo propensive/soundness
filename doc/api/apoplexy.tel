@@ -505,7 +505,7 @@ entry .Api   a client navigated by path, each step checked against the specifica
         schema is an object or an array of objects.
   entry .Error   a response outside the success range, raised as the error class of its status
     detail
-        Error 914.1: _the server responded with an unsuccessful status, `status`_. The sealed
+        Error `↯/s.135.2.1`: _the server responded with an unsuccessful status, `status`_. The sealed
         parent of one case class per status telekinesis names — `Api.NotFound`,
         `Api.BadRequest`, `Api.TooManyRequests`, … — with `Api.Informational`,
         `Api.Redirection`, `Api.ClientError` and `Api.ServerError` for the `1XX`–`5XX` range
@@ -549,7 +549,7 @@ entry .Api   a client navigated by path, each step checked against the specifica
     entry #payload   the error body, construed as the type the specification declares for that response
   entry .Violation   a response with a status the specification does not declare
     detail
-        Error 914.2: _the server responded with an undeclared status, `status`_. The server
+        Error `↯/s.135.2.2`: _the server responded with an undeclared status, `status`_. The server
         has broken its contract, which every call may meet and must handle apart from the
         declared errors: it is raised through its own `Tactic[Api.Violation]`, is never a
         member of a response's `Failure`, and carries the status and the body's raw bytes,
@@ -924,7 +924,7 @@ entry .OpenApi   an OpenAPI 3.x document as a value: info, servers, paths, compo
       uses the first alternative every scheme of which has a `Credential` in scope.
   entry .Error   raised when a document is not valid OpenAPI 3, or a reference cannot be followed
     detail
-        Error 846: _the OpenAPI document was not valid because `reason`_, with one of five
+        Error `↯/s.135.1`: _the OpenAPI document was not valid because `reason`_, with one of five
         reasons, numbered as `846.1` to `846.5`:
 
         ```tabular

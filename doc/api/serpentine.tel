@@ -220,7 +220,7 @@ entry .Path   an absolute path: a root and a descent of names, typed by plane, n
       ```
   entry .Error   raised when a path cannot be read or resolved: an invalid root or name, or roots which differ
     detail
-        Error `SN-831`: _the path `path` was invalid because `reason`_, where the path is
+        Error `↯/s.70.1`: _the path `path` was invalid because `reason`_, where the path is
         named if known. The `#reason` is a `Path.Error.Reason`:
 
         ```tabular

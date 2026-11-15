@@ -82,7 +82,7 @@ object internal:
 
     // NameError → Name.Error
     case class Error(name: Text, rule: Rule, parameter: Text)(using Diagnostics)
-    extends fulminate.Error(79, 0)
+    extends fulminate.Error(68, 1, 0)
       ( m"the name $name is not valid because it ${rule.describe(parameter)}" )
 
     // NameExtractor → Name.Extractor

@@ -105,7 +105,7 @@ object Multihash:
     case Reason.Oversize  => m"the varint exceeds the nine groups the specification permits"
 
   case class Error(reason: Reason)(using Diagnostics)
-  extends fulminate.Error(41, reason.ordinal)(m"the multihash could not be read because $reason")
+  extends fulminate.Error(66, 1, reason.ordinal)(m"the multihash could not be read because $reason")
 
 case class Multihash(code: Int, digest: Data):
   // The registered name of the hash function, when it is one this library knows. A decoded

@@ -483,7 +483,7 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
     entry #attributes   the element's attributes, as name–value pairs
   entry .Error   raised when XML or HTML does not hold a MathML tree
     detail
-        Error 430: _the MathML could not be parsed because reason_. Raised by `Math.aggregable`,
+        Error `↯/s.129.1`: _the MathML could not be parsed because reason_. Raised by `Math.aggregable`,
         `Math.loadable`, `Math.loadableData`, `Mathml.Parser` and `Mathml.Reader` when the
         root element is not `<math>` or an element has a label which is not a MathML
         element. Well-formedness of the XML itself is xylophone's `Xml.Error` and
@@ -845,7 +845,7 @@ entry .Ergo   the Ergo shorthand: a one-line notation which parses to MathML and
       `<mtext>`; needs a `Tactic[Ergo.Error]`.
   entry .Error   raised when Ergo text cannot be parsed, or a tree cannot be written as Ergo
     detail
-        Error 431: _the ergo expression could not be parsed because reason_. Raised by
+        Error `↯/s.129.2`: _the ergo expression could not be parsed because reason_. Raised by
         `Ergo.parse` and `Ergo.interpolate` for malformed text, and by `Ergo.serialize` for an
         element outside the Ergo subset. In the `ergo"…"` interpolator the same faults are
         compile errors, positioned at the character where parsing stopped (the last character

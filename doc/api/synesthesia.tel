@@ -857,7 +857,7 @@ entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, se
       each new session id and kept by `Mcp.Server#session` until the session is terminated.
   entry .Error   raised when a call names no tool, prompt or resource, or omits a required parameter
     detail
-        Error 630: _the MCP operation failed because `reason`_. Raised by a derived
+        Error `↯/s.124.1`: _the MCP operation failed because `reason`_. Raised by a derived
         `Mcp.Specification`'s dispatch, and answered by `Mcp.send` as the JSON-RPC error
         `-32602` under the request's id, so a protocol mistake is distinct from a tool's own
         failure (which is a `CallTool` marked `isError`). Deriving a specification needs a

@@ -259,4 +259,4 @@ object Ssh:
       case Unreachable(reason: Socket.Error.Reason) extends Reason(14)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(600, reason.number)(m"the SSH connection failed because $reason")
+  extends fulminate.Error(122, 2, reason.number)(m"the SSH connection failed because $reason")

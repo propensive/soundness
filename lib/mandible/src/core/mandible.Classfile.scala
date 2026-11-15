@@ -49,7 +49,7 @@ import vacuous.*
 object Classfile:
   // ClassfileError → Classfile.Error
   case class Error()(using Diagnostics)
-  extends fulminate.Error(293, 0)(m"there was an error reading the classfile")
+  extends fulminate.Error(88, 2, 0)(m"there was an error reading the classfile")
 
   given aggregable: Classfile is Aggregable by Data =
     stream => new Classfile(stream.read[Data])

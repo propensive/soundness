@@ -71,7 +71,7 @@ object Enclave:
   // carry different `ethereal-launcher` schema signatures, so the daemon refuses the very first
   // document and closes the connection, leaving `pid` with nothing to print.
   case class Error(tool: Path on Linux)(using Diagnostics)
-  extends fulminate.Error(347, 0)
+  extends fulminate.Error(109, 2, 0)
     ( m"""
       the tool $tool did not report a process ID; its launcher and its daemon may disagree on the
       launcher protocol schema, in which case the `xek` version pinned in `etc/xek.tsv` needs to

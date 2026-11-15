@@ -357,7 +357,7 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
         length or a truncated stream ends the body.
     entry .Error   raised when a request cannot be parsed
       detail
-          Error 367: _could not parse HTTP request because `reason`_, raised by `.parse` and
+          Error `↯/s.103.2`: _could not parse HTTP request because `reason`_, raised by `.parse` and
           `.parseHead`. The reasons, numbered `367.1` to `367.5`, are tabulated under `Reason`.
       entry .Reason   why the request could not be parsed
           ```tabular
@@ -553,7 +553,7 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
         malformed line.
     entry .Error   raised when a response cannot be parsed
       detail
-          Error 366: _could not parse HTTP response because `reason`_, raised by `.parse` and
+          Error `↯/s.103.1`: _could not parse HTTP response because `reason`_, raised by `.parse` and
           `.parseHead`. The reasons are `Expectation(expected, found)` (366.1, _`found` was
           found when `expected` was expected_: the bytes did not begin `HTTP/`, or a line
           did not end in CRLF) and `Status(value)` (366.2, _the HTTP status code `value` was
@@ -659,7 +659,7 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
     entry #request   sends a request to a target and returns the response
   entry .Error   raised when a response arrives with a status outside the success range
     detail
-        Error 438: _the HTTP request failed with status `status`_. Raised by `Receivable`
+        Error `↯/s.103.3`: _the HTTP request failed with status `status`_. Raised by `Receivable`
         (`response.receive[T]`) and by `Http.Response.streamable` when the status's category
         is not `Successful`; the error carries the status and the headers, so the caller can
         react to what went wrong. Inspecting `response.status` directly never raises it.
@@ -798,7 +798,7 @@ entry .Auth   the credentials of an `Authorization` header, by scheme
       `Auth.Error`. Needs a `Tactic[Auth.Error]`, which the instance retains.
   entry .Error   raised when a header value is not a recognised authentication scheme
     detail
-        Error 570: _the authentication value `value` is not valid_, raised by `.decodable`
+        Error `↯/s.103.4`: _the authentication value `value` is not valid_, raised by `.decodable`
         for a scheme it does not know or malformed `Basic` credentials.
     entry #value   the text which could not be decoded
 
@@ -812,7 +812,7 @@ entry .Connect   the namespace of `Connect.Error`: a server which could not be r
   refer telekinesis.Http.Error
   entry .Error   raised when a request cannot reach the server: DNS, refusal, TLS, timeout
     detail
-        Error 999: _the TCP connection failed because `reason`_, raised by every
+        Error `↯/s.103.5`: _the TCP connection failed because `reason`_, raised by every
         `Http.Backend` and `Http.Client`, so a `fetch` or `submit` needs a
         `Tactic[Connect.Error]` in scope. The reasons, numbered `999.1` to `999.5`, are
         tabulated under `Reason`. A TLS failure is distinguished from a network one, and its own

@@ -151,7 +151,7 @@ entry .Diff   an edit script: the insertions, deletions and unchanged elements b
       `redraft`: the type rules out a rendering which could not reproduce the original.
   entry .Error   raised when a line of a unix-format diff cannot be read
     detail
-        Error 39: _could not read the diff at line `lineNo`: `line`_. Raised by
+        Error `↯/s.78.1`: _could not read the diff at line `lineNo`: `line`_. Raised by
         `Diff.aggregable` (`read[Diff[Text]]`) for a command line whose ranges are not numbers,
         or which is not a command at all. A malformed range aborts the read; an unrecognised
         command line is raised and then skipped, so under a tactic which recovers, the rest of
@@ -482,7 +482,7 @@ entry .Redraft   a forgiving patch of text lines: only the changes, located by s
       entry #lines   how many lines of context to keep either side of each change
   entry .Error   raised when a redraft cannot be applied to the original
     detail
-        Error 472: _the redraft could not be applied at line `line` (`text`) because `reason`_.
+        Error `↯/s.78.2`: _the redraft could not be applied at line `line` (`text`) because `reason`_.
         Raised by `Redraft#resolve` and `Redraft#patch`, for the first anomaly found; use
         `Redraft#verify` to list them all.
 

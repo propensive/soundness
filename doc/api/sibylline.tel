@@ -57,7 +57,7 @@ detail
     calls are run, their results reported, and the conversation continued until the model
     answers in text or the `iterating` bound trips.
 
-    Every failure is an `Llm.Error` (error 990) whose `Reason` is one of a fixed set, with the
+    Every failure is an `Llm.Error` (error `↯/s.126.1`) whose `Reason` is one of a fixed set, with the
     HTTP status and any `retry-after` delay; a rate limit or an overload is retried three times
     before it is raised. A call needs an `Online` capability (`internetAccess.online`), an
     `Http.Backend` (`httpBackends.javaNetHttp`), an `Http.Event is Loggable`
@@ -567,7 +567,7 @@ entry .Llm   the provider-neutral vocabulary: messages, replies, sessions, strea
         which overrides it to `true` must return the JSON document as the reply's text.
   entry .Error   raised when a model request fails: unreachable, unauthorized, rate-limited, malformed, …
     detail
-        Error 990, subcoded by `.Reason`: _the model request failed because `reason`:
+        Error `↯/s.126.1`, subcoded by `.Reason`: _the model request failed because `reason`:
         `detail`_. Every failure a provider, the network or the translation can produce is an
         `Llm.Error`; `#status` is the HTTP status when there was one, and `#retry` the
         `retry-after` delay in seconds on a rate limit or overload, the two facts a caller

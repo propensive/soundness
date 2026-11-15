@@ -282,7 +282,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
   entry .currentColor   the `currentcolor` colour keyword
   entry .Error   one fault in CSS text, with its line, column and reason
     detail
-        Error 251: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
+        Error `↯/s.90.1`: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
         number as the subcode. One is raised for each problem found while reading a
         stylesheet or parsing a selector, grammar or value; `read[Css]` collects them all
         into a `Css.Errors`, while `SelectorList.parse` and `Css.Syntax.Matcher.check` raise a

@@ -530,7 +530,7 @@ object Regex:
       case ZeroMaximum         extends Reason(11)
 
   case class Error(index: Int, reason: Regex.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(397, reason.number)
+  extends fulminate.Error(34, 1, reason.number)
     ( m"the regular expression could not be parsed because $reason at $index" )
 
 case class Regex(pattern: Text, groups: List[Regex.Group]) extends Formal:

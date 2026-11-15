@@ -38,4 +38,4 @@ import fulminate.*
 object Rational:
   // RationalError → Rational.Error
   case class Error(text: Text)(using Diagnostics)
-  extends fulminate.Error(741, 0)(m"$text is not a representable rational number")
+  extends fulminate.Error(27, 11, 0)(m"$text is not a representable rational number")

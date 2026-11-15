@@ -269,7 +269,7 @@ entry .Httpd   the JDK backend: the same handler over `com.sun.net.httpserver`, 
       entry #error   the failure, as a `fulminate.Error`
   entry .Error   raised when the port cannot be bound
     detail
-        Error 632: _could not start an HTTP server on port `port`_. Raised by `handle` (of
+        Error `↯/s.116.1`: _could not start an HTTP server on port `port`_. Raised by `handle` (of
         either backend) and `SocketServer#handleSession` when binding the listening socket
         throws a `BindException`, typically because the port is already in use. A
         `Tactic[Httpd.Error]` is required to call `handle`.

@@ -177,7 +177,7 @@ object EmailAddress:
       case InvalidChar(char: Char)                            extends Reason(12)
 
   case class Error(reason: EmailAddress.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(159, reason.number)(m"the email address is not valid because $reason")
+  extends fulminate.Error(100, 4, reason.number)(m"the email address is not valid because $reason")
 
 case class EmailAddress
   ( displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6 ):

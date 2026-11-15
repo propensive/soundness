@@ -44,7 +44,8 @@ import urticose.*
 object Courier:
   // CourierError → Courier.Error
   case class Error(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)
-  extends fulminate.Error(383, 0)(m"unable to send email from $from to $to with subject $subject")
+  extends fulminate.Error(107, 1, 0)
+    ( m"unable to send email from $from to $to with subject $subject" )
 
 // A `Courier` is a capability: its instances are constructed from other capabilities (an HTTP
 // client, a `Tactic`, logging) which they retain — a given that takes capabilities as parameters

@@ -889,7 +889,7 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
 
   entry .Error   a fault in an ACP exchange, or one the agent reported, by its JSON-RPC reason
     detail
-        Error 148: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
+        Error `↯/s.125.1`: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
         `Parse` through 148.7 for `Incompatible`). Each `Reason` carries the JSON-RPC wire
         code the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600,
         `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 and `AuthRequired`
@@ -936,7 +936,7 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
           row  `AuthRequired`  6  _the agent requires authentication_  wire code −32000
           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  no wire code
           ```
-      entry #number   the sub-number of error 148
+      entry #number   the sub-number of error `↯/s.125.1`
       entry #code   the JSON-RPC wire code, or `0` for `Incompatible`, which has none
     entry .reason   the reason a wire code names, or `Unset` for a code outside the standard set
         The inverse of `Reason#code`, for reading an error response. `0` is never a wire code,

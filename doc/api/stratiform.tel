@@ -893,7 +893,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       entry #text   the prefix as a BASE-256 word
     entry .Error   raised when an acceptance, or a document answering one, is invalid
       detail
-          Error 612, sub-numbered by reason: _the acceptance is invalid because …_:
+          Error `↯/s.118.8`, sub-numbered by reason: _the acceptance is invalid because …_:
 
           ```tabular
           column  Case
@@ -1237,7 +1237,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       class's own constructor is not public.
   entry .Error   raised by parsing, schema validation and decoding: a TEL error code and a source span
     detail
-        Error 605, sub-numbered by the reason's TEL code: _the TEL document is invalid at line
+        Error `↯/s.118.1`, sub-numbered by the reason's TEL code: _the TEL document is invalid at line
         2, columns 5-8 because …_, or without the position when the span is empty. The
         reasons are the specification's codes, tabulated under `Tel.Error.Reason`: E1xx for
         parse faults, each with a §19.5 `Recovery` the parser applies so that it can
@@ -1527,7 +1527,7 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
         ```
     entry .Error   raised when a pointer does not resolve or an operation's invariant fails
       detail
-          Error 606: _the mutation failed because …_. `PointerNotFound` is a pointer, block
+          Error `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` is a pointer, block
           index or group which does not resolve to a compound, including a reorder whose groups
           are interleaved or whose indices are out of range, and a `ResizeTabulation` on a block
           with no tabulation; `AtomIndexOutOfRange` an `UpdateAtom` beyond the target's atoms;
@@ -2034,7 +2034,7 @@ entry .Tel4   the trait holding `Tel.Provider`, the type provider over a TEL sch
     entry .tel   the `tel` validator reads the field as a `Tel`
     entry .Error   raised as a record's field is read from a document which does not conform
       detail
-          Error 614, sub-numbered by reason: _the TEL did not conform to its schema because
+          Error `↯/s.118.10`, sub-numbered by reason: _the TEL did not conform to its schema because
           …_. `Absent(name)` (1), _the field `name` is required_, for a required field with no
           compound; `NotSigil(value)` (2), _the value `value` is not a single character_, for
           a `sigil` field.
@@ -2424,7 +2424,7 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
           index; a failure is `Unverified`.
     entry .Error   raised when a schema cannot be resolved; names the failing step
       detail
-          Error 611: _the schema does not resolve because …_. Raised by `SchemaResolver`,
+          Error `↯/s.118.7`: _the schema does not resolve because …_. Raised by `SchemaResolver`,
           `Tels.Layers.select` (an `UnknownLayer`) and acceptance handling. The reasons are
           `UnknownLayer(layer)`, a selected layer the schema does not declare;
           `ComponentCount(expected, found)`, a signature with the wrong number of components;
@@ -2554,7 +2554,7 @@ entry .Tels   a TEL schema: a root struct, named record, scalar and select defin
         not written.
     entry .Error   raised when a schema has a member type no document can name
       detail
-          Error 613: _the schema cannot be rendered because …_. `InlineStruct(keyword)` is a
+          Error `↯/s.118.9`: _the schema cannot be rendered because …_. `InlineStruct(keyword)` is a
           member whose type is an inline struct, such as the `entries` member a derived `Map`
           field produces; `InlineScalar(keyword)` is a member whose inline scalar carries an
           encoding, patterns or a validator other than the four built-in ones. A derived
@@ -2977,7 +2977,7 @@ entry .Telp   a TEL path: a delimiter-first sequence of keywords and selectors o
       a kebab-case identifier, plus `+`. `/` and `.` are the conventional choices.
   entry .Error   raised when a path does not parse or does not resolve
     detail
-        Error 610: _the TELP does not resolve because …_. The `#index` is the zero-based
+        Error `↯/s.118.6`: _the TELP does not resolve because …_. The `#index` is the zero-based
         component at which parsing or resolution failed. The reasons are outcomes of the
         resolving API, not document errors, and carry no E-codes: `Syntax`, a path which is
         empty, begins with no delimiter, has an empty component, or holds a line break;
@@ -3193,7 +3193,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
       ##
       ```
 
-      Every failure of the bytes is a `Bintel.Error` (error 609) whose `Reason` is one of the
+      Every failure of the bytes is a `Bintel.Error` (error `↯/s.118.5`) whose `Reason` is one of the
       specification's B-codes, B01 to B16, plus the decoder's own nesting limit; the error
       entry lists them. A scalar whose schema declares an *encoding* (TEL §21.7) is written and
       read through a `Tel.Codec.Bindings`, which the codec-aware overloads take; with no
@@ -3463,7 +3463,7 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
       `Base256.decodeStrict` first when the text may come from an untrusted source.
   entry .Error   raised when BinTEL bytes are not a valid document, with the specification's B-code as its reason
     detail
-        Error 609: _the BinTEL stream is invalid because `reason`_. Raised by every decoder,
+        Error `↯/s.118.5`: _the BinTEL stream is invalid because `reason`_. Raised by every decoder,
         framer and parser in `Bintel`, by `SchemaSignature`'s encoding and decoding, and by the
         `bintel` and `valueHash` extensions. `Bintel.Error.Reason` numbers its cases by the
         B-code of the BinTEL specification:
@@ -3602,7 +3602,7 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
     entry #schema   the schema the provider reads by
   entry .Error   raised when an image cannot be read or written, with the specification's R-code as its reason
     detail
-        Error 615: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
+        Error `↯/s.118.11`: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
         numbers its cases 1 to 27 by the R-code of the RaTEL specification — `BadMagic`,
         `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`, `SectionsOverlap`,
         `DigestMismatch`, `BadSignature`, `SchemaUndecodable`, `SignatureMismatch`,
@@ -3701,7 +3701,7 @@ entry .Varint   the variable-length unsigned integer encoding of BinTEL §4
     entry #next   the offset of the first byte after the varint, where the next read begins
   entry .Error   raised when bytes are not a valid varint
     detail
-        Error 608: _the varint is invalid because `reason`_. Raised by `Varint.decode` only;
+        Error `↯/s.118.4`: _the varint is invalid because `reason`_. Raised by `Varint.decode` only;
         the BinTEL layer wraps it as `Bintel.Error.Reason.VarintError`.
     entry .Reason   `Truncated` (1), `Overflow` (2) or `Overlong` (3)
       detail
@@ -4084,7 +4084,7 @@ entry .Base256   the BASE-256 binary-to-text codec: one Unicode character per by
     entry #render   the character, its `U+XXXX` code point and its position, as text
   entry .Error   raised by `decodeStrict` when text contains characters outside the alphabet
     detail
-        Error 607: _the BASE-256 string is invalid because `reason`_, where the reason lists
+        Error `↯/s.118.3`: _the BASE-256 string is invalid because `reason`_, where the reason lists
         every offending character.
     entry .Reason   `NotInAlphabet(offenders)`, listing every offending `Base256.Offender`
       entry .communicable   renders the reason with each offender's character, code point and position

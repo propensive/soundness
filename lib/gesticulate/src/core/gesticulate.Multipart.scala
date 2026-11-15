@@ -269,7 +269,7 @@ object Multipart:
   import Multipart.Error.Reason
 
   case class Error(reason: Multipart.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(937, reason.number)(m"multipart data could not be read because $reason")
+  extends fulminate.Error(81, 2, reason.number)(m"multipart data could not be read because $reason")
 
   object Part:
     import anticipation.*

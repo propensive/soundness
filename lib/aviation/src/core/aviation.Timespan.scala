@@ -106,7 +106,7 @@ object Timespan:
   // A duration is not a moment, so its parse failure is its own error rather than a `Reason`
   // of `Moment.Error`.
   case class Error(text: Text)(using Diagnostics)
-  extends fulminate.Error(334, 0)(m"$text is not a recognized duration")
+  extends fulminate.Error(73, 4, 0)(m"$text is not a recognized duration")
 
   given decodable: Tactic[Timespan.Error] => Timespan is Decodable in Text = text =>
     aviation.internal.parseDuration(text.s) match

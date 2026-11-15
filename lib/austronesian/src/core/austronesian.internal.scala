@@ -214,7 +214,7 @@ object internal:
 
     // PojoError → Pojo.Error
     case class Error()(using Diagnostics)
-    extends fulminate.Error(916, 0)(m"could not deserialize from Java POJO types")
+    extends fulminate.Error(120, 1, 0)(m"could not deserialize from Java POJO types")
 
   trait Pojo2:
     given checkable: Pojo is Checkable:

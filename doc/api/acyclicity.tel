@@ -180,7 +180,7 @@ entry .Dag   a directed acyclic graph as a persistent value, with a topological 
       `Digraph`, since two nodes could show as one).
   entry .Error   raised when a graph operation finds a cycle or is asked about a node the graph lacks
     detail
-        Error 191, _the DAG operation failed because `reason`_, with the reason numbered within
+        Error `↯/s.72.1`, _the DAG operation failed because `reason`_, with the reason numbered within
         it. `Reason.Cyclic` (191.2, _the graph contains a cycle_) is raised by the checking
         factories `Dag(…)`, by `acyclic` on any graph, by `Dag#add` for an edge whose target
         already reaches its source, and by `Topology#add` likewise; the graph being edited is left

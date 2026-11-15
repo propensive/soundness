@@ -105,7 +105,7 @@ entry .Hostname   a DNS hostname: dot-separated labels, each held to the rules f
   entry .toExpr   lifts a hostname into a quoted expression, for macros which build one
   entry .Error   raised when text is not a valid hostname
     detail
-        Error 892: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
+        Error `↯/s.100.10`: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
         (through `Hostname.decodable`) and, as a compile error, by `host"…"`. The `#text` is
         the whole text which was decoded and the `#reason` says what was wrong with it.
     entry .Reason   why a hostname was rejected
@@ -157,7 +157,7 @@ entry .Localhost   the hostname `localhost`, as a value
 
 entry .host   the `host"…"` interpolator: a hostname, checked as the code compiles
     `host"www.example.com"` is a `Hostname`, and text which is not a valid hostname is a
-    compile error carrying the `Hostname.Error` message (`[↯SN-892.4] the hostname is not
+    compile error carrying the `Hostname.Error` message (`[↯/s.100.10.4] the hostname is not
     valid because a DNS label cannot be empty` for `host"www..com"`). The interpolator takes
     no substitutions. Declared in `urticose.url`.
 
@@ -270,7 +270,7 @@ entry .IpAddress   the home of `IpAddress.Error`, raised for an IP address or su
       and both subnet types raise, so a program decoding either can handle one type.
   entry .Error   raised when text or bytes are not a valid IPv4 or IPv6 address or subnet
     detail
-        Error 77: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
+        Error `↯/s.100.2`: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
         `as[Ipv6]`, `as[Ipv4Subnet]` and `as[Ipv6Subnet]`, by the `Data` decoders, and as a
         compile error by `ip"…"` and `subnet"…"`; it is also wrapped as the reason of an
         `EmailAddress.Error` or `Url.Error` whose address part is bad.
@@ -345,7 +345,7 @@ entry .subnet   the `subnet"…"` interpolator: an IPv4 or IPv6 subnet, checked 
     `subnet"192.168.0.0/24"` is an `Ipv4Subnet` and `subnet"2001:db8::/32"` an `Ipv6Subnet`:
     the interpolator is transparent and takes its family from whether the address contains a
     dot. The prefix is checked against the family's range (0–32 or 0–128), so an impossible
-    mask is a compile error (`[↯SN-077.9] … the prefix length 40 is not in the range 0-32`),
+    mask is a compile error (`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`),
     and host bits below the prefix are masked away. It takes no substitutions.
 
     ```scala
@@ -385,7 +385,7 @@ entry .MacAddress   a 48-bit hardware address, as an opaque type over `Long`
 entry .mac   the `mac"…"` interpolator: a MAC address, checked as the code compiles
     `mac"01-23-45-ab-cd-ef"` is a `MacAddress`; text which is not six dashed pairs of
     hexadecimal digits is a compile error carrying the `MacAddress.Error` message
-    (`[↯SN-532.2] the MAC address is not valid because group 5 should be two hex digits, but
+    (`[↯/s.100.7.2] the MAC address is not valid because group 5 should be two hex digits, but
     its length is 1`). It takes no substitutions.
 
 entry .Port   a port number whose type records its transport and, for a literal, its number
@@ -428,8 +428,8 @@ entry .tcp   the `tcp"…"` interpolator: a TCP port by number or IANA service n
     `tcp"443"` is a `Port over Tcp of 443` and `tcp"smtp"` a `Port over Tcp of 25`: a name is
     looked up in the IANA service-names registry bundled with the library, for the TCP
     transport specifically, so a service registered only over UDP, or an unknown name, is a
-    compile error (`[↯SN-915] abcdef is not a valid TCP port`), as is a number outside
-    1–65535 (`[↯SN-340]`). It takes no substitutions.
+    compile error (`[↯/s.100.11] abcdef is not a valid TCP port`), as is a number outside
+    1–65535 (`[↯/s.100.5]`). It takes no substitutions.
 
     ```scala
     import soundness.*
@@ -440,7 +440,7 @@ entry .tcp   the `tcp"…"` interpolator: a TCP port by number or IANA service n
 
 entry .udp   the `udp"…"` interpolator: a UDP port by number or IANA service name, checked as the code compiles
     As `tcp"…"`, for the UDP transport: `udp"53"` and `udp"domain"` are each a `Port over Udp
-    of 53`, and a name registered only over TCP does not compile (`[↯SN-915] docker is not a
+    of 53`, and a name registered only over TCP does not compile (`[↯/s.100.11] docker is not a
     valid UDP port`).
 
     ```scala
@@ -608,7 +608,7 @@ entry .EmailAddress   an email address: a local part, a domain, and optionally a
   entry .parse   reads an address from text, as `.decodable` does
   entry .Error   raised when text is not a valid email address
     detail
-        Error 159: _the email address is not valid because `reason`_. Raised by
+        Error `↯/s.100.4`: _the email address is not valid because `reason`_. Raised by
         `as[EmailAddress]` and, as a compile error, by `email"…"`.
     entry .Reason   why an email address was rejected
       detail
@@ -678,7 +678,7 @@ entry .NetworkInterface   one of the machine's network interfaces, with its addr
   entry .byAddress   the interface an IP address is bound to, or `Unset`
   entry .Error   raised when the platform cannot enumerate or inspect its interfaces
     detail
-        Error 418: _the network interface could not be read because `reason`_, wrapping the
+        Error `↯/s.100.6`: _the network interface could not be read because `reason`_, wrapping the
         socket error's message.
     entry .Reason   why the interfaces could not be read
       detail
@@ -736,7 +736,7 @@ entry .Internet   evidence of network access, as a capability, which may say the
   refer urticose.internet
   entry .Error   raised when network access was required and is not available
     detail
-        Error 770: _an Internet connection is not available_. Raised by `Internet#require` on
+        Error `↯/s.100.9`: _an Internet connection is not available_. Raised by `Internet#require` on
         an offline `Internet`, and by `internetAccess.offline` as soon as an `Online` is
         summoned.
   entry #online   whether the network is available
@@ -866,7 +866,7 @@ entry .Url   a URL: a scheme, an optional authority, a location, and optional qu
       `urlInterfaces.soundnessUrl` is the same instance by name.
   entry .Error   raised when text is not a valid URL
     detail
-        Error 714: _the URL `text` is not valid: `reason` at `offset`_. Raised by
+        Error `↯/s.100.8`: _the URL `text` is not valid: `reason` at `offset`_. Raised by
         `as[HttpUrl]`, by `as[Authority]`, and as a compile error by `url"…"`. The `#offset`
         is the position in the text where the fault was found.
     entry .communicable   renders each reason as a message
@@ -1358,7 +1358,7 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
       ```
   entry .Error   raised when a DNS name or message is not valid, or a name does not resolve
     detail
-        Error 53: _the DNS message is not valid because `reason`_. Raised by name construction
+        Error `↯/s.100.1`: _the DNS message is not valid because `reason`_. Raised by name construction
         and parsing, by `Rdata.Txt`, by decoding a message from `Data`, by `Dns.resolve`, and
         as a compile error by `dns"…"`.
     entry .Reason   why a name, message or lookup failed
@@ -1469,7 +1469,7 @@ entry .internal   the opaque types' home and the macro implementations behind th
       entry .parse   reads an address from dashed text, as `.decoder` does
       entry .Error   raised when text is not a valid MAC address
         detail
-            Error 532: _the MAC address is not valid because `reason`_. Raised by
+            Error `↯/s.100.7`: _the MAC address is not valid because `reason`_. Raised by
             `as[MacAddress]` and, as a compile error, by `mac"…"`.
         entry .Reason   why a MAC address was rejected
           detail
@@ -1512,7 +1512,7 @@ entry .internal   the opaque types' home and the macro implementations behind th
           is not reserved.
       entry .Error   raised when a port number is outside 1–65535
         detail
-            Error 139: _the port is not in the valid range_. Raised by `Port[transport](number)`
+            Error `↯/s.100.3`: _the port is not in the valid range_. Raised by `Port[transport](number)`
             and by decoding a port from text; the interpolators `tcp"…"` and `udp"…"` report an
             out-of-range number as a compile error instead.
       entry .Type   the structural bound of `Port`: the type members which refine it

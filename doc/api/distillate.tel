@@ -413,7 +413,7 @@ entry .Enumerable   the derived description of an `enum`: its name, its cases, a
   entry .derived   derives an `Enumerable` for an `enum` of singleton cases, by macro
   entry .Error   text decoded as an enum which names none of its cases
     detail
-        Error 900: _the specified variant (`inputLabel`) is not one of the valid variants
+        Error `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
         (`validVariants`) of the enumeration `sum`_. Raised by the `Decodable.enumeration`
         decoder.
     entry #inputLabel   the text which named no case
@@ -471,7 +471,7 @@ entry .Number   the home of `Number.Error`, raised when text cannot be decoded a
       An object with no members but its error type.
   entry .Error   text which could not be decoded as a number, or whose number was out of range
     detail
-        Error 405, with a subcode for its `#reason`: _`text` is not a valid `specializable`
+        Error `↯/s.25.1`, with a subcode for its `#reason`: _`text` is not a valid `specializable`
         because `reason`_. Raised by the number decoders in the `Decodable` companion.
 
         ```scala
@@ -512,7 +512,7 @@ entry .Truth   a spelling of truth and falsity, accepted by the `Boolean` decode
   entry .trueFalse   the spelling `true`/`false`, always in scope through the companion
   entry .Error   text which no `Truth` in scope recognizes as a `Boolean`
     detail
-        Error 406: _`text` is not a recognized Boolean_. Raised by the `Boolean` decoder.
+        Error `↯/s.25.2`: _`text` is not a recognized Boolean_. Raised by the `Boolean` decoder.
     entry #text   the text, as it was given
   entry #affirmative   the word for `true`, in lower case
   entry #negative   the word for `false`, in lower case

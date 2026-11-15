@@ -66,7 +66,7 @@ object Httpd:
 
   // Httpd.Error → Httpd.Error
   case class Error(port: Int)(using Diagnostics)
-  extends fulminate.Error(632, 0)(m"could not start an HTTP server on port $port")
+  extends fulminate.Error(116, 1, 0)(m"could not start an HTTP server on port $port")
 
 case class Httpd(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:

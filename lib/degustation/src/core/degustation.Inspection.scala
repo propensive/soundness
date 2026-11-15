@@ -196,4 +196,4 @@ object Inspection:
       case Reason.DuplicateKey(key)        => m"the key $key was produced twice"
 
   case class Error(reason: Inspection.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(642, reason.number)(m"the Scala discipline failed because $reason")
+  extends fulminate.Error(139, 1, reason.number)(m"the Scala discipline failed because $reason")

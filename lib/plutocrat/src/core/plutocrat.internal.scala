@@ -107,7 +107,7 @@ object internal:
           m"the character $char at position $index is not a digit or uppercase letter"
 
     case class Error(reason: Isin.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(515, reason.number)(m"the ISIN number is not valid because $reason")
+    extends fulminate.Error(50, 1, reason.number)(m"the ISIN number is not valid because $reason")
 
   extension (isin: Isin)
     private[internal] def payload: Text =

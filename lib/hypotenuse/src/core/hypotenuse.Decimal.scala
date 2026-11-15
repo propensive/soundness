@@ -738,4 +738,4 @@ object decimalInternal:
 
     // DecimalError → Decimal.Error
     case class Error(text: Text)(using Diagnostics)
-    extends fulminate.Error(740, 0)(m"$text is not a representable decimal number")
+    extends fulminate.Error(27, 10, 0)(m"$text is not a representable decimal number")

@@ -2513,7 +2513,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
         case Unread                          extends Reason(5)
 
     case class Error(reason: Acceptance.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(612, reason.number)(m"the acceptance is invalid because $reason")
+    extends fulminate.Error(118, 8, reason.number)(m"the acceptance is invalid because $reason")
 
   // An acceptance (BinTEL §8.4): a reader tells a writer which composed
   // schemas it can consume, in decreasing order of preference, and which
@@ -7891,9 +7891,18 @@ object Tel extends Tel2, TelMutation, TelRevision:
   // bytes and are carried on the accrued `Tel.Focus`.
   case class Error(reason: Tel.Error.Reason, span: Span = Span.empty)(using Diagnostics)
   extends fulminate.Error
-    ( 605, reason.number )
+    ( 118, 1, reason.number )
     ( if span.vacant then m"the TEL document is invalid because $reason"
-      else m"the TEL document is invalid at ${Tel.Error.describe(span)} because $reason" )
+      else m"the TEL document is invalid at ${Tel.Error.describe(span)} because $reason" ):
+
+    // A reason the TEL Specification numbers is the specification's own error, which this one
+    // carries: `E107` there is ↯/t.1.7, and here ↯/s.118.1/t.1.7. A reason which is this
+    // implementation's own is a variant.
+    override def bolt: Bolt =
+      val number = reason.number
+
+      if number < 100 || number >= 400 then super.bolt
+      else Bolt(Bolt.Soundness, module, this.number).carrying(Bolt('t', number/100, number%100))
 
   // TelFlag → Tel.Flag
   // Flags for `open[Tel]`.

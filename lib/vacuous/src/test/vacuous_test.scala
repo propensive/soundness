@@ -47,7 +47,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         def abstractType[notConcrete]: Unit =
           summon[notConcrete is Concrete]
       . map(_.message)
-    . assert(_ == List(t"[↯SN-991] type notConcrete is abstract"))
+    . assert(_ == List(t"[↯/s.20.5] type notConcrete is abstract"))
 
     test(m"Unexpanded inlined abstract method type is not concrete"):
       demilitarize:
@@ -93,7 +93,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         cue[String]
 
       . map(_.message)
-    . assert(_.has("[↯SN-991] type T is abstract"))
+    . assert(_.has("[↯/s.20.5] type T is abstract"))
 
     test(m"Abstract type is not proven distinct from anything, e.g. Int"):
       demilitarize:
@@ -101,7 +101,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         cue[Int]
 
       . map(_.message)
-    . assert(_.has("[↯SN-991] type T is abstract"))
+    . assert(_.has("[↯/s.20.5] type T is abstract"))
 
     test(m"Inline abstract type not distinct from Int"):
       demilitarize:

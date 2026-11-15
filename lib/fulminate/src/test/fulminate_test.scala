@@ -119,6 +119,51 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
         m"a\\b".texts.head
       . assert(_ == t"a\\b")
 
+    suite(m"Bolt codes"):
+      test(m"A code of two numbers is written with its project's letter"):
+        Bolt('s', 87, 3).text
+      . assert(_ == t"↯/s.87.3")
+
+      test(m"A variant and a site follow the error"):
+        (Bolt('s', 87, 3, 2).text, Bolt('s', 87, 3, 2, 5).text)
+      . assert(_ == (t"↯/s.87.3.2", t"↯/s.87.3.2.5"))
+
+      test(m"A code carrying another is a compound"):
+        Bolt('s', 118, 1).carrying(Bolt('t', 1, 7)).text
+      . assert(_ == t"↯/s.118.1/t.1.7")
+
+      test(m"A compound carrying another puts it innermost"):
+        Bolt('p', 2, 2).carrying(Bolt('s', 118, 1)).carrying(Bolt('t', 1, 7)).text
+      . assert(_ == t"↯/p.2.2/s.118.1/t.1.7")
+
+      test(m"The label is the code in brackets"):
+        Bolt('s', 87, 3, 2).label
+      . assert(_ == t"[↯/s.87.3.2]")
+
+      test(m"A code is parsed from its text"):
+        Bolt.parse(t"↯/s.118.1/t.1.7")
+      . assert(_ == Bolt('s', 118, 1, cause = Bolt('t', 1, 7)))
+
+      test(m"Text which is not a code is uncoded"):
+        ( Bolt.parse(t"SN-077").coded,
+          Bolt.parse(t"↯/s.87").coded,
+          Bolt.parse(t"↯/s.1.2.3.4.5").coded )
+      . assert(_ == (false, false, false))
+
+      test(m"A code is read from the start of a message, with its brackets and the space"):
+        val text = t"[↯/s.87.3.2] the port is taken"
+        val (bolt, length) = Bolt.prefix(text)
+        (bolt.text, text.s.substring(length).nn.tt)
+      . assert(_ == (t"↯/s.87.3.2", t"the port is taken"))
+
+      test(m"A message without a code has no prefix"):
+        Bolt.prefix(t"the port is taken")
+      . assert(_ == (Bolt.Uncoded, 0))
+
+      test(m"An unnumbered error has no code"):
+        Bolt.Uncoded.text
+      . assert(_ == t"")
+
     suite(m"Backtick-delimited nesting"):
       test(m"single backtick pair produces an embedded message"):
         val msg = m"hello `world` today"

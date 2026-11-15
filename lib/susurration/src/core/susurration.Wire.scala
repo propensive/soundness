@@ -62,7 +62,8 @@ object Wire:
       case Negative extends Reason(4)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(599, reason.number)(m"could not decode the SSH message because $reason")
+  extends fulminate.Error(122, 1, reason.number)
+    ( m"could not decode the SSH message because $reason" )
 
   // The largest field this reader accepts: SSH packets are at most 256 KiB in practice (RFC 4253
   // §6.1 requires 32 KiB), so a larger length is a corrupt or hostile message, not data to buffer.

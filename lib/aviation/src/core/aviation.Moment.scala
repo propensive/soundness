@@ -109,7 +109,7 @@ object Moment:
       case Gap extends Reason(4)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(333, reason.number)(m"the date was not valid because $reason")
+  extends fulminate.Error(73, 3, reason.number)(m"the date was not valid because $reason")
 
 case class Moment
   ( date:       Date,

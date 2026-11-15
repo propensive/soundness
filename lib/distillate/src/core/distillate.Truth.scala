@@ -44,7 +44,7 @@ object Truth:
   given trueFalse: Truth = Truth("true".tt, "false".tt)
 
   case class Error(text: Text)(using Diagnostics)
-  extends fulminate.Error(406, 0)(m"$text is not a recognized Boolean")
+  extends fulminate.Error(25, 2, 0)(m"$text is not a recognized Boolean")
 
 case class Truth(affirmative: Text, negative: Text):
   def apply(text: Text): Optional[Boolean] =

@@ -74,7 +74,7 @@ object Rig:
       case Reason.Invocation      => t"the staged code could not be invoked"
 
   case class Error(reason: Rig.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(306, reason.number)
+  extends fulminate.Error(121, 1, reason.number)
     ( m"failed to perform a remote operation because $reason" )
 
 trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:

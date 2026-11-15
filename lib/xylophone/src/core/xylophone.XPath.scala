@@ -364,7 +364,8 @@ object XPath extends Format:
       case Reason.Unresolved            => m"the expression contains an unresolved substitution"
 
   case class Error(reason: XPath.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(563, reason.number)(m"the XPath could not be evaluated because $reason")
+  extends fulminate.Error(128, 2, reason.number)
+    ( m"the XPath could not be evaluated because $reason" )
 
   // Operator precedence levels, loosest-first, following the grammar's
   // production nesting (§3.1-§3.5): or=1, and=2, equality=3, relational=4,

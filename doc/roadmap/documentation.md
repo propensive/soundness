@@ -36,9 +36,9 @@ row  doc-8  the walkthrough  long  tool-2, tool-4
 ## doc-1: every error type has a code and a page
 
 Horizon: near
-Baseline: 41 error types carry no `SN-` code; 247 error pages exist (measured 2026-10-21; 40 and 241 on 2026-09-25; 39 and 233 on 2026-08-01)
+Baseline: 41 error types carry no bolt code; 247 error pages exist (measured 2026-10-21; 40 and 241 on 2026-09-25; 39 and 233 on 2026-08-01)
 
-The `SN-` scheme covers the macro-raised compile errors; the remaining runtime error types get
+The bolt codes cover the macro-raised compile errors; the remaining runtime error types get
 codes and pages under the same never-reuse discipline, and parity between types, codes and
 pages becomes a CI check so it cannot drift. Nothing in `etc/` checks the parity yet.
 

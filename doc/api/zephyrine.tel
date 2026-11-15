@@ -839,11 +839,11 @@ entry .Format   a parsed format's name and the position and issue types its pars
 
 entry .Parse   the error every format parser raises
   detail
-      `Parse.Error(format, position, issue)` is error 594, _the `name` was not valid at
+      `Parse.Error(format, position, issue)` is error `↯/s.60.2`, _the `name` was not valid at
       `position` because `issue`_, with the format's own position and issue types; `#span`
       exposes the position as a `Span`. Raised through a `Tactic[Parse.Error]` by every
       parser built on the kernel.
-  entry .Error   error 594: _the `format` was not valid at `position` because `issue`_
+  entry .Error   error `↯/s.60.2`: _the `format` was not valid at `position` because `issue`_
     entry #format   the format which rejected the input
     entry #position   where the input was rejected
     entry #issue   why it was rejected
@@ -860,7 +860,7 @@ entry .Truncation   a stream which ended before it had delivered everything
       turbulence's `Streamable`, `Writable` and `Sink` all report it, so it sits with
       `Stream` and `Spring`. turbulence re-exports it, so `Truncation` resolves through
       `import soundness.*` and `import turbulence.*` alike.
-  entry .Error   error 264: _the stream was cut prematurely after `total`_
+  entry .Error   error `↯/s.60.1`: _the stream was cut prematurely after `total`_
     entry #total   how much had been delivered when the stream was cut
 
 entry .Expanse   a random-access view of an expanse of bytes, for formats whose access is positional

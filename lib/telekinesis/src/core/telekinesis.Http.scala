@@ -706,7 +706,7 @@ object Http:
         case Reason.HeadersTooLarge              => m"the request headers exceeded the maximum size"
 
     case class Error(reason: Http.Request.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(367, reason.number)(m"could not parse HTTP request because $reason")
+    extends fulminate.Error(103, 2, reason.number)(m"could not parse HTTP request because $reason")
 
   enum Body:
     case Flowing(source: Spring[Data]^)
@@ -1223,7 +1223,7 @@ object Http:
         case Reason.Status(value)                => m"the HTTP status code $value was invalid"
 
     case class Error(reason: Http.Response.Error.Reason)(using Diagnostics)
-    extends fulminate.Error(366, reason.number)(m"could not parse HTTP response because $reason")
+    extends fulminate.Error(103, 1, reason.number)(m"could not parse HTTP response because $reason")
 
   // The body is capture-polymorphic (`Body^`): a server-side streamed response
   // legitimately retains the live connection it answers — the handler shape
@@ -1428,7 +1428,7 @@ object Http:
 
   // HttpError → Http.Error
   case class Error(status: Http.Status, headers: List[Http.Header])(using Diagnostics)
-  extends fulminate.Error(438, 0)(m"the HTTP request failed with status $status")
+  extends fulminate.Error(103, 3, 0)(m"the HTTP request failed with status $status")
 
   // HttpEvent → Http.Event
   object Event:

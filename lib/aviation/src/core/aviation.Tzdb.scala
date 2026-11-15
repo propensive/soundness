@@ -269,7 +269,7 @@ object Tzdb:
       case NoTzdbFile(name: Text) extends Reason(8)
 
   case class Error(reason: Tzdb.Error.Reason, line: Int)(using Diagnostics)
-  extends fulminate.Error(385, reason.number)
+  extends fulminate.Error(73, 6, reason.number)
     ( m"the timezone could not be parsed at line $line: $reason" )
 
   // TimeEvent → Tzdb.Event

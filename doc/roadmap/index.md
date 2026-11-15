@@ -67,7 +67,7 @@ Done when:
 The rules that keep this document trustworthy:
 
 - **Item identifiers are permanent.** They are track-prefixed and sequential, and are never
-  reused — the same discipline as `SN-` error codes. A completed item keeps its heading, gaining
+  reused — the same discipline as bolt codes. A completed item keeps its heading, gaining
   a `Done:` line naming the closing commit or pull request. The only exception is an item whose
   criterion *is* the deletion of an artifact.
 - **Every criterion is a command or an observable fact.** A `Done when:` block contains a
@@ -158,7 +158,7 @@ row  No file outside proscenium imports `scala.collection`  `core-3`
 row  No `caps.unsafe` escape hatch remains in `lib/`  `safety-4`
 row  The platform manifest is enforced in CI, its exclusions carry reasons, and an Android APK is built and signed in CI  `plat-1`, `plat-2`, `plat-3`
 row  `doc/api-reduction-candidates.md` no longer exists  `api-5`
-row  Every error type has an `SN-` code and a documentation page, checked in CI  `doc-1`
+row  Every error type has a bolt code and a documentation page, checked in CI  `doc-1`
 row  Every published module is covered by a `doc/modules/` topic  `doc-4`
 row  API documentation is generated and published for every component  `doc-5`
 row  `fury build` builds Soundness itself, attestation-equal to the Mill build  `tool-4`

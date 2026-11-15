@@ -48,7 +48,7 @@ detail
     ```
 
     Reading needs a `Dom` and, unless `recoveries.permissiveRecovery` is in scope, a
-    `Tactic[Parse.Error]`; a parse failure is `Parse.Error` (error 594), whose position is an
+    `Tactic[Parse.Error]`; a parse failure is `Parse.Error` (error `↯/s.60.2`), whose position is an
     `Html.Position` and whose issue an `Html.Issue`. `strategies.throwUnsafely` throws it.
 
     The library is one source set, `honeycomb.core`, with no platform-specific component. The

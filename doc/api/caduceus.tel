@@ -259,7 +259,7 @@ entry .Courier   a delivery service for email, chosen as a contextual value
   refer caduceus.couriers
   entry .Error   raised when a courier cannot deliver an email
     detail
-        Error 383: _unable to send email from `from` to `to` with subject `subject`_. The
+        Error `↯/s.107.1`: _unable to send email from `from` to `to` with subject `subject`_. The
         Resend courier raises it for any failure to connect, an HTTP error status, or a
         response it cannot read. The `to` is the first of the envelope's primary recipients.
     entry #from   the sender's address

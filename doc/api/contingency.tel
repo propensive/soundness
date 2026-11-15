@@ -472,7 +472,7 @@ entry .amalgamate   runs a block and returns its value or its error, as a union
 entry .abortive   runs a macro's block under a `HaltTactic`: an error becomes a compile error
     For macro implementations, with `Quotes` in scope. `abortive[error](block)` supplies a
     `HaltTactic[error, success]` and `Diagnostics.omit`, so an error recorded or aborted in
-    the block halts the compilation with the error's `labelled` message (its `SN-` code and
+    the block halts the compilation with the error's `labelled` message (its bolt code and
     text) as the diagnostic. A macro which parses a literal at expansion time wraps the parse
     in `abortive` to report a malformed literal where it is written.
 
@@ -892,7 +892,7 @@ entry .TrackTactic   the tactic `track` and `validate` inject: registers each er
 
 entry .Errors   several errors reported together, each keyed by the text of its focus
   detail
-      Error 218: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
+      Error `↯/s.24.5`: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
       `(Text, Error)` pairs, for a validation which collects every problem before failing.
       It is built empty and grown with `+`, and a focus's error is looked up with `apply`.
 
@@ -910,7 +910,7 @@ entry .Errors   several errors reported together, each keyed by the text of its 
 
 entry .Validation   several messages reported together, each at a `Pointer`
   detail
-      Error 59: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
+      Error `↯/s.24.3`: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
       message`, `two messages`… for small counts, and a message at `Pointer.Self` shown
       without a position). An `Error` holding `(Pointer, Message)` pairs for a pipeline which
       walks a structure and accumulates what it finds wrong, rather than aborting at the
@@ -937,7 +937,7 @@ entry .Expectation   the home of `Expectation.Error`, raised when `capture`'s bl
   refer contingency.capture
   entry .Error   raised by `capture` when the block was expected to fail but succeeded
     detail
-        Error 841: _the expression was expected to fail, but succeeded_. Carries the value the
+        Error `↯/s.24.16`: _the expression was expected to fail, but succeeded_. Carries the value the
         block produced instead, so a test can see what was returned. `capture` needs a
         `Tactic[Expectation.Error[success]]` in scope for it, which `strategies.throwUnsafely`
         supplies.
@@ -1139,7 +1139,7 @@ entry .AmalgamateTactic   the tactic `amalgamate` installs: breaks out with the 
 entry .HaltTactic   a tactic for macros: an error halts the compilation with its labelled message
   detail
       An `open class` taking `Quotes`, for `error <: Error`: `record` and `abort` both call
-      `halt` with the error's `labelled` message (its `SN-` code and text), so a parse which
+      `halt` with the error's `labelled` message (its bolt code and text), so a parse which
       fails at expansion time is reported as a compile error. `abortive` installs one; a
       macro which wants the error positioned at a particular tree subclasses it and overrides
       `record`/`abort` to pass the position.

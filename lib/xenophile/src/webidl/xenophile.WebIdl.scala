@@ -200,7 +200,7 @@ object WebIdl:
   // skip, for the reason `Typescript.Error` records: a capability contract read partially is a
   // smaller contract than the file declares, and every claim computed from it would be unsound.
   case class Error(reason: WebIdl.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(644, reason.number)(m"the WebIDL could not be read because $reason")
+  extends fulminate.Error(59, 2, reason.number)(m"the WebIDL could not be read because $reason")
 
   // WebIdlParser → WebIdl.Parser
   // A declaration parser for WebIDL (https://webidl.spec.whatwg.org/), retaining what `webidl/1`

@@ -796,7 +796,7 @@ object Acp:
   // AcpError → Acp.Error
   object Error:
     // Each reason carries its JSON-RPC wire code (`code`), alongside the sequential `number`
-    // used for the SN-148 diagnostic. A fault raised in a handler is converted into an error
+    // used for the ↯/s.125.1 diagnostic. A fault raised in a handler is converted into an error
     // response whose `error.code` is the reason's wire code.
     enum Reason(val number: Int, val code: Int) extends Clarification:
       case Parse          extends Reason(1, -32700)
@@ -834,7 +834,7 @@ object Acp:
         m"the agent does not support the protocol version this client implements"
 
   case class Error(reason: Acp.Error.Reason, details: Optional[Text] = Unset)(using Diagnostics)
-  extends fulminate.Error(148, reason.number)(m"the ACP operation failed because $reason"):
+  extends fulminate.Error(125, 1, reason.number)(m"the ACP operation failed because $reason"):
     // The message sent to the agent in the error response: the given details, or the reason's
     // standard description.
     def response: Text = details.or(reason.communicate.text)

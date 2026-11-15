@@ -155,11 +155,11 @@ entry .Optional   a value which may be absent, as the flat union `Unset | value`
       ```
   entry .check   a compile-time check that a type is an `Optional`
       `Optional.check[value]` expands to nothing if `Unset` is a subtype of `value`, and
-      otherwise fails to compile with error 465, _the type `value` is not an `Optional`_.
+      otherwise fails to compile with error `↯/s.20.3`, _the type `value` is not an `Optional`_.
       It is what the `Optionality` given does, exposed for code which wants to assert the
       property directly.
   entry .Error   raised by `assume` when the value was absent
-      Error 591: _the value was not set_. Thrown by `assume`, which needs a
+      Error `↯/s.20.4`: _the value was not set_. Thrown by `assume`, which needs a
       `CanThrow[Optional.Error]` in scope (`import unsafeExceptions.canThrowAny`, or an
       enclosing `unsafely`) precisely because it is an unchecked assertion of presence.
 
@@ -246,7 +246,7 @@ entry .mask   discards a present value which satisfies a predicate
 entry .assume   the value, or a thrown `Optional.Error` if it is absent
     `optional.assume` asserts presence. It is an unchecked assertion, so it needs a
     `CanThrow[Optional.Error]` in scope — `import unsafeExceptions.canThrowAny`, or an
-    enclosing `unsafely` — and throws error 591, _the value was not set_, when the
+    enclosing `unsafely` — and throws error `↯/s.20.4`, _the value was not set_, when the
     assertion is wrong. Prefer `or`, `lay` or a match where the code can say what absence
     means.
 
@@ -409,7 +409,7 @@ entry .Default   the value a type falls back to, used by `presume` and `default`
 entry .Optionality   the proof that a type is an `Optional`, required by every combinator
   detail
       `Optionality[value]` is a sealed marker whose only given, `.default`, is a macro
-      which succeeds when `Unset` is a subtype of `value` and fails with error 465, _the
+      which succeeds when `Unset` is a subtype of `value` and fails with error `↯/s.20.3`, _the
       type `value` is not an `Optional`_, otherwise. The extensions `or`, `let`, `lay`,
       `present`, `absent`, `mask`, `assume`, `presume`, `option`, `javaOptional`,
       `letGiven` and `layGiven` take an `Optionality[optional.type]`, so they resolve only
@@ -427,7 +427,7 @@ entry .Optionality   the proof that a type is an `Optional`, required by every c
 entry .Concrete   the proof that a type is definite, not abstract
   detail
       `self is Concrete` is produced by the inline given `.concrete`, a macro which
-      succeeds when `self` is not an abstract type and otherwise fails with error 991,
+      succeeds when `self` is not an abstract type and otherwise fails with error `↯/s.20.5`,
       _type `self` is abstract_. A generic method which takes an `Optional[value]` asks for
       `value: Concrete` because the flat union is only unambiguous when both members are
       known — an abstract `value` might later be instantiated to a type already optional,
@@ -452,8 +452,8 @@ entry .Concrete   the proof that a type is definite, not abstract
 entry .Distinct   the proof that a type is not a member of a union: `self is Distinct from union`
   detail
       `typeRef is Distinct from otherType` is produced by the inline given `.distinct`, a
-      macro which first requires `typeRef` to be `Concrete` (error 991 otherwise) and then
-      fails with error 401, _type `typeRef` cannot be proven distinct from `otherType`_,
+      macro which first requires `typeRef` to be `Concrete` (error `↯/s.20.5` otherwise) and then
+      fails with error `↯/s.20.2`, _type `typeRef` cannot be proven distinct from `otherType`_,
       when `typeRef` is a subtype of `otherType`. It is the check which keeps `Unset` out
       of a value type, and it lets an API accept "one or several" without ambiguity:
       caduceus's `many[entity: Distinct from List[Any]](value: entity | List[entity])`
@@ -478,7 +478,7 @@ entry .Mandatable   the non-optional type a present value has: `self is Mandatab
       `typeRef is Mandatable` is produced by the transparent inline given `.mandatable`, a
       macro which strips every `Unset` from a union type and records what is left as its
       `#Result`: `Optional[Text] is Mandatable to Text`. A type with no `Unset` in it fails
-      with error 259, _the value is not an `Optional`_. Derivation code uses it to find the
+      with error `↯/s.20.1`, _the value is not an `Optional`_. Derivation code uses it to find the
       type to encode or render for an optional field — breviloquence's CBOR encoder and the
       derived `Inspectable` both take `[inner <: value, value >: Unset.type: Mandatable to
       inner]`.
@@ -524,8 +524,8 @@ entry .internal   the macro implementations behind the proofs and the optimised 
       `concrete`, `distinct` and `mandatable` produce the `Concrete`, `Distinct` and
       `Mandatable` proofs; and `optimizeOr` is the macro behind `or`, which rewrites an
       `optimizable` receiver so that the fallback is supplied to it directly.
-  entry .check   the `Optionality[value]` macro: succeeds when `Unset <: value`, else error 465
-  entry .concrete   the `typeRef is Concrete` macro: fails with error 991 on an abstract type
-  entry .distinct   the `typeRef is Distinct from union` macro: fails with error 401 on a subtype
-  entry .mandatable   the `typeRef is Mandatable` macro: strips `Unset`, or error 259 if there is none
+  entry .check   the `Optionality[value]` macro: succeeds when `Unset <: value`, else error `↯/s.20.3`
+  entry .concrete   the `typeRef is Concrete` macro: fails with error `↯/s.20.5` on an abstract type
+  entry .distinct   the `typeRef is Distinct from union` macro: fails with error `↯/s.20.2` on a subtype
+  entry .mandatable   the `typeRef is Mandatable` macro: strips `Unset`, or error `↯/s.20.1` if there is none
   entry .optimizeOr   the macro behind `or`: inlines the fallback into an `optimizable` receiver

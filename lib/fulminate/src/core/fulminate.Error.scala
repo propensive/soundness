@@ -64,10 +64,13 @@ object Error:
       // [java-boundary] raw stack-trace array from Throwable.getStackTrace
       @scala.caps.unsafe.untrackedCaptures
       stackTrace: scala.Array[StackTraceElement | Null] | Null )
-  extends Error(117, 0)(Unchecked.describe(text))(using errorDiagnostics.emptyDiagnostics):
+  extends Error(15, 1, 0)(Unchecked.describe(text))(using errorDiagnostics.emptyDiagnostics):
     setStackTrace(stackTrace)
 
-transparent abstract class Error(val d: Int, val e: Int)
+// An error is identified by the number of its module, its own number within the module, and — if
+// it distinguishes several cases — the number of its variant, which together are its bolt code
+// (`Bolt`). An error given no numbers has no code.
+transparent abstract class Error(val module: Int, val number: Int, val variant: Int)
   ( val message: Message, private val cause: Throwable | Null )
   ( using val diagnostics: Diagnostics )
 // `caps.Pure`: an error may never hold a live capability. `throw` is the one
@@ -78,11 +81,11 @@ transparent abstract class Error(val d: Int, val e: Int)
 extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.Pure:
   this: Error =>
 
-  def this(d: Int, e: Int)(message: Message)(using Diagnostics) =
-    this(d, e)(message, null)
+  def this(module: Int, number: Int, variant: Int)(message: Message)(using Diagnostics) =
+    this(module, number, variant)(message, null)
 
   def this(message: Message, cause: Throwable | Null = null)(using Diagnostics) =
-    this(0, 0)(message, cause)
+    this(0, 0, 0)(message, cause)
 
   def fullClass: List[Text] =
     (getClass.getName.nn.split("\\.").nn.iterator.map { part => Text(part.nn) }).to(List)
@@ -90,34 +93,19 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.
   def className: Text = List.last(fullClass)
   def component: Text = List.head(fullClass)
 
-  def errorCode: Text =
-    if d == 0 then "".tt
-    else
-      val ePart = if e == 0 then "" else s".$e"
-      f"SN-$d%03d$ePart".tt
+  // The error's bolt code: `↯/s.`, its module's number, and its own within the module, with its
+  // variant if it has one. An error which is reported on account of another project's overrides
+  // this to carry that error's code.
+  def bolt: Bolt =
+    if module == 0 then Bolt.Uncoded else Bolt(Bolt.Soundness, module, number, variant)
 
-  def colourCode: Text =
-    if d == 0 then "".tt
-    else
-      val hyperlink = false
-      val esc = 27.toChar
-      val bel = 7.toChar
-      val gray   = s"$esc[38;2;128;128;128m"
-      val orange = s"$esc[38;2;255;165;0m"
-      val yellow = s"$esc[38;2;255;215;0m"
-      val cyan   = s"$esc[38;2;0;200;255m"
-      val reset  = s"$esc[0m"
-      val ePart  = if e == 0 then "" else s"$gray.$cyan$e"
-      val padded = f"$d%03d"
-      val link   = if hyperlink then s"$esc]8;;https://soundness.dev/SN-$padded$bel" else ""
-      val unlink = if hyperlink then s"$esc]8;;$bel" else ""
-      s"$link$gray[$orange↯SN$gray-$cyan$padded$ePart$gray]$reset$unlink"
-      .tt
+  def errorCode: Text = bolt.text
+  def colourCode: Text = bolt.colorLabel
 
   def labelled: Message =
-    if d == 0 then message else m"[↯$errorCode] $message"
+    if !bolt.coded then message else m"${bolt.label} $message"
 
   override def getMessage: String =
-    if d == 0 then component.s+": "+message.text else "[↯"+errorCode+"] "+message.text
+    if !bolt.coded then component.s+": "+message.text else bolt.label.s+" "+message.text
 
   override def getCause: Throwable | Null = cause

@@ -152,7 +152,7 @@ object Git:
 
   // `detail` is what git itself said, when a backend has it: its standard error, trimmed.
   case class Error(reason: Git.Error.Reason, detail: Optional[Text] = Unset)(using Diagnostics)
-  extends fulminate.Error(685, reason.number)
+  extends fulminate.Error(123, 1, reason.number)
     ( m"the Git operation could not be completed because $reason" )
 
   object RefError:
@@ -177,7 +177,7 @@ object Git:
       case Reason.BadRefspec           => m"the value is not a valid refspec"
 
   case class RefError(value: Text, reason: Git.RefError.Reason)(using Diagnostics)
-  extends fulminate.Error(976, reason.number)
+  extends fulminate.Error(123, 2, reason.number)
     ( m"$value is not a valid Git reference because $reason" )
 
   // ───────────────────────────────────────── Reference paths ──────────────────────────────────

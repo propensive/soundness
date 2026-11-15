@@ -52,7 +52,7 @@ object Arithmetic:
       case Reason.Overflow       => m"the result exceeded the range of its type"
 
   case class Error(reason: Arithmetic.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(868, reason.number)
+  extends fulminate.Error(27, 15, reason.number)
     ( m"the arithmetic operation could not be completed because $reason" )
 
   // The shapes of the fixed-width arithmetic instances: a number with itself, to a result the

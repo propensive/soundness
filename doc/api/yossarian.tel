@@ -126,7 +126,7 @@ entry .Pty   a terminal's state as an immutable value: its screen, cursor, modes
       Raises `Pty.Error` as each chunk is consumed.
   entry .Error   raised when an escape sequence cannot be interpreted
     detail
-        Error 537: _an ANSI escape code could not be handled because `reason`_, where the
+        Error `↯/s.132.1`: _an ANSI escape code could not be handled because `reason`_, where the
         reason is a `Pty.Error.Reason`. Raised by `Pty#consume` (and `Pty.stream`) for an
         escape sequence it does not recognise or whose parameters are invalid, so a test
         discovers that a program emits broken sequences, rather than a real terminal quietly
