@@ -1172,13 +1172,13 @@ entry .Arithmetic
         + levée lorsqu'une opération n'a pas de résultat représentable : un diviseur nul ou un
         + dépassement
     detail
-        - Error 868, _the arithmetic operation could not be completed because `reason`_, where
+        - Error `↯/s.27.15`, _the arithmetic operation could not be completed because `reason`_, where
         - the reason is `Reason.DivisionByZero` (_the divisor was zero_) or `Reason.Overflow`
         - (_the result exceeded the range of its type_); the reason's number (1 or 2) is the
         - error's detail number. Raised by the checked policies through a
         - `Tactic[Arithmetic.Error]`, which `safely`, `recover`, `unsafely` or a `raises`
         - signature supplies.
-        + Erreur 868, _l'opération arithmétique n'a pas pu être achevée car `reason`_, où la
+        + Erreur `↯/s.27.15`, _l'opération arithmétique n'a pas pu être achevée car `reason`_, où la
         + raison est `Reason.DivisionByZero` (_le diviseur était nul_) ou `Reason.Overflow` (_le
         + résultat dépassait l'intervalle de son type_) ; le numéro de la raison (1 ou 2) est le
         + numéro de détail de l'erreur. Levée par les politiques vérifiées via une
@@ -1264,17 +1264,16 @@ entry .Commensurable
       List('1', '2', '3', '4', '5').filter('2' < _ <= '4')     // List('3', '4')
       ```
 
-      - The chain must begin with a bound on the left: `1.4 > x > 1.2` is error 966, _this
+      - The chain must begin with a bound on the left: `1.4 > x > 1.2` is error `↯/s.27.16`, _this
       - cannot be written as a range expression_. Every numeric type in this library has an
       - `Orderable` in its companion, `F64` additionally compares against an `Int` and a
       - `Double`, and any type with a symbolism `Comparable` (or a stdlib `Ordering`, through
       - `Comparable`'s bridge) is `Orderable` through `.orderable`.
-      + La chaîne doit commencer par une borne à gauche : `1.4 > x > 1.2` est l'erreur 966, _ceci
-      + ne peut pas s'écrire sous forme d'expression d'intervalle_. Chaque type numérique de cette
-      + bibliothèque a un `Orderable` dans son compagnon, `F64` se compare en outre à un `Int` et
-      + à un `Double`, et tout type doté d'un `Comparable` de symbolism (ou d'un `Ordering` de la
-      + bibliothèque standard, via la passerelle de `Comparable`) est `Orderable` via
-      + `.orderable`.
+      + La chaîne doit commencer par une borne à gauche : `1.4 > x > 1.2` est l'erreur `↯/s.27.16`,
+      + _ceci ne peut pas s'écrire sous forme d'expression d'intervalle_. Chaque type numérique de
+      + cette bibliothèque a un `Orderable` dans son compagnon, `F64` se compare en outre à un `Int`
+      + et à un `Double`, et tout type doté d'un `Comparable` de symbolism (ou d'un `Ordering` de la
+      + bibliothèque standard, via la passerelle de `Comparable`) est `Orderable` via `.orderable`.
   refer hypotenuse.Orderable
   refer hypotenuse.<
   refer hypotenuse.min
@@ -1286,10 +1285,10 @@ entry .Commensurable
     detail
         - `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`.
         - Its `compare` is a macro which inspects the `Boolean` for a comparison of the same
-        - primitive type, and halts with error 966 if the expression is not one.
-        + `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`.
-        + Son `compare` est une macro qui examine le `Boolean` à la recherche d'une comparaison du
-        + même type primitif, et s'arrête avec l'erreur 966 si l'expression n'en est pas une.
+        - primitive type, and halts with error `↯/s.27.16` if the expression is not one.
+        + `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`. Son
+        + `compare` est une macro qui examine le `Boolean` à la recherche d'une comparaison du même
+        + type primitif, et s'arrête avec l'erreur `↯/s.27.16` si l'expression n'en est pas une.
   entry .memory
     info
         - `Memory is Orderable`: memory sizes compare by their byte count
@@ -1368,8 +1367,8 @@ entry .Rational
   refer hypotenuse.Q64
   entry .Error
     info
-        - Error 741: _`text` is not a representable rational number_
-        + Erreur 741 : _`text` is not a representable rational number_
+        - Error `↯/s.27.11`: _`text` is not a representable rational number_
+        + Erreur `↯/s.27.11` : _`text` is not a representable rational number_
     detail
         - Raised by `Q64.parse(text)` and `Q32.parse(text)` through a `Tactic[Rational.Error]`.
         + Levée par `Q64.parse(text)` et `Q32.parse(text)` via une `Tactic[Rational.Error]`.
@@ -1661,8 +1660,8 @@ entry .decimalInternal
           + une méthode d'extension sur `Decimal` : indique si la valeur est un entier
     entry .Error
       info
-          - Error 740: _`text` is not a representable decimal number_
-          + Erreur 740 : _`text` is not a representable decimal number_
+          - Error `↯/s.27.10`: _`text` is not a representable decimal number_
+          + Erreur `↯/s.27.10` : _`text` is not a representable decimal number_
       detail
           - Raised by `Decimal.parse` for text outside the grammar, and by `Decimal(double)` for
           - a `NaN` or infinite `Double`, through a `Tactic[Decimal.Error]`.
@@ -2464,16 +2463,16 @@ entry .bin
       - `bin"00001111"` is the `Byte` `15`, checked while the code compiles: the digits may be
       - separated by spaces for readability, and the result's type is chosen by their count, so
       - `bin"1111 0000 1111 0000"` is a `Short`. A character other than `0`, `1` or a space is
-      - error 118, _a binary value can only contain characters '0' or '1'_, and a count other
-      - than 8, 16, 32 or 64 is error 167. The result is a primitive; `bits` makes a `B8`,
+      - error `↯/s.27.2`, _a binary value can only contain characters '0' or '1'_, and a count other
+      - than 8, 16, 32 or 64 is error `↯/s.27.5`. The result is a primitive; `bits` makes a `B8`,
       - `B16`, `B32` or `B64` of it.
       + `bin"00001111"` est le `Byte` `15`, vérifié pendant la compilation du code : les chiffres
       + peuvent être séparés par des espaces pour la lisibilité, et le type du résultat est choisi
       + d'après leur nombre, si bien que `bin"1111 0000 1111 0000"` est un `Short`. Un caractère
-      + autre que `0`, `1` ou une espace est l'erreur 118, _une valeur binaire ne peut contenir
-      + que les caractères '0' ou '1'_, et un nombre de chiffres autre que 8, 16, 32 ou 64 est
-      + l'erreur 167. Le résultat est un type primitif ; `bits` en fait un `B8`, `B16`, `B32` ou
-      + `B64`.
+      + autre que `0`, `1` ou une espace est l'erreur `↯/s.27.2`, _une valeur binaire ne peut
+      + contenir que les caractères '0' ou '1'_, et un nombre de chiffres autre que 8, 16, 32 ou 64
+      + est l'erreur `↯/s.27.5`. Le résultat est un type primitif ; `bits` en fait un `B8`, `B16`,
+      + `B32` ou `B64`.
 
       ```scala
       import soundness.*
@@ -2491,14 +2490,14 @@ entry .hex
       - `hex"cafe babe"` is an `Array[Byte]^{}` of the bytes the digits spell, built while the
       - code compiles: spaces and newlines between digits are ignored, so a long constant can be
       - laid out in rows, and the digits may be in either case. A character that is not a hex
-      - digit is error 148, and an odd number of digits is error 137, _a hexadecimal value must
+      - digit is error `↯/s.27.4`, and an odd number of digits is error `↯/s.27.3`, _a hexadecimal value must
       - have an even number of digits_.
       + `hex"cafe babe"` est un `Array[Byte]^{}` des octets que les chiffres épellent, construit
       + pendant la compilation du code : les espaces et sauts de ligne entre les chiffres sont
       + ignorés, si bien qu'une longue constante peut être disposée en lignes, et les chiffres
       + peuvent être en majuscules ou en minuscules. Un caractère qui n'est pas un chiffre
-      + hexadécimal est l'erreur 148, et un nombre impair de chiffres est l'erreur 137, _une
-      + valeur hexadécimale doit avoir un nombre pair de chiffres_.
+      + hexadécimal est l'erreur `↯/s.27.4`, et un nombre impair de chiffres est l'erreur
+      + `↯/s.27.3`, _une valeur hexadécimale doit avoir un nombre pair de chiffres_.
 
       ```scala
       import soundness.*
@@ -3339,11 +3338,11 @@ entry .internal
           - a `U16` from an integer literal, under `genericNumberLiterals`
           + un `U16` à partir d'un littéral entier, sous `genericNumberLiterals`
       detail
-          - Error 764, _a U16 may not be less than 0_, and error 772, _a U16 may not be greater
+          - Error `↯/s.27.12`, _a U16 may not be less than 0_, and error `↯/s.27.14`, _a U16 may not be greater
           - than 65535_, are reported at compile time for a literal out of range.
-          + L'erreur 764, _un U16 ne peut pas être inférieur à 0_, et l'erreur 772, _un U16 ne
-          + peut pas être supérieur à 65535_, sont signalées à la compilation pour un littéral
-          + hors limites.
+          + L'erreur `↯/s.27.12`, _un U16 ne peut pas être inférieur à 0_, et l'erreur `↯/s.27.14`,
+          + _un U16 ne peut pas être supérieur à 65535_, sont signalées à la compilation pour un
+          + littéral hors limites.
     entry .textualizable
       info
           - renders the unsigned decimal value as `Text`
@@ -3405,10 +3404,10 @@ entry .internal
           - a `U8` from an integer literal, under `genericNumberLiterals`
           + un `U8` à partir d'un littéral entier, sous `genericNumberLiterals`
       detail
-          - Error 689, _a U8 may not be less than 0_, and error 709 for a literal above the upper
+          - Error `↯/s.27.8`, _a U8 may not be less than 0_, and error `↯/s.27.9` for a literal above the upper
           - bound, are reported at compile time.
-          + L'erreur 689, _un U8 ne peut pas être inférieur à 0_, et l'erreur 709, pour un littéral
-          + supérieur à la borne supérieure, sont signalées à la compilation.
+          + L'erreur `↯/s.27.8`, _un U8 ne peut pas être inférieur à 0_, et l'erreur `↯/s.27.9`,
+          + pour un littéral supérieur à la borne supérieure, sont signalées à la compilation.
     entry .textualizable
       info
           - renders the unsigned decimal value as `Text`
@@ -3615,10 +3614,11 @@ entry .internal
           - an `S16` from an integer literal, under `genericNumberLiterals`
           + un `S16` à partir d'un littéral entier, sous `genericNumberLiterals`
       detail
-          - Error 46, _an S16 may not be less than -32768_, and error 461, _an S16 may not be
+          - Error `↯/s.27.1`, _an S16 may not be less than -32768_, and error `↯/s.27.7`, _an S16 may not be
           - greater than 32767_, are reported at compile time.
-          + L'erreur 46, _un S16 ne peut pas être inférieur à -32768_, et l'erreur 461, _un S16 ne
-          + peut pas être supérieur à 32767_, sont signalées à la compilation.
+          + L'erreur `↯/s.27.1`, _un S16 ne peut pas être inférieur à -32768_, et l'erreur
+          + `↯/s.27.7`, _un S16 ne peut pas être supérieur à 32767_, sont signalées à la
+          + compilation.
     entry .textualizable
       info
           - renders the signed decimal value as `Text`
@@ -3676,10 +3676,10 @@ entry .internal
           - an `S8` from an integer literal, under `genericNumberLiterals`
           + un `S8` à partir d'un littéral entier, sous `genericNumberLiterals`
       detail
-          - Error 287, _an S8 may not be less than -128_, and error 768, _an S8 may not be
+          - Error `↯/s.27.6`, _an S8 may not be less than -128_, and error `↯/s.27.13`, _an S8 may not be
           - greater than 127_, are reported at compile time.
-          + L'erreur 287, _un S8 ne peut pas être inférieur à -128_, et l'erreur 768, _un S8 ne
-          + peut pas être supérieur à 127_, sont signalées à la compilation.
+          + L'erreur `↯/s.27.6`, _un S8 ne peut pas être inférieur à -128_, et l'erreur `↯/s.27.13`,
+          + _un S8 ne peut pas être supérieur à 127_, sont signalées à la compilation.
     entry .textualizable
       info
           - renders the signed decimal value as `Text`

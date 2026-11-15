@@ -295,7 +295,7 @@ entry .Dag
         + levée lorsqu'une opération sur un graphe trouve un cycle ou porte sur un nœud absent du
         + graphe
     detail
-        - Error 191, _the DAG operation failed because `reason`_, with the reason numbered within
+        - Error `↯/s.72.1`, _the DAG operation failed because `reason`_, with the reason numbered within
         - it. `Reason.Cyclic` (191.2, _the graph contains a cycle_) is raised by the checking
         - factories `Dag(…)`, by `acyclic` on any graph, by `Dag#add` for an edge whose target
         - already reaches its source, and by `Topology#add` likewise; the graph being edited is left
@@ -303,14 +303,14 @@ entry .Dag
         - graph_) is raised by `reachable`, `descendants`, `ancestors` and `lineage` for a node the
         - graph does not have — on a `Dag`, a `Digraph` and through the generic extension alike —
         - with the node rendered by its `toString`.
-        + Erreur 191, _the DAG operation failed because `reason`_, avec la raison numérotée en son
-        + sein. `Reason.Cyclic` (191.2, _the graph contains a cycle_) est levée par les fabriques
-        + vérifiantes `Dag(…)`, par `acyclic` sur tout graphe, par `Dag#add` pour une arête dont la
-        + cible atteint déjà la source, et de même par `Topology#add` ; le graphe en cours de
-        + modification reste inchangé. `Reason.NodeMissing(node)` (191.1, _the node `node` is not
-        + present in the graph_) est levée par `reachable`, `descendants`, `ancestors` et `lineage`
-        + pour un nœud que le graphe n'a pas — sur un `Dag`, sur un `Digraph` comme à travers
-        + l'extension générique — le nœud étant rendu par son `toString`.
+        + Erreur `↯/s.72.1`, _the DAG operation failed because `reason`_, avec la raison numérotée
+        + en son sein. `Reason.Cyclic` (191.2, _the graph contains a cycle_) est levée par les
+        + fabriques vérifiantes `Dag(…)`, par `acyclic` sur tout graphe, par `Dag#add` pour une
+        + arête dont la cible atteint déjà la source, et de même par `Topology#add` ; le graphe en
+        + cours de modification reste inchangé. `Reason.NodeMissing(node)` (191.1, _the node `node`
+        + is not present in the graph_) est levée par `reachable`, `descendants`, `ancestors` et
+        + `lineage` pour un nœud que le graphe n'a pas — sur un `Dag`, sur un `Digraph` comme à
+        + travers l'extension générique — le nœud étant rendu par son `toString`.
 
         ```scala
         import soundness.*

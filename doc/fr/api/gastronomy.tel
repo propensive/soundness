@@ -2069,10 +2069,11 @@ entry .Multihash
         - raised by `Multihash.parse` for an envelope which cannot be read
         + levée par `Multihash.parse` pour une enveloppe qui ne peut pas être lue
     detail
-        - Error 41, with the `Reason`'s ordinal as its detail number: _the multihash could not be
+        - Error `↯/s.66.1`, with the `Reason`'s ordinal as its detail number: _the multihash could not be
         - read because `reason`_, where the reason is one of `Multihash.Reason`'s messages.
-        + Erreur 41, avec l'ordinal de la `Reason` comme numéro de détail : _the multihash could not
-        + be read because `reason`_, où la raison est l'un des messages de `Multihash.Reason`.
+        + Erreur `↯/s.66.1`, avec l'ordinal de la `Reason` comme numéro de détail : _the multihash
+        + could not be read because `reason`_, où la raison est l'un des messages de
+        + `Multihash.Reason`.
     entry #reason
       info
           - which of `Multihash.Reason` applies

@@ -469,14 +469,14 @@ entry .Httpd
         - raised when the port cannot be bound
         + levée lorsque le port ne peut être attaché
     detail
-        - Error 632: _could not start an HTTP server on port `port`_. Raised by `handle` (of
+        - Error `↯/s.116.1`: _could not start an HTTP server on port `port`_. Raised by `handle` (of
         - either backend) and `SocketServer#handleSession` when binding the listening socket
         - throws a `BindException`, typically because the port is already in use. A
         - `Tactic[Httpd.Error]` is required to call `handle`.
-        + Error 632: _could not start an HTTP server on port `port`_. Levée par `handle` (de l'un ou
-        + l'autre backend) et par `SocketServer#handleSession` lorsque l'attachement du socket
-        + d'écoute lève une `BindException`, généralement parce que le port est déjà utilisé. Une
-        + `Tactic[Httpd.Error]` est requise pour appeler `handle`.
+        + Error `↯/s.116.1`: _could not start an HTTP server on port `port`_. Levée par `handle` (de
+        + l'un ou l'autre backend) et par `SocketServer#handleSession` lorsque l'attachement du
+        + socket d'écoute lève une `BindException`, généralement parce que le port est déjà utilisé.
+        + Une `Tactic[Httpd.Error]` est requise pour appeler `handle`.
     entry #port
       info
           - the port which could not be bound

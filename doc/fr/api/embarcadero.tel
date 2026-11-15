@@ -259,7 +259,7 @@ entry .Oci
         + levée lorsqu'une archive OCI ne peut pas être lue : un document manquant, un condensé
         + erroné, une forme non prise en charge
     detail
-        - Error 285: _the OCI image archive could not be read because `reason`_. Raised by
+        - Error `↯/s.113.1`: _the OCI image archive could not be read because `reason`_. Raised by
         - `Image.Handle`'s methods and by the openables, with a `.Reason` saying what went
         - wrong. The reasons: `MissingLayout` (no `oci-layout` marker), `UnsupportedLayout
         - (version)` (a layout version not beginning `1.`), `MissingIndex` (no `index.json`),
@@ -268,17 +268,17 @@ entry .Oci
         - which does not parse, or a blob whose size disagrees with its descriptor),
         - `UnsupportedDigest(algorithm)` (a digest not prefixed `sha256:`), `NoManifest` (an
         - index listing no manifests) and `WriteUnsupported` (an archive opened with `Write`).
-        + Erreur 285 : _the OCI image archive could not be read because `reason`_. Levée par les
-        + méthodes d'`Image.Handle` et par les ouvrables, avec une `.Reason` indiquant ce qui n'a
-        + pas fonctionné. Les raisons : `MissingLayout` (pas de marqueur `oci-layout`),
-        + `UnsupportedLayout
-        + (version)` (une version de structure ne commençant pas par `1.`), `MissingIndex` (pas
-        + d'`index.json`), `MissingBlob(digest)`, `DigestMismatch(expected, actual)` (un blob dont
-        + les octets, hachés, ne donnent pas le condensé par lequel il est adressé),
-        + `InvalidBlob(digest, detail)` (un document qui ne s'analyse pas, ou un blob dont la
-        + taille ne correspond pas à son descripteur), `UnsupportedDigest(algorithm)` (un
-        + condensé sans préfixe `sha256:`), `NoManifest` (un index ne listant aucun manifeste) et
-        + `WriteUnsupported` (une archive ouverte avec `Write`).
+        + Erreur `↯/s.113.1` : _the OCI image archive could not be read because `reason`_. Levée par
+        + les méthodes d'`Image.Handle` et par les ouvrables, avec une `.Reason` indiquant ce qui
+        + n'a pas fonctionné. Les raisons : `MissingLayout` (pas de marqueur `oci-layout`),
+        + `UnsupportedLayout (version)` (une version de structure ne commençant pas par `1.`),
+        + `MissingIndex` (pas d'`index.json`), `MissingBlob(digest)`,
+        + `DigestMismatch(expected, actual)` (un blob dont les octets, hachés, ne donnent pas le
+        + condensé par lequel il est adressé), `InvalidBlob(digest, detail)` (un document qui ne
+        + s'analyse pas, ou un blob dont la taille ne correspond pas à son descripteur),
+        + `UnsupportedDigest(algorithm)` (un condensé sans préfixe `sha256:`), `NoManifest` (un
+        + index ne listant aucun manifeste) et `WriteUnsupported` (une archive ouverte avec
+        + `Write`).
 
         ```scala
         import soundness.*
@@ -1758,8 +1758,8 @@ entry .Containerd
           + Un type opaque sur un tableau d'octets gelé plutôt qu'un simple champ `Data`, afin que
           + la dérivation protobuf puisse le voir comme une valeur simple, sans capture.
           + `Payload(data)` enveloppe une `Data`, `.empty` est la charge utile de longueur nulle, et
-          + l'extension `data` sur `AnyMessage` la relit. Elle s'encode en transmission comme un champ
-          + délimité par sa longueur.
+          + l'extension `data` sur `AnyMessage` la relit. Elle s'encode en transmission comme un
+          + champ délimité par sa longueur.
       entry .empty
         info
             - the zero-length payload, the default `value` of an `AnyMessage`

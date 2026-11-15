@@ -545,16 +545,16 @@ entry .OAuth
         - raised when an OAuth 2 grant, check or redirect fails
         + levée lorsqu'une autorisation, une vérification ou une redirection OAuth 2 échoue
     detail
-        - Error 840: _OAuth failed because `reason`_, where the second number is the reason's.
+        - Error `↯/s.117.1`: _OAuth failed because `reason`_, where the second number is the reason's.
         - Every grant on `Issuer`, `Authorization.parse`, `Scope#apply` and the server
         - middleware raise it, each through the `Tactic[OAuth.Error]` in scope; network,
         - parsing and HTTP-status failures are all mitigated into it, so a caller handles one
         - error type.
-        + Erreur 840 : _OAuth failed because `reason`_, où le second nombre est celui de la raison.
-        + Chaque autorisation sur `Issuer`, `Authorization.parse`, `Scope#apply` et le middleware
-        + serveur la lèvent, chacun via la `Tactic[OAuth.Error]` dans la portée ; les échecs de
-        + réseau, d'analyse et de statut HTTP y sont tous ramenés, si bien qu'un appelant ne traite
-        + qu'un seul type d'erreur.
+        + Erreur `↯/s.117.1` : _OAuth failed because `reason`_, où le second nombre est celui de la
+        + raison. Chaque autorisation sur `Issuer`, `Authorization.parse`, `Scope#apply` et le
+        + middleware serveur la lèvent, chacun via la `Tactic[OAuth.Error]` dans la portée ; les
+        + échecs de réseau, d'analyse et de statut HTTP y sont tous ramenés, si bien qu'un appelant
+        + ne traite qu'un seul type d'erreur.
 
         ```scala
         import soundness.*
@@ -565,8 +565,9 @@ entry .OAuth
         ```
     entry .Reason
       info
-          - why an OAuth exchange failed, numbered as the second part of error 840
-          + pourquoi un échange OAuth a échoué, numéroté comme seconde partie de l'erreur 840
+          - why an OAuth exchange failed, numbered as the second part of error `↯/s.117.1`
+          + pourquoi un échange OAuth a échoué, numéroté comme seconde partie de l'erreur
+          + `↯/s.117.1`
       detail
           - A `Reason is Communicable` given in the companion renders each case:
           + Un given `Reason is Communicable` dans l'objet compagnon rend chaque cas :

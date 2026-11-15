@@ -205,12 +205,12 @@ entry .Svg
         - raised when SVG text cannot be read as an `Svg`
         + levée lorsqu'un texte SVG ne peut pas être lu comme un `Svg`
     detail
-        - Error 122: _the SVG could not be parsed because `reason`_, with the reason's own
+        - Error `↯/s.130.1`: _the SVG could not be parsed because `reason`_, with the reason's own
         - number as the sub-number. Raised by `read[Svg]` and `load[Svg]` through a
         - `Tactic[Svg.Error]`; XML which is not well-formed raises `Xml.Error` first, from the
         - parser beneath.
-        + Erreur 122 : _the SVG could not be parsed because `reason`_, avec le numéro propre de la
-        + raison comme sous-numéro. Levée par `read[Svg]` et `load[Svg]` par une
+        + Erreur `↯/s.130.1` : _the SVG could not be parsed because `reason`_, avec le numéro propre
+        + de la raison comme sous-numéro. Levée par `read[Svg]` et `load[Svg]` par une
         + `Tactic[Svg.Error]` ; un XML mal formé lève d'abord `Xml.Error`, depuis l'analyseur
         + sous-jacent.
 

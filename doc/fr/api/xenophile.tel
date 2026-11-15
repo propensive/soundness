@@ -1358,16 +1358,16 @@ entry .CHeader
         - raised when a C header could not be read as declarations
         + levée lorsqu'un en-tête C n'a pas pu être lu sous forme de déclarations
     detail
-        - Error 646: _the C header could not be read because `reason`_, where the reason is a
+        - Error `↯/s.59.4`: _the C header could not be read because `reason`_, where the reason is a
         - `Syntax` failure (_`detail`, near `tokens`_, quoting the next few tokens, or _the end_)
         - or an `Unsupported` construct (_the construct `x` is outside the grammar this parser
         - accepts_). Raised by `CHeader.Parser.parse`; `CHeader.Dialect.parse` swallows it and
         - defines nothing.
-        + Erreur 646 : _the C header could not be read because `reason`_, où la raison est un échec
-        + `Syntax` (_`detail`, near `tokens`_, citant les quelques jetons suivants, ou _the end_) ou
-        + une construction `Unsupported` (_the construct `x` is outside the grammar this parser
-        + accepts_). Levée par `CHeader.Parser.parse` ; `CHeader.Dialect.parse` l'absorbe et ne
-        + définit rien.
+        + Erreur `↯/s.59.4` : _the C header could not be read because `reason`_, où la raison est un
+        + échec `Syntax` (_`detail`, near `tokens`_, citant les quelques jetons suivants, ou _the
+        + end_) ou une construction `Unsupported` (_the construct `x` is outside the grammar this
+        + parser accepts_). Levée par `CHeader.Parser.parse` ; `CHeader.Dialect.parse` l'absorbe et
+        + ne définit rien.
     entry .Reason
       info
           - why the header could not be read: a syntax error, or a construct the grammar rejects
@@ -1380,8 +1380,9 @@ entry .CHeader
           + `Unsupported(construct)` (numéro 2).
       entry #number
         info
-            - the reason's number within error 646: 1 for `Syntax`, 2 for `Unsupported`
-            + le numéro de la raison au sein de l'erreur 646 : 1 pour `Syntax`, 2 pour `Unsupported`
+            - the reason's number within error `↯/s.59.4`: 1 for `Syntax`, 2 for `Unsupported`
+            + le numéro de la raison au sein de l'erreur `↯/s.59.4` : 1 pour `Syntax`, 2 pour
+            + `Unsupported`
     entry .communicable
       info
           - renders each reason as a message
@@ -3594,7 +3595,7 @@ entry .Typescript
         - raised when a `.d.ts` source cannot be read
         + levée lorsqu'une source `.d.ts` ne peut pas être lue
     detail
-        - Error 643: _the TypeScript declarations could not be read because `reason`_, raised
+        - Error `↯/s.59.1`: _the TypeScript declarations could not be read because `reason`_, raised
         - by `Typescript.Parser.parse` (and `lex`). The `#reason` is a `Typescript.Error.Reason`:
         - a `Syntax` error with its detail and the token it was near; an `Unsupported` construct
         - — a conditional type, a mapped type, a template literal type, an `infer` binder, a
@@ -3603,16 +3604,16 @@ entry .Typescript
         - partially is a smaller contract than it declares; or a `Duplicate` name, where a
         - class, alias or enum is declared twice in one scope (interfaces and functions merge,
         - so a repeated interface is accepted).
-        + Erreur 643 : _the TypeScript declarations could not be read because `reason`_, levée
-        + par `Typescript.Parser.parse` (et `lex`). La `#reason` est une `Typescript.Error.Reason` :
-        + une erreur `Syntax` avec son détail et le jeton près duquel elle s'est produite ; une
-        + construction `Unsupported` — un type conditionnel, un type mappé, un type littéral
-        + gabarit, un lieur `infer`, un décorateur, une signature d'assertion, un `unique symbol`,
-        + un nom de propriété calculé — qui est délibérément une erreur et non un saut silencieux,
-        + puisqu'un fichier de déclarations lu partiellement est un contrat plus petit que celui
-        + qu'il déclare ; ou un nom `Duplicate`, lorsqu'une classe, un alias ou une enum est
-        + déclaré deux fois dans une même portée (les interfaces et les fonctions fusionnent, si
-        + bien qu'une interface répétée est acceptée).
+        + Erreur `↯/s.59.1` : _the TypeScript declarations could not be read because `reason`_,
+        + levée par `Typescript.Parser.parse` (et `lex`). La `#reason` est une
+        + `Typescript.Error.Reason` : une erreur `Syntax` avec son détail et le jeton près duquel
+        + elle s'est produite ; une construction `Unsupported` — un type conditionnel, un type
+        + mappé, un type littéral gabarit, un lieur `infer`, un décorateur, une signature
+        + d'assertion, un `unique symbol`, un nom de propriété calculé — qui est délibérément une
+        + erreur et non un saut silencieux, puisqu'un fichier de déclarations lu partiellement est
+        + un contrat plus petit que celui qu'il déclare ; ou un nom `Duplicate`, lorsqu'une classe,
+        + un alias ou une enum est déclaré deux fois dans une même portée (les interfaces et les
+        + fonctions fusionnent, si bien qu'une interface répétée est acceptée).
 
         ```scala
         import soundness.*
@@ -4113,12 +4114,12 @@ entry .WebIdl
         - raised when a WebIDL fragment cannot be read
         + levée lorsqu'un fragment WebIDL ne peut pas être lu
     detail
-        - Error 644: _the WebIDL could not be read because `reason`_, raised by
+        - Error `↯/s.59.2`: _the WebIDL could not be read because `reason`_, raised by
         - `WebIdl.Parser.parse`. The `#reason` is a `WebIdl.Error.Reason`: a `Syntax` error with
         - its detail and the tokens it was near, an `Unsupported` construct — deliberately an
         - error and not a skip, since a capability contract read partially understates what the
         - file declares — or a `Duplicate` definition.
-        + Erreur 644 : _the WebIDL could not be read because `reason`_, levée par
+        + Erreur `↯/s.59.2` : _the WebIDL could not be read because `reason`_, levée par
         + `WebIdl.Parser.parse`. La `#reason` est une `WebIdl.Error.Reason` : une erreur `Syntax`
         + avec son détail et les jetons près desquels elle s'est produite, une construction
         + `Unsupported` — délibérément une erreur et non un saut, puisqu'un contrat de capacités
@@ -4650,7 +4651,7 @@ entry .Wit
         - raised when a WIT source cannot be read
         + levée lorsqu'une source WIT ne peut pas être lue
     detail
-        - Error 645: _the WIT could not be read because `reason`_, raised by `Wit.Parser.parse`
+        - Error `↯/s.59.3`: _the WIT could not be read because `reason`_, raised by `Wit.Parser.parse`
         - and `WitDialect.worlds`. The `#reason` is a `Wit.Error.Reason`: a `Syntax` error with
         - its detail and the tokens it was near; an `Unsupported` construct — an `@unstable`
         - item, an `async` function, a `stream` or `future` type, a world `include`, or any
@@ -4658,14 +4659,14 @@ entry .Wit
         - a contract read partially is a smaller contract than the file declares, and an
         - unstable item in a published contract would be a stable claim about an unstable
         - surface; a `Duplicate` definition; or an `Unresolved` type name.
-        + Erreur 645 : _the WIT could not be read because `reason`_, levée par `Wit.Parser.parse`
-        + et `WitDialect.worlds`. La `#reason` est une `Wit.Error.Reason` : une erreur `Syntax`
-        + avec son détail et les jetons près desquels elle s'est produite ; une construction
-        + `Unsupported` — un élément `@unstable`, une fonction `async`, un type `stream` ou
-        + `future`, un `include` de monde, ou tout mot-clé hors du vocabulaire — qui est
-        + délibérément une erreur et non un saut, puisqu'un contrat lu partiellement est un
-        + contrat plus petit que celui que déclare le fichier, et qu'un élément instable dans un
-        + contrat publié serait une affirmation stable sur une surface instable ; une définition
+        + Erreur `↯/s.59.3` : _the WIT could not be read because `reason`_, levée par
+        + `Wit.Parser.parse` et `WitDialect.worlds`. La `#reason` est une `Wit.Error.Reason` : une
+        + erreur `Syntax` avec son détail et les jetons près desquels elle s'est produite ; une
+        + construction `Unsupported` — un élément `@unstable`, une fonction `async`, un type
+        + `stream` ou `future`, un `include` de monde, ou tout mot-clé hors du vocabulaire — qui est
+        + délibérément une erreur et non un saut, puisqu'un contrat lu partiellement est un contrat
+        + plus petit que celui que déclare le fichier, et qu'un élément instable dans un contrat
+        + publié serait une affirmation stable sur une surface instable ; une définition
         + `Duplicate` ; ou un nom de type `Unresolved`.
     entry .Reason
       info

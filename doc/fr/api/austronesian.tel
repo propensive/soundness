@@ -366,15 +366,15 @@ entry .internal
           - raised when a `Pojo` does not have the shape of the type it is decoded as
           + levée quand un `Pojo` n'a pas la forme du type vers lequel il est décodé
       detail
-          - Error 916: _could not deserialize from Java POJO types_. Raised by `as` when a product
+          - Error `↯/s.120.1`: _could not deserialize from Java POJO types_. Raised by `as` when a product
           - or a collection is expected and the `Pojo` is not an array, or a sum is expected and
           - it is not a two-element array of a label and a payload. It usually means the two
           - sides of a boundary disagree on the type's definition.
-          + Erreur 916 : _could not deserialize from Java POJO types_. Levée par `as` quand un
-          + produit ou une collection est attendu et que le `Pojo` n'est pas un tableau, ou qu'une
-          + somme est attendue et qu'il n'est pas un tableau à deux éléments formé d'une étiquette
-          + et d'une charge utile. Cela signifie généralement que les deux côtés d'une frontière ne
-          + s'accordent pas sur la définition du type.
+          + Erreur `↯/s.120.1` : _could not deserialize from Java POJO types_. Levée par `as` quand
+          + un produit ou une collection est attendu et que le `Pojo` n'est pas un tableau, ou
+          + qu'une somme est attendue et qu'il n'est pas un tableau à deux éléments formé d'une
+          + étiquette et d'une charge utile. Cela signifie généralement que les deux côtés d'une
+          + frontière ne s'accordent pas sur la définition du type.
   entry .Pojo2
     info
         - the lower-priority instances of `Pojo`'s companion: derived codecs and `Checkable`

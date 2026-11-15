@@ -156,10 +156,10 @@ entry .Permutation
         + levée lorsque des indices ou une séquence ne forment pas une permutation, ou n'y
         + conviennent pas
     detail
-        - Error 427: _could not construct permutation because `reason`_, where the reason is one
+        - Error `↯/s.28.1`: _could not construct permutation because `reason`_, where the reason is one
         - of the `Permutation.Error.Reason` cases:
-        + Error 427 : _could not construct permutation because `reason`_, où la raison est l'un des
-        + cas de `Permutation.Error.Reason` :
+        + Error `↯/s.28.1` : _could not construct permutation because `reason`_, où la raison est
+        + l'un des cas de `Permutation.Error.Reason` :
 
         ```tabular
         - column  Case

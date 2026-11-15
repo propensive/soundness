@@ -402,18 +402,18 @@ entry .Websocket
         - raised when the peer violates the protocol, with the close code to send
         + levée lorsque le pair viole le protocole, avec le code de fermeture à envoyer
     detail
-        - Error 368, with the reason's number as its detail: _the WebSocket protocol was
+        - Error `↯/s.115.1`, with the reason's number as its detail: _the WebSocket protocol was
         - violated because `reason`_. Raised by `Websocket.Frame.parse` and the `Reader` when a
         - frame or message breaks RFC 6455, by `wsClient` when the handshake fails, and when
         - the connection is cut short. The server-side loop catches it, closes the connection
         - with `reason.closeCode`, and returns the initial state; a client sees it through its
         - `Tactic[Websocket.Error]`.
-        + Erreur 368, avec le numéro de la raison pour détail : _the WebSocket protocol was violated
-        + because `reason`_. Levée par `Websocket.Frame.parse` et le `Reader` lorsqu'une trame ou un
-        + message enfreint la RFC 6455, par `wsClient` lorsque la poignée de main échoue, et lorsque
-        + la connexion est interrompue prématurément. La boucle côté serveur l'intercepte, ferme la
-        + connexion avec `reason.closeCode`, et renvoie l'état initial ; un client la voit au
-        + travers de sa `Tactic[Websocket.Error]`.
+        + Erreur `↯/s.115.1`, avec le numéro de la raison pour détail : _the WebSocket protocol was
+        + violated because `reason`_. Levée par `Websocket.Frame.parse` et le `Reader` lorsqu'une
+        + trame ou un message enfreint la RFC 6455, par `wsClient` lorsque la poignée de main
+        + échoue, et lorsque la connexion est interrompue prématurément. La boucle côté serveur
+        + l'intercepte, ferme la connexion avec `reason.closeCode`, et renvoie l'état initial ; un
+        + client la voit au travers de sa `Tactic[Websocket.Error]`.
     entry .Reason
       info
           - why the protocol was violated, each with its RFC 6455 close code

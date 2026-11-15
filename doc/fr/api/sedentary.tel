@@ -509,16 +509,16 @@ entry .Bench
         + levée quand un appareil de benchmark ne peut pas déployer, exécuter ou supprimer une
         + mesure
     detail
-        - Error 794: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
+        - Error `↯/s.10.1`: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
         - staged JAR to the device, launching the measurement JVM, or removing the JAR fails, or
         - when the measurement JVM exits with a nonzero status. `Bench`, `Stress` and `Profile`
         - convert it to superlunary's `Rig.Error`, with the reason `Staging` or `Invocation`, so a
         - suite sees a `Rig.Error`.
-        + Erreur 794 : _unable to run benchmarks_. Levée par un `BenchmarkDevice` quand la copie du
-        + JAR mis en étapes vers l'appareil, le lancement de la JVM de mesure ou la suppression du
-        + JAR échoue, ou quand la JVM de mesure se termine avec un statut non nul. `Bench`, `Stress`
-        + et `Profile` la convertissent en `Rig.Error` de superlunary, avec la raison `Staging` ou
-        + `Invocation`, de sorte qu'une suite voit une `Rig.Error`.
+        + Erreur `↯/s.10.1` : _unable to run benchmarks_. Levée par un `BenchmarkDevice` quand la
+        + copie du JAR mis en étapes vers l'appareil, le lancement de la JVM de mesure ou la
+        + suppression du JAR échoue, ou quand la JVM de mesure se termine avec un statut non nul.
+        + `Bench`, `Stress` et `Profile` la convertissent en `Rig.Error` de superlunary, avec la
+        + raison `Staging` ou `Invocation`, de sorte qu'une suite voit une `Rig.Error`.
 
         - `LocalhostDevice` passes the staged input to the measurement JVM as a command-line
         - argument, so a body which splices in a very large value (a corpus of a megabyte or

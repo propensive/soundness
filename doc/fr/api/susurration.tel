@@ -828,15 +828,15 @@ entry .Ssh
         - raised by every layer when a connection fails, with a `Reason` saying how
         + levée par chaque couche lorsqu'une connexion échoue, avec une `Reason` qui dit comment
     detail
-        - Error 600: _the SSH connection failed because …_, with the reason's own message and
+        - Error `↯/s.122.2`: _the SSH connection failed because …_, with the reason's own message and
         - number appended. One error type serves the transport, authentication and connection
         - protocols, so a `Tactic[Ssh.Error]` is the only tactic any of them needs; a
         - `Wire.Error` from a malformed message is folded into it as `Malformed`.
-        + Erreur 600 : _the SSH connection failed because …_, suivi du message propre à la raison et
-        + de son numéro. Un seul type d'erreur sert aux protocoles de transport, d'authentification
-        + et de connexion, de sorte qu'une `Tactic[Ssh.Error]` est la seule tactique dont chacun
-        + d'eux a besoin ; une `Wire.Error` provenant d'un message mal formé y est intégrée en tant
-        + que `Malformed`.
+        + Erreur `↯/s.122.2` : _the SSH connection failed because …_, suivi du message propre à la
+        + raison et de son numéro. Un seul type d'erreur sert aux protocoles de transport,
+        + d'authentification et de connexion, de sorte qu'une `Tactic[Ssh.Error]` est la seule
+        + tactique dont chacun d'eux a besoin ; une `Wire.Error` provenant d'un message mal formé y
+        + est intégrée en tant que `Malformed`.
 
         ```scala
         import soundness.*
@@ -2256,12 +2256,12 @@ entry .Wire
         + levée par un `Wire.Reader` lorsqu'un message est plus court, plus long ou plus étrange que
         + ne le prétendent ses champs
     detail
-        - Error 599: _could not decode the SSH message because …_, with the reason appended.
+        - Error `↯/s.122.1`: _could not decode the SSH message because …_, with the reason appended.
         - Raised through the `Tactic[Wire.Error]` every read takes, so the reader itself
         - captures nothing.
-        + Erreur 599 : _could not decode the SSH message because …_, suivi de la raison. Levée par
-        + la `Tactic[Wire.Error]` que prend chaque lecture, de sorte que le lecteur lui-même ne
-        + capture rien.
+        + Erreur `↯/s.122.1` : _could not decode the SSH message because …_, suivi de la raison.
+        + Levée par la `Tactic[Wire.Error]` que prend chaque lecture, de sorte que le lecteur
+        + lui-même ne capture rien.
 
         ```scala
         import soundness.*

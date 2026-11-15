@@ -156,12 +156,13 @@ entry .Reference
         - raised when a reference's key matches no entity in the store
         + levée lorsque la clé d'une référence ne correspond à aucune entité du stockage
     detail
-        - Error 519: _the reference `reference` could not be resolved because `reason`_.
+        - Error `↯/s.31.1`: _the reference `reference` could not be resolved because `reason`_.
         - Raised by `Reference#apply` (and `Resolvable#resolve`) when the store has no entity
         - whose `@primary` field equals the key. `#reference` is the key, encoded as text.
-        + Error 519 : _the reference `reference` could not be resolved because `reason`_. Levée par
-        + `Reference#apply` (et `Resolvable#resolve`) lorsque le stockage n'a aucune entité dont le
-        + champ `@primary` est égal à la clé. `#reference` est la clé, encodée en texte.
+        + Error `↯/s.31.1` : _the reference `reference` could not be resolved because `reason`_.
+        + Levée par `Reference#apply` (et `Resolvable#resolve`) lorsque le stockage n'a aucune
+        + entité dont le champ `@primary` est égal à la clé. `#reference` est la clé, encodée en
+        + texte.
     entry #reference
       info
           - the key which could not be resolved, encoded as text

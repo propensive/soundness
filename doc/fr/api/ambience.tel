@@ -284,10 +284,10 @@ entry .Environment
         - raised when a variable which was read is not defined
         + levée quand une variable lue n'est pas définie
     detail
-        - Error 869: _the environment variable `variable` was not defined_. Raised by
+        - Error `↯/s.62.2`: _the environment variable `variable` was not defined_. Raised by
         - `Environment.apply` and the member-access form through the `Tactic[Environment.Error]`
         - in scope; `safely(Environment.editor[Text])` reads as `Unset` instead.
-        + Erreur 869 : _the environment variable `variable` was not defined_. Levée par
+        + Erreur `↯/s.62.2` : _the environment variable `variable` was not defined_. Levée par
         + `Environment.apply` et la forme par accès à un membre, par la `Tactic[Environment.Error]`
         + dans la portée ; `safely(Environment.editor[Text])` donne `Unset` à la place.
     entry #variable
@@ -846,14 +846,15 @@ entry .Property
         - raised when a property which was read is not defined
         + levée quand une propriété lue n'est pas définie
     detail
-        - Error 815: _the system property `property` was not defined_. Raised by the `generic`
+        - Error `↯/s.62.1`: _the system property `property` was not defined_. Raised by the `generic`
         - and `decoder` instances, and by `javaRuntimeVersion` and `javaClassVersion`, through
         - the `Tactic[Property.Error]` in scope; also by other libraries which read a property
         - they need, such as `LocalClasspath` reading `path.separator`.
-        + Erreur 815 : _the system property `property` was not defined_. Levée par les instances
-        + `generic` et `decoder`, et par `javaRuntimeVersion` et `javaClassVersion`, par la
-        + `Tactic[Property.Error]` dans la portée ; également par d'autres bibliothèques qui lisent
-        + une propriété dont elles ont besoin, comme `LocalClasspath` qui lit `path.separator`.
+        + Erreur `↯/s.62.1` : _the system property `property` was not defined_. Levée par les
+        + instances `generic` et `decoder`, et par `javaRuntimeVersion` et `javaClassVersion`, par
+        + la `Tactic[Property.Error]` dans la portée ; également par d'autres bibliothèques qui
+        + lisent une propriété dont elles ont besoin, comme `LocalClasspath` qui lit
+        + `path.separator`.
     entry #property
       info
           - the dotted name of the property which was not defined
@@ -1085,11 +1086,11 @@ entry .WorkingDirectory
         - raised when a working directory is needed and there is none
         + levée quand un répertoire de travail est nécessaire et qu'il n'y en a aucun
     detail
-        - Error 913: _there is no working directory_. Raised by code which must resolve a
+        - Error `↯/s.62.3`: _there is no working directory_. Raised by code which must resolve a
         - relative path and has no `WorkingDirectory` to resolve it against, such as a daemon
         - invocation whose client could not report one.
-        + Erreur 913 : _there is no working directory_. Levée par du code qui doit résoudre un
-        + chemin relatif et n'a aucun `WorkingDirectory` par rapport auquel le faire, comme une
+        + Erreur `↯/s.62.3` : _there is no working directory_. Levée par du code qui doit résoudre
+        + un chemin relatif et n'a aucun `WorkingDirectory` par rapport auquel le faire, comme une
         + invocation de démon dont le client n'a pas pu en signaler un.
   entry #directory
     info

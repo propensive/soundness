@@ -124,14 +124,14 @@ entry .Classfile
         - raised when a class file cannot be read
         + levée lorsqu'un fichier de classe ne peut être lu
     detail
-        - Error 293: _there was an error reading the classfile_. Declared for readers of class
+        - Error `↯/s.88.2`: _there was an error reading the classfile_. Declared for readers of class
         - files to raise; the `Classfile` constructor itself defers parsing until a member is
         - first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
         - have rather than raising.
-        + Erreur 293 : _there was an error reading the classfile_. Déclarée pour que les lecteurs de
-        + fichiers de classe la lèvent ; le constructeur de `Classfile` lui-même diffère l'analyse
-        + jusqu'à la première utilisation d'un membre, et `Classfile.apply` donne `Unset` pour une
-        + classe que le chargeur de classes n'a pas plutôt que de lever une erreur.
+        + Erreur `↯/s.88.2` : _there was an error reading the classfile_. Déclarée pour que les
+        + lecteurs de fichiers de classe la lèvent ; le constructeur de `Classfile` lui-même diffère
+        + l'analyse jusqu'à la première utilisation d'un membre, et `Classfile.apply` donne `Unset`
+        + pour une classe que le chargeur de classes n'a pas plutôt que de lever une erreur.
   entry .aggregable
     info
         - reads a `Classfile` from any stream of bytes, as `read[Classfile]`
@@ -721,12 +721,12 @@ entry .Bytecode
         - raised by `disassemble` when the compiled class file cannot be opened or read
         + levée par `disassemble` lorsque le fichier de classe compilé ne peut être ouvert ou lu
     detail
-        - Error 295, _the bytecode could not be extracted because …_, with a `#reason`:
+        - Error `↯/s.88.3`, _the bytecode could not be extracted because …_, with a `#reason`:
         - `ClassfileMissing` (295.1, _the generated classfile could not be opened_) when the
         - staging compiler left no class file to read, and `ClassfileUnreadable` (295.2, _the
         - generated classfile could not be read_) when the file was truncated or the generated
         - method was not found in it. `disassemble` needs a `Tactic[Bytecode.Error]` in scope.
-        + Erreur 295, _the bytecode could not be extracted because …_, avec un `#reason` :
+        + Erreur `↯/s.88.3`, _the bytecode could not be extracted because …_, avec un `#reason` :
         + `ClassfileMissing` (295.1, _the generated classfile could not be opened_) lorsque le
         + compilateur de mise en étapes n'a laissé aucun fichier de classe à lire, et
         + `ClassfileUnreadable` (295.2, _the generated classfile could not be read_) lorsque le

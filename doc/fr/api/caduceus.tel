@@ -508,10 +508,10 @@ entry .Courier
         - raised when a courier cannot deliver an email
         + levée lorsqu'un transporteur ne peut pas distribuer un e-mail
     detail
-        - Error 383: _unable to send email from `from` to `to` with subject `subject`_. The
+        - Error `↯/s.107.1`: _unable to send email from `from` to `to` with subject `subject`_. The
         - Resend courier raises it for any failure to connect, an HTTP error status, or a
         - response it cannot read. The `to` is the first of the envelope's primary recipients.
-        + Erreur 383 : _unable to send email from `from` to `to` with subject `subject`_. Le
+        + Erreur `↯/s.107.1` : _unable to send email from `from` to `to` with subject `subject`_. Le
         + transporteur Resend la lève pour tout échec de connexion, tout statut d'erreur HTTP, ou
         + toute réponse qu'il ne sait pas lire. Le `to` est le premier des destinataires principaux
         + de l'enveloppe.

@@ -331,21 +331,21 @@ entry .Motif
         - raised when a pattern is not RE2 syntax, or an analysis cannot answer
         + levée lorsqu'un motif n'est pas en syntaxe RE2, ou qu'une analyse ne peut répondre
     detail
-        - Error 500: _the regular expression could not be compiled because `reason` at
+        - Error `↯/s.33.1`: _the regular expression could not be compiled because `reason` at
         - `index`_, with the reason's number as the sub-number. Raised by `Motif.parse` through
         - a `Tactic[Motif.Error]` at the offset of the offending character; by `Program.compile`
         - when a program exceeds `Program.maxOps`; by `Subsumption` (and so `Motif#subsumes`,
         - `Motif#intersects` and kaleidoscope's `Regex#subsumes`) for a pattern with a word or
         - line boundary, or an exploration past `Subsumption.maxStates`; and by kaleidoscope's
         - `Regex#re2`, which parses a regex for this engine as it retags it.
-        + Error 500: _the regular expression could not be compiled because `reason` at `index`_,
-        + avec le numéro de la raison comme sous-numéro. Levée par `Motif.parse` au moyen d'une
-        + `Tactic[Motif.Error]` au décalage du caractère fautif ; par `Program.compile` lorsqu'un
-        + programme dépasse `Program.maxOps` ; par `Subsumption` (et donc `Motif#subsumes`,
-        + `Motif#intersects` et le `Regex#subsumes` de kaleidoscope) pour un motif comportant une
-        + limite de mot ou de ligne, ou pour une exploration au-delà de `Subsumption.maxStates` ; et
-        + par le `Regex#re2` de kaleidoscope, qui analyse une regex pour ce moteur en la
-        + retaguant.
+        + Error `↯/s.33.1`: _the regular expression could not be compiled because `reason` at
+        + `index`_, avec le numéro de la raison comme sous-numéro. Levée par `Motif.parse` au moyen
+        + d'une `Tactic[Motif.Error]` au décalage du caractère fautif ; par `Program.compile`
+        + lorsqu'un programme dépasse `Program.maxOps` ; par `Subsumption` (et donc
+        + `Motif#subsumes`, `Motif#intersects` et le `Regex#subsumes` de kaleidoscope) pour un motif
+        + comportant une limite de mot ou de ligne, ou pour une exploration au-delà de
+        + `Subsumption.maxStates` ; et par le `Regex#re2` de kaleidoscope, qui analyse une regex
+        + pour ce moteur en la retaguant.
 
         ```scala
         import soundness.*

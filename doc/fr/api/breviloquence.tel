@@ -1233,7 +1233,7 @@ entry .Cbor
         + levée lorsqu'un CBOR ne peut être analysé ou qu'un nœud ne peut être décodé dans le type
         + demandé
     detail
-        - Error 595: _could not process the CBOR value because `reason`_, with the
+        - Error `↯/s.104.1`: _could not process the CBOR value because `reason`_, with the
         - `.Reason`'s own number as the error's second component. Raised by `Cbor.Ast.parse`
         - and every `read[…]` for malformed input, with the absolute byte offset at which the
         - fault was met — input which stops mid-value names the offset of the byte which
@@ -1241,14 +1241,14 @@ entry .Cbor
         - head byte names its offset and its value — and by every decoder for a node of the
         - wrong kind, a missing field or a non-text map key. It needs a `Diagnostics` in scope
         - to construct, as every `fulminate.Error` does.
-        + Erreur 595 : _could not process the CBOR value because `reason`_, avec le numéro propre de
-        + la `.Reason` comme second composant de l'erreur. Levée par `Cbor.Ast.parse` et par chaque
-        + `read[…]` pour une entrée mal formée, avec la position absolue en octets où le défaut a
-        + été rencontré — une entrée qui s'arrête au milieu d'une valeur indique la position de
-        + l'octet qui aurait dû suivre, des octets superflus indiquent où commence l'excédent, et un
-        + octet d'en-tête réservé indique sa position et sa valeur — et par chaque décodeur pour un
-        + nœud de la mauvaise sorte, un champ manquant ou une clé de map non textuelle. Sa
-        + construction nécessite des `Diagnostics` dans la portée, comme pour toute
+        + Erreur `↯/s.104.1` : _could not process the CBOR value because `reason`_, avec le numéro
+        + propre de la `.Reason` comme second composant de l'erreur. Levée par `Cbor.Ast.parse` et
+        + par chaque `read[…]` pour une entrée mal formée, avec la position absolue en octets où le
+        + défaut a été rencontré — une entrée qui s'arrête au milieu d'une valeur indique la
+        + position de l'octet qui aurait dû suivre, des octets superflus indiquent où commence
+        + l'excédent, et un octet d'en-tête réservé indique sa position et sa valeur — et par chaque
+        + décodeur pour un nœud de la mauvaise sorte, un champ manquant ou une clé de map non
+        + textuelle. Sa construction nécessite des `Diagnostics` dans la portée, comme pour toute
         + `fulminate.Error`.
 
         ```scala

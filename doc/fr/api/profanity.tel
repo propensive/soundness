@@ -312,11 +312,11 @@ entry .Terminal
         - raised when standard input is not attached to a terminal
         + levée lorsque l'entrée standard n'est pas reliée à un terminal
     detail
-        - Error 493: _STDIN is not attached to a TTY_. Raised by `interactive` when `stty` fails
+        - Error `↯/s.95.2`: _STDIN is not attached to a TTY_. Raised by `interactive` when `stty` fails
         - to put the terminal in raw mode, as it does when the program's input is a pipe or a
         - file.
-        + Erreur 493 : _STDIN is not attached to a TTY_. Levée par `interactive` lorsque `stty`
-        + échoue à placer le terminal en mode brut, comme c'est le cas lorsque l'entrée du
+        + Erreur `↯/s.95.2` : _STDIN is not attached to a TTY_. Levée par `interactive` lorsque
+        + `stty` échoue à placer le terminal en mode brut, comme c'est le cas lorsque l'entrée du
         + programme est un tube ou un fichier.
   entry .Feature
     info
@@ -1399,10 +1399,10 @@ entry .Question
         - raised when the user dismisses a widget instead of answering it
         + levée lorsque l'utilisateur abandonne un widget au lieu d'y répondre
     detail
-        - Error 372: _the user dismissed an interaction_. Raised by `LineEditor#ask` and
+        - Error `↯/s.95.1`: _the user dismissed an interaction_. Raised by `LineEditor#ask` and
         - `SelectMenu#ask` when the user presses `Escape`, `Ctrl`+`C` or `Ctrl`+`D`, or the
         - input ends, before submitting.
-        + Erreur 372 : _the user dismissed an interaction_. Levée par `LineEditor#ask` et
+        + Erreur `↯/s.95.1` : _the user dismissed an interaction_. Levée par `LineEditor#ask` et
         + `SelectMenu#ask` lorsque l'utilisateur appuie sur `Escape`, `Ctrl`+`C` ou `Ctrl`+`D`, ou
         + que l'entrée se termine, avant la validation.
   entry #apply

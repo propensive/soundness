@@ -619,7 +619,7 @@ entry .Dsv
         + levée quand un texte délimité ne peut pas être analysé, ou qu'une ligne ne peut pas être
         + décodée
     detail
-        - Error 364, with a subcode from its `#reason`. A **parse** failure, a quote found after
+        - Error `↯/s.83.1`, with a subcode from its `#reason`. A **parse** failure, a quote found after
         - the start of an unquoted cell, reads _could not parse row data at row `row`, column
         - `column` because a quote was found after the start of a cell_, and carries the 1-based
         - row and column and the character offset into the input. A **decode** failure reads
@@ -627,7 +627,7 @@ entry .Dsv
         - could not be parsed as `expected`_; its position is not in the error itself (`#row` and
         - `#column` are `Prim`, `#offset` is `0`) but in the `CellRef` focus an accruing
         - strategy records with it.
-        + Erreur 364, avec un sous-code tiré de sa `#reason`. Un échec d'**analyse**, un guillemet
+        + Erreur `↯/s.83.1`, avec un sous-code tiré de sa `#reason`. Un échec d'**analyse**, un guillemet
         + trouvé après le début d'une cellule sans guillemets, se lit _could not parse row data at
         + row `row`, column `column` because a quote was found after the start of a cell_, et porte
         + la ligne et la colonne (à partir de 1) ainsi que le décalage en caractères dans l'entrée.

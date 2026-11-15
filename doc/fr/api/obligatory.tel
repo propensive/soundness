@@ -271,10 +271,10 @@ entry .Framing
   refer obligatory.Framable
   entry .Error
     info
-        - raised when a stream cannot be split into frames: error 142
-        + levée lorsqu'un flux ne peut pas être découpé en trames : erreur 142
+        - raised when a stream cannot be split into frames: error `↯/s.112.2`
+        + levée lorsqu'un flux ne peut pas être découpé en trames : erreur `↯/s.112.2`
     detail
-        - Error 142: _could not deframe the message because `reason`_. Raised, through the
+        - Error `↯/s.112.2`: _could not deframe the message because `reason`_. Raised, through the
         - `Tactic[Framing.Error]` the framer's given captured, as the framed iterator is read.
         - The `reason` says what was wrong: `ShortRead` when the input ended inside a frame
         - (`LengthPrefix` with fewer bytes than its header promised, `ContentLength` with a
@@ -282,16 +282,15 @@ entry .Framing
         - followed by a line feed; `MalformedLength` when a `Content-Length` header's value was
         - absent or not a number; and `UnknownHeader`, reserved for a header the protocol
         - rejects (`ContentLength` currently skips unrecognised headers rather than raising it).
-        + Erreur 142 : _could not deframe the message because `reason`_. Levée, au moyen de la
-        + `Tactic[Framing.Error]` qu'a capturée le given du tramage, au fil de la lecture de
+        + Erreur `↯/s.112.2` : _could not deframe the message because `reason`_. Levée, au moyen de
+        + la `Tactic[Framing.Error]` qu'a capturée le given du tramage, au fil de la lecture de
         + l'itérateur tramé. La `reason` indique ce qui n'allait pas : `ShortRead` lorsque l'entrée
         + s'est terminée à l'intérieur d'une trame (`LengthPrefix` avec moins d'octets que n'en
         + promettait son en-tête, `ContentLength` avec un en-tête ou un corps tronqué) ;
         + `MissingLineFeed` lorsque `CrLf` a rencontré un retour chariot non suivi d'un saut de
-        + ligne ; `MalformedLength` lorsque la valeur d'un en-tête `Content-Length` était absente
-        + ou n'était pas un nombre ; et `UnknownHeader`, réservé à un en-tête que le protocole
-        + rejette (`ContentLength` ignore actuellement les en-têtes non reconnus plutôt que de la
-        + lever).
+        + ligne ; `MalformedLength` lorsque la valeur d'un en-tête `Content-Length` était absente ou
+        + n'était pas un nombre ; et `UnknownHeader`, réservé à un en-tête que le protocole rejette
+        + (`ContentLength` ignore actuellement les en-têtes non reconnus plutôt que de la lever).
     entry .Reason
       info
           - why a frame could not be read
@@ -567,15 +566,15 @@ entry .Rpc
       + transmission ; `Rpc.Error` dit seulement qu'un appel a échoué.
   entry .Error
     info
-        - raised when a remote procedure call fails: error 983
-        + levée lorsqu'un appel de procédure distant échoue : erreur 983
+        - raised when a remote procedure call fails: error `↯/s.112.8`
+        + levée lorsqu'un appel de procédure distant échoue : erreur `↯/s.112.8`
     detail
-        - Error 983: _the remote procedure call failed_. A generic failure with no detail, for a
+        - Error `↯/s.112.8`: _the remote procedure call failed_. A generic failure with no detail, for a
         - transport which cannot say more; `JsonRpc.Error` and `Grpc.Error` carry the peer's code
         - and message.
-        + Erreur 983 : _the remote procedure call failed_. Un échec générique sans détail, pour un
-        + transport qui ne peut pas en dire plus ; `JsonRpc.Error` et `Grpc.Error` portent le code
-        + et le message du pair.
+        + Erreur `↯/s.112.8` : _the remote procedure call failed_. Un échec générique sans détail,
+        + pour un transport qui ne peut pas en dire plus ; `JsonRpc.Error` et `Grpc.Error` portent
+        + le code et le message du pair.
 
 entry .rpc
   info
@@ -1137,24 +1136,24 @@ entry .JsonRpc
           + la promesse que `JsonRpc.answer` remplit avec le résultat, ou annule en cas de faute
   entry .Error
     info
-        - raised when a JSON-RPC operation fails: error 721
-        + levée lorsqu'une opération JSON-RPC échoue : erreur 721
+        - raised when a JSON-RPC operation fails: error `↯/s.112.7`
+        + levée lorsqu'une opération JSON-RPC échoue : erreur `↯/s.112.7`
     detail
-        - Error 721: _the JSON-RPC operation failed because `reason`_. Thrown by a `JsonRpc.serve`
+        - Error `↯/s.112.7`: _the JSON-RPC operation failed because `reason`_. Thrown by a `JsonRpc.serve`
         - dispatcher for a method the interface does not declare (`UnknownMethod`), and raised
         - by `JsonRpc.outcome` — and so by every generated `#proxy` method — when the peer answered
         - with an error (`Failed`, with `#code` and `#detail` carrying the peer's `error.code`
         - and `error.message`) or when the request was never answered because its promise was
         - cancelled (`Abandoned`). A protocol client recovers its own error vocabulary from the
         - code: an LSP client maps `code` onto an `Lsp.Error.Reason`.
-        + Erreur 721 : _the JSON-RPC operation failed because `reason`_. Levée comme exception par
-        + un répartiteur `JsonRpc.serve` pour une méthode que l'interface ne déclare pas
-        + (`UnknownMethod`), et levée par `JsonRpc.outcome` — et donc par chaque méthode `#proxy`
-        + générée — lorsque le pair a répondu par une erreur (`Failed`, `#code` et `#detail`
-        + portant l'`error.code` et l'`error.message` du pair) ou lorsque la requête n'a jamais
-        + reçu de réponse parce que sa promesse a été annulée (`Abandoned`). Un client de
-        + protocole retrouve son propre vocabulaire d'erreurs à partir du code : un client LSP
-        + fait correspondre `code` à une `Lsp.Error.Reason`.
+        + Erreur `↯/s.112.7` : _the JSON-RPC operation failed because `reason`_. Levée comme
+        + exception par un répartiteur `JsonRpc.serve` pour une méthode que l'interface ne déclare
+        + pas (`UnknownMethod`), et levée par `JsonRpc.outcome` — et donc par chaque méthode
+        + `#proxy` générée — lorsque le pair a répondu par une erreur (`Failed`, `#code` et
+        + `#detail` portant l'`error.code` et l'`error.message` du pair) ou lorsque la requête n'a
+        + jamais reçu de réponse parce que sa promesse a été annulée (`Abandoned`). Un client de
+        + protocole retrouve son propre vocabulaire d'erreurs à partir du code : un client LSP fait
+        + correspondre `code` à une `Lsp.Error.Reason`.
     entry .Reason
       info
           - why the operation failed
@@ -1455,16 +1454,16 @@ entry .Sse
         + fonctionne donc.
   entry .Error
     info
-        - raised when a server-sent event is not valid, or a replay exceeds a source's buffer: error 350
+        - raised when a server-sent event is not valid, or a replay exceeds a source's buffer: error `↯/s.112.5`
         + levée lorsqu'un événement envoyé par le serveur n'est pas valide, ou qu'un rejeu dépasse
-        + le tampon d'une source : erreur 350
+        + le tampon d'une source : erreur `↯/s.112.5`
     detail
-        - Error 350: _the server-sent event was not valid because `reason`_. Raised by
+        - Error `↯/s.112.5`: _the server-sent event was not valid because `reason`_. Raised by
         - `Sse.decodable` for a malformed line (`MalformedField`), an unknown field name
         - (`UnknownField`) or a `retry` which is not an integer (`BadRetryValue`), and by
         - `Sse.Source#stream` when the requested replay reaches further back than the source's
         - capacity (`CapacityExceeded`).
-        + Erreur 350 : _the server-sent event was not valid because `reason`_. Levée par
+        + Erreur `↯/s.112.5` : _the server-sent event was not valid because `reason`_. Levée par
         + `Sse.decodable` pour une ligne mal formée (`MalformedField`), un nom de champ inconnu
         + (`UnknownField`) ou un `retry` qui n'est pas un entier (`BadRetryValue`), et par
         + `Sse.Source#stream` lorsque le rejeu demandé remonte plus loin que la capacité de la

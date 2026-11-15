@@ -848,13 +848,13 @@ entry .abortive
   detail
       - For macro implementations, with `Quotes` in scope. `abortive[error](block)` supplies a
       - `HaltTactic[error, success]` and `Diagnostics.omit`, so an error recorded or aborted in
-      - the block halts the compilation with the error's `labelled` message (its `SN-` code and
+      - the block halts the compilation with the error's `labelled` message (its bolt code and
       - text) as the diagnostic. A macro which parses a literal at expansion time wraps the parse
       - in `abortive` to report a malformed literal where it is written.
       + Pour les implémentations de macros, avec `Quotes` dans la portée. `abortive[error](block)`
       + fournit une `HaltTactic[error, success]` et `Diagnostics.omit`, si bien qu'une erreur
       + consignée ou interrompue dans le bloc arrête la compilation avec le message `labelled` de
-      + l'erreur (son code `SN-` et son texte) comme diagnostic. Une macro qui analyse un littéral
+      + l'erreur (son code bolt et son texte) comme diagnostic. Une macro qui analyse un littéral
       + au moment du développement enveloppe l'analyse dans `abortive` pour signaler un littéral mal
       + formé à l'endroit où il est écrit.
 
@@ -1721,12 +1721,13 @@ entry .Errors
       - several errors reported together, each keyed by the text of its focus
       + plusieurs erreurs signalées ensemble, chacune indexée par le texte de son focus
   detail
-      - Error 218: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
+      - Error `↯/s.24.5`: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
       - `(Text, Error)` pairs, for a validation which collects every problem before failing.
       - It is built empty and grown with `+`, and a focus's error is looked up with `apply`.
-      + Erreur 218 : _`n` accrued errors: `message` at `focus`; …_. Une `Error` contenant des paires
-      + `(Text, Error)`, pour une validation qui rassemble tous les problèmes avant d'échouer. Elle
-      + est construite vide et augmentée avec `+`, et l'erreur d'un focus se consulte avec `apply`.
+      + Erreur `↯/s.24.5` : _`n` accrued errors: `message` at `focus`; …_. Une `Error` contenant des
+      + paires `(Text, Error)`, pour une validation qui rassemble tous les problèmes avant
+      + d'échouer. Elle est construite vide et augmentée avec `+`, et l'erreur d'un focus se
+      + consulte avec `apply`.
 
       ```scala
       import soundness.*
@@ -1754,12 +1755,12 @@ entry .Validation
       - several messages reported together, each at a `Pointer`
       + plusieurs messages signalés ensemble, chacun en un `Pointer`
   detail
-      - Error 59: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
+      - Error `↯/s.24.3`: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
       - message`, `two messages`… for small counts, and a message at `Pointer.Self` shown
       - without a position). An `Error` holding `(Pointer, Message)` pairs for a pipeline which
       - walks a structure and accumulates what it finds wrong, rather than aborting at the
       - first. Built empty and grown with `+`.
-      + Erreur 59 : _`n` messages: `message` at `pointer`; …_ (avec `no messages`, `one
+      + Erreur `↯/s.24.3` : _`n` messages: `message` at `pointer`; …_ (avec `no messages`, `one
       + message`, `two messages`… pour les petits nombres, et un message en `Pointer.Self`
       + affiché sans position). Une `Error` contenant des paires `(Pointer, Message)` pour un
       + traitement qui parcourt une structure et accumule ce qu'il y trouve d'incorrect, au lieu de
@@ -1810,14 +1811,14 @@ entry .Expectation
         - raised by `capture` when the block was expected to fail but succeeded
         + levée par `capture` lorsque le bloc devait échouer mais a réussi
     detail
-        - Error 841: _the expression was expected to fail, but succeeded_. Carries the value the
+        - Error `↯/s.24.16`: _the expression was expected to fail, but succeeded_. Carries the value the
         - block produced instead, so a test can see what was returned. `capture` needs a
         - `Tactic[Expectation.Error[success]]` in scope for it, which `strategies.throwUnsafely`
         - supplies.
-        + Erreur 841 : _the expression was expected to fail, but succeeded_. Porte la valeur que le
-        + bloc a produite à la place, pour qu'un test puisse voir ce qui a été renvoyé. `capture`
-        + nécessite pour elle une `Tactic[Expectation.Error[success]]` dans la portée, que fournit
-        + `strategies.throwUnsafely`.
+        + Erreur `↯/s.24.16` : _the expression was expected to fail, but succeeded_. Porte la valeur
+        + que le bloc a produite à la place, pour qu'un test puisse voir ce qui a été renvoyé.
+        + `capture` nécessite pour elle une `Tactic[Expectation.Error[success]]` dans la portée, que
+        + fournit `strategies.throwUnsafely`.
     entry #result
       info
           - the value the block produced instead of failing
@@ -2266,12 +2267,12 @@ entry .HaltTactic
       + une tactique pour les macros : une erreur arrête la compilation avec son message étiqueté
   detail
       - An `open class` taking `Quotes`, for `error <: Error`: `record` and `abort` both call
-      - `halt` with the error's `labelled` message (its `SN-` code and text), so a parse which
+      - `halt` with the error's `labelled` message (its bolt code and text), so a parse which
       - fails at expansion time is reported as a compile error. `abortive` installs one; a
       - macro which wants the error positioned at a particular tree subclasses it and overrides
       - `record`/`abort` to pass the position.
       + Une `open class` qui prend `Quotes`, pour `error <: Error` : `record` et `abort` appellent
-      + tous deux `halt` avec le message `labelled` de l'erreur (son code `SN-` et son texte), si
+      + tous deux `halt` avec le message `labelled` de l'erreur (son code bolt et son texte), si
       + bien qu'une analyse qui échoue au moment du développement est signalée comme erreur de
       + compilation. `abortive` en installe une ; une macro qui veut positionner l'erreur sur un
       + arbre particulier en crée une sous-classe et redéfinit `record`/`abort` pour transmettre la

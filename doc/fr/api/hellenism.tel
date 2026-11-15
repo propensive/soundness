@@ -517,12 +517,12 @@ entry .Classpath
         - raised when a resource is not on the classpath
         + levée lorsqu'une ressource n'est pas sur le classpath
     detail
-        - Error 540: _the resource `path` was not on the classpath_. Raised by the `Streamable`
+        - Error `↯/s.67.1`: _the resource `path` was not on the classpath_. Raised by the `Streamable`
         - givens for `Resource` and `Path on Classpath` when the `Classloader` in scope does
         - not have the resource. A `cp"…"` resource is checked at compile time against the
         - compiler's classpath, so this error at runtime means the program was launched with a
         - different one.
-        + Error 540: _the resource `path` was not on the classpath_. Levée par les givens
+        + Error `↯/s.67.1`: _the resource `path` was not on the classpath_. Levée par les givens
         + `Streamable` pour `Resource` et `Path on Classpath` lorsque le `Classloader` dans la
         + portée ne possède pas la ressource. Une ressource `cp"…"` est vérifiée à la compilation
         + par rapport au classpath du compilateur ; cette erreur à l'exécution signifie donc que le

@@ -232,13 +232,13 @@ entry .Compiler
         - raised when a compiler cannot be set up from its options
         + levée lorsqu'un compilateur ne peut pas être configuré à partir de ses options
     detail
-        - Error 779: _there was a problem with the compiler configuration_. Raised when the
+        - Error `↯/s.137.3`: _there was a problem with the compiler configuration_. Raised when the
         - compiler's base context cannot be built from the arguments the `Scalac` was given —
         - an option the embedded compiler rejects — which happens when a `Scalac.Session` is
         - opened. It is a configuration fault, not a compilation failure: sources which do not
         - compile give a `Result.Failure` with `Notice`s, and a compiler which throws
         - gives a `Result.Crash`, neither of which raises this.
-        + Erreur 779 : _there was a problem with the compiler configuration_. Levée lorsque
+        + Erreur `↯/s.137.3` : _there was a problem with the compiler configuration_. Levée lorsque
         + le contexte de base du compilateur ne peut pas être construit à partir des arguments
         + donnés au `Scalac` — une option que le compilateur embarqué rejette — ce qui se produit à
         + l'ouverture d'une `Scalac.Session`. C'est un défaut de configuration, et non un échec de
@@ -1131,13 +1131,13 @@ entry .Toolchain
         - raised when a native tool a toolchain shells out to is not on the `PATH`
         + levée lorsqu'un outil natif auquel fait appel une toolchain n'est pas dans le `PATH`
     detail
-        - Error 586: _the native tool `tool` is not available on the PATH_. Raised by the
+        - Error `↯/s.137.2`: _the native tool `tool` is not available on the PATH_. Raised by the
         - probing constructors — `WasiToolchain()` for `wasm-tools` and `wit-bindgen`,
         - `nativeEdges()` for `clang` and `clang++` — so that an edge whose tooling is absent
         - cannot be built, and a missing tool is found when the toolchain is assembled, not
         - when a link fails. `nativeEdges()` also reports an unrecognised build host, which
         - cannot name its own triple, as the absence of `clang`.
-        + Erreur 586 : _the native tool `tool` is not available on the PATH_. Levée par les
+        + Erreur `↯/s.137.2` : _the native tool `tool` is not available on the PATH_. Levée par les
         + constructeurs qui sondent — `WasiToolchain()` pour `wasm-tools` et `wit-bindgen`,
         + `nativeEdges()` pour `clang` et `clang++` — de sorte qu'une arête dont l'outillage est
         + absent ne puisse pas être construite, et qu'un outil manquant soit détecté à l'assemblage
@@ -1649,8 +1649,9 @@ entry .Link
       + `Compiler.Notice` qu'a signalé le compilateur.
   entry .Error
     info
-        - raised by a toolchain: error 443, _linking failed because `reason`_
-        + levée par une toolchain : erreur 443, _l'édition de liens a échoué parce que `reason`_
+        - raised by a toolchain: error `↯/s.137.1`, _linking failed because `reason`_
+        + levée par une toolchain : erreur `↯/s.137.1`, _l'édition de liens a échoué parce que
+        + `reason`_
     detail
         - `Link.Error(reason)`; its number's detail part is the reason's own number. Match on
         - `#reason` to tell the cases apart:
@@ -3541,21 +3542,19 @@ entry .sjsEdges
 
 entry .Bundler
   info
-      - the running application's classpath, for a build which must package itself
-      + le classpath de l'application en cours d'exécution, pour un build qui doit s'empaqueter
-      + lui-même
+      - the running application's classpath, and the assembly of a JAR from a classpath
+      + le classpath de l'application en cours d'exécution, et l'assemblage d'un JAR à partir d'un
+      + classpath
   detail
-      - Its one public member, `.applicationClasspath`, is the classpath the running program
-      - was loaded from. A staging rig which must fold its own running classpath into the JARs
+      - `.applicationClasspath` is the classpath the running program was loaded from. A staging rig which must fold its own running classpath into the JARs
       - it produces pairs it with its compiled output as a `Deliverable.Emission` and packages
       - the two through the `Artifact.Jar` edge, so the JAR carries the rig's own executor and
       - dependencies:
-      + Son unique membre public, `.applicationClasspath`, est le classpath à partir duquel le
-      + programme en cours d'exécution a été chargé. Un dispositif de mise en étapes qui doit
-      + intégrer son propre classpath d'exécution aux JAR qu'il produit l'associe à sa sortie
-      + compilée sous forme de `Deliverable.Emission` et empaquette les deux par l'arête
-      + `Artifact.Jar`, si bien que le JAR porte l'exécuteur et les dépendances propres du
-      + dispositif :
+      + `.applicationClasspath` est le classpath à partir duquel le programme en cours d'exécution a
+      + été chargé. Un dispositif de mise en étapes qui doit intégrer son propre classpath
+      + d'exécution aux JAR qu'il produit l'associe à sa sortie compilée sous forme de
+      + `Deliverable.Emission` et empaquette les deux par l'arête `Artifact.Jar`, si bien que le JAR
+      + porte l'exécuteur et les dépendances propres du dispositif :
 
       ```scala fuel
       typecheck
@@ -3578,8 +3577,24 @@ entry .Bundler
             List(EntryPoint(executor)) )
       ```
 
-      - The JAR assembly itself is not public: it is what the `jarEdges` tools run.
-      + L'assemblage du JAR lui-même n'est pas public : c'est ce qu'exécutent les outils `jarEdges`.
+      - `.assemble` is the JAR assembly which the `jarEdges` tools run, for a tool which
+      - packages a classpath of its own.
+      + `.assemble` est l'assemblage du JAR qu'exécutent les outils `jarEdges`, pour un outil qui
+      + empaquette un classpath qui lui est propre.
+  entry .assemble
+    info
+        - writes a JAR of everything on a classpath, with a `Main-Class` if one is given
+        + écrit un JAR de tout ce qui est sur un classpath, avec une `Main-Class` si une est donnée
+    detail
+        - A directory entry's files are added, without any `MANIFEST.MF` or `plugin.properties`,
+        - and a JAR entry's entries are re-emitted as they are, without its manifest; where two
+        - entries have a path, the first is kept. The manifest records `Created-By: Soundness`.
+        - It is what `Abscission`'s `Shrunk.Jar` edge packages a closed world with.
+        + Les fichiers d'une entrée de type répertoire sont ajoutés, sans aucun `MANIFEST.MF` ni
+        + `plugin.properties`, et les entrées d'une entrée de type JAR sont réémises telles quelles,
+        + sans son manifeste ; là où deux entrées ont un même chemin, la première est conservée. Le
+        + manifeste enregistre `Created-By: Soundness`. C'est avec lui que l'arête `Shrunk.Jar`
+        + d'`Abscission` empaquette un monde clos.
   entry .applicationClasspath
     info
         - the classpath of the running application, read from its own classloader

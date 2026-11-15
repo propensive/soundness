@@ -559,14 +559,14 @@ entry .Css
         - one fault in CSS text, with its line, column and reason
         + une faute dans du texte CSS, avec sa ligne, sa colonne et sa raison
     detail
-        - Error 251: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
+        - Error `↯/s.90.1`: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
         - number as the subcode. One is raised for each problem found while reading a
         - stylesheet or parsing a selector, grammar or value; `read[Css]` collects them all
         - into a `Css.Errors`, while `SelectorList.parse` and `Css.Syntax.Matcher.check` raise a
         - single `Css.Error` through a `Tactic[Css.Error]`. Constructing one needs a
         - `Diagnostics`.
-        + Erreur 251 : _invalid CSS at line `n` column `n`: `reason`_, avec le propre numéro de la
-        + raison comme sous-code. Une erreur est levée pour chaque problème trouvé lors de la
+        + Erreur `↯/s.90.1` : _invalid CSS at line `n` column `n`: `reason`_, avec le propre numéro
+        + de la raison comme sous-code. Une erreur est levée pour chaque problème trouvé lors de la
         + lecture d'une feuille de style ou de l'analyse d'un sélecteur, d'une grammaire ou d'une
         + valeur ; `read[Css]` les rassemble toutes dans une `Css.Errors`, tandis que
         + `SelectorList.parse` et `Css.Syntax.Matcher.check` lèvent une seule `Css.Error` au moyen

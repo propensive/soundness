@@ -811,9 +811,9 @@ entry .Tar
         + levée quand une archive ne peut être ni lue ni écrite, avec une `Reason` qui indique
         + pourquoi
     detail
-        - Error 284: _the TAR archive could not be read or written because `reason`_. Its
+        - Error `↯/s.93.1`: _the TAR archive could not be read or written because `reason`_. Its
         - `#reason` is a `Tar.Error.Reason`, each with its own number and message:
-        + Erreur 284 : _the TAR archive could not be read or written because `reason`_. Sa
+        + Erreur `↯/s.93.1` : _the TAR archive could not be read or written because `reason`_. Sa
         + `#reason` est une `Tar.Error.Reason`, chacune avec son propre numéro et son propre
         + message :
 
@@ -1669,9 +1669,9 @@ entry .Ar
         + levée quand une archive ar ne peut être ni lue ni écrite, avec une `Reason` qui indique
         + pourquoi
     detail
-        - Error 286: _the ar archive could not be read or written because `reason`_. Its
+        - Error `↯/s.93.2`: _the ar archive could not be read or written because `reason`_. Its
         - `#reason` is an `Ar.Error.Reason`, each with its own number and message:
-        + Erreur 286 : _the ar archive could not be read or written because `reason`_. Sa
+        + Erreur `↯/s.93.2` : _the ar archive could not be read or written because `reason`_. Sa
         + `#reason` est une `Ar.Error.Reason`, chacune avec son propre numéro et son propre
         + message :
 

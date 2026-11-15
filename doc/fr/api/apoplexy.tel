@@ -917,7 +917,7 @@ entry .Api
         - a response outside the success range, raised as the error class of its status
         + une réponse hors de la plage de succès, levée comme la classe d'erreur de son statut
     detail
-        - Error 914.1: _the server responded with an unsuccessful status, `status`_. The sealed
+        - Error `↯/s.135.2.1`: _the server responded with an unsuccessful status, `status`_. The sealed
         - parent of one case class per status telekinesis names — `Api.NotFound`,
         - `Api.BadRequest`, `Api.TooManyRequests`, … — with `Api.Informational`,
         - `Api.Redirection`, `Api.ClientError` and `Api.ServerError` for the `1XX`–`5XX` range
@@ -927,17 +927,17 @@ entry .Api
         - schema for a JSON object, else the media type's carrier, else `Text`, or `Unit` where
         - no body is declared — so `Api.NotFound(())` matches a bodiless `404` and
         - `Api.NotFound(problem)` one with a schema, whose `problem.message` is typed.
-        + Erreur 914.1 : _the server responded with an unsuccessful status, `status`_. Le parent
-        + scellé d'une case class par statut que nomme telekinesis — `Api.NotFound`,
-        + `Api.BadRequest`, `Api.TooManyRequests`, … — avec `Api.Informational`,
-        + `Api.Redirection`, `Api.ClientError` et `Api.ServerError` pour les clés de plage
-        + `1XX`–`5XX` (et pour un statut numéroté que telekinesis ne nomme pas) et `Api.OtherError`
-        + pour une réponse `default`. Chacune porte `#status` et `#payload` : le corps de l'erreur
-        + interprété comme le type que la spécification déclare pour cette réponse — un
-        + enregistrement typé par le schéma d'erreur pour un objet JSON, sinon le porteur du type
-        + de média, sinon `Text`, ou `Unit` lorsqu'aucun corps n'est déclaré — si bien que
-        + `Api.NotFound(())` correspond à un `404` sans corps et `Api.NotFound(problem)` à une
-        + réponse dotée d'un schéma, dont le `problem.message` est typé.
+        + Erreur `↯/s.135.2.1` : _the server responded with an unsuccessful status, `status`_. Le
+        + parent scellé d'une case class par statut que nomme telekinesis — `Api.NotFound`,
+        + `Api.BadRequest`, `Api.TooManyRequests`, … — avec `Api.Informational`, `Api.Redirection`,
+        + `Api.ClientError` et `Api.ServerError` pour les clés de plage `1XX`–`5XX` (et pour un
+        + statut numéroté que telekinesis ne nomme pas) et `Api.OtherError` pour une réponse
+        + `default`. Chacune porte `#status` et `#payload` : le corps de l'erreur interprété comme
+        + le type que la spécification déclare pour cette réponse — un enregistrement typé par le
+        + schéma d'erreur pour un objet JSON, sinon le porteur du type de média, sinon `Text`, ou
+        + `Unit` lorsqu'aucun corps n'est déclaré — si bien que `Api.NotFound(())` correspond à un
+        + `404` sans corps et `Api.NotFound(problem)` à une réponse dotée d'un schéma, dont le
+        + `problem.message` est typé.
 
         - An operation's declared error responses form a union of these classes, the `Failure`
         - of its `Api.Response`; `attempt` yields an `Attempt` over exactly that union, and
@@ -992,15 +992,15 @@ entry .Api
         - a response with a status the specification does not declare
         + une réponse dont le statut n'est pas déclaré par la spécification
     detail
-        - Error 914.2: _the server responded with an undeclared status, `status`_. The server
+        - Error `↯/s.135.2.2`: _the server responded with an undeclared status, `status`_. The server
         - has broken its contract, which every call may meet and must handle apart from the
         - declared errors: it is raised through its own `Tactic[Api.Violation]`, is never a
         - member of a response's `Failure`, and carries the status and the body's raw bytes,
         - since no schema describes them.
-        + Erreur 914.2 : _the server responded with an undeclared status, `status`_. Le serveur a
-        + rompu son contrat, ce que tout appel peut rencontrer et doit traiter à part des erreurs
-        + déclarées : elle est levée à travers sa propre `Tactic[Api.Violation]`, n'est jamais
-        + membre du `Failure` d'une réponse, et porte le statut et les octets bruts du corps,
+        + Erreur `↯/s.135.2.2` : _the server responded with an undeclared status, `status`_. Le
+        + serveur a rompu son contrat, ce que tout appel peut rencontrer et doit traiter à part des
+        + erreurs déclarées : elle est levée à travers sa propre `Tactic[Api.Violation]`, n'est
+        + jamais membre du `Failure` d'une réponse, et porte le statut et les octets bruts du corps,
         + puisqu'aucun schéma ne les décrit.
 
         ```scala
@@ -2059,10 +2059,10 @@ entry .OpenApi
         + levée lorsqu'un document n'est pas un OpenAPI 3 valide, ou qu'une référence ne peut pas
         + être suivie
     detail
-        - Error 846: _the OpenAPI document was not valid because `reason`_, with one of five
+        - Error `↯/s.135.1`: _the OpenAPI document was not valid because `reason`_, with one of five
         - reasons, numbered as `846.1` to `846.5`:
-        + Erreur 846 : _the OpenAPI document was not valid because `reason`_, avec l'une de cinq
-        + raisons, numérotées de `846.1` à `846.5` :
+        + Erreur `↯/s.135.1` : _the OpenAPI document was not valid because `reason`_, avec l'une de
+        + cinq raisons, numérotées de `846.1` à `846.5` :
 
         ```tabular
         - column  Case

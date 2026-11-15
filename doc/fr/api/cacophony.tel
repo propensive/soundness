@@ -503,9 +503,9 @@ entry .Audio
           - raised when a feed cannot record
           + levée lorsqu'une entrée ne peut pas enregistrer
       detail
-          - Error 440: _could not record from feed `name` because …_, with the reason's number
+          - Error `↯/s.82.2`: _could not record from feed `name` because …_, with the reason's number
           - and message appended. Raised by `Feed#record` and by opening a feed as `Pcm`.
-          + Erreur 440 : _could not record from feed `name` because …_, suivi du numéro et du
+          + Erreur `↯/s.82.2` : _could not record from feed `name` because …_, suivi du numéro et du
           + message de la raison. Levée par `Feed#record` et par l'ouverture d'une entrée en tant
           + que `Pcm`.
       entry .Reason
@@ -602,10 +602,10 @@ entry .Audio
           - raised when an outlet cannot play
           + levée lorsqu'une sortie ne peut pas jouer
       detail
-          - Error 374: _could not play to outlet `name` because …_, with the reason's number and
+          - Error `↯/s.82.1`: _could not play to outlet `name` because …_, with the reason's number and
           - message appended. Raised by `Outlet#play` and by `Pcm.play` on an opened outlet.
-          + Erreur 374 : _could not play to outlet `name` because …_, suivi du numéro et du message
-          + de la raison. Levée par `Outlet#play` et par `Pcm.play` sur une sortie ouverte.
+          + Erreur `↯/s.82.1` : _could not play to outlet `name` because …_, suivi du numéro et du
+          + message de la raison. Levée par `Outlet#play` et par `Pcm.play` sur une sortie ouverte.
       entry .Reason
         info
             - `Unavailable`, `UnsupportedConfiguration` or `Closed`

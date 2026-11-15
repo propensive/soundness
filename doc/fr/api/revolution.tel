@@ -155,28 +155,28 @@ entry .Semver
         - raised when text is not a valid semantic version
         + levée lorsqu'un texte n'est pas une version sémantique valide
     detail
-        - Error 250: _`version` is not a valid semantic version because …_, with one of four
+        - Error `↯/s.97.1`: _`version` is not a valid semantic version because …_, with one of four
         - reasons: `BadFormat` (_the string did not match the SemVer 2.0 grammar_, such as
         - `1.2` or `1.2.3.4`), `EmptyIdentifier` (_a prerelease or build identifier was
         - empty_, as in `1.2.3-`), `LeadingZero` (_a numeric identifier had a leading zero_,
         - as in `01.1.1` or `1.2.3-0123`) and `InvalidCharacter` (_an identifier contained a
         - character outside `[0-9A-Za-z-]`_). Raised by `Semver.decodable`; a `v"…"` literal
         - reports the same problems as a compile error instead.
-        + Erreur 250 : _`version` is not a valid semantic version because …_, avec l'une de quatre
-        + raisons : `BadFormat` (_the string did not match the SemVer 2.0 grammar_, comme `1.2` ou
-        + `1.2.3.4`), `EmptyIdentifier` (_a prerelease or build identifier was empty_, comme dans
-        + `1.2.3-`), `LeadingZero` (_a numeric identifier had a leading zero_, comme dans `01.1.1`
-        + ou `1.2.3-0123`) et `InvalidCharacter` (_an identifier contained a character outside
-        + `[0-9A-Za-z-]`_). Levée par `Semver.decodable` ; un littéral `v"…"` signale plutôt les
-        + mêmes problèmes sous forme d'erreur de compilation.
+        + Erreur `↯/s.97.1` : _`version` is not a valid semantic version because …_, avec l'une de
+        + quatre raisons : `BadFormat` (_the string did not match the SemVer 2.0 grammar_, comme
+        + `1.2` ou `1.2.3.4`), `EmptyIdentifier` (_a prerelease or build identifier was empty_,
+        + comme dans `1.2.3-`), `LeadingZero` (_a numeric identifier had a leading zero_, comme dans
+        + `01.1.1` ou `1.2.3-0123`) et `InvalidCharacter` (_an identifier contained a character
+        + outside `[0-9A-Za-z-]`_). Levée par `Semver.decodable` ; un littéral `v"…"` signale plutôt
+        + les mêmes problèmes sous forme d'erreur de compilation.
     entry .Reason
       info
           - why text is not a semantic version: bad format, an empty identifier, a leading zero or a bad character
           + pourquoi un texte n'est pas une version sémantique : mauvais format, identifiant vide,
           + zéro initial ou caractère invalide
       detail
-          - Each case's sub-number of error 250 is its `#number`:
-          + Le sous-numéro de l'erreur 250 de chaque cas est son `#number` :
+          - Each case's sub-number of error `↯/s.97.1` is its `#number`:
+          + Le sous-numéro de l'erreur `↯/s.97.1` de chaque cas est son `#number` :
 
           ```tabular
           - column  Case
@@ -198,8 +198,8 @@ entry .Semver
           ```
       entry #number
         info
-            - the reason's sub-number of error 250
-            + le sous-numéro de la raison dans l'erreur 250
+            - the reason's sub-number of error `↯/s.97.1`
+            + le sous-numéro de la raison dans l'erreur `↯/s.97.1`
     entry .communicable
       info
           - renders each reason as the phrase completing _… is not a valid semantic version because …_

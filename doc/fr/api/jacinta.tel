@@ -2219,7 +2219,7 @@ entry .Json
         - raised when a value cannot be read as what was asked for
         + levée quand une valeur ne peut pas être lue comme ce qui était demandé
     detail
-        - Error 337: _could not access the value because `reason`_, where the `#reason` is a
+        - Error `↯/s.106.1`: _could not access the value because `reason`_, where the `#reason` is a
         - `Json.Error.Reason`: `NotType(found, expected)` (_the JSON value had type `found`
         - instead of `expected`_, each a `Json.Primitive`), `Absent` (_the JSON value was not
         - present_: a required field the object lacks, or a value past the end of an array under
@@ -2227,11 +2227,11 @@ entry .Json
         - raised by every `Json.Decodable`, `Json.Parsable` and `Json.Ast` accessor through the
         - `Tactic[Json.Error]` in scope, and under an accruing strategy each is tagged with the
         - `Json.Focus` of the field that failed.
-        + Erreur 337 : _could not access the value because `reason`_, où le `#reason` est une
-        + `Json.Error.Reason` : `NotType(found, expected)` (_the JSON value had type `found` instead
-        + of `expected`_, chacun étant un `Json.Primitive`), `Absent` (_the JSON value was not
-        + present_ : un champ obligatoire absent de l'objet, ou une valeur au-delà de la fin d'un
-        + tableau sous `as`), et `OutOfRange` (_the array index is out of range_, depuis
+        + Erreur `↯/s.106.1` : _could not access the value because `reason`_, où le `#reason` est
+        + une `Json.Error.Reason` : `NotType(found, expected)` (_the JSON value had type `found`
+        + instead of `expected`_, chacun étant un `Json.Primitive`), `Absent` (_the JSON value was
+        + not present_ : un champ obligatoire absent de l'objet, ou une valeur au-delà de la fin
+        + d'un tableau sous `as`), et `OutOfRange` (_the array index is out of range_, depuis
         + `json(index)`). Elle est levée par chaque accesseur de `Json.Decodable`, `Json.Parsable`
         + et `Json.Ast` via la `Tactic[Json.Error]` dans la portée, et sous une stratégie cumulative
         + chacune est marquée du `Json.Focus` du champ en échec.
@@ -2270,8 +2270,8 @@ entry .Json
             + rend chaque raison sous forme de message
       entry #number
         info
-            - the reason's number within error 337
-            + le numéro de la raison au sein de l'erreur 337
+            - the reason's number within error `↯/s.106.1`
+            + le numéro de la raison au sein de l'erreur `↯/s.106.1`
     entry #reason
       info
           - the `Json.Error.Reason`
@@ -3200,7 +3200,7 @@ entry .Json4
           - raised when a document does not conform to a provider's schema
           + levée quand un document n'est pas conforme au schéma d'un fournisseur
       detail
-          - Error 624: _the JSON was not valid according to the schema because `reason`_, raised
+          - Error `↯/s.106.3`: _the JSON was not valid according to the schema because `reason`_, raised
           - through the `Tactic` of the code reading a record field, so `attempt`, `recover`,
           - `validate` and `track` all see it. The `#reason` is a `Json.Provider.Error.Reason`:
           - `JsonType(expected, found)`, `MissingValue(name)` (a required property absent),
@@ -3209,8 +3209,8 @@ entry .Json4
           - maximum)`, `NotPermitted(value, permitted)` (not in the `enum`), `UnexpectedKind(found,
           - offered)` (a union value of a kind no alternative offers) and `Unparsable(value,
           - format)` (a `json-pointer` or `regex` which does not parse).
-          + Erreur 624 : _the JSON was not valid according to the schema because `reason`_, levée
-          + via la `Tactic` du code qui lit un champ d'enregistrement, de sorte que `attempt`,
+          + Erreur `↯/s.106.3` : _the JSON was not valid according to the schema because `reason`_,
+          + levée via la `Tactic` du code qui lit un champ d'enregistrement, de sorte que `attempt`,
           + `recover`, `validate` et `track` la voient tous. Le `#reason` est une
           + `Json.Provider.Error.Reason` : `JsonType(expected, found)`, `MissingValue(name)` (une
           + propriété obligatoire absente), `IntOutOfRange(value, minimum, maximum)`,
@@ -3221,8 +3221,9 @@ entry .Json4
           + qui ne s'analyse pas).
       entry .Reason
         info
-            - why a document did not conform, numbered 1 to 9 within error 624
-            + pourquoi un document n'était pas conforme, numéroté de 1 à 9 au sein de l'erreur 624
+            - why a document did not conform, numbered 1 to 9 within error `↯/s.106.3`
+            + pourquoi un document n'était pas conforme, numéroté de 1 à 9 au sein de l'erreur
+            + `↯/s.106.3`
         detail
             - An enumeration of the nine reasons, rendered as messages by its companion's
             - anonymous `Communicable`.
@@ -3352,13 +3353,13 @@ entry .JsonPointer
         - raised when text is not a valid JSON reference
         + levée quand un texte n'est pas une référence JSON valide
     detail
-        - Error 415: _the JSON reference was not valid because `reason`_, with the `#offset` of
+        - Error `↯/s.106.2`: _the JSON reference was not valid because `reason`_, with the `#offset` of
         - the character at fault, which the `jp"…"` interpolator uses to position its compile
         - error. The reasons are `ExpectedHash` (_a JSON reference must begin with '#'_),
         - `ExpectedSlash` (_a JSON reference fragment must begin with '/'_) and `BadEscape` (_a
         - '~' in a JSON reference must be followed by '0' or '1'_).
-        + Erreur 415 : _the JSON reference was not valid because `reason`_, avec l'`#offset` du
-        + caractère fautif, que l'interpolateur `jp"…"` utilise pour positionner son erreur de
+        + Erreur `↯/s.106.2` : _the JSON reference was not valid because `reason`_, avec l'`#offset`
+        + du caractère fautif, que l'interpolateur `jp"…"` utilise pour positionner son erreur de
         + compilation. Les raisons sont `ExpectedHash` (_a JSON reference must begin with '#'_),
         + `ExpectedSlash` (_a JSON reference fragment must begin with '/'_) et `BadEscape` (_a '~'
         + in a JSON reference must be followed by '0' or '1'_).
@@ -3367,8 +3368,8 @@ entry .JsonPointer
           - why the reference was invalid: `ExpectedHash`, `ExpectedSlash` or `BadEscape`
           + pourquoi la référence était invalide : `ExpectedHash`, `ExpectedSlash` ou `BadEscape`
       detail
-          - Numbered 2, 3 and 4 within error 415, rendered by `.communicable`.
-          + Numérotées 2, 3 et 4 au sein de l'erreur 415, rendues par `.communicable`.
+          - Numbered 2, 3 and 4 within error `↯/s.106.2`, rendered by `.communicable`.
+          + Numérotées 2, 3 et 4 au sein de l'erreur `↯/s.106.2`, rendues par `.communicable`.
       entry #number
         info
             - the reason's number

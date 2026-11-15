@@ -747,10 +747,10 @@ entry .Discovery
         + levée lorsqu'un nom est invalide, ne peut pas être revendiqué, ne se résout pas, ou
         + qu'aucun backend ne démarre
     detail
-        - Error `SN-054`: _service discovery failed because `reason`_. The `#reason` is one of
+        - Error `↯/s.102.1`: _service discovery failed because `reason`_. The `#reason` is one of
         - `Discovery.Error.Reason`'s cases, numbered 1 to 6:
-        + Erreur `SN-054` : _service discovery failed because `reason`_. La `#reason` est l'un des
-        + cas de `Discovery.Error.Reason`, numérotés de 1 à 6 :
+        + Erreur `↯/s.102.1` : _service discovery failed because `reason`_. La `#reason` est l'un
+        + des cas de `Discovery.Error.Reason`, numérotés de 1 à 6 :
 
         ```tabular
         - column  Case
@@ -1410,13 +1410,13 @@ entry .Mdns
         + levée lorsque le répondeur ne peut pas démarrer : aucune interface, ou un groupe qu'il ne
         + peut pas rejoindre
     detail
-        - Error `SN-055`: _the mDNS responder could not start because `reason`_. Reason
+        - Error `↯/s.102.2`: _the mDNS responder could not start because `reason`_. Reason
         - `NoInterface` (2) is _no interface is up and capable of multicast_; reason
         - `Join(group)` (1) is _the multicast group `224.0.0.251:5353` could not be joined_,
         - raised when neither group could be joined. Raised by `Mdns.Transport.sockets`; a loan
         - which hits it reports `Discovery.Error` reason `Unavailable` instead, with this error
         - as its diagnostics.
-        + Erreur `SN-055` : _the mDNS responder could not start because `reason`_. La raison
+        + Erreur `↯/s.102.2` : _the mDNS responder could not start because `reason`_. La raison
         + `NoInterface` (2) est _no interface is up and capable of multicast_ ; la raison
         + `Join(group)` (1) est _the multicast group `224.0.0.251:5353` could not be joined_, levée
         + lorsqu'aucun des deux groupes n'a pu être rejoint. Levée par `Mdns.Transport.sockets` ; un

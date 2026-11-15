@@ -2852,13 +2852,13 @@ entry .Font
         - raised when a font cannot be read or a face cannot be set
         + levée quand une police ne peut pas être lue ou qu'un style ne peut pas être composé
     detail
-        - Error 564, _the font could not be used because …_, with a `Reason` whose number is the
+        - Error `↯/s.89.1`, _the font could not be used because …_, with a `Reason` whose number is the
         - error's subcode. The table-reading reasons are raised by `Sfnt`'s accessors; the
         - coverage reasons by `Font(…)`, `Font.of[…](…)` and `Font.paired` when the provision's
         - `Coverage` refuses the face.
-        + Erreur 564, _the font could not be used because …_, avec une `Reason` dont le numéro est
-        + le sous-code de l'erreur. Les raisons liées à la lecture des tables sont levées par les
-        + accesseurs de `Sfnt` ; les raisons de couverture par `Font(…)`, `Font.of[…](…)` et
+        + Erreur `↯/s.89.1`, _the font could not be used because …_, avec une `Reason` dont le
+        + numéro est le sous-code de l'erreur. Les raisons liées à la lecture des tables sont levées
+        + par les accesseurs de `Sfnt` ; les raisons de couverture par `Font(…)`, `Font.of[…](…)` et
         + `Font.paired` quand la `Coverage` de la fourniture refuse le style.
 
         ```scala

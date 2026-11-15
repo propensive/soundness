@@ -1287,12 +1287,12 @@ entry .Mathml
         - raised when XML or HTML does not hold a MathML tree
         + levée lorsque du XML ou du HTML ne contient pas d'arbre MathML
     detail
-        - Error 430: _the MathML could not be parsed because reason_. Raised by `Math.aggregable`,
+        - Error `↯/s.129.1`: _the MathML could not be parsed because reason_. Raised by `Math.aggregable`,
         - `Math.loadable`, `Math.loadableData`, `Mathml.Parser` and `Mathml.Reader` when the
         - root element is not `<math>` or an element has a label which is not a MathML
         - element. Well-formedness of the XML itself is xylophone's `Xml.Error` and
         - `Parse.Error`, raised before this one.
-        + Erreur 430 : _the MathML could not be parsed because reason_. Levée par
+        + Erreur `↯/s.129.1` : _the MathML could not be parsed because reason_. Levée par
         + `Math.aggregable`, `Math.loadable`, `Math.loadableData`, `Mathml.Parser` et
         + `Mathml.Reader` lorsque l'élément racine n'est pas `<math>` ou qu'un élément porte un
         + label qui n'est pas un élément MathML. La bonne formation du XML lui-même relève de
@@ -2050,12 +2050,12 @@ entry .Ergo
         + levée lorsqu'un texte Ergo ne peut pas être analysé, ou qu'un arbre ne peut pas être écrit
         + en Ergo
     detail
-        - Error 431: _the ergo expression could not be parsed because reason_. Raised by
+        - Error `↯/s.129.2`: _the ergo expression could not be parsed because reason_. Raised by
         - `Ergo.parse` and `Ergo.interpolate` for malformed text, and by `Ergo.serialize` for an
         - element outside the Ergo subset. In the `ergo"…"` interpolator the same faults are
         - compile errors, positioned at the character where parsing stopped (the last character
         - for an unclosed group, the first for a missing opening bracket).
-        + Erreur 431 : _the ergo expression could not be parsed because reason_. Levée par
+        + Erreur `↯/s.129.2` : _the ergo expression could not be parsed because reason_. Levée par
         + `Ergo.parse` et `Ergo.interpolate` pour un texte mal formé, et par `Ergo.serialize` pour
         + un élément hors du sous-ensemble Ergo. Dans l'interpolateur `ergo"…"`, les mêmes défauts
         + sont des erreurs de compilation, positionnées au caractère où l'analyse s'est arrêtée (le

@@ -2003,8 +2003,8 @@ entry .Tel
           - raised when an acceptance, or a document answering one, is invalid
           + levée lorsqu'une acceptation, ou un document qui y répond, est invalide
       detail
-          - Error 612, sub-numbered by reason: _the acceptance is invalid because …_:
-          + Erreur 612, sous-numérotée par raison : _the acceptance is invalid because …_ :
+          - Error `↯/s.118.8`, sub-numbered by reason: _the acceptance is invalid because …_:
+          + Erreur `↯/s.118.8`, sous-numérotée par raison : _the acceptance is invalid because …_ :
 
           ```tabular
           - column  Case
@@ -2913,19 +2913,19 @@ entry .Tel
         + levée par l'analyse, la validation par schéma et le décodage : un code d'erreur TEL et une
         + étendue dans le code source
     detail
-        - Error 605, sub-numbered by the reason's TEL code: _the TEL document is invalid at line
+        - Error `↯/s.118.1`, sub-numbered by the reason's TEL code: _the TEL document is invalid at line
         - 2, columns 5-8 because …_, or without the position when the span is empty. The
         - reasons are the specification's codes, tabulated under `Tel.Error.Reason`: E1xx for
         - parse faults, each with a §19.5 `Recovery` the parser applies so that it can
         - continue; E2xx for schema validity; E3xx for a document against its schema; E4xx for
         - decoding into a Scala type; and the implementation-reserved E501.
-        + Erreur 605, sous-numérotée par le code TEL de la raison : _the TEL document is invalid
-        + at line 2, columns 5-8 because …_, ou sans la position lorsque l'étendue est vide. Les
-        + raisons sont les codes de la spécification, présentés en tableau sous
-        + `Tel.Error.Reason` : E1xx pour les fautes d'analyse, chacune avec une `Recovery` §19.5
-        + que l'analyseur applique pour pouvoir continuer ; E2xx pour la validité du schéma ; E3xx
-        + pour un document par rapport à son schéma ; E4xx pour le décodage vers un type Scala ;
-        + et E501, réservé à l'implémentation.
+        + Erreur `↯/s.118.1`, sous-numérotée par le code TEL de la raison : _the TEL document is
+        + invalid at line 2, columns 5-8 because …_, ou sans la position lorsque l'étendue est vide.
+        + Les raisons sont les codes de la spécification, présentés en tableau sous
+        + `Tel.Error.Reason` : E1xx pour les fautes d'analyse, chacune avec une `Recovery` §19.5 que
+        + l'analyseur applique pour pouvoir continuer ; E2xx pour la validité du schéma ; E3xx pour
+        + un document par rapport à son schéma ; E4xx pour le décodage vers un type Scala ; et E501,
+        + réservé à l'implémentation.
 
         - A parse error carries its `#span`; a validation or decode error leaves the span
         - empty and carries its location on the accrued `Tel.Focus` instead, as a `Telp` and,
@@ -3580,7 +3580,7 @@ entry .Tel
           - raised when a pointer does not resolve or an operation's invariant fails
           + levée lorsqu'un pointeur ne se résout pas ou que l'invariant d'une opération échoue
       detail
-          - Error 606: _the mutation failed because …_. `PointerNotFound` is a pointer, block
+          - Error `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` is a pointer, block
           - index or group which does not resolve to a compound, including a reorder whose groups
           - are interleaved or whose indices are out of range, and a `ResizeTabulation` on a block
           - with no tabulation; `AtomIndexOutOfRange` an `UpdateAtom` beyond the target's atoms;
@@ -3588,8 +3588,8 @@ entry .Tel
           - `InsertIntoBlock` whose column value exceeds its column's capacity; and
           - `WriteUnsupported`, raised by `open[Tel]` with `Write` when the document's source
           - cannot be written back.
-          + Erreur 606 : _the mutation failed because …_. `PointerNotFound` est un pointeur, un
-          + indice de bloc ou un groupe qui ne se résout pas en un composé, y compris une
+          + Erreur `↯/s.118.2` : _the mutation failed because …_. `PointerNotFound` est un pointeur,
+          + un indice de bloc ou un groupe qui ne se résout pas en un composé, y compris une
           + réorganisation dont les groupes sont entrelacés ou dont les indices sont hors limites,
           + et un `ResizeTabulation` sur un bloc sans tabulation ; `AtomIndexOutOfRange` un
           + `UpdateAtom` au-delà des atomes de la cible ; `FlagAlreadySet` un `SetFlag` d'un
@@ -4729,14 +4729,14 @@ entry .Tel4
           - raised as a record's field is read from a document which does not conform
           + levée lorsqu'un champ d'enregistrement est lu depuis un document non conforme
       detail
-          - Error 614, sub-numbered by reason: _the TEL did not conform to its schema because
+          - Error `↯/s.118.10`, sub-numbered by reason: _the TEL did not conform to its schema because
           - …_. `Absent(name)` (1), _the field `name` is required_, for a required field with no
           - compound; `NotSigil(value)` (2), _the value `value` is not a single character_, for
           - a `sigil` field.
-          + Erreur 614, sous-numérotée par raison : _the TEL did not conform to its schema because
-          + …_. `Absent(name)` (1), _the field `name` is required_, pour un champ obligatoire sans
-          + composé ; `NotSigil(value)` (2), _the value `value` is not a single character_, pour un
-          + champ `sigil`.
+          + Erreur `↯/s.118.10`, sous-numérotée par raison : _the TEL did not conform to its schema
+          + because …_. `Absent(name)` (1), _the field `name` is required_, pour un champ
+          + obligatoire sans composé ; `NotSigil(value)` (2), _the value `value` is not a single
+          + character_, pour un champ `sigil`.
       entry .Reason
         info
             - the two reasons, `Absent(name)` and `NotSigil(value)`
@@ -5731,7 +5731,7 @@ entry .Tels
           - raised when a schema cannot be resolved; names the failing step
           + levée lorsqu'un schéma ne peut pas être résolu ; nomme l'étape en échec
       detail
-          - Error 611: _the schema does not resolve because …_. Raised by `SchemaResolver`,
+          - Error `↯/s.118.7`: _the schema does not resolve because …_. Raised by `SchemaResolver`,
           - `Tels.Layers.select` (an `UnknownLayer`) and acceptance handling. The reasons are
           - `UnknownLayer(layer)`, a selected layer the schema does not declare;
           - `ComponentCount(expected, found)`, a signature with the wrong number of components;
@@ -5740,13 +5740,13 @@ entry .Tels
           - signature; `Unresolved(step, identifier)`, given up at the named step;
           - `NotSchema(detail)`, a resolved body which is not a schema document; and
           - `Unverified(detail)`, a failed signature check.
-          + Erreur 611 : _the schema does not resolve because …_. Levée par `SchemaResolver`,
-          + `Tels.Layers.select` (un `UnknownLayer`) et le traitement des acceptations. Les raisons
-          + sont `UnknownLayer(layer)`, une couche sélectionnée que le schéma ne déclare pas ;
-          + `ComponentCount(expected, found)`, une signature avec un mauvais nombre de composants ;
-          + `BaseMismatch` et `LayerMismatch(layer)`, un hachage de composant en désaccord avec
-          + celui du schéma ; `ReferenceDisagrees`, une référence dont la lignée ne sert pas la
-          + signature ; `Unresolved(step, identifier)`, un abandon à l'étape nommée ;
+          + Erreur `↯/s.118.7` : _the schema does not resolve because …_. Levée par
+          + `SchemaResolver`, `Tels.Layers.select` (un `UnknownLayer`) et le traitement des
+          + acceptations. Les raisons sont `UnknownLayer(layer)`, une couche sélectionnée que le
+          + schéma ne déclare pas ; `ComponentCount(expected, found)`, une signature avec un mauvais
+          + nombre de composants ; `BaseMismatch` et `LayerMismatch(layer)`, un hachage de composant
+          + en désaccord avec celui du schéma ; `ReferenceDisagrees`, une référence dont la lignée
+          + ne sert pas la signature ; `Unresolved(step, identifier)`, un abandon à l'étape nommée ;
           + `NotSchema(detail)`, un corps résolu qui n'est pas un document de schéma ; et
           + `Unverified(detail)`, une vérification de signature échouée.
       entry .Reason
@@ -6006,18 +6006,18 @@ entry .Tels
           - raised when a schema has a member type no document can name
           + levée lorsqu'un schéma a un type de membre qu'aucun document ne peut nommer
       detail
-          - Error 613: _the schema cannot be rendered because …_. `InlineStruct(keyword)` is a
+          - Error `↯/s.118.9`: _the schema cannot be rendered because …_. `InlineStruct(keyword)` is a
           - member whose type is an inline struct, such as the `entries` member a derived `Map`
           - field produces; `InlineScalar(keyword)` is a member whose inline scalar carries an
           - encoding, patterns or a validator other than the four built-in ones. A derived
           - schema with such a member can still type and validate documents, but cannot be
           - written out, hashed or signed.
-          + Erreur 613 : _the schema cannot be rendered because …_. `InlineStruct(keyword)` est un
-          + membre dont le type est une structure en ligne, comme le membre `entries` que produit
-          + un champ `Map` dérivé ; `InlineScalar(keyword)` est un membre dont le scalaire en ligne
-          + porte un encodage, des motifs ou un validateur autre que les quatre intégrés. Un schéma
-          + dérivé ayant un tel membre peut toujours typer et valider des documents, mais ne peut
-          + pas être écrit, haché ni signé.
+          + Erreur `↯/s.118.9` : _the schema cannot be rendered because …_. `InlineStruct(keyword)`
+          + est un membre dont le type est une structure en ligne, comme le membre `entries` que
+          + produit un champ `Map` dérivé ; `InlineScalar(keyword)` est un membre dont le scalaire
+          + en ligne porte un encodage, des motifs ou un validateur autre que les quatre intégrés.
+          + Un schéma dérivé ayant un tel membre peut toujours typer et valider des documents, mais
+          + ne peut pas être écrit, haché ni signé.
       entry .Reason
         info
             - the two reasons: `InlineStruct(keyword)` and `InlineScalar(keyword)`
@@ -7023,7 +7023,7 @@ entry .Telp
         - raised when a path does not parse or does not resolve
         + levée lorsqu'un chemin ne s'analyse pas ou ne se résout pas
     detail
-        - Error 610: _the TELP does not resolve because …_. The `#index` is the zero-based
+        - Error `↯/s.118.6`: _the TELP does not resolve because …_. The `#index` is the zero-based
         - component at which parsing or resolution failed. The reasons are outcomes of the
         - resolving API, not document errors, and carry no E-codes: `Syntax`, a path which is
         - empty, begins with no delimiter, has an empty component, or holds a line break;
@@ -7032,13 +7032,13 @@ entry .Telp
         - value or a flag; `AbsentMember`, a non-repeatable optional member not present;
         - `IndexOutOfRange`, an index beyond the occurrence sequence; `TypeNotKeyed`, a key
         - selector on a type with no key field; and `KeyNotFound`, no occurrence with that key.
-        + Erreur 610 : _the TELP does not resolve because …_. L'`#index` est le composant, compté à
-        + partir de zéro, auquel l'analyse ou la résolution a échoué. Les raisons sont des résultats
-        + de l'API de résolution, non des erreurs de document, et ne portent aucun code E :
-        + `Syntax`, un chemin vide, qui ne commence par aucun délimiteur, qui a un composant vide ou
-        + qui contient un saut de ligne ; `UnknownKeyword`, un composant ne correspondant à aucun
-        + mot-clé de la structure courante (le nom d'une sélection n'est pas un mot-clé ; ceux de
-        + ses variantes le sont) ; `NonStructDescent`, une descente sous une valeur ou un
+        + Erreur `↯/s.118.6` : _the TELP does not resolve because …_. L'`#index` est le composant,
+        + compté à partir de zéro, auquel l'analyse ou la résolution a échoué. Les raisons sont des
+        + résultats de l'API de résolution, non des erreurs de document, et ne portent aucun code
+        + E : `Syntax`, un chemin vide, qui ne commence par aucun délimiteur, qui a un composant
+        + vide ou qui contient un saut de ligne ; `UnknownKeyword`, un composant ne correspondant à
+        + aucun mot-clé de la structure courante (le nom d'une sélection n'est pas un mot-clé ; ceux
+        + de ses variantes le sont) ; `NonStructDescent`, une descente sous une valeur ou un
         + indicateur ; `AbsentMember`, un membre optionnel non répétable absent ; `IndexOutOfRange`,
         + un indice au-delà de la suite d'occurrences ; `TypeNotKeyed`, un sélecteur de clé sur un
         + type sans champ clé ; et `KeyNotFound`, aucune occurrence avec cette clé.
@@ -7429,14 +7429,14 @@ entry .Bintel
       ##
       ```
 
-      - Every failure of the bytes is a `Bintel.Error` (error 609) whose `Reason` is one of the
+      - Every failure of the bytes is a `Bintel.Error` (error `↯/s.118.5`) whose `Reason` is one of the
       - specification's B-codes, B01 to B16, plus the decoder's own nesting limit; the error
       - entry lists them. A scalar whose schema declares an *encoding* (TEL §21.7) is written and
       - read through a `Tel.Codec.Bindings`, which the codec-aware overloads take; with no
       - binding, meeting such a scalar is B13 (`CodecUnresolved`), and `checkCanonical = true`
       - additionally insists that an encoded scalar's bytes are the re-encoding of their decoded
       - text (B15).
-      + Chaque échec lié aux octets est une `Bintel.Error` (erreur 609) dont la `Reason` est
+      + Chaque échec lié aux octets est une `Bintel.Error` (erreur `↯/s.118.5`) dont la `Reason` est
       + l'un des codes B de la spécification, de B01 à B16, plus la limite d'imbrication propre
       + au décodeur ; l'entrée de l'erreur les liste. Un scalaire dont le schéma déclare un
       + *encodage* (TEL §21.7) est écrit et lu au moyen de `Tel.Codec.Bindings`, que prennent
@@ -8020,11 +8020,11 @@ entry .Bintel
         + levée lorsque des octets BinTEL ne forment pas un document valide, avec pour raison le
         + code B de la spécification
     detail
-        - Error 609: _the BinTEL stream is invalid because `reason`_. Raised by every decoder,
+        - Error `↯/s.118.5`: _the BinTEL stream is invalid because `reason`_. Raised by every decoder,
         - framer and parser in `Bintel`, by `SchemaSignature`'s encoding and decoding, and by the
         - `bintel` and `valueHash` extensions. `Bintel.Error.Reason` numbers its cases by the
         - B-code of the BinTEL specification:
-        + Erreur 609 : _the BinTEL stream is invalid because `reason`_. Levée par chaque
+        + Erreur `↯/s.118.5` : _the BinTEL stream is invalid because `reason`_. Levée par chaque
         + décodeur, encadreur et analyseur de `Bintel`, par l'encodage et le décodage de
         + `SchemaSignature`, et par les méthodes d'extension `bintel` et `valueHash`.
         + `Bintel.Error.Reason` numérote ses cas d'après le code B de la spécification BinTEL :
@@ -8371,7 +8371,7 @@ entry .Ratel
         + levée lorsqu'une image ne peut pas être lue ou écrite, avec pour raison le code R de la
         + spécification
     detail
-        - Error 615: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
+        - Error `↯/s.118.11`: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
         - numbers its cases 1 to 27 by the R-code of the RaTEL specification — `BadMagic`,
         - `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`, `SectionsOverlap`,
         - `DigestMismatch`, `BadSignature`, `SchemaUndecodable`, `SignatureMismatch`,
@@ -8386,17 +8386,17 @@ entry .Ratel
         - `Ratel.Provider` is asked to read which was written with another schema. R01–R13 and R19 are raised
         - as an image is opened; the others by the access which meets them, or by `verify`. `CodecNoncanonical` and `NonzeroPadding`, the specification's optional
         - checks, are not yet raised.
-        + Erreur 615 : _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
-        + numérote ses cas de 1 à 27 d'après le code R de la spécification RaTEL — `BadMagic`,
-        + `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`, `SectionsOverlap`,
-        + `DigestMismatch`, `BadSignature`, `SchemaUndecodable`, `SignatureMismatch`,
-        + `SchemaUnlayoutable`, `BadTableDirectory`, `BadRootTable`, `BadRef`, `BadRecordIndex`,
-        + `RowRevisited`, `BadTag`, `BadUtf8`, `CodecUnresolved`, `CodecDecodeFailed`,
-        + `CodecNoncanonical`, `WidthMismatch`, `BadIndex`, `IndexUnsorted`, `IndexDisagrees`,
-        + `NonzeroPadding`, `ValueHashMismatch` — et continue avec ceux qui sont hors de cette
-        + taxonomie : `NestingLimitExceeded` (28), `Unencodable` (29), `Oversized` (30),
-        + `Unindexed` (31) pour une recherche à laquelle aucun index ne répond, et `Unknown` (32),
-        + `Inapplicable` (33) et `Absent` (34) pour un membre qu'une ligne n'a pas, a sous une
+        + Erreur `↯/s.118.11` : _the RaTEL image cannot be used because `reason`_.
+        + `Ratel.Error.Reason` numérote ses cas de 1 à 27 d'après le code R de la spécification
+        + RaTEL — `BadMagic`, `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`,
+        + `SectionsOverlap`, `DigestMismatch`, `BadSignature`, `SchemaUndecodable`,
+        + `SignatureMismatch`, `SchemaUnlayoutable`, `BadTableDirectory`, `BadRootTable`, `BadRef`,
+        + `BadRecordIndex`, `RowRevisited`, `BadTag`, `BadUtf8`, `CodecUnresolved`,
+        + `CodecDecodeFailed`, `CodecNoncanonical`, `WidthMismatch`, `BadIndex`, `IndexUnsorted`,
+        + `IndexDisagrees`, `NonzeroPadding`, `ValueHashMismatch` — et continue avec ceux qui sont
+        + hors de cette taxonomie : `NestingLimitExceeded` (28), `Unencodable` (29), `Oversized`
+        + (30), `Unindexed` (31) pour une recherche à laquelle aucun index ne répond, et `Unknown`
+        + (32), `Inapplicable` (33) et `Absent` (34) pour un membre qu'une ligne n'a pas, a sous une
         + autre sorte, ou pour lequel elle n'a pas de valeur, `Unwritable` (35) pour une image
         + ouverte en écriture, et `Mismatched` (36) pour une image qu'un `Ratel.Provider` doit lire
         + et qui a été écrite avec un autre schéma. R01–R13 et R19 sont levées à l'ouverture d'une
@@ -8609,9 +8609,9 @@ entry .Varint
         - raised when bytes are not a valid varint
         + levée lorsque des octets ne forment pas une varint valide
     detail
-        - Error 608: _the varint is invalid because `reason`_. Raised by `Varint.decode` only;
+        - Error `↯/s.118.4`: _the varint is invalid because `reason`_. Raised by `Varint.decode` only;
         - the BinTEL layer wraps it as `Bintel.Error.Reason.VarintError`.
-        + Erreur 608 : _the varint is invalid because `reason`_. Levée uniquement par
+        + Erreur `↯/s.118.4` : _the varint is invalid because `reason`_. Levée uniquement par
         + `Varint.decode` ; la couche BinTEL l'enveloppe en `Bintel.Error.Reason.VarintError`.
     entry .Reason
       info
@@ -9508,9 +9508,9 @@ entry .Base256
         - raised by `decodeStrict` when text contains characters outside the alphabet
         + levée par `decodeStrict` lorsqu'un texte contient des caractères hors de l'alphabet
     detail
-        - Error 607: _the BASE-256 string is invalid because `reason`_, where the reason lists
+        - Error `↯/s.118.3`: _the BASE-256 string is invalid because `reason`_, where the reason lists
         - every offending character.
-        + Erreur 607 : _the BASE-256 string is invalid because `reason`_, où la raison liste
+        + Erreur `↯/s.118.3` : _the BASE-256 string is invalid because `reason`_, où la raison liste
         + chaque caractère fautif.
     entry .Reason
       info

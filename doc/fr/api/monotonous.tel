@@ -203,14 +203,14 @@ entry .Serialization
         - raised when text to be deserialized holds a character not in the alphabet
         + levée lorsque le texte à désérialiser contient un caractère absent de l'alphabet
     detail
-        - Error 325: _the character `char` at `position` was not valid_. Raised by `deserialize`
+        - Error `↯/s.61.1`: _the character `char` at `position` was not valid_. Raised by `deserialize`
         - and by the streaming deserializer when a character is neither one of the alphabet's
         - own nor one of its tolerated alternatives. A strict alphabet raises it for the other
         - case of a letter, where a tolerant one would accept it.
-        + Erreur 325 : _the character `char` at `position` was not valid_. Levée par `deserialize`
-        + et par le désérialiseur en flux lorsqu'un caractère n'est ni l'un des caractères propres
-        + de l'alphabet ni l'une de ses alternatives tolérées. Un alphabet strict la lève pour
-        + l'autre casse d'une lettre, là où un alphabet tolérant l'accepterait.
+        + Erreur `↯/s.61.1` : _the character `char` at `position` was not valid_. Levée par
+        + `deserialize` et par le désérialiseur en flux lorsqu'un caractère n'est ni l'un des
+        + caractères propres de l'alphabet ni l'une de ses alternatives tolérées. Un alphabet strict
+        + la lève pour l'autre casse d'une lettre, là où un alphabet tolérant l'accepterait.
 
         ```scala
         import soundness.*

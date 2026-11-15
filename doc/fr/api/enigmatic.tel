@@ -471,13 +471,13 @@ entry .Crypto
         + levée lorsque le déchiffrement ou le descellement échoue : mauvaise clé, données
         + corrompues, tag invalide
     detail
-        - Error 521: _could not decrypt the data because `reason`_. Encryption is total — the
+        - Error `↯/s.105.2`: _could not decrypt the data because `reason`_. Encryption is total — the
         - types guarantee a valid transformation — so only the processing side can fail:
         - `Data#decrypt`, the streaming `decrypt` (as the final window is pulled), `unseal`, and
         - encrypting with `BlockCipher.NoPadding` over misaligned input. A provider's own failures
         - (`javax.crypto.BadPaddingException` and the rest) are mapped to a `#reason` and their
         - message kept as `#detail`.
-        + Erreur 521 : _could not decrypt the data because `reason`_. Le chiffrement est
+        + Erreur `↯/s.105.2` : _could not decrypt the data because `reason`_. Le chiffrement est
         + total — les types garantissent une transformation valide — donc seul le traitement
         + inverse peut échouer : `Data#decrypt`, le `decrypt` en flux (au moment où la
         + dernière fenêtre est tirée), `unseal`, et le chiffrement avec
@@ -1666,9 +1666,9 @@ entry .PrivateKey
         - raised when a key document cannot be read as the `PrivateKey` requested
         + levée lorsqu'un document de clé ne peut pas être lu comme la `PrivateKey` demandée
     detail
-        - Error 597: _could not read the private key because `reason`_. Raised by
+        - Error `↯/s.105.7`: _could not read the private key because `reason`_. Raised by
         - `.pemDecodable`, `.derDecodable`, `Pkcs8` and `OpenSsh.privateKey`.
-        + Erreur 597 : _could not read the private key because `reason`_. Levée par
+        + Erreur `↯/s.105.7` : _could not read the private key because `reason`_. Levée par
         + `.pemDecodable`, `.derDecodable`, `Pkcs8` et `OpenSsh.privateKey`.
     entry .communicable
       info
@@ -1846,9 +1846,9 @@ entry .PublicKey
         - raised when a key document cannot be read as the `PublicKey` requested
         + levée lorsqu'un document de clé ne peut pas être lu comme la `PublicKey` demandée
     detail
-        - Error 598: _could not read the public key because `reason`_. Raised by
+        - Error `↯/s.105.8`: _could not read the public key because `reason`_. Raised by
         - `.pemDecodable`, `.derDecodable`, `Spki` and `OpenSsh.publicKey`.
-        + Erreur 598 : _could not read the public key because `reason`_. Levée par
+        + Erreur `↯/s.105.8` : _could not read the public key because `reason`_. Levée par
         + `.pemDecodable`, `.derDecodable`, `Spki` et `OpenSsh.publicKey`.
     entry .communicable
       info
@@ -4216,8 +4216,8 @@ entry .Keystore
         - raised when a keystore cannot be read, or is opened for writing
         + levée lorsqu'un magasin de clés ne peut pas être lu, ou est ouvert en écriture
     detail
-        - Error 522: _the keystore operation failed because `reason`_.
-        + Erreur 522 : _the keystore operation failed because `reason`_.
+        - Error `↯/s.105.3`: _the keystore operation failed because `reason`_.
+        + Erreur `↯/s.105.3` : _the keystore operation failed because `reason`_.
     entry .communicable
       info
           - renders each reason as a message
@@ -4488,7 +4488,7 @@ entry .Asn1
         - raised when bytes are not a strict DER encoding
         + levée lorsque des octets ne sont pas un encodage DER strict
     detail
-        - Error 523: _could not process the ASN.1 value because `reason`_, where the reason
+        - Error `↯/s.105.4`: _could not process the ASN.1 value because `reason`_, where the reason
         - is an `Asn1.Error.Reason` naming the fault and the byte offset. Raised by
         - `Asn1.decodable` and `Asn1.aggregable` (and so by anything decoding through them:
         - `Certificate.decodable`, the key decoders, `text.read[Asn1 in Pem]`) when the input
@@ -4498,16 +4498,16 @@ entry .Asn1
         - malformed time, a boolean other than `0x00`/`0xFF`, a wrong length for a `BOOLEAN`,
         - `NULL` or `BIT STRING`, bad unused-bit padding, a constructed string or a primitive
         - `SEQUENCE`/`SET`.
-        + Erreur 523 : _could not process the ASN.1 value because `reason`_, où la raison est une
-        + `Asn1.Error.Reason` nommant le défaut et la position en octets. Levée par `Asn1.decodable`
-        + et `Asn1.aggregable` (et donc par tout ce qui décode à travers eux :
+        + Erreur `↯/s.105.4` : _could not process the ASN.1 value because `reason`_, où la raison
+        + est une `Asn1.Error.Reason` nommant le défaut et la position en octets. Levée par
+        + `Asn1.decodable` et `Asn1.aggregable` (et donc par tout ce qui décode à travers eux :
         + `Certificate.decodable`, les décodeurs de clés, `text.read[Asn1 in Pem]`) lorsque l'entrée
-        + est tronquée, utilise une longueur indéfinie ou trop longue, un tag trop long, un
-        + entier non minimal ou vide, une longueur trop grande pour être représentée, des octets en
-        + trop, le tag réservé `0`, un identifiant d'objet mal formé ou un arc dépassant
-        + `Int`, un `SET` non trié, un temps mal formé, un booléen autre que `0x00`/`0xFF`, une
-        + mauvaise longueur pour un `BOOLEAN`, un `NULL` ou une `BIT STRING`, un remplissage de bits
-        + inutilisés invalide, une chaîne construite ou un `SEQUENCE`/`SET` primitif.
+        + est tronquée, utilise une longueur indéfinie ou trop longue, un tag trop long, un entier
+        + non minimal ou vide, une longueur trop grande pour être représentée, des octets en trop,
+        + le tag réservé `0`, un identifiant d'objet mal formé ou un arc dépassant `Int`, un `SET`
+        + non trié, un temps mal formé, un booléen autre que `0x00`/`0xFF`, une mauvaise longueur
+        + pour un `BOOLEAN`, un `NULL` ou une `BIT STRING`, un remplissage de bits inutilisés
+        + invalide, une chaîne construite ou un `SEQUENCE`/`SET` primitif.
 
         ```scala
         import soundness.*
@@ -4835,9 +4835,9 @@ entry .Pem
         - raised when text is not a PEM block
         + levée lorsqu'un texte n'est pas un bloc PEM
     detail
-        - Error 389: _could not parse PEM content because `reason`_. Raised by `Pem.aggregable`,
+        - Error `↯/s.105.1`: _could not parse PEM content because `reason`_. Raised by `Pem.aggregable`,
         - `Pem.aggregableAll` and the `read[X in Pem]` liftings:
-        + Erreur 389 : _could not parse PEM content because `reason`_. Levée par
+        + Erreur `↯/s.105.1` : _could not parse PEM content because `reason`_. Levée par
         + `Pem.aggregable`, `Pem.aggregableAll` et les relèvements `read[X in Pem]` :
 
         ```tabular
@@ -5347,14 +5347,14 @@ entry .Cose
         - raised when a COSE message cannot be parsed or verified
         + levée lorsqu'un message COSE ne peut pas être analysé ou vérifié
     detail
-        - Error 596: _could not process the COSE message because `reason`_. Raised by
+        - Error `↯/s.105.6`: _could not process the COSE message because `reason`_. Raised by
         - `Cose.parse` (and so by `authenticate[Cose]`) for an envelope that is not a tag
         - (`MalformedStructure`), a tag other than 17, 18, 97 or 98 (`UnknownTag(tag)`), or a
         - body of the wrong shape (`MalformedStructure`); by `Cose#verifyWith` when the key's
         - variant is not the message's (`VariantMismatch(expected, actual)`); and by
         - `Cose.apply` through its `raises` clause. Malformed CBOR itself is a `Cbor.Error`,
         - raised through the `Tactic[Cbor.Error]` the same calls take.
-        + Erreur 596 : _could not process the COSE message because `reason`_. Levée par
+        + Erreur `↯/s.105.6` : _could not process the COSE message because `reason`_. Levée par
         + `Cose.parse` (et donc par `authenticate[Cose]`) pour une enveloppe qui n'est pas une
         + tag (`MalformedStructure`), un tag autre que 17, 18, 97 ou 98
         + (`UnknownTag(tag)`), ou un corps de mauvaise forme (`MalformedStructure`) ; par
@@ -6117,10 +6117,10 @@ entry .Certificate
         - raised when a certificate cannot be built
         + levée lorsqu'un certificat ne peut pas être construit
     detail
-        - Error 524: _could not build the certificate because `reason`_. Raised by
+        - Error `↯/s.105.5`: _could not build the certificate because `reason`_. Raised by
         - `Certificate.selfSigned` and `Certificate.issued`. Reading and verifying never raise it:
         - `#verify` is `false` for a malformed certificate. The reasons:
-        + Erreur 524 : _could not build the certificate because `reason`_. Levée par
+        + Erreur `↯/s.105.5` : _could not build the certificate because `reason`_. Levée par
         + `Certificate.selfSigned` et `Certificate.issued`. La lecture et la vérification ne
         + la lèvent jamais : `#verify` vaut `false` pour un certificat mal formé. Les raisons :
 

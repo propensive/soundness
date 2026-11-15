@@ -1309,21 +1309,21 @@ entry .Socket
         - raised when a connection fails after a successful bind, with a `Reason`
         + levée lorsqu'une connexion échoue après une liaison réussie, avec une `Reason`
     detail
-        - Error 266: _the connection failed because `reason`_. Raised by every backend
+        - Error `↯/s.101.2`: _the connection failed because `reason`_. Raised by every backend
         - operation after the bind — accepting, transmitting, closing, the TLS handshake, a
         - timed-out receive, connecting, a refusal, name resolution — and by the `Unsupported`
         - operations of a backend which lacks them. The extensions `transmit`, `react`,
         - `exchange` and `duplex` and the `connectableSessional` given take a
         - `Tactic[Socket.Error]`; inside a `listen` loan a per-connection failure is absorbed
         - by the connection's own task, so it ends only that connection.
-        + Erreur 266 : _the connection failed because `reason`_. Levée par toute opération du
-        + backend après la liaison — acceptation, transmission, fermeture, poignée de main
-        + TLS, réception dont le délai a expiré, connexion, refus, résolution de noms — ainsi
-        + que par les opérations `Unsupported` d'un backend qui en est dépourvu. Les
-        + extensions `transmit`, `react`, `exchange` et `duplex` et le given
-        + `connectableSessional` prennent une `Tactic[Socket.Error]` ; à l'intérieur d'un prêt
-        + `listen`, un échec propre à une connexion est absorbé par la tâche de cette
-        + connexion, si bien qu'il ne met fin qu'à cette connexion.
+        + Erreur `↯/s.101.2` : _the connection failed because `reason`_. Levée par toute opération
+        + du backend après la liaison — acceptation, transmission, fermeture, poignée de main TLS,
+        + réception dont le délai a expiré, connexion, refus, résolution de noms — ainsi que par les
+        + opérations `Unsupported` d'un backend qui en est dépourvu. Les extensions `transmit`,
+        + `react`, `exchange` et `duplex` et le given `connectableSessional` prennent une
+        + `Tactic[Socket.Error]` ; à l'intérieur d'un prêt `listen`, un échec propre à une connexion
+        + est absorbé par la tâche de cette connexion, si bien qu'il ne met fin qu'à cette
+        + connexion.
 
         ```scala
         import soundness.*
@@ -1400,13 +1400,13 @@ entry .Bind
         - raised by `listen` and `subscribe` when the socket cannot be bound
         + levée par `listen` et `subscribe` lorsque le socket ne peut pas être lié
     detail
-        - Error 265: _the socket could not be bound because `reason`_. Raised by
+        - Error `↯/s.101.1`: _the socket could not be bound because `reason`_. Raised by
         - `Socket.Backend#listenTcp` and `#listenDomain` (and so by `Bindable#bind`, `listen`,
         - `listenOn` and `subscribe`), classified from the platform's failure: a message naming
         - a permission problem is `PermissionDenied`, one naming an address in use is
         - `PortInUse`, and any other `AddressUnavailable`. The native and WASI backends raise
         - `Unsupported` for a Unix-domain socket.
-        + Erreur 265 : _the socket could not be bound because `reason`_. Levée par
+        + Erreur `↯/s.101.1` : _the socket could not be bound because `reason`_. Levée par
         + `Socket.Backend#listenTcp` et `#listenDomain` (et donc par `Bindable#bind`,
         + `listen`, `listenOn` et `subscribe`), classée d'après l'échec de la plateforme : un
         + message évoquant un problème de permission donne `PermissionDenied`, un message

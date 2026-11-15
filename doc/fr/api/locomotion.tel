@@ -1302,14 +1302,14 @@ entry .Protobuf
         - raised when wire bytes are not a valid message
         + levée lorsque des octets transmis ne forment pas un message valide
     detail
-        - Error 700: _the protobuf data was not valid: `reason`_. Raised through a
+        - Error `↯/s.111.1`: _the protobuf data was not valid: `reason`_. Raised through a
         - `Tactic[Protobuf.Error]` by every decoding path — the derived decoders, the scalar
         - decoders, `ProtobufParser`'s reads and a generated parser — and a `.Reason` says
         - what was wrong and where. The offset on a byte-level reason is the position within
         - the message or sub-message payload being parsed: on the streaming path it is the
         - absolute offset in the input, on the tree path only the top-level message's offsets
         - are absolute, since each nested payload is decoded from its own slice.
-        + Erreur 700 : _the protobuf data was not valid: `reason`_. Levée au travers
+        + Erreur `↯/s.111.1` : _the protobuf data was not valid: `reason`_. Levée au travers
         + d'une `Tactic[Protobuf.Error]` par chaque chemin de décodage — les décodeurs dérivés,
         + les décodeurs scalaires, les lectures de `ProtobufParser` et un analyseur généré — et
         + une `.Reason` indique ce qui n'allait pas et où. Le décalage d'une raison au niveau des

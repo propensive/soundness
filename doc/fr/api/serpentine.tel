@@ -435,9 +435,9 @@ entry .Path
         + levée lorsqu'un chemin ne peut pas être lu ou résolu : une racine ou un nom invalide, ou
         + des racines qui diffèrent
     detail
-        - Error `SN-831`: _the path `path` was invalid because `reason`_, where the path is
+        - Error `↯/s.70.1`: _the path `path` was invalid because `reason`_, where the path is
         - named if known. The `#reason` is a `Path.Error.Reason`:
-        + Erreur `SN-831` : _the path `path` was invalid because `reason`_, où le chemin est nommé
+        + Erreur `↯/s.70.1` : _the path `path` was invalid because `reason`_, où le chemin est nommé
         + s'il est connu. La `#reason` est une `Path.Error.Reason` :
 
         ```tabular

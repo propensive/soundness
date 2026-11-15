@@ -320,12 +320,12 @@ entry .Pdf
         - raised when a document cannot be read, decoded, decrypted or written
         + levée lorsqu'un document ne peut être lu, décodé, déchiffré ou écrit
     detail
-        - Error 280: _the PDF could not be read because `reason`_, where the reason is a
+        - Error `↯/s.110.1`: _the PDF could not be read because `reason`_, where the reason is a
         - `Pdf.Error.Reason` carrying its own number and message. It is raised through a
         - `Tactic[Pdf.Error]`, which every reading and editing method takes, and it is the one
         - error the library raises: filesystem failures when opening or committing a document
         - are folded into it as `Io`.
-        + Erreur 280 : _the PDF could not be read because `reason`_, où la raison est une
+        + Erreur `↯/s.110.1` : _the PDF could not be read because `reason`_, où la raison est une
         + `Pdf.Error.Reason` portant son propre numéro et son propre message. Elle est levée via une
         + `Tactic[Pdf.Error]`, que prend chaque méthode de lecture et de modification, et c'est la
         + seule erreur que lève la bibliothèque : les échecs du système de fichiers lors de
@@ -439,8 +439,8 @@ entry .Pdf
           + `number` et un message ; `communicable` rend le message.
       entry #number
         info
-            - the reason's number, 1 to 18, the sub-number of error 280
-            + le numéro de la raison, de 1 à 18, le sous-numéro de l'erreur 280
+            - the reason's number, 1 to 18, the sub-number of error `↯/s.110.1`
+            + le numéro de la raison, de 1 à 18, le sous-numéro de l'erreur `↯/s.110.1`
     entry .communicable
       info
           - renders each reason as the message in its `Pdf.Error` listing

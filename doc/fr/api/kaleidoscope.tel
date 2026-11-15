@@ -194,17 +194,17 @@ entry .r
       - Inside `r"…"` a backslash is a backslash — only the regular expression's own escaping
       - applies, so a literal parenthesis is `r"\("` — and `$` is written `$$` to mean itself. A
       - pattern which does not parse is a compile error naming the reason and pointing at the
-      - offending character, _[↯SN-397.1] the regular expression could not be parsed because a
+      - offending character, _[↯/s.34.1.1] the regular expression could not be parsed because a
       - capturing group was not closed at 11_; a `$name` with no group after it is
-      - _[↯SN-397.2] … a capturing group was expected immediately following an extractor_. Under
+      - _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Under
       - `regexBackends.re2` the pattern is also checked against the RE2 subset, so a
       - backreference or a lookaround is rejected at compile time rather than at its first use.
       + À l'intérieur de `r"…"`, une barre oblique inverse est une barre oblique inverse — seul
       + l'échappement propre à l'expression régulière s'applique, de sorte qu'une parenthèse
       + littérale s'écrit `r"\("` — et `$` s'écrit `$$` pour se désigner lui-même. Un motif qui ne
       + s'analyse pas est une erreur de compilation qui nomme la raison et désigne le caractère
-      + fautif, _[↯SN-397.1] the regular expression could not be parsed because a capturing group
-      + was not closed at 11_ ; un `$name` qu'aucun groupe ne suit donne _[↯SN-397.2] … a capturing
+      + fautif, _[↯/s.34.1.1] the regular expression could not be parsed because a capturing group
+      + was not closed at 11_ ; un `$name` qu'aucun groupe ne suit donne _[↯/s.34.1.2] … a capturing
       + group was expected immediately following an extractor_. Sous `regexBackends.re2`, le motif
       + est aussi vérifié par rapport au sous-ensemble RE2, de sorte qu'une référence arrière ou une
       + assertion avant ou arrière est rejetée à la compilation plutôt qu'à sa première utilisation.
@@ -770,18 +770,18 @@ entry .Regex
         - raised when a pattern cannot be parsed: the position and the reason
         + levée quand un motif ne peut pas être analysé : la position et la raison
     detail
-        - Error 397: _the regular expression could not be parsed because `reason` at `index`_,
+        - Error `↯/s.34.1`: _the regular expression could not be parsed because `reason` at `index`_,
         - with the reason's number as the error's sub-number, so an unclosed group is
-        - `SN-397.1`. Raised by `Regex.apply` and `Regex.parse` through a `Tactic[Regex.Error]`,
+        - `↯/s.34.1.1`. Raised by `Regex.apply` and `Regex.parse` through a `Tactic[Regex.Error]`,
         - and reported as a compile error, pointing at the offending character, by `r"…"`. The
         - index counts characters of the parts joined together, with nothing standing in for
         - the `$name` substitutions.
-        + Erreur 397 : _the regular expression could not be parsed because `reason` at `index`_,
-        + avec le numéro de la raison comme sous-numéro de l'erreur, de sorte qu'un groupe non fermé
-        + est `SN-397.1`. Levée par `Regex.apply` et `Regex.parse` par une `Tactic[Regex.Error]`, et
-        + signalée comme erreur de compilation, désignant le caractère fautif, par `r"…"`. L'indice
-        + compte les caractères des parties jointes ensemble, sans rien à la place des substitutions
-        + `$name`.
+        + Erreur `↯/s.34.1` : _the regular expression could not be parsed because `reason` at
+        + `index`_, avec le numéro de la raison comme sous-numéro de l'erreur, de sorte qu'un groupe
+        + non fermé est `↯/s.34.1.1`. Levée par `Regex.apply` et `Regex.parse` par une
+        + `Tactic[Regex.Error]`, et signalée comme erreur de compilation, désignant le caractère
+        + fautif, par `r"…"`. L'indice compte les caractères des parties jointes ensemble, sans rien
+        + à la place des substitutions `$name`.
 
         ```scala
         import soundness.*

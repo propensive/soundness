@@ -197,21 +197,21 @@ entry .Pty
         - raised when an escape sequence cannot be interpreted
         + levée lorsqu'une séquence d'échappement ne peut pas être interprétée
     detail
-        - Error 537: _an ANSI escape code could not be handled because `reason`_, where the
+        - Error `↯/s.132.1`: _an ANSI escape code could not be handled because `reason`_, where the
         - reason is a `Pty.Error.Reason`. Raised by `Pty#consume` (and `Pty.stream`) for an
         - escape sequence it does not recognise or whose parameters are invalid, so a test
         - discovers that a program emits broken sequences, rather than a real terminal quietly
         - mangling them. Most faults are raised and the walk continues, so under an accruing
         - strategy the rest of the input is still interpreted; an invalid `SGR` parameter, a
         - non-numeric parameter or a colour number out of range aborts.
-        + Erreur 537 : _an ANSI escape code could not be handled because `reason`_, où la raison est
-        + une `Pty.Error.Reason`. Levée par `Pty#consume` (et `Pty.stream`) pour une séquence
-        + d'échappement qu'il ne reconnaît pas ou dont les paramètres sont invalides ; un test
-        + découvre ainsi qu'un programme émet des séquences défectueuses, plutôt qu'un vrai terminal
-        + ne les déforme en silence. La plupart des défauts sont levés et le parcours continue ;
-        + sous une stratégie qui accumule les erreurs, le reste de l'entrée est donc tout de même
-        + interprété ; un paramètre `SGR` invalide, un paramètre non numérique ou un numéro de
-        + couleur hors limites interrompt le parcours.
+        + Erreur `↯/s.132.1` : _an ANSI escape code could not be handled because `reason`_, où la
+        + raison est une `Pty.Error.Reason`. Levée par `Pty#consume` (et `Pty.stream`) pour une
+        + séquence d'échappement qu'il ne reconnaît pas ou dont les paramètres sont invalides ; un
+        + test découvre ainsi qu'un programme émet des séquences défectueuses, plutôt qu'un vrai
+        + terminal ne les déforme en silence. La plupart des défauts sont levés et le parcours
+        + continue ; sous une stratégie qui accumule les erreurs, le reste de l'entrée est donc tout
+        + de même interprété ; un paramètre `SGR` invalide, un paramètre non numérique ou un numéro
+        + de couleur hors limites interrompt le parcours.
     entry .Reason
       info
           - the fault in an escape sequence which a `Pty` could not interpret

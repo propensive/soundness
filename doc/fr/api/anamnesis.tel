@@ -152,12 +152,12 @@ entry .Database
         - raised when a value which has not been stored is asked for its reference
         + levée quand on demande sa référence à une valeur qui n'a pas été stockée
     detail
-        - Error 229: _the database operation failed because the value has not been stored in the
+        - Error `↯/s.26.1`: _the database operation failed because the value has not been stored in the
         - database_. Raised by `Database#ref` and the `reference` extension when the value has
         - never been passed to `store`; it needs a `Tactic[Database.Error]` in scope.
-        + Erreur 229 : _the database operation failed because the value has not been stored in the
-        + database_. Levée par `Database#ref` et l'extension `reference` quand la valeur n'a jamais
-        + été passée à `store` ; elle requiert une `Tactic[Database.Error]` dans la portée.
+        + Erreur `↯/s.26.1` : _the database operation failed because the value has not been stored
+        + in the database_. Levée par `Database#ref` et l'extension `reference` quand la valeur n'a
+        + jamais été passée à `store` ; elle requiert une `Tactic[Database.Error]` dans la portée.
 
         ```scala
         import soundness.*

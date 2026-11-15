@@ -723,9 +723,9 @@ entry .Http
           - raised when a request cannot be parsed
           + levée lorsqu'une requête ne peut pas être analysée
       detail
-          - Error 367: _could not parse HTTP request because `reason`_, raised by `.parse` and
+          - Error `↯/s.103.2`: _could not parse HTTP request because `reason`_, raised by `.parse` and
           - `.parseHead`. The reasons, numbered `367.1` to `367.5`, are tabulated under `Reason`.
-          + Erreur 367 : _could not parse HTTP request because `reason`_, levée par `.parse`
+          + Erreur `↯/s.103.2` : _could not parse HTTP request because `reason`_, levée par `.parse`
           + et `.parseHead`. Les raisons, numérotées de `367.1` à `367.5`, sont présentées en
           + tableau sous `Reason`.
       entry .Reason
@@ -1158,17 +1158,17 @@ entry .Http
           - raised when a response cannot be parsed
           + levée lorsqu'une réponse ne peut pas être analysée
       detail
-          - Error 366: _could not parse HTTP response because `reason`_, raised by `.parse` and
+          - Error `↯/s.103.1`: _could not parse HTTP response because `reason`_, raised by `.parse` and
           - `.parseHead`. The reasons are `Expectation(expected, found)` (366.1, _`found` was
           - found when `expected` was expected_: the bytes did not begin `HTTP/`, or a line
           - did not end in CRLF) and `Status(value)` (366.2, _the HTTP status code `value` was
           - invalid_). The socket-backed clients translate it into
           - `Connect.Error(Connect.Error.Reason.Unknown)`.
-          + Erreur 366 : _could not parse HTTP response because `reason`_, levée par `.parse` et
-          + `.parseHead`. Les raisons sont `Expectation(expected, found)` (366.1, _`found` was found
-          + when `expected` was expected_ : les octets ne commençaient pas par `HTTP/`, ou une ligne
-          + ne se terminait pas par CRLF) et `Status(value)` (366.2, _the HTTP status code `value`
-          + was invalid_). Les clients reposant sur des sockets la traduisent en
+          + Erreur `↯/s.103.1` : _could not parse HTTP response because `reason`_, levée par
+          + `.parse` et `.parseHead`. Les raisons sont `Expectation(expected, found)` (366.1,
+          + _`found` was found when `expected` was expected_ : les octets ne commençaient pas par
+          + `HTTP/`, ou une ligne ne se terminait pas par CRLF) et `Status(value)` (366.2, _the HTTP
+          + status code `value` was invalid_). Les clients reposant sur des sockets la traduisent en
           + `Connect.Error(Connect.Error.Reason.Unknown)`.
       entry .Reason
         info
@@ -1426,15 +1426,15 @@ entry .Http
         - raised when a response arrives with a status outside the success range
         + levée lorsqu'une réponse arrive avec un statut hors de la plage de succès
     detail
-        - Error 438: _the HTTP request failed with status `status`_. Raised by `Receivable`
+        - Error `↯/s.103.3`: _the HTTP request failed with status `status`_. Raised by `Receivable`
         - (`response.receive[T]`) and by `Http.Response.streamable` when the status's category
         - is not `Successful`; the error carries the status and the headers, so the caller can
         - react to what went wrong. Inspecting `response.status` directly never raises it.
-        + Erreur 438 : _the HTTP request failed with status `status`_. Levée par `Receivable`
-        + (`response.receive[T]`) et par `Http.Response.streamable` lorsque la catégorie du statut
-        + n'est pas `Successful` ; l'erreur porte le statut et les en-têtes, afin que l'appelant
-        + puisse réagir à ce qui s'est mal passé. Examiner directement `response.status` ne la
-        + lève jamais.
+        + Erreur `↯/s.103.3` : _the HTTP request failed with status `status`_. Levée par
+        + `Receivable` (`response.receive[T]`) et par `Http.Response.streamable` lorsque la
+        + catégorie du statut n'est pas `Successful` ; l'erreur porte le statut et les en-têtes,
+        + afin que l'appelant puisse réagir à ce qui s'est mal passé. Examiner directement
+        + `response.status` ne la lève jamais.
 
         ```scala fuel
         typecheck
@@ -1690,9 +1690,9 @@ entry .Auth
         - raised when a header value is not a recognised authentication scheme
         + levée lorsqu'une valeur d'en-tête n'est pas un schéma d'authentification reconnu
     detail
-        - Error 570: _the authentication value `value` is not valid_, raised by `.decodable`
+        - Error `↯/s.103.4`: _the authentication value `value` is not valid_, raised by `.decodable`
         - for a scheme it does not know or malformed `Basic` credentials.
-        + Erreur 570 : _the authentication value `value` is not valid_, levée par
+        + Erreur `↯/s.103.4` : _the authentication value `value` is not valid_, levée par
         + `.decodable` pour un schéma qu'il ne connaît pas ou des identifiants `Basic` mal formés.
     entry #value
       info
@@ -1721,7 +1721,7 @@ entry .Connect
         - raised when a request cannot reach the server: DNS, refusal, TLS, timeout
         + levée lorsqu'une requête ne peut pas atteindre le serveur : DNS, refus, TLS, délai dépassé
     detail
-        - Error 999: _the TCP connection failed because `reason`_, raised by every
+        - Error `↯/s.103.5`: _the TCP connection failed because `reason`_, raised by every
         - `Http.Backend` and `Http.Client`, so a `fetch` or `submit` needs a
         - `Tactic[Connect.Error]` in scope. The reasons, numbered `999.1` to `999.5`, are
         - tabulated under `Reason`. A TLS failure is distinguished from a network one, and its own
@@ -1730,13 +1730,13 @@ entry .Connect
         - refused at the handshake rather than accepted with a warning. Where a connection must
         - be made to a host whose certificate cannot be validated, a relaxed `TlsAcceptance`
         - in scope permits it, explicitly.
-        + Erreur 999 : _the TCP connection failed because `reason`_, levée par chaque `Http.Backend`
-        + et chaque `Http.Client` ; un `fetch` ou un `submit` nécessite donc une
-        + `Tactic[Connect.Error]` dans la portée. Les raisons, numérotées de `999.1` à `999.5`,
-        + sont présentées en tableau sous `Reason`. Un échec TLS est distingué d'un échec réseau,
-        + et sa propre `Connect.Error.Reason.Ssl.Reason` indique à quelle étape il a échoué ; un
-        + certificat expiré, un certificat pour le mauvais hôte, un certificat révoqué ou une
-        + suite de chiffrement défaillante sont chacun refusés lors de la poignée de main plutôt
+        + Erreur `↯/s.103.5` : _the TCP connection failed because `reason`_, levée par chaque
+        + `Http.Backend` et chaque `Http.Client` ; un `fetch` ou un `submit` nécessite donc une
+        + `Tactic[Connect.Error]` dans la portée. Les raisons, numérotées de `999.1` à `999.5`, sont
+        + présentées en tableau sous `Reason`. Un échec TLS est distingué d'un échec réseau, et sa
+        + propre `Connect.Error.Reason.Ssl.Reason` indique à quelle étape il a échoué ; un
+        + certificat expiré, un certificat pour le mauvais hôte, un certificat révoqué ou une suite
+        + de chiffrement défaillante sont chacun refusés lors de la poignée de main plutôt
         + qu'acceptés avec un avertissement. Lorsqu'une connexion doit être établie vers un hôte
         + dont le certificat ne peut pas être validé, une `TlsAcceptance` assouplie dans la portée
         + le permet, explicitement.

@@ -229,6 +229,7 @@ supervise:
 - column  Artifact
 - row  any universe  `Library`  unlinked output, packaged for downstream assembly
 - row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  an executable JAR
+- row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  an executable JAR of only what its entry point reaches
 - row  `Toolchain.Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
 - row  `Toolchain.Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
 - row  `Toolchain.Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
@@ -242,6 +243,7 @@ supervise:
 + column  Artefact
 + row  tout univers  `Library`  une sortie non liée, empaquetée pour un assemblage en aval
 + row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  un JAR exécutable
++ row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  un JAR exécutable ne contenant que ce qu'atteint son point d'entrée
 + row  `Toolchain.Universe.Classfile`  `Dex`  une archive de bytecode Dalvik
 + row  `Toolchain.Universe.Classfile`  `Apk`  un package Android complet, signé et aligné
 + row  `Toolchain.Universe.Classfile`  `Xeq`  un bundle exécutable directement depuis un shell
@@ -432,6 +434,8 @@ def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path o
 - column  Format
 - column  Entry points
 - row  `Artifact.Jar`  at most one, recorded as its `Main-Class`
+- row  `Shrunk`  any number, each a root of what is kept
+- row  `Shrunk.Jar`  at most one, recorded as its `Main-Class`
 - row  `Artifact.Binary`  exactly one
 - row  `Apk`  exactly one
 - row  `Js`, `Wasm`, `Wasi`  any number, each run as a module initializer
@@ -439,11 +443,167 @@ def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path o
 + column  Format
 + column  Points d'entrée
 + row  `Artifact.Jar`  au plus un, enregistré comme sa `Main-Class`
++ row  `Shrunk`  un nombre quelconque, chacun une racine de ce qui est conservé
++ row  `Shrunk.Jar`  au plus un, enregistré comme sa `Main-Class`
 + row  `Artifact.Binary`  exactement un
 + row  `Apk`  exactement un
 + row  `Js`, `Wasm`, `Wasi`  un nombre quelconque, chacun exécuté comme initialiseur de module
 + row  `Library`, `Dex`  ignorés, puisqu'aucun des deux n'enregistre de point d'entrée
 ```
+
+- ### Shrinking
++ ### Réduction
+
+- An executable JAR made through `jarEdges` holds the whole classpath: every class of every
+- library, whether or not the application can reach it. `shrinkEdges` adds a path which holds only
+- what it can. `Shrunk` is a closed world of classfiles, the classes which the entry points reach
+- and no others, and `Shrunk.Jar` is an executable JAR of one:
++ Un JAR exécutable produit par `jarEdges` contient tout le classpath : chaque classe de chaque
++ bibliothèque, que l'application puisse l'atteindre ou non. `shrinkEdges` ajoute un chemin qui ne
++ contient que ce qu'elle peut atteindre. `Shrunk` est un monde clos de fichiers de classe, les
++ classes qu'atteignent les points d'entrée et aucune autre, et `Shrunk.Jar` est un JAR exécutable
++ qui en contient un :
+
+```scala
+supervise:
+  Toolchain(shrinkEdges(scalac)).produce
+    ( Deliverable.Emission(outputPath, classpath),
+      Toolchain.Universe.Classfile,
+      Shrunk.Jar,
+      destination,
+      List(shrinkOptions.name(t"app.jar")),
+      List(EntryPoint(fqcn"com.example.Main")) )
+```
+
+- The path is `Classfile → Shrunk → Shrunk.Jar`, so the closed world is written below the
+- destination, under `shrunk/`, and the JAR is packaged from there. `shrinkEdges` takes the
+- `Scalac` which compiled the classes, because it compiles them again.
++ Le chemin est `Classfile → Shrunk → Shrunk.Jar`, si bien que le monde clos est écrit sous la
++ destination, dans `shrunk/`, et que le JAR est empaqueté à partir de là. `shrinkEdges` prend le
++ `Scalac` qui a compilé les classes, parce qu'il les compile à nouveau.
+
+- A tool which shrinks bytecode must be told about everything the compiler generated: the
+- forwarders a class has for a trait's methods, the bridges, the fields behind a lazy value, the
+- static side of an object. Shrinking here is done earlier, on the TASTy which the compiler wrote
+- beside each class. The classes this compiler compiled are recompiled from it, and the members
+- nothing reaches are taken out after inlining and before the phases which generate any of that,
+- so none of it is generated for a member which is not kept. A unit which nothing reaches is
+- never read, and the macros in it never run.
++ Un outil qui réduit du bytecode doit connaître tout ce que le compilateur a généré : les
++ redirecteurs qu'a une classe pour les méthodes d'un trait, les ponts, les champs derrière une
++ valeur lazy, le côté statique d'un objet. Ici, la réduction se fait plus tôt, sur le TASTy que le
++ compilateur a écrit à côté de chaque classe. Les classes que ce compilateur a compilées sont
++ recompilées à partir de lui, et les membres que rien n'atteint sont retirés après l'inlining et
++ avant les phases qui génèrent tout cela, de sorte que rien n'en est généré pour un membre qui
++ n'est pas conservé. Une unité que rien n'atteint n'est jamais lue, et ses macros ne s'exécutent
++ jamais.
+
+- Three kinds of class make up the closed world:
++ Trois sortes de classes composent le monde clos :
+
+```tabular
+- column  Class
+- column  Treatment
+- row  compiled by this compiler, and reached  recompiled from its TASTy, with only the members which are reached
+- row  compiled by this compiler, and named only as a type  written as a shell: a name, its flags and its parents
+- row  any other: Java, Kotlin, the standard library  copied as it is, if bytecode which is kept refers to it
++ column  Classe
++ column  Traitement
++ row  compilée par ce compilateur, et atteinte  recompilée à partir de son TASTy, avec les seuls membres qui sont atteints
++ row  compilée par ce compilateur, et nommée seulement comme type  écrite comme une coquille : un nom, ses indicateurs et ses parents
++ row  toute autre : Java, Kotlin, la bibliothèque standard  copiée telle quelle, si du bytecode conservé y fait référence
+```
+
+- The standard library, and any other library of Scala, is taken a class at a time. A library
+- with no TASTy is taken whole as soon as one class of it is reached, since such a library may
+- load its own classes by name, which no reference in bytecode shows.
++ La bibliothèque standard, et toute autre bibliothèque Scala, est prise classe par classe. Une
++ bibliothèque sans TASTy est prise en entier dès qu'une de ses classes est atteinte, puisqu'une
++ telle bibliothèque peut charger ses propres classes par leur nom, ce qu'aucune référence dans le
++ bytecode ne montre.
+
+- What the analysis cannot see is what is reached by reflection, and it is told with settings:
++ Ce que l'analyse ne peut pas voir, c'est ce qui est atteint par réflexion, et on le lui indique
++ par des réglages :
+
+```tabular
+- column  Setting
+- column  Effect
+- row  `shrinkOptions.keep(pattern)`  a class which matches is kept with every member
+- row  `shrinkOptions.pin(pattern)`  a unit whose top-level class matches is copied as it is, with all it refers to
+- row  `shrinkOptions.services(false)`  the implementations which `META-INF/services` files name are no longer entry points
+- row  `shrinkOptions.fine(true)`  a library with no TASTy is taken a class at a time too
+- row  `shrinkOptions.name(name)`  the filename of the JAR
++ column  Réglage
++ column  Effet
++ row  `shrinkOptions.keep(pattern)`  une classe qui correspond est conservée avec tous ses membres
++ row  `shrinkOptions.pin(pattern)`  une unité dont la classe de premier niveau correspond est copiée telle quelle, avec tout ce à quoi elle fait référence
++ row  `shrinkOptions.services(false)`  les implémentations que nomment les fichiers `META-INF/services` ne sont plus des points d'entrée
++ row  `shrinkOptions.fine(true)`  une bibliothèque sans TASTy est elle aussi prise classe par classe
++ row  `shrinkOptions.name(name)`  le nom de fichier du JAR
+```
+
+- In a pattern, `*` stands for part of a name and `**` for any number of packages, so
+- `com.example.plugins.**` matches every class beneath that package. A class named in a literal
+- `Class.forName` call which is reached is kept without being asked for, and so is a member
+- called through a structural type, by its name.
++ Dans un motif, `*` tient lieu d'une partie d'un nom et `**` d'un nombre quelconque de packages,
++ si bien que `com.example.plugins.**` correspond à toute classe sous ce package. Une classe
++ nommée dans un appel littéral à `Class.forName` qui est atteint est conservée sans qu'on le
++ demande, de même qu'un membre appelé par son nom à travers un type structurel.
+
+- Outside a toolchain, a `Shrink` does the same to any classpath, and reports what it did:
++ Hors d'une toolchain, un `Shrink` fait de même pour n'importe quel classpath, et rend compte de
++ ce qu'il a fait :
+
+```scala
+val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
+```
+
+- Here `report.kept` is the number of classes in the closed world and `report.classes` the number
+- on the classpath, `report.read` is the number of units which were recompiled of the
+- `report.units` which could have been, and `report.why(fqcn"scala.Option")` is the chain of
+- classes, each referring to the one before, which led to a class being kept.
++ Ici, `report.kept` est le nombre de classes du monde clos et `report.classes` le nombre de
++ celles du classpath, `report.read` est le nombre d'unités recompilées parmi les `report.units`
++ qui auraient pu l'être, et `report.why(fqcn"scala.Option")` est la chaîne de classes, chacune
++ faisant référence à la précédente, qui a conduit à conserver une classe.
+
+- A closed world is checked before it is written. A reference from anything kept to a member
+- which was removed is found twice over, in the compiler's trees before any bytecode is generated
+- and in the bytecode afterwards, and raises a `Shrink.Error` naming both ends; what would have
+- been a `NoSuchMethodError` when the application ran is an error when it is built. A unit which
+- cannot be recompiled is pinned, and `report.notes` says why.
++ Un monde clos est vérifié avant d'être écrit. Une référence depuis quoi que ce soit de conservé
++ vers un membre qui a été retiré est détectée deux fois, dans les arbres du compilateur avant que
++ le moindre bytecode soit généré et dans le bytecode ensuite, et lève une `Shrink.Error` qui nomme
++ les deux extrémités ; ce qui aurait été une `NoSuchMethodError` à l'exécution de l'application
++ est une erreur à sa construction. Une unité qui ne peut pas être recompilée est épinglée, et
++ `report.notes` dit pourquoi.
+
+- What reflection sees of a class is changed by shrinking it, as it must be. A class which has
+- lost members has another default `serialVersionUID`, so a class whose instances one build
+- writes and another reads should be given one with `@SerialVersionUID`; within one closed world,
+- serialization is unaffected. The classes and methods which reflection lists are those which
+- were kept, and a generic signature may name a class which was not.
++ Ce que la réflexion voit d'une classe est modifié par sa réduction, comme il se doit. Une classe
++ qui a perdu des membres a un autre `serialVersionUID` par défaut, si bien qu'il faut en donner
++ un, avec `@SerialVersionUID`, à une classe dont les instances sont écrites par un build et lues
++ par un autre ; au sein d'un même monde clos, la sérialisation n'est pas affectée. Les classes et
++ méthodes que liste la réflexion sont celles qui ont été conservées, et une signature générique
++ peut nommer une classe qui ne l'a pas été.
+
+- Two things are beyond it. Code which is compiled at run time, by a staging compiler, needs the
+- TASTy of everything it refers to, which a closed world does not hold, so the classes it uses
+- must be pinned and their TASTy supplied apart. And the recompilation runs with one set of
+- options for the whole classpath: Soundness's own, with those of the `Scalac` added, though
+- whether each unit was capture-checked is read from its TASTy.
++ Deux choses lui échappent. Le code compilé à l'exécution, par un compilateur de mise en étapes, a
++ besoin du TASTy de tout ce à quoi il fait référence, ce que ne contient pas un monde clos : les
++ classes qu'il utilise doivent donc être épinglées et leur TASTy fourni à part. Et la
++ recompilation s'exécute avec un seul jeu d'options pour tout le classpath : celles de Soundness,
++ auxquelles s'ajoutent celles du `Scalac`, bien que le fait que chaque unité ait été soumise ou non
++ au capture checking soit lu dans son TASTy.
 
 - ### WASI components
 + ### Composants WASI

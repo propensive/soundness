@@ -195,14 +195,14 @@ entry .MediaType
         - raised when text is not a media type
         + levée lorsqu'un texte n'est pas un type de média
     detail
-        - Error 353: _the value `value` is not a valid media type; `reason`_. Raised through a
+        - Error `↯/s.81.1`: _the value `value` is not a valid media type; `reason`_. Raised through a
         - `Tactic[MediaType.Error]` by `Media.parse`, and so by `as[MediaType]`, and reported as
         - a compile error by `media"…"`. The `.Reason` says what was wrong, and its number is the
         - error's sub-number (353.1 to 353.5).
-        + Error 353: _the value `value` is not a valid media type; `reason`_. Levée au moyen d'une
-        + `Tactic[MediaType.Error]` par `Media.parse`, et donc par `as[MediaType]`, et signalée
-        + comme erreur de compilation par `media"…"`. La `.Reason` indique ce qui n'allait pas, et
-        + son numéro est le sous-numéro de l'erreur (353.1 à 353.5).
+        + Error `↯/s.81.1`: _the value `value` is not a valid media type; `reason`_. Levée au moyen
+        + d'une `Tactic[MediaType.Error]` par `Media.parse`, et donc par `as[MediaType]`, et
+        + signalée comme erreur de compilation par `media"…"`. La `.Reason` indique ce qui n'allait
+        + pas, et son numéro est le sous-numéro de l'erreur (353.1 à 353.5).
 
         ```scala
         import soundness.*
@@ -829,12 +829,12 @@ entry .Multipart
         - raised when a multipart body cannot be read
         + levée lorsqu'un corps multipart ne peut être lu
     detail
-        - Error 937: _multipart data could not be read because `reason`_. Raised through a
+        - Error `↯/s.81.2`: _multipart data could not be read because `reason`_. Raised through a
         - `Tactic[Multipart.Error]` by `Multipart.parse` as it reaches the fault, which, since
         - the parts are read lazily, may be while a later part is forced rather than at the
         - call. The `.Reason`'s number is the error's sub-number (937.1 to 937.6).
-        + Error 937: _multipart data could not be read because `reason`_. Levée au moyen d'une
-        + `Tactic[Multipart.Error]` par `Multipart.parse` lorsqu'il atteint le défaut, ce qui,
+        + Error `↯/s.81.2`: _multipart data could not be read because `reason`_. Levée au moyen
+        + d'une `Tactic[Multipart.Error]` par `Multipart.parse` lorsqu'il atteint le défaut, ce qui,
         + puisque les parties sont lues paresseusement, peut se produire au moment où une partie
         + ultérieure est forcée plutôt que lors de l'appel. Le numéro de la `.Reason` est le
         + sous-numéro de l'erreur (937.1 à 937.6).

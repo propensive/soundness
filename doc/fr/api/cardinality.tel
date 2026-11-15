@@ -231,17 +231,18 @@ entry .NumericRange
       detail
           - The `FromDigits` given which makes `val x: 0.0 ~ 1.0 = 0.2` typecheck; it needs
           - `scala.language.experimental.genericNumberLiterals`. A literal below the lower bound
-          - is error 838, _the value `v` is less than the lower bound for this value, `min`_, and
-          - one above the upper bound error 683, _the value `v` is greater than the upper bound for
-          - this value, `max`_; bounds which are not `Double` literal types are errors 51 and 224.
+          - is error `↯/s.16.4`, _the value `v` is less than the lower bound for this value, `min`_, and
+          - one above the upper bound error `↯/s.16.3`, _the value `v` is greater than the upper bound for
+          - this value, `max`_; bounds which are not `Double` literal types are errors `↯/s.16.1` and `↯/s.16.2`.
           - Both bounds are inclusive.
           + Le given `FromDigits` qui fait passer la vérification de types à
           + `val x: 0.0 ~ 1.0 = 0.2` ; il nécessite
           + `scala.language.experimental.genericNumberLiterals`. Un littéral inférieur à la borne
-          + inférieure est l'erreur 838, _the value `v` is less than the lower bound for this value,
-          + `min`_, et un littéral supérieur à la borne supérieure l'erreur 683, _the value `v` is
-          + greater than the upper bound for this value, `max`_ ; des bornes qui ne sont pas des
-          + types littéraux `Double` sont les erreurs 51 et 224. Les deux bornes sont inclusives.
+          + inférieure est l'erreur `↯/s.16.4`, _the value `v` is less than the lower bound for this
+          + value, `min`_, et un littéral supérieur à la borne supérieure l'erreur `↯/s.16.3`, _the
+          + value `v` is greater than the upper bound for this value, `max`_ ; des bornes qui ne
+          + sont pas des types littéraux `Double` sont les erreurs `↯/s.16.1` et `↯/s.16.2`. Les
+          + deux bornes sont inclusives.
 
           ```scala
           import soundness.*

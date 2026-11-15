@@ -1865,18 +1865,18 @@ entry .Truncation
       + `zephyrine.Truncation`, réexporté : l'erreur que lève un flux lorsqu'il est interrompu
       + prématurément
   detail
-      - `Truncation.Error(total)` is error 264, _the stream was cut prematurely after `total`_,
+      - `Truncation.Error(total)` is error `↯/s.60.1`, _the stream was cut prematurely after `total`_,
       - where `total` is the `Bytes` delivered before the cut. A `Spring`'s pull and the
       - `Streamable` givens for JDK sources abort with it through a `Tactic`; the `Writable` and
       - `Sink` givens for JDK targets `raise` it through an `Emit`, since a writer only reports a
       - cut and never aborts. The type lives in zephyrine, beside `Stream` and `Spring`; this
       - export keeps `import turbulence.*` sufficient for modules which name it.
-      + `Truncation.Error(total)` est l'erreur 264, _the stream was cut prematurely after `total`_,
-      + où `total` est le nombre de `Bytes` livrés avant l'interruption. La lecture d'un `Spring`
-      + et les givens `Streamable` des sources du JDK interrompent avec elle via une `Tactic` ;
-      + les givens `Writable` et `Sink` des cibles du JDK la lèvent avec `raise` via un `Emit`,
-      + car un écrivain ne fait que signaler une interruption et n'interrompt jamais. Le type se
-      + trouve dans zephyrine, à côté de `Stream` et `Spring` ; cet export permet à
+      + `Truncation.Error(total)` est l'erreur `↯/s.60.1`, _the stream was cut prematurely after
+      + `total`_, où `total` est le nombre de `Bytes` livrés avant l'interruption. La lecture d'un
+      + `Spring` et les givens `Streamable` des sources du JDK interrompent avec elle via une
+      + `Tactic` ; les givens `Writable` et `Sink` des cibles du JDK la lèvent avec `raise` via un
+      + `Emit`, car un écrivain ne fait que signaler une interruption et n'interrompt jamais. Le
+      + type se trouve dans zephyrine, à côté de `Stream` et `Spring` ; cet export permet à
       + `import turbulence.*` de suffire aux modules qui le nomment.
   refer zephyrine.Truncation
 

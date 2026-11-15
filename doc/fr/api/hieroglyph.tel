@@ -584,14 +584,15 @@ entry .Codepage
         - a character which the encoding cannot represent
         + un caractère que l'encodage ne peut représenter
     detail
-        - Error 282: _character `char` cannot be encoded with the encoding `encoding`_. The
+        - Error `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_. The
         - error type for a character outside an encoding's repertoire. `Codepage#encoded` does
         - not raise it — an unmappable character is replaced, as `String#getBytes` replaces it —
         - so it is for callers which detect the condition themselves.
-        + Erreur 282 : _character `char` cannot be encoded with the encoding `encoding`_. Le type
-        + d'erreur d'un caractère hors du répertoire d'un encodage. `Codepage#encoded` ne la lève
-        + pas — un caractère non représentable est remplacé, comme le remplace `String#getBytes` —
-        + elle est donc destinée aux appelants qui détectent eux-mêmes la situation.
+        + Erreur `↯/s.35.1` : _character `char` cannot be encoded with the encoding `encoding`_. Le
+        + type d'erreur d'un caractère hors du répertoire d'un encodage. `Codepage#encoded` ne la
+        + lève pas — un caractère non représentable est remplacé, comme le remplace
+        + `String#getBytes` — elle est donc destinée aux appelants qui détectent eux-mêmes la
+        + situation.
     entry #char
       info
           - the character which could not be encoded
@@ -1214,7 +1215,7 @@ entry .enc
   detail
       - `enc"UTF-8"` names a character encoding and checks, while the code compiles, that the
       - platform has an encoding of that name (by display name or alias, case insensitively). A
-      - name it does not is a compile error, _the encoding `ABCDEF` was not available_ (SN-541),
+      - name it does not is a compile error, _the encoding `ABCDEF` was not available_ (↯/s.35.2),
       - and a name which is not IANA-registered compiles with a warning that it may not be
       - universally available. The result's `CanEncode` type member is fixed to `true` or `false`
       - from the platform's table, so `enc"ISO-2022-CN".decoder` compiles and
@@ -1222,7 +1223,7 @@ entry .enc
       + `enc"UTF-8"` nomme un encodage de caractères et vérifie, pendant la compilation, que la
       + plateforme a un encodage de ce nom (par nom d'affichage ou alias, sans tenir compte de la
       + casse). Un nom qu'elle n'a pas est une erreur de compilation, _the encoding `ABCDEF` was not
-      + available_ (SN-541), et un nom qui n'est pas enregistré auprès de l'IANA compile avec un
+      + available_ (↯/s.35.2), et un nom qui n'est pas enregistré auprès de l'IANA compile avec un
       + avertissement indiquant qu'il pourrait ne pas être disponible partout. Le membre de type
       + `CanEncode` du résultat est fixé à `true` ou `false` d'après la table de la plateforme ;
       + `enc"ISO-2022-CN".decoder` compile donc et `enc"ISO-2022-CN".encoder` non.
@@ -1255,14 +1256,14 @@ entry .ucs
       - U+1F600's surrogate pair: the result is `Char | Text`, a `Char` for a character in the
       - Basic Multilingual Plane and a `Text` beyond it. The name is matched against
       - `UnicodeData.txt` in capitals, so case does not matter, and a name the database does not
-      - have is a compile error, _the unicode character `…` does not exist_ (SN-954). Takes no
+      - have is a compile error, _the unicode character `…` does not exist_ (↯/s.35.3). Takes no
       - `$`-substitutions.
       + `ucs"GREEK SMALL LETTER ALPHA"` donne `'α'`, et `ucs"Grinning Face"` donne le texte de la
       + paire de substitution de U+1F600 : le résultat est `Char | Text`, un `Char` pour un
       + caractère du plan multilingue de base et un `Text` au-delà. Le nom est comparé à
       + `UnicodeData.txt` en capitales ; la casse n'importe donc pas, et un nom absent de la base de
-      + données est une erreur de compilation, _the unicode character `…` does not exist_ (SN-954).
-      + N'accepte aucune substitution `$`.
+      + données est une erreur de compilation, _the unicode character `…` does not exist_
+      + (↯/s.35.3). N'accepte aucune substitution `$`.
 
       ```scala
       import soundness.*
@@ -1918,15 +1919,15 @@ entry .internal
         - the macro behind `enc"…"`: checks the name against the platform's encodings
         + la macro derrière `enc"…"` : vérifie le nom par rapport aux encodages de la plateforme
     detail
-        - Halts with SN-541 for a name the platform lacks, warns for one not registered with
+        - Halts with ↯/s.35.2 for a name the platform lacks, warns for one not registered with
         - IANA, and splices a lookup whose `CanEncode` type is fixed from the table.
-        + S'arrête avec SN-541 pour un nom que la plateforme ne possède pas, avertit pour un nom non
-        + enregistré auprès de l'IANA, et insère par splice une recherche dont le type `CanEncode`
-        + est fixé d'après la table.
+        + S'arrête avec ↯/s.35.2 pour un nom que la plateforme ne possède pas, avertit pour un nom
+        + non enregistré auprès de l'IANA, et insère par splice une recherche dont le type
+        + `CanEncode` est fixé d'après la table.
   entry .char
     info
         - the macro behind `ucs"…"`: a character by its Unicode name
         + la macro derrière `ucs"…"` : un caractère désigné par son nom Unicode
     detail
-        - Halts with SN-954 for a name `UnicodeData.txt` does not have.
-        + S'arrête avec SN-954 pour un nom absent de `UnicodeData.txt`.
+        - Halts with ↯/s.35.3 for a name `UnicodeData.txt` does not have.
+        + S'arrête avec ↯/s.35.3 pour un nom absent de `UnicodeData.txt`.

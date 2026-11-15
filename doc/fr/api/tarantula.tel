@@ -479,17 +479,17 @@ entry .WebDriver
         + une action WebDriver en échec : le code d'erreur W3C, le message du pilote et sa pile
         + d'appels
     detail
-        - Error 589: _the WebDriver action failed because `reason`: `detail`_, with the
+        - Error `↯/s.127.1`: _the WebDriver action failed because `reason`: `detail`_, with the
         - `WebDriver.Error.Reason`'s number as its subcode. Every failure of a session arrives as
         - this one type: an error object the driver returned in a 4xx or 5xx reply, a driver that
         - could not be reached, a reply which was not the JSON the specification describes (reason
         - `UnknownError`), a reply cut short, a driver that could not be started (`SessionNotCreated`)
         - or one which never began listening (`Timeout`). It is raised through the
         - `Tactic[WebDriver.Error]` in scope when the session was opened.
-        + Erreur 589 : _the WebDriver action failed because `reason`: `detail`_, avec le numéro de
-        + la `WebDriver.Error.Reason` comme sous-code. Chaque échec d'une session arrive sous ce
-        + seul type : un objet d'erreur que le pilote a renvoyé dans une réponse 4xx ou 5xx, un
-        + pilote injoignable, une réponse qui n'était pas le JSON que décrit la spécification
+        + Erreur `↯/s.127.1` : _the WebDriver action failed because `reason`: `detail`_, avec le
+        + numéro de la `WebDriver.Error.Reason` comme sous-code. Chaque échec d'une session arrive
+        + sous ce seul type : un objet d'erreur que le pilote a renvoyé dans une réponse 4xx ou 5xx,
+        + un pilote injoignable, une réponse qui n'était pas le JSON que décrit la spécification
         + (raison `UnknownError`), une réponse tronquée, un pilote qui n'a pas pu être démarré
         + (`SessionNotCreated`) ou qui ne s'est jamais mis à l'écoute (`Timeout`). Elle est levée
         + par la `Tactic[WebDriver.Error]` qui était dans la portée à l'ouverture de la session.

@@ -90,14 +90,14 @@ detail
     + conversation poursuivie jusqu'à ce que le modèle réponde par du texte ou que la
     + borne `iterating` soit atteinte.
 
-    - Every failure is an `Llm.Error` (error 990) whose `Reason` is one of a fixed set, with the
+    - Every failure is an `Llm.Error` (error `↯/s.126.1`) whose `Reason` is one of a fixed set, with the
     - HTTP status and any `retry-after` delay; a rate limit or an overload is retried three times
     - before it is raised. A call needs an `Online` capability (`internetAccess.online`), an
     - `Http.Backend` (`httpBackends.javaNetHttp`), an `Http.Event is Loggable`
     - (`logging.silentLogging`) and a `Tactic[Llm.Error]`, all of which the provider's
     - `sessional` given takes from scope when `session` is called; a `Toolkit` is the one given
     - a session reads at each `ask`, and `Toolkit.empty` applies when none is given.
-    + Tout échec est une `Llm.Error` (erreur 990) dont la `Reason` appartient à un ensemble
+    + Tout échec est une `Llm.Error` (erreur `↯/s.126.1`) dont la `Reason` appartient à un ensemble
     + fixe, avec le statut HTTP et l'éventuel délai `retry-after` ; une limitation de débit ou
     + une surcharge est réessayée trois fois avant d'être levée. Un appel exige une capacité
     + `Online` (`internetAccess.online`), un `Http.Backend` (`httpBackends.javaNetHttp`), un
@@ -1097,7 +1097,7 @@ entry .Llm
         + levée quand une requête au modèle échoue : injoignable, non autorisée, limitée en débit,
         + mal formée, …
     detail
-        - Error 990, subcoded by `.Reason`: _the model request failed because `reason`:
+        - Error `↯/s.126.1`, subcoded by `.Reason`: _the model request failed because `reason`:
         - `detail`_. Every failure a provider, the network or the translation can produce is an
         - `Llm.Error`; `#status` is the HTTP status when there was one, and `#retry` the
         - `retry-after` delay in seconds on a rate limit or overload, the two facts a caller
@@ -1105,7 +1105,7 @@ entry .Llm
         - been retried three times by the time it is raised. The `Tactic[Llm.Error]` is taken
         - when `session` opens, so `strategies.throwUnsafely`, `safely` or `recover` around the
         - session call handles every turn inside it:
-        + Erreur 990, avec un sous-code donné par `.Reason` : _la requête au modèle a échoué
+        + Erreur `↯/s.126.1`, avec un sous-code donné par `.Reason` : _la requête au modèle a échoué
         + parce que `reason` : `detail`_. Tout échec que peuvent produire un fournisseur, le
         + réseau ou la traduction est une `Llm.Error` ; `#status` est le statut HTTP quand il
         + y en a eu un, et `#retry` le délai `retry-after` en secondes lors d'une limitation

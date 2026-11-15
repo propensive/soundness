@@ -371,18 +371,19 @@ entry .Watch
         - raised when a path cannot be watched
         + levée lorsqu'un chemin ne peut pas être surveillé
     detail
-        - Error 545: _the path could not be watched because …_, with one of four reasons:
+        - Error `↯/s.98.1`: _the path could not be watched because …_, with one of four reasons:
         - `LimitExceeded` (_the operating system's limit on watched paths has been exceeded_,
         - such as inotify's `max_user_watches`), `Nonexistent` (_the path does not exist_),
         - `NotDirectory` (_the path is not a directory_, as when a watched path's parent is a
         - regular file) and `PermissionDenied` (_the user does not have permission to watch the
         - path_). Raised by `Watch(paths)` and by `open[Watch]` as the registration is made.
-        + Erreur 545 : _the path could not be watched because …_, avec l'une de quatre raisons :
-        + `LimitExceeded` (_the operating system's limit on watched paths has been exceeded_, comme
-        + `max_user_watches` d'inotify), `Nonexistent` (_the path does not exist_), `NotDirectory`
-        + (_the path is not a directory_, comme lorsque le parent d'un chemin surveillé est un
-        + fichier ordinaire) et `PermissionDenied` (_the user does not have permission to watch the
-        + path_). Levée par `Watch(paths)` et par `open[Watch]` au moment de l'inscription.
+        + Erreur `↯/s.98.1` : _the path could not be watched because …_, avec l'une de quatre
+        + raisons : `LimitExceeded` (_the operating system's limit on watched paths has been
+        + exceeded_, comme `max_user_watches` d'inotify), `Nonexistent` (_the path does not exist_),
+        + `NotDirectory` (_the path is not a directory_, comme lorsque le parent d'un chemin
+        + surveillé est un fichier ordinaire) et `PermissionDenied` (_the user does not have
+        + permission to watch the path_). Levée par `Watch(paths)` et par `open[Watch]` au moment de
+        + l'inscription.
 
         ```scala
         import soundness.*
@@ -397,8 +398,8 @@ entry .Watch
           + pourquoi un chemin n'a pas pu être surveillé : une limite, un chemin absent, un
           + non-répertoire ou une permission
       detail
-          - Each case's sub-number of error 545 is its `#number`:
-          + Le sous-numéro de l'erreur 545 de chaque cas est son `#number` :
+          - Each case's sub-number of error `↯/s.98.1` is its `#number`:
+          + Le sous-numéro de l'erreur `↯/s.98.1` de chaque cas est son `#number` :
 
           ```tabular
           - column  Case
@@ -420,8 +421,8 @@ entry .Watch
           ```
       entry #number
         info
-            - the reason's sub-number of error 545
-            + le sous-numéro de la raison dans l'erreur 545
+            - the reason's sub-number of error `↯/s.98.1`
+            + le sous-numéro de la raison dans l'erreur `↯/s.98.1`
     entry .communicable
       info
           - renders each reason as the phrase completing _the path could not be watched because …_

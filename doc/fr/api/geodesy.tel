@@ -800,12 +800,12 @@ entry .Geolocation
         - raised when text is not a well-formed `geo:` URI
         + levée lorsqu'un texte n'est pas une URI `geo:` bien formée
     detail
-        - Error 420: _the geo URI is not in the correct format because …_, followed by the
+        - Error `↯/s.46.1`: _the geo URI is not in the correct format because …_, followed by the
         - `Reason`'s message. Raised by `Geolocation.decoder`, through the
         - `Tactic[Geolocation.Error]` in scope.
-        + Erreur 420 : _the geo URI is not in the correct format because …_, suivi du message de la
-        + `Reason`. Levée par `Geolocation.decoder`, au moyen de la `Tactic[Geolocation.Error]` dans
-        + la portée.
+        + Erreur `↯/s.46.1` : _the geo URI is not in the correct format because …_, suivi du message
+        + de la `Reason`. Levée par `Geolocation.decoder`, au moyen de la
+        + `Tactic[Geolocation.Error]` dans la portée.
 
         ```scala
         import soundness.*
@@ -820,12 +820,13 @@ entry .Geolocation
         + présentés en tableau sous `Geolocation.Error.Reason`.
     entry .Reason
       info
-          - why a `geo:` URI failed to decode, numbered as a sub-code of error 420
+          - why a `geo:` URI failed to decode, numbered as a sub-code of error `↯/s.46.1`
           + la raison pour laquelle une URI `geo:` n'a pas pu être décodée, numérotée comme un
-          + sous-code de l'erreur 420
+          + sous-code de l'erreur `↯/s.46.1`
       detail
-          - An enumeration of `Clarification`s, numbered as sub-codes of error 420:
-          + Une énumération de `Clarification`, numérotées comme des sous-codes de l'erreur 420 :
+          - An enumeration of `Clarification`s, numbered as sub-codes of error `↯/s.46.1`:
+          + Une énumération de `Clarification`, numérotées comme des sous-codes de l'erreur
+          + `↯/s.46.1` :
 
           ```tabular
           - column  Case

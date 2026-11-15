@@ -289,10 +289,10 @@ entry .Fqcn
         + levée lorsqu'un texte n'est pas un nom de classe valide : un segment vide, un mot-clé ou
         + un caractère interdit
     detail
-        - Error `SN-017`: _the class name `name` is not valid because `reason`_. Raised by
+        - Error `↯/s.63.1`: _the class name `name` is not valid because `reason`_. Raised by
         - `Fqcn.apply` and by decoding text `as[Fqcn]`; `fqcn"…"` reports the same reasons as a
         - compile error.
-        + Erreur `SN-017` : _the class name `name` is not valid because `reason`_. Levée par
+        + Erreur `↯/s.63.1` : _the class name `name` is not valid because `reason`_. Levée par
         + `Fqcn.apply` et par le décodage d'un texte avec `as[Fqcn]` ; `fqcn"…"` signale les mêmes
         + raisons sous forme d'erreur de compilation.
 

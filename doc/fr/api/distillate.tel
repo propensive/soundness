@@ -900,10 +900,10 @@ entry .Enumerable
         - text decoded as an enum which names none of its cases
         + un texte décodé comme une énumération qui ne nomme aucun de ses cas
     detail
-        - Error 900: _the specified variant (`inputLabel`) is not one of the valid variants
+        - Error `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
         - (`validVariants`) of the enumeration `sum`_. Raised by the `Decodable.enumeration`
         - decoder.
-        + Error 900: _the specified variant (`inputLabel`) is not one of the valid variants
+        + Error `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
         + (`validVariants`) of the enumeration `sum`_. Levée par le décodeur
         + `Decodable.enumeration`.
     entry #inputLabel
@@ -1037,10 +1037,11 @@ entry .Number
         - text which could not be decoded as a number, or whose number was out of range
         + un texte qui n'a pu être décodé comme un nombre, ou dont le nombre était hors intervalle
     detail
-        - Error 405, with a subcode for its `#reason`: _`text` is not a valid `specializable`
+        - Error `↯/s.25.1`, with a subcode for its `#reason`: _`text` is not a valid `specializable`
         - because `reason`_. Raised by the number decoders in the `Decodable` companion.
-        + Error 405, avec un sous-code pour sa `#reason` : _`text` is not a valid `specializable`
-        + because `reason`_. Levée par les décodeurs de nombres de l'objet compagnon de `Decodable`.
+        + Error `↯/s.25.1`, avec un sous-code pour sa `#reason` : _`text` is not a valid
+        + `specializable` because `reason`_. Levée par les décodeurs de nombres de l'objet compagnon
+        + de `Decodable`.
 
         ```scala
         import soundness.*
@@ -1117,8 +1118,9 @@ entry .Truth
         - text which no `Truth` in scope recognizes as a `Boolean`
         + un texte qu'aucune `Truth` dans la portée ne reconnaît comme un `Boolean`
     detail
-        - Error 406: _`text` is not a recognized Boolean_. Raised by the `Boolean` decoder.
-        + Error 406: _`text` is not a recognized Boolean_. Levée par le décodeur de `Boolean`.
+        - Error `↯/s.25.2`: _`text` is not a recognized Boolean_. Raised by the `Boolean` decoder.
+        + Error `↯/s.25.2`: _`text` is not a recognized Boolean_. Levée par le décodeur de
+        + `Boolean`.
     entry #text
       info
           - the text, as it was given

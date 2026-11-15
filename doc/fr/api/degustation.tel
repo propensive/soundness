@@ -2091,7 +2091,7 @@ entry .Inspection
         - raised when the Scala discipline cannot be applied to the files
         + levée lorsque la discipline Scala ne peut pas être appliquée aux fichiers
     detail
-        - Error 642: _the Scala discipline failed because `reason`_, where the reason is one of
+        - Error `↯/s.139.1`: _the Scala discipline failed because `reason`_, where the reason is one of
         - `Inspection.Error.Reason`'s cases: `InspectionFailed(detail)` (reason 1), _the TASTy
         - could not be read: `detail`_, for a malformed path, an unreadable file, a malformed
         - jar or a malformed classfile; `Unencodable(construct)` (reason 2), _no canonical
@@ -2100,14 +2100,14 @@ entry .Inspection
         - 3), _the key `key` was produced twice_. Raised by `Inspection.atomize` alone; the
         - library's lower layers throw `Degustation.Unencodable`, `Erasure.Unresolved` and
         - `Classfile.Malformed` instead, which `Inspection` translates.
-        + Erreur 642 : _the Scala discipline failed because `reason`_, où la raison est l'un des cas
-        + d'`Inspection.Error.Reason` : `InspectionFailed(detail)` (raison 1), _the TASTy could not
-        + be read: `detail`_, pour un chemin mal formé, un fichier illisible, un jar mal formé ou un
-        + fichier de classe mal formé ; `Unencodable(construct)` (raison 2), _no canonical encoding
-        + is defined for `construct`_, pour une forme pour laquelle l'encodeur n'a pas de
-        + vocabulaire ou un type dont l'effacement nécessite une classe qui manque au classpath ; et
-        + `DuplicateKey(key)` (raison 3), _the key `key` was produced twice_. Levée par
-        + `Inspection.atomize` seul ; les couches inférieures de la bibliothèque lèvent plutôt
+        + Erreur `↯/s.139.1` : _the Scala discipline failed because `reason`_, où la raison est l'un
+        + des cas d'`Inspection.Error.Reason` : `InspectionFailed(detail)` (raison 1), _the TASTy
+        + could not be read: `detail`_, pour un chemin mal formé, un fichier illisible, un jar mal
+        + formé ou un fichier de classe mal formé ; `Unencodable(construct)` (raison 2), _no
+        + canonical encoding is defined for `construct`_, pour une forme pour laquelle l'encodeur
+        + n'a pas de vocabulaire ou un type dont l'effacement nécessite une classe qui manque au
+        + classpath ; et `DuplicateKey(key)` (raison 3), _the key `key` was produced twice_. Levée
+        + par `Inspection.atomize` seul ; les couches inférieures de la bibliothèque lèvent plutôt
         + `Degustation.Unencodable`, `Erasure.Unresolved` et `Classfile.Malformed`, qu'`Inspection`
         + traduit.
     entry .Reason

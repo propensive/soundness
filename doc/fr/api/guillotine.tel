@@ -1579,13 +1579,13 @@ entry .Pid
         - raised when no process with a given pid is running
         + levée lorsqu'aucun processus ayant un pid donné n'est en cours d'exécution
     detail
-        - Error 909: _the process with PID `1234` is not running_. Raised by `Process(pid)`, and
+        - Error `↯/s.84.2`: _the process with PID `1234` is not running_. Raised by `Process(pid)`, and
         - so by `Job#process`, when `ProcessHandle.of` finds nothing: the process has exited,
         - or never existed. Needs a `Diagnostics` in scope to construct.
-        + Erreur 909 : _the process with PID `1234` is not running_. Levée par `Process(pid)`, et
-        + donc par `Job#process`, lorsque `ProcessHandle.of` ne trouve rien : le processus s'est
-        + terminé, ou n'a jamais existé. Nécessite des `Diagnostics` dans la portée pour être
-        + construite.
+        + Erreur `↯/s.84.2` : _the process with PID `1234` is not running_. Levée par
+        + `Process(pid)`, et donc par `Job#process`, lorsque `ProcessHandle.of` ne trouve rien : le
+        + processus s'est terminé, ou n'a jamais existé. Nécessite des `Diagnostics` dans la portée
+        + pour être construite.
     entry #pid
       info
           - the pid that was looked up
@@ -1615,14 +1615,14 @@ entry .Exec
         + levée lorsqu'une commande ne peut pas être exécutée : un binaire absent, ou une lecture de
         + sa sortie interrompue
     detail
-        - Error 691: _execution of the command `ls -la` failed_. Raised by `exec`, `fork`,
+        - Error `↯/s.84.1`: _execution of the command `ls -la` failed_. Raised by `exec`, `fork`,
         - `detach` and `Command.OnTerminal#exec` when the program cannot be started — it is not
         - on the `PATH`, or the file is not executable — and by `exec` when a read of the output
         - is cut short (a `Truncation.Error`, re-raised as this for the command; the last
         - command of a pipeline). It names the `#command`, so a failure reports what was
         - attempted rather than an errno; the `#stdout` and `#stderr` fields are empty unless
         - the raiser had output to attach.
-        + Erreur 691 : _execution of the command `ls -la` failed_. Levée par `exec`, `fork`,
+        + Erreur `↯/s.84.1` : _execution of the command `ls -la` failed_. Levée par `exec`, `fork`,
         + `detach` et `Command.OnTerminal#exec` lorsque le programme ne peut pas être démarré — il
         + n'est pas dans le `PATH`, ou le fichier n'est pas exécutable — et par `exec` lorsqu'une
         + lecture de la sortie est interrompue prématurément (une `Truncation.Error`, relevée sous

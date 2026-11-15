@@ -689,8 +689,9 @@ entry .internal
         + cascade
   entry .get
     info
-        - the macro behind `value[Unit]`: one component, or error 557 if the unit is absent
-        + la macro derrière `value[Unit]` : une composante, ou l'erreur 557 si l'unité est absente
+        - the macro behind `value[Unit]`: one component, or error `↯/s.54.1` if the unit is absent
+        + la macro derrière `value[Unit]` : une composante, ou l'erreur `↯/s.54.1` si l'unité est
+        + absente
   entry .collapse
     info
         - the macro behind `collapse`: the same value in a cascade with fewer units

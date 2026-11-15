@@ -1789,18 +1789,18 @@ entry .Parse
       - the error every format parser raises
       + l'erreur que lève tout analyseur de format
   detail
-      - `Parse.Error(format, position, issue)` is error 594, _the `name` was not valid at
+      - `Parse.Error(format, position, issue)` is error `↯/s.60.2`, _the `name` was not valid at
       - `position` because `issue`_, with the format's own position and issue types; `#span`
       - exposes the position as a `Span`. Raised through a `Tactic[Parse.Error]` by every
       - parser built on the kernel.
-      + `Parse.Error(format, position, issue)` est l'erreur 594, _le `name` n'était pas valide à
-      + `position` parce que `issue`_, avec les types de position et de problème propres au format ;
-      + `#span` expose la position sous forme de `Span`. Levée via une `Tactic[Parse.Error]` par
-      + tout analyseur construit sur le noyau.
+      + `Parse.Error(format, position, issue)` est l'erreur `↯/s.60.2`, _le `name` n'était pas
+      + valide à `position` parce que `issue`_, avec les types de position et de problème propres au
+      + format ; `#span` expose la position sous forme de `Span`. Levée via une
+      + `Tactic[Parse.Error]` par tout analyseur construit sur le noyau.
   entry .Error
     info
-        - error 594: _the `format` was not valid at `position` because `issue`_
-        + erreur 594 : _le `format` n'était pas valide à `position` parce que `issue`_
+        - error `↯/s.60.2`: _the `format` was not valid at `position` because `issue`_
+        + erreur `↯/s.60.2` : _le `format` n'était pas valide à `position` parce que `issue`_
     entry #format
       info
           - the format which rejected the input
@@ -1846,8 +1846,8 @@ entry .Truncation
       + aussi bien via `import soundness.*` que via `import turbulence.*`.
   entry .Error
     info
-        - error 264: _the stream was cut prematurely after `total`_
-        + erreur 264 : _le flux a été coupé prématurément après `total`_
+        - error `↯/s.60.1`: _the stream was cut prematurely after `total`_
+        + erreur `↯/s.60.1` : _le flux a été coupé prématurément après `total`_
     entry #total
       info
           - how much had been delivered when the stream was cut

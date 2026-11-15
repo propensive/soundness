@@ -283,14 +283,14 @@ entry .Rig
         + levée lorsqu'une valeur ne peut pas franchir la frontière d'un rig, ou que le code mis en
         + étape ne peut pas s'exécuter
     detail
-        - Error 306: _failed to perform a remote operation because `reason`_. This is a failure
+        - Error `↯/s.121.1`: _failed to perform a remote operation because `reason`_. This is a failure
         - of the marshalling and deployment around the staged code, not of the code itself; a
         - staged block which does not compile raises `Compiler.Error` instead. The reason is one
         - of the cases of `Rig.Error.Reason`.
-        + Erreur 306 : _failed to perform a remote operation because `reason`_. C'est un échec de la
-        + sérialisation et du déploiement qui entourent le code mis en étape, et non du code
-        + lui-même ; un bloc mis en étape qui ne compile pas lève plutôt `Compiler.Error`. La raison
-        + est l'un des cas de `Rig.Error.Reason`.
+        + Erreur `↯/s.121.1` : _failed to perform a remote operation because `reason`_. C'est un
+        + échec de la sérialisation et du déploiement qui entourent le code mis en étape, et non du
+        + code lui-même ; un bloc mis en étape qui ne compile pas lève plutôt `Compiler.Error`. La
+        + raison est l'un des cas de `Rig.Error.Reason`.
     entry #reason
       info
           - why the remote operation failed

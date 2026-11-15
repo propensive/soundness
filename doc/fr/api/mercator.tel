@@ -117,15 +117,15 @@ entry .Identity
         - methods with a single type parameter taking one value of that type — directly, by name,
         - or as a variadic parameter, as `List.apply(elements*)` does — and builds `#point` as a
         - call to it. No candidate is a compile error, _the companion object `Play` has no candidate
-        - apply methods_ (SN-569), and more than one is another, _the companion object `Play` has
-        - more than one candidate apply method_ (SN-659).
+        - apply methods_ (↯/s.17.4), and more than one is another, _the companion object `Play` has
+        - more than one candidate apply method_ (↯/s.17.6).
         + Une macro `inline given`, dans la portée implicite. Elle cherche dans le compagnon de `F`
         + des méthodes `apply` à un seul paramètre de type prenant une valeur de ce type —
         + directement, par nom, ou sous forme de paramètre variadique, comme le fait
         + `List.apply(elements*)` — et construit `#point` comme un appel à celle-ci. L'absence de
         + candidat est une erreur de compilation, _the companion object `Play` has no candidate
-        + apply methods_ (SN-569), et plus d'un candidat en est une autre, _the companion object
-        + `Play` has more than one candidate apply method_ (SN-659).
+        + apply methods_ (↯/s.17.4), et plus d'un candidat en est une autre, _the companion object
+        + `Play` has more than one candidate apply method_ (↯/s.17.6).
   entry #point
     info
         - lifts a single value into the container
@@ -162,15 +162,15 @@ entry .Functor
     detail
         - An `inline given` macro, in implicit scope. `#apply` calls the type's own `map`, and
         - `#point` the `Identity` it finds. A missing `Identity` is a compile error, _could not find
-        - Identity value for `Play`_ (SN-970); a type with no `map` is another, _the type `Play` has
-        - no map methods_ (SN-899), and one with several overloads of `map` a third, _the type
-        - `Play` has more than one possible map method_ (SN-380).
+        - Identity value for `Play`_ (↯/s.17.8); a type with no `map` is another, _the type `Play` has
+        - no map methods_ (↯/s.17.7), and one with several overloads of `map` a third, _the type
+        - `Play` has more than one possible map method_ (↯/s.17.2).
         + Une macro `inline given`, dans la portée implicite. `#apply` appelle le `map` propre au
         + type, et `#point` l'`Identity` qu'elle trouve. Une `Identity` manquante est une erreur de
-        + compilation, _could not find Identity value for `Play`_ (SN-970) ; un type sans `map` en
-        + est une autre, _the type `Play` has no map methods_ (SN-899), et un type avec plusieurs
+        + compilation, _could not find Identity value for `Play`_ (↯/s.17.8) ; un type sans `map` en
+        + est une autre, _the type `Play` has no map methods_ (↯/s.17.7), et un type avec plusieurs
         + surcharges de `map` une troisième, _the type `Play` has more than one possible map method_
-        + (SN-380).
+        + (↯/s.17.2).
   entry #point
     info
         - lifts a single value into the container
@@ -231,15 +231,15 @@ entry .Monad
     detail
         - An `inline given` macro, in implicit scope. `#bind` calls the type's own `flatMap`, and
         - `point` and mapping come from the `Functor` it finds. A missing `Functor` is a compile
-        - error, _could not find Functor value for `Play`_ (SN-585); a type with no `flatMap` is
-        - another, _the type `Play` has no flatMap methods_ (SN-356), and one with several overloads
-        - of `flatMap` a third, _the type `Play` has more than one possible flatMap method_ (SN-538).
+        - error, _could not find Functor value for `Play`_ (↯/s.17.5); a type with no `flatMap` is
+        - another, _the type `Play` has no flatMap methods_ (↯/s.17.1), and one with several overloads
+        - of `flatMap` a third, _the type `Play` has more than one possible flatMap method_ (↯/s.17.3).
         + Une macro `inline given`, dans la portée implicite. `#bind` appelle le `flatMap` propre au
         + type, et `point` ainsi que la transformation viennent du `Functor` qu'elle trouve. Un
         + `Functor` manquant est une erreur de compilation, _could not find Functor value for
-        + `Play`_ (SN-585) ; un type sans `flatMap` en est une autre, _the type `Play` has no
-        + flatMap methods_ (SN-356), et un type avec plusieurs surcharges de `flatMap` une
-        + troisième, _the type `Play` has more than one possible flatMap method_ (SN-538).
+        + `Play`_ (↯/s.17.5) ; un type sans `flatMap` en est une autre, _the type `Play` has no
+        + flatMap methods_ (↯/s.17.1), et un type avec plusieurs surcharges de `flatMap` une
+        + troisième, _the type `Play` has more than one possible flatMap method_ (↯/s.17.3).
   entry #bind
     info
         - applies a container-returning function to a container's contents, and flattens

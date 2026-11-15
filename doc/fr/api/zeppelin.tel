@@ -627,11 +627,11 @@ entry .Zip
         - a failure to read, write or open a ZIP archive, with the reason
         + un échec de lecture, d'écriture ou d'ouverture d'une archive ZIP, avec sa raison
     detail
-        - Error 751: _the ZIP operation failed because `reason`_, with the
+        - Error `↯/s.136.1`: _the ZIP operation failed because `reason`_, with the
         - `Zip.Error.Reason`'s number as its subcode. Raised by `Zipfile.read`, by
         - `Zipfile#entry`, by serializing a `Zipfile`, by opening an archive as `Zip` or `Jar`, and
         - by `Zipfile.rebase`.
-        + Erreur 751 : _the ZIP operation failed because `reason`_, avec le numéro de la
+        + Erreur `↯/s.136.1` : _the ZIP operation failed because `reason`_, avec le numéro de la
         + `Zip.Error.Reason` comme sous-code. Levée par `Zipfile.read`, par `Zipfile#entry`, par la
         + sérialisation d'un `Zipfile`, par l'ouverture d'une archive en tant que `Zip` ou `Jar`, et
         + par `Zipfile.rebase`.

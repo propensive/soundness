@@ -395,11 +395,11 @@ entry .Duration
       ```
 
       - `durationDecodables.compactDurationDecodable` reads `30m`, `1.5h`, `250ms` or a bare `90`
-      - from text, raising `Duration.Error` (error 335, _`text` is not a recognized duration_) for
+      - from text, raising `Duration.Error` (error `↯/s.73.5`, _`text` is not a recognized duration_) for
       - anything else, and `durationFormats.compactDurationFormat` shows a duration as `1h 0m 5s`.
       - The alias, the companion and its `Error` are under the hidden `protointernal`.
       + `durationDecodables.compactDurationDecodable` lit `30m`, `1.5h`, `250ms` ou un `90` nu
-      + depuis du texte, levant `Duration.Error` (erreur 335, _`text` n'est pas une durée
+      + depuis du texte, levant `Duration.Error` (erreur `↯/s.73.5`, _`text` n'est pas une durée
       + reconnue_) pour toute autre chose, et `durationFormats.compactDurationFormat` affiche une
       + durée comme `1h 0m 5s`. L'alias, le compagnon et son `Error` se trouvent sous le
       + `protointernal` caché.
@@ -2313,10 +2313,10 @@ entry .Calendar
         + la date d'une année, d'un mois et d'un jour, vérifiée, en levant `Moment.Error` sinon
     detail
         - Inline, so that the `Tactic[Moment.Error]` it needs is resolved where it is called.
-        - Raises `Moment.Error(_.Invalid(year, month, day, calendar))` (error 333, _`2024-2-30`
+        - Raises `Moment.Error(_.Invalid(year, month, day, calendar))` (error `↯/s.73.3`, _`2024-2-30`
         - does not exist in the calendar Gregorian_) and returns `#computeJdn`'s date.
         + Inline, pour que la `Tactic[Moment.Error]` qu'elle exige soit résolue là où elle est
-        + appelée. Lève `Moment.Error(_.Invalid(year, month, day, calendar))` (erreur 333,
+        + appelée. Lève `Moment.Error(_.Invalid(year, month, day, calendar))` (erreur `↯/s.73.3`,
         + _`2024-2-30` n'existe pas dans le calendrier Gregorian_) et renvoie la date de
         + `#computeJdn`.
   entry #monthName
@@ -3555,12 +3555,12 @@ entry .Iso8601
       Iso8601.parse(t"2020-12-31")                    // midnight UTC
       ```
 
-      - A fault raises `Moment.Error(_.Format(text, Iso8601, offset)(issue))` (error 333), _`text`
+      - A fault raises `Moment.Error(_.Format(text, Iso8601, offset)(issue))` (error `↯/s.73.3`), _`text`
       - does not conform to format ISO 8601 (a digit was expected at 7)_, with the `.Issue`
       - saying what the parser wanted at the offset. Errors in the date accrue and the time is
       - not parsed after one, since the fields are variable-width and the cursor would be
       - misaligned.
-      + Une faute lève `Moment.Error(_.Format(text, Iso8601, offset)(issue))` (erreur 333),
+      + Une faute lève `Moment.Error(_.Format(text, Iso8601, offset)(issue))` (erreur `↯/s.73.3`),
       + _`text` n'est pas conforme au format ISO 8601 (un chiffre était attendu en 7)_, avec
       + l'`.Issue` qui dit ce que l'analyseur voulait à cette position. Les erreurs dans la date
       + s'accumulent et l'heure n'est pas analysée après l'une d'elles, puisque les champs sont
@@ -3964,10 +3964,10 @@ entry .protointernal
           + levée par `durationDecodables.compactDurationDecodable` pour un texte qui n'est pas une
           + durée
       detail
-          - Error 335: _`text` is not a recognized duration_. A negative, a word, an unknown
+          - Error `↯/s.73.5`: _`text` is not a recognized duration_. A negative, a word, an unknown
           - unit or an empty text.
-          + Erreur 335 : _`text` is not a recognized duration_. Un nombre négatif, un mot, une unité
-          + inconnue ou un texte vide.
+          + Erreur `↯/s.73.5` : _`text` is not a recognized duration_. Un nombre négatif, un mot,
+          + une unité inconnue ou un texte vide.
       entry #text
         info
             - the text which was not a duration
@@ -4199,16 +4199,16 @@ entry .timestampInternal
           - raised by `t"…".as[Timestamp]` for text which is not a timestamp
           + levée par `t"…".as[Timestamp]` pour un texte qui n'est pas un horodatage
       detail
-          - Error 902: _the time `value` could not be parsed because `reason`_, with the reason's
+          - Error `↯/s.73.9`: _the time `value` could not be parsed because `reason`_, with the reason's
           - number as the error's second part: `BadFormat` (1), _the input did not match the
           - expected timestamp format_; `BadNumber` (2), _a numeric component could not be
           - parsed as an integer_; `BadTime` (3), _a date or time component was outside the
           - valid range_.
-          + Erreur 902 : _the time `value` could not be parsed because `reason`_, avec le numéro de
-          + la raison comme seconde partie de l'erreur : `BadFormat` (1), _the input did not match
-          + the expected timestamp format_ ; `BadNumber` (2), _a numeric component could not be
-          + parsed as an integer_ ; `BadTime` (3), _a date or time component was outside the valid
-          + range_.
+          + Erreur `↯/s.73.9` : _the time `value` could not be parsed because `reason`_, avec le
+          + numéro de la raison comme seconde partie de l'erreur : `BadFormat` (1), _the input did
+          + not match the expected timestamp format_ ; `BadNumber` (2), _a numeric component could
+          + not be parsed as an integer_ ; `BadTime` (3), _a date or time component was outside the
+          + valid range_.
       entry .Reason
         info
             - `BadFormat`, `BadNumber` or `BadTime`
@@ -4602,13 +4602,13 @@ entry .Moment
         - raised when a date, time or moment is not valid
         + levée quand une date, une heure ou un moment n'est pas valide
     detail
-        - Error 333: _the date was not valid because `reason`_, with the reason's number as the
+        - Error `↯/s.73.3`: _the date was not valid because `reason`_, with the reason's number as the
         - sub-code. It is the error of the whole date-and-time vocabulary, not only of `Moment`:
         - `Date(year, month, day)`, `Month(index)`, `Calendar#jdn`, `WeekDate(…)`,
         - `OrdinalCalendar(year, dayOfYear)`, `Rfc1123.parse` and the ISO 8601 instant decoder
         - raise it, and a `Monthstamp - day` computed at runtime goes through `Calendar#jdn`,
         - which raises it too. Built with `Moment.Error(_.Gap)`, which also captures the `Diagnostics`.
-        + Erreur 333 : _the date was not valid because `reason`_, avec le numéro de la raison
+        + Erreur `↯/s.73.3` : _the date was not valid because `reason`_, avec le numéro de la raison
         + comme sous-code. C'est l'erreur de tout le vocabulaire des dates et des heures, et pas
         + seulement de `Moment` : `Date(year, month, day)`, `Month(index)`, `Calendar#jdn`,
         + `WeekDate(…)`, `OrdinalCalendar(year, dayOfYear)`, `Rfc1123.parse` et le décodeur
@@ -6483,10 +6483,10 @@ entry .Timespan
         - raised when text is not an ISO 8601 duration
         + levée quand un texte n'est pas une durée ISO 8601
     detail
-        - Error 334: _`text` is not a recognized duration_, raised by `.decodable`. A duration
+        - Error `↯/s.73.4`: _`text` is not a recognized duration_, raised by `.decodable`. A duration
         - is not a moment, so it has an error of its own rather than a `Moment.Error` reason.
-        + Erreur 334 : _`text` is not a recognized duration_, levée par `.decodable`. Une durée
-        + n'est pas un moment ; elle a donc sa propre erreur plutôt qu'une raison de
+        + Erreur `↯/s.73.4` : _`text` is not a recognized duration_, levée par `.decodable`. Une
+        + durée n'est pas un moment ; elle a donc sa propre erreur plutôt qu'une raison de
         + `Moment.Error`.
     entry #text
       info
@@ -6797,9 +6797,9 @@ entry .Timezone
         - raised for a name which is not a zone in the database
         + levée pour un nom qui n'est pas un fuseau de la base
     detail
-        - Error 929: _the name `name` does not refer to a known timezone_, raised by
+        - Error `↯/s.73.10`: _the name `name` does not refer to a known timezone_, raised by
         - `Timezone(name)` and `text.as[Timezone]`.
-        + Erreur 929 : _the name `name` does not refer to a known timezone_, levée par
+        + Erreur `↯/s.73.10` : _the name `name` does not refer to a known timezone_, levée par
         + `Timezone(name)` et `text.as[Timezone]`.
     entry #name
       info
@@ -7079,9 +7079,9 @@ entry .Tzdb
         - raised when a line of the database cannot be parsed
         + levée quand une ligne de la base ne peut pas être analysée
     detail
-        - Error 385: _the timezone could not be parsed at line `line`: `reason`_, with the
+        - Error `↯/s.73.6`: _the timezone could not be parsed at line `line`: `reason`_, with the
         - reason's number as the sub-code:
-        + Erreur 385 : _the timezone could not be parsed at line `line`: `reason`_,
+        + Erreur `↯/s.73.6` : _the timezone could not be parsed at line `line`: `reason`_,
         + avec le numéro de la raison comme sous-code :
 
         ```tabular

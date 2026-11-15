@@ -185,12 +185,12 @@ entry .Uuid
         - raised when text is not a valid UUID
         + levée quand un texte n'est pas un UUID valide
     detail
-        - Error 349: _`badUuid` is not a valid UUID_. Raised by `Uuid.parse` and by decoding a
+        - Error `↯/s.47.1`: _`badUuid` is not a valid UUID_. Raised by `Uuid.parse` and by decoding a
         - `Uuid` from text. The `uuid"…"` interpolator reports the same message as a compile
         - error.
-        + Erreur 349 : _`badUuid` is not a valid UUID_. Levée par `Uuid.parse` et par le décodage
-        + d'un `Uuid` à partir d'un texte. L'interpolateur `uuid"…"` signale le même message comme
-        + erreur de compilation.
+        + Erreur `↯/s.47.1` : _`badUuid` is not a valid UUID_. Levée par `Uuid.parse` et par le
+        + décodage d'un `Uuid` à partir d'un texte. L'interpolateur `uuid"…"` signale le même
+        + message comme erreur de compilation.
     entry #badUuid
       info
           - the text which failed to parse

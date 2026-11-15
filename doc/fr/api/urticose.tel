@@ -185,12 +185,13 @@ entry .Hostname
         - raised when text is not a valid hostname
         + levée lorsqu'un texte n'est pas un nom d'hôte valide
     detail
-        - Error 892: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
+        - Error `↯/s.100.10`: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
         - (through `Hostname.decodable`) and, as a compile error, by `host"…"`. The `#text` is
         - the whole text which was decoded and the `#reason` says what was wrong with it.
-        + Erreur 892 : _the hostname is not valid because `reason`_. Levée par `as[Hostname]` (via
-        + `Hostname.decodable`) et, sous forme d'erreur de compilation, par `host"…"`. Le `#text`
-        + est le texte entier qui a été décodé et la `#reason` indique ce qui n'allait pas.
+        + Erreur `↯/s.100.10` : _the hostname is not valid because `reason`_. Levée par
+        + `as[Hostname]` (via `Hostname.decodable`) et, sous forme d'erreur de compilation, par
+        + `host"…"`. Le `#text` est le texte entier qui a été décodé et la `#reason` indique ce qui
+        + n'allait pas.
     entry .Reason
       info
           - why a hostname was rejected
@@ -292,11 +293,11 @@ entry .host
       + l'interpolateur `host"…"` : un nom d'hôte, vérifié à la compilation du code
   detail
       - `host"www.example.com"` is a `Hostname`, and text which is not a valid hostname is a
-      - compile error carrying the `Hostname.Error` message (`[↯SN-892.4] the hostname is not
+      - compile error carrying the `Hostname.Error` message (`[↯/s.100.10.4] the hostname is not
       - valid because a DNS label cannot be empty` for `host"www..com"`). The interpolator takes
       - no substitutions. Declared in `urticose.url`.
       + `host"www.example.com"` est un `Hostname`, et un texte qui n'est pas un nom d'hôte valide
-      + est une erreur de compilation portant le message de `Hostname.Error` (`[↯SN-892.4] the
+      + est une erreur de compilation portant le message de `Hostname.Error` (`[↯/s.100.10.4] the
       + hostname is not valid because a DNS label cannot be empty` pour `host"www..com"`).
       + L'interpolateur ne prend aucune substitution. Déclaré dans `urticose.url`.
 
@@ -465,11 +466,11 @@ entry .IpAddress
         + levée lorsqu'un texte ou des octets ne sont pas une adresse ou un sous-réseau IPv4 ou IPv6
         + valide
     detail
-        - Error 77: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
+        - Error `↯/s.100.2`: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
         - `as[Ipv6]`, `as[Ipv4Subnet]` and `as[Ipv6Subnet]`, by the `Data` decoders, and as a
         - compile error by `ip"…"` and `subnet"…"`; it is also wrapped as the reason of an
         - `EmailAddress.Error` or `Url.Error` whose address part is bad.
-        + Erreur 77 : _the IP address is not valid because `reason`_. Levée par `as[Ipv4]`,
+        + Erreur `↯/s.100.2` : _the IP address is not valid because `reason`_. Levée par `as[Ipv4]`,
         + `as[Ipv6]`, `as[Ipv4Subnet]` et `as[Ipv6Subnet]`, par les décodeurs de `Data`, et sous
         + forme d'erreur de compilation par `ip"…"` et `subnet"…"` ; elle est aussi enveloppée comme
         + raison d'une `EmailAddress.Error` ou d'une `Url.Error` dont la partie adresse est
@@ -595,14 +596,14 @@ entry .subnet
       - `subnet"192.168.0.0/24"` is an `Ipv4Subnet` and `subnet"2001:db8::/32"` an `Ipv6Subnet`:
       - the interpolator is transparent and takes its family from whether the address contains a
       - dot. The prefix is checked against the family's range (0–32 or 0–128), so an impossible
-      - mask is a compile error (`[↯SN-077.9] … the prefix length 40 is not in the range 0-32`),
+      - mask is a compile error (`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`),
       - and host bits below the prefix are masked away. It takes no substitutions.
       + `subnet"192.168.0.0/24"` est un `Ipv4Subnet` et `subnet"2001:db8::/32"` un `Ipv6Subnet` :
       + l'interpolateur est transparent et tire sa famille de la présence ou non d'un point dans
       + l'adresse. Le préfixe est vérifié par rapport à la plage de la famille (0–32 ou 0–128), de
       + sorte qu'un masque impossible est une erreur de compilation
-      + (`[↯SN-077.9] … the prefix length 40 is not in the range 0-32`), et les bits d'hôte sous le
-      + préfixe sont masqués. Il ne prend aucune substitution.
+      + (`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`), et les bits d'hôte sous
+      + le préfixe sont masqués. Il ne prend aucune substitution.
 
       ```scala
       import soundness.*
@@ -658,11 +659,11 @@ entry .mac
   detail
       - `mac"01-23-45-ab-cd-ef"` is a `MacAddress`; text which is not six dashed pairs of
       - hexadecimal digits is a compile error carrying the `MacAddress.Error` message
-      - (`[↯SN-532.2] the MAC address is not valid because group 5 should be two hex digits, but
+      - (`[↯/s.100.7.2] the MAC address is not valid because group 5 should be two hex digits, but
       - its length is 1`). It takes no substitutions.
       + `mac"01-23-45-ab-cd-ef"` est une `MacAddress` ; un texte qui n'est pas six paires de
       + chiffres hexadécimaux séparées par des tirets est une erreur de compilation portant le
-      + message de `MacAddress.Error` (`[↯SN-532.2] the MAC address is not valid because group 5
+      + message de `MacAddress.Error` (`[↯/s.100.7.2] the MAC address is not valid because group 5
       + should be two hex digits, but its length is 1`). Il ne prend aucune substitution.
 
 entry .Port
@@ -728,13 +729,13 @@ entry .tcp
       - `tcp"443"` is a `Port over Tcp of 443` and `tcp"smtp"` a `Port over Tcp of 25`: a name is
       - looked up in the IANA service-names registry bundled with the library, for the TCP
       - transport specifically, so a service registered only over UDP, or an unknown name, is a
-      - compile error (`[↯SN-915] abcdef is not a valid TCP port`), as is a number outside
-      - 1–65535 (`[↯SN-340]`). It takes no substitutions.
+      - compile error (`[↯/s.100.11] abcdef is not a valid TCP port`), as is a number outside
+      - 1–65535 (`[↯/s.100.5]`). It takes no substitutions.
       + `tcp"443"` est un `Port over Tcp of 443` et `tcp"smtp"` un `Port over Tcp of 25` : un nom
       + est recherché dans le registre IANA des noms de services fourni avec la bibliothèque, pour
       + le transport TCP spécifiquement, de sorte qu'un service enregistré seulement sur UDP, ou un
-      + nom inconnu, est une erreur de compilation (`[↯SN-915] abcdef is not a valid TCP port`), de
-      + même qu'un numéro hors de 1–65535 (`[↯SN-340]`). Il ne prend aucune substitution.
+      + nom inconnu, est une erreur de compilation (`[↯/s.100.11] abcdef is not a valid TCP port`),
+      + de même qu'un numéro hors de 1–65535 (`[↯/s.100.5]`). Il ne prend aucune substitution.
 
       ```scala
       import soundness.*
@@ -750,11 +751,11 @@ entry .udp
       + compilation du code
   detail
       - As `tcp"…"`, for the UDP transport: `udp"53"` and `udp"domain"` are each a `Port over Udp
-      - of 53`, and a name registered only over TCP does not compile (`[↯SN-915] docker is not a
+      - of 53`, and a name registered only over TCP does not compile (`[↯/s.100.11] docker is not a
       - valid UDP port`).
       + Comme `tcp"…"`, pour le transport UDP : `udp"53"` et `udp"domain"` sont chacun un
       + `Port over Udp of 53`, et un nom enregistré seulement sur TCP ne compile pas
-      + (`[↯SN-915] docker is not a valid UDP port`).
+      + (`[↯/s.100.11] docker is not a valid UDP port`).
 
       ```scala
       import soundness.*
@@ -1100,9 +1101,9 @@ entry .EmailAddress
         - raised when text is not a valid email address
         + levée lorsqu'un texte n'est pas une adresse e-mail valide
     detail
-        - Error 159: _the email address is not valid because `reason`_. Raised by
+        - Error `↯/s.100.4`: _the email address is not valid because `reason`_. Raised by
         - `as[EmailAddress]` and, as a compile error, by `email"…"`.
-        + Erreur 159 : _the email address is not valid because `reason`_. Levée par
+        + Erreur `↯/s.100.4` : _the email address is not valid because `reason`_. Levée par
         + `as[EmailAddress]` et, sous forme d'erreur de compilation, par `email"…"`.
     entry .Reason
       info
@@ -1258,10 +1259,10 @@ entry .NetworkInterface
         - raised when the platform cannot enumerate or inspect its interfaces
         + levée lorsque la plateforme ne peut pas énumérer ou inspecter ses interfaces
     detail
-        - Error 418: _the network interface could not be read because `reason`_, wrapping the
+        - Error `↯/s.100.6`: _the network interface could not be read because `reason`_, wrapping the
         - socket error's message.
-        + Erreur 418 : _the network interface could not be read because `reason`_, qui enveloppe le
-        + message de l'erreur de socket.
+        + Erreur `↯/s.100.6` : _the network interface could not be read because `reason`_, qui
+        + enveloppe le message de l'erreur de socket.
     entry .Reason
       info
           - why the interfaces could not be read
@@ -1401,11 +1402,12 @@ entry .Internet
         - raised when network access was required and is not available
         + levée lorsqu'un accès au réseau était requis et n'est pas disponible
     detail
-        - Error 770: _an Internet connection is not available_. Raised by `Internet#require` on
+        - Error `↯/s.100.9`: _an Internet connection is not available_. Raised by `Internet#require` on
         - an offline `Internet`, and by `internetAccess.offline` as soon as an `Online` is
         - summoned.
-        + Erreur 770 : _an Internet connection is not available_. Levée par `Internet#require` sur
-        + un `Internet` hors ligne, et par `internetAccess.offline` dès qu'un `Online` est invoqué.
+        + Erreur `↯/s.100.9` : _an Internet connection is not available_. Levée par
+        + `Internet#require` sur un `Internet` hors ligne, et par `internetAccess.offline` dès qu'un
+        + `Online` est invoqué.
   entry #online
     info
         - whether the network is available
@@ -1647,12 +1649,12 @@ entry .Url
         - raised when text is not a valid URL
         + levée lorsqu'un texte n'est pas une URL valide
     detail
-        - Error 714: _the URL `text` is not valid: `reason` at `offset`_. Raised by
+        - Error `↯/s.100.8`: _the URL `text` is not valid: `reason` at `offset`_. Raised by
         - `as[HttpUrl]`, by `as[Authority]`, and as a compile error by `url"…"`. The `#offset`
         - is the position in the text where the fault was found.
-        + Erreur 714 : _the URL `text` is not valid: `reason` at `offset`_. Levée par `as[HttpUrl]`,
-        + par `as[Authority]`, et sous forme d'erreur de compilation par `url"…"`. L'`#offset` est
-        + la position dans le texte où le défaut a été trouvé.
+        + Erreur `↯/s.100.8` : _the URL `text` is not valid: `reason` at `offset`_. Levée par
+        + `as[HttpUrl]`, par `as[Authority]`, et sous forme d'erreur de compilation par `url"…"`.
+        + L'`#offset` est la position dans le texte où le défaut a été trouvé.
     entry .communicable
       info
           - renders each reason as a message
@@ -2919,12 +2921,12 @@ entry .Dns
         - raised when a DNS name or message is not valid, or a name does not resolve
         + levée lorsqu'un nom ou un message DNS n'est pas valide, ou qu'un nom ne se résout pas
     detail
-        - Error 53: _the DNS message is not valid because `reason`_. Raised by name construction
+        - Error `↯/s.100.1`: _the DNS message is not valid because `reason`_. Raised by name construction
         - and parsing, by `Rdata.Txt`, by decoding a message from `Data`, by `Dns.resolve`, and
         - as a compile error by `dns"…"`.
-        + Erreur 53 : _the DNS message is not valid because `reason`_. Levée par la construction et
-        + l'analyse des noms, par `Rdata.Txt`, par le décodage d'un message depuis `Data`, par
-        + `Dns.resolve`, et sous forme d'erreur de compilation par `dns"…"`.
+        + Erreur `↯/s.100.1` : _the DNS message is not valid because `reason`_. Levée par la
+        + construction et l'analyse des noms, par `Rdata.Txt`, par le décodage d'un message depuis
+        + `Data`, par `Dns.resolve`, et sous forme d'erreur de compilation par `dns"…"`.
     entry .Reason
       info
           - why a name, message or lookup failed
@@ -3183,9 +3185,9 @@ entry .internal
             - raised when text is not a valid MAC address
             + levée lorsqu'un texte n'est pas une adresse MAC valide
         detail
-            - Error 532: _the MAC address is not valid because `reason`_. Raised by
+            - Error `↯/s.100.7`: _the MAC address is not valid because `reason`_. Raised by
             - `as[MacAddress]` and, as a compile error, by `mac"…"`.
-            + Erreur 532 : _the MAC address is not valid because `reason`_. Levée par
+            + Erreur `↯/s.100.7` : _the MAC address is not valid because `reason`_. Levée par
             + `as[MacAddress]` et, sous forme d'erreur de compilation, par `mac"…"`.
         entry .Reason
           info
@@ -3307,12 +3309,13 @@ entry .internal
             - raised when a port number is outside 1–65535
             + levée lorsqu'un numéro de port est hors de 1–65535
         detail
-            - Error 139: _the port is not in the valid range_. Raised by `Port[transport](number)`
+            - Error `↯/s.100.3`: _the port is not in the valid range_. Raised by `Port[transport](number)`
             - and by decoding a port from text; the interpolators `tcp"…"` and `udp"…"` report an
             - out-of-range number as a compile error instead.
-            + Erreur 139 : _the port is not in the valid range_. Levée par `Port[transport](number)`
-            + et par le décodage d'un port depuis du texte ; les interpolateurs `tcp"…"` et `udp"…"`
-            + signalent plutôt un nombre hors plage sous forme d'erreur de compilation.
+            + Erreur `↯/s.100.3` : _the port is not in the valid range_. Levée par
+            + `Port[transport](number)` et par le décodage d'un port depuis du texte ; les
+            + interpolateurs `tcp"…"` et `udp"…"` signalent plutôt un nombre hors plage sous forme
+            + d'erreur de compilation.
       entry .Type
         info
             - the structural bound of `Port`: the type members which refine it

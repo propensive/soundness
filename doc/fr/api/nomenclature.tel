@@ -811,14 +811,14 @@ entry .internal
           - raised when text is not a valid name in its plane
           + levée lorsqu'un texte n'est pas un nom valide dans son plan
       detail
-          - Error 79: _the name `name` is not valid because it `must not start with 0`_. The
+          - Error `↯/s.68.1`: _the name `name` is not valid because it `must not start with 0`_. The
           - second half is the violated rule's own description of its parameter
           - (`Rule.describe`), so the message states the precise rule the text broke, not merely
           - that it was invalid. Raised by `Name[plane](text)` and by `text.as[Name[plane]]` for
           - the first rule in the plane's intersection which the text fails, and needs a
           - `Diagnostics` in scope, such as `errorDiagnostics.stackTracesDiagnostics`.
-          + Erreur 79 : _the name `name` is not valid because it `must not start with 0`_. La
-          + seconde moitié est la description, par la règle enfreinte elle-même, de son paramètre
+          + Erreur `↯/s.68.1` : _the name `name` is not valid because it `must not start with 0`_.
+          + La seconde moitié est la description, par la règle enfreinte elle-même, de son paramètre
           + (`Rule.describe`), de sorte que le message énonce la règle précise que le texte a
           + enfreinte, et non simplement qu'il était invalide. Levée par `Name[plane](text)` et par
           + `text.as[Name[plane]]` pour la première règle de l'intersection du plan à laquelle le
@@ -1126,16 +1126,16 @@ entry .Moniker
         - raised when a moniker cannot be named or its text cannot be read
         + levée lorsqu'un moniker ne peut pas être nommé ou que son texte ne peut pas être lu
     detail
-        - Error 80, with a sub-number for its `#reason`: _the moniker is not valid because the
+        - Error `↯/s.68.2`, with a sub-number for its `#reason`: _the moniker is not valid because the
         - number 100000 is outside the representable range_. Raised by `Moniker.encodable` for
         - an ordinal the vocabulary cannot name, and by `Moniker.decodable` for text which is not
         - `adjective-animal` or whose words the vocabulary does not have. Needs a `Diagnostics`
         - in scope.
-        + Erreur 80, avec un sous-numéro pour sa `#reason` : _the moniker is not valid because the
-        + number 100000 is outside the representable range_. Levée par `Moniker.encodable` pour un
-        + ordinal que le vocabulaire ne peut pas nommer, et par `Moniker.decodable` pour un texte
-        + qui n'est pas de la forme `adjective-animal` ou dont le vocabulaire ne possède pas les
-        + mots. Exige des `Diagnostics` dans la portée.
+        + Erreur `↯/s.68.2`, avec un sous-numéro pour sa `#reason` : _the moniker is not valid
+        + because the number 100000 is outside the representable range_. Levée par
+        + `Moniker.encodable` pour un ordinal que le vocabulaire ne peut pas nommer, et par
+        + `Moniker.decodable` pour un texte qui n'est pas de la forme `adjective-animal` ou dont le
+        + vocabulaire ne possède pas les mots. Exige des `Diagnostics` dans la portée.
     entry #reason
       info
           - why: `Unreadable`, `OutOfRange`, `Malformed` or `UnknownWord`
@@ -1169,8 +1169,8 @@ entry .Moniker
           ```
       entry #number
         info
-            - the reason's sub-number, which `Moniker.Error` reports alongside error 80
-            + le sous-numéro de la raison, que `Moniker.Error` signale avec l'erreur 80
+            - the reason's sub-number, which `Moniker.Error` reports alongside error `↯/s.68.2`
+            + le sous-numéro de la raison, que `Moniker.Error` signale avec l'erreur `↯/s.68.2`
     entry .communicable
       info
           - renders each reason of a `Moniker.Error` as its message

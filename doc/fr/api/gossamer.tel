@@ -2275,8 +2275,8 @@ entry .Range
       + déplacement du curseur d'un éditeur de ligne.
   entry .Error
     info
-        - Error 151: _the index `index` is outside the range `from`-`to`_
-        + Erreur 151 : _the index `index` is outside the range `from`-`to`_
+        - Error `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
+        + Erreur `↯/s.42.1` : _the index `index` is outside the range `from`-`to`_
     detail
         - Raised when a position is outside a text's bounds by an operation which cannot
         - clamp. It is a `fulminate.Error`, so it is raised through a `Tactic[Range.Error]`

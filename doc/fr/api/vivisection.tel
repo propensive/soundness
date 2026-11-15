@@ -361,17 +361,17 @@ entry .Debugger
         + levée quand une commande JDWP échoue, que la connexion est perdue ou qu'un lancement
         + n'aboutit pas
     detail
-        - Error 601, with the reason's own JDWP error number as its sub-number: _the JDWP action
+        - Error `↯/s.145.1`, with the reason's own JDWP error number as its sub-number: _the JDWP action
         - failed because `reason`: `detail`_. Every operation on `Debug`, `Halt` and
         - `Jdwp.Connection` takes a `Tactic[Debugger.Error]`; the VM's error code in a reply is
         - decoded to a `Debugger.Error.Reason` and raised with the command's set and number as the
         - detail, and a lost connection fails every in-flight request with `Disconnected`.
-        + Erreur 601, avec pour sous-numéro le propre numéro d'erreur JDWP de la raison : _the JDWP
-        + action failed because `reason`: `detail`_. Toute opération sur `Debug`, `Halt` et
-        + `Jdwp.Connection` prend une `Tactic[Debugger.Error]` ; le code d'erreur de la VM dans une
-        + réponse est décodé en une `Debugger.Error.Reason` et levé avec le jeu et le numéro de la
-        + commande comme détail, et une connexion perdue fait échouer chaque requête en cours avec
-        + `Disconnected`.
+        + Erreur `↯/s.145.1`, avec pour sous-numéro le propre numéro d'erreur JDWP de la raison :
+        + _the JDWP action failed because `reason`: `detail`_. Toute opération sur `Debug`, `Halt`
+        + et `Jdwp.Connection` prend une `Tactic[Debugger.Error]` ; le code d'erreur de la VM dans
+        + une réponse est décodé en une `Debugger.Error.Reason` et levé avec le jeu et le numéro de
+        + la commande comme détail, et une connexion perdue fait échouer chaque requête en cours
+        + avec `Disconnected`.
 
         ```scala
         import soundness.*

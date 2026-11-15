@@ -4139,16 +4139,16 @@ entry .Lsp
         - the fault a handler raises, and the error response a server answers with
         + la faute que lève un gestionnaire, et la réponse d'erreur avec laquelle un serveur répond
     detail
-        - Error 147: _the LSP operation failed because `reason`_, numbered by reason (147.1 for
+        - Error `↯/s.114.1`: _the LSP operation failed because `reason`_, numbered by reason (147.1 for
         - `Parse` through 147.11 for `Unstarted`). Each `Reason` carries the JSON-RPC wire code
         - the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600, `MethodNotFound`
         - −32601, `InvalidParams` −32602, `Internal` −32603, `ServerNotInitialized` −32002,
         - `RequestCancelled` −32800, `ContentModified` −32801, `ServerCancelled` −32802,
         - `RequestFailed` −32803 and `Unstarted` −32000, this library's own, for a server
         - subprocess which failed to launch.
-        + Erreur 147 : _the LSP operation failed because `reason`_, numérotée selon la raison (147.1
-        + pour `Parse` jusqu'à 147.11 pour `Unstarted`). Chaque `Reason` porte le code de
-        + transmission JSON-RPC que le protocole lui attribue : `Parse` −32700, `InvalidRequest`
+        + Erreur `↯/s.114.1` : _the LSP operation failed because `reason`_, numérotée selon la
+        + raison (147.1 pour `Parse` jusqu'à 147.11 pour `Unstarted`). Chaque `Reason` porte le code
+        + de transmission JSON-RPC que le protocole lui attribue : `Parse` −32700, `InvalidRequest`
         + −32600, `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603,
         + `ServerNotInitialized` −32002, `RequestCancelled` −32800, `ContentModified` −32801,
         + `ServerCancelled` −32802, `RequestFailed` −32803 et `Unstarted` −32000, propre à cette

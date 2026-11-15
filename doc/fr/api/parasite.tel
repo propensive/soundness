@@ -2305,10 +2305,10 @@ entry .Tenacity
         - raised when a `retry` runs out of attempts, or its body surrenders
         + levée lorsqu'un `retry` épuise ses tentatives, ou que son corps abandonne
     detail
-        - Error 552: _aborted repeated evaluation after `count` attempts_. Raised through the
+        - Error `↯/s.69.1`: _aborted repeated evaluation after `count` attempts_. Raised through the
         - `Tactic[Tenacity.Error]` `retry` needs, when `limit` has been reached or the body called
         - `surrender()`.
-        + Erreur 552 : _aborted repeated evaluation after `count` attempts_. Levée par la
+        + Erreur `↯/s.69.1` : _aborted repeated evaluation after `count` attempts_. Levée par la
         + `Tactic[Tenacity.Error]` que nécessite `retry`, lorsque `limit` a été atteint ou que le
         + corps a appelé `surrender()`.
     entry #count

@@ -975,17 +975,17 @@ entry .Install
   detail
       - Installing a completion script (`Completions.install`), a manpage
       - (`Manpages.install`) or a daemon fails the same two ways, so the error belongs to the
-      - act rather than to any one installer. `Install.Error` is error 822, _the installation
+      - act rather than to any one installer. `Install.Error` is error `↯/s.109.3`, _the installation
       - failed because `reason`_, with the reason's number as its subcode.
       + L'installation d'un script de complétion (`Completions.install`), d'une page de manuel
-      + (`Manpages.install`) ou d'un démon échoue des deux mêmes façons ; l'erreur appartient
-      + donc à l'acte plutôt qu'à un installateur particulier. `Install.Error` est l'erreur 822,
-      + _the installation failed because `reason`_, avec le numéro de la raison comme
-      + sous-code.
+      + (`Manpages.install`) ou d'un démon échoue des deux mêmes façons ; l'erreur appartient donc à
+      + l'acte plutôt qu'à un installateur particulier. `Install.Error` est l'erreur `↯/s.109.3`,
+      + _the installation failed because `reason`_, avec le numéro de la raison comme sous-code.
   entry .Error
     info
-        - error 822: the installation failed, because of the environment or an I/O failure
-        + erreur 822 : l'installation a échoué, à cause de l'environnement ou d'un échec d'E/S
+        - error `↯/s.109.3`: the installation failed, because of the environment or an I/O failure
+        + erreur `↯/s.109.3` : l'installation a échoué, à cause de l'environnement ou d'un échec
+        + d'E/S
     detail
         - Raised through a `Tactic[Install.Error]` by `Completions.install` and
         - `Manpages.install`. `Reason.Environment` (1) means _it was not possible to get enough
@@ -3833,8 +3833,9 @@ entry .Enclave
   refer exoskeleton.pane
   entry .Error
     info
-        - error 347: the sandboxed tool's daemon did not report a process ID
-        + erreur 347 : le démon de l'outil en bac à sable n'a pas indiqué d'identifiant de processus
+        - error `↯/s.109.2`: the sandboxed tool's daemon did not report a process ID
+        + erreur `↯/s.109.2` : le démon de l'outil en bac à sable n'a pas indiqué d'identifiant de
+        + processus
     detail
         - Raised by `Launcher#sandbox` when `tool '{admin}' pid` prints nothing. Overwhelmingly
         - the cause is a protocol mismatch: the launcher the tool was packaged with and the
@@ -4216,8 +4217,8 @@ entry .Pane
           + redimensionne l'affichage et le pseudo-terminal
   entry .Error
     info
-        - error 271: the terminal could not be driven
-        + erreur 271 : le terminal n'a pas pu être piloté
+        - error `↯/s.109.1`: the terminal could not be driven
+        + erreur `↯/s.109.1` : le terminal n'a pas pu être piloté
     detail
         - _can't drive the terminal: `reason`_. The reasons:
         + _can't drive the terminal: `reason`_. Les raisons :

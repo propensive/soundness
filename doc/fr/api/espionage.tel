@@ -1983,18 +1983,19 @@ entry .Acp
         + une erreur dans un échange ACP, ou une erreur signalée par l'agent, selon sa raison
         + JSON-RPC
     detail
-        - Error 148: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
+        - Error `↯/s.125.1`: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
         - `Parse` through 148.7 for `Incompatible`). Each `Reason` carries the JSON-RPC wire
         - code the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600,
         - `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 and `AuthRequired`
         - −32000; `Incompatible` is this library's own, raised by `Acp.connect` when the agent
         - answers `initialize` with another protocol version.
-        + Erreur 148 : _the ACP operation failed because `reason`_, numérotée selon la raison (148.1
-        + pour `Parse` jusqu'à 148.7 pour `Incompatible`). Chaque `Reason` porte le code de
-        + transmission JSON-RPC que lui assigne le protocole : `Parse` −32700, `InvalidRequest`
-        + −32600, `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 et
-        + `AuthRequired` −32000 ; `Incompatible` est propre à cette bibliothèque, levée par
-        + `Acp.connect` lorsque l'agent répond à `initialize` avec une autre version du protocole.
+        + Erreur `↯/s.125.1` : _the ACP operation failed because `reason`_, numérotée selon la
+        + raison (148.1 pour `Parse` jusqu'à 148.7 pour `Incompatible`). Chaque `Reason` porte le
+        + code de transmission JSON-RPC que lui assigne le protocole : `Parse` −32700,
+        + `InvalidRequest` −32600, `MethodNotFound` −32601, `InvalidParams` −32602, `Internal`
+        + −32603 et `AuthRequired` −32000 ; `Incompatible` est propre à cette bibliothèque, levée
+        + par `Acp.connect` lorsque l'agent répond à `initialize` avec une autre version du
+        + protocole.
 
         - The connection's requests raise one, through the `Tactic[Acp.Error]` in scope, for an
         - error response from the agent, with the reason recovered from the wire code by
@@ -2063,8 +2064,8 @@ entry .Acp
           ```
       entry #number
         info
-            - the sub-number of error 148
-            + le sous-numéro de l'erreur 148
+            - the sub-number of error `↯/s.125.1`
+            + le sous-numéro de l'erreur `↯/s.125.1`
       entry #code
         info
             - the JSON-RPC wire code, or `0` for `Incompatible`, which has none

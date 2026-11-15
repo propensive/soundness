@@ -325,13 +325,13 @@ entry .Git
         - raised when a Git operation cannot be completed, with a numbered reason
         + levée quand une opération Git ne peut pas être menée à bien, avec une raison numérotée
     detail
-        - Error 685: _the Git operation could not be completed because `reason`_. The one error
+        - Error `↯/s.123.1`: _the Git operation could not be completed because `reason`_. The one error
         - every repository operation raises, through a `Tactic[Git.Error]` in scope; its
         - `#reason` is a `Git.Error.Reason`, numbered so that the full code is `685.<n>`, and its
         - `#detail` is what git itself said, when a backend has it: the trimmed standard error of
         - the `git` process under `Commandline`, or a filesystem or network failure's own message
         - under `Native`.
-        + Erreur 685 : _the Git operation could not be completed because `reason`_. C'est
+        + Erreur `↯/s.123.1` : _the Git operation could not be completed because `reason`_. C'est
         + l'unique erreur que lève toute opération sur un dépôt, via une `Tactic[Git.Error]` dans la
         + portée ; sa `#reason` est une `Git.Error.Reason`, numérotée de sorte que le code complet
         + soit `685.<n>`, et son `#detail` est ce que git lui-même a dit, quand un backend en
@@ -468,13 +468,13 @@ entry .Git
         - raised when text is not a valid Git reference, hash or refspec
         + levée quand un texte n'est pas une référence, un hachage ou un refspec Git valide
     detail
-        - Error 976: _`value` is not a valid Git reference because `reason`_. Raised by the
+        - Error `↯/s.123.2`: _`value` is not a valid Git reference because `reason`_. Raised by the
         - parsers which check names against git's own rules (`git check-ref-format`):
         - `Git.Branch.parse`, `Git.Tag.parse`, `Git.Revision.parse`, `Git.Refs.parse`,
         - `Git.Refs.heads` and its siblings, `Git.Hash.apply` and `Git.Refspec.parse`, and the
         - `Decodable in Text` givens built from them. `NoteRef#namespace` raises it for a bad
         - notes namespace segment.
-        + Erreur 976 : _`value` is not a valid Git reference because `reason`_. Levée par
+        + Erreur `↯/s.123.2` : _`value` is not a valid Git reference because `reason`_. Levée par
         + les analyseurs qui vérifient les noms selon les règles de git (`git check-ref-format`) :
         + `Git.Branch.parse`, `Git.Tag.parse`, `Git.Revision.parse`, `Git.Refs.parse`,
         + `Git.Refs.heads` et ses semblables, `Git.Hash.apply` et `Git.Refspec.parse`, ainsi que les

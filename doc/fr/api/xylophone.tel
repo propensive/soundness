@@ -865,7 +865,7 @@ entry .Xml
         - raised when XML cannot be read as the type asked for
         + levée lorsque du XML ne peut pas être lu comme le type demandé
     detail
-        - Error 149: _the XML could not be read because `reason`_, with a reason from
+        - Error `↯/s.128.1`: _the XML could not be read because `reason`_, with a reason from
         - `Xml.Error.Reason`. Raised by the primitive decoders, the text bridge, the derived
         - product and sum decoders, and the direct parsers. These are raise-and-continue
         - errors: a decoder records the error through its `Tactic[Xml.Error]` and continues
@@ -873,8 +873,8 @@ entry .Xml
         - per field under `validate[Xml.Focus]` rather than stopping at the first, and each
         - error's `Xml.Focus` carries the XPath of the field at fault. Under
         - `strategies.throwUnsafely` the first is thrown.
-        + Erreur 149 : _the XML could not be read because `reason`_, avec une raison issue de
-        + `Xml.Error.Reason`. Levée par les décodeurs de types primitifs, le pont textuel, les
+        + Erreur `↯/s.128.1` : _the XML could not be read because `reason`_, avec une raison issue
+        + de `Xml.Error.Reason`. Levée par les décodeurs de types primitifs, le pont textuel, les
         + décodeurs dérivés de produits et de sommes, et les analyseurs directs. Ce sont des erreurs
         + de type « lever et continuer » : un décodeur enregistre l'erreur au moyen de sa
         + `Tactic[Xml.Error]` et poursuit avec une sentinelle nulle ou vide, si bien qu'un
@@ -899,8 +899,8 @@ entry .Xml
           - why the XML could not be read, each with its number
           + pourquoi le XML n'a pas pu être lu, chaque raison avec son numéro
       detail
-          - The cases, each extending `Reason(n)` so the error reads as `SN-149.n`:
-          + Les cas, chacun étendant `Reason(n)` pour que l'erreur se lise `SN-149.n` :
+          - The cases, each extending `Reason(n)` so the error reads as `↯/s.128.1.n`:
+          + Les cas, chacun étendant `Reason(n)` pour que l'erreur se lise `↯/s.128.1.n` :
 
           ```tabular
           - column  Case
@@ -3598,12 +3598,12 @@ entry .Xml4
           - raised when a record's field does not conform to its schema
           + levée lorsque le champ d'un enregistrement n'est pas conforme à son schéma
       detail
-          - Error 993: _the XML did not conform to its schema because `reason`_. Raised through
+          - Error `↯/s.128.4`: _the XML did not conform to its schema because `reason`_. Raised through
           - the `Tactic[Xml.Provider.Error]` of the code reading a record field — so
           - `attempt[Xml.Provider.Error](record.shipTo.city)` catches one, and a `collect` with
           - a `venture` per field gathers every violation — with a reason from
           - `Xml.Provider.Error.Reason`.
-          + Erreur 993 : _the XML did not conform to its schema because `reason`_. Levée au
+          + Erreur `↯/s.128.4` : _the XML did not conform to its schema because `reason`_. Levée au
           + travers de la `Tactic[Xml.Provider.Error]` du code qui lit un champ d'enregistrement
           + — si bien que `attempt[Xml.Provider.Error](record.shipTo.city)` en intercepte une,
           + et qu'un `collect` avec un `venture` par champ recueille toutes les violations —
@@ -4502,12 +4502,12 @@ entry .XPath
         - raised when an expression which parsed cannot be evaluated
         + levée lorsqu'une expression qui a été analysée ne peut pas être évaluée
     detail
-        - Error 563: _the XPath could not be evaluated because `reason`_. Raised by `Xml.select`,
+        - Error `↯/s.128.2`: _the XPath could not be evaluated because `reason`_. Raised by `Xml.select`,
         - `Xml.selectText` and `Xml.evaluate`, each of which takes a `Tactic[XPath.Error]`, for
         - an unknown function, a wrong number of arguments, an unbound variable, a
         - non-node-set given to `select`, an unsupported feature (the `id()` function, the
         - `namespace` axis) or an expression still holding an unresolved substitution.
-        + Erreur 563 : _the XPath could not be evaluated because `reason`_. Levée par
+        + Erreur `↯/s.128.2` : _the XPath could not be evaluated because `reason`_. Levée par
         + `Xml.select`, `Xml.selectText` et `Xml.evaluate`, qui reçoivent chacune une
         + `Tactic[XPath.Error]`, pour une fonction inconnue, un mauvais nombre d'arguments, une
         + variable non liée, une valeur autre qu'un ensemble de nœuds passée à `select`, une
@@ -5037,9 +5037,9 @@ entry .Xsd
         - raised when a schema document cannot be read
         + levée lorsqu'un document de schéma ne peut pas être lu
     detail
-        - Error 992: _the XML Schema could not be read because `reason`_. Raised by `Xsd.parse`
+        - Error `↯/s.128.3`: _the XML Schema could not be read because `reason`_. Raised by `Xsd.parse`
         - through its `Tactic[Xsd.Error]`.
-        + Erreur 992 : _the XML Schema could not be read because `reason`_. Levée par
+        + Erreur `↯/s.128.3` : _the XML Schema could not be read because `reason`_. Levée par
         + `Xsd.parse` au travers de sa `Tactic[Xsd.Error]`.
 
         ```scala

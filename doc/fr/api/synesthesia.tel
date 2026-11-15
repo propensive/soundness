@@ -2075,13 +2075,13 @@ entry .Mcp
         + levée lorsqu'un appel ne nomme aucun outil, prompt ou ressource, ou omet un paramètre
         + requis
     detail
-        - Error 630: _the MCP operation failed because `reason`_. Raised by a derived
+        - Error `↯/s.124.1`: _the MCP operation failed because `reason`_. Raised by a derived
         - `Mcp.Specification`'s dispatch, and answered by `Mcp.send` as the JSON-RPC error
         - `-32602` under the request's id, so a protocol mistake is distinct from a tool's own
         - failure (which is a `CallTool` marked `isError`). Deriving a specification needs a
         - `Tactic[Mcp.Error]` in scope, and `Mcp.Interface` rethrows the error unscoped.
-        + Erreur 630 : _the MCP operation failed because `reason`_. Levée par la répartition d'une
-        + `Mcp.Specification` dérivée, et à laquelle `Mcp.send` répond par l'erreur JSON-RPC
+        + Erreur `↯/s.124.1` : _the MCP operation failed because `reason`_. Levée par la répartition
+        + d'une `Mcp.Specification` dérivée, et à laquelle `Mcp.send` répond par l'erreur JSON-RPC
         + `-32602` sous l'id de la requête, si bien qu'une faute de protocole se distingue de
         + l'échec propre d'un outil (qui est un `CallTool` marqué `isError`). Dériver une
         + spécification nécessite une `Tactic[Mcp.Error]` dans la portée, et `Mcp.Interface` relève

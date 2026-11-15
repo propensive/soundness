@@ -235,12 +235,12 @@ entry .Diff
         - raised when a line of a unix-format diff cannot be read
         + levée lorsqu'une ligne d'un diff au format Unix ne peut pas être lue
     detail
-        - Error 39: _could not read the diff at line `lineNo`: `line`_. Raised by
+        - Error `↯/s.78.1`: _could not read the diff at line `lineNo`: `line`_. Raised by
         - `Diff.aggregable` (`read[Diff[Text]]`) for a command line whose ranges are not numbers,
         - or which is not a command at all. A malformed range aborts the read; an unrecognised
         - command line is raised and then skipped, so under a tactic which recovers, the rest of
         - the diff is still read.
-        + Erreur 39 : _could not read the diff at line `lineNo`: `line`_. Levée par
+        + Erreur `↯/s.78.1` : _could not read the diff at line `lineNo`: `line`_. Levée par
         + `Diff.aggregable` (`read[Diff[Text]]`) pour une ligne de commande dont les plages ne sont
         + pas des nombres, ou qui n'est pas du tout une commande. Une plage mal formée interrompt la
         + lecture ; une ligne de commande non reconnue est levée puis ignorée, si bien que, sous une
@@ -935,12 +935,12 @@ entry .Redraft
         - raised when a redraft cannot be applied to the original
         + levée lorsqu'un redraft ne peut pas être appliqué à l'original
     detail
-        - Error 472: _the redraft could not be applied at line `line` (`text`) because `reason`_.
+        - Error `↯/s.78.2`: _the redraft could not be applied at line `line` (`text`) because `reason`_.
         - Raised by `Redraft#resolve` and `Redraft#patch`, for the first anomaly found; use
         - `Redraft#verify` to list them all.
-        + Erreur 472 : _the redraft could not be applied at line `line` (`text`) because `reason`_.
-        + Levée par `Redraft#resolve` et `Redraft#patch`, pour la première anomalie trouvée ;
-        + utilisez `Redraft#verify` pour les lister toutes.
+        + Erreur `↯/s.78.2` : _the redraft could not be applied at line `line` (`text`) because
+        + `reason`_. Levée par `Redraft#resolve` et `Redraft#patch`, pour la première anomalie
+        + trouvée ; utilisez `Redraft#verify` pour les lister toutes.
 
         ```scala
         import soundness.*

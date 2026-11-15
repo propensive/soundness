@@ -1599,7 +1599,7 @@ entry .Yaml
         - raised when a document cannot be decoded as the type asked for
         + levée lorsqu'un document ne peut être décodé dans le type demandé
     detail
-        - Error 31: _could not access the YAML value because `reason`_. Raised by `Yaml#as`,
+        - Error `↯/s.134.1`: _could not access the YAML value because `reason`_. Raised by `Yaml#as`,
         - `Yaml#apply`, the updates and every `Decodable in Yaml` when a node has the wrong
         - shape or a required field is missing. The reason is one of two:
         - `Reason.NotType(found, expected)` — _the YAML value had type `found` instead of
@@ -1608,9 +1608,9 @@ entry .Yaml
         - so under an accruing strategy a record with three bad fields reports three errors,
         - each focused on its field; the gated construction never runs the record's
         - constructor on sentinel values.
-        + Erreur 31 : _could not access the YAML value because `reason`_. Levée par `Yaml#as`,
-        + `Yaml#apply`, les mises à jour et chaque `Decodable in Yaml` lorsqu'un nœud n'a pas la
-        + bonne forme ou qu'un champ requis manque. La raison est l'une de deux :
+        + Erreur `↯/s.134.1` : _could not access the YAML value because `reason`_. Levée par
+        + `Yaml#as`, `Yaml#apply`, les mises à jour et chaque `Decodable in Yaml` lorsqu'un nœud n'a
+        + pas la bonne forme ou qu'un champ requis manque. La raison est l'une de deux :
         + `Reason.NotType(found, expected)` — _the YAML value had type `found` instead of
         + `expected`_, tous deux des `Yaml.Primitive` — et `Reason.Absent` — _the YAML value was not
         + present_. Les décodeurs de primitives enregistrent l'erreur et continuent avec une
@@ -2710,12 +2710,12 @@ entry .YamlPath
         - raised when text is not a valid YAML path
         + levée lorsqu'un texte n'est pas un chemin YAML valide
     detail
-        - Error 546: _the YAML path was not valid because `reason`_. Raised by `.decodable`
+        - Error `↯/s.134.2`: _the YAML path was not valid because `reason`_. Raised by `.decodable`
         - and reported, at the exact character, by the `yp"…"` interpolator as the code
         - compiles. `offset` is the index within the text where the fault was found.
-        + Erreur 546 : _the YAML path was not valid because `reason`_. Levée par `.decodable` et
-        + signalée, au caractère près, par l'interpolateur `yp"…"` pendant la compilation du code.
-        + `offset` est l'indice dans le texte où le défaut a été trouvé.
+        + Erreur `↯/s.134.2` : _the YAML path was not valid because `reason`_. Levée par
+        + `.decodable` et signalée, au caractère près, par l'interpolateur `yp"…"` pendant la
+        + compilation du code. `offset` est l'indice dans le texte où le défaut a été trouvé.
     entry #reason
       info
           - `ExpectedHash`, `ExpectedSlash` or `BadEscape`
