@@ -864,6 +864,18 @@ object Shaker:
         case tree: Ident =>
           refer(tree.symbol)
 
+          // An identifier read from TASTy may stand for a selection from an object, as it
+          // does after `import Chorus.*`: the object is in its type, and nowhere else.
+          tree.tpe match
+            case tpe: TermRef =>
+              tpe.prefix match
+                case prefix: TermRef  => refer(prefix.symbol)
+                case prefix: ThisType => if prefix.cls.is(ModuleClass) then instantiate(prefix.cls)
+                case _                => ()
+
+            case _ =>
+              ()
+
         case tree: Select =>
           // A member of a type which may be null has no one symbol, where selecting it was
           // allowed: it is whatever has its name, in what the type is when it is not null.
