@@ -140,7 +140,7 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
     entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
   entry .Error   raised when an OCI archive cannot be read: a missing document, a bad digest, an unsupported form
     detail
-        Error 285: _the OCI image archive could not be read because `reason`_. Raised by
+        Error `↯/s.113.1`: _the OCI image archive could not be read because `reason`_. Raised by
         `Image.Handle`'s methods and by the openables, with a `.Reason` saying what went
         wrong. The reasons: `MissingLayout` (no `oci-layout` marker), `UnsupportedLayout
         (version)` (a layout version not beginning `1.`), `MissingIndex` (no `index.json`),

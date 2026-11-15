@@ -408,7 +408,7 @@ entry .Geolocation   a location with optional altitude, uncertainty, reference s
       import.
   entry .Error   raised when text is not a well-formed `geo:` URI
     detail
-        Error 420: _the geo URI is not in the correct format because …_, followed by the
+        Error `↯/s.46.1`: _the geo URI is not in the correct format because …_, followed by the
         `Reason`'s message. Raised by `Geolocation.decoder`, through the
         `Tactic[Geolocation.Error]` in scope.
 
@@ -421,9 +421,9 @@ entry .Geolocation   a location with optional altitude, uncertainty, reference s
 
         Each `Reason` is numbered as a sub-code of 420; the cases and their messages are
         tabulated under `Geolocation.Error.Reason`.
-    entry .Reason   why a `geo:` URI failed to decode, numbered as a sub-code of error 420
+    entry .Reason   why a `geo:` URI failed to decode, numbered as a sub-code of error `↯/s.46.1`
       detail
-          An enumeration of `Clarification`s, numbered as sub-codes of error 420:
+          An enumeration of `Clarification`s, numbered as sub-codes of error `↯/s.46.1`:
 
           ```tabular
           column  Case

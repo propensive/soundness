@@ -549,7 +549,7 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
       CborNull | CborUndefined | Tag`: what `Cbor.Ast.apply` accepts.
   entry .Error   raised when CBOR cannot be parsed or a node cannot be decoded as the type asked for
     detail
-        Error 595: _could not process the CBOR value because `reason`_, with the
+        Error `↯/s.104.1`: _could not process the CBOR value because `reason`_, with the
         `.Reason`'s own number as the error's second component. Raised by `Cbor.Ast.parse`
         and every `read[…]` for malformed input, with the absolute byte offset at which the
         fault was met — input which stops mid-value names the offset of the byte which

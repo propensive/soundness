@@ -192,7 +192,7 @@ entry .Watch   a registration of watched paths, its events, and the `open[Watch]
     entry #paths   every path touched in the batch, once each, in order of first occurrence
   entry .Error   raised when a path cannot be watched
     detail
-        Error 545: _the path could not be watched because …_, with one of four reasons:
+        Error `↯/s.98.1`: _the path could not be watched because …_, with one of four reasons:
         `LimitExceeded` (_the operating system's limit on watched paths has been exceeded_,
         such as inotify's `max_user_watches`), `Nonexistent` (_the path does not exist_),
         `NotDirectory` (_the path is not a directory_, as when a watched path's parent is a
@@ -208,7 +208,7 @@ entry .Watch   a registration of watched paths, its events, and the `open[Watch]
         ```
     entry .Reason   why a path could not be watched: a limit, a missing path, a non-directory or a permission
       detail
-          Each case's sub-number of error 545 is its `#number`:
+          Each case's sub-number of error `↯/s.98.1` is its `#number`:
 
           ```tabular
           column  Case
@@ -220,7 +220,7 @@ entry .Watch   a registration of watched paths, its events, and the `open[Watch]
           row  `NotDirectory`  3  _the path is not a directory_
           row  `PermissionDenied`  4  _the user does not have permission to watch the path_
           ```
-      entry #number   the reason's sub-number of error 545
+      entry #number   the reason's sub-number of error `↯/s.98.1`
     entry .communicable   renders each reason as the phrase completing _the path could not be watched because …_
     entry #reason   why the path could not be watched
   entry #stream   every event, one at a time, until the watch is unregistered

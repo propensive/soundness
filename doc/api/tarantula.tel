@@ -234,7 +234,7 @@ entry .WebDriver   a browser to drive: a local driver program, or a driver alrea
   entry #capabilities   the JSON sent as the `POST /session` payload
   entry .Error   a failed WebDriver action: the W3C error code, the driver's message and its stack trace
     detail
-        Error 589: _the WebDriver action failed because `reason`: `detail`_, with the
+        Error `↯/s.127.1`: _the WebDriver action failed because `reason`: `detail`_, with the
         `WebDriver.Error.Reason`'s number as its subcode. Every failure of a session arrives as
         this one type: an error object the driver returned in a 4xx or 5xx reply, a driver that
         could not be reached, a reply which was not the JSON the specification describes (reason

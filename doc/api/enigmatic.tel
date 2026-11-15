@@ -216,7 +216,7 @@ entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API
     entry #bytes   `size` random bytes
   entry .Error   raised when decryption or unsealing fails: a wrong key, corrupt data, a bad tag
     detail
-        Error 521: _could not decrypt the data because `reason`_. Encryption is total — the
+        Error `↯/s.105.2`: _could not decrypt the data because `reason`_. Encryption is total — the
         types guarantee a valid transformation — so only the processing side can fail:
         `Data#decrypt`, the streaming `decrypt` (as the final window is pulled), `unseal`, and
         encrypting with `BlockCipher.NoPadding` over misaligned input. A provider's own failures
@@ -757,7 +757,7 @@ entry .PrivateKey   a private key held by a `Cloak`: signs, decrypts, agrees, an
       itself appears.
   entry .Error   raised when a key document cannot be read as the `PrivateKey` requested
     detail
-        Error 597: _could not read the private key because `reason`_. Raised by
+        Error `↯/s.105.7`: _could not read the private key because `reason`_. Raised by
         `.pemDecodable`, `.derDecodable`, `Pkcs8` and `OpenSsh.privateKey`.
     entry .communicable   renders each reason as a message
     entry .Reason   why the document was refused
@@ -841,7 +841,7 @@ entry .PublicKey   the public half of a key pair: verifies signatures, encrypts 
   entry .inspectable   renders a public key in full hexadecimal, needing no `Alphabet` in scope
   entry .Error   raised when a key document cannot be read as the `PublicKey` requested
     detail
-        Error 598: _could not read the public key because `reason`_. Raised by
+        Error `↯/s.105.8`: _could not read the public key because `reason`_. Raised by
         `.pemDecodable`, `.derDecodable`, `Spki` and `OpenSsh.publicKey`.
     entry .communicable   renders each reason as a message
     entry .Reason   why the document was refused
@@ -1931,7 +1931,7 @@ entry .Keystore   a PKCS#12 keystore, opened for the duration of a scope with a 
       `Tactic[Keystore.Error]` in scope.
   entry .Error   raised when a keystore cannot be read, or is opened for writing
     detail
-        Error 522: _the keystore operation failed because `reason`_.
+        Error `↯/s.105.3`: _the keystore operation failed because `reason`_.
     entry .communicable   renders each reason as a message
     entry .Reason   why the operation failed
         `Unreadable` (1): _the keystore could not be read with the given password_ — a wrong
@@ -2057,7 +2057,7 @@ entry .Asn1   an ASN.1 value, in the universal types PKIX uses, with a strict DE
     entry #value   reads one value ending at or before the limit, raising `Asn1.Error`
   entry .Error   raised when bytes are not a strict DER encoding
     detail
-        Error 523: _could not process the ASN.1 value because `reason`_, where the reason
+        Error `↯/s.105.4`: _could not process the ASN.1 value because `reason`_, where the reason
         is an `Asn1.Error.Reason` naming the fault and the byte offset. Raised by
         `Asn1.decodable` and `Asn1.aggregable` (and so by anything decoding through them:
         `Certificate.decodable`, the key decoders, `text.read[Asn1 in Pem]`) when the input
@@ -2229,7 +2229,7 @@ entry .Pem   a PEM block: a label and the bytes its base64 armor carries
       line, each with its `\n`.
   entry .Error   raised when text is not a PEM block
     detail
-        Error 389: _could not parse PEM content because `reason`_. Raised by `Pem.aggregable`,
+        Error `↯/s.105.1`: _could not parse PEM content because `reason`_. Raised by `Pem.aggregable`,
         `Pem.aggregableAll` and the `read[X in Pem]` liftings:
 
         ```tabular
@@ -2471,7 +2471,7 @@ entry .Cose   a COSE message (RFC 9052): a payload signed or MACed under a key, 
     entry #check   whether the authentication bytes are valid for the to-be-signed bytes under the key
   entry .Error   raised when a COSE message cannot be parsed or verified
     detail
-        Error 596: _could not process the COSE message because `reason`_. Raised by
+        Error `↯/s.105.6`: _could not process the COSE message because `reason`_. Raised by
         `Cose.parse` (and so by `authenticate[Cose]`) for an envelope that is not a tag
         (`MalformedStructure`), a tag other than 17, 18, 97 or 98 (`UnknownTag(tag)`), or a
         body of the wrong shape (`MalformedStructure`); by `Cose#verifyWith` when the key's
@@ -2862,7 +2862,7 @@ entry .Certificate   an X.509 certificate, held as the ASN.1 value it is
       `SubjectPublicKeyInfo`.
   entry .Error   raised when a certificate cannot be built
     detail
-        Error 524: _could not build the certificate because `reason`_. Raised by
+        Error `↯/s.105.5`: _could not build the certificate because `reason`_. Raised by
         `Certificate.selfSigned` and `Certificate.issued`. Reading and verifying never raise it:
         `#verify` is `false` for a malformed certificate. The reasons:
 

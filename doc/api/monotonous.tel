@@ -134,7 +134,7 @@ entry .Serialization   the supertype of the encodings, and the home of `Serializ
   refer monotonous.Serialization.Error
   entry .Error   raised when text to be deserialized holds a character not in the alphabet
     detail
-        Error 325: _the character `char` at `position` was not valid_. Raised by `deserialize`
+        Error `↯/s.61.1`: _the character `char` at `position` was not valid_. Raised by `deserialize`
         and by the streaming deserializer when a character is neither one of the alphabet's
         own nor one of its tolerated alternatives. A strict alphabet raises it for the other
         case of a letter, where a tolerant one would accept it.

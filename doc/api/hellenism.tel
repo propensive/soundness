@@ -262,7 +262,7 @@ entry .Classpath   the root of the classpath plane, and a classpath as a list of
         drops it from the text it renders.
   entry .Error   raised when a resource is not on the classpath
     detail
-        Error 540: _the resource `path` was not on the classpath_. Raised by the `Streamable`
+        Error `↯/s.67.1`: _the resource `path` was not on the classpath_. Raised by the `Streamable`
         givens for `Resource` and `Path on Classpath` when the `Classloader` in scope does
         not have the resource. A `cp"…"` resource is checked at compile time against the
         compiler's classpath, so this error at runtime means the program was launched with a

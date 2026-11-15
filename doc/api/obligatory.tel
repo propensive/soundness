@@ -156,9 +156,9 @@ entry .Framing   the act of delimiting messages in a stream, and the error when 
       type — and is distinct from `Grpc.Framing`, the gRPC message convention, which raises
       `Grpc.Error` instead.
   refer obligatory.Framable
-  entry .Error   raised when a stream cannot be split into frames: error 142
+  entry .Error   raised when a stream cannot be split into frames: error `↯/s.112.2`
     detail
-        Error 142: _could not deframe the message because `reason`_. Raised, through the
+        Error `↯/s.112.2`: _could not deframe the message because `reason`_. Raised, through the
         `Tactic[Framing.Error]` the framer's given captured, as the framed iterator is read.
         The `reason` says what was wrong: `ShortRead` when the input ended inside a frame
         (`LengthPrefix` with fewer bytes than its header promised, `ContentLength` with a
@@ -306,8 +306,8 @@ entry .Rpc   the home of `Rpc.Error`, the generic failure of a remote call
       The object holds only `Rpc.Error`. The protocol-specific failures are `JsonRpc.Error` and
       `Grpc.Error`, each carrying what its wire format reports; `Rpc.Error` says only that a
       call failed.
-  entry .Error   raised when a remote procedure call fails: error 983
-      Error 983: _the remote procedure call failed_. A generic failure with no detail, for a
+  entry .Error   raised when a remote procedure call fails: error `↯/s.112.8`
+      Error `↯/s.112.8`: _the remote procedure call failed_. A generic failure with no detail, for a
       transport which cannot say more; `JsonRpc.Error` and `Grpc.Error` carry the peer's code
       and message.
 
@@ -591,9 +591,9 @@ entry .JsonRpc   JSON-RPC 2.0: a dispatcher and client stub derived from an `@rp
         because an error response cannot fulfil the promise and is matched back by id.
     entry #id   the UUID the request was sent under
     entry #promise   the promise `JsonRpc.answer` fulfils with the result, or cancels on a fault
-  entry .Error   raised when a JSON-RPC operation fails: error 721
+  entry .Error   raised when a JSON-RPC operation fails: error `↯/s.112.7`
     detail
-        Error 721: _the JSON-RPC operation failed because `reason`_. Thrown by a `JsonRpc.serve`
+        Error `↯/s.112.7`: _the JSON-RPC operation failed because `reason`_. Thrown by a `JsonRpc.serve`
         dispatcher for a method the interface does not declare (`UnknownMethod`), and raised
         by `JsonRpc.outcome` — and so by every generated `#proxy` method — when the peer answered
         with an error (`Failed`, with `#code` and `#detail` carrying the peer's `error.code`
@@ -742,9 +742,9 @@ entry .Sse   one server-sent event: its event name, data lines, id and retry int
       what `Sse.Source#put(json)` stores and `JsonRpc#stream` produces.
   entry .textEncodable   makes an `Sse` from a `Text`: a `message` event with the text as its one data line
       The `Text is Encodable in Sse` given, in implicit scope, so `Sse.Source#put(t"…")` works.
-  entry .Error   raised when a server-sent event is not valid, or a replay exceeds a source's buffer: error 350
+  entry .Error   raised when a server-sent event is not valid, or a replay exceeds a source's buffer: error `↯/s.112.5`
     detail
-        Error 350: _the server-sent event was not valid because `reason`_. Raised by
+        Error `↯/s.112.5`: _the server-sent event was not valid because `reason`_. Raised by
         `Sse.decodable` for a malformed line (`MalformedField`), an unknown field name
         (`UnknownField`) or a `retry` which is not an integer (`BadRetryValue`), and by
         `Sse.Source#stream` when the requested replay reaches further back than the source's

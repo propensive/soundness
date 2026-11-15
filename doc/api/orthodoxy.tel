@@ -312,7 +312,7 @@ entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fail
       An object which holds `OAuth.Error` and its reasons.
   entry .Error   raised when an OAuth 2 grant, check or redirect fails
     detail
-        Error 840: _OAuth failed because `reason`_, where the second number is the reason's.
+        Error `↯/s.117.1`: _OAuth failed because `reason`_, where the second number is the reason's.
         Every grant on `Issuer`, `Authorization.parse`, `Scope#apply` and the server
         middleware raise it, each through the `Tactic[OAuth.Error]` in scope; network,
         parsing and HTTP-status failures are all mitigated into it, so a caller handles one
@@ -325,7 +325,7 @@ entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fail
         capture[OAuth.Error](Authorization.parse(t"""{"token_type": "Bearer"}""".as[Json])).reason
         // OAuth.Error.Reason.InvalidJsonResponse
         ```
-    entry .Reason   why an OAuth exchange failed, numbered as the second part of error 840
+    entry .Reason   why an OAuth exchange failed, numbered as the second part of error `↯/s.117.1`
       detail
           A `Reason is Communicable` given in the companion renders each case:
 

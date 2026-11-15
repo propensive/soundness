@@ -423,7 +423,7 @@ entry .Xml   an XML node or sequence of nodes, and the companion which holds the
     entry #apply   a copy of the element with the given children, `Unset` ones dropped
   entry .Error   raised when XML cannot be read as the type asked for
     detail
-        Error 149: _the XML could not be read because `reason`_, with a reason from
+        Error `↯/s.128.1`: _the XML could not be read because `reason`_, with a reason from
         `Xml.Error.Reason`. Raised by the primitive decoders, the text bridge, the derived
         product and sum decoders, and the direct parsers. These are raise-and-continue
         errors: a decoder records the error through its `Tactic[Xml.Error]` and continues
@@ -1547,7 +1547,7 @@ entry .Xml4   the lowest layer of `Xml`'s companion, holding `Xml.Provider`
           At lower priority than the three direct conversions in `Schema`'s companion.
     entry .Error   raised when a record's field does not conform to its schema
       detail
-          Error 993: _the XML did not conform to its schema because `reason`_. Raised through
+          Error `↯/s.128.4`: _the XML did not conform to its schema because `reason`_. Raised through
           the `Tactic[Xml.Provider.Error]` of the code reading a record field — so
           `attempt[Xml.Provider.Error](record.shipTo.city)` catches one, and a `collect` with
           a `venture` per field gathers every violation — with a reason from
@@ -1955,7 +1955,7 @@ entry .XPath   an XPath 1.0 expression as a value: parsed, built with typed cons
     entry #text   the value as a string: a node-set's first string-value, `1` for `1.0`, `true`/`false`
   entry .Error   raised when an expression which parsed cannot be evaluated
     detail
-        Error 563: _the XPath could not be evaluated because `reason`_. Raised by `Xml.select`,
+        Error `↯/s.128.2`: _the XPath could not be evaluated because `reason`_. Raised by `Xml.select`,
         `Xml.selectText` and `Xml.evaluate`, each of which takes a `Tactic[XPath.Error]`, for
         an unknown function, a wrong number of arguments, an unbound variable, a
         non-node-set given to `select`, an unsupported feature (the `id()` function, the
@@ -2159,7 +2159,7 @@ entry .Xsd   an XML Schema (XSD 1.0) as an immutable model of its declarations
     entry #location   the `schemaLocation`, if given
   entry .Error   raised when a schema document cannot be read
     detail
-        Error 992: _the XML Schema could not be read because `reason`_. Raised by `Xsd.parse`
+        Error `↯/s.128.3`: _the XML Schema could not be read because `reason`_. Raised by `Xsd.parse`
         through its `Tactic[Xsd.Error]`.
 
         ```scala

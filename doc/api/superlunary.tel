@@ -176,7 +176,7 @@ entry .Rig   an environment quoted code can be compiled for and run in, with `di
       Not normally needed by a caller.
   entry .Error   raised when a value cannot cross a rig's boundary, or the staged code cannot be run
     detail
-        Error 306: _failed to perform a remote operation because `reason`_. This is a failure
+        Error `↯/s.121.1`: _failed to perform a remote operation because `reason`_. This is a failure
         of the marshalling and deployment around the staged code, not of the code itself; a
         staged block which does not compile raises `Compiler.Error` instead. The reason is one
         of the cases of `Rig.Error.Reason`.

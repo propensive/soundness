@@ -955,7 +955,7 @@ entry .StreamOutputStream   a `java.io.OutputStream` whose writes become a lazy 
 
 entry .Truncation   `zephyrine.Truncation`, re-exported: the error a stream raises when it is cut short
   detail
-      `Truncation.Error(total)` is error 264, _the stream was cut prematurely after `total`_,
+      `Truncation.Error(total)` is error `↯/s.60.1`, _the stream was cut prematurely after `total`_,
       where `total` is the `Bytes` delivered before the cut. A `Spring`'s pull and the
       `Streamable` givens for JDK sources abort with it through a `Tactic`; the `Writable` and
       `Sink` givens for JDK targets `raise` it through an `Emit`, since a writer only reports a

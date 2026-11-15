@@ -183,6 +183,7 @@ row  `SN-714`  [`↯/s.100.8`](100.8.md)  Urticose
 row  `SN-716`  [`↯/s.24.14`](24.14.md)  Contingency
 row  `SN-721`  [`↯/s.112.7`](112.7.md)  Obligatory
 row  `SN-735`  [`↯/s.73.8`](73.8.md)  Aviation
+row  `SN-737`  [`↯/s.146.1`](146.1.md)  Abscission
 row  `SN-740`  [`↯/s.27.10`](27.10.md)  Hypotenuse
 row  `SN-741`  `↯/s.27.11`  Hypotenuse
 row  `SN-751`  [`↯/s.136.1`](136.1.md)  Zeppelin

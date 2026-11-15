@@ -105,7 +105,7 @@ entry .Hostname   a DNS hostname: dot-separated labels, each held to the rules f
   entry .toExpr   lifts a hostname into a quoted expression, for macros which build one
   entry .Error   raised when text is not a valid hostname
     detail
-        Error 892: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
+        Error `↯/s.100.10`: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
         (through `Hostname.decodable`) and, as a compile error, by `host"…"`. The `#text` is
         the whole text which was decoded and the `#reason` says what was wrong with it.
     entry .Reason   why a hostname was rejected
@@ -270,7 +270,7 @@ entry .IpAddress   the home of `IpAddress.Error`, raised for an IP address or su
       and both subnet types raise, so a program decoding either can handle one type.
   entry .Error   raised when text or bytes are not a valid IPv4 or IPv6 address or subnet
     detail
-        Error 77: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
+        Error `↯/s.100.2`: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
         `as[Ipv6]`, `as[Ipv4Subnet]` and `as[Ipv6Subnet]`, by the `Data` decoders, and as a
         compile error by `ip"…"` and `subnet"…"`; it is also wrapped as the reason of an
         `EmailAddress.Error` or `Url.Error` whose address part is bad.
@@ -608,7 +608,7 @@ entry .EmailAddress   an email address: a local part, a domain, and optionally a
   entry .parse   reads an address from text, as `.decodable` does
   entry .Error   raised when text is not a valid email address
     detail
-        Error 159: _the email address is not valid because `reason`_. Raised by
+        Error `↯/s.100.4`: _the email address is not valid because `reason`_. Raised by
         `as[EmailAddress]` and, as a compile error, by `email"…"`.
     entry .Reason   why an email address was rejected
       detail
@@ -678,7 +678,7 @@ entry .NetworkInterface   one of the machine's network interfaces, with its addr
   entry .byAddress   the interface an IP address is bound to, or `Unset`
   entry .Error   raised when the platform cannot enumerate or inspect its interfaces
     detail
-        Error 418: _the network interface could not be read because `reason`_, wrapping the
+        Error `↯/s.100.6`: _the network interface could not be read because `reason`_, wrapping the
         socket error's message.
     entry .Reason   why the interfaces could not be read
       detail
@@ -736,7 +736,7 @@ entry .Internet   evidence of network access, as a capability, which may say the
   refer urticose.internet
   entry .Error   raised when network access was required and is not available
     detail
-        Error 770: _an Internet connection is not available_. Raised by `Internet#require` on
+        Error `↯/s.100.9`: _an Internet connection is not available_. Raised by `Internet#require` on
         an offline `Internet`, and by `internetAccess.offline` as soon as an `Online` is
         summoned.
   entry #online   whether the network is available
@@ -866,7 +866,7 @@ entry .Url   a URL: a scheme, an optional authority, a location, and optional qu
       `urlInterfaces.soundnessUrl` is the same instance by name.
   entry .Error   raised when text is not a valid URL
     detail
-        Error 714: _the URL `text` is not valid: `reason` at `offset`_. Raised by
+        Error `↯/s.100.8`: _the URL `text` is not valid: `reason` at `offset`_. Raised by
         `as[HttpUrl]`, by `as[Authority]`, and as a compile error by `url"…"`. The `#offset`
         is the position in the text where the fault was found.
     entry .communicable   renders each reason as a message
@@ -1358,7 +1358,7 @@ entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, rec
       ```
   entry .Error   raised when a DNS name or message is not valid, or a name does not resolve
     detail
-        Error 53: _the DNS message is not valid because `reason`_. Raised by name construction
+        Error `↯/s.100.1`: _the DNS message is not valid because `reason`_. Raised by name construction
         and parsing, by `Rdata.Txt`, by decoding a message from `Data`, by `Dns.resolve`, and
         as a compile error by `dns"…"`.
     entry .Reason   why a name, message or lookup failed
@@ -1469,7 +1469,7 @@ entry .internal   the opaque types' home and the macro implementations behind th
       entry .parse   reads an address from dashed text, as `.decoder` does
       entry .Error   raised when text is not a valid MAC address
         detail
-            Error 532: _the MAC address is not valid because `reason`_. Raised by
+            Error `↯/s.100.7`: _the MAC address is not valid because `reason`_. Raised by
             `as[MacAddress]` and, as a compile error, by `mac"…"`.
         entry .Reason   why a MAC address was rejected
           detail
@@ -1512,7 +1512,7 @@ entry .internal   the opaque types' home and the macro implementations behind th
           is not reserved.
       entry .Error   raised when a port number is outside 1–65535
         detail
-            Error 139: _the port is not in the valid range_. Raised by `Port[transport](number)`
+            Error `↯/s.100.3`: _the port is not in the valid range_. Raised by `Port[transport](number)`
             and by decoding a port from text; the interpolators `tcp"…"` and `udp"…"` report an
             out-of-range number as a compile error instead.
       entry .Type   the structural bound of `Port`: the type members which refine it

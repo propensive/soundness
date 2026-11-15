@@ -181,7 +181,7 @@ entry .internal   the opaque type `Pojo`, its companion of codecs, and its error
         ```
     entry .Error   raised when a `Pojo` does not have the shape of the type it is decoded as
       detail
-          Error 916: _could not deserialize from Java POJO types_. Raised by `as` when a product
+          Error `↯/s.120.1`: _could not deserialize from Java POJO types_. Raised by `as` when a product
           or a collection is expected and the `Pojo` is not an array, or a sum is expected and
           it is not a two-element array of a label and a payload. It usually means the two
           sides of a boundary disagree on the type's definition.

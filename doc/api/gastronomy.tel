@@ -983,7 +983,7 @@ entry .Multihash   a self-describing digest envelope: varint code, varint length
       with those messages, which `Multihash.Error` embeds.
   entry .Error   raised by `Multihash.parse` for an envelope which cannot be read
     detail
-        Error 41, with the `Reason`'s ordinal as its detail number: _the multihash could not be
+        Error `↯/s.66.1`, with the `Reason`'s ordinal as its detail number: _the multihash could not be
         read because `reason`_, where the reason is one of `Multihash.Reason`'s messages.
     entry #reason   which of `Multihash.Reason` applies
   entry #code   the algorithm's multicodec code, as an `Int`

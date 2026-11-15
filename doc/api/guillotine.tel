@@ -794,7 +794,7 @@ entry .Pid   a process identifier, as its own type: renders as `↯1234`, parses
       the variable is not a number. Needs a `Tactic[Number.Error]`.
   entry .Error   raised when no process with a given pid is running
     detail
-        Error 909: _the process with PID `1234` is not running_. Raised by `Process(pid)`, and
+        Error `↯/s.84.2`: _the process with PID `1234` is not running_. Raised by `Process(pid)`, and
         so by `Job#process`, when `ProcessHandle.of` finds nothing: the process has exited,
         or never existed. Needs a `Diagnostics` in scope to construct.
     entry #pid   the pid that was looked up
@@ -809,7 +809,7 @@ entry .Exec   the vocabulary of running a command: `Exec.Error` and the `Exec.Ev
   refer guillotine.Executable
   entry .Error   raised when a command cannot be run: a missing binary, or a read of its output cut short
     detail
-        Error 691: _execution of the command `ls -la` failed_. Raised by `exec`, `fork`,
+        Error `↯/s.84.1`: _execution of the command `ls -la` failed_. Raised by `exec`, `fork`,
         `detach` and `Command.OnTerminal#exec` when the program cannot be started — it is not
         on the `PATH`, or the file is not executable — and by `exec` when a read of the output
         is cut short (a `Truncation.Error`, re-raised as this for the command; the last

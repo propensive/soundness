@@ -110,7 +110,7 @@ entry .Shrink   how a classpath is shrunk: the options, and the patterns of clas
         Each class of the chain refers to the one before it; the last is one which was
         recompiled, or was an entry point. A class which was not kept is a chain of itself.
   entry .Package   a package of the classpath, with its classes there and in the closed world
-  entry .Error   raised when a classpath cannot be shrunk: error 737, _the classpath could not be shrunk because `reason`_
+  entry .Error   raised when a classpath cannot be shrunk: error `↯/s.146.1`, _the classpath could not be shrunk because `reason`_
     entry .Reason   why: the closed world would not be sound, or the shrinker failed
       detail
           ```tabular

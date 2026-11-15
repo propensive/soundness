@@ -184,7 +184,7 @@ entry .Error   the base of every Soundness error: a number, a structured message
 
   entry .Unchecked   a foreign `Throwable` wrapped as an `Error`, so that it can be raised
     detail
-        Error 117: _unchecked error with message, `text`_, or _unchecked error with no
+        Error `↯/s.15.1`: _unchecked error with message, `text`_, or _unchecked error with no
         message_. `Unchecked(throwable)` keeps the original's message as `#text` and
         adopts its stack trace, and is built with `emptyDiagnostics`, since the trace it carries
         is the original's. `Error(throwable)` is the usual way to make one: it passes a real
@@ -528,7 +528,7 @@ entry .TextEscapes   decodes the standard escape sequences in text: `\n`, `\t`, 
       a text ending in a lone backslash.
   entry .Error   raised when an escape sequence is not valid
     detail
-        Error 421: _the character `c` should not be escaped_, _the unicode escape is
+        Error `↯/s.15.2`: _the character `c` should not be escaped_, _the unicode escape is
         incomplete_ or _the final character cannot be an escape_. Thrown by `escape` and
         `standardEscape`.
     entry #initMessage   the message describing the invalid escape

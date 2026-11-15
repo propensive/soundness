@@ -1596,7 +1596,7 @@ entry .Lsp   the protocol: its types, the handler registry, `listen`, `proxy`, a
     entry .apply   the dispatcher for a server, routing each message by the trait which declares its method
   entry .Error   the fault a handler raises, and the error response a server answers with
     detail
-        Error 147: _the LSP operation failed because `reason`_, numbered by reason (147.1 for
+        Error `↯/s.114.1`: _the LSP operation failed because `reason`_, numbered by reason (147.1 for
         `Parse` through 147.11 for `Unstarted`). Each `Reason` carries the JSON-RPC wire code
         the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600, `MethodNotFound`
         −32601, `InvalidParams` −32602, `Internal` −32603, `ServerNotInitialized` −32002,

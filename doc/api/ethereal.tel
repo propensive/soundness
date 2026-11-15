@@ -1084,7 +1084,7 @@ entry .Upgrade   stages a signed replacement executable for the launcher to veri
         `outcome.when[Instant]`, for any `Instantiable across Instants from Long`.
   entry .Error   raised when a candidate cannot be staged
     detail
-        Error 631: _could not stage the upgrade because `reason`_, raised by `Upgrade.stage`.
+        Error `↯/s.140.1`: _could not stage the upgrade because `reason`_, raised by `Upgrade.stage`.
         The reason is a `Clarification`, so the full code is `↯/s.140.1.1` to `↯/s.140.1.3`:
         `CannotReadSource` (1) — _the upgrade source could not be read_; `CannotWritePending`
         (2) — _the .pending file could not be written_; `CannotResolveName` (3) — _the
@@ -1095,7 +1095,7 @@ entry .Upgrade   stages a signed replacement executable for the launcher to veri
           `CannotReadSource`, `CannotWritePending` or `CannotResolveName`, numbered 1 to 3;
           the companion's `Communicable` renders each.
       entry .communicable   renders each reason as a message
-      entry #number   the reason's number within error 631
+      entry #number   the reason's number within error `↯/s.140.1`
     entry #reason   why the candidate could not be staged
 
 entry .Terminus   what one of the client's standard streams is attached to: a terminal or a pipe

@@ -115,7 +115,7 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
       `Document(Svg(10, 10), enc"UTF-8").show` begins `<?xml version="1.0" encoding="UTF-8"?>`.
   entry .Error   raised when SVG text cannot be read as an `Svg`
     detail
-        Error 122: _the SVG could not be parsed because `reason`_, with the reason's own
+        Error `↯/s.130.1`: _the SVG could not be parsed because `reason`_, with the reason's own
         number as the sub-number. Raised by `read[Svg]` and `load[Svg]` through a
         `Tactic[Svg.Error]`; XML which is not well-formed raises `Xml.Error` first, from the
         parser beneath.

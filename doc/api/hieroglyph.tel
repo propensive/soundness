@@ -323,7 +323,7 @@ entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of
       are built.
   entry .Error   a character which the encoding cannot represent
     detail
-        Error 282: _character `char` cannot be encoded with the encoding `encoding`_. The
+        Error `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_. The
         error type for a character outside an encoding's repertoire. `Codepage#encoded` does
         not raise it — an unmappable character is replaced, as `String#getBytes` replaces it —
         so it is for callers which detect the condition themselves.

@@ -141,9 +141,9 @@ entry .NumericRange   the home of the bounded-number type `~` and its operations
     entry .cardinality   checks a numeric literal against its bounded type as the code compiles
         The `FromDigits` given which makes `val x: 0.0 ~ 1.0 = 0.2` typecheck; it needs
         `scala.language.experimental.genericNumberLiterals`. A literal below the lower bound
-        is error 838, _the value `v` is less than the lower bound for this value, `min`_, and
-        one above the upper bound error 683, _the value `v` is greater than the upper bound for
-        this value, `max`_; bounds which are not `Double` literal types are errors 51 and 224.
+        is error `↯/s.16.4`, _the value `v` is less than the lower bound for this value, `min`_, and
+        one above the upper bound error `↯/s.16.3`, _the value `v` is greater than the upper bound for
+        this value, `max`_; bounds which are not `Double` literal types are errors `↯/s.16.1` and `↯/s.16.2`.
         Both bounds are inclusive.
 
         ```scala

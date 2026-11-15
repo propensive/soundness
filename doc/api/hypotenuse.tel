@@ -655,7 +655,7 @@ entry .Arithmetic   the failure of an arithmetic operation, and the shapes of th
   refer hypotenuse.arithmeticOptions
   entry .Error   raised when an operation has no representable result: a zero divisor or an overflow
     detail
-        Error 868, _the arithmetic operation could not be completed because `reason`_, where
+        Error `↯/s.27.15`, _the arithmetic operation could not be completed because `reason`_, where
         the reason is `Reason.DivisionByZero` (_the divisor was zero_) or `Reason.Overflow`
         (_the result exceeded the range of its type_); the reason's number (1 or 2) is the
         error's detail number. Raised by the checked policies through a
@@ -696,7 +696,7 @@ entry .Commensurable   the compile-time comparison typeclass behind `<`, `<=`, `
       List('1', '2', '3', '4', '5').filter('2' < _ <= '4')     // List('3', '4')
       ```
 
-      The chain must begin with a bound on the left: `1.4 > x > 1.2` is error 966, _this
+      The chain must begin with a bound on the left: `1.4 > x > 1.2` is error `↯/s.27.16`, _this
       cannot be written as a range expression_. Every numeric type in this library has an
       `Orderable` in its companion, `F64` additionally compares against an `Int` and a
       `Double`, and any type with a symbolism `Comparable` (or a stdlib `Ordering`, through
@@ -707,7 +707,7 @@ entry .Commensurable   the compile-time comparison typeclass behind `<`, `<=`, `
   entry .numeric   `(a < x) < b`: a chained comparison on the primitives, rewritten into one range test
       `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`.
       Its `compare` is a macro which inspects the `Boolean` for a comparison of the same
-      primitive type, and halts with error 966 if the expression is not one.
+      primitive type, and halts with error `↯/s.27.16` if the expression is not one.
   entry .memory   `Memory is Orderable`: memory sizes compare by their byte count
   entry .ordinal   `Ordinal is Orderable`: `Prim < Sec`
   entry .orderable   any `Comparable` type is `Orderable`, so `<` and `max` work on it
@@ -743,7 +743,7 @@ entry .Rational   the error raised when text is not a rational number
       `Q64.parse` and `Q32.parse` raise `Rational.Error` for text which is neither an
       integer, a fraction `numerator/denominator`, nor `NaR`.
   refer hypotenuse.Q64
-  entry .Error   Error 741: _`text` is not a representable rational number_
+  entry .Error   Error `↯/s.27.11`: _`text` is not a representable rational number_
     detail
         Raised by `Q64.parse(text)` and `Q32.parse(text)` through a `Tactic[Rational.Error]`.
     entry #text   the text which could not be parsed
@@ -885,7 +885,7 @@ entry .decimalInternal   the opaque scope of `Decimal`
         back to the same value.
     entry .double   an extension on `Decimal`: the nearest `Double`, correctly rounded
     entry .whole   an extension on `Decimal`: whether the value is an integer
-    entry .Error   Error 740: _`text` is not a representable decimal number_
+    entry .Error   Error `↯/s.27.10`: _`text` is not a representable decimal number_
       detail
           Raised by `Decimal.parse` for text outside the grammar, and by `Decimal(double)` for
           a `NaN` or infinite `Double`, through a `Tactic[Decimal.Error]`.
@@ -1163,8 +1163,8 @@ entry .bin   the `bin"…"` literal: a `Byte`, `Short`, `Int` or `Long` from 8, 
     `bin"00001111"` is the `Byte` `15`, checked while the code compiles: the digits may be
     separated by spaces for readability, and the result's type is chosen by their count, so
     `bin"1111 0000 1111 0000"` is a `Short`. A character other than `0`, `1` or a space is
-    error 118, _a binary value can only contain characters '0' or '1'_, and a count other
-    than 8, 16, 32 or 64 is error 167. The result is a primitive; `bits` makes a `B8`,
+    error `↯/s.27.2`, _a binary value can only contain characters '0' or '1'_, and a count other
+    than 8, 16, 32 or 64 is error `↯/s.27.5`. The result is a primitive; `bits` makes a `B8`,
     `B16`, `B32` or `B64` of it.
 
     ```scala
@@ -1178,7 +1178,7 @@ entry .hex   the `hex"…"` literal, a frozen byte array; and the hexadecimal re
     `hex"cafe babe"` is an `Array[Byte]^{}` of the bytes the digits spell, built while the
     code compiles: spaces and newlines between digits are ignored, so a long constant can be
     laid out in rows, and the digits may be in either case. A character that is not a hex
-    digit is error 148, and an odd number of digits is error 137, _a hexadecimal value must
+    digit is error `↯/s.27.4`, and an odd number of digits is error `↯/s.27.3`, _a hexadecimal value must
     have an even number of digits_.
 
     ```scala
@@ -1525,7 +1525,7 @@ entry .internal   the opaque scope of the fixed-width types and their extension 
     entry .divisible   `U16 / U16`, from the `DivisionByZero` policy in scope
     entry .canEqual   a `U16` may be compared with `==` only to another `U16`
     entry .fromDigits   a `U16` from an integer literal, under `genericNumberLiterals`
-        Error 764, _a U16 may not be less than 0_, and error 772, _a U16 may not be greater
+        Error `↯/s.27.12`, _a U16 may not be less than 0_, and error `↯/s.27.14`, _a U16 may not be greater
         than 65535_, are reported at compile time for a literal out of range.
     entry .textualizable   renders the unsigned decimal value as `Text`
     entry .apply   `U16(bits: B16)`: reads a bit pattern as an unsigned integer
@@ -1544,7 +1544,7 @@ entry .internal   the opaque scope of the fixed-width types and their extension 
     entry .divisible   `U8 / U8`, from the `DivisionByZero` policy in scope
     entry .canEqual   a `U8` may be compared with `==` only to another `U8`
     entry .fromDigits   a `U8` from an integer literal, under `genericNumberLiterals`
-        Error 689, _a U8 may not be less than 0_, and error 709 for a literal above the upper
+        Error `↯/s.27.8`, _a U8 may not be less than 0_, and error `↯/s.27.9` for a literal above the upper
         bound, are reported at compile time.
     entry .textualizable   renders the unsigned decimal value as `Text`
     entry .apply   `U8(bits: B8)`: reads a bit pattern as an unsigned integer
@@ -1605,7 +1605,7 @@ entry .internal   the opaque scope of the fixed-width types and their extension 
     entry .divisible   `S16 / S16`, truncating, from the `DivisionByZero` policy in scope
     entry .canEqual   an `S16` may be compared with `==` to any signed, floating or primitive numeric type
     entry .fromDigits   an `S16` from an integer literal, under `genericNumberLiterals`
-        Error 46, _an S16 may not be less than -32768_, and error 461, _an S16 may not be
+        Error `↯/s.27.1`, _an S16 may not be less than -32768_, and error `↯/s.27.7`, _an S16 may not be
         greater than 32767_, are reported at compile time.
     entry .textualizable   renders the signed decimal value as `Text`
     entry .apply   `S16(bits: B16)`: reads a bit pattern as a signed integer
@@ -1622,7 +1622,7 @@ entry .internal   the opaque scope of the fixed-width types and their extension 
     entry .divisible   `S8 / S8`, truncating, from the `DivisionByZero` policy in scope
     entry .canEqual   an `S8` may be compared with `==` to any signed, floating or primitive numeric type
     entry .fromDigits   an `S8` from an integer literal, under `genericNumberLiterals`
-        Error 287, _an S8 may not be less than -128_, and error 768, _an S8 may not be
+        Error `↯/s.27.6`, _an S8 may not be less than -128_, and error `↯/s.27.13`, _an S8 may not be
         greater than 127_, are reported at compile time.
     entry .textualizable   renders the signed decimal value as `Text`
     entry .apply   `S8(bits: B8)`: reads a bit pattern as a signed integer

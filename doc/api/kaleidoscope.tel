@@ -426,7 +426,7 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
         by `Regex.makePattern`.
   entry .Error   raised when a pattern cannot be parsed: the position and the reason
     detail
-        Error 397: _the regular expression could not be parsed because `reason` at `index`_,
+        Error `↯/s.34.1`: _the regular expression could not be parsed because `reason` at `index`_,
         with the reason's number as the error's sub-number, so an unclosed group is
         `↯/s.34.1.1`. Raised by `Regex.apply` and `Regex.parse` through a `Tactic[Regex.Error]`,
         and reported as a compile error, pointing at the offending character, by `r"…"`. The

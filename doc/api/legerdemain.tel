@@ -365,7 +365,7 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
       takes, and each value must be `Encodable in Query`; both are checked as the code
       compiles. A value of the wrong type is a compile error, _the parameter `name` takes
       values of `T` but the provided value had type `U`_; a name with no `Parametric` is
-      another (error 865), and a value with no encoding a third (error 790).
+      another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
 
       ```scala
       import soundness.*
@@ -381,7 +381,7 @@ entry .Query   form-encoded key–value pairs: a URL query string or a form subm
   entry .addable   `query + query`: the pairs of both, the left's first
   entry .Error   raised when a parameter a value needs is missing from a query
     detail
-        Error 205: _the query parameter could not be read because the parameter was not
+        Error `↯/s.87.2`: _the query parameter could not be read because the parameter was not
         present in the query string_. Raised by the `Decodable in Query` givens when a value
         which is required has no parameter, and focused at that field's `Pointer` when a case
         class is decoded, so an accruing strategy reports every missing field of a form.

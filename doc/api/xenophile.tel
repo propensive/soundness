@@ -700,7 +700,7 @@ entry .CHeader   the C header front end: its declaration model, parser, the `Dia
     entry .parse   the projected definitions of a header: `library` plus one type per struct and union
   entry .Error   raised when a C header could not be read as declarations
     detail
-        Error 646: _the C header could not be read because `reason`_, where the reason is a
+        Error `↯/s.59.4`: _the C header could not be read because `reason`_, where the reason is a
         `Syntax` failure (_`detail`, near `tokens`_, quoting the next few tokens, or _the end_)
         or an `Unsupported` construct (_the construct `x` is outside the grammar this parser
         accepts_). Raised by `CHeader.Parser.parse`; `CHeader.Dialect.parse` swallows it and
@@ -709,7 +709,7 @@ entry .CHeader   the C header front end: its declaration model, parser, the `Dia
       detail
           A `Clarification` enum with `Syntax(detail, near)` (number 1) and `Unsupported(construct)`
           (number 2).
-      entry #number   the reason's number within error 646: 1 for `Syntax`, 2 for `Unsupported`
+      entry #number   the reason's number within error `↯/s.59.4`: 1 for `Syntax`, 2 for `Unsupported`
     entry .communicable   renders each reason as a message
     entry #reason   the reason, as a `CHeader.Error.Reason`
 
@@ -1694,7 +1694,7 @@ entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code co
         the canonical encoding a discipline hashes is structural and lives with the discipline.
   entry .Error   raised when a `.d.ts` source cannot be read
     detail
-        Error 643: _the TypeScript declarations could not be read because `reason`_, raised
+        Error `↯/s.59.1`: _the TypeScript declarations could not be read because `reason`_, raised
         by `Typescript.Parser.parse` (and `lex`). The `#reason` is a `Typescript.Error.Reason`:
         a `Syntax` error with its detail and the token it was near; an `Unsupported` construct
         — a conditional type, a mapped type, a template literal type, an `infer` binder, a
@@ -1912,7 +1912,7 @@ entry .WebIdl   the WebIDL ecosystem: `.idl` interfaces read as the code compile
     entry #named   the definition's own name; for an `includes` statement, the including target
   entry .Error   raised when a WebIDL fragment cannot be read
     detail
-        Error 644: _the WebIDL could not be read because `reason`_, raised by
+        Error `↯/s.59.2`: _the WebIDL could not be read because `reason`_, raised by
         `WebIdl.Parser.parse`. The `#reason` is a `WebIdl.Error.Reason`: a `Syntax` error with
         its detail and the tokens it was near, an `Unsupported` construct — deliberately an
         error and not a skip, since a capability contract read partially understates what the
@@ -2161,7 +2161,7 @@ entry .Wit   the WIT ecosystem: WebAssembly component interfaces read as the cod
     entry #worlds   the package's worlds, in order
   entry .Error   raised when a WIT source cannot be read
     detail
-        Error 645: _the WIT could not be read because `reason`_, raised by `Wit.Parser.parse`
+        Error `↯/s.59.3`: _the WIT could not be read because `reason`_, raised by `Wit.Parser.parse`
         and `WitDialect.worlds`. The `#reason` is a `Wit.Error.Reason`: a `Syntax` error with
         its detail and the tokens it was near; an `Unsupported` construct — an `@unstable`
         item, an `async` function, a `stream` or `future` type, a world `include`, or any

@@ -1094,7 +1094,7 @@ entry .Range   the home of `Range.Error`, raised when an index is outside a text
       Only the error lives here. The slicing operations themselves clamp rather than fail —
       `segment` cuts an oversized interval short — so the error is raised by the few
       operations which must reject an index, such as a line editor's cursor movement.
-  entry .Error   Error 151: _the index `index` is outside the range `from`-`to`_
+  entry .Error   Error `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
     detail
         Raised when a position is outside a text's bounds by an operation which cannot
         clamp. It is a `fulminate.Error`, so it is raised through a `Tactic[Range.Error]`

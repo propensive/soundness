@@ -714,7 +714,7 @@ entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated thr
           byte values the parser's dispatch tables compare against.
   entry .Error   raised when a document cannot be decoded as the type asked for
     detail
-        Error 31: _could not access the YAML value because `reason`_. Raised by `Yaml#as`,
+        Error `↯/s.134.1`: _could not access the YAML value because `reason`_. Raised by `Yaml#as`,
         `Yaml#apply`, the updates and every `Decodable in Yaml` when a node has the wrong
         shape or a required field is missing. The reason is one of two:
         `Reason.NotType(found, expected)` — _the YAML value had type `found` instead of
@@ -1184,7 +1184,7 @@ entry .YamlPath   the address of a node in a document, written `#/a/0/b` with JS
   entry .divisible2   `path / ordinal`: a path extended by an index segment
   entry .Error   raised when text is not a valid YAML path
     detail
-        Error 546: _the YAML path was not valid because `reason`_. Raised by `.decodable`
+        Error `↯/s.134.2`: _the YAML path was not valid because `reason`_. Raised by `.decodable`
         and reported, at the exact character, by the `yp"…"` interpolator as the code
         compiles. `offset` is the index within the text where the fault was found.
     entry #reason   `ExpectedHash`, `ExpectedSlash` or `BadEscape`

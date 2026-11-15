@@ -276,7 +276,7 @@ entry .Audio   an immutable block of PCM samples which knows its rate, channels,
         fresh on each call, so a device plugged in since is seen.
     entry .Error   raised when a feed cannot record
       detail
-          Error 440: _could not record from feed `name` because …_, with the reason's number
+          Error `↯/s.82.2`: _could not record from feed `name` because …_, with the reason's number
           and message appended. Raised by `Feed#record` and by opening a feed as `Pcm`.
       entry .Reason   `Unavailable`, `UnsupportedConfiguration` or `Closed`
           `Unavailable` (1), _the audio line could not be opened_: another program holds it, or
@@ -327,7 +327,7 @@ entry .Audio   an immutable block of PCM samples which knows its rate, channels,
         Enumerates the JVM's mixers and keeps those offering a `SourceDataLine`.
     entry .Error   raised when an outlet cannot play
       detail
-          Error 374: _could not play to outlet `name` because …_, with the reason's number and
+          Error `↯/s.82.1`: _could not play to outlet `name` because …_, with the reason's number and
           message appended. Raised by `Outlet#play` and by `Pcm.play` on an opened outlet.
       entry .Reason   `Unavailable`, `UnsupportedConfiguration` or `Closed`
           `Unavailable` (1), _the audio line could not be opened_; `UnsupportedConfiguration`

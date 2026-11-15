@@ -95,7 +95,7 @@ entry .Permutation   a reversible rearrangement of a sequence, stored as its fac
       `Factoradic` to recover the permutation.
   entry .Error   raised when indexes or a sequence do not make, or fit, a permutation
     detail
-        Error 427: _could not construct permutation because `reason`_, where the reason is one
+        Error `↯/s.28.1`: _could not construct permutation because `reason`_, where the reason is one
         of the `Permutation.Error.Reason` cases:
 
         ```tabular

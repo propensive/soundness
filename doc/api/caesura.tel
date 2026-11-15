@@ -289,7 +289,7 @@ entry .Dsv   one row of delimited data: an array of cells, with the column names
     entry .conjunction   the macro which derives a row encoder for a product, concatenating its fields' cells
   entry .Error   raised when delimited text cannot be parsed, or a row cannot be decoded
     detail
-        Error 364, with a subcode from its `#reason`. A **parse** failure, a quote found after
+        Error `↯/s.83.1`, with a subcode from its `#reason`. A **parse** failure, a quote found after
         the start of an unquoted cell, reads _could not parse row data at row `row`, column
         `column` because a quote was found after the start of a cell_, and carries the 1-based
         row and column and the character offset into the input. A **decode** failure reads

@@ -892,7 +892,7 @@ entry .TrackTactic   the tactic `track` and `validate` inject: registers each er
 
 entry .Errors   several errors reported together, each keyed by the text of its focus
   detail
-      Error 218: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
+      Error `↯/s.24.5`: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
       `(Text, Error)` pairs, for a validation which collects every problem before failing.
       It is built empty and grown with `+`, and a focus's error is looked up with `apply`.
 
@@ -910,7 +910,7 @@ entry .Errors   several errors reported together, each keyed by the text of its 
 
 entry .Validation   several messages reported together, each at a `Pointer`
   detail
-      Error 59: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
+      Error `↯/s.24.3`: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
       message`, `two messages`… for small counts, and a message at `Pointer.Self` shown
       without a position). An `Error` holding `(Pointer, Message)` pairs for a pipeline which
       walks a structure and accumulates what it finds wrong, rather than aborting at the
@@ -937,7 +937,7 @@ entry .Expectation   the home of `Expectation.Error`, raised when `capture`'s bl
   refer contingency.capture
   entry .Error   raised by `capture` when the block was expected to fail but succeeded
     detail
-        Error 841: _the expression was expected to fail, but succeeded_. Carries the value the
+        Error `↯/s.24.16`: _the expression was expected to fail, but succeeded_. Carries the value the
         block produced instead, so a test can see what was returned. `capture` needs a
         `Tactic[Expectation.Error[success]]` in scope for it, which `strategies.throwUnsafely`
         supplies.

@@ -103,7 +103,7 @@ entry .MediaType   a media type as a value: its group, subtype, suffixes and par
       user writes `media"…"` rather than touching this.
   entry .Error   raised when text is not a media type
     detail
-        Error 353: _the value `value` is not a valid media type; `reason`_. Raised through a
+        Error `↯/s.81.1`: _the value `value` is not a valid media type; `reason`_. Raised through a
         `Tactic[MediaType.Error]` by `Media.parse`, and so by `as[MediaType]`, and reported as
         a compile error by `media"…"`. The `.Reason` says what was wrong, and its number is the
         error's sub-number (353.1 to 353.5).
@@ -423,7 +423,7 @@ entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent
       ```
   entry .Error   raised when a multipart body cannot be read
     detail
-        Error 937: _multipart data could not be read because `reason`_. Raised through a
+        Error `↯/s.81.2`: _multipart data could not be read because `reason`_. Raised through a
         `Tactic[Multipart.Error]` by `Multipart.parse` as it reaches the fault, which, since
         the parts are read lazily, may be while a later part is forced rather than at the
         call. The `.Reason`'s number is the error's sub-number (937.1 to 937.6).

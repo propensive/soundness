@@ -97,7 +97,7 @@ entry .Reference   a typed reference to an entity, holding its key and resolved 
       ```
   entry .Error   raised when a reference's key matches no entity in the store
     detail
-        Error 519: _the reference `reference` could not be resolved because `reason`_.
+        Error `↯/s.31.1`: _the reference `reference` could not be resolved because `reason`_.
         Raised by `Reference#apply` (and `Resolvable#resolve`) when the store has no entity
         whose `@primary` field equals the key. `#reference` is the key, encoded as text.
     entry #reference   the key which could not be resolved, encoded as text

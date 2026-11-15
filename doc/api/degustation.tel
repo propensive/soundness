@@ -930,7 +930,7 @@ entry .Inspection   atomizes `.tasty` files on disk against a classpath of direc
       once, and each entry's bytes when a class in it is first asked for.
   entry .Error   raised when the Scala discipline cannot be applied to the files
     detail
-        Error 642: _the Scala discipline failed because `reason`_, where the reason is one of
+        Error `↯/s.139.1`: _the Scala discipline failed because `reason`_, where the reason is one of
         `Inspection.Error.Reason`'s cases: `InspectionFailed(detail)` (reason 1), _the TASTy
         could not be read: `detail`_, for a malformed path, an unreadable file, a malformed
         jar or a malformed classfile; `Unencodable(construct)` (reason 2), _no canonical

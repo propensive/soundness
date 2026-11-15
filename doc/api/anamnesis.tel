@@ -95,7 +95,7 @@ entry .Database   an in-memory store of interned values and the typed relations 
       relation table for each element of the tuple.
   entry .Error   raised when a value which has not been stored is asked for its reference
     detail
-        Error 229: _the database operation failed because the value has not been stored in the
+        Error `↯/s.26.1`: _the database operation failed because the value has not been stored in the
         database_. Raised by `Database#ref` and the `reference` extension when the value has
         never been passed to `store`; it needs a `Tactic[Database.Error]` in scope.
 

@@ -362,7 +362,7 @@ entry .internal   the opaque types `Money` and `Isin`, their companions and exte
     entry .inspectable   inspects an ISIN as the interpolator which would produce it: `isin"US0378331005"`
     entry .Error   raised when text is not a valid ISIN, saying which rule it broke
       detail
-          Error 515: _the ISIN number is not valid because …_, with the reason: the wrong
+          Error `↯/s.50.1`: _the ISIN number is not valid because …_, with the reason: the wrong
           length (_it had length 11, but it should be 12 characters long_), a bad country
           code, a character which is not a digit or uppercase letter (with its position), or
           a failed Luhn check on the last digit. Raised by `Isin(…)`, and reported as a
