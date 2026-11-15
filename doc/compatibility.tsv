@@ -22,6 +22,7 @@
 # notes : hand-written: the reason for every `no` or `core` cell. Must be non-empty for such rows.
 module	jvm	js	native	wasm	submodules	notes
 abacist	yes	yes	yes	js		
+abscission	yes	no	no	no		shrinks a classpath by recompiling it from its TASTy with the compiler (dotty)
 acyclicity	yes	yes	yes	js		
 adversaria	yes	yes	yes	js		
 ambience	yes	yes	yes	wasi		

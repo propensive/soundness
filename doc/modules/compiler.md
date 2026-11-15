@@ -146,6 +146,7 @@ column  Format
 column  Artifact
 row  any universe  `Library`  unlinked output, packaged for downstream assembly
 row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  an executable JAR
+row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  an executable JAR of only what its entry point reaches
 row  `Toolchain.Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
 row  `Toolchain.Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
 row  `Toolchain.Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
@@ -267,11 +268,96 @@ them as its format demands:
 column  Format
 column  Entry points
 row  `Artifact.Jar`  at most one, recorded as its `Main-Class`
+row  `Shrunk`  any number, each a root of what is kept
+row  `Shrunk.Jar`  at most one, recorded as its `Main-Class`
 row  `Artifact.Binary`  exactly one
 row  `Apk`  exactly one
 row  `Js`, `Wasm`, `Wasi`  any number, each run as a module initializer
 row  `Library`, `Dex`  ignored, since neither records an entry point
 ```
+
+### Shrinking
+
+An executable JAR made through `jarEdges` holds the whole classpath: every class of every
+library, whether or not the application can reach it. `shrinkEdges` adds a path which holds only
+what it can. `Shrunk` is a closed world of classfiles, the classes which the entry points reach
+and no others, and `Shrunk.Jar` is an executable JAR of one:
+
+```scala
+supervise:
+  Toolchain(shrinkEdges(scalac)).produce
+    ( Deliverable.Emission(outputPath, classpath),
+      Toolchain.Universe.Classfile,
+      Shrunk.Jar,
+      destination,
+      List(shrinkOptions.name(t"app.jar")),
+      List(EntryPoint(fqcn"com.example.Main")) )
+```
+
+The path is `Classfile → Shrunk → Shrunk.Jar`, so the closed world is written below the
+destination, under `shrunk/`, and the JAR is packaged from there. `shrinkEdges` takes the
+`Scalac` which compiled the classes, because it compiles them again.
+
+A tool which shrinks bytecode must be told about everything the compiler generated: the
+forwarders a class has for a trait's methods, the bridges, the fields behind a lazy value, the
+static side of an object. Shrinking here is done earlier, on the TASTy which the compiler wrote
+beside each class. The classes this compiler compiled are recompiled from it, and the members
+nothing reaches are taken out after inlining and before the phases which generate any of that,
+so none of it is generated for a member which is not kept. A unit which nothing reaches is
+never read, and the macros in it never run.
+
+Three kinds of class make up the closed world:
+
+```tabular
+column  Class
+column  Treatment
+row  compiled by this compiler, and reached  recompiled from its TASTy, with only the members which are reached
+row  compiled by this compiler, and named only as a type  written as a shell: a name, its flags and its parents
+row  any other: Java, Kotlin, the standard library  copied as it is, if bytecode which is kept refers to it
+```
+
+The standard library, and any other library of Scala, is taken a class at a time. A library
+with no TASTy is taken whole as soon as one class of it is reached, since such a library may
+load its own classes by name, which no reference in bytecode shows.
+
+What the analysis cannot see is what is reached by reflection, and it is told with settings:
+
+```tabular
+column  Setting
+column  Effect
+row  `shrinkOptions.keep(pattern)`  a class which matches is kept with every member
+row  `shrinkOptions.pin(pattern)`  a unit whose top-level class matches is copied as it is, with all it refers to
+row  `shrinkOptions.services(false)`  the implementations which `META-INF/services` files name are no longer entry points
+row  `shrinkOptions.fine(true)`  a library with no TASTy is taken a class at a time too
+row  `shrinkOptions.name(name)`  the filename of the JAR
+```
+
+In a pattern, `*` stands for part of a name and `**` for any number of packages, so
+`com.example.plugins.**` matches every class beneath that package. A class named in a literal
+`Class.forName` call which is reached is kept without being asked for, and so is a member
+called through a structural type, by its name.
+
+Outside a toolchain, a `Shrink` does the same to any classpath, and reports what it did:
+
+```scala
+val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
+```
+
+Here `report.kept` is the number of classes in the closed world and `report.classes` the number
+on the classpath, `report.read` is the number of units which were recompiled of the
+`report.units` which could have been, and `report.why(fqcn"scala.Option")` is the chain of
+classes, each referring to the one before, which led to a class being kept.
+
+A closed world is checked before it is written. A reference from anything kept to a member
+which was removed is found twice over, in the compiler's trees before any bytecode is generated
+and in the bytecode afterwards, and raises a `Shrink.Error` naming both ends; what would have
+been a `NoSuchMethodError` when the application ran is an error when it is built. A unit which
+cannot be recompiled is pinned, and `report.notes` says why.
+
+Two things are beyond it. Code which is compiled at run time, by a staging compiler, needs the
+TASTy of everything it refers to, which a closed world does not hold, so the classes it uses
+must be pinned and their TASTy supplied apart. And the recompilation runs with one set of
+options for the whole classpath: Soundness's own, with those of the `Scalac` added.
 
 ### WASI components
 

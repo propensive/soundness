@@ -75,7 +75,8 @@ object Shrinker:
   // world's, of which `recompiled` classes came from TASTy, `shells` are only shells and
   // `copied` are as they were. `members` and `removed` count the methods and fields of the
   // recompiled classes. `pinned` are the units which were not recompiled, by request or
-  // because they could not be, and `notes` say why of the latter.
+  // because they could not be, and `notes` say why of the latter. `packages` are the packages
+  // of the classpath, each with the number of classes it has there and in the closed world.
   final case class Report
     ( problems:   List[String],
       units:      Int,
@@ -91,6 +92,7 @@ object Shrinker:
       removed:    Int,
       pinned:     List[String],
       notes:      List[String],
+      packages:   List[(String, Int, Int)],
       reasons:    Map[String, String] ):
 
     // Why a class is in the closed world: the chain of classes, each of which refers to the
@@ -328,14 +330,14 @@ object Shrinker:
         List(".SF", ".DSA", ".RSA", ".EC").exists(name.endsWith(_))
 
   // The entries a classloader loads from, where it says — a host which was given a classpath
-  // has no need to ask — and the JVM's own otherwise.
+  // has no need to ask — and the JVM's own otherwise; each as an absolute path.
   def classpath(loader: ClassLoader): List[String] = loader match
     case loader: java.net.URLClassLoader =>
       loader.getURLs.nn.toList.map { url => jnf.Path.of(url.nn.toURI).nn.toString }
 
     case _ =>
       System.getProperty("java.class.path").nn.split(java.io.File.pathSeparator).nn.toList
-      . map(_.nn)
+      . map { entry => jnf.Path.of(entry.nn).nn.toAbsolutePath.nn.toString }
 
   def shrink(request: Request): Report =
     val sources: List[Source] = request.classpath.map(new Source(_))
@@ -402,6 +404,11 @@ object Shrinker:
       holders.get(name+classSuffix).map: source =>
         parsed.getOrElseUpdate(name, refs(source.read(name+classSuffix)))
 
+    def failure(problems: List[String], read: Int): Report =
+      Report
+        ( problems, units.size, read, classes.length, 0L, 0, 0L, 0, 0, 0, 0, 0, pinned.toList,
+          notes, Nil, Map() )
+
     // Services: the implementations each file names, over every entry which has the file.
     val services: mutable.LinkedHashMap[String, mutable.LinkedHashSet[String]] =
       mutable.LinkedHashMap()
@@ -449,226 +456,244 @@ object Shrinker:
                 if recompilable.contains(owner)
                 then roots += Shaker.Root(dotted(owner), member, false)
 
+    val absent: List[String] =
+      request.mains.filterNot { main => holders.contains(main.replace('.', '/').nn+classSuffix) }
+
     // Compilation
     val staging: jnf.Path = jnf.Files.createTempDirectory("abscission").nn
 
-    val outcome: Shaker.Outcome =
-      if units.isEmpty then Shaker.Outcome(Nil, Shaker.Tally(0, 0, 0, 0, 0, 0), Nil)
-      else
-        Shaker.shake
-          ( units.toList.sorted.map(dotted), roots.toList, request.classpath, staging.toString,
-            request.options )
-
-    def emitted(): Map[String, jnf.Path] =
-      val walk = jnf.Files.walk(staging).nn
-
-      try
-        walk.iterator.nn.asScala.toList.filter(_.toString.endsWith(classSuffix)).map: file =>
-          val name: String = staging.relativize(file).nn.toString.replace('\\', '/').nn
-          name.dropRight(classSuffix.length) -> file
-        . toMap
-      finally walk.close()
-
+    // What the compiler writes is read back from a directory of its own, which does not outlive
+    // this.
     def cleanup(): Unit =
-      val walk = jnf.Files.walk(staging).nn
-      try walk.sorted(java.util.Comparator.reverseOrder()).nn.forEach(jnf.Files.delete(_))
-      finally walk.close()
+      if jnf.Files.exists(staging) then
+        val walk = jnf.Files.walk(staging).nn
+        try walk.sorted(java.util.Comparator.reverseOrder()).nn.forEach(jnf.Files.delete(_))
+        finally walk.close()
 
-    // A unit which fails to recompile is one to copy as it is instead; whatever it refers to
-    // is then kept, and the rest is shrunk again.
-    val failed: List[String] =
-      if outcome.problems.isEmpty || attempt >= 3 then Nil else
-        val files: Set[String] = outcome.problems.map(_.file).filter(_.nonEmpty).toSet
+    try
+      val outcome: Shaker.Outcome =
+        if absent.nonEmpty then
+          val problems: List[Shaker.Problem] = absent.map: main =>
+            Shaker.Problem("", 0, s"the entry point $main is not a class of the classpath")
 
-        if files.isEmpty || outcome.problems.exists(_.file.isEmpty) then Nil else
-          units.toList.filter: unit =>
-            holders.get(unit+tastySuffix).exists: holder =>
-              val recorded: String | Null = source(holder.read(unit+tastySuffix))
-              recorded != null &&
-                files.exists { file => file == recorded || file.endsWith("/"+recorded) }
-          . map(dotted)
+          Shaker.Outcome(problems, Shaker.Tally(0, 0, 0, 0, 0, 0), Nil)
+        else if units.isEmpty then Shaker.Outcome(Nil, Shaker.Tally(0, 0, 0, 0, 0, 0), Nil)
+        else
+          Shaker.shake
+            ( units.toList.sorted.map(dotted), roots.toList, request.classpath, staging.toString,
+              request.options )
 
-    def described: List[String] = outcome.problems.map: problem =>
-      if problem.file.isEmpty then problem.message
-      else s"${problem.file}:${problem.line}: ${problem.message}"
+      def emitted(): Map[String, jnf.Path] =
+        val walk = jnf.Files.walk(staging).nn
 
-    if failed.nonEmpty then
-      cleanup()
-      shrink(request, sources, unfit ::: failed, notes ::: described, attempt + 1)
-    else if outcome.problems.nonEmpty then
-      cleanup()
+        try
+          walk.iterator.nn.asScala.toList.filter(_.toString.endsWith(classSuffix)).map: file =>
+            val name: String = staging.relativize(file).nn.toString.replace('\\', '/').nn
+            name.dropRight(classSuffix.length) -> file
+          . toMap
+        finally walk.close()
 
-      Report
-        ( described, units.size, outcome.tally.units, classes.length, 0L, 0, 0L, 0, 0, 0, 0, 0,
-          pinned.toList, notes, Map() )
-    else
-      val output: jnf.Path = jnf.Path.of(request.output).nn
-      val produced: Map[String, jnf.Path] = emitted()
-      val reasons: mutable.HashMap[String, String] = mutable.HashMap()
-      val included: mutable.LinkedHashMap[String, Refs] = mutable.LinkedHashMap()
-      val contents: mutable.HashMap[String, Array[Byte]] = mutable.HashMap()
-      val shells: mutable.HashSet[String] = mutable.HashSet()
-      val whole: mutable.HashSet[Source] = mutable.HashSet()
-      val queue: mutable.ArrayDeque[String] = mutable.ArrayDeque()
-      val problems: mutable.ListBuffer[String] = mutable.ListBuffer()
+      // A unit which fails to recompile is one to copy as it is instead; whatever it refers to
+      // is then kept, and the rest is shrunk again.
+      val failed: List[String] =
+        if outcome.problems.isEmpty || attempt >= 3 then Nil else
+          val files: Set[String] = outcome.problems.map(_.file).filter(_.nonEmpty).toSet
 
-      // Whether a library is one to take a class at a time: one of Scala, which has TASTy.
-      val scala: mutable.HashMap[Source, Boolean] = mutable.HashMap()
-      def fine(source: Source): Boolean =
-        request.fine || scala.getOrElseUpdate(source, source.names.exists(_.endsWith(tastySuffix)))
+          if files.isEmpty || outcome.problems.exists(_.file.isEmpty) then Nil else
+            units.toList.filter: unit =>
+              holders.get(unit+tastySuffix).exists: holder =>
+                val recorded: String | Null = source(holder.read(unit+tastySuffix))
+                recorded != null &&
+                  files.exists { file => file == recorded || file.endsWith("/"+recorded) }
+            . map(dotted)
 
-      def reach(name: String, from: String): Unit =
-        if !included.contains(name) && !reasons.contains(name) then
-          reasons(name) = from
-          queue += name
+      def described: List[String] = outcome.problems.map: problem =>
+        if problem.file.isEmpty then problem.message
+        else s"${problem.file}:${problem.line}: ${problem.message}"
 
-      def follow(): Unit =
-        while queue.nonEmpty do
-          val name: String = queue.removeHead()
+      if failed.nonEmpty then
+        shrink(request, sources, unfit ::: failed, notes ::: described, attempt + 1)
+      else if outcome.problems.nonEmpty then
+        failure(described, outcome.tally.units)
+      else
+        val output: jnf.Path = jnf.Path.of(request.output).nn
+        val produced: Map[String, jnf.Path] = emitted()
+        val reasons: mutable.HashMap[String, String] = mutable.HashMap()
+        val included: mutable.LinkedHashMap[String, Refs] = mutable.LinkedHashMap()
+        val contents: mutable.HashMap[String, Array[Byte]] = mutable.HashMap()
+        val shells: mutable.HashSet[String] = mutable.HashSet()
+        val whole: mutable.HashSet[Source] = mutable.HashSet()
+        val queue: mutable.ArrayDeque[String] = mutable.ArrayDeque()
+        val problems: mutable.ListBuffer[String] = mutable.ListBuffer()
 
-          if !included.contains(name) then
-            produced.get(name) match
-              case Some(file) =>
-                val bytes: Array[Byte] = jnf.Files.readAllBytes(file).nn
-                val found: Refs = refs(bytes)
-                included(name) = found
-                contents(name) = bytes
-                found.classes.foreach(reach(_, name))
+        // Whether a library is one to take a class at a time: one of Scala, which has TASTy.
+        val scala: mutable.HashMap[Source, Boolean] = mutable.HashMap()
+        def fine(source: Source): Boolean =
+          request.fine ||
+            scala.getOrElseUpdate(source, source.names.exists(_.endsWith(tastySuffix)))
 
-              case None =>
-                holders.get(name+classSuffix).foreach: source =>
-                  if recompilable.contains(name) then
-                    original(name).foreach: found =>
-                      included(name) =
-                        found.copy
-                          ( classes = found.parents.toSet, members = Set(), declared = Set() )
+        def reach(name: String, from: String): Unit =
+          if !included.contains(name) && !reasons.contains(name) then
+            reasons(name) = from
+            queue += name
 
-                      contents(name) = shell(found)
-                      shells += name
-                      found.parents.foreach(reach(_, name))
-                  else
-                    val bytes: Array[Byte] = source.read(name+classSuffix)
-                    val found: Refs = parsed.getOrElseUpdate(name, refs(bytes))
-                    included(name) = found
-                    contents(name) = bytes
-                    found.classes.foreach(reach(_, name))
+        def follow(): Unit =
+          while queue.nonEmpty do
+            val name: String = queue.removeHead()
 
-                    if !fine(source) && whole.add(source) then
-                      source.names.foreach: other =>
-                        val own: Boolean = holders.get(other).contains(source)
+            if !included.contains(name) then
+              produced.get(name) match
+                case Some(file) =>
+                  val bytes: Array[Byte] = jnf.Files.readAllBytes(file).nn
+                  val found: Refs = refs(bytes)
+                  included(name) = found
+                  contents(name) = bytes
+                  found.classes.foreach(reach(_, name))
 
-                        if other.endsWith(classSuffix) && !discarded(other) && own
-                        then reach(other.dropRight(classSuffix.length), name)
+                case None =>
+                  holders.get(name+classSuffix).foreach: source =>
+                    if recompilable.contains(name) then
+                      original(name).foreach: found =>
+                        included(name) =
+                          found.copy
+                            ( classes = found.parents.toSet, members = Set(), declared = Set() )
 
-      produced.keysIterator.foreach(reach(_, ""))
-      entries.foreach(reach(_, ""))
-      outcome.dynamic.foreach { name => reach(name.replace('.', '/').nn, "") }
-      pinned.foreach: unit =>
-        val prefix: String = unit.replace('.', '/').nn
-        classes.foreach: name =>
-          if name == prefix || name.startsWith(prefix+"$") then reach(name, "")
+                        contents(name) = shell(found)
+                        shells += name
+                        found.parents.foreach(reach(_, name))
+                    else
+                      val bytes: Array[Byte] = source.read(name+classSuffix)
+                      val found: Refs = parsed.getOrElseUpdate(name, refs(bytes))
+                      included(name) = found
+                      contents(name) = bytes
+                      found.classes.foreach(reach(_, name))
 
+                      if !fine(source) && whole.add(source) then
+                        source.names.foreach: other =>
+                          val own: Boolean = holders.get(other).contains(source)
 
-      follow()
+                          if other.endsWith(classSuffix) && !discarded(other) && own
+                          then reach(other.dropRight(classSuffix.length), name)
 
-      // An implementation of a service which is kept, in a library which is copied, is one
-      // its loader may ask for.
-      var growing: Boolean = true
+        produced.keysIterator.foreach(reach(_, ""))
+        entries.foreach(reach(_, ""))
+        outcome.dynamic.foreach { name => reach(name.replace('.', '/').nn, "") }
+        pinned.foreach: unit =>
+          val prefix: String = unit.replace('.', '/').nn
+          classes.foreach: name =>
+            if name == prefix || name.startsWith(prefix+"$") then reach(name, "")
 
-      while growing do
-        growing = false
-
-        services.foreach: (file, implementations) =>
-          val service: String = file.drop("META-INF/services/".length).replace('.', '/').nn
-
-          if included.contains(service) || !holders.contains(service+classSuffix) then
-            implementations.foreach: implementation =>
-              val name: String = implementation.replace('.', '/').nn
-
-              val copied: Boolean =
-                !recompilable.contains(name) && holders.contains(name+classSuffix)
-
-              if !included.contains(name) && copied && request.services then
-                reach(name, service)
-                growing = true
 
         follow()
 
-      // Every member which is named, of a class which was recompiled, must be there: declared
-      // by a class of the closed world which the named class inherits from, unless it was
-      // never declared by a class of the classpath at all, and so is the JDK's.
-      def declares(name: String, member: (String, String), seen: mutable.HashSet[String]): Boolean =
-        seen.add(name) && included.get(name).exists: found =>
-          !shells.contains(name) && found.declared.contains(member) ||
-            found.parents.exists(declares(_, member, seen))
+        // An implementation of a service which is kept, in a library which is copied, is one
+        // its loader may ask for.
+        var growing: Boolean = true
 
-      def declared(name: String, member: (String, String), seen: mutable.HashSet[String]): Boolean =
-        seen.add(name) && original(name).exists: found =>
-          found.declared.contains(member) || found.parents.exists(declared(_, member, seen))
+        while growing do
+          growing = false
 
-      included.foreach: (name, found) =>
-        found.members.foreach: (owner, member, descriptor) =>
-          if recompilable.contains(owner) && included.contains(owner) then
-            val signature: (String, String) = (member, descriptor)
+          services.foreach: (file, implementations) =>
+            val service: String = file.drop("META-INF/services/".length).replace('.', '/').nn
 
-            val missing: Boolean =
-              !declares(owner, signature, mutable.HashSet()) &&
-                (shells.contains(owner) || declared(owner, signature, mutable.HashSet()))
+            if included.contains(service) || !holders.contains(service+classSuffix) then
+              implementations.foreach: implementation =>
+                val name: String = implementation.replace('.', '/').nn
 
-            if missing then
-              val referent: String = s"$member$descriptor of ${dotted(owner)}"
-              problems += s"${dotted(name)} refers to $referent, which was removed"
+                val copied: Boolean =
+                  !recompilable.contains(name) && holders.contains(name+classSuffix)
 
-      if problems.isEmpty then
-        jnf.Files.createDirectories(output)
-        var written: Long = 0L
+                if !included.contains(name) && copied && request.services then
+                  reach(name, service)
+                  growing = true
 
-        def write(name: String, bytes: Array[Byte]): Unit =
-          val file: jnf.Path = output.resolve(name).nn
-          jnf.Files.createDirectories(file.getParent)
-          jnf.Files.write(file, bytes)
-          written += bytes.length
+          follow()
 
-        included.keysIterator.foreach { name => write(name+classSuffix, contents(name)) }
+        // Every member which is named, of a class which was recompiled, must be there: declared
+        // by a class of the closed world which the named class inherits from, unless it was
+        // never declared by a class of the classpath at all, and so is the JDK's.
+        type Member = (String, String)
 
-        // The resources of every entry which has given a class, or which holds classes that
-        // were recompiled.
-        val givers: Set[Source] =
-          included.keysIterator.flatMap { name => holders.get(name+classSuffix) }.toSet ++
-            units.iterator.flatMap { unit => holders.get(unit+tastySuffix) }
+        def declares(name: String, member: Member, seen: mutable.HashSet[String]): Boolean =
+          seen.add(name) && included.get(name).exists: found =>
+            !shells.contains(name) && found.declared.contains(member) ||
+              found.parents.exists(declares(_, member, seen))
 
-        var resources: Long = 0L
+        def declared(name: String, member: Member, seen: mutable.HashSet[String]): Boolean =
+          seen.add(name) && original(name).exists: found =>
+            found.declared.contains(member) || found.parents.exists(declared(_, member, seen))
 
-        holders.foreach: (name, source) =>
-          if !name.endsWith(classSuffix) && !discarded(name) && givers.contains(source) then
-            val bytes: Array[Byte] = source.read(name)
+        included.foreach: (name, found) =>
+          found.members.foreach: (owner, member, descriptor) =>
+            if recompilable.contains(owner) && included.contains(owner) then
+              val signature: (String, String) = (member, descriptor)
+
+              val missing: Boolean =
+                !declares(owner, signature, mutable.HashSet()) &&
+                  (shells.contains(owner) || declared(owner, signature, mutable.HashSet()))
+
+              if missing then
+                val referent: String = s"$member$descriptor of ${dotted(owner)}"
+                problems += s"${dotted(name)} refers to $referent, which was removed"
+
+        if problems.isEmpty then
+          jnf.Files.createDirectories(output)
+          var written: Long = 0L
+
+          def write(name: String, bytes: Array[Byte]): Unit =
             val file: jnf.Path = output.resolve(name).nn
             jnf.Files.createDirectories(file.getParent)
             jnf.Files.write(file, bytes)
-            resources += bytes.length
+            written += bytes.length
 
-        services.foreach: (file, implementations) =>
-          val kept: List[String] =
-            implementations.toList.filter { name => included.contains(name.replace('.', '/').nn) }
+          included.keysIterator.foreach { name => write(name+classSuffix, contents(name)) }
 
-          if kept.nonEmpty then
-            val target: jnf.Path = output.resolve(file).nn
-            jnf.Files.createDirectories(target.getParent)
-            jnf.Files.writeString(target, kept.mkString("", "\n", "\n"))
+          // The resources of every entry which has given a class, or which holds classes that
+          // were recompiled.
+          val givers: Set[Source] =
+            included.keysIterator.flatMap { name => holders.get(name+classSuffix) }.toSet ++
+              units.iterator.flatMap { unit => holders.get(unit+tastySuffix) }
 
-        cleanup()
+          var resources: Long = 0L
 
-        val size: Long =
-          classes.iterator.map { name => holders(name+classSuffix).size(name+classSuffix) }.sum
+          holders.foreach: (name, source) =>
+            if !name.endsWith(classSuffix) && !discarded(name) && givers.contains(source) then
+              val bytes: Array[Byte] = source.read(name)
+              val file: jnf.Path = output.resolve(name).nn
+              jnf.Files.createDirectories(file.getParent)
+              jnf.Files.write(file, bytes)
+              resources += bytes.length
 
-        Report
-          ( Nil, units.size, outcome.tally.units, classes.length, size, included.size, written,
-            produced.size, shells.size, included.size - produced.size - shells.size,
-            outcome.tally.members, outcome.tally.removed, pinned.toList, notes,
-            reasons.iterator.filter(_(1).nonEmpty)
-            . map { (name, from) => dotted(name) -> dotted(from) }.toMap )
-      else
-        cleanup()
-        Report
-          ( problems.toList, units.size, outcome.tally.units, classes.length, 0L, 0, 0L, 0, 0, 0,
-            0, 0, pinned.toList, notes, Map() )
+          services.foreach: (file, implementations) =>
+            val kept: List[String] =
+              implementations.toList.filter { name => included.contains(name.replace('.', '/').nn) }
+
+            if kept.nonEmpty then
+              val target: jnf.Path = output.resolve(file).nn
+              jnf.Files.createDirectories(target.getParent)
+              jnf.Files.writeString(target, kept.mkString("", "\n", "\n"))
+
+          val size: Long =
+            classes.iterator.map { name => holders(name+classSuffix).size(name+classSuffix) }.sum
+
+          def packaged(names: Iterable[String]): Map[String, Int] =
+            names.groupMapReduce { name => dotted(name.take(name.lastIndexOf('/').max(0))) }
+              ( _ => 1 )
+              ( _ + _ )
+
+          val before: Map[String, Int] = packaged(classes)
+          val after: Map[String, Int] = packaged(included.keys)
+
+          val packages: List[(String, Int, Int)] =
+            before.toList.sortBy(_(0)).map: (name, count) =>
+              (name, count, after.getOrElse(name, 0))
+
+          Report
+            ( Nil, units.size, outcome.tally.units, classes.length, size, included.size, written,
+              produced.size, shells.size, included.size - produced.size - shells.size,
+              outcome.tally.members, outcome.tally.removed, pinned.toList, notes, packages,
+              reasons.iterator.filter(_(1).nonEmpty)
+              . map { (name, from) => dotted(name) -> dotted(from) }.toMap )
+        else
+          failure(problems.toList, outcome.tally.units)
+    finally cleanup()

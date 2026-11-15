@@ -65,8 +65,9 @@ object Bundler:
   // carries the rig's own executor and dependencies.
   def applicationClasspath: LocalClasspath = LocalClasspath.of(Classloader[Bundler.type])
 
-
-  private[anthology] def assemble
+  // Writes a JAR of everything on `classpath` to `jarfile`, with `main` as its `Main-Class` if
+  // there is one: what the `Jar` edge does, for a tool which packages a classpath of its own.
+  def assemble
     ( classpath: LocalClasspath, jarfile: Path on Linux, main: Optional[Fqcn] )
   :   Path on Linux raises Zip.Error raises Path.Error raises Io.Error raises Truncation.Error =
 
