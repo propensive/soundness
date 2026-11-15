@@ -88,7 +88,7 @@ object Worlds:
   lazy val plain: World = shrink(scala.Nil, scala.Nil)
 
   lazy val guarded: World =
-    shrink(scala.List("abscission.Yorick"), scala.List("abscission.Prompter"))
+    shrink(scala.List("abscission.Yorick"), scala.List("abscission.Prompter", "abscission.Steward"))
 
   // The same world, made as a JAR by the edges of a toolchain.
   lazy val jar: World =
@@ -197,8 +197,12 @@ object Tests extends Suite("shrinking", m"Abscission Tests"):
       . assert(_.exists(_ == t"interval"))
 
       test(m"a pinned unit is reported"):
-        Worlds.guarded.report.pinned.map(_.tt).to(List)
-      . assert(_ == List(t"abscission.Prompter"))
+        Worlds.guarded.report.pinned.sorted.map(_.tt).to(List)
+      . assert(_ == List(t"abscission.Prompter", t"abscission.Steward"))
+
+      test(m"what a pinned unit calls is kept, by the name it is compiled with"):
+        Worlds.guarded.methods("abscission.Ledger$").map(_.tt).to(List)
+      . assert(_ == List(t"credit"))
 
       test(m"the world with a kept class and a pinned unit performs as before"):
         Worlds.guarded.transcript().tt

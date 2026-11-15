@@ -205,6 +205,18 @@ object Door:
 
   def greet(guest: Guest | Null): String = guest.name
 
+// Its one method is compiled with a name which is not the one it is written with.
+object Ledger:
+  @scala.annotation.targetName("credit")
+  def +(amount: Int): Int = amount + 1
+
+  def debit(amount: Int): Int = amount - 1
+
+// Pinned, in one of the worlds the tests make: what it calls is then known only from its
+// bytecode, by the name `credit`.
+object Steward:
+  def reckon: Int = Ledger + 4
+
 object Globe extends Runnable:
   def call(understudy: Understudy | Null): String =
     if understudy == null then "nobody" else understudy.ready
@@ -265,6 +277,7 @@ object Globe extends Runnable:
     say(Tiring().fits("doublet").toString)
     say(Bell.toll(11).toString)
     say(Door.greet(Guest()))
+    say(Steward.reckon.toString)
     val bytes: java.io.ByteArrayOutputStream = java.io.ByteArrayOutputStream()
     val output: java.io.ObjectOutputStream = java.io.ObjectOutputStream(bytes)
     output.writeObject(Humour.Phlegmatic)

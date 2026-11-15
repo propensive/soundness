@@ -373,6 +373,10 @@ object Shaker:
     private val mixers: mutable.HashMap[Symbol, mutable.ArrayBuffer[Symbol]] = mutable.HashMap()
     private val accessors: mutable.HashMap[Symbol, mutable.ArrayBuffer[Symbol]] = mutable.HashMap()
 
+    // The names a member has: as it is written, and as it is compiled, which differs for one
+    // that is annotated `@targetName`.
+    private val compilations: mutable.HashMap[Symbol, (String, String)] = mutable.HashMap()
+
     private val foreign: mutable.HashMap[Symbol, Set[Name]] = mutable.HashMap()
     private val candidates: mutable.HashMap[Symbol, List[Symbol]] = mutable.HashMap()
     private val reflective: mutable.HashSet[Name] = mutable.HashSet()
@@ -512,22 +516,23 @@ object Shaker:
         List(staticRef(name.toTypeName.moduleClassName, generateStubs = false).symbol)
         . filter { symbol => symbol.exists && symbol.isClass }
 
+      // A nested class is found by the name it is compiled with, which is its own unless it
+      // was given another, as `&` is when it is annotated `@targetName("And")`.
       def nested(name: String): List[Symbol] =
         val cut: Int = name.lastIndexOf('$', name.length - 2)
 
         if cut <= 0 then Nil else
           val inner: String = name.substring(cut + 1).nn
+          val simple: String = inner.stripSuffix("$")
 
-          named(name.substring(0, cut).nn).flatMap: outer =>
-            val simple: TermName = inner.stripSuffix("$").toTermName.decode.toTermName
-            val member: Symbol = outer.info.decl(simple.toTypeName).symbol
-            val value: Symbol = outer.info.decl(simple).symbol
-
-            val classes: List[Symbol] =
-              List(member).filter: symbol =>
-                symbol.exists && symbol.isClass && !inner.endsWith("$")
-
-            classes ::: List(value).filter(_.is(Module)).map(_.moduleClass)
+          named(name.substring(0, cut).nn).filter(plan.loadable).flatMap: outer =>
+            outer.info.decls.toList.flatMap: member =>
+              if member.targetName.mangledString != simple then Nil
+              else if member.isTerm then
+                if member.is(Module) then List(member.moduleClass) else Nil
+              else if member.isClass && !member.is(ModuleClass) && !inner.endsWith("$")
+              then List(member)
+              else Nil
 
       val direct: List[Symbol] =
         if binary.endsWith("$") then module(binary.dropRight(1)) else top(binary) ::: module(binary)
@@ -540,10 +545,14 @@ object Shaker:
     // Whether a member may be compiled to something of a given name: itself, or one of the
     // members the compiler derives from it, whose names begin or end with its own.
     private def compiles(symbol: Symbol, name: String)(using Context): Boolean =
-      val own: String = symbol.name.mangledString
+      def derived(own: String): Boolean =
+        name == own || name.startsWith(own+"$") || name.endsWith("$$"+own) ||
+          name.contains("$$"+own+"$") || name == own+"_$eq"
 
-      name == own || name.startsWith(own+"$") || name.endsWith("$$"+own) ||
-        name.contains("$$"+own+"$") || name == own+"_$eq"
+      val (written, compiled) = compilations.getOrElseUpdate
+        ( symbol, (symbol.name.mangledString, symbol.targetName.mangledString) )
+
+      derived(written) || (written != compiled) && derived(compiled)
 
     private def seed(root: Shaker.Root)(using Context): Unit =
       val owners: List[Symbol] = named(root.owner)
