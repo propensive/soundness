@@ -1,0 +1,616 @@
+tel 1.0
+
+base anamnesis
+import soundness
+
+info
+    - an in-memory store of interned values and typed relations, whose schema is the database's type
+    + un stockage en mémoire de valeurs internées et de relations typées, dont le schéma est le type
+    + de la base de données
+detail
+    - _Anamnesis_ is an in-memory database for a program's working data. Values are stored
+    - once and identified by typed references, and the relations the database supports are
+    - declared in its type, as a tuple of `A -< B` pairs ("an `A` may have `B`s"), so that
+    - relating two values the schema does not connect is a compile error rather than a silent
+    - corruption.
+    + _Anamnesis_ est une base de données en mémoire pour les données de travail d'un programme. Les
+    + valeurs sont stockées une seule fois et identifiées par des références typées, et les
+    + relations que la base de données prend en charge sont déclarées dans son type, sous la forme
+    + d'un tuple de paires `A -< B` (« un `A` peut avoir des `B` »), de sorte que relier deux
+    + valeurs que le schéma ne connecte pas est une erreur de compilation plutôt qu'une corruption
+    + silencieuse.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Cabinet(name: Text)
+    case class Shelf(name: Text)
+    case class Box(name: Text)
+
+    given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()
+
+    val shelf = Shelf(t"top").store()
+    val box = Box(t"alpha").store()
+
+    shelf.assign(box)
+    shelf.lookup[Box].map(_())   // Set(Box(t"alpha"))
+    box.assign(shelf)            // does not compile: no Box -< Shelf relation
+    ```
+
+    - A `Database` is usually a given, since the extension methods `store`, `reference`,
+    - `assign`, `unassign` and `lookup` find it contextually. A stored value's reference is a
+    - `Ref of Box in db.type`: typed by both the value and the database, so it cannot be
+    - confused with a reference to another type, nor used against another database, and it
+    - dereferences by application, `box()`. Storing is *interning*: an equal value stored twice
+    - gives the same reference, so identity in the database is by value, and `reference()` finds
+    - the reference of a value already stored, raising `Database.Error` if it is not.
+    + Une `Database` est habituellement un given, car les méthodes d'extension `store`, `reference`,
+    + `assign`, `unassign` et `lookup` la trouvent dans le contexte. La référence d'une valeur
+    + stockée est un `Ref of Box in db.type` : typée à la fois par la valeur et par la base de
+    + données, elle ne peut être confondue avec une référence vers un autre type, ni utilisée avec
+    + une autre base de données, et on la déréférence par application, `box()`. Stocker, c'est
+    + *interner* : une valeur égale stockée deux fois donne la même référence, de sorte que
+    + l'identité dans la base de données est fondée sur la valeur, et `reference()` trouve la
+    + référence d'une valeur déjà stockée, en levant `Database.Error` si elle ne l'est pas.
+
+    - A query is an ordinary Scala predicate over the references `lookup` returns, so it is
+    - checked by the compiler like the rest of the program.
+    + Une requête est un prédicat Scala ordinaire sur les références que renvoie `lookup` ; elle est
+    + donc vérifiée par le compilateur comme le reste du programme.
+
+    - The library has one source set, `anamnesis.core`, which compiles for every platform.
+    - `Database`, the relation operators `-<` and `>-`, `Entity`, `Listable`, `Referenceable`,
+    - `enumerate` and the five extension methods are exported to the `soundness` umbrella; `Ref`
+    - and `Reference` are exported to the `anamnesis` package from `anamnesis.internal`.
+    + La bibliothèque a un seul ensemble de sources, `anamnesis.core`, qui compile pour toutes les
+    + plateformes. `Database`, les opérateurs de relation `-<` et `>-`, `Entity`, `Listable`,
+    + `Referenceable`, `enumerate` et les cinq méthodes d'extension sont exportés vers le package
+    + parapluie `soundness` ; `Ref` et `Reference` sont exportés vers le package `anamnesis` depuis
+    + `anamnesis.internal`.
+
+refer anamnesis.Database
+refer anamnesis.Ref
+refer anamnesis.-<
+refer anamnesis.store
+refer anamnesis.assign
+refer anamnesis.lookup
+
+entry .Database
+  info
+      - an in-memory store of interned values and the typed relations between them
+      + un stockage en mémoire de valeurs internées et des relations typées entre elles
+  detail
+      - A `Database of relations` holds values and, for each `A -< B` in its `relations` tuple,
+      - a one-to-many relation from `A`s to `B`s. The tuple is the database's `#Topic`, and
+      - every relating operation demands evidence (`#Has`) that its relation is in it, so the
+      - schema is checked as the code compiles.
+      + Une `Database of relations` contient des valeurs et, pour chaque `A -< B` de son tuple
+      + `relations`, une relation un-à-plusieurs des `A` vers les `B`. Le tuple est le `#Topic` de
+      + la base de données, et chaque opération de mise en relation exige la preuve (`#Has`) que sa
+      + relation en fait partie, de sorte que le schéma est vérifié à la compilation du code.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Shelf(name: Text)
+      case class Box(name: Text)
+      case class Pencil(name: Text)
+
+      given db: Database of (Shelf -< Box, Box -< Pencil, Text >- Box) = Database()
+
+      val alpha: Ref of Box in db.type = Box(t"alpha").store()
+      val red = Pencil(t"red").store()
+      alpha.assign(red)
+      alpha.lookup[Pencil]
+      ```
+
+      - The database's methods take references typed `in this.type`, so they are most easily
+      - called through the package's extension methods (`store`, `reference`, `assign`,
+      - `unassign`, `lookup`) with the database as a given. A reference is only meaningful to the
+      - database which allocated it.
+      + Les méthodes de la base de données prennent des références typées `in this.type` ; on les
+      + appelle donc le plus facilement par les méthodes d'extension du package (`store`,
+      + `reference`, `assign`, `unassign`, `lookup`), avec la base de données comme given. Une
+      + référence n'a de sens que pour la base de données qui l'a allouée.
+
+      - `#store` is guarded by a mutex, so concurrent stores intern consistently; the relating
+      - methods are not, and a database whose relations are changed from several threads needs
+      - its own synchronisation.
+      + `#store` est protégée par un mutex, de sorte que des stockages concurrents internent de
+      + façon cohérente ; les méthodes de mise en relation ne le sont pas, et une base de données
+      + dont les relations sont modifiées depuis plusieurs threads a besoin de sa propre
+      + synchronisation.
+  refer anamnesis.-<
+  refer anamnesis.Ref
+  refer anamnesis.store
+  entry .Relation
+    info
+        - the type of one relation, `left -< right`, as an element of a database's schema
+        + le type d'une relation, `left -< right`, en tant qu'élément du schéma d'une base de
+        + données
+    detail
+        - A sealed marker trait, never instantiated: `Database.Relation[left, right]` is what both
+        - `left -< right` and `right >- left` denote, and a database's `#Topic` is a tuple of them.
+        + Un trait marqueur scellé, jamais instancié : `Database.Relation[left, right]` est ce que
+        + désignent à la fois `left -< right` et `right >- left`, et le `#Topic` d'une base de
+        + données est un tuple de ces relations.
+  entry .apply
+    info
+        - a new, empty database of the relations its expected type declares
+        + une nouvelle base de données vide, des relations que déclare son type attendu
+    detail
+        - `Database()` is transparent and takes the relations from the type it is ascribed:
+        - `given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()`. It allocates one
+        - relation table for each element of the tuple.
+        + `Database()` est transparent et prend les relations du type qui lui est attribué :
+        + `given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()`. Il alloue une table
+        + de relation pour chaque élément du tuple.
+  entry .Error
+    info
+        - raised when a value which has not been stored is asked for its reference
+        + levée quand on demande sa référence à une valeur qui n'a pas été stockée
+    detail
+        - Error `↯/s.26.1`: _the database operation failed because the value has not been stored in the
+        - database_. Raised by `Database#ref` and the `reference` extension when the value has
+        - never been passed to `store`; it needs a `Tactic[Database.Error]` in scope.
+        + Erreur `↯/s.26.1` : _the database operation failed because the value has not been stored
+        + in the database_. Levée par `Database#ref` et l'extension `reference` quand la valeur n'a
+        + jamais été passée à `store` ; elle requiert une `Tactic[Database.Error]` dans la portée.
+
+        ```scala
+        import soundness.*
+
+        case class Box(name: Text)
+        given db: Database of Tuple1[Box -< Text] = Database()
+
+        safely(Box(t"missing").reference())   // Unset
+        ```
+    entry .Reason
+      info
+          - why a database operation failed
+          + pourquoi une opération sur la base de données a échoué
+      detail
+          - An enum with the single case `UnknownReference` (number 1): the value has not been
+          - stored in the database.
+          + Une énumération avec l'unique cas `UnknownReference` (numéro 1) : la valeur n'a pas été
+          + stockée dans la base de données.
+      entry #number
+        info
+            - the reason's number, the second part of the error's code
+            + le numéro de la raison, seconde partie du code de l'erreur
+    entry .communicable
+      info
+          - describes a `Database.Error.Reason` as a message
+          + décrit une `Database.Error.Reason` sous forme de message
+    entry #reason
+      info
+          - why the operation failed, as a `Database.Error.Reason`
+          + pourquoi l'opération a échoué, sous forme de `Database.Error.Reason`
+  entry #Topic
+    info
+        - the database's relations, as a tuple of `Database.Relation`s
+        + les relations de la base de données, sous forme de tuple de `Database.Relation`
+    detail
+        - Fixed by the type the database is created as: in `Database of (A -< B, B -< C)` it is
+        - `(A -< B, B -< C)`.
+        + Fixé par le type avec lequel la base de données est créée : dans
+        + `Database of (A -< B, B -< C)`, c'est `(A -< B, B -< C)`.
+  entry #AllRelations
+    info
+        - the union of the database's relations, `Tuple.Union[Topic]`
+        + l'union des relations de la base de données, `Tuple.Union[Topic]`
+  entry #Has
+    info
+        - evidence that a relation is in the database's schema: `relation <:< AllRelations`
+        + la preuve qu'une relation fait partie du schéma de la base de données :
+        + `relation <:< AllRelations`
+    detail
+        - The contextual evidence `db.Has[left -< right]` which `assign`, `unassign` and `lookup`
+        - require; where it cannot be found, the relation is not in the schema and the call does
+        - not compile.
+        + La preuve contextuelle `db.Has[left -< right]` qu'exigent `assign`, `unassign` et
+        + `lookup` ; là où elle est introuvable, la relation n'est pas dans le schéma et l'appel ne
+        + compile pas.
+  entry #allocate
+    info
+        - a fresh reference of a given type, not yet attached to any value
+        + une nouvelle référence d'un type donné, pas encore attachée à une valeur
+    detail
+        - Increments the database's counter and returns the next reference, typed `Ref of ref in
+        - this.type`. `#store` uses it; a reference allocated directly has no value to
+        - dereference to.
+        + Incrémente le compteur de la base de données et renvoie la référence suivante, typée
+        + `Ref of ref in this.type`. `#store` l'utilise ; une référence allouée directement n'a
+        + aucune valeur vers laquelle se déréférencer.
+  entry #dereference
+    info
+        - the value a reference names
+        + la valeur que nomme une référence
+    detail
+        - `ref()` is the same, through the `Ref` extension, with the database as a given. A
+        - reference which was allocated but never stored fails with an exception from the
+        - underlying map.
+        + `ref()` fait de même, par l'extension `Ref`, avec la base de données comme given. Une
+        + référence allouée mais jamais stockée échoue avec une exception de la map sous-jacente.
+  entry #store
+    info
+        - interns a value, returning its reference: a new one, or the one it already has
+        + interne une valeur et renvoie sa référence : une nouvelle, ou celle qu'elle a déjà
+    detail
+        - Equal values share one reference, so storing a value twice is harmless and identity is
+        - by value. The `store()` extension calls this with the database in scope.
+        + Des valeurs égales partagent une même référence ; stocker deux fois une valeur est donc
+        + sans effet néfaste, et l'identité est fondée sur la valeur. L'extension `store()` appelle
+        + cette méthode avec la base de données de la portée.
+  entry #ref
+    info
+        - the reference of a value already stored, raising `Database.Error` if it was not
+        + la référence d'une valeur déjà stockée, en levant `Database.Error` si elle ne l'était pas
+    detail
+        - Needs a `Tactic[Database.Error]`. The `reference()` extension calls this with the
+        - database in scope; it is how a value arriving from elsewhere is matched to what the
+        - database already holds, rather than stored again.
+        + Requiert une `Tactic[Database.Error]`. L'extension `reference()` appelle cette méthode
+        + avec la base de données de la portée ; c'est ainsi qu'une valeur venue d'ailleurs est
+        + rapprochée de ce que la base de données contient déjà, plutôt que stockée à nouveau.
+  entry #assign
+    info
+        - relates two references by one of the schema's relations
+        + relie deux références par l'une des relations du schéma
+    detail
+        - `db.assign(left, right)` adds `right` to the set of `right`s related to `left` by
+        - `left -< right`, which the database's `#Topic` must contain. The `assign` extension is
+        - the usual spelling.
+        + `db.assign(left, right)` ajoute `right` à l'ensemble des `right` reliés à `left` par
+        + `left -< right`, que le `#Topic` de la base de données doit contenir. L'extension `assign`
+        + est l'écriture habituelle.
+  entry #unassign
+    info
+        - removes a relation between two references
+        + supprime une relation entre deux références
+    detail
+        - The inverse of `#assign`: `right` is removed from the set related to `left`, and the
+        - relation's reverse index forgets it. Removing a relation which was never made leaves the
+        - database as it was.
+        + L'inverse de `#assign` : `right` est retiré de l'ensemble relié à `left`, et l'index
+        + inverse de la relation l'oublie. Supprimer une relation qui n'a jamais été établie laisse
+        + la base de données inchangée.
+  entry #lookup
+    info
+        - every reference related to a reference by one relation, as a `Set`
+        + toutes les références reliées à une référence par une relation, sous forme de `Set`
+    detail
+        - `db.lookup[Shelf, Box](shelf)` is every `Box` assigned to `shelf`; a reference with none
+        - gives the empty set. The `lookup` extension infers the left type from the reference.
+        + `db.lookup[Shelf, Box](shelf)` est l'ensemble des `Box` assignées à `shelf` ; une
+        + référence qui n'en a aucune donne l'ensemble vide. L'extension `lookup` infère le type de
+        + gauche à partir de la référence.
+
+entry .-<
+  info
+      - a relation of the schema: `left -< right` means a `left` may have `right`s
+      + une relation du schéma : `left -< right` signifie qu'un `left` peut avoir des `right`
+  detail
+      - An infix alias of `Database.Relation[left, right]`. A database's type is a tuple of these:
+      - `Database of (Cabinet -< Shelf, Shelf -< Box)` lets a cabinet have shelves and a shelf
+      - have boxes, and nothing else, so `box.assign(shelf)` does not compile there.
+      + Un alias infixe de `Database.Relation[left, right]`. Le type d'une base de données est un
+      + tuple de ces relations : `Database of (Cabinet -< Shelf, Shelf -< Box)` permet à une armoire
+      + d'avoir des étagères et à une étagère d'avoir des boîtes, et rien d'autre ;
+      + `box.assign(shelf)` n'y compile donc pas.
+
+      ```scala
+      import soundness.*
+
+      case class Shelf(name: Text)
+      case class Box(name: Text)
+
+      given db: Database of (Shelf -< Box, Text >- Box) = Database()
+      ```
+
+entry .>-
+  info
+      - a relation written right to left: `left >- right` means a `right` may have `left`s
+      + une relation écrite de droite à gauche : `left >- right` signifie qu'un `right` peut avoir
+      + des `left`
+  detail
+      - An infix alias of `Database.Relation[right, left]`, the mirror of `-<`, for a schema which
+      - reads better from the owned side: `Text >- Box` is the same relation as `Box -< Text`, so
+      - a box may have text labels.
+      + Un alias infixe de `Database.Relation[right, left]`, le miroir de `-<`, pour un schéma qui
+      + se lit mieux du côté possédé : `Text >- Box` est la même relation que `Box -< Text`, de
+      + sorte qu'une boîte peut avoir des étiquettes textuelles.
+
+entry .store
+  info
+      - interns a value in the database in scope, returning its typed reference
+      + interne une valeur dans la base de données de la portée et renvoie sa référence typée
+  detail
+      - An inline extension on any value, needing a `Database` given. It returns a `Ref of
+      - value in db.type`; an equal value already stored gives the reference it already has.
+      + Une extension inline sur n'importe quelle valeur, qui requiert un given `Database`. Elle
+      + renvoie un `Ref of value in db.type` ; une valeur égale déjà stockée donne la référence
+      + qu'elle a déjà.
+
+      ```scala
+      import soundness.*
+
+      case class Box(name: Text)
+      given db: Database of Tuple1[Box -< Text] = Database()
+
+      val box: Ref of Box in db.type = Box(t"alpha").store()
+      box()   // Box(t"alpha")
+      ```
+
+entry .reference
+  info
+      - the reference of a value already stored in the database in scope
+      + la référence d'une valeur déjà stockée dans la base de données de la portée
+  detail
+      - An inline extension on any value, needing a `Database` given and a
+      - `Tactic[Database.Error]`, which is raised (`Database.Error.Reason.UnknownReference`) if
+      - the value was never stored. Where `store()` would intern a new value, `reference()` only
+      - finds an existing one.
+      + Une extension inline sur n'importe quelle valeur, qui requiert un given `Database` et une
+      + `Tactic[Database.Error]`, levée (`Database.Error.Reason.UnknownReference`) si la valeur n'a
+      + jamais été stockée. Là où `store()` internerait une nouvelle valeur, `reference()` ne fait
+      + que trouver une valeur existante.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Box(name: Text)
+      given db: Database of Tuple1[Box -< Text] = Database()
+
+      Box(t"alpha").store()
+      Box(t"alpha").reference()
+      ```
+
+entry .assign
+  info
+      - relates a reference to another, by a relation the database's type declares
+      + relie une référence à une autre, par une relation que déclare le type de la base de données
+  detail
+      - An inline extension on a `Ref of left in db.type`, needing the `Database` given and
+      - `db.Has[left -< right]`: `shelf.assign(box)` compiles only if `Shelf -< Box` is in the
+      - schema. Assigning the same pair twice leaves one relation.
+      + Une extension inline sur un `Ref of left in db.type`, qui requiert le given `Database` et
+      + `db.Has[left -< right]` : `shelf.assign(box)` ne compile que si `Shelf -< Box` est dans le
+      + schéma. Assigner deux fois la même paire laisse une seule relation.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Shelf(name: Text)
+      case class Box(name: Text)
+      given db: Database of Tuple1[Shelf -< Box] = Database()
+
+      val shelf = Shelf(t"top").store()
+      val box = Box(t"alpha").store()
+      shelf.assign(box)
+      box.assign(shelf)   // does not compile
+      ```
+
+entry .unassign
+  info
+      - removes a relation between a reference and another
+      + supprime une relation entre une référence et une autre
+  detail
+      - An inline extension on a `Ref of left in db.type`, needing the `Database` given and
+      - `db.Has[left -< right]`; the inverse of `assign`. Other references related to `left` are
+      - unaffected.
+      + Une extension inline sur un `Ref of left in db.type`, qui requiert le given `Database` et
+      + `db.Has[left -< right]` ; l'inverse de `assign`. Les autres références reliées à `left` ne
+      + sont pas affectées.
+
+entry .lookup
+  info
+      - the references related to a reference by one relation, as a `Set`
+      + les références reliées à une référence par une relation, sous forme de `Set`
+  detail
+      - An inline extension on a `Ref of left in db.type`, needing the `Database` given and
+      - `db.Has[left -< right]`: `shelf.lookup[Box]` is every box assigned to the shelf. Each
+      - result is a `Ref` which dereferences by application, so a query is a predicate over the
+      - values:
+      + Une extension inline sur un `Ref of left in db.type`, qui requiert le given `Database` et
+      + `db.Has[left -< right]` : `shelf.lookup[Box]` est l'ensemble des boîtes assignées à
+      + l'étagère. Chaque résultat est un `Ref` qui se déréférence par application ; une requête est
+      + donc un prédicat sur les valeurs :
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Shelf(name: Text)
+      case class Box(name: Text)
+      given db: Database of Tuple1[Shelf -< Box] = Database()
+
+      val shelf = Shelf(t"top").store()
+      shelf.assign(Box(t"alpha").store())
+      shelf.lookup[Box].filter(_().name.starts(t"a"))
+      ```
+
+entry .enumerate
+  info
+      - every reference to an entity type, as its `Listable` instance lists them
+      + toutes les références vers un type d'entité, telles que les liste son instance `Listable`
+  detail
+      - `enumerate[entity]` needs `entity` to be an `Entity` with a `Listable` instance, and is
+      - that instance's `list` with a predicate which accepts everything.
+      + `enumerate[entity]` requiert que `entity` soit une `Entity` dotée d'une instance `Listable`,
+      + et correspond au `list` de cette instance avec un prédicat qui accepte tout.
+
+entry .Ref
+  info
+      - a reference to a stored value, typed by the value and by the database which holds it
+      + une référence vers une valeur stockée, typée par la valeur et par la base de données qui la
+      + contient
+  detail
+      - The opaque type `anamnesis.internal.Ref`, exported here. A reference from `store` has the
+      - type `Ref of value in db.type`: the `of` names the value's type and the `in` its
+      - database, so a reference to a `Box` cannot be passed where a reference to a `Shelf` is
+      - wanted, nor dereferenced against another database. Underneath it is an `Int`, so a
+      - reference is cheap to hold, compare and use as a key.
+      + Le type opaque `anamnesis.internal.Ref`, exporté ici. Une référence issue de `store` a le
+      + type `Ref of value in db.type` : le `of` nomme le type de la valeur et le `in` sa base de
+      + données, de sorte qu'une référence vers une `Box` ne peut être passée là où une référence
+      + vers une `Shelf` est attendue, ni déréférencée avec une autre base de données. En dessous,
+      + c'est un `Int` ; une référence est donc peu coûteuse à conserver, à comparer et à utiliser
+      + comme clé.
+
+      - A reference dereferences by application, `ref()`, with its database as a given:
+      + Une référence se déréférence par application, `ref()`, avec sa base de données comme given :
+
+      ```scala
+      import soundness.*
+
+      case class Box(name: Text)
+      given db: Database of Tuple1[Box -< Text] = Database()
+
+      val box = Box(t"alpha").store()
+      box()
+      ```
+
+entry .Reference
+  info
+      - a reference to an `Entity`, by the entity's key
+      + une référence vers une `Entity`, par la clé de l'entité
+  detail
+      - The opaque type `anamnesis.internal.Reference`, exported here. Where `Ref` is allocated
+      - by a database, a `Reference[entity]` is the entity's own key (its `Operand`), typed by
+      - what it refers to; an entity type which is `Referenceable` resolves a key back to its
+      - entity, and a reference encodes and decodes as text through the key's own codecs.
+      + Le type opaque `anamnesis.internal.Reference`, exporté ici. Alors que `Ref` est alloué par
+      + une base de données, une `Reference[entity]` est la clé propre de l'entité (son `Operand`),
+      + typée par ce qu'elle désigne ; un type d'entité qui est `Referenceable` résout une clé en
+      + son entité, et une référence s'encode et se décode en texte par les codecs propres de la
+      + clé.
+
+entry .Entity
+  info
+      - a value with its own key, which can be referred to by `Reference`
+      + une valeur dotée de sa propre clé, à laquelle on peut faire référence par `Reference`
+  detail
+      - An `Entity` is `Operable`: its `Operand` type member is the type of its key, and `#ref`
+      - the key itself. A companion `Referenceable` instance looks an entity up by its key, and
+      - a `Listable` instance enumerates them, which `enumerate` uses.
+      + Une `Entity` est `Operable` : son membre de type `Operand` est le type de sa clé, et `#ref`
+      + la clé elle-même. Une instance compagnon `Referenceable` recherche une entité par sa clé, et
+      + une instance `Listable` les énumère, ce qu'utilise `enumerate`.
+  refer anamnesis.Referenceable
+  refer anamnesis.Listable
+  entry #ref
+    info
+        - the entity's key, of its `Operand` type
+        + la clé de l'entité, de son type `Operand`
+  entry #reference
+    info
+        - a `Reference` to this entity, by its key
+        + une `Reference` vers cette entité, par sa clé
+
+entry .Listable
+  info
+      - a typeclass which lists the references to every entity of a type
+      + une classe de types qui liste les références vers toutes les entités d'un type
+  detail
+      - An instance for an `Entity` type enumerates the references to its entities which a
+      - predicate accepts; `enumerate[entity]` lists them all.
+      + Une instance pour un type `Entity` énumère les références vers ses entités qu'accepte un
+      + prédicat ; `enumerate[entity]` les liste toutes.
+  entry #Self
+    info
+        - the entity type the instance lists
+        + le type d'entité que l'instance liste
+  entry #list
+    info
+        - the references to the entities a predicate accepts
+        + les références vers les entités qu'accepte un prédicat
+
+entry .Referenceable
+  info
+      - a typeclass which resolves an entity from its key
+      + une classe de types qui résout une entité à partir de sa clé
+  detail
+      - An instance for an `Entity` type, whose `Operand` is the key type, finds the entity a
+      - key names; applying a `Reference[entity]` with `()` resolves it through this instance.
+      - It also gives `Reference` its text codecs, through the key type's own.
+      + Une instance pour un type `Entity`, dont l'`Operand` est le type de clé, trouve l'entité que
+      + nomme une clé ; appliquer une `Reference[entity]` avec `()` la résout par cette instance.
+      + Elle donne aussi à `Reference` ses codecs textuels, par ceux du type de clé.
+  entry #Self
+    info
+        - the entity type, whose `Operand` is the instance's key type
+        + le type d'entité, dont l'`Operand` est le type de clé de l'instance
+  entry #lookup
+    info
+        - the entity a key names
+        + l'entité que nomme une clé
+
+entry .internal
+  info
+      - the opaque types `Ref` and `Reference`, and their companions and extensions
+      + les types opaques `Ref` et `Reference`, ainsi que leurs compagnons et extensions
+  hidden
+  detail
+      - Not for direct use: the object holds the opaque definitions of `Ref` and `Reference`,
+      - which are exported to the `anamnesis` package and documented there.
+      + Pas pour un usage direct : l'objet contient les définitions opaques de `Ref` et `Reference`,
+      + qui sont exportées vers le package `anamnesis` et documentées là.
+  entry .Dereferenceable
+    info
+        - the bound of `Ref`: a value whose `Form` is the database it belongs to
+        + la borne de `Ref` : une valeur dont la `Form` est la base de données à laquelle elle
+        + appartient
+    entry #Form
+      info
+          - the database type a reference belongs to
+          + le type de base de données auquel appartient une référence
+  entry .Ref
+    info
+        - a reference to a stored value; see `anamnesis.Ref`
+        + une référence vers une valeur stockée ; voir `anamnesis.Ref`
+    detail
+        - The opaque type `Ref <: Dereferenceable`, an `Int` underneath.
+        + Le type opaque `Ref <: Dereferenceable`, un `Int` en dessous.
+    entry .apply
+      info
+          - allocates a fresh reference in a database, as `Database#allocate`
+          + alloue une nouvelle référence dans une base de données, comme `Database#allocate`
+  entry .Reference
+    info
+        - a reference to an entity by its key; see `anamnesis.Reference`
+        + une référence vers une entité par sa clé ; voir `anamnesis.Reference`
+    detail
+        - The opaque type `Reference[+entity <: Entity]`, the key underneath.
+        + Le type opaque `Reference[+entity <: Entity]`, la clé en dessous.
+    entry .apply
+      info
+          - the reference to an entity, by its key
+          + la référence vers une entité, par sa clé
+    entry .encodable
+      info
+          - encodes a reference as its key's text, for a `Referenceable` entity
+          + encode une référence sous la forme du texte de sa clé, pour une entité `Referenceable`
+    entry .decodable
+      info
+          - decodes a reference from its key's text, for a `Referenceable` entity
+          + décode une référence à partir du texte de sa clé, pour une entité `Referenceable`
+  entry .expose
+    info
+        - the key a `Reference` holds, as its `Referenceable` instance's `Operand`
+        + la clé que contient une `Reference`, en tant qu'`Operand` de son instance `Referenceable`
+  entry .apply
+    info
+        - dereferences a `Ref` against its database, or resolves a `Reference` to its entity
+        + déréférence un `Ref` avec sa base de données, ou résout une `Reference` en son entité
+    detail
+        - Two extensions sharing a name: `ref()` on a `Ref of value in database` gives the value,
+        - with the database as a given; `reference()` on a `Reference[entity]` looks the entity up
+        - through its `Referenceable` instance.
+        + Deux extensions partageant un nom : `ref()` sur un `Ref of value in database` donne la
+        + valeur, avec la base de données comme given ; `reference()` sur une `Reference[entity]`
+        + recherche l'entité par son instance `Referenceable`.

@@ -190,7 +190,7 @@ to live state. vivisection is that server: `vivisection.DapServer` handles the r
 and its suite's `DapClient` drives a live debuggee through a breakpoint, a `next` step and
 inspection in the ordinary run, with each local rendered through its `Inspectable` instance
 and an object snapshot shown by its simple name and identity rather than a JVM class name. The
-topic is `doc/modules/debugging.md`.
+topic is `doc/en/modules/debugging.md`.
 
 Done when: a scripted DAP session — set a breakpoint, step, inspect a value rendered in
 Soundness terms — passes against a running Soundness application in CI.

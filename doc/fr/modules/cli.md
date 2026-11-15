@@ -1,0 +1,871 @@
+- ## Command-Line Applications
++ ## Applications en ligne de commande
+
+- ### About
++ ### Présentation
+
+- A command-line application has three parts: an entry point, which hands the program its
+- arguments, an interpretation of those arguments as subcommands, flags and operands, and tab
+- completions for every shell.
++ Une application en ligne de commande comporte trois parties : un point d'entrée, qui remet
++ au programme ses arguments, une interprétation de ces arguments en sous-commandes, options
++ et opérandes, et des complétions par tabulation pour chaque shell.
+
+- The unusual part is that the completions are derived from the same code which runs the
+- command, so they cannot drift away from what the program actually does. Neither can the help
+- text, the manpage, or the list of exit statuses. All of them are read from the program, not
+- written beside it.
++ La particularité est que les complétions sont dérivées du même code que celui qui exécute
++ la commande ; elles ne peuvent donc pas s'écarter de ce que fait réellement le programme.
++ Pas plus que le texte d'aide, la page de manuel ou la liste des codes de sortie. Tous sont
++ lus depuis le programme, et non écrits à côté de lui.
+
+- ### On the command line
++ ### Sur la ligne de commande
+
+- The arguments which a shell passes are a flat list of text. Every command-line program must
+- recover their structure before any real work begins: which words are subcommands, which are
+- flags, and which values belong to which. Completion scripts then implement that same
+- interpretation again, by hand, for each shell, and they drift from the program they
+- describe. The new flag exists, but the completions have never heard of it.
++ Les arguments que transmet un shell sont une liste plate de textes. Tout programme en ligne
++ de commande doit retrouver leur structure avant qu'un vrai travail ne commence : quels mots
++ sont des sous-commandes, lesquels sont des options, et quelles valeurs appartiennent à quoi.
++ Les scripts de complétion réimplémentent ensuite cette même interprétation, à la main, pour
++ chaque shell, et ils s'écartent du programme qu'ils décrivent. La nouvelle option existe,
++ mais les complétions n'en ont jamais entendu parler.
+
+- Here the list of arguments is turned into typed values: a subcommand matched by name, a flag
+- read as an `Int`, an operand [decoded](decoding.md) to a path. Enough is recorded about each
+- argument to complete it. Pressing `tab` runs the program's own code for handling arguments,
+- in a mode which produces suggestions instead of effects. A flag which the program checks for
+- therefore becomes a flag which the program can suggest, and the completions agree with the
+- program by construction.
++ Ici, la liste des arguments est transformée en valeurs typées : une sous-commande reconnue
++ par son nom, une option lue comme un `Int`, un opérande [décodé](decoding.md) en chemin. On
++ consigne sur chaque argument assez d'informations pour le compléter. Appuyer sur `tab`
++ exécute le code propre au programme qui traite les arguments, dans un mode qui produit des
++ suggestions au lieu d'effets. Une option que le programme vérifie devient donc une option
++ que le programme peut suggérer, et les complétions concordent avec le programme par
++ construction.
+
+- Every parameter, and how it is parsed, is declared where the command is defined, which is
+- the [declarative context](../../philosophy/declarative-context.md) style, applied to the
+- command line.
++ Chaque paramètre, et la façon dont il est analysé, est déclaré là où la commande est
++ définie, ce qui est le style du
++ [contexte déclaratif](../../philosophy/declarative-context.md), appliqué à la ligne de
++ commande.
+
+- The sections below start with a minimal entry point, and build up through subcommands and
+- flags to completions, help and manpages. Everything comes from the `soundness` package,
+- together with a few choices which the entry point needs:
++ Les sections ci-dessous commencent par un point d'entrée minimal, et progressent à travers
++ les sous-commandes et les options jusqu'aux complétions, à l'aide et aux pages de manuel.
++ Tout vient du package `soundness`, accompagné de quelques choix dont le point d'entrée a
++ besoin :
+
+```scala
+import soundness.*
+
+import backstops.genericErrorMessageBackstop
+import executives.directExecutive
+import interpreters.posixInterpreter
+import systems.javaBaseSystem
+import strategies.throwUnsafely
+```
+
+```tabular
+- column  Import
+- column  Decides
+- row  `interpreters.posixInterpreter`  how the flat list of arguments is read as flags and operands
+- row  `executives.directExecutive`  what the body of the entry point returns; [Tab completions](#tab-completions) uses another
+- row  `backstops.genericErrorMessageBackstop`  what is printed when an error escapes the program
+- row  `systems.javaBaseSystem`  where [system properties](environment.md#system-properties) come from
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception
++ column  Import
++ column  Décide
++ row  `interpreters.posixInterpreter`  comment la liste plate d'arguments est lue en options et opérandes
++ row  `executives.directExecutive`  ce que renvoie le corps du point d'entrée ; [Complétions par tabulation](#tab-completions) en utilise un autre
++ row  `backstops.genericErrorMessageBackstop`  ce qui est affiché lorsqu'une erreur s'échappe du programme
++ row  `systems.javaBaseSystem`  d'où proviennent les [propriétés système](environment.md#system-properties)
++ row  `strategies.throwUnsafely`  qu'une erreur est levée sous forme d'exception
+```
+
+- The samples on this page define whole programs, so they are compiled but not run.
++ Les exemples de cette page définissent des programmes entiers ; ils sont donc compilés mais
++ pas exécutés.
+
+- ### An entry point
++ ### Un point d'entrée
+
+- The `application` method wraps the entry point of a program. It gives its body the program's
+- context, and expects an `Exit` status in return. It takes the arguments as a list of text.
++ La méthode `application` enveloppe le point d'entrée d'un programme. Elle donne à son corps
++ le contexte du programme, et attend en retour un code de sortie `Exit`. Elle prend les
++ arguments sous forme de liste de textes.
+
+- The same program can equally be an object which extends `Application`. That abstract class
+- supplies the `main` method, which converts the JVM's arguments, and asks only for an
+- `invoke`:
++ Le même programme peut tout aussi bien être un objet qui étend `Application`. Cette classe
++ abstraite fournit la méthode `main`, qui convertit les arguments de la JVM, et ne demande
++ qu'un `invoke` :
+
+```scala fuel
+alternative Function
+  code
+      def mytool(args: List[Text]): Unit = application(args):
+        Out.println(t"Hello, world!")
+        Exit.Ok
+alternative `Application`
+  code
+      object MyTool extends Application:
+        def invoke(using Cli): Exit =
+          Out.println(t"Hello, world!")
+          Exit.Ok
+##
+```
+
+- Packaged as an executable JAR whose `Main-Class` is `mytool` or `MyTool`, this runs from a
+- shell. `Exit.Ok` reports success. `Exit.Fail(1)`, or any positive code, reports failure. The
+- status must be returned, and is never left implicit. [Packaging](packaging.md) builds the
+- JAR.
++ Empaqueté sous forme de JAR exécutable dont la `Main-Class` est `mytool` ou `MyTool`, ce
++ programme s'exécute depuis un shell. `Exit.Ok` signale un succès. `Exit.Fail(1)`, ou tout
++ code positif, signale un échec. Le code de sortie doit être renvoyé, et n'est jamais
++ laissé implicite. L'[empaquetage](packaging.md) construit le JAR.
+
+- ### Arguments
++ ### Arguments
+
+- Within the body, `arguments` is the list of arguments which the program was given. Each is
+- an `Argument`, and applying one gives its `Text`:
++ Dans le corps, `arguments` est la liste des arguments qu'a reçus le programme. Chacun est un
++ `Argument`, et l'appliquer donne son `Text` :
+
+```scala
+def echo(args: List[Text]): Unit = application(args):
+  arguments.each: argument =>
+    Out.println(argument())
+  Exit.Ok
+```
+
+- An `Argument` is more than its text. It remembers its position on the command line, which is
+- what later lets a completion know which argument it is completing. Positions are numbered
+- from `0`, for the first argument after the command, and not from `1`, as in most scripting
+- languages.
++ Un `Argument` est plus que son texte. Il se souvient de sa position sur la ligne de
++ commande, ce qui permet ensuite à une complétion de savoir quel argument elle complète. Les
++ positions sont numérotées à partir de `0`, pour le premier argument après la commande, et
++ non à partir de `1`, comme dans la plupart des langages de script.
+
+- Two words are often used interchangeably, and are worth separating. *Arguments* are the flat
+- sequence of textual values which the shell hands over. *Parameters* are what they mean, once
+- they have been interpreted. The arguments of `grep -rA4 pattern` are `-rA4` and `pattern`.
+- Its parameters are "search recursively", "show four lines of trailing context" and "search
+- for `pattern`".
++ Deux mots sont souvent employés indifféremment, et méritent d'être distingués. Les
++ *arguments* sont la séquence plate de valeurs textuelles que remet le shell. Les
++ *paramètres* sont ce qu'ils signifient, une fois interprétés. Les arguments de
++ `grep -rA4 pattern` sont `-rA4` et `pattern`. Ses paramètres sont « rechercher
++ récursivement », « afficher quatre lignes de contexte après » et « rechercher `pattern` ».
+
+- The interpreter in scope is what turns the first into the second, which is why it is chosen
+- by import, and not fixed. The package `interpreters` has three:
++ C'est l'interpréteur dans la portée qui transforme les premiers en seconds ; c'est pourquoi
++ il est choisi par import, et non figé. Le package `interpreters` en propose trois :
+
+```tabular
+- column  Interpreter
+- column  Reads
+- row  `posixInterpreter`  `--long` and `-s` flags
+- row  `posixClusteringInterpreter`  `--long` and `-s` flags, and `-rA4` as `-r -A 4`, with a cluster's last letter taking the value
+- row  `simpleInterpreter`  every argument as an operand, and no flags
++ column  Interpréteur
++ column  Lit
++ row  `posixInterpreter`  les options `--long` et `-s`
++ row  `posixClusteringInterpreter`  les options `--long` et `-s`, et `-rA4` comme `-r -A 4`, la dernière lettre d'un groupe prenant la valeur
++ row  `simpleInterpreter`  chaque argument comme un opérande, sans aucune option
+```
+
+- ### Subcommands
++ ### Sous-commandes
+
+- A `Subcommand` names a mode which the program can run in, with a description for help and
+- completions. It is also an extractor, so the first argument is matched against it in an
+- ordinary pattern:
++ Une `Subcommand` nomme un mode dans lequel le programme peut s'exécuter, avec une
++ description pour l'aide et les complétions. C'est aussi un extracteur ; le premier argument
++ est donc filtré par rapport à elle dans un motif ordinaire :
+
+```scala
+val Build = Subcommand(t"build", e"compile the project")
+val Test = Subcommand(t"test", e"run the tests")
+
+def tool1(args: List[Text]): Unit = application(args):
+  arguments match
+    case Build() :: _ => Out.println(t"building");  Exit.Ok
+    case Test() :: _  => Out.println(t"testing");   Exit.Ok
+    case _            => Out.println(t"unknown command"); Exit.Fail(1)
+```
+
+- The description is written with the `e"…"` interpolator, which carries
+- [styling](terminal.md#styled-text) for shells which show it. A plain `Text` description
+- works too.
++ La description s'écrit avec l'interpolateur `e"…"`, qui porte un
++ [style](terminal.md#styled-text) pour les shells qui l'affichent. Une description en simple
++ `Text` fonctionne aussi.
+
+- Subcommands nest. Matching a subcommand, and then matching again on the remaining arguments,
+- gives a tree of commands, each with its own flags. A subcommand may be `hidden = true`, which
+- keeps it out of help and completions. Subcommands are gathered under headings in help with a
+- `CommandGroup`:
++ Les sous-commandes s'imbriquent. Reconnaître une sous-commande, puis filtrer à nouveau les
++ arguments restants, donne un arbre de commandes, chacune avec ses propres options. Une
++ sous-commande peut être `hidden = true`, ce qui la tient à l'écart de l'aide et des
++ complétions. Les sous-commandes sont regroupées sous des intitulés dans l'aide au moyen
++ d'un `CommandGroup` :
+
+```scala
+val admin = CommandGroup(t"Admin commands", t"Commands for user administration.")
+val UserAdd = Subcommand(t"useradd", e"add a user account", group = admin)
+```
+
+- ### Flags
++ ### Options
+
+- A `Flag` is an argument which begins with `-` or `--`. Declaring one, and applying it, reads
+- its value from the command line. The result is [`Optional`](optional-values.md), because the
+- flag may be absent. A flag's type is whatever its value should be decoded to, and any type
+- which can be read from text works without further ceremony:
++ Un `Flag` est un argument qui commence par `-` ou `--`. En déclarer un, puis l'appliquer,
++ lit sa valeur sur la ligne de commande. Le résultat est [`Optional`](optional-values.md),
++ car l'option peut être absente. Le type d'une option est celui dans lequel sa valeur doit
++ être décodée, et tout type qui peut être lu depuis un texte fonctionne sans autre
++ formalité :
+
+```scala
+def tool2(args: List[Text]): Unit = application(args):
+  arguments match
+    case Build() :: _ =>
+      val jobs: Optional[Int] = Flag[Int](t"jobs", aliases = List('j'))()
+      Out.println(t"building with ${jobs.or(1)} jobs")
+      Exit.Ok
+
+    case _ =>
+      Exit.Fail(1)
+```
+
+- A flag is declared with these parameters:
++ Une option se déclare avec ces paramètres :
+
+```tabular
+- column  Parameter
+- column  Default
+- column  Meaning
+- row  `name`  required  the long form, as `--name`, or a `Char` for a short one
+- row  `aliases`  `Nil`  other forms, such as a short `-j`
+- row  `description`  `Unset`  the text shown in help and beside completions
+- row  `repeatable`  `false`  whether the flag may appear more than once
+- row  `secret`  `false`  whether to leave the flag out of completions and help
++ column  Paramètre
++ column  Défaut
++ column  Signification
++ row  `name`  obligatoire  la forme longue, comme `--name`, ou un `Char` pour une forme courte
++ row  `aliases`  `Nil`  d'autres formes, comme une forme courte `-j`
++ row  `description`  `Unset`  le texte affiché dans l'aide et à côté des complétions
++ row  `repeatable`  `false`  si l'option peut apparaître plus d'une fois
++ row  `secret`  `false`  si l'option doit être tenue à l'écart des complétions et de l'aide
+```
+
+- `aliases` gives short forms, so `--jobs 4`, `-j 4` and `--jobs=4` are read alike.
++ `aliases` donne des formes courtes ; `--jobs 4`, `-j 4` et `--jobs=4` sont donc lus de la
++ même façon.
+
+- The occurrences of a repeatable flag are read together, through a `List` type. `--tag a
+- --tag b` is read as `List(t"a", t"b")`, with each operand interpreted as the type of the
+- elements. An `Optional` type reads an operand which may be malformed as `Unset`, instead of
+- raising an error. Counting a `List` walks it, so `size` asks for the
+- [`linearSize` acknowledgment](collections.md#positions-and-access):
++ Les occurrences d'une option répétable sont lues ensemble, au moyen d'un type `List`.
++ `--tag a
++ --tag b` est lu comme `List(t"a", t"b")`, chaque opérande étant interprété comme le type
++ des éléments. Un type `Optional` lit un opérande éventuellement malformé comme `Unset`, au
++ lieu de lever une erreur. Compter une `List` la parcourt ; `size` demande donc
++ [l'acquiescement `linearSize`](collections.md#positions-and-access) :
+
+```scala
+import dysasymptotics.linearSize
+
+def tool3(args: List[Text]): Unit = application(args):
+  val tags: Optional[List[Text]] = Flag[List[Text]](t"tag", repeatable = true)()
+  val port: Optional[Int] = Flag[Optional[Int]](t"port")()
+  Out.println(t"${tags.or(Nil).size} tags on port ${port.or(80)}")
+  Exit.Ok
+```
+
+- A flag which takes no value, and is simply on or off, is a `Switch`:
++ Une option qui ne prend aucune valeur, et qui est simplement activée ou désactivée, est un
++ `Switch` :
+
+```scala
+val verbose = Switch(t"verbose", aliases = List('v'), description = t"print detail")
+```
+
+- ### Settings
++ ### Réglages
+
+- Many options should be settable not only on the command line, but also by an
+- [environment variable](environment.md), a system property or a configuration file, with a
+- fixed order of precedence. A `Setting` declares such an option once, by a canonical name in
+- camel case, and each source derives its own name for it by convention. Declaring an
+- application's identity, as a `Configurator.Prefix`, activates the standard cascade:
++ De nombreuses options devraient pouvoir être réglées non seulement sur la ligne de commande,
++ mais aussi par une [variable d'environnement](environment.md), une propriété système ou un
++ fichier de configuration, avec un ordre de précédence fixe. Un `Setting` déclare une telle
++ option une seule fois, par un nom canonique en camel case, et chaque source en dérive son
++ propre nom par convention. Déclarer l'identité d'une application, sous forme de
++ `Configurator.Prefix`, active la cascade standard :
+
+```scala
+given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")
+
+val LogLevel = Setting[Text](t"logLevel", description = t"logging verbosity")
+val Home = Setting[Text](t"home", variable = t"MYAPP_HOME")
+```
+
+- Reading `LogLevel()` inside the body consults its sources in order, and the first which has
+- a value wins:
++ Lire `LogLevel()` dans le corps consulte ses sources dans l'ordre, et la première qui a une
++ valeur l'emporte :
+
+```tabular
+- column  Source
+- column  Named, for `logLevel`
+- row  the command-line flag  `--log-level`
+- row  the environment variable given as `variable`, if any  verbatim, as `MYAPP_HOME` for `Home`
+- row  the system property  `myapp.log.level`
+- row  the environment variable  `MYAPP_LOG_LEVEL`
++ column  Source
++ column  Nommée, pour `logLevel`
++ row  l'option de ligne de commande  `--log-level`
++ row  la variable d'environnement donnée par `variable`, s'il y en a une  telle quelle, comme `MYAPP_HOME` pour `Home`
++ row  la propriété système  `myapp.log.level`
++ row  la variable d'environnement  `MYAPP_LOG_LEVEL`
+```
+
+- The result is `Optional`, so a default is given in the usual way, as
+- `LogLevel().or(t"info")`. `variable` is for a setting whose environment variable does not
+- follow the convention. Reading a setting registers its flag for tab completion, exactly as
+- reading the flag directly would.
++ Le résultat est `Optional` ; une valeur par défaut se donne donc de la manière habituelle,
++ comme `LogLevel().or(t"info")`. `variable` sert à un réglage dont la variable
++ d'environnement ne suit pas la convention. Lire un réglage enregistre son option pour la
++ complétion par tabulation, exactement comme le ferait la lecture directe de l'option.
+
+- Each source is a `Configurator`, which has a single abstract method, from a setting's
+- canonical name to an optional textual value. The cascade is just composition with `++`, in
+- which the left side takes priority. No format of configuration file is prescribed, but any
+- source can join the cascade as a function of one line. Defining a `Configurator` given
+- replaces the standard cascade, though the command-line flag always takes priority:
++ Chaque source est un `Configurator`, qui a une seule méthode abstraite, allant du nom
++ canonique d'un réglage vers une valeur textuelle optionnelle. La cascade n'est qu'une
++ composition avec `++`, dans laquelle le côté gauche a priorité. Aucun format de fichier de
++ configuration n'est imposé, mais toute source peut rejoindre la cascade sous forme d'une
++ fonction d'une ligne. Définir un given `Configurator` remplace la cascade standard, bien
++ que l'option de ligne de commande ait toujours priorité :
+
+```scala
+def fromFile(name: Text): Optional[Text] = Unset
+
+given configurator: (Environment, System) => Configurator =
+  Configurator.properties ++ Configurator.environment ++ { name => fromFile(name) }
+```
+
+- ### Exit status and errors
++ ### Code de sortie et erreurs
+
+- The body returns an `Exit`: `Exit.Ok`, or `Exit.Fail(code)` for a failure. An
+- [error](errors.md) which escapes the body is caught by the *backstop* in scope, which turns
+- it into an exit status instead of a stack trace. A backstop is chosen by importing one from
+- the package `backstops`:
++ Le corps renvoie un `Exit` : `Exit.Ok`, ou `Exit.Fail(code)` en cas d'échec. Une
++ [erreur](errors.md) qui s'échappe du corps est interceptée par le *filet de sécurité*
++ dans la portée, qui la transforme en code de sortie au lieu d'une trace de pile.
++ On choisit un filet de sécurité en en important un depuis le package `backstops` :
+
+```tabular
+- column  Backstop
+- column  Prints
+- row  `genericErrorMessageBackstop`  a short, fixed message: `An unexpected error occurred.`
+- row  `exceptionMessageBackstop`  the exception's own message
+- row  `stackTraceBackstop`  the full stack trace
+- row  `silentBackstop`  nothing
++ column  Filet de sécurité
++ column  Affiche
++ row  `genericErrorMessageBackstop`  un message court et fixe : `An unexpected error occurred.`
++ row  `exceptionMessageBackstop`  le message propre à l'exception
++ row  `stackTraceBackstop`  la trace de pile complète
++ row  `silentBackstop`  rien
+```
+
+- Each exits with status 1 for an exception, and with 2 for any more serious error.
++ Chacun sort avec le code 1 pour une exception, et avec 2 pour toute erreur plus grave.
+
+- An exit code on its own says little to the user. A failure which the program anticipates is
+- better declared as a `Status`, which is an object with both the code and a description:
++ Un code de sortie seul en dit peu à l'utilisateur. Un échec que le programme anticipe est
++ mieux déclaré sous forme de `Status`, un objet qui porte à la fois le code et une
++ description :
+
+```scala
+object CannotConnect extends Status(1, t"the server could not be reached")
+object BadConfig extends Status(2, t"the configuration file was invalid")
+```
+
+- A `Status` is returned wherever an `Exit` is. Under the completions executive, below, the
+- statuses which a command can return are discovered from its code, and appear in its help and
+- its manpage without being listed anywhere else.
++ Un `Status` se renvoie partout où se renvoie un `Exit`. Sous l'exécutif de complétions,
++ ci-dessous, les codes de sortie qu'une commande peut renvoyer sont découverts à partir de
++ son code, et apparaissent dans son aide et sa page de manuel sans être énumérés nulle part
++ ailleurs.
+
+- ### Tab completions
++ ### Complétions par tabulation
+
+- Tab completion is one of the most useful things which a command-line program offers. It lets
+- a user discover features, see which flags and values are available, and avoid mistakes in
+- typing altogether.
++ La complétion par tabulation est l'une des choses les plus utiles qu'offre un programme en
++ ligne de commande. Elle permet à l'utilisateur de découvrir des fonctionnalités, de voir
++ quelles options et valeurs sont disponibles, et d'éviter complètement les fautes de frappe.
+
+- It is also, conventionally, maintained separately from the program itself. There is a
+- different script for each shell, often written by different people. Each approximates the
+- command's behavior by listing its subcommands and flags, and sometimes goes further, to keep
+- mutually exclusive flags consistent with each other. The shells do not even agree on what a
+- completion is: Bash offers the text of the completion alone, while Zsh and Fish can show a
+- description beside it. The work is admirable, and it is impossible to keep correct.
++ Elle est aussi, par convention, maintenue séparément du programme lui-même. Il existe un
++ script différent pour chaque shell, souvent écrit par des personnes différentes. Chacun
++ approxime le comportement de la commande en énumérant ses sous-commandes et ses options,
++ et va parfois plus loin, pour garder cohérentes entre elles des options mutuellement
++ exclusives. Les shells ne s'accordent même pas sur ce qu'est une complétion : Bash propose
++ le texte de la complétion seul, tandis que Zsh et Fish peuvent afficher une description à
++ côté. Ce travail est admirable, et il est impossible de le maintenir correct.
+
+- Here the program itself is the only source of truth. The same code which interprets the
+- arguments produces the completions, so they agree by construction. The scripts for each
+- shell shrink to nothing of consequence: they capture the incomplete command line, the
+- position of the cursor and the name of the shell, and hand them to the application in
+- completions mode.
++ Ici, le programme lui-même est la seule source de vérité. Le même code qui interprète les
++ arguments produit les complétions ; elles concordent donc par construction. Les scripts de
++ chaque shell se réduisent à presque rien : ils capturent la ligne de commande incomplète,
++ la position du curseur et le nom du shell, et les remettent à l'application en mode
++ complétions.
+
+- Turning completions on replaces the default executive with the completions executive. It is
+- imported where the entry point is defined, so that it, and not the direct executive, is the
+- one in scope for that program:
++ Activer les complétions remplace l'exécutif par défaut par l'exécutif de complétions. Il
++ est importé là où le point d'entrée est défini, afin que ce soit lui, et non l'exécutif
++ direct, qui soit dans la portée pour ce programme :
+
+```scala
+import executives.completionsExecutive
+```
+
+- Under this executive, the body returns an `Execution`, and the only way to build one is an
+- `execute` block. The code *before* `execute` is the *prelude*. It runs both when the command
+- is invoked and when completions are requested. The `execute` block runs *only* on a real
+- invocation. So the prelude handles the arguments, and the side effects live inside
+- `execute`:
++ Sous cet exécutif, le corps renvoie une `Execution`, et la seule façon d'en construire une
++ est un bloc `execute`. Le code situé *avant* `execute` est le *prélude*. Il s'exécute à la
++ fois lorsque la commande est invoquée et lorsque des complétions sont demandées. Le bloc
++ `execute` ne s'exécute *que* lors d'une véritable invocation. Le prélude traite donc les
++ arguments, et les effets de bord résident dans `execute` :
+
+```scala fuel
+frame
+  label The subcommands, under the direct executive
+  code
+      def tool1(args: List[Text]): Unit =
+        import executives.directExecutive
+        application(args):
+          arguments match
+            case Build() :: _ => Out.println(t"building");  Exit.Ok
+            case Test() :: _  => Out.println(t"testing");   Exit.Ok
+            case _            => Out.println(t"unknown command"); Exit.Fail(1)
+frame
+  label With a flag read in the prelude
+  code
+      def tool2(args: List[Text]): Unit =
+        import executives.directExecutive
+        application(args):
+          arguments match
+            case Build() :: _ =>
+              val jobs: Optional[Int] = Flag[Int](t"jobs", aliases = List('j'))()
+              Out.println(t"building with ${jobs.or(1)} jobs")
+              Exit.Ok
+
+            case _ =>
+              Exit.Fail(1)
+frame
+  label Under the completions executive, the effects inside `execute`
+  code
+      def mytool2(args: List[Text]): Unit =
+        import executives.completionsExecutive
+        application(args):
+          arguments match
+            case Build() :: _ =>
+              val jobs = Flag[Int](t"jobs", aliases = List('j'))()
+              execute:
+                Out.println(t"building with ${jobs().or(1)} jobs")
+                Exit.Ok
+
+            case _ =>
+              execute(Exit.Fail(1))
+##
+```
+
+- Matching `Build`, and declaring the `--jobs` flag, happen in the prelude, so they run when
+- the user presses `tab`. After `mytool `, the shell offers `build`, and after `mytool build `,
+- it offers `--jobs`.
++ La reconnaissance de `Build`, et la déclaration de l'option `--jobs`, ont lieu dans le
++ prélude ; elles s'exécutent donc lorsque l'utilisateur appuie sur `tab`. Après `mytool `,
++ le shell propose `build`, et après `mytool build `, il propose `--jobs`.
+
+- The structure guarantees this. An `Execution` cannot be produced without an `execute` block,
+- and the prelude which registers a completion is exactly the prelude which reads the value,
+- so completion and execution can never disagree. The completions executive also withholds
+- standard output from the prelude, since there is nowhere to send it while completing.
+- `Out.println` is available only inside `execute`.
++ La structure le garantit. Une `Execution` ne peut pas être produite sans bloc `execute`, et
++ le prélude qui enregistre une complétion est exactement le prélude qui lit la valeur ;
++ complétion et exécution ne peuvent donc jamais diverger. L'exécutif de complétions retient
++ aussi la sortie standard hors du prélude, puisqu'il n'y a nulle part où l'envoyer pendant
++ la complétion. `Out.println` n'est disponible que dans `execute`.
+
+- #### Conditional completions
++ #### Complétions conditionnelles
+
+- A flag which is read in the prelude gives a `Prospective` handle, not the value itself. Its
+- `present` and `absent` may be consulted at once, to decide what else to offer, but applying
+- it to get the value is possible only inside `execute`.
++ Une option lue dans le prélude donne une poignée `Prospective`, et non la valeur elle-même.
++ Ses `present` et `absent` peuvent être consultés immédiatement, pour décider de ce qu'il
++ faut proposer d'autre, mais l'appliquer pour obtenir la valeur n'est possible que dans
++ `execute`.
+
+- The consequences run deeper than "a flag which is read is a flag which is offered". The
+- reading may be conditional, and then so is the offering, on *precisely the same condition*.
+- Consider a command with a `-v` flag, which turns on output, and a `--verbosity` flag, which
+- is meaningful only beside it:
++ Les conséquences vont plus loin que « une option lue est une option proposée ». La lecture
++ peut être conditionnelle, et la proposition l'est alors aussi, *exactement sous la même
++ condition*. Considérons une commande avec une option `-v`, qui active la sortie, et une
++ option `--verbosity`, qui n'a de sens qu'à côté d'elle :
+
+```scala
+enum Verbosity:
+  case Quiet, Normal, Loud
+
+def tool3(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  import enumIdentification.kebabCaseIdentifiable
+  application(args):
+    val verbose = Switch(t"verbose", aliases = List('v'))()
+    val verbosity = if verbose.present then Flag[Verbosity](t"verbosity")() else Unset
+
+    execute:
+      Out.println(t"verbosity: ${verbosity.let(_()).or(Verbosity.Normal)}")
+      Exit.Ok
+```
+
+- A flag whose type is an [enumeration] reads its value by name, in the style which the
+- imported `enumIdentification` given chooses: here, `--verbosity loud`.
++ Une option dont le type est une [énumération] lit sa valeur par son nom, dans le style que
++ choisit le given `enumIdentification` importé : ici, `--verbosity loud`.
+
+- Pressing `tab` after a bare `-` runs this prelude. `-v` is checked for, and so becomes a
+- candidate. If it is not yet on the command line, it is offered. If it *is* already there,
+- the branch which checks for `--verbosity` runs too, so `--verbosity` becomes a candidate as
+- well, while `-v`, which makes sense only once, does not. No table of dependencies between
+- flags was written anywhere. The conditional structure of the code is the conditional
+- structure of the completions, however complex it becomes.
++ Appuyer sur `tab` après un `-` seul exécute ce prélude. `-v` est vérifiée, et devient donc
++ une candidate. Si elle n'est pas encore sur la ligne de commande, elle est proposée. Si
++ elle s'y trouve *déjà*, la branche qui vérifie `--verbosity` s'exécute aussi ; `--verbosity`
++ devient donc aussi une candidate, tandis que `-v`, qui n'a de sens qu'une seule fois, ne
++ l'est pas. Aucune table de dépendances entre options n'a été écrite nulle part. La
++ structure conditionnelle du code est la structure conditionnelle des complétions, si
++ complexe qu'elle devienne.
+
+- One caveat applies to `inline` code. `Flag#apply()` is a `transparent inline` method. Inside
+- another `inline def`, it is not expanded when that body is typed, so its result is not
+- narrowed to a `Prospective`, and `.present` on it would answer `true` for every flag. An
+- inline method should read a flag with `Flag#present`, anywhere, or with `Flag#value`, inside
+- `execute`. Both are plain methods, which read the flag directly.
++ Une réserve s'applique au code `inline`. `Flag#apply()` est une méthode
++ `transparent inline`. À l'intérieur d'un autre `inline def`, elle n'est pas développée
++ lorsque ce corps est typé ; son résultat n'est donc pas restreint à un `Prospective`, et
++ `.present` sur celui-ci répondrait `true` pour toutes les options. Une méthode inline
++ devrait lire une option avec `Flag#present`, n'importe où, ou avec `Flag#value`, dans
++ `execute`. Ce sont deux méthodes simples, qui lisent l'option directement.
+
+- ### Required and validated flags
++ ### Options obligatoires et validées
+
+- A flag which must be present is read with `require()` instead of `()`, and one whose value
+- must also decode correctly is read with `validate()`. In the prelude, each gives a
+- `Requisite` handle, whose value is unconditionally available inside `execute`, because a
+- requisite which is missing or malformed stops the block from running at all.
++ Une option qui doit être présente se lit avec `require()` au lieu de `()`, et une option
++ dont la valeur doit en outre se décoder correctement se lit avec `validate()`. Dans le
++ prélude, chacune donne une poignée `Requisite`, dont la valeur est disponible sans
++ condition dans `execute`, car une option requise manquante ou malformée empêche tout
++ simplement le bloc de s'exécuter.
+
+- Every such flag is checked before the block starts. The user therefore learns of all of them
+- at once, with exit status 2, by the convention for errors of usage, and not of one each time
+- the program is run:
++ Toutes ces options sont vérifiées avant le démarrage du bloc. L'utilisateur les découvre
++ donc toutes à la fois, avec le code de sortie 2, selon la convention pour les erreurs
++ d'utilisation, et non une à chaque exécution du programme :
+
+```scala
+def tool4(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  application(args):
+    val home = Flag[Text](t"home", description = t"the home directory").require()
+    val jobs = Flag[Int](t"jobs", description = t"parallel jobs").validate()
+
+    execute:
+      Out.println(t"building ${home()} with ${jobs()} jobs")
+      Exit.Ok
+```
+
+- Inside `execute`, the same calls give the value directly, and raise a `Flag.Error` (whose
+- reason is `Missing` or `Invalid`) immediately, for the backstop to report. A required flag is
+- also marked as required in the help text.
++ Dans `execute`, les mêmes appels donnent directement la valeur, et lèvent immédiatement une
++ `Flag.Error` (dont la raison est `Missing` ou `Invalid`), que le filet de sécurité
++ signalera. Une option obligatoire est aussi marquée comme telle dans le texte d'aide.
+
+- Each way of reading a flag gives something different in the prelude and inside `execute`:
++ Chaque façon de lire une option donne quelque chose de différent dans le prélude et dans
++ `execute` :
+
+```tabular
+- column  Read
+- column  In the prelude
+- column  Inside `execute`
+- row  `flag()`  a `Prospective`, whose `present` and `absent` answer at once  an `Optional` value
+- row  `flag.require()`  a `Requisite`, checked before `execute` runs  the value, or a `Flag.Error`
+- row  `flag.validate()`  a `Requisite`, checked before `execute` runs  the value, or a `Flag.Error`
+- row  `flag.present`  a `Boolean`  a `Boolean`
+- row  `flag.value`  not available  an `Optional` value
++ column  Lecture
++ column  Dans le prélude
++ column  Dans `execute`
++ row  `flag()`  un `Prospective`, dont `present` et `absent` répondent immédiatement  une valeur `Optional`
++ row  `flag.require()`  un `Requisite`, vérifié avant l'exécution d'`execute`  la valeur, ou une `Flag.Error`
++ row  `flag.validate()`  un `Requisite`, vérifié avant l'exécution d'`execute`  la valeur, ou une `Flag.Error`
++ row  `flag.present`  un `Boolean`  un `Boolean`
++ row  `flag.value`  non disponible  une valeur `Optional`
+```
+
+- ### The executive, and effectful methods
++ ### L'exécutif, et les méthodes à effets
+
+- The *executive* is what determines the return type of the body of an entry point, and the
+- [contextual values][contextual value] which are available inside it:
++ L'*exécutif* est ce qui détermine le type de retour du corps d'un point d'entrée, et les
++ [valeurs contextuelles][valeur contextuelle] qui y sont disponibles :
+
+```tabular
+- column  Executive
+- column  Body returns
+- column  `Stdio` and `Effectful`
+- row  `directExecutive`  an `Exit`  throughout the body
+- row  `completionsExecutive`  an `Execution`  only inside `execute`
++ column  Exécutif
++ column  Le corps renvoie
++ column  `Stdio` et `Effectful`
++ row  `directExecutive`  un `Exit`  dans tout le corps
++ row  `completionsExecutive`  une `Execution`  uniquement dans `execute`
+```
+
+- `directExecutive` never runs the body speculatively, so a flag which is read anywhere in its
+- body is its value. Choosing an executive by import is what lets the API of the entry point
+- stay uniform, while imposing really different requirements on the code inside it.
++ `directExecutive` n'exécute jamais le corps de façon spéculative ; une option lue n'importe
++ où dans son corps est donc sa valeur. Choisir un exécutif par import est ce qui permet à
++ l'API du point d'entrée de rester uniforme, tout en imposant des exigences réellement
++ différentes au code qu'il contient.
+
+- An `execute` block also supplies an erased `Effectful`. Nothing consumes it internally. Its
+- purpose is that a method may *demand* it:
++ Un bloc `execute` fournit aussi un `Effectful` effacé. Rien ne le consomme en interne. Son
++ but est qu'une méthode puisse l'*exiger* :
+
+```scala
+def deleteEverything()(using Effectful): Unit = ()
+```
+
+- Under the completions executive, an `Effectful` can be obtained only inside an `execute`
+- block. Such a method therefore cannot be called from the prelude, which is to say that it
+- cannot run while the user is merely pressing `tab`. Marking the operations which are truly
+- irreversible in this way makes it hard to invoke one by accident, from code which
+- completions will run. The `install` operation, which writes completion scripts into place,
+- requires it for exactly this reason.
++ Sous l'exécutif de complétions, un `Effectful` ne peut être obtenu que dans un bloc
++ `execute`. Une telle méthode ne peut donc pas être appelée depuis le prélude, c'est-à-dire
++ qu'elle ne peut pas s'exécuter pendant que l'utilisateur se contente d'appuyer sur `tab`.
++ Marquer ainsi les opérations réellement irréversibles rend difficile d'en invoquer une par
++ accident, depuis du code que les complétions exécuteront. L'opération `install`, qui
++ installe les scripts de complétion, l'exige précisément pour cette raison.
+
+- ### Completing values
++ ### Compléter des valeurs
+
+- A flag completes its own values, when its type can describe them. A type is told how to
+- suggest values with a `Discoverable` instance, and how to read a chosen value with an
+- `Interpretable` instance:
++ Une option complète ses propres valeurs, lorsque son type peut les décrire. On indique à un
++ type comment suggérer des valeurs avec une instance `Discoverable`, et comment lire une
++ valeur choisie avec une instance `Interpretable` :
+
+```scala
+case class Mode(name: Text)
+
+given modeDiscoverable: (Mode is Discoverable) = (_, _) => List(Suggestion(t"debug"), Suggestion(t"release"))
+
+given modeInterpretable: (Mode is Interpretable) = new Interpretable:
+  type Self = Mode
+  def interpret(arguments: List[Argument]): Optional[Mode] = arguments match
+    case argument :: _ => Mode(argument())
+    case _             => Unset
+
+def tool5(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  application(args):
+    val mode = Flag[Mode](t"mode", description = t"build mode")()
+    execute(Exit.Ok)
+```
+
+- With these in scope, `mytool build --mode ` offers `debug` and `release`. A `Suggestion` may
+- have a description, which is shown by the shells that support one. It may be marked
+- `incomplete`, to complete a value one segment at a time, as for a file path. A flag whose
+- type is `Pathname` completes [filesystem paths](paths.md) in this way with no further code,
+- and expands a leading `~` as the shell would.
++ Avec celles-ci dans la portée, `mytool build --mode ` propose `debug` et `release`. Une
++ `Suggestion` peut avoir une description, affichée par les shells qui le permettent. Elle
++ peut être marquée `incomplete`, pour compléter une valeur un segment à la fois, comme pour
++ un chemin de fichier. Une option dont le type est `Pathname` complète ainsi les
++ [chemins du système de fichiers](paths.md) sans code supplémentaire, et développe un `~`
++ initial comme le ferait le shell.
+
+- ### Help and manpages
++ ### Aide et pages de manuel
+
+- The prelude describes the whole interface: the subcommands, the flags, their descriptions,
+- which flags are required, and which statuses each command can return. Help therefore needs
+- no separate source. The completions executive rebuilds the interface as a `Help` tree, by
+- running the prelude again with synthesized prefixes of arguments, and lays it out, aligned,
+- in the style of a manpage. The same tree is written as a
+- [manpage](https://en.wikipedia.org/wiki/Man_page) in roff, with `roff`, and
+- `Manpages.install` writes that into place.
++ Le prélude décrit toute l'interface : les sous-commandes, les options, leurs descriptions,
++ les options obligatoires, et les codes de sortie que chaque commande peut renvoyer. L'aide
++ n'a donc besoin d'aucune source distincte. L'exécutif de complétions reconstruit
++ l'interface sous forme d'un arbre `Help`, en exécutant à nouveau le prélude avec des
++ préfixes d'arguments synthétisés, et la met en page, alignée, dans le style d'une page de
++ manuel. Le même arbre s'écrit sous forme de
++ [page de manuel](https://en.wikipedia.org/wiki/Man_page) en roff, avec `roff`, et
++ `Manpages.install` l'installe à sa place.
+
+- Everything which is discovered is documented. A `Status` which is returned from an `execute`
+- block appears under *Exit status*, and an environment variable which is read in the prelude
+- appears under *Environment*. Descriptions which discovery cannot supply, such as what an
+- environment variable means, or an example invocation, are added through a `Manual`:
++ Tout ce qui est découvert est documenté. Un `Status` renvoyé depuis un bloc `execute`
++ apparaît sous *Exit status*, et une variable d'environnement lue dans le prélude apparaît
++ sous *Environment*. Les descriptions que la découverte ne peut pas fournir, comme la
++ signification d'une variable d'environnement, ou un exemple d'invocation, s'ajoutent au
++ moyen d'un `Manual` :
+
+```scala
+val manual = Manual
+  ( environment  = List(Manual.EnvironmentVariable(t"MYAPP_HOME", t"the home directory")),
+    examples     = List(Manual.Example(t"build with four jobs", t"mytool build --jobs 4")) )
+```
+
+- Within a command, `explain` attaches a paragraph of local help to the section for the
+- current subcommand, so a deep subcommand documents itself where it is defined.
++ Dans une commande, `explain` attache un paragraphe d'aide locale à la section de la
++ sous-commande courante ; une sous-commande profonde se documente donc là où elle est
++ définie.
+
+- ### Installing completions
++ ### Installer les complétions
+
+- A completed application ships with a generic, identical completion script for each shell:
+- Bash, Zsh, Fish and PowerShell. The script does nothing but forward the current command line
+- to the application, in completions mode. The built-in administration command writes these
+- scripts into place:
++ Une application terminée est livrée avec un script de complétion générique et identique
++ pour chaque shell : Bash, Zsh, Fish et PowerShell. Le script ne fait que transmettre la
++ ligne de commande courante à l'application, en mode complétions. La commande
++ d'administration intégrée installe ces scripts à leur place :
+
+```sh
+mytool '{admin}' install
+```
+
+- After installation, each shell completes the command through the application itself, so new
+- subcommands and flags need no change to any script.
++ Après l'installation, chaque shell complète la commande par l'intermédiaire de
++ l'application elle-même ; les nouvelles sous-commandes et options ne nécessitent donc
++ aucune modification d'aucun script.
+
+- ### Fast startup
++ ### Démarrage rapide
+
+- A command which is invoked for completion must start quickly, or the shell feels sluggish.
+- Running the application as a [daemon](daemons.md) removes the JVM's startup cost from every
+- invocation. The program stays resident, and each command, including each request for
+- completions, is dispatched to the running process. The same body which `application` runs is
+- run by `daemon`, so an application gains fast startup by changing how it is launched, not
+- how it is written.
++ Une commande invoquée pour la complétion doit démarrer rapidement, sans quoi le shell
++ paraît lent. Exécuter l'application en tant que [démon](daemons.md) supprime le coût de
++ démarrage de la JVM de chaque invocation. Le programme reste résident, et chaque commande,
++ y compris chaque demande de complétions, est répartie vers le processus en cours
++ d'exécution. Le même corps que celui qu'exécute `application` est exécuté par `daemon` ;
++ une application gagne donc un démarrage rapide en changeant la façon dont elle est lancée,
++ et non la façon dont elle est écrite.
+
+- ### Related
++ ### Voir aussi
+
+- - [Daemons](daemons.md) keeps an application resident, for fast startup.
+- - [Environment](environment.md) reads the variables and properties which settings fall back
+-   to.
+- - [Decoding](decoding.md) reads the value of a flag as a type.
+- - [Terminal](terminal.md) styles output, and reads the keyboard interactively.
+- - [Packaging](packaging.md) builds the executable.
+- - [Gauges](gauges.md), [LSP](lsp.md), [processes](processes.md), [time](time.md) and [UUIDs](uuid.md) describe what a command-line application shows, runs and parses.
++ - [Démons](daemons.md) garde une application résidente, pour un démarrage rapide.
++ - [Environnement](environment.md) lit les variables et propriétés sur lesquelles se
++   rabattent les réglages.
++ - [Décodage](decoding.md) lit la valeur d'une option sous forme d'un type.
++ - [Terminal](terminal.md) met en forme la sortie, et lit le clavier de façon interactive.
++ - [Empaquetage](packaging.md) construit l'exécutable.
++ - [Jauges](gauges.md), [LSP](lsp.md), [processus](processes.md), [temps](time.md) et
++   [UUID](uuid.md) décrivent ce qu'une application en ligne de commande affiche, exécute et
++   analyse.

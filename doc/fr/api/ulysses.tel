@@ -1,0 +1,654 @@
+tel 1.0
+
+base ulysses
+import soundness
+
+info
+    - Bloom filters sized from intent, and palimpsests: compact sequences of hashes from a shared library
+    + filtres de Bloom dimensionnés selon l'intention, et palimpsestes : séquences compactes de
+    + hachages d'une bibliothèque partagée
+detail
+    - _Ulysses_ holds two structures for remembering hashes compactly.
+    + _Ulysses_ contient deux structures pour retenir des hachages de manière compacte.
+
+    - A **Bloom filter**, `BloomFilter`, answers "may this element have been added?" in a few
+    - bits an element, whatever the elements' size: a `false` is always right, and a `true` is
+    - right but for a false-positive rate fixed when the filter is built. The filter is built from
+    - the two numbers that matter — roughly how many elements it will hold, and the rate to
+    - tolerate — and derives its bit-array size and number of hash positions from them. Any
+    - `Digestible` value can be an element, and the hash algorithm is a type parameter, chosen
+    - like any other `gastronomy` digest.
+    + Un **filtre de Bloom**, `BloomFilter`, répond à « cet élément a-t-il pu être ajouté ? » en
+    + quelques bits par élément, quelle que soit la taille des éléments : un `false` est toujours
+    + juste, et un `true` est juste sauf pour un taux de faux positifs fixé à la construction du
+    + filtre. Le filtre est construit à partir des deux nombres qui comptent — à peu près combien
+    + d'éléments il contiendra, et le taux à tolérer — et en déduit la taille de son tableau de bits
+    + et le nombre de ses positions de hachage. Toute valeur `Digestible` peut être un élément, et
+    + l'algorithme de hachage est un paramètre de type, choisi comme n'importe quel autre
+    + condensé de `gastronomy`.
+
+    ```scala
+    import soundness.*
+    import providers.soundnessProvider
+    import Blake3.hash
+
+    val bloom = BloomFilter[Text](100, 0.001) + t"Hello world"
+    val fuller = bloom ++ List(t"hello", t"world")
+
+    fuller.hits(t"hello")     // true: it was added
+    fuller.hits(t"goodbye")   // false, almost certainly
+    ```
+
+    - A filter fresh from `BloomFilter(…)` is *exclusive*: the code that made it fills it in place
+    - with `add` and `addAll`, with no copying, and then `BloomFilter.freeze` consumes it to give a
+    - frozen filter which may be shared and queried anywhere but never written to. `+` and `++`
+    - grow a frozen filter into a new frozen filter, at one copy of the bits each.
+    + Un filtre qui sort tout juste de `BloomFilter(…)` est *exclusif* : le code qui l'a créé le
+    + remplit sur place avec `add` et `addAll`, sans copie, puis `BloomFilter.freeze` le consomme
+    + pour donner un filtre gelé qui peut être partagé et interrogé n'importe où mais jamais écrit.
+    + `+` et `++` font croître un filtre gelé en un nouveau filtre gelé, au prix d'une copie des
+    + bits chacun.
+
+    - A **palimpsest**, `Palimpsest`, is the compact encoding of an ordered sequence of
+    - fixed-length hashes drawn from a library which sender and receiver both hold: the hashes are
+    - XORed over one another at offsets set by a `Cadence`, so `n` hashes of `H` bytes take
+    - `H + k_i + k_r·(n − 2) + 1` bytes rather than `H·n`. Decoding (`Palimpsest#resolve`)
+    - searches a `Bibliography` of the known hashes for the combination which cancels the body
+    - out. This is the encoding of BinTEL's schema signatures.
+    + Un **palimpseste**, `Palimpsest`, est l'encodage compact d'une séquence ordonnée de hachages
+    + de longueur fixe tirés d'une bibliothèque que détiennent à la fois l'émetteur et le
+    + receveur : les hachages sont combinés par XOR les uns sur les autres à des décalages fixés
+    + par une `Cadence`, si bien que `n` hachages de `H` octets occupent `H + k_i + k_r·(n − 2) + 1`
+    + octets au lieu de `H·n`. Le décodage (`Palimpsest#resolve`) cherche dans une `Bibliography`
+    + des hachages connus la combinaison qui annule le corps. C'est l'encodage des signatures de
+    + schéma de BinTEL.
+
+    - The library has a single source set, `ulysses.core`, which compiles for the JVM, Scala.js
+    - and Scala Native. `BloomFilter`, `Bibliography`, `Cadence` and `Palimpsest` are exported to
+    - the `soundness` umbrella. There is no choice package; the hash algorithm of a filter is
+    - chosen by type, with a `Hash` given in scope (`Blake3.hash`, or a provider such as
+    - `providers.soundnessProvider`), and a non-cryptographic algorithm such as `Murmur3` or
+    - `Crc32` needs `cryptoPermits.permitNonCryptographicHashes` imported by name.
+    + La bibliothèque a un unique ensemble de sources, `ulysses.core`, qui compile pour la JVM,
+    + Scala.js et Scala Native. `BloomFilter`, `Bibliography`, `Cadence` et `Palimpsest` sont
+    + exportés dans le package parapluie `soundness`. Il n'y a pas de package de choix ;
+    + l'algorithme de hachage d'un filtre est choisi par type, avec un given `Hash` dans la portée
+    + (`Blake3.hash`, ou un fournisseur tel que `providers.soundnessProvider`), et un algorithme non
+    + cryptographique tel que `Murmur3` ou `Crc32` requiert
+    + `cryptoPermits.permitNonCryptographicHashes` importé par son nom.
+
+refer ulysses.BloomFilter
+refer ulysses.Palimpsest
+refer ulysses.Bibliography
+refer ulysses.Cadence
+refer gastronomy.Digestible
+
+entry .BloomFilter
+  info
+      - a probabilistic set: a `false` from `hits` is definitive, a `true` is probable
+      + un ensemble probabiliste : un `false` de `hits` est définitif, un `true` est probable
+  detail
+      - A `BloomFilter[element, algorithm]` remembers which elements were added as bits alone. Each
+      - element is digested once under `algorithm`, and its first two 64-bit words `h₁` and `h₂`
+      - give the `#hashCount` bit positions `(h₁ + i·h₂) mod #bitSize` (Kirsch–Mitzenmacher double
+      - hashing, the scheme Guava uses); an algorithm whose digest is shorter than sixteen bytes,
+      - such as a CRC, is re-applied under a counter until enough bytes are gathered. Adding an
+      - element sets its positions; `#hits` checks them.
+      + Un `BloomFilter[element, algorithm]` retient quels éléments ont été ajoutés uniquement sous
+      + forme de bits. Chaque élément est condensé une fois avec `algorithm`, et ses deux premiers
+      + mots de 64 bits `h₁` et `h₂` donnent les `#hashCount` positions de bits
+      + `(h₁ + i·h₂) mod #bitSize` (le double hachage de Kirsch–Mitzenmacher, le schéma qu'utilise
+      + Guava) ; un algorithme dont le condensé fait moins de seize octets, tel qu'un CRC, est
+      + réappliqué avec un compteur jusqu'à ce que suffisamment d'octets soient réunis. Ajouter un
+      + élément active ses positions ; `#hits` les vérifie.
+
+      - Elements enter through `gastronomy`'s `Digestible` typeclass, so text, numbers and case
+      - classes are usable as elements with no preparation. The algorithm is part of the type:
+      - two filters over the same elements agree only if they agree on the algorithm, and a filter
+      - whose bits are kept must be rebuilt under the same one.
+      + Les éléments entrent via la classe de types `Digestible` de `gastronomy`, si bien que le
+      + texte, les nombres et les case classes sont utilisables comme éléments sans préparation.
+      + L'algorithme fait partie du type : deux filtres sur les mêmes éléments ne concordent que
+      + s'ils concordent sur l'algorithme, et un filtre dont on conserve les bits doit être
+      + reconstruit avec le même.
+
+      - Access is tracked by separation checking, as an `Array`'s is. `BloomFilter.apply` gives an
+      - exclusive filter (`BloomFilter[…]^`), on which `#add` and `#addAll` set bits in place;
+      - `.freeze` consumes it and gives the frozen form (`BloomFilter[…]^{}`) without copying.
+      - `#+` and `#++` copy the bits once and give a new frozen filter, so a frozen filter grows
+      - without the original changing.
+      + L'accès est suivi par le contrôle de séparation, comme celui d'un `Array`.
+      + `BloomFilter.apply` donne un filtre exclusif (`BloomFilter[…]^`), sur lequel `#add` et
+      + `#addAll` activent des bits sur place ; `.freeze` le consomme et donne la forme gelée
+      + (`BloomFilter[…]^{}`) sans copie. `#+` et `#++` copient les bits une fois et donnent un
+      + nouveau filtre gelé, si bien qu'un filtre gelé croît sans que l'original change.
+
+      ```scala fuel
+      frame
+        label An exclusive filter, fresh from `BloomFilter(…)`
+        code
+            import soundness.*
+            import providers.soundnessProvider
+            import Blake3.hash
+
+            val filter = BloomFilter[Text](10_000, 0.01)
+      frame
+        label Filled in place, with no copying
+        code
+            import soundness.*
+            import providers.soundnessProvider
+            import Blake3.hash
+
+            val filter = BloomFilter[Text](10_000, 0.01)
+            filter.add(t"first")
+            filter.addAll(List(t"second", t"third"))
+      frame
+        label Frozen: shareable, queryable, and no longer writable
+        code
+            import soundness.*
+            import providers.soundnessProvider
+            import Blake3.hash
+
+            val filter = BloomFilter[Text](10_000, 0.01)
+            filter.add(t"first")
+            filter.addAll(List(t"second", t"third"))
+            val frozen = BloomFilter.freeze(filter)
+            frozen.hits(t"second")   // true
+      frame
+        label Grown by copying, into a new frozen filter
+        code
+            import soundness.*
+            import providers.soundnessProvider
+            import Blake3.hash
+
+            val filter = BloomFilter[Text](10_000, 0.01)
+            filter.add(t"first")
+            filter.addAll(List(t"second", t"third"))
+            val frozen = BloomFilter.freeze(filter)
+            val grown = frozen + t"fourth"
+      ##
+      ```
+
+      - After `freeze`, the compiler rejects any further use of the consumed `filter`, and `add`
+      - on a frozen filter does not compile. Two filters are equal when their sizes, hash counts
+      - and bits are.
+      + Après `freeze`, le compilateur rejette toute utilisation ultérieure du `filter` consommé, et
+      + `add` sur un filtre gelé ne compile pas. Deux filtres sont égaux lorsque leurs tailles,
+      + leurs nombres de hachages et leurs bits le sont.
+
+      - A filter given far more elements than it was sized for keeps working, but its
+      - false-positive rate rises above the one requested: the rate is a promise about a filter
+      - used as intended.
+      + Un filtre qui reçoit bien plus d'éléments que ce pour quoi il a été dimensionné continue de
+      + fonctionner, mais son taux de faux positifs dépasse celui qui a été demandé : le taux est
+      + une promesse qui vaut pour un filtre utilisé comme prévu.
+  refer gastronomy.Digestible
+  refer gastronomy.Hash
+  refer gastronomy.Murmur3
+  entry .apply
+    info
+        - an empty, exclusive filter sized for an expected number of elements and a false-positive rate
+        + un filtre vide et exclusif, dimensionné pour un nombre d'éléments attendu et un taux de
+        + faux positifs
+    detail
+        - `BloomFilter[element](approximateSize, targetErrorRate)[algorithm]` takes the expected
+        - number of elements and the tolerable false-positive rate, a bounded `0.0 ~ 1.0`, so a rate
+        - outside the unit interval does not compile. With `n = max(1, approximateSize)` and
+        - `p = max(targetErrorRate, 2⁻⁵³)`, the filter has `max(1, ⌈−n·ln p/(ln 2)²⌉)` bits and
+        - `max(1, round(bits/n·ln 2))` hash positions: `BloomFilter[Text](100, 0.01)` has 959 bits,
+        - and `(10_000, 0.01)` seven positions. A size of zero or a rate of `1.0` still gives a
+        - working filter, and a rate of zero is sized for the smallest rate a `Double` resolves.
+        + `BloomFilter[element](approximateSize, targetErrorRate)[algorithm]` prend le nombre
+        + d'éléments attendu et le taux de faux positifs tolérable, un `0.0 ~ 1.0` borné, si bien
+        + qu'un taux hors de l'intervalle unité ne compile pas. Avec `n = max(1, approximateSize)`
+        + et `p = max(targetErrorRate, 2⁻⁵³)`, le filtre a `max(1, ⌈−n·ln p/(ln 2)²⌉)` bits et
+        + `max(1, round(bits/n·ln 2))` positions de hachage : `BloomFilter[Text](100, 0.01)` a 959
+        + bits, et `(10_000, 0.01)` sept positions. Une taille nulle ou un taux de `1.0` donnent
+        + tout de même un filtre qui fonctionne, et un taux nul est dimensionné pour le plus petit
+        + taux que résout un `Double`.
+
+        - The algorithm is the second, optional type-parameter list, inferred from the `Hash` given
+        - in scope when omitted. It needs a `Hash in algorithm` and an erased
+        - `Permit[HashWeakness[algorithm]]`: BLAKE3 and SHA-2 need no permit, while `Murmur3` (about
+        - a fifth of BLAKE3's cost, and enough, since a Bloom filter has no adversary) and the
+        - checksums need `cryptoPermits.permitNonCryptographicHashes`.
+        + L'algorithme est la seconde liste de paramètres de type, optionnelle, inférée à partir du
+        + given `Hash` dans la portée lorsqu'elle est omise. Elle requiert un `Hash in algorithm` et
+        + un `Permit[HashWeakness[algorithm]]` effacé : BLAKE3 et SHA-2 ne requièrent aucun
+        + permis, tandis que `Murmur3` (environ un cinquième du coût de BLAKE3, et suffisant,
+        + puisqu'un filtre de Bloom n'a pas d'adversaire) et les sommes de contrôle requièrent
+        + `cryptoPermits.permitNonCryptographicHashes`.
+
+        ```scala
+        import soundness.*
+        import providers.soundnessProvider
+        import cryptoPermits.permitNonCryptographicHashes
+
+        val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+        ```
+
+        - The result is exclusive (`BloomFilter[element, algorithm]^`): it may be filled in place
+        - but not aliased, so a filter used in several places must first be frozen with `.freeze`.
+        + Le résultat est exclusif (`BloomFilter[element, algorithm]^`) : il peut être rempli sur
+        + place mais pas aliasé, si bien qu'un filtre utilisé à plusieurs endroits doit d'abord être
+        + gelé avec `.freeze`.
+  entry .freeze
+    info
+        - consumes an exclusive filter and yields its frozen, read-only form, without copying
+        + consomme un filtre exclusif et en donne la forme gelée, en lecture seule, sans copie
+    detail
+        - `BloomFilter.freeze(filter)` takes the exclusive filter as a `consume` parameter, so the
+        - compiler's separation checking rejects any later use of `filter`, and returns the same
+        - bits as a `BloomFilter[element, algorithm]^{}`, which any reference may query and none may
+        - write to. It is the same discipline as `Array.freeze`.
+        + `BloomFilter.freeze(filter)` prend le filtre exclusif comme paramètre `consume`, si bien
+        + que le contrôle de séparation du compilateur rejette toute utilisation ultérieure de
+        + `filter`, et renvoie les mêmes bits sous forme de `BloomFilter[element, algorithm]^{}`,
+        + que toute référence peut interroger et qu'aucune ne peut écrire. C'est la même discipline
+        + qu'`Array.freeze`.
+  entry #bitSize
+    info
+        - the number of bits in the filter, fixed when it was built
+        + le nombre de bits du filtre, fixé à sa construction
+  entry #hashCount
+    info
+        - the number of bit positions each element sets and each query checks
+        + le nombre de positions de bits que chaque élément active et que chaque requête vérifie
+  entry #add
+    info
+        - sets an element's bit positions in place, on an exclusive filter
+        + active sur place les positions de bits d'un élément, sur un filtre exclusif
+    detail
+        - An `update` method, callable only through an exclusive (`^`) reference: on a frozen filter
+        - it does not compile. It allocates nothing beyond the element's digest.
+        + Une méthode `update`, appelable uniquement via une référence exclusive (`^`) : sur un
+        + filtre gelé, elle ne compile pas. Elle n'alloue rien au-delà du condensé de l'élément.
+  entry #addAll
+    info
+        - adds every element of a collection in place, on an exclusive filter
+        + ajoute sur place chaque élément d'une collection, sur un filtre exclusif
+    detail
+        - Takes any collection which is `Traversable by element` — a `List`, `Sequence`, `Set`,
+        - `Chain`, frozen `Array` or a `scala.Iterable` — and calls `#add` for each. Like `#add`, it
+        - is an `update` method, and does not compile on a frozen filter.
+        + Prend toute collection qui est `Traversable by element` — une `List`, une `Sequence`, un
+        + `Set`, une `Chain`, un `Array` gelé ou un `scala.Iterable` — et appelle `#add` pour chaque
+        + élément. Comme `#add`, c'est une méthode `update`, qui ne compile pas sur un filtre gelé.
+  entry #+
+    info
+        - a new frozen filter holding one more element, at one copy of the bits
+        + un nouveau filtre gelé contenant un élément de plus, au prix d'une copie des bits
+    detail
+        - The original is unchanged, so this is how a frozen filter grows. Folding `+` over many
+        - elements copies the bits once per element; `#++` copies them once for all.
+        + L'original est inchangé : c'est ainsi qu'un filtre gelé croît. Replier `+` sur de nombreux
+        + éléments copie les bits une fois par élément ; `#++` les copie une fois pour tous.
+  entry #++
+    info
+        - a new frozen filter holding every element of a collection, at one copy of the bits
+        + un nouveau filtre gelé contenant chaque élément d'une collection, au prix d'une copie des
+        + bits
+    detail
+        - Takes any collection which is `Traversable by element`. The bits are copied once, and the
+        - elements are added to the copy in a single pass, so `filter ++ elements` equals the fold
+        - of `+` over them at a fraction of its cost.
+        + Prend toute collection qui est `Traversable by element`. Les bits sont copiés une fois, et
+        + les éléments sont ajoutés à la copie en une seule passe, si bien que `filter ++ elements`
+        + est égal au repli de `+` sur ceux-ci pour une fraction de son coût.
+  entry #hits
+    info
+        - whether an element may have been added: `false` is certain, `true` probable
+        + si un élément a pu être ajouté : `false` est certain, `true` probable
+    detail
+        - Checks the element's bit positions, answering `false` at the first clear one; it allocates
+        - nothing beyond the digest. A `true` for an element never added happens at about the rate
+        - the filter was sized for, while it holds no more elements than it was sized for.
+        + Vérifie les positions de bits de l'élément, en répondant `false` à la première qui est
+        + inactive ; elle n'alloue rien au-delà du condensé. Un `true` pour un élément jamais
+        + ajouté se produit à peu près au taux pour lequel le filtre a été dimensionné, tant qu'il
+        + ne contient pas plus d'éléments que ce pour quoi il a été dimensionné.
+
+        ```scala
+        import soundness.*
+        import providers.soundnessProvider
+        import Blake3.hash
+
+        case class Point(x: Int, y: Int)
+
+        val filter = BloomFilter[Point](100, 0.01) + Point(1, 2)
+        filter.hits(Point(1, 2))   // true
+        filter.hits(Point(2, 1))   // false, almost certainly
+        ```
+  entry #population
+    info
+        - the number of set bits, from which the number of elements added can be estimated
+        + le nombre de bits actifs, à partir duquel on peut estimer le nombre d'éléments ajoutés
+
+entry .Cadence
+  info
+      - the parameters of a palimpsest: the hash size and the offsets between layered hashes
+      + les paramètres d'un palimpseste : la taille des hachages et les décalages entre les hachages
+      + superposés
+  detail
+      - A `Cadence(initial, regular, hashSize)` fixes how a `Palimpsest` lays its hashes over one
+      - another: hash 0 at offset 0, hash 1 `initial` bytes later (the _initial cadence_ `k_i`),
+      - and each later hash `regular` bytes after the one before (the _regular cadence_ `k_r`).
+      - `regular` must be in 1 to 4, `initial` between `regular` and `regular + 3`, and
+      - `hashSize` one of `.hashSizes` (8, 10, 12, 16, 20, 24, 28, 32, 48 or 64 bytes); a cadence
+      - breaking any of these is a panic when constructed.
+      + Une `Cadence(initial, regular, hashSize)` fixe la manière dont un `Palimpsest` superpose ses
+      + hachages : le hachage 0 au décalage 0, le hachage 1 `initial` octets plus loin (la _cadence
+      + initiale_ `k_i`), et chaque hachage suivant `regular` octets après le précédent (la _cadence
+      + régulière_ `k_r`). `regular` doit être entre 1 et 4, `initial` entre `regular` et
+      + `regular + 3`, et `hashSize` l'une des `.hashSizes` (8, 10, 12, 16, 20, 24, 28, 32, 48 ou 64
+      + octets) ; une cadence qui enfreint l'une de ces règles provoque une panique à sa
+      + construction.
+
+      - The three parameters pack into one byte, `#byte`, which closes every palimpsest, so a
+      - decoder recovers the cadence from the data itself. `Palimpsest.apply` takes the cadence as
+      - a contextual value, and `.default` is in implicit scope:
+      + Les trois paramètres tiennent dans un octet, `#byte`, qui clôt chaque palimpseste, si bien
+      + qu'un décodeur retrouve la cadence à partir des données elles-mêmes. `Palimpsest.apply`
+      + prend la cadence comme valeur contextuelle, et `.default` est dans la portée implicite :
+
+      ```scala
+      import soundness.*
+
+      given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
+      cadence.totalLength(3)   // 39
+      ```
+
+      - Shorter hashes make shorter palimpsests but raise the chance that two distinct hashes in
+      - the library share a prefix, which makes decoding ambiguous: the default 12-byte hash suits
+      - a small, closed library only, and where an ambiguity has security consequences or the
+      - library is open, a `hashSize` of 32 is the right choice (as BinTEL pins).
+      + Des hachages plus courts donnent des palimpsestes plus courts mais augmentent la probabilité
+      + que deux hachages distincts de la bibliothèque partagent un préfixe, ce qui rend le décodage
+      + ambigu : le hachage de 12 octets par défaut ne convient qu'à une petite bibliothèque fermée,
+      + et lorsqu'une ambiguïté a des conséquences sur la sécurité ou que la bibliothèque est
+      + ouverte, une `hashSize` de 32 est le bon choix (c'est ce que fixe BinTEL).
+  refer ulysses.Palimpsest
+  entry .hashSizes
+    info
+        - the hash sizes, in bytes, a cadence may name: 8, 10, 12, 16, 20, 24, 28, 32, 48 and 64
+        + les tailles de hachage, en octets, qu'une cadence peut nommer : 8, 10, 12, 16, 20, 24, 28,
+        + 32, 48 et 64
+    detail
+        - A frozen `Array[Int]`; a hash size's position in it is the four-bit index `#hashSizeIndex`
+        - packed into the cadence byte. Indices 10 to 15 are reserved.
+        + Un `Array[Int]` gelé ; la position d'une taille de hachage dans celui-ci est l'indice sur
+        + quatre bits `#hashSizeIndex` placé dans l'octet de cadence. Les indices 10 à 15 sont
+        + réservés.
+  entry .default
+    info
+        - the default cadence: 12-byte hashes, an initial cadence of 4 and a regular cadence of 1
+        + la cadence par défaut : des hachages de 12 octets, une cadence initiale de 4 et une
+        + cadence régulière de 1
+    detail
+        - In implicit scope, so `Palimpsest(hashes)` uses it when no other `Cadence` is given. Its
+        - 96-bit hashes suit only a small closed library; define a `given Cadence` with
+        - `hashSize = 32` for an open one.
+        + Dans la portée implicite, si bien que `Palimpsest(hashes)` l'utilise lorsqu'aucune autre
+        + `Cadence` n'est donnée. Ses hachages de 96 bits ne conviennent qu'à une petite
+        + bibliothèque fermée ; définissez une `given Cadence` avec `hashSize = 32` pour une
+        + bibliothèque ouverte.
+  entry .unpack
+    info
+        - the cadence a cadence byte packs, or `Unset` if it names a reserved hash size
+        + la cadence que contient un octet de cadence, ou `Unset` s'il nomme une taille de hachage
+        + réservée
+    detail
+        - The inverse of `#byte`: the low two bits are `regular − 1`, the next two
+        - `initial − regular`, and the high four the index into `.hashSizes`; an index of 10 or more
+        - gives `Unset`.
+        + L'inverse de `#byte` : les deux bits de poids faible sont `regular − 1`, les deux suivants
+        + `initial − regular`, et les quatre de poids fort l'indice dans `.hashSizes` ; un indice de
+        + 10 ou plus donne `Unset`.
+  entry #initial
+    info
+        - the initial cadence `k_i`: the offset in bytes from the first hash to the second
+        + la cadence initiale `k_i` : le décalage en octets du premier hachage au second
+  entry #regular
+    info
+        - the regular cadence `k_r`: the offset in bytes between each later pair of hashes
+        + la cadence régulière `k_r` : le décalage en octets entre chaque paire de hachages suivante
+  entry #hashSize
+    info
+        - the length in bytes of each hash
+        + la longueur en octets de chaque hachage
+  entry #hashSizeIndex
+    info
+        - the position of `#hashSize` in `Cadence.hashSizes`, packed into the cadence byte
+        + la position de `#hashSize` dans `Cadence.hashSizes`, placée dans l'octet de cadence
+  entry #byte
+    info
+        - the cadence byte: the hash-size index and both cadences, packed into eight bits
+        + l'octet de cadence : l'indice de taille de hachage et les deux cadences, placés dans huit
+        + bits
+    detail
+        - Bits 4 to 7 hold `#hashSizeIndex`, bits 2 and 3 `initial − regular`, and bits 0 and 1
+        - `regular − 1`. A palimpsest's bytes XOR together to this value.
+        + Les bits 4 à 7 contiennent `#hashSizeIndex`, les bits 2 et 3 `initial − regular`, et les
+        + bits 0 et 1 `regular − 1`. Les octets d'un palimpseste combinés par XOR donnent cette
+        + valeur.
+  entry #offset
+    info
+        - the byte offset of the hash at a given index within a palimpsest body
+        + le décalage en octets du hachage d'indice donné dans le corps d'un palimpseste
+    detail
+        - `0` for the first hash, and `initial + (i − 1)·regular` for the `i`-th.
+        + `0` pour le premier hachage, et `initial + (i − 1)·regular` pour le `i`-ième.
+  entry #bodyLength
+    info
+        - the length of the body of a palimpsest of `n` hashes, before the cadence byte
+        + la longueur du corps d'un palimpseste de `n` hachages, avant l'octet de cadence
+    detail
+        - `hashSize` for one hash, and `hashSize + initial + regular·(n − 2)` for more.
+        + `hashSize` pour un hachage, et `hashSize + initial + regular·(n − 2)` pour davantage.
+  entry #totalLength
+    info
+        - the whole length of a palimpsest of `n` hashes, including its cadence byte
+        + la longueur totale d'un palimpseste de `n` hachages, octet de cadence compris
+  entry #hashCount
+    info
+        - the number of hashes a body of a given length holds, or `Unset` if no number fits
+        + le nombre de hachages que contient un corps d'une longueur donnée, ou `Unset` si aucun
+        + nombre ne convient
+
+entry .Bibliography
+  info
+      - the library of known hashes a palimpsest is decoded against, indexed by prefix
+      + la bibliothèque des hachages connus par rapport à laquelle un palimpseste est décodé,
+      + indexée par préfixe
+  detail
+      - A `Bibliography` holds every hash a receiver knows, so that `Palimpsest#resolve` can find
+      - the hashes a palimpsest layers. `Palimpsest#resolve` takes one as a contextual value:
+      + Une `Bibliography` contient chaque hachage que connaît un receveur, afin que
+      + `Palimpsest#resolve` puisse trouver les hachages que superpose un palimpseste.
+      + `Palimpsest#resolve` en prend une comme valeur contextuelle :
+
+      ```scala
+      import soundness.*
+      import providers.soundnessProvider
+
+      val letters = List(t"alpha", t"beta", t"gamma", t"delta").map(_.digest[Blake3].data)
+
+      given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
+      given bibliography: Bibliography = Bibliography(letters)
+
+      Palimpsest(letters.to[Sequence]).resolve   // the four hashes, in order
+      ```
+
+      - The index sorts the hashes in unsigned lexicographic byte order on its first lookup, so
+      - every hash with a given prefix sits in one run, found by binary search; one ordering
+      - serves every prefix length, so the bibliography need not know the `Cadence`.
+      + L'index trie les hachages dans l'ordre lexicographique des octets non signés lors de sa
+      + première consultation, si bien que tous les hachages ayant un préfixe donné se trouvent dans
+      + une même plage, trouvée par recherche dichotomique ; un seul ordre sert pour toutes les
+      + longueurs de préfixe, si bien que la bibliographie n'a pas besoin de connaître la `Cadence`.
+  refer ulysses.Palimpsest
+  entry .apply
+    info
+        - a bibliography of a list of hashes
+        + une bibliographie d'une liste de hachages
+    detail
+        - `Bibliography(hashes)` takes a `List[Data]`. The hashes are kept in the given order in
+        - `#hashes`, and sorted lazily for lookup.
+        + `Bibliography(hashes)` prend une `List[Data]`. Les hachages sont conservés dans l'ordre
+        + donné dans `#hashes`, et triés paresseusement pour la recherche.
+  entry #hashes
+    info
+        - the library's hashes, as a frozen `Array[Data]` in the order they were given
+        + les hachages de la bibliothèque, sous forme d'`Array[Data]` gelé dans l'ordre où ils ont
+        + été donnés
+  entry #lookup
+    info
+        - every hash which begins with a prefix, in unsigned lexicographic byte order
+        + chaque hachage qui commence par un préfixe, dans l'ordre lexicographique des octets non
+        + signés
+    detail
+        - Returns a `murmuration` `Iterator[Data]`. An empty prefix matches every hash, and a prefix
+        - longer than a hash never matches it. Bytes compare as unsigned, so `0x7f` precedes `0x80`.
+        + Renvoie un `Iterator[Data]` de `murmuration`. Un préfixe vide correspond à tous les
+        + hachages, et un préfixe plus long qu'un hachage ne lui correspond jamais. Les octets se
+        + comparent comme non signés, si bien que `0x7f` précède `0x80`.
+
+        ```scala
+        import soundness.*
+
+        val shelf = Bibliography(List(Data(0x80.toByte, 1), Data(0x10, 2), Data(0x80.toByte, 0)))
+        shelf.lookup(Data(0x80.toByte)).to[List]   // the hashes 8000 and 8001, in that order
+        ```
+
+entry .Palimpsest
+  info
+      - an ordered sequence of hashes from a shared library, layered by XOR into few bytes
+      + une séquence ordonnée de hachages issus d'une bibliothèque partagée, superposés par XOR en
+      + peu d'octets
+  detail
+      - A palimpsest encodes `n` hashes of `H` bytes each in `H + k_i + k_r·(n − 2) + 1` bytes
+      - (or `H + 1` for one), rather than `H·n`, by XORing each hash into a common body at the
+      - offset its `Cadence` gives, so that each overwrites part of its neighbours. A trailing
+      - byte is chosen so that every byte of the palimpsest XORs to the cadence byte, which makes
+      - the encoding self-describing (the receiver needs no parameters) and gives a one-byte
+      - integrity check.
+      + Un palimpseste encode `n` hachages de `H` octets chacun en `H + k_i + k_r·(n − 2) + 1`
+      + octets (ou `H + 1` pour un seul), au lieu de `H·n`, en combinant par XOR chaque hachage dans
+      + un corps commun au décalage que donne sa `Cadence`, de sorte que chacun recouvre une partie
+      + de ses voisins. Un octet final est choisi de sorte que tous les octets du palimpseste
+      + combinés par XOR donnent l'octet de cadence, ce qui rend l'encodage autodescriptif (le
+      + receveur n'a besoin d'aucun paramètre) et fournit un contrôle d'intégrité d'un octet.
+
+      - The saving costs work at the receiver: `#resolve` must search a `Bibliography` of the
+      - hashes it knows for the sequence which cancels the body to zero. The first hash is
+      - looked up by its first `initial` bytes, each later one by `regular` bytes at its offset,
+      - XORed out, and the search backtracks when a choice leads nowhere.
+      + L'économie se paie par du travail chez le receveur : `#resolve` doit chercher dans une
+      + `Bibliography` des hachages qu'il connaît la séquence qui ramène le corps à zéro. Le premier
+      + hachage est recherché par ses `initial` premiers octets, chacun des suivants par `regular`
+      + octets à son décalage, retiré par XOR, et la recherche revient en arrière lorsqu'un choix ne
+      + mène nulle part.
+
+      ```scala fuel
+      frame
+        label Some hashes, drawn from a library both sides hold
+        code
+            import soundness.*
+            import providers.soundnessProvider
+
+            val library = List(t"alpha", t"beta", t"gamma", t"delta").map(_.digest[Blake3].data)
+            given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
+      frame
+        label Layered into one palimpsest: 32 + 4 + 2·2 + 1 = 41 bytes, not 128
+        code
+            import soundness.*
+            import providers.soundnessProvider
+
+            val library = List(t"alpha", t"beta", t"gamma", t"delta").map(_.digest[Blake3].data)
+            given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
+
+            val palimpsest = Palimpsest(library.to[Sequence])
+            palimpsest.data.length   // 41
+      frame
+        label Resolved against the receiver's bibliography
+        code
+            import soundness.*
+            import providers.soundnessProvider
+
+            val library = List(t"alpha", t"beta", t"gamma", t"delta").map(_.digest[Blake3].data)
+            given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
+
+            val palimpsest = Palimpsest(library.to[Sequence])
+            given bibliography: Bibliography = Bibliography(library)
+            palimpsest.resolve   // the four hashes, in their original order
+      ##
+      ```
+
+      - A palimpsest is the encoding of BinTEL's schema signatures, in `stratiform`.
+      + Un palimpseste est l'encodage des signatures de schéma de BinTEL, dans `stratiform`.
+  refer ulysses.Cadence
+  refer ulysses.Bibliography
+  entry .searchLimit
+    info
+        - the default bound on the candidate trials of a decoding search: 100,000
+        + la borne par défaut du nombre d'essais de candidats d'une recherche de décodage : 100 000
+    detail
+        - A decoder accepting palimpsests from an untrusted source must bound the work of its
+        - backtracking search, so `#resolve` gives up with `Unset` after this many trials. The
+        - bound counts trials rather than time, so it is deterministic.
+        + Un décodeur qui accepte des palimpsestes d'une source non fiable doit borner le travail de
+        + sa recherche avec retour arrière, si bien que `#resolve` abandonne avec `Unset` après ce
+        + nombre d'essais. La borne compte des essais plutôt que du temps, elle est donc
+        + déterministe.
+  entry .apply
+    info
+        - encodes a non-empty sequence of hashes as a palimpsest, under the `Cadence` in scope
+        + encode une séquence non vide de hachages sous forme de palimpseste, avec la `Cadence` dans
+        + la portée
+    detail
+        - `Palimpsest(hashes)` takes a `Sequence[Data]` and a contextual `Cadence` (`Cadence.default`
+        - when no other is given). Every hash must be exactly `cadence.hashSize` bytes long, and
+        - there must be at least one: either violation is a panic, not a raised error, since it is
+        - a mistake in the caller's code. A sequence of BLAKE3 digests under the default 12-byte
+        - cadence must therefore be cut to twelve bytes first.
+        + `Palimpsest(hashes)` prend une `Sequence[Data]` et une `Cadence` contextuelle
+        + (`Cadence.default` lorsqu'aucune autre n'est donnée). Chaque hachage doit faire exactement
+        + `cadence.hashSize` octets, et il doit y en avoir au moins un : toute violation provoque
+        + une panique, et non une erreur levée, puisqu'il s'agit d'une faute dans le code de
+        + l'appelant. Une séquence de condensés BLAKE3 avec la cadence de 12 octets par défaut doit
+        + donc d'abord être tronquée à douze octets.
+  entry #data
+    info
+        - the palimpsest's bytes, the body followed by the cadence byte
+        + les octets du palimpseste, le corps suivi de l'octet de cadence
+  entry #length
+    info
+        - the number of hashes the palimpsest encodes
+        + le nombre de hachages qu'encode le palimpseste
+  entry #resolve
+    info
+        - the hashes a palimpsest layers, found in the `Bibliography` in scope, or `Unset`
+        + les hachages que superpose un palimpseste, trouvés dans la `Bibliography` dans la portée,
+        + ou `Unset`
+    detail
+        - Recovers the `Cadence` from the XOR of the bytes, derives the number of hashes from the
+        - length, and searches the contextual `Bibliography` for the hashes in order. The result is
+        - `Unset` if the cadence byte names a reserved hash size, if the length fits no number of
+        - hashes, if that number differs from `#length`, if no combination of the library's hashes
+        - cancels the body, or if the search exceeds its limit: `Palimpsest.searchLimit` trials, or
+        - the number passed as `resolve(limit)`.
+        + Retrouve la `Cadence` à partir du XOR des octets, déduit le nombre de hachages de la
+        + longueur, et cherche dans l'ordre les hachages dans la `Bibliography` contextuelle. Le
+        + résultat est `Unset` si l'octet de cadence nomme une taille de hachage réservée, si la
+        + longueur ne correspond à aucun nombre de hachages, si ce nombre diffère de `#length`, si
+        + aucune combinaison des hachages de la bibliothèque n'annule le corps, ou si la recherche
+        + dépasse sa limite : `Palimpsest.searchLimit` essais, ou le nombre passé sous la forme
+        + `resolve(limit)`.
+
+        - Where two hashes in the library share the prefixes the search looks at, a palimpsest may
+        - decode to a different sequence than the one encoded; the candidates are tried in the
+        - bibliography's byte order. Longer hashes and cadences make this rarer.
+        + Lorsque deux hachages de la bibliothèque partagent les préfixes qu'examine la recherche,
+        + un palimpseste peut se décoder en une séquence différente de celle qui a été encodée ; les
+        + candidats sont essayés dans l'ordre des octets de la bibliographie. Des hachages et des
+        + cadences plus longs rendent ce cas plus rare.

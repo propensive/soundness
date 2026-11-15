@@ -9,7 +9,7 @@ deliberate design constraint rather than a property hoped for after the fact.
 
 ## Values compose
 
-A [stream](../modules/streams.md) pipeline is the clearest case. Each stage takes a
+A [stream](../en/modules/streams.md) pipeline is the clearest case. Each stage takes a
 stream and yields a stream, so stages chain without adapters and in any order that makes
 sense:
 

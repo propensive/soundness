@@ -6,7 +6,7 @@ confidently synthesise whatever the documentation fails to say. The standard is 
 every module documented, every error code explained, every novel idea specified, and every
 message following a written convention.
 
-The prose exists in three parallel systems today: the topic guides in `doc/modules/` — the
+The prose exists in three parallel systems today: the topic guides in `doc/en/modules/` — the
 direction of travel, and where the substantial writing happens — the legacy per-module
 templates in `lib/*/doc/`, inherited from when each module was its own repository, and a
 separate copy of the philosophy material under `web/res/content/`. Three systems means

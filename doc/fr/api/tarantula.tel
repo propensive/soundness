@@ -1,0 +1,2172 @@
+tel 1.0
+
+base tarantula
+import soundness
+
+info
+    - browser automation over the W3C WebDriver protocol: sessions, elements, actions and screenshots
+    + automatisation de navigateur par le protocole W3C WebDriver : sessions, éléments, actions et
+    + captures d'écran
+detail
+    - _Tarantula_ drives a web browser from Scala through the
+    - [WebDriver](https://www.w3.org/TR/webdriver2/) protocol. A browser is a value — `WebDriver.Chrome`,
+    - `WebDriver.Firefox`, `WebDriver.Safari` or `WebDriver.Edge`, each the standard driver program for
+    - its browser — and opening a session on it launches the driver, waits for it to listen, creates a
+    - session and, when the block ends, deletes the session and stops the driver, whether the block
+    - returned or threw. A driver that is already running, or a remote Selenium grid, is driven through
+    - the same `WebDriver.Session` interface with `WebDriver(url, capabilities)`.
+    + _Tarantula_ pilote un navigateur web depuis Scala par le protocole
+    + [WebDriver](https://www.w3.org/TR/webdriver2/). Un navigateur est une valeur —
+    + `WebDriver.Chrome`, `WebDriver.Firefox`, `WebDriver.Safari` ou `WebDriver.Edge`, chacune le
+    + programme pilote standard de son navigateur — et ouvrir une session sur lui lance le pilote,
+    + attend qu'il écoute, crée une session et, à la fin du bloc, supprime la session et arrête le
+    + pilote, que le bloc ait renvoyé une valeur ou levé une exception. Un pilote déjà en cours
+    + d'exécution, ou une grille Selenium distante, se pilote par la même interface
+    + `WebDriver.Session` avec `WebDriver(url, capabilities)`.
+
+    - Within the session, `browser` is the handle in scope: it navigates, reads the title and source,
+    - finds elements by typed criteria — an HTML tag, a validated DOM id, a class list, a CSS selector
+    - list, an XPath or link text, anything with a `Focusable` instance — switches windows and frames,
+    - handles alerts, manages cookies and timeouts, performs keyboard and pointer actions, runs
+    - JavaScript, prints the page and takes screenshots.
+    + Dans la session, `browser` est la poignée dans la portée : elle navigue, lit le titre et le
+    + code source, trouve des éléments selon des critères typés — une balise HTML, un id DOM validé,
+    + une liste de classes, une liste de sélecteurs CSS, un XPath ou un texte de lien, tout ce qui a
+    + une instance de `Focusable` — change de fenêtre et de cadre, traite les alertes, gère les
+    + cookies et les délais, effectue des actions au clavier et au pointeur, exécute du JavaScript,
+    + imprime la page et prend des captures d'écran.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import errorDiagnostics.stackTracesDiagnostics
+    import httpBackends.javaNetHttp
+    import internetAccess.online
+    import logging.silentLogging
+    import probates.awaitProbate
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import workingDirectories.javaBaseWorkingDirectory
+
+    supervise:
+      WebDriver.Chrome.headless.session:
+        browser.navigateTo(url"https://example.com/")
+        browser.title()
+    ```
+
+    - A session needs internet access (`internetAccess.online`), an HTTP client to speak to the driver
+    - (`httpBackends.javaNetHttp`), a `Tactic[WebDriver.Error]` and `Diagnostics`, and a logger for
+    - `Http.Event`s; launching a local driver additionally needs a `Monitor` (a `supervise` block), a
+    - `WorkingDirectory`, an `Environment` for the driver process and a logger for `Exec.Event`s.
+    + Une session a besoin d'un accès à internet (`internetAccess.online`), d'un client HTTP pour
+    + parler au pilote (`httpBackends.javaNetHttp`), d'une `Tactic[WebDriver.Error]` et de
+    + `Diagnostics`, et d'un journal pour les `Http.Event` ; lancer un pilote local requiert en plus
+    + un `Monitor` (un bloc `supervise`), un `WorkingDirectory`, un `Environment` pour le processus
+    + du pilote et un journal pour les `Exec.Event`.
+
+    - The `WebDriver.Session` handle is a capability, confined by capture checking to the block that
+    - owns it: returning it, or anything that captures it, is a compile error. `WebDriver.Element`
+    - handles are pure values, but every operation on one takes the session as a contextual parameter,
+    - so a handle is inert outside its session, and one used after its page has changed raises
+    - `WebDriver.Error` with reason `StaleElement`. Every failure — a driver that cannot be reached, a
+    - reply of the wrong shape, or any error the driver reports — arrives as one `WebDriver.Error`,
+    - carrying the W3C error code as its `WebDriver.Error.Reason`.
+    + La poignée `WebDriver.Session` est une capacité, confinée par le contrôle des captures au bloc
+    + qui la possède : la renvoyer, ou renvoyer quoi que ce soit qui la capture, est une erreur de
+    + compilation. Les poignées `WebDriver.Element` sont des valeurs pures, mais chaque opération
+    + sur l'une d'elles prend la session comme paramètre contextuel ; une poignée est donc inerte
+    + hors de sa session, et une poignée utilisée après le changement de sa page lève une
+    + `WebDriver.Error` de raison `StaleElement`. Chaque échec — un pilote injoignable, une réponse
+    + de forme incorrecte, ou toute erreur que signale le pilote — arrive sous la forme d'une seule
+    + `WebDriver.Error`, portant le code d'erreur W3C comme `WebDriver.Error.Reason`.
+
+    - Element selection is spelled `\`, not `/`: `browser \ Li`, `element \ cls"item"` and
+    - `shadowRoot \ Button` each return every match, and `element(…)` exactly one, raising
+    - `NoSuchElement` otherwise. The backslash leaves symbolism's arithmetic `/` free to divide
+    - quantities in the same scope.
+    + La sélection d'éléments s'écrit `\`, et non `/` : `browser \ Li`, `element \ cls"item"` et
+    + `shadowRoot \ Button` renvoient chacun toutes les correspondances, et `element(…)` exactement
+    + une, en levant `NoSuchElement` sinon. La barre oblique inverse laisse le `/` arithmétique de
+    + symbolism libre de diviser des quantités dans la même portée.
+
+    - The library has two source sets:
+    + La bibliothèque a deux ensembles de sources :
+
+    - - `tarantula.core` — `WebDriver` and its nested `Session`, `Element`, `ShadowRoot`, `Error` and
+    -   `Local`, the `browser` accessor and the element extensions (`click`, `value`, `innerText`,
+    -   `attribute`, …). It needs a driver binary (`chromedriver`, `geckodriver`, `safaridriver` or
+    -   `msedgedriver`) on the path to launch a browser; the protocol layer itself is plain HTTP and
+    -   can be exercised against any WebDriver endpoint.
+    - - `tarantula.image` — the `screenshot()` extensions, which decode a screenshot into a
+    -   `Raster in Png` through hallucination, kept apart so that browser automation does not depend
+    -   on an image codec.
+    + - `tarantula.core` — `WebDriver` et ses types imbriqués `Session`, `Element`, `ShadowRoot`,
+    +   `Error` et `Local`, l'accesseur `browser` et les extensions d'élément (`click`, `value`,
+    +   `innerText`, `attribute`, …). Il lui faut un binaire de pilote (`chromedriver`,
+    +   `geckodriver`, `safaridriver` ou `msedgedriver`) dans le chemin pour lancer un navigateur ;
+    +   la couche protocolaire elle-même n'est que du HTTP et peut être exercée contre n'importe
+    +   quel endpoint WebDriver.
+    + - `tarantula.image` — les extensions `screenshot()`, qui décodent une capture d'écran en un
+    +   `Raster in Png` par hallucination, tenues à part pour que l'automatisation du navigateur ne
+    +   dépende pas d'un codec d'image.
+
+    - Everything is exported to the `soundness` umbrella, so a user writes `import soundness.*` and
+    - imports the ambient givens above by name.
+    + Tout est exporté vers le package parapluie `soundness` ; un utilisateur écrit donc
+    + `import soundness.*` et importe par leur nom les givens ambiants ci-dessus.
+
+refer tarantula.WebDriver
+refer tarantula.browser
+refer anticipation.Focusable
+
+entry .WebDriver
+  info
+      - a browser to drive: a local driver program, or a driver already listening at a URL
+      + un navigateur à piloter : un programme pilote local, ou un pilote qui écoute déjà à une URL
+  detail
+      - `WebDriver` is two things which share a name. As a **type**, it is a driver that is already
+      - listening — one started by hand, or a Selenium grid — addressed by its `#base` URL and the
+      - `#capabilities` it will be asked for, and made with `WebDriver(url"http://localhost:4444",
+      - capabilities)`. As an **object**, it is the home of the four local browsers (`.Chrome`,
+      - `.Firefox`, `.Safari`, `.Edge`), each a `WebDriver.Local` which launches its driver program for
+      - the duration of a session, and of the types every session uses: `Session`, `Element`,
+      - `ShadowRoot` and `Error`.
+      + `WebDriver` désigne deux choses qui partagent un nom. En tant que **type**, c'est un pilote
+      + qui écoute déjà — démarré à la main, ou une grille Selenium — adressé par son URL `#base` et
+      + les `#capabilities` qu'on lui demandera, et construit avec
+      + `WebDriver(url"http://localhost:4444", capabilities)`. En tant qu'**objet**, il abrite les
+      + quatre navigateurs locaux (`.Chrome`, `.Firefox`, `.Safari`, `.Edge`), chacun un
+      + `WebDriver.Local` qui lance son programme pilote le temps d'une session, ainsi que les types
+      + qu'utilise chaque session : `Session`, `Element`, `ShadowRoot` et `Error`.
+
+      - Both are `Sessional`, so `driver.session: session ?=> …` opens a session on either, and the
+      - session is closed — and a launched driver stopped — in a `finally` when the block ends.
+      + Tous deux sont `Sessional` ; `driver.session: session ?=> …` ouvre donc une session sur l'un
+      + ou l'autre, et la session est fermée — et un pilote lancé, arrêté — dans un `finally` à la
+      + fin du bloc.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Firefox.headless.on(4445).session:
+          browser.navigateTo(url"https://example.com/")
+          browser.element(H1).innerText()
+
+      WebDriver(url"http://localhost:4444", WebDriver.Chrome.capabilities).session:
+        browser.title()
+      ```
+
+      - A `WebDriver` built with `apply` sends its `capabilities` JSON as the `POST /session` payload
+      - verbatim, so a Selenium grid's own extensions, proxies, timeouts and mobile emulation can all
+      - be requested through it.
+      + Un `WebDriver` construit avec `apply` envoie tel quel son JSON `capabilities` comme charge
+      + utile de `POST /session` ; les extensions propres à une grille Selenium, les proxys, les
+      + délais et l'émulation mobile peuvent donc tous être demandés par ce biais.
+  refer tarantula.WebDriver.Session
+  refer tarantula.WebDriver.Local
+  refer tarantula.WebDriver.Error
+  refer tarantula.browser
+  entry .Driver
+    info
+        - the four W3C driver programs: chromedriver, geckodriver, safaridriver and msedgedriver
+        + les quatre programmes pilotes W3C : chromedriver, geckodriver, safaridriver et
+        + msedgedriver
+    detail
+        - An enumeration of the driver programs a `WebDriver.Local` can launch, as data rather than
+        - subclasses: `Chromedriver`, `Geckodriver`, `Safaridriver` and `Edgedriver`. Each knows the
+        - command which starts it on a port, the `browserName` capability its browser answers to, and
+        - the arguments which put that browser in headless mode. Adding a browser is a new case, since
+        - the process lifecycle is the same for all of them.
+        + Une énumération des programmes pilotes qu'un `WebDriver.Local` peut lancer, sous forme de
+        + données plutôt que de sous-classes : `Chromedriver`, `Geckodriver`, `Safaridriver` et
+        + `Edgedriver`. Chacun connaît la commande qui le démarre sur un port, la capacité
+        + `browserName` à laquelle répond son navigateur, et les arguments qui mettent ce navigateur
+        + en mode headless. Ajouter un navigateur revient à ajouter un cas, puisque le cycle de vie
+        + du processus est le même pour tous.
+    entry #command
+      info
+          - the shell command which starts the driver listening on a port
+          + la commande shell qui démarre le pilote à l'écoute sur un port
+      detail
+          - `chromedriver --port=N` and `msedgedriver --port=N` take the port with an equals sign;
+          - `geckodriver --port N` and `safaridriver --port N` take it as a separate argument. The
+          - driver binary must be on the path.
+          + `chromedriver --port=N` et `msedgedriver --port=N` prennent le port avec un signe égal ;
+          + `geckodriver --port N` et `safaridriver --port N` le prennent comme argument séparé. Le
+          + binaire du pilote doit se trouver dans le chemin.
+    entry #browserName
+      info
+          - the `browserName` capability the driver's browser answers to
+          + la capacité `browserName` à laquelle répond le navigateur du pilote
+      detail
+          - `chrome`, `firefox`, `safari` or `MicrosoftEdge`, as the W3C capabilities object spells
+          - them.
+          + `chrome`, `firefox`, `safari` ou `MicrosoftEdge`, tels que les écrit l'objet de
+          + capacités W3C.
+    entry #headless
+      info
+          - the browser arguments which select headless mode, if the browser has one
+          + les arguments du navigateur qui sélectionnent le mode headless, s'il en a un
+      detail
+          - `--headless=new` for Chrome and Edge (the supported spelling since the old `--headless`
+          - became its alias), the single-dashed `-headless` for Firefox, and nothing for Safari, which
+          - has no headless mode: asking for one is a no-op rather than an error.
+          + `--headless=new` pour Chrome et Edge (l'écriture prise en charge depuis que l'ancien
+          + `--headless` en est devenu l'alias), `-headless` à tiret simple pour Firefox, et rien
+          + pour Safari, qui n'a pas de mode headless : en demander un est sans effet plutôt qu'une
+          + erreur.
+  entry .Local
+    info
+        - a browser and the driver program which drives it, as a pure value
+        + un navigateur et le programme pilote qui le pilote, sous forme de valeur pure
+    detail
+        - A `WebDriver.Local` names a browser to drive by its `WebDriver.Driver`, the port the driver
+        - should listen on (`4444` unless `#on` says otherwise), the arguments the browser is launched
+        - with and, optionally, a capabilities object to send in place of the generated one. It holds
+        - no process, connection or session id, so it may be a `val` shared between tests and used for
+        - several sessions in turn; `.Chrome`, `.Firefox`, `.Safari` and `.Edge` are the four standard
+        - values.
+        + Un `WebDriver.Local` désigne un navigateur à piloter par son `WebDriver.Driver`, le port
+        + sur lequel le pilote doit écouter (`4444` sauf si `#on` dit autre chose), les arguments
+        + avec lesquels le navigateur est lancé et, éventuellement, un objet de capacités à envoyer
+        + à la place de celui qui est généré. Il ne détient ni processus, ni connexion, ni id de
+        + session ; il peut donc être une `val` partagée entre des tests et servir à plusieurs
+        + sessions successives ; `.Chrome`, `.Firefox`, `.Safari` et `.Edge` sont les quatre valeurs
+        + standard.
+
+        ```scala fuel
+        typecheck
+        ##
+        val chrome: WebDriver.Local = WebDriver.Chrome.headless.on(4450).arguing(t"--window-size=1280,800")
+
+        supervise:
+          chrome.session:
+            browser.navigateTo(url"https://example.com/")
+            browser.title()
+        ```
+
+        - Opening a session forks the driver's command, polls its `GET /status` endpoint every 50
+        - milliseconds for up to five seconds until it answers, opens the session with
+        - `#capabilities`, and stops the driver when the block ends. A driver that cannot be forked
+        - raises `WebDriver.Error` with reason `SessionNotCreated`, and one that never starts listening
+        - raises one with reason `Timeout`. Two sessions on the same port at once will collide, so a
+        - test suite running sessions in parallel gives each its own with `#on`.
+        + Ouvrir une session lance la commande du pilote dans un processus, interroge son endpoint
+        + `GET /status` toutes les 50 millisecondes pendant cinq secondes au plus jusqu'à ce qu'il
+        + réponde, ouvre la session avec `#capabilities`, et arrête le pilote à la fin du bloc. Un
+        + pilote qui ne peut être lancé lève une `WebDriver.Error` de raison `SessionNotCreated`, et
+        + un pilote qui ne se met jamais à l'écoute en lève une de raison `Timeout`. Deux sessions
+        + simultanées sur le même port entreront en collision ; une suite de tests qui exécute des
+        + sessions en parallèle donne donc à chacune son propre port avec `#on`.
+    refer tarantula.WebDriver.Driver
+    refer tarantula.WebDriver.Session
+    entry .Sessional
+      info
+          - opens a session on a `WebDriver.Local`: forks the driver, waits, drives, stops
+          + ouvre une session sur un `WebDriver.Local` : lance le pilote, attend, pilote, arrête
+      detail
+          - The `aperture.Sessional` instance for `WebDriver.Local`, with `Self = Local` and `Result =
+          - Session^`. It needs an `Online`, an `Http.Backend`, a `WorkingDirectory`, an `Environment`
+          - (which the driver process inherits), a `Monitor`, loggers for `Http.Event` and `Exec.Event`,
+          - a `Tactic[WebDriver.Error]` and `Diagnostics`. The `.sessional` given constructs it, so a
+          - caller never names the class.
+          + L'instance de `aperture.Sessional` pour `WebDriver.Local`, avec `Self = Local` et
+          + `Result = Session^`. Elle a besoin d'un `Online`, d'un `Http.Backend`, d'un
+          + `WorkingDirectory`, d'un `Environment` (dont hérite le processus du pilote), d'un
+          + `Monitor`, de journaux pour les `Http.Event` et les `Exec.Event`, d'une
+          + `Tactic[WebDriver.Error]` et de `Diagnostics`. Le given `.sessional` la construit ;
+          + l'appelant ne nomme donc jamais la classe.
+      entry #session
+        info
+            - forks the driver, waits for it to listen, runs the block, and stops it
+            + lance le pilote, attend qu'il écoute, exécute le bloc, puis l'arrête
+        detail
+            - Runs `lambda` with a fresh `WebDriver.Session` in scope, then aborts the driver's job in a
+            - `finally`. A failure to fork is reported as `WebDriver.Error` with reason
+            - `SessionNotCreated`; a driver that does not answer `GET /status` within five seconds as one
+            - with reason `Timeout`.
+            + Exécute `lambda` avec une nouvelle `WebDriver.Session` dans la portée, puis interrompt
+            + la tâche du pilote dans un `finally`. Un échec du lancement est signalé par une
+            + `WebDriver.Error` de raison `SessionNotCreated` ; un pilote qui ne répond pas à
+            + `GET /status` en cinq secondes, par une erreur de raison `Timeout`.
+    entry .sessional
+      info
+          - the given which lets `local.session: session ?=> …` resolve
+          + le given qui permet à `local.session: session ?=> …` d'être résolu
+      detail
+          - In the companion of `WebDriver.Local`, so it is found with no import whenever the contextual
+          - values it needs are in scope: `Online`, `Http.Backend`, `WorkingDirectory`, `Environment`,
+          - `Monitor`, `Http.Event is Loggable`, `Exec.Event is Loggable`, `Tactic[WebDriver.Error]` and
+          - `Diagnostics`.
+          + Dans le compagnon de `WebDriver.Local`, il est donc trouvé sans import dès que les
+          + valeurs contextuelles dont il a besoin sont dans la portée : `Online`, `Http.Backend`,
+          + `WorkingDirectory`, `Environment`, `Monitor`, `Http.Event is Loggable`,
+          + `Exec.Event is Loggable`, `Tactic[WebDriver.Error]` et `Diagnostics`.
+    entry #driver
+      info
+          - the driver program which drives this browser
+          + le programme pilote qui pilote ce navigateur
+    entry #port
+      info
+          - the port the driver listens on; `4444` by default
+          + le port sur lequel écoute le pilote ; `4444` par défaut
+    entry #arguments
+      info
+          - the arguments the browser is launched with, such as `--headless=new`
+          + les arguments avec lesquels le navigateur est lancé, comme `--headless=new`
+    entry #requested
+      info
+          - a capabilities object to send instead of the generated one, or `Unset`
+          + un objet de capacités à envoyer à la place de celui qui est généré, ou `Unset`
+    entry #on
+      info
+          - the same browser with its driver on another port
+          + le même navigateur avec son pilote sur un autre port
+      detail
+          - Each session on a port needs that port free, so sessions run concurrently each take their
+          - own: `WebDriver.Chrome.on(4451)`.
+          + Chaque session sur un port a besoin que ce port soit libre ; des sessions exécutées en
+          + parallèle prennent donc chacune le leur : `WebDriver.Chrome.on(4451)`.
+    entry #headless
+      info
+          - the same browser launched without a window
+          + le même navigateur lancé sans fenêtre
+      detail
+          - Appends the driver's headless arguments (`WebDriver.Driver#headless`) to `#arguments`; on
+          - Safari, which has no headless mode, it changes nothing.
+          + Ajoute les arguments headless du pilote (`WebDriver.Driver#headless`) à `#arguments` ;
+          + sur Safari, qui n'a pas de mode headless, cela ne change rien.
+    entry #arguing
+      info
+          - the same browser with more launch arguments
+          + le même navigateur avec des arguments de lancement supplémentaires
+      detail
+          - `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` appends the arguments
+          - the browser is started with, as `goog:chromeOptions`, `moz:firefoxOptions` or
+          - `ms:edgeOptions` says.
+          + `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` ajoute des arguments
+          + au démarrage du navigateur, comme l'indiquent `goog:chromeOptions`, `moz:firefoxOptions`
+          + ou `ms:edgeOptions`.
+    entry #requesting
+      info
+          - the same browser, with the capabilities object replaced wholesale
+          + le même navigateur, avec l'objet de capacités remplacé en entier
+      detail
+          - For what `WebDriver.Local` does not model — proxies, timeouts, mobile emulation, a
+          - grid's extensions — the whole `POST /session` payload can be supplied as `Json`, replacing
+          - the generated `alwaysMatch` object.
+          + Pour ce que `WebDriver.Local` ne modélise pas — proxys, délais, émulation mobile,
+          + extensions d'une grille — toute la charge utile de `POST /session` peut être fournie en
+          + `Json`, en remplacement de l'objet `alwaysMatch` généré.
+    entry #capabilities
+      info
+          - the `POST /session` payload: an `alwaysMatch` object naming the browser and its arguments
+          + la charge utile de `POST /session` : un objet `alwaysMatch` nommant le navigateur et ses
+          + arguments
+      detail
+          - The W3C shape, `{"capabilities": {"alwaysMatch": {…}}}`, with the browser's name and its
+          - vendor options object (`goog:chromeOptions`, `moz:firefoxOptions` or `ms:edgeOptions`,
+          - carrying `#arguments`; Safari takes only its name). Only `alwaysMatch` is generated, since
+          - `firstMatch` exists to let one request suit several drivers and a `Local` names exactly one.
+          - When `#requested` is set, it is returned instead.
+          + La forme W3C, `{"capabilities": {"alwaysMatch": {…}}}`, avec le nom du navigateur et
+          + l'objet d'options de son éditeur (`goog:chromeOptions`, `moz:firefoxOptions` ou
+          + `ms:edgeOptions`, portant `#arguments` ; Safari ne prend que son nom). Seul
+          + `alwaysMatch` est généré, puisque `firstMatch` sert à ce qu'une requête convienne à
+          + plusieurs pilotes, et qu'un `Local` en nomme exactement un. Lorsque `#requested` est
+          + défini, c'est lui qui est renvoyé.
+  entry .Chrome
+    info
+        - Chrome, through `chromedriver` on port 4444
+        + Chrome, par `chromedriver` sur le port 4444
+    detail
+        - `WebDriver.Local(WebDriver.Driver.Chromedriver)`: `WebDriver.Chrome.headless.session: …` opens
+        - a headless Chrome session.
+        + `WebDriver.Local(WebDriver.Driver.Chromedriver)` : `WebDriver.Chrome.headless.session: …`
+        + ouvre une session Chrome headless.
+  entry .Firefox
+    info
+        - Firefox, through `geckodriver` on port 4444
+        + Firefox, par `geckodriver` sur le port 4444
+  entry .Safari
+    info
+        - Safari, through `safaridriver` on port 4444
+        + Safari, par `safaridriver` sur le port 4444
+    detail
+        - Safari has no headless mode, so `WebDriver.Safari.headless` is the same as `WebDriver.Safari`.
+        + Safari n'a pas de mode headless ; `WebDriver.Safari.headless` est donc identique à
+        + `WebDriver.Safari`.
+  entry .Edge
+    info
+        - Microsoft Edge, through `msedgedriver` on port 4444
+        + Microsoft Edge, par `msedgedriver` sur le port 4444
+  entry .Sessional
+    info
+        - opens a session on a driver that is already listening
+        + ouvre une session sur un pilote qui écoute déjà
+    detail
+        - The `aperture.Sessional` instance for `WebDriver`, with `Self = WebDriver` and `Result =
+        - Session^`. It creates the session with `POST /session` and the driver's `#capabilities`,
+        - runs the block with the handle in scope, and deletes the session — which is what closes the
+        - browser — in a `finally`, swallowing a failure to delete, since a driver that has already
+        - died cannot tidy up and saying so would hide the block's own error. Launching a local driver
+        - (`WebDriver.Local.Sessional`) is composition over this. It needs an `Online`, an
+        - `Http.Backend`, a logger for `Http.Event`, a `Tactic[WebDriver.Error]` and `Diagnostics`.
+        + L'instance de `aperture.Sessional` pour `WebDriver`, avec `Self = WebDriver` et
+        + `Result = Session^`. Elle crée la session avec `POST /session` et les `#capabilities` du
+        + pilote, exécute le bloc avec la poignée dans la portée, et supprime la session — ce qui
+        + ferme le navigateur — dans un `finally`, en ignorant un échec de la suppression, car un
+        + pilote déjà mort ne peut pas faire le ménage et le signaler masquerait l'erreur propre au
+        + bloc. Lancer un pilote local (`WebDriver.Local.Sessional`) se compose par-dessus. Elle a
+        + besoin d'un `Online`, d'un `Http.Backend`, d'un journal pour les `Http.Event`, d'une
+        + `Tactic[WebDriver.Error]` et de `Diagnostics`.
+    entry #session
+      info
+          - creates the session, runs the block with it in scope, and deletes it
+          + crée la session, exécute le bloc avec elle dans la portée, puis la supprime
+      detail
+          - The session's `Result` type is a fresh `Session^`: each call's handle is its own capability,
+          - so the block cannot return it or anything capturing it.
+          + Le type `Result` de la session est un `Session^` frais : la poignée de chaque appel est
+          + sa propre capacité, de sorte que le bloc ne peut la renvoyer, ni rien qui la capture.
+  entry .sessional
+    info
+        - the given which lets `webDriver.session: session ?=> …` resolve
+        + le given qui permet à `webDriver.session: session ?=> …` d'être résolu
+    detail
+        - In the companion of `WebDriver`, so it is found with no import when an `Online`, an
+        - `Http.Backend`, an `Http.Event is Loggable`, a `Tactic[WebDriver.Error]` and `Diagnostics` are
+        - in scope.
+        + Dans le compagnon de `WebDriver`, il est donc trouvé sans import lorsqu'un `Online`, un
+        + `Http.Backend`, un `Http.Event is Loggable`, une `Tactic[WebDriver.Error]` et
+        + `Diagnostics` sont dans la portée.
+  entry .apply
+    info
+        - a driver already listening at a base URL, with the capabilities to request
+        + un pilote qui écoute déjà à une URL de base, avec les capacités à demander
+    detail
+        - `WebDriver(url"http://localhost:4444", capabilities)` drives a driver started by hand, or a
+        - Selenium grid, through the same `Session` interface as a local browser. The capabilities are
+        - sent verbatim as the `POST /session` payload; `WebDriver.Chrome.capabilities` is a ready-made
+        - one, and `t"{}".read[Json]` is enough for a driver that needs none.
+        + `WebDriver(url"http://localhost:4444", capabilities)` pilote un pilote démarré à la main,
+        + ou une grille Selenium, par la même interface `Session` qu'un navigateur local. Les
+        + capacités sont envoyées telles quelles comme charge utile de `POST /session` ;
+        + `WebDriver.Chrome.capabilities` en est un exemple tout prêt, et `t"{}".read[Json]` suffit
+        + pour un pilote qui n'en demande aucune.
+
+        ```scala fuel
+        typecheck
+        ##
+        WebDriver(url"http://localhost:4444", WebDriver.Firefox.headless.capabilities).session:
+          browser.navigateTo(url"https://example.com/")
+          browser.title()
+        ```
+  entry #base
+    info
+        - the URL the driver listens at; commands are addressed beneath `base/session/id`
+        + l'URL à laquelle écoute le pilote ; les commandes sont adressées sous `base/session/id`
+  entry #capabilities
+    info
+        - the JSON sent as the `POST /session` payload
+        + le JSON envoyé comme charge utile de `POST /session`
+  entry .Error
+    info
+        - a failed WebDriver action: the W3C error code, the driver's message and its stack trace
+        + une action WebDriver en échec : le code d'erreur W3C, le message du pilote et sa pile
+        + d'appels
+    detail
+        - Error `↯/s.127.1`: _the WebDriver action failed because `reason`: `detail`_, with the
+        - `WebDriver.Error.Reason`'s number as its subcode. Every failure of a session arrives as
+        - this one type: an error object the driver returned in a 4xx or 5xx reply, a driver that
+        - could not be reached, a reply which was not the JSON the specification describes (reason
+        - `UnknownError`), a reply cut short, a driver that could not be started (`SessionNotCreated`)
+        - or one which never began listening (`Timeout`). It is raised through the
+        - `Tactic[WebDriver.Error]` in scope when the session was opened.
+        + Erreur `↯/s.127.1` : _the WebDriver action failed because `reason`: `detail`_, avec le
+        + numéro de la `WebDriver.Error.Reason` comme sous-code. Chaque échec d'une session arrive
+        + sous ce seul type : un objet d'erreur que le pilote a renvoyé dans une réponse 4xx ou 5xx,
+        + un pilote injoignable, une réponse qui n'était pas le JSON que décrit la spécification
+        + (raison `UnknownError`), une réponse tronquée, un pilote qui n'a pas pu être démarré
+        + (`SessionNotCreated`) ou qui ne s'est jamais mis à l'écoute (`Timeout`). Elle est levée
+        + par la `Tactic[WebDriver.Error]` qui était dans la portée à l'ouverture de la session.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.navigateTo(url"https://example.com/")
+
+            safely(browser.element(H2)).or:
+              browser.element(H1)
+        ```
+
+        - The driver's own message is `#detail`, and its stack trace, one line per element, is
+        - `#browserStacktrace`. `#data` keeps the specification's optional extra object, which is
+        - what carries the prompt's text on an `UnexpectedAlertOpen`: exactly what a caller needs to
+        - decide whether to accept or dismiss it.
+        + Le message propre du pilote est `#detail`, et sa pile d'appels, une ligne par élément, est
+        + `#browserStacktrace`. `#data` conserve l'objet supplémentaire optionnel de la
+        + spécification, qui porte le texte de l'invite lors d'un `UnexpectedAlertOpen` : exactement
+        + ce dont l'appelant a besoin pour décider de l'accepter ou de la rejeter.
+    refer tarantula.WebDriver.Error.Reason
+    entry .Reason
+      info
+          - the W3C error code a driver reported, as an enumeration with stable numbers
+          + le code d'erreur W3C signalé par un pilote, sous forme d'énumération aux numéros stables
+      detail
+          - One case for every error code the WebDriver specification defines, with the code as the
+          - driver spells it in the `error` field of its error object:
+          + Un cas pour chaque code d'erreur que définit la spécification WebDriver, avec le code
+          + tel que l'écrit le pilote dans le champ `error` de son objet d'erreur :
+
+          ```tabular
+          - column  Case
+          - column  Code
+          - column  Message
+          - column  W3C code
+          - row  `NoSuchElement`  1  _the requested element was not found_  `no such element`
+          - row  `StaleElement`  2  _the element is no longer attached to the page_  `stale element reference`
+          - row  `NoSuchWindow`  3  _the requested window was not found_  `no such window`
+          - row  `JavascriptError`  4  _a JavaScript error occurred while evaluating it_  `javascript error`
+          - row  `ScriptTimeout`  5  _the asynchronous script did not complete in time_  `script timeout`
+          - row  `Timeout`  6  _the operation timed out_  `timeout`
+          - row  `UnknownCommand`  7  _the WebDriver does not recognise the command_  `unknown command`
+          - row  `Other(code)`  8  _the WebDriver reported the error code `code`_  any other, kept as `code`
+          - row  `ElementClickIntercepted`  9  _the click was intercepted by another element_  `element click intercepted`
+          - row  `ElementNotInteractable`  10  _the element cannot be interacted with_  `element not interactable`
+          - row  `InsecureCertificate`  11  _the page was served with an untrusted certificate_  `insecure certificate`
+          - row  `InvalidArgument`  12  _an argument to the command was not acceptable_  `invalid argument`
+          - row  `InvalidCookieDomain`  13  _the cookie's domain does not match the current page_  `invalid cookie domain`
+          - row  `InvalidElementState`  14  _the element is in a state which forbids the action_  `invalid element state`
+          - row  `InvalidSelector`  15  _the selector was not a valid one_  `invalid selector`
+          - row  `InvalidSessionId`  16  _the session is no longer active_  `invalid session id`
+          - row  `MoveTargetOutOfBounds`  17  _the pointer target lies outside the viewport_  `move target out of bounds`
+          - row  `NoSuchAlert`  18  _no alert is currently open_  `no such alert`
+          - row  `NoSuchCookie`  19  _the requested cookie was not found_  `no such cookie`
+          - row  `NoSuchFrame`  20  _the requested frame was not found_  `no such frame`
+          - row  `NoSuchShadowRoot`  21  _the element has no shadow root_  `no such shadow root`
+          - row  `DetachedShadowRoot`  22  _the shadow root is no longer attached to the page_  `detached shadow root`
+          - row  `SessionNotCreated`  23  _a new session could not be created_  `session not created`
+          - row  `UnableToSetCookie`  24  _the cookie could not be set_  `unable to set cookie`
+          - row  `UnableToCaptureScreen`  25  _the screenshot could not be taken_  `unable to capture screen`
+          - row  `UnexpectedAlertOpen`  26  _an unexpected alert is open_  `unexpected alert open`
+          - row  `UnknownError`  27  _the WebDriver encountered an unknown error_  `unknown error`
+          - row  `UnknownMethod`  28  _the command does not support the HTTP method used_  `unknown method`
+          - row  `UnsupportedOperation`  29  _the WebDriver does not support the operation_  `unsupported operation`
+          + column  Cas
+          + column  Code
+          + column  Message
+          + column  Code W3C
+          + row  `NoSuchElement`  1  _the requested element was not found_  `no such element`
+          + row  `StaleElement`  2  _the element is no longer attached to the page_  `stale element reference`
+          + row  `NoSuchWindow`  3  _the requested window was not found_  `no such window`
+          + row  `JavascriptError`  4  _a JavaScript error occurred while evaluating it_  `javascript error`
+          + row  `ScriptTimeout`  5  _the asynchronous script did not complete in time_  `script timeout`
+          + row  `Timeout`  6  _the operation timed out_  `timeout`
+          + row  `UnknownCommand`  7  _the WebDriver does not recognise the command_  `unknown command`
+          + row  `Other(code)`  8  _the WebDriver reported the error code `code`_  tout autre, conservé comme `code`
+          + row  `ElementClickIntercepted`  9  _the click was intercepted by another element_  `element click intercepted`
+          + row  `ElementNotInteractable`  10  _the element cannot be interacted with_  `element not interactable`
+          + row  `InsecureCertificate`  11  _the page was served with an untrusted certificate_  `insecure certificate`
+          + row  `InvalidArgument`  12  _an argument to the command was not acceptable_  `invalid argument`
+          + row  `InvalidCookieDomain`  13  _the cookie's domain does not match the current page_  `invalid cookie domain`
+          + row  `InvalidElementState`  14  _the element is in a state which forbids the action_  `invalid element state`
+          + row  `InvalidSelector`  15  _the selector was not a valid one_  `invalid selector`
+          + row  `InvalidSessionId`  16  _the session is no longer active_  `invalid session id`
+          + row  `MoveTargetOutOfBounds`  17  _the pointer target lies outside the viewport_  `move target out of bounds`
+          + row  `NoSuchAlert`  18  _no alert is currently open_  `no such alert`
+          + row  `NoSuchCookie`  19  _the requested cookie was not found_  `no such cookie`
+          + row  `NoSuchFrame`  20  _the requested frame was not found_  `no such frame`
+          + row  `NoSuchShadowRoot`  21  _the element has no shadow root_  `no such shadow root`
+          + row  `DetachedShadowRoot`  22  _the shadow root is no longer attached to the page_  `detached shadow root`
+          + row  `SessionNotCreated`  23  _a new session could not be created_  `session not created`
+          + row  `UnableToSetCookie`  24  _the cookie could not be set_  `unable to set cookie`
+          + row  `UnableToCaptureScreen`  25  _the screenshot could not be taken_  `unable to capture screen`
+          + row  `UnexpectedAlertOpen`  26  _an unexpected alert is open_  `unexpected alert open`
+          + row  `UnknownError`  27  _the WebDriver encountered an unknown error_  `unknown error`
+          + row  `UnknownMethod`  28  _the command does not support the HTTP method used_  `unknown method`
+          + row  `UnsupportedOperation`  29  _the WebDriver does not support the operation_  `unsupported operation`
+          ```
+
+          - The numbers are the error's subcode and are frozen: 1 to 8 keep the meanings they were
+          - first published with, which is why `Other` sits at 8 out of alphabetical order, and
+          - every code added since appends from 9. A code the enumeration does not know becomes
+          - `Other`, so decoding is total and the code a driver sent is never lost.
+          + Les numéros sont le sous-code de l'erreur et sont gelés : 1 à 8 gardent le sens avec
+          + lequel ils ont été publiés à l'origine, ce qui explique pourquoi `Other` occupe le 8
+          + hors de l'ordre alphabétique, et chaque code ajouté depuis s'inscrit à partir de 9. Un
+          + code que l'énumération ne connaît pas devient `Other` ; le décodage est donc total et le
+          + code envoyé par un pilote n'est jamais perdu.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              capture[WebDriver.Error](browser.element(Name[DomId](t"absent"))).reason
+                == WebDriver.Error.Reason.NoSuchElement
+          ```
+      entry .apply
+        info
+            - decodes a W3C error code, such as `no such element`, to its `Reason`
+            + décode un code d'erreur W3C, comme `no such element`, en sa `Reason`
+        detail
+            - Total: an unrecognised code is `Other(code)`.
+            + Totale : un code non reconnu donne `Other(code)`.
+
+            ```scala
+            import soundness.*
+
+            WebDriver.Error.Reason(t"stale element reference") == WebDriver.Error.Reason.StaleElement
+            ```
+      entry .Other
+        info
+            - an error code the enumeration does not name, kept as the driver sent it
+            + un code d'erreur que l'énumération ne nomme pas, conservé tel que l'a envoyé le pilote
+        entry #code0
+          info
+              - the code exactly as the driver spelled it
+              + le code exactement tel que l'a écrit le pilote
+      entry #number
+        info
+            - the reason's frozen subcode, from 1 to 29
+            + le sous-code gelé de la raison, de 1 à 29
+      entry #code
+        info
+            - the code as the specification spells it, such as `no such element`
+            + le code tel que l'écrit la spécification, comme `no such element`
+    entry .communicable
+      info
+          - renders each `Reason` as a sentence, such as _the requested element was not found_
+          + rend chaque `Reason` sous forme de phrase, comme _the requested element was not found_
+      detail
+          - The `Communicable` given for `WebDriver.Error.Reason`, in its companion's scope, which is
+          - what fills the `reason` in the error's message.
+          + Le given `Communicable` pour `WebDriver.Error.Reason`, dans la portée de son compagnon,
+          + qui fournit le `reason` du message de l'erreur.
+    entry #reason
+      info
+          - the W3C error code the driver reported, as a `WebDriver.Error.Reason`
+          + le code d'erreur W3C signalé par le pilote, sous forme de `WebDriver.Error.Reason`
+    entry #detail
+      info
+          - the driver's message, or the raw reply when it was not a W3C error object
+          + le message du pilote, ou la réponse brute lorsqu'elle n'était pas un objet d'erreur W3C
+    entry #browserStacktrace
+      info
+          - the driver's stack trace, one line per element; empty when it sent none
+          + la pile d'appels du pilote, une ligne par élément ; vide s'il n'en a envoyé aucune
+    entry #data
+      info
+          - the error object's optional `data` member, which carries an open prompt's text
+          + le membre `data` optionnel de l'objet d'erreur, qui porte le texte d'une invite ouverte
+      detail
+          - On an `UnexpectedAlertOpen`, `data.text` is the prompt's text, so a caller can read it and
+          - decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+          + Lors d'un `UnexpectedAlertOpen`, `data.text` est le texte de l'invite ; l'appelant peut
+          + donc le lire et choisir entre `WebDriver.Session#acceptAlert` et
+          + `WebDriver.Session#dismissAlert`.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              capture[WebDriver.Error](browser.title()).data.let(_.text.as[Text])
+          ```
+  entry .Element
+    info
+        - a handle on a node of the page: a pure value, usable only with its session in scope
+        + une poignée sur un nœud de la page : une valeur pure, utilisable seulement avec sa session
+        + dans la portée
+    detail
+        - The opaque reference a driver returned for a DOM node, meaningful only to the session which
+        - produced it. It is a pure value holding neither a capability nor its session, so a `List`
+        - of them can be built and passed around freely; every operation on one — `click`,
+        - `innerText`, `value`, `attribute`, `element` and the other extensions in the `tarantula`
+        - package — takes the `WebDriver.Session` as a contextual parameter, so an element is inert
+        - outside its session's block.
+        + La référence opaque qu'un pilote a renvoyée pour un nœud DOM, qui n'a de sens que pour la
+        + session qui l'a produite. C'est une valeur pure qui ne détient ni capacité ni session ; on
+        + peut donc en construire une `List` et la faire circuler librement ; chaque opération sur
+        + l'une d'elles — `click`, `innerText`, `value`, `attribute`, `element` et les autres
+        + extensions du package `tarantula` — prend la `WebDriver.Session` comme paramètre
+        + contextuel, si bien qu'un élément est inerte hors du bloc de sa session.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.navigateTo(url"https://example.com/")
+            val menu: WebDriver.Element = browser.element(Name[DomId](t"menu"))
+            val items: List[WebDriver.Element] = menu \ Li \ cls"item"
+            items.map(_.innerText())
+        ```
+
+        - A leaked element is a dangling id rather than a live handle. One used after its page has
+        - changed raises `WebDriver.Error` with reason `StaleElement`.
+        + Un élément qui s'échappe est un id orphelin plutôt qu'une poignée vivante. Un élément
+        + utilisé après le changement de sa page lève une `WebDriver.Error` de raison
+        + `StaleElement`.
+    refer tarantula.WebDriver.Session
+    refer tarantula.element
+    entry .encodable
+      info
+          - encodes an element in the wire form a script argument or pointer origin takes
+          + encode un élément sous la forme de transmission que prend un argument de script ou une
+          + origine de pointeur
+      detail
+          - The W3C _web element identifier_ form, `{"element-6066-11e4-a52e-4f735466cecf": id}`, so
+          - an element can be passed in `WebDriver.Session#execute`'s arguments as `element.in[Json]`,
+          - where the script sees the live DOM node.
+          + La forme W3C d'_identifiant d'élément web_,
+          + `{"element-6066-11e4-a52e-4f735466cecf": id}`, qui permet de passer un élément parmi les
+          + arguments de `WebDriver.Session#execute` sous la forme `element.in[Json]`, où le script
+          + voit le nœud DOM vivant.
+    entry .\
+      info
+          - every match for a locator beneath an element, or beneath each of a list of elements
+          + toutes les correspondances d'un localisateur sous un élément, ou sous chacun des
+          + éléments d'une liste
+      detail
+          - `element \ Li` asks the driver for every descendant matching any `Focusable` locator — an
+          - HTML tag, a `cls"…"` class list, a `Name[DomId]`, a `SelectorList`, an `XPath` or link
+          - text — and returns them in document order, an empty list for none. The second form, on a
+          - `List[WebDriver.Element]`, selects from every element found so far, so selections chain:
+          - `element \ Name[DomId](t"menu") \ Li \ cls"item"`. The protocol has no batch find, so the
+          - chained form makes one request per element, and nothing is deduplicated. It needs the
+          - `WebDriver.Session` in scope.
+          + `element \ Li` demande au pilote chaque descendant correspondant à un localisateur
+          + `Focusable` quelconque — une balise HTML, une liste de classes `cls"…"`, un
+          + `Name[DomId]`, une `SelectorList`, un `XPath` ou un texte de lien — et les renvoie dans
+          + l'ordre du document, ou une liste vide s'il n'y en a aucun. La seconde forme, sur une
+          + `List[WebDriver.Element]`, sélectionne à partir de chaque élément déjà trouvé, de sorte
+          + que les sélections s'enchaînent : `element \ Name[DomId](t"menu") \ Li \ cls"item"`. Le
+          + protocole n'a pas de recherche groupée ; la forme enchaînée fait donc une requête par
+          + élément, et rien n'est dédoublonné. Elle a besoin de la `WebDriver.Session` dans la
+          + portée.
+
+          - It is spelled `\` rather than `/` because symbolism's generic `/`, which `soundness`
+          - exports, would claim that name for every receiver. Both forms are in the companion of
+          - `WebDriver.Element`, so they need no import.
+          + Elle s'écrit `\` plutôt que `/` parce que le `/` générique de symbolism, qu'exporte
+          + `soundness`, revendiquerait ce nom pour tout receveur. Les deux formes sont dans le
+          + compagnon de `WebDriver.Element` ; elles ne demandent donc aucun import.
+    entry #elementId
+      info
+          - the driver's opaque id for the node
+          + l'id opaque du nœud selon le pilote
+  entry .ShadowRoot
+    info
+        - the open shadow root an element hosts, as a handle for finding elements within it
+        + la racine shadow ouverte qu'héberge un élément, sous forme de poignée pour y trouver des
+        + éléments
+    detail
+        - Reached with `element.shadowRoot()`. The protocol addresses a shadow root separately from
+        - an element, and only finding is valid against one, so it is a separate pure handle: search
+        - it with `\` for every match or `element` for exactly one, with the `WebDriver.Session` in
+        - scope. Only *open* shadow roots are reachable; asking for a closed one raises
+        - `WebDriver.Error` with reason `NoSuchShadowRoot`, and using one whose host has left the
+        - page raises `DetachedShadowRoot`.
+        + Atteinte avec `element.shadowRoot()`. Le protocole adresse une racine shadow séparément
+        + d'un élément, et seule la recherche est valide sur elle ; c'est donc une poignée pure
+        + distincte : on y cherche avec `\` pour toutes les correspondances ou avec `element` pour
+        + exactement une, avec la `WebDriver.Session` dans la portée. Seules les racines shadow
+        + *ouvertes* sont accessibles ; en demander une fermée lève une `WebDriver.Error` de raison
+        + `NoSuchShadowRoot`, et utiliser une racine dont l'hôte a quitté la page lève
+        + `DetachedShadowRoot`.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            val root: WebDriver.ShadowRoot = browser.element(Name[DomId](t"widget")).shadowRoot()
+            root.element(Button).click()
+            (root \ Li).length
+        ```
+    entry .\
+      info
+          - every match for a locator within a shadow root, in document order
+          + toutes les correspondances d'un localisateur dans une racine shadow, dans l'ordre du
+          + document
+      detail
+          - `root \ Button` returns every element in the shadow tree matching any `Focusable`
+          - locator, or an empty list. It needs the `WebDriver.Session` in scope, and lives in the
+          - companion of `WebDriver.ShadowRoot`, so it needs no import.
+          + `root \ Button` renvoie chaque élément de l'arbre shadow correspondant à un localisateur
+          + `Focusable` quelconque, ou une liste vide. Elle a besoin de la `WebDriver.Session` dans
+          + la portée, et se trouve dans le compagnon de `WebDriver.ShadowRoot` ; elle ne demande
+          + donc aucun import.
+    entry #shadowId
+      info
+          - the driver's opaque id for the shadow root
+          + l'id opaque de la racine shadow selon le pilote
+  entry .Session
+    info
+        - a live WebDriver session: one browser, its windows and cookies, confined to its block
+        + une session WebDriver vivante : un navigateur, ses fenêtres et ses cookies, confinés à son
+        + bloc
+    detail
+        - The near end of a conversation with a driver, addressed beneath `base/session/id`. A
+        - session is never constructed directly: `session` on a `WebDriver` or a `WebDriver.Local`
+        - opens one, lends it to the block as a contextual value, and deletes it — closing the
+        - browser — when the block ends. Inside the block, `browser` names it.
+        + L'extrémité locale d'une conversation avec un pilote, adressée sous `base/session/id`. Une
+        + session n'est jamais construite directement : `session` sur un `WebDriver` ou un
+        + `WebDriver.Local` en ouvre une, la prête au bloc comme valeur contextuelle, et la supprime
+        + — en fermant le navigateur — à la fin du bloc. Dans le bloc, `browser` la désigne.
+
+        - It is a capability, so capture checking confines it, and every closure over it, to the
+        - block which owns it: returning the session, or a lambda which uses it, is a compile error.
+        - What its commands return — `Text`, `Data`, `Json`, `WebDriver.Element`s, rectangles — is
+        - pure data, since every command is a complete round trip.
+        + C'est une capacité ; le contrôle des captures la confine donc, ainsi que toute fermeture
+        + qui la capture, au bloc qui la possède : renvoyer la session, ou une lambda qui l'utilise,
+        + est une erreur de compilation. Ce que renvoient ses commandes — `Text`, `Data`, `Json`,
+        + `WebDriver.Element`, rectangles — est de la donnée pure, puisque chaque commande est un
+        + aller-retour complet.
+
+        - A script is grown one stage at a time: open a session, navigate, find, act, and read the
+        - result back.
+        + Un script se construit une étape à la fois : ouvrir une session, naviguer, trouver, agir,
+        + puis relire le résultat.
+
+        ```scala fuel
+        typecheck
+        frame
+          label Open a session
+          code
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.title()
+        frame
+          label Navigate to a page
+          code
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.navigateTo(url"https://example.com/search")
+                  browser.title()
+        frame
+          label Find a field and type into it
+          code
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.navigateTo(url"https://example.com/search")
+                  val field = browser.element(Name[DomId](t"query"))
+                  field.value(t"spiders")
+                  field.property(t"value")
+        frame
+          label Submit, and wait for the results
+          code
+              import retryTenacities.exponentialTenTimesTenacity
+
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.navigateTo(url"https://example.com/search")
+                  browser.element(Name[DomId](t"query")).value(t"spiders")
+                  browser.press(Keypress.Enter)
+                  browser.awaitElements(cls"result").map(_.innerText())
+        ##
+        ```
+
+        - Every command raises `WebDriver.Error` through the `Tactic` in scope when the session was
+        - opened, and needs nothing further. The waits (`#awaitElement`, `#awaitElements`,
+        - `#awaitUntil`) additionally take a `Tenacity`, a `Monitor` and a `Tactic[Tenacity.Error]`
+        - at the call.
+        + Chaque commande lève une `WebDriver.Error` par la `Tactic` qui était dans la portée à
+        + l'ouverture de la session, et n'a besoin de rien d'autre. Les attentes (`#awaitElement`,
+        + `#awaitElements`, `#awaitUntil`) prennent en plus, à l'appel, une `Tenacity`, un `Monitor`
+        + et une `Tactic[Tenacity.Error]`.
+    refer tarantula.browser
+    refer tarantula.WebDriver.Element
+    refer tarantula.WebDriver.Error
+    entry .Rect
+      info
+          - the bounding box of an element or a window, in CSS pixels
+          + le rectangle englobant d'un élément ou d'une fenêtre, en pixels CSS
+      detail
+          - Returned by the `windowRect`, `maximize`, `minimize` and `fullscreen` commands of a
+          - `WebDriver.Session` and by the `rect` extension on an element, and taken by
+          - `windowRect(rect)` to move and resize the window.
+          + Renvoyé par les commandes `windowRect`, `maximize`, `minimize` et `fullscreen` d'une
+          + `WebDriver.Session` et par l'extension `rect` d'un élément, et pris par
+          + `windowRect(rect)` pour déplacer et redimensionner la fenêtre.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.session:
+              browser.windowRect(WebDriver.Session.Rect(0.0, 0.0, 1280.0, 800.0))
+              browser.windowRect().width
+          ```
+      entry #x
+        info
+            - the left edge, from the viewport's or the screen's origin
+            + le bord gauche, depuis l'origine de la zone d'affichage ou de l'écran
+      entry #y
+        info
+            - the top edge, from the viewport's or the screen's origin
+            + le bord supérieur, depuis l'origine de la zone d'affichage ou de l'écran
+      entry #width
+        info
+            - the width, in CSS pixels
+            + la largeur, en pixels CSS
+      entry #height
+        info
+            - the height, in CSS pixels
+            + la hauteur, en pixels CSS
+    entry .cm
+      info
+          - a length in centimetres, as the `Quantity[Metres[1]]` a print's page and margins take
+          + une longueur en centimètres, sous la forme de la `Quantity[Metres[1]]` que prennent la
+          + page et les marges d'une impression
+      detail
+          - `WebDriver.Session.cm(1.5)` is fifteen millimetres. Any length quantity will do in a
+          - `Page` or `Margin` — `21.0*Centi(Metre)`, `8.5*Inch` — so this is only a convenience.
+          + `WebDriver.Session.cm(1.5)` vaut quinze millimètres. Toute quantité de longueur convient
+          + dans une `Page` ou une `Margin` — `21.0*Centi(Metre)`, `8.5*Inch` — ce n'est donc qu'une
+          + commodité.
+    entry .Page
+      info
+          - the paper size a print is laid out on; US Letter by default
+          + le format de papier sur lequel une impression est mise en page ; US Letter par défaut
+      detail
+          - Lengths are `Quantity[Metres[1]]`, so they can be written in any unit, and are sent to
+          - the driver in the centimetres the protocol requires. The defaults are the
+          - specification's own: 21.59cm by 27.94cm.
+          + Les longueurs sont des `Quantity[Metres[1]]` ; elles peuvent donc s'écrire dans
+          + n'importe quelle unité, et sont envoyées au pilote dans les centimètres qu'exige le
+          + protocole. Les valeurs par défaut sont celles de la spécification : 21,59 cm sur 27,94
+          + cm.
+
+          ```scala
+          import soundness.*
+
+          val a4 = WebDriver.Session.Page(WebDriver.Session.cm(21.0), WebDriver.Session.cm(29.7))
+          ```
+      entry #width
+        info
+            - the page's width, as a length
+            + la largeur de la page, sous forme de longueur
+      entry #height
+        info
+            - the page's height, as a length
+            + la hauteur de la page, sous forme de longueur
+    entry .Margin
+      info
+          - the four margins of a printed page; one centimetre each by default
+          + les quatre marges d'une page imprimée ; un centimètre chacune par défaut
+      detail
+          - Lengths are `Quantity[Metres[1]]`, sent to the driver in centimetres. `.uniform` makes
+          - four equal margins.
+          + Les longueurs sont des `Quantity[Metres[1]]`, envoyées au pilote en centimètres.
+          + `.uniform` produit quatre marges égales.
+      entry .uniform
+        info
+            - four equal margins of the given length
+            + quatre marges égales de la longueur donnée
+        detail
+            ```scala
+            import soundness.*
+
+            WebDriver.Session.Margin.uniform(WebDriver.Session.cm(0.5))
+            ```
+      entry #top
+        info
+            - the top margin
+            + la marge supérieure
+      entry #bottom
+        info
+            - the bottom margin
+            + la marge inférieure
+      entry #left
+        info
+            - the left margin
+            + la marge gauche
+      entry #right
+        info
+            - the right margin
+            + la marge droite
+    entry .Orientation
+      info
+          - whether a page is printed `Portrait` or `Landscape`
+          + si une page est imprimée en `Portrait` ou en `Landscape`
+      entry #name
+        info
+            - the orientation as the protocol spells it: `portrait` or `landscape`
+            + l'orientation telle que l'écrit le protocole : `portrait` ou `landscape`
+    entry .Print
+      info
+          - the options `WebDriver.Session#printPage` takes: orientation, scale, paper, margins, pages
+          + les options que prend `WebDriver.Session#printPage` : orientation, échelle, papier,
+          + marges, pages
+      detail
+          - Every field has the specification's default: `Portrait`, a scale of `1.0`, no
+          - background graphics, a US Letter `Page`, one-centimetre `Margin`s, shrinking to fit, and
+          - every page. `pageRanges` is the protocol's own textual form, such as `List(t"1-3",
+          - t"5")`, since a range there may be open-ended.
+          + Chaque champ a la valeur par défaut de la spécification : `Portrait`, une échelle de
+          + `1.0`, pas de graphismes d'arrière-plan, une `Page` US Letter, des `Margin` d'un
+          + centimètre, une réduction pour tenir dans la page, et toutes les pages. `pageRanges` est
+          + la forme textuelle propre au protocole, comme `List(t"1-3", t"5")`, puisqu'un intervalle
+          + peut y être ouvert.
+
+          ```scala fuel
+          typecheck
+          ##
+          import WebDriver.Session.{Print, Orientation, Margin, cm}
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.navigateTo(url"https://example.com/")
+
+              browser.printPage:
+                Print(orientation = Orientation.Landscape, margin = Margin.uniform(cm(0.5)))
+          ```
+      entry #orientation
+        info
+            - `Portrait` or `Landscape`
+            + `Portrait` ou `Landscape`
+      entry #scale
+        info
+            - the scale factor, from 0.1 to 2.0; `1.0` by default
+            + le facteur d'échelle, de 0.1 à 2.0 ; `1.0` par défaut
+      entry #background
+        info
+            - whether background colours and images are printed; `false` by default
+            + si les couleurs et images d'arrière-plan sont imprimées ; `false` par défaut
+      entry #page
+        info
+            - the paper size, as a `WebDriver.Session.Page`
+            + le format de papier, sous forme de `WebDriver.Session.Page`
+      entry #margin
+        info
+            - the margins, as a `WebDriver.Session.Margin`
+            + les marges, sous forme de `WebDriver.Session.Margin`
+      entry #shrinkToFit
+        info
+            - whether content is shrunk to fit the page width; `true` by default
+            + si le contenu est réduit pour tenir dans la largeur de la page ; `true` par défaut
+      entry #pageRanges
+        info
+            - the pages to print, as text such as `1-3` or `5`; every page when empty
+            + les pages à imprimer, sous forme de texte comme `1-3` ou `5` ; toutes les pages si
+            + vide
+    entry .Timeouts
+      info
+          - the three timeouts a session keeps, in milliseconds
+          + les trois délais que garde une session, en millisecondes
+      detail
+          - `implicit` is how long a find command retries before reporting `NoSuchElement`, and is
+          - how a script waits for a page to settle without sleeping; `pageLoad` bounds navigation
+          - and `script` bounds `WebDriver.Session#execute` and `WebDriver.Session#executeAsync`. An `Unset` field is left as the
+          - driver has it.
+          + `implicit` est la durée pendant laquelle une commande de recherche réessaie avant de
+          + signaler `NoSuchElement`, et c'est ainsi qu'un script attend qu'une page se stabilise
+          + sans dormir ; `pageLoad` borne la navigation et `script` borne
+          + `WebDriver.Session#execute` et `WebDriver.Session#executeAsync`. Un champ `Unset` est
+          + laissé tel que le pilote l'a.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
+              browser.timeouts().pageLoad
+          ```
+
+          - The implicit timeout covers find commands and nothing else: a button becoming enabled
+          - or a heading's text changing is waited for with `WebDriver.Session#awaitUntil`.
+          + Le délai implicite couvre les commandes de recherche et rien d'autre : un bouton qui
+          + devient actif ou le texte d'un titre qui change s'attendent avec
+          + `WebDriver.Session#awaitUntil`.
+      entry #implicit
+        info
+            - how long a find retries before giving up, or `Unset` to leave it as it is
+            + la durée pendant laquelle une recherche réessaie avant d'abandonner, ou `Unset` pour
+            + la laisser telle quelle
+      entry #pageLoad
+        info
+            - how long a navigation may take, or `Unset` to leave it as it is
+            + la durée que peut prendre une navigation, ou `Unset` pour la laisser telle quelle
+      entry #script
+        info
+            - how long a script may run, or `Unset` to leave it as it is
+            + la durée pendant laquelle un script peut s'exécuter, ou `Unset` pour la laisser telle
+            + quelle
+    entry .Action
+      info
+          - one step of a keyboard or pointer input sequence, for `WebDriver.Session#perform`
+          + une étape d'une séquence d'entrée au clavier ou au pointeur, pour
+          + `WebDriver.Session#perform`
+      detail
+          - The W3C `/actions` endpoint is the only way to send a modifier, a chord, a hover or a
+          - drag, and an `Action` is one step of it: a key going down or up, a pause, a pointer
+          - button pressed or released, or a pointer movement. A list of steps is performed against
+          - one input source, a `WebDriver.Session.Action.Source`.
+          + L'endpoint W3C `/actions` est le seul moyen d'envoyer un modificateur, un accord de
+          + touches, un survol ou un glisser, et une `Action` en est une étape : une touche enfoncée
+          + ou relâchée, une pause, un bouton de pointeur pressé ou relâché, ou un mouvement du
+          + pointeur. Une liste d'étapes s'effectue sur une source d'entrée, une
+          + `WebDriver.Session.Action.Source`.
+
+          ```scala fuel
+          typecheck
+          ##
+          import WebDriver.Session.Action
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              val target = browser.element(Name[DomId](t"menu"))
+
+              browser.perform
+                ( Action.Source.Pointer,
+                  List(Action.PointerMove(0, 0, origin = target), Action.Pause(500)) )
+          ```
+
+          - Plain text entry into a field is simpler and faster with the `value` extension on an
+          - element, and keypresses are simplest with `WebDriver.Session#press`, which builds the
+          - steps with `.steps`.
+          + La saisie de texte simple dans un champ est plus simple et plus rapide avec l'extension
+          + `value` d'un élément, et les frappes de touches sont plus simples avec
+          + `WebDriver.Session#press`, qui construit les étapes avec `.steps`.
+      entry .Source
+        info
+            - which input source a sequence of actions drives: `Key` or `Pointer`
+            + la source d'entrée que pilote une séquence d'actions : `Key` ou `Pointer`
+        detail
+            - One `perform` call drives one source. A "none" source also exists in the
+            - specification, but it can only pause, which either of these can do; two sources in
+            - lockstep need the assembled JSON passed to `WebDriver.Session#actions`.
+            + Un appel à `perform` pilote une source. Une source « none » existe aussi dans la
+            + spécification, mais elle ne sait que faire des pauses, ce que l'une ou l'autre de
+            + celles-ci sait faire ; deux sources agissant de concert exigent de passer le JSON
+            + assemblé à `WebDriver.Session#actions`.
+        entry #id
+          info
+              - the source's id in the sequence: `keyboard` or `pointer`
+              + l'id de la source dans la séquence : `keyboard` ou `pointer`
+        entry #kind
+          info
+              - the source's type: `key` or `pointer`
+              + le type de la source : `key` ou `pointer`
+      entry .LeftButton
+        info
+            - the left mouse button, `0`, as the specification numbers buttons
+            + le bouton gauche de la souris, `0`, selon la numérotation des boutons de la
+            + spécification
+      entry .MiddleButton
+        info
+            - the middle mouse button, `1` in the DOM's numbering
+            + le bouton du milieu de la souris, `1` dans la numérotation du DOM
+      entry .RightButton
+        info
+            - the right mouse button, `2` in the DOM's numbering, not `1` as one might guess
+            + le bouton droit de la souris, `2` dans la numérotation du DOM, et non `1` comme on
+            + pourrait le croire
+      entry .codepoint
+        info
+            - the character a `Keypress` types, or the private-use codepoint for a named key
+            + le caractère que tape une `Keypress`, ou le point de code à usage privé d'une touche
+            + nommée
+        detail
+            - A character key is itself; `Enter`, `Tab`, `Backspace`, `Escape`, the arrows, `Home`,
+            - `End`, `PageUp`, `PageDown`, `Insert`, `Delete` and `F1` to `F12` are the codepoints the
+            - specification assigns them in Unicode's private use area, from U+E000. A modifier on its
+            - own, a function key outside 1 to 12, or a terminal escape sequence is `Unset`.
+            + Une touche de caractère est ce caractère ; `Enter`, `Tab`, `Backspace`, `Escape`, les
+            + flèches, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete` et `F1` à `F12` sont
+            + les points de code que leur attribue la spécification dans la zone à usage privé
+            + d'Unicode, à partir de U+E000. Un modificateur seul, une touche de fonction hors de 1
+            + à 12, ou une séquence d'échappement de terminal vaut `Unset`.
+      entry .steps
+        info
+            - a `Keypress` as the key actions which produce it, modifiers held around it
+            + une `Keypress` sous forme des actions de touche qui la produisent, les modificateurs
+            + tenus autour
+        detail
+            - A modified keypress becomes its modifier pressed, the inner keypress struck, and the
+            - modifier released, nested to any depth, since the protocol has no command for "type
+            - this with control held". A keypress with no browser counterpart is no steps at all.
+            + Une frappe modifiée devient son modificateur enfoncé, la frappe intérieure tapée, puis
+            + le modificateur relâché, imbriqués à n'importe quelle profondeur, puisque le protocole
+            + n'a pas de commande pour « taper ceci avec Ctrl enfoncé ». Une frappe sans équivalent
+            + dans le navigateur ne donne aucune étape.
+
+            ```scala fuel
+            frame
+              label A named key
+              code
+                  WebDriver.Session.Action.steps(Keypress.Enter)
+                  // KeyDown(""), KeyUp("")
+            frame
+              label With Control held
+              code
+                  WebDriver.Session.Action.steps(Keypress.Ctrl('A'))
+                  // KeyDown(""), KeyDown("A"), KeyUp("A"), KeyUp("")
+            frame
+              label With Control and Shift held
+              code
+                  WebDriver.Session.Action.steps(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
+                  // KeyDown(""), KeyDown(""), KeyDown(""),
+                  // KeyUp(""), KeyUp(""), KeyUp("")
+            ##
+            ```
+      entry .encodable
+        info
+            - encodes an action as the specification's JSON, such as `{"type":"keyDown","value":"a"}`
+            + encode une action dans le JSON de la spécification, comme
+            + `{"type":"keyDown","value":"a"}`
+        detail
+            - Written by hand, since the discriminator is a `type` field with camel-cased values and
+            - each variant carries its own keys; a `PointerMove` with no origin is relative to the
+            - `viewport`.
+            + Écrit à la main, puisque le discriminant est un champ `type` aux valeurs en camelCase
+            + et que chaque variante porte ses propres clés ; un `PointerMove` sans origine est
+            + relatif au `viewport`.
+      entry .KeyDown
+        info
+            - presses a key, by the character or codepoint it types
+            + enfonce une touche, par le caractère ou le point de code qu'elle tape
+        entry #value
+          info
+              - the key, as a character or a private-use codepoint from `WebDriver.Session.Action.codepoint`
+              + la touche, sous forme de caractère ou de point de code à usage privé issu de
+              + `WebDriver.Session.Action.codepoint`
+      entry .KeyUp
+        info
+            - releases a key, by the character or codepoint it types
+            + relâche une touche, par le caractère ou le point de code qu'elle tape
+        entry #value
+          info
+              - the key, as a character or a private-use codepoint from `WebDriver.Session.Action.codepoint`
+              + la touche, sous forme de caractère ou de point de code à usage privé issu de
+              + `WebDriver.Session.Action.codepoint`
+      entry .Pause
+        info
+            - waits for a number of milliseconds before the next step
+            + attend un nombre de millisecondes avant l'étape suivante
+        entry #duration
+          info
+              - the pause, in milliseconds
+              + la pause, en millisecondes
+      entry .PointerDown
+        info
+            - presses a pointer button; the left one by default
+            + presse un bouton du pointeur ; le gauche par défaut
+        entry #button
+          info
+              - the button, numbered as the DOM does: `0` left, `1` middle, `2` right
+              + le bouton, numéroté comme dans le DOM : `0` gauche, `1` milieu, `2` droit
+      entry .PointerUp
+        info
+            - releases a pointer button; the left one by default
+            + relâche un bouton du pointeur ; le gauche par défaut
+        entry #button
+          info
+              - the button, numbered as the DOM does: `0` left, `1` middle, `2` right
+              + le bouton, numéroté comme dans le DOM : `0` gauche, `1` milieu, `2` droit
+      entry .PointerMove
+        info
+            - moves the pointer, relative to the viewport or to the centre of an element
+            + déplace le pointeur, relativement à la zone d'affichage ou au centre d'un élément
+        entry #x
+          info
+              - the horizontal offset, in CSS pixels
+              + le décalage horizontal, en pixels CSS
+        entry #y
+          info
+              - the vertical offset, in CSS pixels
+              + le décalage vertical, en pixels CSS
+        entry #duration
+          info
+              - how long the movement takes, in milliseconds; `100` by default
+              + la durée du mouvement, en millisecondes ; `100` par défaut
+        entry #origin
+          info
+              - the element whose centre the offsets are from, or `Unset` for the viewport
+              + l'élément depuis le centre duquel se mesurent les décalages, ou `Unset` pour la zone
+              + d'affichage
+    entry #sessionId
+      info
+          - the id the driver gave this session when it was created
+          + l'id que le pilote a donné à cette session lors de sa création
+    entry #capabilities
+      info
+          - what the driver agreed to, which may differ from what was asked for
+          + ce que le pilote a accepté, qui peut différer de ce qui a été demandé
+      detail
+          - The negotiated capabilities object from the driver's reply to `POST /session`: it names
+          - the browser and version which answered and says whether optional behaviour, such as
+          - `setWindowRect` or `acceptInsecureCerts`, is available. Vendor keys (`moz:*`, `goog:*`)
+          - are left as `Json`; `#browserName`, `#browserVersion` and `#platformName` read the common
+          - ones.
+          + L'objet de capacités négocié issu de la réponse du pilote à `POST /session` : il nomme
+          + le navigateur et la version qui ont répondu et indique si un comportement optionnel,
+          + comme `setWindowRect` ou `acceptInsecureCerts`, est disponible. Les clés propres aux
+          + éditeurs (`moz:*`, `goog:*`) restent en `Json` ; `#browserName`, `#browserVersion` et
+          + `#platformName` lisent les clés communes.
+    entry #browserName
+      info
+          - the name of the browser which answered, from the negotiated capabilities
+          + le nom du navigateur qui a répondu, d'après les capacités négociées
+    entry #browserVersion
+      info
+          - the version of the browser which answered, or `Unset` if the driver did not say
+          + la version du navigateur qui a répondu, ou `Unset` si le pilote ne l'a pas indiquée
+    entry #platformName
+      info
+          - the operating system the browser runs on, or `Unset` if the driver did not say
+          + le système d'exploitation sur lequel tourne le navigateur, ou `Unset` si le pilote ne
+          + l'a pas indiqué
+    entry #navigateTo
+      info
+          - loads a URL in the current window, and waits for it to load
+          + charge une URL dans la fenêtre courante, et attend qu'elle soit chargée
+      detail
+          - Takes an `HttpUrl`, such as the result of `url"https://…"`, or any URL type which is
+          - `Abstractable across Urls to Text`. The overload for `HttpUrl` exists because the
+          - interpolator's result has the singleton type `Url["https"]`, which the generic form,
+          - declared for `Url["http" | "https"]`, would reject.
+          + Prend une `HttpUrl`, comme le résultat de `url"https://…"`, ou tout type d'URL qui est
+          + `Abstractable across Urls to Text`. La surcharge pour `HttpUrl` existe parce que le
+          + résultat de l'interpolateur a le type singleton `Url["https"]`, que la forme générique,
+          + déclarée pour `Url["http" | "https"]`, rejetterait.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.navigateTo(url"https://example.com/")
+              browser.url[HttpUrl]()
+          ```
+    entry #url
+      info
+          - the current window's URL, as a URL type of the caller's choosing
+          + l'URL de la fenêtre courante, sous un type d'URL choisi par l'appelant
+      detail
+          - `browser.url[HttpUrl]()`, or any type `Instantiable across Urls from Text`.
+          + `browser.url[HttpUrl]()`, ou tout type `Instantiable across Urls from Text`.
+    entry #back
+      info
+          - goes back one page in the current window's history
+          + recule d'une page dans l'historique de la fenêtre courante
+    entry #forward
+      info
+          - goes forward one page in the current window's history
+          + avance d'une page dans l'historique de la fenêtre courante
+    entry #refresh
+      info
+          - reloads the current page
+          + recharge la page courante
+    entry #title
+      info
+          - the current page's title
+          + le titre de la page courante
+    entry #source
+      info
+          - the current page's markup, as the browser serialises its DOM
+          + le balisage de la page courante, tel que le navigateur sérialise son DOM
+      detail
+          - The DOM as it now stands, serialised, not the bytes the server sent: whatever the page's
+          - scripts have changed is included.
+          + Le DOM tel qu'il est à présent, sérialisé, et non les octets envoyés par le serveur :
+          + tout ce que les scripts de la page ont modifié y figure.
+    entry #screenshotData
+      info
+          - a PNG of the current viewport, or of one element, as raw bytes
+          + un PNG de la zone d'affichage courante, ou d'un élément, en octets bruts
+      detail
+          - `screenshotData()` captures the viewport and `screenshotData(element)` one element. The
+          - bytes are those the driver sent, decoded from Base64. The `screenshot` extension in the
+          - `tarantula.image` component decodes them further, into a `Raster in Png`.
+          + `screenshotData()` capture la zone d'affichage et `screenshotData(element)` un élément.
+          + Les octets sont ceux qu'a envoyés le pilote, décodés depuis Base64. L'extension
+          + `screenshot` du composant `tarantula.image` les décode davantage, en un `Raster in Png`.
+    entry #window
+      info
+          - the handle of the current window or tab
+          + la poignée de la fenêtre ou de l'onglet courant
+    entry #windows
+      info
+          - the handles of every open window and tab, in no particular order
+          + les poignées de chaque fenêtre et onglet ouverts, sans ordre particulier
+    entry #closeWindow
+      info
+          - closes the current window, returning the handles of those which remain
+          + ferme la fenêtre courante, en renvoyant les poignées de celles qui restent
+      detail
+          - Commands go to no window until `#switchTo` selects another; closing the last one ends the
+          - browser's session as far as the driver is concerned.
+          + Les commandes ne vont à aucune fenêtre tant que `#switchTo` n'en a pas sélectionné une
+          + autre ; fermer la dernière met fin à la session du navigateur du point de vue du pilote.
+    entry #switchTo
+      info
+          - makes another window or tab, by its handle, the target of every command
+          + fait d'une autre fenêtre ou d'un autre onglet, par sa poignée, la cible de chaque
+          + commande
+      detail
+          - Only the current window responds to commands, so a handle from `#newWindow` or `#windows`
+          - is passed here before the window can be used.
+          + Seule la fenêtre courante répond aux commandes ; une poignée issue de `#newWindow` ou de
+          + `#windows` est donc passée ici avant que la fenêtre puisse servir.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              val original = browser.window()
+              val tab = browser.newWindow()
+              browser.switchTo(tab)
+              browser.navigateTo(url"https://example.com/")
+              browser.closeWindow()
+              browser.switchTo(original)
+          ```
+    entry #newWindow
+      info
+          - opens a new tab, or a window, and returns its handle without switching to it
+          + ouvre un nouvel onglet, ou une fenêtre, et renvoie sa poignée sans y basculer
+      detail
+          - `newWindow()` opens a tab and `newWindow(tab = false)` a window. As the specification
+          - says, the current window is left where it was: pass the handle to `#switchTo` to use it.
+          + `newWindow()` ouvre un onglet et `newWindow(tab = false)` une fenêtre. Comme le dit la
+          + spécification, la fenêtre courante reste où elle était : passez la poignée à `#switchTo`
+          + pour l'utiliser.
+    entry #windowRect
+      info
+          - the current window's position and size, or moves and resizes it
+          + la position et la taille de la fenêtre courante, ou la déplace et la redimensionne
+      detail
+          - `windowRect()` reads the window's `WebDriver.Session.Rect`; `windowRect(rect)` asks for a
+          - new one, which a window manager may not grant in full, and which a headless browser may
+          - ignore.
+          + `windowRect()` lit le `WebDriver.Session.Rect` de la fenêtre ; `windowRect(rect)` en
+          + demande un nouveau, qu'un gestionnaire de fenêtres peut ne pas accorder entièrement, et
+          + qu'un navigateur headless peut ignorer.
+    entry #maximize
+      info
+          - maximises the current window, returning the geometry it actually took
+          + maximise la fenêtre courante, en renvoyant la géométrie qu'elle a réellement prise
+    entry #minimize
+      info
+          - minimises the current window, returning the geometry it actually took
+          + réduit la fenêtre courante, en renvoyant la géométrie qu'elle a réellement prise
+    entry #fullscreen
+      info
+          - makes the current window full-screen, returning the geometry it actually took
+          + met la fenêtre courante en plein écran, en renvoyant la géométrie qu'elle a réellement
+          + prise
+    entry #frame
+      info
+          - enters a frame, by its element or its index, as the target of every command
+          + entre dans un cadre, par son élément ou son indice, comme cible de chaque commande
+      detail
+          - Commands address the current browsing context, so entering a frame is a change of mode
+          - rather than an argument to each command. `#parentFrame` steps back out one level, and
+          - `#topFrame` returns to the top-level document from any depth. An absent frame raises
+          - `WebDriver.Error` with reason `NoSuchFrame`.
+          + Les commandes s'adressent au contexte de navigation courant ; entrer dans un cadre est
+          + donc un changement de mode plutôt qu'un argument de chaque commande. `#parentFrame`
+          + ressort d'un niveau, et `#topFrame` revient au document de premier niveau depuis
+          + n'importe quelle profondeur. Un cadre absent lève une `WebDriver.Error` de raison
+          + `NoSuchFrame`.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.frame(browser.element(Iframe))
+              browser.element(H1).innerText()
+              browser.topFrame()
+          ```
+    entry #parentFrame
+      info
+          - leaves the current frame for the one which contains it
+          + quitte le cadre courant pour celui qui le contient
+    entry #topFrame
+      info
+          - returns to the top-level document from a frame at any depth
+          + revient au document de premier niveau depuis un cadre à n'importe quelle profondeur
+      detail
+          - Sends an explicit `null` frame id, which the protocol distinguishes from an absent one.
+          + Envoie un id de cadre `null` explicite, que le protocole distingue d'un id absent.
+    entry #acceptAlert
+      info
+          - accepts the open alert, confirm or prompt, as clicking its OK button would
+          + accepte l'alerte, la confirmation ou l'invite ouverte, comme le ferait un clic sur son
+          + bouton OK
+      detail
+          - While a prompt is open every other command fails with `WebDriver.Error` reason
+          - `UnexpectedAlertOpen`, whose `WebDriver.Error#data` carries the prompt's text; with no prompt open this
+          - raises `NoSuchAlert`.
+          + Tant qu'une invite est ouverte, toute autre commande échoue avec une `WebDriver.Error`
+          + de raison `UnexpectedAlertOpen`, dont le `WebDriver.Error#data` porte le texte de
+          + l'invite ; sans invite ouverte, ceci lève `NoSuchAlert`.
+    entry #dismissAlert
+      info
+          - dismisses the open alert, confirm or prompt, as its Cancel button would
+          + rejette l'alerte, la confirmation ou l'invite ouverte, comme le ferait son bouton
+          + Annuler
+    entry #alertText
+      info
+          - the open prompt's message, or types an answer into it
+          + le message de l'invite ouverte, ou y tape une réponse
+      detail
+          - `alertText()` reads the message of the open alert, confirm or prompt; `alertText(text)`
+          - types into a `prompt` before `#acceptAlert` submits it.
+          + `alertText()` lit le message de l'alerte, de la confirmation ou de l'invite ouverte ;
+          + `alertText(text)` tape dans un `prompt` avant que `#acceptAlert` ne le soumette.
+    entry #timeouts
+      info
+          - the session's timeouts, or sets them
+          + les délais de la session, ou les définit
+      detail
+          - `timeouts()` reads the `WebDriver.Session.Timeouts` in force; `timeouts(timeouts)` sets
+          - those which are not `Unset`, leaving the rest as they were.
+          + `timeouts()` lit les `WebDriver.Session.Timeouts` en vigueur ; `timeouts(timeouts)`
+          + définit ceux qui ne sont pas `Unset`, en laissant les autres tels qu'ils étaient.
+    entry #cookies
+      info
+          - every cookie visible to the current page
+          + chaque cookie visible par la page courante
+      detail
+          - Each a telekinesis `Cookie.Value`, whose fields are the names the protocol uses. It has
+          - no `sameSite`, so that attribute is neither read nor set.
+          + Chacun est un `Cookie.Value` de telekinesis, dont les champs portent les noms qu'utilise
+          + le protocole. Il n'a pas de `sameSite` ; cet attribut n'est donc ni lu ni défini.
+    entry #cookie
+      info
+          - the cookie of the given name visible to the current page
+          + le cookie du nom donné visible par la page courante
+      detail
+          - Raises `WebDriver.Error` with reason `NoSuchCookie` if there is none.
+          + Lève une `WebDriver.Error` de raison `NoSuchCookie` s'il n'y en a aucun.
+    entry #addCookie
+      info
+          - sets a cookie on the current page's domain
+          + définit un cookie sur le domaine de la page courante
+      detail
+          - Takes a `Cookie.Value`. A cookie for another domain raises `WebDriver.Error` with reason
+          - `InvalidCookieDomain`, so navigate to the domain first. A cookie which needs a `sameSite`
+          - attribute can be set with `#execute` instead.
+          + Prend un `Cookie.Value`. Un cookie pour un autre domaine lève une `WebDriver.Error` de
+          + raison `InvalidCookieDomain` ; naviguez donc d'abord vers le domaine. Un cookie qui a
+          + besoin d'un attribut `sameSite` peut être défini avec `#execute` à la place.
+    entry #deleteCookie
+      info
+          - deletes the cookie of the given name
+          + supprime le cookie du nom donné
+    entry #deleteCookies
+      info
+          - deletes every cookie visible to the current page
+          + supprime chaque cookie visible par la page courante
+    entry #perform
+      info
+          - performs a sequence of `WebDriver.Session.Action`s on one input source
+          + effectue une séquence de `WebDriver.Session.Action` sur une source d'entrée
+      detail
+          - Sends the steps as a single sequence to the `/actions` endpoint, on the keyboard or the
+          - pointer source. Keys and buttons left held stay held until `#releaseActions`.
+          + Envoie les étapes en une seule séquence à l'endpoint `/actions`, sur la source clavier
+          + ou pointeur. Les touches et boutons laissés enfoncés le restent jusqu'à
+          + `#releaseActions`.
+
+          ```scala fuel
+          typecheck
+          ##
+          import WebDriver.Session.Action
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.perform
+                ( Action.Source.Pointer,
+                  List(Action.PointerMove(10, 10), Action.PointerDown(), Action.PointerUp()) )
+          ```
+    entry #actions
+      info
+          - sends an assembled `/actions` payload, for sources moving in lockstep
+          + envoie une charge utile `/actions` assemblée, pour des sources qui agissent de concert
+      detail
+          - The escape hatch beneath `#perform`, for the rare chord across keyboard and pointer: the
+          - `Json` is sent as the request body, `{"actions": […]}`, unchanged.
+          + L'échappatoire sous `#perform`, pour le rare accord entre clavier et pointeur : le
+          + `Json` est envoyé tel quel comme corps de la requête, `{"actions": […]}`.
+    entry #press
+      info
+          - types a sequence of keypresses, with their modifiers held around them
+          + tape une séquence de frappes, avec leurs modificateurs tenus autour
+      detail
+          - Each `Keypress` — a character, a named key such as `Keypress.Enter` or
+          - `Keypress.FunctionKey(3)`, or one wrapped in `Ctrl`, `Shift`, `Alt` or `Meta` — becomes
+          - the key actions of `WebDriver.Session.Action.steps`, all performed on the keyboard source
+          - in one request. Filling a field with plain text is better done with the `value`
+          - extension on an element: one request rather than several actions per character.
+          + Chaque `Keypress` — un caractère, une touche nommée comme `Keypress.Enter` ou
+          + `Keypress.FunctionKey(3)`, ou une frappe enveloppée dans `Ctrl`, `Shift`, `Alt` ou
+          + `Meta` — devient les actions de touche de `WebDriver.Session.Action.steps`, toutes
+          + effectuées sur la source clavier en une seule requête. Remplir un champ avec du texte
+          + simple se fait mieux avec l'extension `value` d'un élément : une requête plutôt que
+          + plusieurs actions par caractère.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.element(Name[DomId](t"query")).click()
+              browser.press(Keypress.Ctrl('A'), Keypress.Backspace, Keypress.Enter)
+          ```
+    entry #releaseActions
+      info
+          - releases every key and button left held, and clears the input state
+          + relâche chaque touche et bouton laissés enfoncés, et efface l'état d'entrée
+    entry #printPage
+      info
+          - the current page printed as a PDF, in raw bytes
+          + la page courante imprimée en PDF, en octets bruts
+      detail
+          - Takes `WebDriver.Session.Print` options, the specification's defaults when none are given.
+          - This is what the page would print as, not what is rendered: `#screenshotData` captures
+          - that. Not every driver implements it — Safari does not — and one which does not raises
+          - `WebDriver.Error` with reason `UnknownCommand` or `UnsupportedOperation`.
+          + Prend des options `WebDriver.Session.Print`, celles par défaut de la spécification si
+          + aucune n'est donnée. C'est ce que donnerait l'impression de la page, non ce qui est
+          + rendu : `#screenshotData` capture cela. Tous les pilotes ne l'implémentent pas — Safari
+          + non — et un pilote qui ne l'implémente pas lève une `WebDriver.Error` de raison
+          + `UnknownCommand` ou `UnsupportedOperation`.
+    entry #execute
+      info
+          - runs a JavaScript function body in the page and returns its result as `Json`
+          + exécute un corps de fonction JavaScript dans la page et renvoie son résultat en `Json`
+      detail
+          - The escape hatch for anything the protocol does not model. The script is a function body,
+          - so it uses `return`, and its arguments are `arguments[0]`, `arguments[1]` and so on: a
+          - `WebDriver.Element` passed as `element.in[Json]` arrives as its live DOM node, and an
+          - element returned comes back in the wire form. A script which throws raises
+          - `WebDriver.Error` with reason `JavascriptError`.
+          + L'échappatoire pour tout ce que le protocole ne modélise pas. Le script est un corps de
+          + fonction ; il utilise donc `return`, et ses arguments sont `arguments[0]`,
+          + `arguments[1]` et ainsi de suite : un `WebDriver.Element` passé sous la forme
+          + `element.in[Json]` arrive comme son nœud DOM vivant, et un élément renvoyé revient sous
+          + la forme de transmission. Un script qui lève une exception lève une `WebDriver.Error` de
+          + raison `JavascriptError`.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              val heading = browser.element(H1)
+              browser.execute(t"return arguments[0].offsetHeight", List(heading.in[Json])).as[Int]
+          ```
+    entry #executeAsync
+      info
+          - runs asynchronous JavaScript, returning the value it passes to its callback
+          + exécute du JavaScript asynchrone, en renvoyant la valeur qu'il passe à son callback
+      detail
+          - As `#execute`, but the script is given a callback as its last argument and the command
+          - completes when the script calls it; one which does not within the `script` timeout raises
+          - `WebDriver.Error` with reason `ScriptTimeout`.
+          + Comme `#execute`, mais le script reçoit un callback comme dernier argument et la
+          + commande se termine lorsque le script l'appelle ; un script qui ne le fait pas dans le
+          + délai `script` lève une `WebDriver.Error` de raison `ScriptTimeout`.
+    entry #element
+      info
+          - the one element a locator matches, at page scope or beneath an element or shadow root
+          + l'unique élément que désigne un localisateur, à l'échelle de la page ou sous un élément
+          + ou une racine shadow
+      detail
+          - `browser.element(H1)` asks the driver for the first match for any `Focusable` locator: an
+          - HTML tag, a `cls"…"` class list, a `Name[DomId]`, a `SelectorList`, an `XPath`, or `Text`
+          - as link text. Nothing matching raises `WebDriver.Error` with reason `NoSuchElement`, after
+          - the session's implicit timeout. The forms taking a `WebDriver.Element` or a
+          - `WebDriver.ShadowRoot` search beneath it, and are usually written through the `element`
+          - extension: `menu.element(Li)`.
+          + `browser.element(H1)` demande au pilote la première correspondance d'un localisateur
+          + `Focusable` quelconque : une balise HTML, une liste de classes `cls"…"`, un
+          + `Name[DomId]`, une `SelectorList`, un `XPath`, ou un `Text` comme texte de lien.
+          + L'absence de correspondance lève une `WebDriver.Error` de raison `NoSuchElement`, après
+          + le délai implicite de la session. Les formes qui prennent un `WebDriver.Element` ou une
+          + `WebDriver.ShadowRoot` cherchent sous celui-ci, et s'écrivent d'ordinaire par
+          + l'extension `element` : `menu.element(Li)`.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.element(Name[DomId](t"greeting")).innerText()
+              browser.element(unsafely(SelectorList.parse(t"nav li.active")))
+          ```
+    entry #elements
+      info
+          - every element a locator matches, at page scope or beneath an element or shadow root
+          + chaque élément que désigne un localisateur, à l'échelle de la page ou sous un élément ou
+          + une racine shadow
+      detail
+          - As `#element`, but returns every match in document order, and an empty list rather than
+          - an error for none. `browser \ Li` is the same at page scope.
+          + Comme `#element`, mais renvoie toutes les correspondances dans l'ordre du document, et
+          + une liste vide plutôt qu'une erreur s'il n'y en a aucune. `browser \ Li` fait la même
+          + chose à l'échelle de la page.
+    entry #\
+      info
+          - every element a locator matches at page scope, as `browser \ Li`
+          + chaque élément que désigne un localisateur à l'échelle de la page, comme `browser \ Li`
+      detail
+          - `#elements` by another name. Selection is `\` rather than `/`, since symbolism's generic
+          - `/`, which `soundness` exports, claims the name for every receiver. On the result, `\`
+          - again selects beneath each element found: `browser \ Ul \ Li`.
+          + `#elements` sous un autre nom. La sélection s'écrit `\` plutôt que `/`, puisque le `/`
+          + générique de symbolism, qu'exporte `soundness`, revendique ce nom pour tout receveur.
+          + Sur le résultat, `\` sélectionne à nouveau sous chaque élément trouvé :
+          + `browser \ Ul \ Li`.
+    entry #activeElement
+      info
+          - the element which has the focus
+          + l'élément qui a le focus
+    entry #awaitElements
+      info
+          - every match for a locator, polled until there is at least one
+          + toutes les correspondances d'un localisateur, interrogées jusqu'à ce qu'il y en ait au
+          + moins une
+      detail
+          - The protocol has no wait command beyond the implicit timeout for finds, so this polls
+          - `POST /elements` under the `Tenacity` in scope, which is the caller's choice of schedule,
+          - and raises `Tenacity.Error` when the policy gives up. It also needs a `Monitor`. It
+          - polls the plural endpoint deliberately: that reports absence as an empty list, where the
+          - singular one raises an error that, being routed to the session's own tactic, could not be
+          - caught here to drive a retry.
+          + Le protocole n'a pas de commande d'attente au-delà du délai implicite des recherches ;
+          + ceci interroge donc `POST /elements` sous la `Tenacity` dans la portée, qui est le
+          + calendrier choisi par l'appelant, et lève une `Tenacity.Error` lorsque la politique
+          + abandonne. Il faut aussi un `Monitor`. L'interrogation porte délibérément sur l'endpoint
+          + pluriel : celui-ci signale l'absence par une liste vide, alors que l'endpoint singulier
+          + lève une erreur qui, acheminée vers la tactique propre à la session, ne pourrait être
+          + interceptée ici pour déclencher un nouvel essai.
+
+          ```scala fuel
+          typecheck
+          ##
+          import retryTenacities.exponentialTenTimesTenacity
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.awaitElements(cls"result").length
+          ```
+    entry #awaitElement
+      info
+          - the first match for a locator, polled until there is one
+          + la première correspondance d'un localisateur, interrogée jusqu'à ce qu'il y en ait une
+      detail
+          - As `#awaitElements`, returning the first element found; needs a `Tenacity`, a `Monitor`
+          - and a `Tactic[Tenacity.Error]`.
+          + Comme `#awaitElements`, en renvoyant le premier élément trouvé ; il faut une `Tenacity`,
+          + un `Monitor` et une `Tactic[Tenacity.Error]`.
+    entry #awaitUntil
+      info
+          - polls a condition under the `Tenacity` in scope until it holds
+          + interroge une condition sous la `Tenacity` dans la portée jusqu'à ce qu'elle soit vraie
+      detail
+          - The general wait, for anything the caller can evaluate without raising: a title, a count
+          - of elements, an attribute, a cookie. The condition is re-evaluated at each attempt, and
+          - `Tenacity.Error` is raised when the policy gives up.
+          + L'attente générale, pour tout ce que l'appelant peut évaluer sans lever d'erreur : un
+          + titre, un nombre d'éléments, un attribut, un cookie. La condition est réévaluée à chaque
+          + tentative, et une `Tenacity.Error` est levée lorsque la politique abandonne.
+
+          ```scala fuel
+          typecheck
+          ##
+          import retryTenacities.exponentialTenTimesTenacity
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.element(Button).click()
+              browser.awaitUntil(browser.title() == t"Done")
+          ```
+    entry #shadowRoot
+      info
+          - the open shadow root an element hosts
+          + la racine shadow ouverte qu'héberge un élément
+      detail
+          - Usually written through the `shadowRoot` extension on the element. A closed or absent
+          - shadow root raises `WebDriver.Error` with reason `NoSuchShadowRoot`.
+          + S'écrit d'ordinaire par l'extension `shadowRoot` de l'élément. Une racine shadow fermée
+          + ou absente lève une `WebDriver.Error` de raison `NoSuchShadowRoot`.
+    entry #click
+      info
+          - clicks an element at its centre, scrolling it into view first
+          + clique sur un élément en son centre, en le faisant d'abord défiler dans la vue
+      detail
+          - Usually written through the `click` extension: `button.click()`. An element covered by
+          - another raises `WebDriver.Error` with reason `ElementClickIntercepted`, and one which
+          - cannot be clicked `ElementNotInteractable`.
+          + S'écrit d'ordinaire par l'extension `click` : `button.click()`. Un élément recouvert par
+          + un autre lève une `WebDriver.Error` de raison `ElementClickIntercepted`, et un élément
+          + sur lequel on ne peut cliquer, `ElementNotInteractable`.
+    entry #clear
+      info
+          - empties an editable element, such as an input or a text area
+          + vide un élément modifiable, comme un champ de saisie ou une zone de texte
+    entry #value
+      info
+          - types text into an element, as the keyboard would
+          + tape du texte dans un élément, comme le ferait le clavier
+      detail
+          - Usually written through the `value` extension: `field.value(t"search terms")`. Text is
+          - appended to what is already there; `#clear` it first to replace it.
+          + S'écrit d'ordinaire par l'extension `value` : `field.value(t"search terms")`. Le texte
+          + est ajouté à ce qui s'y trouve déjà ; appliquez d'abord `#clear` pour le remplacer.
+    entry #innerText
+      info
+          - an element's rendered text, by the `innerText` algorithm
+          + le texte rendu d'un élément, selon l'algorithme `innerText`
+      detail
+          - What a reader sees, with hidden text omitted and line breaks where the layout puts them,
+          - rather than the DOM's `textContent`. Named `innerText` rather than `text`, which is
+          - already an extension in the `soundness` umbrella.
+          + Ce que voit un lecteur, sans le texte masqué et avec des sauts de ligne là où la mise en
+          + page les place, plutôt que le `textContent` du DOM. Nommé `innerText` plutôt que `text`,
+          + qui est déjà une extension du package parapluie `soundness`.
+    entry #tagName
+      info
+          - an element's tag name, such as `h1`
+          + le nom de balise d'un élément, comme `h1`
+    entry #role
+      info
+          - an element's computed ARIA role, such as `button` or `heading`
+          + le rôle ARIA calculé d'un élément, comme `button` ou `heading`
+    entry #label
+      info
+          - an element's computed accessible name, as a screen reader would announce it
+          + le nom accessible calculé d'un élément, tel que l'annoncerait un lecteur d'écran
+    entry #enabled
+      info
+          - whether a form control is enabled
+          + si un contrôle de formulaire est actif
+    entry #selected
+      info
+          - whether a checkbox, radio button or option is selected
+          + si une case à cocher, un bouton radio ou une option est sélectionné
+    entry #attribute
+      info
+          - an attribute as the markup has it, or `Unset` if the element has none
+          + un attribut tel que le porte le balisage, ou `Unset` si l'élément n'en a pas
+      detail
+          - Differs from `#property` as soon as a script touches the node: the `value` attribute of
+          - an input is what the page was served with, its property what the field holds now.
+          + Diffère de `#property` dès qu'un script touche au nœud : l'attribut `value` d'un champ
+          + de saisie est celui avec lequel la page a été servie, sa propriété ce que contient le
+          + champ à présent.
+    entry #property
+      info
+          - a live DOM property of an element, or `Unset` if it has none
+          + une propriété DOM vivante d'un élément, ou `Unset` s'il n'en a pas
+    entry #css
+      info
+          - the computed value of a CSS property on an element, such as `color`
+          + la valeur calculée d'une propriété CSS d'un élément, comme `color`
+    entry #rect
+      info
+          - an element's bounding box, as a `WebDriver.Session.Rect` in CSS pixels
+          + le rectangle englobant d'un élément, sous forme de `WebDriver.Session.Rect` en pixels
+          + CSS
+    entry #displayed
+      info
+          - whether an element is displayed, by the specification's displayedness check
+          + si un élément est affiché, selon le test d'affichage de la spécification
+      detail
+          - The W3C specification dropped the JSON Wire Protocol's `displayed` command, so this runs
+          - the element's `getClientRects().length > 0` as a script, as every conforming client does.
+          + La spécification W3C a abandonné la commande `displayed` du JSON Wire Protocol ; ceci
+          + exécute donc `getClientRects().length > 0` sur l'élément sous forme de script, comme le
+          + fait tout client conforme.
+
+entry .browser
+  info
+      - the `WebDriver.Session` in scope, so that commands read as `browser.title()`
+      + la `WebDriver.Session` dans la portée, pour que les commandes se lisent `browser.title()`
+  detail
+      - Inside a `session` block the handle is a contextual value; `browser` names it, with its
+      - capture set kept as the session's own, so whatever it returns is confined to the same
+      - block. It is a method taking the session as a named contextual parameter, not a `summon`,
+      - which would mint a fresh capability rather than refer to the one the block owns.
+      + Dans un bloc `session`, la poignée est une valeur contextuelle ; `browser` la désigne, en
+      + gardant comme ensemble de captures celui de la session, de sorte que tout ce qu'il renvoie
+      + est confiné au même bloc. C'est une méthode qui prend la session comme paramètre contextuel
+      + nommé, et non un `summon`, qui créerait une nouvelle capacité plutôt que de désigner celle
+      + que possède le bloc.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          browser.navigateTo(url"https://example.com/")
+          browser.source().length
+      ```
+
+entry .click
+  info
+      - clicks an element at its centre, through the `WebDriver.Session` in scope
+      + clique sur un élément en son centre, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#click`. An element
+      - covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#click`. Un élément
+      + recouvert par un autre lève une `WebDriver.Error` de raison `ElementClickIntercepted`.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          browser.element(Button).click()
+      ```
+
+entry .clear
+  info
+      - empties an editable element, through the `WebDriver.Session` in scope
+      + vide un élément modifiable, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#clear`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#clear`.
+
+entry .innerText
+  info
+      - an element's rendered text, through the `WebDriver.Session` in scope
+      + le texte rendu d'un élément, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`: what a reader sees, by the `innerText` algorithm,
+      - rather than the DOM's `textContent`. It is not called `text`, since `text` is already an
+      - extension in the `soundness` umbrella.
+      + Une extension de `WebDriver.Element` : ce que voit un lecteur, selon l'algorithme
+      + `innerText`, plutôt que le `textContent` du DOM. Elle ne s'appelle pas `text`, puisque
+      + `text` est déjà une extension du package parapluie `soundness`.
+
+entry .tagName
+  info
+      - an element's tag name, such as `h1`, through the `WebDriver.Session` in scope
+      + le nom de balise d'un élément, comme `h1`, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#tagName`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#tagName`.
+
+entry .enabled
+  info
+      - whether a form control is enabled, through the `WebDriver.Session` in scope
+      + si un contrôle de formulaire est actif, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#enabled`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#enabled`.
+
+entry .selected
+  info
+      - whether a checkbox, radio button or option is selected
+      + si une case à cocher, un bouton radio ou une option est sélectionné
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#selected`; it needs
+      - the session in scope.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#selected` ; elle a
+      + besoin de la session dans la portée.
+
+entry .displayed
+  info
+      - whether an element is displayed, through the `WebDriver.Session` in scope
+      + si un élément est affiché, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`. The W3C protocol has no displayedness command, so
+      - `WebDriver.Session#displayed` evaluates one as a script.
+      + Une extension de `WebDriver.Element`. Le protocole W3C n'a pas de commande d'affichage ;
+      + `WebDriver.Session#displayed` en évalue donc un sous forme de script.
+
+entry .role
+  info
+      - an element's computed ARIA role, through the `WebDriver.Session` in scope
+      + le rôle ARIA calculé d'un élément, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#role`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#role`.
+
+entry .label
+  info
+      - an element's computed accessible name, through the `WebDriver.Session` in scope
+      + le nom accessible calculé d'un élément, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#label`: the name a
+      - screen reader would announce, from its text, its `aria-label` or its associated `<label>`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#label` : le nom
+      + qu'annoncerait un lecteur d'écran, tiré de son texte, de son `aria-label` ou du `<label>`
+      + qui lui est associé.
+
+      - The `soundness` umbrella also exports wisteria's `label`, the name of a field or case
+      - within a derivation, so under `import soundness.*` the two names collide and
+      - `element.label()` may not resolve; `browser.label(element)` reaches the same command
+      - without the extension.
+      + Le package parapluie `soundness` exporte aussi le `label` de wisteria, le nom d'un champ ou
+      + d'un cas dans une dérivation ; avec `import soundness.*`, les deux noms entrent donc en
+      + collision et `element.label()` peut ne pas se résoudre ; `browser.label(element)` atteint la
+      + même commande sans l'extension.
+
+entry .cssValue
+  info
+      - the computed value of a CSS property on an element, such as `color`
+      + la valeur calculée d'une propriété CSS d'un élément, comme `color`
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#css`; it needs the
+      - session in scope.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#css` ; elle a besoin
+      + de la session dans la portée.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          browser.element(H1).cssValue(t"font-size")
+      ```
+
+entry .shadowRoot
+  info
+      - the open shadow root an element hosts, through the `WebDriver.Session` in scope
+      + la racine shadow ouverte qu'héberge un élément, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, returning a `WebDriver.ShadowRoot` to search with `\`
+      - or `element`. A closed or absent root raises `WebDriver.Error` with reason
+      - `NoSuchShadowRoot`.
+      + Une extension de `WebDriver.Element`, qui renvoie une `WebDriver.ShadowRoot` dans laquelle
+      + chercher avec `\` ou `element`. Une racine fermée ou absente lève une `WebDriver.Error` de
+      + raison `NoSuchShadowRoot`.
+
+entry .rect
+  info
+      - an element's bounding box in CSS pixels, through the `WebDriver.Session` in scope
+      + le rectangle englobant d'un élément en pixels CSS, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, returning a `WebDriver.Session.Rect`.
+      + Une extension de `WebDriver.Element`, qui renvoie un `WebDriver.Session.Rect`.
+
+entry .value
+  info
+      - types text into an element, through the `WebDriver.Session` in scope
+      + tape du texte dans un élément, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#value`. The text is
+      - appended to what the field already holds, and is one request however long it is; named
+      - keys and chords need `WebDriver.Session#press`.
+      + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#value`. Le texte est
+      + ajouté à ce que contient déjà le champ, et tient en une requête quelle que soit sa
+      + longueur ; les touches nommées et les accords exigent `WebDriver.Session#press`.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          val field = browser.element(Name[DomId](t"query"))
+          field.clear()
+          field.value(t"search terms")
+          field.property(t"value")
+      ```
+
+entry .screenshotData
+  info
+      - a PNG of one element, as raw bytes, through the `WebDriver.Session` in scope
+      + un PNG d'un élément, en octets bruts, par la `WebDriver.Session` dans la portée
+  detail
+      - An extension on `WebDriver.Element`. The `screenshot` extension, in `tarantula.image`,
+      - decodes the same bytes into a `Raster in Png`.
+      + Une extension de `WebDriver.Element`. L'extension `screenshot`, dans `tarantula.image`,
+      + décode les mêmes octets en un `Raster in Png`.
+
+entry .attribute
+  info
+      - an element's attribute as the markup has it, or `Unset` if it has none
+      + l'attribut d'un élément tel que le porte le balisage, ou `Unset` s'il n'en a pas
+  detail
+      - An extension on `WebDriver.Element`, needing the session in scope. It differs from
+      - `property` once a script touches the node: an input's `value` attribute is what the page
+      - was served with, its `value` property what the field holds now.
+      + Une extension de `WebDriver.Element`, qui a besoin de la session dans la portée. Elle
+      + diffère de `property` dès qu'un script touche au nœud : l'attribut `value` d'un champ de
+      + saisie est celui avec lequel la page a été servie, sa propriété `value` ce que contient le
+      + champ à présent.
+
+entry .property
+  info
+      - a live DOM property of an element, or `Unset` if it has none
+      + une propriété DOM vivante d'un élément, ou `Unset` s'il n'en a pas
+  detail
+      - An extension on `WebDriver.Element`, needing the session in scope.
+      + Une extension de `WebDriver.Element`, qui a besoin de la session dans la portée.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          val box = browser.element(Name[DomId](t"agree"))
+          box.click()
+          (box.attribute(t"checked"), box.property(t"checked"))
+      ```
+
+entry .element
+  info
+      - the one element a locator matches beneath an element or a shadow root
+      + l'unique élément que désigne un localisateur sous un élément ou une racine shadow
+  detail
+      - An extension on `WebDriver.Element` and on `WebDriver.ShadowRoot`, taking any `Focusable`
+      - locator and needing the session in scope: `menu.element(Li)`. Nothing matching raises
+      - `WebDriver.Error` with reason `NoSuchElement`; `\` returns every match instead, and an
+      - empty list for none.
+      + Une extension de `WebDriver.Element` et de `WebDriver.ShadowRoot`, qui prend un localisateur
+      + `Focusable` quelconque et a besoin de la session dans la portée : `menu.element(Li)`.
+      + L'absence de correspondance lève une `WebDriver.Error` de raison `NoSuchElement` ; `\`
+      + renvoie plutôt toutes les correspondances, et une liste vide s'il n'y en a aucune.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          val form = browser.element(Form)
+          form.element(Name[DomId](t"submit")).click()
+      ```
+
+entry .screenshot
+  info
+      - a screenshot of the viewport or of one element, decoded as a `Raster in Png`
+      + une capture d'écran de la zone d'affichage ou d'un élément, décodée en un `Raster in Png`
+  detail
+      - An extension on `WebDriver.Session` and on `WebDriver.Element`, in the `tarantula.image`
+      - component, which keeps the image codec out of browser automation: `screenshotData`,
+      - decoded by hallucination's PNG codec. A screenshot the codec cannot read is thrown, as it
+      - would mean the driver sent something which was not a PNG.
+      + Une extension de `WebDriver.Session` et de `WebDriver.Element`, dans le composant
+      + `tarantula.image`, qui tient le codec d'image hors de l'automatisation du navigateur :
+      + `screenshotData`, décodé par le codec PNG de hallucination. Une capture d'écran que le codec
+      + ne peut lire est levée comme exception, car cela signifierait que le pilote a envoyé autre
+      + chose qu'un PNG.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Chrome.headless.session:
+          browser.navigateTo(url"https://example.com/")
+          val page: Raster in Png = browser.screenshot()
+          val heading: Raster in Png = browser.element(H1).screenshot()
+      ```

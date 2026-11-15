@@ -1,0 +1,981 @@
+tel 1.0
+
+base polyvinyl
+import soundness
+
+info
+    - records and named tuples whose fields are typed from a schema read as the code compiles
+    + enregistrements et tuples nommés dont les champs sont typés à partir d'un schéma lu à la
+    + compilation du code
+detail
+    - _Polyvinyl_ is the type-provider machinery beneath Soundness's schema-driven records. A
+    - **specification** — an object extending `Specification` — reads a schema (a JSON Schema, an
+    - XML Schema, a TEL schema document, a database's table definitions) while the calling code
+    - compiles, and its `record` and `tuple` methods turn raw data into a value whose fields have
+    - the exact types the schema declares. `record.name` typechecks as `Text` and `record.nope`
+    - does not compile, with no Scala class written to mirror the schema.
+    + _Polyvinyl_ est la mécanique de fournisseur de types sous-jacente aux enregistrements
+    + pilotés par schéma de Soundness. Une **spécification** — un objet qui étend
+    + `Specification` — lit un schéma (un JSON Schema, un XML Schema, un document de schéma TEL,
+    + les définitions de tables d'une base de données) pendant la compilation du code appelant,
+    + et ses méthodes `record` et `tuple` transforment des données brutes en une valeur dont les
+    + champs ont exactement les types que déclare le schéma. `record.name` est bien typé en tant
+    + que `Text` et `record.nope` ne compile pas, sans qu'aucune classe Scala ne soit écrite pour
+    + refléter le schéma.
+
+    - The pieces fit together like this:
+    + Les pièces s'assemblent ainsi :
+
+    - - a `Specification` supplies the schema as an ordered list of `Specification.Member`s, and a handful of
+    -   primitives over the underlying data: `access`, `absent` and `repeated`, and for richer
+    -   formats `entries`, `kind`, `elements` and `pairs`;
+    - - each `Specification.Member` is a `Specification.Member.Value` (a scalar, named by a type label), a `Specification.Member.Record` of
+    -   further members, or a `Specification.Member.Union` of alternatives, and carries a `Specification.Multiplicity`: `One`,
+    -   `Optional`, `Many` or `Keyed`;
+    - - an `Intensional` instance for each type label says what Scala type a scalar becomes and
+    -   how one value of it is read; an `Intensional.Fallible` reading can fail;
+    - - the `record` and `tuple` macros put these together into a structural refinement of
+    -   `Record`, read lazily, or a named tuple, read eagerly.
+    + - une `Specification` fournit le schéma sous forme de liste ordonnée de
+    +   `Specification.Member`, et quelques primitives sur les données sous-jacentes :
+    +   `access`, `absent` et `repeated`, et pour les formats plus riches `entries`, `kind`,
+    +   `elements` et `pairs` ;
+    + - chaque `Specification.Member` est un `Specification.Member.Value` (un scalaire, désigné
+    +   par une étiquette de type), un `Specification.Member.Record` d'autres membres, ou un
+    +   `Specification.Member.Union` d'alternatives, et porte une `Specification.Multiplicity` :
+    +   `One`, `Optional`, `Many` ou `Keyed` ;
+    + - une instance `Intensional` pour chaque étiquette de type indique en quel type Scala se
+    +   transforme un scalaire et comment une valeur de celui-ci est lue ; une lecture
+    +   `Intensional.Fallible` peut échouer ;
+    + - les macros `record` et `tuple` assemblent le tout en un raffinement structurel de
+    +   `Record`, lu paresseusement, ou en un tuple nommé, lu de façon stricte.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+
+    object Catalogue extends Json.Provider(t"""{
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string" }, "age": { "type": "integer" } }
+    }""".read[Json])
+
+    val input = t"""{"name": "Bicycle"}""".read[Json]
+    val record = Catalogue.record(input)
+    record.name   // Text
+    record.age    // Optional[Int]
+    record.nope   // does not compile
+    ```
+
+    - The concrete specifications live with their formats: `Json.Provider` in jacinta,
+    - `Xml.Provider` in xylophone, `Tel.Provider` in stratiform, and the OpenAPI client's
+    - `record()`. Polyvinyl itself knows nothing of any format.
+    + Les spécifications concrètes résident avec leurs formats : `Json.Provider` dans jacinta,
+    + `Xml.Provider` dans xylophone, `Tel.Provider` dans stratiform, et le `record()` du client
+    + OpenAPI. Polyvinyl lui-même ne connaît aucun format.
+
+    - **Compilation order.** The macros evaluate the specification object while the call site
+    - compiles, loading its class through the compiler's classpath, so the object must be
+    - compiled before the code which calls its `record` or `tuple`: declare it in a file of its
+    - own. The compiler orders separate files of one run for this, suspending the calling unit
+    - until the object has been emitted; one file holding both cannot be ordered.
+    + **Ordre de compilation.** Les macros évaluent l'objet de spécification pendant la
+    + compilation du site d'appel, en chargeant sa classe par le classpath du compilateur ;
+    + l'objet doit donc être compilé avant le code qui appelle son `record` ou son `tuple` :
+    + déclarez-le dans un fichier à part. Le compilateur ordonne pour cela les fichiers distincts
+    + d'une même exécution, en suspendant l'unité appelante jusqu'à ce que l'objet ait été émis ;
+    + un fichier unique contenant les deux ne peut pas être ordonné.
+
+    - The library has one published source set, `polyvinyl.core`, which compiles for every
+    - platform and is exported in full to the `soundness` umbrella: `Intensional`, `Specification.Member`,
+    - `Specification.Multiplicity`, `Record` and `Specification`. A second component, `polyvinyl.fixtures`, is
+    - internal and unpublished: it holds the test specifications (`TreeProvider` over a small
+    - `Tree` document type, and objects such as `PersonRecords` and `ShapeRecords`) which the
+    - tests need compiled before their call sites, and is a compact worked example of a complete
+    - `Specification`.
+    + La bibliothèque a un seul ensemble de sources publié, `polyvinyl.core`, qui se compile pour
+    + toutes les plateformes et est entièrement exporté dans le package parapluie `soundness` :
+    + `Intensional`, `Specification.Member`, `Specification.Multiplicity`, `Record` et
+    + `Specification`. Un second composant, `polyvinyl.fixtures`, est interne et non publié : il
+    + contient les spécifications de test (`TreeProvider` sur un petit type de document `Tree`,
+    + et des objets tels que `PersonRecords` et `ShapeRecords`) que les tests ont besoin de voir
+    + compilées avant leurs sites d'appel, et constitue un exemple compact et complet de
+    + `Specification`.
+
+    - A record is a `Selectable`, so code which reads records should not be capture-checked:
+    - under capture checking, selecting a `Text` field of a refined `Record` is currently rejected.
+    + Un enregistrement est un `Selectable` ; le code qui lit des enregistrements ne devrait donc
+    + pas être soumis au contrôle des captures : sous contrôle des captures, la sélection d'un
+    + champ `Text` d'un `Record` raffiné est actuellement rejetée.
+
+refer polyvinyl.Specification
+refer polyvinyl.Record
+refer polyvinyl.Specification.Member
+refer polyvinyl.Intensional
+refer polyvinyl.Specification.Multiplicity
+
+entry .Specification
+  info
+      - a type provider over one document format: a schema as `#fields`, and reading primitives
+      + un fournisseur de types sur un format de document : un schéma sous forme de `#fields`, et
+      + des primitives de lecture
+  detail
+      - A `Specification` is the object a schema-driven record type comes from. A concrete one is
+      - an `object` (usually extending a format's provider class, such as `Json.Provider`) which
+      - states:
+      + Une `Specification` est l'objet d'où provient un type d'enregistrement piloté par schéma.
+      + Une spécification concrète est un `object` (étendant généralement la classe de fournisseur
+      + d'un format, comme `Json.Provider`) qui indique :
+
+      - - `#Origin`, the type of the raw data (`Json`, `Xml`, `Tel`), and `#Form`, a marker type
+      -   under which its `Intensional` instances are found;
+      - - `#Failure`, the error any field may fail with as it is read;
+      - - `#fields`, the schema, as an ordered list of named `Member`s;
+      - - the primitives `#access`, `#absent` and `#repeated`, and where the format has them
+      -   `#required`, `#entries`, `#kind`, `#elements`, `#pairs` and `#unoffered`.
+      + - `#Origin`, le type des données brutes (`Json`, `Xml`, `Tel`), et `#Form`, un type
+      +   marqueur sous lequel se trouvent ses instances `Intensional` ;
+      + - `#Failure`, l'erreur par laquelle tout champ peut échouer lors de sa lecture ;
+      + - `#fields`, le schéma, sous forme de liste ordonnée de `Member` nommés ;
+      + - les primitives `#access`, `#absent` et `#repeated`, et, lorsque le format en dispose,
+      +   `#required`, `#entries`, `#kind`, `#elements`, `#pairs` et `#unoffered`.
+
+      - It then has `#record` and `#tuple` with nothing more declared: both are `transparent
+      - inline`, expanded where they are called with the specification object as the receiver,
+      - so the macro finds that object by its type, loads it, and evaluates its `#fields`. The
+      - object must therefore be compiled before the calling code, in a file of its own.
+      + Elle dispose alors de `#record` et `#tuple` sans rien déclarer de plus : les deux sont
+      + `transparent
+      + inline`, développées là où elles sont appelées avec l'objet de spécification comme
+      + receveur ; la macro trouve donc cet objet par son type, le charge et évalue ses
+      + `#fields`. L'objet doit par conséquent être compilé avant le code appelant, dans un
+      + fichier à part.
+
+      ```scala
+      import soundness.*
+
+      enum Tree:
+        case Leaf(text: Text)
+        case Node(children: Map[Text, Tree])
+        case Absent
+
+      case class TreeError(reason: Text)(using Diagnostics)
+      extends Error(m"the tree could not be read because $reason")
+
+      abstract class TreeProvider(fields0: List[(Text, Specification.Member)]) extends Specification:
+        type Origin = Tree
+        type Form = TreeProvider
+        type Failure = TreeError
+
+        def fields(using Tactic[Specification.Error]): List[(Text, Specification.Member)] = fields0
+
+        def access(name: Text, tree: Tree)(using Tactic[TreeError]): Tree = tree match
+          case Tree.Node(children) if Map.defines(children, name) => Map.at(children, name)
+          case _                                                  => Tree.Absent
+
+        def absent(tree: Tree): Boolean = tree == Tree.Absent
+
+        def repeated(name: Text, tree: Tree)(using Tactic[TreeError]): List[Tree] =
+          access(name, tree) match
+            case Tree.Absent => List()
+            case other       => List(other)
+
+      object TreeProvider:
+        private def leaf(tree: Tree): Text = tree match
+          case Tree.Leaf(text) => text
+          case _               => t""
+
+        given text: ("text" is Intensional in TreeProvider from Tree to Text) = Intensional(leaf(_))
+      ```
+
+      - With that, `object People extends TreeProvider(List(t"name" -> Member.Value(t"text")))`,
+      - in another file, makes `People.record(tree).name` a field of type `Text`. The
+      - `Intensional` instances live in the companion of the `#Form` type, so they are found with
+      - no import.
+      + Ainsi, `object People extends TreeProvider(List(t"name" -> Member.Value(t"text")))`, dans
+      + un autre fichier, fait de `People.record(tree).name` un champ de type `Text`. Les instances
+      + `Intensional` résident dans le compagnon du type `#Form` ; elles sont donc trouvées sans
+      + import.
+
+      - A schema which cannot be read is raised from `#fields` as a `Specification.Error`, which
+      - the macros report as a compile error at the call site, as they do a field whose type label
+      - has no `Intensional` instance.
+      + Un schéma illisible est levé depuis `#fields` sous forme de `Specification.Error`, que les
+      + macros signalent comme une erreur de compilation au site d'appel, comme elles le font pour
+      + un champ dont l'étiquette de type n'a pas d'instance `Intensional`.
+  refer polyvinyl.Specification.Member
+  refer polyvinyl.Intensional
+  refer polyvinyl.Record
+  entry .Error
+    info
+        - a schema which could not be read: reported as a compile error where `record` or `tuple` is called
+        + un schéma qui n'a pas pu être lu : signalé comme une erreur de compilation là où `record`
+        + ou `tuple` est appelé
+    detail
+        - _the specification could not be read because `detail`_. Raised by a specification's
+        - `#fields` when its schema cannot be parsed or composed — a malformed document, a
+        - reference which does not resolve. The `record` and `tuple` macros read the fields under
+        - a tactic which halts compilation, so the error appears as a compile error at the call
+        - site rather than at runtime.
+        + _the specification could not be read because `detail`_. Levée par les `#fields` d'une
+        + spécification lorsque son schéma ne peut être analysé ou composé — un document malformé,
+        + une référence qui ne se résout pas. Les macros `record` et `tuple` lisent les champs sous
+        + une tactique qui arrête la compilation ; l'erreur apparaît donc comme une erreur de
+        + compilation au site d'appel plutôt qu'à l'exécution.
+    entry #detail
+      info
+          - what was wrong with the schema
+          + ce qui n'allait pas dans le schéma
+  entry .Raising
+    info
+        - a specification reading from `origin` in `form`, whose fields fail with `failure`
+        + une spécification qui lit depuis `origin` dans `form`, dont les champs échouent avec
+        + `failure`
+    detail
+        - `Specification.Raising[form, origin, failure]` is `(Specification in form from origin) {
+        - type Failure = failure }`: the type of a specification object as a macro refers to it,
+        - used by `.recordExpansion` and `.tupleExpansion`.
+        + `Specification.Raising[form, origin, failure]` est `(Specification in form from origin) {
+        + type Failure = failure }` : le type d'un objet de spécification tel qu'une macro y fait
+        + référence, utilisé par `.recordExpansion` et `.tupleExpansion`.
+  entry .record
+    info
+        - the macro implementation behind `Specification#record`
+        + l'implémentation macro derrière `Specification#record`
+    detail
+        - Not called directly: `#record` on a specification object splices this, which locates the
+        - object from its singleton type, evaluates its `#fields`, and builds the refined `Record`
+        - type and the transform its fields are read by. It halts with _record and tuple can only be
+        - called on a specification object_ when the receiver is not an object.
+        + Pas appelée directement : `#record` sur un objet de spécification y fait un splice ; elle
+        + localise l'objet à partir de son type singleton, évalue ses `#fields`, et construit le
+        + type `Record` raffiné ainsi que la transformation par laquelle ses champs sont lus. Elle
+        + s'arrête avec _record and tuple can only be called on a specification object_ lorsque le
+        + receveur n'est pas un objet.
+  entry .tuple
+    info
+        - the macro implementation behind `Specification#tuple`
+        + l'implémentation macro derrière `Specification#tuple`
+    detail
+        - Not called directly: `#tuple` on a specification object splices this. It builds the
+        - named-tuple type and the code which reads every field at once, and halts with _the
+        - tuple's fields may raise `Failure`, but no Tactic for it is in scope_ when no
+        - `Tactic[Failure]` is found at the call site.
+        + Pas appelée directement : `#tuple` sur un objet de spécification y fait un splice. Elle
+        + construit le type de tuple nommé et le code qui lit tous les champs d'un coup, et s'arrête
+        + avec _the
+        + tuple's fields may raise `Failure`, but no Tactic for it is in scope_ lorsqu'aucune
+        + `Tactic[Failure]` n'est trouvée au site d'appel.
+  entry .recordExpansion
+    info
+        - a refined `Record` type and its transform, from an explicit field list
+        + un type `Record` raffiné et sa transformation, à partir d'une liste explicite de champs
+    detail
+        - For a macro of another library which already has the fields of a part of a document in
+        - hand — the response schema within an OpenAPI document, say — and a specification object
+        - supplying only the format's primitives and `Intensional` instances. It returns the
+        - refined `Record` type and the transform to pass to `#build`. Runs in a macro, under
+        - `Quotes`.
+        + Pour une macro d'une autre bibliothèque qui a déjà sous la main les champs d'une partie
+        + d'un document — le schéma de réponse dans un document OpenAPI, par exemple — et un objet
+        + de spécification ne fournissant que les primitives du format et les instances
+        + `Intensional`. Elle renvoie le type `Record` raffiné et la transformation à passer à
+        + `#build`. S'exécute dans une macro, sous `Quotes`.
+  entry .tupleExpansion
+    info
+        - a named-tuple type and the function which builds it, from an explicit field list
+        + un type de tuple nommé et la fonction qui le construit, à partir d'une liste explicite de
+        + champs
+    detail
+        - As `.recordExpansion`, for the named-tuple form: it returns the named-tuple type and the
+        - code reading a value of the origin type into it. Runs in a macro, under `Quotes`.
+        + Comme `.recordExpansion`, pour la forme tuple nommé : elle renvoie le type de tuple nommé
+        + et le code qui y lit une valeur du type d'origine. S'exécute dans une macro, sous
+        + `Quotes`.
+  entry #Origin
+    info
+        - the type of the raw data the specification reads, such as `Json` or `Xml`
+        + le type des données brutes que lit la spécification, comme `Json` ou `Xml`
+  entry #Form
+    info
+        - the marker type under which the specification's `Intensional` instances are found
+        + le type marqueur sous lequel se trouvent les instances `Intensional` de la spécification
+    detail
+        - An instance for the type label `"text"` is a `"text" is Intensional in Form from Origin
+        - to Text`. Usually `Form` is the provider class itself, so the instances live in its
+        - companion and are found through implicit scope.
+        + Une instance pour l'étiquette de type `"text"` est un `"text" is Intensional in Form from
+        + Origin
+        + to Text`. Généralement, `Form` est la classe de fournisseur elle-même ; les instances
+        + résident donc dans son compagnon et sont trouvées par la portée implicite.
+  entry #Failure
+    info
+        - the error every field may fail with as it is read
+        + l'erreur par laquelle tout champ peut échouer lors de sa lecture
+    detail
+        - A required value which is absent, a value of the wrong kind, a value which breaks the
+        - schema's constraints. A record's field is typed `Record.Field[result, Failure]`, so each
+        - access needs a `Tactic[Failure]`, and a caller can gather every problem in a document
+        - under one tactic (with `validate` and `track`, a `venture` per field). Every
+        - `Intensional.Fallible` instance a specification uses must raise `Failure` or a subtype.
+        + Une valeur requise absente, une valeur du mauvais genre, une valeur qui enfreint les
+        + contraintes du schéma. Le champ d'un enregistrement est typé
+        + `Record.Field[result, Failure]` ; chaque accès requiert donc une `Tactic[Failure]`, et un
+        + appelant peut rassembler tous les problèmes d'un document sous une même tactique (avec
+        + `validate` et `track`, un `venture` par champ). Chaque instance `Intensional.Fallible`
+        + qu'utilise une spécification doit lever `Failure` ou un sous-type.
+  entry #fields
+    info
+        - the schema: the record's fields in order, each a name and a `Member`
+        + le schéma : les champs de l'enregistrement dans l'ordre, chacun un nom et un `Member`
+    detail
+        - Evaluated by the macros while the call site compiles. A record's members are unordered,
+        - but a named tuple's elements follow this order. A schema which cannot be read raises
+        - `Specification.Error`, which becomes a compile error.
+        + Évalué par les macros pendant la compilation du site d'appel. Les membres d'un
+        + enregistrement ne sont pas ordonnés, mais les éléments d'un tuple nommé suivent cet ordre.
+        + Un schéma illisible lève `Specification.Error`, qui devient une erreur de compilation.
+  entry #access
+    info
+        - the value of a named field within a value, or a sentinel for a missing field
+        + la valeur d'un champ nommé dans une valeur, ou une sentinelle pour un champ manquant
+    detail
+        - The primitive every `Multiplicity.One` and `Multiplicity.Optional` field is fetched with:
+        - a JSON object's property, an XML element's child with the field's label. A missing field
+        - is not an error here; it is a value for which `#absent` is true.
+        + La primitive par laquelle est récupéré chaque champ `Multiplicity.One` et
+        + `Multiplicity.Optional` : la propriété d'un objet JSON, l'enfant d'un élément XML portant
+        + l'étiquette du champ. Un champ manquant n'est pas une erreur ici ; c'est une valeur pour
+        + laquelle `#absent` est vrai.
+  entry #absent
+    info
+        - whether a value `#access` returned stands for a missing field
+        + si une valeur renvoyée par `#access` représente un champ manquant
+    detail
+        - An `Optional` field is `Unset` where this is true.
+        + Un champ `Optional` vaut `Unset` là où ceci est vrai.
+  entry #repeated
+    info
+        - every value of a field which carries any number of them, in document order
+        + toutes les valeurs d'un champ qui en porte un nombre quelconque, dans l'ordre du document
+    detail
+        - The primitive behind `Multiplicity.Many`: the elements of a JSON array, or every sibling
+        - with the field's keyword in a format which repeats a field. An absent field has none.
+        + La primitive derrière `Multiplicity.Many` : les éléments d'un tableau JSON, ou chaque
+        + frère portant le mot-clé du champ dans un format qui répète un champ. Un champ absent n'en
+        + a aucune.
+  entry #required
+    info
+        - the value of a field which must be present, failing where the format says so
+        + la valeur d'un champ qui doit être présent, échouant là où le format le prévoit
+    detail
+        - Applied to a field read under `Multiplicity.One`. By default it returns the value as it
+        - is, and the field's `Intensional` instance meets the absent value; a specification
+        - overrides it to raise its `#Failure` for a missing required field.
+        + Appliquée à un champ lu sous `Multiplicity.One`. Par défaut, elle renvoie la valeur telle
+        + quelle, et l'instance `Intensional` du champ rencontre la valeur absente ; une
+        + spécification la redéfinit pour lever son `#Failure` en cas de champ requis manquant.
+  entry #entries
+    info
+        - a keyed field's values by name, for `Multiplicity.Keyed`
+        + les valeurs d'un champ à clés, par nom, pour `Multiplicity.Keyed`
+    detail
+        - A format with dictionaries overrides this; by default it panics with _this specification
+        - has no keyed fields_, so a keyed member is only usable where it is overridden.
+        + Un format doté de dictionnaires la redéfinit ; par défaut, elle panique avec _this
+        + specification
+        + has no keyed fields_ ; un membre à clés n'est donc utilisable que là où elle est
+        + redéfinie.
+  entry #kind
+    info
+        - the kind of a value, by which a `Member.Union` chooses its alternative
+        + le genre d'une valeur, par lequel un `Member.Union` choisit son alternative
+    detail
+        - `t"leaf"`, `t"node"`, `t"string"`, `t"array"`: whatever names the specification gives
+        - the shapes its values can take, matching the kinds its unions' alternatives are keyed by.
+        - By default it panics with _this specification has no unions_.
+        + `t"leaf"`, `t"node"`, `t"string"`, `t"array"` : les noms que la spécification donne aux
+        + formes que peuvent prendre ses valeurs, correspondant aux genres qui servent de clés aux
+        + alternatives de ses unions. Par défaut, elle panique avec _this specification has no
+        + unions_.
+  entry #elements
+    info
+        - the elements of a value which is itself a sequence, for a `Many` alternative of a union
+        + les éléments d'une valeur qui est elle-même une séquence, pour une alternative `Many`
+        + d'une union
+    detail
+        - By default it panics with _this specification has no unions_.
+        + Par défaut, elle panique avec _this specification has no unions_.
+  entry #pairs
+    info
+        - the named values within a value which is itself a dictionary, for a `Keyed` alternative
+        + les valeurs nommées d'une valeur qui est elle-même un dictionnaire, pour une alternative
+        + `Keyed`
+    detail
+        - By default it panics with _this specification has no unions_.
+        + Par défaut, elle panique avec _this specification has no unions_.
+  entry #unoffered
+    info
+        - fails for a value of a union whose kind is none its alternatives offer
+        + échoue pour une valeur d'une union dont le genre ne correspond à aucune des alternatives
+        + proposées
+    detail
+        - Receives the value's kind and the kinds offered. A specification overrides it to raise
+        - its `#Failure`; by default it panics with _the value's kind, `kind`, is none the union
+        - offers_.
+        + Reçoit le genre de la valeur et les genres proposés. Une spécification la redéfinit pour
+        + lever son `#Failure` ; par défaut, elle panique avec _the value's kind, `kind`, is none
+        + the union offers_.
+  entry #Context
+    info
+        - what the members of a record are read in, for a specification whose source is not in its values
+        + ce dans quoi sont lus les membres d'un enregistrement, pour une spécification dont la
+        + source ne se trouve pas dans ses valeurs
+    detail
+        - An open file, say, which a record only says where to look in. A record made by
+        - `Specification.recordWith` asks for a context wherever a member is selected, as well as
+        - a `Tactic`, and passes it to `#accessWith`, `#repeatedWith`, `#entriesWith` and `#series`.
+        - The context is tracked wherever it is passed, so the type named need not say that it is
+        - a capability, and may be one. A specification without a context leaves it undefined.
+        + Un fichier ouvert, par exemple, dont un enregistrement indique seulement où regarder. Un
+        + enregistrement créé par `Specification.recordWith` demande un contexte partout où un
+        + membre est sélectionné, ainsi qu'une `Tactic`, et le transmet à `#accessWith`,
+        + `#repeatedWith`, `#entriesWith` et `#series`. Le contexte est suivi partout où il est
+        + transmis ; le type désigné n'a donc pas besoin de dire qu'il s'agit d'une capacité, et
+        + peut en être une. Une spécification sans contexte le laisse indéfini.
+  entry #accessWith
+    info
+        - `#access`, in a context
+        + `#access`, dans un contexte
+    detail
+        - What a record made by `recordWith` fetches a field with. By default it is `#access`.
+        + Ce par quoi un enregistrement créé par `recordWith` récupère un champ. Par défaut,
+        + `#access`.
+  entry #repeatedWith
+    info
+        - `#repeated`, in a context
+        + `#repeated`, dans un contexte
+  entry #entriesWith
+    info
+        - `#entries`, in a context
+        + `#entries`, dans un contexte
+  entry #Series
+    info
+        - the collection a member of multiplicity `Series` reads as
+        + la collection sous laquelle est lu un membre de multiplicité `Series`
+    detail
+        - A type of the specification's own, of the context a record was made with and of the
+        - type of an element.
+        + Un type propre à la spécification, fonction du contexte avec lequel un enregistrement a
+        + été créé et du type d'un élément.
+  entry #series
+    info
+        - makes the collection of a `Series` member, from a function which reads one element
+        + crée la collection d'un membre `Series`, à partir d'une fonction qui lit un élément
+    detail
+        - The function is applied to a value, a context and a tactic, and is what the macro would
+        - have applied to each element of a `Many` member. A collection keeps it and reads an
+        - element when it is asked for one, in whatever context it is then given. By default it
+        - panics with _this specification has no series_.
+        + La fonction est appliquée à une valeur, un contexte et une tactique, et c'est ce que la
+        + macro aurait appliqué à chaque élément d'un membre `Many`. Une collection la conserve et
+        + lit un élément lorsqu'on le lui demande, dans le contexte qui lui est alors donné. Par
+        + défaut, elle panique avec _this specification has no series_.
+  entry #build
+    info
+        - wraps a value and a field transform as a `Record`
+        + enveloppe une valeur et une transformation de champs sous forme de `Record`
+    detail
+        - Called by the generated code for each record and nested record; by default
+        - `Record(data, transform)`. The transform is a pure function, since a record retains it.
+        + Appelée par le code généré pour chaque enregistrement et enregistrement imbriqué ; par
+        + défaut `Record(data, transform)`. La transformation est une fonction pure, puisqu'un
+        + enregistrement la retient.
+  entry #record
+    info
+        - a lazily-read record over a value, refined with one typed member per field
+        + un enregistrement lu paresseusement sur une valeur, raffiné d'un membre typé par champ
+    detail
+        - `spec.record(value)` is declared to return `Record`, but being `transparent inline` its
+        - call has a structural refinement of it: for a schema of three fields,
+        - `Record { def age: Record.Field[Int, Failure]; def name: Record.Field[Text, Failure];
+        - def employed: Record.Field[Boolean, Failure] }`. A field which is not in the schema does
+        - not compile.
+        + `spec.record(value)` est déclaré comme renvoyant `Record`, mais, étant
+        + `transparent inline`, son appel en a un raffinement structurel : pour un schéma de trois
+        + champs,
+        + `Record { def age: Record.Field[Int, Failure]; def name: Record.Field[Text, Failure];
+        + def employed: Record.Field[Boolean, Failure] }`. Un champ absent du schéma ne compile pas.
+
+        - A record holds the raw value and reads a field each time it is selected, so a
+        - malformed field is noticed only when it is read, and a field read twice is converted
+        - twice. Each field access fails through the `Tactic[Failure]` in scope where the field is
+        - selected.
+        + Un enregistrement conserve la valeur brute et lit un champ chaque fois qu'il est
+        + sélectionné ; un champ malformé n'est donc remarqué que lorsqu'il est lu, et un champ lu
+        + deux fois est converti deux fois. Chaque accès à un champ échoue par la `Tactic[Failure]`
+        + dans la portée là où le champ est sélectionné.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+
+        // `Catalogue` is a `Json.Provider` object, declared in a file of its own
+        val record = Catalogue.record(t"""{"name": "Bicycle"}""".read[Json])
+        val name: Text = record.name
+        ```
+
+        - Nested `Member.Record`s become nested records, `Many` members `List`s, `Optional`
+        - members `Optional`s and `Keyed` members `Map[Text, _]`s.
+        + Les `Member.Record` imbriqués deviennent des enregistrements imbriqués, les membres `Many`
+        + des `List`, les membres `Optional` des `Optional` et les membres `Keyed` des
+        + `Map[Text, _]`.
+  entry #tuple
+    info
+        - an eagerly-read named tuple over a value, one element per field in schema order
+        + un tuple nommé lu de façon stricte sur une valeur, un élément par champ dans l'ordre du
+        + schéma
+    detail
+        - `spec.tuple(value)` reads every field at once, when the tuple is built: a malformed field
+        - fails the construction whether or not it is ever used, so the elements have their plain
+        - types (`Int`, not `Record.Field[Int, Failure]`) and a `Tactic[Failure]` must be in scope
+        - at the call, which does not compile without one.
+        + `spec.tuple(value)` lit tous les champs d'un coup, lors de la construction du tuple : un
+        + champ malformé fait échouer la construction, qu'il soit utilisé ou non ; les éléments ont
+        + donc leurs types simples (`Int`, et non `Record.Field[Int, Failure]`) et une
+        + `Tactic[Failure]` doit être dans la portée lors de l'appel, qui ne compile pas sans elle.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+
+        // `Catalogue` is a `Json.Provider` object, declared in a file of its own
+        val tuple = Catalogue.tuple(t"""{"name": "Bicycle"}""".read[Json])
+        tuple.name                // Text
+        val (name, age) = tuple   // in the schema's order
+        ```
+
+        - A nested record member becomes a nested named tuple, and the record alternative of a
+        - union a nested tuple too.
+        + Un membre enregistrement imbriqué devient un tuple nommé imbriqué, et l'alternative
+        + enregistrement d'une union devient elle aussi un tuple imbriqué.
+
+  entry .Member
+    info
+        - one field of a specification's schema: a scalar, a nested record, or a union
+        + un champ du schéma d'une spécification : un scalaire, un enregistrement imbriqué ou une
+        + union
+    detail
+        - A specification's `#fields` are a list of named `Member`s, in the order a named tuple's
+        - elements follow. There are three kinds:
+        + Les `#fields` d'une spécification sont une liste de `Member` nommés, dans l'ordre que
+        + suivent les éléments d'un tuple nommé. Il en existe trois genres :
+
+        - - `Member.Value(fieldType, params, multiplicity)`: a scalar, read by the `Intensional`
+        -   instance for the label `fieldType` (`t"text"`, `t"integer"`), which receives `params`
+        -   (a bound, a pattern) verbatim;
+        - - `Member.Record(fields, multiplicity)`: a nested record of further members, read from
+        -   the field's own value by the same specification;
+        - - `Member.Union(alternatives, multiplicity)`: alternatives, each keyed by the kind of value
+        -   (as `Specification#kind` reports it) which selects it, read as the Scala union of their
+        -   types.
+        + - `Member.Value(fieldType, params, multiplicity)` : un scalaire, lu par l'instance
+        +   `Intensional` de l'étiquette `fieldType` (`t"text"`, `t"integer"`), qui reçoit `params`
+        +   (une borne, un motif) tels quels ;
+        + - `Member.Record(fields, multiplicity)` : un enregistrement imbriqué d'autres membres, lu
+        +   depuis la valeur propre du champ par la même spécification ;
+        + - `Member.Union(alternatives, multiplicity)` : des alternatives, chacune associée au genre
+        +   de valeur (tel que le signale `Specification#kind`) qui la sélectionne, lues comme
+        +   l'union Scala de leurs types.
+
+        - Each carries a `Multiplicity`, `One` by default, set with `#optional`, `#many` and
+        - `#keyed`.
+        + Chacun porte une `Multiplicity`, `One` par défaut, définie avec `#optional`, `#many` et
+        + `#keyed`.
+
+        ```scala fuel
+        alternative One
+          code
+              t"tags" -> Specification.Member.Value(t"text")   // record.tags: Text
+        alternative Optional
+          code
+              t"tags" -> Specification.Member.Value(t"text").optional   // record.tags: Optional[Text]
+        alternative Many
+          code
+              t"tags" -> Specification.Member.Value(t"text").many   // record.tags: List[Text]
+        alternative Keyed
+          code
+              t"tags" -> Specification.Member.Value(t"text").keyed   // record.tags: Map[Text, Text]
+        alternative Union
+          code
+              t"tags" -> Specification.Member.Union(List(
+                t"leaf"  -> Specification.Member.Value(t"text"),
+                t"items" -> Specification.Member.Value(t"text").many))   // record.tags: Text | List[Text]
+        ##
+        ```
+
+        - A union's alternative may carry its own multiplicity, so a union of one alternative nests
+        - one multiplicity inside another (`List[List[Text]]`); a `Member` on its own carries only
+        - one.
+        + L'alternative d'une union peut porter sa propre multiplicité ; une union à une seule
+        + alternative imbrique donc une multiplicité dans une autre (`List[List[Text]]`) ; un
+        + `Member` seul n'en porte qu'une.
+    refer polyvinyl.Specification.Multiplicity
+    refer polyvinyl.Specification
+    entry .Value
+      info
+          - a scalar field, read by the `Intensional` instance for its type label
+          + un champ scalaire, lu par l'instance `Intensional` de son étiquette de type
+      entry #fieldType
+        info
+            - the type label, such as `t"text"`, by which the field's `Intensional` instance is found
+            + l'étiquette de type, comme `t"text"`, par laquelle est trouvée l'instance
+            + `Intensional` du champ
+        detail
+            - Instances are keyed by the exact label: `t"Text"` does not find the instance for
+            - `"text"`, and a label with no instance is a compile error, _could not find an
+            - Intensional instance for the field `name` with type `label`_.
+            + Les instances sont indexées par l'étiquette exacte : `t"Text"` ne trouve pas
+            + l'instance de `"text"`, et une étiquette sans instance est une erreur de compilation,
+            + _could not find an Intensional instance for the field `name` with type `label`_.
+      entry #params
+        info
+            - the member's parameters, passed verbatim to its instance
+            + les paramètres du membre, transmis tels quels à son instance
+        detail
+            - Such as a bound or a pattern, for an instance made with `Intensional.parametric`.
+            + Comme une borne ou un motif, pour une instance créée avec `Intensional.parametric`.
+      entry #multiplicity
+        info
+            - how many values the field carries
+            + combien de valeurs porte le champ
+    entry .Record
+      info
+          - a nested record of further members
+          + un enregistrement imbriqué d'autres membres
+      entry #fields
+        info
+            - the nested record's fields, in order
+            + les champs de l'enregistrement imbriqué, dans l'ordre
+      entry #multiplicity
+        info
+            - how many nested records the field carries
+            + combien d'enregistrements imbriqués porte le champ
+    entry .Union
+      info
+          - a field whose value may take any of several shapes, chosen by its kind
+          + un champ dont la valeur peut prendre plusieurs formes, choisie par son genre
+      detail
+          - Each alternative is keyed by the kind (`Specification#kind`) of value which selects it,
+          - and the field reads as the union of the alternatives' types (`Text | List[Text]`). A
+          - value whose kind no alternative offers is passed to `Specification#unoffered`. In a
+          - tuple, a record alternative becomes a nested named tuple.
+          + Chaque alternative est associée au genre (`Specification#kind`) de valeur qui la
+          + sélectionne, et le champ se lit comme l'union des types des alternatives
+          + (`Text | List[Text]`). Une valeur dont aucune alternative ne propose le genre est
+          + transmise à `Specification#unoffered`. Dans un tuple, une alternative enregistrement
+          + devient un tuple nommé imbriqué.
+      entry #alternatives
+        info
+            - each alternative, keyed by the kind of value which selects it
+            + chaque alternative, associée au genre de valeur qui la sélectionne
+      entry #multiplicity
+        info
+            - how many values the field carries
+            + combien de valeurs porte le champ
+    entry #multiplicity
+      info
+          - how many values the field carries
+          + combien de valeurs porte le champ
+    entry #of
+      info
+          - this member with another multiplicity
+          + ce membre avec une autre multiplicité
+    entry #optional
+      info
+          - this member read as `Optional`, `Unset` where the value is absent
+          + ce membre lu comme `Optional`, `Unset` là où la valeur est absente
+    entry #many
+      info
+          - this member read as a `List` of any number of values
+          + ce membre lu comme une `List` d'un nombre quelconque de valeurs
+    entry #keyed
+      info
+          - this member read as a `Map[Text, _]` of values each under a name
+          + ce membre lu comme une `Map[Text, _]` de valeurs chacune sous un nom
+    entry #series
+      info
+          - this member read as the specification's own collection, element by element
+          + ce membre lu comme la collection propre à la spécification, élément par élément
+  entry .Multiplicity
+    info
+        - how many values a field carries: one, at most one, any number, or any number by name
+        + combien de valeurs porte un champ : une, au plus une, un nombre quelconque, ou un nombre
+        + quelconque par nom
+    detail
+        - `One` reads exactly one value, through `Specification#access` and `Specification#required`;
+        - `Optional` reads at most one, as an `Optional` which is `Unset` where `Specification#absent`
+        - is true; `Many` reads any number, as a `List`, through `Specification#repeated`; and `Keyed`
+        - reads any number each under a name, as a `Map[Text, _]`, through `Specification#entries`.
+        - `Series` reads any number as a collection of the specification's own, its `#Series`, made
+        - by `Specification#series`, which reads an element only when it is asked for one; it is
+        - for a specification which is read in a `#Context`.
+        + `One` lit exactement une valeur, au moyen de `Specification#access` et
+        + `Specification#required` ; `Optional` en lit au plus une, sous forme d'un `Optional` qui
+        + vaut `Unset` là où `Specification#absent` est vrai ; `Many` en lit un nombre quelconque,
+        + sous forme de `List`, au moyen de `Specification#repeated` ; et `Keyed` en lit un nombre
+        + quelconque, chacune sous un nom, sous forme de `Map[Text, _]`, au moyen de
+        + `Specification#entries`. `Series` en lit un nombre quelconque sous forme d'une collection
+        + propre à la spécification, son `#Series`, créée par `Specification#series`, qui ne lit un
+        + élément que lorsqu'on le lui demande ; elle sert à une spécification lue dans un
+        + `#Context`.
+
+        - The macro applies the multiplicity itself, so an `Intensional` instance describes a single
+        - value only, and a specification says nothing more about optionality or repetition. A
+        - `Member` takes one with `#of`, or `#optional`, `#many` and `#keyed`.
+        + La macro applique elle-même la multiplicité ; une instance `Intensional` ne décrit donc
+        + qu'une seule valeur, et une spécification n'en dit pas davantage sur l'optionnalité ou la
+        + répétition. Un `Member` en prend une avec `#of`, ou `#optional`, `#many` et `#keyed`.
+
+entry .Record
+  info
+      - a value whose fields are typed by a specification, read lazily from its underlying data
+      + une valeur dont les champs sont typés par une spécification, lue paresseusement depuis ses
+      + données sous-jacentes
+  detail
+      - A `Record` is a `Selectable` over a raw value (its `#recordData`) and a function from a
+      - field's name to the field's reading (its `#recordAccess`). It is not built by hand: a
+      - specification's `record` method returns a structural refinement of `Record from Origin`
+      - with one member per schema field, typed `Record.Field[result, Failure]`, so a selected
+      - field has the schema's type and is read through the caller's `Tactic`.
+      + Un `Record` est un `Selectable` sur une valeur brute (son `#recordData`) et une fonction
+      + qui va du nom d'un champ à la lecture de ce champ (son `#recordAccess`). On ne le construit
+      + pas à la main : la méthode `record` d'une spécification renvoie un raffinement structurel
+      + de `Record from Origin` avec un membre par champ du schéma, typé
+      + `Record.Field[result, Failure]` ; un champ sélectionné a donc le type du schéma et est lu
+      + au moyen de la `Tactic` de l'appelant.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      // `Catalogue` is a `Json.Provider` object, declared in a file of its own
+      val record = Catalogue.record(t"""{"name": "Bicycle"}""".read[Json])
+      record.name    // Text
+      record.data    // the Json it was read from
+      ```
+
+      - Its own members have deliberately unusual names (`recordData`, `recordAccess`) so that a
+      - schema may declare almost any field name; the raw data is reached with the extension
+      - `.data`, which a schema field named `data` takes precedence over. A schema field named
+      - like a method of `java.lang.Object` (`notify`, `toString`) cannot be reached by selection,
+      - only by `#selectDynamic`.
+      + Ses propres membres ont des noms délibérément inhabituels (`recordData`, `recordAccess`)
+      + afin qu'un schéma puisse déclarer presque n'importe quel nom de champ ; on atteint les
+      + données brutes avec l'extension `.data`, sur laquelle l'emporte un champ de schéma nommé
+      + `data`. Un champ de schéma portant le nom d'une méthode de `java.lang.Object` (`notify`,
+      + `toString`) ne peut pas être atteint par sélection, seulement par `#selectDynamic`.
+  refer polyvinyl.Specification
+  entry .Field
+    info
+        - the type of a record's field: its value, read under the `Tactic` of the code reading it
+        + le type du champ d'un enregistrement : sa valeur, lue sous la `Tactic` du code qui le lit
+    detail
+        - `Record.Field[result, failure]` is the pure context function `Tactic[failure]^ ?->
+        - result`, applied wherever the field is selected, as `result raises failure` would be. Being
+        - pure, a type which mentions a record — an error carrying one as its payload — captures
+        - nothing.
+        + `Record.Field[result, failure]` est la fonction contextuelle pure `Tactic[failure]^ ?->
+        + result`, appliquée partout où le champ est sélectionné, comme le serait
+        + `result raises failure`. Étant pure, un type qui mentionne un enregistrement — une erreur
+        + qui en porte un comme charge utile — ne capture rien.
+  entry .apply
+    info
+        - a record over a value and a field transform
+        + un enregistrement sur une valeur et une transformation de champs
+    detail
+        - `Record(data, access)`: the generated code's way of building a record, which
+        - `Specification#build` calls. The accessor is a pure function, since the record retains it.
+        + `Record(data, access)` : la façon dont le code généré construit un enregistrement, appelée
+        + par `Specification#build`. L'accesseur est une fonction pure, puisque l'enregistrement le
+        + retient.
+  entry .data
+    info
+        - the record's underlying data, typed as the specification's `Origin`
+        + les données sous-jacentes de l'enregistrement, typées comme l'`Origin` de la spécification
+    detail
+        - An extension rather than a member, so that a schema may declare a field called `data`,
+        - which then takes precedence: a refinement's member is selected before an extension is
+        - tried.
+        + Une extension plutôt qu'un membre, afin qu'un schéma puisse déclarer un champ appelé
+        + `data`, qui l'emporte alors : le membre d'un raffinement est sélectionné avant qu'une
+        + extension ne soit essayée.
+  entry #recordData
+    info
+        - the raw value the record reads its fields from
+        + la valeur brute depuis laquelle l'enregistrement lit ses champs
+  entry #recordAccess
+    info
+        - the function from a field's name and the record's data to the field's reading
+        + la fonction qui va du nom d'un champ et des données de l'enregistrement à la lecture de ce
+        + champ
+  entry #selectDynamic
+    info
+        - reads a field by name, as the refined record's field selections do
+        + lit un champ par son nom, comme le font les sélections de champs de l'enregistrement
+        + raffiné
+    detail
+        - The name arrives JVM-encoded (`street$minusaddress` for `street-address`) and is decoded
+        - before it is looked up. The result is the field's reading, a context function over the
+        - specification's `Tactic[Failure]`, which a refined field type applies at the call site;
+        - called by name, the caller casts and applies it. A name which is not a field panics with
+        - _the record has no field named `field`_.
+        + Le nom arrive encodé à la manière de la JVM (`street$minusaddress` pour `street-address`)
+        + et est décodé avant d'être recherché. Le résultat est la lecture du champ, une fonction
+        + contextuelle sur la `Tactic[Failure]` de la spécification, qu'un type de champ raffiné
+        + applique au site d'appel ; appelée par son nom, c'est l'appelant qui la caste et
+        + l'applique. Un nom qui n'est pas un champ panique avec _the record has no field named
+        + `field`_.
+
+entry .Intensional
+  info
+      - how a scalar type label is read: the Scala type it becomes, and how one value is read
+      + comment est lue une étiquette de type scalaire : le type Scala qu'elle devient, et comment
+      + une valeur est lue
+  detail
+      - A specification declares one instance for each scalar type label its schemas can name. A
+      - `"text" is Intensional in Form from Origin to Text` reads a `Specification.Member.Value(t"text")` as
+      - `Text` from a value of the specification's `Origin`; the `Form` is the specification's
+      - marker type, so the instances are given in its companion and found with no import.
+      + Une spécification déclare une instance pour chaque étiquette de type scalaire que ses
+      + schémas peuvent nommer. Un `"text" is Intensional in Form from Origin to Text` lit un
+      + `Specification.Member.Value(t"text")` sous forme de `Text` depuis une valeur de l'`Origin`
+      + de la spécification ; le `Form` est le type marqueur de la spécification ; les instances
+      + sont donc données dans son compagnon et trouvées sans import.
+
+      ```scala
+      import soundness.*
+
+      trait Form
+
+      object Form:
+        given text: ("text" is Intensional in Form from Text to Text) = Intensional(identity)
+        given length: ("length" is Intensional in Form from Text to Int) = Intensional(_.s.length)
+
+        given params: ("params" is Intensional in Form from Text to List[Text]) =
+          Intensional.parametric: (text, params) => params
+      ```
+
+      - An instance reads one value: the member's `Specification.Multiplicity` is applied by the macro around
+      - it. A reading which can fail is an `Intensional.Fallible` instead, typically made with
+      - `Intensional.Reading`. An instance retains its accessor, so it captures whatever the
+      - accessor does; one over a pure function is itself pure.
+      + Une instance lit une valeur : la `Specification.Multiplicity` du membre est appliquée
+      + autour d'elle par la macro. Une lecture qui peut échouer est plutôt un
+      + `Intensional.Fallible`, généralement créé avec `Intensional.Reading`. Une instance retient
+      + son accesseur ; elle capture donc tout ce que capture l'accesseur ; une instance sur une
+      + fonction pure est elle-même pure.
+  refer polyvinyl.Specification
+  refer polyvinyl.Specification.Member
+  entry .Fallible
+    info
+        - an `Intensional` whose reading can fail, through the `Tactic` for its `Error`
+        + un `Intensional` dont la lecture peut échouer, au moyen de la `Tactic` de son `Error`
+    detail
+        - A reading which can fail — a value of the wrong kind, one outside its bounds, a string
+        - which does not match its pattern — is a `Fallible`, whose `#transform` takes a
+        - `Tactic[Error]`. In a record, the field is read under the `Tactic` of the code which
+        - selects it; in a tuple, under the one where the tuple is built.
+        + Une lecture qui peut échouer — une valeur du mauvais genre, une valeur hors de ses bornes,
+        + une chaîne qui ne correspond pas à son motif — est un `Fallible`, dont le `#transform`
+        + prend une `Tactic[Error]`. Dans un enregistrement, le champ est lu sous la `Tactic` du
+        + code qui le sélectionne ; dans un tuple, sous celle de l'endroit où le tuple est
+        + construit.
+
+        - The instance's `Error` must be the specification's `Failure` or a subtype, so that every
+        - field fails in one way; an instance raising anything else is a compile error, _the
+        - instance for `label` raises `error`, not the specification's `failure`_. Fallibility is
+        - declared here, rather than as a `raises` result, because under capture checking a
+        - `raises` result cannot implement an abstract method.
+        + L'`Error` de l'instance doit être la `Failure` de la spécification ou un sous-type, de
+        + sorte que chaque champ échoue d'une même façon ; une instance qui lève autre chose est une
+        + erreur de compilation, _the
+        + instance for `label` raises `error`, not the specification's `failure`_. La faillibilité
+        + est déclarée ici, plutôt que sous forme de résultat `raises`, car sous contrôle des
+        + captures un résultat `raises` ne peut pas implémenter une méthode abstraite.
+    entry #Self
+      info
+          - the type label this instance reads
+          + l'étiquette de type que lit cette instance
+    entry #Error
+      info
+          - the error the reading may raise
+          + l'erreur que la lecture peut lever
+    entry #transform
+      info
+          - reads one value, with the member's parameters, raising through the `Tactic`
+          + lit une valeur, avec les paramètres du membre, en levant au moyen de la `Tactic`
+  entry .Reading
+    info
+        - a `Fallible` instance over a pure function of the value, its parameters and the `Tactic`
+        + une instance `Fallible` sur une fonction pure de la valeur, de ses paramètres et de la
+        + `Tactic`
+    detail
+        - `Intensional.Reading[label, form, origin, result, error]` is a class, so a format may
+        - declare each of its fallible readers as a given of a class type: a given typed with the
+        - refined `Fallible` would be a field capturing `any`, making the object holding it a
+        - capability.
+        + `Intensional.Reading[label, form, origin, result, error]` est une classe ; un format peut
+        + donc déclarer chacun de ses lecteurs faillibles comme un given d'un type classe : un given
+        + typé avec le `Fallible` raffiné serait un champ capturant `any`, faisant de l'objet qui le
+        + contient une capacité.
+
+        ```scala
+        import soundness.*
+
+        case class TreeError(reason: Text)(using Diagnostics)
+        extends Error(m"the tree could not be read because $reason")
+
+        trait Form
+
+        object Form:
+          given number: Intensional.Reading["number", Form, Text, Int, TreeError] =
+            Intensional.Reading: (text, params) =>
+              text.s.toIntOption.getOrElse(abort(TreeError(t"not a number")))
+        ```
+  entry .apply
+    info
+        - an instance from a function of the value alone
+        + une instance à partir d'une fonction de la seule valeur
+    detail
+        - `Intensional(accessor)` makes an instance which ignores the member's parameters. Its
+        - label, form, origin and result types come from the expected type of the given it
+        - defines.
+        + `Intensional(accessor)` crée une instance qui ignore les paramètres du membre. Ses types
+        + d'étiquette, de forme, d'origine et de résultat proviennent du type attendu du given
+        + qu'elle définit.
+  entry .parametric
+    info
+        - an instance from a function of the value and the member's parameters
+        + une instance à partir d'une fonction de la valeur et des paramètres du membre
+    detail
+        - For a type label whose reading depends on its parameters, such as a bounded integer or a
+        - pattern: the function receives the `Specification.Member.Value`'s `params` verbatim.
+        + Pour une étiquette de type dont la lecture dépend de ses paramètres, comme un entier borné
+        + ou un motif : la fonction reçoit tels quels les `params` du `Specification.Member.Value`.
+  entry #Self
+    info
+        - the type label this instance reads, a literal `String` type such as `"text"`
+        + l'étiquette de type que lit cette instance, un type `String` littéral comme `"text"`
+  entry #transform
+    info
+        - reads one value of the origin type, with the member's parameters
+        + lit une valeur du type d'origine, avec les paramètres du membre

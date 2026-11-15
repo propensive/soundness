@@ -1,0 +1,2595 @@
+tel 1.0
+
+base contingency
+import soundness
+
+info
+    - error handling as a choice at the call site: `raises` in the type, a `Tactic` in scope
+    + le traitement des erreurs comme un choix au site d'appel : `raises` dans le type, une `Tactic`
+    + dans la portée
+detail
+    - _Contingency_ separates the code which can fail from the decision of what a failure does.
+    - A method which can fail says so in its return type with `raises`; inside it, `abort`
+    - reports an error and stops, and `raise` reports one and continues. The caller decides what
+    - becomes of the error by putting a **tactic** — a `Tactic[error]` — in scope: throw it, make
+    - the result absent, collect it with others, replace it with a value, translate it into
+    - another error, or terminate the process. The fallible method never says which, so one body
+    - serves every response.
+    + _Contingency_ sépare le code qui peut échouer de la décision de ce que produit un échec. Une
+    + méthode qui peut échouer le dit dans son type de retour avec `raises` ; à l'intérieur,
+    + `abort` signale une erreur et s'arrête, et `raise` en signale une et continue. L'appelant
+    + décide du sort de l'erreur en plaçant une **tactique** — une `Tactic[error]` — dans la
+    + portée : la lever, rendre le résultat absent, la collecter avec d'autres, la remplacer par
+    + une valeur, la traduire en une autre erreur, ou mettre fin au processus. La méthode
+    + faillible ne dit jamais laquelle ; un même corps sert donc toutes les réponses.
+
+    ```scala
+    import soundness.*
+
+    case class PortError(port: Int)(using Diagnostics)
+    extends Error(m"the port $port is not available")
+
+    case class Connection(port: Int)
+
+    def connect(port: Int): Connection raises PortError =
+      if port > 1024 then Connection(port) else abort(PortError(port))
+    ```
+
+    - `Connection raises PortError` is only an alias for the context function type
+    - `Tactic[PortError] ?=> Connection`, so a `raises` method is a method taking its
+    - error-handling policy as a contextual argument, and `abort` is what calls into it. The
+    - requirement propagates: a caller of `connect` either declares `raises PortError` itself or
+    - discharges the obligation with one of the handlers below. The same failing call — decoding
+    - text which is not a number, which raises `Number.Error` — under each:
+    + `Connection raises PortError` n'est qu'un alias du type de fonction contextuelle
+    + `Tactic[PortError] ?=> Connection` ; une méthode `raises` est donc une méthode qui prend sa
+    + politique de traitement des erreurs comme argument contextuel, et `abort` est ce qui
+    + l'appelle. L'exigence se propage : un appelant de `connect` déclare lui-même
+    + `raises PortError`, ou s'acquitte de l'obligation avec l'un des gestionnaires ci-dessous. Le
+    + même appel en échec — le décodage d'un texte qui n'est pas un nombre, qui lève
+    + `Number.Error` — sous chacun d'eux :
+
+    ```scala fuel
+    alternative `throwUnsafely`
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          locally:
+            import strategies.throwUnsafely
+            t"abc".as[Int]                          // throws Number.Error
+    alternative `safely`
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          safely(t"abc".as[Int])                    // Unset
+    alternative `attempt`
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          attempt[Number.Error](t"abc".as[Int])     // Attempt.Failure(Number.Error(…))
+    alternative `capture`
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+          import strategies.throwUnsafely
+
+          capture[Number.Error](t"abc".as[Int])     // Number.Error(t"abc", Int, Unparseable)
+    alternative `recover`
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          recover:
+            case Number.Error(text, _, _) => 0
+          . protect(t"abc".as[Int])                 // 0
+    ##
+    ```
+
+    - The pieces, by the question each answers:
+    + Les éléments, selon la question à laquelle chacun répond :
+
+    - - **Declaring failure**: `raises`, `raise`, `abort`, and `Tactic`/`Emit`, the capabilities
+    -   behind them. An `Emit` can only report; a `Tactic` can also abort.
+    - - **Choosing once, broadly**: the `strategies` package, whose givens are imported by name —
+    -   `throwUnsafely` for prototypes and entry points, `throwSafely` under `CanThrow`,
+    -   `uncheckedErrors` and `fatalErrors` for errors classified `Unchecked` or `Fatal`, and
+    -   `mitigation` for errors with a `Mitigable` translation. `import soundness.*` brings none
+    -   of them in, because a wildcard import never imports givens.
+    - - **Choosing locally, for a block**: `safely` (absent on failure), `unsafely` (throw, and
+    -   say so), `throwErrors`, `attempt` (an `Attempt`), `capture` (the error, for tests),
+    -   `amalgamate` (a union), and the handler builders `recover`, `mitigate`, `accrue` and
+    -   `handle`, each written as match cases and applied to a block with `protect`.
+    - - **Collecting every failure**: `raise` records and continues, so an accruing tactic —
+    -   `accrue`, `track`, `validate` — gathers every error of a validation pass; `Foci`,
+    -   `focus` and `Pointer` say *where* each one happened; `venture` and `guard` keep a
+    -   recorded failure from cascading into spurious ones; `Tactic#tolerate` discards a block's
+    -   failure within the ambient tactic.
+    - - **Classifying errors**: `Unchecked` (may be thrown unhandled), `Fatal` (ends the
+    -   process, with an `Exit` status) and `Mitigable` (translates into another error).
+    - - **Errors as values**: `Attempt`, `Venture`, `Errors`, `Validation`, `Expectation.Error`.
+    + - **Déclarer l'échec** : `raises`, `raise`, `abort`, et `Tactic`/`Emit`, les capacités qui
+    +   les sous-tendent. Un `Emit` ne peut que signaler ; une `Tactic` peut aussi interrompre.
+    + - **Choisir une fois, globalement** : le package `strategies`, dont les givens s'importent
+    +   par leur nom — `throwUnsafely` pour les prototypes et les points d'entrée, `throwSafely`
+    +   sous `CanThrow`, `uncheckedErrors` et `fatalErrors` pour les erreurs classées
+    +   `Unchecked` ou `Fatal`, et `mitigation` pour les erreurs dotées d'une traduction
+    +   `Mitigable`. `import soundness.*` n'en importe aucun, car un import joker n'importe jamais
+    +   de givens.
+    + - **Choisir localement, pour un bloc** : `safely` (absent en cas d'échec), `unsafely`
+    +   (lever, en le disant), `throwErrors`, `attempt` (un `Attempt`), `capture` (l'erreur, pour
+    +   les tests), `amalgamate` (une union), et les constructeurs de gestionnaires `recover`,
+    +   `mitigate`, `accrue` et `handle`, chacun écrit sous forme de cas de filtrage et appliqué à
+    +   un bloc avec `protect`.
+    + - **Collecter tous les échecs** : `raise` consigne et continue ; une tactique cumulative —
+    +   `accrue`, `track`, `validate` — rassemble donc toutes les erreurs d'une passe de
+    +   validation ; `Foci`, `focus` et `Pointer` disent *où* chacune s'est produite ; `venture`
+    +   et `guard` empêchent un échec consigné de provoquer en cascade des échecs factices ;
+    +   `Tactic#tolerate` ignore l'échec d'un bloc au sein de la tactique ambiante.
+    + - **Classer les erreurs** : `Unchecked` (peut être levée sans être traitée), `Fatal` (met
+    +   fin au processus, avec un statut `Exit`) et `Mitigable` (se traduit en une autre erreur).
+    + - **Les erreurs comme valeurs** : `Attempt`, `Venture`, `Errors`, `Validation`,
+    +   `Expectation.Error`.
+
+    - A tactic is a capability. `Emit`, and so every `Tactic`, extends `caps.Control`: it
+    - captures a return point on the stack of the code which installed it, so a body which runs
+    - on another thread (a task's) cannot retain one, and a tactic is never used after its scope
+    - has closed. The ambient strategies are the exception, and deliberately pure: an unscoped
+    - throw retains no return point. Every error is a `Hazard` — a pure `Exception` — so no error
+    - can smuggle a capability out of the scope which confined it; a `Diagnostics` given (from
+    - `errorDiagnostics`) decides whether each error captures a stack trace, and the tactics
+    - which discard their errors supply `Diagnostics.omit` themselves.
+    + Une tactique est une capacité. `Emit`, et donc toute `Tactic`, étend `caps.Control` : elle
+    + capture un point de retour sur la pile du code qui l'a installée, si bien qu'un corps
+    + s'exécutant sur un autre thread (celui d'une tâche) ne peut en conserver une, et qu'une
+    + tactique n'est jamais utilisée après la fermeture de sa portée. Les stratégies ambiantes
+    + sont l'exception, et sont délibérément pures : une levée hors portée ne conserve aucun point
+    + de retour. Toute erreur est un `Hazard` — une `Exception` pure — si bien qu'aucune erreur ne
+    + peut faire sortir clandestinement une capacité de la portée qui la confinait ; un given
+    + `Diagnostics` (de `errorDiagnostics`) décide si chaque erreur capture une trace de pile, et
+    + les tactiques qui ignorent leurs erreurs fournissent elles-mêmes `Diagnostics.omit`.
+
+    - The library is one source set, `contingency.core`, built on `fulminate` (for `Error`,
+    - `Message` and `Diagnostics`) and `vacuous` (for `Optional`), and it compiles for the JVM,
+    - Scala.js and Scala Native alike. Everything but `raising` and `FatalTactic` is exported to
+    - the `soundness` umbrella, and `strategies` merges with the umbrella's own package of that
+    - name.
+    + La bibliothèque est un seul ensemble de sources, `contingency.core`, construit sur
+    + `fulminate` (pour `Error`, `Message` et `Diagnostics`) et `vacuous` (pour `Optional`), et
+    + elle compile aussi bien pour la JVM que pour Scala.js et Scala Native. Tout sauf `raising`
+    + et `FatalTactic` est exporté vers le package parapluie `soundness`, et `strategies` fusionne
+    + avec le package du même nom du package parapluie.
+
+refer contingency.Tactic
+refer contingency.raises
+refer contingency.strategies
+refer contingency.safely
+refer contingency.recover
+refer contingency.accrue
+refer fulminate.Error
+
+entry .Tactic
+  info
+      - the capability to report an error and to abort with one: what `raises` asks for
+      + la capacité de signaler une erreur et d'interrompre avec elle : ce que demande `raises`
+  detail
+      - A `Tactic[error]` is an `Emit[error]` which can additionally `abort`: a value-replacing
+      - abnormal exit. `success raises error` is `Tactic[error]^ ?=> success`, so every fallible
+      - method takes a tactic as a contextual parameter, `raise` calls its `record` and `abort`
+      - calls its `abort`. What each does is the tactic's choice: a `ThrowTactic` throws, an
+      - `OptionalTactic` breaks out of `safely` with `Unset`, an `AccrueTactic` folds the error
+      - into an accumulation and carries on.
+      + Une `Tactic[error]` est un `Emit[error]` qui peut en outre interrompre (`abort`) : une
+      + sortie anormale qui remplace la valeur. `success raises error` est
+      + `Tactic[error]^ ?=> success` ; toute méthode faillible prend donc une tactique comme
+      + paramètre contextuel, `raise` appelle son `record` et `abort` appelle son `abort`. Ce que
+      + fait chacun relève du choix de la tactique : une `ThrowTactic` lève, une `OptionalTactic`
+      + sort de `safely` avec `Unset`, une `AccrueTactic` intègre l'erreur dans une accumulation et
+      + poursuit.
+
+      - The type is contravariant in `error`, which is what lets the ambient
+      - `ThrowTactic[Hazard]` satisfy a `Tactic[PortError]`. A tactic is rarely built by hand:
+      - the handlers (`safely`, `attempt`, `recover`…) and the `strategies` givens supply one,
+      - and `summon[Tactic[PortError]]` reaches the one in scope, as a method body does when it
+      - calls `#tolerate`.
+      + Le type est contravariant en `error`, ce qui permet à la `ThrowTactic[Hazard]` ambiante de
+      + satisfaire une `Tactic[PortError]`. Une tactique est rarement construite à la main : les
+      + gestionnaires (`safely`, `attempt`, `recover`…) et les givens de `strategies` en fournissent
+      + une, et `summon[Tactic[PortError]]` atteint celle qui est dans la portée, comme le fait un
+      + corps de méthode lorsqu'il appelle `#tolerate`.
+
+      ```scala
+      import soundness.*
+
+      def lenient(text: Text): Optional[Int] raises Number.Error =
+        summon[Tactic[Number.Error]].tolerate(text.as[Int])
+      ```
+
+      - A tactic is a `caps.Control` capability, shared rather than exclusive: one tactic is
+      - legitimately aliased by everything which reports into its scope (a codec summoned for
+      - `as` captures the same tactic `as` takes as evidence), and raising is not a consuming
+      - use. The boundary-based tactics close over a stack label, so a tactic cannot be retained
+      - by a body which runs on another thread, and must not be used after the block which
+      - installed it has returned.
+      + Une tactique est une capacité `caps.Control`, partagée plutôt qu'exclusive : une tactique a
+      + légitimement pour alias tout ce qui signale dans sa portée (un codec invoqué pour `as`
+      + capture la même tactique que `as` prend comme preuve), et lever une erreur n'en est pas une
+      + utilisation consommante. Les tactiques fondées sur une frontière se referment sur une
+      + étiquette de pile ; une tactique ne peut donc pas être conservée par un corps qui s'exécute
+      + sur un autre thread, et ne doit pas être utilisée après le retour du bloc qui l'a installée.
+  refer contingency.Emit
+  refer contingency.raises
+  refer contingency.strategies
+  entry #abort
+    info
+        - reports an error and does not return
+        + signale une erreur et ne retourne pas
+    detail
+        - The value-replacing exit. Under a fail-fast tactic the error escapes at once; under an
+        - accruing tactic it is folded in and the enclosing aggregation scope is surrendered; under
+        - a `VentureTactic` only the venture is abandoned.
+        + La sortie qui remplace la valeur. Sous une tactique à échec immédiat, l'erreur s'échappe
+        + aussitôt ; sous une tactique cumulative, elle est intégrée et la portée d'agrégation
+        + englobante est abandonnée ; sous une `VentureTactic`, seule l'entreprise est abandonnée.
+  entry #certify
+    info
+        - the flush point of an aggregation scope: surrenders it if anything was recorded
+        + le point de vidage d'une portée d'agrégation : l'abandonne si quelque chose a été consigné
+    detail
+        - If the tactic is `#tainted`, `certify` does not return — the scope escapes with its
+        - accumulated errors; otherwise it is a no-op. On every fail-fast tactic it is always a
+        - no-op, since a recorded error would already have escaped. `guard` calls it to skip a
+        - block under a tainted tactic, and the package-level `certify[error]()` calls it on the
+        - tactic in scope.
+        + Si la tactique est `#tainted`, `certify` ne retourne pas — la portée s'échappe avec ses
+        + erreurs accumulées ; sinon c'est une opération sans effet. Sur toute tactique à échec
+        + immédiat, elle est toujours sans effet, puisqu'une erreur consignée se serait déjà
+        + échappée. `guard` l'appelle pour sauter un bloc sous une tactique entachée, et le
+        + `certify[error]()` de niveau package l'appelle sur la tactique dans la portée.
+  entry #tainted
+    info
+        - whether any error has been recorded in this tactic's aggregation scope
+        + si une erreur a été consignée dans la portée d'agrégation de cette tactique
+    detail
+        - Truthfully `false` on every fail-fast tactic, where `record` never returns, and forwarded
+        - through `#contramap`, so taint crosses a `mitigate`d library boundary: a `guard` inside a
+        - library is skipped when the caller's scope is already tainted.
+        + Véritablement `false` sur toute tactique à échec immédiat, où `record` ne retourne jamais,
+        + et transmis à travers `#contramap`, si bien que l'entachement franchit une frontière de
+        + bibliothèque traitée par `mitigate` : un `guard` à l'intérieur d'une bibliothèque est
+        + sauté lorsque la portée de l'appelant est déjà entachée.
+  entry #tolerate
+    info
+        - runs a block and discards whatever it raises: its value, or `Unset`
+        + exécute un bloc et ignore tout ce qu'il lève : sa valeur, ou `Unset`
+    detail
+        - The block's result, or `Unset` once an error has been recorded or the block aborts —
+        - within the ambient tactic, not under a new one as `safely` would install. The default
+        - catches the escape a fail-fast tactic makes; an accruing tactic (`AccrueTactic`,
+        - `TrackTactic`, `VentureTactic`) also rolls its accrual back to what it was before the
+        - block, so a tolerated fault leaves no trace. This is the lever for a codec decoding an
+        - optional field leniently: the field's decoder was bound to the ambient tactic when it was
+        - resolved, so the tactic is the only place its fault can be intercepted.
+        + Le résultat du bloc, ou `Unset` dès qu'une erreur a été consignée ou que le bloc
+        + s'interrompt — au sein de la tactique ambiante, et non sous une nouvelle comme
+        + l'installerait `safely`. L'implémentation par défaut intercepte l'échappement que réalise
+        + une tactique à échec immédiat ; une tactique cumulative (`AccrueTactic`, `TrackTactic`,
+        + `VentureTactic`) ramène aussi son accumulation à ce qu'elle était avant le bloc, si bien
+        + qu'une faute tolérée ne laisse aucune trace. C'est le levier dont dispose un codec pour
+        + décoder un champ optionnel avec indulgence : le décodeur du champ a été lié à la tactique
+        + ambiante lors de sa résolution, si bien que la tactique est le seul endroit où sa faute
+        + peut être interceptée.
+  entry #contramap
+    info
+        - a tactic for another error type, by translating each error into this one
+        + une tactique pour un autre type d'erreur, obtenue en traduisant chaque erreur en celle-ci
+    detail
+        - `tactic.contramap(lambda)` is a `Tactic[error2]^{tactic}` whose `record`, `abort`,
+        - `certify`, `tainted` and `tolerate` all forward to `tactic`, with each error passed
+        - through `lambda` first. The lambda is a pure `->` function: a shared capability may
+        - retain only shared capabilities and pure values, and an error transformer has no
+        - business capturing anything else. `strategies.mitigation` and `mitigate` are built on
+        - it.
+        + `tactic.contramap(lambda)` est une `Tactic[error2]^{tactic}` dont `record`, `abort`,
+        + `certify`, `tainted` et `tolerate` transmettent tous à `tactic`, chaque erreur passant
+        + d'abord par `lambda`. La lambda est une fonction `->` pure : une capacité partagée ne peut
+        + conserver que des capacités partagées et des valeurs pures, et un transformateur d'erreurs
+        + n'a aucune raison de capturer quoi que ce soit d'autre. `strategies.mitigation` et
+        + `mitigate` sont construits dessus.
+
+entry .Emit
+  info
+      - the capability to report an error as a side-effect, without the power to abort
+      + la capacité de signaler une erreur comme effet de bord, sans le pouvoir d'interrompre
+  detail
+      - An `Emit[error]` can `record` an error but cannot, of itself, stop: whether control
+      - continues afterwards is the implementation's choice. `raise` needs only an `Emit`;
+      - `abort` needs a full `Tactic`. So an `Emit[error] ?=>` obligation is weaker than
+      - `raises error`, and a `Tactic` in scope discharges either. `handle` is the construct
+      - which supplies bare emitters: each case of its handler becomes an `Emit` whose `record`
+      - runs the case body in place, and the protected block carries on.
+      + Un `Emit[error]` peut consigner (`record`) une erreur mais ne peut pas, de lui-même,
+      + s'arrêter : que le contrôle continue ensuite relève du choix de l'implémentation. `raise`
+      + n'a besoin que d'un `Emit` ; `abort` a besoin d'une `Tactic` complète. Une obligation
+      + `Emit[error] ?=>` est donc plus faible que `raises error`, et une `Tactic` dans la portée
+      + s'acquitte de l'une comme de l'autre. `handle` est la construction qui fournit de simples
+      + émetteurs : chaque cas de son gestionnaire devient un `Emit` dont le `record` exécute le
+      + corps du cas sur place, et le bloc protégé poursuit.
+
+      - An emitter is a `caps.Control` capability, and is `Findable`, so a missing one is
+      - reported with the choice packages which would supply it. It may retain only other
+      - `Control` capabilities: a handler lambda passed to `.apply` can raise into an outer
+      - tactic, but cannot capture a logger or a stream.
+      + Un émetteur est une capacité `caps.Control`, et est `Findable` : un émetteur manquant est
+      + donc signalé avec les packages de choix qui le fourniraient. Il ne peut conserver que
+      + d'autres capacités `Control` : une lambda de gestionnaire passée à `.apply` peut lever vers
+      + une tactique externe, mais ne peut pas capturer un logger ou un flux.
+  refer contingency.Tactic
+  refer contingency.handle
+  entry .apply
+    info
+        - an emitter which runs a handler at the emit point
+        + un émetteur qui exécute un gestionnaire au point d'émission
+    detail
+        - `Emit(handler)` (with a `Diagnostics` in scope) is an `Emit[error]^` whose `record`
+        - calls `handler` on the error and returns. The handler is a `consume`d function which may
+        - capture only `caps.Control` capabilities — an outer tactic it raises into — since the
+        - emitter it becomes is itself a classified capability. This is what `handle { … }.protect`
+        - installs for each covered error type.
+        + `Emit(handler)` (avec un `Diagnostics` dans la portée) est un `Emit[error]^` dont le
+        + `record` appelle `handler` sur l'erreur puis retourne. Le gestionnaire est une fonction
+        + consommée (`consume`) qui ne peut capturer que des capacités `caps.Control` — une tactique
+        + externe vers laquelle il lève — puisque l'émetteur qu'il devient est lui-même une capacité
+        + classifiée. C'est ce qu'installe `handle { … }.protect` pour chaque type d'erreur couvert.
+  entry #diagnostics
+    info
+        - the `Diagnostics` errors reported through this emitter are built with
+        + le `Diagnostics` avec lequel sont construites les erreurs signalées par cet émetteur
+    detail
+        - Every `record` and `abort` takes its error as a `Diagnostics ?=> error` thunk and
+        - evaluates it with this, so the tactic — not the raising code — decides whether a stack
+        - trace is captured. `ThrowTactic` captures one; `OptionalTactic` omits it, since the error
+        - is discarded.
+        + Chaque `record` et chaque `abort` prend son erreur sous forme de thunk
+        + `Diagnostics ?=> error` et l'évalue avec celui-ci, si bien que c'est la tactique — et non
+        + le code qui lève — qui décide si une trace de pile est capturée. `ThrowTactic` en capture
+        + une ; `OptionalTactic` l'omet, puisque l'erreur est ignorée.
+  entry #record
+    info
+        - reports an error; whether control continues is the implementation's choice
+        + signale une erreur ; que le contrôle continue relève du choix de l'implémentation
+  entry #contramap
+    info
+        - an emitter for another error type, by translating each error into this one
+        + un émetteur pour un autre type d'erreur, obtenu en traduisant chaque erreur en celle-ci
+    detail
+        - `emit.contramap(lambda)` is an `Emit[error2]^{emit}` forwarding every record through the
+        - pure `lambda`.
+        + `emit.contramap(lambda)` est un `Emit[error2]^{emit}` qui transmet chaque consignation à
+        + travers la `lambda` pure.
+
+entry .strategies
+  info
+      - the broad, importable tactics: throw, throw under `CanThrow`, unchecked, fatal, mitigate
+      + les tactiques globales et importables : lever, lever sous `CanThrow`, non vérifiées,
+      + fatales, atténuer
+  detail
+      - A *strategy* is a tactic imported once and applied broadly, where a *tactic* installed
+      - by `safely` or `recover` is local to a block; both are the one type `Tactic`. The choice
+      - is never implicit: `import soundness.*` brings none of these givens in, and one is
+      - imported by name.
+      + Une *stratégie* est une tactique importée une fois et appliquée globalement, alors qu'une
+      + *tactique* installée par `safely` ou `recover` est locale à un bloc ; toutes deux sont le
+      + même type `Tactic`. Le choix n'est jamais implicite : `import soundness.*` n'importe aucun
+      + de ces givens, et l'on en importe un par son nom.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"abc".as[Int]   // throws Number.Error
+      ```
+
+      - The ambient strategies are for a program's entry points and for prototyping — the
+      - intended progression is to prototype under `throwUnsafely` and convert the places which
+      - matter to real handling as the program hardens, with no change to the fallible code. A
+      - method-local `import strategies.throwUnsafely` shadows the method's own `raises` tactic
+      - for every `abort` below it, which is the nesting rule working as designed, but easy to
+      - do by accident inside a `raises` method.
+      + Les stratégies ambiantes sont destinées aux points d'entrée d'un programme et au
+      + prototypage — la progression prévue consiste à prototyper sous `throwUnsafely` puis à
+      + convertir les endroits qui comptent en un vrai traitement à mesure que le programme se
+      + consolide, sans aucune modification du code faillible. Un `import strategies.throwUnsafely`
+      + local à une méthode masque la propre tactique `raises` de la méthode pour chaque `abort`
+      + situé en dessous, ce qui est la règle d'imbrication fonctionnant comme prévu, mais facile à
+      + faire par accident à l'intérieur d'une méthode `raises`.
+
+      - `throwUnsafely`, `uncheckedErrors` and `fatalErrors` are pure values rather than tracked
+      - capabilities: an unscoped throw (or a termination in place) retains no return point, and
+      - a tracked ambient tactic would either fail the level check inside a derived codec's
+      - synthesised thunk or be captured by every lambda raising through it. `throwSafely` is
+      - the scoped one, capturing the `CanThrow` evidence it throws under.
+      + `throwUnsafely`, `uncheckedErrors` et `fatalErrors` sont des valeurs pures plutôt que des
+      + capacités suivies : une levée hors portée (ou une terminaison sur place) ne conserve aucun
+      + point de retour, et une tactique ambiante suivie échouerait à la vérification de niveau dans
+      + le thunk synthétisé d'un codec dérivé, ou serait capturée par chaque lambda qui lève à
+      + travers elle. `throwSafely` est celle qui est limitée à une portée, capturant la preuve
+      + `CanThrow` sous laquelle elle lève.
+  refer contingency.ThrowTactic
+  refer contingency.Unchecked
+  refer contingency.Fatal
+  refer contingency.Mitigable
+  entry .throwUnsafely
+    info
+        - throws every error as an ordinary exception, with no capability required
+        + lève chaque erreur comme une exception ordinaire, sans exiger aucune capacité
+    detail
+        - A pure `ThrowTactic[Hazard]^{}`, so by contravariance it satisfies every `Tactic[error]`
+        - at once. The error is built with `Diagnostics.capture`, so it carries a stack trace.
+        - Suits scripts, prototypes and the outermost layer of a program; a library should say
+        - what it does instead, with `unsafely` and a reason beside it where an obligation cannot
+        - fire.
+        + Une `ThrowTactic[Hazard]^{}` pure, qui par contravariance satisfait d'un coup toute
+        + `Tactic[error]`. L'erreur est construite avec `Diagnostics.capture` ; elle porte donc une
+        + trace de pile. Convient aux scripts, aux prototypes et à la couche la plus externe d'un
+        + programme ; une bibliothèque devrait plutôt dire ce qu'elle fait, avec `unsafely` et une
+        + justification à côté là où une obligation ne peut pas se déclencher.
+  entry .throwSafely
+    info
+        - throws, but only where a `CanThrow[error]` capability is in scope
+        + lève, mais seulement là où une capacité `CanThrow[error]` est dans la portée
+    detail
+        - `throwSafely[error]` is a `ThrowTactic[error]^{canThrow}`: it throws exactly as
+        - `throwUnsafely` does, but it needs an (erased) `CanThrow[error]` given, so the
+        - possibility of the throw stays visible in the types under `saferExceptions`. Its capture
+        - set is the `CanThrow` evidence, a `caps.Control` capability, which keeps it out of a
+        - body which runs on another thread.
+        + `throwSafely[error]` est une `ThrowTactic[error]^{canThrow}` : elle lève exactement comme
+        + `throwUnsafely`, mais elle nécessite un given `CanThrow[error]` (effacé), si bien que la
+        + possibilité de la levée reste visible dans les types sous `saferExceptions`. Son ensemble
+        + de captures est la preuve `CanThrow`, une capacité `caps.Control`, ce qui la tient à
+        + l'écart d'un corps s'exécutant sur un autre thread.
+  entry .mitigation
+    info
+        - a tactic for any error which is `Mitigable to` an error already handled
+        + une tactique pour toute erreur `Mitigable to` une erreur déjà traitée
+    detail
+        - Given a `Tactic[error]^` in scope and an `error2 is Mitigable to error`, provides a
+        - `Tactic[error2]^` which translates each `error2` with `mitigate` and reports it to the
+        - outer tactic. A low-level failure thus reaches an API boundary already translated into
+        - that boundary's vocabulary, without every call site restating the translation.
+        + Étant donné une `Tactic[error]^` dans la portée et un `error2 is Mitigable to error`,
+        + fournit une `Tactic[error2]^` qui traduit chaque `error2` avec `mitigate` et la signale à
+        + la tactique externe. Un échec de bas niveau atteint ainsi une frontière d'API déjà traduit
+        + dans le vocabulaire de cette frontière, sans que chaque site d'appel ne répète la
+        + traduction.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+        import strategies.mitigation
+
+        case class InputError(text: Text)(using Diagnostics)
+        extends Error(m"the input $text is not acceptable")
+
+        given Number.Error is Mitigable to InputError = error => InputError(error.text)
+
+        def age(text: Text): Int raises InputError = text.as[Int]
+        ```
+  entry .fatalErrors
+    info
+        - terminates the process with the error's `Exit` status, for errors marked `Fatal`
+        + met fin au processus avec le statut `Exit` de l'erreur, pour les erreurs marquées `Fatal`
+    detail
+        - A pure `FatalTactic[exception]^{}` for any error type with an `is Fatal` given, which
+        - says what status to exit with. Suits failures during initialisation, where there is no
+        - meaningful way to continue.
+        + Une `FatalTactic[exception]^{}` pure pour tout type d'erreur muni d'un given `is Fatal`,
+        + qui indique avec quel statut quitter. Convient aux échecs survenant pendant
+        + l'initialisation, où il n'y a aucune manière sensée de continuer.
+  entry .uncheckedErrors
+    info
+        - throws, unhandled, any error which is marked `Unchecked`
+        + lève, sans traitement, toute erreur marquée `Unchecked`
+    detail
+        - A pure `UncheckedTactic[error]^{}` for any error with an erased `error is Unchecked`
+        - given. The error is thrown with a stack trace (`Diagnostics.capture`). It lets a type
+        - whose errors are not worth handling — an impossible-in-practice failure — be raised
+        - without a handler at each site, while still being declared.
+        + Une `UncheckedTactic[error]^{}` pure pour toute erreur munie d'un given effacé
+        + `error is Unchecked`. L'erreur est levée avec une trace de pile (`Diagnostics.capture`).
+        + Cela permet de lever un type dont les erreurs ne valent pas la peine d'être traitées — un
+        + échec impossible en pratique — sans gestionnaire à chaque site, tout en restant déclaré.
+
+        ```scala
+        import soundness.*
+        import strategies.uncheckedErrors
+
+        erased given Number.Error is Unchecked = new Unchecked { type Self = Number.Error }
+
+        t"abc".as[Int]   // throws Number.Error, with no other tactic in scope
+        ```
+
+entry .raises
+  info
+      - `success raises error`: the return type of a method which may raise `error`
+      + `success raises error` : le type de retour d'une méthode qui peut lever `error`
+  detail
+      - An infix type alias: `success raises error` is `Tactic[error]^ ?=> success`, a context
+      - function taking the error-handling tactic. A method declared with it is a method taking
+      - the policy as a contextual argument; `abort` and `raise` inside it call that tactic. A
+      - method which can fail in more than one way writes each: `Int raises Io.Error raises
+      - Number.Error`. Calling such a method needs a `Tactic` for each error in scope — a
+      - `strategies` given, or an enclosing `safely`, `recover`, `attempt`… block — or an
+      - enclosing method which itself declares `raises` for it.
+      + Un alias de type infixe : `success raises error` est `Tactic[error]^ ?=> success`, une
+      + fonction contextuelle qui prend la tactique de traitement des erreurs. Une méthode déclarée
+      + avec lui est une méthode qui prend la politique comme argument contextuel ; `abort` et
+      + `raise` à l'intérieur appellent cette tactique. Une méthode qui peut échouer de plusieurs
+      + façons les écrit toutes : `Int raises Io.Error raises Number.Error`. Appeler une telle
+      + méthode nécessite une `Tactic` pour chaque erreur dans la portée — un given de `strategies`,
+      + ou un bloc `safely`, `recover`, `attempt`… englobant — ou une méthode englobante qui déclare
+      + elle-même `raises` pour elle.
+
+      ```scala
+      import soundness.*
+
+      def half(text: Text): Int raises Number.Error = text.as[Int] / 2
+
+      safely(half(t"42"))   // 21
+      safely(half(t"x"))    // Unset
+      ```
+
+      - A `val` initialised by a `raises` call gets the result type, not the context function
+      - type: the tactic is resolved at the call. A typeclass instance whose method result is `S
+      - raises E` cannot be written under capture checking (each `?=>` mints a fresh root); such
+      - an instance takes its `Tactic[E]` as a `using` parameter instead.
+      + Un `val` initialisé par un appel `raises` reçoit le type du résultat, et non le type de
+      + fonction contextuelle : la tactique est résolue à l'appel. Une instance de classe de types
+      + dont le résultat de méthode est `S raises E` ne peut pas être écrite sous contrôle des
+      + captures (chaque `?=>` crée une nouvelle racine) ; une telle instance prend plutôt sa
+      + `Tactic[E]` comme paramètre `using`.
+
+entry .raising
+  info
+      - `success raising (E1, E2)`: a `raises` for each error in a tuple, as a match type
+      + `success raising (E1, E2)` : un `raises` pour chaque erreur d'un tuple, sous forme de type
+      + match
+  detail
+      - `result raising (Io.Error, Number.Error)` reduces to `Tactic[Io.Error] ?=>
+      - Tactic[Number.Error] ?=> result`, and a non-tuple `raising E` to `Tactic[E] ?=> result`.
+      - It is not exported to the `soundness` umbrella and cannot yet replace `raises`: a match
+      - type reducing to a context function in a method's return type crashes the compiler at a
+      - cross-module use site, so `raises` chained once per error is the form to write.
+      + `result raising (Io.Error, Number.Error)` se réduit à `Tactic[Io.Error] ?=>
+      + Tactic[Number.Error] ?=> result`, et un `raising E` hors tuple à `Tactic[E] ?=> result`. Il
+      + n'est pas exporté vers le package parapluie `soundness` et ne peut pas encore remplacer
+      + `raises` : un type match qui se réduit à une fonction contextuelle dans le type de retour
+      + d'une méthode fait planter le compilateur sur un site d'utilisation situé dans un autre
+      + module ; `raises` enchaîné une fois par erreur est donc la forme à écrire.
+
+entry .mitigates
+  info
+      - `error mitigates error2`: evidence that `error2` can be translated into `error`
+      + `error mitigates error2` : la preuve que `error2` peut être traduite en `error`
+  detail
+      - An infix alias for `error2 is Mitigable to error`, so a context bound or `using` clause
+      - can be written in the direction the translation reads. See `Mitigable` and
+      - `strategies.mitigation`.
+      + Un alias infixe de `error2 is Mitigable to error`, pour qu'une borne de contexte ou une
+      + clause `using` puisse s'écrire dans le sens où se lit la traduction. Voir `Mitigable` et
+      + `strategies.mitigation`.
+
+entry .tracks
+  info
+      - `result tracks focus`: a result computed with a `Foci[focus]` in scope
+      + `result tracks focus` : un résultat calculé avec un `Foci[focus]` dans la portée
+  detail
+      - An infix alias for `Foci[focus] ?=> result`, written after `raises`: `Unit raises
+      - Json.Error tracks JsonPointer` is a validation which records each error against the
+      - position it happened at. A `Foci` given is always resolvable (`Foci.default` discards
+      - everything), so a `tracks` method can be called anywhere, and only an enclosing `track`
+      - or `validate` makes the positions observable.
+      + Un alias infixe de `Foci[focus] ?=> result`, écrit après `raises` : `Unit raises
+      + Json.Error tracks JsonPointer` est une validation qui consigne chaque erreur avec la
+      + position où elle s'est produite. Un given `Foci` peut toujours être résolu (`Foci.default`
+      + ignore tout) ; une méthode `tracks` peut donc être appelée n'importe où, et seul un `track`
+      + ou un `validate` englobant rend les positions observables.
+
+entry .raise
+  info
+      - reports an error and continues: the value-preserving report
+      + signale une erreur et continue : le signalement qui préserve la valeur
+  detail
+      - `raise(error)` calls `record` on the `Emit[error]^` in scope and returns `Unit`. Under a
+      - fail-fast tactic (`throwUnsafely`, `safely`, `attempt`…) control never comes back; under an
+      - accruing tactic (`accrue`, `track`, `validate`, `handle`) it does, so the code carries on,
+      - and the result of the enclosing scope is eventually discarded in favour of the
+      - accumulated errors. The error is a `Diagnostics ?=> error` thunk, built with the tactic's
+      - own `Diagnostics`, so a raising method needs no `Diagnostics` of its own.
+      + `raise(error)` appelle `record` sur l'`Emit[error]^` dans la portée et renvoie `Unit`. Sous
+      + une tactique à échec immédiat (`throwUnsafely`, `safely`, `attempt`…), le contrôle ne
+      + revient jamais ; sous une tactique cumulative (`accrue`, `track`, `validate`, `handle`), il
+      + revient, le code poursuit donc, et le résultat de la portée englobante est finalement ignoré
+      + au profit des erreurs accumulées. L'erreur est un thunk `Diagnostics ?=> error`, construit
+      + avec le propre `Diagnostics` de la tactique ; une méthode qui lève n'a donc besoin d'aucun
+      + `Diagnostics` à elle.
+
+      - Since `raise` returns `Unit`, a method which must continue with a value writes an *ersatz*
+      - value after it: `raise(error) yet 0`. An ersatz value should be inconsequential — nothing
+      - downstream should depend on it, and it should not provoke further errors — which is what
+      - `venture` and `guard` make structural rather than hoped for.
+      + Puisque `raise` renvoie `Unit`, une méthode qui doit poursuivre avec une valeur écrit une
+      + valeur *ersatz* après lui : `raise(error) yet 0`. Une valeur ersatz devrait être sans
+      + conséquence — rien en aval ne devrait en dépendre, et elle ne devrait pas provoquer d'autres
+      + erreurs — ce que `venture` et `guard` rendent structurel plutôt qu'espéré.
+
+      ```scala
+      import soundness.*
+
+      def lenientAge(text: Text): Int raises Number.Error =
+        safely(text.as[Int]).or:
+          raise(Number.Error(text, Int, Number.Error.Reason.Unparseable)) yet 0
+      ```
+
+      - `raise` asks only for an `Emit`, the weaker capability; `abort` needs a `Tactic`.
+      + `raise` ne demande qu'un `Emit`, la capacité la plus faible ; `abort` nécessite une
+      + `Tactic`.
+
+entry .abort
+  info
+      - reports an error and does not return: the value-replacing exit
+      + signale une erreur et ne retourne pas : la sortie qui remplace la valeur
+  detail
+      - `abort(error)` calls `abort` on the `Tactic[error]^` in scope and has type `Nothing`, so
+      - it can stand anywhere a value is needed. Under a fail-fast tactic the error escapes the
+      - tactic's scope; under an accruing one the error is folded in and the scope surrendered;
+      - inside a `venture` only the venture is abandoned. The error thunk is built with the
+      - tactic's `Diagnostics`.
+      + `abort(error)` appelle `abort` sur la `Tactic[error]^` dans la portée et a le type
+      + `Nothing` ; il peut donc figurer partout où une valeur est attendue. Sous une tactique à
+      + échec immédiat, l'erreur s'échappe de la portée de la tactique ; sous une tactique
+      + cumulative, l'erreur est intégrée et la portée abandonnée ; à l'intérieur d'un `venture`,
+      + seule l'entreprise est abandonnée. Le thunk d'erreur est construit avec le `Diagnostics` de
+      + la tactique.
+
+      ```scala
+      import soundness.*
+
+      case class PortError(port: Int)(using Diagnostics)
+      extends Error(m"the port $port is not available")
+
+      def connect(port: Int): Int raises PortError =
+        if port > 1024 then port else abort(PortError(port))
+      ```
+
+entry .certify
+  info
+      - surrenders the enclosing aggregation scope if any error has been recorded
+      + abandonne la portée d'agrégation englobante si une erreur a été consignée
+  detail
+      - `certify[error]()` calls `Tactic#certify` on the tactic in scope: a no-op under a
+      - fail-fast tactic, and under an accruing one the point at which a tainted scope escapes
+      - with its accumulated errors rather than continuing. `guard` is the usual way to express
+      - the same thing around a block.
+      + `certify[error]()` appelle `Tactic#certify` sur la tactique dans la portée : sans effet
+      + sous une tactique à échec immédiat, et, sous une tactique cumulative, le point auquel une
+      + portée entachée s'échappe avec ses erreurs accumulées au lieu de continuer. `guard` est la
+      + manière habituelle d'exprimer la même chose autour d'un bloc.
+
+entry .safely
+  info
+      - runs a block and makes its failure absent: the value, or `Unset`
+      + exécute un bloc et rend son échec absent : la valeur, ou `Unset`
+  detail
+      - `safely(block)` evaluates the block with an `OptionalTactic` in scope and returns
+      - `Optional[success]`: the block's value, or `Unset` on the first error recorded or aborted.
+      - The error itself is discarded, so it is built with `Diagnostics.omit` — no stack trace is
+      - captured — and `safely` needs no `Diagnostics` of its own. An exception thrown by the
+      - block (the block also receives a `CanThrow[Exception]`) is likewise caught and becomes
+      - `Unset`.
+      + `safely(block)` évalue le bloc avec une `OptionalTactic` dans la portée et renvoie
+      + `Optional[success]` : la valeur du bloc, ou `Unset` à la première erreur consignée ou
+      + interrompue. L'erreur elle-même est ignorée ; elle est donc construite avec
+      + `Diagnostics.omit` — aucune trace de pile n'est capturée — et `safely` n'a besoin d'aucun
+      + `Diagnostics` à lui. Une exception levée par le bloc (le bloc reçoit aussi un
+      + `CanThrow[Exception]`) est de même interceptée et devient `Unset`.
+
+      ```scala
+      import soundness.*
+
+      safely(t"42".as[Int])            // 42
+      safely(t"abc".as[Int])           // Unset
+      safely(t"abc".as[Int]).or(0)     // 0
+      ```
+
+      - The error type is inferred from the block's requirement; `safely[Number.Error](…)` names
+      - it when inference needs help, or when the block's only obligation is the one being
+      - discharged. `safely` installs a *new* tactic: inside an accruing scope, an error recorded
+      - in the block is not folded into the outer accrual. `Tactic#tolerate` is the alternative
+      - which stays inside the ambient tactic.
+      + Le type d'erreur est inféré à partir de l'exigence du bloc ; `safely[Number.Error](…)` le
+      + nomme lorsque l'inférence a besoin d'aide, ou lorsque la seule obligation du bloc est celle
+      + dont on s'acquitte. `safely` installe une *nouvelle* tactique : à l'intérieur d'une portée
+      + cumulative, une erreur consignée dans le bloc n'est pas intégrée à l'accumulation externe.
+      + `Tactic#tolerate` est l'alternative qui reste au sein de la tactique ambiante.
+
+entry .unsafely
+  info
+      - runs a block whose error is asserted not to happen: the value, or a throw
+      + exécute un bloc dont on affirme que l'erreur ne se produira pas : la valeur, ou une levée
+  detail
+      - `unsafely(block)` evaluates the block under a `ThrowTactic`, so an error which does occur
+      - is thrown as an ordinary, unchecked exception, with a stack trace. It discharges the
+      - obligation without handling it — legitimate at a program's boundary, in a test which has
+      - already established the value is fine, or beside a check which has just proved the error
+      - impossible — and is a searchable marker of the places where the guarantee stops. The block
+      - also receives an `Unsafe` token, so a method gated `(using Unsafe)` may be called within
+      - it.
+      + `unsafely(block)` évalue le bloc sous une `ThrowTactic` : une erreur qui se produit est donc
+      + levée comme une exception ordinaire, non vérifiée, avec une trace de pile. Il s'acquitte de
+      + l'obligation sans la traiter — légitime à la frontière d'un programme, dans un test qui a
+      + déjà établi que la valeur est correcte, ou à côté d'une vérification qui vient de prouver
+      + l'erreur impossible — et constitue un marqueur, facile à rechercher, des endroits où la
+      + garantie s'arrête. Le bloc reçoit aussi un jeton `Unsafe`, si bien qu'une méthode gardée par
+      + `(using Unsafe)` peut y être appelée.
+
+      ```scala
+      import soundness.*
+
+      unsafely(t"42".as[Int])   // 42
+      unsafely(t"abc".as[Int])  // throws Number.Error
+      ```
+
+      - Prefer a total API carrying its proof in the type, then `mitigate` into a named error,
+      - then `unsafely` with the reason in a comment. A `success` type which is a refined path
+      - type is widened by `unsafely`'s type variable; put the scoped check inside the API rather
+      - than around the call.
+      + Préférez une API totale portant sa preuve dans le type, puis `mitigate` vers une erreur
+      + nommée, puis `unsafely` avec la justification en commentaire. Un type `success` qui est un
+      + type de chemin raffiné est élargi par la variable de type de `unsafely` ; placez la
+      + vérification limitée à une portée à l'intérieur de l'API plutôt qu'autour de l'appel.
+
+entry .throwErrors
+  info
+      - runs a block under a `ThrowTactic`, given a `CanThrow[error]`
+      + exécute un bloc sous une `ThrowTactic`, étant donné un `CanThrow[error]`
+  detail
+      - `throwErrors[error](block)` supplies a `ThrowTactic[error]` to the block, so an error is
+      - thrown; unlike `unsafely`, it requires a `CanThrow[error]` capability in scope, so the
+      - throw remains checked under `saferExceptions`. It is the block form of
+      - `strategies.throwSafely`.
+      + `throwErrors[error](block)` fournit une `ThrowTactic[error]` au bloc, si bien qu'une erreur
+      + est levée ; contrairement à `unsafely`, il exige une capacité `CanThrow[error]` dans la
+      + portée, si bien que la levée reste vérifiée sous `saferExceptions`. C'est la forme bloc de
+      + `strategies.throwSafely`.
+
+entry .capture
+  info
+      - runs a block which is expected to fail, and returns the error it raised
+      + exécute un bloc dont on attend l'échec, et renvoie l'erreur qu'il a levée
+  detail
+      - `capture[error](block)` evaluates the block with an `EitherTactic` and returns the
+      - `error` it recorded or aborted with. A block which succeeds is itself a failure — the
+      - test was checking the wrong thing — and aborts with `Expectation.Error` carrying the value
+      - produced, so `capture` needs a `Tactic[Expectation.Error[success]]^` in scope (the
+      - ambient `strategies.throwUnsafely` serves) and a `Diagnostics`. An exception of the
+      - captured type thrown rather than raised is captured too; any other exception propagates.
+      + `capture[error](block)` évalue le bloc avec une `EitherTactic` et renvoie l'`error` qu'il a
+      + consignée ou avec laquelle il s'est interrompu. Un bloc qui réussit est lui-même un échec —
+      + le test vérifiait la mauvaise chose — et s'interrompt avec `Expectation.Error` portant la
+      + valeur produite ; `capture` nécessite donc une `Tactic[Expectation.Error[success]]^` dans la
+      + portée (la `strategies.throwUnsafely` ambiante convient) et un `Diagnostics`. Une exception
+      + du type capturé levée directement plutôt que signalée est capturée elle aussi ; toute autre
+      + exception se propage.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      import strategies.throwUnsafely
+
+      capture[Number.Error](t"abc".as[Int]).reason   // Number.Error.Reason.Unparseable
+      ```
+
+      - The error type must be given explicitly (`ClassTag` is needed to catch it), which is also
+      - what makes a `capture` in a test read as its assertion: the block must fail with exactly
+      - this.
+      + Le type d'erreur doit être donné explicitement (`ClassTag` est nécessaire pour
+      + l'intercepter), ce qui fait aussi qu'un `capture` dans un test se lit comme son assertion :
+      + le bloc doit échouer exactement avec ceci.
+
+entry .attempt
+  info
+      - runs a block and returns an `Attempt`: its value, or the error it failed with
+      + exécute un bloc et renvoie un `Attempt` : sa valeur, ou l'erreur avec laquelle il a échoué
+  detail
+      - `attempt[error](block)` evaluates the block with an `AttemptTactic` and returns
+      - `Attempt.Success(value)` or `Attempt.Failure(error)` on the first error recorded or
+      - aborted, for code which must branch on both outcomes. It needs a `Diagnostics` in scope,
+      - since the error is kept.
+      + `attempt[error](block)` évalue le bloc avec une `AttemptTactic` et renvoie
+      + `Attempt.Success(value)`, ou `Attempt.Failure(error)` à la première erreur consignée ou
+      + interrompue, pour le code qui doit bifurquer selon les deux issues. Il nécessite un
+      + `Diagnostics` dans la portée, puisque l'erreur est conservée.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      attempt[Number.Error](t"42".as[Int])    // Attempt.Success(42)
+      attempt[Number.Error](t"abc".as[Int]) match
+        case Attempt.Failure(error) => error.text   // t"abc"
+        case Attempt.Success(value) => t""
+      ```
+
+entry .amalgamate
+  info
+      - runs a block and returns its value or its error, as a union
+      + exécute un bloc et renvoie sa valeur ou son erreur, sous forme d'union
+  detail
+      - `amalgamate[error](block)` evaluates the block with an `AmalgamateTactic` and returns
+      - `success | error`: the value, or the first error recorded or aborted. A match on the result
+      - separates them, with no wrapper. Needs a `Diagnostics`.
+      + `amalgamate[error](block)` évalue le bloc avec une `AmalgamateTactic` et renvoie
+      + `success | error` : la valeur, ou la première erreur consignée ou interrompue. Un filtrage
+      + sur le résultat les sépare, sans enveloppe. Nécessite un `Diagnostics`.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      amalgamate[Number.Error](t"abc".as[Int]) match
+        case error: Number.Error => t"not a number"
+        case value: Int          => t"$value"
+      ```
+
+entry .abortive
+  info
+      - runs a macro's block under a `HaltTactic`: an error becomes a compile error
+      + exécute le bloc d'une macro sous une `HaltTactic` : une erreur devient une erreur de
+      + compilation
+  detail
+      - For macro implementations, with `Quotes` in scope. `abortive[error](block)` supplies a
+      - `HaltTactic[error, success]` and `Diagnostics.omit`, so an error recorded or aborted in
+      - the block halts the compilation with the error's `labelled` message (its bolt code and
+      - text) as the diagnostic. A macro which parses a literal at expansion time wraps the parse
+      - in `abortive` to report a malformed literal where it is written.
+      + Pour les implémentations de macros, avec `Quotes` dans la portée. `abortive[error](block)`
+      + fournit une `HaltTactic[error, success]` et `Diagnostics.omit`, si bien qu'une erreur
+      + consignée ou interrompue dans le bloc arrête la compilation avec le message `labelled` de
+      + l'erreur (son code bolt et son texte) comme diagnostic. Une macro qui analyse un littéral
+      + au moment du développement enveloppe l'analyse dans `abortive` pour signaler un littéral mal
+      + formé à l'endroit où il est écrit.
+
+entry .Attempt
+  info
+      - the outcome of `attempt`: a success carrying a value, or a failure carrying an error
+      + l'issue de `attempt` : un succès portant une valeur, ou un échec portant une erreur
+  detail
+      - An enum with two cases, `Success(value: result)` and `Failure(value: error)`, where
+      - `error <: Hazard`. `attempt[error](block)` is how one is produced, and the methods on it
+      - let the outcome be inspected, transformed, or turned back into a raise.
+      + Une énumération à deux cas, `Success(value: result)` et `Failure(value: error)`, où
+      + `error <: Hazard`. `attempt[error](block)` est la manière d'en produire une, et ses méthodes
+      + permettent d'inspecter l'issue, de la transformer, ou de la reconvertir en levée.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val outcome: Attempt[Int, Number.Error] = attempt[Number.Error](t"abc".as[Int])
+
+      outcome.success                   // false
+      outcome.map(_ * 2)                // Attempt.Failure(…)
+      outcome.recover { case _: Number.Error => 0 }   // 0
+      ```
+  refer contingency.attempt
+  entry #failure
+    info
+        - whether this is a `Failure`
+        + s'il s'agit d'un `Failure`
+  entry #success
+    info
+        - whether this is a `Success`
+        + s'il s'agit d'un `Success`
+  entry #map
+    info
+        - transforms the value of a `Success`; a `Failure` passes through unchanged
+        + transforme la valeur d'un `Success` ; un `Failure` passe inchangé
+  entry #handle
+    info
+        - replaces the error of a `Failure` with another, by a partial function
+        + remplace l'erreur d'un `Failure` par une autre, au moyen d'une fonction partielle
+    detail
+        - `attempt.handle { case Number.Error(text, _, _) => InputError(text) }` applies the cases
+        - to a `Failure`'s error, leaving one the cases do not cover as it was, and widens the
+        - error type to `Hazard`. A `Success` is unchanged.
+        + `attempt.handle { case Number.Error(text, _, _) => InputError(text) }` applique les cas à
+        + l'erreur d'un `Failure`, en laissant telle quelle une erreur que les cas ne couvrent pas,
+        + et élargit le type d'erreur à `Hazard`. Un `Success` est inchangé.
+  entry #acknowledge
+    info
+        - runs a side-effect on a `Failure`'s error, and returns this attempt
+        + exécute un effet de bord sur l'erreur d'un `Failure`, et renvoie cette tentative
+    detail
+        - For logging a failure without consuming it: the partial function is applied if it is
+        - defined at the error, and the attempt is returned unchanged either way.
+        + Pour journaliser un échec sans le consommer : la fonction partielle est appliquée si elle
+        + est définie pour l'erreur, et la tentative est renvoyée inchangée dans tous les cas.
+  entry #apply
+    info
+        - the value of a `Success`, or aborts with a `Failure`'s error
+        + la valeur d'un `Success`, ou une interruption avec l'erreur d'un `Failure`
+    detail
+        - `attempt()` is `result raises error`: it turns an `Attempt` back into a raise against
+        - the tactic in scope, so a value which was captured for inspection can be rejoined to the
+        - ordinary flow.
+        + `attempt()` est `result raises error` : il reconvertit un `Attempt` en levée vers la
+        + tactique dans la portée, si bien qu'une valeur capturée pour inspection peut rejoindre le
+        + flux ordinaire.
+  entry #recover
+    info
+        - the value of a `Success`, or a replacement computed from a `Failure`'s error
+        + la valeur d'un `Success`, ou un remplacement calculé à partir de l'erreur d'un `Failure`
+    detail
+        - `attempt.recover { case error => fallback }` is the value if there is one, else the
+        - partial function applied to the error; it must cover every error it may meet.
+        + `attempt.recover { case error => fallback }` est la valeur s'il y en a une, sinon la
+        + fonction partielle appliquée à l'erreur ; elle doit couvrir toutes les erreurs qu'elle
+        + peut rencontrer.
+
+entry .recover
+  info
+      - handles chosen errors by supplying a replacement value, with `protect`
+      + traite les erreurs choisies en fournissant une valeur de remplacement, avec `protect`
+  detail
+      - `recover { cases }.protect(block)` runs the block with a tactic for each error type the
+      - cases cover; on the first covered error, the block is abandoned and the matching case
+      - body's value is returned in its place. The handler is written as match cases, and must be
+      - written inline — the macro reads the cases at compile time to find which error types they
+      - cover, which is how `protect` knows which tactics to inject. An error the cases do not
+      - cover is not handled: its `raises` obligation propagates outward as usual.
+      + `recover { cases }.protect(block)` exécute le bloc avec une tactique pour chaque type
+      + d'erreur que couvrent les cas ; à la première erreur couverte, le bloc est abandonné et la
+      + valeur du corps du cas correspondant est renvoyée à sa place. Le gestionnaire s'écrit sous
+      + forme de cas de filtrage, et doit être écrit en ligne — la macro lit les cas à la
+      + compilation pour savoir quels types d'erreur ils couvrent, et c'est ainsi que `protect` sait
+      + quelles tactiques injecter. Une erreur que les cas ne couvrent pas n'est pas traitée : son
+      + obligation `raises` se propage vers l'extérieur comme d'habitude.
+
+      ```scala
+      import soundness.*
+
+      recover:
+        case Number.Error(text, _, _) => 0
+      . protect(t"abc".as[Int])   // 0
+      ```
+
+      - A case matching a union of error types (`case error: (Io.Error | Number.Error)`), or an
+      - alias of a union, registers a handler for each member. A pattern must be exhaustive for
+      - its error type (a case class pattern with every field a wildcard or binding; a varargs
+      - field as `arguments*`), or it is a compile error: a `recover` cannot half-handle a type. A
+      - `recover` written directly inside an `inline def` does not resolve its tactics; delegate
+      - the body to a non-inline helper method. A case body may raise into an outer tactic, but
+      - may not capture a non-`Control` capability such as a logger.
+      + Un cas filtrant une union de types d'erreur (`case error: (Io.Error | Number.Error)`), ou un
+      + alias d'union, enregistre un gestionnaire pour chaque membre. Un motif doit être exhaustif
+      + pour son type d'erreur (un motif de case class dont chaque champ est un joker ou une
+      + liaison ; un champ variadique sous la forme `arguments*`), sans quoi c'est une erreur de
+      + compilation : un `recover` ne peut pas traiter un type à moitié. Un `recover` écrit
+      + directement dans une `inline def` ne résout pas ses tactiques ; déléguez le corps à une
+      + méthode auxiliaire non inline. Un corps de cas peut lever vers une tactique externe, mais ne
+      + peut pas capturer une capacité non `Control` comme un logger.
+
+entry .Recovery
+  info
+      - a `recover` handler, waiting for the block it protects
+      + un gestionnaire `recover`, en attente du bloc qu'il protège
+  detail
+      - `recover { cases }` is a `Recovery[lambda]` whose type parameter records, as a type
+      - lambda `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result`, the error types the cases
+      - cover; `.protect(block)` then injects one tactic per covered type into the block. The
+      - value is only ever used as `recover { … }.protect { … }`.
+      + `recover { cases }` est une `Recovery[lambda]` dont le paramètre de type enregistre, sous
+      + forme de lambda de type `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result`, les types
+      + d'erreur que couvrent les cas ; `.protect(block)` injecte ensuite une tactique par type
+      + couvert dans le bloc. La valeur ne s'utilise jamais que sous la forme
+      + `recover { … }.protect { … }`.
+  refer contingency.recover
+  entry .protect
+    info
+        - runs a block under the recovery's tactics, replacing a covered error with its case's value
+        + exécute un bloc sous les tactiques de la récupération, en remplaçant une erreur couverte
+        + par la valeur de son cas
+    detail
+        - Runs the block inside a `boundary`: each injected tactic, on `record` or `abort`, applies
+        - the handler to the error and breaks out with the case body's value as the block's
+        - result. The replacement value travels as a `Recovery.Escape`, so a case body of the
+        - wrong type is a compile error at the `protect`.
+        + Exécute le bloc à l'intérieur d'un `boundary` : chaque tactique injectée, sur `record` ou
+        + `abort`, applique le gestionnaire à l'erreur et sort avec la valeur du corps du cas comme
+        + résultat du bloc. La valeur de remplacement voyage sous forme de `Recovery.Escape` ; un
+        + corps de cas du mauvais type est donc une erreur de compilation au niveau du `protect`.
+  entry .Escape
+    info
+        - the carrier of a recovered value out of a protected block
+        + le vecteur d'une valeur récupérée hors d'un bloc protégé
+    detail
+        - A stackless exception, pure by construction, carrying the case body's value as an
+        - untyped reference between two frames of one `protect` call. Not raised by user code.
+        + Une exception sans pile, pure par construction, qui porte la valeur du corps du cas sous
+        + forme de référence non typée entre deux trames d'un même appel à `protect`. Elle n'est pas
+        + levée par le code utilisateur.
+    entry .apply
+      info
+          - wraps a value for escape
+          + enveloppe une valeur pour l'échappement
+    entry #value
+      info
+          - the recovered value, at its original type
+          + la valeur récupérée, dans son type d'origine
+    entry #fillInStackTrace
+      info
+          - returns this: an escape never records a stack trace
+          + renvoie ceci : un échappement n'enregistre jamais de trace de pile
+  entry .EscapeTactic
+    info
+        - the tactic behind `protect`, breaking out of a `boundary` with the escaped value
+        + la tactique derrière `protect`, qui sort d'un `boundary` avec la valeur échappée
+    detail
+        - A `Tactic[Recovery.Escape[result]]` over a `boundary.Label[result]`, with
+        - `Diagnostics.omit`: its `record` and `abort` unwrap the escape's value and break.
+        - `protect` contramaps it once per covered error type.
+        + Une `Tactic[Recovery.Escape[result]]` sur un `boundary.Label[result]`, avec
+        + `Diagnostics.omit` : ses `record` et `abort` déballent la valeur de l'échappement et
+        + sortent. `protect` la transpose une fois par type d'erreur couvert.
+  entry #handler
+    info
+        - the match cases, as a partial function from `Exception`
+        + les cas de filtrage, sous forme de fonction partielle depuis `Exception`
+
+entry .mitigate
+  info
+      - translates chosen errors into another error, which then propagates, with `protect`
+      + traduit les erreurs choisies en une autre erreur, qui se propage ensuite, avec `protect`
+  detail
+      - `mitigate { cases }.protect(block)` runs the block with a tactic for each error type the
+      - cases cover; a covered error is passed through its case, and the error the case returns
+      - is raised against the tactic *in scope for that type* — so the block's low-level failure
+      - becomes the error the enclosing method declares. Each case body's error type must have a
+      - `Tactic` in scope at the `mitigate`, or the macro halts with _There is no available
+      - handler for E_. The cases must be written inline, as for `recover`.
+      + `mitigate { cases }.protect(block)` exécute le bloc avec une tactique pour chaque type
+      + d'erreur que couvrent les cas ; une erreur couverte passe par son cas, et l'erreur que
+      + renvoie le cas est levée vers la tactique *dans la portée pour ce type* — si bien que
+      + l'échec de bas niveau du bloc devient l'erreur que déclare la méthode englobante. Le type
+      + d'erreur de chaque corps de cas doit avoir une `Tactic` dans la portée au niveau du
+      + `mitigate`, sinon la macro s'arrête avec _There is no available handler for E_. Les cas
+      + doivent être écrits en ligne, comme pour `recover`.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      case class InputError(text: Text)(using Diagnostics)
+      extends Error(m"the input $text is not acceptable")
+
+      def age(text: Text): Int raises InputError =
+        mitigate:
+          case Number.Error(text, _, _) => InputError(text)
+        . protect(text.as[Int])
+
+      capture[InputError](age(t"abc")).text   // t"abc"
+      ```
+
+      - Mitigations chain: a `mitigate` inside another turns A into B and then B into C. Taint
+      - crosses a mitigation — the inner tactic's `tainted` forwards to the outer — so a `guard`
+      - inside the protected block sees the caller's accrual. A case body builds its error
+      - outside any `Diagnostics` of the block's, so either import one (`errorDiagnostics`) or
+      - reuse the original's: `InputError(text)(using error.diagnostics)`. Like `recover`, a
+      - `mitigate` directly inside an `inline def` finds no tactic; delegate to a non-inline
+      - method. `strategies.mitigation` applies the same translation implicitly, from a
+      - `Mitigable` instance, wherever an outer tactic exists.
+      + Les atténuations s'enchaînent : un `mitigate` à l'intérieur d'un autre transforme A en B
+      + puis B en C. L'entachement franchit une atténuation — le `tainted` de la tactique interne
+      + transmet à la tactique externe — si bien qu'un `guard` à l'intérieur du bloc protégé voit
+      + l'accumulation de l'appelant. Un corps de cas construit son erreur en dehors de tout
+      + `Diagnostics` du bloc ; il faut donc soit en importer un (`errorDiagnostics`), soit
+      + réutiliser celui de l'original : `InputError(text)(using error.diagnostics)`. Comme
+      + `recover`, un `mitigate` placé directement dans une `inline def` ne trouve aucune tactique ;
+      + déléguez à une méthode non inline. `strategies.mitigation` applique implicitement la même
+      + traduction, à partir d'une instance de `Mitigable`, partout où existe une tactique externe.
+
+entry .Mitigation
+  info
+      - a `mitigate` handler, waiting for the block it protects
+      + un gestionnaire `mitigate`, en attente du bloc qu'il protège
+  detail
+      - `mitigate { cases }` is a `Mitigation[lambda]` recording the covered error types in its
+      - type lambda; `.protect(block)` injects, for each, the tactic in scope for the case's
+      - *result* error type, contramapped through the case. Used only as `mitigate { … }.protect
+      - { … }`.
+      + `mitigate { cases }` est une `Mitigation[lambda]` qui enregistre les types d'erreur couverts
+      + dans sa lambda de type ; `.protect(block)` injecte, pour chacun, la tactique dans la portée
+      + pour le type d'erreur *résultat* du cas, transposée à travers le cas.
+      + Utilisé seulement sous la forme `mitigate { … }.protect { … }`.
+  refer contingency.mitigate
+  entry .protect
+    info
+        - runs a block, raising each covered error as its case's translation
+        + exécute un bloc, en levant chaque erreur couverte sous la forme de la traduction de son
+        + cas
+  entry #handler
+    info
+        - the match cases, as a partial function from `Exception`
+        + les cas de filtrage, sous forme de fonction partielle depuis `Exception`
+
+entry .accrue
+  info
+      - collects every chosen error into one accumulated error, with `protect`
+      + rassemble toutes les erreurs choisies en une seule erreur accumulée, avec `protect`
+  detail
+      - `accrue(initial)(combine) { cases }.protect(block)` runs the block with an
+      - `AccrueTactic` for each error type the cases cover. Each covered error the block raises is
+      - folded into the accumulation with `combine`, and the block continues; when it finishes
+      - (or aborts), if anything accrued, the accumulated error is raised against the enclosing
+      - `Tactic[accrual]`, and the block's own result is discarded. If nothing accrued, the
+      - block's value is returned. The `cases` only *name* the covered types (their bodies are
+      - not run); `combine` does the folding, and is a pure `->` function, since it may be
+      - re-run under contention.
+      + `accrue(initial)(combine) { cases }.protect(block)` exécute le bloc avec une
+      + `AccrueTactic` pour chaque type d'erreur que couvrent les cas. Chaque erreur couverte que
+      + lève le bloc est intégrée à l'accumulation avec `combine`, et le bloc poursuit ; lorsqu'il
+      + se termine (ou s'interrompt), si quelque chose s'est accumulé, l'erreur accumulée est levée
+      + vers la `Tactic[accrual]` englobante, et le propre résultat du bloc est ignoré. Si rien ne
+      + s'est accumulé, la valeur du bloc est renvoyée. Les `cases` ne font que *nommer* les types
+      + couverts (leurs corps ne sont pas exécutés) ; `combine` réalise l'intégration, et c'est une
+      + fonction `->` pure, puisqu'elle peut être réexécutée en cas de contention.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      import strategies.throwUnsafely
+      import dysasymptotics.linearSize
+
+      case class Invalid(problems: List[Text])(using Diagnostics)
+      extends Error(m"${problems.size} problems")
+
+      def combine(all: Invalid, error: Exception): Invalid = error match
+        case error: Number.Error => Invalid(all.problems :+ error.text)
+        case _                   => all
+
+      capture[Invalid]:
+        accrue(Invalid(Nil))(combine) { case _: Number.Error => () }
+        . protect:
+            raise(Number.Error(t"a", Int, Number.Error.Reason.Unparseable))
+            raise(Number.Error(t"b", Int, Number.Error.Reason.Unparseable))
+      . problems   // List(t"a", t"b")
+      ```
+
+      - The accrual type must be a `Hazard`, because it is raised; `validate` is the twin whose
+      - accumulation is returned as a plain value instead. `track` adds a focus to each error.
+      + Le type d'accumulation doit être un `Hazard`, puisqu'il est levé ; `validate` est le jumeau
+      + dont l'accumulation est plutôt renvoyée comme simple valeur. `track` ajoute un focus à
+      + chaque erreur.
+
+entry .Accrual
+  info
+      - an `accrue` handler, and the tactic it installs
+      + un gestionnaire `accrue`, et la tactique qu'il installe
+  detail
+      - `accrue(initial)(combine) { cases }` is an `Accrual[accrual, lambda]` holding the
+      - initial accumulation, the combining function and the cases; `.protect(block)` runs the
+      - block under one `AccrueTactic` shared by every covered error type, and needs a
+      - `Tactic[accrual]^` and a `Diagnostics` in scope.
+      + `accrue(initial)(combine) { cases }` est une `Accrual[accrual, lambda]` qui contient
+      + l'accumulation initiale, la fonction de combinaison et les cas ; `.protect(block)` exécute
+      + le bloc sous une unique `AccrueTactic` partagée par tous les types d'erreur couverts, et
+      + nécessite une `Tactic[accrual]^` et un `Diagnostics` dans la portée.
+  refer contingency.accrue
+  entry .protect
+    info
+        - runs a block, folding each covered error into the accrual; raises the accrual if any
+        + exécute un bloc, en intégrant chaque erreur couverte à l'accumulation ; lève
+        + l'accumulation s'il y en a une
+    detail
+        - Returns the block's value if nothing accrued. Otherwise — whether the block completed,
+        - aborted, or threw — records the accumulated error against the enclosing
+        - `Tactic[accrual]` and throws it, so the block's result never reaches the caller.
+        + Renvoie la valeur du bloc si rien ne s'est accumulé. Sinon — que le bloc se soit terminé,
+        + interrompu ou qu'il ait levé une exception — consigne l'erreur accumulée auprès de la
+        + `Tactic[accrual]` englobante et la lève, si bien que le résultat du bloc n'atteint jamais
+        + l'appelant.
+  entry .AccrueTactic
+    info
+        - the tactic `accrue` injects: folds each error into an accumulation and continues
+        + la tactique qu'injecte `accrue` : intègre chaque erreur à une accumulation et poursuit
+    detail
+        - A `Tactic[error]` over an initial `accrual` and a pure `combine: (accrual, Exception)
+        - -> accrual`, with the `Diagnostics` it builds errors with. `record` folds the error in
+        - and returns; `abort` folds it in and throws the accumulation; `certify` throws the
+        - accumulation if anything has accrued; `tolerate` rolls the accumulation back to the
+        - snapshot taken before its block. The accumulation is held in an atomic cell, so the
+        - tactic is safe to share across the threads of one scope, but `combine` may be re-run
+        - under contention and must be pure.
+        + Une `Tactic[error]` sur une `accrual` initiale et une fonction pure `combine: (accrual,
+        + Exception) -> accrual`, avec le `Diagnostics` avec lequel elle construit les erreurs.
+        + `record` intègre l'erreur et retourne ; `abort` l'intègre et lève l'accumulation ;
+        + `certify` lève l'accumulation si quelque chose s'est accumulé ; `tolerate` ramène
+        + l'accumulation à l'instantané pris avant son bloc. L'accumulation est conservée dans une
+        + cellule atomique, si bien que la tactique peut être partagée sans risque entre les threads
+        + d'une même portée, mais `combine` peut être réexécutée en cas de contention et doit être
+        + pure.
+    entry #diagnostics
+      info
+          - the `Diagnostics` errors are built with
+          + le `Diagnostics` avec lequel les erreurs sont construites
+    entry #record
+      info
+          - folds an error into the accumulation and returns
+          + intègre une erreur à l'accumulation et retourne
+    entry #abort
+      info
+          - folds an error in and throws the accumulated error
+          + intègre une erreur et lève l'erreur accumulée
+    entry #certify
+      info
+          - throws the accumulated error if anything has accrued
+          + lève l'erreur accumulée si quelque chose s'est accumulé
+    entry #tainted
+      info
+          - whether the accumulation differs from the initial value
+          + si l'accumulation diffère de la valeur initiale
+    entry #tolerate
+      info
+          - a block's value, or `Unset` with the accumulation restored to what it was
+          + la valeur d'un bloc, ou `Unset` avec l'accumulation restaurée à ce qu'elle était
+    entry #accumulated
+      info
+          - the accumulation so far
+          + l'accumulation jusqu'ici
+    entry #changed
+      info
+          - whether the accumulation differs from the initial value
+          + si l'accumulation diffère de la valeur initiale
+  entry #handler
+    info
+        - the match cases naming the covered error types
+        + les cas de filtrage qui nomment les types d'erreur couverts
+  entry #initial
+    info
+        - the accumulation before any error
+        + l'accumulation avant toute erreur
+  entry #combine
+    info
+        - the pure function folding each error into the accumulation
+        + la fonction pure qui intègre chaque erreur à l'accumulation
+
+entry .handle
+  info
+      - runs chosen errors' case bodies as side-effects and continues, with `protect`
+      + exécute les corps de cas des erreurs choisies comme effets de bord et poursuit, avec
+      + `protect`
+  detail
+      - `handle { cases }.protect(block)` runs the block with an `Emit` — not a full `Tactic` —
+      - for each error type the cases cover: a `raise` of a covered error runs its case body in
+      - place, and control returns to the block, which continues. The case bodies return `Unit`.
+      - An uncovered error, or one a case body re-raises, stays an obligation of the enclosing
+      - scope. Since only an `Emit` is injected, an `abort` of a covered error inside the block
+      - is not discharged by `handle`.
+      + `handle { cases }.protect(block)` exécute le bloc avec un `Emit` — et non une `Tactic`
+      + complète — pour chaque type d'erreur que couvrent les cas : un `raise` d'une erreur couverte
+      + exécute son corps de cas sur place, et le contrôle revient au bloc, qui poursuit. Les corps
+      + de cas renvoient `Unit`. Une erreur non couverte, ou une erreur qu'un corps de cas relève,
+      + reste une obligation de la portée englobante. Comme seul un `Emit` est injecté, un `abort`
+      + d'une erreur couverte à l'intérieur du bloc n'est pas acquitté par `handle`.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      var seen = 0
+
+      handle:
+        case Number.Error(text, _, _) => seen += 1
+      . protect:
+          raise(Number.Error(t"a", Int, Number.Error.Reason.Unparseable))
+          raise(Number.Error(t"b", Int, Number.Error.Reason.Unparseable))
+
+      seen   // 2
+      ```
+
+      - A case body becomes a `caps.Control` capability's handler, so it may raise into an outer
+      - tactic but may not capture a non-control capability such as a logger: move such work out
+      - of the case body.
+      + Un corps de cas devient le gestionnaire d'une capacité `caps.Control` ; il peut donc lever
+      + vers une tactique externe mais ne peut pas capturer une capacité qui n'est pas de contrôle,
+      + comme un logger : sortez ce travail du corps du cas.
+
+entry .Handler
+  info
+      - a `handle` handler, waiting for the block it protects
+      + un gestionnaire `handle`, en attente du bloc qu'il protège
+  detail
+      - `handle { cases }` is a `Handler[lambda]` recording the covered error types as a type
+      - lambda over `Emit`s; `.protect(block)` injects one `Emit` per type, each backed by the
+      - case body, and needs a `Diagnostics` in scope. Used only as `handle { … }.protect { … }`.
+      + `handle { cases }` est un `Handler[lambda]` qui enregistre les types d'erreur couverts sous
+      + forme de lambda de type sur des `Emit` ; `.protect(block)` injecte un `Emit` par type,
+      + chacun adossé au corps du cas, et nécessite un `Diagnostics` dans la portée. Utilisé
+      + seulement sous la forme `handle { … }.protect { … }`.
+  refer contingency.handle
+  entry .protect
+    info
+        - runs a block with an `Emit` per covered error, each running its case body in place
+        + exécute un bloc avec un `Emit` par erreur couverte, chacun exécutant son corps de cas sur
+        + place
+  entry #handler
+    info
+        - the match cases, as a partial function from `Exception` to `Unit`
+        + les cas de filtrage, sous forme de fonction partielle depuis `Exception` vers `Unit`
+
+entry .track
+  info
+      - collects chosen errors, each with the focus it was raised at, into one accumulated error
+      + rassemble les erreurs choisies, chacune avec le focus où elle a été levée, en une seule
+      + erreur accumulée
+  detail
+      - `track[focus](initial) { cases }.protect(block)` is `accrue` with positions. The block
+      - runs with a `Foci[focus]` and a `TrackTactic` for each error type the cases cover; every
+      - covered error is registered against the foci, together with the focus current at the
+      - time (set by `focus`), and the block continues. When it finishes, if anything was
+      - registered, the errors are folded — each case receives the error, with `prior` (the
+      - `Optional[focus]` it was raised at) and `accrual` (the accumulation so far) as named
+      - contextual values — and the result is aborted against the enclosing `Tactic[accrual]`.
+      - Each case returns the new accumulation.
+      + `track[focus](initial) { cases }.protect(block)` est un `accrue` avec positions. Le bloc
+      + s'exécute avec un `Foci[focus]` et une `TrackTactic` pour chaque type d'erreur que couvrent
+      + les cas ; chaque erreur couverte est enregistrée auprès des focus, avec le focus courant à
+      + ce moment (fixé par `focus`), et le bloc poursuit. Lorsqu'il se termine, si quelque chose a
+      + été enregistré, les erreurs sont repliées — chaque cas reçoit l'erreur, avec `prior` (le
+      + `Optional[focus]` où elle a été levée) et `accrual` (l'accumulation jusqu'ici) comme valeurs
+      + contextuelles nommées — et le résultat est interrompu vers la `Tactic[accrual]` englobante.
+      + Chaque cas renvoie la nouvelle accumulation.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      import dysasymptotics.linearSize
+
+      case class Invalid(problems: List[Text])(using Diagnostics)
+      extends Error(m"${problems.size} problems")
+
+      recover:
+        case Invalid(problems) => problems
+      . protect:
+          track[Pointer](Invalid(Nil)):
+            case error: Number.Error =>
+              val where = prior.let(_.text).or(t"?")
+              Invalid(accrual.problems :+ t"$where: ${error.text}")
+          . protect:
+              focus(prior.or(Pointer.Self)(t"age")):
+                raise(Number.Error(t"abc", Int, Number.Error.Reason.Unparseable))
+              List()
+      // List(t"age: abc")
+      ```
+
+      - The focus type is chosen by the structure being traversed — a `JsonPointer` for JSON, a
+      - path for XML, a cell reference for a spreadsheet — so a position is reported in the
+      - data's own vocabulary. `validate` is the same construct returning the accumulation as a
+      - plain value rather than raising it.
+      + Le type de focus est choisi selon la structure parcourue — un `JsonPointer` pour JSON, un
+      + chemin pour XML, une référence de cellule pour un tableur — si bien qu'une position est
+      + signalée dans le vocabulaire propre aux données. `validate` est la même construction, qui
+      + renvoie l'accumulation comme simple valeur au lieu de la lever.
+
+entry .Tracking
+  info
+      - a `track` handler, waiting for the block it protects
+      + un gestionnaire `track`, en attente du bloc qu'il protège
+  detail
+      - `track[focus](initial) { cases }` is a `Tracking[accrual, lambda, focus]` holding the
+      - initial accumulation and the fold; `.protect(block)` runs the block with a fresh
+      - `TrackFoci` and a `TrackTactic` per covered error type, and needs a `Tactic[accrual]^`
+      - and a `Diagnostics` in scope. Used only as `track[…](…) { … }.protect { … }`. A function
+      - *value* typed `… raises E tracks F` cannot be written under capture checking, so a
+      - helper wrapping `track` should be an `inline def` whose body is spliced into `protect`.
+      + `track[focus](initial) { cases }` est un `Tracking[accrual, lambda, focus]` qui contient
+      + l'accumulation initiale et le repli ; `.protect(block)` exécute le bloc avec un nouveau
+      + `TrackFoci` et une `TrackTactic` par type d'erreur couvert, et nécessite une
+      + `Tactic[accrual]^` et un `Diagnostics` dans la portée. Utilisé seulement sous la forme
+      + `track[…](…) { … }.protect { … }`. Une *valeur* de fonction typée `… raises E tracks F` ne
+      + peut pas être écrite sous contrôle des captures ; une méthode auxiliaire qui enveloppe
+      + `track` devrait donc être une `inline def` dont le corps est injecté dans `protect`.
+  refer contingency.track
+  entry .protect
+    info
+        - runs a block, registering covered errors with their foci; aborts with the fold if any
+        + exécute un bloc, en enregistrant les erreurs couvertes avec leurs focus ; s'interrompt
+        + avec le repli s'il y en a
+  entry #initial
+    info
+        - the accumulation before any error
+        + l'accumulation avant toute erreur
+  entry #lambda
+    info
+        - the fold: each error, with its `prior` focus and the `accrual` so far, to a new accumulation
+        + le repli : chaque erreur, avec son focus `prior` et l'`accrual` jusqu'ici, vers une
+        + nouvelle accumulation
+
+entry .validate
+  info
+      - collects chosen errors with their foci into a value which is returned, not raised
+      + rassemble les erreurs choisies avec leurs focus en une valeur qui est renvoyée, et non
+      + levée
+  detail
+      - `validate[focus](initial) { cases }.protect(block)` is `track` whose result is the
+      - accumulation itself: the block runs with a `Foci[focus]` and a `TrackTactic` per covered
+      - error type, and whatever the block returns is discarded; the fold over the registered
+      - errors (each case with `prior` and `accrual` in scope) is the value of the whole
+      - expression. The accumulation need not be an error — a `validate` collecting a `Count`,
+      - or a list of messages, is only ever returned. Needs a `Diagnostics`.
+      + `validate[focus](initial) { cases }.protect(block)` est un `track` dont le résultat est
+      + l'accumulation elle-même : le bloc s'exécute avec un `Foci[focus]` et une `TrackTactic` par
+      + type d'erreur couvert, et ce que renvoie le bloc est ignoré ; le repli sur les erreurs
+      + enregistrées (chaque cas ayant `prior` et `accrual` dans la portée) est la valeur de
+      + l'expression entière. L'accumulation n'a pas besoin d'être une erreur — un `validate` qui
+      + collecte un `Count`, ou une liste de messages, n'est jamais que renvoyé. Nécessite un
+      + `Diagnostics`.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      case class Problems(texts: List[Text])
+
+      val problems: Problems =
+        validate[Pointer](Problems(Nil)):
+          case error: Number.Error => Problems(accrual.texts :+ error.text)
+        . protect:
+            raise(Number.Error(t"a", Int, Number.Error.Reason.Unparseable))
+            raise(Number.Error(t"b", Int, Number.Error.Reason.Unparseable))
+
+      problems.texts   // List(t"a", t"b")
+      ```
+
+      - Nested validations are fully delimited: an inner `validate` keeps its own errors, and the
+      - outer sees none of them.
+      + Les validations imbriquées sont entièrement délimitées : un `validate` interne garde ses
+      + propres erreurs, et l'externe n'en voit aucune.
+
+entry .Validate
+  info
+      - a `validate` handler, waiting for the block it protects
+      + un gestionnaire `validate`, en attente du bloc qu'il protège
+  detail
+      - `validate[focus](initial) { cases }` is a `Validate[accrual, lambda, focus]`; `.protect
+      - (block)` runs the block with a fresh `TrackFoci` and a `TrackTactic` per covered type,
+      - then returns the fold. It can be constructed directly — `Validate[Tally, [r] =>> r
+      - raises CErrorA, Pointer](initial, cases)` — where a helper needs to name the covered
+      - types itself.
+      + `validate[focus](initial) { cases }` est un `Validate[accrual, lambda, focus]` ; `.protect
+      + (block)` exécute le bloc avec un nouveau `TrackFoci` et une `TrackTactic` par type couvert,
+      + puis renvoie le repli. Il peut être construit directement — `Validate[Tally, [r] =>> r
+      + raises CErrorA, Pointer](initial, cases)` — lorsqu'une méthode auxiliaire doit nommer
+      + elle-même les types couverts.
+  refer contingency.validate
+  entry .protect
+    info
+        - runs a block, registering covered errors with their foci; returns the fold
+        + exécute un bloc, en enregistrant les erreurs couvertes avec leurs focus ; renvoie le
+        + repli
+  entry #initial
+    info
+        - the accumulation before any error
+        + l'accumulation avant toute erreur
+  entry #lambda
+    info
+        - the fold: each error, with its `prior` focus and the `accrual` so far, to a new accumulation
+        + le repli : chaque erreur, avec son focus `prior` et l'`accrual` jusqu'ici, vers une
+        + nouvelle accumulation
+
+entry .accrual
+  info
+      - the accumulation so far, inside a `track`, `validate` or `accrue` case
+      + l'accumulation jusqu'ici, à l'intérieur d'un cas de `track`, `validate` ou `accrue`
+  detail
+      - Reads the contextual `accrual aka "accrual"` value a `track` or `validate` fold passes to
+      - each case: `case error: Number.Error => Invalid(accrual.problems :+ error.text)`. Outside
+      - such a case there is no such value in scope.
+      + Lit la valeur contextuelle `accrual aka "accrual"` qu'un repli de `track` ou de `validate`
+      + passe à chaque cas : `case error: Number.Error => Invalid(accrual.problems :+ error.text)`.
+      + En dehors d'un tel cas, aucune valeur de ce genre n'est dans la portée.
+
+entry .focus
+  info
+      - runs a block, and tags each error registered within it with a focus
+      + exécute un bloc, et associe un focus à chaque erreur enregistrée en son sein
+  detail
+      - `focus(transform)(block)` evaluates the block, then — however it ended — supplements
+      - every error the `Foci[focus]` in scope registered during it with the focus `transform`
+      - produces. The transform receives `prior`, the `Optional[focus]` already attached (by an
+      - inner `focus`), so a traversal descending a structure composes positions from the inside
+      - out: `focus(prior.or(Pointer.Self)(t"name"))`. The inert `Foci.default` registers
+      - nothing, and `Foci#active` lets a hot loop skip the wrapping entirely.
+      + `focus(transform)(block)` évalue le bloc, puis — quelle que soit la manière dont il s'est
+      + terminé — complète chaque erreur que le `Foci[focus]` dans la portée a enregistrée pendant
+      + son exécution avec le focus que produit `transform`. La transformation reçoit `prior`, le
+      + `Optional[focus]` déjà attaché (par un `focus` interne), si bien qu'un parcours qui descend
+      + dans une structure compose les positions de l'intérieur vers l'extérieur :
+      + `focus(prior.or(Pointer.Self)(t"name"))`. Le `Foci.default` inerte n'enregistre rien, et
+      + `Foci#active` permet à une boucle critique d'éviter entièrement l'enveloppement.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val foci = TrackFoci[Pointer]()
+      given Foci[Pointer] = foci
+
+      focus[Pointer, Unit](prior.or(Pointer.Self)(t"field")):
+        foci.register(Number.Error(t"abc", Int, Number.Error.Reason.Unparseable))
+
+      foci.length   // 1
+      ```
+
+entry .Foci
+  info
+      - the record of where errors were registered: the positions a `track` or `validate` collects
+      + le registre des endroits où les erreurs ont été enregistrées : les positions que collecte un
+      + `track` ou un `validate`
+  detail
+      - A `Foci[focus]` is the mutable register a `TrackTactic` reports into: each error, with
+      - an `Optional[focus]` saying where in a structure it arose, which `focus` fills in as the
+      - traversal unwinds. `TrackFoci` is the recording implementation which `track` and
+      - `validate` install; `Foci.default` is the inert one in implicit scope everywhere else,
+      - so a method declared `tracks focus` can always be called, and only an enclosing
+      - `track` or `validate` observes the positions.
+      + Un `Foci[focus]` est le registre mutable auprès duquel signale une `TrackTactic` : chaque
+      + erreur, avec un `Optional[focus]` indiquant où elle est survenue dans une structure, que
+      + `focus` renseigne à mesure que le parcours se déroule en sens inverse. `TrackFoci` est
+      + l'implémentation qui enregistre, qu'installent `track` et `validate` ; `Foci.default` est
+      + l'implémentation inerte présente partout ailleurs dans la portée implicite, si bien qu'une
+      + méthode déclarée `tracks focus` peut toujours être appelée, et que seul un `track` ou un
+      + `validate` englobant observe les positions.
+  refer contingency.track
+  refer contingency.focus
+  refer contingency.Pointer
+  entry .default
+    info
+        - the inert `Foci`, in implicit scope: registers nothing, reports no success
+        + le `Foci` inerte, dans la portée implicite : n'enregistre rien, ne signale aucun succès
+    detail
+        - Its `active` is `false`, its `length` is 0, `register` and `supplement` discard
+        - everything, `fold` returns the initial value and `success` is `false` (no error was
+        - recorded, but nothing was tracked either).
+        + Son `active` vaut `false`, son `length` 0, `register` et `supplement` ignorent tout,
+        + `fold` renvoie la valeur initiale et `success` vaut `false` (aucune erreur n'a été
+        + consignée, mais rien n'a non plus été suivi).
+  entry #active
+    info
+        - whether registered errors are kept; `false` only for `Foci.default`
+        + si les erreurs enregistrées sont conservées ; `false` uniquement pour `Foci.default`
+    detail
+        - A hot decode loop checks this to skip its per-field `focus` wrapping, and the closure
+        - each wrap allocates, when no focus would ever be observed.
+        + Une boucle de décodage critique le vérifie pour éviter son enveloppement `focus` par
+        + champ, et la fermeture qu'alloue chaque enveloppement, lorsqu'aucun focus ne serait jamais
+        + observé.
+  entry #length
+    info
+        - how many errors have been registered
+        + combien d'erreurs ont été enregistrées
+  entry #success
+    info
+        - whether tracking ran and no error was registered
+        + si le suivi a eu lieu sans qu'aucune erreur ne soit enregistrée
+  entry #register
+    info
+        - records an error, with no focus yet
+        + enregistre une erreur, encore sans focus
+  entry #fold
+    info
+        - folds the registered errors, each with its focus, into an accumulation
+        + replie les erreurs enregistrées, chacune avec son focus, en une accumulation
+    detail
+        - `fold(initial)((focus, accumulation) => { case error => … })`: the lambda receives the
+        - focus and accumulation and returns a partial function over the error.
+        + `fold(initial)((focus, accumulation) => { case error => … })` : la lambda reçoit le focus
+        + et l'accumulation et renvoie une fonction partielle sur l'erreur.
+  entry #supplement
+    info
+        - applies a transform to the focus of the last `count` errors registered
+        + applique une transformation au focus des `count` dernières erreurs enregistrées
+    detail
+        - How `focus` attaches a position: the transform takes the `Optional[focus]` already
+        - there and returns the new one.
+        + La manière dont `focus` attache une position : la transformation prend le
+        + `Optional[focus]` déjà présent et renvoie le nouveau.
+  entry #truncate
+    info
+        - drops every error registered after the first `length`
+        + supprime toutes les erreurs enregistrées après les `length` premières
+    detail
+        - How a `TrackTactic#tolerate` rolls back what its block recorded.
+        + La manière dont un `TrackTactic#tolerate` annule ce que son bloc a consigné.
+  entry #tainted
+    info
+        - whether any error has been registered
+        + si une erreur a été enregistrée
+
+entry .TrackFoci
+  info
+      - the recording `Foci`: keeps every registered error with its focus
+      + le `Foci` qui enregistre : conserve chaque erreur enregistrée avec son focus
+  detail
+      - The implementation `track` and `validate` install, with an `ArrayBuffer` of errors and
+      - one of their `Optional[focus]`es. It can be bound as a local given to observe foci
+      - without a `track` (`given Foci[Pointer] = TrackFoci()`).
+      + L'implémentation qu'installent `track` et `validate`, avec un `ArrayBuffer` d'erreurs et un
+      + autre de leurs `Optional[focus]`. Elle peut être liée comme given local pour observer les
+      + focus sans `track` (`given Foci[Pointer] = TrackFoci()`).
+
+entry .Pointer
+  info
+      - a dotted path into a structure, as the focus of an error
+      + un chemin pointé dans une structure, comme focus d'une erreur
+  detail
+      - The simplest focus type: `Pointer.Self` is the root, and `Pointer.Child(parent, label)`
+      - one step down. `Pointer(t"a")(t"b")(t"c")` builds a path, which renders as `a.b.c`, and
+      - is the focus type the `validate` examples use where the structure has no pointer type
+      - of its own. It is `Encodable in Text` and `Communicable`, so it interpolates into a
+      - message as its dotted text.
+      + Le type de focus le plus simple : `Pointer.Self` est la racine, et
+      + `Pointer.Child(parent, label)` un pas plus bas. `Pointer(t"a")(t"b")(t"c")` construit un
+      + chemin, qui se rend sous la forme `a.b.c`, et c'est le type de focus qu'utilisent les
+      + exemples de `validate` lorsque la structure n'a pas de type de pointeur propre. Il est
+      + `Encodable in Text` et `Communicable` ; il s'interpole donc dans un message sous forme de
+      + son texte pointé.
+
+      ```scala
+      import soundness.*
+
+      Pointer().text                      // t""
+      Pointer(t"a")(t"b")(t"c").text      // t"a.b.c"
+      ```
+  entry .apply
+    info
+        - `Pointer()` is the root; `Pointer(label)` a child of the root
+        + `Pointer()` est la racine ; `Pointer(label)` un enfant de la racine
+  entry .encodable
+    info
+        - renders a pointer as its dotted text
+        + rend un pointeur sous forme de son texte pointé
+  entry .communicable
+    info
+        - renders a pointer as a message of its dotted text
+        + rend un pointeur sous forme de message de son texte pointé
+  entry #text
+    info
+        - the labels joined with `.`; empty for the root
+        + les étiquettes jointes par `.` ; vide pour la racine
+  entry #apply
+    info
+        - `pointer(label)`: the child of this pointer with that label
+        + `pointer(label)` : l'enfant de ce pointeur portant cette étiquette
+
+entry .TrackTactic
+  info
+      - the tactic `track` and `validate` inject: registers each error with the foci and continues
+      + la tactique qu'injectent `track` et `validate` : enregistre chaque erreur auprès des focus
+      + et poursuit
+  detail
+      - A `Tactic[error]` over a `boundary` label, an initial accumulation and the `Foci` to
+      - register into, with the `Diagnostics` it builds errors with. `record` registers the
+      - error and returns; `abort` registers it and breaks out of the block; `certify` breaks
+      - out if the foci are tainted; `tolerate` truncates the foci back to where they were
+      - before its block.
+      + Une `Tactic[error]` sur une étiquette `boundary`, une accumulation initiale et le `Foci`
+      + auprès duquel enregistrer, avec le `Diagnostics` avec lequel elle construit les erreurs.
+      + `record` enregistre l'erreur et retourne ; `abort` l'enregistre et sort du bloc ; `certify`
+      + sort si les focus sont entachés ; `tolerate` tronque les focus à ce qu'ils étaient avant
+      + son bloc.
+  entry #diagnostics
+    info
+        - the `Diagnostics` errors are built with
+        + le `Diagnostics` avec lequel les erreurs sont construites
+  entry #record
+    info
+        - registers the error with the foci and returns
+        + enregistre l'erreur auprès des focus et retourne
+  entry #finish
+    info
+        - a no-op, kept for the tactic's shape
+        + une opération sans effet, conservée pour la forme de la tactique
+  entry #certify
+    info
+        - breaks out of the tracked block if any error has been registered
+        + sort du bloc suivi si une erreur a été enregistrée
+  entry #tainted
+    info
+        - whether the foci hold any error
+        + si les focus contiennent une erreur
+  entry #tolerate
+    info
+        - a block's value, or `Unset` with the errors it registered dropped from the foci
+        + la valeur d'un bloc, ou `Unset` avec les erreurs qu'il a enregistrées retirées des focus
+  entry #abort
+    info
+        - registers the error and breaks out of the tracked block
+        + enregistre l'erreur et sort du bloc suivi
+
+entry .Errors
+  info
+      - several errors reported together, each keyed by the text of its focus
+      + plusieurs erreurs signalées ensemble, chacune indexée par le texte de son focus
+  detail
+      - Error `↯/s.24.5`: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
+      - `(Text, Error)` pairs, for a validation which collects every problem before failing.
+      - It is built empty and grown with `+`, and a focus's error is looked up with `apply`.
+      + Erreur `↯/s.24.5` : _`n` accrued errors: `message` at `focus`; …_. Une `Error` contenant des
+      + paires `(Text, Error)`, pour une validation qui rassemble tous les problèmes avant
+      + d'échouer. Elle est construite vide et augmentée avec `+`, et l'erreur d'un focus se
+      + consulte avec `apply`.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val errors = Errors() + (t"age", Number.Error(t"abc", Int, Number.Error.Reason.Unparseable))
+      errors(t"age")       // the Number.Error
+      errors(t"missing")   // Unset
+      ```
+  entry #errors
+    info
+        - the `(focus, error)` pairs, most recent first
+        + les paires `(focus, error)`, la plus récente en premier
+  entry #+
+    info
+        - `errors + (focus, error)`: a new `Errors` with one more pair
+        + `errors + (focus, error)` : un nouvel `Errors` avec une paire de plus
+  entry #apply
+    info
+        - the error recorded at a focus, or `Unset`
+        + l'erreur consignée en un focus, ou `Unset`
+
+entry .Validation
+  info
+      - several messages reported together, each at a `Pointer`
+      + plusieurs messages signalés ensemble, chacun en un `Pointer`
+  detail
+      - Error `↯/s.24.3`: _`n` messages: `message` at `pointer`; …_ (with `no messages`, `one
+      - message`, `two messages`… for small counts, and a message at `Pointer.Self` shown
+      - without a position). An `Error` holding `(Pointer, Message)` pairs for a pipeline which
+      - walks a structure and accumulates what it finds wrong, rather than aborting at the
+      - first. Built empty and grown with `+`.
+      + Erreur `↯/s.24.3` : _`n` messages: `message` at `pointer`; …_ (avec `no messages`, `one
+      + message`, `two messages`… pour les petits nombres, et un message en `Pointer.Self`
+      + affiché sans position). Une `Error` contenant des paires `(Pointer, Message)` pour un
+      + traitement qui parcourt une structure et accumule ce qu'il y trouve d'incorrect, au lieu de
+      + s'interrompre au premier problème. Construite vide et augmentée avec `+`.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val validation = Validation() + (Pointer(t"name"), m"the value was not set")
+      validation(Pointer(t"name"))   // m"the value was not set"
+      validation.text.text           // t"one message: the value was not set at name"
+      ```
+  entry .text
+    info
+        - the message for a list of `(Pointer, Message)` pairs: a count, then each message at its pointer
+        + le message pour une liste de paires `(Pointer, Message)` : un nombre, puis chaque message
+        + à son pointeur
+  entry #messages
+    info
+        - the pairs, most recent first
+        + les paires, la plus récente en premier
+  entry #+
+    info
+        - `validation + (pointer, message)`: a new `Validation` with one more pair
+        + `validation + (pointer, message)` : une nouvelle `Validation` avec une paire de plus
+  entry #apply
+    info
+        - the message recorded at a pointer, or `Unset`
+        + le message consigné à un pointeur, ou `Unset`
+  entry #text
+    info
+        - the validation's message, as `Validation.text` renders it
+        + le message de la validation, tel que le rend `Validation.text`
+
+entry .Expectation
+  info
+      - the home of `Expectation.Error`, raised when `capture`'s block succeeds
+      + le foyer d'`Expectation.Error`, levée lorsque le bloc de `capture` réussit
+  detail
+      - `capture` expects its block to fail and returns the error it raised; `Expectation`
+      - names that expectation so its disappointment has somewhere to live.
+      + `capture` s'attend à ce que son bloc échoue et renvoie l'erreur qu'il a levée ;
+      + `Expectation` nomme cette attente, pour que sa déception ait un endroit où vivre.
+  refer contingency.capture
+  entry .Error
+    info
+        - raised by `capture` when the block was expected to fail but succeeded
+        + levée par `capture` lorsque le bloc devait échouer mais a réussi
+    detail
+        - Error `↯/s.24.16`: _the expression was expected to fail, but succeeded_. Carries the value the
+        - block produced instead, so a test can see what was returned. `capture` needs a
+        - `Tactic[Expectation.Error[success]]` in scope for it, which `strategies.throwUnsafely`
+        - supplies.
+        + Erreur `↯/s.24.16` : _the expression was expected to fail, but succeeded_. Porte la valeur
+        + que le bloc a produite à la place, pour qu'un test puisse voir ce qui a été renvoyé.
+        + `capture` nécessite pour elle une `Tactic[Expectation.Error[success]]` dans la portée, que
+        + fournit `strategies.throwUnsafely`.
+    entry #result
+      info
+          - the value the block produced instead of failing
+          + la valeur que le bloc a produite au lieu d'échouer
+
+entry .venture
+  info
+      - evaluates a block eagerly, remembering whether it recorded any error
+      + évalue un bloc immédiatement, en retenant s'il a consigné une erreur
+  detail
+      - `venture(block)` runs the block at once, under a `VentureTactic` interposed before the
+      - ambient `Tactic[error]`: every error it raises is recorded into the ambient scope exactly
+      - as it would be outside, but the result is a `Venture[value]` — the value if the block
+      - recorded nothing, or the `Failed` marker if it did. An `abort` inside a venture is
+      - *delimited*: it records its error and abandons only the venture, so sibling ventures each
+      - contribute their full error sets, and code which later forces a failed venture with
+      - `venture()` is skipped rather than fed a placeholder.
+      + `venture(block)` exécute le bloc sur-le-champ, sous une `VentureTactic` interposée devant la
+      + `Tactic[error]` ambiante : chaque erreur qu'il lève est consignée dans la portée ambiante
+      + exactement comme elle le serait à l'extérieur, mais le résultat est un `Venture[value]` — la
+      + valeur si le bloc n'a rien consigné, ou le marqueur `Failed` dans le cas contraire. Un
+      + `abort` à l'intérieur d'une entreprise est *délimité* : il consigne son erreur et
+      + n'abandonne que l'entreprise, si bien que des entreprises sœurs fournissent chacune leur
+      + ensemble complet d'erreurs, et que le code qui force ensuite une entreprise échouée avec
+      + `venture()` est sauté au lieu de recevoir une valeur de substitution.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      case class Person(name: Text, age: Int)
+
+      def person(name: Text, age: Text): Person raises Number.Error =
+        val checkedName = venture:
+          if name == t"" then abort(Number.Error(name, Int, Number.Error.Reason.Unparseable))
+          else name
+
+        val checkedAge = venture(age.as[Int])
+
+        venture:
+          if checkedName().length > checkedAge()
+          then abort(Number.Error(age, Int, Number.Error.Reason.OutOfRange))
+
+        guard:
+          Person(checkedName(), checkedAge())
+      ```
+
+      - Under a fail-fast ambient tactic (`safely`, `throwUnsafely`, `attempt`…) the forwarded
+      - `record` escapes immediately, and `venture` is transparent eager evaluation: the same
+      - body serves every strategy. The block receives one capability which is both its tactic
+      - and its `Guard` (a `Venturer[error]`), so a venture may be forced inside another.
+      + Sous une tactique ambiante à échec immédiat (`safely`, `throwUnsafely`, `attempt`…), le
+      + `record` transmis s'échappe immédiatement, et `venture` est une évaluation immédiate
+      + transparente : le même corps sert toutes les stratégies. Le bloc reçoit une capacité unique
+      + qui est à la fois sa tactique et son `Guard` (un `Venturer[error]`), si bien qu'une
+      + entreprise peut être forcée à l'intérieur d'une autre.
+
+entry .guard
+  info
+      - runs a block only if nothing has been recorded so far; otherwise surrenders the scope
+      + exécute un bloc seulement si rien n'a été consigné jusqu'ici ; sinon abandonne la portée
+  detail
+      - `guard(block)` checks the ambient `Tactic[error]`'s `tainted`: if clean, the block runs
+      - with a `Guard` capability in scope (so ventures can be forced within it); if tainted, the
+      - block is skipped by certifying the tactic, which surrenders the whole aggregation scope to
+      - its accumulated errors. Forcing a failed `Venture` inside the block escapes the same way.
+      - Under a fail-fast tactic `tainted` is always `false`, so `guard` is the identity.
+      + `guard(block)` vérifie le `tainted` de la `Tactic[error]` ambiante : si elle est propre, le
+      + bloc s'exécute avec une capacité `Guard` dans la portée (de sorte que des entreprises
+      + peuvent y être forcées) ; si elle est entachée, le bloc est sauté par certification de la
+      + tactique, qui abandonne toute la portée d'agrégation au profit de ses erreurs accumulées.
+      + Forcer un `Venture` échoué à l'intérieur du bloc s'échappe de la même manière. Sous une
+      + tactique à échec immédiat, `tainted` vaut toujours `false` ; `guard` est donc l'identité.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      safely[Number.Error]:
+        val n = venture(t"abc".as[Int])
+        guard(n() * 2)
+      // Unset: under `safely` the failing venture escapes before any guard
+      ```
+
+entry .Guard
+  info
+      - the witness of an enclosing skip-scope, which a failed `Venture` can escape to
+      + le témoin d'une portée de saut englobante, vers laquelle un `Venture` échoué peut s'échapper
+  detail
+      - A capability provided to the block of a `venture` or `guard`: forcing a `Venture` with
+      - `venture()` requires one, so that forcing is only possible where a lexical region exists
+      - to abandon. `escape()` performs the abandonment — for a `venture`, failing the venture
+      - itself; for a `guard`, certifying the ambient tactic. With no skip-scope in context,
+      - forcing does not compile: there would be nowhere well-defined to skip to.
+      + Une capacité fournie au bloc d'un `venture` ou d'un `guard` : forcer un `Venture` avec
+      + `venture()` en exige une, de sorte que le forçage n'est possible que là où existe une région
+      + lexicale à abandonner. `escape()` réalise l'abandon — pour un `venture`, en faisant échouer
+      + l'entreprise elle-même ; pour un `guard`, en certifiant la tactique ambiante. Sans portée de
+      + saut dans le contexte, le forçage ne compile pas : il n'y aurait aucun endroit bien défini
+      + vers lequel sauter.
+  refer contingency.venture
+  refer contingency.guard
+  entry #escape
+    info
+        - abandons the enclosing skip-scope; does not return
+        + abandonne la portée de saut englobante ; ne retourne pas
+
+entry .Venturer
+  info
+      - the one capability a `venture` block receives: its tactic, which is also its `Guard`
+      + l'unique capacité que reçoit un bloc `venture` : sa tactique, qui est aussi son `Guard`
+  detail
+      - `Venturer[error]` is `Tactic[error] & Guard`: the venture's delimiting tactic and its own
+      - skip-scope witness are the same object, passed once, since the same capability cannot be
+      - passed twice under separation checking. A named alias because a parenthesised capturing
+      - intersection cannot be parsed in context-function position.
+      + `Venturer[error]` est `Tactic[error] & Guard` : la tactique délimitante de l'entreprise et
+      + son propre témoin de portée de saut sont le même objet, passé une seule fois, puisque la
+      + même capacité ne peut pas être passée deux fois sous contrôle de séparation. Un alias nommé,
+      + car une intersection capturante entre parenthèses ne peut pas être analysée en position de
+      + fonction contextuelle.
+
+entry .Venture
+  info
+      - the outcome of a `venture`: the value, or the marker that errors were recorded
+      + l'issue d'un `venture` : la valeur, ou le marqueur indiquant que des erreurs ont été
+      + consignées
+  detail
+      - `Venture[value]` is an opaque union of `value` and `Venture.Failed`, so a successful
+      - venture allocates nothing — opaque, unlike `Optional`, so that `apply()` resolves only
+      - on ventures. The errors themselves are not held here: they were recorded into the
+      - ambient tactic at the venture's declaration, and `Failed` only marks the value unusable,
+      - which is why forcing a failed venture reports nothing further.
+      + `Venture[value]` est une union opaque de `value` et de `Venture.Failed`, si bien qu'une
+      + entreprise réussie n'alloue rien — opaque, contrairement à `Optional`, pour que `apply()` ne
+      + se résolve que sur les entreprises. Les erreurs elles-mêmes ne sont pas conservées ici :
+      + elles ont été consignées dans la tactique ambiante à la déclaration de l'entreprise, et
+      + `Failed` ne fait que marquer la valeur comme inutilisable, raison pour laquelle forcer une
+      + entreprise échouée ne signale rien de plus.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      safely[Number.Error]:
+        val n: Venture[Int] = venture(t"42".as[Int])
+        n.ready   // true
+        guard(n() + 1)
+      // 43
+      ```
+  refer contingency.venture
+  refer contingency.guard
+  refer contingency.Guard
+  entry .Failed
+    info
+        - the marker of a venture which recorded errors
+        + le marqueur d'une entreprise qui a consigné des erreurs
+  entry .Type
+    info
+        - the opaque type `Failed.type | value` which `Venture[value]` aliases
+        + le type opaque `Failed.type | value` dont `Venture[value]` est un alias
+  entry .apply
+    info
+        - `Venture(value)` is a ready venture; `venture()` forces one, escaping if it failed
+        + `Venture(value)` est une entreprise prête ; `venture()` en force une, en s'échappant si
+        + elle a échoué
+    detail
+        - `Venture.apply(value)` wraps a value as a ready venture. The extension `venture()` on an
+        - instance is the value, or escapes to the enclosing skip-scope if the venture failed: it
+        - needs a `Guard^` in scope — an enclosing `venture` or `guard` block — and does not
+        - compile without one.
+        + `Venture.apply(value)` enveloppe une valeur en entreprise prête. L'extension `venture()`
+        + sur une instance est la valeur, ou s'échappe vers la portée de saut englobante si
+        + l'entreprise a échoué : elle nécessite un `Guard^` dans la portée — un bloc `venture` ou
+        + `guard` englobant — et ne compile pas sans.
+  entry .failed
+    info
+        - a failed venture, of any value type
+        + une entreprise échouée, de n'importe quel type de valeur
+  entry .ready
+    info
+        - whether the venture holds a value rather than `Failed`
+        + si l'entreprise contient une valeur plutôt que `Failed`
+  entry .vouch
+    info
+        - the value, panicking if the venture failed
+        + la valeur, avec une panique si l'entreprise a échoué
+    detail
+        - Escape-free forcing for a venture the caller has already checked with `ready` — a
+        - decoder which checks a whole batch before using any. Reaching a failed venture here is
+        - a logic error, so it panics rather than skipping.
+        + Un forçage sans échappement pour une entreprise que l'appelant a déjà vérifiée avec
+        + `ready` — un décodeur qui vérifie tout un lot avant d'en utiliser un élément. Atteindre
+        + ici une entreprise échouée est une erreur de logique ; il y a donc panique plutôt que
+        + saut.
+
+entry .VentureTactic
+  info
+      - the tactic `venture` interposes: records into the ambient scope, aborts only the venture
+      + la tactique qu'interpose `venture` : consigne dans la portée ambiante, n'interrompt que
+      + l'entreprise
+  detail
+      - A `Tactic[error]` and `Guard` over the ambient tactic and the venture's `boundary`
+      - label. `record` counts the error and forwards it to the ambient tactic; `abort` does the
+      - same and breaks out of the venture with `Venture.failed`; `certify` fails the venture if
+      - it has recorded anything; `tolerate` delegates to the ambient tactic's `tolerate` and
+      - restores the venture's own count; `escape` fails the venture. Under a fail-fast ambient
+      - tactic the forwarded `record` never returns.
+      + Une `Tactic[error]` et un `Guard` sur la tactique ambiante et l'étiquette `boundary` de
+      + l'entreprise. `record` compte l'erreur et la transmet à la tactique ambiante ; `abort` fait
+      + de même et sort de l'entreprise avec `Venture.failed` ; `certify` fait échouer l'entreprise
+      + si elle a consigné quelque chose ; `tolerate` délègue au `tolerate` de la tactique ambiante
+      + et restaure le propre compte de l'entreprise ; `escape` fait échouer l'entreprise. Sous une
+      + tactique ambiante à échec immédiat, le `record` transmis ne retourne jamais.
+  entry #diagnostics
+    info
+        - the ambient tactic's `Diagnostics`
+        + le `Diagnostics` de la tactique ambiante
+  entry #failed
+    info
+        - whether an error was recorded during this venture's evaluation
+        + si une erreur a été consignée pendant l'évaluation de cette entreprise
+    detail
+        - Distinct from `tainted`, which also reflects the ambient scope: an earlier venture's
+        - failure must not fail this one.
+        + Distinct de `tainted`, qui reflète aussi la portée ambiante : l'échec d'une entreprise
+        + antérieure ne doit pas faire échouer celle-ci.
+  entry #tainted
+    info
+        - whether this venture, or the ambient scope, has recorded an error
+        + si cette entreprise, ou la portée ambiante, a consigné une erreur
+  entry #record
+    info
+        - counts the error and forwards it to the ambient tactic
+        + compte l'erreur et la transmet à la tactique ambiante
+  entry #abort
+    info
+        - counts and forwards the error, then abandons the venture
+        + compte et transmet l'erreur, puis abandonne l'entreprise
+  entry #certify
+    info
+        - abandons the venture if it has recorded anything
+        + abandonne l'entreprise si elle a consigné quelque chose
+  entry #tolerate
+    info
+        - the ambient tactic's `tolerate`, with this venture's count restored afterwards
+        + le `tolerate` de la tactique ambiante, avec le compte de cette entreprise restauré ensuite
+  entry #escape
+    info
+        - abandons the venture, recording nothing further
+        + abandonne l'entreprise, sans rien consigner de plus
+
+entry .ThrowTactic
+  info
+      - the tactic which throws: behind `throwUnsafely`, `throwSafely`, `unsafely` and `throwErrors`
+      + la tactique qui lève : derrière `throwUnsafely`, `throwSafely`, `unsafely` et `throwErrors`
+  detail
+      - A `Tactic[error]` whose `record` and `abort` both throw the error as an unchecked
+      - exception, built with `Diagnostics.capture` so it carries a stack trace. A throwing
+      - tactic captures nothing (`CanThrow` is erased), which makes it the natural ambient
+      - strategy: `.ambient` is the pure instance `strategies.throwUnsafely` provides, and the
+      - scoped forms mint their own. Contravariant in `error`, so one `ThrowTactic[Hazard]`
+      - satisfies every `Tactic[error]`. A local `given tactic: Tactic[Json.Error] = ThrowTactic()`
+      - is the way to supply a throwing tactic to one method without importing a strategy.
+      + Une `Tactic[error]` dont `record` et `abort` lèvent tous deux l'erreur comme exception non
+      + vérifiée, construite avec `Diagnostics.capture` pour qu'elle porte une trace de pile. Une
+      + tactique qui lève ne capture rien (`CanThrow` est effacé), ce qui en fait la stratégie
+      + ambiante naturelle : `.ambient` est l'instance pure que fournit
+      + `strategies.throwUnsafely`, et les formes limitées à une portée créent la leur.
+      + Contravariante en `error`, si bien qu'une seule `ThrowTactic[Hazard]` satisfait toute
+      + `Tactic[error]`. Un `given tactic: Tactic[Json.Error] = ThrowTactic()` local est la manière
+      + de fournir une tactique qui lève à une seule méthode sans importer de stratégie.
+  refer contingency.strategies
+  entry .ambient
+    info
+        - the pure `ThrowTactic[Hazard]^{}` behind `strategies.throwUnsafely`
+        + la `ThrowTactic[Hazard]^{}` pure derrière `strategies.throwUnsafely`
+    detail
+        - A pure value, as `unsafeExceptions.canThrowAny` is: an unscoped throw retains no return
+        - point, and a tracked ambient tactic could satisfy neither a derivation's synthesised
+        - thunk nor a lambda which raises through it.
+        + Une valeur pure, comme l'est `unsafeExceptions.canThrowAny` : une levée hors portée ne
+        + conserve aucun point de retour, et une tactique ambiante suivie ne pourrait satisfaire ni
+        + le thunk synthétisé d'une dérivation ni une lambda qui lève à travers elle.
+  entry #diagnostics
+    info
+        - `Diagnostics.capture`: a thrown error carries its stack trace
+        + `Diagnostics.capture` : une erreur levée porte sa trace de pile
+  entry #record
+    info
+        - throws the error
+        + lève l'erreur
+  entry #abort
+    info
+        - throws the error
+        + lève l'erreur
+  entry #certify
+    info
+        - a no-op: a thrown error has already escaped
+        + sans effet : une erreur levée s'est déjà échappée
+
+entry .OptionalTactic
+  info
+      - the tactic `safely` and `dare` install: breaks out with `Unset`
+      + la tactique qu'installent `safely` et `dare` : sort avec `Unset`
+  detail
+      - A `Tactic[error]` over a `boundary.Label[Optional[success]]`: `record` and `abort` both
+      - break out of the block with `Unset`, and the error is never materialised, so it is built
+      - with `Diagnostics.omit`.
+      + Une `Tactic[error]` sur un `boundary.Label[Optional[success]]` : `record` et `abort` sortent
+      + tous deux du bloc avec `Unset`, et l'erreur n'est jamais matérialisée ; elle est donc
+      + construite avec `Diagnostics.omit`.
+  refer contingency.safely
+  entry #Result
+    info
+        - `Optional[success]`
+        + `Optional[success]`
+  entry #Return
+    info
+        - `Optional[success]`
+        + `Optional[success]`
+  entry #diagnostics
+    info
+        - `Diagnostics.omit`: the error is discarded, so no trace is captured
+        + `Diagnostics.omit` : l'erreur est ignorée, aucune trace n'est donc capturée
+  entry #record
+    info
+        - breaks out of the block with `Unset`
+        + sort du bloc avec `Unset`
+  entry #abort
+    info
+        - breaks out of the block with `Unset`
+        + sort du bloc avec `Unset`
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .AttemptTactic
+  info
+      - the tactic `attempt` installs: breaks out with `Attempt.Failure(error)`
+      + la tactique qu'installe `attempt` : sort avec `Attempt.Failure(error)`
+  detail
+      - A `Tactic[error]` over a `boundary.Label[Attempt[success, error]]`, with the
+      - `Diagnostics` in scope at the `attempt`: `record` and `abort` break out with the error
+      - wrapped as a `Failure`.
+      + Une `Tactic[error]` sur un `boundary.Label[Attempt[success, error]]`, avec le `Diagnostics`
+      + dans la portée au niveau de l'`attempt` : `record` et `abort` sortent avec l'erreur
+      + enveloppée en `Failure`.
+  refer contingency.attempt
+  entry #Result
+    info
+        - `Attempt[success, error]`
+        + `Attempt[success, error]`
+  entry #Return
+    info
+        - `Attempt[success, error]`
+        + `Attempt[success, error]`
+  entry #diagnostics
+    info
+        - the `Diagnostics` given at the `attempt`
+        + le given `Diagnostics` au niveau de l'`attempt`
+  entry #record
+    info
+        - breaks out with `Attempt.Failure(error)`
+        + sort avec `Attempt.Failure(error)`
+  entry #abort
+    info
+        - breaks out with `Attempt.Failure(error)`
+        + sort avec `Attempt.Failure(error)`
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .EitherTactic
+  info
+      - the tactic `capture` installs: breaks out with `Left(error)`
+      + la tactique qu'installe `capture` : sort avec `Left(error)`
+  detail
+      - A `Tactic[error]` over a `boundary.Label[Either[error, success]]`, with the
+      - `Diagnostics` in scope: `record` and `abort` break out with `Left(error)`. `capture`
+      - unwraps the `Either` to return the error, or aborts with `Expectation.Error` on a
+      - `Right`.
+      + Une `Tactic[error]` sur un `boundary.Label[Either[error, success]]`, avec le `Diagnostics`
+      + dans la portée : `record` et `abort` sortent avec `Left(error)`. `capture` déballe
+      + l'`Either` pour renvoyer l'erreur, ou s'interrompt avec `Expectation.Error` sur un `Right`.
+  refer contingency.capture
+  entry #diagnostics
+    info
+        - the `Diagnostics` given at the `capture`
+        + le given `Diagnostics` au niveau du `capture`
+  entry #record
+    info
+        - breaks out with `Left(error)`
+        + sort avec `Left(error)`
+  entry #abort
+    info
+        - breaks out with `Left(error)`
+        + sort avec `Left(error)`
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .AmalgamateTactic
+  info
+      - the tactic `amalgamate` installs: breaks out with the error itself
+      + la tactique qu'installe `amalgamate` : sort avec l'erreur elle-même
+  detail
+      - A `Tactic[error]` over a `boundary.Label[success | error]`, with the `Diagnostics` in
+      - scope: `record` and `abort` break out with the bare error, which the caller
+      - distinguishes from a value by a type match.
+      + Une `Tactic[error]` sur un `boundary.Label[success | error]`, avec le `Diagnostics` dans la
+      + portée : `record` et `abort` sortent avec l'erreur nue, que l'appelant distingue d'une
+      + valeur par un filtrage sur le type.
+  refer contingency.amalgamate
+  entry #Result
+    info
+        - `success | error`
+        + `success | error`
+  entry #Return
+    info
+        - `success | error`
+        + `success | error`
+  entry #diagnostics
+    info
+        - the `Diagnostics` given at the `amalgamate`
+        + le given `Diagnostics` au niveau de l'`amalgamate`
+  entry #record
+    info
+        - breaks out with the error
+        + sort avec l'erreur
+  entry #abort
+    info
+        - breaks out with the error
+        + sort avec l'erreur
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .HaltTactic
+  info
+      - a tactic for macros: an error halts the compilation with its labelled message
+      + une tactique pour les macros : une erreur arrête la compilation avec son message étiqueté
+  detail
+      - An `open class` taking `Quotes`, for `error <: Error`: `record` and `abort` both call
+      - `halt` with the error's `labelled` message (its bolt code and text), so a parse which
+      - fails at expansion time is reported as a compile error. `abortive` installs one; a
+      - macro which wants the error positioned at a particular tree subclasses it and overrides
+      - `record`/`abort` to pass the position.
+      + Une `open class` qui prend `Quotes`, pour `error <: Error` : `record` et `abort` appellent
+      + tous deux `halt` avec le message `labelled` de l'erreur (son code bolt et son texte), si
+      + bien qu'une analyse qui échoue au moment du développement est signalée comme erreur de
+      + compilation. `abortive` en installe une ; une macro qui veut positionner l'erreur sur un
+      + arbre particulier en crée une sous-classe et redéfinit `record`/`abort` pour transmettre la
+      + position.
+  refer contingency.abortive
+  entry #diagnostics
+    info
+        - `Diagnostics.omit`, as a given: a compile-time error needs no stack trace
+        + `Diagnostics.omit`, sous forme de given : une erreur à la compilation n'a pas besoin de
+        + trace de pile
+  entry #record
+    info
+        - halts the compilation with the error's message
+        + arrête la compilation avec le message de l'erreur
+  entry #abort
+    info
+        - halts the compilation with the error's message
+        + arrête la compilation avec le message de l'erreur
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .UncheckedTactic
+  info
+      - the tactic which throws an error classified `Unchecked`
+      + la tactique qui lève une erreur classée `Unchecked`
+  detail
+      - A `Tactic[error]` whose `record` and `abort` throw, built with
+      - `errorDiagnostics.stackTracesDiagnostics`. The `error is Unchecked` evidence is checked
+      - at the summon site by `strategies.uncheckedErrors`, which provides the pure
+      - `.ambient` instance, rather than held by the tactic.
+      + Une `Tactic[error]` dont `record` et `abort` lèvent, construite avec
+      + `errorDiagnostics.stackTracesDiagnostics`. La preuve `error is Unchecked` est vérifiée au
+      + site d'invocation par `strategies.uncheckedErrors`, qui fournit l'instance pure `.ambient`,
+      + plutôt que d'être détenue par la tactique.
+  refer contingency.Unchecked
+  entry .ambient
+    info
+        - the pure `UncheckedTactic[Hazard]^{}` behind `strategies.uncheckedErrors`
+        + la `UncheckedTactic[Hazard]^{}` pure derrière `strategies.uncheckedErrors`
+  entry #diagnostics
+    info
+        - stack traces are captured, as a given
+        + les traces de pile sont capturées, sous forme de given
+  entry #record
+    info
+        - throws the error
+        + lève l'erreur
+  entry #abort
+    info
+        - throws the error
+        + lève l'erreur
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .FatalTactic
+  info
+      - the tactic which terminates the process with the error's `Exit` status
+      + la tactique qui met fin au processus avec le statut `Exit` de l'erreur
+  detail
+      - A `Tactic[exception]` for an error type with an `is Fatal` given: `record` and `abort`
+      - both ask the `Fatal` instance for the error's `Exit` status and `terminate()` the
+      - process with it. `strategies.fatalErrors` provides the pure instance. Not exported to
+      - the `soundness` umbrella: it is reached through the strategy, not named directly.
+      + Une `Tactic[exception]` pour un type d'erreur muni d'un given `is Fatal` : `record` et
+      + `abort` demandent tous deux à l'instance de `Fatal` le statut `Exit` de l'erreur et mettent
+      + fin au processus avec lui par `terminate()`. `strategies.fatalErrors` fournit l'instance
+      + pure. Non exportée vers le package parapluie `soundness` : on l'atteint par la stratégie, et
+      + non en la nommant directement.
+  refer contingency.Fatal
+  entry #diagnostics
+    info
+        - stack traces are captured, as a given
+        + les traces de pile sont capturées, sous forme de given
+  entry #record
+    info
+        - terminates the process with the error's status
+        + met fin au processus avec le statut de l'erreur
+  entry #abort
+    info
+        - terminates the process with the error's status
+        + met fin au processus avec le statut de l'erreur
+  entry #certify
+    info
+        - a no-op
+        + sans effet
+
+entry .Unchecked
+  info
+      - the marker typeclass for an error which may be thrown without being handled
+      + la classe de types marqueur d'une erreur qui peut être levée sans être traitée
+  detail
+      - `error is Unchecked` has no members, so the given can be `erased`: `erased given
+      - AsciiError is Unchecked`. With `strategies.uncheckedErrors` imported, a method raising an
+      - unchecked error can be called with no tactic for it in scope, and the error is thrown.
+      - The classification is the author's assertion that the failure is not worth handling at
+      - each site, while still declared in the type.
+      + `error is Unchecked` n'a pas de membres ; le given peut donc être `erased` : `erased given
+      + AsciiError is Unchecked`. Avec `strategies.uncheckedErrors` importé, une méthode qui lève
+      + une erreur non vérifiée peut être appelée sans aucune tactique pour elle dans la portée, et
+      + l'erreur est levée. La classification est l'affirmation de l'auteur que l'échec ne vaut pas
+      + la peine d'être traité à chaque site, tout en restant déclaré dans le type.
+
+entry .Fatal
+  info
+      - the typeclass for an error which ends the process, saying with what status
+      + la classe de types d'une erreur qui met fin au processus, en indiquant avec quel statut
+  detail
+      - `error is Fatal` maps an error to the `Exit` status the process should end with; under
+      - `strategies.fatalErrors`, raising such an error terminates the process. It suits
+      - failures during initialisation, where there is no meaningful way to continue.
+      + `error is Fatal` associe à une erreur le statut `Exit` avec lequel le processus doit se
+      + terminer ; sous `strategies.fatalErrors`, lever une telle erreur met fin au processus. Cela
+      + convient aux échecs survenant pendant l'initialisation, où il n'y a aucune manière sensée de
+      + continuer.
+
+      ```scala
+      import soundness.*
+
+      case class InitError(reason: Text)(using Diagnostics)
+      extends Error(m"initialization failed: $reason")
+
+      given InitError is Fatal = error => Exit.Fail(127)
+      ```
+  refer contingency.strategies
+  entry #status
+    info
+        - the `Exit` status for an error
+        + le statut `Exit` d'une erreur
+  entry #contramap
+    info
+        - a `Fatal` for another type, by mapping it to this one
+        + un `Fatal` pour un autre type, obtenu en l'associant à celui-ci
+
+entry .Mitigable
+  info
+      - the typeclass saying how one error type becomes another
+      + la classe de types qui indique comment un type d'erreur devient un autre
+  detail
+      - `error2 is Mitigable to error` (`error mitigates error2`, in the infix spelling) has one
+      - method, `mitigate`, translating an `error2` into an `error`. With
+      - `strategies.mitigation` imported, any `Tactic[error]` in scope automatically yields a
+      - `Tactic[error2]`, so a low-level failure is translated at the boundary of the API which
+      - declares the outer error, without each call site restating it. `mitigate { cases }`
+      - is the explicit, block-scoped form.
+      + `error2 is Mitigable to error` (`error mitigates error2`, dans l'écriture infixe) a une
+      + seule méthode, `mitigate`, qui traduit un `error2` en un `error`. Avec
+      + `strategies.mitigation` importé, toute `Tactic[error]` dans la portée produit
+      + automatiquement une `Tactic[error2]`, si bien qu'un échec de bas niveau est traduit à la
+      + frontière de l'API qui déclare l'erreur externe, sans que chaque site d'appel ne le répète.
+      + `mitigate { cases }` est la forme explicite, limitée à un bloc.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      case class InputError(text: Text)(using Diagnostics)
+      extends Error(m"the input $text is not acceptable")
+
+      given Number.Error is Mitigable to InputError = error => InputError(error.text)
+      ```
+
+      - The translation runs outside any `Diagnostics` of the raising site's; import one, or
+      - build the new error `(using error.diagnostics)`.
+      + La traduction s'exécute en dehors de tout `Diagnostics` du site qui lève ; importez-en un,
+      + ou construisez la nouvelle erreur `(using error.diagnostics)`.
+  refer contingency.strategies
+  refer contingency.mitigate
+  entry #Self
+    info
+        - the error type translated from
+        + le type d'erreur source de la traduction
+  entry #Result
+    info
+        - the error type translated to
+        + le type d'erreur cible de la traduction
+  entry #mitigate
+    info
+        - the translation of one error into the other
+        + la traduction d'une erreur en l'autre
+
+entry .lest
+  info
+      - `optional.lest(error)`: the value, or aborts with the error if `Unset`
+      + `optional.lest(error)` : la valeur, ou une interruption avec l'erreur si `Unset`
+  detail
+      - An extension on `Optional[value]`: `optional.lest(error)` is the value when present, and
+      - `abort(error)` against the `Tactic[error]^` in scope when absent. It turns an absence into
+      - a declared failure at the point where the value is required.
+      + Une extension sur `Optional[value]` : `optional.lest(error)` est la valeur lorsqu'elle est
+      + présente, et `abort(error)` vers la `Tactic[error]^` dans la portée lorsqu'elle est absente.
+      + Elle transforme une absence en échec déclaré à l'endroit où la valeur est requise.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val port: Optional[Int] = Unset
+      port.lest(Number.Error(t"", Int, Number.Error.Reason.Unparseable))   // throws
+      ```
+
+entry .dare
+  info
+      - `optional.dare(block)`: applies a fallible block to a present value, absent on failure
+      + `optional.dare(block)` : applique un bloc faillible à une valeur présente, absent en cas
+      + d'échec
+  detail
+      - An extension on `Optional[value]`: `optional.dare[error](value => …)` is `Unset` if the
+      - optional is absent, else the block's result, or `Unset` if the block raises — `let`
+      - composed with `safely`, with the same `OptionalTactic` and no stack trace captured.
+      + Une extension sur `Optional[value]` : `optional.dare[error](value => …)` est `Unset` si
+      + l'optionnel est absent, sinon le résultat du bloc, ou `Unset` si le bloc lève — `let`
+      + composé avec `safely`, avec la même `OptionalTactic` et sans capture de trace de pile.
+
+      ```scala
+      import soundness.*
+
+      val text: Optional[Text] = t"42"
+      text.dare[Number.Error](_.as[Int])   // 42
+      ```
+
+entry .survive
+  info
+      - the results of a fallible lambda over a collection, with the failures dropped
+      + les résultats d'une lambda faillible sur une collection, les échecs étant écartés
+  detail
+      - An extension on any receiver which is `Traversable by element`:
+      - `collection.survive[error](element => …)` applies the lambda to each element under
+      - `safely`, keeps only the results which did not raise, and returns them as a
+      - `List[result]`.
+      + Une extension sur tout receveur `Traversable by element` :
+      + `collection.survive[error](element => …)` applique la lambda à chaque élément sous
+      + `safely`, ne garde que les résultats qui n'ont pas levé d'erreur, et les renvoie sous forme
+      + de `List[result]`.
+
+      ```scala
+      import soundness.*
+
+      List(t"1", t"x", t"3").survive[Int][Number.Error](_.as[Int])   // List(1, 3)
+      ```
+
+entry .internal
+  info
+      - the macro implementations behind `recover`, `mitigate`, `accrue`, `handle`, `track` and `validate`
+      + les implémentations de macros derrière `recover`, `mitigate`, `accrue`, `handle`, `track` et
+      + `validate`
+  hidden
+  detail
+      - Not for direct use. The object reads a handler's match cases at compile time to find
+      - which error types they cover, builds the type lambda `[result] =>> (Tactic[E1], …,
+      - Tactic[En]) ?=> result` which the handler values carry, and splices the tactics into a
+      - `protect`ed block. The patterns it accepts: a typed pattern (a union covers each
+      - member), a binding, alternatives, or an exhaustive case-class extractor; a wildcard or a
+      - non-exhaustive pattern is a compile error.
+      + Pas destiné à un usage direct. L'objet lit les cas de filtrage d'un gestionnaire à la
+      + compilation pour savoir quels types d'erreur ils couvrent, construit la lambda de type
+      + `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result` que portent les valeurs de
+      + gestionnaire, et injecte les tactiques dans un bloc protégé par `protect`. Les motifs qu'il
+      + accepte : un motif typé (une union couvre chaque membre), une liaison, des alternatives, ou
+      + un extracteur de case class exhaustif ; un joker ou un motif non exhaustif est une erreur de
+      + compilation.
+  entry .unwrap
+    info
+        - strips `Inlined` and single-definition blocks from a term
+        + retire d'un terme les `Inlined` et les blocs à définition unique
+  entry .unpack
+    info
+        - the members of a union type, dealiased, as a list
+        + les membres d'un type union, après résolution des alias, sous forme de liste
+  entry .track
+    info
+        - builds a `Tracking` from a `track` handler
+        + construit un `Tracking` à partir d'un gestionnaire `track`
+  entry .validate
+    info
+        - builds a `Validate` from a `validate` handler
+        + construit un `Validate` à partir d'un gestionnaire `validate`
+  entry .trackWithin
+    info
+        - the body of `Tracking.protect`
+        + le corps de `Tracking.protect`
+  entry .validateWithin
+    info
+        - the body of `Validate.protect`
+        + le corps de `Validate.protect`
+  entry .recoverBuild
+    info
+        - builds a `Recovery` from a `recover` handler
+        + construit une `Recovery` à partir d'un gestionnaire `recover`
+  entry .mitigateBuild
+    info
+        - builds a `Mitigation` from a `mitigate` handler
+        + construit une `Mitigation` à partir d'un gestionnaire `mitigate`
+  entry .accrueBuild
+    info
+        - builds an `Accrual` from an `accrue` handler
+        + construit une `Accrual` à partir d'un gestionnaire `accrue`
+  entry .handleBuild
+    info
+        - builds a `Handler` from a `handle` handler
+        + construit un `Handler` à partir d'un gestionnaire `handle`
+  entry .protectBody
+    info
+        - the body of `Handler.protect`
+        + le corps de `Handler.protect`
+  entry .mitigateBody
+    info
+        - the body of `Mitigation.protect`
+        + le corps de `Mitigation.protect`
+  entry .recoverBody
+    info
+        - the body of `Recovery.protect`
+        + le corps de `Recovery.protect`
+  entry .accrueBody
+    info
+        - the body of `Accrual.protect`
+        + le corps de `Accrual.protect`

@@ -1,0 +1,2718 @@
+tel 1.0
+
+base proscenium
+import soundness
+
+info
+    - the prelude every Soundness module compiles against: its collections, markers and blessed names
+    + le prélude contre lequel se compile chaque module de Soundness : ses collections, ses
+    + marqueurs et ses noms consacrés
+detail
+    - _Proscenium_ is the default namespace of Soundness. Every module in the build is
+    - compiled with `-Yno-predef -Yimports:java.lang,proscenium`, so neither `scala.Predef`
+    - nor the `scala` package is imported implicitly; what a source file sees without an
+    - import is `java.lang`, this package, and nothing else. A consumer outside the build
+    - reaches the same names through `import soundness.*`, since everything here is
+    - re-exported to the umbrella (the collection companions as stable `val`s, so their
+    - members resolve through the forwarders).
+    + _Proscenium_ est l'espace de noms par défaut de Soundness. Chaque module du build est
+    + compilé avec `-Yno-predef -Yimports:java.lang,proscenium`, si bien que ni `scala.Predef`
+    + ni le package `scala` ne sont importés implicitement ; ce qu'un fichier source voit sans
+    + import, c'est `java.lang`, ce package, et rien d'autre. Un consommateur extérieur au build
+    + atteint les mêmes noms via `import soundness.*`, puisque tout ce qui est ici est réexporté
+    + vers le package parapluie (les compagnons des collections sous forme de `val` stables,
+    + afin que leurs membres soient résolus via les redirections).
+
+    - The package has three kinds of content.
+    + Le package a trois sortes de contenu.
+
+    - **The collections.** `List`, `Sequence`, `Set`, `Map`, `Ledger`, `Chain` and `Array`
+    - are *opaque* aliases of the standard library's structures — a linked list, a `Vector`,
+    - a hash set, a hash map, an insertion-ordered `VectorMap`, a `LazyList` and a JVM array
+    - — which cost nothing to wrap and expose none of the stdlib's members. Their companions
+    - hold construction (`apply`, `empty`, `from`, `fill`, `tabulate`, `range`), pattern
+    - support, macro lifting, and the greppable `stdlib` bridge; every other operation —
+    - `map`, `filter`, `fold`, `head`, `at`, `size`, `sort` — is a typeclass-driven
+    - extension defined in the libraries above (`murmuration`, `denominative`,
+    - `concordance`, `rudiments`), reached with `import soundness.*`. A total vocabulary
+    - replaces the partial one: `head` returns an `Optional` unless the receiver is proven
+    - `Populated`, and the operations whose cost belies their name (a `List`'s `size`, a
+    - `Chain`'s) are gated behind a named import from `dysasymptotics`.
+    + **Les collections.** `List`, `Sequence`, `Set`, `Map`, `Ledger`, `Chain` et `Array`
+    + sont des alias *opaques* des structures de la bibliothèque standard — une liste chaînée,
+    + un `Vector`, un ensemble haché, une map hachée, une `VectorMap` ordonnée par insertion,
+    + une `LazyList` et un tableau de la JVM — qui ne coûtent rien à envelopper et n'exposent
+    + aucun des membres de la stdlib. Leurs compagnons contiennent la construction (`apply`,
+    + `empty`, `from`, `fill`, `tabulate`, `range`), la prise en charge du filtrage par motif,
+    + le lifting pour les macros et le pont `stdlib`, facile à rechercher avec grep ; toute autre
+    + opération — `map`, `filter`, `fold`, `head`, `at`, `size`, `sort` — est une extension
+    + pilotée par des classes de types, définie dans les bibliothèques de niveau supérieur
+    + (`murmuration`, `denominative`, `concordance`, `rudiments`), et accessible avec
+    + `import soundness.*`. Un vocabulaire total remplace le vocabulaire partiel : `head`
+    + renvoie un `Optional` à moins que le receveur ne soit prouvé `Populated`, et les
+    + opérations dont le coût dément le nom (le `size` d'une `List`, celui d'une `Chain`) sont
+    + soumises à un import nommé depuis `dysasymptotics`.
+
+    ```scala
+    import soundness.*
+
+    val numbers = List(3, 1, 2)                  // List[Int] & Populated: the arity is the proof
+    numbers.head                                 // 3, total on a populated list
+    numbers.map(_*2)                             // List(6, 2, 4)
+    Map(t"a" -> 1).at(t"b")                      // Unset
+    numbers.stdlib                               // scala.collection.immutable.List(3, 1, 2)
+    List.from(scala.collection.immutable.List(1, 2))
+    ```
+
+    - There is deliberately no implicit conversion between an opaque collection and its
+    - stdlib form in either direction: a conversion applies at member selection too and would
+    - silently restore the whole partial API. Crossing to a stdlib or Java API is written as
+    - `xs.stdlib` — a zero-copy view, and a greppable marker of every seam — and back with the
+    - companion's `from` or `.to(List)`. A varargs splice, `f(xs*)`, works on an opaque
+    - collection directly, through the `Spreadable` givens beside each collection. Do not use
+    - `stdlib` to dodge a cost gate: `xs.stdlib.length` hides exactly the cost
+    - `dysasymptotics.linearSize` exists to acknowledge; open the gate with a comment saying
+    - why the cost is acceptable, or restructure.
+    + Il n'existe délibérément aucune conversion implicite entre une collection opaque et sa
+    + forme stdlib, dans un sens comme dans l'autre : une conversion s'applique aussi lors de la
+    + sélection de membres et rétablirait silencieusement toute l'API partielle. Le passage
+    + vers une API stdlib ou Java s'écrit `xs.stdlib` — une vue sans copie, et un marqueur
+    + repérable par grep de chaque jonction — et le retour s'écrit avec le `from` du compagnon
+    + ou `.to(List)`. Un splice de varargs, `f(xs*)`, fonctionne directement sur une collection
+    + opaque, grâce aux givens `Spreadable` placés à côté de chaque collection. N'utilisez pas
+    + `stdlib` pour contourner une barrière de coût : `xs.stdlib.length` masque précisément le
+    + coût que `dysasymptotics.linearSize` existe pour reconnaître ; ouvrez la barrière avec un
+    + commentaire expliquant pourquoi le coût est acceptable, ou restructurez le code.
+
+    - **The markers.** `Populated` is a structural refinement recording a proof of
+    - non-emptiness (`List[Int] & Populated`), minted by the fixed-arity literal constructors
+    - and by rudiments' `occupied`; `Sized[n]` records a proof of length, minted by `fill`
+    - and `tabulate` with a literal count; and `Comparison` (`Less`, `Same`, `More`) is the
+    - result of every three-way comparison in Soundness, the currency of symbolism's
+    - `Comparable`.
+    + **Les marqueurs.** `Populated` est un raffinement structurel qui enregistre une preuve
+    + de non-vacuité (`List[Int] & Populated`), produite par les constructeurs littéraux
+    + d'arité fixe et par `occupied` de rudiments ; `Sized[n]` enregistre une preuve de
+    + longueur, produite par `fill` et `tabulate` avec un nombre littéral ; et `Comparison`
+    + (`Less`, `Same`, `More`) est le résultat de toute comparaison à trois issues dans
+    + Soundness, la monnaie d'échange du `Comparable` de symbolism.
+
+    - **The blessed names.** `proscenium.prelude.scala` re-exports from `scala` only what
+    - Soundness code needs without an import: the fundamental and primitive types, the infix
+    - `&`/`|`/`<:<`/`=:=`, `Option`/`Either` and the tuple types, `CanEqual`, `Conversion`,
+    - `PartialFunction`, `StringContext`, the numeric abstractions, the annotations, `Iterable`
+    - and (for now) `StringBuilder`. `proscenium_core.scala` adds the Predef members worth
+    - keeping (`nn`, `summon`, `identity`, `locally`, `valueOf`, `is`, `ArrowAssoc`, the
+    - primitive wrappers and array ops, `assert`, `???`), `ClassTag`, `Typeable`, `TreeMap`,
+    - `TreeSet`, `TrieMap`, `NonFatal`, `boundary`/`break`, the `…HasAsScala`/`…HasAsJava`
+    - converters, `tailrec`/`targetName`/`switch`/`missingContext`, the `unchecked…`
+    - annotations, and a few of its own: `classOf` (an inline version which is correct through
+    - an export), `absolve` (Predef's `runtimeChecked`), `Void`, `Nat`, `Label`, `Zero`,
+    - `Mono`, `~>`, `prohibits`, `infer`, `provide`, `->` and the `unexported` annotation.
+    + **Les noms consacrés.** `proscenium.prelude.scala` ne réexporte de `scala` que ce dont
+    + le code de Soundness a besoin sans import : les types fondamentaux et primitifs, les
+    + opérateurs infixes `&`/`|`/`<:<`/`=:=`, `Option`/`Either` et les types tuples, `CanEqual`,
+    + `Conversion`, `PartialFunction`, `StringContext`, les abstractions numériques, les
+    + annotations, `Iterable` et (pour l'instant) `StringBuilder`. `proscenium_core.scala`
+    + ajoute les membres de Predef qui valent d'être conservés (`nn`, `summon`, `identity`,
+    + `locally`, `valueOf`, `is`, `ArrowAssoc`, les enveloppes de primitifs et les opérations
+    + sur les tableaux, `assert`, `???`), `ClassTag`, `Typeable`, `TreeMap`, `TreeSet`,
+    + `TrieMap`, `NonFatal`, `boundary`/`break`, les convertisseurs `…HasAsScala`/`…HasAsJava`,
+    + `tailrec`/`targetName`/`switch`/`missingContext`, les annotations `unchecked…`, et
+    + quelques noms qui lui sont propres : `classOf` (une version inline qui reste correcte à
+    + travers un export), `absolve` (le `runtimeChecked` de Predef), `Void`, `Nat`, `Label`,
+    + `Zero`, `Mono`, `~>`, `prohibits`, `infer`, `provide`, `->` et l'annotation `unexported`.
+
+    - What is *not* blessed is as deliberate as what is. The stdlib's concrete collections
+    - (`Seq`, `Vector`, `IndexedSeq`, `Range`, `LazyList`) are absent, so a stdlib collection
+    - at an interop seam must announce itself with `import scala.collection…`; `Ordering` and
+    - `Ordered` are absent, since comparison is `Comparable` and the few APIs which still take
+    - an `Ordering` import `scala.math.Ordering` explicitly; `Iterator` is absent, so a bare
+    - `Iterator` under `import soundness.*` is murmuration's separation-checked one, and a
+    - stdlib iterator is written `scala.collection.Iterator`; and `Precise` is absent because
+    - an exported alias of it silently fails to suppress union widening — write
+    - `scala.Precise`. Packages (`scala.caps`, `scala.math`, `scala.compiletime`,
+    - `scala.annotation`, `scala.util`) cannot be exported and are imported per file.
+    + Ce qui n'est *pas* consacré l'est aussi délibérément que ce qui l'est. Les collections
+    + concrètes de la stdlib (`Seq`, `Vector`, `IndexedSeq`, `Range`, `LazyList`) sont
+    + absentes, si bien qu'une collection de la stdlib à une jonction d'interopérabilité doit
+    + s'annoncer avec `import scala.collection…` ; `Ordering` et `Ordered` sont absents,
+    + puisque la comparaison passe par `Comparable` et que les quelques API qui prennent encore
+    + un `Ordering` importent `scala.math.Ordering` explicitement ; `Iterator` est absent,
+    + si bien qu'un `Iterator` nu sous `import soundness.*` est celui de murmuration, vérifié
+    + par séparation, et qu'un itérateur de la stdlib s'écrit `scala.collection.Iterator` ; et
+    + `Precise` est absent parce qu'un alias exporté de celui-ci échoue silencieusement à
+    + empêcher l'élargissement des unions — écrivez `scala.Precise`. Les packages
+    + (`scala.caps`, `scala.math`, `scala.compiletime`, `scala.annotation`, `scala.util`) ne
+    + peuvent pas être exportés et sont importés fichier par fichier.
+
+    - Two traps for macro authors. `Unit` is a type alias here, not an export (its companion
+    - cannot be exported), so it is a *distinct symbol* from `scala.Unit`: in a macro, compare
+    - types with `=:=` or after `.dealias`, never by `typeSymbol ==`. And `Array` is the
+    - opaque alias, so `TypeRepr.of[Array[Byte]]` is likewise not `scala.Array`'s symbol.
+    + Deux pièges pour les auteurs de macros. `Unit` est ici un alias de type, et non un export
+    + (son compagnon ne peut pas être exporté) ; c'est donc un *symbole distinct* de
+    + `scala.Unit` : dans une macro, comparez les types avec `=:=` ou après `.dealias`, jamais
+    + avec `typeSymbol ==`. Et `Array` est l'alias opaque, si bien que
+    + `TypeRepr.of[Array[Byte]]` n'est pas non plus le symbole de `scala.Array`.
+
+    - The library is a single source set, `proscenium.core`, with no dependencies, compiled
+    - for the JVM, Scala.js and Scala Native. On every platform the collections are the same
+    - stdlib structures underneath; `Array` is the platform's native array.
+    + La bibliothèque est un ensemble de sources unique, `proscenium.core`, sans dépendances,
+    + compilé pour la JVM, Scala.js et Scala Native. Sur toutes les plateformes, les
+    + collections reposent sur les mêmes structures de la stdlib ; `Array` est le tableau natif
+    + de la plateforme.
+
+refer proscenium.List
+refer proscenium.Array
+refer proscenium.Populated
+refer proscenium.Comparison
+refer proscenium.Chain
+
+entry .Array
+  info
+      - a fixed-size array whose write access is tracked by separation checking
+      + un tableau de taille fixe dont l'accès en écriture est suivi par le contrôle de séparation
+  detail
+      - `Array[element]` is an opaque alias of the platform's native array, so it costs
+      - nothing to use, but its access rights are in its capture set: any reference can
+      - *read*, only an exclusive reference — `Array[element]^` — can *write*, aliased
+      - writers are rejected, and `freeze` consumes an exclusive array to yield the
+      - **frozen** form, `Array[element]^{}`, without copying. The frozen form is not a
+      - parallel immutable type: an array no capture set can write through *is* immutable,
+      - so `^{}` is the whole story, and `Data`, anticipation's type for bytes, is exactly
+      - `Array[Byte]^{}`.
+      + `Array[element]` est un alias opaque du tableau natif de la plateforme ; son usage ne
+      + coûte donc rien, mais ses droits d'accès figurent dans son ensemble de captures : toute
+      + référence peut *lire*, seule une référence exclusive — `Array[element]^` — peut
+      + *écrire*, les écrivains en alias sont rejetés, et `freeze` consomme un tableau exclusif
+      + pour produire la forme **gelée**, `Array[element]^{}`, sans copie. La forme gelée n'est
+      + pas un type immuable parallèle : un tableau à travers lequel aucun ensemble de captures
+      + ne peut écrire *est* immuable ; `^{}` dit donc tout, et `Data`, le type d'anticipation
+      + pour les octets, est exactement `Array[Byte]^{}`.
+
+      ```scala
+      import soundness.*
+
+      val frozen: Array[Int]^{} = Array(1, 2, 3)        // a literal is frozen by construction
+      val buffer: Array[Int]^ = Array.allocate[Int](3)  // exclusive and writable
+      buffer(0) = 11
+      buffer.fill(8)
+      val done: Array[Int]^{} = Array.freeze(buffer)    // consumes `buffer`
+      Array.freeze(Array.thaw(done)).to[List]            // an exclusive copy, frozen again
+      done.map(_*2).to[List]                             // List(16, 16, 16)
+      ```
+
+      - Reading is `Int`-indexed here, since `denominative`'s `Ordinal` sits above this
+      - module: an exclusive array reads with `apply(index)` and writes with
+      - `update(index, value)`, both inlined to the JVM's own array access; a shared or frozen
+      - reference reads with `readUnchecked(index)`, which is bounds-partial and is what
+      - concordance's total, `Optional`-returning `at` and the ordinal-indexed `apply` in
+      - rudiments are built on. At an ordinary call site use those, or a confined ordinal;
+      - a bare `readUnchecked` carries a comment naming its proof.
+      + La lecture est ici indexée par `Int`, puisque l'`Ordinal` de `denominative` se situe
+      + au-dessus de ce module : un tableau exclusif se lit avec `apply(index)` et s'écrit avec
+      + `update(index, value)`, tous deux inlinés en accès natif de la JVM aux tableaux ; une
+      + référence partagée ou gelée se lit avec `readUnchecked(index)`, qui est partiel quant
+      + aux bornes et sur lequel reposent le `at` total, qui renvoie un `Optional`, de
+      + concordance et l'`apply` indexé par ordinal de rudiments. Sur un site d'appel ordinaire,
+      + utilisez-les, ou un ordinal confiné ; un `readUnchecked` nu porte un commentaire qui nomme
+      + sa preuve.
+
+      - Editing a frozen array is copy-and-freeze: `thaw` for an exclusive copy to write
+      - several slots, `concat` of segments (`Array.concat(xs.before(i), replacement,
+      - xs.after(i))`) for a splice, and rudiments' `define` for one slot. Two things are
+      - sanctioned uses of the raw `scala.Array`: `raw` and `unsafeJvm`, for the JDK's
+      - byte-array surface (`OutputStream.write`, `MessageDigest.update`), and a field whose
+      - type an external definition fixes. New code otherwise stays on `Array`.
+      + Modifier un tableau gelé, c'est copier puis geler : `thaw` pour une copie exclusive
+      + permettant d'écrire plusieurs cases, `concat` de segments
+      + (`Array.concat(xs.before(i), replacement, xs.after(i))`) pour un remplacement de segment, et
+      + `define` de rudiments pour une seule case. Deux usages du `scala.Array` brut sont admis :
+      + `raw` et `unsafeJvm`, pour la surface des tableaux d'octets du JDK (`OutputStream.write`,
+      + `MessageDigest.update`), et un champ dont le type est fixé par une définition externe. Hors
+      + de ces cas, le nouveau code s'en tient à `Array`.
+
+      - Equality on an array is reference identity — the opaque alias cannot override `==` —
+      - so content equality is `Array.same`, and a test compares through `to[List]`. A `val`
+      - cannot hold an exclusive buffer that is then consumed and replaced (`grow`), so an
+      - accumulating builder threads its buffer through `consume` parameters by recursion.
+      - One trap: `import rudiments.*` brings an `Applicable` `apply` which shadows the
+      - exclusive array's inline `apply`; a file which imports rudiments wholesale reads a
+      - buffer through ordinals or `readUnchecked` instead.
+      + L'égalité sur un tableau est l'identité de référence — l'alias opaque ne peut pas
+      + redéfinir `==` — si bien que l'égalité de contenu s'écrit `Array.same`, et qu'un test
+      + compare via `to[List]`. Une `val` ne peut pas contenir un tampon exclusif qui serait
+      + ensuite consommé et remplacé (`grow`) ; un constructeur accumulateur fait donc passer son
+      + tampon par des paramètres `consume`, par récursion. Un piège : `import rudiments.*`
+      + apporte un `apply` d'`Applicable` qui masque l'`apply` inline du tableau exclusif ; un
+      + fichier qui importe rudiments en entier lit plutôt un tampon via des ordinaux ou
+      + `readUnchecked`.
+
+      - Pattern matching reads but never writes, so `case Array(a, b, c)` works on any
+      - reference. A frozen array `map`s to a frozen array (`map` needs a `ClassTag` for the
+      - result element, which is why it is a companion extension rather than a `Mappable`
+      - instance), and the generic collection vocabulary — `to[List]`, `each`, `fold`,
+      - `extent`, `at` — comes from the libraries above.
+      + Le filtrage par motif lit mais n'écrit jamais ; `case Array(a, b, c)` fonctionne donc sur
+      + toute référence. Un tableau gelé se transforme par `map` en tableau gelé (`map` nécessite
+      + un `ClassTag` pour l'élément résultat, ce qui explique qu'il s'agisse d'une extension du
+      + compagnon plutôt que d'une instance de `Mappable`), et le vocabulaire générique des
+      + collections — `to[List]`, `each`, `fold`, `extent`, `at` — provient des bibliothèques de
+      + niveau supérieur.
+  refer proscenium.Sized
+  refer proscenium.Populated
+  entry .allocate
+    info
+        - a new exclusive array of a given size: `Array.allocate[Int](3)`
+        + un nouveau tableau exclusif d'une taille donnée : `Array.allocate[Int](3)`
+    detail
+        - Named `allocate` rather than `apply` so that `Array(3)` unambiguously means the
+        - one-element literal. The elements are the type's zero (`0`, `false`, `null`), and
+        - the result is `Array[element]^`, writable through `update`. Needs a `ClassTag`.
+        + Nommé `allocate` plutôt qu'`apply` afin que `Array(3)` désigne sans ambiguïté le
+        + littéral à un élément. Les éléments valent le zéro du type (`0`, `false`, `null`), et
+        + le résultat est un `Array[element]^`, accessible en écriture via `update`. Nécessite un
+        + `ClassTag`.
+  entry .apply
+    info
+        - `Array(a, b, c)`, a frozen literal; and `buffer(index)`, the exclusive read
+        + `Array(a, b, c)`, un littéral gelé ; et `buffer(index)`, la lecture exclusive
+    detail
+        - Two members share the name. On the companion, `Array(elements*)` builds a fresh
+        - array which no writer can alias, so it is frozen (`Array[element]^{}`) by
+        - construction; it needs a `ClassTag`. As an extension on an exclusive `Array[element]^`,
+        - `buffer(index)` reads one slot, inlined to the JVM's own array access (no boxing):
+        - sole ownership means nobody else can have changed the content. On a shared or frozen
+        - reference there is no `apply`; read with `readUnchecked`, or through concordance's
+        - total `at`.
+        + Deux membres partagent ce nom. Sur le compagnon, `Array(elements*)` construit un nouveau
+        + tableau qu'aucun écrivain ne peut partager ; il est donc gelé (`Array[element]^{}`) par
+        + construction ; il nécessite un `ClassTag`. En tant qu'extension sur un `Array[element]^`
+        + exclusif, `buffer(index)` lit une case, inliné en accès natif de la JVM aux tableaux (sans
+        + boxing) : la propriété exclusive garantit que personne d'autre n'a pu modifier le
+        + contenu. Sur une référence partagée ou gelée, il n'y a pas d'`apply` ; lisez avec
+        + `readUnchecked`, ou via le `at` total de concordance.
+  entry .update
+    info
+        - `buffer(index) = value`: writes one slot of an exclusive array
+        + `buffer(index) = value` : écrit une case d'un tableau exclusif
+    detail
+        - An inline extension on `Array[element]^` only — a frozen or shared reference has no
+        - `update` — compiled to the JVM's own array store. The receiver is inline, so it is
+        - evaluated after the index and value, where it is used.
+        + Une extension inline sur `Array[element]^` uniquement — une référence gelée ou partagée
+        + n'a pas d'`update` — compilée en écriture native de la JVM dans un tableau. Le receveur
+        + est inline ; il est donc évalué après l'index et la valeur, là où il est utilisé.
+  entry .empty
+    info
+        - the frozen empty array: `Array.empty[Int]`
+        + le tableau vide gelé : `Array.empty[Int]`
+  entry .from
+    info
+        - a frozen array copied from any `IterableOnce`
+        + un tableau gelé copié depuis n'importe quel `IterableOnce`
+    detail
+        - `Array.from(elements)` copies the elements of a stdlib iterable or iterator into a
+        - fresh array, which is frozen since nothing else can reach it. Needs a `ClassTag`.
+        + `Array.from(elements)` copie les éléments d'un itérable ou d'un itérateur de la stdlib
+        + dans un nouveau tableau, qui est gelé puisque rien d'autre ne peut l'atteindre. Nécessite
+        + un `ClassTag`.
+  entry .fill
+    info
+        - `Array.fill(n)(element)`: a frozen array of `n` copies; and `buffer.fill(value)`
+        + `Array.fill(n)(element)` : un tableau gelé de `n` copies ; et `buffer.fill(value)`
+    detail
+        - On the companion, `Array.fill(count)(element)` evaluates `element` once per slot and
+        - freezes the result; when `count` is a literal the result is additionally branded
+        - `Sized[count]`, so `Array.fill(512)(0.toByte)` is an `Array[Byte]^{} & Sized[512]`
+        - and a literal ordinal below 512 reads it totally. A `val` count gives the plain
+        - array. As an extension on an exclusive `Array[element]^`, `buffer.fill(value)`
+        - overwrites every slot in place.
+        + Sur le compagnon, `Array.fill(count)(element)` évalue `element` une fois par case et gèle
+        + le résultat ; lorsque `count` est un littéral, le résultat est en outre marqué
+        + `Sized[count]`, si bien que `Array.fill(512)(0.toByte)` est un
+        + `Array[Byte]^{} & Sized[512]` et qu'un ordinal littéral inférieur à 512 le lit de façon
+        + totale. Un nombre donné par une `val` produit le tableau simple. En tant qu'extension sur
+        + un `Array[element]^` exclusif, `buffer.fill(value)` écrase chaque case sur place.
+  entry .tabulate
+    info
+        - `Array.tabulate(n)(index => …)`: a frozen array computed by index
+        + `Array.tabulate(n)(index => …)` : un tableau gelé calculé par index
+    detail
+        - Like `.fill` with the slot's index passed to the lambda, and branded `Sized[n]` when
+        - `n` is a literal.
+        + Comme `.fill`, l'index de la case étant passé à la lambda, et marqué `Sized[n]` lorsque
+        + `n` est un littéral.
+  entry .range
+    info
+        - `Array.range(start, end)`: the integers from `start` up to `end`, exclusive
+        + `Array.range(start, end)` : les entiers de `start` jusqu'à `end`, exclu
+    detail
+        - Frozen; an empty range (`end <= start`) is the empty array.
+        + Gelé ; un intervalle vide (`end <= start`) donne le tableau vide.
+  entry .concat
+    info
+        - a frozen array of two or three readable arrays in sequence
+        + un tableau gelé formé de deux ou trois tableaux lisibles mis bout à bout
+    detail
+        - `Array.concat(left, right)` copies both into a fresh array and freezes it; with two
+        - `Sized` arguments the result is `Sized[left + right]`, decided at the type level. The
+        - three-operand form, `Array.concat(left, middle, right)`, is the splice: `Array.concat
+        - (xs.before(i), replacement, xs.after(i))` rebuilds an array with a segment replaced
+        - in one pass. The arity is fixed rather than variadic because a frozen array as the
+        - element of a varargs `Seq` is re-freshened under capture checking and the segments'
+        - element types then fail to unify. Needs a `ClassTag`.
+        + `Array.concat(left, right)` copie les deux dans un nouveau tableau et le gèle ; avec deux
+        + arguments `Sized`, le résultat est `Sized[left + right]`, déterminé au niveau des types.
+        + La forme à trois opérandes, `Array.concat(left, middle, right)`, sert au remplacement de
+        + segment : `Array.concat
+        + (xs.before(i), replacement, xs.after(i))` reconstruit un tableau en remplaçant un segment
+        + en une seule passe. L'arité est fixe plutôt que variadique parce qu'un tableau gelé
+        + élément d'un `Seq` de varargs est rendu à nouveau frais par le contrôle des captures, et
+        + que les types d'éléments des segments ne s'unifient alors plus. Nécessite un `ClassTag`.
+  entry .same
+    info
+        - element-wise equality of two readable arrays
+        + égalité élément par élément de deux tableaux lisibles
+    detail
+        - `Array.same(left, right)` is whether the two have the same length and equal elements
+        - at every index. `==` on arrays is reference identity, which the opaque alias cannot
+        - override, so content equality is a named operation.
+        + `Array.same(left, right)` indique si les deux ont la même longueur et des éléments égaux
+        + à chaque index. `==` sur les tableaux est l'identité de référence, que l'alias opaque ne
+        + peut pas redéfinir ; l'égalité de contenu est donc une opération nommée.
+  entry .freeze
+    info
+        - consumes an exclusive array and yields it frozen, without copying
+        + consomme un tableau exclusif et le renvoie gelé, sans copie
+    detail
+        - `Array.freeze(buffer)` takes `buffer` as a `consume` parameter: the separation
+        - checker retires every writer statically, so the surviving reference can drop its
+        - write capability and become `Array[element]^{}` with no copy. It is the only sound
+        - way to produce a frozen array from a mutable one; after the call, `buffer` cannot be
+        - used again.
+        + `Array.freeze(buffer)` prend `buffer` en paramètre `consume` : le contrôleur de
+        + séparation retire statiquement tous les écrivains, si bien que la référence survivante
+        + peut abandonner sa capacité d'écriture et devenir `Array[element]^{}` sans copie. C'est
+        + la seule manière sûre d'obtenir un tableau gelé à partir d'un tableau mutable ; après
+        + l'appel, `buffer` ne peut plus être utilisé.
+
+        ```scala
+        import soundness.*
+
+        val buffer = Array.allocate[Int](2)
+        buffer(0) = 1
+        buffer(1) = 2
+        Array.freeze(buffer).to[List]   // List(1, 2)
+        ```
+  entry .thaw
+    info
+        - an exclusive copy of any readable array, the inverse of `freeze`
+        + une copie exclusive de n'importe quel tableau lisible, l'inverse de `freeze`
+    detail
+        - `Array.thaw(array)` allocates a fresh exclusive array and copies the source into it,
+        - so the caller may write several slots (`copy(i) = value`) and `freeze` again. Always
+        - a copy, never the source itself: the source may be frozen or shared, so other
+        - readers keep seeing it unchanged. For a one-slot edit use rudiments' `define`; for a
+        - splice, `.concat`. Needs a `ClassTag`.
+        + `Array.thaw(array)` alloue un nouveau tableau exclusif et y copie la source, afin que
+        + l'appelant puisse écrire plusieurs cases (`copy(i) = value`) puis appeler `freeze` à
+        + nouveau. Toujours une copie, jamais la source elle-même : la source peut être gelée ou
+        + partagée, et les autres lecteurs continuent donc de la voir inchangée. Pour modifier une
+        + seule case, utilisez `define` de rudiments ; pour remplacer un segment, `.concat`.
+        + Nécessite un `ClassTag`.
+  entry .grow
+    info
+        - a larger exclusive array holding an exclusive buffer's content, consuming it
+        + un tableau exclusif plus grand qui contient le contenu d'un tampon exclusif, en le
+        + consommant
+    detail
+        - `Array.grow(buffer, size)` is the step of a linear accumulating builder: it consumes
+        - `buffer`, copies as much of it as fits into a fresh array of `size` (a smaller size
+        - truncates), and returns that, exclusive. Because the old buffer is consumed, the
+        - idiom is recursion threading the buffer through `consume` parameters — a `var`
+        - cannot hold an exclusive buffer.
+        + `Array.grow(buffer, size)` est l'étape d'un constructeur accumulateur linéaire : il
+        + consomme `buffer`, en copie autant que possible dans un nouveau tableau de taille `size`
+        + (une taille plus petite tronque) et renvoie celui-ci, exclusif. Comme l'ancien tampon est
+        + consommé, l'idiome consiste à faire passer le tampon par des paramètres `consume`, par
+        + récursion — une `var` ne peut pas contenir un tampon exclusif.
+  entry .place
+    info
+        - copies a readable array into an exclusive one, at an offset
+        + copie un tableau lisible dans un tableau exclusif, à un décalage donné
+    detail
+        - Extensions on `Array[element]^`: `buffer.place(source)` copies `source` to the start,
+        - `buffer.place(source, at)` to offset `at`, and `buffer.place(source, sourceStart,
+        - targetStart, count)` copies a window. Frozen and shared sources both serve. It is
+        - `System.arraycopy` underneath, and is what every frozen constructor uses to fill its
+        - result.
+        + Extensions sur `Array[element]^` : `buffer.place(source)` copie `source` au début,
+        + `buffer.place(source, at)` au décalage `at`, et `buffer.place(source, sourceStart,
+        + targetStart, count)` copie une fenêtre. Les sources gelées comme partagées conviennent.
+        + C'est `System.arraycopy` en dessous, et c'est ce qu'utilise chaque constructeur gelé
+        + pour remplir son résultat.
+  entry .length
+    info
+        - the number of slots, on any reference
+        + le nombre de cases, sur toute référence
+  entry .readUnchecked
+    info
+        - reads a slot of a shared or frozen array, with no bounds check
+        + lit une case d'un tableau partagé ou gelé, sans vérification des bornes
+    detail
+        - The bounds-partial read, inlined: `array.readUnchecked(index)` on any readable
+        - reference. Reading through a shared reference is sound because separation excludes
+        - a live writer wherever readers alias. It is the primitive under concordance's total
+        - `at`; at an ordinary call site prefer that or a confined ordinal, and a bare call
+        - carries a comment naming the proof that the index is in range.
+        + La lecture partielle quant aux bornes, inlinée : `array.readUnchecked(index)` sur toute
+        + référence lisible. Lire via une référence partagée est sûr, car la séparation exclut tout
+        + écrivain actif partout où des lecteurs partagent un alias. C'est la primitive sous le
+        + `at` total de concordance ; sur un site d'appel ordinaire, préférez celui-ci ou un ordinal
+        + confiné, et un appel nu porte un commentaire qui nomme la preuve que l'index est dans
+        + l'intervalle.
+  entry .raw
+    info
+        - the underlying JVM array of an exclusive reference, for interop
+        + le tableau JVM sous-jacent d'une référence exclusive, pour l'interopérabilité
+    detail
+        - `buffer.raw` is the `scala.Array[element]^` behind an exclusive array, for a Java API
+        - which fills it (`random.nextBytes`, `stream.read`). The result aliases the array and
+        - shares its exclusivity rather than escaping it.
+        + `buffer.raw` est le `scala.Array[element]^` derrière un tableau exclusif, pour une API
+        + Java qui le remplit (`random.nextBytes`, `stream.read`). Le résultat est un alias du
+        + tableau et partage son exclusivité au lieu de s'en échapper.
+  entry .stdlib
+    info
+        - a zero-copy, read-only `ArraySeq` view of any readable array
+        + une vue `ArraySeq` en lecture seule et sans copie de n'importe quel tableau lisible
+    detail
+        - The greppable bridge to the stdlib and Java APIs which want a `Seq`, as
+        - `List.stdlib` is for lists. Not for element access: its generic `apply` boxes and
+        - is a partial read the collection vocabulary does not offer.
+        + Le pont repérable par grep vers les API de la stdlib et de Java qui attendent un `Seq`,
+        + comme `List.stdlib` l'est pour les listes. Pas pour l'accès aux éléments : son `apply`
+        + générique fait du boxing et constitue une lecture partielle que le vocabulaire des
+        + collections ne propose pas.
+  entry .map
+    info
+        - a frozen array of the results of a function, from any readable array
+        + un tableau gelé des résultats d'une fonction, à partir de n'importe quel tableau lisible
+    detail
+        - `array.map(lambda)` on any readable reference gives a new frozen array; it needs a
+        - `ClassTag` for the result element, which is why it is a companion extension rather
+        - than a `Mappable` instance (no typeclass slot can carry the obligation). The lambda's
+        - result type is an explicit type parameter so that a nested frozen array's capture is
+        - not re-minted at the call.
+        + `array.map(lambda)` sur toute référence lisible donne un nouveau tableau gelé ; il
+        + nécessite un `ClassTag` pour l'élément résultat, ce qui explique qu'il s'agisse d'une
+        + extension du compagnon plutôt que d'une instance de `Mappable` (aucun emplacement de
+        + classe de types ne peut porter cette obligation). Le type de résultat de la lambda est un
+        + paramètre de type explicite, afin que la capture d'un tableau gelé imbriqué ne soit pas
+        + recréée à l'appel.
+  entry .scratch
+    info
+        - a bare JVM array, for interior scratch below the exclusivity discipline
+        + un tableau JVM nu, pour un espace de travail interne en deçà de la discipline
+        + d'exclusivité
+    detail
+        - `Array.scratch[element](size)` is `new scala.Array[element](size)`, through the
+        - companion so that the fields of `caps.Mutable` state machines and other code beneath
+        - `Array`'s reach share this vocabulary without spelling `new`. Not an `Array`; see
+        - `.raw` for the exclusive interop view.
+        + `Array.scratch[element](size)` vaut `new scala.Array[element](size)`, via le compagnon,
+        + afin que les champs des machines à états `caps.Mutable` et tout autre code hors de portée
+        + d'`Array` partagent ce vocabulaire sans écrire `new`. Ce n'est pas un `Array` ; voir
+        + `.raw` pour la vue d'interopérabilité exclusive.
+  entry .unsafeFrozen
+    info
+        - asserts a JVM array has no writer and returns it frozen
+        + affirme qu'un tableau JVM n'a aucun écrivain et le renvoie gelé
+    detail
+        - The trusted boundary cast for interop edges which cannot thread `consume`: the
+        - caller asserts it retains no writer to the `scala.Array` it passes. Named `unsafe…`
+        - because the assertion is unchecked.
+        + Le transtypage de confiance à la frontière, pour les points d'interopérabilité qui ne
+        + peuvent pas faire passer `consume` : l'appelant affirme ne conserver aucun écrivain sur le
+        + `scala.Array` qu'il transmet. Nommé `unsafe…` car l'affirmation n'est pas vérifiée.
+  entry .unsafeJvm
+    info
+        - the JVM array behind a readable reference, for Java APIs which only read
+        + le tableau JVM derrière une référence lisible, pour les API Java qui ne font que lire
+    detail
+        - `Array.unsafeJvm(array)` hands a `scala.Array[element]` to the JDK's byte-array
+        - surface — `OutputStream.write`, `MessageDigest.update`, `SecretKeySpec` — which reads
+        - but never writes its argument. Nothing is asserted about this side; the whole claim
+        - is about the callee, which a Java signature cannot express, so it is one greppable
+        - call checkable against one Javadoc rather than an ambient `Unsafe`.
+        + `Array.unsafeJvm(array)` transmet un `scala.Array[element]` à la surface des tableaux
+        + d'octets du JDK — `OutputStream.write`, `MessageDigest.update`, `SecretKeySpec` — qui
+        + lit son argument mais ne l'écrit jamais. Rien n'est affirmé de ce côté ; toute
+        + l'affirmation porte sur l'appelé, ce qu'une signature Java ne peut pas exprimer ; c'est
+        + donc un appel unique, repérable par grep, vérifiable par rapport à une Javadoc, plutôt
+        + qu'un `Unsafe` ambiant.
+  entry .unapplySeq
+    info
+        - `case Array(a, b, c)`: pattern support for any readable array
+        + `case Array(a, b, c)` : prise en charge du filtrage par motif pour tout tableau lisible
+    detail
+        - A pattern reads but never writes, so frozen, shared and exclusive receivers all
+        - match; a pattern of the wrong arity fails to match.
+        + Un motif lit mais n'écrit jamais ; les receveurs gelés, partagés et exclusifs
+        + correspondent donc tous ; un motif de mauvaise arité ne correspond pas.
+  entry .quoted
+    info
+        - lifts a list or frozen array of `Expr`s into one `Expr` of a frozen array
+        + élève une liste ou un tableau gelé d'`Expr` en une seule `Expr` d'un tableau gelé
+    detail
+        - The native counterpart of `Expr.ofList` for macro code holding `List[Expr[element]]`
+        - or `Array[Expr[element]]^{}`: `Array.quoted(elements)` splices one
+        - `Expr[Array[element]^{}]`, resolving the element's `ClassTag` at the expansion site
+        - where the type is concrete, and failing the expansion with _no ClassTag is available
+        - for the elements of the array_ if there is none.
+        + Le pendant natif d'`Expr.ofList` pour le code de macro qui détient une
+        + `List[Expr[element]]` ou un `Array[Expr[element]]^{}` : `Array.quoted(elements)`
+        + produit par splice une seule `Expr[Array[element]^{}]`, en résolvant le `ClassTag` de
+        + l'élément au site d'expansion, où le type est concret, et fait échouer l'expansion avec
+        + _no ClassTag is available
+        + for the elements of the array_ s'il n'y en a pas.
+  entry .arrayIsSpreadable
+    info
+        - lets a frozen array be spliced into varargs: `f(array*)`
+        + permet de passer un tableau gelé en varargs par splice : `f(array*)`
+    detail
+        - The `Spreadable` given (a `scala.Spreadable`, from the proscala compiler) which
+        - makes `f(array*)` work on an `Array[element]^{}` without a `stdlib` crossing.
+        + Le given `Spreadable` (un `scala.Spreadable`, issu du compilateur proscala) qui fait
+        + fonctionner `f(array*)` sur un `Array[element]^{}` sans passer par `stdlib`.
+
+entry .List
+  info
+      - an immutable linked list, as an opaque alias of the stdlib's `List`
+      + une liste chaînée immuable, alias opaque de la `List` de la stdlib
+  detail
+      - `List[element]` is the workhorse collection: cheap to prepend to and to traverse,
+      - linear to index or to count. It is an opaque alias of
+      - `scala.collection.immutable.List`, so it costs nothing, but none of the stdlib's
+      - members are visible on it; its API is the typeclass-driven vocabulary of the
+      - libraries above (`map`, `filter`, `bind`, `fold`, `each`, `head`, `at`, `sort`, …),
+      - which is total. The companion holds construction, pattern support, the `stdlib`
+      - bridge, and the macro lifting.
+      + `List[element]` est la collection à tout faire : peu coûteuse pour l'ajout en tête et le
+      + parcours, linéaire pour l'indexation et le comptage. C'est un alias opaque de
+      + `scala.collection.immutable.List` ; elle ne coûte donc rien, mais aucun des membres de la
+      + stdlib n'y est visible ; son API est le vocabulaire piloté par des classes de types des
+      + bibliothèques de niveau supérieur (`map`, `filter`, `bind`, `fold`, `each`, `head`,
+      + `at`, `sort`, …), qui est total. Le compagnon contient la construction, la prise en
+      + charge du filtrage par motif, le pont `stdlib` et le lifting pour les macros.
+
+      ```scala
+      import soundness.*
+
+      val numbers = List(3, 1, 2)      // List[Int] & Populated
+      numbers.head                      // 3: total, since the arity proved non-emptiness
+      val more = 0 :: numbers           // List(0, 3, 1, 2)
+
+      more match
+        case head :: tail => head
+        case Nil          => -1
+
+      List.empty[Int].head              // Optional[Int]: Unset
+      ```
+
+      - A literal of one to twelve elements is branded `& Populated` — the arity of the
+      - call *is* the proof of non-emptiness — so `head`, `last`, `tail` and `reduce` are
+      - total on it. A thirteen-element literal, `List(elements*)` from a `Seq`, and the
+      - result of any transformation are plain `List[element]`, on which `head` is an
+      - `Optional`; rudiments' `occupied` recovers the proof with one check. A branded list
+      - compares with a plain one (`.populatedEquality`).
+      + Un littéral de un à douze éléments est marqué `& Populated` — l'arité de l'appel *est* la
+      + preuve de non-vacuité — si bien que `head`, `last`, `tail` et `reduce` y sont totaux. Un
+      + littéral de treize éléments, `List(elements*)` à partir d'un `Seq`, et le résultat de
+      + toute transformation sont de simples `List[element]`, sur lesquelles `head` est un
+      + `Optional` ; `occupied` de rudiments rétablit la preuve par une seule vérification. Une
+      + liste marquée se compare à une liste simple (`.populatedEquality`).
+
+      - `Nil` is the empty list, matched by equality (`case Nil =>`); `head :: tail`
+      - constructs and deconstructs (through `consConstructor` and the `::` extractor); and
+      - `case List(a, b)` matches by `.unapplySeq`. Counting a list (`size`) and indexing it
+      - (`at`, `sec`, `ter`) are walks from its head, and so are available only under
+      - `import dysasymptotics.linearSize` and `linearAccess` respectively — which say
+      - something true and should not be dodged through `stdlib`.
+      + `Nil` est la liste vide, reconnue par égalité (`case Nil =>`) ; `head :: tail` construit
+      + et déconstruit (via `consConstructor` et l'extracteur `::`) ; et `case List(a, b)`
+      + correspond via `.unapplySeq`. Compter les éléments d'une liste (`size`) et l'indexer
+      + (`at`, `sec`, `ter`) sont des parcours depuis sa tête, et ne sont donc disponibles que
+      + sous `import dysasymptotics.linearSize` et `linearAccess` respectivement — qui disent
+      + quelque chose de vrai et qu'il ne faut pas contourner via `stdlib`.
+
+      - Crossing to the stdlib is `list.stdlib`, a cast with no copy, and back is `List.from`
+      - or `.to(List)` on any stdlib collection (through `.factory`); there is no implicit
+      - conversion in either direction. A varargs splice `f(list*)` works directly. The
+      - companion's primitive operations (`.size`, `.head`, `.at`, `.map`, …) are plain
+      - methods for the typeclass instances above to call; at an ordinary call site the
+      - extension vocabulary is what to use.
+      + Le passage vers la stdlib s'écrit `list.stdlib`, un transtypage sans copie, et le retour
+      + s'écrit `List.from` ou `.to(List)` sur toute collection de la stdlib (via `.factory`) ;
+      + il n'y a de conversion implicite dans aucun sens. Un splice de varargs `f(list*)`
+      + fonctionne directement. Les opérations primitives du compagnon (`.size`, `.head`, `.at`,
+      + `.map`, …) sont de simples méthodes destinées à être appelées par les instances de
+      + classes de types de niveau supérieur ; sur un site d'appel ordinaire, c'est le
+      + vocabulaire d'extensions qu'il faut utiliser.
+  refer proscenium.Nil
+  refer proscenium.Populated
+  refer proscenium.Sequence
+  refer proscenium.Chain
+  entry .apply
+    info
+        - `List(a, b, c)`: a list of its arguments, branded `Populated` up to twelve
+        + `List(a, b, c)` : une liste de ses arguments, marquée `Populated` jusqu'à douze
+    detail
+        - One fixed-arity overload per arity from one to twelve returns `List[element] &
+        - Populated`; the varargs form, which a `Seq` splice or more than twelve elements
+        - reaches, returns a plain `List[element]`. The fixed arities exist because a
+        - `(head, tail*)` overload is ambiguous with `(elements*)` and a macro would be an
+        - implicit search under live type variables.
+        + Une surcharge d'arité fixe pour chaque arité de un à douze renvoie `List[element] &
+        + Populated` ; la forme varargs, qu'atteint un splice de `Seq` ou plus de douze éléments,
+        + renvoie une simple `List[element]`. Les arités fixes existent parce qu'une surcharge
+        + `(head, tail*)` est ambiguë avec `(elements*)` et qu'une macro serait une recherche
+        + implicite avec des variables de type actives.
+  entry .empty
+    info
+        - the empty list, typed: `List.empty[Int]`
+        + la liste vide, typée : `List.empty[Int]`
+  entry .from
+    info
+        - a list copied from any `IterableOnce`
+        + une liste copiée depuis n'importe quel `IterableOnce`
+    detail
+        - `List.from(elements)` is the way back from the stdlib: it copies a stdlib collection
+        - or iterator into a `List`. A `scala.collection.immutable.List` is wrapped without
+        - copying.
+        + `List.from(elements)` est le chemin de retour depuis la stdlib : il copie une collection
+        + ou un itérateur de la stdlib dans une `List`. Une `scala.collection.immutable.List` est
+        + enveloppée sans copie.
+  entry .fill
+    info
+        - `List.fill(n)(element)`: `n` evaluations of `element`
+        + `List.fill(n)(element)` : `n` évaluations de `element`
+  entry .tabulate
+    info
+        - `List.tabulate(n)(index => …)`: `n` elements computed by index
+        + `List.tabulate(n)(index => …)` : `n` éléments calculés par index
+  entry .range
+    info
+        - `List.range(start, end)`: the integers from `start` up to `end`, exclusive
+        + `List.range(start, end)` : les entiers de `start` jusqu'à `end`, exclu
+  entry .unapplySeq
+    info
+        - `case List(a, b)`: pattern support
+        + `case List(a, b)` : prise en charge du filtrage par motif
+  entry .stdlib
+    info
+        - the underlying `scala.collection.immutable.List`, with no copy
+        + la `scala.collection.immutable.List` sous-jacente, sans copie
+    detail
+        - The greppable bridge to a stdlib or Java API, as an inline cast. It is the one way to
+        - reach the partial stdlib surface, and every use is a visible seam; it should not be
+        - used to bypass a cost gate (`xs.stdlib.length` for a gated `size`).
+        + Le pont repérable par grep vers une API de la stdlib ou de Java, sous forme de
+        + transtypage inline. C'est l'unique moyen d'atteindre la surface partielle de la stdlib,
+        + et chaque usage est une jonction visible ; il ne doit pas servir à contourner une
+        + barrière de coût (`xs.stdlib.length` pour un `size` soumis à barrière).
+  entry .factory
+    info
+        - `.to(List)` on a stdlib collection builds a `List`
+        + `.to(List)` sur une collection de la stdlib construit une `List`
+    detail
+        - A `Conversion` from the companion `List.type` to a stdlib `Factory`, so that
+        - `scalaSeq.to(List)` works. It is defined on the companion's type only, so it cannot
+        - expose members of `List` values.
+        + Une `Conversion` du compagnon `List.type` vers une `Factory` de la stdlib, afin que
+        + `scalaSeq.to(List)` fonctionne. Elle n'est définie que sur le type du compagnon ; elle ne
+        + peut donc pas exposer de membres des valeurs `List`.
+  entry .populatedEquality
+    info
+        - `CanEqual[List[a] & Populated, List[b]]`: a branded list compares with a plain one
+        + `CanEqual[List[a] & Populated, List[b]]` : une liste marquée se compare à une liste simple
+    detail
+        - `CanEqual` is sought in the companions of the compared types, and the `Populated`
+        - brand contributes none, so the equality lives here; `.populatedEqualityReversed`
+        - is the other order.
+        + `CanEqual` est recherché dans les compagnons des types comparés, et le marqueur
+        + `Populated` n'en fournit aucun ; l'égalité se trouve donc ici ;
+        + `.populatedEqualityReversed` traite l'autre ordre.
+  entry .populatedEqualityReversed
+    info
+        - `CanEqual[List[a], List[b] & Populated]`
+        + `CanEqual[List[a], List[b] & Populated]`
+  entry .toExpr
+    info
+        - lifts a `List` of liftable elements into an `Expr` in a macro
+        + élève une `List` d'éléments liftables en une `Expr` dans une macro
+    detail
+        - `Expr(list)` works for a `List[element]` whose element has a `ToExpr`; the lifted tree
+        - is `List.from(…)`.
+        + `Expr(list)` fonctionne pour une `List[element]` dont l'élément dispose d'un `ToExpr` ;
+        + l'arbre relevé est `List.from(…)`.
+  entry .fromExpr
+    info
+        - unlifts an `Expr[List[element]]` which was produced by lifting
+        + rabaisse une `Expr[List[element]]` produite par lifting
+    detail
+        - Recognises `List.from(…)` of a constant stdlib list, `List.empty` and `Nil`; any
+        - other list-yielding tree is not constant-foldable and gives `None`.
+        + Reconnaît `List.from(…)` d'une liste stdlib constante, `List.empty` et `Nil` ; tout
+        + autre arbre produisant une liste n'est pas réductible par constantes et donne `None`.
+  entry .quoted
+    info
+        - lifts a `List[Expr[element]]` into one `Expr[List[element]]`
+        + élève une `List[Expr[element]]` en une seule `Expr[List[element]]`
+    detail
+        - The native counterpart of `Expr.ofList`, for macro code holding a native list of
+        - lifted elements; `Expr.ofList(xs.stdlib)` wrapped in `List.from` is `List.quoted(xs)`.
+        + Le pendant natif d'`Expr.ofList`, pour le code de macro qui détient une liste native
+        + d'éléments relevés ; `Expr.ofList(xs.stdlib)` enveloppé dans `List.from` équivaut à
+        + `List.quoted(xs)`.
+  entry .size
+    info
+        - the length, by traversal: a primitive for `Countable`
+        + la longueur, par parcours : une primitive pour `Countable`
+    detail
+        - The companion's primitive operations are plain methods, not extensions, for the
+        - typeclass instances in the libraries above; call-site code uses the gated `size`
+        - extension instead.
+        + Les opérations primitives du compagnon sont de simples méthodes, et non des extensions,
+        + destinées aux instances de classes de types des bibliothèques de niveau supérieur ; le
+        + code des sites d'appel utilise à la place l'extension `size`, soumise à barrière.
+  entry .nil
+    info
+        - whether the list is empty: a primitive for the typeclass instances
+        + indique si la liste est vide : une primitive pour les instances de classes de types
+  entry .head
+    info
+        - the first element, partial: a primitive for the `Populated`-gated `head`
+        + le premier élément, partiel : une primitive pour le `head` soumis à `Populated`
+  entry .tail
+    info
+        - everything after the first element, partial: a primitive
+        + tout ce qui suit le premier élément, partiel : une primitive
+  entry .last
+    info
+        - the final element, partial: a primitive
+        + le dernier élément, partiel : une primitive
+  entry .lead
+    info
+        - everything before the last element, partial: a primitive
+        + tout ce qui précède le dernier élément, partiel : une primitive
+  entry .at
+    info
+        - the element at an `Int` index, partial: a primitive for `Indexable`
+        + l'élément à un index `Int`, partiel : une primitive pour `Indexable`
+  entry .define
+    info
+        - a list with the element at an index replaced: a primitive for `Definable`
+        + une liste dont l'élément à un index est remplacé : une primitive pour `Definable`
+  entry .has
+    info
+        - whether an element is present: a primitive for `Inclusive`
+        + indique si un élément est présent : une primitive pour `Inclusive`
+  entry .drop
+    info
+        - the list without its first `n` elements: a primitive
+        + la liste privée de ses `n` premiers éléments : une primitive
+  entry .append
+    info
+        - the list with an element added at the end, branded `Populated`
+        + la liste avec un élément ajouté à la fin, marquée `Populated`
+    detail
+        - Appending makes the list non-empty, so the construction is the proof.
+        + L'ajout rend la liste non vide ; la construction constitue donc la preuve.
+  entry .prepend
+    info
+        - the list with an element added at the front, branded `Populated`
+        + la liste avec un élément ajouté en tête, marquée `Populated`
+  entry .concat
+    info
+        - two lists joined: a primitive for `concat`
+        + deux listes jointes : une primitive pour `concat`
+  entry .invert
+    info
+        - the list reversed: a primitive for `Reversible`
+        + la liste inversée : une primitive pour `Reversible`
+  entry .map
+    info
+        - the list with a function applied to each element: a primitive for `Mappable`
+        + la liste avec une fonction appliquée à chaque élément : une primitive pour `Mappable`
+  entry .slice
+    info
+        - the elements between two `Int` indices: a primitive for `excerpt`
+        + les éléments compris entre deux index `Int` : une primitive pour `excerpt`
+  entry .iterator
+    info
+        - a stdlib iterator over the list: a primitive for `Traversable`
+        + un itérateur de la stdlib sur la liste : une primitive pour `Traversable`
+
+entry .Nil
+  info
+      - the empty list, `List[Nothing]`
+      + la liste vide, `List[Nothing]`
+  detail
+      - A value, not an extractor object, so `case Nil =>` matches by equality and existing
+      - syntax compiles unchanged. It conforms to every `List[element]` by covariance, and
+      - `Default[List[element]]` is `Nil`.
+      + Une valeur, et non un objet extracteur ; `case Nil =>` correspond donc par égalité et la
+      + syntaxe existante compile sans changement. Elle est conforme à toute `List[element]` par
+      + covariance, et `Default[List[element]]` vaut `Nil`.
+
+entry .listIsSpreadable
+  info
+      - lets a list be spliced into varargs: `f(list*)`
+      + permet de passer une liste en varargs par splice : `f(list*)`
+  detail
+      - The `Spreadable` given (a `scala.Spreadable`, from the proscala compiler) which makes
+      - `f(list*)` work on an opaque `List` without a `stdlib` crossing. It is
+      - subtype-parametric, so a branded `List[a] & Populated` splices too. Unlike the other
+      - collections' `Spreadable` givens it sits at the top level of the package rather than
+      - in the companion, which is equivalent for resolution: a top-level opaque type's
+      - implicit scope includes the definitions beside it.
+      + Le given `Spreadable` (un `scala.Spreadable`, issu du compilateur proscala) qui fait
+      + fonctionner `f(list*)` sur une `List` opaque sans passer par `stdlib`. Il est
+      + paramétrique en sous-type ; une `List[a] & Populated` marquée peut donc aussi être passée
+      + par splice. Contrairement aux givens `Spreadable` des autres collections, il se trouve au
+      + niveau supérieur du package plutôt que dans le compagnon, ce qui est équivalent pour la
+      + résolution : la portée implicite d'un type opaque de niveau supérieur inclut les
+      + définitions placées à côté de lui.
+
+entry .listGatherable
+  info
+      - makes a repeated parameter a `List` in the body of its method
+      + fait d'un paramètre répété une `List` dans le corps de sa méthode
+  detail
+      - The `Gatherable` given (a `scala.Gatherable`, from the proscala compiler) which a
+      - module compiled with `-Zgatherable-varargs` receives its repeated parameters through:
+      - the body of `def join(parts: Text*)` sees `parts` as a `List[Text]`, converted once on
+      - entry, where the language would hand it a stdlib `Seq`. Every Soundness module is
+      - compiled this way, so a varargs method is written against the `List` API directly, with
+      - no `parts.to(List)` on its first line. Callers are unaffected: the signature is still
+      - `Text*`, and `join(texts*)` splices as before. It sits at the top level of the package
+      - because `Gatherable[element]` has no subject whose companion could hold it; `-Yimports`
+      - puts it in scope. A project using `soundness.*` without that root import, or without
+      - the flag, keeps the stdlib `Seq`. Class parameters (`case class Path(segments: Text*)`),
+      - `inline` parameters and macros are not affected by the flag and remain a `Seq`.
+      + Le given `Gatherable` (un `scala.Gatherable`, issu du compilateur proscala) par lequel
+      + un module compilé avec `-Zgatherable-varargs` reçoit ses paramètres répétés : le corps de
+      + `def join(parts: Text*)` voit `parts` comme une `List[Text]`, convertie une seule fois à
+      + l'entrée, là où le langage lui transmettrait un `Seq` de la stdlib. Chaque module de
+      + Soundness est compilé ainsi ; une méthode varargs s'écrit donc directement contre l'API
+      + de `List`, sans `parts.to(List)` en première ligne. Les appelants ne sont pas affectés :
+      + la signature reste `Text*`, et `join(texts*)` fonctionne par splice comme avant. Il se
+      + trouve au niveau supérieur du package parce que `Gatherable[element]` n'a pas de sujet
+      + dont le compagnon pourrait le contenir ; `-Yimports` le place dans la portée. Un projet
+      + qui utilise `soundness.*` sans cet import racine, ou sans l'option, conserve le `Seq` de
+      + la stdlib. Les paramètres de classe (`case class Path(segments: Text*)`), les paramètres
+      + `inline` et les macros ne sont pas concernés par l'option et restent des `Seq`.
+
+entry .consConstructor
+  info
+      - the given which supplies `head :: tail` on the opaque `List`
+      + le given qui fournit `head :: tail` sur la `List` opaque
+  detail
+      - `::` is right-associative, so the receiver of the extension is the head — the left
+      - operand at the call site — and the argument is the tail. The extension rides on a given
+      - rather than at top level because the name belongs to the extractor object `::`; the
+      - given is visible everywhere through `-Yimports`, so `1 :: List(2, 3)` just works. The
+      - result is a plain `List[element]`, not `& Populated`: in a chain `a :: b :: c` the
+      - right operand is typed first, and the element type cannot be inferred from a branded
+      - result there.
+      + `::` est associatif à droite ; le receveur de l'extension est donc la tête — l'opérande
+      + gauche au site d'appel — et l'argument est la queue. L'extension repose sur un given
+      + plutôt qu'au niveau supérieur parce que le nom appartient à l'objet extracteur `::` ; le
+      + given est visible partout grâce à `-Yimports`, si bien que `1 :: List(2, 3)` fonctionne
+      + tout simplement. Le résultat est une simple `List[element]`, et non `& Populated` : dans
+      + une chaîne `a :: b :: c`, l'opérande droit est typé en premier, et le type d'élément ne
+      + peut pas y être inféré à partir d'un résultat marqué.
+
+entry .::
+  info
+      - the extractor for `case head :: tail =>` on the opaque `List`
+      + l'extracteur pour `case head :: tail =>` sur la `List` opaque
+  detail
+      - A name-based extractor, allocating no `Option`: `::.unapply(list)` yields a
+      - `ConsView` whose `isEmpty` is the list's, and whose `_1` and `_2` are the head and
+      - the tail. The constructor `head :: tail` is the extension in `consConstructor`.
+      + Un extracteur fondé sur les noms, qui n'alloue aucune `Option` : `::.unapply(list)`
+      + produit une `ConsView` dont l'`isEmpty` est celui de la liste, et dont `_1` et `_2` sont
+      + la tête et la queue. Le constructeur `head :: tail` est l'extension de `consConstructor`.
+
+      ```scala
+      import soundness.*
+
+      List(1, 2, 3) match
+        case head :: tail => head
+        case Nil          => 0
+      ```
+  entry .ConsView
+    info
+        - the view a `::` pattern reads: `isEmpty`, `_1` (head), `_2` (tail)
+        + la vue que lit un motif `::` : `isEmpty`, `_1` (tête), `_2` (queue)
+    entry #isEmpty
+      info
+          - whether the list is empty, in which case the pattern fails
+          + indique si la liste est vide, auquel cas le motif échoue
+    entry #get
+      info
+          - the view itself
+          + la vue elle-même
+    entry #_1
+      info
+          - the head
+          + la tête
+    entry #_2
+      info
+          - the tail, as a `List`
+          + la queue, sous forme de `List`
+  entry .unapply
+    info
+        - `case head :: tail`: the view over a list
+        + `case head :: tail` : la vue sur une liste
+
+entry .Sequence
+  info
+      - an immutable indexed sequence, as an opaque alias of the stdlib's `Vector`
+      + une séquence indexée immuable, alias opaque du `Vector` de la stdlib
+  detail
+      - A `Sequence[element]` is cheap to read at any position and to append to, so
+      - indexing (`at`, `sec`, `ter`) and `size` need no cost acknowledgment, unlike a
+      - `List`. It is an opaque alias of `scala.collection.immutable.Vector` with the same
+      - design as `List`: members invisible, the vocabulary from the typeclass extensions
+      - above, construction and the `stdlib` bridge in the companion, and no implicit
+      - conversion to or from `Vector`.
+      + Une `Sequence[element]` est peu coûteuse à lire à toute position et à compléter en fin ;
+      + l'indexation (`at`, `sec`, `ter`) et `size` ne nécessitent donc aucune reconnaissance de
+      + coût, contrairement à une `List`. C'est un alias opaque de
+      + `scala.collection.immutable.Vector` conçu comme `List` : membres invisibles, vocabulaire
+      + issu des extensions de classes de types de niveau supérieur, construction et pont
+      + `stdlib` dans le compagnon, et aucune conversion implicite vers ou depuis `Vector`.
+
+      ```scala
+      import soundness.*
+
+      val letters = Sequence(t"a", t"b", t"c")   // Sequence[Text] & Populated
+      letters(Sec)                                // t"b"
+      letters.head                                // t"a"
+
+      letters match
+        case Sequence(a, b, c) => a
+        case _                 => t""
+      ```
+
+      - A literal of one to twelve elements is branded `& Populated`, as a `List` literal is.
+      - A `Sequence` has no `factory` conversion, so a stdlib collection is converted with
+      - `Sequence.from(elements)` rather than `.to(Sequence)`.
+      + Un littéral de un à douze éléments est marqué `& Populated`, comme l'est un littéral de
+      + `List`. Une `Sequence` n'a pas de conversion `factory` ; une collection de la stdlib se
+      + convertit donc avec `Sequence.from(elements)` plutôt qu'avec `.to(Sequence)`.
+  refer proscenium.List
+  entry .apply
+    info
+        - `Sequence(a, b, c)`: a sequence of its arguments, branded `Populated` up to twelve
+        + `Sequence(a, b, c)` : une séquence de ses arguments, marquée `Populated` jusqu'à douze
+  entry .empty
+    info
+        - the empty sequence, typed: `Sequence.empty[Int]`
+        + la séquence vide, typée : `Sequence.empty[Int]`
+  entry .from
+    info
+        - a sequence copied from any `IterableOnce`
+        + une séquence copiée depuis n'importe quel `IterableOnce`
+    detail
+        - The way back from the stdlib, and the only one: `Sequence` has no `factory`
+        - conversion for `.to(Sequence)`.
+        + Le chemin de retour depuis la stdlib, et le seul : `Sequence` n'a pas de conversion
+        + `factory` pour `.to(Sequence)`.
+  entry .unapplySeq
+    info
+        - `case Sequence(a, b)`: pattern support
+        + `case Sequence(a, b)` : prise en charge du filtrage par motif
+  entry .stdlib
+    info
+        - the underlying `scala.collection.immutable.Vector`, with no copy
+        + le `scala.collection.immutable.Vector` sous-jacent, sans copie
+    detail
+        - The greppable bridge to a stdlib or Java API.
+        + Le pont repérable par grep vers une API de la stdlib ou de Java.
+  entry .populatedEquality
+    info
+        - `CanEqual[Sequence[a] & Populated, Sequence[b]]`
+        + `CanEqual[Sequence[a] & Populated, Sequence[b]]`
+  entry .populatedEqualityReversed
+    info
+        - `CanEqual[Sequence[a], Sequence[b] & Populated]`
+        + `CanEqual[Sequence[a], Sequence[b] & Populated]`
+  entry .toExpr
+    info
+        - lifts a `Sequence` of liftable elements into an `Expr` in a macro
+        + élève une `Sequence` d'éléments liftables en une `Expr` dans une macro
+  entry .fromExpr
+    info
+        - unlifts an `Expr[Sequence[element]]` produced by `Sequence.from` of a constant list
+        + rabaisse une `Expr[Sequence[element]]` produite par `Sequence.from` d'une liste constante
+  entry .sequenceIsSpreadable
+    info
+        - lets a sequence be spliced into varargs: `f(sequence*)`
+        + permet de passer une séquence en varargs par splice : `f(sequence*)`
+    detail
+        - Subtype-parametric, so a branded `Sequence[a] & Populated` splices too.
+        + Paramétrique en sous-type ; une `Sequence[a] & Populated` marquée peut donc aussi être
+        + passée par splice.
+  entry .size
+    info
+        - the length, constant time: a primitive for `Countable`
+        + la longueur, en temps constant : une primitive pour `Countable`
+    detail
+        - The companion's primitive operations are plain methods for the typeclass instances
+        - above; call-site code uses the extension vocabulary.
+        + Les opérations primitives du compagnon sont de simples méthodes destinées aux instances
+        + de classes de types de niveau supérieur ; le code des sites d'appel utilise le
+        + vocabulaire d'extensions.
+  entry .nil
+    info
+        - whether the sequence is empty: a primitive
+        + indique si la séquence est vide : une primitive
+  entry .head
+    info
+        - the first element, partial: a primitive for the `Populated`-gated `head`
+        + le premier élément, partiel : une primitive pour le `head` soumis à `Populated`
+  entry .tail
+    info
+        - everything after the first element, partial: a primitive
+        + tout ce qui suit le premier élément, partiel : une primitive
+  entry .last
+    info
+        - the final element, partial: a primitive
+        + le dernier élément, partiel : une primitive
+  entry .lead
+    info
+        - everything before the last element, partial: a primitive
+        + tout ce qui précède le dernier élément, partiel : une primitive
+  entry .at
+    info
+        - the element at an `Int` index, partial: a primitive for `Indexable`
+        + l'élément à un index `Int`, partiel : une primitive pour `Indexable`
+  entry .define
+    info
+        - a sequence with the element at an index replaced: a primitive
+        + une séquence dont l'élément à un index est remplacé : une primitive
+  entry .has
+    info
+        - whether an element is present: a primitive
+        + indique si un élément est présent : une primitive
+  entry .drop
+    info
+        - the sequence without its first `n` elements: a primitive
+        + la séquence privée de ses `n` premiers éléments : une primitive
+  entry .append
+    info
+        - the sequence with an element at the end: a primitive
+        + la séquence avec un élément à la fin : une primitive
+  entry .prepend
+    info
+        - the sequence with an element at the front: a primitive
+        + la séquence avec un élément en tête : une primitive
+  entry .concat
+    info
+        - two sequences joined: a primitive
+        + deux séquences jointes : une primitive
+  entry .invert
+    info
+        - the sequence reversed: a primitive for `Reversible`
+        + la séquence inversée : une primitive pour `Reversible`
+  entry .map
+    info
+        - the sequence with a function applied to each element: a primitive
+        + la séquence avec une fonction appliquée à chaque élément : une primitive
+  entry .slice
+    info
+        - the elements between two `Int` indices: a primitive
+        + les éléments compris entre deux index `Int` : une primitive
+  entry .iterator
+    info
+        - a stdlib iterator over the sequence: a primitive for `Traversable`
+        + un itérateur de la stdlib sur la séquence : une primitive pour `Traversable`
+
+entry .Set
+  info
+      - an immutable set, as an opaque alias of the stdlib's `Set`
+      + un ensemble immuable, alias opaque du `Set` de la stdlib
+  detail
+      - A `Set[element]` holds each element once, with no order, so it cannot be sorted,
+      - excerpted or indexed: those operations are absent rather than arbitrary. It supports
+      - membership (`has`), insertion (`:+`), union (`concat`), `intersect` and `except`
+      - through the typeclass extensions above, and is invariant in its element, like the
+      - stdlib's. An opaque alias of `scala.collection.immutable.Set` with the same design as
+      - `List`: members invisible, construction and the `stdlib` bridge in the companion, no
+      - implicit conversion.
+      + Un `Set[element]` contient chaque élément une seule fois, sans ordre ; il ne peut donc
+      + être ni trié, ni découpé, ni indexé : ces opérations sont absentes plutôt qu'arbitraires.
+      + Il prend en charge l'appartenance (`has`), l'insertion (`:+`), l'union (`concat`),
+      + `intersect` et `except` via les extensions de classes de types de niveau supérieur, et
+      + il est invariant en son élément, comme celui de la stdlib. Un alias opaque de
+      + `scala.collection.immutable.Set` conçu comme `List` : membres invisibles, construction
+      + et pont `stdlib` dans le compagnon, aucune conversion implicite.
+
+      ```scala
+      import soundness.*
+
+      val primes = Set(2, 3, 5, 7)
+      primes.has(5)                  // true
+      primes.intersect(Set(2, 4))    // Set(2)
+      primes.except(Set(2, 3))       // Set(5, 7)
+      primes.stdlib                  // scala.collection.immutable.Set(2, 3, 5, 7)
+      ```
+
+      - Unlike `List` and `Sequence`, a `Set` literal is not branded `Populated`; `occupied`
+      - proves it where needed.
+      + Contrairement à `List` et `Sequence`, un littéral de `Set` n'est pas marqué
+      + `Populated` ; `occupied` le prouve là où c'est nécessaire.
+  refer proscenium.Map
+  entry .apply
+    info
+        - `Set(a, b, c)`: a set of its arguments, duplicates discarded
+        + `Set(a, b, c)` : un ensemble de ses arguments, doublons écartés
+  entry .empty
+    info
+        - the empty set, typed: `Set.empty[Int]`
+        + l'ensemble vide, typé : `Set.empty[Int]`
+  entry .from
+    info
+        - a set built from any `IterableOnce`, duplicates discarded
+        + un ensemble construit à partir de n'importe quel `IterableOnce`, doublons écartés
+  entry .stdlib
+    info
+        - the underlying `scala.collection.immutable.Set`, with no copy
+        + le `scala.collection.immutable.Set` sous-jacent, sans copie
+  entry .factory
+    info
+        - `.to(Set)` on a stdlib collection builds a `Set`
+        + `.to(Set)` sur une collection de la stdlib construit un `Set`
+  entry .populatedEquality
+    info
+        - `CanEqual[Set[a] & Populated, Set[b]]`: a proven-non-empty set compares with a plain one
+        + `CanEqual[Set[a] & Populated, Set[b]]` : un ensemble prouvé non vide se compare à un
+        + ensemble simple
+  entry .populatedEqualityReversed
+    info
+        - `CanEqual[Set[a], Set[b] & Populated]`
+        + `CanEqual[Set[a], Set[b] & Populated]`
+  entry .toExpr
+    info
+        - lifts a `Set` of liftable elements into an `Expr` in a macro
+        + élève un `Set` d'éléments liftables en une `Expr` dans une macro
+  entry .fromExpr
+    info
+        - unlifts an `Expr[Set[element]]` produced by `Set.from` of a constant list
+        + rabaisse une `Expr[Set[element]]` produite par `Set.from` d'une liste constante
+  entry .size
+    info
+        - the number of elements, constant time: a primitive for `Countable`
+        + le nombre d'éléments, en temps constant : une primitive pour `Countable`
+    detail
+        - The companion's primitive operations are plain methods for the typeclass instances
+        - above; call-site code uses the extension vocabulary.
+        + Les opérations primitives du compagnon sont de simples méthodes destinées aux instances
+        + de classes de types de niveau supérieur ; le code des sites d'appel utilise le
+        + vocabulaire d'extensions.
+  entry .nil
+    info
+        - whether the set is empty: a primitive
+        + indique si l'ensemble est vide : une primitive
+  entry .has
+    info
+        - whether an element is present: a primitive for `Inclusive`
+        + indique si un élément est présent : une primitive pour `Inclusive`
+  entry .insert
+    info
+        - the set with an element added: a primitive for `:+`
+        + l'ensemble avec un élément ajouté : une primitive pour `:+`
+  entry .concat
+    info
+        - the union of two sets: a primitive
+        + l'union de deux ensembles : une primitive
+  entry .intersect
+    info
+        - the elements in both sets: a primitive
+        + les éléments présents dans les deux ensembles : une primitive
+  entry .except
+    info
+        - the elements of the left set not in the right: a primitive
+        + les éléments de l'ensemble de gauche absents de celui de droite : une primitive
+  entry .map
+    info
+        - the set of a function's results over the elements: a primitive for `Mappable`
+        + l'ensemble des résultats d'une fonction sur les éléments : une primitive pour `Mappable`
+  entry .iterator
+    info
+        - a stdlib iterator over the elements: a primitive for `Traversable`
+        + un itérateur de la stdlib sur les éléments : une primitive pour `Traversable`
+
+entry .Map
+  info
+      - an immutable map from keys to values, as an opaque alias of the stdlib's `Map`
+      + une map immuable de clés vers des valeurs, alias opaque de la `Map` de la stdlib
+  detail
+      - A `Map[key, value]` pairs keys with values with no promised iteration order (a
+      - `Ledger` promises insertion order). Through the typeclass extensions above it reads a
+      - value by key with `at`, as an `Optional` since the key may be absent; tests a key with
+      - `defines`; adds or replaces with `define`; removes with `omit`; exposes `keys` (a
+      - `Set`) and `values`; and `map`s its values, keeping its keys, where `remap`
+      - transforms entries as pairs. An opaque alias of `scala.collection.immutable.Map`,
+      - covariant in its value, with construction and the `stdlib` bridge in the companion
+      - and no implicit conversion.
+      + Une `Map[key, value]` associe des clés à des valeurs sans promettre d'ordre d'itération
+      + (un `Ledger` promet l'ordre d'insertion). Via les extensions de classes de types de
+      + niveau supérieur, elle lit une valeur par clé avec `at`, sous forme d'`Optional` puisque
+      + la clé peut être absente ; teste une clé avec `defines` ; ajoute ou remplace avec
+      + `define` ; supprime avec `omit` ; expose `keys` (un `Set`) et `values` ; et transforme
+      + ses valeurs avec `map`, en conservant ses clés, tandis que `remap` transforme les entrées
+      + sous forme de paires. Un alias opaque de `scala.collection.immutable.Map`, covariant en
+      + sa valeur, avec construction et pont `stdlib` dans le compagnon, et aucune conversion
+      + implicite.
+
+      ```scala
+      import soundness.*
+
+      val ages = Map(t"Romeo" -> 16, t"Juliet" -> 13)
+      ages.at(t"Romeo")           // 16
+      ages.at(t"Paris")           // Unset
+      ages.define(t"Paris", 25)   // a new map of three entries; `ages` is unchanged
+      ages.map(_ + 1)             // Map(t"Romeo" -> 17, t"Juliet" -> 14)
+      ```
+  refer proscenium.Ledger
+  refer proscenium.Set
+  entry .apply
+    info
+        - `Map(k1 -> v1, k2 -> v2)`: a map of its pairs; a later pair for a key wins
+        + `Map(k1 -> v1, k2 -> v2)` : une map de ses paires ; pour une même clé, la dernière paire
+        + l'emporte
+  entry .empty
+    info
+        - the empty map, typed: `Map.empty[Text, Int]`
+        + la map vide, typée : `Map.empty[Text, Int]`
+  entry .from
+    info
+        - a map built from any `IterableOnce` of pairs
+        + une map construite à partir de n'importe quel `IterableOnce` de paires
+  entry .stdlib
+    info
+        - the underlying `scala.collection.immutable.Map`, with no copy
+        + la `scala.collection.immutable.Map` sous-jacente, sans copie
+  entry .factory
+    info
+        - `.to(Map)` on a stdlib collection of pairs builds a `Map`
+        + `.to(Map)` sur une collection de paires de la stdlib construit une `Map`
+  entry .toExpr
+    info
+        - lifts a `Map` of liftable keys and values into an `Expr` in a macro
+        + élève une `Map` de clés et de valeurs liftables en une `Expr` dans une macro
+  entry .fromExpr
+    info
+        - unlifts an `Expr[Map[key, value]]` produced by `Map.from` of a constant list
+        + rabaisse une `Expr[Map[key, value]]` produite par `Map.from` d'une liste constante
+  entry .size
+    info
+        - the number of entries, constant time: a primitive for `Countable`
+        + le nombre d'entrées, en temps constant : une primitive pour `Countable`
+    detail
+        - The companion's primitive operations are plain methods for the typeclass instances
+        - above; call-site code uses the extension vocabulary. `.read` mirrors the stdlib's
+        - `Option`-returning `get`; the `Optional`-returning `at` is layered above, in the
+        - libraries which know `vacuous`.
+        + Les opérations primitives du compagnon sont de simples méthodes destinées aux instances
+        + de classes de types de niveau supérieur ; le code des sites d'appel utilise le
+        + vocabulaire d'extensions. `.read` reproduit le `get` de la stdlib, qui renvoie une
+        + `Option` ; le `at` qui renvoie un `Optional` est construit au-dessus, dans les
+        + bibliothèques qui connaissent `vacuous`.
+  entry .nil
+    info
+        - whether the map is empty: a primitive
+        + indique si la map est vide : une primitive
+  entry .defines
+    info
+        - whether a key is present: a primitive for `Applicable`
+        + indique si une clé est présente : une primitive pour `Applicable`
+  entry .at
+    info
+        - the value for a key, partial: a primitive
+        + la valeur associée à une clé, partiel : une primitive
+  entry .read
+    info
+        - the value for a key as an `Option`: a primitive, mirroring the stdlib's `get`
+        + la valeur associée à une clé sous forme d'`Option` : une primitive, qui reproduit le `get`
+        + de la stdlib
+  entry .define
+    info
+        - a map with a key set to a value: a primitive for `Definable`
+        + une map dans laquelle une clé est associée à une valeur : une primitive pour `Definable`
+  entry .omit
+    info
+        - a map without a key: a primitive for `Omissible`
+        + une map privée d'une clé : une primitive pour `Omissible`
+  entry .keys
+    info
+        - the keys, as a `Set`: a primitive
+        + les clés, sous forme de `Set` : une primitive
+  entry .values
+    info
+        - the values, as a `List`: a primitive
+        + les valeurs, sous forme de `List` : une primitive
+  entry .concat
+    info
+        - two maps merged, the right's entries winning: a primitive
+        + deux maps fusionnées, les entrées de droite l'emportant : une primitive
+  entry .map
+    info
+        - the map with a function applied to each value, keys unchanged: a primitive for `Mappable`
+        + la map avec une fonction appliquée à chaque valeur, clés inchangées : une primitive pour
+        + `Mappable`
+  entry .iterator
+    info
+        - a stdlib iterator over the entries as pairs: a primitive for `Traversable`
+        + un itérateur de la stdlib sur les entrées sous forme de paires : une primitive pour
+        + `Traversable`
+
+entry .Ledger
+  info
+      - an insertion-ordered immutable map, as an opaque alias of `VectorMap`
+      + une map immuable ordonnée par insertion, alias opaque de `VectorMap`
+  detail
+      - A `Ledger[key, value]` is exactly a `Map` which promises to iterate its entries in
+      - the order they were first added, which `Map` deliberately does not. It is backed by
+      - `scala.collection.immutable.VectorMap` — insertion-ordered like `ListMap`, but with
+      - effectively constant-time lookup and append, since the registries kept in ledgers
+      - (dialect member tables, attribute lists, test reports) grow into the hundreds. The
+      - vocabulary is the `Map`'s: `at`, `defines`, `define`, `omit`, `keys`, `values`,
+      - `map` over values preserving order. A `Ledger` is not a `Map` and does not convert to
+      - one.
+      + Un `Ledger[key, value]` est exactement une `Map` qui promet d'itérer sur ses entrées dans
+      + l'ordre où elles ont été ajoutées pour la première fois, ce que `Map` ne fait délibérément
+      + pas. Il repose sur `scala.collection.immutable.VectorMap` — ordonnée par insertion comme
+      + `ListMap`, mais avec une recherche et un ajout en temps quasi constant, puisque les
+      + registres conservés dans des ledgers (tables de membres de dialectes, listes d'attributs,
+      + rapports de tests) atteignent plusieurs centaines d'entrées. Le vocabulaire est celui de la
+      + `Map` : `at`, `defines`, `define`, `omit`, `keys`, `values`, et `map` sur les valeurs en
+      + préservant l'ordre. Un `Ledger` n'est pas une `Map` et ne s'y convertit pas.
+
+      ```scala
+      import soundness.*
+
+      val ledger = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+      ledger.keys                    // List(t"c", t"a", t"b"), in insertion order
+      ledger.at(t"a")                // 1
+      Ledger(t"a" -> 1, t"a" -> 2).at(t"a")   // 2: a later pair for the same key wins
+      ```
+  refer proscenium.Map
+  entry .apply
+    info
+        - `Ledger(k1 -> v1, k2 -> v2)`: a ledger of its pairs, in order
+        + `Ledger(k1 -> v1, k2 -> v2)` : un ledger de ses paires, dans l'ordre
+  entry .empty
+    info
+        - the empty ledger, typed: `Ledger.empty[Text, Int]`
+        + le ledger vide, typé : `Ledger.empty[Text, Int]`
+  entry .from
+    info
+        - a ledger built from any `IterableOnce` of pairs, in their order
+        + un ledger construit à partir de n'importe quel `IterableOnce` de paires, dans leur ordre
+  entry .stdlib
+    info
+        - the underlying `scala.collection.immutable.VectorMap`, with no copy
+        + la `scala.collection.immutable.VectorMap` sous-jacente, sans copie
+  entry .factory
+    info
+        - `.to(Ledger)` on a stdlib collection of pairs builds a `Ledger`
+        + `.to(Ledger)` sur une collection de paires de la stdlib construit un `Ledger`
+  entry .toExpr
+    info
+        - lifts a `Ledger` of liftable keys and values into an `Expr` in a macro
+        + élève un `Ledger` de clés et de valeurs liftables en une `Expr` dans une macro
+  entry .fromExpr
+    info
+        - unlifts an `Expr[Ledger[key, value]]` produced by `Ledger.from` of a constant list
+        + rabaisse une `Expr[Ledger[key, value]]` produite par `Ledger.from` d'une liste constante
+  entry .size
+    info
+        - the number of entries: a primitive for `Countable`
+        + le nombre d'entrées : une primitive pour `Countable`
+    detail
+        - The companion's primitive operations are plain methods for the typeclass instances
+        - above; call-site code uses the extension vocabulary.
+        + Les opérations primitives du compagnon sont de simples méthodes destinées aux instances
+        + de classes de types de niveau supérieur ; le code des sites d'appel utilise le
+        + vocabulaire d'extensions.
+  entry .nil
+    info
+        - whether the ledger is empty: a primitive
+        + indique si le ledger est vide : une primitive
+  entry .defines
+    info
+        - whether a key is present: a primitive
+        + indique si une clé est présente : une primitive
+  entry .at
+    info
+        - the value for a key, partial: a primitive
+        + la valeur associée à une clé, partiel : une primitive
+  entry .read
+    info
+        - the value for a key as an `Option`: a primitive, mirroring the stdlib's `get`
+        + la valeur associée à une clé sous forme d'`Option` : une primitive, qui reproduit le `get`
+        + de la stdlib
+  entry .define
+    info
+        - a ledger with a key set to a value, keeping its position if present: a primitive
+        + un ledger dans lequel une clé est associée à une valeur, en conservant sa position si elle
+        + existe : une primitive
+  entry .omit
+    info
+        - a ledger without a key: a primitive
+        + un ledger privé d'une clé : une primitive
+  entry .keys
+    info
+        - the keys as a `List`, in insertion order: a primitive
+        + les clés sous forme de `List`, dans l'ordre d'insertion : une primitive
+  entry .values
+    info
+        - the values as a `List`, in insertion order: a primitive
+        + les valeurs sous forme de `List`, dans l'ordre d'insertion : une primitive
+  entry .concat
+    info
+        - two ledgers merged, the right's entries appended or overriding: a primitive
+        + deux ledgers fusionnés, les entrées de droite étant ajoutées ou l'emportant : une
+        + primitive
+  entry .map
+    info
+        - the ledger with a function applied to each value, order preserved: a primitive
+        + le ledger avec une fonction appliquée à chaque valeur, ordre préservé : une primitive
+  entry .iterator
+    info
+        - a stdlib iterator over the entries, in insertion order: a primitive
+        + un itérateur de la stdlib sur les entrées, dans l'ordre d'insertion : une primitive
+
+entry .Chain
+  info
+      - a lazy, possibly infinite sequence, as an opaque alias of the stdlib's `LazyList`
+      + une séquence paresseuse, éventuellement infinie, alias opaque de la `LazyList` de la stdlib
+  detail
+      - A `Chain[element]` computes its elements as they are demanded and remembers them,
+      - so it can describe every natural number or every line a process will print, as long
+      - as only a finite prefix is ever forced. `head #:: rest` prepends without forcing
+      - `rest`; `Chain.iterate`, `Chain.unfold` and `Chain.continually` generate from a seed
+      - or a value; `keep` and `skip` take and drop a prefix lazily; `prefix #::: suffix`
+      - concatenates without forcing the suffix; and `case head #:: tail =>` matches forcing
+      - only the head. `size`, `last` and `lead` force the whole chain and may never return,
+      - so they are gated behind `import dysasymptotics.unboundedSize`.
+      + Une `Chain[element]` calcule ses éléments à mesure qu'on les demande et les mémorise ;
+      + elle peut donc décrire tous les entiers naturels ou toutes les lignes qu'un processus
+      + affichera, tant que seul un préfixe fini est jamais forcé. `head #:: rest` ajoute en tête
+      + sans forcer `rest` ; `Chain.iterate`, `Chain.unfold` et `Chain.continually` génèrent à
+      + partir d'une graine ou d'une valeur ; `keep` et `skip` prennent et suppriment un préfixe
+      + paresseusement ; `prefix #::: suffix` concatène sans forcer le suffixe ; et
+      + `case head #:: tail =>` correspond en ne forçant que la tête. `size`, `last` et `lead`
+      + forcent toute la chaîne et peuvent ne jamais terminer ; ils sont donc soumis à
+      + `import dysasymptotics.unboundedSize`.
+
+      ```scala
+      import soundness.*
+
+      val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
+      naturals.keep(5).to[List]            // List(0, 1, 2, 3, 4)
+      naturals.skip(10).keep(2).to[List]   // List(10, 11)
+      Chain.continually(7).keep(3).to[List]
+
+      def evens: Chain[Int] = naturals.filter(_%2 == 0)
+      evens match
+        case head #:: _ => head             // 0, forcing nothing beyond it
+      ```
+
+      - An opaque alias of `scala.collection.immutable.LazyList` with the same design as
+      - `List` — members invisible, `stdlib` bridge in the companion, no implicit conversion
+      - — with one difference: a `Chain` literal is never branded `Populated`, since the
+      - streaming shape must not let a transparent expansion into a capture-checked call
+      - site; prove non-emptiness with `occupied` or a `#::` match. There is a `ToExpr` but
+      - no `FromExpr`, since an eager unlift would misrepresent the lazy shape. A `Chain`
+      - has deliberately no `Segmentable` instance: the lazy `keep`/`skip` in
+      - `chainSegments` are what it has, and a strict instance would force an unbounded
+      - chain.
+      + Un alias opaque de `scala.collection.immutable.LazyList` conçu comme `List` — membres
+      + invisibles, pont `stdlib` dans le compagnon, aucune conversion implicite — à une
+      + différence près : un littéral de `Chain` n'est jamais marqué `Populated`, car la forme en
+      + flux ne doit pas laisser une expansion transparente pénétrer dans un site d'appel soumis
+      + au contrôle des captures ; prouvez la non-vacuité avec `occupied` ou un motif `#::`. Il
+      + existe un `ToExpr` mais pas de `FromExpr`, car un rabaissement strict trahirait la forme
+      + paresseuse. Une `Chain` n'a délibérément aucune instance de `Segmentable` : elle dispose
+      + des `keep`/`skip` paresseux de `chainSegments`, et une instance stricte forcerait une
+      + chaîne non bornée.
+  refer proscenium.lazyCons
+  refer proscenium.chainSegments
+  refer proscenium.List
+  entry .apply
+    info
+        - `Chain(a, b, c)`: a finite chain of its arguments, unbranded
+        + `Chain(a, b, c)` : une chaîne finie de ses arguments, non marquée
+  entry .empty
+    info
+        - the empty chain, typed: `Chain.empty[Int]`
+        + la chaîne vide, typée : `Chain.empty[Int]`
+  entry .from
+    info
+        - a chain over any `IterableOnce`, evaluated lazily where the source allows
+        + une chaîne sur n'importe quel `IterableOnce`, évaluée paresseusement lorsque la source le
+        + permet
+  entry .continually
+    info
+        - an infinite chain repeating a by-name value: `Chain.continually(7)`
+        + une chaîne infinie qui répète une valeur passée par nom : `Chain.continually(7)`
+  entry .iterate
+    info
+        - an infinite chain from a seed and a step: `Chain.iterate(0)(_ + 1)`
+        + une chaîne infinie à partir d'une graine et d'un pas : `Chain.iterate(0)(_ + 1)`
+    detail
+        - The seed is by-name; nothing is evaluated until forced.
+        + La graine est passée par nom ; rien n'est évalué avant d'être forcé.
+  entry .unfold
+    info
+        - a chain generated from a state by a function yielding `Option[(element, state)]`
+        + une chaîne générée à partir d'un état par une fonction qui produit une
+        + `Option[(element, state)]`
+    detail
+        - `Chain.unfold(init)(state => …)` continues while the function returns `Some` of the
+        - next element and state, and ends at `None`.
+        + `Chain.unfold(init)(state => …)` continue tant que la fonction renvoie un `Some` de
+        + l'élément et de l'état suivants, et se termine sur `None`.
+  entry .range
+    info
+        - `Chain.range(start, end)`: the integral values from `start` up to `end`
+        + `Chain.range(start, end)` : les valeurs entières de `start` jusqu'à `end`
+  entry .cons
+    info
+        - the primitive lazy cons: `Chain.cons(head, tail)`, with `tail` by-name
+        + le cons paresseux primitif : `Chain.cons(head, tail)`, avec `tail` passé par nom
+    detail
+        - The method form of `#::`.
+        + La forme méthode de `#::`.
+  entry .defer
+    info
+        - a chain whose evaluation is deferred until it is forced
+        + une chaîne dont l'évaluation est différée jusqu'à ce qu'elle soit forcée
+    detail
+        - `Chain.defer(chain)` keeps the by-name `chain` unevaluated until the result is
+        - demanded, for a recursive definition whose body must not run eagerly.
+        + `Chain.defer(chain)` laisse le paramètre par nom `chain` non évalué jusqu'à ce que le
+        + résultat soit demandé, pour une définition récursive dont le corps ne doit pas
+        + s'exécuter immédiatement.
+  entry .unapplySeq
+    info
+        - `case Chain(a, b)`: pattern support, forcing the whole chain
+        + `case Chain(a, b)` : prise en charge du filtrage par motif, qui force toute la chaîne
+  entry .stdlib
+    info
+        - the underlying `scala.collection.immutable.LazyList`, with no copy
+        + la `scala.collection.immutable.LazyList` sous-jacente, sans copie
+  entry .factory
+    info
+        - `.to(Chain)` on a stdlib collection builds a `Chain`
+        + `.to(Chain)` sur une collection de la stdlib construit une `Chain`
+  entry .populatedEquality
+    info
+        - `CanEqual[Chain[a] & Populated, Chain[b]]`
+        + `CanEqual[Chain[a] & Populated, Chain[b]]`
+  entry .populatedEqualityReversed
+    info
+        - `CanEqual[Chain[a], Chain[b] & Populated]`
+        + `CanEqual[Chain[a], Chain[b] & Populated]`
+  entry .toExpr
+    info
+        - lifts a finite `Chain` into an `Expr` in a macro, forcing it entirely
+        + élève une `Chain` finie en une `Expr` dans une macro, en la forçant entièrement
+    detail
+        - A constant tree cannot be lazy, so lifting forces the whole chain; it serves only a
+        - finite chain a macro has already materialised. There is deliberately no `FromExpr`.
+        + Un arbre constant ne peut pas être paresseux ; le lifting force donc toute la chaîne ; il
+        + ne sert qu'à une chaîne finie qu'une macro a déjà matérialisée. Il n'y a délibérément pas
+        + de `FromExpr`.
+  entry .chainIsSpreadable
+    info
+        - lets a chain be spliced into varargs: `f(chain*)`, forcing it
+        + permet de passer une chaîne en varargs par splice : `f(chain*)`, en la forçant
+  entry .size
+    info
+        - the length, forcing the whole chain: a primitive for the `unboundedSize`-gated `size`
+        + la longueur, en forçant toute la chaîne : une primitive pour le `size` soumis à
+        + `unboundedSize`
+    detail
+        - The companion's primitive operations are plain methods for the typeclass instances
+        - above; `size`, `last` and `lead` force the whole chain and diverge on an infinite
+        - one, which is why their extensions are gated.
+        + Les opérations primitives du compagnon sont de simples méthodes destinées aux instances
+        + de classes de types de niveau supérieur ; `size`, `last` et `lead` forcent toute la
+        + chaîne et divergent sur une chaîne infinie, ce qui explique que leurs extensions soient
+        + soumises à une barrière.
+  entry .nil
+    info
+        - whether the chain is empty, forcing only the first node: a primitive
+        + indique si la chaîne est vide, en ne forçant que le premier nœud : une primitive
+  entry .head
+    info
+        - the first element, partial: a primitive for the `Populated`-gated `head`
+        + le premier élément, partiel : une primitive pour le `head` soumis à `Populated`
+  entry .tail
+    info
+        - the chain after its first element, not forcing the tail's contents: a primitive
+        + la chaîne après son premier élément, sans forcer le contenu de la queue : une primitive
+  entry .last
+    info
+        - the final element, forcing the whole chain: a primitive
+        + le dernier élément, en forçant toute la chaîne : une primitive
+  entry .lead
+    info
+        - everything before the last element, forcing the whole chain: a primitive
+        + tout ce qui précède le dernier élément, en forçant toute la chaîne : une primitive
+  entry .append
+    info
+        - the chain with an element lazily appended: a primitive
+        + la chaîne avec un élément ajouté paresseusement à la fin : une primitive
+  entry .prepend
+    info
+        - the chain with an element prepended, lazily: a primitive
+        + la chaîne avec un élément ajouté en tête, paresseusement : une primitive
+  entry .concat
+    info
+        - two chains joined lazily: a primitive
+        + deux chaînes jointes paresseusement : une primitive
+  entry .map
+    info
+        - the chain with a function applied lazily to each element: a primitive
+        + la chaîne avec une fonction appliquée paresseusement à chaque élément : une primitive
+  entry .iterator
+    info
+        - a stdlib iterator over the chain: a primitive for `Traversable`
+        + un itérateur de la stdlib sur la chaîne : une primitive pour `Traversable`
+
+entry .lazyCons
+  info
+      - the given which supplies `head #:: tail` on the opaque `Chain`
+      + le given qui fournit `head #:: tail` sur la `Chain` opaque
+  detail
+      - The lazy cons constructor: `head #:: tail` prepends `head` to `tail` without
+      - evaluating `tail`, which is by-name, so `head #:: recur()` does not call `recur()`.
+      - As with `::`, the receiver of the extension is the head (right-associativity swaps the
+      - operands), and it rides on a given because the name belongs to the extractor object
+      - `#::`; the given is visible everywhere through `-Yimports`.
+      + Le constructeur cons paresseux : `head #:: tail` ajoute `head` en tête de `tail` sans
+      + évaluer `tail`, qui est passé par nom ; `head #:: recur()` n'appelle donc pas `recur()`.
+      + Comme pour `::`, le receveur de l'extension est la tête (l'associativité à droite
+      + intervertit les opérandes), et elle repose sur un given parce que le nom appartient à
+      + l'objet extracteur `#::` ; le given est visible partout grâce à `-Yimports`.
+
+      ```scala
+      import soundness.*
+
+      def from(n: Int): Chain[Int] = n #:: from(n + 1)
+      from(1).keep(3).to[List]   // List(1, 2, 3)
+      ```
+
+entry .#::
+  info
+      - the non-forcing extractor for `case head #:: tail =>` on a `Chain`
+      + l'extracteur non forçant pour `case head #:: tail =>` sur une `Chain`
+  detail
+      - A name-based extractor whose `isEmpty` and `_1` force only the first node, and
+      - whose `_2` is the tail through `LazyList#tail`, which does not force the tail's
+      - elements — so matching a chain to read its head computes exactly one element. The
+      - constructor `head #:: tail` is the extension in `lazyCons`.
+      + Un extracteur fondé sur les noms dont `isEmpty` et `_1` ne forcent que le premier nœud,
+      + et dont `_2` est la queue via `LazyList#tail`, qui ne force pas les éléments de la
+      + queue — si bien que filtrer une chaîne pour lire sa tête ne calcule qu'un seul élément.
+      + Le constructeur `head #:: tail` est l'extension de `lazyCons`.
+
+      ```scala
+      import soundness.*
+
+      Chain.continually(42) match
+        case head #:: _ => head   // 42
+      ```
+  entry .ConsView
+    info
+        - the view a `#::` pattern reads: `isEmpty`, `_1` (head), `_2` (lazy tail)
+        + la vue que lit un motif `#::` : `isEmpty`, `_1` (tête), `_2` (queue paresseuse)
+    entry #isEmpty
+      info
+          - whether the chain is empty, forcing only the first node
+          + indique si la chaîne est vide, en ne forçant que le premier nœud
+    entry #get
+      info
+          - the view itself
+          + la vue elle-même
+    entry #_1
+      info
+          - the head
+          + la tête
+    entry #_2
+      info
+          - the tail, as a `Chain`, unforced
+          + la queue, sous forme de `Chain`, non forcée
+  entry .unapply
+    info
+        - `case head #:: tail`: the view over a chain
+        + `case head #:: tail` : la vue sur une chaîne
+
+entry .#:::
+  info
+      - `prefix #::: suffix`: lazy concatenation of two chains
+      + `prefix #::: suffix` : concaténation paresseuse de deux chaînes
+  detail
+      - An extension on `Chain[element]`: the suffix is by-name and is not forced until the
+      - prefix is exhausted, so a chain may be defined as a finite prefix followed by a
+      - recursive or infinite suffix. The suffix's element type may widen the prefix's.
+      + Une extension sur `Chain[element]` : le suffixe est passé par nom et n'est pas forcé tant
+      + que le préfixe n'est pas épuisé ; une chaîne peut donc être définie comme un préfixe fini
+      + suivi d'un suffixe récursif ou infini. Le type d'élément du suffixe peut élargir celui du
+      + préfixe.
+
+entry .chainSegments
+  info
+      - the given which supplies the lazy `keep` and `skip` on a `Chain`
+      + le given qui fournit les `keep` et `skip` paresseux sur une `Chain`
+  detail
+      - `chain.keep(n)` and `chain.skip(n)` take and drop a prefix by count, `chain.keep(p)`
+      - and `chain.skip(p)` by predicate; all four are non-forcing — they evaluate elements
+      - only as the result is demanded — so all are safe on an unbounded chain, where the
+      - `Segmentable`-driven `keep`/`skip` on the strict collections would count and rebuild.
+      - The count forms are total: an out-of-range count clips. There is no right-to-left
+      - form, since it would have no non-forcing meaning. They ride on a given so that they
+      - are consulted only after the generic candidates have failed on a `Chain` receiver,
+      - which they always do.
+      + `chain.keep(n)` et `chain.skip(n)` prennent et suppriment un préfixe selon un nombre,
+      + `chain.keep(p)` et `chain.skip(p)` selon un prédicat ; les quatre sont non forçants — ils
+      + n'évaluent les éléments qu'à mesure que le résultat est demandé — et sont donc tous sûrs
+      + sur une chaîne non bornée, là où les `keep`/`skip` des collections strictes, pilotés par
+      + `Segmentable`, compteraient et reconstruiraient. Les formes par nombre sont totales : un
+      + nombre hors limites est rogné. Il n'existe pas de forme de droite à gauche, qui n'aurait
+      + pas de sens non forçant. Elles reposent sur un given afin de n'être consultées qu'après
+      + l'échec des candidats génériques sur un receveur `Chain`, ce qui arrive toujours.
+
+      ```scala
+      import soundness.*
+
+      Chain.iterate(0)(_ + 1).skip(10).keep(2).to[List]   // List(10, 11)
+      ```
+
+entry .Comparison
+  info
+      - the result of a three-way comparison: `Less`, `Same` or `More`
+      + le résultat d'une comparaison à trois issues : `Less`, `Same` ou `More`
+  detail
+      - The currency of symbolism's `Comparable`, whose `compare(left, right)` returns one.
+      - An enumeration rather than an `Int` sign: the three cases are singletons, so it
+      - allocates nothing, while remaining pattern-matchable and carrying its queries as
+      - members, which an extension named `also` or `more` could not do without contending
+      - with the universal extensions in the umbrella. `Less` means the left operand is
+      - smaller, `More` that it is larger, and `Same` that neither is.
+      + La monnaie d'échange du `Comparable` de symbolism, dont `compare(left, right)` renvoie
+      + une telle valeur. Une énumération plutôt qu'un signe `Int` : les trois cas sont des
+      + singletons, elle n'alloue donc rien, tout en restant filtrable par motif et en portant
+      + ses requêtes comme membres, ce qu'une extension nommée `also` ou `more` ne pourrait pas
+      + faire sans entrer en concurrence avec les extensions universelles du package parapluie.
+      + `Less` signifie que l'opérande gauche est plus petit, `More` qu'il est plus grand, et
+      + `Same` qu'il n'est ni l'un ni l'autre.
+
+      ```scala
+      import soundness.*
+
+      Comparison(-42)                          // Comparison.Less
+      Comparison.Less.flip                     // Comparison.More
+      Comparison.More.sign                     // 1
+      Comparison.Same.also(Comparison.Less)    // Comparison.Less
+      Comparison.More.also(Comparison.Less)    // Comparison.More
+      ```
+
+      - `also` composes comparisons lexicographically — this one unless it is `Same`, in
+      - which case the next, which is by-name and so unevaluated when the first is decisive —
+      - and `sign` and `.apply` convert to and from the sign convention of
+      - `java.util.Comparator` and `scala.math.Ordering` at the seams.
+      + `also` compose les comparaisons lexicographiquement — celle-ci, sauf si elle vaut
+      + `Same`, auquel cas la suivante, qui est passée par nom et donc non évaluée lorsque la
+      + première est décisive — et `sign` et `.apply` convertissent vers et depuis la convention
+      + de signe de `java.util.Comparator` et de `scala.math.Ordering` aux jonctions.
+  entry .apply
+    info
+        - a `Comparison` from a `compareTo`-style sign: negative, zero or positive
+        + une `Comparison` à partir d'un signe à la manière de `compareTo` : négatif, nul ou positif
+    detail
+        - Magnitudes are collapsed to the three cases, so every `Comparison` is canonical.
+        + Les magnitudes sont réduites aux trois cas, si bien que toute `Comparison` est canonique.
+  entry #less
+    info
+        - whether this is `Less`
+        + indique s'il s'agit de `Less`
+  entry #same
+    info
+        - whether this is `Same`
+        + indique s'il s'agit de `Same`
+  entry #more
+    info
+        - whether this is `More`
+        + indique s'il s'agit de `More`
+  entry #flip
+    info
+        - the comparison of the same two values in the opposite order
+        + la comparaison des deux mêmes valeurs dans l'ordre inverse
+    detail
+        - `Less` and `More` exchange; `Same` is unchanged.
+        + `Less` et `More` sont échangés ; `Same` reste inchangé.
+  entry #sign
+    info
+        - `-1`, `0` or `1`: the `Comparator`/`Ordering` convention, for stdlib and JDK seams
+        + `-1`, `0` ou `1` : la convention de `Comparator`/`Ordering`, pour les jonctions avec la
+        + stdlib et le JDK
+  entry #also
+    info
+        - lexicographic composition: this unless it is `Same`, else the next comparison
+        + composition lexicographique : celle-ci, sauf si elle vaut `Same`, et sinon la comparaison
+        + suivante
+    detail
+        - The second comparison is by-name, so a chain of `also`s stops at the first decisive
+        - result and evaluates nothing after it.
+        + La seconde comparaison est passée par nom ; une chaîne d'`also` s'arrête donc au premier
+        + résultat décisif et n'évalue rien au-delà.
+
+entry .Populated
+  info
+      - a proof of non-emptiness in a value's type: `List[Int] & Populated`
+      + une preuve de non-vacuité dans le type d'une valeur : `List[Int] & Populated`
+  detail
+      - A phantom structural refinement, `Any { type Occupied = true }`, intersected with a
+      - collection type to record that it has at least one element. The proof is minted two
+      - ways: the fixed-arity literal constructors (`List(1, 2, 3)`, `Sequence(t"a")`) brand
+      - their result by construction, and rudiments' `occupied` checks a value once and yields
+      - `Optional[self & Populated]`. The operations which are only total on a non-empty
+      - receiver — `head`, `last`, `tail`, `reduce` — then demand a `Populated` receiver, or
+      - degrade to an `Optional` result, so partiality is discharged where the code compiles.
+      + Un raffinement structurel fantôme, `Any { type Occupied = true }`, intersecté avec un
+      + type de collection pour enregistrer qu'elle contient au moins un élément. La preuve est
+      + produite de deux manières : les constructeurs littéraux d'arité fixe (`List(1, 2, 3)`,
+      + `Sequence(t"a")`) marquent leur résultat par construction, et `occupied` de rudiments
+      + vérifie une valeur une fois et produit un `Optional[self & Populated]`. Les opérations
+      + qui ne sont totales que sur un receveur non vide — `head`, `last`, `tail`, `reduce` —
+      + exigent alors un receveur `Populated`, ou se replient sur un résultat `Optional` ; la
+      + partialité est ainsi réglée là où le code compile.
+
+      ```scala
+      import soundness.*
+
+      val proven = List(4, 5, 6)         // List[Int] & Populated
+      proven.head                        // 4: an Int, not an Optional[Int]
+      List.empty[Int].occupied           // Unset
+      List(7, 8).occupied.let(_.head)    // 7
+      ```
+
+      - A refinement rather than a trait so that it erases away: `Text & Populated` is still
+      - a `String` at runtime, where a nominal marker would insert casts that fail. The
+      - brand is lost by any transformation and by a type ascription to the plain type. It
+      - lives here, below every collection, so the companions can brand their literals;
+      - `rudiments.Populated` is an alias of it.
+      + Un raffinement plutôt qu'un trait, afin qu'il disparaisse à l'effacement :
+      + `Text & Populated` reste une `String` à l'exécution, là où un marqueur nominal
+      + introduirait des transtypages qui échouent. La marque est perdue par toute
+      + transformation et par une ascription de type vers le type simple. Elle se trouve ici,
+      + sous toutes les collections, afin que les compagnons puissent marquer leurs littéraux ;
+      + `rudiments.Populated` en est un alias.
+
+entry .Sized
+  info
+      - a proof of length in a value's type: `Array[Byte]^{} & Sized[512]`
+      + une preuve de longueur dans le type d'une valeur : `Array[Byte]^{} & Sized[512]`
+  detail
+      - The counterpart of `Populated` for fixed-layout data — a tar header of 512 bytes, a
+      - compass rose of eight points. `Sized[length]` is the refinement `Any { type Length =
+      - length }`, minted three ways: `Array.fill` and `Array.tabulate` (and `Data.fill`) with
+      - a *literal* count brand their result by construction; a producer which fixes a layout
+      - declares the brand on its result; and concordance's `sized[n]` checks a value's length
+      - once and records it, as `occupied` records non-emptiness. A literal ordinal below the
+      - length is then confined by construction: an `apply` on a `Sized[n]` receiver with a
+      - literal ordinal decides the bound at compile time, so the read is total and an
+      - out-of-range literal is a compile error. The length is a type-level `Int`, so
+      - `scala.compiletime.ops.int` combines proofs: `Array.concat` of two sized arrays is
+      - `Sized[left + right]`.
+      + Le pendant de `Populated` pour les données à disposition fixe — un en-tête tar de 512
+      + octets, une rose des vents de huit points. `Sized[length]` est le raffinement
+      + `Any { type Length = length }`, produit de trois manières : `Array.fill` et `Array.tabulate`
+      + (et `Data.fill`) avec un nombre *littéral* marquent leur résultat par construction ; un
+      + producteur qui fixe une disposition déclare la marque sur son résultat ; et `sized[n]` de
+      + concordance vérifie une fois la longueur d'une valeur et l'enregistre, comme `occupied`
+      + enregistre la non-vacuité. Un ordinal littéral inférieur à la longueur est alors confiné par
+      + construction : un `apply` sur un receveur `Sized[n]` avec un ordinal littéral décide de la
+      + borne à la compilation ; la lecture est donc totale et un littéral hors limites est une
+      + erreur de compilation. La longueur est un `Int` au niveau des types ; on combine donc les
+      + preuves avec `scala.compiletime.ops.int` : `Array.concat` de deux tableaux dimensionnés est
+      + `Sized[left + right]`.
+
+entry .Unit
+  info
+      - the `Unit` type, as an alias of `scala.Unit`
+      + le type `Unit`, alias de `scala.Unit`
+  detail
+      - `Unit` cannot be `export`ed (its companion is forbidden in source), so the prelude
+      - declares `type Unit = scala.Unit`, which is a *distinct symbol*. Code is unaffected,
+      - but a macro which compares `TypeRepr.of[Unit].typeSymbol` with a method's return type
+      - symbol finds them unequal; compare with `=:=` or after `.dealias`.
+      + `Unit` ne peut pas être exporté avec `export` (son compagnon est interdit dans le code
+      + source) ; le prélude déclare donc `type Unit = scala.Unit`, qui est un *symbole
+      + distinct*. Le code n'est pas affecté, mais une macro qui compare
+      + `TypeRepr.of[Unit].typeSymbol` avec le symbole du type de retour d'une méthode les trouve
+      + différents ; comparez avec `=:=` ou après `.dealias`.
+
+entry .classOf
+  info
+      - the class of a type, correct through an export: `classOf[Text]`
+      + la classe d'un type, correcte à travers un export : `classOf[Text]`
+  detail
+      - Predef's `classOf` is a compiler intrinsic only when its call carries a concrete class
+      - type, so through an export forwarder every call yielded `Class[Object]`. This inline
+      - version summons the `ClassTag` at each call site, where the type argument is concrete,
+      - and takes `runtimeClass` from it.
+      + Le `classOf` de Predef n'est un intrinsèque du compilateur que lorsque son appel porte un
+      + type de classe concret ; à travers un redirecteur d'export, chaque appel produisait donc
+      + `Class[Object]`. Cette version inline invoque le `ClassTag` à chaque site d'appel, où
+      + l'argument de type est concret, et en tire `runtimeClass`.
+
+entry .absolve
+  info
+      - `Predef.runtimeChecked`, renamed: marks a match as deliberately non-exhaustive
+      + `Predef.runtimeChecked`, renommé : marque un filtrage comme délibérément non exhaustif
+  detail
+      - `value.absolve match …` tells the compiler the match need not be exhaustive, in place
+      - of an `@unchecked` annotation. Used in macros which match on a shape they know.
+      + `value.absolve match …` indique au compilateur que le filtrage n'a pas besoin d'être
+      + exhaustif, à la place d'une annotation `@unchecked`. Utilisé dans les macros qui filtrent
+      + sur une forme qu'elles connaissent.
+
+entry .Nat
+  info
+      - `Int & Singleton`: the type of a literal natural number
+      + `Int & Singleton` : le type d'un entier naturel littéral
+  detail
+      - A bound for a type-level integer parameter, such as a unit's power in quantitative
+      - (`Units[power <: Nat, …]`).
+      + Une borne pour un paramètre entier au niveau des types, comme la puissance d'une unité
+      + dans quantitative (`Units[power <: Nat, …]`).
+
+entry .Label
+  info
+      - `String & Singleton`: the type of a string literal
+      + `String & Singleton` : le type d'un littéral de chaîne
+  detail
+      - A bound for a type parameter which must be a string literal, such as a field name, a
+      - tag name or a property name (`Typeface of "sans-serif"`, `AnnotatedField[…, target <:
+      - Label]`).
+      + Une borne pour un paramètre de type qui doit être un littéral de chaîne, comme un nom de
+      + champ, un nom de balise ou un nom de propriété (`Typeface of "sans-serif"`,
+      + `AnnotatedField[…, target <: Label]`).
+
+entry .Zero
+  info
+      - `EmptyTuple`, renamed: the end of a tuple
+      + `EmptyTuple`, renommé : la fin d'un tuple
+  detail
+      - `Zero` is `scala.EmptyTuple`; a one-element tuple is `Mono[value]`, `value *: Zero`.
+      + `Zero` est `scala.EmptyTuple` ; un tuple à un élément est `Mono[value]`, `value *: Zero`.
+
+entry .Mono
+  info
+      - a one-element tuple: `Mono[value]` is `value *: Zero`, and `Mono(x)` makes one
+      + un tuple à un élément : `Mono[value]` est `value *: Zero`, et `Mono(x)` en crée un
+  detail
+      - The name for the degenerate tuple which generic tuple code produces, with a
+      - constructor `Mono(value)`.
+      + Le nom du tuple dégénéré que produit le code générique sur les tuples, avec un
+      + constructeur `Mono(value)`.
+
+entry .~>
+  info
+      - `domain ~> range`: an infix alias of `PartialFunction[domain, range]`
+      + `domain ~> range` : un alias infixe de `PartialFunction[domain, range]`
+  detail
+      - Lets a partial-function parameter read as an arrow: `lambda: (Optional[focus],
+      - accrual) => Exception ~> accrual`.
+      + Permet de lire un paramètre de fonction partielle comme une flèche :
+      + `lambda: (Optional[focus], accrual) => Exception ~> accrual`.
+
+entry .prohibits
+  info
+      - `result prohibits prohibited`: a given which is selected only if no `prohibited` given exists
+      + `result prohibits prohibited` : un given qui n'est sélectionné que s'il n'existe aucun given
+      + `prohibited`
+  detail
+      - `prohibits[result, prohibited]` is `NotGiven[prohibited] ?-> result`, a pure context
+      - function: a given of this type is selected for `result` and, on selection, resolves
+      - its `NotGiven[prohibited]` at the use site, so `given choice: Choice prohibits Policy =
+      - …` reads as the guard it is. The arrow is pure so that an ordinary object can hold the
+      - given as a field.
+      + `prohibits[result, prohibited]` vaut `NotGiven[prohibited] ?-> result`, une fonction
+      + contextuelle pure : un given de ce type est sélectionné pour `result` et, lors de sa
+      + sélection, résout son `NotGiven[prohibited]` au site d'utilisation ; ainsi,
+      + `given choice: Choice prohibits Policy = …` se lit comme la garde qu'il est. La flèche est
+      + pure afin qu'un objet ordinaire puisse détenir le given comme champ.
+
+entry .unexported
+  info
+      - marks a top-level definition deliberately absent from the `soundness` umbrella
+      + marque une définition de niveau supérieur délibérément absente du package parapluie
+      + `soundness`
+  detail
+      - An annotation for a module, extension method or helper whose simple name would clash
+      - with another library's in the umbrella package, or which is a compile-time or internal
+      - helper reached through its own library's import. The export-generating tooling reads
+      - it and skips the annotated definition.
+      + Une annotation pour un module, une méthode d'extension ou un utilitaire dont le nom
+      + simple entrerait en conflit avec celui d'une autre bibliothèque dans le package
+      + parapluie, ou qui est un utilitaire interne ou de compilation atteint par l'import de sa
+      + propre bibliothèque. L'outillage qui génère les exports la lit et ignore la définition
+      + annotée.
+
+entry .infer
+  info
+      - `infer[context]`: summons a given, inlined
+      + `infer[context]` : invoque un given, de façon inline
+  detail
+      - `transparent inline def infer[context] = summonInline[context]`: the house spelling of
+      - `summonInline`, used where an instance is summoned inside an inline method so that the
+      - search happens at the expansion site. `summon` is the non-inline form.
+      + `transparent inline def infer[context] = summonInline[context]` : l'orthographe maison
+      + de `summonInline`, utilisée lorsqu'une instance est invoquée à l'intérieur d'une méthode
+      + inline, afin que la recherche ait lieu au site d'expansion. `summon` en est la forme non
+      + inline.
+
+entry .provide
+  info
+      - runs a block with a given of a named type supplied from the call site
+      + exécute un bloc avec un given d'un type nommé, fourni depuis le site d'appel
+  detail
+      - `provide[Context](block)` summons a `Context` where it is expanded and passes it to the
+      - context-function `block`, so that a method which needs a `Tactic[Error]` can be
+      - called from inline code which has one: `provide[Tactic[Pojo.Error]]: …`. The `Void`
+      - parameter is a placeholder which lets the result type parameter be inferred after
+      - the context one is given.
+      + `provide[Context](block)` invoque un `Context` là où il est développé et le transmet à
+      + la fonction contextuelle `block`, afin qu'une méthode qui a besoin d'une `Tactic[Error]`
+      + puisse être appelée depuis du code inline qui en dispose :
+      + `provide[Tactic[Pojo.Error]]: …`. Le paramètre `Void` est un substitut qui permet
+      + d'inférer le paramètre de type du résultat une fois le paramètre de contexte fourni.
+
+entry .->
+  info
+      - `left -> right`: the pair `(left, right)`
+      + `left -> right` : la paire `(left, right)`
+  detail
+      - The tuple arrow, supplied here because `scala.Predef` made it an inline method which
+      - `-Yno-predef` would otherwise lose. `Map(t"a" -> 1)` depends on it.
+      + La flèche de tuple, fournie ici parce que `scala.Predef` en faisait une méthode inline
+      + que `-Yno-predef` ferait sinon perdre. `Map(t"a" -> 1)` en dépend.
+
+entry .Void
+  info
+      - `scala.DummyImplicit`, renamed: a placeholder using-parameter
+      + `scala.DummyImplicit`, renommé : un paramètre using substitut
+  detail
+      - A `(using erased void: Void)` parameter lets a method separate a type parameter the
+      - caller gives from one the compiler infers: `safely[error](using erased void:
+      - Void)[success](…)`. Also exported under its original name, `DummyImplicit`.
+      + Un paramètre `(using erased void: Void)` permet à une méthode de séparer un paramètre de
+      + type que l'appelant fournit d'un paramètre que le compilateur infère :
+      + `safely[error](using erased void: Void)[success](…)`. Également exporté sous son nom
+      + d'origine, `DummyImplicit`.
+
+entry .is
+  info
+      - `subject is Typeclass`: refines a typeclass's `Self` to its subject
+      + `subject is Typeclass` : raffine le `Self` d'une classe de types en son sujet
+  detail
+      - Predef's infix `is`, re-exported: `Text is Showable` is `Showable { type Self = Text }`,
+      - the phrase every Soundness typeclass is summoned and declared by, and the root the
+      - prepositional prepositions (`in`, `by`, `to`, …) extend.
+      + Le `is` infixe de Predef, réexporté : `Text is Showable` vaut
+      + `Showable { type Self = Text }`, la formule par laquelle chaque classe de types de
+      + Soundness est invoquée et déclarée, et la racine qu'étendent les prépositions
+      + (`in`, `by`, `to`, …).
+
+entry .nn
+  info
+      - asserts a nullable value is not `null`: `javaResult.nn`
+      + affirme qu'une valeur nullable n'est pas `null` : `javaResult.nn`
+  detail
+      - Predef's `nn`, for a `T | Null` from a Java API whose documentation promises a
+      - value; throws `NullPointerException` if the promise is broken. Where `null` is a
+      - legitimate outcome, use `Optional(value)` instead.
+      + Le `nn` de Predef, pour un `T | Null` issu d'une API Java dont la documentation promet
+      + une valeur ; lève `NullPointerException` si la promesse n'est pas tenue. Lorsque `null`
+      + est un résultat légitime, utilisez plutôt `Optional(value)`.
+
+entry .summon
+  info
+      - `summon[T]`: the given of a type, from Predef
+      + `summon[T]` : le given d'un type, issu de Predef
+  detail
+      - The non-inline summon; `infer[T]` is the inline form for use inside inline methods.
+      + L'invocation non inline ; `infer[T]` est la forme inline, à utiliser à l'intérieur des
+      + méthodes inline.
+
+entry .identity
+  info
+      - `identity(x)` is `x`, from Predef
+      + `identity(x)` vaut `x`, issu de Predef
+
+entry .locally
+  info
+      - `locally { … }`: a block as an expression, from Predef
+      + `locally { … }` : un bloc en tant qu'expression, issu de Predef
+  detail
+      - Chiefly for a block which opens with a `given` import whose scope should end with it,
+      - such as a choice between `alphabets` or `dysasymptotics` givens.
+      + Surtout utile pour un bloc qui commence par un import de `given` dont la portée doit se
+      + terminer avec lui, comme un choix entre des givens `alphabets` ou `dysasymptotics`.
+
+entry .valueOf
+  info
+      - `valueOf[literal]`: the value of a singleton type, from Predef
+      + `valueOf[literal]` : la valeur d'un type singleton, issu de Predef
+
+entry .assert
+  info
+      - Predef's `assert(condition)` and `assert(condition, message)`
+      + `assert(condition)` et `assert(condition, message)` de Predef
+
+entry .???
+  info
+      - Predef's `???`: a placeholder which throws `NotImplementedError`
+      + Le `???` de Predef : un substitut qui lève `NotImplementedError`
+
+entry .ArrowAssoc
+  info
+      - Predef's `ArrowAssoc`: the class behind `->`
+      + L'`ArrowAssoc` de Predef : la classe derrière `->`
+  detail
+      - Kept so that stdlib code and the `->` extension here agree; the pair arrow itself is
+      - the `->` extension.
+      + Conservé afin que le code de la stdlib et l'extension `->` d'ici concordent ; la flèche
+      + de paire elle-même est l'extension `->`.
+
+entry .$conforms
+  info
+      - Predef's `$conforms`: the given behind every `A <:< A` evidence
+      + Le `$conforms` de Predef : le given derrière toute preuve `A <:< A`
+  hidden
+  detail
+      - Re-exported from Predef so that subtype evidence (`<:<`) still resolves under
+      - `-Yno-predef`; not for direct use.
+      + Réexporté depuis Predef afin que les preuves de sous-typage (`<:<`) soient toujours
+      + résolues sous `-Yno-predef` ; non destiné à un usage direct.
+
+entry .augmentString
+  info
+      - Predef's `String` to `StringOps` conversion, for the few `String` seams
+      + La conversion de `String` en `StringOps` de Predef, pour les rares jonctions avec `String`
+
+entry .intWrapper
+  info
+      - Predef's `Int` to `RichInt`, for `until`, `to`, `max`, `min` on `Int`
+      + La conversion de `Int` en `RichInt` de Predef, pour `until`, `to`, `max`, `min` sur `Int`
+entry .longWrapper
+  info
+      - Predef's `Long` to `RichLong`
+      + La conversion de `Long` en `RichLong` de Predef
+entry .shortWrapper
+  info
+      - Predef's `Short` to `RichShort`
+      + La conversion de `Short` en `RichShort` de Predef
+entry .byteWrapper
+  info
+      - Predef's `Byte` to `RichByte`
+      + La conversion de `Byte` en `RichByte` de Predef
+entry .charWrapper
+  info
+      - Predef's `Char` to `RichChar`, for `isDigit`, `toUpper` and the like
+      + La conversion de `Char` en `RichChar` de Predef, pour `isDigit`, `toUpper` et consorts
+entry .doubleWrapper
+  info
+      - Predef's `Double` to `RichDouble`
+      + La conversion de `Double` en `RichDouble` de Predef
+entry .floatWrapper
+  info
+      - Predef's `Float` to `RichFloat`
+      + La conversion de `Float` en `RichFloat` de Predef
+
+entry .refArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array` of references
+      + La conversion `ArrayOps` de Predef pour un `scala.Array` de références
+  detail
+      - The array-ops conversions apply to the raw `scala.Array` at a JDK seam, not to the
+      - opaque `Array`, whose vocabulary is the typeclass one.
+      + Les conversions vers les opérations de tableaux s'appliquent au `scala.Array` brut à une
+      + jonction avec le JDK, et non à l'`Array` opaque, dont le vocabulaire est celui des
+      + classes de types.
+entry .genericArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array` of any element
+      + La conversion `ArrayOps` de Predef pour un `scala.Array` de n'importe quel élément
+entry .byteArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Byte]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Byte]`
+entry .shortArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Short]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Short]`
+entry .intArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Int]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Int]`
+entry .longArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Long]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Long]`
+entry .floatArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Float]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Float]`
+entry .doubleArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Double]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Double]`
+entry .charArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Char]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Char]`
+entry .booleanArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Boolean]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Boolean]`
+entry .unitArrayOps
+  info
+      - Predef's `ArrayOps` conversion for a `scala.Array[Unit]`
+      + La conversion `ArrayOps` de Predef pour un `scala.Array[Unit]`
+
+entry .ClassTag
+  info
+      - `scala.reflect.ClassTag`, re-exported: the runtime class token an array element needs
+      + `scala.reflect.ClassTag`, réexporté : le jeton de classe d'exécution dont a besoin un
+      + élément de tableau
+  detail
+      - Every `Array` constructor takes a `ClassTag[element]` context bound, so a generic
+      - method which builds arrays carries `[element: ClassTag]`.
+      + Chaque constructeur d'`Array` prend une borne de contexte `ClassTag[element]` ; une
+      + méthode générique qui construit des tableaux porte donc `[element: ClassTag]`.
+
+entry .Typeable
+  info
+      - `scala.reflect.Typeable`, re-exported: a runtime type test for a type pattern
+      + `scala.reflect.Typeable`, réexporté : un test de type à l'exécution pour un motif de type
+
+entry .TreeMap
+  info
+      - `scala.collection.immutable.TreeMap`, re-exported: a sorted stdlib map
+      + `scala.collection.immutable.TreeMap`, réexporté : une map triée de la stdlib
+  detail
+      - A stdlib structure kept for the few places which need key order, at the cost of an
+      - explicit `import scala.math.Ordering` for its keys. Not an opaque Soundness collection.
+      + Une structure de la stdlib conservée pour les rares endroits qui ont besoin de l'ordre
+      + des clés, au prix d'un `import scala.math.Ordering` explicite pour ses clés. Ce n'est
+      + pas une collection opaque de Soundness.
+
+entry .TreeSet
+  info
+      - `scala.collection.immutable.TreeSet`, re-exported: a sorted stdlib set
+      + `scala.collection.immutable.TreeSet`, réexporté : un ensemble trié de la stdlib
+
+entry .TrieMap
+  info
+      - `scala.collection.concurrent.TrieMap`, re-exported: a concurrent stdlib map
+      + `scala.collection.concurrent.TrieMap`, réexporté : une map concurrente de la stdlib
+
+entry .NonFatal
+  info
+      - `scala.util.control.NonFatal`, re-exported: the extractor for recoverable throwables
+      + `scala.util.control.NonFatal`, réexporté : l'extracteur des throwables récupérables
+
+entry .boundary
+  info
+      - `scala.util.boundary`, re-exported: a labelled block to `break` out of
+      + `scala.util.boundary`, réexporté : un bloc étiqueté dont on sort avec `break`
+entry .break
+  info
+      - `scala.util.boundary.break`, re-exported: leaves the enclosing `boundary` with a value
+      + `scala.util.boundary.break`, réexporté : quitte le `boundary` englobant avec une valeur
+
+entry .IteratorHasAsScala
+  info
+      - `.asScala` on a `java.util.Iterator`, from `CollectionConverters`
+      + `.asScala` sur un `java.util.Iterator`, issu de `CollectionConverters`
+  detail
+      - The Java-interop converters are re-exported so that a JDK seam needs no extra import;
+      - the result is a stdlib collection, crossed back with the companion's `from`.
+      + Les convertisseurs d'interopérabilité Java sont réexportés afin qu'une jonction avec le
+      + JDK ne nécessite aucun import supplémentaire ; le résultat est une collection de la
+      + stdlib, qu'on reconvertit avec le `from` du compagnon.
+entry .ListHasAsScala
+  info
+      - `.asScala` on a `java.util.List`, from `CollectionConverters`
+      + `.asScala` sur un `java.util.List`, issu de `CollectionConverters`
+entry .MapHasAsScala
+  info
+      - `.asScala` on a `java.util.Map`, from `CollectionConverters`
+      + `.asScala` sur un `java.util.Map`, issu de `CollectionConverters`
+entry .EnumerationHasAsScala
+  info
+      - `.asScala` on a `java.util.Enumeration`, from `CollectionConverters`
+      + `.asScala` sur une `java.util.Enumeration`, issu de `CollectionConverters`
+entry .SeqHasAsJava
+  info
+      - `.asJava` on a stdlib `Seq`, from `CollectionConverters`
+      + `.asJava` sur un `Seq` de la stdlib, issu de `CollectionConverters`
+entry .MapHasAsJava
+  info
+      - `.asJava` on a stdlib `Map`, from `CollectionConverters`
+      + `.asJava` sur une `Map` de la stdlib, issu de `CollectionConverters`
+
+entry .tailrec
+  info
+      - `scala.annotation.tailrec`, re-exported
+      + `scala.annotation.tailrec`, réexporté
+entry .targetName
+  info
+      - `scala.annotation.targetName`, re-exported
+      + `scala.annotation.targetName`, réexporté
+entry .switch
+  info
+      - `scala.annotation.switch`, re-exported
+      + `scala.annotation.switch`, réexporté
+entry .StaticAnnotation
+  info
+      - `scala.annotation.StaticAnnotation`, re-exported: the base of a user annotation
+      + `scala.annotation.StaticAnnotation`, réexporté : la base d'une annotation utilisateur
+entry .missingContext
+  info
+      - `scala.annotation.implicitNotFound`, renamed: the message for a missing given
+      + `scala.annotation.implicitNotFound`, renommé : le message pour un given manquant
+  detail
+      - `@missingContext("…")` on a typeclass or a given's type sets the error reported when
+      - no instance is found.
+      + `@missingContext("…")` sur une classe de types ou sur le type d'un given définit
+      + l'erreur signalée lorsqu'aucune instance n'est trouvée.
+entry .uncheckedVariance
+  info
+      - `scala.annotation.unchecked.uncheckedVariance`, re-exported
+      + `scala.annotation.unchecked.uncheckedVariance`, réexporté
+entry .uncheckedCaptures
+  info
+      - `scala.annotation.unchecked.uncheckedCaptures`, re-exported
+      + `scala.annotation.unchecked.uncheckedCaptures`, réexporté
+entry .uncheckedStable
+  info
+      - `scala.annotation.unchecked.uncheckedStable`, re-exported
+      + `scala.annotation.unchecked.uncheckedStable`, réexporté
+
+entry .into
+  info
+      - `Conversion.into`, re-exported: marks a parameter as accepting implicit conversions
+      + `Conversion.into`, réexporté : marque un paramètre comme acceptant les conversions
+      + implicites
+
+entry .Any
+  info
+      - `scala.Any`, re-exported
+      + `scala.Any`, réexporté
+entry .AnyKind
+  info
+      - `scala.AnyKind`, re-exported: the bound admitting a type of any kind
+      + `scala.AnyKind`, réexporté : la borne qui admet un type de n'importe quelle sorte
+entry .AnyRef
+  info
+      - `scala.AnyRef`, re-exported
+      + `scala.AnyRef`, réexporté
+entry .AnyVal
+  info
+      - `scala.AnyVal`, re-exported
+      + `scala.AnyVal`, réexporté
+entry .Matchable
+  info
+      - `scala.Matchable`, re-exported
+      + `scala.Matchable`, réexporté
+entry .Nothing
+  info
+      - `scala.Nothing`, re-exported
+      + `scala.Nothing`, réexporté
+  detail
+      - The type of an expression which never yields — `panic`, `abort` and a tactic's
+      - `raise` return it — so it conforms to every type.
+      + Le type d'une expression qui ne produit jamais de valeur — `panic`, `abort` et le
+      + `raise` d'une tactique le renvoient — ; il est donc conforme à tous les types.
+entry .Null
+  info
+      - `scala.Null`, re-exported
+      + `scala.Null`, réexporté
+  detail
+      - The type of `null` under explicit nulls; a Java API's nullable `T | Null` is made
+      - an `Optional` with `Optional(value)` or asserted with `nn`.
+      + Le type de `null` avec les nulls explicites ; le `T | Null` nullable d'une API Java
+      + devient un `Optional` avec `Optional(value)` ou est affirmé non nul avec `nn`.
+entry .Singleton
+  info
+      - `scala.Singleton`, re-exported: the bound for a literal type parameter
+      + `scala.Singleton`, réexporté : la borne d'un paramètre de type littéral
+entry .&
+  info
+      - the infix intersection type, `A & B`, re-exported
+      + le type intersection infixe, `A & B`, réexporté
+entry .|
+  info
+      - the infix union type, `A | B`, re-exported
+      + le type union infixe, `A | B`, réexporté
+entry .<:<
+  info
+      - the subtype evidence `A <:< B`, re-exported
+      + la preuve de sous-typage `A <:< B`, réexportée
+entry .=:=
+  info
+      - the type-equality evidence `A =:= B`, re-exported
+      + la preuve d'égalité de types `A =:= B`, réexportée
+entry .Boolean
+  info
+      - `scala.Boolean`, re-exported
+      + `scala.Boolean`, réexporté
+entry .Byte
+  info
+      - `scala.Byte`, re-exported
+      + `scala.Byte`, réexporté
+entry .Char
+  info
+      - `scala.Char`, re-exported
+      + `scala.Char`, réexporté
+entry .Double
+  info
+      - `scala.Double`, re-exported
+      + `scala.Double`, réexporté
+entry .Float
+  info
+      - `scala.Float`, re-exported
+      + `scala.Float`, réexporté
+entry .Int
+  info
+      - `scala.Int`, re-exported
+      + `scala.Int`, réexporté
+entry .Long
+  info
+      - `scala.Long`, re-exported
+      + `scala.Long`, réexporté
+entry .Short
+  info
+      - `scala.Short`, re-exported
+      + `scala.Short`, réexporté
+entry .Either
+  info
+      - `scala.Either`, re-exported
+      + `scala.Either`, réexporté
+entry .Left
+  info
+      - `scala.Left`, re-exported
+      + `scala.Left`, réexporté
+entry .Right
+  info
+      - `scala.Right`, re-exported
+      + `scala.Right`, réexporté
+entry .Option
+  info
+      - `scala.Option`, re-exported, for the boundary with code which uses it
+      + `scala.Option`, réexporté, pour la frontière avec le code qui l'utilise
+  detail
+      - Soundness code represents absence as an `Optional`; `Option` is kept for stdlib and
+      - third-party APIs, converted at the seam with `optional` and `option`.
+      + Le code de Soundness représente l'absence par un `Optional` ; `Option` est conservé pour
+      + les API de la stdlib et des tiers, et converti à la jonction avec `optional` et `option`.
+entry .Some
+  info
+      - `scala.Some`, re-exported
+      + `scala.Some`, réexporté
+entry .None
+  info
+      - `scala.None`, re-exported
+      + `scala.None`, réexporté
+entry .Tuple
+  info
+      - `scala.Tuple`, re-exported
+      + `scala.Tuple`, réexporté
+entry .EmptyTuple
+  info
+      - `scala.EmptyTuple`, re-exported; also available as `Zero`
+      + `scala.EmptyTuple`, réexporté ; également disponible sous le nom `Zero`
+entry .NonEmptyTuple
+  info
+      - `scala.NonEmptyTuple`, re-exported
+      + `scala.NonEmptyTuple`, réexporté
+entry .Tuple1
+  info
+      - `scala.Tuple1`, re-exported
+      + `scala.Tuple1`, réexporté
+entry .Tuple2
+  info
+      - `scala.Tuple2`, re-exported
+      + `scala.Tuple2`, réexporté
+entry .*:
+  info
+      - the tuple cons type and extractor `head *: tail`, re-exported
+      + le type cons de tuple et l'extracteur `head *: tail`, réexportés
+entry .CanEqual
+  info
+      - `scala.CanEqual`, re-exported: strict-equality evidence
+      + `scala.CanEqual`, réexporté : la preuve d'égalité stricte
+entry .Conversion
+  info
+      - `scala.Conversion`, re-exported: the class of an implicit conversion
+      + `scala.Conversion`, réexporté : la classe d'une conversion implicite
+entry .Dynamic
+  info
+      - `scala.Dynamic`, re-exported: the marker for `selectDynamic` members
+      + `scala.Dynamic`, réexporté : le marqueur des membres `selectDynamic`
+entry .Function
+  info
+      - `scala.Function`, re-exported
+      + `scala.Function`, réexporté
+entry .PartialFunction
+  info
+      - `scala.PartialFunction`, re-exported; also written infix as `~>`
+      + `scala.PartialFunction`, réexporté ; s'écrit aussi en infixe `~>`
+entry .Product
+  info
+      - `scala.Product`, re-exported
+      + `scala.Product`, réexporté
+entry .Selectable
+  info
+      - `scala.Selectable`, re-exported: structural selection
+      + `scala.Selectable`, réexporté : la sélection structurelle
+entry .StringContext
+  info
+      - `scala.StringContext`, re-exported: what an interpolator extends
+      + `scala.StringContext`, réexporté : ce qu'étend un interpolateur
+entry .BigDecimal
+  info
+      - `scala.BigDecimal`, re-exported
+      + `scala.BigDecimal`, réexporté
+entry .BigInt
+  info
+      - `scala.BigInt`, re-exported
+      + `scala.BigInt`, réexporté
+entry .Fractional
+  info
+      - `scala.Fractional`, re-exported
+      + `scala.Fractional`, réexporté
+entry .Integral
+  info
+      - `scala.Integral`, re-exported
+      + `scala.Integral`, réexporté
+entry .Numeric
+  info
+      - `scala.Numeric`, re-exported
+      + `scala.Numeric`, réexporté
+  detail
+      - The numeric abstractions are kept for the stdlib seams which take them; `Ordering`
+      - and `Ordered` are deliberately not, since comparison in Soundness is `Comparable`.
+      + Les abstractions numériques sont conservées pour les jonctions avec la stdlib qui les
+      + prennent ; `Ordering` et `Ordered` ne le sont délibérément pas, puisque la comparaison
+      + dans Soundness passe par `Comparable`.
+entry .deprecated
+  info
+      - `scala.deprecated`, re-exported
+      + `scala.deprecated`, réexporté
+entry .unchecked
+  info
+      - `scala.unchecked`, re-exported
+      + `scala.unchecked`, réexporté
+entry .volatile
+  info
+      - `scala.volatile`, re-exported
+      + `scala.volatile`, réexporté
+entry .transient
+  info
+      - `scala.transient`, re-exported
+      + `scala.transient`, réexporté
+entry .native
+  info
+      - `scala.native`, re-exported
+      + `scala.native`, réexporté
+entry .main
+  info
+      - `scala.main`, re-exported: the annotation of a program's entry method
+      + `scala.main`, réexporté : l'annotation de la méthode d'entrée d'un programme
+entry .unsafeExceptions
+  info
+      - `scala.unsafeExceptions`, re-exported: `import unsafeExceptions.canThrowAny`
+      + `scala.unsafeExceptions`, réexporté : `import unsafeExceptions.canThrowAny`
+  detail
+      - The object whose `canThrowAny` given lets any exception be thrown without a
+      - `CanThrow`, for code which has decided not to track them.
+      + L'objet dont le given `canThrowAny` permet de lever n'importe quelle exception sans
+      + `CanThrow`, pour le code qui a choisi de ne pas les suivre.
+entry .CanThrow
+  info
+      - `scala.CanThrow`, re-exported: the capability to throw an exception type
+      + `scala.CanThrow`, réexporté : la capacité de lever un type d'exception
+entry .DummyImplicit
+  info
+      - `scala.DummyImplicit`, re-exported; also available as `Void`
+      + `scala.DummyImplicit`, réexporté ; également disponible sous le nom `Void`
+entry .MatchError
+  info
+      - `scala.MatchError`, re-exported
+      + `scala.MatchError`, réexporté
+entry .NamedTuple
+  info
+      - `scala.NamedTuple`, re-exported
+      + `scala.NamedTuple`, réexporté
+entry .Specializable
+  info
+      - `scala.Specializable`, re-exported
+      + `scala.Specializable`, réexporté
+entry .ValueOf
+  info
+      - `scala.ValueOf`, re-exported: the value of a singleton type, as evidence
+      + `scala.ValueOf`, réexporté : la valeur d'un type singleton, sous forme de preuve
+entry .NoSuchElementException
+  info
+      - `scala.NoSuchElementException`, re-exported
+      + `scala.NoSuchElementException`, réexporté
+entry .Iterable
+  info
+      - `scala.Iterable`, re-exported: the one stdlib collection interface kept
+      + `scala.Iterable`, réexporté : la seule interface de collection de la stdlib conservée
+  detail
+      - The abstract interface is the internal currency of the collection typeclasses
+      - (`compact`, `entire` and the `Iterable` receivers in rudiments take one); concrete
+      - stdlib collections are not re-exported. `Iterator` is *not* here: under `import
+      - soundness.*` it is murmuration's.
+      + L'interface abstraite est la monnaie d'échange interne des classes de types de
+      + collections (`compact`, `entire` et les receveurs `Iterable` de rudiments en prennent
+      + une) ; les collections concrètes de la stdlib ne sont pas réexportées. `Iterator` n'est
+      + *pas* ici : sous `import
+      + soundness.*`, c'est celui de murmuration.
+entry .StringBuilder
+  info
+      - `scala.StringBuilder`, re-exported, for now, as the mutable text accumulator
+      + `scala.StringBuilder`, réexporté, pour l'instant, comme accumulateur de texte mutable
+  detail
+      - Marked temporary in the prelude, pending a review of mutable text accumulation.
+      + Marqué comme temporaire dans le prélude, en attendant une révision de l'accumulation de
+      + texte mutable.

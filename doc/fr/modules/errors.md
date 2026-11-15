@@ -1,0 +1,789 @@
+- ## Errors
++ ## Erreurs
+
+- ### About
++ ### Présentation
+
+- An error is a value with a structured message, and the possibility of failure is written into a
+- method's type. A method that can fail declares the error with `raises`, and a caller cannot
+- ignore the declaration: its code must either handle the failure or declare it in turn.
++ Une erreur est une valeur porteuse d'un message structuré, et la possibilité d'un échec est
++ inscrite dans le type d'une méthode. Une méthode qui peut échouer déclare l'erreur avec
++ `raises`, et l'appelant ne peut pas ignorer cette déclaration : son code doit soit traiter
++ l'échec, soit le déclarer à son tour.
+
+- *How* a failure is handled is chosen where the method is called, not where it fails. The caller
+- may have it thrown, replaced with a fallback, collected with others, or recovered from.
++ *La manière* dont un échec est traité se choisit là où la méthode est appelée, et non
++ là où elle échoue. L'appelant peut le faire lever, le remplacer par une valeur de repli, le
++ regrouper avec d'autres, ou s'en remettre.
+
+- This gives failure the visibility of checked exceptions without their rigidity. The same
+- fallible operation can be run carelessly in a prototype and made completely safe later, by
+- changing the [strategy] in scope, without rewriting the operation.
++ L'échec bénéficie ainsi de la visibilité des exceptions vérifiées, sans leur rigidité. Une
++ même opération faillible peut être exécutée sans précaution dans un prototype, puis rendue
++ entièrement sûre plus tard, en changeant la [stratégie] dans la portée, sans réécrire
++ l'opération.
+
+- ### On errors
++ ### À propos des erreurs
+
+- There are two traditions of handling failure, and each gives something up:
++ Il existe deux traditions de traitement des échecs, et chacune sacrifie quelque chose :
+
+```tabular
+- column  Tradition
+- column  A failure is
+- column  What is lost
+- row  unchecked exceptions  invisible in a method's type  the caller learns of a failure only when it happens
+- row  Java's checked exceptions  visible in every signature along the call chain  flexibility: there is one fixed response, to throw
++ column  Tradition
++ column  Un échec est
++ column  Ce qui est perdu
++ row  exceptions non vérifiées  invisible dans le type d'une méthode  l'appelant ne l'apprend qu'au moment de l'échec
++ row  exceptions vérifiées de Java  visible dans chaque signature des appelants  la souplesse : une seule réponse, lever
+```
+
+- In both, the error is often reduced to a string, which loses the structure that would let a
+- program inspect it or react to it.
++ Dans les deux cas, l'erreur est souvent réduite à une chaîne, ce qui perd la structure qui
++ permettrait à un programme de l'examiner ou d'y réagir.
+
+- Here the failure stays in the type, and the detail stays in the value:
++ Ici, l'échec reste dans le type, et le détail reste dans la valeur :
+
+- - An error is a value which carries a typed [message](../../philosophy/expressive-errors.md).
+- - A method advertises the errors it can raise in its return type, which makes for an
+-   [honest signature].
+- - The decision about what to do belongs to the caller, and is expressed as a
+-   [contextual value] called a strategy.
++ - Une erreur est une valeur porteuse d'un
++   [message](../../philosophy/expressive-errors.md) typé.
++ - Une méthode annonce dans son type de retour les erreurs qu'elle peut lever, ce qui en fait
++   une [signature honnête].
++ - La décision de ce qu'il faut faire appartient à l'appelant, et s'exprime sous la forme
++   d'une [valeur contextuelle] appelée stratégie.
+
+- Because the strategy is an ordinary [given], one body of fallible code serves every response.
+- That is the whole of the [error-handling](../../philosophy/error-handling.md) principle, and it is
+- why fallible calls still read as ordinary [direct style](../../philosophy/direct-style.md) code.
++ Comme la stratégie est un [given] ordinaire, un seul corps de code faillible sert toutes les
++ réponses. C'est là tout le principe du
++ [traitement des erreurs](../../philosophy/error-handling.md), et c'est pourquoi les appels
++ faillibles se lisent toujours comme du code ordinaire en
++ [style direct](../../philosophy/direct-style.md).
+
+- Everything comes from the `soundness` package. One more choice decides whether an error records
+- a stack trace, and the last import lets the samples print their results:
++ Tout provient du package `soundness`. Un choix supplémentaire décide si une erreur
++ enregistre une trace de pile, et le dernier import permet aux exemples d'afficher leurs
++ résultats :
+
+```scala
+import soundness.*
+import errorDiagnostics.stackTracesDiagnostics
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+```
+
+- The samples revolve around one fallible operation: connecting to a port, which fails when the
+- port is not available. It stands in for any operation which can fail:
++ Les exemples tournent autour d'une seule opération faillible : la connexion à un port, qui
++ échoue lorsque le port n'est pas disponible. Elle tient lieu de n'importe quelle opération
++ susceptible d'échouer :
+
+```scala
+case class Connection(port: Int)
+
+def available(port: Int): Boolean = port > 1024
+```
+
+- ### Defining an error
++ ### Définir une erreur
+
+- An error is a case class which extends `Error`. Its message is written with the `m"…"`
+- [interpolator], and the values which explain the failure are kept as typed fields:
++ Une erreur est une case class qui étend `Error`. Son message s'écrit avec
++ l'[interpolateur] `m"…"`, et les valeurs qui expliquent l'échec sont conservées dans des
++ champs typés :
+
+```scala
+case class PortError(port: Int)(using Diagnostics)
+extends Error(m"the port $port is not available")
+```
+
+- The `m"…"` interpolator builds a `Message`, which is a structured value and not a `String`. Its
+- substitutions are typed: only a value which knows how to appear in a message can be
+- substituted.
++ L'interpolateur `m"…"` construit un `Message`, qui est une valeur structurée et non une
++ `String`. Ses substitutions sont typées : seule une valeur qui sait comment apparaître dans
++ un message peut y être substituée.
+
+- A `Message` keeps the boundary between its fixed words and its substituted values. A message
+- may embed other messages, and each embedding stays identifiable instead of being flattened into
+- the surrounding text. The same message can therefore be rendered as [Markdown](markdown.md),
+- [HTML](html.md) or [styled terminal text](terminal.md), with the substituted values set apart
+- from the words around them. `text` flattens it to plain text where that is all that is wanted.
++ Un `Message` conserve la frontière entre ses mots fixes et ses valeurs substituées. Un
++ message peut en incorporer d'autres, et chaque incorporation reste identifiable au lieu
++ d'être aplatie dans le texte environnant. Le même message peut donc être rendu en
++ [Markdown](markdown.md), en [HTML](html.md) ou en
++ [texte de terminal stylé](terminal.md), avec les valeurs substituées distinguées des mots
++ qui les entourent. `text` l'aplatit en texte brut lorsque c'est tout ce qu'on veut.
+
+- Anything with a `Communicable` instance can be embedded. That covers the primitive types,
+- `Text`, and any type with a `Showable` instance. A type contributes more structure than its
+- plain rendering by having a `Communicable` instance written for it.
++ Tout ce qui possède une instance de `Communicable` peut être incorporé. Cela couvre les
++ types primitifs, `Text`, et tout type doté d'une instance de `Showable`. Un type apporte plus
++ de structure que son rendu brut lorsqu'on écrit pour lui une instance de `Communicable`.
+
+- An error which is not meant to be caught is a `Panic`. It takes a message explaining why the
+- situation was believed to be impossible. Reaching a panic means a programmer's understanding
+- was wrong, so it is not a failure to handle, and it appears in no `raises` clause.
++ Une erreur qui n'est pas destinée à être interceptée est une `Panic`. Elle prend un message
++ expliquant pourquoi la situation était jugée impossible. Atteindre une panique signifie que
++ la compréhension d'un programmeur était erronée : ce n'est donc pas un échec à traiter, et
++ elle n'apparaît dans aucune clause `raises`.
+
+- ### Declaring that code can fail
++ ### Déclarer qu'un code peut échouer
+
+- A method which can fail says so with [`raises`][raises], naming the error in its return type.
+- Within such a method, `raise` reports an error, and `abort` reports one and stops:
++ Une méthode qui peut échouer le dit avec [`raises`][raises], en nommant l'erreur dans son
++ type de retour. Dans une telle méthode, `raise` signale une erreur, et `abort` en signale une
++ et s'arrête :
+
+```scala
+def connect(port: Int): Connection raises PortError =
+  if available(port) then Connection(port) else abort(PortError(port))
+```
+
+- The requirement propagates. Code which calls `connect` must either declare `raises PortError`
+- itself, or handle the failure. Code which does neither does not compile:
++ L'exigence se propage. Le code qui appelle `connect` doit soit déclarer lui-même
++ `raises PortError`, soit traiter l'échec. Un code qui ne fait ni l'un ni l'autre ne compile
++ pas :
+
+```scala fuel
+compile
+errors show
+##
+val connection = connect(80)
+```
+
+- A method which can fail in more than one way names each error with its own `raises`.
++ Une méthode qui peut échouer de plusieurs manières nomme chaque erreur avec son propre
++ `raises`.
+
+- `raises` is only an alias. `Connection raises PortError` *is* the context function type
+- `Tactic[PortError] ?=> Connection`, which is in turn the same as a parameter
+- `(using Tactic[PortError])`. So a method which declares `raises` is a method that takes the way
+- its errors are handled as an argument, the [tactic], and `abort` is what calls it.
++ `raises` n'est qu'un alias. `Connection raises PortError` *est* le type de fonction
++ contextuelle `Tactic[PortError] ?=> Connection`, qui équivaut à son tour à un paramètre
++ `(using Tactic[PortError])`. Une méthode qui déclare `raises` est donc une méthode qui prend
++ en argument la manière dont ses erreurs sont traitées, la [tactique], et c'est `abort` qui
++ l'appelle.
+
+- That is the whole mechanism, and it explains the shape of everything below. A fallible method
+- does not decide how failure is handled. It hands that decision back to whoever called it, and so
+- one implementation serves every strategy at once.
++ C'est là tout le mécanisme, et il explique la forme de tout ce qui suit. Une méthode
++ faillible ne décide pas de la manière dont l'échec est traité. Elle renvoie cette décision à
++ quiconque l'a appelée, et une seule implémentation sert ainsi toutes les stratégies à la
++ fois.
+
+- ### Choosing a strategy
++ ### Choisir une stratégie
+
+- Where a fallible operation is used, a *strategy* in scope decides what a failure does. The
+- `throwUnsafely` strategy throws the error as an ordinary exception:
++ Là où une opération faillible est utilisée, une *stratégie* dans la portée décide de ce que
++ produit un échec. La stratégie `throwUnsafely` lève l'erreur comme une exception ordinaire :
+
+```scala
+import strategies.throwUnsafely
+```
+
+```scala fuel
+run
+##
+Out.println(connect(8080).inspect)
+```
+
+```scala fuel
+run
+errors show
+##
+connect(80)
+```
+
+- A strategy applies to everything in its scope. Other ways of handling a failure apply to one
+- block. `safely` runs a block and turns any failure into `Unset`, giving an
+- [optional](optional-values.md) value. `capture` gives the error itself, which is what a test
+- needs to check that the right failure is produced:
++ Une stratégie s'applique à tout ce qui se trouve dans sa portée. D'autres manières de
++ traiter un échec s'appliquent à un seul bloc. `safely` exécute un bloc et transforme tout
++ échec en `Unset`, ce qui donne une valeur [optionnelle](optional-values.md). `capture` donne
++ l'erreur elle-même, ce dont un test a besoin pour vérifier que c'est le bon échec qui est
++ produit :
+
+```scala fuel
+run
+##
+Out.println(safely(connect(8080)).inspect)
+Out.println(safely(connect(80)).inspect)
+Out.println(capture[PortError](connect(80)).port.show)
+Out.println(capture[PortError](connect(80)).message.show)
+```
+
+- These are three of the ways to run fallible code. All of them, including those described in the
+- sections below, compare as follows:
++ Ce sont trois des manières d'exécuter du code faillible. Toutes, y compris celles décrites
++ dans les sections suivantes, se comparent ainsi :
+
+```tabular
+- column  Name
+- column  Used as
+- column  A failure
+- row  `throwUnsafely`  a strategy, imported from `strategies`  is thrown, with no capability required
+- row  `throwSafely`  a strategy, imported from `strategies`  is thrown, given a `CanThrow` capability
+- row  `safely`  a block  becomes `Unset`
+- row  `unsafely`  a block  is thrown, the block asserting that none will occur
+- row  `capture`  a block  is returned; a success is an `Expectation.Error`
+- row  `attempt`  a block  is returned in an `Attempt`, beside a success
+- row  `amalgamate`  a block  is returned in place of the value, as a union
+- row  `tolerate`  a method of the ambient tactic  becomes `Unset`, and what was recorded is rolled back
++ column  Nom
++ column  Utilisé comme
++ column  Un échec
++ row  `throwUnsafely`  une stratégie, importée de `strategies`  est levé, sans capacité requise
++ row  `throwSafely`  une stratégie, importée de `strategies`  est levé, sous une capacité `CanThrow`
++ row  `safely`  un bloc  devient `Unset`
++ row  `unsafely`  un bloc  est levé, le bloc affirmant qu'aucun ne se produira
++ row  `capture`  un bloc  est renvoyé ; un succès est une `Expectation.Error`
++ row  `attempt`  un bloc  est renvoyé dans un `Attempt`, à côté d'un succès
++ row  `amalgamate`  un bloc  est renvoyé à la place de la valeur, sous forme d'union
++ row  `tolerate`  une méthode de la tactique ambiante  devient `Unset`, et l'enregistré est annulé
+```
+
+- *Tactic* and *strategy* are the same type, `Tactic`. They are told apart only by the scope they
+- are meant for. A tactic is local: the `protect` block of a `recover` or `mitigate`, or a
+- `safely` or `unsafely` block. A strategy is imported once and applies broadly, as
+- `throwUnsafely` does. The difference is one of intent, not of implementation, but both words
+- appear throughout the documentation, and the name of the `strategies` package is deliberate.
++ *Tactique* et *stratégie* sont le même type, `Tactic`. On ne les distingue que par la portée
++ à laquelle ils sont destinés. Une tactique est locale : le bloc `protect` d'un `recover` ou
++ d'un `mitigate`, ou un bloc `safely` ou `unsafely`. Une stratégie est importée une fois et
++ s'applique largement, comme le fait `throwUnsafely`. La différence relève de l'intention, non
++ de l'implémentation, mais les deux mots apparaissent dans toute la documentation, et le nom
++ du package `strategies` est délibéré.
+
+- #### Unchecked and fatal errors
++ #### Erreurs non vérifiées et fatales
+
+- Two further declarations change what an error demands, wherever it is raised. An error marked
+- `Unchecked` may be thrown without being handled. `Unchecked` is a [typeclass] with no members,
+- so its given can be `erased`:
++ Deux déclarations supplémentaires changent ce qu'exige une erreur, où qu'elle soit levée.
++ Une erreur marquée `Unchecked` peut être levée sans être traitée. `Unchecked` est une
++ [classe de types] sans membres, son given peut donc être `erased` :
+
+```scala fuel
+typecheck
+##
+case class AsciiError(char: Char)(using Diagnostics)
+extends Error(m"the character $char is not ASCII")
+
+erased given AsciiError is Unchecked = new Unchecked { type Self = AsciiError }
+```
+
+- An error declared `Fatal` ends the process, and says with what exit status. This suits a failure
+- during initialization, where there is no meaningful way to continue:
++ Une erreur déclarée `Fatal` met fin au processus, et indique avec quel code de sortie. Cela
++ convient à un échec pendant l'initialisation, lorsqu'il n'existe aucune manière sensée de
++ continuer :
+
+```scala
+case class InitError(reason: Text)(using Diagnostics)
+extends Error(m"initialization failed: $reason")
+
+given InitError is Fatal = error => Exit.Fail(127)
+```
+
+- The four kinds of failure differ in whether they must be handled, and in what happens when one
+- occurs:
++ Les quatre sortes d'échec diffèrent selon qu'elles doivent être traitées ou non, et selon ce
++ qui se passe lorsque l'une survient :
+
+```tabular
+- column  A failure which is
+- column  Must be handled
+- column  When it occurs
+- row  an `Error`  yes, or declared with `raises`  the tactic in scope decides
+- row  a `Panic`  no  it is not meant to be caught
+- row  an `Error` with an `Unchecked` given  no  it is thrown, under `strategies.uncheckedErrors`
+- row  an `Error` with a `Fatal` given  no  the process ends with the given's status, under `strategies.fatalErrors`
++ column  Un échec qui est
++ column  Doit être traité
++ column  Lorsqu'il survient
++ row  une `Error`  oui, ou déclaré avec `raises`  la tactique dans la portée décide
++ row  une `Panic`  non  il n'est pas destiné à être intercepté
++ row  une `Error` avec un given `Unchecked`  non  il est levé, sous `strategies.uncheckedErrors`
++ row  une `Error` avec un given `Fatal`  non  le processus sort avec le code du given, sous `strategies.fatalErrors`
+```
+
+- ### Recovering
++ ### Se remettre d'un échec
+
+- `recover` handles chosen errors by supplying a replacement value. It is applied to a block with
+- `protect`:
++ `recover` traite les erreurs choisies en fournissant une valeur de remplacement. Il
++ s'applique à un bloc avec `protect` :
+
+```scala
+val fallback =
+  recover:
+    case PortError(port) => Connection(8080)
+  . protect:
+      connect(80)
+```
+
+```scala fuel
+run
+##
+Out.println(fallback.inspect)
+```
+
+- A handler which matches a union of error types handles each member, so one `recover` can answer
+- several kinds of failure.
++ Un gestionnaire qui filtre une union de types d'erreur traite chacun de ses membres : un
++ seul `recover` peut ainsi répondre à plusieurs sortes d'échec.
+
+- `mitigate` replaces one error with another. It translates a low-level failure into the error a
+- caller expects, before the failure propagates:
++ `mitigate` remplace une erreur par une autre. Il traduit un échec de bas niveau en l'erreur
++ qu'attend l'appelant, avant que l'échec ne se propage :
+
+```scala
+case class ServiceError(detail: Text)(using Diagnostics)
+extends Error(m"the service could not start: $detail")
+
+def start(port: Int): Connection raises ServiceError =
+  mitigate:
+    case PortError(port) => ServiceError(t"port $port unavailable")
+  . protect:
+      connect(port)
+```
+
+```scala fuel
+run
+##
+Out.println(capture[ServiceError](start(80)).message.show)
+```
+
+- The two compose. A `mitigate` inside a `recover` turns one error into another, and then handles
+- it.
++ Les deux se composent. Un `mitigate` à l'intérieur d'un `recover` transforme une erreur en
++ une autre, puis la traite.
+
+- #### Inside an inline method
++ #### Dans une méthode inline
+
+- `recover` cannot be used in the body of an `inline def`. No inline call is expanded while such
+- a body is typed, so the handler's error types are not yet known where `protect`'s block needs
+- them. There, `deferRecover` names the error types as a type argument, and is otherwise the same:
++ `recover` ne peut pas être utilisé dans le corps d'un `inline def`. Aucun appel inline n'est
++ développé pendant le typage d'un tel corps : les types d'erreur du gestionnaire ne sont donc
++ pas encore connus là où le bloc de `protect` en a besoin. Dans ce cas, `deferRecover` nomme
++ les types d'erreur sous forme d'argument de type, et se comporte par ailleurs de la même
++ manière :
+
+```scala fuel
+typecheck
+##
+inline def reconnect(inline port: Int): Connection =
+  deferRecover[PortError]:
+    case PortError(_) => Connection(8080)
+  . protect:
+      connect(port)
+```
+
+- `deferMitigate`, `deferHandle` and `deferAccrue` do the same for `mitigate`, `handle` and
+- `accrue`.
++ `deferMitigate`, `deferHandle` et `deferAccrue` font de même pour `mitigate`, `handle` et
++ `accrue`.
+
+- ### Accumulating failures
++ ### Accumuler les échecs
+
+- By default the first error stops the work. Some tasks should instead gather every failure and
+- report them together: validating a form, or parsing a document. `raise`, unlike `abort`, records
+- an error and continues, and `accrue` folds the recorded errors into one:
++ Par défaut, la première erreur arrête le travail. Certaines tâches doivent au contraire
++ rassembler tous les échecs et les signaler ensemble : la validation d'un formulaire, ou
++ l'analyse d'un document. `raise`, contrairement à `abort`, enregistre une erreur et
++ continue, et `accrue` combine les erreurs enregistrées en une seule :
+
+```scala
+import dysasymptotics.linearSize
+
+case class Invalid(problems: List[Text])(using Diagnostics)
+extends Error(m"${problems.size} problems")
+
+case class Form(name: Text, email: Text, age: Int)
+
+def validateName(form: Form): Unit raises PortError =
+  if form.name == t"" then raise(PortError(1))
+
+def validateAge(form: Form): Unit raises PortError =
+  if form.age < 0 then raise(PortError(2))
+
+val form = Form(t"", t"nobody", -1)
+
+def collect(all: Invalid, error: Exception): Invalid = error match
+  case error: PortError => Invalid(all.problems :+ error.message.text)
+  case _                => all
+
+val invalid =
+  capture[Invalid]:
+    accrue(Invalid(Nil))(collect) { case error: PortError => () }
+    . protect:
+        validateName(form)
+        validateAge(form)
+```
+
+- Both fields are checked, though the first has already failed, and the one `Invalid` carries
+- every problem:
++ Les deux champs sont vérifiés, bien que le premier ait déjà échoué, et l'unique `Invalid`
++ porte tous les problèmes :
+
+```scala fuel
+run
+##
+invalid.problems.each(Out.println(_))
+```
+
+- The two validators raise `PortError` only to keep the sample to one error type. A real form
+- would have an error of its own. In the call to `accrue`, the function `collect` folds each
+- raised error into the accumulation, and the final block says which errors are handled.
++ Les deux validateurs ne lèvent `PortError` que pour limiter l'exemple à un seul type
++ d'erreur. Un vrai formulaire aurait sa propre erreur. Dans l'appel à `accrue`, la fonction
++ `collect` intègre chaque erreur levée à l'accumulation, et le bloc final indique quelles
++ erreurs sont traitées.
+
+- `abort` and `raise` differ in their return types. `abort` returns `Nothing`: it has no value to
+- give back, so it leaves. `raise` returns a value, called an *ersatz* value, which is a stand-in
+- that lets execution carry on locally while the error is recorded against the tactic. Once
+- anything has been raised, the final result of the enclosing scope is discarded, whatever it
+- turns out to be, and the accumulated errors are produced in its place.
++ `abort` et `raise` diffèrent par leur type de retour. `abort` renvoie `Nothing` : il n'a
++ aucune valeur à rendre, il sort donc. `raise` renvoie une valeur, appelée valeur *ersatz*,
++ qui est un substitut permettant à l'exécution de se poursuivre localement pendant que
++ l'erreur est enregistrée auprès de la tactique. Dès que quoi que ce soit a été levé, le
++ résultat final de la portée englobante est écarté, quel qu'il soit, et les erreurs
++ accumulées sont produites à sa place.
+
+- Discarding the result is what makes ersatz values safe, but it covers only the result, not side
+- effects. An ersatz value should be *inconsequential*: nothing downstream should depend on it,
+- and above all it should not provoke further errors of its own. A placeholder which flows into a
+- validating constructor produces a complaint about a value nobody ever supplied, which is worse
+- than no report at all.
++ C'est l'abandon du résultat qui rend les valeurs ersatz sûres, mais il ne couvre que le
++ résultat, pas les effets de bord. Une valeur ersatz doit être *sans conséquence* : rien en
++ aval ne doit en dépendre, et surtout elle ne doit pas provoquer d'autres erreurs de son
++ propre fait. Un substitut qui parvient à un constructeur validant produit une plainte au
++ sujet d'une valeur que personne n'a jamais fournie, ce qui est pire que pas de signalement
++ du tout.
+
+- ### Ventures and guards
++ ### Ventures et gardes
+
+- `venture` and `guard` remove that hazard, by making explicit which computations depend on which.
++ `venture` et `guard` éliminent ce risque, en rendant explicites les dépendances entre les
++ calculs.
+
+- `venture(…)` evaluates its block immediately, under the ambient tactic, so every error it raises
+- accumulates exactly as it would outside. Its result is a `Venture[Value]`: the computed value if
+- the block recorded nothing, or the marker `Failed` if it did. An `abort` inside a venture is
+- *delimited*. It records its error and abandons only that venture, not the whole scope, so
+- sibling ventures each contribute all their errors independently:
++ `venture(…)` évalue son bloc immédiatement, sous la tactique ambiante, de sorte que chaque
++ erreur qu'il lève s'accumule exactement comme elle le ferait à l'extérieur. Son résultat est
++ un `Venture[Value]` : la valeur calculée si le bloc n'a rien enregistré, ou le marqueur
++ `Failed` dans le cas contraire. Un `abort` à l'intérieur d'une venture est *délimité*. Il
++ enregistre son erreur et n'abandonne que cette venture, et non toute la portée : des
++ ventures sœurs contribuent ainsi chacune toutes leurs erreurs indépendamment :
+
+```scala
+import dynamicAccess.dynamicJson
+
+case class Person(name: Text, age: Int)
+
+def decodePerson(json: Json): Person raises Json.Error =
+  val name = venture(json.name.as[Text])
+  val age = venture(json.age.as[Int])
+
+  venture:
+    if name().length > age() then abort(Json.Error(Json.Error.Reason.Absent))
+
+  guard:
+    Person(name(), age())
+```
+
+- `name()` *forces* a venture, which gives its value. Forcing is allowed only inside an enclosing
+- `venture` or `guard`, called a *skip-scope*. Forcing a failed venture escapes to that scope, and
+- records nothing more, since the venture's errors have already been recorded. In the sample, if
+- `name` failed then the consistency check is skipped entirely, while `age`, which was evaluated
+- at its declaration, has still contributed its errors. Forcing a venture outside any skip-scope
+- is a compiletime error, because there would be nowhere well-defined to skip to.
++ `name()` *force* une venture, ce qui donne sa valeur. Forcer n'est autorisé qu'à
++ l'intérieur d'un `venture` ou d'un `guard` englobant, appelé *portée de saut*. Forcer une
++ venture échouée s'échappe vers cette portée, et n'enregistre rien de plus, puisque les
++ erreurs de la venture ont déjà été enregistrées. Dans l'exemple, si `name` a échoué, la
++ vérification de cohérence est entièrement sautée, tandis que `age`, qui a été évalué à sa
++ déclaration, a tout de même contribué ses erreurs. Forcer une venture hors de toute portée
++ de saut est une erreur [à la compilation][compilation], car il n'y aurait aucun endroit bien
++ défini vers lequel sauter.
+
+- `guard` runs its block only if the ambient tactic is *clean*, with nothing recorded so far. If
+- anything has been recorded, the block is skipped, and the scope gives up in favor of the errors
+- already gathered.
++ `guard` n'exécute son bloc que si la tactique ambiante est *propre*, sans rien
++ d'enregistré jusque-là. Si quoi que ce soit a été enregistré, le bloc est sauté, et la
++ portée abandonne au profit des erreurs déjà rassemblées.
+
+- None of this costs anything when errors are not being accumulated. Under a tactic which stops at
+- the first error, any error has already escaped, so `guard` simply runs its block and `venture`
+- simply evaluates its own.
++ Rien de tout cela ne coûte quoi que ce soit lorsque les erreurs ne sont pas accumulées. Sous
++ une tactique qui s'arrête à la première erreur, toute erreur s'est déjà échappée : `guard`
++ exécute donc simplement son bloc et `venture` évalue simplement le sien.
+
+- [JSON](json.md#collecting-every-error) uses this machinery to report every fault in a document
+- at once.
++ [JSON](json.md#collecting-every-error) utilise ce mécanisme pour signaler d'un coup toutes
++ les fautes d'un document.
+
+- ### Tolerating a failure
++ ### Tolérer un échec
+
+- A tactic can also run a block and discard whatever it raises. `tolerate` gives the block's
+- value, or `Unset` if the block recorded an error or aborted. Unlike `safely`, it works *within*
+- the ambient tactic instead of installing a new one, so an accumulating tactic rolls back what
+- the block recorded:
++ Une tactique peut aussi exécuter un bloc et écarter tout ce qu'il lève. `tolerate` donne la
++ valeur du bloc, ou `Unset` si le bloc a enregistré une erreur ou a abandonné. Contrairement
++ à `safely`, il travaille *au sein* de la tactique ambiante au lieu d'en installer une
++ nouvelle : une tactique d'accumulation annule donc ce que le bloc a enregistré :
+
+```scala fuel
+typecheck
+##
+def tolerant(json: Json): Optional[Int] raises Json.Error =
+  summon[Tactic[Json.Error]].tolerate(json.as[Int])
+```
+
+- This is how a codec decodes an optional field leniently. The field's decoder was bound to the
+- ambient tactic when it was resolved, so the tactic itself is the only place where a fault in it
+- can be intercepted.
++ C'est ainsi qu'un codec décode un champ optionnel avec indulgence. Le décodeur du champ a
++ été lié à la tactique ambiante lors de sa résolution : la tactique elle-même est donc le
++ seul endroit où une faute de ce décodeur peut être interceptée.
+
+- Together, these are the operations for reporting and containing a failure while errors are
+- being accumulated:
++ Ensemble, ce sont les opérations permettant de signaler et de contenir un échec pendant que
++ les erreurs sont accumulées :
+
+```tabular
+- column  Operation
+- column  Yields
+- column  After an error
+- row  `abort(error)`  `Nothing`  leaves the scope, or only the venture it is in
+- row  `raise(error)`  an ersatz value  continues, with the error recorded
+- row  `venture(…)`  a `Venture[Value]`, `Failed` if the block recorded anything  its siblings still run
+- row  `guard(…)`  the block's value  the block is skipped if anything was recorded before it
+- row  `tactic.tolerate(…)`  an `Optional` value, `Unset` on failure  what the block recorded is rolled back
++ column  Opération
++ column  Produit
++ column  Après une erreur
++ row  `abort(error)`  `Nothing`  quitte la portée, ou seulement la venture où il se trouve
++ row  `raise(error)`  une valeur ersatz  continue, l'erreur étant enregistrée
++ row  `venture(…)`  un `Venture[Value]`, `Failed` si le bloc a enregistré une erreur  ses sœurs s'exécutent tout de même
++ row  `guard(…)`  la valeur du bloc  le bloc est sauté si une erreur a été enregistrée avant lui
++ row  `tactic.tolerate(…)`  une valeur `Optional`, `Unset` en cas d'échec  l'enregistrement du bloc est annulé
+```
+
+- ### Saying where a failure was
++ ### Indiquer où s'est produit un échec
+
+- A list of accumulated errors is useful only if each one says where it came from. A *focus* is
+- the position, within a structure, which the code is currently working on, and `track` maintains
+- it as a traversal descends. Under `validate`, a recorded error is paired with the focus at the
+- moment it was raised:
++ Une liste d'erreurs accumulées n'est utile que si chacune indique d'où elle vient. Un
++ *focus* est la position, au sein d'une structure, sur laquelle le code travaille
++ actuellement, et `track` la maintient à mesure qu'un parcours descend. Sous `validate`, une
++ erreur enregistrée est associée au focus au moment où elle a été levée :
+
+```scala fuel
+run
+##
+Out.println(Pointer(t"a")(t"b")(t"c").text)
+```
+
+- The type of the pointer is chosen by the structure being traversed, so a position is reported
+- in the vocabulary of the data, not as an index into something internal:
++ Le type du pointeur est choisi par la structure parcourue : une position est ainsi signalée
++ dans le vocabulaire des données, et non comme un indice dans quelque chose d'interne :
+
+```tabular
+- column  Format
+- column  Focus
+- column  Locates by
+- row  [JSON](json.md)  `Json.Focus`  a `JsonPointer`
+- row  [XML](xml.md)  `Xml.Focus`  an `XPath`
+- row  [YAML](yaml.md)  `Yaml.Focus`  a `YamlPath`
+- row  [TEL](tel.md)  `Tel.Focus`  a `Telp`
+- row  [CSV](csv.md)  `CellRef`  a row and a column name
++ column  Format
++ column  Focus
++ column  Localise par
++ row  [JSON](json.md)  `Json.Focus`  un `JsonPointer`
++ row  [XML](xml.md)  `Xml.Focus`  un `XPath`
++ row  [YAML](yaml.md)  `Yaml.Focus`  un `YamlPath`
++ row  [TEL](tel.md)  `Tel.Focus`  un `Telp`
++ row  [CSV](csv.md)  `CellRef`  une ligne et un nom de colonne
+```
+
+- This is the machinery beneath every report of "which field failed" in the data formats.
++ C'est le mécanisme qui sous-tend chaque signalement de « quel champ a échoué » dans les
++ formats de données.
+
+- ### Inspecting a failure directly
++ ### Examiner directement un échec
+
+- Three related operations turn a failure into a value.
++ Trois opérations apparentées transforment un échec en valeur.
+
+- `capture` runs a block which is expected to fail, and gives the error. A block which succeeds is
+- itself an error, an `Expectation.Error`, since the code was checking for the wrong thing:
++ `capture` exécute un bloc dont on attend l'échec, et donne l'erreur. Un bloc qui réussit est
++ lui-même une erreur, une `Expectation.Error`, puisque le code vérifiait la mauvaise chose :
+
+```scala fuel
+run
+errors show
+##
+capture[PortError](connect(8080))
+```
+
+- `attempt` makes no such demand. It gives an `Attempt`, which is either a success carrying the
+- value or a failure carrying the error, for code which must branch on both:
++ `attempt` n'a pas une telle exigence. Il donne un `Attempt`, qui est soit un succès portant
++ la valeur, soit un échec portant l'erreur, pour un code qui doit se ramifier selon les deux :
+
+```scala
+def describe(port: Int): Text = attempt[PortError](connect(port)) match
+  case Attempt.Success(connection) => t"connected on port ${connection.port}"
+  case Attempt.Failure(error)      => t"failed: ${error.message}"
+```
+
+```scala fuel
+run
+##
+Out.println(describe(8080))
+Out.println(describe(80))
+```
+
+- `amalgamate` gives either the block's value or the first error it raises, typed as the union of
+- the two.
++ `amalgamate` donne soit la valeur du bloc, soit la première erreur qu'il lève, typée comme
++ l'union des deux.
+
+- [Testing](testing.md) uses `capture` to assert that code fails in the way it should.
++ [Les tests](testing.md) utilisent `capture` pour affirmer qu'un code échoue de la manière
++ attendue.
+
+- ### Translating and escalating
++ ### Traduire et escalader
+
+- `Mitigable` is the typeclass behind `mitigate`. An instance says how one error type becomes
+- another, and importing `strategies.mitigation` applies it automatically wherever a caller
+- expects the outer type. A low-level failure therefore reaches the boundary of an API already
+- translated into that API's vocabulary, without each call restating the translation.
++ `Mitigable` est la classe de types derrière `mitigate`. Une instance indique comment un type
++ d'erreur devient un autre, et importer `strategies.mitigation` l'applique automatiquement
++ partout où un appelant attend le type extérieur. Un échec de bas niveau atteint donc la
++ frontière d'une API déjà traduit dans le vocabulaire de cette API, sans que chaque appel
++ reformule la traduction.
+
+- Two strategies sit at the ends of the range. `throwUnsafely` throws, with no capability
+- required, which suits prototypes and scripts. `throwSafely` also throws, but demands a
+- `CanThrow` [capability], so the possibility stays visible in the types. Between them sit the
+- recovering, accumulating and optional forms, and the choice is always made by the caller.
++ Deux stratégies se trouvent aux extrémités de l'éventail. `throwUnsafely` lève, sans
++ capacité requise, ce qui convient aux prototypes et aux scripts. `throwSafely` lève
++ également, mais exige une [capacité] `CanThrow`, de sorte que la possibilité reste visible
++ dans les types. Entre les deux se trouvent les formes de récupération, d'accumulation et
++ optionnelles, et le choix est toujours fait par l'appelant.
+
+- ### Diagnostics
++ ### Diagnostics
+
+- An `Error` can record a stack trace or omit it. The `Diagnostics` given in scope decides:
++ Une `Error` peut enregistrer une trace de pile ou l'omettre. Le `Diagnostics` given dans la
++ portée en décide :
+
+```tabular
+- column  Import
+- column  An error
+- row  `errorDiagnostics.stackTracesDiagnostics`  records a stack trace, for debugging
+- row  `errorDiagnostics.emptyDiagnostics`  records none, which is cheaper where an error is expected and handled
++ column  Import
++ column  Une erreur
++ row  `errorDiagnostics.stackTracesDiagnostics`  enregistre une trace de pile, pour le débogage
++ row  `errorDiagnostics.emptyDiagnostics`  n'en enregistre aucune, moins coûteux si l'erreur est attendue et traitée
+```
+
+- The choice exists because none of this is built on throwing. `abort` and `raise` use Scala's
+- `boundary` and `break`, so leaving a computation with an error constructs no stack trace unless
+- one was asked for, and an error is no more expensive to build than any other immutable value.
+- Failure is a normal part of a program's behavior, so it should not cost more than success.
+- [Stack traces](stack-traces.md) describes how a recorded trace is read and displayed.
++ Ce choix existe parce que rien de tout cela ne repose sur la levée d'exceptions. `abort` et
++ `raise` utilisent `boundary` et `break` de Scala : quitter un calcul avec une erreur ne
++ construit donc aucune trace de pile à moins qu'on en ait demandé une, et une erreur ne coûte
++ pas plus cher à construire que toute autre valeur immuable. L'échec fait normalement partie
++ du comportement d'un programme : il ne doit donc pas coûter plus cher que le succès.
++ [Les traces de pile](stack-traces.md) décrit comment une trace enregistrée est lue et
++ affichée.
+
+- ### When a contextual value is missing
++ ### Lorsqu'une valeur contextuelle manque
+
+- Much of the above relies on a given being in scope. The compiler's ordinary report of a missing
+- one, "No given instance of type … was found", says only that the search failed, not where. With
+- `import soundness.*`, a diagnostic hook is in scope which explains the failure instead. Its
+- message names the value being resolved and the candidate instances which were considered, and
+- shows as a tree the nested requirement each of them could not meet.
++ Une bonne partie de ce qui précède repose sur la présence d'un given dans la portée. Le
++ signalement ordinaire du compilateur pour un given manquant, "No given instance of type …
++ was found", dit seulement que la recherche a échoué, et non où. Avec `import soundness.*`,
++ un point d'accroche de diagnostic est dans la portée, qui explique l'échec à la place. Son
++ message nomme la valeur en cours de résolution et les instances candidates qui ont été
++ envisagées, et montre sous forme d'arbre l'exigence imbriquée que chacune n'a pas pu
++ satisfaire.
+
+- A decoder which cannot be [derived](derivation.md#when-derivation-fails) because one field's
+- type has no instance is therefore reported at that field. A strategy missing from a fallible
+- call is named as the strategy, with the choice packages which supply one. The hook does nothing
+- when resolution succeeds, so it costs nothing in a program that compiles.
++ Un décodeur qui ne peut pas être [dérivé](derivation.md#when-derivation-fails) parce que le
++ type d'un champ n'a pas d'instance est donc signalé au niveau de ce champ. Une stratégie
++ absente d'un appel faillible est nommée en tant que stratégie, avec les packages de choix
++ qui en fournissent une. Le point d'accroche ne fait rien lorsque la résolution réussit : il
++ ne coûte donc rien dans un programme qui compile.

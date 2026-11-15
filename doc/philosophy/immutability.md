@@ -13,7 +13,7 @@ else.
 The objection to immutability is always the same: changing one field deep inside a
 structure means rebuilding every layer above it. That is true, and it is a problem of
 syntax rather than of semantics — so Soundness solves it with syntax. A
-[lens](../modules/optics.md) takes the update written as an ordinary path assignment and
+[lens](../en/modules/optics.md) takes the update written as an ordinary path assignment and
 does the rebuilding:
 
 ```scala fuel
@@ -80,7 +80,7 @@ escape the scope that owns its source, does not compile. Mutation is permitted h
 because [capture and separation checking](capture-checking.md) prove that nobody else
 can see it.
 
-A **`Canvas`**, obtained by opening a [raster](../modules/images.md) for writing, mutates
+A **`Canvas`**, obtained by opening a [raster](../en/modules/images.md) for writing, mutates
 pixels in place — because generating a large image one pixel-function call at a time is
 the wrong shape for a drawing algorithm. The mutation is scoped to the `open` block and
 gated on the `Write` grant, and `snapshot` takes an independent copy for anything that

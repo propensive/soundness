@@ -1,0 +1,2483 @@
+tel 1.0
+
+base susurration
+import soundness
+
+info
+    - a native SSH-2 client: host keys, client configuration, the transport, authentication and remote commands
+    + un client SSH-2 natif : clés d'hôte, configuration du client, transport, authentification et
+    + commandes distantes
+detail
+    - _Susurration_ is an SSH-2 client written entirely in Scala: no `ssh` binary is spawned,
+    - and nothing is reached through JNI. It reads the two files every client reads —
+    - `known_hosts` as a `KnownHosts` and `~/.ssh/config` as an `SshConfig` — speaks the
+    - transport layer of RFC 4253 over a coaxial `Duplex` (`Transport`: the identification
+    - exchange, the key exchange and the encrypted packet protocol), authenticates with public
+    - keys as RFC 4252 describes (`Signer`, from a loaded `PrivateKey` or an `ssh-agent`), and
+    - runs commands through the connection protocol of RFC 4254 (`Session` and `Channel`). Every
+    - message is encoded with the RFC 4251 wire types, read and written by `Wire.Reader` and
+    - `Wire.Writer`.
+    + _Susurration_ est un client SSH-2 entièrement écrit en Scala : aucun binaire `ssh` n'est
+    + lancé, et rien ne passe par JNI. Il lit les deux fichiers que lit tout client —
+    + `known_hosts` sous forme de `KnownHosts` et `~/.ssh/config` sous forme de `SshConfig` —,
+    + parle la couche transport de la RFC 4253 sur un `Duplex` de coaxial (`Transport` :
+    + l'échange d'identification, l'échange de clés et le protocole de paquets chiffrés),
+    + s'authentifie par clé publique comme le décrit la RFC 4252 (`Signer`, à partir d'une
+    + `PrivateKey` chargée ou d'un `ssh-agent`), et exécute des commandes par le protocole de
+    + connexion de la RFC 4254 (`Session` et `Channel`). Chaque message est encodé avec les types
+    + de transmission de la RFC 4251, lus et écrits par `Wire.Reader` et `Wire.Writer`.
+
+    - The pieces are assembled by an `Ssh.Endpoint`: a host, a port, a user and the signers
+    - that prove the user. Its `session` connects, checks the server's host key against the
+    - `Ssh.HostKeys` policy in scope, authenticates, and lends a `Session` that runs commands:
+    + Les pièces sont assemblées par un `Ssh.Endpoint` : un hôte, un port, un utilisateur et les
+    + signataires qui prouvent l'identité de l'utilisateur. Son `session` se connecte, vérifie la
+    + clé d'hôte du serveur selon la politique `Ssh.HostKeys` dans la portée, s'authentifie, et
+    + prête une `Session` qui exécute des commandes :
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+    import errorDiagnostics.stackTracesDiagnostics
+    import providers.javaBaseProvider
+    import cloaks.heapCloak
+    import internetAccess.online
+    import socketBackends.javaBaseSockets
+    import logging.silentLogging
+
+    val keyText: Text = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…"
+    val key = keyText.read[PrivateKey[Ed25519] in Pem]
+    given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+    val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+
+    endpoint.session: ssh ?=>
+      val result = ssh.exec(t"uname -a")
+      result.stdout.read[Text]
+      result.status   // 0
+    ```
+
+    - Beneath the endpoint, each layer is usable on its own, and a program which needs
+    - something other than a command — git's pack protocol, say — builds on the layer it
+    - needs. Watching the layers stack up is the clearest account of how the library fits
+    - together:
+    + Sous l'endpoint, chaque couche est utilisable seule, et un programme qui a besoin d'autre
+    + chose qu'une commande — le protocole de packs de git, par exemple — s'appuie sur la couche
+    + dont il a besoin. Regarder les couches s'empiler est la façon la plus claire de comprendre
+    + comment la bibliothèque s'articule :
+
+    ```scala fuel
+    typecheck
+    frame
+      label The transport: identification and key exchange over a connected duplex
+      code
+          Endpoint(t"example.com", Port[Tcp](22)).duplex: duplex =>
+            val transport = Ssh.Transport(duplex, t"example.com", 22)
+            transport.connect()
+            transport.negotiated   // Ssh.Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
+    frame
+      label Authentication: the first signer the server accepts wins
+      code
+          Endpoint(t"example.com", Port[Tcp](22)).duplex: duplex =>
+            val transport = Ssh.Transport(duplex, t"example.com", 22)
+            transport.connect()
+            transport.authenticate(t"hamlet", List(Ssh.Signer(key)))
+    frame
+      label A session over the authenticated transport runs a command
+      code
+          Endpoint(t"example.com", Port[Tcp](22)).duplex: duplex =>
+            val transport = Ssh.Transport(duplex, t"example.com", 22)
+            transport.connect()
+            transport.authenticate(t"hamlet", List(Ssh.Signer(key)))
+            val session = Ssh.Session(transport)
+            val result = session.exec(t"uname -a")
+            session.close()
+            result.stdout.read[Text]
+    frame
+      label An endpoint's session does all of it, and closes the connection afterwards
+      code
+          Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key))).session: ssh ?=>
+            ssh.exec(t"uname -a").stdout.read[Text]
+    ##
+    ```
+
+    - The client is deliberately single-threaded: a transport is driven by the one thread
+    - which sends a message and reads what comes back, which is the shape of every exchange a
+    - command or a git client makes. The ciphers it offers are the AEAD ones every current
+    - server has (`chacha20-poly1305@openssh.com`, `aes256-gcm@openssh.com`,
+    - `aes128-gcm@openssh.com`), the key exchanges are `curve25519-sha256` and
+    - `ecdh-sha2-nistp256`, and host keys may be Ed25519, ECDSA P-256 or RSA (under SHA-2).
+    - Re-keying after RFC 4253's limits is not yet performed.
+    + Le client est délibérément monothread : un transport est piloté par le seul thread qui
+    + envoie un message et lit ce qui revient, ce qui est la forme de tout échange que fait une
+    + commande ou un client git. Les chiffrements qu'il propose sont les chiffrements AEAD dont
+    + dispose tout serveur actuel (`chacha20-poly1305@openssh.com`, `aes256-gcm@openssh.com`,
+    + `aes128-gcm@openssh.com`), les échanges de clés sont `curve25519-sha256` et
+    + `ecdh-sha2-nistp256`, et les clés d'hôte peuvent être Ed25519, ECDSA P-256 ou RSA (avec
+    + SHA-2). Le renouvellement des clés au-delà des limites de la RFC 4253 n'est pas encore
+    + effectué.
+
+    - Contextual values the layers need: an `Ssh.Provider` (a `Crypto` with X25519, ECDH,
+    - Ed25519, ECDSA, AES-GCM and ChaCha20, which `providers.javaBaseProvider` is), an
+    - `Ssh.Algorithms` (`Ssh.Algorithms.default` is in implicit scope), an `Ssh.HostKeys`
+    - policy (the given built from a `KnownHosts` in scope, or `Ssh.HostKeys.trustOnFirstUse`),
+    - a `Hash in Sha2[256]`, a `Socket.Backend` (`socketBackends.javaBaseSockets`), `Online`
+    - (`internetAccess.online`) for an endpoint's session, `Diagnostics`, and a
+    - `Tactic[Ssh.Error]`. Loading a key from PEM needs a `Cloak` (`cloaks.heapCloak`).
+    + Valeurs contextuelles dont les couches ont besoin : un `Ssh.Provider` (un `Crypto` avec
+    + X25519, ECDH, Ed25519, ECDSA, AES-GCM et ChaCha20, ce qu'est
+    + `providers.javaBaseProvider`), des `Ssh.Algorithms` (`Ssh.Algorithms.default` est dans la
+    + portée implicite), une politique `Ssh.HostKeys` (le given construit à partir d'un
+    + `KnownHosts` dans la portée, ou `Ssh.HostKeys.trustOnFirstUse`), un `Hash in Sha2[256]`, un
+    + `Socket.Backend` (`socketBackends.javaBaseSockets`), `Online` (`internetAccess.online`)
+    + pour la session d'un endpoint, `Diagnostics`, et une `Tactic[Ssh.Error]`. Charger une clé
+    + depuis du PEM nécessite un `Cloak` (`cloaks.heapCloak`).
+
+    - The library is one source set, `susurration.core`, for the JVM. The umbrella exports
+    - `Ssh`, `Wire`, `KnownHosts` and `SshConfig`; the other classes — `Transport`, `Channel`,
+    - `Session`, `Signer`, `Identity`, `Agent` and `Invocable` — clash with names other
+    - libraries export, so from `soundness` they are reached as `Ssh.Transport`, `Ssh.Session`
+    - and so on, while within `package susurration` the bare names are unchanged. Inside a
+    - `session` block the handle must be named (`endpoint.session: ssh ?=> …`): a bare
+    - `session.exec` resolves to aperture's `session` extension instead.
+    + La bibliothèque est un seul ensemble de sources, `susurration.core`, pour la JVM. Le
+    + package parapluie exporte `Ssh`, `Wire`, `KnownHosts` et `SshConfig` ; les autres classes
+    + — `Transport`, `Channel`, `Session`, `Signer`, `Identity`, `Agent` et `Invocable` —
+    + entrent en conflit avec des noms qu'exportent d'autres bibliothèques ; depuis `soundness`,
+    + on y accède donc par `Ssh.Transport`, `Ssh.Session` et ainsi de suite, tandis qu'au sein
+    + de `package susurration` les noms nus sont inchangés. Dans un bloc `session`, la poignée
+    + doit être nommée (`endpoint.session: ssh ?=> …`) : un `session.exec` nu se résout plutôt
+    + vers l'extension `session` d'aperture.
+
+refer susurration.Ssh
+refer susurration.Transport
+refer susurration.Session
+refer susurration.KnownHosts
+refer susurration.Signer
+
+entry .Ssh
+  info
+      - the protocol's constants, the client's decisions, and the umbrella's door to the other classes
+      + les constantes du protocole, les décisions du client, et la porte du package parapluie vers
+      + les autres classes
+  detail
+      - `Ssh` holds what the SSH-2 protocol fixes — `.Version`, the client's identification
+      - string, and `.Message`, the message numbers of RFC 4250 — and the decisions a client
+      - makes: `.Algorithms`, which algorithms to offer and in what order; `.HostKeys`, whether
+      - to trust a host's key; `.Credentials`, where identities come from when only a URL is
+      - known; and `.Endpoint`, a destination whose `session` connects, authenticates and runs
+      - commands. `.Error` is the one error every layer raises, with a `Reason` for each way a
+      - connection can fail, and `.Provider` is the refinement of `Crypto` the transport needs.
+      + `Ssh` contient ce que fixe le protocole SSH-2 — `.Version`, la chaîne d'identification du
+      + client, et `.Message`, les numéros de messages de la RFC 4250 — et les décisions que prend
+      + un client : `.Algorithms`, quels algorithmes proposer et dans quel ordre ; `.HostKeys`, s'il
+      + faut faire confiance à la clé d'un hôte ; `.Credentials`, d'où viennent les identités
+      + lorsqu'on ne connaît qu'une URL ; et `.Endpoint`, une destination dont le `session` se
+      + connecte, s'authentifie et exécute des commandes. `.Error` est l'unique erreur que lève
+      + chaque couche, avec une `Reason` pour chaque manière dont une connexion peut échouer, et
+      + `.Provider` est le raffinement de `Crypto` dont le transport a besoin.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import providers.javaBaseProvider
+      import internetAccess.online
+      import socketBackends.javaBaseSockets
+      import logging.silentLogging
+
+      given Ssh.HostKeys = Ssh.HostKeys.insecurelyAcceptAll
+      given Ssh.Algorithms = Ssh.Algorithms(cipher = List(t"aes256-gcm@openssh.com"))
+
+      Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+        val transport = Ssh.Transport(duplex, t"github.com", 22)
+        transport.connect()
+        transport.service(t"ssh-userauth")
+        transport.negotiated.let(_.cipher)   // t"aes256-gcm@openssh.com"
+      ```
+
+      - From the `soundness` umbrella, the library's classes are members of `Ssh` —
+      - `Ssh.Transport`, `Ssh.Channel`, `Ssh.Session`, `Ssh.Signer`, `Ssh.Identity`,
+      - `Ssh.Agent` and `Ssh.Invocable` — because other libraries export a `Transport`, a
+      - `Channel`, a `Session`, an `Agent` and an `Identity` of their own. Each is a type alias
+      - and a companion value, so `Ssh.Signer(key)` and `Ssh.Transport.Negotiated` work as the
+      - bare names do inside `package susurration`.
+      + Depuis le package parapluie `soundness`, les classes de la bibliothèque sont des membres de
+      + `Ssh` — `Ssh.Transport`, `Ssh.Channel`, `Ssh.Session`, `Ssh.Signer`, `Ssh.Identity`,
+      + `Ssh.Agent` et `Ssh.Invocable` — parce que d'autres bibliothèques exportent leurs propres
+      + `Transport`, `Channel`, `Session`, `Agent` et `Identity`. Chacune est un alias de type et
+      + une valeur compagnon, de sorte que `Ssh.Signer(key)` et `Ssh.Transport.Negotiated`
+      + fonctionnent comme les noms nus au sein de `package susurration`.
+  refer susurration.Transport
+  refer susurration.Session
+  refer susurration.Signer
+  refer susurration.KnownHosts
+  entry .Transport
+    info
+        - `susurration.Transport`, the transport layer, reached from the umbrella as `Ssh.Transport`
+        + `susurration.Transport`, la couche transport, accessible depuis le package parapluie par
+        + `Ssh.Transport`
+    detail
+        - A type alias and a companion value, so that `Ssh.Transport(duplex, host, port)` and
+        - `Ssh.Transport.Negotiated` are the class and its companion. The full account is on
+        - `susurration.Transport`.
+        + Un alias de type et une valeur compagnon, de sorte que `Ssh.Transport(duplex, host, port)`
+        + et `Ssh.Transport.Negotiated` sont la classe et son objet compagnon. La description
+        + complète se trouve sur `susurration.Transport`.
+  entry .Channel
+    info
+        - `susurration.Channel`, a session channel, reached from the umbrella as `Ssh.Channel`
+        + `susurration.Channel`, un canal de session, accessible depuis le package parapluie par
+        + `Ssh.Channel`
+    detail
+        - A type alias and a companion value; `Ssh.Channel.Event` is the channel's event type.
+        - The full account is on `susurration.Channel`.
+        + Un alias de type et une valeur compagnon ; `Ssh.Channel.Event` est le type d'événement du
+        + canal. La description complète se trouve sur `susurration.Channel`.
+  entry .Session
+    info
+        - `susurration.Session`, an authenticated connection, reached from the umbrella as `Ssh.Session`
+        + `susurration.Session`, une connexion authentifiée, accessible depuis le package parapluie
+        + par `Ssh.Session`
+    detail
+        - A type alias and a companion value; `Ssh.Session.Result` is what `exec` returns. The
+        - full account is on `susurration.Session`.
+        + Un alias de type et une valeur compagnon ; `Ssh.Session.Result` est ce que renvoie
+        + `exec`. La description complète se trouve sur `susurration.Session`.
+  entry .Signer
+    info
+        - `susurration.Signer`, a proof of identity, reached from the umbrella as `Ssh.Signer`
+        + `susurration.Signer`, une preuve d'identité, accessible depuis le package parapluie par
+        + `Ssh.Signer`
+    detail
+        - A type alias and a companion value, so `Ssh.Signer(key)` makes a signer over a loaded
+        - private key. The full account is on `susurration.Signer`.
+        + Un alias de type et une valeur compagnon, de sorte que `Ssh.Signer(key)` crée un
+        + signataire sur une clé privée chargée. La description complète se trouve sur
+        + `susurration.Signer`.
+  entry .Identity
+    info
+        - `susurration.Identity`, how a cipher's keys sign for SSH, reached as `Ssh.Identity`
+        + `susurration.Identity`, comment les clés d'un chiffrement signent pour SSH, accessible par
+        + `Ssh.Identity`
+    detail
+        - A type alias and a companion value. The full account is on `susurration.Identity`.
+        + Un alias de type et une valeur compagnon. La description complète se trouve sur
+        + `susurration.Identity`.
+  entry .Agent
+    info
+        - `susurration.Agent`, an `ssh-agent` client, reached from the umbrella as `Ssh.Agent`
+        + `susurration.Agent`, un client `ssh-agent`, accessible depuis le package parapluie par
+        + `Ssh.Agent`
+    detail
+        - A type alias and a companion value, so `Ssh.Agent(socketPath).identities()` lists the
+        - agent's keys as signers. The full account is on `susurration.Agent`.
+        + Un alias de type et une valeur compagnon, de sorte que
+        + `Ssh.Agent(socketPath).identities()` énumère les clés de l'agent sous forme de
+        + signataires. La description complète se trouve sur `susurration.Agent`.
+  entry .Invocable
+    info
+        - `susurration.Invocable`, how a command becomes a command line, reached as `Ssh.Invocable`
+        + `susurration.Invocable`, comment une commande devient une ligne de commande, accessible
+        + par `Ssh.Invocable`
+    detail
+        - A type alias and a companion value. The full account is on `susurration.Invocable`.
+        + Un alias de type et une valeur compagnon. La description complète se trouve sur
+        + `susurration.Invocable`.
+  entry .Version
+    info
+        - the identification string this client sends: `SSH-2.0-susurration_0.72`
+        + la chaîne d'identification qu'envoie ce client : `SSH-2.0-susurration_0.72`
+    detail
+        - The line sent, terminated by CR LF, before anything else (RFC 4253 §4.2), and the text
+        - hashed into the exchange hash as `V_C`. The server's own line is `Transport#serverVersion`.
+        + La ligne envoyée, terminée par CR LF, avant toute autre chose (RFC 4253 §4.2), et le texte
+        + haché dans le hachage d'échange en tant que `V_C`. La ligne propre du serveur est
+        + `Transport#serverVersion`.
+  entry .Message
+    info
+        - the message numbers of RFC 4250 §4.1.2, as named `Byte` constants
+        + les numéros de messages de la RFC 4250 §4.1.2, sous forme de constantes `Byte` nommées
+    detail
+        - The first byte of every packet's payload names its message. These are the numbers the
+        - transport, authentication and connection protocols use: `Disconnect` (1), `Ignore`
+        - (2), `Unimplemented` (3), `Debug` (4), `ServiceRequest` (5), `ServiceAccept` (6),
+        - `ExtInfo` (7), `KexInit` (20), `NewKeys` (21), `KexEcdhInit` (30), `KexEcdhReply`
+        - (31), `UserauthRequest` (50), `UserauthFailure` (51), `UserauthSuccess` (52),
+        - `UserauthBanner` (53), `UserauthPkOk` (60), `GlobalRequest` (80), `RequestSuccess`
+        - (81), `RequestFailure` (82), `ChannelOpen` (90), `ChannelOpenConfirmation` (91),
+        - `ChannelOpenFailure` (92), `ChannelWindowAdjust` (93), `ChannelData` (94),
+        - `ChannelExtendedData` (95), `ChannelEof` (96), `ChannelClose` (97), `ChannelRequest`
+        - (98), `ChannelSuccess` (99) and `ChannelFailure` (100).
+        + Le premier octet de la charge utile de chaque paquet nomme son message. Voici les numéros
+        + qu'utilisent les protocoles de transport, d'authentification et de connexion :
+        + `Disconnect` (1), `Ignore` (2), `Unimplemented` (3), `Debug` (4), `ServiceRequest` (5),
+        + `ServiceAccept` (6), `ExtInfo` (7), `KexInit` (20), `NewKeys` (21), `KexEcdhInit` (30),
+        + `KexEcdhReply` (31), `UserauthRequest` (50), `UserauthFailure` (51), `UserauthSuccess`
+        + (52), `UserauthBanner` (53), `UserauthPkOk` (60), `GlobalRequest` (80), `RequestSuccess`
+        + (81), `RequestFailure` (82), `ChannelOpen` (90), `ChannelOpenConfirmation` (91),
+        + `ChannelOpenFailure` (92), `ChannelWindowAdjust` (93), `ChannelData` (94),
+        + `ChannelExtendedData` (95), `ChannelEof` (96), `ChannelClose` (97), `ChannelRequest`
+        + (98), `ChannelSuccess` (99) et `ChannelFailure` (100).
+
+        - They are what `Transport#expect` takes and what a `Wire.Writer` begins a payload
+        - with:
+        + C'est ce que prend `Transport#expect` et ce par quoi un `Wire.Writer` commence une charge
+        + utile :
+
+        ```scala
+        import soundness.*
+
+        val writer = Wire.Writer()
+        writer.byte(Ssh.Message.ServiceRequest)
+        writer.text(t"ssh-userauth")
+        writer.data
+        ```
+    entry .Disconnect
+      info
+          - `SSH_MSG_DISCONNECT`, 1
+          + `SSH_MSG_DISCONNECT`, 1
+    entry .Ignore
+      info
+          - `SSH_MSG_IGNORE`, 2
+          + `SSH_MSG_IGNORE`, 2
+    entry .Unimplemented
+      info
+          - `SSH_MSG_UNIMPLEMENTED`, 3
+          + `SSH_MSG_UNIMPLEMENTED`, 3
+    entry .Debug
+      info
+          - `SSH_MSG_DEBUG`, 4
+          + `SSH_MSG_DEBUG`, 4
+    entry .ServiceRequest
+      info
+          - `SSH_MSG_SERVICE_REQUEST`, 5
+          + `SSH_MSG_SERVICE_REQUEST`, 5
+    entry .ServiceAccept
+      info
+          - `SSH_MSG_SERVICE_ACCEPT`, 6
+          + `SSH_MSG_SERVICE_ACCEPT`, 6
+    entry .ExtInfo
+      info
+          - `SSH_MSG_EXT_INFO`, 7
+          + `SSH_MSG_EXT_INFO`, 7
+    entry .KexInit
+      info
+          - `SSH_MSG_KEXINIT`, 20
+          + `SSH_MSG_KEXINIT`, 20
+    entry .NewKeys
+      info
+          - `SSH_MSG_NEWKEYS`, 21
+          + `SSH_MSG_NEWKEYS`, 21
+    entry .KexEcdhInit
+      info
+          - `SSH_MSG_KEX_ECDH_INIT`, 30
+          + `SSH_MSG_KEX_ECDH_INIT`, 30
+    entry .KexEcdhReply
+      info
+          - `SSH_MSG_KEX_ECDH_REPLY`, 31
+          + `SSH_MSG_KEX_ECDH_REPLY`, 31
+    entry .UserauthRequest
+      info
+          - `SSH_MSG_USERAUTH_REQUEST`, 50
+          + `SSH_MSG_USERAUTH_REQUEST`, 50
+    entry .UserauthFailure
+      info
+          - `SSH_MSG_USERAUTH_FAILURE`, 51
+          + `SSH_MSG_USERAUTH_FAILURE`, 51
+    entry .UserauthSuccess
+      info
+          - `SSH_MSG_USERAUTH_SUCCESS`, 52
+          + `SSH_MSG_USERAUTH_SUCCESS`, 52
+    entry .UserauthBanner
+      info
+          - `SSH_MSG_USERAUTH_BANNER`, 53
+          + `SSH_MSG_USERAUTH_BANNER`, 53
+    entry .UserauthPkOk
+      info
+          - `SSH_MSG_USERAUTH_PK_OK`, 60
+          + `SSH_MSG_USERAUTH_PK_OK`, 60
+    entry .GlobalRequest
+      info
+          - `SSH_MSG_GLOBAL_REQUEST`, 80
+          + `SSH_MSG_GLOBAL_REQUEST`, 80
+    entry .RequestSuccess
+      info
+          - `SSH_MSG_REQUEST_SUCCESS`, 81
+          + `SSH_MSG_REQUEST_SUCCESS`, 81
+    entry .RequestFailure
+      info
+          - `SSH_MSG_REQUEST_FAILURE`, 82
+          + `SSH_MSG_REQUEST_FAILURE`, 82
+    entry .ChannelOpen
+      info
+          - `SSH_MSG_CHANNEL_OPEN`, 90
+          + `SSH_MSG_CHANNEL_OPEN`, 90
+    entry .ChannelOpenConfirmation
+      info
+          - `SSH_MSG_CHANNEL_OPEN_CONFIRMATION`, 91
+          + `SSH_MSG_CHANNEL_OPEN_CONFIRMATION`, 91
+    entry .ChannelOpenFailure
+      info
+          - `SSH_MSG_CHANNEL_OPEN_FAILURE`, 92
+          + `SSH_MSG_CHANNEL_OPEN_FAILURE`, 92
+    entry .ChannelWindowAdjust
+      info
+          - `SSH_MSG_CHANNEL_WINDOW_ADJUST`, 93
+          + `SSH_MSG_CHANNEL_WINDOW_ADJUST`, 93
+    entry .ChannelData
+      info
+          - `SSH_MSG_CHANNEL_DATA`, 94
+          + `SSH_MSG_CHANNEL_DATA`, 94
+    entry .ChannelExtendedData
+      info
+          - `SSH_MSG_CHANNEL_EXTENDED_DATA`, 95
+          + `SSH_MSG_CHANNEL_EXTENDED_DATA`, 95
+    entry .ChannelEof
+      info
+          - `SSH_MSG_CHANNEL_EOF`, 96
+          + `SSH_MSG_CHANNEL_EOF`, 96
+    entry .ChannelClose
+      info
+          - `SSH_MSG_CHANNEL_CLOSE`, 97
+          + `SSH_MSG_CHANNEL_CLOSE`, 97
+    entry .ChannelRequest
+      info
+          - `SSH_MSG_CHANNEL_REQUEST`, 98
+          + `SSH_MSG_CHANNEL_REQUEST`, 98
+    entry .ChannelSuccess
+      info
+          - `SSH_MSG_CHANNEL_SUCCESS`, 99
+          + `SSH_MSG_CHANNEL_SUCCESS`, 99
+    entry .ChannelFailure
+      info
+          - `SSH_MSG_CHANNEL_FAILURE`, 100
+          + `SSH_MSG_CHANNEL_FAILURE`, 100
+  entry .Provider
+    info
+        - the `Crypto` provider the transport needs: X25519, ECDH, Ed25519, ECDSA, AES-GCM and ChaCha20
+        + le fournisseur `Crypto` dont le transport a besoin : X25519, ECDH, Ed25519, ECDSA, AES-GCM
+        + et ChaCha20
+    detail
+        - A refinement of enigmatic's `Crypto` with the members the key exchange, host-key
+        - verification and the AEAD ciphers call: `x25519` and `ecdh` (each a
+        - `Crypto.KeyAgreement`), `ed25519` and `ecdsa(digest)` (each a `Crypto.SignatureScheme`),
+        - `aesGcm` (a `Crypto.Aead`) and `chaCha20` (a `Crypto.StreamCipher`), beyond the random
+        - source, HMAC and RSA every provider has. `providers.javaBaseProvider` satisfies it,
+        - and it is a contextual parameter of `Transport`, `Identity`'s givens and
+        - `Ssh.Endpoint`'s session.
+        + Un raffinement du `Crypto` d'enigmatic avec les membres qu'appellent l'échange de clés, la
+        + vérification de la clé d'hôte et les chiffrements AEAD : `x25519` et `ecdh` (chacun un
+        + `Crypto.KeyAgreement`), `ed25519` et `ecdsa(digest)` (chacun un
+        + `Crypto.SignatureScheme`), `aesGcm` (un `Crypto.Aead`) et `chaCha20` (un
+        + `Crypto.StreamCipher`), en plus de la source aléatoire, du HMAC et du RSA dont dispose
+        + tout fournisseur. `providers.javaBaseProvider` le satisfait, et c'est un paramètre
+        + contextuel de `Transport`, des givens d'`Identity` et de la session de `Ssh.Endpoint`.
+  entry .Algorithms
+    info
+        - the algorithms the client offers, in order of preference, by their registered names
+        + les algorithmes que propose le client, par ordre de préférence, sous leurs noms
+        + enregistrés
+    detail
+        - A `Transport` sends these lists in its `KEXINIT`, and the first of each which the
+        - server also supports is chosen (RFC 4253 §7.1); a kind with nothing in common raises
+        - `Ssh.Error` with `NoCommonAlgorithm(kind)`. The companion's `.default` given puts the
+        - defaults in implicit scope, so a client which is content with them need not mention
+        - the type; one which is not binds its own as a local given.
+        + Un `Transport` envoie ces listes dans son `KEXINIT`, et le premier de chacune que le
+        + serveur prend aussi en charge est choisi (RFC 4253 §7.1) ; une catégorie sans rien en
+        + commun lève `Ssh.Error` avec `NoCommonAlgorithm(kind)`. Le given `.default` de l'objet
+        + compagnon place les valeurs par défaut dans la portée implicite, de sorte qu'un client qui
+        + s'en contente n'a pas besoin de mentionner le type ; un client qui ne s'en contente pas
+        + lie les siennes comme given local.
+
+        ```scala
+        import soundness.*
+
+        val fips = Ssh.Algorithms
+          ( kex = List(t"ecdh-sha2-nistp256"),
+            hostKey = List(t"ecdsa-sha2-nistp256", t"rsa-sha2-256"),
+            cipher = List(t"aes256-gcm@openssh.com", t"aes128-gcm@openssh.com") )
+        ```
+
+        - The fields: `kex`, the key-exchange methods (`curve25519-sha256`,
+        - `curve25519-sha256@libssh.org`, `ecdh-sha2-nistp256`); `hostKey`, the host-key
+        - algorithms (`ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-512`, `rsa-sha2-256`);
+        - `cipher`, offered in both directions (`chacha20-poly1305@openssh.com`,
+        - `aes256-gcm@openssh.com`, `aes128-gcm@openssh.com`); `mac` (`hmac-sha2-256`), which the
+        - AEAD ciphers never use but the protocol requires to be named; and `compression`
+        - (`none`). A name not in these defaults is sent to the server as written but not
+        - implemented by the transport, so `Ssh.Algorithms(cipher = List(t"none"))` is refused
+        - by every server rather than agreed.
+        + Les champs : `kex`, les méthodes d'échange de clés (`curve25519-sha256`,
+        + `curve25519-sha256@libssh.org`, `ecdh-sha2-nistp256`) ; `hostKey`, les algorithmes de clé
+        + d'hôte (`ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-512`, `rsa-sha2-256`) ; `cipher`,
+        + proposé dans les deux sens (`chacha20-poly1305@openssh.com`, `aes256-gcm@openssh.com`,
+        + `aes128-gcm@openssh.com`) ; `mac` (`hmac-sha2-256`), que les chiffrements AEAD n'utilisent
+        + jamais mais que le protocole exige de nommer ; et `compression` (`none`). Un nom absent de
+        + ces valeurs par défaut est envoyé au serveur tel qu'il est écrit mais n'est pas implémenté
+        + par le transport ; ainsi `Ssh.Algorithms(cipher = List(t"none"))` est refusé par tout
+        + serveur plutôt qu'accepté.
+    entry .default
+      info
+          - the given which offers the default lists: Curve25519, Ed25519 and ChaCha20-Poly1305 first
+          + le given qui propose les listes par défaut : Curve25519, Ed25519 et ChaCha20-Poly1305 en
+          + premier
+      detail
+          - In implicit scope through the companion, so a `Transport` needs no import to use
+          - the defaults; a local `given Ssh.Algorithms` outranks it.
+          + Dans la portée implicite par l'objet compagnon, de sorte qu'un `Transport` n'a besoin
+          + d'aucun import pour utiliser les valeurs par défaut ; un `given Ssh.Algorithms` local a
+          + priorité sur lui.
+    entry #kex
+      info
+          - the key-exchange methods, most preferred first
+          + les méthodes d'échange de clés, de la plus préférée à la moins préférée
+    entry #hostKey
+      info
+          - the host-key algorithms, most preferred first
+          + les algorithmes de clé d'hôte, du plus préféré au moins préféré
+    entry #cipher
+      info
+          - the ciphers, most preferred first, offered in both directions
+          + les chiffrements, du plus préféré au moins préféré, proposés dans les deux sens
+    entry #mac
+      info
+          - the MAC algorithms, named for the protocol's sake; an AEAD cipher carries its own integrity
+          + les algorithmes MAC, nommés pour les besoins du protocole ; un chiffrement AEAD porte sa
+          + propre intégrité
+    entry #compression
+      info
+          - the compression methods: `none`
+          + les méthodes de compression : `none`
+  entry .HostKeys
+    info
+        - the policy on a server's host key: whether to continue, given the key it presented
+        + la politique concernant la clé d'hôte d'un serveur : faut-il continuer, compte tenu de la
+        + clé présentée
+    detail
+        - Before anything is trusted, the key exchange hands the policy the host, the port,
+        - the key's type (`ssh-ed25519`, `ecdsa-sha2-nistp256`, `ssh-rsa`) and OpenSSH's blob
+        - for it, and `#accept` says whether to go on; `false` makes `Transport#connect` raise
+        - `Ssh.Error` with `HostKeyRejected(keyType)`. A `Transport` and an `Ssh.Endpoint`'s
+        - session both take the policy as a contextual value, and there is no default: it must
+        - be chosen.
+        + Avant que quoi que ce soit ne soit considéré comme fiable, l'échange de clés transmet à la
+        + politique l'hôte, le port, le type de la clé (`ssh-ed25519`, `ecdsa-sha2-nistp256`,
+        + `ssh-rsa`) et son blob OpenSSH, et `#accept` dit s'il faut continuer ; `false` fait lever
+        + à `Transport#connect` une `Ssh.Error` avec `HostKeyRejected(keyType)`. Un `Transport` et
+        + la session d'un `Ssh.Endpoint` prennent tous deux la politique comme valeur contextuelle,
+        + et il n'y a pas de valeur par défaut : elle doit être choisie.
+
+        ```scala
+        import soundness.*
+        import providers.javaBaseProvider
+
+        val known = KnownHosts(t"github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl")
+
+        val strict: Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
+        val lenient: Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(known)
+        ```
+
+        - `.knownHosts` is a given over a `KnownHosts` in scope, so `given KnownHosts = …`
+        - alone makes the strict policy available; `.trustOnFirstUse` accepts a key the file
+        - does not mention, as `ssh` does with `StrictHostKeyChecking=accept-new`; and
+        - `.insecurelyAcceptAll` is for a test against a server whose key is not worth
+        - recording. A policy which accepts a first-seen key should record it, which
+        - `KnownHosts.line` writes in the file's own form.
+        + `.knownHosts` est un given sur un `KnownHosts` dans la portée, de sorte que
+        + `given KnownHosts = …` suffit à rendre disponible la politique stricte ;
+        + `.trustOnFirstUse` accepte une clé que le fichier ne mentionne pas, comme le fait `ssh`
+        + avec `StrictHostKeyChecking=accept-new` ; et `.insecurelyAcceptAll` sert à tester contre
+        + un serveur dont la clé ne vaut pas la peine d'être enregistrée. Une politique qui accepte
+        + une clé vue pour la première fois devrait l'enregistrer, ce qu'écrit `KnownHosts.line`
+        + dans le format propre au fichier.
+    refer susurration.KnownHosts
+    entry .knownHosts
+      info
+          - the strict policy: a key is accepted only if a `KnownHosts` in scope says it is `Known`
+          + la politique stricte : une clé n'est acceptée que si un `KnownHosts` dans la portée dit
+          + qu'elle est `Known`
+      detail
+          - A given built from a `KnownHosts` and a `Crypto` in scope, so it needs no import once
+          - a `given KnownHosts` exists; a `Changed`, `Revoked` or `Unknown` verdict rejects the
+          - key. It may also be called directly, `Ssh.HostKeys.knownHosts(using known, crypto)`.
+          + Un given construit à partir d'un `KnownHosts` et d'un `Crypto` dans la portée ; il ne
+          + nécessite donc aucun import dès lors qu'un `given KnownHosts` existe ; un verdict
+          + `Changed`, `Revoked` ou `Unknown` rejette la clé. On peut aussi l'appeler directement,
+          + `Ssh.HostKeys.knownHosts(using known, crypto)`.
+    entry .trustOnFirstUse
+      info
+          - accepts a `Known` or an `Unknown` key, and rejects a `Changed` or `Revoked` one
+          + accepte une clé `Known` ou `Unknown`, et rejette une clé `Changed` ou `Revoked`
+      detail
+          - What `ssh` does under `StrictHostKeyChecking=accept-new`: a host the file has never
+          - seen is trusted, and a host whose key differs from the one on file is not. Needs a
+          - `Crypto` for hashed entries. The caller is responsible for recording the key it
+          - accepted, since the policy does not write the file.
+          + Ce que fait `ssh` sous `StrictHostKeyChecking=accept-new` : un hôte que le fichier n'a
+          + jamais vu est accepté, et un hôte dont la clé diffère de celle enregistrée ne l'est pas.
+          + Nécessite un `Crypto` pour les entrées hachées. L'appelant est responsable de
+          + l'enregistrement de la clé qu'il a acceptée, puisque la politique n'écrit pas le
+          + fichier.
+    entry .insecurelyAcceptAll
+      info
+          - accepts every key, verifying nothing
+          + accepte toutes les clés, sans rien vérifier
+      detail
+          - For tests against a throwaway server. A connection under this policy is encrypted but
+          - not authenticated: anyone on the path may be the server.
+          + Pour des tests contre un serveur jetable. Une connexion sous cette politique est
+          + chiffrée mais non authentifiée : n'importe qui sur le chemin peut être le serveur.
+    entry #accept
+      info
+          - whether to continue with the host, port, key type and key blob presented
+          + s'il faut continuer avec l'hôte, le port, le type de clé et le blob de clé présentés
+  entry .Credentials
+    info
+        - where identities come from when a transport is given only a URL: the user and the signers
+        + d'où viennent les identités lorsqu'un transport ne reçoit qu'une URL : l'utilisateur et
+        + les signataires
+    detail
+        - A git transport or any client handed `ssh://user@host/path` needs, for a host, the
+        - user to be (if the URL does not say) and the signers to try there; `Credentials`
+        - answers both. Octogenarian's `gitTransports.soundnessSsh` takes one as a contextual
+        - value.
+        + Un transport git, ou tout client à qui l'on remet `ssh://user@host/path`, a besoin, pour
+        + un hôte, de l'utilisateur à endosser (si l'URL ne le dit pas) et des signataires à y
+        + essayer ; `Credentials` répond aux deux. Le `gitTransports.soundnessSsh` d'octogenarian en
+        + prend un comme valeur contextuelle.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+        import socketBackends.javaBaseSockets
+
+        given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
+        ```
+
+        - `Ssh.Credentials(signers*)` offers the same signers to every host and has no opinion
+        - about the user; `.agent` offers every key an `ssh-agent` holds.
+        + `Ssh.Credentials(signers*)` propose les mêmes signataires à tous les hôtes et n'a pas
+        + d'avis sur l'utilisateur ; `.agent` propose toutes les clés que détient un `ssh-agent`.
+    refer susurration.Signer
+    refer susurration.Agent
+    entry .apply
+      info
+          - the same signers for every host, with no opinion about the user
+          + les mêmes signataires pour tous les hôtes, sans avis sur l'utilisateur
+      detail
+          - `Ssh.Credentials(Ssh.Signer(key1), Ssh.Signer(key2))`: `user` is `Unset` for every
+          - host, and `signers` is the list given, whatever the host and user.
+          + `Ssh.Credentials(Ssh.Signer(key1), Ssh.Signer(key2))` : `user` vaut `Unset` pour tous
+          + les hôtes, et `signers` est la liste donnée, quels que soient l'hôte et l'utilisateur.
+    entry .agent
+      info
+          - every key the `ssh-agent` at a socket path holds, listed afresh on each call
+          + toutes les clés que détient le `ssh-agent` à un chemin de socket, énumérées à nouveau à
+          + chaque appel
+      detail
+          - Needs a `Socket.Backend` and `Diagnostics`. `signers` asks the agent for its
+          - identities each time; an agent which cannot be reached yields no signers rather than
+          - an error, so authentication then fails with `Unauthenticated`.
+          + Nécessite un `Socket.Backend` et `Diagnostics`. `signers` demande à chaque fois ses
+          + identités à l'agent ; un agent injoignable ne donne aucun signataire plutôt qu'une
+          + erreur, de sorte que l'authentification échoue alors avec `Unauthenticated`.
+    entry #user
+      info
+          - the user to be at a host, or `Unset` to use the URL's or the caller's
+          + l'utilisateur à endosser sur un hôte, ou `Unset` pour utiliser celui de l'URL ou de
+          + l'appelant
+    entry #signers
+      info
+          - the signers to try for a host and user, in order
+          + les signataires à essayer pour un hôte et un utilisateur, dans l'ordre
+  entry .Endpoint
+    info
+        - a destination: host, port, user and signers, whose `session` connects, authenticates and runs commands
+        + une destination : hôte, port, utilisateur et signataires, dont le `session` se connecte,
+        + s'authentifie et exécute des commandes
+    detail
+        - An `Endpoint` is `Sessional` (through `.sessional`), so `endpoint.session: ssh ?=> …`
+        - opens a TCP connection, performs the key exchange, checks the host key against the
+        - `Ssh.HostKeys` in scope, authenticates as `#user` with `#signers` (the first the server
+        - accepts wins), lends a `Session` to the block, and disconnects and closes the socket
+        - when the block ends, however it ends.
+        + Un `Endpoint` est `Sessional` (par `.sessional`), de sorte que
+        + `endpoint.session: ssh ?=> …` ouvre une connexion TCP, effectue l'échange de clés,
+        + vérifie la clé d'hôte selon les `Ssh.HostKeys` dans la portée, s'authentifie en tant que
+        + `#user` avec `#signers` (le premier que le serveur accepte l'emporte), prête une `Session`
+        + au bloc, puis se déconnecte et ferme le socket à la fin du bloc, quelle que soit la façon
+        + dont il se termine.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+        import providers.javaBaseProvider
+        import cloaks.heapCloak
+        import internetAccess.online
+        import socketBackends.javaBaseSockets
+        import logging.silentLogging
+
+        given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+        val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
+        val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+
+        endpoint.session: ssh ?=>
+          ssh.exec(t"echo one").stdout.read[Text]   // t"one\n"
+          ssh.exec(t"echo two").stdout.read[Text]   // t"two\n"
+        ```
+
+        - The session needs `Online`, a `Socket.Backend`, an `Every[Socket.Option.Tcp]`, an
+        - `Ssh.Provider`, `Ssh.Algorithms`, `Ssh.HostKeys`, a `Hash in Sha2[256]`, a
+        - `Tactic[Ssh.Error]` and `Diagnostics`. A connection which cannot be made raises
+        - `Ssh.Error` with `Unreachable(reason)`; a port outside 1–65535 raises `Malformed`. The
+        - handle must be named in the block — `ssh ?=>` — because a bare `session` inside it
+        - resolves to aperture's `session` extension rather than the lent value.
+        + La session nécessite `Online`, un `Socket.Backend`, un `Every[Socket.Option.Tcp]`, un
+        + `Ssh.Provider`, des `Ssh.Algorithms`, des `Ssh.HostKeys`, un `Hash in Sha2[256]`, une
+        + `Tactic[Ssh.Error]` et `Diagnostics`. Une connexion impossible à établir lève `Ssh.Error`
+        + avec `Unreachable(reason)` ; un port hors de 1–65535 lève `Malformed`. La poignée doit
+        + être nommée dans le bloc — `ssh ?=>` — parce qu'un `session` nu à l'intérieur se résout
+        + vers l'extension `session` d'aperture plutôt que vers la valeur prêtée.
+
+        - `#resolved` applies an `SshConfig`, so an endpoint named as the user names it on the
+        - command line (`work`) becomes the host, port and user the configuration says.
+        + `#resolved` applique un `SshConfig`, de sorte qu'un endpoint nommé comme l'utilisateur le
+        + nomme sur la ligne de commande (`work`) devient l'hôte, le port et l'utilisateur
+        + qu'indique la configuration.
+    refer susurration.Session
+    refer susurration.SshConfig
+    entry .sessional
+      info
+          - the given which makes an `Endpoint` `Sessional`, lending a `Session` to a block
+          + le given qui rend un `Endpoint` `Sessional`, en prêtant une `Session` à un bloc
+      detail
+          - An `EndpointSessional`, capturing `Online` and the `Tactic[Ssh.Error]` it is built
+          - with. In implicit scope through the companion; the contextual values it needs are
+          - listed on `Ssh.Endpoint`.
+          + Un `EndpointSessional`, qui capture `Online` et la `Tactic[Ssh.Error]` avec lesquels il
+          + est construit. Dans la portée implicite par l'objet compagnon ; les valeurs
+          + contextuelles dont il a besoin sont énumérées sur `Ssh.Endpoint`.
+    entry #host
+      info
+          - the host to connect to, as a name or an address
+          + l'hôte auquel se connecter, sous forme de nom ou d'adresse
+    entry #port
+      info
+          - the TCP port, 22 for a standard server
+          + le port TCP, 22 pour un serveur standard
+    entry #user
+      info
+          - the user to authenticate as
+          + l'utilisateur sous lequel s'authentifier
+    entry #signers
+      info
+          - the proofs of identity to offer, in order; the first the server accepts is used
+          + les preuves d'identité à proposer, dans l'ordre ; la première que le serveur accepte est
+          + utilisée
+    entry #resolved
+      info
+          - the endpoint as an `SshConfig` resolves it: its `HostName`, `Port` and `User`
+          + l'endpoint tel que le résout un `SshConfig` : son `HostName`, son `Port` et son `User`
+      detail
+          - `endpoint.resolved(config)` looks `#host` up as a `Host` pattern and replaces the
+          - host with the configuration's `HostName`, the port with its `Port`, and the user with
+          - its `User` if one is set (keeping the endpoint's own otherwise). The signers are
+          - unchanged: an `IdentityFile` is a path the caller must load.
+          + `endpoint.resolved(config)` recherche `#host` comme motif `Host` et remplace l'hôte par
+          + le `HostName` de la configuration, le port par son `Port`, et l'utilisateur par son
+          + `User` s'il en est défini un (en gardant sinon celui de l'endpoint). Les signataires
+          + sont inchangés : un `IdentityFile` est un chemin que l'appelant doit charger.
+
+          ```scala
+          import soundness.*
+          import errorDiagnostics.stackTracesDiagnostics
+
+          val config = SshConfig(t"Host work\n  HostName git.example.com\n  User hamlet\n  Port 2222")
+          Ssh.Endpoint(t"work", 22, t"me", Nil).resolved(config)
+          // Ssh.Endpoint(t"git.example.com", 2222, t"hamlet", Nil)
+          ```
+  entry .EndpointSessional
+    info
+        - the `Sessional` instance behind `Ssh.Endpoint#session`
+        + l'instance `Sessional` derrière `Ssh.Endpoint#session`
+    detail
+        - A named class rather than an anonymous given, so that its `Result` type member —
+        - `Session^` — is not freshened by inference. It is constructed by `Ssh.Endpoint.sessional`
+        - from the contextual values in scope and is not normally named by a user.
+        + Une classe nommée plutôt qu'un given anonyme, afin que son membre de type `Result` —
+        + `Session^` — ne soit pas rafraîchi par l'inférence. Elle est construite par
+        + `Ssh.Endpoint.sessional` à partir des valeurs contextuelles dans la portée et n'est
+        + normalement pas nommée par un utilisateur.
+    entry #session
+      info
+          - connects, authenticates and lends a `Session` to the block, closing everything afterwards
+          + se connecte, s'authentifie et prête une `Session` au bloc, en fermant tout ensuite
+  entry .Error
+    info
+        - raised by every layer when a connection fails, with a `Reason` saying how
+        + levée par chaque couche lorsqu'une connexion échoue, avec une `Reason` qui dit comment
+    detail
+        - Error `↯/s.122.2`: _the SSH connection failed because …_, with the reason's own message and
+        - number appended. One error type serves the transport, authentication and connection
+        - protocols, so a `Tactic[Ssh.Error]` is the only tactic any of them needs; a
+        - `Wire.Error` from a malformed message is folded into it as `Malformed`.
+        + Erreur `↯/s.122.2` : _the SSH connection failed because …_, suivi du message propre à la
+        + raison et de son numéro. Un seul type d'erreur sert aux protocoles de transport,
+        + d'authentification et de connexion, de sorte qu'une `Tactic[Ssh.Error]` est la seule
+        + tactique dont chacun d'eux a besoin ; une `Wire.Error` provenant d'un message mal formé y
+        + est intégrée en tant que `Malformed`.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        val error = Ssh.Error(Ssh.Error.Reason.NoCommonAlgorithm(t"cipher"))
+        error.reason   // Ssh.Error.Reason.NoCommonAlgorithm(t"cipher")
+        ```
+    entry .communicable
+      info
+          - renders each `Reason` as its message
+          + rend chaque `Reason` sous forme de son message
+    entry .Reason
+      info
+          - the ways a connection fails, each with its number and message
+          + les manières dont une connexion échoue, chacune avec son numéro et son message
+      detail
+          ```tabular
+          - column  Case
+          - column  Code
+          - column  Message
+          - column  Note
+          - row  `Malformed(detail)`  1  _the server sent a malformed message: `detail`_
+          - row  `Unexpected(message)`  2  _the server sent an unexpected message `message`_  including `3` for `SSH_MSG_UNIMPLEMENTED`: the server did not understand something this client sent
+          - row  `NoCommonAlgorithm(kind)`  3  _the server offers no supported `kind` algorithm_  `key exchange`, `host key` or `cipher`
+          - row  `HostKeyRejected(keyType)`  4  _the server's `keyType` host key was not accepted_  the `Ssh.HostKeys` policy refused the key
+          - row  `BadSignature`  5  _the server's signature over the exchange is wrong_  the host key's signature over the exchange hash failed to verify
+          - row  `Disconnected(code, text)`  6  _the server disconnected with code `code`: `text`_  the server sent `SSH_MSG_DISCONNECT`
+          - row  `ClosedConnection`  7  _the connection was closed_  the socket closed mid-message
+          - row  `Integrity`  8  _a packet failed its integrity check_  its AEAD check
+          - row  `ServiceRefused(service)`  9  _the server did not accept the service `service`_
+          - row  `Unauthenticated(methods)`  10  _no identity was accepted; allowed: `methods`_  no signer was accepted; the methods are those the server would allow, `publickey` or `publickey,password`
+          - row  `Agent(detail)`  11  _the SSH agent `detail`_  the `ssh-agent` could not be reached, did not list its keys or refused to sign
+          - row  `ChannelRefused(detail)`  12  _the server refused to open a channel: `detail`_  a session channel
+          - row  `RequestRefused(kind)`  13  _the server refused the `kind` request_  an `exec` request
+          - row  `Unreachable(reason)`  14  _the server could not be reached: `reason`_  the TCP connection could not be made; carries the `Socket.Error.Reason`
+          + column  Cas
+          + column  Code
+          + column  Message
+          + column  Remarque
+          + row  `Malformed(detail)`  1  _the server sent a malformed message: `detail`_
+          + row  `Unexpected(message)`  2  _the server sent an unexpected message `message`_  y compris `3` pour `SSH_MSG_UNIMPLEMENTED` : le serveur n'a pas compris quelque chose que ce client a envoyé
+          + row  `NoCommonAlgorithm(kind)`  3  _the server offers no supported `kind` algorithm_  `key exchange`, `host key` ou `cipher`
+          + row  `HostKeyRejected(keyType)`  4  _the server's `keyType` host key was not accepted_  la politique `Ssh.HostKeys` a refusé la clé
+          + row  `BadSignature`  5  _the server's signature over the exchange is wrong_  la signature de la clé d'hôte sur le hachage d'échange n'a pas pu être vérifiée
+          + row  `Disconnected(code, text)`  6  _the server disconnected with code `code`: `text`_  le serveur a envoyé `SSH_MSG_DISCONNECT`
+          + row  `ClosedConnection`  7  _the connection was closed_  le socket s'est fermé au milieu d'un message
+          + row  `Integrity`  8  _a packet failed its integrity check_  sa vérification AEAD
+          + row  `ServiceRefused(service)`  9  _the server did not accept the service `service`_
+          + row  `Unauthenticated(methods)`  10  _no identity was accepted; allowed: `methods`_  aucun signataire n'a été accepté ; les méthodes sont celles que le serveur autoriserait, `publickey` ou `publickey,password`
+          + row  `Agent(detail)`  11  _the SSH agent `detail`_  le `ssh-agent` n'a pas pu être joint, n'a pas énuméré ses clés ou a refusé de signer
+          + row  `ChannelRefused(detail)`  12  _the server refused to open a channel: `detail`_  un canal de session
+          + row  `RequestRefused(kind)`  13  _the server refused the `kind` request_  une requête `exec`
+          + row  `Unreachable(reason)`  14  _the server could not be reached: `reason`_  la connexion TCP n'a pas pu être établie ; porte la `Socket.Error.Reason`
+          ```
+    entry #reason
+      info
+          - why the connection failed
+          + pourquoi la connexion a échoué
+
+entry .Transport
+  info
+      - the SSH transport layer over a connected `Duplex`: key exchange, encrypted packets, authentication
+      + la couche transport SSH sur un `Duplex` connecté : échange de clés, paquets chiffrés,
+      + authentification
+  detail
+      - `Transport(duplex, hostname, port)` wraps a coaxial `Duplex` already connected to a
+      - server. `#connect` performs the identification exchange and the first key exchange
+      - (RFC 4253 §4 and §7: `KEXINIT` both ways, one ECDH round trip, the exchange hash, the
+      - host key's signature over it, and `NEWKEYS`), checking the server's key against the
+      - `Ssh.HostKeys` policy in scope before trusting anything; from then on `#send` and
+      - `#receive` move one packet's payload at a time, encrypted under the agreed AEAD
+      - cipher. `#authenticate` is the public-key authentication of RFC 4252 on top of them,
+      - and `Session` is the connection protocol on top of that.
+      + `Transport(duplex, hostname, port)` enveloppe un `Duplex` de coaxial déjà connecté à un
+      + serveur. `#connect` effectue l'échange d'identification et le premier échange de clés
+      + (RFC 4253 §4 et §7 : `KEXINIT` dans les deux sens, un aller-retour ECDH, le hachage
+      + d'échange, la signature de la clé d'hôte sur celui-ci, et `NEWKEYS`), en vérifiant la clé
+      + du serveur selon la politique `Ssh.HostKeys` dans la portée avant de faire confiance à quoi
+      + que ce soit ; dès lors, `#send` et `#receive` déplacent la charge utile d'un paquet à la
+      + fois, chiffrée avec le chiffrement AEAD convenu. `#authenticate` est l'authentification
+      + par clé publique de la RFC 4252 par-dessus, et `Session` est le protocole de connexion
+      + par-dessus celle-ci.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import providers.javaBaseProvider
+      import internetAccess.online
+      import socketBackends.javaBaseSockets
+      import logging.silentLogging
+
+      given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+      Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+        val transport = Ssh.Transport(duplex, t"github.com", 22)
+        transport.connect()
+        transport.serverVersion   // t"SSH-2.0-babeld-…"
+        transport.service(t"ssh-userauth")
+        transport.negotiated      // Ssh.Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
+        transport.disconnect()
+      ```
+
+      - The constructor takes an `Ssh.Provider`, `Ssh.Algorithms`, `Ssh.HostKeys` and a `Hash
+      - in Sha2[256]` as contextual values; every operation takes a `Tactic[Ssh.Error]` and
+      - `Diagnostics`. The `hostname` and `port` are what the host-key policy is asked about,
+      - so they should be the names the user knows the server by (as in `known_hosts`), not a
+      - resolved address.
+      + Le constructeur prend un `Ssh.Provider`, des `Ssh.Algorithms`, des `Ssh.HostKeys` et un
+      + `Hash in Sha2[256]` comme valeurs contextuelles ; chaque opération prend une
+      + `Tactic[Ssh.Error]` et `Diagnostics`. Le `hostname` et le `port` sont ce sur quoi la
+      + politique de clé d'hôte est interrogée ; ce doivent donc être les noms sous lesquels
+      + l'utilisateur connaît le serveur (comme dans `known_hosts`), et non une adresse résolue.
+
+      - A transport is driven by one thread: a message is sent and its reply read, by the
+      - same caller, and the transport is shared by a `Session` and every `Channel` opened on
+      - it. Nothing in it is safe to call from two threads at once. The ciphers are the AEAD
+      - ones — `chacha20-poly1305@openssh.com` as OpenSSH defines it, and `aes256-gcm@openssh.com`
+      - / `aes128-gcm@openssh.com` as RFC 5647 — so no separate MAC is used, and re-keying
+      - after RFC 4253's limits is not yet performed. The transport's own housekeeping
+      - messages (`IGNORE`, `DEBUG`, `EXT_INFO`) are consumed by `#receive`; a `DISCONNECT`
+      - from the server raises `Ssh.Error` with `Disconnected(code, text)`.
+      + Un transport est piloté par un seul thread : un message est envoyé et sa réponse lue, par
+      + le même appelant, et le transport est partagé par une `Session` et chaque `Channel` ouvert
+      + dessus. Rien en lui ne peut être appelé sans risque depuis deux threads à la fois. Les
+      + chiffrements sont les chiffrements AEAD — `chacha20-poly1305@openssh.com` tel que le
+      + définit OpenSSH, et `aes256-gcm@openssh.com` / `aes128-gcm@openssh.com` selon la RFC 5647
+      + — de sorte qu'aucun MAC séparé n'est utilisé, et le renouvellement des clés au-delà des
+      + limites de la RFC 4253 n'est pas encore effectué. Les messages d'intendance propres au
+      + transport (`IGNORE`, `DEBUG`, `EXT_INFO`) sont consommés par `#receive` ; un `DISCONNECT`
+      + venant du serveur lève `Ssh.Error` avec `Disconnected(code, text)`.
+  refer susurration.Ssh
+  refer susurration.Session
+  refer susurration.Signer
+  entry .Negotiated
+    info
+        - the algorithms a key exchange agreed on: the kex method, the host-key algorithm and the cipher
+        + les algorithmes convenus par un échange de clés : la méthode kex, l'algorithme de clé
+        + d'hôte et le chiffrement
+    detail
+        - Available as `Transport#negotiated` once `connect` has completed. `cipher` is the
+        - client-to-server cipher; the server-to-client one is negotiated separately but from the
+        - same preference list.
+        + Disponible sous la forme de `Transport#negotiated` une fois `connect` terminé. `cipher`
+        + est le chiffrement du client vers le serveur ; celui du serveur vers le client est négocié
+        + séparément mais à partir de la même liste de préférences.
+
+        ```scala
+        import soundness.*
+
+        Ssh.Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
+        ```
+    entry #kex
+      info
+          - the key-exchange method agreed: `curve25519-sha256`, `curve25519-sha256@libssh.org` or `ecdh-sha2-nistp256`
+          + la méthode d'échange de clés convenue : `curve25519-sha256`,
+          + `curve25519-sha256@libssh.org` ou `ecdh-sha2-nistp256`
+    entry #hostKey
+      info
+          - the host-key algorithm agreed: `ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-512` or `rsa-sha2-256`
+          + l'algorithme de clé d'hôte convenu : `ssh-ed25519`, `ecdsa-sha2-nistp256`,
+          + `rsa-sha2-512` ou `rsa-sha2-256`
+    entry #cipher
+      info
+          - the cipher agreed for packets this client sends
+          + le chiffrement convenu pour les paquets qu'envoie ce client
+  entry #sessionId
+    info
+        - the exchange hash of the first key exchange, which identifies the session; `Unset` before it
+        + le hachage d'échange du premier échange de clés, qui identifie la session ; `Unset` avant
+        + celui-ci
+    detail
+        - RFC 4253 §7.2: the session identifier never changes, however many key exchanges
+        - follow, and it is what public-key authentication signs over, so a signature cannot be
+        - replayed on another connection.
+        + RFC 4253 §7.2 : l'identifiant de session ne change jamais, quel que soit le nombre
+        + d'échanges de clés qui suivent, et c'est sur lui que porte la signature de
+        + l'authentification par clé publique, de sorte qu'une signature ne peut pas être rejouée
+        + sur une autre connexion.
+  entry #negotiated
+    info
+        - the algorithms agreed by the key exchange, or `Unset` before `connect`
+        + les algorithmes convenus par l'échange de clés, ou `Unset` avant `connect`
+  entry #serverVersion
+    info
+        - the server's identification line, such as `SSH-2.0-OpenSSH_10.0`, or `Unset` before `connect`
+        + la ligne d'identification du serveur, telle que `SSH-2.0-OpenSSH_10.0`, ou `Unset` avant
+        + `connect`
+    detail
+        - Lines before the `SSH-` line are permitted by the protocol and skipped, up to a hundred
+        - of them; the line is checked to begin `SSH-2.0-` or `SSH-1.99-`, and any other raises
+        - `Ssh.Error` with `Malformed`.
+        + Des lignes avant la ligne `SSH-` sont permises par le protocole et ignorées, jusqu'à une
+        + centaine ; on vérifie que la ligne commence par `SSH-2.0-` ou `SSH-1.99-`, et toute autre
+        + lève `Ssh.Error` avec `Malformed`.
+  entry #connect
+    info
+        - the identification exchange and the first key exchange, leaving the connection encrypted
+        + l'échange d'identification et le premier échange de clés, qui laissent la connexion
+        + chiffrée
+    detail
+        - Sends `Ssh.Version`, reads the server's line, and performs the key exchange: the
+        - client's preference lists are sent, the first of each the server shares is chosen
+        - (`NoCommonAlgorithm(kind)` otherwise), an ephemeral X25519 or P-256 key is agreed, the
+        - server's host key is handed to the `Ssh.HostKeys` policy (`HostKeyRejected(keyType)`
+        - if refused), its signature over the exchange hash is verified under the agreed
+        - algorithm (`BadSignature` if not), and both directions switch to the derived keys at
+        - `NEWKEYS`. Afterwards `#negotiated`, `#sessionId` and `#serverVersion` are set.
+        + Envoie `Ssh.Version`, lit la ligne du serveur, et effectue l'échange de clés : les listes
+        + de préférences du client sont envoyées, le premier élément de chacune que partage le
+        + serveur est choisi (sinon `NoCommonAlgorithm(kind)`), une clé éphémère X25519 ou P-256 est
+        + convenue, la clé d'hôte du serveur est transmise à la politique `Ssh.HostKeys`
+        + (`HostKeyRejected(keyType)` en cas de refus), sa signature sur le hachage d'échange est
+        + vérifiée selon l'algorithme convenu (`BadSignature` sinon), et les deux sens passent aux
+        + clés dérivées à `NEWKEYS`. Ensuite, `#negotiated`, `#sessionId` et `#serverVersion` sont
+        + définis.
+  entry #send
+    info
+        - sends one packet with the given payload, padded and encrypted under the current keys
+        + envoie un paquet avec la charge utile donnée, complétée et chiffrée avec les clés
+        + courantes
+    detail
+        - RFC 4253 §6: the payload is padded with random bytes to the cipher's block (at least
+        - four bytes of padding; with an AEAD cipher the length field is excluded from the
+        - alignment, as OpenSSH computes it), sealed, and written to the duplex. The payload's
+        - first byte should be an `Ssh.Message` number.
+        + RFC 4253 §6 : la charge utile est complétée par des octets aléatoires jusqu'au bloc du
+        + chiffrement (au moins quatre octets de remplissage ; avec un chiffrement AEAD, le champ de
+        + longueur est exclu de l'alignement, comme le calcule OpenSSH), scellée, et écrite dans le
+        + duplex. Le premier octet de la charge utile doit être un numéro `Ssh.Message`.
+  entry #receive
+    info
+        - the next packet's payload, with the transport's housekeeping handled and `DISCONNECT` raised
+        + la charge utile du paquet suivant, l'intendance du transport étant traitée et `DISCONNECT`
+        + levé
+    detail
+        - Reads and unseals one packet (`Integrity` if the AEAD tag fails), strips the padding,
+        - and returns the payload — unless it is `IGNORE`, `DEBUG` or `EXT_INFO`, which are
+        - consumed and the next packet read instead; `UNIMPLEMENTED`, which raises
+        - `Unexpected(3)`, since it means the server did not understand this client; or
+        - `DISCONNECT`, which raises `Disconnected(code, text)`. A closed socket raises
+        - `ClosedConnection`.
+        + Lit et descelle un paquet (`Integrity` si le tag AEAD échoue), retire le remplissage, et
+        + renvoie la charge utile — sauf s'il s'agit de `IGNORE`, `DEBUG` ou `EXT_INFO`, qui sont
+        + consommés, le paquet suivant étant lu à la place ; de `UNIMPLEMENTED`, qui lève
+        + `Unexpected(3)`, puisqu'il signifie que le serveur n'a pas compris ce client ; ou de
+        + `DISCONNECT`, qui lève `Disconnected(code, text)`. Un socket fermé lève
+        + `ClosedConnection`.
+  entry #expect
+    info
+        - receives a packet which must be of the given `Ssh.Message` type, as a reader past its first byte
+        + reçoit un paquet qui doit être du type `Ssh.Message` donné, sous forme de lecteur placé
+        + après son premier octet
+    detail
+        - `transport.expect(Ssh.Message.ServiceAccept)` returns a `Wire.Reader` positioned after
+        - the message byte; a packet of any other type raises `Ssh.Error` with
+        - `Unexpected(number)`.
+        + `transport.expect(Ssh.Message.ServiceAccept)` renvoie un `Wire.Reader` positionné après
+        + l'octet de message ; un paquet de tout autre type lève `Ssh.Error` avec
+        + `Unexpected(number)`.
+  entry #service
+    info
+        - requests a service, such as `ssh-userauth`, which the server must accept
+        + demande un service, tel que `ssh-userauth`, que le serveur doit accepter
+    detail
+        - Sends `SERVICE_REQUEST` and expects `SERVICE_ACCEPT` naming the same service
+        - (`ServiceRefused(name)` otherwise). A service already granted on this transport is not
+        - requested again, so `#authenticate`, which requests `ssh-userauth` itself, may follow a
+        - caller's own request harmlessly.
+        + Envoie `SERVICE_REQUEST` et attend un `SERVICE_ACCEPT` nommant le même service (sinon
+        + `ServiceRefused(name)`). Un service déjà accordé sur ce transport n'est pas redemandé, de
+        + sorte que `#authenticate`, qui demande lui-même `ssh-userauth`, peut suivre sans dommage
+        + une demande faite par l'appelant.
+  entry #authenticate
+    info
+        - public-key authentication as a user, with each signer in turn until the server accepts one
+        + authentification par clé publique en tant qu'utilisateur, avec chaque signataire tour à
+        + tour jusqu'à ce que le serveur en accepte un
+    detail
+        - RFC 4252 §7, with the signers in order: for each, the server is first asked whether it
+        - would accept the key at all (`USERAUTH_REQUEST` without a signature), and only an
+        - acceptable key is asked to sign — which matters for an agent holding many keys, as a
+        - server counts refused attempts. The signature covers `#sessionId` and the request.
+        - Banners are skipped. When no signer is accepted, `Ssh.Error` is raised with
+        - `Unauthenticated(methods)`, where `methods` is the comma-separated list the server
+        - would allow, such as `publickey`.
+        + RFC 4252 §7, avec les signataires dans l'ordre : pour chacun, on demande d'abord au
+        + serveur s'il accepterait la clé (`USERAUTH_REQUEST` sans signature), et seule une clé
+        + acceptable est appelée à signer — ce qui compte pour un agent détenant de nombreuses clés,
+        + car un serveur compte les tentatives refusées. La signature couvre `#sessionId` et la
+        + requête. Les bannières sont ignorées. Lorsqu'aucun signataire n'est accepté, `Ssh.Error`
+        + est levée avec `Unauthenticated(methods)`, où `methods` est la liste, séparée par des
+        + virgules, que le serveur autoriserait, telle que `publickey`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+        import providers.javaBaseProvider
+        import cloaks.heapCloak
+        import internetAccess.online
+        import socketBackends.javaBaseSockets
+        import logging.silentLogging
+
+        given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+        val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
+        val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
+
+        Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+          val transport = Ssh.Transport(duplex, t"github.com", 22)
+          transport.connect()
+          transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
+        ```
+  entry #disconnect
+    info
+        - ends the connection politely with `SSH_MSG_DISCONNECT` (by application), and closes the duplex
+        + termine poliment la connexion avec `SSH_MSG_DISCONNECT` (par l'application), et ferme le
+        + duplex
+    detail
+        - RFC 4253 §11.1. `Session#close` calls this, and an `Ssh.Endpoint`'s session does so
+        - when its block ends.
+        + RFC 4253 §11.1. `Session#close` l'appelle, et la session d'un `Ssh.Endpoint` le fait à la
+        + fin de son bloc.
+
+entry .Session
+  info
+      - an authenticated connection which runs commands on the server
+      + une connexion authentifiée qui exécute des commandes sur le serveur
+  detail
+      - `Session(transport)` is the connection protocol of RFC 4254 over a `Transport` which
+      - has connected and authenticated: `#exec` runs a command as one exchange — input
+      - written, output and standard error collected, exit status awaited — and `#channel`
+      - lends a `Channel` to a block for a protocol which interleaves reading and writing,
+      - such as git's. A session is usually lent by `Ssh.Endpoint#session` rather than built
+      - by hand.
+      + `Session(transport)` est le protocole de connexion de la RFC 4254 sur un `Transport` qui
+      + s'est connecté et authentifié : `#exec` exécute une commande en un seul échange — entrée
+      + écrite, sortie et erreur standard collectées, statut de sortie attendu — et `#channel`
+      + prête un `Channel` à un bloc pour un protocole qui entrelace lecture et écriture, comme
+      + celui de git. Une session est généralement prêtée par `Ssh.Endpoint#session` plutôt que
+      + construite à la main.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import providers.javaBaseProvider
+      import cloaks.heapCloak
+      import internetAccess.online
+      import socketBackends.javaBaseSockets
+      import logging.silentLogging
+
+      given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+      val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
+      val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+
+      endpoint.session: ssh ?=>
+        val upper = ssh.exec(t"tr a-z A-Z", t"whisper".bytestream)
+        upper.stdout.read[Text]   // t"WHISPER"
+
+        val failed = ssh.exec(t"exit 3")
+        failed.status             // 3
+
+        ssh.channel: channel =>
+          channel.exec(t"seq 1 200000")
+          channel.eof()
+          channel.stdout().to[List].length   // more than one chunk
+          channel.exitStatus                 // 0
+      ```
+
+      - Several commands may run over one session, one after another: each opens its own
+      - channel. Every operation takes a `Tactic[Ssh.Error]` and `Diagnostics`, and the
+      - session, like the transport it drives, is for one thread.
+      + Plusieurs commandes peuvent s'exécuter sur une même session, l'une après l'autre : chacune
+      + ouvre son propre canal. Chaque opération prend une `Tactic[Ssh.Error]` et `Diagnostics`,
+      + et la session, comme le transport qu'elle pilote, est destinée à un seul thread.
+  refer susurration.Channel
+  refer susurration.Transport
+  refer susurration.Invocable
+  entry .Result
+    info
+        - what a command wrote and how it exited
+        + ce qu'une commande a écrit et comment elle s'est terminée
+    detail
+        - Returned by `Session#exec`. `stdout` and `stderr` are the whole of each stream, as
+        - `Data`; `status` is the exit status the server reported, or `Unset` if the channel
+        - closed without one (a process killed by a signal, say). The fields are arrays, so
+        - two results are equal only by reference: compare `stdout.read[Text]` rather than the
+        - result.
+        + Renvoyé par `Session#exec`. `stdout` et `stderr` sont l'intégralité de chaque flux, sous
+        + forme de `Data` ; `status` est le statut de sortie que le serveur a signalé, ou `Unset` si
+        + le canal s'est fermé sans en signaler (un processus tué par un signal, par exemple). Les
+        + champs sont des tableaux ; deux résultats ne sont donc égaux que par référence : comparez
+        + `stdout.read[Text]` plutôt que le résultat.
+    entry #stdout
+      info
+          - everything the command wrote to standard output
+          + tout ce que la commande a écrit sur la sortie standard
+    entry #stderr
+      info
+          - everything the command wrote to standard error
+          + tout ce que la commande a écrit sur l'erreur standard
+    entry #status
+      info
+          - the exit status, or `Unset` if none was reported
+          + le statut de sortie, ou `Unset` si aucun n'a été signalé
+  entry #open
+    info
+        - opens a session channel, which the caller must close
+        + ouvre un canal de session, que l'appelant doit fermer
+    detail
+        - RFC 4254 §5.1 and §6.1: sends `CHANNEL_OPEN` for a `session` and waits for the
+        - confirmation, raising `Ssh.Error` with `ChannelRefused(detail)` if the server declines.
+        - A global request the server sends first (OpenSSH announces its host keys this way) is
+        - declined and skipped. `#channel` is the same with the close handled.
+        + RFC 4254 §5.1 et §6.1 : envoie `CHANNEL_OPEN` pour une `session` et attend la
+        + confirmation, en levant `Ssh.Error` avec `ChannelRefused(detail)` si le serveur refuse.
+        + Une requête globale que le serveur envoie d'abord (OpenSSH annonce ainsi ses clés d'hôte)
+        + est refusée et ignorée. `#channel` fait de même, la fermeture étant prise en charge.
+  entry #exec
+    info
+        - runs a command with the given standard input and environment, and collects its output and status
+        + exécute une commande avec l'entrée standard et l'environnement donnés, et collecte sa
+        + sortie et son statut
+    detail
+        - `ssh.exec(command, input = Data(), environment = Nil)` opens a channel, sets each
+        - environment variable (which the server applies only if its `AcceptEnv` allows the
+        - name, saying nothing either way), starts the command (`RequestRefused(t"exec")` if the
+        - server will not), writes the input, closes the input, reads both output streams to
+        - the end, and closes the channel. The command may be a `Text` the remote shell
+        - interprets, or a guillotine `Command` from `sh"…"`, whose arguments are quoted one by
+        - one so that a value with spaces or shell characters stays a single argument (see
+        - `Invocable`).
+        + `ssh.exec(command, input = Data(), environment = Nil)` ouvre un canal, définit chaque
+        + variable d'environnement (que le serveur n'applique que si son `AcceptEnv` autorise le
+        + nom, sans rien dire dans un cas comme dans l'autre), lance la commande
+        + (`RequestRefused(t"exec")` si le serveur refuse), écrit l'entrée, ferme l'entrée, lit les
+        + deux flux de sortie jusqu'au bout, et ferme le canal. La commande peut être un `Text`
+        + qu'interprète le shell distant, ou une `Command` de guillotine issue de `sh"…"`, dont les
+        + arguments sont protégés un à un afin qu'une valeur contenant des espaces ou des caractères
+        + du shell reste un seul argument (voir `Invocable`).
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+        import providers.javaBaseProvider
+        import cloaks.heapCloak
+        import internetAccess.online
+        import socketBackends.javaBaseSockets
+        import logging.silentLogging
+
+        given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+        val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
+        val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+        val branch = t"feature/one two"
+
+        endpoint.session: ssh ?=>
+          ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]
+          ssh.exec(t"echo $$GREETING", Data(), List((t"GREETING", t"hello"))).stdout.read[Text]
+        ```
+
+        - Megabytes pass in each direction, across the window adjustments of flow control; the
+        - whole of standard output is held in memory, so a command whose output should be
+        - streamed uses `#channel` and `Channel#stdout` instead.
+        + Des mégaoctets transitent dans chaque sens, au fil des ajustements de fenêtre du contrôle
+        + de flux ; l'intégralité de la sortie standard est conservée en mémoire, de sorte qu'une
+        + commande dont la sortie devrait être traitée en flux utilise plutôt `#channel` et
+        + `Channel#stdout`.
+  entry #channel
+    info
+        - lends an open session channel to a block, closing it afterwards
+        + prête un canal de session ouvert à un bloc, en le fermant ensuite
+    detail
+        - For a protocol which interleaves writing and reading — a `Channel`'s `exec`, `write`,
+        - `eof`, `stdout` and `next` are all available — with the close guaranteed however the
+        - block ends.
+        + Pour un protocole qui entrelace écriture et lecture — `exec`, `write`, `eof`, `stdout` et
+        + `next` d'un `Channel` sont tous disponibles — la fermeture étant garantie quelle que soit
+        + la façon dont le bloc se termine.
+  entry #close
+    info
+        - disconnects the transport
+        + déconnecte le transport
+    detail
+        - `Transport#disconnect`: the polite `SSH_MSG_DISCONNECT`, and the duplex closed. An
+        - `Ssh.Endpoint`'s session does this itself when its block ends.
+        + `Transport#disconnect` : le `SSH_MSG_DISCONNECT` poli, et la fermeture du duplex. La
+        + session d'un `Ssh.Endpoint` le fait elle-même à la fin de son bloc.
+
+entry .Channel
+  info
+      - a session channel: a remote process, its standard streams, its exit status, and flow control
+      + un canal de session : un processus distant, ses flux standard, son statut de sortie et le
+      + contrôle de flux
+  detail
+      - RFC 4254 §5–6. A channel is a process on the server: its standard output arrives as
+      - `CHANNEL_DATA` and its standard error as `CHANNEL_EXTENDED_DATA`, its exit status as a
+      - request, and data flows in each direction only as far as the other side's window
+      - allows. A channel is opened by `Session#open` or lent by `Session#channel`, driven by
+      - the transport's single thread: writing pumps the connection until the server has
+      - granted window, and reading pumps it until the next event, queueing anything else that
+      - arrives for its turn.
+      + RFC 4254 §5–6. Un canal est un processus sur le serveur : sa sortie standard arrive sous
+      + forme de `CHANNEL_DATA` et son erreur standard sous forme de `CHANNEL_EXTENDED_DATA`, son
+      + statut de sortie sous forme de requête, et les données ne circulent dans chaque sens que
+      + dans la limite de la fenêtre de l'autre côté. Un canal est ouvert par `Session#open` ou
+      + prêté par `Session#channel`, et piloté par l'unique thread du transport : l'écriture fait
+      + tourner la connexion jusqu'à ce que le serveur ait accordé de la fenêtre, et la lecture la
+      + fait tourner jusqu'à l'événement suivant, en mettant en file d'attente tout ce qui arrive
+      + d'autre en attendant son tour.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import providers.javaBaseProvider
+      import cloaks.heapCloak
+      import internetAccess.online
+      import socketBackends.javaBaseSockets
+      import logging.silentLogging
+
+      given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+      val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
+      val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+
+      endpoint.session: ssh ?=>
+        ssh.channel: channel =>
+          channel.env(t"LANG", t"C")
+          channel.exec(t"sort")
+          channel.write(t"pear\napple\n".bytestream)
+          channel.eof()
+          channel.stdout().to[List]   // the sorted lines, in chunks
+          channel.exitStatus          // 0
+          channel.stderr              // Nil
+      ```
+
+      - The usual order is `#env` (optionally), then `#exec`, then `#write` and `#eof`, then
+      - `#stdout` or `#next`, then `#close`. Every operation takes a `Tactic[Ssh.Error]` and
+      - `Diagnostics`. A global request from the server arriving mid-stream is declined if it
+      - wants an answer and otherwise ignored; a message for another channel raises
+      - `Malformed`.
+      + L'ordre habituel est `#env` (facultativement), puis `#exec`, puis `#write` et `#eof`, puis
+      + `#stdout` ou `#next`, puis `#close`. Chaque opération prend une `Tactic[Ssh.Error]` et
+      + `Diagnostics`. Une requête globale du serveur arrivant en cours de flux est refusée si elle
+      + attend une réponse, et ignorée sinon ; un message destiné à un autre canal lève
+      + `Malformed`.
+  refer susurration.Session
+  refer susurration.Invocable
+  entry .InitialWindow
+    info
+        - the window this client grants the server at open: 2 MiB
+        + la fenêtre que ce client accorde au serveur à l'ouverture : 2 Mio
+    detail
+        - What the server may send before the client adjusts the window; it is topped up once
+        - half has been used, so a stream of output never stalls on the client's side.
+        + Ce que le serveur peut envoyer avant que le client n'ajuste la fenêtre ; elle est
+        + réapprovisionnée dès que la moitié en a été utilisée, de sorte qu'un flux de sortie ne se
+        + bloque jamais du côté du client.
+  entry .MaxPacket
+    info
+        - the largest packet this client accepts on a channel: 32768 bytes
+        + le plus grand paquet que ce client accepte sur un canal : 32768 octets
+  entry .Event
+    info
+        - what a channel delivers: output, error output, an exit, a signal, a reply, end of input, or closure
+        + ce que délivre un canal : sortie, sortie d'erreur, fin de processus, signal, réponse, fin
+        + d'entrée ou fermeture
+    detail
+        - Returned by `Channel#next`. `Stdout(data)` and `Stderr(data)` are chunks of the two
+        - streams; `Exit(status)` the process's exit status; `Signal(name)` the signal which
+        - killed it; `Reply(success)` the answer to a request made with `reply = true`; `Eof`
+        - the server's end of its output; and `Closed` the server's close, after which `next`
+        - is `Unset`.
+        + Renvoyé par `Channel#next`. `Stdout(data)` et `Stderr(data)` sont des morceaux des deux
+        + flux ; `Exit(status)` le statut de sortie du processus ; `Signal(name)` le signal qui l'a
+        + tué ; `Reply(success)` la réponse à une requête faite avec `reply = true` ; `Eof` la fin
+        + de la sortie du serveur ; et `Closed` la fermeture par le serveur, après laquelle `next`
+        + vaut `Unset`.
+  entry #closed
+    info
+        - whether the server has closed its side of the channel
+        + si le serveur a fermé son côté du canal
+  entry #exitStatus
+    info
+        - the process's exit status, once the server has reported it
+        + le statut de sortie du processus, une fois que le serveur l'a signalé
+    detail
+        - Set when the `exit-status` request arrives, which is after the output ends: read it
+        - after `#stdout` has been drained or `#next` has returned `Closed`.
+        + Défini à l'arrivée de la requête `exit-status`, qui suit la fin de la sortie : lisez-le
+        + après avoir épuisé `#stdout` ou lorsque `#next` a renvoyé `Closed`.
+  entry #request
+    info
+        - sends a channel request of a given kind, and with `reply`, waits for the server's answer
+        + envoie une requête de canal d'un type donné et, avec `reply`, attend la réponse du serveur
+    detail
+        - `channel.request(kind, reply)(writer => …)` writes the request's type-specific fields
+        - through the lambda and sends it; with `reply` true it pumps the connection until the
+        - server's `CHANNEL_SUCCESS` or `CHANNEL_FAILURE` and returns which, and otherwise
+        - returns `true` at once. `#exec` and `#env` are built on it; a request the server does
+        - not understand returns `false`.
+        + `channel.request(kind, reply)(writer => …)` écrit les champs propres au type de requête au
+        + moyen de la lambda et l'envoie ; avec `reply` à vrai, il fait tourner la connexion
+        + jusqu'au `CHANNEL_SUCCESS` ou `CHANNEL_FAILURE` du serveur et renvoie lequel, et sinon
+        + renvoie `true` immédiatement. `#exec` et `#env` sont construits dessus ; une requête que
+        + le serveur ne comprend pas renvoie `false`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+        import providers.javaBaseProvider
+        import cloaks.heapCloak
+        import internetAccess.online
+        import socketBackends.javaBaseSockets
+        import logging.silentLogging
+
+        given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+        val key = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…".read[PrivateKey[Ed25519] in Pem]
+        val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+
+        endpoint.session: ssh ?=>
+          ssh.channel: channel =>
+            channel.request(t"nonsense", true)(_ => ())   // false
+        ```
+  entry #env
+    info
+        - sets an environment variable for the process, which the server applies only if its `AcceptEnv` allows
+        + définit une variable d'environnement pour le processus, que le serveur n'applique que si
+        + son `AcceptEnv` l'autorise
+    detail
+        - An `env` request without a reply, so the server says nothing either way: a variable
+        - the server's `AcceptEnv` does not list is silently dropped. Must precede `#exec`.
+        + Une requête `env` sans réponse, de sorte que le serveur ne dit rien dans un cas comme dans
+        + l'autre : une variable que l'`AcceptEnv` du serveur n'énumère pas est abandonnée sans
+        + bruit. Doit précéder `#exec`.
+  entry #exec
+    info
+        - starts a command, which the server must accept
+        + lance une commande, que le serveur doit accepter
+    detail
+        - An `exec` request with a reply: a `Text` is run as written by the user's shell, and a
+        - guillotine `Command` is quoted argument by argument (`Invocable`). Raises `Ssh.Error`
+        - with `RequestRefused(t"exec")` if the server declines, which an `sshd` with
+        - `ForceCommand` or a restricted key does.
+        + Une requête `exec` avec réponse : un `Text` est exécuté tel qu'il est écrit par le shell
+        + de l'utilisateur, et une `Command` de guillotine est protégée argument par argument
+        + (`Invocable`). Lève `Ssh.Error` avec `RequestRefused(t"exec")` si le serveur refuse, ce
+        + que fait un `sshd` avec `ForceCommand` ou une clé restreinte.
+  entry #write
+    info
+        - writes to the process's standard input, waiting for window when there is none
+        + écrit sur l'entrée standard du processus, en attendant de la fenêtre lorsqu'il n'y en a
+        + plus
+    detail
+        - Sent in packets no larger than the server's window and maximum packet size, pumping
+        - the connection for `CHANNEL_WINDOW_ADJUST` whenever the window is exhausted. Any
+        - events which arrive meanwhile are queued for `#next`. Writing to a closed channel
+        - does nothing.
+        + Envoyé en paquets ne dépassant pas la fenêtre du serveur ni sa taille maximale de paquet,
+        + en faisant tourner la connexion pour obtenir `CHANNEL_WINDOW_ADJUST` chaque fois que la
+        + fenêtre est épuisée. Les événements qui arrivent entre-temps sont mis en file d'attente
+        + pour `#next`. Écrire dans un canal fermé ne fait rien.
+  entry #eof
+    info
+        - ends the process's standard input
+        + termine l'entrée standard du processus
+    detail
+        - Sends `CHANNEL_EOF` once; a second call, or a call after the channel has closed, does
+        - nothing. A command which reads its input to the end — `cat`, `sort`, `tr` — does not
+        - exit until this is sent.
+        + Envoie `CHANNEL_EOF` une seule fois ; un second appel, ou un appel après la fermeture du
+        + canal, ne fait rien. Une commande qui lit son entrée jusqu'au bout — `cat`, `sort`, `tr` —
+        + ne se termine pas tant que ceci n'a pas été envoyé.
+  entry #next
+    info
+        - the next event from the process, or `Unset` once the channel is closed and nothing remains
+        + l'événement suivant du processus, ou `Unset` une fois le canal fermé et plus rien en
+        + attente
+    detail
+        - Queued events first, then whatever the connection delivers, pumping until one arrives.
+        - `#stdout` is the usual way to consume a channel; `next` is for a protocol which must
+        - see every event in order, including `Reply` and `Signal`.
+        + D'abord les événements en file d'attente, puis ce que délivre la connexion, qu'on fait
+        + tourner jusqu'à ce qu'un événement arrive. `#stdout` est la manière habituelle de
+        + consommer un canal ; `next` sert à un protocole qui doit voir chaque événement dans
+        + l'ordre, y compris `Reply` et `Signal`.
+  entry #stdout
+    info
+        - the process's standard output as a lazy chain of chunks, ending when the process does
+        + la sortie standard du processus sous forme de chaîne paresseuse de morceaux, qui se
+        + termine avec le processus
+    detail
+        - A `Chain[Data]` which pumps the connection as it is forced: `Stdout` chunks are
+        - yielded, `Stderr` chunks are kept for `#stderr`, and the chain ends at `Closed`. It is
+        - lazy, so a long-running command's output can be processed as it arrives; forcing it
+        - to the end leaves `#exitStatus` set.
+        + Une `Chain[Data]` qui fait tourner la connexion à mesure qu'on la force : les morceaux
+        + `Stdout` sont produits, les morceaux `Stderr` sont conservés pour `#stderr`, et la chaîne
+        + se termine à `Closed`. Elle est paresseuse, de sorte que la sortie d'une commande de
+        + longue durée peut être traitée à mesure qu'elle arrive ; la forcer jusqu'au bout laisse
+        + `#exitStatus` défini.
+  entry #stderr
+    info
+        - the standard-error chunks received so far, in order
+        + les morceaux d'erreur standard reçus jusqu'ici, dans l'ordre
+    detail
+        - Filled as `#stdout` is forced (or `#next` is called); complete once the channel has
+        - closed.
+        + Rempli à mesure que `#stdout` est forcé (ou que `#next` est appelé) ; complet une fois le
+        + canal fermé.
+  entry #close
+    info
+        - closes the channel, draining the server's events until it has closed its side too
+        + ferme le canal, en épuisant les événements du serveur jusqu'à ce qu'il ait fermé son côté
+        + lui aussi
+    detail
+        - Sends `CHANNEL_CLOSE` (once) and pumps until the server's own close arrives, so that
+        - the exit status is recorded and the transport is left between packets, ready for the
+        - next channel. `Session#channel` and `Session#exec` call it in a `finally`.
+        + Envoie `CHANNEL_CLOSE` (une fois) et fait tourner la connexion jusqu'à l'arrivée de la
+        + fermeture du serveur, afin que le statut de sortie soit enregistré et que le transport
+        + soit laissé entre deux paquets, prêt pour le canal suivant. `Session#channel` et
+        + `Session#exec` l'appellent dans un `finally`.
+
+entry .Signer
+  info
+      - a proof of identity: a loaded private key, or a key an `ssh-agent` holds, that signs the authentication request
+      + une preuve d'identité : une clé privée chargée, ou une clé que détient un `ssh-agent`, qui
+      + signe la requête d'authentification
+  detail
+      - What `Transport#authenticate` and an `Ssh.Endpoint` take: `#algorithm` is the
+      - signature algorithm the server is offered (`ssh-ed25519`, `ecdsa-sha2-nistp256`,
+      - `rsa-sha2-256`, …), `#blob` the public key in OpenSSH's wire form, and `#sign` the
+      - full signature blob of RFC 4253 §6.6 — the algorithm's name, then the signature — over
+      - the data the server will verify. A signer over a key in this process is made with
+      - `Signer(key)`; one over a key an agent holds comes from `Agent#identities`, and signs
+      - without the key ever leaving the agent.
+      + Ce que prennent `Transport#authenticate` et un `Ssh.Endpoint` : `#algorithm` est
+      + l'algorithme de signature proposé au serveur (`ssh-ed25519`, `ecdsa-sha2-nistp256`,
+      + `rsa-sha2-256`, …), `#blob` la clé publique sous la forme de transmission d'OpenSSH, et
+      + `#sign` le blob de signature complet de la RFC 4253 §6.6 — le nom de l'algorithme, puis la
+      + signature — sur les données que le serveur vérifiera. Un signataire sur une clé de ce
+      + processus se crée avec `Signer(key)` ; un signataire sur une clé que détient un agent
+      + provient d'`Agent#identities`, et signe sans que la clé ne quitte jamais l'agent.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import providers.javaBaseProvider
+      import cloaks.heapCloak
+      import alphabets.base64Standard
+
+      val keyText: Text = t"-----BEGIN OPENSSH PRIVATE KEY-----\n…"
+      val signer = Ssh.Signer(keyText.read[PrivateKey[Ed25519] in Pem])
+      signer.algorithm                 // t"ssh-ed25519"
+      signer.blob.serialize[Base64]    // the second field of the key's .pub line
+      ```
+  refer susurration.Identity
+  refer susurration.Agent
+  entry .apply
+    info
+        - a signer over a private key held in this process, for any cipher with an `Identity`
+        + un signataire sur une clé privée détenue dans ce processus, pour tout chiffrement doté
+        + d'une `Identity`
+    detail
+        - `Signer(key: PrivateKey[cipher]^)` needs the cipher to have an `Identity` (Ed25519,
+        - `Ecdsa[256 | 384 | 521]` or `Rsa[2048 | 3072 | 4096]`) and a `KeyAlgorithm`, and the
+        - cipher itself as a contextual value, which is in scope once the key has been read
+        - with a provider. The result captures the key. An RSA key signs as `rsa-sha2-256`;
+        - `ssh-rsa` with SHA-1 is not offered. A key read from PEM — PKCS#8, PKCS#1, SEC1 or
+        - `openssh-key-v1`, unencrypted — needs a `Cloak` (`cloaks.heapCloak`) to hold it.
+        + `Signer(key: PrivateKey[cipher]^)` nécessite que le chiffrement ait une `Identity`
+        + (Ed25519, `Ecdsa[256 | 384 | 521]` ou `Rsa[2048 | 3072 | 4096]`) et un `KeyAlgorithm`, et
+        + le chiffrement lui-même comme valeur contextuelle, qui est dans la portée dès que la clé a
+        + été lue avec un fournisseur. Le résultat capture la clé. Une clé RSA signe en tant que
+        + `rsa-sha2-256` ; `ssh-rsa` avec SHA-1 n'est pas proposé. Une clé lue depuis du PEM —
+        + PKCS#8, PKCS#1, SEC1 ou `openssh-key-v1`, non chiffrée — nécessite un `Cloak`
+        + (`cloaks.heapCloak`) pour la détenir.
+  entry #algorithm
+    info
+        - the signature algorithm name the server is offered
+        + le nom de l'algorithme de signature proposé au serveur
+  entry #blob
+    info
+        - the public key in OpenSSH's wire form, as a `known_hosts` or `authorized_keys` line encodes it after the type
+        + la clé publique sous la forme de transmission d'OpenSSH, telle qu'une ligne de
+        + `known_hosts` ou d'`authorized_keys` l'encode après le type
+  entry #sign
+    info
+        - the signature blob (algorithm name, then signature) over the data
+        + le blob de signature (nom de l'algorithme, puis signature) sur les données
+    detail
+        - Over the session identifier and the authentication request, in practice. An agent
+        - which refuses to sign yields an empty blob, which the server then rejects as an
+        - ordinary failure.
+        + Sur l'identifiant de session et la requête d'authentification, en pratique. Un agent qui
+        + refuse de signer donne un blob vide, que le serveur rejette alors comme un échec
+        + ordinaire.
+
+entry .Identity
+  info
+      - how a cipher's keys identify a user to an SSH server: the algorithm name, and the signature's wire form
+      + comment les clés d'un chiffrement identifient un utilisateur auprès de SSH : nom
+      + d'algorithme et forme de transmission de la signature
+  detail
+      - RFC 4252 §7. A typeclass with an instance for each cipher a private key may be:
+      - `.ed25519` signs raw (RFC 8709) as `ssh-ed25519`; `.ecdsa` signs as
+      - `ecdsa-sha2-nistp256`, `-nistp384` or `-nistp521`, with `r` and `s` as `mpint`s (RFC
+      - 5656 §3.1.2) under the digest its curve pairs with; and `.rsa` signs as `rsa-sha2-256`
+      - (RFC 8332). Each instance summons its cipher from the `Ssh.Provider` in scope, so an
+      - ECDSA key signs under the right digest whatever `Signature.Digest` is around. The
+      - givens are in the companion, so `Signer(key)` finds them with no import.
+      + RFC 4252 §7. Une classe de types avec une instance pour chaque chiffrement que peut être
+      + une clé privée : `.ed25519` signe en brut (RFC 8709) en tant que `ssh-ed25519` ; `.ecdsa`
+      + signe en tant que `ecdsa-sha2-nistp256`, `-nistp384` ou `-nistp521`, avec `r` et `s` en
+      + `mpint` (RFC 5656 §3.1.2), sous le condensé associé à sa courbe ; et `.rsa` signe en tant
+      + que `rsa-sha2-256` (RFC 8332). Chaque instance invoque son chiffrement depuis le
+      + `Ssh.Provider` dans la portée, de sorte qu'une clé ECDSA signe sous le bon condensé quel
+      + que soit le `Signature.Digest` environnant. Les givens sont dans l'objet compagnon, de
+      + sorte que `Signer(key)` les trouve sans import.
+  refer susurration.Signer
+  entry .ed25519
+    info
+        - the `Identity` for `Ed25519` keys: `ssh-ed25519`, the raw 64-byte signature
+        + l'`Identity` des clés `Ed25519` : `ssh-ed25519`, la signature brute de 64 octets
+    detail
+        - Needs an `Ssh.Provider` in scope.
+        + Nécessite un `Ssh.Provider` dans la portée.
+  entry .ecdsa
+    info
+        - the `Identity` for `Ecdsa[256]`, `Ecdsa[384]` and `Ecdsa[521]` keys, as `ecdsa-sha2-nistp*`
+        + l'`Identity` des clés `Ecdsa[256]`, `Ecdsa[384]` et `Ecdsa[521]`, en tant que
+        + `ecdsa-sha2-nistp*`
+    detail
+        - The provider's DER `SEQUENCE { r, s }` is re-encoded as two `mpint`s, as the SSH wire
+        - form requires; the digest is SHA-256, SHA-384 or SHA-512 by curve. Needs an
+        - `Ssh.Provider` in scope.
+        + Le `SEQUENCE { r, s }` DER du fournisseur est réencodé en deux `mpint`, comme l'exige la
+        + forme de transmission SSH ; le condensé est SHA-256, SHA-384 ou SHA-512 selon la courbe.
+        + Nécessite un `Ssh.Provider` dans la portée.
+  entry .rsa
+    info
+        - the `Identity` for `Rsa[2048]`, `Rsa[3072]` and `Rsa[4096]` keys, as `rsa-sha2-256`
+        + l'`Identity` des clés `Rsa[2048]`, `Rsa[3072]` et `Rsa[4096]`, en tant que `rsa-sha2-256`
+    detail
+        - SHA-256 over PKCS#1 v1.5. Needs an `Ssh.Provider` in scope.
+        + SHA-256 sur PKCS#1 v1.5. Nécessite un `Ssh.Provider` dans la portée.
+  entry #algorithm
+    info
+        - the signature algorithm name the authentication request carries
+        + le nom de l'algorithme de signature que porte la requête d'authentification
+  entry #sign
+    info
+        - the signature over the data, in the algorithm's wire form, with the given private key
+        + la signature sur les données, sous la forme de transmission de l'algorithme, avec la clé
+        + privée donnée
+
+entry .Agent
+  info
+      - an `ssh-agent` client: lists the keys the agent holds, and signs with them without ever seeing them
+      + un client `ssh-agent` : énumère les clés que détient l'agent, et signe avec elles sans
+      + jamais les voir
+  detail
+      - `Agent(path)` reaches the agent over the Unix-domain socket at `path` — what the
+      - `SSH_AUTH_SOCK` environment variable names — speaking draft-miller-ssh-agent: each
+      - operation is one request and one reply over a fresh connection. It needs a
+      - `Socket.Backend` (`socketBackends.javaBaseSockets`) and `Diagnostics`.
+      + `Agent(path)` joint l'agent par le socket de domaine Unix situé à `path` — ce que désigne
+      + la variable d'environnement `SSH_AUTH_SOCK` — en parlant draft-miller-ssh-agent : chaque
+      + opération est une requête et une réponse sur une nouvelle connexion. Il nécessite un
+      + `Socket.Backend` (`socketBackends.javaBaseSockets`) et `Diagnostics`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import socketBackends.javaBaseSockets
+
+      val signers: List[Ssh.Signer] = Ssh.Agent(t"/tmp/ssh-agent.sock").identities()
+      signers.map(_.algorithm)   // List(t"ssh-ed25519", t"ecdsa-sha2-nistp256")
+      ```
+
+      - An agent that cannot be reached, does not list its keys, closes the connection or
+      - sends a bad length raises `Ssh.Error` with `Agent(detail)`. `Ssh.Credentials.agent`
+      - wraps one as a `Credentials` for transports given only a URL.
+      + Un agent qui ne peut pas être joint, n'énumère pas ses clés, ferme la connexion ou envoie
+      + une longueur invalide lève `Ssh.Error` avec `Agent(detail)`. `Ssh.Credentials.agent`
+      + l'enveloppe en `Credentials` pour les transports qui ne reçoivent qu'une URL.
+  refer susurration.Signer
+  refer susurration.Ssh
+  entry #identities
+    info
+        - the keys the agent holds, each as a `Signer` that defers to the agent
+        + les clés que détient l'agent, chacune sous forme de `Signer` qui s'en remet à l'agent
+    detail
+        - Takes a `Tactic[Ssh.Error]`. Each signer's `algorithm` is the key's type, except that
+        - an `ssh-rsa` key is offered as `rsa-sha2-256` and the agent asked for a SHA-256
+        - signature by flag; its `blob` is the key as the agent lists it; and its `sign` sends a
+        - sign request, returning the agent's full signature blob, or an empty blob if the agent
+        - refuses (so that the server rejects it as an ordinary failure).
+        + Prend une `Tactic[Ssh.Error]`. L'`algorithm` de chaque signataire est le type de la clé,
+        + sauf qu'une clé `ssh-rsa` est proposée en tant que `rsa-sha2-256`, l'agent étant prié par
+        + un indicateur de produire une signature SHA-256 ; son `blob` est la clé telle que l'agent
+        + l'énumère ; et son `sign` envoie une requête de signature, renvoyant le blob de signature
+        + complet de l'agent, ou un blob vide si l'agent refuse (afin que le serveur le rejette
+        + comme un échec ordinaire).
+
+entry .Invocable
+  info
+      - how a value becomes the command line an SSH server's shell runs
+      + comment une valeur devient la ligne de commande qu'exécute le shell d'un serveur SSH
+  detail
+      - RFC 4254 §6.5 passes an `exec` request's command to the user's shell. A `Text` is run
+      - as written (`.text`), so the shell interprets it; a guillotine `Command` from `sh"…"`
+      - is quoted argument by argument (`.command`), so a value with a space or a shell
+      - character in it stays one argument, as it would locally.
+      + La RFC 4254 §6.5 transmet la commande d'une requête `exec` au shell de l'utilisateur. Un
+      + `Text` est exécuté tel qu'il est écrit (`.text`), de sorte que le shell l'interprète ; une
+      + `Command` de guillotine issue de `sh"…"` est protégée argument par argument (`.command`),
+      + de sorte qu'une valeur contenant un espace ou un caractère du shell reste un seul
+      + argument, comme elle le resterait en local.
+
+      ```scala
+      import soundness.*
+
+      val argument = t"two words, a 'quote' and a $$sign"
+      summon[Text is Ssh.Invocable].line(t"printf %s hello")
+      sh"printf %s $argument".escape   // what the server's shell receives, one argument intact
+      ```
+
+      - `Session#exec` and `Channel#exec` take any `Invocable` value. The instances are in the
+      - companion, so no import is needed.
+      + `Session#exec` et `Channel#exec` prennent toute valeur `Invocable`. Les instances sont dans
+      + l'objet compagnon ; aucun import n'est donc nécessaire.
+  entry .text
+    info
+        - a `Text` is the command line as written, for the remote shell to interpret
+        + un `Text` est la ligne de commande telle qu'elle est écrite, que le shell distant
+        + interprète
+  entry .command
+    info
+        - a guillotine `Command` is quoted argument by argument, so arguments are not re-split
+        + une `Command` de guillotine est protégée argument par argument, de sorte que les arguments
+        + ne sont pas redécoupés
+    detail
+        - Bounded as `[command <: Command]` rather than `Command` itself, because `sh"…"`
+        - yields a `Command` refined by its executable's name.
+        + Borné par `[command <: Command]` plutôt que par `Command` lui-même, parce que `sh"…"`
+        + produit une `Command` raffinée par le nom de son exécutable.
+  entry #line
+    info
+        - the command line for a value
+        + la ligne de commande d'une valeur
+
+entry .KnownHosts
+  info
+      - OpenSSH's `known_hosts` file: the key each host has presented before, and the verdict on a key presented now
+      + le fichier `known_hosts` d'OpenSSH : la clé que chaque hôte a présentée auparavant, et le
+      + verdict sur une clé présentée maintenant
+  detail
+      - `KnownHosts(text)` parses the file's lines — `hosts type base64 [comment]`, where
+      - `hosts` is a comma-separated list of patterns with `*` and `?` wildcards, `!` negation
+      - and `[host]:port` for a non-default port, or a hashed `|1|salt|hash` entry (HMAC-SHA1
+      - of the hostname under the salt), optionally preceded by `@revoked` or
+      - `@cert-authority` — into `#entries`, skipping comments and lines which are not keys, as
+      - OpenSSH skips them. `#verify` is the whole of host-key checking: for a host, port, key
+      - type and the key the server presented, whether it is `Known`, `Changed` (the warning
+      - every SSH user has read in capitals), `Unknown` or `Revoked`.
+      + `KnownHosts(text)` analyse les lignes du fichier — `hosts type base64 [comment]`, où
+      + `hosts` est une liste de motifs séparés par des virgules, avec les jokers `*` et `?`, la
+      + négation `!` et `[host]:port` pour un port non standard, ou une entrée hachée
+      + `|1|salt|hash` (HMAC-SHA1 du nom d'hôte avec le sel), éventuellement précédée de
+      + `@revoked` ou `@cert-authority` — en `#entries`, en ignorant les commentaires et les lignes
+      + qui ne sont pas des clés, comme OpenSSH les ignore. `#verify` constitue toute la
+      + vérification de clé d'hôte : pour un hôte, un port, un type de clé et la clé que le serveur
+      + a présentée, dit si elle est `Known`, `Changed` (l'avertissement que tout utilisateur de
+      + SSH a lu en majuscules), `Unknown` ou `Revoked`.
+
+      ```scala fuel
+      substitute AAAAB3..JdW+sCyH  ...
+      ##
+      import soundness.*
+      import providers.javaBaseProvider
+      import alphabets.base64Standard
+      import strategies.throwUnsafely
+
+      val hosts = KnownHosts(t"""
+        github.com,gh ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+        [example.com]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS
+        *.internal,!bad.internal ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcz0N3WrVZdgC9lXMxggLgs1OxMHSZjTzkCPsI268siCVGLUK6K2aSzdjr0RV03JXdsgWdiabWqlkMcW3oWn4R9JvoPMTowZ3cbUIZKQGXkPk9RESxRcAxHPgIayELROpJart9MzVvPIR3cVcG5CqQ10noIFWwqaCD/m5Idm+ZLcj1VlJ9NzHm1tHRyMaeLKxBSIsRGAPkir9hrbxD+S1qfStCaGY+uwrQCBb4KobM4cwivoTe6hIkivH4JHsHu1oZuozJzGhuJ5Db6l4LnXJD5L9wdq60+npNmIBVougLtQRzrvKVTr7s2WE46jpj/8LbUHw77oYI9rr/JdW+sCyH
+        @revoked old.example.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS
+        """)
+
+      val github = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
+      val other = t"AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS".deserialize[Base64]
+
+      hosts.verify(t"github.com", 22, t"ssh-ed25519", github)        // KnownHosts.Verdict.Known
+      hosts.verify(t"GH", 22, t"ssh-ed25519", github)                // KnownHosts.Verdict.Known
+      hosts.verify(t"github.com", 22, t"ssh-ed25519", other)         // KnownHosts.Verdict.Changed
+      hosts.verify(t"example.com", 22, t"ssh-ed25519", other)        // KnownHosts.Verdict.Unknown: the entry is for port 2222
+      hosts.verify(t"old.example.com", 22, t"ssh-ed25519", other)    // KnownHosts.Verdict.Revoked
+      ```
+
+      - Hostnames match case-insensitively and by any alias on the line; a non-default port
+      - matches only its bracketed entry. Matching a hashed entry needs a `Crypto` in scope
+      - (`providers.javaBaseProvider`) for the HMAC. The key is compared as OpenSSH's own blob
+      - — the base64 field after the type, which is what the transport receives and what
+      - `OpenSsh.publicKey` reads — so an entry of any key type can be compared without
+      - decoding it. `Ssh.HostKeys.knownHosts` and `Ssh.HostKeys.trustOnFirstUse` turn a
+      - `KnownHosts` into the host-key policy a `Transport` consults; `.line` writes a line for
+      - a key newly accepted.
+      + Les noms d'hôte se comparent sans tenir compte de la casse et par n'importe quel alias de
+      + la ligne ; un port non standard ne correspond qu'à son entrée entre crochets. La
+      + correspondance avec une entrée hachée nécessite un `Crypto` dans la portée
+      + (`providers.javaBaseProvider`) pour le HMAC. La clé est comparée sous la forme du blob
+      + propre à OpenSSH — le champ base64 après le type, qui est ce que reçoit le transport et ce
+      + que lit `OpenSsh.publicKey` — de sorte qu'une entrée de n'importe quel type de clé peut
+      + être comparée sans la décoder. `Ssh.HostKeys.knownHosts` et `Ssh.HostKeys.trustOnFirstUse`
+      + font d'un `KnownHosts` la politique de clé d'hôte que consulte un `Transport` ; `.line`
+      + écrit une ligne pour une clé nouvellement acceptée.
+  refer susurration.Ssh
+  entry .Verdict
+    info
+        - what a presented key is to the file: `Known`, `Unknown`, `Changed` or `Revoked`
+        + ce qu'est une clé présentée pour le fichier : `Known`, `Unknown`, `Changed` ou `Revoked`
+    detail
+        - `Known`: a non-authority entry for the host carries this key. `Changed`: the host has
+        - entries of this key's type, but not this key. `Unknown`: the host has no entries of
+        - this type, or none at all. `Revoked`: an `@revoked` entry carries this key, whatever
+        - else is on file. A `@cert-authority` entry vouches for certificates, not for a plain
+        - key, so it never makes a key `Known`.
+        + `Known` : une entrée hors autorité pour l'hôte porte cette clé. `Changed` : l'hôte a des
+        + entrées du type de cette clé, mais pas cette clé. `Unknown` : l'hôte n'a aucune entrée de
+        + ce type, ou aucune entrée du tout. `Revoked` : une entrée `@revoked` porte cette clé, quoi
+        + qu'il y ait d'autre dans le fichier. Une entrée `@cert-authority` se porte garante de
+        + certificats, non d'une clé simple ; elle ne rend donc jamais une clé `Known`.
+  entry .Host
+    info
+        - a line's host specification: the patterns it names, or the hash it hides them behind
+        + la spécification d'hôte d'une ligne : les motifs qu'elle nomme, ou le hachage derrière
+        + lequel elle les cache
+    detail
+        - `Patterns(patterns)` holds the comma-separated list as written — `github.com`,
+        - `*.internal`, `!bad.internal`, `[example.com]:2222` — and `Hashed(salt, hash)` an
+        - `|1|salt|hash` entry, which reveals nothing about which host it names until the host
+        - is known.
+        + `Patterns(patterns)` contient la liste séparée par des virgules telle qu'elle est écrite —
+        + `github.com`, `*.internal`, `!bad.internal`, `[example.com]:2222` — et
+        + `Hashed(salt, hash)` une entrée `|1|salt|hash`, qui ne révèle rien de l'hôte qu'elle
+        + désigne tant que l'hôte n'est pas connu.
+    entry #matches
+      info
+          - whether the host and port are named: a glob matches, no negation excludes, or the HMAC agrees
+          + si l'hôte et le port sont désignés : un glob correspond, aucune négation n'exclut, ou le
+          + HMAC concorde
+      detail
+          - A port of 22 matches the bare hostname; any other matches only its `[host]:port`
+          - form. Patterns are matched case-insensitively with `KnownHosts.glob`; a hashed entry
+          - is matched by computing HMAC-SHA1 of the bracketed name under the salt, which needs
+          - a `Crypto` in scope.
+          + Un port 22 correspond au nom d'hôte nu ; tout autre ne correspond qu'à sa forme
+          + `[host]:port`. Les motifs sont comparés sans tenir compte de la casse avec
+          + `KnownHosts.glob` ; une entrée hachée est comparée en calculant le HMAC-SHA1 du nom
+          + entre crochets avec le sel, ce qui nécessite un `Crypto` dans la portée.
+  entry .Entry
+    info
+        - one line of the file: its marker, host, key type, key blob and comment
+        + une ligne du fichier : son marqueur, son hôte, son type de clé, son blob de clé et son
+        + commentaire
+    detail
+        - The key is kept as OpenSSH's own blob, so it can be compared with a presented key
+        - of any type and re-encoded exactly as it was read.
+        + La clé est conservée sous la forme du blob propre à OpenSSH, de sorte qu'elle peut être
+        + comparée à une clé présentée de n'importe quel type et réencodée exactement telle qu'elle
+        + a été lue.
+    entry #marker
+      info
+          - `@revoked`, `@cert-authority`, or `Unset` for a plain entry
+          + `@revoked`, `@cert-authority`, ou `Unset` pour une entrée simple
+    entry #host
+      info
+          - the patterns or hash naming the host
+          + les motifs ou le hachage désignant l'hôte
+    entry #keyType
+      info
+          - the key's type as the line names it: `ssh-ed25519`, `ecdsa-sha2-nistp256`, `ssh-rsa`
+          + le type de la clé tel que le nomme la ligne : `ssh-ed25519`, `ecdsa-sha2-nistp256`,
+          + `ssh-rsa`
+    entry #key
+      info
+          - the key blob, decoded from base64; it begins with its own type, which must be the line's
+          + le blob de clé, décodé du base64 ; il commence par son propre type, qui doit être celui
+          + de la ligne
+    entry #comment
+      info
+          - the rest of the line after the key, or `Unset`
+          + le reste de la ligne après la clé, ou `Unset`
+    entry #revoked
+      info
+          - whether the marker is `@revoked`
+          + si le marqueur est `@revoked`
+    entry #authority
+      info
+          - whether the marker is `@cert-authority`
+          + si le marqueur est `@cert-authority`
+  entry .apply
+    info
+        - parses a whole file's text, skipping comments and lines which are not keys
+        + analyse le texte d'un fichier entier, en ignorant les commentaires et les lignes qui ne
+        + sont pas des clés
+    detail
+        - One `Entry` per parseable line, in file order. A line whose base64 does not decode, or
+        - whose blob does not begin with the type the line names, is not a key and is skipped,
+        - as OpenSSH skips it.
+        + Une `Entry` par ligne analysable, dans l'ordre du fichier. Une ligne dont le base64 ne se
+        + décode pas, ou dont le blob ne commence pas par le type que nomme la ligne, n'est pas une
+        + clé et est ignorée, comme OpenSSH l'ignore.
+  entry .entry
+    info
+        - parses one line, or `Unset` if it is blank, a comment, or not a key
+        + analyse une ligne, ou `Unset` si elle est vide, un commentaire, ou pas une clé
+    detail
+        - Fields are split on spaces; a leading `@…` word is the marker; the host, type and
+        - base64 follow, and anything after is the comment. A hashed host with a salt or hash
+        - that does not decode is `Unset`.
+        + Les champs sont séparés par des espaces ; un mot initial `@…` est le marqueur ; l'hôte, le
+        + type et le base64 suivent, et tout ce qui vient après est le commentaire. Un hôte haché
+        + dont le sel ou le hachage ne se décode pas donne `Unset`.
+  entry .glob
+    info
+        - a shell-style glob with `*` and `?`, matched case-insensitively as OpenSSH matches hostnames
+        + un glob de style shell avec `*` et `?`, comparé sans tenir compte de la casse comme
+        + OpenSSH compare les noms d'hôte
+    detail
+        - `KnownHosts.glob(t"*.example.com", t"Git.Example.COM")` is `true`. The same matcher
+        - serves `SshConfig`'s `Host` patterns.
+        + `KnownHosts.glob(t"*.example.com", t"Git.Example.COM")` vaut `true`. Le même mécanisme de
+        + correspondance sert aux motifs `Host` de `SshConfig`.
+  entry .line
+    info
+        - a `known_hosts` line for a host and its key, as `ssh-keyscan` writes it
+        + une ligne `known_hosts` pour un hôte et sa clé, telle que l'écrit `ssh-keyscan`
+    detail
+        - `KnownHosts.line(hostname, port, keyType, key)`: the host bare for port 22 and
+        - bracketed with its port otherwise, then the type, then the key blob in base64.
+        + `KnownHosts.line(hostname, port, keyType, key)` : l'hôte nu pour le port 22 et entre
+        + crochets avec son port sinon, puis le type, puis le blob de clé en base64.
+
+        ```scala
+        import soundness.*
+        import alphabets.base64Standard
+        import strategies.throwUnsafely
+
+        val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS".deserialize[Base64]
+        KnownHosts.line(t"example.com", 2222, t"ssh-ed25519", key)
+        // t"[example.com]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS"
+        ```
+  entry #entries
+    info
+        - the file's entries, in file order
+        + les entrées du fichier, dans l'ordre du fichier
+  entry #lookup
+    info
+        - the entries naming a host and port (22 by default), revoked or not, in file order
+        + les entrées désignant un hôte et un port (22 par défaut), révoquées ou non, dans l'ordre
+        + du fichier
+    detail
+        - Needs a `Crypto` for hashed entries. Authority entries are included; `#verify` filters
+        - them out.
+        + Nécessite un `Crypto` pour les entrées hachées. Les entrées d'autorité sont incluses ;
+        + `#verify` les écarte.
+  entry #verify
+    info
+        - the verdict on a key the host presented, as OpenSSH's blob
+        + le verdict sur une clé que l'hôte a présentée, sous forme du blob d'OpenSSH
+    detail
+        - `verify(hostname, port, keyType, key)`: `Revoked` if any matching entry marked
+        - `@revoked` carries the key; else `Known` if any non-revoked, non-authority entry
+        - carries it; else `Changed` if the host has an entry of the key's type; else `Unknown`.
+        - Needs a `Crypto` for hashed entries.
+        + `verify(hostname, port, keyType, key)` : `Revoked` si une entrée correspondante marquée
+        + `@revoked` porte la clé ; sinon `Known` si une entrée non révoquée et hors autorité la
+        + porte ; sinon `Changed` si l'hôte a une entrée du type de la clé ; sinon `Unknown`.
+        + Nécessite un `Crypto` pour les entrées hachées.
+
+entry .SshConfig
+  info
+      - the part of `~/.ssh/config` a client needs to reach a host as the user's own `ssh` would
+      + la partie de `~/.ssh/config` dont un client a besoin pour joindre un hôte comme le ferait le
+      + `ssh` de l'utilisateur
+  detail
+      - `SshConfig(text)` reads the file's `Host` blocks — patterns with `*`, `?` and `!`, as
+      - `KnownHosts.glob` matches them — and, within them, `HostName`, `User`, `Port` and
+      - `IdentityFile`, in either `Keyword value` or `Keyword=value` spelling. `#resolve`
+      - answers, for a destination as the user names it, the host to connect to, the user,
+      - the port and the identity files, with the first value obtained winning as in OpenSSH
+      - (so specific blocks go before `Host *`), except that every `IdentityFile`
+      - accumulates. `%h` in `HostName` and `IdentityFile` expands to the host as given; `~`
+      - is left for the caller, who knows the home directory.
+      + `SshConfig(text)` lit les blocs `Host` du fichier — des motifs avec `*`, `?` et `!`, tels
+      + que `KnownHosts.glob` les compare — et, en leur sein, `HostName`, `User`, `Port` et
+      + `IdentityFile`, sous la forme `Keyword value` ou `Keyword=value`. `#resolve` donne, pour
+      + une destination telle que l'utilisateur la nomme, l'hôte auquel se connecter,
+      + l'utilisateur, le port et les fichiers d'identité, la première valeur obtenue l'emportant
+      + comme dans OpenSSH (les blocs spécifiques viennent donc avant `Host *`), sauf que chaque
+      + `IdentityFile` s'accumule. `%h` dans `HostName` et `IdentityFile` est remplacé par l'hôte
+      + tel qu'il est donné ; `~` est laissé à l'appelant, qui connaît le répertoire personnel.
+
+      ```scala
+      import soundness.*
+
+      val config = SshConfig(t"""
+        Host work
+          HostName git.example.com
+          User hamlet
+          Port 2222
+          IdentityFile ~/.ssh/id_work
+
+        Host *.example.com !git.example.com
+          User horatio
+
+        Host *
+          IdentityFile ~/.ssh/id_ed25519
+          User=ophelia
+          HostName %h.lan
+        """)
+
+      config.resolve(t"work")
+      // SshConfig.Resolution(t"git.example.com", t"hamlet", 2222, List(t"~/.ssh/id_work", t"~/.ssh/id_ed25519"))
+      config.resolve(t"dev.example.com").user   // t"horatio"
+      config.resolve(t"git.example.com").user   // t"ophelia": the negation excludes it from the second block
+      config.resolve(t"other").hostName         // t"other.lan"
+      SshConfig(t"").resolve(t"example.com")    // SshConfig.Resolution(t"example.com", Unset, 22, Nil)
+      ```
+
+      - `Match` blocks, `Include` and every other keyword are not interpreted: a `Match`
+      - block's contents are skipped entirely, and an unknown keyword inside a `Host` block is
+      - ignored. `Ssh.Endpoint#resolved` applies a configuration to an endpoint.
+      + Les blocs `Match`, `Include` et tous les autres mots-clés ne sont pas interprétés : le
+      + contenu d'un bloc `Match` est entièrement ignoré, et un mot-clé inconnu à l'intérieur d'un
+      + bloc `Host` est ignoré. `Ssh.Endpoint#resolved` applique une configuration à un endpoint.
+  refer susurration.Ssh.Endpoint
+  entry .Resolution
+    info
+        - what the configuration says about a host: its hostname, user, port and identity files
+        + ce que dit la configuration d'un hôte : son nom d'hôte, son utilisateur, son port et ses
+        + fichiers d'identité
+    detail
+        - Returned by `SshConfig#resolve`. `hostName` falls back to the host as given, `port`
+        - to 22, and `user` is `Unset` when no block sets one, in which case the caller
+        - supplies it.
+        + Renvoyé par `SshConfig#resolve`. `hostName` se replie sur l'hôte tel qu'il est donné,
+        + `port` sur 22, et `user` vaut `Unset` lorsqu'aucun bloc n'en définit un, auquel cas c'est
+        + l'appelant qui le fournit.
+    entry #hostName
+      info
+          - the host to connect to: the first `HostName`, with `%h` expanded, or the host itself
+          + l'hôte auquel se connecter : le premier `HostName`, avec `%h` remplacé, ou l'hôte
+          + lui-même
+    entry #user
+      info
+          - the first `User`, or `Unset`
+          + le premier `User`, ou `Unset`
+    entry #port
+      info
+          - the first `Port` which is a number, or 22
+          + le premier `Port` qui est un nombre, ou 22
+    entry #identityFiles
+      info
+          - every `IdentityFile`, in order, with `%h` expanded and `~` as written
+          + chaque `IdentityFile`, dans l'ordre, avec `%h` remplacé et `~` tel qu'il est écrit
+  entry .Block
+    info
+        - a `Host` block: the patterns it applies to and its settings, lower-cased, in order
+        + un bloc `Host` : les motifs auxquels il s'applique et ses réglages, en minuscules, dans
+        + l'ordre
+    detail
+        - Keywords before the first `Host` line form a block with the pattern `*`, applying
+        - everywhere, and come first. Keyword names are lower-cased so that `HostName` and
+        - `hostname` are the same setting; values are kept as written.
+        + Les mots-clés précédant la première ligne `Host` forment un bloc de motif `*`, qui
+        + s'applique partout, et viennent en premier. Les noms de mots-clés sont mis en minuscules
+        + afin que `HostName` et `hostname` soient le même réglage ; les valeurs sont conservées
+        + telles qu'elles sont écrites.
+    entry #patterns
+      info
+          - the block's host patterns, with `!` for a negation
+          + les motifs d'hôte du bloc, avec `!` pour une négation
+    entry #settings
+      info
+          - the block's `(keyword, value)` pairs, keyword lower-cased, in file order
+          + les paires `(keyword, value)` du bloc, mot-clé en minuscules, dans l'ordre du fichier
+    entry #matches
+      info
+          - whether a host is named by a pattern and excluded by none
+          + si un hôte est désigné par un motif et exclu par aucun
+  entry .apply
+    info
+        - parses a configuration file's text into its blocks
+        + analyse le texte d'un fichier de configuration en ses blocs
+    detail
+        - Blank lines and `#` comments are skipped; `Keyword value`, `Keyword=value` and
+        - `Keyword = value` are all read; a `Match` line starts a block with no patterns, which
+        - nothing matches, so its contents are ignored.
+        + Les lignes vides et les commentaires `#` sont ignorés ; `Keyword value`, `Keyword=value`
+        + et `Keyword = value` sont tous lus ; une ligne `Match` commence un bloc sans motif, auquel
+        + rien ne correspond, de sorte que son contenu est ignoré.
+  entry #blocks
+    info
+        - the `Host` blocks, in file order, beginning with the implicit `*` block for settings before any `Host`
+        + les blocs `Host`, dans l'ordre du fichier, en commençant par le bloc implicite `*` pour
+        + les réglages précédant tout `Host`
+  entry #values
+    info
+        - every value of a keyword for a host, in the order obtained
+        + toutes les valeurs d'un mot-clé pour un hôte, dans l'ordre d'obtention
+    detail
+        - `config.values(t"work", t"IdentityFile")`: the keyword is matched case-insensitively,
+        - across every block whose patterns match the host, in file order. The first is what
+        - `#resolve` takes for `HostName`, `User` and `Port`; all of them for `IdentityFile`.
+        + `config.values(t"work", t"IdentityFile")` : le mot-clé est comparé sans tenir compte de la
+        + casse, dans chaque bloc dont les motifs correspondent à l'hôte, dans l'ordre du fichier.
+        + La première valeur est celle que `#resolve` retient pour `HostName`, `User` et `Port` ;
+        + toutes le sont pour `IdentityFile`.
+  entry #resolve
+    info
+        - the hostname, user, port and identity files for a host
+        + le nom d'hôte, l'utilisateur, le port et les fichiers d'identité d'un hôte
+    detail
+        - The first `HostName` (with `%h` replaced by the host) or the host itself; the first
+        - `User` or `Unset`; the first `Port` which parses as a number, or 22; and every
+        - `IdentityFile`, `%h` replaced.
+        + Le premier `HostName` (avec `%h` remplacé par l'hôte) ou l'hôte lui-même ; le premier
+        + `User` ou `Unset` ; le premier `Port` qui s'analyse comme un nombre, ou 22 ; et chaque
+        + `IdentityFile`, avec `%h` remplacé.
+
+entry .Wire
+  info
+      - the SSH wire encoding of RFC 4251 §5: a `Reader` and a `Writer` over its field types
+      + l'encodage de transmission SSH de la RFC 4251 §5 : un `Reader` et un `Writer` sur ses types
+      + de champs
+  detail
+      - Every message of the transport, authentication and connection protocols is a sequence
+      - of a few field types: a `byte`, a `boolean`, a big-endian `uint32` or `uint64`, a
+      - length-prefixed `string` (binary, or UTF-8 `text`), a two's-complement `mpint`, and a
+      - comma-separated `name-list`. A `Wire.Writer` accumulates them into a message's `data`,
+      - and a `Wire.Reader` is a cursor over one which reads them back, reporting a short or
+      - oversized message as a `Wire.Error`.
+      + Chaque message des protocoles de transport, d'authentification et de connexion est une
+      + séquence de quelques types de champs : un `byte`, un `boolean`, un `uint32` ou un `uint64`
+      + gros-boutiste, une `string` préfixée par sa longueur (binaire, ou `text` UTF-8), un
+      + `mpint` en complément à deux, et une `name-list` séparée par des virgules. Un `Wire.Writer`
+      + les accumule dans les `data` d'un message, et un `Wire.Reader` est un curseur sur un
+      + message qui les relit, en signalant un message trop court ou surdimensionné par une
+      + `Wire.Error`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val writer = Wire.Writer()
+      writer.byte(Ssh.Message.ServiceRequest)
+      writer.text(t"ssh-userauth")
+      writer.names(List(t"curve25519-sha256", t"ecdh-sha2-nistp256"))
+      writer.mpint(BigInt("123456789012345678901234567890"))
+
+      val reader = Wire.Reader(writer.data)
+      reader.byte()      // 5
+      reader.text()      // t"ssh-userauth"
+      reader.names()     // List(t"curve25519-sha256", t"ecdh-sha2-nistp256")
+      reader.mpint()     // BigInt("123456789012345678901234567890")
+      reader.end()
+      ```
+
+      - The reader and writer are both `caps.Mutable`, so they are local, single-owner values:
+      - a reader's methods are `update` methods, and every read takes a `Tactic[Wire.Error]`
+      - and `Diagnostics`. The transport folds a `Wire.Error` into `Ssh.Error` as `Malformed`,
+      - and the `ssh-agent` client into `Agent(detail)`.
+      + Le lecteur et l'écrivain sont tous deux `caps.Mutable` ; ce sont donc des valeurs locales
+      + à propriétaire unique : les méthodes d'un lecteur sont des méthodes `update`, et chaque
+      + lecture prend une `Tactic[Wire.Error]` et `Diagnostics`. Le transport intègre une
+      + `Wire.Error` dans `Ssh.Error` en tant que `Malformed`, et le client `ssh-agent` en tant
+      + qu'`Agent(detail)`.
+  entry .Limit
+    info
+        - the largest field a reader accepts: 16 MiB
+        + le plus grand champ qu'accepte un lecteur : 16 Mio
+    detail
+        - SSH packets are at most 256 KiB in practice (RFC 4253 §6.1 requires 32 KiB to be
+        - accepted), so a length beyond this is a corrupt or hostile message, reported as
+        - `Oversized` before anything is allocated.
+        + Les paquets SSH font au plus 256 Kio en pratique (la RFC 4253 §6.1 exige d'en accepter 32
+        + Kio) ; une longueur au-delà est donc celle d'un message corrompu ou hostile, signalée
+        + comme `Oversized` avant toute allocation.
+  entry .Error
+    info
+        - raised by a `Wire.Reader` when a message is shorter, longer or stranger than its fields claim
+        + levée par un `Wire.Reader` lorsqu'un message est plus court, plus long ou plus étrange que
+        + ne le prétendent ses champs
+    detail
+        - Error `↯/s.122.1`: _could not decode the SSH message because …_, with the reason appended.
+        - Raised through the `Tactic[Wire.Error]` every read takes, so the reader itself
+        - captures nothing.
+        + Erreur `↯/s.122.1` : _could not decode the SSH message because …_, suivi de la raison.
+        + Levée par la `Tactic[Wire.Error]` que prend chaque lecture, de sorte que le lecteur
+        + lui-même ne capture rien.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        val writer = Wire.Writer()
+        writer.uint32(10)
+        writer.bytes(Array.fill[Byte](3)(0))
+        capture[Wire.Error](Wire.Reader(writer.data).string()).reason   // Wire.Error.Reason.Truncated
+        ```
+    entry .communicable
+      info
+          - renders each `Reason` as its message
+          + rend chaque `Reason` sous forme de son message
+    entry .Reason
+      info
+          - `Truncated`, `Oversized(length)`, `Trailing(count)` or `Negative`
+          + `Truncated`, `Oversized(length)`, `Trailing(count)` ou `Negative`
+      detail
+          ```tabular
+          - column  Case
+          - column  Code
+          - column  Message
+          - column  Note
+          - row  `Truncated`  1  _the message ended before the field did_
+          - row  `Oversized(length)`  2  _a field claimed a length of `length` bytes_  beyond `Wire.Limit`
+          - row  `Trailing(count)`  3  _`count` bytes followed the end of the message_  from `Reader#end`
+          - row  `Negative`  4  _a negative integer was found where none is permitted_
+          + column  Cas
+          + column  Code
+          + column  Message
+          + column  Remarque
+          + row  `Truncated`  1  _the message ended before the field did_
+          + row  `Oversized(length)`  2  _a field claimed a length of `length` bytes_  au-delà de `Wire.Limit`
+          + row  `Trailing(count)`  3  _`count` bytes followed the end of the message_  depuis `Reader#end`
+          + row  `Negative`  4  _a negative integer was found where none is permitted_
+          ```
+    entry #reason
+      info
+          - why the message could not be decoded
+          + pourquoi le message n'a pas pu être décodé
+  entry .Reader
+    info
+        - a cursor over a message, reading one field at a time with its bounds checked
+        + un curseur sur un message, qui lit un champ à la fois en vérifiant ses bornes
+    detail
+        - `Wire.Reader(data)` starts at the first byte. Each read advances the cursor and
+        - raises `Wire.Error` (`Truncated`) if the message ends before the field does, or
+        - (`Oversized`) if a length prefix exceeds `Wire.Limit`, before anything is allocated.
+        - A `Reader` is `caps.Mutable`: its reads are `update` methods, and it should be
+        - consumed by the code which made it.
+        + `Wire.Reader(data)` commence au premier octet. Chaque lecture fait avancer le curseur et
+        + lève `Wire.Error` (`Truncated`) si le message se termine avant le champ, ou (`Oversized`)
+        + si un préfixe de longueur dépasse `Wire.Limit`, avant toute allocation. Un `Reader` est
+        + `caps.Mutable` : ses lectures sont des méthodes `update`, et il doit être consommé par le
+        + code qui l'a créé.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+
+        val writer = Wire.Writer()
+        writer.uint32(7)
+        writer.boolean(true)
+        val reader = Wire.Reader(writer.data)
+        reader.uint32()      // 7
+        reader.remaining     // 1
+        reader.boolean()     // true
+        reader.finished      // true
+        ```
+    entry #remaining
+      info
+          - the bytes not yet read
+          + les octets pas encore lus
+    entry #finished
+      info
+          - whether every byte has been read
+          + si tous les octets ont été lus
+    entry #byte
+      info
+          - one byte
+          + un octet
+    entry #boolean
+      info
+          - one byte, `true` if it is not zero
+          + un octet, `true` s'il n'est pas nul
+    entry #uint32
+      info
+          - a big-endian 32-bit integer, as an `Int` (so `0xffffffff` reads as `-1`)
+          + un entier 32 bits gros-boutiste, sous forme d'`Int` (de sorte que `0xffffffff` se lit
+          + `-1`)
+    entry #uint64
+      info
+          - a big-endian 64-bit integer, as a `Long`
+          + un entier 64 bits gros-boutiste, sous forme de `Long`
+    entry #string
+      info
+          - a `uint32` length, then that many bytes
+          + une longueur `uint32`, puis autant d'octets
+      detail
+          - The protocol's binary `string`: a key blob, a signature, a packet's channel data.
+          + La `string` binaire du protocole : un blob de clé, une signature, les données de canal
+          + d'un paquet.
+    entry #bytes
+      info
+          - the next `count` bytes, with no length prefix: a fixed-size field such as the 16-byte KEX cookie
+          + les `count` octets suivants, sans préfixe de longueur : un champ de taille fixe tel que
+          + le cookie KEX de 16 octets
+    entry #text
+      info
+          - a `string` decoded as UTF-8
+          + une `string` décodée en UTF-8
+      detail
+          - Service names, user names, algorithm names and command lines are all `text`.
+          + Les noms de services, les noms d'utilisateurs, les noms d'algorithmes et les lignes de
+          + commande sont tous des `text`.
+    entry #mpint
+      info
+          - a `string` holding a two's-complement big-endian integer, as a `BigInt`; the empty string is zero
+          + une `string` contenant un entier gros-boutiste en complément à deux, sous forme de
+          + `BigInt` ; la chaîne vide vaut zéro
+    entry #names
+      info
+          - a `text` of comma-separated names, as a list; the empty text is `Nil`
+          + un `text` de noms séparés par des virgules, sous forme de liste ; le texte vide donne
+          + `Nil`
+      detail
+          - The `name-list` of a `KEXINIT`'s algorithm fields and a `USERAUTH_FAILURE`'s methods.
+          + La `name-list` des champs d'algorithmes d'un `KEXINIT` et des méthodes d'un
+          + `USERAUTH_FAILURE`.
+    entry #rest
+      info
+          - everything not yet read, for a payload whose shape depends on what precedes it
+          + tout ce qui n'a pas encore été lu, pour une charge utile dont la forme dépend de ce qui
+          + la précède
+    entry #end
+      info
+          - asserts that the message has been consumed entirely, raising `Trailing(count)` otherwise
+          + affirme que le message a été entièrement consommé, et lève `Trailing(count)` dans le cas
+          + contraire
+  entry .Writer
+    info
+        - an accumulating message writer, whose `data` is the message so far
+        + un écrivain de message cumulatif, dont `data` est le message jusqu'ici
+    detail
+        - `Wire.Writer()` is empty; each method appends one field, and `#data` is a fresh copy
+        - of everything written. A `Writer` is `caps.Mutable`, so it is a local value built
+        - and read by one piece of code.
+        + `Wire.Writer()` est vide ; chaque méthode ajoute un champ, et `#data` est une nouvelle
+        + copie de tout ce qui a été écrit. Un `Writer` est `caps.Mutable` ; c'est donc une valeur
+        + locale construite et lue par un seul morceau de code.
+
+        ```scala
+        import soundness.*
+        import alphabets.hexUpperCase
+
+        val writer = Wire.Writer()
+        writer.mpint(BigInt("9a378f9b2e332a7", 16))
+        writer.mpint(BigInt(0x80))
+        writer.mpint(BigInt(-0x1234))
+        writer.data.serialize[Hex]   // t"0000000809A378F9B2E332A7" + t"000000020080" + t"00000002EDCC"
+        ```
+    entry #length
+      info
+          - the bytes written so far
+          + les octets écrits jusqu'ici
+    entry #byte
+      info
+          - one byte
+          + un octet
+    entry #boolean
+      info
+          - one byte: `1` for `true`, `0` for `false`
+          + un octet : `1` pour `true`, `0` pour `false`
+    entry #uint32
+      info
+          - a big-endian 32-bit integer
+          + un entier 32 bits gros-boutiste
+    entry #uint64
+      info
+          - a big-endian 64-bit integer
+          + un entier 64 bits gros-boutiste
+    entry #string
+      info
+          - a `uint32` length, then the bytes
+          + une longueur `uint32`, puis les octets
+    entry #bytes
+      info
+          - the bytes with no length prefix: a fixed-size field, or a message already encoded
+          + les octets sans préfixe de longueur : un champ de taille fixe, ou un message déjà encodé
+      detail
+          - `Session` joins a command's output chunks with it, and the transport embeds one
+          - message in another (the signed authentication request) with it.
+          + `Session` joint avec lui les morceaux de sortie d'une commande, et le transport s'en
+          + sert pour incorporer un message dans un autre (la requête d'authentification signée).
+    entry #text
+      info
+          - the text as UTF-8, length-prefixed
+          + le texte en UTF-8, préfixé par sa longueur
+    entry #mpint
+      info
+          - a `BigInt` in the shortest two's-complement form, length-prefixed; zero is the empty string
+          + un `BigInt` sous la forme en complément à deux la plus courte, préfixé par sa longueur ;
+          + zéro est la chaîne vide
+      detail
+          - As RFC 4251 prescribes: a positive number whose top bit is set gets a leading zero
+          - byte (`0x80` encodes as `00 80`), and a negative number its two's complement.
+          + Comme le prescrit la RFC 4251 : un nombre positif dont le bit de poids fort est à 1
+          + reçoit un octet nul initial (`0x80` s'encode en `00 80`), et un nombre négatif son
+          + complément à deux.
+    entry #names
+      info
+          - a list of names joined with commas, as length-prefixed text
+          + une liste de noms joints par des virgules, sous forme de texte préfixé par sa longueur
+    entry #data
+      info
+          - everything written so far, as a fresh `Data`
+          + tout ce qui a été écrit jusqu'ici, sous forme d'un nouveau `Data`

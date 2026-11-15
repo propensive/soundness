@@ -1,0 +1,962 @@
+tel 1.0
+
+base soundness
+import soundness
+
+info
+    - the umbrella package: one `import soundness.*` reaches every Soundness library
+    + le package parapluie : un seul `import soundness.*` donne accès à toutes les bibliothèques de
+    + Soundness
+detail
+    - _Soundness_ is a family of well over a hundred libraries, each in a package of its own
+    - (`gossamer` for text, `galilei` for the filesystem, `jacinta` for JSON, …), and
+    - `soundness` is the package which gathers them. A program writes one wildcard import and
+    - then names whatever it needs, from any library, without knowing which library it came
+    - from:
+    + _Soundness_ est une famille de bien plus d'une centaine de bibliothèques, chacune dans son
+    + propre package (`gossamer` pour le texte, `galilei` pour le système de fichiers, `jacinta`
+    + pour JSON, …), et `soundness` est le package qui les rassemble. Un programme écrit un seul
+    + import joker puis nomme ce dont il a besoin, depuis n'importe quelle bibliothèque, sans
+    + savoir de quelle bibliothèque cela provient :
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+
+    val greeting: Text = t"Hello, world".upper
+    val xs: List[Int] = List(3, 1, 2)
+    val user: Text = System.properties.user.name()
+    ```
+
+    - The package holds almost nothing of its own. Every library has, in each of its
+    - components, a file named `soundness_<library>_<component>.scala` which `export`s that
+    - component's public names into `package soundness`, so the umbrella grows with the
+    - components on the classpath: a program that depends on `galilei.jvm` sees galilei's
+    - filesystem backends in it, and one that does not, does not. These forwarders are
+    - documented where they are defined, on each library's own page — `Classloader` on
+    - hellenism's, `Json` on jacinta's — and not here. This page documents only what the
+    - umbrella *declares* itself: a handful of hand-written forwarders which an `export`
+    - cannot express, the collection aliases, two annotation types, the catch-all
+    - `explainMissingContext`, and the `repackage` entry point.
+    + Le package ne contient presque rien en propre. Chaque bibliothèque possède, dans chacun de
+    + ses composants, un fichier nommé `soundness_<library>_<component>.scala` qui exporte
+    + (`export`) les noms publics de ce composant dans `package soundness` ; le package parapluie
+    + grandit donc avec les composants présents dans le classpath : un programme qui dépend de
+    + `galilei.jvm` y voit les backends de système de fichiers de galilei, et un programme qui
+    + n'en dépend pas ne les voit pas. Ces redirecteurs sont documentés là où ils sont définis, sur
+    + la page propre à chaque bibliothèque — `Classloader` sur celle de hellenism, `Json` sur
+    + celle de jacinta — et non ici. Cette page ne documente que ce que le package parapluie
+    + *déclare* lui-même : une poignée de redirecteurs écrits à la main qu'un `export` ne peut pas
+    + exprimer, les alias de collections, deux types d'annotations, le fourre-tout
+    + `explainMissingContext`, et le point d'entrée `repackage`.
+
+    - **Choice packages.** A given which selects an implementation — an error-handling
+    - strategy, a classloader, a codepage, a log format, a filesystem backend — lives in a
+    - small package named for its role: `strategies`, `classloaders`, `codepages`,
+    - `logFormats`, `filesystemBackends`. The umbrella mirrors each as a `package` of the same
+    - name, and blocks of the same name from different libraries merge, so
+    - `soundness.construables` holds the `Construable` givens of jacinta, xylophone,
+    - honeycomb, caesura and a dozen others, and `soundness.wasiApis` those of every library
+    - with a WASI backend. The path through the umbrella and the path through the library are
+    - the same given: `import soundness.monthFormats.englishMonths` and `import
+    - aviation.monthFormats.englishMonths` are interchangeable.
+    + **Packages de choix.** Un given qui sélectionne une implémentation — une stratégie de
+    + traitement des erreurs, un chargeur de classes, une page de codes, un format de journal, un
+    + backend de système de fichiers — réside dans un petit package nommé d'après son rôle :
+    + `strategies`, `classloaders`, `codepages`, `logFormats`, `filesystemBackends`. Le package
+    + parapluie reflète chacun d'eux sous forme d'un `package` du même nom, et les blocs de même nom
+    + provenant de bibliothèques différentes fusionnent ; `soundness.construables` contient donc les
+    + givens `Construable` de jacinta, xylophone, honeycomb, caesura et d'une douzaine d'autres, et
+    + `soundness.wasiApis` ceux de toutes les bibliothèques dotées d'un backend WASI. Le chemin par
+    + le package parapluie et le chemin par la bibliothèque désignent le même given :
+    + `import soundness.monthFormats.englishMonths` et `import aviation.monthFormats.englishMonths`
+    + sont interchangeables.
+
+    - A choice-package given is always **imported by name**, because `import strategies.*`
+    - does not import givens: Scala's wildcard selects only ordinary members, and a given
+    - needs its own name or a `given` selector. And a given imported into the lexical scope
+    - outranks any given in a companion object, which is what lets a choice package override
+    - a library's default. `import soundness.*` itself therefore brings no choice into scope —
+    - with one deliberate exception, `explainMissingContext`, which is an old-style `implicit
+    - def` precisely so that the wildcard does include it.
+    + Un given de package de choix est toujours **importé par son nom**, car
+    + `import strategies.*` n'importe pas les givens : le joker de Scala ne sélectionne que les
+    + membres ordinaires, et un given requiert son propre nom ou un sélecteur `given`. Et un given
+    + importé dans la portée lexicale l'emporte sur tout given d'un objet compagnon, ce qui
+    + permet à un package de choix de remplacer le choix par défaut d'une bibliothèque.
+    + `import soundness.*` lui-même n'introduit donc aucun choix dans la portée — à une exception
+    + délibérée près, `explainMissingContext`, qui est un `implicit
+    + def` à l'ancienne précisément pour que le joker l'inclue.
+
+    - **Names left out.** Types and terms live in separate namespaces, so a type `via` and a
+    - method `via` coexist; but two libraries which export one *term* (or one *type*) into
+    - `package soundness` do not overload — the compiler keeps one and silently drops the
+    - other. Each such clash has been ruled on, and the loser is reached through its own
+    - package, where it keeps its name:
+    + **Noms laissés de côté.** Les types et les termes vivent dans des espaces de noms
+    + distincts ; un type `via` et une méthode `via` coexistent donc ; mais deux bibliothèques qui
+    + exportent un même *terme* (ou un même *type*) dans `package soundness` ne se surchargent
+    + pas — le compilateur en garde un et abandonne l'autre en silence. Chacun de ces conflits a
+    + été tranché, et le perdant s'atteint par son propre package, où il conserve son nom :
+
+    ```tabular
+    - column  Name
+    - column  In the umbrella
+    - column  Reach the other as
+    - row  `Channel`  perihelion's WebSocket  `anticipation.Channel` (pixel channels)
+    - row  `Completion`, `Completions`  exoskeleton's  `harlequin.Completion`, `prophesy.Completion`
+    - row  `Fragment`  honeycomb's  `harlequin.Fragment`
+    - row  `Descriptor`  embarcadero's OCI  `hallucination.Descriptor`
+    - row  `Diagnostic`  harlequin's  `frontier.Diagnostic`
+    - row  `Message`  fulminate's  `perihelion.Websocket.Message` (a WebSocket frame)
+    - row  `Tag`  honeycomb's HTML tag  `probably.Tag`, `xylophone.Tag`
+    - row  `Attributive`, `Renderable`  honeycomb's  `xylophone.Attributive`, `xylophone.Renderable`
+    - row  `Universe`, `Classfile`  anthology's, mandible's  `degustation.Universe`, `degustation.Classfile`
+    - row  `as`  distillate's decoding  `scintillate.as` (a request body)
+    - row  `teletype`  escapade's rendering  `delicious.teletype`
+    - row  `Kelvin(…)` as an `apply`  rudiments' deindexing `apply`  `import quantitative.*`
+    + column  Nom
+    + column  Dans le package parapluie
+    + column  Atteindre l'autre par
+    + row  `Channel`  celui de perihelion (WebSocket)  `anticipation.Channel` (canaux de pixels)
+    + row  `Completion`, `Completions`  ceux d'exoskeleton  `harlequin.Completion`, `prophesy.Completion`
+    + row  `Fragment`  celui de honeycomb  `harlequin.Fragment`
+    + row  `Descriptor`  celui d'embarcadero (OCI)  `hallucination.Descriptor`
+    + row  `Diagnostic`  celui de harlequin  `frontier.Diagnostic`
+    + row  `Message`  celui de fulminate  `perihelion.Websocket.Message` (une trame WebSocket)
+    + row  `Tag`  celui de honeycomb (balise HTML)  `probably.Tag`, `xylophone.Tag`
+    + row  `Attributive`, `Renderable`  ceux de honeycomb  `xylophone.Attributive`, `xylophone.Renderable`
+    + row  `Universe`, `Classfile`  ceux d'anthology et de mandible  `degustation.Universe`, `degustation.Classfile`
+    + row  `as`  le décodage de distillate  `scintillate.as` (un corps de requête)
+    + row  `teletype`  le rendu d'escapade  `delicious.teletype`
+    + row  `Kelvin(…)` comme `apply`  l'`apply` de désindexation de rudiments  `import quantitative.*`
+    ```
+
+    - A few names are absent for a different reason: an `export` cannot forward them
+    - faithfully. rudiments' `Scribe`/`scribe` and `Surveyor`/`survey`, and zephyrine's
+    - `Region` and `Slate`, are reached from `rudiments` and `zephyrine` directly; perihelion's
+    - `wsClient` and `wsSessional` are imported by name from `perihelion`. A definition
+    - deliberately kept out of the umbrella carries the `unexported` annotation in its source,
+    - and each library's page says which of its names are not exported. The MathML element
+    - types sit inside `Mathml` rather than at the top level, so `import soundness.Mathml.*`
+    - gives the bare element names where MathML is written by hand.
+    + Quelques noms sont absents pour une autre raison : un `export` ne peut pas les relayer
+    + fidèlement. `Scribe`/`scribe` et `Surveyor`/`survey` de rudiments, ainsi que `Region` et
+    + `Slate` de zephyrine, s'atteignent directement depuis `rudiments` et `zephyrine` ;
+    + `wsClient` et `wsSessional` de perihelion s'importent par leur nom depuis `perihelion`.
+    + Une définition délibérément tenue hors du package parapluie porte l'annotation
+    + `unexported` dans son code source, et la page de chaque bibliothèque indique lesquels de
+    + ses noms ne sont pas exportés. Les types d'éléments MathML se trouvent dans `Mathml` plutôt
+    + qu'au premier niveau ; `import soundness.Mathml.*` donne donc les noms d'éléments seuls là
+    + où l'on écrit du MathML à la main.
+
+    - One shadowing is worth knowing: ambience's `System` is exported, so under `import
+    - soundness.*` a bare `System` is the Soundness one, and the JDK's must be written
+    - `java.lang.System` (for `System.nanoTime`, `System.arraycopy`, …).
+    + Un masquage mérite d'être connu : le `System` d'ambience est exporté ; sous `import
+    + soundness.*`, un `System` seul désigne donc celui de Soundness, et celui du JDK doit
+    + s'écrire `java.lang.System` (pour `System.nanoTime`, `System.arraycopy`, …).
+
+    - **Why some forwarders are hand-written.** A synthesized `export` forwarder is a plain
+    - method, and some definitions do not survive the trip, so the umbrella re-declares them,
+    - each delegating to its library's original:
+    + **Pourquoi certains redirecteurs sont écrits à la main.** Un redirecteur `export` synthétisé
+    + est une simple méthode, et certaines définitions ne survivent pas au voyage ; le package
+    + parapluie les redéclare donc, chacune déléguant à l'original de sa bibliothèque :
+
+    - - an `export` of an *overloaded* extension forwards only one overload, so `thru`, `till`,
+    -   `tabulate` and the interval `each` are declared here, every overload in one
+    -   compilation unit;
+    - - an extension whose typeclass evidence is a dependent leading `using` clause — the
+    -   deindexing group `apply`, `at`, `defines`, `confine`, `pick`, `unsafeAttested`, with
+    -   `define`, `omit`, `keep` and `skip` — needs that clause so that a failed summon
+    -   discards the candidate, and a forwarder cannot carry it;
+    - - a forwarder loses a capture-annotated refinement, so zephyrine's `via` and `accepting`,
+    -   contingency's `throwUnsafely` and scintillate's four `httpServers` givens are written
+    -   out with their capture sets;
+    - - an `export` of an object is a `def`, an unstable prefix through which an opaque type is
+    -   transparent, so the collection companions are forwarded as stable `val`s beside
+    -   parameterised type aliases (`List`, `Sequence`, `Set`, `Map`, `Chain`);
+    - - an `export` of a case class brings its constructor proxy, a term, so `assign` and
+    -   `attribute` are type aliases alone, leaving the term names to anamnesis and galilei.
+    + - un `export` d'une extension *surchargée* ne relaie qu'une seule surcharge ; `thru`,
+    +   `till`, `tabulate` et le `each` des intervalles sont donc déclarés ici, toutes les
+    +   surcharges dans une même unité de compilation ;
+    + - une extension dont la preuve de classe de types est une clause `using` dépendante en
+    +   tête — le groupe de désindexation `apply`, `at`, `defines`, `confine`, `pick`,
+    +   `unsafeAttested`, avec `define`, `omit`, `keep` et `skip` — a besoin de cette clause
+    +   pour qu'une invocation échouée écarte le candidat, et un redirecteur ne peut pas la porter ;
+    + - un redirecteur perd un raffinement annoté de captures ; `via` et `accepting` de
+    +   zephyrine, `throwUnsafely` de contingency et les quatre givens `httpServers` de
+    +   scintillate sont donc écrits en entier avec leurs ensembles de captures ;
+    + - un `export` d'un objet est un `def`, un préfixe instable à travers lequel un type opaque
+    +   est transparent ; les compagnons de collections sont donc relayés sous forme de `val`
+    +   stables à côté d'alias de types paramétrés (`List`, `Sequence`, `Set`, `Map`, `Chain`) ;
+    + - un `export` d'une case class apporte son proxy de constructeur, un terme ; `assign` et
+    +   `attribute` ne sont donc que des alias de types, laissant les noms de termes à anamnesis
+    +   et galilei.
+
+    - **How the documentation is organised.** Each package has its own page, named for it;
+    - a name reached through `soundness` is documented on the page of the package which
+    - defines it, and each library's page says which of its components contribute what,
+    - which choice packages it mirrors into the umbrella, and which givens are imported by
+    - name. This page has an entry for each declaration of the umbrella's own, and for the
+    - two choice packages whose givens are declared here rather than exported.
+    + **Organisation de la documentation.** Chaque package a sa propre page, qui porte son nom ;
+    + un nom atteint par `soundness` est documenté sur la page du package qui le définit, et la
+    + page de chaque bibliothèque indique ce qu'apporte chacun de ses composants, quels packages
+    + de choix elle reflète dans le package parapluie, et quels givens s'importent par leur nom.
+    + Cette page comporte une entrée pour chaque déclaration propre au package parapluie, et pour
+    + les deux packages de choix dont les givens sont déclarés ici plutôt qu'exportés.
+
+refer soundness.explainMissingContext
+refer soundness.strategies
+refer soundness.List
+refer proscenium.unexported
+
+entry .List
+  info
+      - the opaque linked list `proscenium.List`, with its companion as a stable value
+      + la liste chaînée opaque `proscenium.List`, avec son compagnon sous forme de valeur stable
+  detail
+      - `type List[+element] = proscenium.List[element]` and `val List = proscenium.List`: the
+      - Soundness list, documented on proscenium's page, as the umbrella names it. The type is
+      - a parameterised alias, since a bare alias of an opaque constructor is not seen through
+      - (`::`, `CanEqual` and the extension methods would treat it as a different `List`); and
+      - the companion is a `val` rather than an `export`ed `def`, since a companion member
+      - selected through a `def` prefix sees the opaque type's right-hand side and exposes the
+      - standard library's whole API. `Nil`, `::` and `#::` are forwarded beside it.
+      + `type List[+element] = proscenium.List[element]` et `val List = proscenium.List` : la
+      + liste de Soundness, documentée sur la page de proscenium, telle que la nomme le package
+      + parapluie. Le type est un alias paramétré, puisqu'un alias nu d'un constructeur opaque
+      + n'est pas vu à travers (`::`, `CanEqual` et les méthodes d'extension le traiteraient comme
+      + une `List` différente) ; et le compagnon est une `val` plutôt qu'un `def` exporté
+      + (`export`), puisqu'un membre de compagnon sélectionné au travers d'un préfixe `def` voit le
+      + membre droit du type opaque et expose toute l'API de la bibliothèque standard. `Nil`, `::`
+      + et `#::` sont relayés à côté.
+
+      ```scala
+      import soundness.*
+
+      val xs: List[Int] = List(1, 2, 3)
+      xs.map(_ + 1)
+      ```
+
+      - A list built from a standard-library collection is `List.from(xs)`, not `xs.to[List]`,
+      - which on a stdlib receiver reaches Scala's own `to` and fails for want of a factory.
+      + Une liste construite à partir d'une collection de la bibliothèque standard s'écrit
+      + `List.from(xs)`, et non `xs.to[List]`, qui sur un receveur de la bibliothèque standard
+      + atteint le `to` propre à Scala et échoue faute de fabrique.
+
+entry .Sequence
+  info
+      - the opaque indexed sequence `proscenium.Sequence`, with its companion as a stable value
+      + la séquence indexée opaque `proscenium.Sequence`, avec son compagnon sous forme de valeur
+      + stable
+  detail
+      - `type Sequence[+element] = proscenium.Sequence[element]` and `val Sequence =
+      - proscenium.Sequence`: an immutable `Vector` behind an opaque type, as proscenium's page
+      - describes it. Forwarded as a parameterised alias and a stable `val` for the reasons
+      - `List` is.
+      + `type Sequence[+element] = proscenium.Sequence[element]` et `val Sequence =
+      + proscenium.Sequence` : un `Vector` immuable derrière un type opaque, tel que le décrit la
+      + page de proscenium. Relayé sous forme d'alias paramétré et de `val` stable pour les mêmes
+      + raisons que `List`.
+
+      ```scala
+      import soundness.*
+
+      val xs = Sequence(10, 20, 30)
+      xs.pick(Sec) { i => xs(i) + 1 }   // 21
+      ```
+
+entry .Set
+  info
+      - the opaque hash set `proscenium.Set`, with its companion as a stable value
+      + l'ensemble haché opaque `proscenium.Set`, avec son compagnon sous forme de valeur stable
+  detail
+      - `type Set[element] = proscenium.Set[element]` and `val Set = proscenium.Set`, forwarded
+      - as an alias and a stable `val` for the reasons `List` is. A `Set` is `Reshapable` but has
+      - no stable order, so it does not `sort`.
+      + `type Set[element] = proscenium.Set[element]` et `val Set = proscenium.Set`, relayés sous
+      + forme d'alias et de `val` stable pour les mêmes raisons que `List`. Un `Set` est
+      + `Reshapable` mais n'a pas d'ordre stable ; il ne se trie donc pas (`sort`).
+
+entry .Map
+  info
+      - the opaque hash map `proscenium.Map`, with its companion as a stable value
+      + la map hachée opaque `proscenium.Map`, avec son compagnon sous forme de valeur stable
+  detail
+      - `type Map[key, +value] = proscenium.Map[key, value]` and `val Map = proscenium.Map`,
+      - forwarded as an alias and a stable `val` for the reasons `List` is. `map.confine(key)`,
+      - `map(key)`, `map.define(key, value)` and `map.omit(key)` are the umbrella's deindexing
+      - extensions.
+      + `type Map[key, +value] = proscenium.Map[key, value]` et `val Map = proscenium.Map`,
+      + relayés sous forme d'alias et de `val` stable pour les mêmes raisons que `List`.
+      + `map.confine(key)`, `map(key)`, `map.define(key, value)` et `map.omit(key)` sont les
+      + extensions de désindexation du package parapluie.
+
+      ```scala
+      import soundness.*
+
+      val ages = Map(t"Hamlet" -> 30)
+      ages.confine(t"Hamlet").let(ages(_))   // 30
+      ```
+
+entry .Chain
+  info
+      - the opaque lazy sequence `proscenium.Chain`, with its companion as a stable value
+      + la séquence paresseuse opaque `proscenium.Chain`, avec son compagnon sous forme de valeur
+      + stable
+  detail
+      - `type Chain[+element] = proscenium.Chain[element]` and `val Chain = proscenium.Chain`: a
+      - `LazyList` behind an opaque type, forwarded as an alias and a stable `val` for the
+      - reasons `List` is. Its lazy `keep` and `skip` live in its companion, and the umbrella's
+      - own `keep` and `skip` are shaped so that a `Chain` receiver still reaches them.
+      + `type Chain[+element] = proscenium.Chain[element]` et `val Chain = proscenium.Chain` : une
+      + `LazyList` derrière un type opaque, relayée sous forme d'alias et de `val` stable pour les
+      + mêmes raisons que `List`. Ses `keep` et `skip` paresseux résident dans son compagnon, et
+      + les `keep` et `skip` propres au package parapluie sont conçus de sorte qu'un receveur
+      + `Chain` les atteigne malgré tout.
+
+entry .infer
+  info
+      - `infer[context]`: summons a contextual value at the inline expansion site
+      + `infer[context]` : invoque une valeur contextuelle au site d'expansion inline
+  detail
+      - `transparent inline def infer[context]: context = summonInline[context]`, declared in
+      - the umbrella so that code written against `import soundness.*` has the same spelling
+      - as proscenium's. Inside an inline method, the search happens where the method is
+      - expanded rather than where it is defined; `summon` is the non-inline form.
+      + `transparent inline def infer[context]: context = summonInline[context]`, déclaré dans le
+      + package parapluie afin que le code écrit avec `import soundness.*` ait la même graphie que
+      + celui de proscenium. Dans une méthode inline, la recherche a lieu là où la méthode est
+      + développée plutôt que là où elle est définie ; `summon` est la forme non inline.
+
+entry .explainMissingContext
+  info
+      - explains every failed implicit search, brought in by `import soundness.*`
+      + explique chaque recherche implicite échouée, introduit par `import soundness.*`
+  detail
+      - The umbrella's form of frontier's catch-all `frontier.context.explainMissingContext`. It
+      - is a candidate in every implicit search; when a search fails, the compiler reports a
+      - rendered tree of the candidates tried, what each one required, and which instances on
+      - the classpath would satisfy it, in place of its own terse message. When the search would
+      - succeed without it, it steps aside and contributes nothing, so it never changes which
+      - instance a program uses.
+      + La forme, dans le package parapluie, du fourre-tout de frontier
+      + `frontier.context.explainMissingContext`. Il est candidat dans chaque recherche implicite ;
+      + lorsqu'une recherche échoue, le compilateur affiche, à la place de son propre message
+      + laconique, un arbre rendu des candidats essayés, de ce que chacun requérait, et des
+      + instances du classpath qui le satisferaient. Lorsque la recherche réussirait sans lui, il
+      + s'efface et n'apporte rien ; il ne change donc jamais l'instance qu'utilise un programme.
+
+      ```scala
+      import soundness.*
+
+      summon[Char is Concatenable]   // does not compile
+      ```
+
+      - It is an old-style `transparent inline implicit def` rather than a `given`, because a
+      - wildcard import excludes givens and this one must be in scope for anyone who writes
+      - `import soundness.*`. It is annotated `@scala.annotation.internal.diagnostic`, which
+      - the Proscala compiler honours; frontier's page explains its bounds and the shapes of the
+      - tree.
+      + C'est un `transparent inline implicit def` à l'ancienne plutôt qu'un `given`, car un import
+      + joker exclut les givens et celui-ci doit être dans la portée de quiconque écrit
+      + `import soundness.*`. Il est annoté `@scala.annotation.internal.diagnostic`, que respecte
+      + le compilateur Proscala ; la page de frontier explique ses limites et les formes de
+      + l'arbre.
+
+entry .repackage
+  info
+      - the `@main` entry point of burdock's repackager: `java -cp app.jar soundness.repackage`
+      + le point d'entrée `@main` du réempaqueteur de burdock :
+      + `java -cp app.jar soundness.repackage`
+  detail
+      - A command-line entry point, in the `soundness` package so that it can be launched by a
+      - fully-qualified name which every Soundness application carries:
+      + Un point d'entrée en ligne de commande, dans le package `soundness`, afin de pouvoir être
+      + lancé par un nom pleinement qualifié que porte toute application Soundness :
+
+      ```sh
+      java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
+      ```
+
+      - It passes its arguments, as a `List[Text]`, to `burdock.repackage`, which rewrites the
+      - running application's JAR in place, externalizing its published dependencies; burdock's
+      - page describes the arguments and the output.
+      + Il transmet ses arguments, sous forme de `List[Text]`, à `burdock.repackage`, qui réécrit
+      + sur place le JAR de l'application en cours d'exécution, en externalisant ses dépendances
+      + publiées ; la page de burdock décrit les arguments et la sortie.
+
+entry .assign
+  info
+      - the `@assign(layer)` annotation of stratiform, forwarded as a type alone
+      + l'annotation `@assign(layer)` de stratiform, relayée sous forme de type seul
+  detail
+      - `type assign = stratiform.assign`: a field annotation which places a case-class field in
+      - a TEL schema layer, as stratiform's page describes it. It is a type alias rather than an
+      - `export`, since exporting the class would also export its constructor proxy, a term
+      - `assign`, which would hide anamnesis's `assign` method; the annotation `@assign(…)` reads
+      - the same either way.
+      + `type assign = stratiform.assign` : une annotation de champ qui place un champ de case
+      + class dans une couche de schéma TEL, telle que la décrit la page de stratiform. C'est un
+      + alias de type plutôt qu'un `export`, puisqu'exporter la classe exporterait aussi son proxy
+      + de constructeur, un terme `assign`, qui masquerait la méthode `assign` d'anamnesis ;
+      + l'annotation `@assign(…)` se lit de la même façon dans les deux cas.
+
+      ```scala
+      import soundness.*
+
+      object withPhone extends Tel.Layer("with-phone")
+
+      case class Contact(name: Text, @assign(withPhone) phone: Optional[Text])
+      ```
+
+entry .attribute
+  info
+      - the `@attribute` annotation of xylophone, as a type; the term is galilei's
+      + l'annotation `@attribute` de xylophone, sous forme de type ; le terme est celui de galilei
+  detail
+      - `type attribute = xylophone.Xml.attribute`: the annotation which marks a case-class field
+      - as an XML attribute rather than a child element. It is a type alias rather than an
+      - `export`, because galilei and tarantula already export a *term* named `attribute` into
+      - the umbrella (reading an extended attribute of a path, or an element's attribute), which
+      - the case class's companion would collide with; an annotation needs only the type.
+      + `type attribute = xylophone.Xml.attribute` : l'annotation qui marque un champ de case class
+      + comme un attribut XML plutôt que comme un élément enfant. C'est un alias de type plutôt
+      + qu'un `export`, car galilei et tarantula exportent déjà un *terme* nommé `attribute` dans
+      + le package parapluie (lecture d'un attribut étendu d'un chemin, ou de l'attribut d'un
+      + élément), avec lequel le compagnon de la case class entrerait en conflit ; une annotation
+      + n'a besoin que du type.
+
+      ```scala
+      import soundness.*
+
+      case class Book(@attribute isbn: Text, title: Text)
+      ```
+
+entry .thru
+  info
+      - `start thru end`: the interval between two ordinals, end inclusive, confined if both ends are
+      + `start thru end` : l'intervalle entre deux ordinaux, fin incluse, confiné si les deux
+      + extrémités le sont
+  detail
+      - `Ter thru Sen` is the interval of `Ter`, `Quat`, `Quin` and `Sen`. Two overloads, both
+      - declared in the umbrella: over plain `Ordinal`s the result is a plain `Interval`, and over
+      - two ordinals confined to the same value (`Ordinal in form`) it is an `Interval in form`,
+      - whose every ordinal reads that value totally. They are declared here rather than
+      - exported from denominative because an `export` forwards only one overload, and a plain
+      - `Ordinal` receiver would then be offered the confined one and fail.
+      + `Ter thru Sen` est l'intervalle de `Ter`, `Quat`, `Quin` et `Sen`. Deux surcharges, toutes
+      + deux déclarées dans le package parapluie : sur de simples `Ordinal`, le résultat est un
+      + simple `Interval`, et sur deux ordinaux confinés à la même valeur (`Ordinal in form`),
+      + c'est un `Interval in form`, dont chaque ordinal lit cette valeur de façon totale. Elles
+      + sont déclarées ici plutôt qu'exportées depuis denominative, car un `export` ne relaie
+      + qu'une surcharge, et un receveur `Ordinal` simple se verrait alors proposer la surcharge
+      + confinée et échouerait.
+
+      ```scala
+      import soundness.*
+
+      (Sec thru Ter).tabulate(_.n1)          // Sequence(2, 3)
+      ```
+
+entry .till
+  info
+      - `start till end`: the interval between two ordinals, end exclusive, confined if both ends are
+      + `start till end` : l'intervalle entre deux ordinaux, fin exclue, confiné si les deux
+      + extrémités le sont
+  detail
+      - `Ter till Sen` is `Ter`, `Quat` and `Quin`; `Sec till Sec` is empty. As with `thru`, the
+      - two overloads — plain and confined — are declared together in the umbrella, because an
+      - `export` would forward only one.
+      + `Ter till Sen` donne `Ter`, `Quat` et `Quin` ; `Sec till Sec` est vide. Comme pour
+      + `thru`, les deux surcharges — simple et confinée — sont déclarées ensemble dans le package
+      + parapluie, car un `export` n'en relaierait qu'une.
+
+entry .tabulate
+  info
+      - `xs.tabulate { i => … }`: a `Sequence` of one element per ordinal of a value or interval
+      + `xs.tabulate { i => … }` : une `Sequence` d'un élément par ordinal d'une valeur ou d'un
+      + intervalle
+  detail
+      - The collecting counterpart of `each`: builds a `Sequence` with one element per position,
+      - in order. Three overloads, declared together in the umbrella for the reason `thru` is:
+      - over a `Countable` value the lambda receives `Ordinal in value.type`, so its reads of
+      - the value are bare; over a plain `Interval` it receives a plain `Ordinal`; over an
+      - `Interval in form`, an `Ordinal in form`. Each delegates to `denominative.tabulate`.
+      + Le pendant collecteur de `each` : construit une `Sequence` avec un élément par position,
+      + dans l'ordre. Trois surcharges, déclarées ensemble dans le package parapluie pour la même
+      + raison que `thru` : sur une valeur `Countable`, la lambda reçoit `Ordinal in value.type`,
+      + de sorte que ses lectures de la valeur sont directes ; sur un `Interval` simple, elle
+      + reçoit un `Ordinal` simple ; sur un `Interval in form`, un `Ordinal in form`. Chacune
+      + délègue à `denominative.tabulate`.
+
+      ```scala
+      import soundness.*
+
+      val xs = Sequence(10, 20, 30)
+      xs.tabulate { i => xs(i) + i.n0 }   // Sequence(10, 21, 32)
+      ```
+
+entry .each
+  info
+      - `interval.each { i => … }`: visits every ordinal of an interval, in order
+      + `interval.each { i => … }` : parcourt chaque ordinal d'un intervalle, dans l'ordre
+  detail
+      - The umbrella declares the two interval overloads of `each` beside the collection `each`
+      - it exports from rudiments: over a plain `Interval` the lambda receives an `Ordinal`, and
+      - over a confined `Interval in form` it receives `Ordinal in form`, so a read inside is
+      - total. All of them must share one scope — two top-level definitions of one name in
+      - `package soundness` do not overload, and one is silently dropped — and the confined
+      - overload must sit beside the plain one, or the plain one wins for a confined receiver
+      - and strips its brand without an error. The collection form, `xs.each { x => … }`, is
+      - documented on rudiments' page.
+      + Le package parapluie déclare les deux surcharges d'intervalle de `each` à côté du `each`
+      + de collection qu'il exporte depuis rudiments : sur un `Interval` simple, la lambda reçoit
+      + un `Ordinal`, et sur un `Interval in form` confiné, elle reçoit `Ordinal in form` ; une
+      + lecture à l'intérieur est donc totale. Toutes doivent partager une même portée — deux
+      + définitions de premier niveau d'un même nom dans `package soundness` ne se surchargent
+      + pas, et l'une est abandonnée en silence — et la surcharge confinée doit se trouver à côté
+      + de la simple, sans quoi la simple l'emporte pour un receveur confiné et retire sa marque
+      + sans erreur. La forme collection, `xs.each { x => … }`, est documentée sur la page de
+      + rudiments.
+
+      ```scala
+      import soundness.*
+
+      val xs = Sequence(1, 2, 3)
+      xs.extent.each { i => assert(xs(i) > 0) }
+      ```
+
+entry .apply
+  info
+      - `xs(index)`: the element at an index, bare for a confined index and `Optional` otherwise
+      + `xs(index)` : l'élément à un indice, direct pour un indice confiné et `Optional` sinon
+  detail
+      - The universal deindexing read for any value with an `Applicable` instance — the
+      - collections by `Ordinal`, a `Map` by key, a `Text` by `Ordinal` — re-declared here
+      - rather than exported, since its evidence is a dependent leading `using` clause which a
+      - forwarder cannot carry. It delegates inline to `rudiments.apply`, so an index typed
+      - `Operand in xs.type` (from `confine`, `pick`, `each`, …) reads the element bare and any
+      - other index is checked, giving an `Optional`. A second overload reads a frozen array typed
+      - `& Sized[n]` with a literal ordinal, checked against `n` as the code compiles. Rudiments'
+      - page has the full account.
+      + La lecture de désindexation universelle pour toute valeur dotée d'une instance
+      + `Applicable` — les collections par `Ordinal`, une `Map` par clé, un `Text` par `Ordinal` —
+      + redéclarée ici plutôt qu'exportée, puisque sa preuve est une clause `using` dépendante en
+      + tête qu'un redirecteur ne peut pas porter. Elle délègue en inline à `rudiments.apply` ; un
+      + indice typé `Operand in xs.type` (issu de `confine`, `pick`, `each`, …) lit donc
+      + l'élément directement, et tout autre indice est vérifié, donnant un `Optional`. Une
+      + seconde surcharge lit un tableau gelé typé `& Sized[n]` avec un ordinal littéral, vérifié
+      + par rapport à `n` à la compilation du code. La page de rudiments en donne la description
+      + complète.
+
+      ```scala
+      import soundness.*
+
+      val xs = Sequence(10, 20, 30)
+      xs(Sec)                             // Optional[Int]: 20
+      xs.confine(Sec).let { i => xs(i) }  // the read bare inside
+      ```
+
+entry .at
+  info
+      - `xs.at(index)`: the same read as `xs(index)`, bare for a confined index and `Optional` otherwise
+      + `xs.at(index)` : la même lecture que `xs(index)`, directe pour un indice confiné et
+      + `Optional` sinon
+  detail
+      - Identical to `apply`, re-declared in the umbrella with it and delegating to
+      - `rudiments.at`; kept for code which spells positional access `xs.at(Sec)` and keyed
+      - access `map.at(key)`.
+      + Identique à `apply`, redéclarée avec lui dans le package parapluie et déléguant à
+      + `rudiments.at` ; conservée pour le code qui écrit l'accès positionnel `xs.at(Sec)` et
+      + l'accès par clé `map.at(key)`.
+
+entry .defines
+  info
+      - `xs.defines(index)`: whether an index or key is defined for a value
+      + `xs.defines(index)` : si un indice ou une clé est défini pour une valeur
+  detail
+      - True when the value's `Applicable` instance contains the index: an ordinal within a
+      - collection's extent, or a key present in a `Map`. Re-declared in the umbrella with the
+      - rest of the deindexing group, with the one-line body duplicated rather than delegated.
+      + Vrai lorsque l'instance `Applicable` de la valeur contient l'indice : un ordinal dans
+      + l'étendue d'une collection, ou une clé présente dans une `Map`. Redéclarée dans le package
+      + parapluie avec le reste du groupe de désindexation, son corps d'une ligne étant dupliqué
+      + plutôt que délégué.
+
+entry .confine
+  info
+      - `xs.confine(index)`: checks an index against a value and returns it branded to that value
+      + `xs.confine(index)` : vérifie un indice par rapport à une valeur et le renvoie marqué pour
+      + cette valeur
+  detail
+      - `Unset` if the index is not defined for the value, and otherwise the index itself typed
+      - `Operand in xs.type`, so that a following `xs(i)` is bare and checks nothing again.
+      - Works for keys as well as ordinals. Re-declared in the umbrella with the rest of the
+      - deindexing group.
+      + `Unset` si l'indice n'est pas défini pour la valeur, et sinon l'indice lui-même typé
+      + `Operand in xs.type`, de sorte qu'un `xs(i)` ultérieur est direct et ne vérifie plus
+      + rien. Fonctionne pour les clés comme pour les ordinaux. Redéclarée dans le package
+      + parapluie avec le reste du groupe de désindexation.
+
+      ```scala
+      import soundness.*
+
+      val ages = Map(t"Hamlet" -> 30)
+      ages.confine(t"Hamlet").let(ages(_))   // 30
+      ```
+
+entry .pick
+  info
+      - `xs.pick(index) { i => … }`: checks an index and runs a lambda with it confined, or gives `Unset`
+      + `xs.pick(index) { i => … }` : vérifie un indice et exécute une lambda avec cet indice
+      + confiné, ou donne `Unset`
+  detail
+      - The fused form of `confine` and `let`: the lambda receives the index typed `Operand in
+      - xs.type`, so its reads of `xs` are bare, and the result is `Optional`, `Unset` when the
+      - index is not defined. Re-declared in the umbrella with the rest of the deindexing group.
+      + La forme fusionnée de `confine` et de `let` : la lambda reçoit l'indice typé `Operand in
+      + xs.type`, de sorte que ses lectures de `xs` sont directes, et le résultat est `Optional`,
+      + `Unset` lorsque l'indice n'est pas défini. Redéclarée dans le package parapluie avec le
+      + reste du groupe de désindexation.
+
+      ```scala
+      import soundness.*
+
+      val xs = Sequence(10, 20, 30)
+      xs.pick(Ter) { i => xs(i) + i.n0 }   // 32
+      ```
+
+entry .unsafeAttested
+  info
+      - brands an index, or an interval, as valid for a value on the caller's word
+      + marque un indice, ou un intervalle, comme valide pour une valeur, sur la parole de
+      + l'appelant
+  detail
+      - `xs.unsafeAttested(index)` is `confine` without the check, minting `Operand in xs.type`
+      - directly; `xs.unsafeAttested(index) { i => … }` scopes the attestation to a lambda; and
+      - `interval.unsafeAttested(xs)` brands an `Interval` as `Interval in xs.type`. Every form
+      - takes an erased `Unsafe` token, so the call sits inside `unsafely`, and every call carries
+      - a comment naming the construction which proves the bound. Re-declared in the umbrella
+      - with the rest of the deindexing group.
+      + `xs.unsafeAttested(index)` est `confine` sans la vérification, produisant directement
+      + `Operand in xs.type` ; `xs.unsafeAttested(index) { i => … }` limite l'attestation à une
+      + lambda ; et `interval.unsafeAttested(xs)` marque un `Interval` comme
+      + `Interval in xs.type`. Chaque forme prend un jeton `Unsafe` effacé ; l'appel se trouve
+      + donc dans `unsafely`, et chaque appel porte un commentaire nommant la construction qui
+      + prouve la borne. Redéclarée dans le package parapluie avec le reste du groupe de
+      + désindexation.
+
+      ```scala
+      import soundness.*
+
+      val xs: Sequence[Int] = Sequence(1, 2, 4)
+
+      unsafely:
+        // In bounds by construction: the literal above has three elements.
+        xs.unsafeAttested(Sec) { i => xs(i) }   // 2
+      ```
+
+entry .define
+  info
+      - `xs.define(index, value)`: a copy of a container with one position or key set
+      + `xs.define(index, value)` : une copie d'un conteneur avec une position ou une clé définie
+  detail
+      - Through the receiver's `Definable` instance: `xs.define(Sec, 9)` on a `Sequence`,
+      - `map.define(key, value)` on a `Map`. Out-of-range ordinals leave the container
+      - unchanged, and an absent key adds an entry. Re-declared in the umbrella because its
+      - evidence is a dependent leading `using` clause.
+      + Au moyen de l'instance `Definable` du receveur : `xs.define(Sec, 9)` sur une `Sequence`,
+      + `map.define(key, value)` sur une `Map`. Des ordinaux hors limites laissent le conteneur
+      + inchangé, et une clé absente ajoute une entrée. Redéclarée dans le package parapluie car sa
+      + preuve est une clause `using` dépendante en tête.
+
+      ```scala
+      import soundness.*
+
+      Map(t"Hamlet" -> 30).define(t"Ophelia", 25)
+      ```
+
+entry .omit
+  info
+      - `xs.omit(index)`: a copy of a container without one key or position
+      + `xs.omit(index)` : une copie d'un conteneur sans une clé ou une position
+  detail
+      - Through the receiver's `Omissible` instance: `map.omit(key)` removes an entry, and an
+      - absent key leaves the map as it was. Re-declared in the umbrella because its evidence is
+      - a dependent leading `using` clause.
+      + Au moyen de l'instance `Omissible` du receveur : `map.omit(key)` retire une entrée, et
+      + une clé absente laisse la map telle qu'elle était. Redéclarée dans le package parapluie car
+      + sa preuve est une clause `using` dépendante en tête.
+
+entry .keep
+  info
+      - the first (or, with `Bidi.Rtl`, the last) `count` elements, or the leading run matching a predicate
+      + les `count` premiers (ou, avec `Bidi.Rtl`, derniers) éléments, ou la suite initiale
+      + correspondant à un prédicat
+  detail
+      - `xs.keep(3)` takes three elements, `xs.keep(3, Bidi.Rtl)` the last three, and
+      - `xs.keep(_ < 4)` the leading run that matches — a prefix, not a filter. Shape-preserving
+      - through `Segmentable`, so a `Text` stays a `Text`. Re-declared in the umbrella rather
+      - than exported so that a `Chain` receiver, which has no `Segmentable` instance, discards
+      - this candidate and reaches the lazy `keep` in `Chain`'s companion; a forwarder would
+      - claim the call and fail.
+      + `xs.keep(3)` prend trois éléments, `xs.keep(3, Bidi.Rtl)` les trois derniers, et
+      + `xs.keep(_ < 4)` la suite initiale qui correspond — un préfixe, pas un filtre. Préserve la
+      + forme au moyen de `Segmentable` ; un `Text` reste donc un `Text`. Redéclarée dans le
+      + package parapluie plutôt qu'exportée afin qu'un receveur `Chain`, qui n'a pas d'instance
+      + `Segmentable`, écarte ce candidat et atteigne le `keep` paresseux du compagnon de `Chain` ;
+      + un redirecteur s'approprierait l'appel et échouerait.
+
+      ```scala
+      import soundness.*
+
+      t"Hello".keep(1, Bidi.Rtl)         // t"o"
+      t"HELLOworld".keep(_.isUpper)      // t"HELLO"
+      ```
+
+entry .skip
+  info
+      - all but the first (or, with `Bidi.Rtl`, the last) `count` elements, or all after the leading matching run
+      + tous les éléments sauf les `count` premiers (ou, avec `Bidi.Rtl`, derniers), ou tous ceux
+      + qui suivent la suite initiale correspondante
+  detail
+      - The complement of `keep`: `xs.skip(2)` drops two elements, `xs.skip(2, Bidi.Rtl)` the
+      - last two, and `xs.skip(_ == ' ')` the leading run of spaces. Re-declared in the umbrella
+      - for the reason `keep` is, so that a `Chain` reaches its companion's lazy `skip`.
+      + Le complément de `keep` : `xs.skip(2)` retire deux éléments, `xs.skip(2, Bidi.Rtl)` les
+      + deux derniers, et `xs.skip(_ == ' ')` la suite initiale d'espaces. Redéclarée dans le
+      + package parapluie pour la même raison que `keep`, afin qu'une `Chain` atteigne le `skip`
+      + paresseux de son compagnon.
+
+entry .via
+  info
+      - `stream.via(stage)`: a stream pulled through a stage with a `Ductile` instance
+      + `stream.via(stage)` : un flux tiré à travers un étage doté d'une instance `Ductile`
+  detail
+      - The umbrella's hand-written forwarder for zephyrine's pull-composition: consumes the
+      - stream and the stage, and gives a stream of the stage's `Result` type over its
+      - `Transport`, needing a `Buffering`. A synthesized forwarder would lose the dependent
+      - `ductile.Result` refinement under capture checking, so this one is written out and
+      - delegates to `zephyrine.via`; it behaves identically. The *type* `via` (a value computed
+      - in a locale) is cosmopolite's, in the type namespace, and does not clash.
+      + Le redirecteur écrit à la main par le package parapluie pour la composition en tirage de
+      + zephyrine : consomme le flux et l'étage, et donne un flux du type `Result` de l'étage sur
+      + son `Transport`, en requérant un `Buffering`. Un redirecteur synthétisé perdrait le
+      + raffinement dépendant `ductile.Result` sous contrôle des captures ; celui-ci est donc écrit
+      + en entier et délègue à `zephyrine.via` ; il se comporte de manière identique. Le *type*
+      + `via` (une valeur calculée dans une locale) est celui de cosmopolite, dans l'espace de
+      + noms des types, et n'entre pas en conflit.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import charsets.utf8Charset
+
+      val bytes: Data = t"The quick brown fox".in[Data]
+      bytes.stream.via(summon[Charset]).memoize
+      ```
+
+entry .accepting
+  info
+      - `intake.accepting(stage)`: an intake pushing through a stage with a `Ductile` instance
+      + `intake.accepting(stage)` : une entrée qui pousse à travers un étage doté d'une instance
+      + `Ductile`
+  detail
+      - The umbrella's hand-written forwarder for zephyrine's push-composition: consumes the
+      - intake and the stage, and gives an intake of the stage's `Operand` type over its
+      - `Upstream`, needing a `Buffering`. Written out rather than exported for the reason `via`
+      - is, and delegating to `zephyrine.accepting`.
+      + Le redirecteur écrit à la main par le package parapluie pour la composition en poussée de
+      + zephyrine : consomme l'entrée et l'étage, et donne une entrée du type `Operand` de l'étage
+      + sur son `Upstream`, en requérant un `Buffering`. Écrit en entier plutôt qu'exporté pour la
+      + même raison que `via`, et déléguant à `zephyrine.accepting`.
+
+entry .dispose
+  info
+      - `handle.dispose()`: releases a WIT resource handle, in Wasm-compiled code
+      + `handle.dispose()` : libère une poignée de ressource WIT, dans du code compilé en Wasm
+  detail
+      - An inline extension on `xenophile.Wasm.Handle`, in xenophile's `wasm` component only. It
+      - expands to `WasmInvoke.dispose`, which emits the resource's `[resource-drop]` Component
+      - Model import; like `invoke`, it is plain `inline` so the import materializes at the
+      - Wasm-linked call site downstream. A program should dispose every handle it obtains when
+      - it is done with it, typically in a `finally`.
+      + Une extension inline sur `xenophile.Wasm.Handle`, uniquement dans le composant `wasm` de
+      + xenophile. Elle se développe en `WasmInvoke.dispose`, qui émet l'import
+      + `[resource-drop]` du Component Model pour la ressource ; comme `invoke`, elle est
+      + simplement `inline`, de sorte que l'import se matérialise au site d'appel lié en Wasm, en
+      + aval. Un programme devrait libérer chaque poignée qu'il obtient une fois qu'il en a fini
+      + avec elle, généralement dans un `finally`.
+
+entry .threads
+  info
+      - the threading models of parasite, each a `Threading` given to import by name
+      + les modèles de threads de parasite, chacun un given `Threading` à importer par son nom
+  detail
+      - An object of forwarders to `parasite.threads`: `platformThreads`, `virtualThreads`,
+      - `adaptiveThreads`, `pooledThreads` and `javascriptThreads`, documented on parasite's
+      - page. It is an object, not a package, as parasite's own is: its givens are
+      - capabilities, which must live in an object.
+      + Un objet de redirecteurs vers `parasite.threads` : `platformThreads`, `virtualThreads`,
+      + `adaptiveThreads`, `pooledThreads` et `javascriptThreads`, documentés sur la page de
+      + parasite. C'est un objet, et non un package, comme celui de parasite : ses givens sont des
+      + capacités, qui doivent résider dans un objet.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      ```
+
+entry .supervisors
+  info
+      - parasite's global supervisor, as a given to import by name
+      + le superviseur global de parasite, sous forme de given à importer par son nom
+  detail
+      - An object forwarding `parasite.supervisors.globalSupervisor`, the `PlatformSupervisor`
+      - as a `Supervisor` given, for code which needs a supervisor directly rather than a
+      - `Threading`.
+      + Un objet qui relaie `parasite.supervisors.globalSupervisor`, le `PlatformSupervisor` sous
+      + forme de given `Supervisor`, pour le code qui a besoin directement d'un superviseur plutôt
+      + que d'un `Threading`.
+
+entry .unsupervised
+  info
+      - parasite's process-lifetime monitor, for blocking outside any `supervise` scope
+      + le moniteur de durée de vie du processus de parasite, pour bloquer en dehors de toute portée
+      + `supervise`
+  detail
+      - An object forwarding `parasite.unsupervised.orphanMonitor`, a `Monitor` which parks the
+      - calling platform thread and supervises nothing: a deliberate escape hatch for daemon
+      - lifecycles and process-lifetime waits. Prefer `supervise` wherever the blocking region
+      - is already scoped.
+      + Un objet qui relaie `parasite.unsupervised.orphanMonitor`, un `Monitor` qui met en attente
+      + le thread de plateforme appelant et ne supervise rien : une échappatoire délibérée pour le
+      + cycle de vie des démons et les attentes de la durée du processus. Préférez `supervise`
+      + partout où la région bloquante est déjà délimitée.
+
+entry .strategies
+  info
+      - the error-handling strategies, merged from every library; `throwUnsafely` is declared here
+      + les stratégies de traitement des erreurs, fusionnées depuis toutes les bibliothèques ;
+      + `throwUnsafely` est déclarée ici
+  detail
+      - The umbrella's `strategies` choice package. Its givens are `Tactic`s, which decide
+      - what happens when an error is raised, and each is imported by name, since `import
+      - strategies.*` does not import givens. Most are forwarders to
+      - `contingency.strategies` (`fatalErrors`, `mitigation`, `throwSafely`,
+      - `uncheckedErrors`), documented on contingency's page; `throwUnsafely` alone is
+      - declared here.
+      + Le package de choix `strategies` du package parapluie. Ses givens sont des `Tactic`, qui
+      + décident de ce qui se passe lorsqu'une erreur est levée, et chacun s'importe par son nom,
+      + puisque `import
+      + strategies.*` n'importe pas les givens. La plupart sont des redirecteurs vers
+      + `contingency.strategies` (`fatalErrors`, `mitigation`, `throwSafely`,
+      + `uncheckedErrors`), documentés sur la page de contingency ; seule `throwUnsafely` est
+      + déclarée ici.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"42".as[Int]
+      ```
+  refer contingency.strategies
+  entry .throwUnsafely
+    info
+        - throws every error as an ordinary exception, with no capability required
+        + lève chaque erreur sous forme d'exception ordinaire, sans exiger aucune capacité
+    detail
+        - A pure `ThrowTactic[Hazard]^{}` delegating to `contingency.strategies.throwUnsafely`,
+        - so by contravariance it satisfies every `Tactic[error]` at once. It is a delegating
+        - given rather than an export forwarder: a forwarder is a method, and the umbrella name
+        - of a value given would land in the capture set of every `^{tactic}` instance summoned
+        - through it, where a method is not a legal capture reference. Suits scripts and the
+        - outermost layer of a program; a library should state what it raises instead.
+        + Une `ThrowTactic[Hazard]^{}` pure qui délègue à `contingency.strategies.throwUnsafely` ;
+        + par contravariance, elle satisfait donc toutes les `Tactic[error]` à la fois. C'est un
+        + given délégant plutôt qu'un redirecteur d'export : un redirecteur est une méthode, et le
+        + nom, dans le package parapluie, d'un given valeur aboutirait dans l'ensemble de captures
+        + de chaque instance `^{tactic}` invoquée par son intermédiaire, où une méthode n'est pas
+        + une référence de capture légale. Convient aux scripts et à la couche la plus externe d'un
+        + programme ; une bibliothèque devrait plutôt indiquer ce qu'elle lève.
+
+entry .httpServers
+  info
+      - the HTTP servers of scintillate, each a `Protocolic` given to import by name
+      + les serveurs HTTP de scintillate, chacun un given `Protocolic` à importer par son nom
+  detail
+      - The umbrella's `httpServers` choice package: which server answers `tcp"8080".serve[Http]`
+      - is chosen by importing one of these by name. All four are declared here as
+      - hand-written forwarders to `scintillate.httpServers`, because a synthesized export
+      - forwarder loses the givens' capture-annotated refinement types. Each is typed
+      - `scintillate.httpServers.HttpdFor[port]` for a port of 80, 443, 8080 or 8000, captures
+      - the `Tactic[Httpd.Error]` and `Monitor` it is given, and needs a `Probate`, an
+      - `Httpd.Event is Loggable` and a `WebserverErrorPage` in scope.
+      + Le package de choix `httpServers` du package parapluie : le serveur qui répond à
+      + `tcp"8080".serve[Http]` se choisit en important l'un de ces givens par son nom. Les quatre
+      + sont déclarés ici sous forme de redirecteurs écrits à la main vers
+      + `scintillate.httpServers`, car un redirecteur d'export synthétisé perd les types raffinés
+      + annotés de captures des givens. Chacun est typé `scintillate.httpServers.HttpdFor[port]`
+      + pour un port 80, 443, 8080 ou 8000, capture la `Tactic[Httpd.Error]` et le `Monitor` qui lui
+      + sont donnés, et requiert un `Probate`, un `Httpd.Event is Loggable` et une
+      + `WebserverErrorPage` dans la portée.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+      import httpServers.soundnessHttpd
+
+      def main(): Unit = supervise:
+        tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served"))
+      ```
+  refer scintillate.httpServers
+  refer scintillate.Httpd
+  refer scintillate.SocketServer
+  entry .jdkHttpserver
+    info
+        - `Http` served by the JDK's `Httpd` on `localhost`
+        + `Http` servi par le `Httpd` du JDK sur `localhost`
+    detail
+        - Forwards `scintillate.httpServers.jdkHttpserver`: the server built on the JDK's
+        - `com.sun.net.httpserver`, bound to the loopback interface only.
+        + Relaie `scintillate.httpServers.jdkHttpserver` : le serveur construit sur le
+        + `com.sun.net.httpserver` du JDK, lié uniquement à l'interface de bouclage.
+  entry .jdkHttpserverPublic
+    info
+        - `Http` served by the JDK's `Httpd` on every interface
+        + `Http` servi par le `Httpd` du JDK sur toutes les interfaces
+    detail
+        - Forwards `scintillate.httpServers.jdkHttpserverPublic`: as `jdkHttpserver`, but bound
+        - to every network interface, so reachable from other machines.
+        + Relaie `scintillate.httpServers.jdkHttpserverPublic` : comme `jdkHttpserver`, mais lié à
+        + toutes les interfaces réseau, donc joignable depuis d'autres machines.
+  entry .soundnessHttpd
+    info
+        - `Http` served by scintillate's own `SocketServer` on `localhost`
+        + `Http` servi par le `SocketServer` propre à scintillate sur `localhost`
+    detail
+        - Forwards `scintillate.httpServers.soundnessHttpd`: Soundness's own server, which also
+        - speaks HTTP/2 over TLS, bound to the loopback interface only.
+        + Relaie `scintillate.httpServers.soundnessHttpd` : le serveur propre à Soundness, qui parle
+        + aussi HTTP/2 sur TLS, lié uniquement à l'interface de bouclage.
+  entry .soundnessHttpdPublic
+    info
+        - `Http` served by scintillate's own `SocketServer` on every interface
+        + `Http` servi par le `SocketServer` propre à scintillate sur toutes les interfaces
+    detail
+        - Forwards `scintillate.httpServers.soundnessHttpdPublic`: as `soundnessHttpd`, but bound
+        - to every network interface.
+        + Relaie `scintillate.httpServers.soundnessHttpdPublic` : comme `soundnessHttpd`, mais lié à
+        + toutes les interfaces réseau.

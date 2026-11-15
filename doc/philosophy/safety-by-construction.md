@@ -105,4 +105,4 @@ occasionally pushes a design toward keeping something literal that would otherwi
 been computed.
 
 See [impossible states](impossible-states.md) for the rule this serves, and
-[interpolation](../modules/interpolation.md) for how such a literal is built.
+[interpolation](../en/modules/interpolation.md) for how such a literal is built.

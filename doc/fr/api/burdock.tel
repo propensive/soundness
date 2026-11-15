@@ -1,0 +1,810 @@
+tel 1.0
+
+base burdock
+import soundness
+
+info
+    - slim application JARs: dependencies named by content hash, fetched, verified and cached at launch
+    + des JAR d'application légers : dépendances nommées par hachage de contenu, récupérées,
+    + vérifiées et mises en cache au lancement
+detail
+    - _Burdock_ makes an application JAR small without making it fragile. A JAR which carries
+    - every dependency it needs ships tens of megabytes of library code, most of it already
+    - published somewhere public; Burdock replaces each published dependency with a reference to
+    - it, named by the SHA-256 of the exact bytes the compiler read, and a small bootstrap loader
+    - fetches, verifies and caches them when the application starts.
+    + _Burdock_ rend un JAR d'application léger sans le rendre fragile. Un JAR qui embarque toutes
+    + les dépendances dont il a besoin livre des dizaines de mégaoctets de code de bibliothèque,
+    + dont la plupart est déjà publiée quelque part publiquement ; Burdock remplace chaque
+    + dépendance publiée par une référence vers elle, nommée par le SHA-256 des octets exacts
+    + qu'a lus le compilateur, et un petit chargeur d'amorçage les récupère, les vérifie et les
+    + met en cache au démarrage de l'application.
+
+    - The work happens in three stages:
+    + Le travail se déroule en trois étapes :
+
+    - - **at compile time**, `externalize` wraps the application's entry point; its macro hashes
+    -   every dependency JAR on the build's classpath, hard-links each into the Burdock cache,
+    -   and embeds the list of hashes in the compiled output as the resource
+    -   META-INF/burdock.deps;
+    - - **after the build**, the `soundness.repackage` entry point (the `repackage` method here)
+    -   rewrites the JAR in place: each hash which resolves to a public URL — through the release
+    -   assets of hinted GitHub repositories (`GitHub`) or through deps.dev (`DepsDev`) — becomes
+    -   a `Burdock-Require` reference, and anything else is inlined from the cache;
+    - - **at launch**, `Bootstrap`, the one class the repackaged JAR adds, downloads every
+    -   requirement not already cached, checks each against its hash, and starts the
+    -   application on a classpath in manifest order.
+    + - **à la compilation**, `externalize` enveloppe le point d'entrée de l'application ; sa
+    +   macro calcule le hachage de chaque JAR de dépendance du classpath du build, crée pour
+    +   chacun un lien physique dans le cache de Burdock, et embarque la liste des hachages dans
+    +   la sortie compilée sous forme de la ressource META-INF/burdock.deps ;
+    + - **après le build**, le point d'entrée `soundness.repackage` (la méthode `repackage` ici)
+    +   réécrit le JAR sur place : chaque hachage qui se résout en une URL publique — au moyen
+    +   des ressources de version des dépôts GitHub indiqués (`GitHub`) ou au moyen de deps.dev
+    +   (`DepsDev`) — devient une référence `Burdock-Require`, et tout le reste est incorporé
+    +   depuis le cache ;
+    + - **au lancement**, `Bootstrap`, l'unique classe qu'ajoute le JAR reconditionné, télécharge
+    +   chaque dépendance requise qui n'est pas déjà en cache, vérifie chacune par rapport à son
+    +   hachage, et démarre l'application sur un classpath dans l'ordre du manifeste.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    @main
+    def myApp(): Unit = externalize:
+      Out.println(t"hello, world")
+    ```
+
+    ```sh
+    java -cp app.jar:burdock.jar soundness.repackage --github propensive/soundness
+    java -jar app.jar
+    ```
+
+    - **The cache.** Dependency JARs are kept, by hash, as `~/.cache/soundness/jars/<sha256>.jar`.
+    - The `externalize` macro and the repackager use that directory under the user's home; the
+    - bootstrap honours `XDG_CACHE_HOME`, using `$XDG_CACHE_HOME/soundness/jars` when it is set
+    - and non-empty. Earlier releases used `~/.cache/burdock`; nothing migrates it, so the first
+    - launch after upgrading downloads every requirement again, and the old directory may be
+    - deleted.
+    + **Le cache.** Les JAR de dépendances sont conservés, par hachage, sous
+    + `~/.cache/soundness/jars/<sha256>.jar`. La macro `externalize` et le reconditionneur
+    + utilisent ce répertoire sous le répertoire personnel de l'utilisateur ; l'amorçage respecte
+    + `XDG_CACHE_HOME`, en utilisant `$XDG_CACHE_HOME/soundness/jars` lorsque cette variable est
+    + définie et non vide. Les versions précédentes utilisaient `~/.cache/burdock` ; rien ne le
+    + migre, de sorte que le premier lancement après la mise à jour télécharge de nouveau toutes
+    + les dépendances requises, et l'ancien répertoire peut être supprimé.
+
+    - Because a reference names exact bytes, the completeness invariant holds: every dependency
+    - is either referenced or present, a hash which is neither stops the repackage with a
+    - `Repackager.RepackageError`, and a download whose checksum does not match stops the launch.
+    + Comme une référence désigne des octets exacts, l'invariant de complétude est garanti :
+    + chaque dépendance est soit référencée, soit présente, un hachage qui n'est ni l'un ni
+    + l'autre arrête le reconditionnement avec une `Repackager.RepackageError`, et un
+    + téléchargement dont la somme de contrôle ne correspond pas arrête le lancement.
+
+    - The library has two JVM-only source sets: `burdock.core`, with `externalize`, the
+    - `Repackager` and its resolvers, which is exported to the `soundness` umbrella together with
+    - the `soundness.repackage` command-line entry point; and `burdock.boot`, the single Java
+    - class `Bootstrap`, which depends on nothing but the JDK so that it can run before any
+    - dependency has been fetched.
+    + La bibliothèque a deux ensembles de sources réservés à la JVM : `burdock.core`, avec
+    + `externalize`, le `Repackager` et ses résolveurs, qui est exporté vers le package parapluie
+    + `soundness` avec le point d'entrée en ligne de commande `soundness.repackage` ; et
+    + `burdock.boot`, l'unique classe Java `Bootstrap`, qui ne dépend que du JDK afin de pouvoir
+    + s'exécuter avant qu'aucune dépendance n'ait été récupérée.
+
+refer burdock.externalize
+refer burdock.Repackager
+refer burdock.Bootstrap
+refer burdock.repackage
+
+entry .externalize
+  info
+      - wraps an application's entry point so that Burdock can externalize its dependencies
+      + enveloppe le point d'entrée d'une application afin que Burdock puisse externaliser ses
+      + dépendances
+  detail
+      - `externalize(block)` returns `block` unchanged at runtime. Its macro, while the code
+      - compiles, reads the compiler's classpath, computes the SHA-256 of every dependency JAR on
+      - it, hard-links each into the cache at `~/.cache/soundness/jars/<sha256>.jar` (copying where
+      - the cache is on another filesystem), and writes the hashes, one per line, to the resource
+      - META-INF/burdock.deps in the compile output, so it is packaged into the JAR like any
+      - other resource.
+      + `externalize(block)` renvoie `block` inchangé à l'exécution. Sa macro, pendant la
+      + compilation du code, lit le classpath du compilateur, calcule le SHA-256 de chaque JAR de
+      + dépendance qui s'y trouve, crée pour chacun un lien physique dans le cache à
+      + `~/.cache/soundness/jars/<sha256>.jar` (en le copiant lorsque le cache est sur un autre
+      + système de fichiers), et écrit les hachages, un par ligne, dans la ressource
+      + META-INF/burdock.deps de la sortie de compilation, de sorte qu'elle est empaquetée dans le
+      + JAR comme toute autre ressource.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      @main
+      def myApp(): Unit = externalize:
+        Out.println(t"hello, world")
+      ```
+
+      - Nothing else about the application changes: it is built, tested and run as an ordinary
+      - JAR, and the resource is inert until `repackage` reads it. Whether each dependency is
+      - published is decided later, by the repackager; the cache covers whatever cannot be
+      - resolved. The hard-links live on the build machine, so a JAR with unpublished dependencies
+      - must be repackaged where it was built.
+      + Rien d'autre ne change dans l'application : elle est construite, testée et exécutée comme
+      + un JAR ordinaire, et la ressource reste inerte jusqu'à ce que `repackage` la lise. La
+      + question de savoir si chaque dépendance est publiée est tranchée plus tard, par le
+      + reconditionneur ; le cache couvre tout ce qui ne peut être résolu. Les liens physiques
+      + résident sur la machine de build, de sorte qu'un JAR comportant des dépendances non
+      + publiées doit être reconditionné là où il a été construit.
+
+entry .repackage
+  info
+      - rewrites the running application's JAR in place, externalizing its published dependencies
+      + réécrit sur place le JAR de l'application en cours d'exécution, en externalisant ses
+      + dépendances publiées
+  detail
+      - The command-line logic behind `soundness.repackage`, launched with the application JAR
+      - and Burdock on the classpath:
+      + La logique de ligne de commande derrière `soundness.repackage`, lancée avec le JAR de
+      + l'application et Burdock sur le classpath :
+
+      ```sh
+      java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
+      ```
+
+      - It locates the application JAR as the classpath entry holding META-INF/burdock.deps
+      - (raising `Repackager.UserError` if there is none, or if that entry is a directory), reads
+      - the `Bootstrap` class from Burdock's own JAR, builds a resolver which consults the
+      - hinted GitHub repositories before deps.dev, and calls `Repackager.repackage` into a
+      - temporary sibling, which then atomically replaces the original. A `GITHUB_TOKEN`
+      - environment variable, if set, lifts GitHub's unauthenticated rate limit.
+      + Elle localise le JAR de l'application comme l'entrée du classpath contenant
+      + META-INF/burdock.deps (en levant `Repackager.UserError` s'il n'y en a pas, ou si cette
+      + entrée est un répertoire), lit la classe `Bootstrap` depuis le propre JAR de Burdock,
+      + construit un résolveur qui consulte les dépôts GitHub indiqués avant deps.dev, et appelle
+      + `Repackager.repackage` vers un fichier temporaire voisin, qui remplace ensuite
+      + atomiquement l'original. Une variable d'environnement `GITHUB_TOKEN`, si elle est définie,
+      + lève la limite de débit de GitHub pour les accès non authentifiés.
+
+      - Only arguments of the form `--github owner/repo`, `--github=owner/repo` or a
+      - comma-separated list of either are accepted (see `parseArguments`). While resolving, a
+      - progress bar is drawn in place when standard output is a terminal, and suppressed when
+      - it is redirected; at the end a summary is printed: entries read and written, classes kept,
+      - inlined and stripped, the GitHub assets indexed, and each externalized requirement. Any
+      - error is printed and the process exits with status 1.
+      + Seuls les arguments de la forme `--github owner/repo`, `--github=owner/repo` ou une liste
+      + de l'un ou l'autre séparée par des virgules sont acceptés (voir `parseArguments`). Pendant
+      + la résolution, une barre de progression est dessinée sur place lorsque la sortie standard
+      + est un terminal, et supprimée lorsqu'elle est redirigée ; à la fin, un résumé est affiché :
+      + entrées lues et écrites, classes conservées, incorporées et retirées, ressources GitHub
+      + indexées, et chaque dépendance requise externalisée. Toute erreur est affichée et le
+      + processus se termine avec le statut 1.
+
+      - This method is not exported to the `soundness` umbrella: the umbrella's own
+      - `soundness.repackage`, a `@main` method taking the arguments as `Text*`, is the entry
+      - point to launch, and calls `burdock.repackage`.
+      + Cette méthode n'est pas exportée vers le package parapluie `soundness` : le propre
+      + `soundness.repackage` du package parapluie, une méthode `@main` prenant les arguments sous
+      + forme de `Text*`, est le point d'entrée à lancer, et appelle `burdock.repackage`.
+  refer burdock.Repackager
+  refer burdock.parseArguments
+
+entry .parseArguments
+  info
+      - parses `--github` hints into GitHub repositories
+      + analyse les indications `--github` en dépôts GitHub
+  detail
+      - Accepts `--github owner/repo`, `--github=owner/repo`, and comma-separated lists in either
+      - form, any number of times. An unrecognized argument, a `--github` with no operand, or a
+      - repository not of the form owner/repo raises `Repackager.UserError` with a usage line,
+      - _usage: soundness.repackage [--github owner/repo]..._. It is not exported to the
+      - `soundness` umbrella, so it is reached as `burdock.parseArguments`.
+      + Accepte `--github owner/repo`, `--github=owner/repo`, et des listes séparées par des
+      + virgules sous l'une ou l'autre forme, un nombre quelconque de fois. Un argument non
+      + reconnu, un `--github` sans opérande, ou un dépôt qui n'est pas de la forme owner/repo lève
+      + `Repackager.UserError` avec une ligne d'usage, _usage: soundness.repackage [--github
+      + owner/repo]..._. Elle n'est pas exportée vers le package parapluie `soundness` ; on
+      + l'atteint donc par `burdock.parseArguments`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      burdock.parseArguments(List(t"--github", t"propensive/soundness,propensive/fuel"))
+      ```
+
+entry .Repackager
+  info
+      - rewrites a JAR: published dependencies become references, others are inlined from the cache
+      + réécrit un JAR : les dépendances publiées deviennent des références, les autres sont
+      + incorporées depuis le cache
+  detail
+      - The repackager's core, free of I/O beyond reading the input JAR and writing the output.
+      - `.repackage` keeps the application's own classes, drops the bundled classes of every
+      - dependency it can resolve to a URL (listing them instead in the `Burdock-Require`
+      - manifest attribute), inlines the classes of the rest from the cache, adds the
+      - `Bootstrap` class, and rewrites the manifest so that `Main-Class` is `burdock.Bootstrap`
+      - and `Burdock-Main` the original entry point.
+      + Le cœur du reconditionneur, sans entrées-sorties au-delà de la lecture du JAR d'entrée et de
+      + l'écriture de la sortie. `.repackage` conserve les propres classes de l'application, retire
+      + les classes embarquées de chaque dépendance qu'il peut résoudre en une URL (en les
+      + énumérant plutôt dans l'attribut de manifeste `Burdock-Require`), incorpore les classes des
+      + autres depuis le cache, ajoute la classe `Bootstrap`, et réécrit le manifeste de sorte que
+      + `Main-Class` soit `burdock.Bootstrap` et `Burdock-Main` le point d'entrée d'origine.
+
+      - The resolver, the cache lookup and the progress callback are injected, so the logic is
+      - testable without the network or the filesystem:
+      + Le résolveur, la recherche dans le cache et le callback de progression sont injectés, de
+      + sorte que la logique peut être testée sans le réseau ni le système de fichiers :
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
+      val resolve: Repackager.Resolver = hash => if hash == t"aaa" then published else Unset
+      val cached: Repackager.CacheReader = _ => (List[Zip.Entry](): List[Zip.Entry])
+
+      val (requirements, inlined) = Repackager.partition(List(t"aaa", t"bbb"), resolve, cached)
+      ```
+
+      - Entries are copied verbatim, still compressed, so a Stored entry stays Stored and a
+      - Deflated one keeps its CRC and compressed size; only the new manifest and the bootstrap
+      - class are compressed afresh. Directory entries are dropped, and where two entries share
+      - a name the first is kept: the force-included bootstrap over any bundled copy, and an
+      - application class over a cached one.
+      + Les entrées sont copiées telles quelles, toujours compressées, de sorte qu'une entrée Stored
+      + reste Stored et qu'une entrée Deflated conserve son CRC et sa taille compressée ; seuls le
+      + nouveau manifeste et la classe d'amorçage sont compressés à nouveau. Les entrées de
+      + répertoire sont retirées, et lorsque deux entrées partagent un nom, la première est
+      + conservée : l'amorçage inclus d'office plutôt que toute copie embarquée, et une classe de
+      + l'application plutôt qu'une classe en cache.
+  refer burdock.Bootstrap
+  refer burdock.DepsDev
+  refer burdock.GitHub
+  entry .partition
+    info
+        - splits dependency hashes into requirements to reference and cached entries to inline
+        + répartit les hachages de dépendances entre dépendances requises à référencer et entrées en
+        + cache à incorporer
+    detail
+        - `partition(hashes, resolve, cached, progress)` classifies every hash: one which `resolve`
+        - maps to a URL becomes a `Requirement`, one which `cached` finds contributes its entries,
+        - and one which is neither raises `Repackager.RepackageError`, _dependency `hash` is
+        - neither published nor cached_. Lookups run concurrently on virtual threads, sixteen at a
+        - time, and `progress` is called with `(completed, total)` after each group, on the calling
+        - thread. Results are in the order of `hashes`, which is the classpath order.
+        + `partition(hashes, resolve, cached, progress)` classe chaque hachage : celui que `resolve`
+        + associe à une URL devient un `Requirement`, celui que `cached` trouve apporte ses entrées,
+        + et celui qui n'est ni l'un ni l'autre lève `Repackager.RepackageError`, _dependency `hash`
+        + is neither published nor cached_. Les recherches s'exécutent de façon concurrente sur des
+        + threads virtuels, seize à la fois, et `progress` est appelé avec `(completed, total)`
+        + après chaque groupe, sur le thread appelant. Les résultats sont dans l'ordre de `hashes`,
+        + qui est l'ordre du classpath.
+  entry .repackage
+    info
+        - rewrites `inputJar` into `outputJar`, returning a `Repackager.Summary`
+        + réécrit `inputJar` en `outputJar`, en renvoyant un `Repackager.Summary`
+    detail
+        - Takes the input and output paths, a `Resolver`, a `CacheReader`, the bytes of the
+        - `Bootstrap` class and an optional `Progress` callback, and raises
+        - `Repackager.RepackageError` when the JAR has no manifest, no META-INF/burdock.deps
+        - resource or no `Main-Class`, when a dependency is neither published nor cached, and for
+        - any filesystem, stream or archive failure. Published dependencies found in the cache have
+        - their bundled entries stripped; one absent from the cache cannot be identified, so its
+        - entries stay bundled: still correct, only not slimmed.
+        + Prend les chemins d'entrée et de sortie, un `Resolver`, un `CacheReader`, les octets de la
+        + classe `Bootstrap` et un callback `Progress` optionnel, et lève
+        + `Repackager.RepackageError` lorsque le JAR n'a pas de manifeste, pas de ressource
+        + META-INF/burdock.deps ou pas de `Main-Class`, lorsqu'une dépendance n'est ni publiée ni en
+        + cache, et pour tout échec de système de fichiers, de flux ou d'archive. Les dépendances
+        + publiées trouvées dans le cache voient leurs entrées embarquées retirées ; une dépendance
+        + absente du cache ne peut être identifiée, de sorte que ses entrées restent embarquées : le
+        + résultat reste correct, simplement non allégé.
+  entry .Resolver
+    info
+        - resolves a dependency hash to its public download URL, or `Unset`
+        + résout le hachage d'une dépendance en son URL de téléchargement publique, ou `Unset`
+    detail
+        - `Text => Optional[HttpUrl]`. The command line composes `GitHub.index` with
+        - `DepsDev.mavenUrl`.
+        + `Text => Optional[HttpUrl]`. La ligne de commande compose `GitHub.index` avec
+        + `DepsDev.mavenUrl`.
+  entry .Progress
+    info
+        - a callback receiving `(completed, total)` after each group of dependencies is classified
+        + un callback recevant `(completed, total)` après le classement de chaque groupe de
+        + dépendances
+  entry .CacheReader
+    info
+        - looks a dependency hash up in the local cache, giving its entries or `Unset`
+        + recherche le hachage d'une dépendance dans le cache local, en donnant ses entrées ou
+        + `Unset`
+    detail
+        - `Text => Optional[List[Zip.Entry]]`. Directories and the manifest are excluded, and the
+        - payloads stay lazy, so stripping a published dependency's entries by name does not read
+        - the cached JAR's contents.
+        + `Text => Optional[List[Zip.Entry]]`. Les répertoires et le manifeste sont exclus, et les
+        + charges utiles restent paresseuses, de sorte que retirer par nom les entrées d'une
+        + dépendance publiée ne lit pas le contenu du JAR en cache.
+  entry .Requirement
+    info
+        - an externalized dependency: its URL and the SHA-256 it must match
+        + une dépendance externalisée : son URL et le SHA-256 auquel elle doit correspondre
+    entry #url
+      info
+          - where the bootstrap downloads the dependency from
+          + l'endroit d'où l'amorçage télécharge la dépendance
+    entry #digest
+      info
+          - the dependency's SHA-256, as lowercase hex
+          + le SHA-256 de la dépendance, en hexadécimal minuscule
+    entry #text
+      info
+          - the requirement as it appears in `Burdock-Require`: `<sha256>:<url>`
+          + la dépendance requise telle qu'elle apparaît dans `Burdock-Require` : `<sha256>:<url>`
+  entry .Summary
+    info
+        - what a repackage did, for the caller to report
+        + ce qu'a fait un reconditionnement, pour que l'appelant en rende compte
+    entry #inputEntries
+      info
+          - how many entries the input JAR had
+          + le nombre d'entrées du JAR d'entrée
+    entry #directoriesSkipped
+      info
+          - how many directory entries were dropped
+          + le nombre d'entrées de répertoire retirées
+    entry #ownKept
+      info
+          - how many of the application's own entries were kept
+          + le nombre de propres entrées de l'application conservées
+    entry #externalized
+      info
+          - the requirements written to `Burdock-Require`, in classpath order
+          + les dépendances requises écrites dans `Burdock-Require`, dans l'ordre du classpath
+    entry #inlined
+      info
+          - how many entries were inlined from cached dependencies
+          + le nombre d'entrées incorporées depuis des dépendances en cache
+    entry #stripped
+      info
+          - how many bundled entries of published dependencies were removed
+          + le nombre d'entrées embarquées de dépendances publiées qui ont été retirées
+    entry #outputEntries
+      info
+          - how many entries the output JAR has, the manifest included
+          + le nombre d'entrées du JAR de sortie, manifeste compris
+  entry .UserError
+    info
+        - a mistake in how the repackager was invoked
+        + une erreur dans la manière dont le reconditionneur a été invoqué
+    detail
+        - Raised for a JAR which was not built with Burdock (_this JAR was not built with Burdock
+        - (no META-INF/burdock.deps)_), one which is a directory rather than a file, a malformed
+        - argument or repository hint, and a failure to list a hinted repository's releases.
+        + Levée pour un JAR qui n'a pas été construit avec Burdock (_this JAR was not built with
+        + Burdock (no META-INF/burdock.deps)_), pour un JAR qui est un répertoire plutôt qu'un
+        + fichier, pour un argument ou une indication de dépôt mal formés, et pour un échec de
+        + l'énumération des versions d'un dépôt indiqué.
+    entry #detail
+      info
+          - what was wrong
+          + ce qui n'allait pas
+  entry .RepackageError
+    info
+        - a JAR which could not be repackaged
+        + un JAR qui n'a pu être reconditionné
+    detail
+        - Raised by `Repackager.repackage` and `Repackager.partition`: no manifest, no
+        - `Main-Class`, no META-INF/burdock.deps resource, a dependency neither published nor
+        - cached, or a filesystem, stream, archive or concurrency failure.
+        + Levée par `Repackager.repackage` et `Repackager.partition` : pas de manifeste, pas de
+        + `Main-Class`, pas de ressource META-INF/burdock.deps, une dépendance ni publiée ni en
+        + cache, ou un échec de système de fichiers, de flux, d'archive ou de concurrence.
+    entry #detail
+      info
+          - what went wrong
+          + ce qui s'est mal passé
+  entry .BurdockMain
+    info
+        - the `Burdock-Main` manifest attribute: the application's own entry point
+        + l'attribut de manifeste `Burdock-Main` : le propre point d'entrée de l'application
+  entry .BurdockRequire
+    info
+        - the `Burdock-Require` manifest attribute: the externalized dependencies
+        + l'attribut de manifeste `Burdock-Require` : les dépendances externalisées
+  entry .BurdockVerbosity
+    info
+        - the `Burdock-Verbosity` manifest attribute: how much the bootstrap prints
+        + l'attribut de manifeste `Burdock-Verbosity` : la quantité d'informations qu'affiche
+        + l'amorçage
+    detail
+        - One of `silent`, `error` (the default), `info` or `debug`; the repackager writes
+        - `silent`. Any other value stops the launch with status 2.
+        + L'une des valeurs `silent`, `error` (par défaut), `info` ou `debug` ; le reconditionneur
+        + écrit `silent`. Toute autre valeur arrête le lancement avec le statut 2.
+  entry .burdockMain
+    info
+        - writes `Burdock-Main` as a fully-qualified class name
+        + écrit `Burdock-Main` sous forme de nom de classe pleinement qualifié
+  entry .burdockRequire
+    info
+        - writes `Burdock-Require` as space-separated `<sha256>:<url>` items
+        + écrit `Burdock-Require` sous forme d'éléments `<sha256>:<url>` séparés par des espaces
+  entry .burdockVerbosity
+    info
+        - writes `Burdock-Verbosity` as text
+        + écrit `Burdock-Verbosity` sous forme de texte
+
+entry .Bootstrap
+  info
+      - the runtime entry point of a repackaged JAR: fetches, verifies and loads its dependencies
+      + le point d'entrée d'exécution d'un JAR reconditionné : récupère, vérifie et charge ses
+      + dépendances
+  detail
+      - A Java class in `burdock.boot`, and the only class a repackaged JAR adds: it must run
+      - before any dependency is present, so it uses only the JDK, and compiles to a single class
+      - file. `java -jar app.jar` starts it as the manifest's `Main-Class`.
+      + Une classe Java de `burdock.boot`, et l'unique classe qu'ajoute un JAR reconditionné : elle
+      + doit s'exécuter avant qu'aucune dépendance ne soit présente, de sorte qu'elle n'utilise que
+      + le JDK, et se compile en un unique fichier de classe. `java -jar app.jar` la démarre en tant
+      + que `Main-Class` du manifeste.
+
+      - It reads `Burdock-Require`, downloads every requirement not already in the cache —
+      - `$XDG_CACHE_HOME/soundness/jars` if that variable is set and non-empty, otherwise
+      - `~/.cache/soundness/jars` — up to eight at a time with connect and read timeouts, and
+      - checks each download's SHA-256 against the manifest's hash (and a cached file's too). It
+      - then builds a classloader over the JAR and the requirements, in manifest order, sets it
+      - as the thread's context classloader, and invokes `main` on the class `Burdock-Main`
+      - names.
+      + Elle lit `Burdock-Require`, télécharge chaque dépendance requise qui n'est pas déjà dans le
+      + cache — `$XDG_CACHE_HOME/soundness/jars` si cette variable est définie et non vide, sinon
+      + `~/.cache/soundness/jars` — jusqu'à huit à la fois avec des délais de connexion et de
+      + lecture, et vérifie le SHA-256 de chaque téléchargement par rapport au hachage du manifeste
+      + (ainsi que celui d'un fichier en cache). Elle construit ensuite un chargeur de classes sur
+      + le JAR et les dépendances requises, dans l'ordre du manifeste, l'installe comme chargeur de
+      + classes de contexte du thread, et invoque `main` sur la classe que nomme `Burdock-Main`.
+
+      - A checksum mismatch exits with status 1; a malformed `Burdock-Require` item, an invalid
+      - `Burdock-Verbosity`, a missing manifest or entry point, or any failure to launch exits
+      - with status 2. A launcher which supervises startup may set the system property
+      - `burdock.progress` to a file path: while fetching, the bootstrap keeps one line in it,
+      - `<completed> <total> <bytes>`, written atomically, and deletes it when done.
+      + Une somme de contrôle discordante termine avec le statut 1 ; un élément `Burdock-Require`
+      + mal formé, un `Burdock-Verbosity` invalide, un manifeste ou un point d'entrée absent, ou
+      + tout échec de lancement termine avec le statut 2. Un lanceur qui supervise le démarrage
+      + peut fixer la propriété système `burdock.progress` à un chemin de fichier : pendant la
+      + récupération, l'amorçage y maintient une ligne, `<completed> <total> <bytes>`, écrite
+      + atomiquement, et le supprime une fois terminé.
+  entry .main
+    info
+        - launches the application named by `Burdock-Main`, after fetching its requirements
+        + lance l'application que nomme `Burdock-Main`, après avoir récupéré ses dépendances
+        + requises
+
+entry .DepsDev
+  info
+      - resolves a dependency's SHA-256 to its Maven Central URL through Google's deps.dev
+      + résout le SHA-256 d'une dépendance en son URL Maven Central au moyen de deps.dev de Google
+  detail
+      - deps.dev ("Open Source Insights") indexes published artifacts by content hash. `.mavenUrl`
+      - asks its query API which Maven artifact has a hash and builds the artifact's URL on
+      - repo1.maven.org; anything deps.dev does not know as a Maven artifact is `Unset`, and the
+      - repackager then inlines the dependency from the cache instead. The case classes model the
+      - part of the API's JSON response which matters.
+      + deps.dev (« Open Source Insights ») indexe les artefacts publiés par hachage de contenu.
+      + `.mavenUrl` demande à son API de requête quel artefact Maven a un hachage donné et
+      + construit l'URL de l'artefact sur repo1.maven.org ; tout ce que deps.dev ne connaît pas
+      + comme artefact Maven donne `Unset`, et le reconditionneur incorpore alors plutôt la
+      + dépendance depuis le cache. Les case classes modélisent la partie de la réponse JSON de
+      + l'API qui importe.
+  entry .mavenUrl
+    info
+        - the Maven Central URL of the JAR with a given SHA-256, or `Unset`
+        + l'URL Maven Central du JAR ayant un SHA-256 donné, ou `Unset`
+    detail
+        - Takes the hash as hex, sends it base64-encoded as the API expects, and picks the first
+        - result whose system is `MAVEN`. It logs `DepsEvent.Querying` at `fine` and
+        - `DepsEvent.Resolved` at `info`, so it needs a `DepsEvent is Loggable` in scope. Every
+        - failure — the network, an unexpected response, an unknown artifact — gives `Unset`.
+        + Prend le hachage en hexadécimal, l'envoie encodé en base64 comme l'attend l'API, et
+        + choisit le premier résultat dont le système est `MAVEN`. Elle journalise
+        + `DepsEvent.Querying` au niveau `fine` et `DepsEvent.Resolved` au niveau `info`, et
+        + nécessite donc un `DepsEvent is Loggable` dans la portée. Tout échec — le réseau, une
+        + réponse inattendue, un artefact inconnu — donne `Unset`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import logging.silentLogging
+
+        DepsDev.mavenUrl(t"a"*64)
+        ```
+  entry .Unresolved
+    info
+        - a hash which is not a known Maven artifact
+        + un hachage qui n'est pas un artefact Maven connu
+    detail
+        - _not a known Maven artifact_. Raised and caught within `.mavenUrl`, which answers `Unset`.
+        + _not a known Maven artifact_. Levée et interceptée au sein de `.mavenUrl`, qui répond
+        + `Unset`.
+  entry .VersionKey
+    info
+        - an artifact's identity in a deps.dev response
+        + l'identité d'un artefact dans une réponse de deps.dev
+    entry #system
+      info
+          - the package system, such as `MAVEN`
+          + le système de packages, tel que `MAVEN`
+    entry #name
+      info
+          - the artifact's name, `group:artifact` for Maven
+          + le nom de l'artefact, `group:artifact` pour Maven
+    entry #version
+      info
+          - the artifact's version
+          + la version de l'artefact
+  entry .Version
+    info
+        - one version in a deps.dev response
+        + une version dans une réponse de deps.dev
+    entry #versionKey
+      info
+          - the version's identity
+          + l'identité de la version
+  entry .Result
+    info
+        - one match in a deps.dev response
+        + une correspondance dans une réponse de deps.dev
+    entry #version
+      info
+          - the matching version
+          + la version correspondante
+  entry .QueryResult
+    info
+        - a deps.dev hash query's response
+        + la réponse d'une requête de hachage de deps.dev
+    entry #results
+      info
+          - every artifact version with the hash
+          + chaque version d'artefact ayant ce hachage
+
+entry .GitHub
+  info
+      - resolves dependency hashes against the release assets of hinted GitHub repositories
+      + résout des hachages de dépendances par rapport aux ressources de version des dépôts GitHub
+      + indiqués
+  detail
+      - GitHub keeps no global index by hash, but its REST API lists a repository's releases,
+      - and each asset carries a `digest` (`sha256:<hex>`). So the repositories named with
+      - `--github` are indexed up front — a few requests each, rather than one per dependency —
+      - and the index is consulted before deps.dev, since a repository the user named should take
+      - precedence.
+      + GitHub ne maintient aucun index global par hachage, mais son API REST énumère les versions
+      + d'un dépôt, et chaque ressource porte un `digest` (`sha256:<hex>`). Les dépôts nommés avec
+      + `--github` sont donc indexés d'emblée — quelques requêtes chacun, plutôt qu'une par
+      + dépendance — et l'index est consulté avant deps.dev, puisqu'un dépôt que l'utilisateur a
+      + nommé doit avoir la priorité.
+
+      ```scala
+      import soundness.*
+
+      val release = GitHub.Release(List(GitHub.Asset(t"lib-1.jar",
+        t"https://github.com/o/r/releases/download/v1/lib-1.jar", t"sha256:${t"a"*64}")))
+
+      GitHub.indexReleases(List(release))
+      ```
+  refer burdock.Repackager
+  entry .Repository
+    info
+        - a GitHub repository, as an owner and a name
+        + un dépôt GitHub, sous forme d'un propriétaire et d'un nom
+    entry .parse
+      info
+          - reads `owner/repo`, raising `Repackager.UserError` for anything else
+          + lit `owner/repo`, en levant `Repackager.UserError` pour toute autre chose
+      detail
+          - Exactly one slash, with both parts non-empty: `t"owner"`, `t"owner/"`, `t"/repo"` and
+          - `t"a/b/c"` are all rejected, with _`text` is not a GitHub repository of the form
+          - owner/repo_.
+          + Exactement une barre oblique, avec les deux parties non vides : `t"owner"`, `t"owner/"`,
+          + `t"/repo"` et `t"a/b/c"` sont tous rejetés, avec _`text` is not a GitHub repository of
+          + the form owner/repo_.
+    entry .showable
+      info
+          - shows a repository as `owner/repo`
+          + affiche un dépôt sous la forme `owner/repo`
+    entry #owner
+      info
+          - the user or organization which owns the repository
+          + l'utilisateur ou l'organisation propriétaire du dépôt
+    entry #name
+      info
+          - the repository's name
+          + le nom du dépôt
+    entry #text
+      info
+          - the repository as `owner/repo`
+          + le dépôt sous la forme `owner/repo`
+  entry .Asset
+    info
+        - one release asset, as the releases API describes it
+        + une ressource de version, telle que la décrit l'API des versions
+    entry #name
+      info
+          - the asset's file name
+          + le nom de fichier de la ressource
+    entry #url
+      info
+          - the asset's download URL, read from the JSON field `browser_download_url`
+          + l'URL de téléchargement de la ressource, lue depuis le champ JSON `browser_download_url`
+    entry #digest
+      info
+          - the asset's digest, `sha256:<hex>`, or `Unset` for an asset uploaded before GitHub computed them
+          + le condensé de la ressource, `sha256:<hex>`, ou `Unset` pour une ressource envoyée avant
+          + que GitHub ne les calcule
+  entry .Release
+    info
+        - one release of a repository, with its assets
+        + une version d'un dépôt, avec ses ressources
+    entry #assets
+      info
+          - the release's assets
+          + les ressources de la version
+  entry .indexReleases
+    info
+        - indexes a list of releases' `.jar` assets by their SHA-256
+        + indexe les ressources `.jar` d'une liste de versions par leur SHA-256
+    detail
+        - Pure, so it needs no network. Every asset whose name ends in .jar and whose digest is a
+        - SHA-256 is keyed by the lowercase hex; other assets are skipped. The API lists the newest
+        - release first, so where one hash appears in several releases the first, newest URL wins.
+        + Pure, de sorte qu'elle ne nécessite pas de réseau. Chaque ressource dont le nom se termine
+        + par .jar et dont le condensé est un SHA-256 est indexée par l'hexadécimal en minuscules ;
+        + les autres ressources sont ignorées. L'API énumère la version la plus récente en premier,
+        + de sorte que lorsqu'un même hachage apparaît dans plusieurs versions, c'est la première
+        + URL, la plus récente, qui l'emporte.
+  entry .releases
+    info
+        - lists every release of a repository through the GitHub API
+        + énumère chaque version d'un dépôt au moyen de l'API GitHub
+    detail
+        - Pages through the API a hundred releases at a time until a page comes back empty. An
+        - optional token is sent as a bearer token. It logs `DepsEvent.Indexing` and raises
+        - `Repackager.UserError` for an HTTP error, a failure to connect, or a response which is
+        - not the expected JSON.
+        + Parcourt l'API page par page, cent versions à la fois, jusqu'à ce qu'une page revienne
+        + vide. Un jeton optionnel est envoyé comme jeton bearer. Elle journalise
+        + `DepsEvent.Indexing` et lève `Repackager.UserError` pour une erreur HTTP, un échec de
+        + connexion, ou une réponse qui n'est pas le JSON attendu.
+  entry .index
+    info
+        - one index, from SHA-256 to download URL, across all the hinted repositories
+        + un index unique, du SHA-256 vers l'URL de téléchargement, sur l'ensemble des dépôts
+        + indiqués
+    detail
+        - Lists and indexes each repository in turn, logging `DepsEvent.Indexed` with the number
+        - of assets found, and keeps the first URL for a hash found in more than one.
+        + Énumère et indexe chaque dépôt tour à tour, en journalisant `DepsEvent.Indexed` avec le
+        + nombre de ressources trouvées, et conserve la première URL pour un hachage trouvé dans
+        + plus d'un dépôt.
+
+entry .DepsEvent
+  info
+      - what Burdock logs as it resolves dependencies
+      + ce que journalise Burdock lorsqu'il résout des dépendances
+  detail
+      - Every event is tagged `Log.Dependency`, and the two which make requests `Log.Network`
+      - too. `DepsDev.mavenUrl` logs `Querying` at `fine` and `Resolved` at `info`;
+      - `GitHub.releases` logs `Indexing` at `fine`, and `GitHub.index` logs `Indexed` at `info`.
+      - A `DepsEvent is Loggable` must be in scope; `logging.silentLogging` discards them.
+      + Chaque événement est tagué `Log.Dependency`, et les deux qui effectuent des requêtes
+      + aussi `Log.Network`. `DepsDev.mavenUrl` journalise `Querying` au niveau `fine` et
+      + `Resolved` au niveau `info` ; `GitHub.releases` journalise `Indexing` au niveau `fine`, et
+      + `GitHub.index` journalise `Indexed` au niveau `info`. Un `DepsEvent is Loggable` doit être
+      + dans la portée ; `logging.silentLogging` les ignore.
+  entry .communicable
+    info
+        - renders each event as a message
+        + rend chaque événement sous forme de message
+  entry .Querying
+    info
+        - a deps.dev lookup began: _querying deps.dev for the artifact with hash `hash`_
+        + une recherche sur deps.dev a commencé : _querying deps.dev for the artifact with hash
+        + `hash`_
+    entry #hash
+      info
+          - the dependency's SHA-256
+          + le SHA-256 de la dépendance
+  entry .Resolved
+    info
+        - a hash was resolved: _resolved hash `hash` to `url`_
+        + un hachage a été résolu : _resolved hash `hash` to `url`_
+    entry #hash
+      info
+          - the dependency's SHA-256
+          + le SHA-256 de la dépendance
+    entry #url
+      info
+          - the URL it resolved to
+          + l'URL en laquelle il a été résolu
+  entry .Indexing
+    info
+        - a repository's releases are being listed: _listing the GitHub releases of `repository`_
+        + les versions d'un dépôt sont en cours d'énumération : _listing the GitHub releases of
+        + `repository`_
+    entry #repository
+      info
+          - the repository, as `owner/repo`
+          + le dépôt, sous la forme `owner/repo`
+  entry .Indexed
+    info
+        - a repository was indexed: _indexed `assets` release assets of `repository`_
+        + un dépôt a été indexé : _indexed `assets` release assets of `repository`_
+    entry #repository
+      info
+          - the repository, as `owner/repo`
+          + le dépôt, sous la forme `owner/repo`
+    entry #assets
+      info
+          - how many assets were indexed
+          + le nombre de ressources indexées
+
+entry .ProgressBar
+  info
+      - the repackager's progress bar: a forty-cell gauge in ember colours
+      + la barre de progression du reconditionneur : une jauge de quarante cellules aux couleurs de
+      + braise
+  detail
+      - The drawing is ultimatum's gauge, with the smooth eighth-block bar, Unicode glyphs and
+      - the ember palette fixed; redrawing it in place is left to the caller.
+      + Le dessin est la jauge d'ultimatum, avec la barre lisse en huitièmes de bloc, les glyphes
+      + Unicode et la palette braise fixés ; son redessin sur place est laissé à l'appelant.
+  entry .width
+    info
+        - the bar's width in cells: 40
+        + la largeur de la barre en cellules : 40
+  entry .render
+    info
+        - renders a fraction of completion as a `Teletype` bar
+        + rend une fraction d'avancement sous forme de barre `Teletype`
+    detail
+        - The fraction is clamped to the range from 0 to 1. An empty bar is all spaces, a full one
+        - all full blocks, and a fraction between cells ends with one partial block; the bar is
+        - always forty cells wide.
+        + La fraction est ramenée à l'intervalle de 0 à 1. Une barre vide n'est faite que d'espaces,
+        + une barre pleine que de blocs pleins, et une fraction tombant entre deux cellules se
+        + termine par un bloc partiel ; la barre fait toujours quarante cellules de large.
+
+        ```scala
+        import soundness.*
+
+        ProgressBar.render(0.5)
+        ```
+
+entry .internal
+  info
+      - the macro implementation behind `externalize`
+      + l'implémentation de la macro derrière `externalize`
+  hidden
+  detail
+      - Not for direct use: the compile-time half of Burdock, written against the JDK alone since
+      - it runs in the compiler's JVM.
+      + Pas destiné à un usage direct : la moitié de Burdock qui s'exécute à la compilation, écrite
+      + uniquement au moyen du JDK puisqu'elle s'exécute dans la JVM du compilateur.
+  entry .ResourcePath
+    info
+        - the resource holding the dependency hashes: `META-INF/burdock.deps`
+        + la ressource contenant les hachages des dépendances : `META-INF/burdock.deps`
+  entry .externalize
+    info
+        - the macro: hashes and caches the classpath's JARs, writes the resource, returns the block
+        + la macro : calcule les hachages des JAR du classpath et les met en cache, écrit la
+        + ressource, renvoie le bloc

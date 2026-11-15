@@ -62,12 +62,12 @@ capability needs are gathered into one trait, and the platform-specific implemen
 are supplied separately.
 
 `FilesystemBackend` collects stat, open, read, write, list, link and delete; everything
-in the [filesystem](../modules/filesystem.md) API is defined in terms of them. The
+in the [filesystem](../en/modules/filesystem.md) API is defined in terms of them. The
 `java.nio` implementation, the WASI implementation over `wasi:filesystem`, and any
 future one are interchangeable, and the user-facing API mentions no platform at all. The
-same shape gives [sockets](../modules/sockets.md) a `SocketBackend`,
-[compression](../modules/compression.md) its per-platform DEFLATE engines, and
-[images](../modules/images.md) their codecs.
+same shape gives [sockets](../en/modules/sockets.md) a `SocketBackend`,
+[compression](../en/modules/compression.md) its per-platform DEFLATE engines, and
+[images](../en/modules/images.md) their codecs.
 
 That is what makes the same code run on the JVM, in a browser, in a native binary and
 inside a WebAssembly component: not conditional compilation, but a seam narrow enough

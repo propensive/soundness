@@ -1,0 +1,941 @@
+tel 1.0
+
+base legerdemain
+import soundness
+
+info
+    - HTML forms derived from data types, and the form-encoded `Query` their submissions decode from
+    + des formulaires HTML dérivés des types de données, et la `Query` encodée en formulaire à
+    + partir de laquelle leurs soumissions se décodent
+detail
+    - _Legerdemain_ treats an HTML form as a user interface to a data type. A case class gives a
+    - form — a labelled widget per field, chosen by the field's type, with nested case classes as
+    - nested fieldsets — and a submission, a `Query` of key–value pairs, decodes back into the
+    - case class, with any failure pointing at the field which caused it. The type is the single
+    - source of truth for both halves, so the form cannot drift from the data it collects.
+    + _Legerdemain_ traite un formulaire HTML comme une interface utilisateur vers un type de
+    + données. Une case class donne un formulaire — un widget étiqueté par champ, choisi d'après le
+    + type du champ, les case classes imbriquées devenant des fieldsets imbriqués — et une
+    + soumission, une `Query` de paires clé–valeur, se décode de nouveau en case class, tout échec
+    + désignant le champ qui l'a causé. Le type est l'unique source de vérité pour les deux moitiés,
+    + de sorte que le formulaire ne peut pas diverger des données qu'il recueille.
+
+    ```scala
+    import soundness.*
+    import formulations.postFormulation
+    import strategies.throwUnsafely
+
+    case class Person(name: Text, crowned: Boolean)
+    case class Scene(speaker: Person, place: Text)
+
+    val form: Html of Flow = elicit[Scene](validation = Validation(), submit = t"Save")
+
+    val query = t"speaker.name=Macbeth&speaker.crowned=on&place=Dunsinane".as[Query]
+    query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
+    ```
+
+    - The pieces fit together through three typeclasses. `Elicitable` says which `Widget` a
+    - field's type is edited with — a `Field` for anything encodable as text, a `Checkbox` for a
+    - `Boolean`, a `Combobox` for an enumeration, a `Dropdown` for a stored `Reference`.
+    - `Formulaic` is derived for a product type from its fields' `Elicitable`s and produces the
+    - form's rows. `Formulation` decides how the form and each row are framed in HTML; the one
+    - standard choice is `formulations.postFormulation`, imported by name, since `import
+    - soundness.*` does not import givens.
+    + Les pièces s'assemblent par trois classes de types. `Elicitable` indique avec quel `Widget` se
+    + modifie le type d'un champ — un `Field` pour tout ce qui s'encode en texte, une `Checkbox`
+    + pour un `Boolean`, une `Combobox` pour une énumération, un `Dropdown` pour une `Reference`
+    + stockée. `Formulaic` est dérivé pour un type produit à partir des `Elicitable`s de ses champs
+    + et produit les lignes du formulaire. `Formulation` décide de la façon dont le formulaire et
+    + chaque ligne sont encadrés en HTML ; le seul choix standard est
+    + `formulations.postFormulation`, importé par son nom, puisque `import soundness.*` n'importe
+    + pas les givens.
+
+    - The library has two source sets. `legerdemain.query` holds `Query` and `Parametric`: the
+    - form-encoded key–value structure, with no HTML in it, which the HTTP client and server
+    - use for URL query strings and form posts. `legerdemain.core` adds the widgets, the
+    - typeclasses, `elicit`, `edit` and the `formulations` package, and depends on honeycomb's
+    - HTML. Everything is exported to the `soundness` umbrella. Telekinesis builds the form
+    - cycle — render, submit, re-render with errors — on these, as `orchestrate`.
+    + La bibliothèque a deux ensembles de sources. `legerdemain.query` contient `Query` et
+    + `Parametric` : la structure clé–valeur encodée en formulaire, sans HTML, qu'utilisent le
+    + client et le serveur HTTP pour les chaînes de requête des URL et les envois de formulaires.
+    + `legerdemain.core` ajoute les widgets, les classes de types, `elicit`, `edit` et le package
+    + `formulations`, et dépend du HTML de honeycomb. Tout est exporté vers le package parapluie
+    + `soundness`. Telekinesis construit sur ces éléments le cycle de formulaire — rendu,
+    + soumission, nouveau rendu avec les erreurs — sous le nom `orchestrate`.
+
+refer legerdemain.Query
+refer legerdemain.elicit
+refer legerdemain.Formulaic
+refer legerdemain.Formulation
+refer legerdemain.Elicitable
+
+entry .elicit
+  info
+      - renders the form for a type, optionally filled from a submitted `Query`, with its validation messages
+      + rend le formulaire d'un type, éventuellement rempli à partir d'une `Query` soumise, avec ses
+      + messages de validation
+  detail
+      - `elicit[Value](query, validation, submit)` renders the whole form for `Value`, which must
+      - be `Formulaic`, through the `Formulation` given in scope. `query` is what was submitted, to
+      - show the user's entries again (`Unset` for a blank form); `validation` holds the messages
+      - to attach to fields, keyed by each field's `Pointer` (`Validation()` for none); and
+      - `submit` is the submit button's label, or `Unset` for the formulation's default.
+      + `elicit[Value](query, validation, submit)` rend le formulaire complet de `Value`, qui doit
+      + être `Formulaic`, par le given `Formulation` dans la portée. `query` est ce qui a été
+      + soumis, pour réafficher les saisies de l'utilisateur (`Unset` pour un formulaire vierge) ;
+      + `validation` contient les messages à associer aux champs, indexés par le `Pointer` de chaque
+      + champ (`Validation()` pour aucun) ; et `submit` est l'étiquette du bouton de soumission, ou
+      + `Unset` pour celle par défaut de la formulation.
+
+      ```scala
+      import soundness.*
+      import formulations.postFormulation
+      import strategies.throwUnsafely
+
+      case class Person(name: Text, email: Text)
+
+      val blank = elicit[Person](validation = Validation(), submit = t"Register")
+
+      val submitted = t"name=Hamlet".as[Query]
+      val again = elicit[Person](submitted, Validation(), t"Register")
+      ```
+
+      - Each field is labelled from its name, split at its capitals and capitalised (`firstName`
+      - becomes _First name_), and a nested case class becomes a `<fieldset>` with the field's
+      - label as its legend. A field's widget is named by its dotted path, `speaker.name`, which is
+      - the key it is submitted under.
+      + Chaque champ est étiqueté d'après son nom, découpé à ses majuscules et capitalisé
+      + (`firstName` devient _First name_), et une case class imbriquée devient un `<fieldset>` dont
+      + la légende est l'étiquette du champ. Le widget d'un champ est nommé par son chemin pointé,
+      + `speaker.name`, qui est la clé sous laquelle il est soumis.
+
+entry .edit
+  info
+      - renders the form for a value, filled with that value's fields
+      + rend le formulaire d'une valeur, rempli avec les champs de cette valeur
+  detail
+      - An extension on any value which is both `Formulaic` and `Encodable in Query`:
+      - `value.edit(validation, submit)` is the form `elicit` renders, filled with the value's own
+      - fields encoded as a `Query`, for changing an existing record. It needs a `Formulation` in
+      - scope.
+      + Une extension sur toute valeur à la fois `Formulaic` et `Encodable in Query` :
+      + `value.edit(validation, submit)` est le formulaire que rend `elicit`, rempli avec les
+      + propres champs de la valeur encodés en `Query`, pour modifier un enregistrement existant.
+      + Elle requiert une `Formulation` dans la portée.
+
+      ```scala
+      import soundness.*
+      import formulations.postFormulation
+
+      case class Person(name: Text, email: Text)
+
+      Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
+      ```
+
+entry .formulations
+  info
+      - the standard ways to frame a form in HTML, each a given to import by name
+      + les façons standard d'encadrer un formulaire en HTML, chacune un given à importer par son
+      + nom
+  detail
+      - How a form and its rows are rendered is a `Formulation` in scope, and `import
+      - soundness.*` brings none in: one is imported by name, or an application defines its own
+      - to match its design.
+      + La façon dont un formulaire et ses lignes sont rendus est une `Formulation` dans la portée,
+      + et `import soundness.*` n'en apporte aucune : on en importe une par son nom, ou une
+      + application définit la sienne pour l'accorder à son design.
+
+      ```scala
+      import soundness.*
+      import formulations.postFormulation
+      ```
+  entry .postFormulation
+    info
+        - a plain, unstyled form which posts back to its own URL
+        + un formulaire simple, sans style, qui renvoie vers sa propre URL
+    detail
+        - The form is a `<form action="." method="post">` holding the rows and a submit button
+        - labelled with the `submit` text, or _Submit_ if it is `Unset`. Each row is a `<div>`
+        - holding a `<p class="alert">` with the field's validation message, if any, a `<label>`
+        - around the legend and the widget, and a `<span class="required">*</span>`, so a
+        - stylesheet can style the alert and the marker. The marker is currently shown on every
+        - row, whether or not the field is required.
+        + Le formulaire est un `<form action="." method="post">` contenant les lignes et un bouton
+        + de soumission étiqueté avec le texte `submit`, ou _Submit_ s'il vaut `Unset`. Chaque ligne
+        + est une `<div>` contenant un `<p class="alert">` avec le message de validation du champ,
+        + s'il y en a un, un `<label>` autour de la légende et du widget, et un
+        + `<span class="required">*</span>`, de sorte qu'une feuille de style peut styliser l'alerte
+        + et le marqueur. Le marqueur est actuellement affiché sur chaque ligne, que le champ soit
+        + requis ou non.
+
+entry .Formulation
+  info
+      - how a form, and each labelled row of it, is framed in HTML
+      + la façon dont un formulaire, et chacune de ses lignes étiquetées, est encadré en HTML
+  detail
+      - A `Formulation` is the presentation of a form, separate from how its fields are derived:
+      - `#form` wraps the rows and the submit button, and `#element` frames one widget with its
+      - legend and validation message. `elicit` and `edit` take one as a contextual value;
+      - `formulations.postFormulation` is the standard one, and an application defines its own
+      - for its own markup:
+      + Une `Formulation` est la présentation d'un formulaire, distincte de la façon dont ses champs
+      + sont dérivés : `#form` enveloppe les lignes et le bouton de soumission, et `#element`
+      + encadre un widget avec sa légende et son message de validation. `elicit` et `edit` en
+      + prennent une comme valeur contextuelle ; `formulations.postFormulation` est la formulation
+      + standard, et une application définit la sienne pour son propre balisage :
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg, whatwg.*
+
+      given Formulation:
+        def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
+          Form(method = t"post")(Html.Fragment(content*), Input.Submit(value = submit.or(t"Go")))
+
+        def element
+          ( widget: Html of Phrasing, legend: Text, validation: Optional[Message], required: Boolean )
+        :   Html of Flow =
+          Div(Label(legend, widget))
+      ```
+
+      - A `Formulation` is capture-tracked (`Findable`), so one may close over a capability.
+      + Une `Formulation` fait l'objet d'un suivi des captures (`Findable`), de sorte qu'elle peut
+      + capturer une capacité.
+  refer legerdemain.formulations
+  entry #form
+    info
+        - wraps a form's rows and its submit button, labelled with the text or a default
+        + enveloppe les lignes d'un formulaire et son bouton de soumission, étiqueté avec le texte
+        + ou une valeur par défaut
+  entry #element
+    info
+        - frames one widget with its legend, its validation message, and whether it is required
+        + encadre un widget avec sa légende, son message de validation, et l'indication qu'il est
+        + requis ou non
+
+entry .Formulaic
+  info
+      - a type which can be presented as form rows: derived for case classes, field by field
+      + un type qui peut être présenté sous forme de lignes de formulaire : dérivé pour les case
+      + classes, champ par champ
+  detail
+      - `Formulaic` is the typeclass `elicit` and `edit` need. It is derived for a product type
+      - from its fields — each field must itself be `Formulaic` — and is given for any single
+      - value which is `Elicitable` and whose widget is `Renderable` as phrasing HTML. A
+      - derived product renders as a `<fieldset>` with a `<legend>`, so nesting in the data is
+      - nesting in the form.
+      + `Formulaic` est la classe de types dont ont besoin `elicit` et `edit`. Elle est dérivée pour
+      + un type produit à partir de ses champs — chaque champ devant lui-même être `Formulaic` — et
+      + fournie pour toute valeur isolée qui est `Elicitable` et dont le widget est `Renderable` en
+      + HTML de phrasé. Un produit dérivé se rend sous forme de `<fieldset>` avec une `<legend>`, de
+      + sorte que l'imbrication dans les données est l'imbrication dans le formulaire.
+
+      - `#fields` receives the `Pointer` of the value within the whole form, its legend, the
+      - part of the submitted `Query` under that pointer, the `Validation` and the `Formulation`;
+      - a single field looks up its own message in the validation by its pointer.
+      + `#fields` reçoit le `Pointer` de la valeur dans le formulaire complet, sa légende, la partie
+      + de la `Query` soumise sous ce pointeur, la `Validation` et la `Formulation` ; un champ isolé
+      + cherche son propre message dans la validation d'après son pointeur.
+  refer legerdemain.Elicitable
+  refer legerdemain.elicit
+  entry .elicitable
+    info
+        - a single field's row: its `Elicitable` widget, rendered and framed with its message
+        + la ligne d'un champ isolé : son widget `Elicitable`, rendu et encadré avec son message
+    detail
+        - Makes the widget for the value with the field's dotted name, legend and submitted value,
+        - renders it, and frames it with the formulation's `element`.
+        + Crée le widget de la valeur avec le nom pointé, la légende et la valeur soumise du champ,
+        + le rend, et l'encadre avec l'`element` de la formulation.
+  entry .conjunction
+    info
+        - derives the rows of a case class: a fieldset of each field's rows
+        + dérive les lignes d'une case class : un fieldset des lignes de chaque champ
+    detail
+        - The derivation `Formulaic` uses for products. Each field's legend is its name split at
+        - the capitals and capitalised, and its pointer extends the parent's with the field's
+        - name.
+        + La dérivation qu'utilise `Formulaic` pour les produits. La légende de chaque champ est son
+        + nom découpé aux majuscules et capitalisé, et son pointeur étend celui du parent avec le
+        + nom du champ.
+  entry #fields
+    info
+        - the form rows for a value, given its pointer, legend, submitted query, validation and formulation
+        + les lignes de formulaire d'une valeur, d'après son pointeur, sa légende, la requête
+        + soumise, la validation et la formulation
+
+entry .Elicitable
+  info
+      - which widget edits a type, and how a value of it is entered as text
+      + quel widget modifie un type, et comment une valeur de ce type est saisie sous forme de texte
+  detail
+      - `value is Elicitable` says what a form field of type `value` looks like: its `Operand` is
+      - a `Widget` type, `#widget` makes one with a field's name, legend and current value, and
+      - `#input` gives the text a value is submitted as. The givens in the companion choose:
+      + `value is Elicitable` indique à quoi ressemble un champ de formulaire de type `value` : son
+      + `Operand` est un type `Widget`, `#widget` en crée un avec le nom, la légende et la valeur
+      + courante d'un champ, et `#input` donne le texte sous lequel une valeur est soumise. Les
+      + givens de l'objet compagnon choisissent :
+
+      - - any `Encodable in Text` value — `Text`, numbers, validated types such as
+      -   `EmailAddress` — is a text `Field` (`decodable`, in `Elicitable2`, at lower priority);
+      - - a `Boolean` is a `Checkbox`, submitted as `on` when checked (`boolean`);
+      - - an `Enumerable` type is a `Combobox` offering each value's name (`enumerable`);
+      - - a `Reference[Entity]` to a stored entity is a `Dropdown` of every stored entity,
+      -   shown by its `Showable` rendering (`reference`).
+      + - toute valeur `Encodable in Text` — `Text`, nombres, types validés comme `EmailAddress` —
+      +   est un `Field` texte (`decodable`, dans `Elicitable2`, avec une priorité inférieure) ;
+      + - un `Boolean` est une `Checkbox`, soumise comme `on` quand elle est cochée (`boolean`) ;
+      + - un type `Enumerable` est une `Combobox` qui propose le nom de chaque valeur
+      +   (`enumerable`) ;
+      + - une `Reference[Entity]` vers une entité stockée est un `Dropdown` de toutes les entités
+      +   stockées, affichées par leur rendu `Showable` (`reference`).
+
+      - A type of one's own gets a different widget with a given of its own.
+      + Un type personnel obtient un autre widget avec un given qui lui est propre.
+  refer legerdemain.Widget
+  refer legerdemain.Formulaic
+  entry .boolean
+    info
+        - edits a `Boolean` with a `Checkbox`, entered as `on` when true and empty when false
+        + modifie un `Boolean` avec une `Checkbox`, saisi comme `on` quand il est vrai et vide quand
+        + il est faux
+  entry .enumerable
+    info
+        - edits an `Enumerable` type with a `Combobox` of its values' names
+        + modifie un type `Enumerable` avec une `Combobox` des noms de ses valeurs
+    detail
+        - Each value is entered by its name, as `Enumerable` names it, and the combobox's list
+        - offers all of them.
+        + Chaque valeur est saisie par son nom, tel que `Enumerable` la nomme, et la liste de la
+        + combobox les propose toutes.
+  entry .reference
+    info
+        - edits a `Reference` to a stored entity with a `Dropdown` of all such entities
+        + modifie une `Reference` vers une entité stockée avec un `Dropdown` de toutes les entités
+        + de ce genre
+    detail
+        - Needs the entity to be `Listable`, `Showable` and `Referenceable`, and its reference's
+        - operand to be `Encodable in Text`: every stored entity is enumerated, each option keyed
+        - by its encoded reference and labelled with the entity's `show`.
+        + Requiert que l'entité soit `Listable`, `Showable` et `Referenceable`, et que l'opérande de
+        + sa référence soit `Encodable in Text` : toutes les entités stockées sont énumérées, chaque
+        + option ayant pour clé sa référence encodée et pour étiquette le `show` de l'entité.
+  entry #input
+    info
+        - the text a value of this type is entered or submitted as
+        + le texte sous lequel une valeur de ce type est saisie ou soumise
+  entry #widget
+    info
+        - the widget for a field, from its name, its legend and its current text
+        + le widget d'un champ, d'après son nom, sa légende et son texte courant
+
+entry .Elicitable2
+  info
+      - the lower-priority `Elicitable` given, for any type encodable as text
+      + le given `Elicitable` de priorité inférieure, pour tout type encodable en texte
+  detail
+      - Mixed into the `Elicitable` companion so that the more specific givens there win.
+      + Incorporé à l'objet compagnon d'`Elicitable` afin que les givens plus spécifiques qui s'y
+      + trouvent l'emportent.
+  entry #decodable
+    info
+        - edits any `Encodable in Text` value with a text `Field`, entered as its encoding
+        + modifie toute valeur `Encodable in Text` avec un `Field` texte, saisie sous forme de son
+        + encodage
+    detail
+        - Despite its name, it requires only that the type is `Encodable in Text`: the field shows
+        - the value's encoding, and the submission is decoded separately, through `Query`.
+        + Malgré son nom, il requiert seulement que le type soit `Encodable in Text` : le champ
+        + affiche l'encodage de la valeur, et la soumission est décodée séparément, par `Query`.
+
+entry .Widget
+  info
+      - a form control, with the name it is submitted under and its current value
+      + un contrôle de formulaire, avec le nom sous lequel il est soumis et sa valeur courante
+  detail
+      - The common shape of `Field`, `Checkbox`, `Combobox`, `Dropdown` and `RadioGroup`: each is
+      - a case class with a `#name`, the field's dotted path in the form, and a `#value`, the text
+      - it holds, and each companion has a `Renderable` given which renders it as phrasing HTML.
+      + La forme commune de `Field`, `Checkbox`, `Combobox`, `Dropdown` et `RadioGroup` : chacun est
+      + une case class avec un `#name`, le chemin pointé du champ dans le formulaire, et une
+      + `#value`, le texte qu'il contient, et chaque objet compagnon a un given `Renderable` qui le
+      + rend en HTML de phrasé.
+  entry #name
+    info
+        - the name the control is submitted under: the field's dotted path within the form
+        + le nom sous lequel le contrôle est soumis : le chemin pointé du champ dans le formulaire
+  entry #value
+    info
+        - the text the control holds, from the submitted query or the value being edited
+        + le texte que contient le contrôle, tiré de la requête soumise ou de la valeur en cours de
+        + modification
+
+entry .Field
+  info
+      - a text input, the widget for any value encodable as text
+      + une saisie de texte, le widget de toute valeur encodable en texte
+  detail
+      - Renders as `<input type="text">` with the widget's name and value; the label is
+      - rendered by the `Formulation` around it.
+      + Se rend sous forme d'`<input type="text">` avec le nom et la valeur du widget ; l'étiquette
+      + est rendue par la `Formulation` qui l'entoure.
+  entry .renderable
+    info
+        - renders a field as an `<input type="text">`
+        + rend un champ sous forme d'`<input type="text">`
+  entry #label
+    info
+        - the field's legend
+        + la légende du champ
+  entry #name
+    info
+        - the name the field is submitted under: its dotted path within the form
+        + le nom sous lequel le champ est soumis : son chemin pointé dans le formulaire
+  entry #value
+    info
+        - the text in the field
+        + le texte du champ
+
+entry .Checkbox
+  info
+      - a checkbox, the widget for a `Boolean`
+      + une case à cocher, le widget d'un `Boolean`
+  detail
+      - Renders as `<input type="checkbox">`, checked when its value is not empty. A checked box
+      - is submitted as `on` and an unchecked one not at all, which is why a `Boolean` decodes
+      - from a `Query` by whether its key is present.
+      + Se rend sous forme d'`<input type="checkbox">`, cochée quand sa valeur n'est pas vide. Une
+      + case cochée est soumise comme `on` et une case non cochée pas du tout, c'est pourquoi un
+      + `Boolean` se décode à partir d'une `Query` selon que sa clé est présente ou non.
+  entry .renderable
+    info
+        - renders a checkbox, checked if its value is non-empty
+        + rend une case à cocher, cochée si sa valeur n'est pas vide
+  entry #name
+    info
+        - the name the box is submitted under: its dotted path within the form
+        + le nom sous lequel la case est soumise : son chemin pointé dans le formulaire
+  entry #value
+    info
+        - `on` when checked, and empty otherwise
+        + `on` quand elle est cochée, et vide sinon
+
+entry .Combobox
+  info
+      - a text input with a list of suggestions, the widget for an enumeration
+      + une saisie de texte avec une liste de suggestions, le widget d'une énumération
+  detail
+      - Renders as an `<input>` tied by its `list` attribute to a `<datalist>` of the options, so
+      - a browser suggests the values while still accepting typed text, which then must decode.
+      - The datalist's id is the widget's name, so the name must be a valid DOM id: a field whose
+      - name contains whitespace, or a lone enumeration at the root of a form (whose name is
+      - empty), cannot be rendered.
+      + Se rend sous forme d'un `<input>` lié par son attribut `list` à une `<datalist>` des
+      + options, de sorte qu'un navigateur suggère les valeurs tout en acceptant du texte saisi, qui
+      + doit ensuite se décoder. L'id de la datalist est le nom du widget ; le nom doit donc être un
+      + id DOM valide : un champ dont le nom contient des espaces, ou une énumération isolée à la
+      + racine d'un formulaire (dont le nom est vide), ne peut pas être rendu.
+  entry .renderable
+    info
+        - renders a combobox as an `<input>` and its `<datalist>`
+        + rend une combobox sous forme d'un `<input>` et de sa `<datalist>`
+  entry #name
+    info
+        - the name the input is submitted under, and its datalist's id
+        + le nom sous lequel la saisie est soumise, et l'id de sa datalist
+  entry #options
+    info
+        - the suggested values
+        + les valeurs suggérées
+  entry #value
+    info
+        - the text in the input
+        + le texte de la saisie
+
+entry .Dropdown
+  info
+      - a selection from a fixed list of labelled options, the widget for a stored reference
+      + une sélection dans une liste fixe d'options étiquetées, le widget d'une référence stockée
+  detail
+      - Renders as a `<select>` of `<option>`s, each submitting its `key` and showing its `value`.
+      + Se rend sous forme d'un `<select>` d'`<option>`s, chacune soumettant sa `key` et affichant
+      + sa `value`.
+  entry .renderable
+    info
+        - renders a dropdown as a `<select>` of its options
+        + rend une liste déroulante sous forme d'un `<select>` de ses options
+  entry #name
+    info
+        - the name the selection is submitted under
+        + le nom sous lequel la sélection est soumise
+  entry #options
+    info
+        - the options, each a submitted key and a displayed label
+        + les options, chacune une clé soumise et une étiquette affichée
+  entry #value
+    info
+        - the key currently selected
+        + la clé actuellement sélectionnée
+
+entry .RadioGroup
+  info
+      - a set of radio buttons sharing one name, one of which is chosen
+      + un ensemble de boutons radio partageant un même nom, dont l'un est choisi
+  detail
+      - Renders as a `<label>` per option around an `<input type="radio">`. No standard
+      - `Elicitable` produces one; a type which should be chosen by radio buttons needs an
+      - `Elicitable` given whose `Operand` is `RadioGroup`.
+      + Se rend sous forme d'un `<label>` par option autour d'un `<input type="radio">`. Aucun
+      + `Elicitable` standard n'en produit ; un type qui doit être choisi par des boutons radio
+      + requiert un given `Elicitable` dont l'`Operand` est `RadioGroup`.
+  entry .renderable
+    info
+        - renders a radio group as a labelled radio button per option
+        + rend un groupe radio sous forme d'un bouton radio étiqueté par option
+  entry #name
+    info
+        - the name every button in the group is submitted under
+        + le nom sous lequel chaque bouton du groupe est soumis
+  entry #options
+    info
+        - the options, each with a key, a submitted value and a label
+        + les options, chacune avec une clé, une valeur soumise et une étiquette
+  entry #value
+    info
+        - the value currently chosen
+        + la valeur actuellement choisie
+
+entry .Query
+  info
+      - form-encoded key–value pairs: a URL query string or a form submission, and their codecs
+      + des paires clé–valeur encodées en formulaire : une chaîne de requête d'URL ou une soumission
+      + de formulaire, et leurs codecs
+  detail
+      - A `Query` is an ordered list of `(key, value)` pairs of `Text`, as a query string
+      - `a=1&b=2` or an `application/x-www-form-urlencoded` body holds them. Nested data is
+      - flattened into dotted keys — `speaker.name` — so a case class encodes to a `Query` field
+      - by field and decodes from one, which is how form submissions and query parameters become
+      - typed values.
+      + Une `Query` est une liste ordonnée de paires `(key, value)` de `Text`, telles qu'une chaîne
+      + de requête `a=1&b=2` ou un corps `application/x-www-form-urlencoded` les contient. Les
+      + données imbriquées sont aplaties en clés pointées — `speaker.name` — de sorte qu'une case
+      + class s'encode en `Query` champ par champ et s'en décode de même, ce qui est la façon dont
+      + les soumissions de formulaires et les paramètres de requête deviennent des valeurs typées.
+
+      ```scala fuel
+      frame
+        label An empty query
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val query = Query()
+            query.show   // t""
+      frame
+        label One parameter
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val query = Query(List(t"name" -> t"Nick Bottom"))
+            query.show   // t"name=Nick+Bottom"
+      frame
+        label A second parameter appended
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val query = Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com"))
+            query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
+      frame
+        label Both nested under a prefix, then decoded
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            case class Person(name: Text, email: Text)
+            case class Scene(speaker: Person, place: Text)
+
+            val query =
+              (Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com")))
+              . prefix(t"speaker") + Query(List(t"place" -> t"Athens"))
+
+            query.show       // t"speaker.name=Nick+Bottom&speaker.email=bottom%40example.com&place=Athens"
+            query.as[Scene]  // Scene(Person(t"Nick Bottom", t"bottom@example.com"), t"Athens")
+      ##
+      ```
+
+      - Text decodes to a `Query` with `as[Query]` and a `Query` encodes, or `show`s, as the
+      - URL-encoded string. Any type which is `Encodable in Text` encodes to a `Query` of one
+      - unnamed value, and any case class whose fields encode does so field by field; decoding
+      - mirrors both, raising `Query.Error` for a missing parameter. Under an accruing strategy
+      - (`validate`), every missing or invalid field of a case class is reported, each with its
+      - dotted `Pointer`, and the case class's constructor runs only if every field decoded.
+      + Un texte se décode en `Query` avec `as[Query]` et une `Query` s'encode, ou s'affiche
+      + (`show`), sous forme de chaîne encodée pour URL. Tout type `Encodable in Text` s'encode en
+      + une `Query` d'une valeur sans nom, et toute case class dont les champs s'encodent le fait
+      + champ par champ ; le décodage reflète les deux, en levant `Query.Error` pour un paramètre
+      + manquant. Sous une stratégie cumulative (`validate`), chaque champ manquant ou invalide
+      + d'une case class est signalé, chacun avec son `Pointer` pointé, et le constructeur de la
+      + case class ne s'exécute que si chaque champ s'est décodé.
+
+      - Named parameters are read and written dynamically — `query.name`, `query.name = value`,
+      - `Query.make(name = value)` — when a `Parametric` given types the name.
+      + Les paramètres nommés se lisent et s'écrivent dynamiquement — `query.name`,
+      + `query.name = value`, `Query.make(name = value)` — quand un given `Parametric` type le nom.
+  refer legerdemain.Parametric
+  refer legerdemain.elicit
+  entry .apply
+    info
+        - an empty query, a query of one unnamed value, or one of the given pairs, in order
+        + une requête vide, une requête d'une valeur sans nom, ou une requête des paires données,
+        + dans l'ordre
+    detail
+        - `Query()` is empty, `Query(text)` holds the single value `text` with an empty key — the
+        - shape a value `Encodable in Text` encodes to — and `Query(pairs)` holds a list of `(key,
+        - value)` pairs as they are.
+        + `Query()` est vide, `Query(text)` contient la seule valeur `text` avec une clé vide — la
+        + forme vers laquelle s'encode une valeur `Encodable in Text` — et `Query(pairs)` contient
+        + une liste de paires `(key, value)` telles quelles.
+  entry .encodable
+    info
+        - encodes a `Query` as URL-encoded text; and any encodable value or case class as a `Query`
+        + encode une `Query` en texte encodé pour URL ; et toute valeur encodable ou case class en
+        + `Query`
+    detail
+        - Two givens share the name. One renders a `Query` as `key=value` pairs joined by `&`, each
+        - key and value URL-encoded. The other, an inline given, makes any type `Encodable in
+        - Query`: a type `Encodable in Text` becomes a query of one unnamed value, and a case
+        - class encodes each field under its name, nested fields under dotted keys.
+        + Deux givens partagent ce nom. L'un rend une `Query` sous forme de paires `key=value`
+        + jointes par `&`, chaque clé et chaque valeur étant encodées pour URL. L'autre, un given
+        + inline, rend tout type `Encodable in Query` : un type `Encodable in Text` devient une
+        + requête d'une valeur sans nom, et une case class encode chaque champ sous son nom, les
+        + champs imbriqués sous des clés pointées.
+
+        ```scala
+        import soundness.*
+
+        case class Person(name: Text, age: Int)
+
+        summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
+        ```
+  entry .decodable
+    info
+        - decodes URL-encoded text as a `Query`; and a `Query` as any decodable value or case class
+        + décode un texte encodé pour URL en `Query` ; et une `Query` en toute valeur décodable ou
+        + case class
+    detail
+        - Two givens share the name. One splits text on `&` and each part at its first `=`,
+        - URL-decoding both sides; a part with no `=` is a key with an empty value. The other, an
+        - inline given, makes any type `Decodable in Query`: a type `Decodable in Text` is decoded
+        - from the query's unnamed value, and a case class field by field from the parameters
+        - under its fields' names.
+        + Deux givens partagent ce nom. L'un découpe le texte sur `&` et chaque partie à son premier
+        + `=`, en décodant les deux côtés pour URL ; une partie sans `=` est une clé avec une valeur
+        + vide. L'autre, un given inline, rend tout type `Decodable in Query` : un type
+        + `Decodable in Text` est décodé à partir de la valeur sans nom de la requête, et une case
+        + class champ par champ à partir des paramètres situés sous les noms de ses champs.
+
+        - A missing value raises `Query.Error` with the reason `Missing`, unless the type has a
+        - `Default`, which is used after the error is raised. Under an accruing strategy, every
+        - missing field of a case class is raised, each focused at its dotted `Pointer`, and the
+        - constructor is not run on fallback values — so a refined type's constructor never
+        - reports phantom errors for fields the user did not fill in.
+        + Une valeur manquante lève `Query.Error` avec la raison `Missing`, à moins que le type
+        + n'ait un `Default`, qui est utilisé après que l'erreur a été levée. Sous une stratégie
+        + cumulative, chaque champ manquant d'une case class est levé, chacun ciblé sur son
+        + `Pointer` pointé, et le constructeur ne s'exécute pas sur des valeurs de repli — de sorte
+        + que le constructeur d'un type raffiné ne signale jamais d'erreurs fantômes pour des champs
+        + que l'utilisateur n'a pas remplis.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Person(name: Text, email: Text)
+
+        t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
+        ```
+  entry .EncodableDerivation
+    info
+        - the product derivation of `Encodable in Query`: each field encoded under its name
+        + la dérivation de produits de `Encodable in Query` : chaque champ encodé sous son nom
+    detail
+        - Used by the inline `encodable` given for case classes; not normally named directly.
+        + Utilisée par le given inline `encodable` pour les case classes ; on ne la nomme
+        + normalement pas directement.
+    entry .conjunction
+      info
+          - encodes a product as the union of its fields' queries, each prefixed with the field's name
+          + encode un produit comme l'union des requêtes de ses champs, chacune préfixée par le nom
+          + du champ
+  entry .DecodableDerivation
+    info
+        - the product derivation of `Decodable in Query`: each field decoded from its parameters
+        + la dérivation de produits de `Decodable in Query` : chaque champ décodé à partir de ses
+        + paramètres
+    detail
+        - Used by the inline `decodable` given for case classes; not normally named directly.
+        - It decodes the fields in a single traversal, focuses each field's errors at its
+        - `Pointer` (a nested record's error lands at `outer.inner`), and constructs the product
+        - only when every field decoded cleanly.
+        + Utilisée par le given inline `decodable` pour les case classes ; on ne la nomme
+        + normalement pas directement. Elle décode les champs en un seul parcours, cible les erreurs
+        + de chaque champ sur son `Pointer` (l'erreur d'un enregistrement imbriqué atterrit en
+        + `outer.inner`), et ne construit le produit que si chaque champ s'est décodé sans erreur.
+    entry .conjunction
+      info
+          - decodes a product field by field, constructing it only if every field decoded
+          + décode un produit champ par champ, en ne le construisant que si chaque champ s'est
+          + décodé
+  entry .booleanEncodable
+    info
+        - encodes a `Boolean` as a checkbox does: `on` when true, and nothing when false
+        + encode un `Boolean` comme le fait une case à cocher : `on` quand il est vrai, et rien
+        + quand il est faux
+  entry .booleanDecodable
+    info
+        - decodes a `Boolean` as a checkbox's submission: true if the value is present at all
+        + décode un `Boolean` comme la soumission d'une case à cocher : vrai si la valeur est
+        + présente, quelle qu'elle soit
+    detail
+        - An unchecked checkbox is not submitted, so a `Boolean` field is never missing: its
+        - absence is `false`.
+        + Une case non cochée n'est pas soumise, de sorte qu'un champ `Boolean` ne manque jamais :
+        + son absence vaut `false`.
+  entry .showable
+    info
+        - shows a `Query` as its URL-encoded query string, as `#queryString` gives it
+        + affiche une `Query` sous forme de sa chaîne de requête encodée pour URL, telle que la
+        + donne `#queryString`
+  entry .inspectable
+    info
+        - a debug rendering of a `Query`: `key = "value"` pairs, separated by commas, not URL-encoded
+        + un rendu de débogage d'une `Query` : des paires `key = "value"`, séparées par des
+        + virgules, non encodées pour URL
+  entry .applyDynamicNamed
+    info
+        - `Query.make(name = value, …)`: a query from named, typed parameters
+        + `Query.make(name = value, …)` : une requête à partir de paramètres nommés et typés
+    detail
+        - Each parameter name must have a `Parametric` given in scope saying what type its value
+        - takes, and each value must be `Encodable in Query`; both are checked as the code
+        - compiles. A value of the wrong type is a compile error, _the parameter `name` takes
+        - values of `T` but the provided value had type `U`_; a name with no `Parametric` is
+        - another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
+        + Chaque nom de paramètre doit avoir dans la portée un given `Parametric` indiquant le type
+        + de sa valeur, et chaque valeur doit être `Encodable in Query` ; les deux sont vérifiés
+        + pendant la compilation du code. Une valeur du mauvais type est une erreur de compilation,
+        + _the parameter `name` takes values of `T` but the provided value had type `U`_ ; un nom
+        + sans `Parametric` en est une autre (erreur `↯/s.87.4`), et une valeur sans encodage une
+        + troisième (erreur `↯/s.87.3`).
+
+        ```scala
+        import soundness.*
+
+        inline given ("key" is Parametric to Text) = !!
+        inline given ("count" is Parametric to Int) = !!
+
+        Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
+        ```
+
+        - Telekinesis's `queryParameters.arbitraryQueryParameter`, imported by name, accepts any
+        - name with any value.
+        + Le `queryParameters.arbitraryQueryParameter` de Telekinesis, importé par son nom, accepte
+        + n'importe quel nom avec n'importe quelle valeur.
+  entry .addable
+    info
+        - `query + query`: the pairs of both, the left's first
+        + `query + query` : les paires des deux, celles de gauche d'abord
+  entry .Error
+    info
+        - raised when a parameter a value needs is missing from a query
+        + levée quand un paramètre dont une valeur a besoin manque dans une requête
+    detail
+        - Error `↯/s.87.2`: _the query parameter could not be read because the parameter was not
+        - present in the query string_. Raised by the `Decodable in Query` givens when a value
+        - which is required has no parameter, and focused at that field's `Pointer` when a case
+        - class is decoded, so an accruing strategy reports every missing field of a form.
+        + Erreur `↯/s.87.2` : _the query parameter could not be read because the parameter was not
+        + present in the query string_. Levée par les givens `Decodable in Query` quand une valeur
+        + requise n'a pas de paramètre, et ciblée sur le `Pointer` de ce champ lors du décodage
+        + d'une case class, de sorte qu'une stratégie cumulative signale chaque champ manquant d'un
+        + formulaire.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Person(name: Text, email: Text)
+
+        capture[Query.Error](t"name=Hamlet".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
+        ```
+    entry .Reason
+      info
+          - why a query parameter could not be read: `Missing`, the only reason
+          + la raison pour laquelle un paramètre de requête n'a pas pu être lu : `Missing`, la seule
+          + raison
+      detail
+          - `Missing` (1): the parameter was not present in the query string.
+          + `Missing` (1) : le paramètre n'était pas présent dans la chaîne de requête.
+      entry #number
+        info
+            - the reason's number, the second part of the error's code
+            + le numéro de la raison, la seconde partie du code de l'erreur
+    entry .communicable
+      info
+          - renders a reason as a message: _the parameter was not present in the query string_
+          + rend une raison sous forme de message : _the parameter was not present in the query
+          + string_
+    entry #reason
+      info
+          - the `Query.Error.Reason`
+          + la `Query.Error.Reason`
+  entry #values
+    info
+        - the query's `(key, value)` pairs, in order, with keys dotted for nested fields
+        + les paires `(key, value)` de la requête, dans l'ordre, avec des clés pointées pour les
+        + champs imbriqués
+  entry #append
+    info
+        - a query with another's pairs after this one's
+        + une requête avec les paires d'une autre après celles de celle-ci
+  entry #nil
+    info
+        - whether the query holds no pairs
+        + si la requête ne contient aucune paire
+  entry #++
+    info
+        - a query with another's pairs after this one's, as `#append`
+        + une requête avec les paires d'une autre après celles de celle-ci, comme `#append`
+  entry #selectDynamic
+    info
+        - `query.name`: the parameter `name`, decoded to the type its `Parametric` names
+        + `query.name` : le paramètre `name`, décodé dans le type que nomme son `Parametric`
+    detail
+        - Needs `"name" is Parametric to Result` and `Result is Decodable in Query`; the part of the
+        - query under `name` (its own value and any dotted children) is decoded, raising
+        - `Query.Error` if it is missing.
+        + Requiert `"name" is Parametric to Result` et `Result is Decodable in Query` ; la partie de
+        + la requête sous `name` (sa propre valeur et tout enfant pointé) est décodée, en levant
+        + `Query.Error` si elle manque.
+  entry #updateDynamic
+    info
+        - `query.name = value`: a query with the parameter `name` added, encoded from a typed value
+        + `query.name = value` : une requête à laquelle est ajouté le paramètre `name`, encodé à
+        + partir d'une valeur typée
+    detail
+        - Needs `"name" is Parametric to Result` and the value to be `Encodable in Query`. A value
+        - encoding to one unnamed value is added under `name`; a structured one is added under
+        - `name.` and each of its own keys. The receiver is unchanged.
+        + Requiert `"name" is Parametric to Result` et que la valeur soit `Encodable in Query`. Une
+        + valeur qui s'encode en une valeur sans nom est ajoutée sous `name` ; une valeur structurée
+        + est ajoutée sous `name.` et chacune de ses propres clés. Le receveur est inchangé.
+  entry #at
+    info
+        - the value under a key, decoded from text, or `Unset` if there is none
+        + la valeur sous une clé, décodée à partir d'un texte, ou `Unset` s'il n'y en a aucune
+    detail
+        - `query.at[Int](t"page")` is the value of the parameter `page` as an `Int`, or `Unset`
+        - when no `page` parameter has a value of its own. It needs a `Tactic` for the decoding.
+        + `query.at[Int](t"page")` est la valeur du paramètre `page` sous forme d'`Int`, ou `Unset`
+        + quand aucun paramètre `page` n'a de valeur propre. Elle requiert une `Tactic` pour le
+        + décodage.
+  entry #as
+    info
+        - the whole query decoded as a value, with errors focused at their `Pointer`s
+        + la requête entière décodée en valeur, avec les erreurs ciblées sur leurs `Pointer`s
+    detail
+        - `query.as[Person]` decodes through `Person is Decodable in Query`, so a missing field
+        - raises `Query.Error` focused at that field's dotted pointer.
+        + `query.as[Person]` décode par `Person is Decodable in Query`, de sorte qu'un champ
+        + manquant lève `Query.Error` ciblée sur le pointeur pointé de ce champ.
+  entry #apply
+    info
+        - the query's unnamed value, or `Unset`; or the part of the query under a key
+        + la valeur sans nom de la requête, ou `Unset` ; ou la partie de la requête sous une clé
+    detail
+        - `query()` is the value of a query which holds exactly one pair with an empty key, and
+        - `Unset` otherwise. `query(t"speaker")` is the sub-query under `speaker`: the pair keyed
+        - `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+        + `query()` est la valeur d'une requête qui contient exactement une paire à clé vide, et
+        + `Unset` sinon. `query(t"speaker")` est la sous-requête sous `speaker` : la paire de clé
+        + `speaker` devient la valeur sans nom et chaque clé commençant par `speaker.` perd ce
+        + préfixe.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
+        query(t"speaker")             // the query name=Hamlet&email=a%40b.c
+        query(t"speaker")(t"name")()  // t"Hamlet"
+        ```
+  entry #prefix
+    info
+        - the query with every key put under a prefix: `name` becomes `prefix.name`
+        + la requête avec chaque clé placée sous un préfixe : `name` devient `prefix.name`
+    detail
+        - An unnamed value's key becomes the prefix itself, so a value encoded on its own and then
+        - prefixed is a named parameter.
+        + La clé d'une valeur sans nom devient le préfixe lui-même, de sorte qu'une valeur encodée
+        + seule puis préfixée est un paramètre nommé.
+  entry #queryString
+    info
+        - the query as URL-encoded text, with an unnamed value written alone, without `=`
+        + la requête sous forme de texte encodé pour URL, une valeur sans nom étant écrite seule,
+        + sans `=`
+    detail
+        - Each pair is `key=value`, URL-encoded, joined with `&`; a pair with an empty key is
+        - written as its value alone.
+        + Chaque paire est `key=value`, encodée pour URL, jointe par `&` ; une paire à clé vide
+        + s'écrit par sa seule valeur.
+
+entry .Parametric
+  info
+      - the type a named query parameter takes, for `query.name` and `Query.make(name = …)`
+      + le type que prend un paramètre de requête nommé, pour `query.name` et `Query.make(name = …)`
+  detail
+      - `"name" is Parametric to Result` declares that the query parameter `name` holds values of
+      - type `Result`. It is the evidence the dynamic accessors of `Query` need — `query.name`,
+      - `query.name = value` and `Query.make(name = value)` — so a parameter is read and written
+      - at a fixed type, checked as the code compiles. It carries no behaviour, so a given is
+      - written as an erased placeholder:
+      + `"name" is Parametric to Result` déclare que le paramètre de requête `name` contient des
+      + valeurs de type `Result`. C'est la preuve dont ont besoin les accesseurs dynamiques de
+      + `Query` — `query.name`, `query.name = value` et `Query.make(name = value)` — de sorte qu'un
+      + paramètre est lu et écrit dans un type fixe, vérifié pendant la compilation du code. Il ne
+      + porte aucun comportement ; un given s'écrit donc comme un substitut effacé :
+
+      ```scala
+      import soundness.*
+
+      inline given ("page" is Parametric to Int) = !!
+      ```
+
+      - Telekinesis's `queryParameters.arbitraryQueryParameter` gives every name every type, for
+      - code which wants dynamic access without declaring each parameter.
+      + Le `queryParameters.arbitraryQueryParameter` de Telekinesis donne à chaque nom chaque type,
+      + pour le code qui veut l'accès dynamique sans déclarer chaque paramètre.
+  refer legerdemain.Query
+  entry #Self
+    info
+        - the parameter's name, as a literal `Label` type
+        + le nom du paramètre, sous forme de type `Label` littéral
+
+entry .internal
+  info
+      - the macro behind `Query.make`
+      + la macro derrière `Query.make`
+  hidden
+  detail
+      - Not for direct use: the object exists so that the macro has a stable home.
+      + Pas destiné à un usage direct : l'objet existe pour que la macro ait un emplacement stable.
+  entry .query
+    info
+        - the macro behind `Query.make(name = value, …)`: checks each name's `Parametric` and encodes each value
+        + la macro derrière `Query.make(name = value, …)` : vérifie le `Parametric` de chaque nom et
+        + encode chaque valeur

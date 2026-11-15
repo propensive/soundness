@@ -1,0 +1,242 @@
+tel 1.0
+
+base gigantism
+import soundness
+
+info
+    - metaprogramming helpers: every given instance in scope, macro result types, imports at a call site
+    + utilitaires de métaprogrammation : toute instance given dans la portée, types de résultat de
+    + macro, imports au site d'appel
+detail
+    - _Gigantism_ is a small toolkit for the Soundness libraries' own macros, and for any
+    - library which, like them, needs a little more from the compiler than Scala's public
+    - reflection API offers.
+    + _Gigantism_ est une petite boîte à outils pour les propres macros des bibliothèques Soundness,
+    + et pour toute bibliothèque qui, comme elles, a besoin d'un peu plus de la part du compilateur
+    + que ce qu'offre l'API de réflexion publique de Scala.
+
+    - Its central feature is `every[T]`, which collects *every* given instance of `T` visible
+    - where it is called — including instances which are mutually ambiguous, which an ordinary
+    - `summon` rejects — into an `Every[T]`. This is how a library lets a user enable several
+    - options at once by importing several givens: the `Boolean` decoder collects
+    - `Every[Truth]`, and coaxial's sockets collect `Every` socket option in scope.
+    + Sa fonctionnalité centrale est `every[T]`, qui rassemble *toutes* les instances given de `T`
+    + visibles là où elle est appelée — y compris des instances mutuellement ambiguës, qu'un
+    + `summon` ordinaire rejette — dans un `Every[T]`. C'est ainsi qu'une bibliothèque permet à un
+    + utilisateur d'activer plusieurs options à la fois en important plusieurs givens : le décodeur
+    + de `Boolean` rassemble `Every[Truth]`, et les sockets de coaxial rassemblent dans un `Every`
+    + chaque option de socket dans la portée.
+
+    ```scala
+    import soundness.*
+
+    case class Colour(name: Text)
+
+    object Colours:
+      given red: Colour = Colour(t"red")
+      given green: Colour = Colour(t"green")
+      given blue: Colour = Colour(t"blue")
+
+    import Colours.{red, blue}
+    every[Colour].values.map(_.name)   // red and blue, in either order
+    ```
+
+    - Alongside it are `Macro[T]`, the type of a macro implementation's result; `Lifts`, which
+    - lifts Soundness `List`s of expressions into quoted lists and varargs; and
+    - `metaprogramming.imports`, which lists the imports in scope at a macro's call site.
+    + À côté d'elle se trouvent `Macro[T]`, le type du résultat d'une implémentation de macro ;
+    + `Lifts`, qui élève des `List` Soundness d'expressions en listes quotées et en varargs ; et
+    + `metaprogramming.imports`, qui liste les imports dans la portée au site d'appel d'une macro.
+
+    - `every` and `metaprogramming` reach into the compiler's internal API
+    - (`dotty.tools.dotc`), so they are tied to the compiler version Soundness is built with.
+    - The library has a single source set, `gigantism.core`, and everything is exported to the
+    - `soundness` umbrella.
+    + `every` et `metaprogramming` puisent dans l'API interne du compilateur (`dotty.tools.dotc`) :
+    + ils sont donc liés à la version du compilateur avec laquelle Soundness est construit. La
+    + bibliothèque a un seul ensemble de sources, `gigantism.core`, et tout est exporté vers le
+    + package parapluie `soundness`.
+
+refer gigantism.Every
+refer gigantism.every
+refer gigantism.Macro
+
+entry .Every
+  info
+      - every given instance of a type visible at a call site, collected into a list
+      + toutes les instances given d'un type visibles à un site d'appel, rassemblées dans une liste
+  detail
+      - An `Every[T]` holds all the given `T`s in scope where it was summoned, in `#values`.
+      - It is made by `every[T]`, or summoned as a context parameter through the companion's
+      - `.default` given, which needs no import: a method which takes `(using Every[Option])`
+      - sees every `Option` given its caller has in scope.
+      + Un `Every[T]` contient tous les `T` given dans la portée là où il a été invoqué, dans
+      + `#values`. On le crée avec `every[T]`, ou on l'invoque comme paramètre contextuel au moyen
+      + du given `.default` du compagnon, qui ne demande aucun import : une méthode qui prend
+      + `(using Every[Option])` voit chaque given `Option` que son appelant a dans la portée.
+
+      ```scala
+      import soundness.*
+
+      case class Shape(name: Text)
+
+      def shapes(using all: Every[Shape]): Int = all.values.length
+
+      given triangle: Shape = Shape(t"triangle")
+      given square: Shape = Shape(t"square")
+      shapes   // 2
+      ```
+
+      - Instances are found whether they are local, imported by name or in implicit scope, and
+      - mutually ambiguous ones are all included; an instance out of scope is not. The order of
+      - the values is not specified. With no instance in scope, `#values` is empty.
+      + Les instances sont trouvées qu'elles soient locales, importées par leur nom ou dans la
+      + portée implicite, et celles qui sont mutuellement ambiguës sont toutes incluses ; une
+      + instance hors de la portée ne l'est pas. L'ordre des valeurs n'est pas spécifié. Sans
+      + instance dans la portée, `#values` est vide.
+  refer gigantism.every
+  entry .default
+    info
+        - summons an `Every[T]` of all the `T` instances in scope, as a context parameter
+        + invoque un `Every[T]` de toutes les instances de `T` dans la portée, comme paramètre
+        + contextuel
+    detail
+        - A transparent inline given: it expands at each use site, so it sees the instances in
+        - scope there.
+        + Un given inline transparent : il se développe à chaque site d'utilisation, et voit donc
+        + les instances dans la portée à cet endroit.
+  entry .summonAll
+    info
+        - the macro which collects every instance of a type in scope at its expansion site
+        + la macro qui rassemble toutes les instances d'un type dans la portée à son site
+        + d'expansion
+    detail
+        - The implementation behind `every` and `.default`. It repeatedly searches for an
+        - instance while ignoring those already found, and recovers both alternatives from an
+        - ambiguous search through the compiler's internal `AmbiguousImplicits`.
+        + L'implémentation derrière `every` et `.default`. Elle recherche une instance à plusieurs
+        + reprises en ignorant celles déjà trouvées, et récupère les deux alternatives d'une
+        + recherche ambiguë grâce à l'`AmbiguousImplicits` interne du compilateur.
+  entry #values
+    info
+        - the instances found, as a standard-library `List`
+        + les instances trouvées, sous forme de `List` de la bibliothèque standard
+    detail
+        - The list is the Scala standard library's, not Soundness's, because the instances
+        - collected may carry capabilities, which Soundness's `List` does not hold.
+        - `List.from(every[T].values)` converts it.
+        + La liste est celle de la bibliothèque standard de Scala, et non celle de Soundness, car
+        + les instances rassemblées peuvent porter des capacités, que la `List` de Soundness ne
+        + contient pas. `List.from(every[T].values)` la convertit.
+
+entry .every
+  info
+      - collects every given instance of a type visible at the call site, as an `Every`
+      + rassemble toutes les instances given d'un type visibles au site d'appel, sous forme
+      + d'`Every`
+  detail
+      - `every[T]` expands to an `Every[T]` holding each given `T` in scope at the call,
+      - including instances which are ambiguous with one another. It does not fail when none is
+      - in scope: the result is then empty.
+      + `every[T]` se développe en un `Every[T]` contenant chaque `T` given dans la portée lors de
+      + l'appel, y compris les instances ambiguës entre elles. Il n'échoue pas quand aucune n'est
+      + dans la portée : le résultat est alors vide.
+
+      ```scala
+      import soundness.*
+
+      case class Shape(name: Text)
+
+      locally:
+        given local: Shape = Shape(t"triangle")
+        every[Shape].values.length   // 1
+      ```
+
+entry .Macro
+  info
+      - the type of a macro implementation's result: `Quotes ?=> Expr[T]`
+      + le type du résultat d'une implémentation de macro : `Quotes ?=> Expr[T]`
+  detail
+      - A macro implementation declared to return `Macro[T]` receives the `Quotes` as a context
+      - parameter, so `def impl(x: Expr[Int]): Macro[Text] = '{…}` needs no `(using Quotes)`.
+      + Une implémentation de macro déclarée comme renvoyant `Macro[T]` reçoit les `Quotes` comme
+      + paramètre contextuel : `def impl(x: Expr[Int]): Macro[Text] = '{…}` n'a donc pas besoin de
+      + `(using Quotes)`.
+
+entry .Lifts
+  info
+      - lifts Soundness `List`s of expressions into quoted lists and varargs
+      + élève des `List` Soundness d'expressions en listes quotées et en varargs
+  detail
+      - The counterparts of `Expr.ofList` and `Varargs` for macro code which holds its lifted
+      - expressions in a Soundness `List` rather than a standard-library `Seq`.
+      + Les équivalents d'`Expr.ofList` et de `Varargs` pour un code de macro qui conserve ses
+      + expressions relevées dans une `List` Soundness plutôt que dans une `Seq` de la bibliothèque
+      + standard.
+  entry .list
+    info
+        - lifts a `List` of expressions into an expression of a `List`
+        + élève une `List` d'expressions en une expression d'une `List`
+  entry .varargs
+    info
+        - lifts a `List` of expressions into a varargs argument, `Expr[Seq[T]]`
+        + élève une `List` d'expressions en un argument varargs, `Expr[Seq[T]]`
+  entry .Varargs
+    info
+        - matches a varargs argument, giving its element expressions as a `List`
+        + filtre un argument varargs, en donnant les expressions de ses éléments sous forme de
+        + `List`
+    detail
+        - The extractor counterpart of `Lifts.varargs`: `case Lifts.Varargs(elements) =>`
+        - matches an `Expr[Seq[T]]` written as literal arguments.
+        + L'extracteur qui fait pendant à `Lifts.varargs` : `case Lifts.Varargs(elements) =>` filtre
+        + un `Expr[Seq[T]]` écrit sous forme d'arguments littéraux.
+    entry .unapply
+      info
+          - the element expressions of a varargs argument, if it was written as literal arguments
+          + les expressions des éléments d'un argument varargs, s'il a été écrit sous forme
+          + d'arguments littéraux
+
+entry .metaprogramming
+  info
+      - compiler facilities beyond the public reflection API, for the `Quotes` in scope
+      + des fonctionnalités du compilateur au-delà de l'API de réflexion publique, pour les `Quotes`
+      + dans la portée
+  detail
+      - Inside a macro implementation, `metaprogramming` wraps the `Quotes` in scope as a
+      - `Metaprogramming`, so that `metaprogramming.imports` lists the imports visible at the
+      - macro's call site.
+      + Dans une implémentation de macro, `metaprogramming` enveloppe les `Quotes` dans la portée
+      + sous forme de `Metaprogramming`, afin que `metaprogramming.imports` liste les imports
+      + visibles au site d'appel de la macro.
+
+entry .Metaprogramming
+  info
+      - compiler facilities beyond the public reflection API, for one `Quotes`
+      + des fonctionnalités du compilateur au-delà de l'API de réflexion publique, pour un `Quotes`
+      + donné
+  detail
+      - Made with `metaprogramming` inside a macro implementation. It reaches into the
+      - compiler's internal context, so it depends on the version of the compiler.
+      + Créé avec `metaprogramming` dans une implémentation de macro. Il puise dans le contexte
+      + interne du compilateur : il dépend donc de la version du compilateur.
+  entry #Import
+    info
+        - one import visible at a macro's call site
+        + un import visible au site d'appel d'une macro
+    entry #wildcard
+      info
+          - whether the import is a wildcard, `import p.*`
+          + si l'import est un import joker, `import p.*`
+    entry #term
+      info
+          - the term imported from, as a `TermRef`
+          + le terme depuis lequel on importe, sous forme de `TermRef`
+  entry #quotes
+    info
+        - the `Quotes` this wraps
+        + les `Quotes` qu'il enveloppe
+  entry #imports
+    info
+        - every import in scope at the macro's call site, outermost first
+        + tous les imports dans la portée au site d'appel de la macro, le plus extérieur en premier

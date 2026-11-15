@@ -1,0 +1,610 @@
+tel 1.0
+
+base eucalyptus
+import soundness
+
+info
+    - loggers, log formats and log destinations for the typed events that `Log` emits
+    + des loggers, des formats de journal et des destinations de journal pour les événements typés
+    + qu'émet `Log`
+detail
+    - _Eucalyptus_ is the runtime half of Soundness's typed logging. A method which logs states
+    - so in its type (`Long logs Backup.Event`) and emits a typed event with `Log.info`,
+    - `Log.warn` and the rest; those names, with `Log.Level`, `Loggable` and the `LogSink` trait,
+    - live in `anticipation`, below every library which logs. Eucalyptus supplies what an
+    - *application* adds: a `Logger`, which is a `LogSink` placed in scope as a given, a log
+    - format (an `Inscribable`) which renders each event, and destinations to write it to.
+    + _Eucalyptus_ est la moitié d'exécution de la journalisation typée de Soundness. Une méthode
+    + qui journalise l'indique dans son type (`Long logs Backup.Event`) et émet un événement typé
+    + avec `Log.info`, `Log.warn` et les autres ; ces noms, avec `Log.Level`, `Loggable` et le trait
+    + `LogSink`, résident dans `anticipation`, en dessous de toute bibliothèque qui journalise.
+    + Eucalyptus fournit ce qu'ajoute une *application* : un `Logger`, qui est un `LogSink` placé
+    + dans la portée comme given, un format de journal (un `Inscribable`) qui rend chaque événement,
+    + et des destinations où l'écrire.
+
+    - Every `Logger` in scope receives every event it admits, so routing is a matter of which
+    - loggers are in scope, each with its own threshold, categories, format and destination.
+    - With none in scope, logging is silent and free: the argument to every `Log` method is
+    - by name, and is never evaluated unless some logger accepts its level.
+    + Chaque `Logger` dans la portée reçoit chaque événement qu'il admet ; le routage dépend donc
+    + des loggers présents dans la portée, chacun avec son propre seuil, ses catégories, son format
+    + et sa destination. Sans aucun logger dans la portée, la journalisation est silencieuse et
+    + gratuite : l'argument de chaque méthode de `Log` est passé par nom, et n'est jamais évalué à
+    + moins qu'un logger n'accepte son niveau.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import codepages.utf8Codepage
+    import filesystemBackends.javaBaseFilesystem
+    import logFormats.timestampedLogFormat
+    import pathInterfaces.pathOnLinux
+    import probates.awaitProbate
+    import strategies.throwUnsafely
+    import temporaryDirectories.javaBaseTemporaryDirectory
+    import threads.virtualThreads
+
+    val logFile = temporaryDirectory[Path on Linux] / "app.log"
+
+    supervise:
+      given Logger[Any, Message] = Logger(logFile, level = Log.Level.Info)
+      Log.fine(m"not written: below the threshold")
+      Log.info(m"written, with a timestamp and the level")
+    ```
+
+    - A `Logger` writes on a background daemon, so it needs the `Monitor` which `supervise`
+    - provides, a `Probate` (from `probates`) for how that daemon is settled at the end of
+    - the supervision, and a `Writable` for its destination. Its format is chosen by importing
+    - one given from `logFormats` by name, and `logging.silentLogging` silences a whole file;
+    - both are choice packages, imported by name because `import logFormats.*` does not import
+    - givens.
+    + Un `Logger` écrit depuis un démon en arrière-plan ; il a donc besoin du `Monitor` que fournit
+    + `supervise`, d'un `Probate` (issu de `probates`) indiquant comment ce démon est réglé à la fin
+    + de la supervision, et d'un `Writable` pour sa destination. Son format se choisit en important
+    + par son nom un given de `logFormats`, et `logging.silentLogging` réduit au silence un fichier
+    + entier ; tous deux sont des packages de choix, importés par leur nom car `import logFormats.*`
+    + n'importe pas les givens.
+
+    - Writing to the terminal needs a destination which is writable by the format's form.
+    - `Out` is writable only by `Teletype`, through `writables.outTeletypeWritable` from
+    - escapade, so a terminal logger uses the `Teletype` format `ansiTimestampedLogFormat`
+    - with a `LogPalette`; there is no `Writable` for `Out` by `Text`, so `Logger(Out)` with
+    - `timestampedLogFormat` does not compile.
+    + Écrire dans le terminal exige une destination dans laquelle on peut écrire la forme du format.
+    + `Out` n'est accessible en écriture que par `Teletype`, via `writables.outTeletypeWritable`
+    + d'escapade ; un logger de terminal utilise donc le format `Teletype`
+    + `ansiTimestampedLogFormat` avec une `LogPalette` ; il n'existe aucun `Writable` pour `Out` par
+    + `Text`, de sorte que `Logger(Out)` avec `timestampedLogFormat` ne compile pas.
+
+    - The library has four source sets:
+    + La bibliothèque a quatre ensembles de sources :
+
+    - - `eucalyptus.core` — `Logger`, `Inscribable`, `mute`, `Taggable`, the text formats
+    -   `timestampedLogFormat` and `untimestampedLogFormat`, and `logging.silentLogging`.
+    - - `eucalyptus.ansi` — `LogPalette` and the terminal format `ansiTimestampedLogFormat`.
+    - - `eucalyptus.gcp` — `googleCloudPlatformLogFormat`, one JSON object per event, in the
+    -   shape Google Cloud's logging agent reads.
+    - - `eucalyptus.syslog` — `Syslog`, a destination which hands lines to the system log
+    -   through the `logger` command.
+    + - `eucalyptus.core` — `Logger`, `Inscribable`, `mute`, `Taggable`, les formats textuels
+    +   `timestampedLogFormat` et `untimestampedLogFormat`, et `logging.silentLogging`.
+    + - `eucalyptus.ansi` — `LogPalette` et le format de terminal `ansiTimestampedLogFormat`.
+    + - `eucalyptus.gcp` — `googleCloudPlatformLogFormat`, un objet JSON par événement, sous la
+    +   forme que lit l'agent de journalisation de Google Cloud.
+    + - `eucalyptus.syslog` — `Syslog`, une destination qui transmet les lignes au journal système
+    +   par la commande `logger`.
+
+    - Everything is exported to the `soundness` umbrella, and the `logFormats` and `logging`
+    - choice packages merge with the umbrella's own.
+    + Tout est exporté vers le package parapluie `soundness`, et les packages de choix `logFormats`
+    + et `logging` fusionnent avec ceux du package parapluie.
+
+refer eucalyptus.Logger
+refer eucalyptus.Inscribable
+refer eucalyptus.logFormats
+refer eucalyptus.logging
+refer anticipation.Log
+refer anticipation.Loggable
+refer anticipation.LogSink
+
+entry .Logger
+  info
+      - a log sink which renders each event through a format and writes it to a destination
+      + un puits de journal qui rend chaque événement par un format et l'écrit dans une destination
+  detail
+      - A `Logger[Event, Form]` is a `LogSink`: placed in scope as a given, it receives every
+      - event of type `Event` (or a subtype) logged in that scope, at or above its threshold
+      - level. The first type parameter selects which events it takes — `Any` for all — and
+      - the second is the carrier they are transcribed to before formatting, usually
+      - `Message`, which every `Communicable` event becomes.
+      + Un `Logger[Event, Form]` est un `LogSink` : placé dans la portée comme given, il reçoit
+      + chaque événement de type `Event` (ou d'un sous-type) journalisé dans cette portée, à son
+      + niveau seuil ou au-dessus. Le premier paramètre de type choisit les événements qu'il prend —
+      + `Any` pour tous — et le second est le porteur dans lequel ils sont transcrits avant le
+      + formatage, habituellement `Message`, que devient tout événement `Communicable`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import codepages.utf8Codepage
+      import filesystemBackends.javaBaseFilesystem
+      import logFormats.untimestampedLogFormat
+      import pathInterfaces.pathOnLinux
+      import probates.awaitProbate
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import threads.virtualThreads
+
+      val detailed = temporaryDirectory[Path on Linux] / "detailed.log"
+      val network = temporaryDirectory[Path on Linux] / "network.log"
+
+      supervise:
+        given everything: Logger[Any, Message] = Logger(detailed, level = Log.Level.Fine)
+        given networking: Logger[Any, Message] = Logger(network, categories = Set(Log.Network))
+        Log.fine(m"only the detailed log sees this")
+      ```
+
+      - Several loggers may be in scope at once, and `Loggable.fanOut` delivers each event to
+      - all of those which accept it. A logger accepts an event when its level is at or above
+      - the logger's threshold (`#accepts`) and, if the logger was given categories, when the
+      - event's runtime type mixes in one of them (`admits`); the event is constructed and
+      - formatted only if some logger accepts it.
+      + Plusieurs loggers peuvent être dans la portée à la fois, et `Loggable.fanOut` remet chaque
+      + événement à tous ceux qui l'acceptent. Un logger accepte un événement quand son niveau est
+      + égal ou supérieur au seuil du logger (`#accepts`) et, si le logger a reçu des catégories,
+      + quand le type à l'exécution de l'événement intègre l'une d'elles (`admits`) ; l'événement
+      + n'est construit et formaté que si un logger l'accepte.
+
+      - Formatting happens on the logging thread, and writing on a daemon: each event becomes
+      - one record on a queue, which the daemon streams to the destination. A failed write
+      - (`Truncation.Error`) ends that stream, and the daemon begins a fresh one from the same
+      - queue, so a transient failure does not silence the logger; the daemon stops when the
+      - VM shuts down.
+      + Le formatage a lieu sur le thread qui journalise, et l'écriture sur un démon : chaque
+      + événement devient un enregistrement dans une file, que le démon transmet en flux à la
+      + destination. Une écriture échouée (`Truncation.Error`) met fin à ce flux, et le démon en
+      + commence un nouveau depuis la même file, de sorte qu'un échec passager ne réduit pas le
+      + logger au silence ; le démon s'arrête à l'arrêt de la VM.
+  refer eucalyptus.logFormats
+  refer anticipation.LogSink
+  refer anticipation.Log
+  entry .apply
+    info
+        - makes a logger writing to a destination, with a threshold level and optional categories
+        + crée un logger qui écrit dans une destination, avec un niveau seuil et des catégories
+        + optionnelles
+    detail
+        - `Logger(destination, level, name, categories)`. The `level` defaults to `Log.Level.Info`,
+        - and `categories` to the empty set, which admits events of every category; a non-empty
+        - set of `Log.Category`s (`Log.Network`, `Log.Filesystem`, …) admits only events whose
+        - runtime type mixes in one of their marker traits. `name` is accepted but not yet used.
+        + `Logger(destination, level, name, categories)`. Le `level` vaut par défaut
+        + `Log.Level.Info`, et `categories` l'ensemble vide, qui admet les événements de toute
+        + catégorie ; un ensemble non vide de `Log.Category` (`Log.Network`, `Log.Filesystem`, …)
+        + n'admet que les événements dont le type à l'exécution intègre l'un de leurs traits
+        + marqueurs. `name` est accepté mais pas encore utilisé.
+
+        - It needs in scope a format, `Form is Inscribable in Format` for the logger's carrier
+        - (one of the `logFormats` givens), a `Writable` for the destination by arrays of that
+        - format (any destination writable by `Text` qualifies, through `Writable.chunked`), a
+        - `Buffering`, a `Monitor` (from `supervise`), a `Probate` and a `Codepoint`, which the
+        - compiler supplies.
+        + Il requiert dans la portée un format, `Form is Inscribable in Format` pour le porteur du
+        + logger (l'un des givens de `logFormats`), un `Writable` pour la destination par tableaux
+        + de ce format (toute destination accessible en écriture par `Text` convient, via
+        + `Writable.chunked`), un `Buffering`, un `Monitor` (issu de `supervise`), un `Probate` et
+        + un `Codepoint`, que fournit le compilateur.
+
+        - The queue and the writer daemon belong to the **call site**: every `Logger` built at
+        - the same source position shares one, so a given re-evaluated on each summon does not
+        - start a new thread each time. The consequence is that the destination is fixed by the
+        - first call at that position: a helper which builds `Logger(path)` for different paths
+        - from one line writes all of them to the first path. Build loggers for different
+        - destinations at different call sites.
+        + La file et le démon d'écriture appartiennent au **site d'appel** : tous les `Logger`
+        + construits à la même position dans le code source en partagent un, de sorte qu'un given
+        + réévalué à chaque invocation ne démarre pas un nouveau thread à chaque fois. La
+        + conséquence est que la destination est fixée par le premier appel à cette position : un
+        + utilitaire qui construit `Logger(path)` pour différents chemins depuis une seule ligne les
+        + écrit tous dans le premier chemin. Construisez les loggers de destinations différentes à
+        + des sites d'appel différents.
+  entry #accepts
+    info
+        - whether the logger records events at a level: at or above its threshold
+        + indique si le logger enregistre les événements d'un niveau : égal ou supérieur à son seuil
+  entry #submit
+    info
+        - queues a transcribed event for formatting and writing, at a level and timestamp
+        + met en file un événement transcrit pour qu'il soit formaté et écrit, à un niveau et un
+        + horodatage
+    detail
+        - Called by `Loggable.fanOut` once `#accepts` and `admits` have passed; the event is
+        - formatted on the calling thread and its record queued for the writer daemon. Not
+        - usually called directly.
+        + Appelée par `Loggable.fanOut` une fois `#accepts` et `admits` passés ; l'événement est
+        + formaté sur le thread appelant et son enregistrement mis en file pour le démon d'écriture.
+        + Habituellement pas appelée directement.
+
+entry .Inscribable
+  info
+      - a log format: how a value renders, with its level and timestamp, as one record
+      + un format de journal : comment une valeur se rend, avec son niveau et son horodatage, en un
+      + enregistrement
+  detail
+      - A typeclass, `Message is Inscribable in Text`, whose `#formatter` turns a value, its
+      - `Log.Level` and its timestamp (milliseconds since the epoch) into one record of the type
+      - `Form`. A `Logger` uses the one in scope for its carrier type; the standard ones are
+      - imported by name from `logFormats`. A custom format is a lambda:
+      + Une classe de types, `Message is Inscribable in Text`, dont le `#formatter` transforme une
+      + valeur, son `Log.Level` et son horodatage (en millisecondes depuis l'epoch) en un
+      + enregistrement du type `Form`. Un `Logger` utilise celui qui est dans la portée pour son
+      + type porteur ; les formats standard sont importés par leur nom depuis `logFormats`. Un
+      + format personnalisé est une lambda :
+
+      ```scala
+      import soundness.*
+
+      given terse: Message is Inscribable in Text = (message, level, timestamp) =>
+        t"${level.ordinal}: ${message.text}\n"
+      ```
+
+      - A text format should end each record with a newline, since a destination writes the
+      - records one after another.
+      + Un format textuel devrait terminer chaque enregistrement par un saut de ligne, puisqu'une
+      + destination écrit les enregistrements les uns après les autres.
+  refer eucalyptus.logFormats
+  entry #formatter
+    info
+        - renders a value with its level and timestamp as one record
+        + rend une valeur avec son niveau et son horodatage en un enregistrement
+  entry #contramap
+    info
+        - a format for another type, which converts it to this one first
+        + un format pour un autre type, qui le convertit d'abord en celui-ci
+    detail
+        - `format.contramap[Event](_.message)` formats an `Event` by mapping it to the type this
+        - format handles; the level and timestamp pass through unchanged.
+        + `format.contramap[Event](_.message)` formate un `Event` en l'associant au type que gère ce
+        + format ; le niveau et l'horodatage passent inchangés.
+  entry #format
+    info
+        - renders a value as a record, as an extension method on the value
+        + rend une valeur en un enregistrement, comme méthode d'extension sur la valeur
+    detail
+        - `message.format(level, timestamp)`, the same as `#formatter`.
+        + `message.format(level, timestamp)`, identique à `#formatter`.
+
+entry .Taggable
+  info
+      - a typeclass for values to which a tag of type `Operand` can be added
+      + une classe de types pour les valeurs auxquelles on peut ajouter un tag de type
+      + `Operand`
+  detail
+      - `value.tag(operand)` returns the value with a tag added. Nothing in Soundness provides
+      - or uses an instance yet.
+      + `value.tag(operand)` renvoie la valeur avec un tag ajouté. Rien dans Soundness ne
+      + fournit ni n'utilise encore d'instance.
+  entry #tag
+    info
+        - the value with a tag added
+        + la valeur avec un tag ajouté
+
+entry .mute
+  info
+      - runs a block with logging of one event type suppressed, whatever loggers are in scope
+      + exécute un bloc en supprimant la journalisation d'un type d'événement, quels que soient les
+      + loggers dans la portée
+  detail
+      - `mute[Event]:` evaluates its block with a silent `Event is Loggable` given to it, which
+      - outranks the `Loggable.fanOut` the loggers in scope would otherwise provide, so events
+      - of exactly that type are dropped within the block while every other event is logged as
+      - usual. Events transcribed into another type before they are logged are not affected.
+      + `mute[Event]:` évalue son bloc en lui donnant un given `Event is Loggable` silencieux, qui
+      + l'emporte sur le `Loggable.fanOut` que fourniraient sinon les loggers de la portée ; les
+      + événements exactement de ce type sont donc ignorés dans le bloc tandis que tous les autres
+      + sont journalisés comme d'habitude. Les événements transcrits dans un autre type avant d'être
+      + journalisés ne sont pas affectés.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      object Backup:
+        enum Event:
+          case Started(source: Text)
+
+        object Event:
+          given communicable: Event is Communicable =
+            case Started(source) => m"backing up $source"
+
+      def backup(source: Text): Unit logs Backup.Event = Log.info(Backup.Event.Started(source))
+
+      mute[Backup.Event]:
+        backup(t"/var")
+      ```
+
+entry .dateFormat
+  info
+      - the date and time pattern of the timestamped formats: `2026-Nov-04 09:30:00.250`
+      + le motif de date et d'heure des formats horodatés : `2026-Nov-04 09:30:00.250`
+  detail
+      - A `java.text.SimpleDateFormat` for `yyyy-MMM-dd HH:mm:ss.SSS` in the JVM's default time
+      - zone, used by `timestampedLogFormat` and `ansiTimestampedLogFormat`. A
+      - `SimpleDateFormat` is not safe for concurrent use, so it should not be called directly
+      - from several threads.
+      + Un `java.text.SimpleDateFormat` pour `yyyy-MMM-dd HH:mm:ss.SSS` dans le fuseau horaire par
+      + défaut de la JVM, utilisé par `timestampedLogFormat` et `ansiTimestampedLogFormat`. Un
+      + `SimpleDateFormat` n'est pas sûr en usage concurrent ; il ne devrait donc pas être appelé
+      + directement depuis plusieurs threads.
+
+entry .LogPalette
+  info
+      - the colours `ansiTimestampedLogFormat` paints levels and dates with
+      + les couleurs dont `ansiTimestampedLogFormat` peint les niveaux et les dates
+  detail
+      - A `Palette` in `Srgb` with four further colours: `error` for `Fail`, `warning` for
+      - `Warn`, `informative` for `Info`, and `subdued` for `Fine` and for the date. No palette
+      - is provided, so a terminal logger defines one as a given.
+      + Une `Palette` en `Srgb` avec quatre couleurs supplémentaires : `error` pour `Fail`,
+      + `warning` pour `Warn`, `informative` pour `Info`, et `subdued` pour `Fine` et pour la date.
+      + Aucune palette n'est fournie ; un logger de terminal en définit donc une comme given.
+
+      ```scala
+      import soundness.*
+
+      given LogPalette = new Palette:
+        type Form = Srgb
+        def background: Color in Srgb  = WebColors.Black
+        def foreground: Color in Srgb  = WebColors.White
+        def error: Color in Srgb       = WebColors.Red
+        def warning: Color in Srgb     = WebColors.Orange
+        def informative: Color in Srgb = WebColors.SteelBlue
+        def subdued: Color in Srgb     = WebColors.DimGray
+      ```
+
+entry .Syslog
+  info
+      - the system log as a log destination, with an optional tag on each line
+      + le journal système comme destination de journal, avec un tag optionnel sur chaque
+      + ligne
+  detail
+      - `Syslog(tag)` is a destination for a `Logger` with a `Text` format: its records are
+      - piped to the standard input of the `logger` command, with `-t tag` when a tag is
+      - given, so they arrive in the system log as `logger` writes them. A failure to launch
+      - `logger` or to write to it is ignored rather than raised, and the launch itself is
+      - not logged.
+      + `Syslog(tag)` est une destination pour un `Logger` doté d'un format `Text` : ses
+      + enregistrements sont redirigés vers l'entrée standard de la commande `logger`, avec `-t tag`
+      + quand un tag est donné, et arrivent donc dans le journal système tels que `logger`
+      + les écrit. Un échec du lancement de `logger` ou de l'écriture vers lui est ignoré plutôt que
+      + levé, et le lancement lui-même n'est pas journalisé.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logFormats.untimestampedLogFormat
+      import probates.awaitProbate
+      import threads.virtualThreads
+
+      supervise:
+        given Logger[Any, Message] = Logger(Syslog(t"myapp"), level = Log.Level.Warn)
+        Log.warn(m"disk nearly full")
+      ```
+
+      - A format without a timestamp suits it, as the system log adds its own. The `logger`
+      - command must be on the path: this is for Unix-like systems.
+      + Un format sans horodatage lui convient, car le journal système ajoute le sien. La commande
+      + `logger` doit se trouver dans le chemin : ceci est destiné aux systèmes de type Unix.
+  entry .writable
+    info
+        - `Syslog` is `Writable` by `Text`: each stream is piped to a `logger` process
+        + `Syslog` est `Writable` par `Text` : chaque flux est redirigé vers un processus `logger`
+    detail
+        - Needs a `Monitor` in scope, which the `Logger`'s `supervise` block provides. The text
+        - is encoded in the system's default codepage.
+        + Requiert un `Monitor` dans la portée, que fournit le bloc `supervise` du `Logger`. Le
+        + texte est encodé dans la page de code par défaut du système.
+  entry #tag
+    info
+        - the tag `logger -t` puts on each line, or `Unset` for none
+        + le tag que `logger -t` place sur chaque ligne, ou `Unset` pour aucune
+
+entry .EucalyptusGcp
+  info
+      - an empty marker object of the `eucalyptus.gcp` source set
+      + un objet marqueur vide de l'ensemble de sources `eucalyptus.gcp`
+  hidden
+  detail
+      - Not for direct use; the Google Cloud format is `logFormats.googleCloudPlatformLogFormat`.
+      + Pas pour un usage direct ; le format Google Cloud est
+      + `logFormats.googleCloudPlatformLogFormat`.
+
+entry .logFormats
+  info
+      - the standard log formats, each a given to import by name
+      + les formats de journal standard, chacun un given à importer par son nom
+  detail
+      - A `Logger` renders each event through the `Inscribable` given in scope for its
+      - carrier, and none is in implicit scope: one is imported by name, since `import
+      - logFormats.*` does not import givens.
+      + Un `Logger` rend chaque événement par le given `Inscribable` de la portée pour son porteur,
+      + et aucun n'est dans la portée implicite : on en importe un par son nom, puisque
+      + `import logFormats.*` n'importe pas les givens.
+
+      ```scala fuel
+      alternative Timestamped
+        code
+            import soundness.*
+            import logFormats.timestampedLogFormat
+
+            val format = summon[Message is Inscribable in Text]
+            format.formatter(m"server listening on 8080", Log.Level.Info, System.currentTimeMillis)
+            // t"2026-Nov-04 09:30:00.250 [INFO] server listening on 8080\n"
+      alternative Untimestamped
+        code
+            import soundness.*
+            import logFormats.untimestampedLogFormat
+
+            val format = summon[Message is Inscribable in Text]
+            format.formatter(m"server listening on 8080", Log.Level.Info, System.currentTimeMillis)
+            // t"[INFO] server listening on 8080\n"
+      alternative Google Cloud
+        code
+            import soundness.*
+            import logFormats.googleCloudPlatformLogFormat
+
+            val format = summon[Message is Inscribable in Text]
+            format.formatter(m"server listening on 8080", Log.Level.Info, System.currentTimeMillis)
+            // t"""{"severity":"INFO","message":"server listening on 8080"}"""
+      ##
+      ```
+
+      - `timestampedLogFormat` and `untimestampedLogFormat` format any `Communicable` value,
+      - `ansiTimestampedLogFormat` and `googleCloudPlatformLogFormat` only a `Message`, which a
+      - `Logger[…, Message]` transcribes every event to. `textLevelLogFormat` and
+      - `teletypeableLogFormat`, which render a `Log.Level`, are used by the others and are not
+      - exported to the umbrella's `logFormats`.
+      + `timestampedLogFormat` et `untimestampedLogFormat` formatent toute valeur `Communicable`,
+      + `ansiTimestampedLogFormat` et `googleCloudPlatformLogFormat` seulement un `Message`, dans
+      + lequel un `Logger[…, Message]` transcrit chaque événement. `textLevelLogFormat` et
+      + `teletypeableLogFormat`, qui rendent un `Log.Level`, sont utilisés par les autres et ne sont
+      + pas exportés vers le `logFormats` du package parapluie.
+  entry .timestampedLogFormat
+    info
+        - a line of text: date and time, the level in brackets, and the message
+        + une ligne de texte : la date et l'heure, le niveau entre crochets, et le message
+    detail
+        - `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, ending with a newline, for
+        - any `Communicable` event, with the timestamp formatted by `dateFormat`.
+        + `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, terminée par un saut de ligne,
+        + pour tout événement `Communicable`, avec l'horodatage formaté par `dateFormat`.
+  entry .untimestampedLogFormat
+    info
+        - a line of text: the level in brackets, and the message
+        + une ligne de texte : le niveau entre crochets, et le message
+    detail
+        - `[INFO] server listening on 8080`, ending with a newline, for any `Communicable`
+        - event. Suits a destination which adds its own timestamp, such as `Syslog`.
+        + `[INFO] server listening on 8080`, terminée par un saut de ligne, pour tout événement
+        + `Communicable`. Convient à une destination qui ajoute son propre horodatage, comme
+        + `Syslog`.
+  entry .textLevelLogFormat
+    info
+        - renders a `Log.Level` as `FINE`, `INFO`, `WARN` or `FAIL`
+        + rend un `Log.Level` sous la forme `FINE`, `INFO`, `WARN` ou `FAIL`
+    detail
+        - The `Showable` for `Log.Level` the text formats interpolate. It is not exported to the
+        - umbrella's `logFormats` package; import it as `eucalyptus.logFormats.textLevelLogFormat`.
+        + Le `Showable` pour `Log.Level` qu'interpolent les formats textuels. Il n'est pas exporté
+        + vers le package `logFormats` du package parapluie ; importez-le sous la forme
+        + `eucalyptus.logFormats.textLevelLogFormat`.
+  entry .ansiTimestampedLogFormat
+    info
+        - a teletype: dimmed date and time, the level on a coloured ground, `>` and the message
+        + un teletype : la date et l'heure atténuées, le niveau sur un fond coloré, `>` et le
+        + message
+    detail
+        - A `Message is Inscribable in Teletype`, for terminals, in `eucalyptus.ansi`. It needs a
+        - `LogPalette` in scope for its colours. Messages are cut into lines of at most 76
+        - characters, and each continuation line is indented to align under the first line's
+        - message. With `Out` as the destination it also needs `writables.outTeletypeWritable`
+        - and a `Stdio`.
+        + Un `Message is Inscribable in Teletype`, pour les terminaux, dans `eucalyptus.ansi`. Il
+        + requiert une `LogPalette` dans la portée pour ses couleurs. Les messages sont découpés en
+        + lignes d'au plus 76 caractères, et chaque ligne de continuation est indentée pour
+        + s'aligner sous le message de la première ligne. Avec `Out` comme destination, il requiert
+        + aussi `writables.outTeletypeWritable` et un `Stdio`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import logFormats.ansiTimestampedLogFormat
+        import probates.awaitProbate
+        import stdios.javaLangSystemStdio
+        import termcapDefinitions.xterm256Termcap
+        import threads.virtualThreads
+        import writables.outTeletypeWritable
+
+        given LogPalette = new Palette:
+          type Form = Srgb
+          def background: Color in Srgb  = WebColors.Black
+          def foreground: Color in Srgb  = WebColors.White
+          def error: Color in Srgb       = WebColors.Red
+          def warning: Color in Srgb     = WebColors.Orange
+          def informative: Color in Srgb = WebColors.SteelBlue
+          def subdued: Color in Srgb     = WebColors.DimGray
+
+        supervise:
+          given Logger[Any, Message] = Logger(Out)
+          Log.warn(m"retrying after timeout")
+        ```
+
+        - The records carry no trailing newline, so consecutive events written to `Out` are not
+        - separated by one.
+        + Les enregistrements ne portent aucun saut de ligne final ; des événements consécutifs
+        + écrits dans `Out` n'en sont donc pas séparés.
+  entry .teletypeableLogFormat
+    info
+        - renders a `Log.Level` as a bold label on the `LogPalette` colour for its level
+        + rend un `Log.Level` sous la forme d'une étiquette en gras sur la couleur de la
+        + `LogPalette` de son niveau
+    detail
+        - The `Teletypeable` for `Log.Level` that `ansiTimestampedLogFormat` uses, in
+        - `eucalyptus.ansi`. It needs a `LogPalette`, and is not exported to the umbrella's
+        - `logFormats` package.
+        + Le `Teletypeable` pour `Log.Level` qu'utilise `ansiTimestampedLogFormat`, dans
+        + `eucalyptus.ansi`. Il requiert une `LogPalette`, et n'est pas exporté vers le package
+        + `logFormats` du package parapluie.
+  entry .googleCloudPlatformLogFormat
+    info
+        - one compact JSON object per event, with `severity` and `message`
+        + un objet JSON compact par événement, avec `severity` et `message`
+    detail
+        - A `Message is Inscribable in Text`, in `eucalyptus.gcp`, which writes
+        - `{"severity":"WARNING","message":"…"}`, the structured form Google Cloud's logging
+        - agent reads from a container's standard output. The levels map to `DEBUG`, `INFO`,
+        - `WARNING` and `ERROR`; the message is its plain text, without styling. No timestamp is
+        - written, as the agent records its own, and the record has no trailing newline.
+        + Un `Message is Inscribable in Text`, dans `eucalyptus.gcp`, qui écrit
+        + `{"severity":"WARNING","message":"…"}`, la forme structurée que lit l'agent de
+        + journalisation de Google Cloud depuis la sortie standard d'un conteneur. Les niveaux
+        + correspondent à `DEBUG`, `INFO`, `WARNING` et `ERROR` ; le message est son texte brut,
+        + sans style. Aucun horodatage n'est écrit, car l'agent enregistre le sien, et
+        + l'enregistrement n'a pas de saut de ligne final.
+
+entry .logging
+  info
+      - loggers to import by name, overriding those in scope
+      + des loggers à importer par leur nom, qui remplacent ceux de la portée
+  detail
+      - A choice package, merged with the umbrella's `logging`. A given imported by name
+      - outranks the companion-scoped `Loggable.fanOut` which the loggers in scope provide.
+      + Un package de choix, fusionné avec le `logging` du package parapluie. Un given importé par
+      + son nom l'emporte sur le `Loggable.fanOut` de portée compagnon que fournissent les loggers
+      + de la portée.
+  entry .silentLogging
+    info
+        - discards every event, for the whole scope it is imported into
+        + ignore tous les événements, dans toute la portée où il est importé
+    detail
+        - `import logging.silentLogging` supplies a silent `Loggable` for every event type, so
+        - nothing logged in the file reaches any `Logger`, and no event is ever constructed.
+        - It suits a test or a script which calls a library that logs but whose output is
+        - unwanted; for one event type within one block, `mute` is finer.
+        + `import logging.silentLogging` fournit un `Loggable` silencieux pour chaque type
+        + d'événement, de sorte que rien de ce qui est journalisé dans le fichier n'atteint un
+        + `Logger`, et qu'aucun événement n'est jamais construit. Il convient à un test ou à un
+        + script qui appelle une bibliothèque qui journalise mais dont la sortie est indésirable ;
+        + pour un seul type d'événement dans un seul bloc, `mute` est plus fin.
+
+        ```scala
+        import soundness.*
+        import logging.silentLogging
+
+        Log.warn(m"discarded")
+        ```

@@ -1,0 +1,1140 @@
+tel 1.0
+
+base fulminate
+import soundness
+
+info
+    - errors as values with structured messages: `Error`, `Message` and `m"…"`, `Panic`, `Diagnostics`
+    + les erreurs sous forme de valeurs avec des messages structurés : `Error`, `Message` et `m"…"`,
+    + `Panic`, `Diagnostics`
+detail
+    - _Fulminate_ is the vocabulary of failure every Soundness library shares. An **error** is a
+    - value — a case class extending `Error` — carrying the typed fields which explain what went
+    - wrong and a **message** built from them; a `Message` is not a string but a structured
+    - value, written with the `m"…"` interpolator, which keeps each interpolated part distinct
+    - from the words around it so that the same message renders as plain text, styled terminal
+    - text, Markdown or HTML. Anything with a `Communicable` instance can be interpolated, which
+    - is how a type decides, once, how it reads in prose.
+    + _Fulminate_ est le vocabulaire de l'échec que partagent toutes les bibliothèques de
+    + Soundness. Une **erreur** est une valeur — une case class qui étend `Error` — portant les
+    + champs typés qui expliquent ce qui s'est mal passé et un **message** construit à partir
+    + d'eux ; un `Message` n'est pas une chaîne mais une valeur structurée, écrite avec
+    + l'interpolateur `m"…"`, qui maintient chaque partie interpolée distincte des mots qui
+    + l'entourent, de sorte que le même message se rend en texte brut, en texte de terminal
+    + stylé, en Markdown ou en HTML. Tout ce qui possède une instance `Communicable` peut être
+    + interpolé ; c'est ainsi qu'un type décide, une fois pour toutes, de la façon dont il se lit
+    + dans la prose.
+
+    ```scala
+    import soundness.*
+    import errorDiagnostics.stackTracesDiagnostics
+
+    case class PortError(port: Int)(using Diagnostics)
+    extends Error(m"the port $port is not available")
+
+    PortError(80).message.text   // t"the port 80 is not available"
+    ```
+
+    - An error type has a bolt code — `Error(25, 1, 0)`, the first error of the twenty-fifth
+    - module, is `↯/s.25.1` — which is stable across releases, never reused, and documented at
+    - `doc/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+    - `Clarification`, each numbered within the error (`↯/s.25.1.1`), and each rendered through
+    - its own `Communicable`. A full error, grown step by step (900 stands for the number of
+    - the module the error is in):
+    + Un type d'erreur a un code bolt — `Error(25, 1, 0)`, la première erreur du vingt-cinquième
+    + module, correspond à `↯/s.25.1` — stable d'une version à l'autre, jamais réutilisé, et
+    + documenté dans `doc/errors/25.1.md` ; ses différentes causes sont les cas d'une énumération
+    + `Reason` qui étend `Clarification`, chacun numéroté au sein de l'erreur (`↯/s.25.1.1`) et
+    + rendu par son propre `Communicable`. Une erreur complète, construite pas à pas (900 tient lieu
+    + du numéro du module où se trouve l'erreur) :
+
+    ```scala fuel
+    frame
+      label An error with a message
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          case class PortError(port: Int)(using Diagnostics)
+          extends Error(m"the port $port is not available")
+
+          PortError(80).getMessage   // the top-level package, then ": the port 80 is not available"
+    frame
+      label With a number, for the catalogue
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          case class PortError(port: Int)(using Diagnostics)
+          extends Error(900, 1, 0)(m"the port $port is not available")
+
+          PortError(80).errorCode    // t"↯/s.900.1"
+          PortError(80).getMessage   // "[↯/s.900.1] the port 80 is not available"
+    frame
+      label With a reason, numbered within it
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          object PortError:
+            enum Reason(val number: Int) extends Clarification:
+              case Taken      extends Reason(1)
+              case Privileged extends Reason(2)
+
+            object Reason:
+              given communicable: Reason is Communicable =
+                case Taken      => m"it is already in use"
+                case Privileged => m"it is below 1024 and needs privilege"
+
+          case class PortError(port: Int, reason: PortError.Reason)(using Diagnostics)
+          extends Error(900, 1, reason.number)(m"the port $port is not available because $reason")
+
+          PortError(80, PortError.Reason.Privileged).errorCode   // t"↯/s.900.1.2"
+          PortError(80, PortError.Reason.Privileged).message.text
+          // t"the port 80 is not available because it is below 1024 and needs privilege"
+    ##
+    ```
+
+    - Every error is a `Hazard` — an `Exception` which is `caps.Pure` — so it can never carry a
+    - live capability out of the scope which confined it: an error holds the path which could
+    - not be opened, not the open handle. Whether an error captures a stack trace is a
+    - contextual choice, the `Diagnostics` given: `errorDiagnostics.stackTracesDiagnostics`
+    - records one, and `errorDiagnostics.emptyDiagnostics` omits it, which is why every error's
+    - constructor takes `(using Diagnostics)`, and why an error which is expected and handled
+    - costs no more to build than any other value. A `Panic` is the one failure not meant to be
+    - handled: a `java.lang.Error` which says why a situation was believed impossible.
+    + Toute erreur est un `Hazard` — une `Exception` qui est `caps.Pure` — ; elle ne peut donc
+    + jamais emporter une capacité active hors de la portée qui la confinait : une erreur
+    + contient le chemin qui n'a pas pu être ouvert, pas la poignée ouverte. Qu'une erreur
+    + capture ou non une trace de pile est un choix contextuel, le given `Diagnostics` :
+    + `errorDiagnostics.stackTracesDiagnostics` en enregistre une, et
+    + `errorDiagnostics.emptyDiagnostics` l'omet ; c'est pourquoi le constructeur de chaque
+    + erreur prend `(using Diagnostics)`, et pourquoi une erreur attendue et traitée ne coûte pas
+    + plus cher à construire que toute autre valeur. Une `Panic` est le seul échec qui n'est pas
+    + destiné à être traité : une `java.lang.Error` qui explique pourquoi une situation était
+    + jugée impossible.
+
+    - For macros, `halt` and `warn` report a `Message` as a compile-time diagnostic, with the
+    - same bolt code as its prefix, and a foreign `Throwable` is wrapped as an `Error.Unchecked` to make it
+    - a `Hazard`. How to *raise* and *handle* an error — `raises`, `Tactic`, `safely`,
+    - `recover`… — is `contingency`, which builds on this library.
+    + Pour les macros, `halt` et `warn` signalent un `Message` comme diagnostic de compilation, avec
+    + le même code bolt pour préfixe, et un `Throwable` étranger est enveloppé dans une
+    + `Error.Unchecked` pour en faire un `Hazard`. La façon de *lever* et de *traiter* une erreur —
+    + `raises`, `Tactic`, `safely`, `recover`… — relève de `contingency`, qui s'appuie sur cette
+    + bibliothèque.
+
+    - The library is two source sets. `fulminate.core` holds everything above and compiles for
+    - the JVM, Scala.js and Scala Native; `fulminate.print` adds `printables.messagePrintable`,
+    - the `Printable` instance which lets a `Message` be printed, kept separate so that the
+    - error vocabulary does not depend on printing. Everything is exported to the `soundness`
+    - umbrella, and the `errorDiagnostics` and `printables` choice packages merge with the
+    - umbrella's own, so their givens are imported by name (`import
+    - errorDiagnostics.stackTracesDiagnostics`): a wildcard import never imports givens.
+    + La bibliothèque comprend deux ensembles de sources. `fulminate.core` contient tout ce qui
+    + précède et se compile pour la JVM, Scala.js et Scala Native ; `fulminate.print` ajoute
+    + `printables.messagePrintable`, l'instance `Printable` qui permet d'afficher un `Message`,
+    + tenue à part afin que le vocabulaire des erreurs ne dépende pas de l'affichage. Tout est
+    + exporté dans le package parapluie `soundness`, et les packages de choix `errorDiagnostics`
+    + et `printables` fusionnent avec ceux du package parapluie ; leurs givens s'importent donc
+    + par leur nom (`import
+    + errorDiagnostics.stackTracesDiagnostics`) : un import joker n'importe jamais les givens.
+
+refer fulminate.Error
+refer fulminate.Message
+refer fulminate.m
+refer fulminate.Communicable
+refer fulminate.Diagnostics
+refer fulminate.errorDiagnostics
+refer contingency.Tactic
+
+entry .Error
+  info
+      - the base of every Soundness error: a number, a structured message and optional diagnostics
+      + la base de toute erreur de Soundness : un numéro, un message structuré et des diagnostics
+      + optionnels
+  detail
+      - An error is a case class extending `Error`, carrying as fields the values which explain
+      - it, with its message written with `m"…"` from those same fields, so that the message
+      - can never describe a state the value is not in. The primary constructor is
+      - `Error(d, e)(message, cause)(using Diagnostics)`, with two shorter forms: `Error(d,
+      - e)(message)` and `Error(message, cause = null)`, the last for an error with no number.
+      + Une erreur est une case class qui étend `Error`, portant comme champs les valeurs qui
+      + l'expliquent, avec son message écrit par `m"…"` à partir de ces mêmes champs, de sorte que
+      + le message ne puisse jamais décrire un état dans lequel la valeur ne se trouve pas. Le
+      + constructeur principal est `Error(d, e)(message, cause)(using Diagnostics)`, avec deux
+      + formes plus courtes : `Error(d,
+      + e)(message)` et `Error(message, cause = null)`, la dernière pour une erreur sans numéro.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      case class PortError(port: Int)(using Diagnostics)
+      extends Error(m"the port $port is not available")
+
+      val error = PortError(80)
+      error.message.text      // t"the port 80 is not available"
+      error.component         // the package the error class is in
+      error.getStackTrace.nn.length > 0   // true, under stackTracesDiagnostics
+      ```
+
+      - An error is identified by three numbers, which make its bolt code. `module` is the
+      - number of the library the error is in, as the `bolt` registry's `s.tel` records it;
+      - `number` is the error's own within that library, the next free one when the error type
+      - is written, and never reused (a retired number stays in the registry, marked so); and
+      - `variant` is the number of the error's reason — the `number` of its `Reason` case, an
+      - enum extending `Clarification` — or 0 when the error has no reasons. The error is
+      - documented at `doc/errors/<module>.<number>.md` with its cause and the usual remedies,
+      - so that `↯/s.25.1` in a user's report can be looked up rather than guessed at. An error
+      - written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
+      - component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
+      - `getMessage` and of a compile-time `halt`.
+      + Une erreur est identifiée par trois nombres, qui forment son code bolt. `module` est le
+      + numéro de la bibliothèque où se trouve l'erreur, tel que l'enregistre le fichier `s.tel` du
+      + registre `bolt` ; `number` est le numéro propre de l'erreur au sein de cette bibliothèque,
+      + le prochain libre lors de l'écriture du type d'erreur, et jamais réutilisé (un numéro retiré
+      + demeure dans le registre, marqué comme tel) ; et `variant` est le numéro de la raison de
+      + l'erreur — le `number` de son cas `Reason`, une énumération qui étend `Clarification` — ou 0
+      + lorsque l'erreur n'a pas de raisons. L'erreur est documentée dans
+      + `doc/errors/<module>.<number>.md` avec sa cause et les remèdes habituels, de sorte que le
+      + `↯/s.25.1` d'un rapport d'utilisateur puisse être consulté plutôt que deviné. Une erreur
+      + écrite `Error(message)` a `module = 0` : pas de code, et `getMessage` préfixe à la place son
+      + composant. Le code est rendu dans le préfixe `[↯/s.25.1.2]` de `#labelled`, de `getMessage`
+      + et d'un `halt` à la compilation.
+
+      - An `Error` is `caps.Pure`: it may never hold a live capability, because `throw` is the
+      - one channel capture checking cannot see, and an exception caught outside a scope
+      - arrives with its captures erased. The `Diagnostics` given decides whether the
+      - constructor captures a stack trace (`Exception`'s `writableStackTrace` is set from it),
+      - which is the one piece of ceremony defining an error imposes. The message text is also
+      - the exception's `getMessage`, so an error which does escape as a thrown exception still
+      - reads properly.
+      + Une `Error` est `caps.Pure` : elle ne doit jamais contenir de capacité active, car `throw`
+      + est le seul canal que le contrôle des captures ne peut pas voir, et une exception
+      + interceptée hors d'une portée arrive avec ses captures effacées. Le given `Diagnostics`
+      + décide si le constructeur capture une trace de pile (le `writableStackTrace` d'`Exception`
+      + en est déduit), ce qui est la seule formalité qu'impose la définition d'une erreur. Le
+      + texte du message est aussi le `getMessage` de l'exception ; une erreur qui s'échappe
+      + effectivement sous forme d'exception levée se lit donc toujours correctement.
+
+      - The house style for the message is `doc/standards/messages.md`: lowercase, no trailing
+      - period, present tense, the specific resource at fault interpolated as a typed value,
+      - and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
+      - a handler deconstructs the case class and its `Reason`, never its text.
+      + Le style maison des messages est `doc/standards/messages.md` : en minuscules, sans point
+      + final, au présent, la ressource précise en cause étant interpolée comme valeur typée, et
+      + jamais *invalid* ni *bad* comme prédicat à lui seul. Les erreurs sont faites pour être
+      + filtrées : un gestionnaire déconstruit la case class et sa `Reason`, jamais son texte.
+  refer fulminate.Message
+  refer fulminate.Bolt
+  refer fulminate.Clarification
+  refer fulminate.Diagnostics
+  refer fulminate.Hazard
+  refer fulminate.Error.Unchecked
+  entry .apply
+    info
+        - any `Throwable` as an `Error`: itself if it is one, else wrapped as `Error.Unchecked`
+        + tout `Throwable` sous forme d'`Error` : lui-même s'il en est une, sinon enveloppé dans une
+        + `Error.Unchecked`
+    detail
+        - `Error(throwable)` passes an `Error` through unchanged and wraps any other `Throwable`
+        - in an `Error.Unchecked`, which keeps its message and stack trace. This is how a JDK
+        - exception becomes a `Hazard` which can be raised.
+        + `Error(throwable)` laisse passer une `Error` inchangée et enveloppe tout autre `Throwable`
+        + dans une `Error.Unchecked`, qui conserve son message et sa trace de pile. C'est ainsi
+        + qu'une exception du JDK devient un `Hazard` qui peut être levé.
+  entry #module
+    info
+        - the number of the error's library: the `25` of `↯/s.25.1.2`, or 0 for an unnumbered error
+        + le numéro de la bibliothèque de l'erreur : le `25` de `↯/s.25.1.2`, ou 0 pour une erreur
+        + non numérotée
+  entry #number
+    info
+        - the error's number within its library: the `1` of `↯/s.25.1.2`
+        + le numéro de l'erreur au sein de sa bibliothèque : le `1` de `↯/s.25.1.2`
+  entry #variant
+    info
+        - the reason's number within the error: the `2` of `↯/s.25.1.2`, or 0
+        + le numéro de la raison au sein de l'erreur : le `2` de `↯/s.25.1.2`, ou 0
+  entry #bolt
+    info
+        - the error's bolt code; `Bolt.Uncoded` for an unnumbered error
+        + le code bolt de l'erreur ; `Bolt.Uncoded` pour une erreur non numérotée
+    detail
+        - An error which is reported on account of another project's overrides this to carry
+        - that error's code: Stratiform's `Tel.Error` for a reason the TEL Specification numbers
+        - is `↯/s.118.1/t.1.7`.
+        + Une erreur signalée en raison d'une erreur d'un autre projet redéfinit ceci pour porter
+        + le code de cette erreur : la `Tel.Error` de Stratiform, pour une raison que numérote la
+        + TEL Specification, est `↯/s.118.1/t.1.7`.
+  entry #message
+    info
+        - the error's message, as a structured `Message`
+        + le message de l'erreur, sous forme de `Message` structuré
+  entry #diagnostics
+    info
+        - the `Diagnostics` the error was built with
+        + les `Diagnostics` avec lesquels l'erreur a été construite
+    detail
+        - Available so that a translated error can be built with the original's choice:
+        - `InputError(text)(using error.diagnostics)`.
+        + Disponible afin qu'une erreur traduite puisse être construite avec le choix de
+        + l'originale : `InputError(text)(using error.diagnostics)`.
+  entry #fullClass
+    info
+        - the error class's fully-qualified name, as its segments
+        + le nom pleinement qualifié de la classe d'erreur, sous forme de ses segments
+  entry #className
+    info
+        - the error class's simple name
+        + le nom simple de la classe d'erreur
+  entry #component
+    info
+        - the first segment of the class's name: the library which defines it
+        + le premier segment du nom de la classe : la bibliothèque qui la définit
+    detail
+        - The first segment of the class's fully-qualified name, which is the top-level package
+        - for a Soundness error. It is the prefix of `getMessage` for an error with no number, so
+        - a message such as `galilei: the path is not a directory` says where the error came from.
+        + Le premier segment du nom pleinement qualifié de la classe, qui est le package de premier
+        + niveau pour une erreur de Soundness. C'est le préfixe de `getMessage` pour une erreur sans
+        + numéro ; un message comme `galilei: the path is not a directory` indique donc d'où vient
+        + l'erreur.
+  entry #errorCode
+    info
+        - the code as text, `↯/s.25.1` or `↯/s.25.1.2`; empty for an unnumbered error
+        + le code sous forme de texte, `↯/s.25.1` ou `↯/s.25.1.2` ; vide pour une erreur non
+        + numérotée
+  entry #colourCode
+    info
+        - the code as `[↯/s.25.1.2]`, with ANSI colours; empty for an unnumbered error
+        + le code sous la forme `[↯/s.25.1.2]`, avec des couleurs ANSI ; vide pour une erreur non
+        + numérotée
+  entry #labelled
+    info
+        - the message with its code prefixed: `[↯/s.25.1.2] message`
+        + le message précédé de son code : `[↯/s.25.1.2] message`
+    detail
+        - The message alone when the error has no number. This is what `HaltTactic` reports when
+        - an error becomes a compile error.
+        + Le message seul lorsque l'erreur n'a pas de numéro. C'est ce que signale `HaltTactic`
+        + lorsqu'une erreur devient une erreur de compilation.
+
+  entry .Unchecked
+    info
+        - a foreign `Throwable` wrapped as an `Error`, so that it can be raised
+        + un `Throwable` étranger enveloppé dans une `Error`, afin de pouvoir être levé
+    detail
+        - Error `↯/s.15.1`: _unchecked error with message, `text`_, or _unchecked error with no
+        - message_. `Unchecked(throwable)` keeps the original's message as `#text` and
+        - adopts its stack trace, and is built with `emptyDiagnostics`, since the trace it carries
+        - is the original's. `Error(throwable)` is the usual way to make one: it passes a real
+        - `Error` through and wraps anything else. The original itself is not kept — `getCause`
+        - is `null` — only its message and stack trace, so a handler which meets one should
+        - surface it as a typed error, or fix the source of the throw, rather than match on the
+        - original's class.
+        + Erreur `↯/s.15.1` : _unchecked error with message, `text`_, ou _unchecked error with no
+        + message_. `Unchecked(throwable)` conserve le message de l'original comme `#text` et adopte
+        + sa trace de pile, et se construit avec `emptyDiagnostics`, puisque la trace qu'elle porte
+        + est celle de l'original. `Error(throwable)` est la façon habituelle d'en créer une : elle
+        + laisse passer une véritable `Error` et enveloppe tout le reste. L'original lui-même n'est
+        + pas conservé — `getCause` vaut `null` — seulement son message et sa trace de pile ; un
+        + gestionnaire qui en rencontre une devrait donc la faire apparaître comme une erreur typée,
+        + ou corriger la source de la levée, plutôt que filtrer sur la classe de l'original.
+    refer fulminate.Error
+    entry .describe
+      info
+          - the message for an original message text; _with no message_ when it is empty
+          + le message pour le texte d'un message original ; _with no message_ lorsqu'il est vide
+    entry .apply
+      info
+          - wraps a `Throwable`, keeping its message and stack trace
+          + enveloppe un `Throwable`, en conservant son message et sa trace de pile
+    entry #text
+      info
+          - the original's message, or empty text
+          + le message de l'original, ou un texte vide
+    entry #stackTrace
+      info
+          - the original's stack trace, as the JVM array
+          + la trace de pile de l'original, sous forme de tableau JVM
+
+entry .Bolt
+  info
+      - a bolt code: the name of a diagnostic, such as `↯/s.25.1.2` or `↯/s.118.1/t.1.7`
+      + un code bolt : le nom d'un diagnostic, comme `↯/s.25.1.2` ou `↯/s.118.1/t.1.7`
+  detail
+      - A bolt code names a diagnostic of one of Propensive's projects in one form across all
+      - of them: `↯`, and one or more groups, each begun by `/`. A group is the letter of a
+      - project (`s` is Soundness) and its numbers: a subdivision of the project — for
+      - Soundness, a library — an error in it, and optionally a variant of the error and a
+      - site it is reported from. A code of several groups is a compound: the first is the
+      - error which was reported, and those after it are the `cause` it was reported on account
+      - of, which is a code in its own right.
+      + Un code bolt nomme un diagnostic de l'un des projets de Propensive sous une même forme dans
+      + tous : `↯`, puis un ou plusieurs groupes, chacun commençant par `/`. Un groupe est la lettre
+      + d'un projet (`s` pour Soundness) et ses numéros : une subdivision du projet — pour
+      + Soundness, une bibliothèque —, une erreur qu'elle contient, et éventuellement une variante
+      + de l'erreur et un site d'où elle est signalée. Un code de plusieurs groupes est un composé :
+      + le premier est l'erreur qui a été signalée, et ceux qui le suivent sont la `cause` en raison
+      + de laquelle elle l'a été, qui est un code à part entière.
+
+      ```scala
+      val code = Bolt('s', 118, 1).carrying(Bolt('t', 1, 7))
+      code.text           // t"↯/s.118.1/t.1.7"
+      code.cause.nn.text  // t"↯/t.1.7"
+      Bolt.parse(t"↯/s.25.1.2").variant   // 2
+      ```
+
+      - The record of what each code means is the
+      - [bolt](https://github.com/propensive/bolt) repository.
+      + La liste de ce que signifie chaque code est le dépôt
+      + [bolt](https://github.com/propensive/bolt).
+  refer fulminate.Error
+  entry .Soundness
+    info
+        - the letter by which bolt codes name Soundness, `s`
+        + la lettre par laquelle les codes bolt nomment Soundness, `s`
+  entry .Uncoded
+    info
+        - the code of a diagnostic which has none
+        + le code d'un diagnostic qui n'en a pas
+  entry .prefix
+    info
+        - the code a text begins with, bracketed or not, and how many characters it occupies
+        + le code par lequel commence un texte, entre crochets ou non, et le nombre de caractères
+        + qu'il occupe
+    detail
+        - `Uncoded` and zero if the text does not begin with a code. The count includes a space
+        - which follows the code, so that dropping that many characters leaves the message.
+        + `Uncoded` et zéro si le texte ne commence pas par un code. Le compte inclut une espace qui
+        + suit le code, de sorte qu'en retirant autant de caractères il reste le message.
+  entry .parse
+    info
+        - the code a text consists of; `Uncoded` if it is not exactly a code
+        + le code dont se compose un texte ; `Uncoded` s'il ne s'agit pas exactement d'un code
+  entry #project
+    info
+        - the letter of the project
+        + la lettre du projet
+  entry #subdivision
+    info
+        - the number of the part of the project: for Soundness, of the library
+        + le numéro de la partie du projet : pour Soundness, de la bibliothèque
+  entry #error
+    info
+        - the number of the error within the subdivision
+        + le numéro de l'erreur au sein de la subdivision
+  entry #variant
+    info
+        - the number of the error's variant, or 0
+        + le numéro de la variante de l'erreur, ou 0
+  entry #site
+    info
+        - the number of the site the error is reported from, or 0
+        + le numéro du site d'où l'erreur est signalée, ou 0
+  entry #cause
+    info
+        - the code this error was reported on account of, or `null`
+        + le code en raison duquel cette erreur a été signalée, ou `null`
+  entry #coded
+    info
+        - whether this is a code at all: false only for `Uncoded`
+        + s'il s'agit bien d'un code : faux seulement pour `Uncoded`
+  entry #carrier
+    info
+        - the error which was reported, without its cause
+        + l'erreur qui a été signalée, sans sa cause
+  entry #carrying
+    info
+        - this code carrying another, which goes innermost in a compound
+        + ce code portant un autre code, qui se place au plus profond d'un composé
+  entry #text
+    info
+        - the code as it is written, `↯/s.25.1.2`; empty for `Uncoded`
+        + le code tel qu'il s'écrit, `↯/s.25.1.2` ; vide pour `Uncoded`
+  entry #label
+    info
+        - the code in brackets, as it is written before a message
+        + le code entre crochets, tel qu'il s'écrit avant un message
+  entry #colorLabel
+    info
+        - the bracketed code with ANSI colours
+        + le code entre crochets, avec des couleurs ANSI
+
+entry .Hazard
+  info
+      - the domain of raisable values: any pure `Exception`
+      + le domaine des valeurs pouvant être levées : toute `Exception` pure
+  detail
+      - `type Hazard = Exception & caps.Pure`. `Error` is pure by inheritance, so every Soundness
+      - error is a `Hazard`; a JDK exception must be wrapped (by `Error(throwable)`, as an
+      - `Error.Unchecked`) to be raised, since purity cannot be established for an arbitrary
+      - `Throwable` subclass. Every `Tactic[error]`, `raises error` and `Attempt[_, error]` bounds
+      - its error by `Hazard`.
+      + `type Hazard = Exception & caps.Pure`. `Error` est pure par héritage ; toute erreur de
+      + Soundness est donc un `Hazard` ; une exception du JDK doit être enveloppée (par
+      + `Error(throwable)`, sous forme d'`Error.Unchecked`) pour être levée, puisque la pureté ne
+      + peut pas être établie pour une sous-classe arbitraire de `Throwable`. Toute
+      + `Tactic[error]`, tout `raises error` et tout `Attempt[_, error]` borne son erreur par
+      + `Hazard`.
+
+entry .Message
+  info
+      - a structured message: fixed text with typed, distinguishable parts embedded
+      + un message structuré : un texte fixe dans lequel sont incorporées des parties typées et
+      + distinguables
+  detail
+      - A `Message` is `texts` — the literal pieces — interleaved with `messages`, the embedded
+      - parts, one fewer than the texts, so that the boundary between the fixed and the
+      - variable parts of a message survives to the point of rendering. `m"…"` builds one;
+      - `#text` flattens it to plain text; `#colorText` renders the embedded parts in italics on
+      - a terminal; a renderer for Markdown, HTML or styled text walks `#segments` or `#fold`.
+      + Un `Message` se compose de `texts` — les morceaux littéraux — entrelacés avec `messages`,
+      + les parties incorporées, une de moins que les textes, de sorte que la frontière entre les
+      + parties fixes et variables d'un message subsiste jusqu'au rendu. `m"…"` en construit un ;
+      + `#text` l'aplatit en texte brut ; `#colorText` rend les parties incorporées en italique
+      + dans un terminal ; un moteur de rendu pour Markdown, HTML ou du texte stylé parcourt
+      + `#segments` ou `#fold`.
+
+      ```scala
+      import soundness.*
+
+      val name = t"world"
+      val message = m"hello $name"
+
+      message.texts      // List(t"hello ", t"")
+      message.messages   // List(Message(t"world"))
+      message.text       // t"hello world"
+      (message + m"!").text   // t"hello world!"
+      ```
+
+      - A message's parts may be nested to any depth: an embedded `Message` keeps its own
+      - structure, and `m"…"` also embeds the text between backticks as a part, so `m"the
+      - field `name` is absent"` renders `name` as a distinguishable part. `Message` is
+      - `Communicable` (as itself), so a message interpolates into another, and a `List[Message]`
+      - interpolates as bullets. Printing a `Message` needs `printables.messagePrintable`, from
+      - `fulminate.print`.
+      + Les parties d'un message peuvent être imbriquées à n'importe quelle profondeur : un
+      + `Message` incorporé conserve sa propre structure, et `m"…"` incorpore aussi comme partie le
+      + texte situé entre accents graves ; `m"the
+      + field `name` is absent"` rend donc `name` comme une partie distinguable. `Message` est
+      + `Communicable` (en tant que lui-même) ; un message s'interpole donc dans un autre, et une
+      + `List[Message]` s'interpole sous forme de puces. Afficher un `Message` requiert
+      + `printables.messagePrintable`, de `fulminate.print`.
+  refer fulminate.m
+  refer fulminate.Communicable
+  refer fulminate.printables
+  entry .apply
+    info
+        - a message of one literal text
+        + un message d'un seul texte littéral
+    detail
+        - `Message(text)` is a message with no embedded parts. The overload `Message[tuple]
+        - (messages, done)` is the inline helper the `m"…"` macro uses to convert a tuple of
+        - substitutions through their `Communicable` instances; it is not for direct use.
+        + `Message(text)` est un message sans partie incorporée. La surcharge
+        + `Message[tuple] (messages, done)` est l'utilitaire inline qu'utilise la macro `m"…"` pour
+        + convertir un tuple de substitutions au moyen de leurs instances `Communicable` ; elle
+        + n'est pas destinée à un usage direct.
+  entry .communicable
+    info
+        - a `Message` interpolates into another as itself
+        + un `Message` s'interpole dans un autre en tant que lui-même
+    detail
+        - In `Message`'s own companion so that it is in implicit scope for `Message is
+        - Transcribable to Message`, which is how a logger can log a bare message.
+        + Dans le compagnon propre à `Message` afin d'être dans la portée implicite pour `Message is
+        + Transcribable to Message`, ce qui permet à un logger de journaliser un message nu.
+  entry #texts
+    info
+        - the literal pieces, one more than the embedded parts; empty text where parts abut
+        + les morceaux littéraux, un de plus que les parties incorporées ; un texte vide là où des
+        + parties se touchent
+  entry #messages
+    info
+        - the embedded parts, in order
+        + les parties incorporées, dans l'ordre
+  entry #+
+    info
+        - `left + right`: concatenation, with the texts at the join merged into one piece
+        + `left + right` : la concaténation, les textes à la jonction étant fusionnés en un seul
+        + morceau
+  entry #segments
+    info
+        - the message as one flat list of its texts and parts, interleaved
+        + le message sous forme d'une liste plate de ses textes et parties, entrelacés
+  entry #fold
+    info
+        - renders the message depth-first, the function receiving each text with its nesting level
+        + rend le message en profondeur d'abord, la fonction recevant chaque texte avec son niveau
+        + d'imbrication
+    detail
+        - `message.fold(initial)((accumulator, text, level) => …)`: every literal piece of the
+        - message and of its parts, in reading order, with the depth it is embedded at (0 for the
+        - top level). `#text` and `#colorText` are folds.
+        + `message.fold(initial)((accumulator, text, level) => …)` : chaque morceau littéral du
+        + message et de ses parties, dans l'ordre de lecture, avec la profondeur à laquelle il est
+        + incorporé (0 pour le premier niveau). `#text` et `#colorText` sont des repliements.
+  entry #text
+    info
+        - the message flattened to plain text, with multi-line literals unwrapped
+        + le message aplati en texte brut, les littéraux multilignes étant déroulés
+    detail
+        - Lines of a triple-quoted `m"""…"""` are trimmed and joined with single spaces, and a
+        - blank line becomes a newline, so a message may be laid out across lines in source
+        - without the layout reaching the reader.
+        + Les lignes d'un `m"""…"""` entre triples guillemets sont rognées et jointes par des
+        + espaces simples, et une ligne vide devient un saut de ligne ; un message peut donc être
+        + disposé sur plusieurs lignes dans le code source sans que cette disposition n'atteigne le
+        + lecteur.
+  entry #colorText
+    info
+        - the message as terminal text, embedded parts in italics and deeper parts in bold italics
+        + le message sous forme de texte de terminal, les parties incorporées en italique et les
+        + parties plus profondes en gras italique
+    detail
+        - ANSI styling only — no colour, despite the name — with depth 1 in italics and depth 2 or
+        - more in bold italics. A macro's `halt` uses it when the compiler's colour setting is on.
+        + Uniquement du style ANSI — pas de couleur, malgré le nom — avec la profondeur 1 en
+        + italique et la profondeur 2 ou plus en gras italique. Le `halt` d'une macro l'utilise
+        + lorsque le réglage de couleur du compilateur est activé.
+  entry #unwrap
+    info
+        - collapses a multi-line string: lines trimmed and joined with spaces, blank lines as newlines
+        + replie une chaîne multiligne : lignes rognées et jointes par des espaces, lignes vides
+        + converties en sauts de ligne
+    detail
+        - The normalisation `#text` applies; public so that a renderer can apply the same rule
+        - to a literal.
+        + La normalisation qu'applique `#text` ; publique afin qu'un moteur de rendu puisse
+        + appliquer la même règle à un littéral.
+
+entry .m
+  info
+      - the `m"…"` interpolator: a `Message` from literal text and `Communicable` substitutions
+      + l'interpolateur `m"…"` : un `Message` à partir de texte littéral et de substitutions
+      + `Communicable`
+  detail
+      - `m"the port $port is not available"` builds a `Message` whose literal pieces are the
+      - text between substitutions and whose parts are the substitutions, each converted through
+      - its `Communicable` instance — so only a value which knows how to read in prose can be
+      - interpolated, and a value with no instance is a compile error. A `Message` interpolates
+      - as itself, `Text` as itself (quoted with `“ ”` if empty or padded), the primitives as
+      - their decimal or character text, any `Textualizable` through its text, and a
+      - `List[Message]` as bullets.
+      + `m"the port $port is not available"` construit un `Message` dont les morceaux littéraux
+      + sont le texte entre les substitutions et dont les parties sont les substitutions, chacune
+      + convertie au moyen de son instance `Communicable` — seule une valeur qui sait se lire dans
+      + la prose peut donc être interpolée, et une valeur sans instance est une erreur de
+      + compilation. Un `Message` s'interpole en tant que lui-même, `Text` en tant que lui-même
+      + (entre `“ ”` s'il est vide ou entouré d'espaces), les primitifs sous forme de leur texte
+      + décimal ou de leur caractère, tout `Textualizable` au moyen de son texte, et une
+      + `List[Message]` sous forme de puces.
+
+      ```scala
+      import soundness.*
+
+      val port = 80
+      val reason = m"it needs privilege"
+
+      m"the port $port is not available: $reason".text
+      // t"the port 80 is not available: it needs privilege"
+
+      m"the field `name` is absent".messages   // List(Message(t"name"))
+      ```
+
+      - Text between a pair of backticks becomes an embedded part — a message of its own,
+      - which may itself contain substitutions — so an identifier or a literal fragment in the
+      - prose is distinguishable from the words around it, and renders in italics on a
+      - terminal or as code in Markdown. An unmatched backtick is a compile error, _the m""
+      - interpolator has an unmatched backtick_. The escapes `\n`, `\r`, `\t`, `\f`, `\b`,
+      - `\e`, `\\`, `\"`, `\'` and `\uXXXX` are decoded at compile time, and any other escape is
+      - a compile error. A triple-quoted `m"""…"""` may span lines; `Message#text` unwraps them.
+      + Le texte entre une paire d'accents graves devient une partie incorporée — un message à
+      + part entière, qui peut lui-même contenir des substitutions — de sorte qu'un identifiant ou
+      + un fragment littéral dans la prose se distingue des mots qui l'entourent, et se rend en
+      + italique dans un terminal ou sous forme de code en Markdown. Un accent grave non apparié
+      + est une erreur de compilation, _the m""
+      + interpolator has an unmatched backtick_. Les échappements `\n`, `\r`, `\t`, `\f`, `\b`,
+      + `\e`, `\\`, `\"`, `\'` et `\uXXXX` sont décodés à la compilation, et tout autre
+      + échappement est une erreur de compilation. Un `m"""…"""` entre triples guillemets peut
+      + s'étendre sur plusieurs lignes ; `Message#text` les déroule.
+
+      - The house style for what a message says is `doc/standards/messages.md`.
+      + Le style maison de ce que dit un message est `doc/standards/messages.md`.
+
+entry .Communicable
+  info
+      - the typeclass of values which can read in prose: a value to a `Message`
+      + la classe de types des valeurs qui peuvent se lire dans la prose : d'une valeur vers un
+      + `Message`
+  detail
+      - `value is Communicable` converts a value to a `Message`, and is what `m"…"` asks of
+      - each substitution. A type which appears in messages gives an instance in its companion,
+      - usually derived from its text rendering, so that every message about such values agrees
+      - on how one reads; a `Reason` enum gives one which phrases each case. The instances in
+      - the companion cover `Text` (quoted with `“ ”` when empty or padded, so an absent or
+      - whitespace value is visible), `String`, `Char`, `Int`, `Long`, `Message`, any
+      - `Textualizable`, a `List[Message]` (as bullets, one per line), a `Specializable` (`Int`
+      - as `int`, for messages naming a primitive type), and — inside a macro, with `Quotes` in
+      - scope — a `Term` or an `Expr`.
+      + `value is Communicable` convertit une valeur en `Message`, et c'est ce que `m"…"` exige de
+      + chaque substitution. Un type qui apparaît dans des messages fournit une instance dans son
+      + compagnon, généralement dérivée de son rendu textuel, afin que tous les messages portant
+      + sur de telles valeurs s'accordent sur la façon dont elles se lisent ; une énumération
+      + `Reason` en fournit une qui formule chaque cas. Les instances du compagnon couvrent `Text`
+      + (entre `“ ”` lorsqu'il est vide ou entouré d'espaces, de sorte qu'une valeur absente ou
+      + faite d'espaces soit visible), `String`, `Char`, `Int`, `Long`, `Message`, tout
+      + `Textualizable`, une `List[Message]` (sous forme de puces, une par ligne), un
+      + `Specializable` (`Int` sous la forme `int`, pour les messages qui nomment un type
+      + primitif), et — dans une macro, avec `Quotes` dans la portée — un `Term` ou un `Expr`.
+
+      ```scala
+      import soundness.*
+
+      enum Weekday:
+        case Monday, Tuesday
+
+      object Weekday:
+        given communicable: Weekday is Communicable =
+          case Monday  => m"the first day of the week"
+          case Tuesday => m"the second day of the week"
+
+      m"today is ${Weekday.Monday}".text   // t"today is the first day of the week"
+      ```
+
+      - A `Communicable` is a `Transcribable to Message`: converting a value to a message is
+      - exactly how a loggable event is transcribed onto a log's carrier, which is what lets a
+      - logger log any `Communicable` event with no further bridge. `value.communicate` is the
+      - conversion as an extension method.
+      + Un `Communicable` est un `Transcribable to Message` : convertir une valeur en message est
+      + exactement la façon dont un événement journalisable est transcrit sur le support d'un
+      + journal, ce qui permet à un logger de journaliser tout événement `Communicable` sans
+      + autre passerelle. `value.communicate` est la conversion sous forme de méthode d'extension.
+  refer fulminate.m
+  refer fulminate.Message
+  refer fulminate.communicate
+  entry .text
+    info
+        - `Text` as itself, quoted with `“ ”` if it is empty or begins or ends with a space
+        + `Text` en tant que lui-même, entre `“ ”` s'il est vide ou commence ou se termine par une
+        + espace
+  entry .string
+    info
+        - `String` as its text
+        + `String` sous forme de son texte
+  entry .char
+    info
+        - a `Char` as the character
+        + un `Char` sous forme du caractère
+  entry .int
+    info
+        - an `Int` in decimal
+        + un `Int` en décimal
+  entry .long
+    info
+        - a `Long` in decimal
+        + un `Long` en décimal
+  entry .textualizable
+    info
+        - any `Textualizable` value, as its text
+        + toute valeur `Textualizable`, sous forme de son texte
+  entry .term
+    info
+        - a `quotes.reflect.Term`, as the compiler shows it; for macros, with `Quotes` in scope
+        + un `quotes.reflect.Term`, tel que l'affiche le compilateur ; pour les macros, avec
+        + `Quotes` dans la portée
+  entry .expr
+    info
+        - an `Expr[T]`, as the compiler shows it; for macros, with `Quotes` in scope
+        + un `Expr[T]`, tel que l'affiche le compilateur ; pour les macros, avec `Quotes` dans la
+        + portée
+  entry .specializable
+    info
+        - a primitive's companion (`Int`, `Boolean`…) as its lowercase name
+        + le compagnon d'un primitif (`Int`, `Boolean`…) sous forme de son nom en minuscules
+    detail
+        - For a message naming a primitive type, as `Number.Error`'s _is not a valid int_ does.
+        + Pour un message qui nomme un type primitif, comme le fait le _is not a valid int_ de
+        + `Number.Error`.
+  entry .listMessage
+    info
+        - a `List[Message]` as bullets, one message per line
+        + une `List[Message]` sous forme de puces, un message par ligne
+    detail
+        - Each message on its own line prefixed with ` - `, so an error which aggregates others
+        - says how many and lists them beneath. Do not join messages with commas by hand.
+        + Chaque message sur sa propre ligne, préfixé par ` - ` ; une erreur qui en agrège d'autres
+        + indique ainsi combien il y en a et les énumère en dessous. Ne joignez pas des messages par
+        + des virgules à la main.
+  entry #Result
+    info
+        - `Message`
+        + `Message`
+  entry #message
+    info
+        - the message for a value
+        + le message pour une valeur
+  entry #record
+    info
+        - the message for a value: the `Transcribable` name for the same conversion
+        + le message pour une valeur : le nom `Transcribable` de la même conversion
+  entry #contramap
+    info
+        - a `Communicable` for another type, by mapping it to this one
+        + un `Communicable` pour un autre type, en le ramenant à celui-ci
+    detail
+        - `Communicable.text.contramap(_.tt)` is how the `String` instance is made.
+        + `Communicable.text.contramap(_.tt)` est la façon dont est créée l'instance pour `String`.
+
+entry .communicate
+  info
+      - `value.communicate`: the value as a `Message`, through its `Communicable`
+      + `value.communicate` : la valeur sous forme de `Message`, au moyen de son `Communicable`
+
+entry .Clarification
+  info
+      - the trait a `Reason` enum extends: a number for each distinct cause of an error
+      + le trait qu'étend une énumération `Reason` : un numéro pour chaque cause distincte d'une
+      + erreur
+  detail
+      - `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
+      - `Reason` enum extending `Clarification`, each with a number unique within the error, so
+      - that `Error(25, 1, reason.number)` renders as `↯/s.25.1.1`, `↯/s.25.1.2`… and each has a
+      - sub-section of the error's page in `doc/errors`. A `Reason` carries data of its own where
+      - the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
+      - `Communicable` instance phrasing each case, which the error's message interpolates. A
+      - `halt` or `warn` given a `Clarification` puts its number in the diagnostic's prefix.
+      + `trait Clarification { def number: Int }`. Les différentes causes d'une erreur sont les
+      + cas d'une énumération `Reason` qui étend `Clarification`, chacun avec un numéro unique au
+      + sein de l'erreur, de sorte que `Error(25, 1, reason.number)` se rend `↯/s.25.1.1`,
+      + `↯/s.25.1.2`… et que chacun ait une sous-section de la page de l'erreur dans `doc/errors`.
+      + Une `Reason` porte ses propres données là où le diagnostic en a besoin
+      + (`Ipv4ByteOutOfRange(byte: Int)`), et fournit sa propre instance `Communicable` qui formule
+      + chaque cas, que le message de l'erreur interpole. Un `halt` ou un `warn` auquel on donne
+      + une `Clarification` place son numéro dans le préfixe du diagnostic.
+
+      ```scala
+      import soundness.*
+
+      object Port:
+        enum Reason(val number: Int) extends Clarification:
+          case Taken      extends Reason(1)
+          case Privileged extends Reason(2)
+
+      Port.Reason.Privileged.number   // 2
+      ```
+
+entry .Diagnostics
+  info
+      - whether an error captures a stack trace: `Diagnostics.capture` or `Diagnostics.omit`
+      + si une erreur capture une trace de pile : `Diagnostics.capture` ou `Diagnostics.omit`
+  detail
+      - An opaque type (exported from `fulminate.internal`) with two values. Every error's
+      - constructor takes one as a contextual parameter and passes `captureStack` to
+      - `Exception`'s `writableStackTrace`, so an error built under `omit` has no stack trace
+      - and costs no more than any other value, which is what makes typed errors affordable in
+      - hot paths where they are expected and handled. The tactics which discard their errors
+      - (`safely`, `recover`) supply `omit` themselves; those which keep them take the
+      - `Diagnostics` in scope; a throwing tactic uses `capture`.
+      + Un type opaque (exporté depuis `fulminate.internal`) à deux valeurs. Le constructeur de
+      + chaque erreur en prend un comme paramètre contextuel et transmet `captureStack` au
+      + `writableStackTrace` d'`Exception` ; une erreur construite sous `omit` n'a donc pas de
+      + trace de pile et ne coûte pas plus que toute autre valeur, ce qui rend les erreurs typées
+      + abordables dans les chemins critiques où elles sont attendues et traitées. Les tactiques
+      + qui ignorent leurs erreurs (`safely`, `recover`) fournissent elles-mêmes `omit` ; celles
+      + qui les conservent prennent les `Diagnostics` dans la portée ; une tactique qui lève
+      + utilise `capture`.
+
+      ```scala
+      import soundness.*
+
+      case class PortError(port: Int)(using Diagnostics)
+      extends Error(m"the port $port is not available")
+
+      locally:
+        given Diagnostics = Diagnostics.omit
+        PortError(80).getStackTrace.nn.length   // 0
+
+      locally:
+        given Diagnostics = Diagnostics.capture
+        PortError(80).getStackTrace.nn.length > 0   // true
+      ```
+
+      - The usual way to choose is importing one of the `errorDiagnostics` givens by name.
+      + La façon habituelle de choisir consiste à importer par son nom l'un des givens
+      + `errorDiagnostics`.
+  refer fulminate.errorDiagnostics
+  refer fulminate.Error
+
+entry .errorDiagnostics
+  info
+      - the two `Diagnostics` choices, as givens to import by name
+      + les deux choix de `Diagnostics`, sous forme de givens à importer par leur nom
+  detail
+      - `import soundness.*` brings neither in, since a wildcard import never imports givens;
+      - one is imported by name wherever errors are constructed outside a tactic's thunk — a
+      - test, a `mitigate` case, a direct `PortError(80)`. Inside `abort(…)` and `raise(…)` the
+      - tactic supplies its own, so a `raises` method needs no import.
+      + `import soundness.*` n'en introduit aucun, puisqu'un import joker n'importe jamais les
+      + givens ; on en importe un par son nom partout où des erreurs sont construites hors du
+      + thunk d'une tactique — un test, un cas `mitigate`, un `PortError(80)` direct. Dans
+      + `abort(…)` et `raise(…)`, la tactique fournit le sien ; une méthode `raises` ne requiert
+      + donc aucun import.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      ```
+  refer fulminate.Diagnostics
+  entry .emptyDiagnostics
+    info
+        - `Diagnostics.omit`: no stack traces; cheaper where an error is expected and handled
+        + `Diagnostics.omit` : pas de traces de pile ; moins coûteux là où une erreur est attendue
+        + et traitée
+  entry .stackTracesDiagnostics
+    info
+        - `Diagnostics.capture`: stack traces, for debugging
+        + `Diagnostics.capture` : des traces de pile, pour le débogage
+
+entry .Panic
+  info
+      - an error not meant to be caught: a programmer's understanding was wrong
+      + une erreur qui n'est pas destinée à être interceptée : la compréhension d'un programmeur
+      + était erronée
+  detail
+      - A `java.lang.Error` (not an `Exception`, and so not a `Hazard`) carrying a `Message`
+      - which says why the situation was believed impossible. Reaching one is not a failure to
+      - handle: it appears in no `raises` clause, and no tactic catches it. `panic(message)`
+      - throws one; `Panic(exception)` wraps an exception which was unexpectedly thrown, with a
+      - message naming its class and text.
+      + Une `java.lang.Error` (et non une `Exception`, donc pas un `Hazard`) portant un `Message`
+      + qui explique pourquoi la situation était jugée impossible. En atteindre une n'est pas un
+      + échec à traiter : elle n'apparaît dans aucune clause `raises`, et aucune tactique ne
+      + l'intercepte. `panic(message)` en lève une ; `Panic(exception)` enveloppe une exception
+      + levée de manière inattendue, avec un message nommant sa classe et son texte.
+
+      ```scala
+      import soundness.*
+
+      def denominator(n: Int): Int =
+        if n == 0 then panic(m"a zero denominator was checked for earlier") else n
+      ```
+  refer fulminate.panic
+  entry .apply
+    info
+        - a panic for an exception which was unexpectedly thrown
+        + une panique pour une exception levée de manière inattendue
+    detail
+        - `Panic(exception)` has the message _an `ClassName` exception was unexpectedly thrown;
+        - the error was: `text`_, with `[null]` for an exception without a message.
+        + `Panic(exception)` a pour message _an `ClassName` exception was unexpectedly thrown;
+        + the error was: `text`_, avec `[null]` pour une exception sans message.
+  entry #message
+    info
+        - why the situation was believed impossible
+        + pourquoi la situation était jugée impossible
+
+entry .panic
+  info
+      - throws a `Panic` with a message: the situation was believed impossible
+      + lève une `Panic` avec un message : la situation était jugée impossible
+  detail
+      - `panic(m"…")` has type `Nothing`, so it stands anywhere a value is needed — the
+      - unreachable branch of a match, the `else` of a check which an earlier step guaranteed.
+      - It is not an error to handle, and is not declared in a signature.
+      + `panic(m"…")` a le type `Nothing` ; il peut donc figurer partout où une valeur est
+      + attendue — la branche inaccessible d'un filtrage, le `else` d'une vérification qu'une
+      + étape antérieure garantissait. Ce n'est pas une erreur à traiter, et elle n'est pas
+      + déclarée dans une signature.
+
+entry .halt
+  info
+      - reports a compile error from a macro and aborts the expansion
+      + signale une erreur de compilation depuis une macro et interrompt l'expansion
+  detail
+      - For macro implementations, with `Quotes` in scope. `halt(message)` reports the
+      - `Message`'s text (coloured, through `Message#colorText`, when the compiler's `-color`
+      - setting is on) with `report.errorAndAbort`; `halt(message, position)` attaches a
+      - position. The numbered overloads prefix the diagnostic with the error's code as
+      - `[↯/s.25.1] ` — `halt(module, number, message)`, `halt(module, number, message,
+      - position)` — or with its reason's number as `[↯/s.25.1.2] `: `halt(module, number,
+      - reason, message)` and `halt(module, number, reason, message, position)`, where `reason`
+      - is a `Clarification`. The position parameter of the numbered
+      - forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
+      - reports without one. Every macro-raised code has a page in `doc/errors`, like a runtime
+      - error's.
+      + Pour les implémentations de macros, avec `Quotes` dans la portée. `halt(message)` signale le
+      + texte du `Message` (en couleur, au moyen de `Message#colorText`, lorsque le réglage `-color`
+      + du compilateur est activé) avec `report.errorAndAbort` ; `halt(message, position)` y attache
+      + une position. Les surcharges numérotées préfixent le diagnostic par le code de l'erreur sous
+      + la forme `[↯/s.25.1] ` — `halt(module, number, message)`,
+      + `halt(module, number, message, position)` — ou par le numéro de sa raison sous la forme
+      + `[↯/s.25.1.2] ` : `halt(module, number, reason, message)` et
+      + `halt(module, number, reason, message, position)`, où `reason` est une `Clarification`. Le
+      + paramètre de position des formes numérotées est `Matchable`, et une valeur qui n'est pas une
+      + `quotes.reflect.Position` (ou `null`) signale sans position. Chaque code levé par une macro
+      + a une page dans `doc/errors`, comme celui d'une erreur à l'exécution.
+
+      ```scala
+      import soundness.*
+      import scala.quoted.*
+
+      def check(expr: Expr[Int])(using Quotes): Expr[Int] = expr.value match
+        case Some(n) if n > 0 => expr
+        case _                => halt(m"the argument $expr must be a positive literal")
+      ```
+
+      - `HaltTactic`, from `contingency`, turns a raised `Error` into a `halt` of its `labelled`
+      - message, so a parser which raises at run time reports the same error at compile time.
+      + `HaltTactic`, de `contingency`, transforme une `Error` levée en un `halt` de son message
+      + `labelled` ; un analyseur qui lève à l'exécution signale donc la même erreur à la
+      + compilation.
+
+entry .warn
+  info
+      - reports a compile warning from a macro
+      + signale un avertissement de compilation depuis une macro
+  detail
+      - For macro implementations, with `Quotes` in scope. The same overloads as `halt` —
+      - `warn(message)`, `warn(message, position)`, `warn(d, message)`, `warn(d, message,
+      - position)`, `warn(d, reason, message)` and `warn(d, reason, message, position)` — with
+      - `report.warning` in place of `report.errorAndAbort`, so the expansion continues.
+      + Pour les implémentations de macros, avec `Quotes` dans la portée. Les mêmes surcharges que
+      + `halt` — `warn(message)`, `warn(message, position)`, `warn(d, message)`, `warn(d, message,
+      + position)`, `warn(d, reason, message)` et `warn(d, reason, message, position)` — avec
+      + `report.warning` à la place de `report.errorAndAbort` ; l'expansion se poursuit donc.
+
+entry .TextEscapes
+  info
+      - decodes the standard escape sequences in text: `\n`, `\t`, `\uXXXX`…
+      + décode les séquences d'échappement standard dans un texte : `\n`, `\t`, `\uXXXX`…
+  detail
+      - The escape rules `m"…"` and the other interpolators share, as runtime functions for a
+      - parser which meets escapes in its input. `escape(text)` decodes every escape in a text;
+      - `standardEscape` is one step of that loop. The recognised escapes are `\\`, `\n`, `\r`,
+      - `\f`, `\b`, `\t`, `\e`, `\"`, `\'` and `\uXXXX`. These functions throw
+      - `TextEscapes.Error` as a checked exception (`throws`, not `raises`), so a caller needs a
+      - `CanThrow[TextEscapes.Error]` or `unsafeExceptions.canThrowAny` in scope.
+      + Les règles d'échappement que partagent `m"…"` et les autres interpolateurs, sous forme de
+      + fonctions d'exécution pour un analyseur qui rencontre des échappements dans son entrée.
+      + `escape(text)` décode chaque échappement d'un texte ; `standardEscape` est une étape de
+      + cette boucle. Les échappements reconnus sont `\\`, `\n`, `\r`, `\f`, `\b`, `\t`, `\e`,
+      + `\"`, `\'` et `\uXXXX`. Ces fonctions lèvent `TextEscapes.Error` sous forme d'exception
+      + vérifiée (`throws`, et non `raises`) ; un appelant a donc besoin d'un
+      + `CanThrow[TextEscapes.Error]` ou de `unsafeExceptions.canThrowAny` dans la portée.
+
+      ```scala
+      import soundness.*
+      import unsafeExceptions.canThrowAny
+
+      TextEscapes.escape(t"a\\tb")   // t"a\tb", with a real tab
+      ```
+  entry .standardEscape
+    info
+        - decodes one character at a position: the character (or -1), the next position, and whether an escape is open
+        + décode un caractère à une position : le caractère (ou -1), la position suivante, et si un
+        + échappement est ouvert
+    detail
+        - `standardEscape(text, cursor, escaping)` reads the character at `cursor` in the state
+        - `escaping` says, and returns the decoded character (`-1` when the character opened an
+        - escape and produced nothing), the position to continue from, and the new state.
+        + `standardEscape(text, cursor, escaping)` lit le caractère à `cursor` dans l'état
+        + qu'indique `escaping`, et renvoie le caractère décodé (`-1` lorsque le caractère a ouvert
+        + un échappement et n'a rien produit), la position à partir de laquelle continuer, et le
+        + nouvel état.
+  entry .escape
+    info
+        - decodes every escape in a text
+        + décode chaque échappement d'un texte
+    detail
+        - Throws `TextEscapes.Error` for an unrecognised escape, an incomplete `\u` sequence, or
+        - a text ending in a lone backslash.
+        + Lève `TextEscapes.Error` pour un échappement non reconnu, une séquence `\u` incomplète, ou
+        + un texte se terminant par une barre oblique inverse isolée.
+  entry .Error
+    info
+        - raised when an escape sequence is not valid
+        + levée lorsqu'une séquence d'échappement n'est pas valide
+    detail
+        - Error `↯/s.15.2`: _the character `c` should not be escaped_, _the unicode escape is
+        - incomplete_ or _the final character cannot be an escape_. Thrown by `escape` and
+        - `standardEscape`.
+        + Erreur `↯/s.15.2` : _the character `c` should not be escaped_, _the unicode escape is
+        + incomplete_ ou _the final character cannot be an escape_. Levée par `escape` et
+        + `standardEscape`.
+    entry #initMessage
+      info
+          - the message describing the invalid escape
+          + le message qui décrit l'échappement invalide
+
+entry .printables
+  info
+      - the `Printable` instance for `Message`, as a given to import by name
+      + l'instance `Printable` pour `Message`, sous forme de given à importer par son nom
+  detail
+      - In `fulminate.print`, a separate source set, so that the error vocabulary every module
+      - depends on does not also depend on printing. The given is not in `Message`'s implicit
+      - scope from there, so it must be imported; `Printable` has no generic fallback, so a
+      - call site which forgets fails to compile rather than printing something degraded.
+      + Dans `fulminate.print`, un ensemble de sources distinct, afin que le vocabulaire des
+      + erreurs dont dépend chaque module ne dépende pas aussi de l'affichage. Depuis cet endroit,
+      + le given n'est pas dans la portée implicite de `Message` ; il doit donc être importé ;
+      + `Printable` n'a pas de repli générique ; un site d'appel qui l'oublie échoue donc à la
+      + compilation plutôt que d'afficher quelque chose de dégradé.
+
+      ```scala
+      import soundness.*
+      import printables.messagePrintable
+
+      val message: Message = m"the port `80` is not available"
+      message.print   // t"the port 80 is not available"
+      ```
+  entry .messagePrintable
+    info
+        - prints a `Message` as its plain `text`, whatever the terminal
+        + affiche un `Message` sous forme de son `text` brut, quel que soit le terminal
+
+entry .internal
+  info
+      - the home of `Diagnostics` and of the `m"…"` macro
+      + le foyer de `Diagnostics` et de la macro `m"…"`
+  hidden
+  detail
+      - Not for direct use. `Diagnostics` is declared here, as an opaque type over `Boolean`,
+      - and exported to the `fulminate` package; the macro behind `m"…"` and its helper live
+      - alongside it.
+      + Pas destiné à un usage direct. `Diagnostics` est déclaré ici, sous forme de type opaque sur
+      + `Boolean`, et exporté vers le package `fulminate` ; la macro derrière `m"…"` et son
+      + utilitaire résident à côté.
+  entry .Diagnostics
+    info
+        - the opaque type `Diagnostics`; see `fulminate.Diagnostics`
+        + le type opaque `Diagnostics` ; voir `fulminate.Diagnostics`
+    detail
+        - Declared here and exported; its page under the `fulminate` package has the account.
+        + Déclaré ici et exporté ; sa page dans le package `fulminate` en donne la description.
+    entry .capture
+      info
+          - errors record their stack trace
+          + les erreurs enregistrent leur trace de pile
+    entry .omit
+      info
+          - errors record no stack trace
+          + les erreurs n'enregistrent aucune trace de pile
+  entry .captureStack
+    info
+        - an extension on `Diagnostics`: whether a stack trace is to be captured
+        + une extension sur `Diagnostics` : si une trace de pile doit être capturée
+    detail
+        - The `Boolean` passed to `Exception`'s `writableStackTrace` by `Error`'s constructor.
+        + Le `Boolean` que le constructeur d'`Error` transmet au `writableStackTrace` d'`Exception`.
+  entry .mSubMessages
+    info
+        - converts a substitution, or a tuple of them, to messages through `Communicable`
+        + convertit une substitution, ou un tuple de substitutions, en messages au moyen de
+        + `Communicable`
+  entry .mMacro
+    info
+        - the macro behind `m"…"`: decodes escapes, splits on backticks, and splices a `Message`
+        + la macro derrière `m"…"` : décode les échappements, découpe selon les accents graves, et
+        + produit par splice un `Message`

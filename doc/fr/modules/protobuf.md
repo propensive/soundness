@@ -1,0 +1,477 @@
+- ## Protocol Buffers
++ ## Protocol Buffers
+
+- ### About
++ ### Présentation
+
+- [Protocol Buffers](https://protobuf.dev/) is the wire format of gRPC, and of much of the world
+- of services. It is compact, driven by a schema, and defined by Google's proto3 specification.
++ [Protocol Buffers](https://protobuf.dev/) est le format de transmission de gRPC, et d'une grande
++ partie du monde des services. Il est compact, piloté par un schéma, et défini par la
++ spécification proto3 de Google.
+
+- Here it is encoded and decoded directly from Scala types. A case class with numbered fields
+- *is* the definition of a message. There is no `*.proto` file to write, and no code generator to
+- run, and the bytes produced match what `protoc` would produce for the equivalent schema.
++ Ici, il est encodé et décodé directement à partir de types Scala. Une case class aux champs
++ numérotés *est* la définition d'un message. Il n'y a aucun fichier `*.proto` à écrire, ni aucun
++ générateur de code à exécuter, et les octets produits correspondent à ce que `protoc`
++ produirait pour le schéma équivalent.
+
+- ### On Protocol Buffers
++ ### Sur Protocol Buffers
+
+- The conventional workflow puts the schema outside the language. Messages are defined in
+- `*.proto` files, a generator emits source code, and the build keeps the two in step. That
+- indirection buys schemas which are shared between languages. For a Scala program talking to a
+- Scala program, or one which simply must speak an existing proto3 protocol, it is machinery
+- without benefit.
++ Le flux de travail conventionnel place le schéma en dehors du langage. Les messages sont définis
++ dans des fichiers `*.proto`, un générateur émet du code source, et le build maintient les deux
++ en phase. Cette indirection procure des schémas partagés entre langages. Pour un programme Scala
++ qui dialogue avec un programme Scala, ou qui doit simplement parler un protocole proto3
++ existant, c'est une machinerie sans bénéfice.
+
+- Here the wire format is [derived][derivation] from the case class itself. Field numbers are the
+- one thing proto3 needs which Scala does not have, and they come from an annotation. Everything
+- else follows from the types of the fields: varints, zig-zag encoding, length-delimited messages
+- and packed repeated fields. The wire format and the code therefore cannot disagree, which is
+- [correctness](../../philosophy/correctness.md) with one definition. The encoding is validated
+- against `protoc`'s own output.
++ Ici, le format de transmission est [dérivé][dérivation] de la case class elle-même. Les numéros
++ de champ sont la seule chose dont proto3 a besoin et que Scala n'a pas, et ils proviennent d'une
++ annotation. Tout le reste découle des types des champs : varints, encodage zig-zag, messages
++ délimités par leur longueur et champs répétés empaquetés. Le format de transmission et le code
++ ne peuvent donc pas se contredire, ce qui est la [correction](../../philosophy/correctness.md)
++ avec une seule définition. L'encodage est validé par rapport à la sortie de `protoc` lui-même.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last two imports let them print their results, with bytes written in hexadecimal:
++ Tout provient du package `soundness`. Les exemples lèvent toute erreur sous forme d'exception,
++ et les deux derniers imports leur permettent d'afficher leurs résultats, avec les octets écrits
++ en hexadécimal :
+
+```scala
+import soundness.*
+import strategies.throwUnsafely
+import alphabets.hexLowerCase
+import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+```
+
+- ### Messages
++ ### Messages
+
+- A message is a case class whose fields carry their proto3 field numbers:
++ Un message est une case class dont les champs portent leurs numéros de champ proto3 :
+
+```scala
+case class Person(@field(1) name: Text, @field(2) age: Int)
+```
+
+- `in[Protobuf]` encodes a value as a message, and `encode` gives the message's bytes.
+- `read[Person in Protobuf]` reads bytes back to the type:
++ `in[Protobuf]` encode une valeur en message, et `encode` donne les octets du message.
++ `read[Person in Protobuf]` relit des octets dans le type :
+
+```scala
+val bytes = Person(t"Hamlet", 30).in[Protobuf].encode
+```
+
+```scala fuel
+run
+##
+Out.println(bytes.serialize[Hex])
+Out.println(Chain(bytes).read[Person in Protobuf].inspect)
+```
+
+- Decoding may also stop at the generic message, to be inspected or converted later.
+- `read[Protobuf]` gives a `Protobuf` value, and `as[Person]` converts it.
++ Le décodage peut aussi s'arrêter au message générique, pour être inspecté ou converti plus tard.
++ `read[Protobuf]` donne une valeur `Protobuf`, et `as[Person]` la convertit.
+
+- Fields which are left unannotated are numbered in the order they are declared. The numbers may
+- be sparse, with `@field(3)` and `@field(7)` and nothing between, as the evolution of a protocol
+- requires. [Annotations](annotations.md) describes how `@field` is read.
++ Les champs laissés sans annotation sont numérotés dans l'ordre de leur déclaration. Les numéros
++ peuvent être clairsemés, avec `@field(3)` et `@field(7)` et rien entre les deux, comme l'exige
++ l'évolution d'un protocole. [Annotations](annotations.md) décrit comment `@field` est lue.
+
+- ### Field types
++ ### Types de champs
+
+- The Scala type decides the proto3 encoding. The sized [numeric types](numbers.md#numeric-types)
+- map precisely onto proto3's kinds of integer, so the choice of type is the choice of wire
+- encoding:
++ Le type Scala détermine l'encodage proto3. Les [types numériques](numbers.md#numeric-types)
++ dimensionnés correspondent précisément aux sortes d'entiers de proto3 ; le choix du type est
++ donc le choix de l'encodage de transmission :
+
+```tabular
+- column  Scala type
+- column  Proto3 type
+- column  Wire encoding
+- row  `Int`  `int32`  varint
+- row  `Long`  `int64`  varint
+- row  `Boolean`  `bool`  varint
+- row  `U32`  `uint32`  varint
+- row  `U64`  `uint64`  varint
+- row  `S32`  `sint32`  zig-zag varint
+- row  `S64`  `sint64`  zig-zag varint
+- row  `B32`  `fixed32`  four bytes
+- row  `B64`  `fixed64`  eight bytes
+- row  `Float`  `float`  four bytes
+- row  `Double`  `double`  eight bytes
+- row  `Text`  `string`  length-delimited UTF-8
+- row  `Data`  `bytes`  length-delimited
+- row  a case class  a nested message  length-delimited
+- row  an enumeration or sealed hierarchy  `oneof`  the variant, chosen by field number
+- row  `Optional[T]`  `T`, with explicit presence  nothing when `Unset`
+- row  `List[T]`  `repeated T`  packed, for a number or `Boolean`
+- row  `Map[K, V]`  `map<K, V>`  repeated key–value entries
++ column  Type Scala
++ column  Type proto3
++ column  Encodage de transmission
++ row  `Int`  `int32`  varint
++ row  `Long`  `int64`  varint
++ row  `Boolean`  `bool`  varint
++ row  `U32`  `uint32`  varint
++ row  `U64`  `uint64`  varint
++ row  `S32`  `sint32`  varint zig-zag
++ row  `S64`  `sint64`  varint zig-zag
++ row  `B32`  `fixed32`  quatre octets
++ row  `B64`  `fixed64`  huit octets
++ row  `Float`  `float`  quatre octets
++ row  `Double`  `double`  huit octets
++ row  `Text`  `string`  UTF-8 délimité par sa longueur
++ row  `Data`  `bytes`  délimité par sa longueur
++ row  une case class  un message imbriqué  délimité par sa longueur
++ row  une énumération ou une hiérarchie scellée  `oneof`  la variante, choisie par numéro de champ
++ row  `Optional[T]`  `T`, avec présence explicite  rien quand `Unset`
++ row  `List[T]`  `repeated T`  empaqueté, pour un nombre ou un `Boolean`
++ row  `Map[K, V]`  `map<K, V>`  des entrées clé–valeur répétées
+```
+
+- A message may mix them freely:
++ Un message peut les mélanger librement :
+
+```scala
+case class Typed
+   ( @field(1) unsigned: U32,
+     @field(2) signed:   S32,
+     @field(3) fixed:    B32 )
+```
+
+- A repeated field may also be a frozen array, `Array[Long]^{}`, `Array[Double]^{}` or
+- `Array[Message]^{}`, with the same bytes as the `List` form. It is the representation to choose
+- for data which is [read or written directly](#parsing-directly). The parser fills it without
+- allocating a cell for each element, and without boxing a number, and the printer walks it by
+- index.
++ Un champ répété peut aussi être un tableau gelé, `Array[Long]^{}`, `Array[Double]^{}` ou
++ `Array[Message]^{}`, avec les mêmes octets que la forme `List`. C'est la représentation à
++ choisir pour des données [lues ou écrites directement](#parsing-directly). L'analyseur le
++ remplit sans allouer de cellule pour chaque élément, et sans boxer de nombre, et
++ l'afficheur le parcourt par indice.
+
+- ### Presence, repetition and maps
++ ### Présence, répétition et maps
+
+- Proto3's treatment of absence is a well-known source of confusion. Here the type says which
+- behavior applies:
++ Le traitement de l'absence par proto3 est une source de confusion bien connue. Ici, le type
++ indique quel comportement s'applique :
+
+```scala
+case class MaybeName(@field(1) name: Optional[Text])
+case class Tags(@field(1) tags: List[Text])
+case class Labels(@field(1) labels: Map[Text, Text])
+```
+
+- An `Optional` field has explicit presence. When it is unset it writes nothing, and it is read
+- back as `Unset`, which is distinct from a field which is present and empty:
++ Un champ `Optional` a une présence explicite. Quand il n'est pas défini, il n'écrit rien, et il
++ est relu comme `Unset`, ce qui est distinct d'un champ présent et vide :
+
+```scala fuel
+run
+##
+Out.println(MaybeName(Unset).in[Protobuf].encode.length.show)
+Out.println(MaybeName(t"").in[Protobuf].encode.length.show)
+```
+
+- A `List` field is repeated. It keeps its order, and keeps elements which have the default
+- value: a list of `0, 1, 2` is read back as three elements, without losing the zero. Repeated
+- numbers are packed into a single length-delimited field, as proto3 requires of a writer. A
+- reader accepts both the packed and the unpacked forms, as proto3 requires of a reader.
++ Un champ `List` est répété. Il conserve son ordre, ainsi que les éléments qui ont la valeur par
++ défaut : une liste `0, 1, 2` est relue comme trois éléments, sans perdre le zéro. Les nombres
++ répétés sont empaquetés dans un seul champ délimité par sa longueur, comme proto3 l'exige d'un
++ écrivain. Un lecteur accepte à la fois les formes empaquetée et non empaquetée, comme proto3
++ l'exige d'un lecteur.
+
+- A `Map` becomes the standard repeated messages of a key and a value, so a `Map[Text, Int]` on
+- the wire is exactly what `map<string, int32>` would be.
++ Une `Map` devient les messages répétés standard d'une clé et d'une valeur ; une
++ `Map[Text, Int]` en transmission est donc exactement ce que serait `map<string, int32>`.
+
+- ### Navigating a message
++ ### Naviguer dans un message
+
+- The fields of a message are keyed by number, not by name, so an optic selects a field by its
+- number: `Prim` is field 1, `Sec` is field 2, and so on. A [lens](optics.md) reaches through
+- nested messages, and replaces a field without disturbing the rest:
++ Les champs d'un message sont indexés par numéro, et non par nom ; une optique sélectionne donc
++ un champ par son numéro : `Prim` est le champ 1, `Sec` le champ 2, et ainsi de suite. Une
++ [lentille](optics.md) traverse les messages imbriqués, et remplace un champ sans perturber le
++ reste :
+
+```scala
+import conversions.encodableToProtobuf
+
+case class Point(@field(1) x: Int, @field(2) y: Int)
+case class Wrapper(@field(1) point: Point, @field(2) label: Text)
+
+val wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").in[Protobuf]
+```
+
+```scala fuel
+run
+##
+Out.println(wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper].inspect)
+```
+
+- This is what to use where a message must be relayed with one field altered, and everything
+- else passed through untouched, including fields which this program does not know about.
++ C'est ce qu'il faut utiliser là où un message doit être relayé avec un champ modifié, et tout le
++ reste transmis intact, y compris les champs que ce programme ne connaît pas.
+
+- ### Errors
++ ### Erreurs
+
+- A malformed message raises a `Protobuf.Error`. It names the problem and, for a fault in the
+- bytes, its offset, so a fault on the wire is debugged from the error, not from a hex dump:
++ Un message mal formé lève une `Protobuf.Error`. Elle nomme le problème et, pour un défaut dans
++ les octets, son décalage ; un défaut en transmission se débogue donc à partir de l'erreur, et non
++ d'un vidage hexadécimal :
+
+```tabular
+- column  Reason
+- column  Raised when
+- row  `Truncated`  the data ends in the middle of a field
+- row  `MalformedVarint`  a varint is malformed
+- row  `UnexpectedWireType`  a field has a wire type its Scala type cannot read
+- row  `Overflow`  a number is too large for its type
+- row  `MissingField`  a required field is absent; it names the field number, not an offset
++ column  Raison
++ column  Levée quand
++ row  `Truncated`  les données se terminent au milieu d'un champ
++ row  `MalformedVarint`  un varint est mal formé
++ row  `UnexpectedWireType`  un champ a un type de transmission que son type Scala ne sait pas lire
++ row  `Overflow`  un nombre est trop grand pour son type
++ row  `MissingField`  un champ requis est absent ; elle nomme le numéro du champ, et non un décalage
+```
+
+- The offset is a position within the message, or the nested message, which is being parsed.
+- Here the last byte of an encoded `Person` is lost:
++ Le décalage est une position dans le message, ou le message imbriqué, en cours d'analyse. Ici,
++ le dernier octet d'une `Person` encodée est perdu :
+
+```scala fuel
+run
+errors show
+##
+Chain(bytes.keep(bytes.length - 1)).read[Person in Protobuf]
+```
+
+- ### Compatibility
++ ### Compatibilité
+
+- Compatibility with `protoc` is by construction, and by test. The canonical example message
+- from the Protocol Buffers documentation encodes to its documented bytes, `08 96 01`:
++ La compatibilité avec `protoc` est assurée par construction, et par les tests. Le message
++ d'exemple canonique de la documentation de Protocol Buffers s'encode en ses octets documentés,
++ `08 96 01` :
+
+```scala
+case class Sample(@field(1) value: Int)
+```
+
+```scala fuel
+run
+##
+Out.println(Sample(150).in[Protobuf].encode.serialize[Hex])
+```
+
+- The encodings of the sized numeric types are checked against recorded wire data, not merely
+- written and read back, since writing and reading agree with each other even when both are
+- wrong.
++ Les encodages des types numériques dimensionnés sont vérifiés par rapport à des données de
++ transmission enregistrées, et pas seulement écrits puis relus, puisque l'écriture et la lecture
++ s'accordent entre elles même quand les deux sont fausses.
+
+- Where a message needs no interoperability, the field numbers may be left off entirely. A
+- message with no annotations numbers its fields from one, in the order they are declared, which
+- is what `protoc` would have produced for the same declarations:
++ Là où un message n'a besoin d'aucune interopérabilité, les numéros de champ peuvent être
++ entièrement omis. Un message sans annotations numérote ses champs à partir de un, dans l'ordre
++ de leur déclaration, ce qu'aurait produit `protoc` pour les mêmes déclarations :
+
+```scala
+case class Unnumbered(value: Int, other: Int)
+```
+
+- ### Parsing directly
++ ### Analyser directement
+
+- A type with a `Protobuf.Parsable` instance is read straight from the wire bytes, field by
+- field, and no intermediate `Protobuf` value is built. The instance is derived at
+- [compiletime], and composes a parser for that exact shape of message:
++ Un type doté d'une instance `Protobuf.Parsable` se lit directement à partir des octets
++ transmis, champ par champ, sans construire de valeur `Protobuf` intermédiaire. L'instance est
++ dérivée [à la compilation][compilation], et compose un analyseur pour cette forme exacte de
++ message :
+
+```scala fuel
+compile
+##
+import locomotion.Inlinable
+
+given personParsable: (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+
+val parsed = Chain(bytes).read[Person in Protobuf]
+```
+
+- The derivation is imported by name. A message whose field types have hand-written `Inlinable`
+- instances also needs the `locomotion.staged` module, which evaluates those instances as the
+- code compiles. Without it, such a field is decoded through its `Decodable in Protobuf`.
++ La dérivation est importée par son nom. Un message dont les types de champs ont des instances
++ `Inlinable` écrites à la main requiert aussi le module `locomotion.staged`, qui évalue ces
++ instances à la compilation du code. Sans lui, un tel champ est décodé par son
++ `Decodable in Protobuf`.
+
+- Reading from a [stream](streams.md) works in the same way, and the input is never assembled
+- first. The parser reads each chunk as it arrives, so a field which is split across two chunks
+- reads exactly as one which arrives whole. The memory held is bounded by the one field being
+- read, except across a oneof, whose message is held while its variant is chosen.
+- `read[Protobuf]`, by contrast, reads the whole message into memory, since a `Protobuf` value
+- is its bytes.
++ La lecture depuis un [flux](streams.md) fonctionne de la même façon, et l'entrée n'est jamais
++ assemblée au préalable. L'analyseur lit chaque morceau à son arrivée ; un champ coupé entre deux
++ morceaux se lit donc exactement comme un champ qui arrive entier. La mémoire occupée est bornée
++ par le seul champ en cours de lecture, sauf à travers un oneof, dont le message est conservé
++ pendant que sa variante est choisie. `read[Protobuf]`, au contraire, lit tout le message en
++ mémoire, puisqu'une valeur `Protobuf` est ses octets.
+
+- ### Printing directly
++ ### Afficher directement
+
+- The same derivation generates the writing side. A `Protobuf.Printable` instance writes a
+- value's fields straight into the output array. It makes two passes, one to measure every nested
+- length and one to write. No field is encoded into an intermediate `Protobuf` value, and no
+- nested message is encoded and then copied into its parent. With an instance in scope,
+- `in[Protobuf]` uses it:
++ La même dérivation génère le côté écriture. Une instance `Protobuf.Printable` écrit les champs
++ d'une valeur directement dans le tableau de sortie. Elle fait deux passes, l'une pour mesurer
++ chaque longueur imbriquée et l'autre pour écrire. Aucun champ n'est encodé dans une valeur
++ `Protobuf` intermédiaire, et aucun message imbriqué n'est encodé puis copié dans son parent.
++ Avec une instance dans la portée, `in[Protobuf]` l'utilise :
+
+```scala fuel
+compile
+##
+given personPrintable: (Person is Protobuf.Printable) = Inlinable.printable[Person]
+
+val printed = Person(t"Hamlet", 30).in[Protobuf].encode
+```
+
+- The bytes are exactly those which the derived encoding writes. A message may therefore be
+- printed directly on one side of a connection, and decoded through the `Protobuf` value on the
+- other.
++ Les octets sont exactement ceux qu'écrit l'encodage dérivé. Un message peut donc être affiché
++ directement d'un côté d'une connexion, et décodé par la valeur `Protobuf` de l'autre.
+
+- `in[Data over Protobuf]` writes the bytes in one step, as the mirror of
+- `read[Person in Protobuf]`. It prints directly where a `Printable` exists, and encodes through
+- the `Protobuf` value otherwise:
++ `in[Data over Protobuf]` écrit les octets en une étape, en miroir de
++ `read[Person in Protobuf]`. Il affiche directement là où un `Printable` existe, et encode par la
++ valeur `Protobuf` sinon :
+
+```scala
+val direct = Person(t"Hamlet", 30).in[Data over Protobuf]
+```
+
+```scala fuel
+run
+##
+Out.println(direct.read[Person in Protobuf].inspect)
+```
+
+- ### Choosing the route for every type
++ ### Choisir la voie pour chaque type
+
+- Declaring an instance for each type is one way to opt in. A message can also generate both of
+- its instances at once, into its companion:
++ Déclarer une instance pour chaque type est une façon d'adhérer. Un message peut aussi générer
++ ses deux instances à la fois, dans son compagnon :
+
+```scala
+case class Visitor(name: Text, age: Int) derives Protobuf.Direct
+```
+
+- A single import then selects the route for every message and oneof in scope, without any
+- declaration. A generic case class or a collection is neither a message nor a oneof:
++ Un seul import choisit alors la voie pour chaque message et chaque oneof de la portée, sans
++ aucune déclaration. Une case class générique ou une collection n'est ni un message ni un oneof :
+
+```tabular
+- column  Import
+- column  For a message or oneof
+- column  For any other type
+- row  `codecs.direct`  a generated parser and printer  the derived codecs
+- row  `codecs.derived`  the derived codecs, even where a direct instance is in scope  the derived codecs
+- row  `codecs.strict`  a generated parser and printer  a compile error
++ column  Import
++ column  Pour un message ou un oneof
++ column  Pour tout autre type
++ row  `codecs.direct`  un analyseur et un afficheur générés  les codecs dérivés
++ row  `codecs.derived`  les codecs dérivés, même là où une instance directe est dans la portée  les codecs dérivés
++ row  `codecs.strict`  un analyseur et un afficheur générés  une erreur de compilation
+```
+
+- The modes are alternatives, so import one at a time.
++ Les modes sont des alternatives ; importez-en un à la fois.
+
+- Under `codecs.direct`, a type which derives `Protobuf.Direct` uses the instances it generated
+- once, instead of generating them again at each use, which would cost compile time. The results
+- are the same by either route. Only the speed differs, and the positions reported in errors.
++ Sous `codecs.direct`, un type qui dérive `Protobuf.Direct` utilise les instances qu'il a
++ générées une fois, au lieu de les générer de nouveau à chaque utilisation, ce qui coûterait du
++ temps de compilation. Les résultats sont les mêmes par l'une ou l'autre voie. Seules diffèrent
++ la vitesse, et les positions signalées dans les erreurs.
+
+- `codecs.strict` is `codecs.direct` for code which must not fall back. A
+- `read[Play in Protobuf]` or an `in[Data over Protobuf]` on a type with no direct codec is a
+- compile error which names the type. `in[Protobuf]` names the wire value itself, and is not
+- restricted.
++ `codecs.strict` est `codecs.direct` pour du code qui ne doit pas se replier. Un
++ `read[Play in Protobuf]` ou un `in[Data over Protobuf]` sur un type sans codec direct est une
++ erreur de compilation qui nomme le type. `in[Protobuf]` nomme la valeur transmise elle-même, et
++ n'est pas restreint.
+
+- ### Protocol Buffers over HTTP
++ ### Protocol Buffers sur HTTP
+
+- A `Protobuf` value is a request body or a response body, with the media type
+- `application/protobuf`, and a body is parsed back on arrival. A binary API is therefore
+- consumed and offered with the same code as a [JSON one](json.md#json-over-http). Only the
+- format's type differs. [RPC](rpc.md) builds typed remote calls on such messages.
++ Une valeur `Protobuf` est un corps de requête ou un corps de réponse, avec le type de média
++ `application/protobuf`, et un corps est analysé de nouveau à son arrivée. Une API binaire se
++ consomme et s'offre donc avec le même code qu'une [API JSON](json.md#json-over-http). Seul le
++ type du format diffère. [RPC](rpc.md) construit des appels distants typés sur de tels messages.
+
+- ### Related
++ ### Voir aussi
+
+- - [Binary data](binary-data.md) describes the bytes beneath the wire format.
++ - [Données binaires](binary-data.md) décrit les octets sous-jacents au format de transmission.

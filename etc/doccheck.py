@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate every ```scala example in the tutorials under doc/modules/ through the flame REPL,
+"""Evaluate every ```scala example in the tutorials under doc/en/modules/ through the flame REPL,
 and report each fence as ran, rejected, or thrown.
 
 flame (the Soundness REPL, https://github.com/propensive/flame) exposes its engine as a JSON
@@ -492,7 +492,7 @@ def main():
     sys.stdout.reconfigure(line_buffering=True)
     global FULL, OLDER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('docs', nargs='*', help='tutorial names (json) or paths; default: all of doc/modules')
+    parser.add_argument('docs', nargs='*', help='tutorial names (json) or paths; default: all of doc/en/modules')
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--release', help='the Soundness release flame is built against (default: the most-populated version in ~/.ivy2/local)')
     parser.add_argument('--values', action='store_true', help='print each fence\'s printed output, value and type')
@@ -509,7 +509,7 @@ def main():
     OLDER = release_names()
 
     docs = [d if d.endswith('.md') else os.path.join('doc', 'modules', d + '.md') for d in args.docs] \
-        or sorted(glob.glob('doc/modules/*.md'))
+        or sorted(glob.glob('doc/en/modules/*.md'))
     for doc in docs:
         if not os.path.exists(doc):
             raise SystemExit(f'no such tutorial: {doc}')

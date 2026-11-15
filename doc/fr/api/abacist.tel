@@ -1,0 +1,698 @@
+tel 1.0
+
+base abacist
+import soundness
+
+info
+    - mixed-radix quantities: whole numbers of each unit in a cascade, like hours, minutes and seconds
+    + quantités en base mixte : un nombre entier de chaque unité d'une cascade, comme heures,
+    + minutes et secondes
+detail
+    - _Abacist_ represents a value counted in a *cascade* of units in exact but non-decimal
+    - multiples — hours, minutes and seconds; stones, pounds and ounces; feet and inches — as a
+    - `Quanta`: a whole number of each unit, with the carrying between them done by the
+    - arithmetic. The type states the cascade, the smallest unit as its type parameter and the
+    - larger ones after `in`, and the units are quantitative's real units, so the ratios between
+    - them are known and a `Quanta` converts to and from an ordinary `Quantity`.
+    + _Abacist_ représente une valeur comptée dans une *cascade* d'unités aux multiples exacts mais
+    + non décimaux — heures, minutes et secondes ; stones, livres et onces ; pieds et pouces — sous
+    + la forme d'un `Quanta` : un nombre entier de chaque unité, les retenues entre elles étant
+    + assurées par l'arithmétique. Le type énonce la cascade, la plus petite unité comme paramètre
+    + de type et les plus grandes après `in`, et les unités sont les vraies unités de quantitative ;
+    + les rapports entre elles sont donc connus, et un `Quanta` se convertit vers et depuis une
+    + `Quantity` ordinaire.
+
+    ```scala
+    import soundness.*
+
+    type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+    val weight: Weight = Quanta(1, 3, 2)   // 1 stone, 3 pounds, 2 ounces
+    weight[Stones]                         // 1
+    (weight + Quanta(15))[Pounds]          // 4
+    weight.show                            // t"1st 3lb 2oz"
+    weight.quantity.convert[Pounds]        // 17.125 pounds
+    ```
+
+    - A value is written largest unit first, as it is spoken, and its components are read back by
+    - naming a unit. At runtime a `Quanta` is a single `Long`, the whole value counted in its
+    - smallest unit, so arithmetic on it is integer arithmetic; the cascade lives only in the
+    - type, and the macros which read and build values do the dividing and multiplying with
+    - constants computed as the code compiles. A cascade is checked when it is used: every unit
+    - must have the same dimension, and a literal component must be non-negative and less than
+    - the number of its units which make the next.
+    + Une valeur s'écrit en commençant par la plus grande unité, comme on la prononce, et ses
+    + composantes se relisent en nommant une unité. À l'exécution, un `Quanta` est un unique `Long`,
+    + la valeur entière comptée dans sa plus petite unité ; son arithmétique est donc une
+    + arithmétique entière. La cascade n'existe que dans le type, et les macros qui lisent et
+    + construisent les valeurs effectuent les divisions et multiplications avec des constantes
+    + calculées lors de la compilation du code. Une cascade est vérifiée à l'utilisation : toutes
+    + les unités doivent avoir la même dimension, et une composante littérale doit être positive ou
+    + nulle et inférieure au nombre de ses unités qui forment la suivante.
+
+    - `TimeSeconds` and `TimeMinutes` name the two time cascades everyone needs. A `UnitsNames`
+    - given changes how a cascade shows, so that a height can read `5' 9"`.
+    + `TimeSeconds` et `TimeMinutes` nomment les deux cascades temporelles dont tout le monde a
+    + besoin. Un given `UnitsNames` change l'affichage d'une cascade, de sorte qu'une taille peut se
+    + lire `5' 9"`.
+
+    - The library has one source set, `abacist.core`, for every platform, and depends on
+    - quantitative for its units. Everything is exported to the `soundness` umbrella. The
+    - `Quanta` type is declared in `abacist.protointernal`, whose extension methods apply to
+    - every `Quanta` without an import, and the macros in `abacist.internal`; neither is for
+    - direct use.
+    + La bibliothèque a un seul ensemble de sources, `abacist.core`, pour toutes les plateformes, et
+    + dépend de quantitative pour ses unités. Tout est exporté vers le package parapluie
+    + `soundness`. Le type `Quanta` est déclaré dans `abacist.protointernal`, dont les méthodes
+    + d'extension s'appliquent à tout `Quanta` sans import, et les macros dans `abacist.internal` ;
+    + ni l'un ni l'autre ne sont destinés à un usage direct.
+
+refer abacist.Quanta
+refer abacist.quanta
+refer abacist.UnitsNames
+refer abacist.TimeSeconds
+
+entry .Quanta
+  info
+      - a value in a cascade of units, as a whole number of each: feet and inches, hours and minutes
+      + une valeur dans une cascade d'unités, sous forme d'un nombre entier de chacune : pieds et
+      + pouces, heures et minutes
+  detail
+      - `Quanta[Base] in (Unit1, Unit2, …)` is a value counted in a cascade of units of one
+      - dimension: `Base` the smallest, each further unit larger than the one before it. The
+      - cascade after `in` is its `Form`, a tuple of units or a single unit, and a `Quanta[Base]`
+      - with no `in` is a count of the base unit alone. Every unit is a quantitative unit at
+      - power 1, such as `Inches[1]` or `Hours[1]`.
+      + `Quanta[Base] in (Unit1, Unit2, …)` est une valeur comptée dans une cascade d'unités d'une
+      + même dimension : `Base` la plus petite, chaque unité suivante plus grande que la précédente.
+      + La cascade après `in` est sa `Form`, un tuple d'unités ou une seule unité, et un
+      + `Quanta[Base]` sans `in` est un compte de la seule unité de base. Chaque unité est une unité
+      + quantitative à la puissance 1, comme `Inches[1]` ou `Hours[1]`.
+
+      ```scala
+      import soundness.*
+
+      type Height = Quanta[Inches[1]] in (Feet[1])
+      type Distance = Quanta[Inches[1]] in (Feet[1], Yards[1], Miles[1])
+
+      val height: Height = Quanta(5, 9)
+      height[Feet]     // 5
+      height[Inches]   // 9
+
+      val distance: Distance = Quanta(1800, 4, 2, 11)
+      distance[Yards]  // 4
+      ```
+
+      - `Quanta(…)` takes the components largest first, and takes its cascade from the expected
+      - type, so a value needs a declared type or an ascription such as `(Quanta(5, 6): Weight)`;
+      - fewer components than units fill the larger units with zero. A literal component which
+      - is negative, or as large as the number of its units in the next unit up (`Quanta(5, 12)`
+      - as a `Height`), is a compile error; the largest unit is unbounded. A unit of another
+      - dimension in the cascade is a compile error, as is a base which is not a unit.
+      + `Quanta(…)` prend les composantes en commençant par la plus grande, et tire sa cascade du
+      + type attendu ; une valeur a donc besoin d'un type déclaré ou d'une ascription comme
+      + `(Quanta(5, 6): Weight)`. Avec moins de composantes que d'unités, les plus grandes unités
+      + sont mises à zéro. Une composante littérale négative, ou aussi grande que le nombre de ses
+      + unités dans l'unité immédiatement supérieure (`Quanta(5, 12)` en tant que `Height`), est une
+      + erreur de compilation ; la plus grande unité n'est pas bornée. Une unité d'une autre
+      + dimension dans la cascade est une erreur de compilation, tout comme une base qui n'est pas
+      + une unité.
+
+      - At runtime a `Quanta` is one `Long`: the whole value in its base unit, which `long`
+      - reveals. So arithmetic carries automatically:
+      + À l'exécution, un `Quanta` est un seul `Long` : la valeur entière dans son unité de base,
+      + que révèle `long`. L'arithmétique effectue donc les retenues automatiquement :
+
+      ```scala fuel
+      frame
+        label Twelve pounds nine ounces
+        code
+            import soundness.*
+
+            type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+            val weight: Weight = Quanta(12, 9)
+            weight.show   // t"12lb 9oz"
+      frame
+        label Plus seven ounces carries into the pounds
+        code
+            import soundness.*
+
+            type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+            val weight: Weight = Quanta(12, 9) + Quanta(7)
+            weight.show   // t"13lb"
+      frame
+        label Plus two more pounds carries into the stones
+        code
+            import soundness.*
+
+            type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+            val weight: Weight = Quanta(12, 9) + Quanta(7) + Quanta(2, 0)
+            weight.show   // t"1st 1lb"
+      frame
+        label Collapsed, so the stones become pounds
+        code
+            import soundness.*
+
+            type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+            val weight: Weight = Quanta(12, 9) + Quanta(7) + Quanta(2, 0)
+            weight.collapse(1).show   // t"15lb"
+      ##
+      ```
+
+      - Values of one base unit add and subtract (`+`, `-`), negate, multiply and divide by a
+      - `Double` (rounding to the nearest base unit), compare (`<`, `>=`, …) — including two
+      - values with the same base but different cascades, through their common supertype
+      - `Quanta[Base]` — and aggregate with `total` and `mean`. They convert to a `Quantity`
+      - with `quantity` and from one with `Quantity#quanta`. A result of subtraction may be
+      - negative, and then every component is negative or zero.
+      + Des valeurs d'une même unité de base s'additionnent et se soustraient (`+`, `-`), changent
+      + de signe, se multiplient et se divisent par un `Double` (en arrondissant à l'unité de base
+      + la plus proche), se comparent (`<`, `>=`, …) — y compris deux valeurs de même base mais de
+      + cascades différentes, par leur supertype commun `Quanta[Base]` — et s'agrègent avec `total`
+      + et `mean`. Elles se convertissent en `Quantity` avec `quantity` et depuis celle-ci avec
+      + `Quantity#quanta`. Le résultat d'une soustraction peut être négatif, et alors chaque
+      + composante est négative ou nulle.
+
+      - The companion's givens are in implicit scope: `show` renders the non-zero components
+      - with their units' symbols (`1st 3lb 2oz`, or a `UnitsNames` given's names), and
+      - `inspect` every component, zeroes included (`Quanta(0st 3lb 2oz)`). The full list of
+      - companion members is under `abacist.protointernal.Quanta`, where the opaque type is
+      - declared and from which it is exported here.
+      + Les givens du compagnon sont dans la portée implicite : `show` rend les composantes non
+      + nulles avec les symboles de leurs unités (`1st 3lb 2oz`, ou les noms d'un given
+      + `UnitsNames`), et `inspect` toutes les composantes, zéros compris (`Quanta(0st 3lb 2oz)`).
+      + La liste complète des membres du compagnon se trouve sous `abacist.protointernal.Quanta`, où
+      + le type opaque est déclaré et d'où il est exporté ici.
+  refer abacist.protointernal.Quanta
+  refer abacist.quanta
+  refer abacist.UnitsNames
+  refer abacist.TimeSeconds
+
+entry .AnyUnit
+  info
+      - the bound on a `Quanta`'s base unit: one quantitative unit, at any power
+      + la borne de l'unité de base d'un `Quanta` : une unité quantitative, à n'importe quelle
+      + puissance
+  detail
+      - `Units[?, ?]`. A `Quanta[String]` is rejected by this bound. A cascade is built from units
+      - at power 1, such as `Inches[1]`.
+      + `Units[?, ?]`. Un `Quanta[String]` est rejeté par cette borne. Une cascade se construit à
+      + partir d'unités à la puissance 1, comme `Inches[1]`.
+
+entry .Divisions
+  info
+      - the bound on a `Quanta`'s `Form`: a tuple of units, or a single unit
+      + la borne de la `Form` d'un `Quanta` : un tuple d'unités, ou une seule unité
+  detail
+      - `Tuple | AnyUnit`, so `Quanta[Inches[1]] in (Feet[1])` and `Quanta[Inches[1]] in Feet[1]`
+      - are both well-formed, and so is a cascade of several units in a tuple.
+      + `Tuple | AnyUnit` ; `Quanta[Inches[1]] in (Feet[1])` et `Quanta[Inches[1]] in Feet[1]` sont
+      + donc tous deux bien formés, tout comme une cascade de plusieurs unités dans un tuple.
+
+entry .TimeMinutes
+  info
+      - a duration in hours and minutes: `Quanta[Minutes[1]] in (Hours[1])`
+      + une durée en heures et minutes : `Quanta[Minutes[1]] in (Hours[1])`
+  detail
+      ```scala
+      import soundness.*
+
+      val time: TimeMinutes = Quanta(2, 45)
+      time[Hours]     // 2
+      time.show       // t"2h 45min"
+      ```
+
+      - The hours are unbounded, so a duration of more than a day is still in hours.
+      + Les heures ne sont pas bornées ; une durée de plus d'un jour reste donc exprimée en heures.
+
+entry .TimeSeconds
+  info
+      - a duration in hours, minutes and seconds: `Quanta[Seconds[1]] in (Minutes[1], Hours[1])`
+      + une durée en heures, minutes et secondes : `Quanta[Seconds[1]] in (Minutes[1], Hours[1])`
+  detail
+      ```scala
+      import soundness.*
+
+      val time: TimeSeconds = Quanta(27, 18, 9)
+      (time[Hours], time[Minutes], time[Seconds])   // (27, 18, 9)
+      ```
+
+      - The hours are unbounded, so `Quanta(27, 18, 9)` is twenty-seven hours, not a day and three
+      - hours.
+      + Les heures ne sont pas bornées ; `Quanta(27, 18, 9)` vaut donc vingt-sept heures, et non un
+      + jour et trois heures.
+
+entry .quanta
+  info
+      - converts a `Quantity` to a `Quanta` of a chosen cascade, rounding to its smallest unit
+      + convertit une `Quantity` en un `Quanta` d'une cascade choisie, en arrondissant à sa plus
+      + petite unité
+  detail
+      - An extension on `Quantity`: `quantity.quanta[Result]` converts the quantity to the
+      - `Quanta` type `Result`, in its base unit, and rounds to the nearest whole one. The
+      - quantity's dimension must be the cascade's; the conversion ratio is computed as the code
+      - compiles.
+      + Une extension sur `Quantity` : `quantity.quanta[Result]` convertit la quantité vers le type
+      + `Quanta` `Result`, dans son unité de base, et arrondit à l'unité entière la plus proche. La
+      + dimension de la quantité doit être celle de la cascade ; le rapport de conversion est
+      + calculé lors de la compilation du code.
+
+      ```scala
+      import soundness.*
+
+      type Height = Quanta[Inches[1]] in (Feet[1])
+      type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+      val length: Quantity[Metres[1]] = 5.9*Foot + 10.0*Inch
+      val height = length.quanta[Height]   // 6 feet, 9 inches
+
+      val mass: Quantity[Kilograms[1]] = 20.0*Kilo(Gram)
+      mass.quanta[Weight].show             // t"3st 2lb 1oz"
+      ```
+
+      - `Quanta#quantity` is the conversion back.
+      + `Quanta#quantity` est la conversion inverse.
+  refer abacist.Quanta
+
+entry .UnitsNames
+  info
+      - how a `Quanta` type's components are labelled when shown, in place of the units' symbols
+      + la manière dont les composantes d'un type `Quanta` sont étiquetées à l'affichage, à la place
+      + des symboles des unités
+  detail
+      - A `UnitsNames[Q]` given for a `Quanta` type `Q` replaces the unit symbols `show` uses. It
+      - is a single-abstract-method trait, so a lambda returning the names, largest unit first,
+      - is enough:
+      + Un given `UnitsNames[Q]` pour un type `Quanta` `Q` remplace les symboles d'unités qu'utilise
+      + `show`. C'est un trait à une seule méthode abstraite ; une lambda renvoyant les noms, en
+      + commençant par la plus grande unité, suffit donc :
+
+      ```scala
+      import soundness.*
+
+      type Height = Quanta[Inches[1]] in (Feet[1])
+
+      given UnitsNames[Height] = () => List(t"'", t"\"")
+
+      (Quanta(5, 9): Height).show   // t"5' 9\""
+      ```
+
+      - Each shown component is its number followed by its name, and the components are joined
+      - by `#separator`. Zero components are omitted, as with the default rendering, and the
+      - names are matched to the remaining components from the smallest unit upwards. So a
+      - value with a zero component *below* a non-zero one is mislabelled: `Quanta(5, 0)` as a
+      - `Height` shows as `5"`, not `5'`.
+      + Chaque composante affichée est son nombre suivi de son nom, et les composantes sont jointes
+      + par `#separator`. Les composantes nulles sont omises, comme dans le rendu par défaut, et les
+      + noms sont associés aux composantes restantes en partant de la plus petite unité. Une valeur
+      + ayant une composante nulle *en dessous* d'une composante non nulle est donc mal étiquetée :
+      + `Quanta(5, 0)` en tant que `Height` s'affiche `5"`, et non `5'`.
+  refer abacist.Quanta
+  entry #prefix
+    info
+        - text intended to precede the rendering; empty by default, and not currently used by `show`
+        + le texte destiné à précéder le rendu ; vide par défaut, et actuellement inutilisé par
+        + `show`
+  entry #separator
+    info
+        - the text between shown components: a space by default
+        + le texte entre les composantes affichées : une espace par défaut
+  entry #units
+    info
+        - the names of the cascade's units, largest first
+        + les noms des unités de la cascade, en commençant par la plus grande
+
+entry .protointernal
+  info
+      - the home of the opaque `Quanta` type, and of the extension methods every `Quanta` has
+      + le foyer du type opaque `Quanta`, et des méthodes d'extension que possède tout `Quanta`
+  hidden
+  detail
+      - Not for direct use: the object exists so that `Quanta` can be an opaque alias of `Long`,
+      - and is the prefix of that type, so its extension methods apply to every `Quanta` with no
+      - import. `Quanta` is exported from here to the `abacist` package, where its full account
+      - is.
+      + Pas destiné à un usage direct : l'objet existe pour que `Quanta` puisse être un alias opaque
+      + de `Long`, et il est le préfixe de ce type, si bien que ses méthodes d'extension
+      + s'appliquent à tout `Quanta` sans import. `Quanta` est exporté d'ici vers le package
+      + `abacist`, où se trouve sa description complète.
+  entry .Quanta
+    info
+        - a value in a cascade of units, held as one `Long`; see `abacist.Quanta`
+        + une valeur dans une cascade d'unités, stockée dans un seul `Long` ; voir `abacist.Quanta`
+    detail
+        - The opaque type `Quanta[Base <: AnyUnit] = Long`, and its companion of constructors and
+        - givens. Its page under the `abacist` package has the full account. The companion
+        - inherits its `commensurable` given from `anteprotointernal.Quanta2`.
+        + Le type opaque `Quanta[Base <: AnyUnit] = Long`, et son compagnon de constructeurs et de
+        + givens. Sa page sous le package `abacist` en donne la description complète. Le compagnon
+        + hérite son given `commensurable` de `anteprotointernal.Quanta2`.
+    entry .apply
+      info
+          - builds a value from its components, largest unit first, in the expected type's cascade
+          + construit une valeur à partir de ses composantes, la plus grande unité en premier, dans
+          + la cascade du type attendu
+      detail
+          - `Quanta(…)` is a macro which takes the base unit and the `Form` from the expected type
+          - and encodes the components into the base-unit count. A literal component which is
+          - negative or too large for its unit, or more components than units, is a compile
+          - error; a non-literal component is not checked.
+          + `Quanta(…)` est une macro qui tire l'unité de base et la `Form` du type attendu et
+          + encode les composantes en un compte d'unités de base. Une composante littérale négative
+          + ou trop grande pour son unité, ou davantage de composantes que d'unités, est une erreur
+          + de compilation ; une composante non littérale n'est pas vérifiée.
+
+          ```scala
+          import soundness.*
+
+          val time: TimeSeconds = Quanta(1, 30, 0)
+          time.long   // 5400
+          ```
+    entry .fromLong
+      info
+          - reinterprets a count of base units as a `Quanta` type, without checks
+          + réinterprète un compte d'unités de base comme un type `Quanta`, sans vérification
+      detail
+          - `Quanta.fromLong[Q](long)` is the inverse of `long`: the `Long` is taken as the value in
+          - `Q`'s base unit. The type argument must be a `Quanta` type; nothing checks it.
+          + `Quanta.fromLong[Q](long)` est l'inverse de `long` : le `Long` est pris comme la valeur
+          + dans l'unité de base de `Q`. L'argument de type doit être un type `Quanta` ; rien ne le
+          + vérifie.
+    entry .underlying
+      info
+          - the `Underlying` witness that a `Quanta` with a `Form` is a `Long` at runtime
+          + le témoin `Underlying` qu'un `Quanta` avec une `Form` est un `Long` à l'exécution
+    entry .underlyingBare
+      info
+          - the `Underlying` witness that a bare `Quanta[Base]` is a `Long` at runtime
+          + le témoin `Underlying` qu'un `Quanta[Base]` nu est un `Long` à l'exécution
+    entry .zeroic
+      info
+          - the zero of a bare `Quanta[Base]`, for `total` and other aggregates
+          + le zéro d'un `Quanta[Base]` nu, pour `total` et les autres agrégats
+    entry .zeroic2
+      info
+          - the zero of a `Quanta` with a `Form`, for `total` and other aggregates
+          + le zéro d'un `Quanta` avec une `Form`, pour `total` et les autres agrégats
+      detail
+          - A given separate from `.zeroic`, so that a search for a zero of an unknown subtype
+          - cannot settle on `Nothing`.
+          + Un given distinct de `.zeroic`, afin que la recherche d'un zéro pour un sous-type
+          + inconnu ne puisse pas se fixer sur `Nothing`.
+    entry .typeable
+      info
+          - lets a `Quanta` type be matched in a pattern against `Any`
+          + permet de filtrer un type `Quanta` par motif à partir d'`Any`
+      detail
+          - Any `Long` matches, since the cascade does not exist at runtime: a pattern
+          - `case q: Weight` also matches a `Long`, or a `Quanta` of another cascade.
+          + N'importe quel `Long` correspond, puisque la cascade n'existe pas à l'exécution : un
+          + motif `case q: Weight` correspond aussi à un `Long`, ou à un `Quanta` d'une autre
+          + cascade.
+    entry .integral
+      info
+          - the `Integral` instance of `Long`, for any `Quanta` type
+          + l'instance `Integral` de `Long`, pour tout type `Quanta`
+      detail
+          - Lets the standard numeric operations, and Soundness's aggregates such as `mean`, treat a
+          - `Quanta` as the integer it is at runtime.
+          + Permet aux opérations numériques standard, et aux agrégats de Soundness comme `mean`, de
+          + traiter un `Quanta` comme l'entier qu'il est à l'exécution.
+
+          ```scala
+          import soundness.*
+
+          type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+          List(Quanta(10): Weight, Quanta(1, 6), Quanta(2, 4, 1)).total   // 2st 6lb 1oz
+          List(Quanta(10): Weight, Quanta(1, 6), Quanta(2, 4, 1)).mean    // 11lb 6oz
+          ```
+    entry .addable
+      info
+          - `+` between two values of one `Quanta` type, carrying between units
+          + `+` entre deux valeurs d'un même type `Quanta`, avec retenue entre les unités
+    entry .subtractable
+      info
+          - `-` between two values of one `Quanta` type; the result may be negative
+          + `-` entre deux valeurs d'un même type `Quanta` ; le résultat peut être négatif
+    entry .multiplicable
+      info
+          - `*` by a `Double`, rounding half up to the nearest base unit
+          + `*` par un `Double`, en arrondissant au demi supérieur à l'unité de base la plus proche
+      detail
+          ```scala
+          import soundness.*
+
+          type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+          val weight: Weight = Quanta(12, 9)
+          (weight*2.5).show   // t"2st 3lb 7oz"
+          ```
+    entry .divisible
+      info
+          - `/` by a `Double`, rounding half up to the nearest base unit
+          + `/` par un `Double`, en arrondissant au demi supérieur à l'unité de base la plus proche
+    entry .negatable
+      info
+          - unary `-` on a `Quanta`, negating every component
+          + `-` unaire sur un `Quanta`, qui change le signe de chaque composante
+    entry .showQuanta
+      info
+          - builds the `Showable` for a `Quanta` type: a `UnitsNames` given's names, or the units' symbols
+          + construit le `Showable` d'un type `Quanta` : les noms d'un given `UnitsNames`, ou les
+          + symboles des unités
+      detail
+          - The implementation behind `.showable` and `.showableBare`. Without a `UnitsNames`, each
+          - non-zero component is its number and its unit's symbol, joined by spaces
+          - (`1st 3lb 2oz`); a value whose components are all zero shows as empty text.
+          + L'implémentation derrière `.showable` et `.showableBare`. Sans `UnitsNames`, chaque
+          + composante non nulle est son nombre et le symbole de son unité, séparés par des espaces
+          + (`1st 3lb 2oz`) ; une valeur dont toutes les composantes sont nulles s'affiche comme un
+          + texte vide.
+    entry .inspectQuanta
+      info
+          - builds the `Inspectable` for a `Quanta` type: every component, zeroes included
+          + construit l'`Inspectable` d'un type `Quanta` : toutes les composantes, zéros compris
+      detail
+          - The implementation behind `.inspectable` and `.inspectableBare`, rendering
+          - `Quanta(0st 3lb 2oz)`, so that a packed `Long` is never inspected as a bare number.
+          + L'implémentation derrière `.inspectable` et `.inspectableBare`, qui rend
+          + `Quanta(0st 3lb 2oz)`, afin qu'un `Long` compacté ne soit jamais inspecté comme un
+          + simple nombre.
+    entry .inspectable
+      info
+          - inspects a `Quanta` with a `Form` as `Quanta(0st 3lb 2oz)`
+          + inspecte un `Quanta` avec une `Form` sous la forme `Quanta(0st 3lb 2oz)`
+    entry .inspectableBare
+      info
+          - inspects a bare `Quanta[Base]` as `Quanta(9s)`
+          + inspecte un `Quanta[Base]` nu sous la forme `Quanta(9s)`
+    entry .showable
+      info
+          - shows a `Quanta` with a `Form` by its non-zero components, as `3lb 2oz`
+          + affiche un `Quanta` avec une `Form` par ses composantes non nulles, sous la forme
+          + `3lb 2oz`
+    entry .showableBare
+      info
+          - shows a bare `Quanta[Base]` by its count and unit, as `9s`
+          + affiche un `Quanta[Base]` nu par son compte et son unité, sous la forme `9s`
+    entry .distributiveQuanta
+      info
+          - builds the `Distributive` for a `Quanta` type, by its components
+          + construit le `Distributive` d'un type `Quanta`, composante par composante
+      detail
+          - The implementation behind `.distributive2` and `.distributive2Bare`: a value's parts are
+          - its components as `Long`s, largest unit first, and formatted parts are placed as
+          - `2 st, 3 lb, 4 oz`.
+          + L'implémentation derrière `.distributive2` et `.distributive2Bare` : les parties d'une
+          + valeur sont ses composantes sous forme de `Long`, la plus grande unité en premier, et
+          + les parties formatées sont placées sous la forme `2 st, 3 lb, 4 oz`.
+    entry .distributive2
+      info
+          - formats a `Quanta` with a `Form` component by component, as `Distributive by Long`
+          + formate un `Quanta` avec une `Form` composante par composante, en tant que
+          + `Distributive by Long`
+    entry .distributive2Bare
+      info
+          - formats a bare `Quanta[Base]` as its one component, as `Distributive by Long`
+          + formate un `Quanta[Base]` nu comme son unique composante, en tant que
+          + `Distributive by Long`
+    entry .distributive
+      info
+          - makes a `Distributive by Long` from a parts function and a placing function
+          + crée un `Distributive by Long` à partir d'une fonction de découpage en parties et d'une
+          + fonction de placement
+  entry .long
+    info
+        - the value as one `Long`: the whole of it counted in its smallest unit
+        + la valeur sous forme d'un seul `Long` : sa totalité comptée dans sa plus petite unité
+    detail
+        - An extension on every `Quanta`. A `TimeSeconds` of `Quanta(1, 30, 0)` is `5400`.
+        + Une extension sur tout `Quanta`. Un `TimeSeconds` valant `Quanta(1, 30, 0)` vaut `5400`.
+  entry .apply
+    info
+        - the component of a `Quanta` in one of its units, as `value[Minutes]`
+        + la composante d'un `Quanta` dans l'une de ses unités, comme `value[Minutes]`
+    detail
+        - An extension on every `Quanta`, taking the unit's type constructor (`Feet`, not
+        - `Feet[1]`). A unit which is not in the cascade is a compile error, _the Quanta does not
+        - include this unit_ (557).
+        + Une extension sur tout `Quanta`, qui prend le constructeur de type de l'unité (`Feet`, et
+        + non `Feet[1]`). Une unité absente de la cascade est une erreur de compilation, _the Quanta
+        + does not include this unit_ (557).
+
+        ```scala
+        import soundness.*
+
+        val time: TimeSeconds = Quanta(27, 18, 9)
+        time[Minutes]   // 18
+        ```
+  entry .quantity
+    info
+        - the value as a `Quantity` in its dimension's principal unit
+        + la valeur sous forme de `Quantity` dans l'unité principale de sa dimension
+    detail
+        - An extension on every `Quanta`: a length becomes `Quantity[Metres[1]]`, a mass
+        - `Quantity[Kilograms[1]]`, a duration `Quantity[Seconds[1]]`, by a ratio computed as the
+        - code compiles. `convert` then gives any other unit.
+        + Une extension sur tout `Quanta` : une longueur devient `Quantity[Metres[1]]`, une masse
+        + `Quantity[Kilograms[1]]`, une durée `Quantity[Seconds[1]]`, par un rapport calculé lors de
+        + la compilation du code. `convert` donne ensuite n'importe quelle autre unité.
+
+        ```scala
+        import soundness.*
+
+        type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+        val weight: Weight = Quanta(5, 6)
+        weight.quantity                   // 2.438057 kilograms
+        weight.quantity.convert[Pounds]   // 5.375 pounds
+        ```
+  entry .components
+    info
+        - the components as a `Ledger` from each unit's symbol to its count, largest first
+        + les composantes sous forme de `Ledger` associant au symbole de chaque unité son compte, la
+        + plus grande en premier
+    detail
+        - An extension on every `Quanta`, including zero components: `Quanta(3, 2)` as a weight is
+        - `st → 0`, `lb → 3`, `oz → 2`. A unit at a power other than 1 has its power appended in
+        - superscript.
+        + Une extension sur tout `Quanta`, composantes nulles comprises : `Quanta(3, 2)` en tant que
+        + poids donne `st → 0`, `lb → 3`, `oz → 2`. Une unité à une puissance autre que 1 voit sa
+        + puissance ajoutée en exposant.
+  entry .multiply
+    info
+        - multiplies by a `Double`, rounding half up to the nearest base unit
+        + multiplie par un `Double`, en arrondissant au demi supérieur à l'unité de base la plus
+        + proche
+    detail
+        - An extension on every `Quanta`, keeping the receiver's type; the same as `*`.
+        + Une extension sur tout `Quanta`, qui conserve le type du receveur ; identique à `*`.
+  entry .divide
+    info
+        - divides by a `Double`, rounding half up to the nearest base unit
+        + divise par un `Double`, en arrondissant au demi supérieur à l'unité de base la plus proche
+    detail
+        - An extension on every `Quanta`, keeping the receiver's type; the same as `/`.
+        + Une extension sur tout `Quanta`, qui conserve le type du receveur ; identique à `/`.
+  entry .collapse
+    info
+        - merges the largest units of a cascade into the next, as a `Quanta` with fewer units
+        + fusionne les plus grandes unités d'une cascade dans la suivante, en un `Quanta` à moins
+        + d'unités
+    detail
+        - An extension on every `Quanta`: `value.collapse(n)` drops the `n` largest units from the
+        - type, so their counts are carried into the largest that remains. The value is unchanged;
+        - only its cascade is. `n` must be a literal no greater than the number of units above the
+        - base, or it is a compile error.
+        + Une extension sur tout `Quanta` : `value.collapse(n)` retire du type les `n` plus grandes
+        + unités, si bien que leurs comptes sont reportés dans la plus grande unité restante. La
+        + valeur est inchangée ; seule sa cascade change. `n` doit être un littéral au plus égal au
+        + nombre d'unités au-dessus de la base, sinon c'est une erreur de compilation.
+
+        ```scala
+        import soundness.*
+
+        type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+        val weight: Weight = Quanta(2, 3, 4)
+        weight.collapse(1)[Pounds]   // 31
+        weight.collapse(2)[Ounces]   // 500
+        ```
+
+entry .anteprotointernal
+  info
+      - the trait which gives the `Quanta` companion its comparison given
+      + le trait qui donne au compagnon de `Quanta` son given de comparaison
+  hidden
+  detail
+      - Mixed into `protointernal`; not for direct use. It exists so that the comparison given
+      - has lower priority than the companion's own.
+      + Mélangé dans `protointernal` ; pas destiné à un usage direct. Il existe pour que le given de
+      + comparaison ait une priorité plus basse que ceux du compagnon lui-même.
+  entry #Quanta2
+    info
+        - the parent of the `Quanta` companion, holding `commensurable`
+        + le parent du compagnon de `Quanta`, qui contient `commensurable`
+    detail
+        - Not for direct use.
+        + Pas destiné à un usage direct.
+    entry #commensurable
+      info
+          - compares two values of one base unit, as `<`, `<=`, `>` and `>=` on their base-unit counts
+          + compare deux valeurs d'une même unité de base, par `<`, `<=`, `>` et `>=` sur leurs
+          + comptes d'unités de base
+      detail
+          - Values with the same base unit but different cascades compare through their common
+          - supertype `Quanta[Base]`.
+          + Des valeurs de même unité de base mais de cascades différentes se comparent par leur
+          + supertype commun `Quanta[Base]`.
+
+entry .internal
+  info
+      - the macros behind `Quanta`'s construction, components, conversions and `collapse`
+      + les macros derrière la construction, les composantes, les conversions et `collapse` de
+      + `Quanta`
+  hidden
+  detail
+      - Not for direct use: the object exists so that the macros have a stable home. Its
+      - compile errors are the ones `Quanta` users see: a component out of range, a cascade mixing
+      - dimensions, an absent unit, a collapse too deep.
+      + Pas destiné à un usage direct : l'objet existe pour que les macros aient un foyer stable.
+      + Ses erreurs de compilation sont celles que voient les utilisateurs de `Quanta` : une
+      + composante hors limites, une cascade qui mélange des dimensions, une unité absente, une
+      + fusion trop profonde.
+  entry .assembleParts
+    info
+        - the macro behind `Quanta(…)`: encodes the components against the expected type's cascade
+        + la macro derrière `Quanta(…)` : encode les composantes selon la cascade du type attendu
+  entry .describeQuanta
+    info
+        - the macro behind `components`: the count of each unit, by symbol
+        + la macro derrière `components` : le compte de chaque unité, par symbole
+  entry .multiplyQuanta
+    info
+        - the macro behind `multiply` and `divide`
+        + la macro derrière `multiply` et `divide`
+  entry .toQuantity
+    info
+        - the macro behind `quantity`: the value in its dimension's principal unit
+        + la macro derrière `quantity` : la valeur dans l'unité principale de sa dimension
+  entry .fromQuantity
+    info
+        - the macro behind `Quantity#quanta`: a quantity rounded to a cascade's base unit
+        + la macro derrière `Quantity#quanta` : une quantité arrondie à l'unité de base d'une
+        + cascade
+  entry .get
+    info
+        - the macro behind `value[Unit]`: one component, or error `↯/s.54.1` if the unit is absent
+        + la macro derrière `value[Unit]` : une composante, ou l'erreur `↯/s.54.1` si l'unité est
+        + absente
+  entry .collapse
+    info
+        - the macro behind `collapse`: the same value in a cascade with fewer units
+        + la macro derrière `collapse` : la même valeur dans une cascade à moins d'unités
