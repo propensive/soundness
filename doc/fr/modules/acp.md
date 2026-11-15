@@ -320,7 +320,7 @@ def files(using Acp.Registry): Unit =
 -   cell
 -   cell  the agent answers `initialize` with a protocol version other than 1
 + column  Raison
-+ column  Code transmis
++ column  Code de transmission
 + column  Levée lorsque
 + row  `Parse`  -32700  un message n'a pas pu être analysé comme du JSON
 + row  `InvalidRequest`  -32600  un message n'était pas une requête JSON-RPC valide

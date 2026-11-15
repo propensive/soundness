@@ -166,10 +166,10 @@ case class Typed
 - for data which is [read or written directly](#parsing-directly). The parser fills it without
 - allocating a cell for each element, and without boxing a number, and the printer walks it by
 - index.
-+ Un champ répété peut aussi être un tableau figé, `Array[Long]^{}`, `Array[Double]^{}` ou
++ Un champ répété peut aussi être un tableau gelé, `Array[Long]^{}`, `Array[Double]^{}` ou
 + `Array[Message]^{}`, avec les mêmes octets que la forme `List`. C'est la représentation à
 + choisir pour des données [lues ou écrites directement](#parsing-directly). L'analyseur le
-+ remplit sans allouer de cellule pour chaque élément, et sans mettre de nombre en boîte, et
++ remplit sans allouer de cellule pour chaque élément, et sans boxer de nombre, et
 + l'afficheur le parcourt par indice.
 
 - ### Presence, repetition and maps
@@ -211,7 +211,7 @@ Out.println(MaybeName(t"").in[Protobuf].encode.length.show)
 - A `Map` becomes the standard repeated messages of a key and a value, so a `Map[Text, Int]` on
 - the wire is exactly what `map<string, int32>` would be.
 + Une `Map` devient les messages répétés standard d'une clé et d'une valeur ; une
-+ `Map[Text, Int]` sur le réseau est donc exactement ce que serait `map<string, int32>`.
++ `Map[Text, Int]` en transmission est donc exactement ce que serait `map<string, int32>`.
 
 - ### Navigating a message
 + ### Naviguer dans un message
@@ -250,7 +250,7 @@ Out.println(wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper].inspect)
 - A malformed message raises a `Protobuf.Error`. It names the problem and, for a fault in the
 - bytes, its offset, so a fault on the wire is debugged from the error, not from a hex dump:
 + Un message mal formé lève une `Protobuf.Error`. Elle nomme le problème et, pour un défaut dans
-+ les octets, son décalage ; un défaut sur le réseau se débogue donc à partir de l'erreur, et non
++ les octets, son décalage ; un défaut en transmission se débogue donc à partir de l'erreur, et non
 + d'un vidage hexadécimal :
 
 ```tabular

@@ -209,7 +209,7 @@ val matched: Boolean = regex.matches(t"123")
 - function type takes an ordinary Scala lambda. The parameter of the lambda is itself a facade
 - over the Kotlin type, so the value inside it navigates too:
 + Les propriétés se lisent comme des membres, et les propriétés `var` acceptent l'affectation,
-+ au moyen des getters et setters qu'a générés Kotlin. Affecter une `val` ne compile pas. Un
++ au moyen des accesseurs et mutateurs qu'a générés Kotlin. Affecter une `val` ne compile pas. Un
 + paramètre Kotlin de type fonction prend une lambda Scala ordinaire. Le paramètre de la lambda
 + est lui-même une façade sur le type Kotlin ; la valeur à l'intérieur se parcourt donc aussi :
 

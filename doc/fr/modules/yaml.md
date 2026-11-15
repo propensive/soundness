@@ -416,7 +416,7 @@ val position = tracked.locate(YamlPath()(t"a"))
 - together.
 + Sous une stratégie qui [accumule les échecs](errors.md#accumulating-failures), le décodage
 + recueille toutes les fautes d'un document au lieu de s'arrêter à la première. Chacune est
-+ étiquetée par son chemin, comme `#/age` ou `#/email`, si bien que les problèmes d'un fichier de
++ taguée par son chemin, comme `#/age` ou `#/email`, si bien que les problèmes d'un fichier de
 + configuration entier sont signalés ensemble.
 
 - ### Numbers

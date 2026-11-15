@@ -5,8 +5,8 @@ import soundness
 
 info
     - any Scala value as a classloader-neutral `Pojo` of JDK boxes, strings and object arrays, and back
-    + toute valeur Scala en `Pojo` neutre vis-à-vis des classloaders, fait de boîtes du JDK, de
-    + chaînes et de tableaux d'objets, et retour
+    + toute valeur Scala en `Pojo` neutre vis-à-vis des chargeurs de classes, fait de boîtes du JDK,
+    + de chaînes et de tableaux d'objets, et retour
 detail
     - _Austronesian_ carries a structured value across a boundary its class cannot cross — into
     - another classloader, another process, or a staged computation — by encoding it as a
@@ -16,13 +16,13 @@ detail
     - boxed self. The receiving side decodes against the type it expects, deriving the same
     - codec from the same definition, so no schema travels with the data.
     + _Austronesian_ transporte une valeur structurée à travers une frontière que sa classe ne peut
-    + pas franchir — vers un autre classloader, un autre processus, ou un calcul mis en étapes — en
-    + l'encodant sous forme de `Pojo` : un arbre construit uniquement à partir des types que
-    + partagent tous les contextes JVM, `String`, les primitifs emballés et `Array[Object]`. Un
-    + produit devient un tableau de ses champs, un variant une paire de son libellé et de sa charge
-    + utile, une collection un tableau de ses éléments, et un primitif sa propre forme emballée. Le
-    + côté récepteur décode par rapport au type qu'il attend, en dérivant le même codec à partir de
-    + la même définition : aucun schéma ne voyage donc avec les données.
+    + pas franchir — vers un autre chargeur de classes, un autre processus, ou un calcul mis en
+    + étapes — en l'encodant sous forme de `Pojo` : un arbre construit uniquement à partir des types
+    + que partagent tous les contextes JVM, `String`, les primitifs boxés et `Array[Object]`. Un
+    + produit devient un tableau de ses champs, une variante une paire de son étiquette et de sa
+    + charge utile, une collection un tableau de ses éléments, et un primitif sa propre forme boxée.
+    + Le côté récepteur décode par rapport au type qu'il attend, en dérivant le même codec à partir
+    + de la même définition : aucun schéma ne voyage donc avec les données.
 
     ```scala
     import soundness.*
@@ -79,9 +79,9 @@ detail
     - staging's remote execution. `Pojo` and `pojo` are exported to the `soundness` umbrella;
     - every codec is in `Pojo`'s companion, in implicit scope, so nothing else is imported.
     + La bibliothèque a un seul ensemble de sources, `austronesian.core`, et constitue le transport
-    + sous-jacent à l'exécution distante de staging. `Pojo` et `pojo` sont exportés vers le package
-    + parapluie `soundness` ; chaque codec se trouve dans le compagnon de `Pojo`, dans la portée
-    + implicite : rien d'autre n'est donc importé.
+    + sous-jacent à l'exécution distante de la mise en étapes. `Pojo` et `pojo` sont exportés vers
+    + le package parapluie `soundness` ; chaque codec se trouve dans le compagnon de `Pojo`, dans la
+    + portée implicite : rien d'autre n'est donc importé.
 
 refer austronesian.Pojo
 refer austronesian.pojo
@@ -90,7 +90,7 @@ refer austronesian.internal.Pojo.Error
 entry .Pojo
   info
       - a value as a tree of JDK types alone: strings, boxed primitives and object arrays
-      + une valeur sous forme d'arbre composé des seuls types du JDK : chaînes, primitifs emballés
+      + une valeur sous forme d'arbre composé des seuls types du JDK : chaînes, primitifs boxés
       + et tableaux d'objets
   detail
       - `Pojo` is the opaque type `austronesian.internal.Pojo`, exported here. It is a subtype of
@@ -103,8 +103,8 @@ entry .Pojo
       + d'`Object` dont le type sous-jacent est l'union de `Array[Object]`, `String`,
       + `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Character`, `java.lang.Short`,
       + `java.lang.Integer`, `java.lang.Long`, `java.lang.Float` et `java.lang.Double` : un `Pojo`
-      + ne peut donc pas être confondu avec un objet arbitraire et a un sens pour tout classloader,
-      + puisque toutes ces classes viennent du JDK.
+      + ne peut donc pas être confondu avec un objet arbitraire et a un sens pour tout chargeur de
+      + classes, puisque toutes ces classes viennent du JDK.
 
       ```scala
       import soundness.*
@@ -129,14 +129,14 @@ entry .Pojo
       - - A sum (a sealed trait or an enum) is a two-element array of the variant's label and the
       -   variant's own encoding: `Array("Green", Array())` for a parameterless enum case.
       + - `Text` et `String` sont le `String`, et `Int`, `Long`, `Float`, `Double`, `Char`,
-      +   `Boolean` et `Byte` leurs formes emballées.
+      +   `Boolean` et `Byte` leurs formes boxées.
       + - Une collection (tout `Iterable`, ou une `List`, un `Set` ou une `Sequence`) est un
       +   `Array[Object]` des encodages de ses éléments.
       + - Un produit (une case class) est un `Array[Object]` des encodages de ses champs, dans
       +   l'ordre de déclaration.
-      + - Une somme (un trait scellé ou une énumération) est un tableau à deux éléments formé du
-      +   libellé du variant et de l'encodage propre au variant : `Array("Green", Array())` pour un
-      +   cas d'énumération sans paramètre.
+      + - Une somme (un trait scellé ou une énumération) est un tableau à deux éléments formé de
+      +   l'étiquette de la variante et de l'encodage propre à la variante :
+      +   `Array("Green", Array())` pour un cas d'énumération sans paramètre.
 
       - Two `Pojo`s compare structurally with probably's `===`, through `Pojo`'s `Checkable`
       - instance, which compares arrays element by element where `==` would compare their
@@ -149,7 +149,7 @@ entry .Pojo
 entry .pojo
   info
       - encodes a value as a classloader-neutral `Pojo`
-      + encode une valeur sous forme de `Pojo` neutre vis-à-vis des classloaders
+      + encode une valeur sous forme de `Pojo` neutre vis-à-vis des chargeurs de classes
   detail
       - An inline extension on any value which is `Encodable in Pojo`: the primitives, `Text`,
       - `String`, collections of encodable elements, and any case class, enum or sealed trait
@@ -197,7 +197,7 @@ entry .internal
     entry .apply
       info
           - wraps a string, a boxed primitive or an object array as a `Pojo`
-          + enveloppe une chaîne, un primitif emballé ou un tableau d'objets sous forme de `Pojo`
+          + enveloppe une chaîne, un primitif boxé ou un tableau d'objets sous forme de `Pojo`
       detail
           - Takes a value of one of the JDK types `Pojo` permits, and returns it unchanged as a
           - `Pojo`. It does not check an array's elements, which should themselves be `Pojo`s.
@@ -349,8 +349,8 @@ entry .internal
           - sum decoder raises `Pojo.Error` on a mismatched shape, and an unknown variant label
           - raises distillate's `Variant.Error`; a `Tactic[Pojo.Error]` is needed in scope.
           + Une extension inline sur `Pojo`, pour tout type qui est `Decodable in Pojo`. Un décodeur
-          + de produit ou de somme lève `Pojo.Error` sur une forme qui ne correspond pas, et un
-          + libellé de variant inconnu lève la `Variant.Error` de distillate ; une
+          + de produit ou de somme lève `Pojo.Error` sur une forme qui ne correspond pas, et une
+          + étiquette de variante inconnue lève la `Variant.Error` de distillate ; une
           + `Tactic[Pojo.Error]` est nécessaire dans la portée.
 
           ```scala
@@ -372,8 +372,8 @@ entry .internal
           - sides of a boundary disagree on the type's definition.
           + Erreur 916 : _could not deserialize from Java POJO types_. Levée par `as` quand un
           + produit ou une collection est attendu et que le `Pojo` n'est pas un tableau, ou qu'une
-          + somme est attendue et qu'il n'est pas un tableau à deux éléments formé d'un libellé et
-          + d'une charge utile. Cela signifie généralement que les deux côtés d'une frontière ne
+          + somme est attendue et qu'il n'est pas un tableau à deux éléments formé d'une étiquette
+          + et d'une charge utile. Cela signifie généralement que les deux côtés d'une frontière ne
           + s'accordent pas sur la définition du type.
   entry .Pojo2
     info
@@ -402,7 +402,7 @@ entry .internal
           - A product encodes as the array of its fields, a sum as the pair of its variant's label
           - and encoding.
           + Un produit s'encode sous forme du tableau de ses champs, une somme sous forme de la
-          + paire du libellé et de l'encodage de son variant.
+          + paire de l'étiquette et de l'encodage de sa variante.
     entry #decodable
       info
           - derives `Decodable in Pojo` for any product or sum, through wisteria
@@ -431,8 +431,8 @@ entry .protointernal
     entry .disjunction
       info
           - a sum as a two-element array of its variant's label and encoding
-          + une somme sous forme d'un tableau à deux éléments formé du libellé et de l'encodage de
-          + son variant
+          + une somme sous forme d'un tableau à deux éléments formé de l'étiquette et de l'encodage
+          + de sa variante
   entry .DecodableDerivation
     info
         - derives `Decodable in Pojo` for products and sums
@@ -445,5 +445,5 @@ entry .protointernal
     entry .disjunction
       info
           - a sum from a label and payload pair, raising `Pojo.Error` for any other shape
-          + une somme à partir d'une paire libellé et charge utile, en levant `Pojo.Error` pour
+          + une somme à partir d'une paire étiquette et charge utile, en levant `Pojo.Error` pour
           + toute autre forme

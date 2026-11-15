@@ -79,7 +79,7 @@ detail
     + fonctionne parce que les deux membres de l'union sont connus, et pour un type *abstrait*
     + ils ne le sont pas : une `value` instanciée plus tard par un type déjà optionnel fusionnerait
     + deux absences censées être distinctes. Les combinateurs exigent donc une preuve
-    + `Optionality` que le type de leur récepteur est réellement un `Optional` (appeler `let` sur
+    + `Optionality` que le type de leur receveur est réellement un `Optional` (appeler `let` sur
     + un simple `Text` est une erreur de compilation, _the type Text is not an `Optional`_), et
     + une méthode générique prenant un `Optional[value]` pour une `value` abstraite demande
     + `value: Concrete` dans sa signature. `Distinct` et `Mandatable` sont les deux autres faits
@@ -173,7 +173,7 @@ entry .Optional
       - `CanEqual` givens which let any value be compared with `Unset` under strict equality.
       + Les combinateurs — `or`, `let`, `lay`, `present`, `absent`, `mask`, `assume`, `presume`,
       + `option`, `javaOptional`, `letGiven`, `layGiven` — sont des extensions de niveau package,
-      + chacune gardée par une preuve `Optionality` que le type du récepteur est un `Optional` ;
+      + chacune gardée par une preuve `Optionality` que le type du receveur est un `Optional` ;
       + `Optional.check[value]` effectue explicitement la même vérification. L'objet dispose de
       + `.apply`, qui transforme un résultat Java nullable en `Optional`, et des deux givens
       + `CanEqual` qui permettent de comparer toute valeur à `Unset` en égalité stricte.
@@ -189,7 +189,7 @@ entry .Optional
       - should be branched by a `match` whose first case is `case Unset =>`, rather than
       - through a `| Null` sentinel and flow typing, which loses the separation checker's
       - tracking of a consumed value.
-      + Deux faits liés au contrôle des captures importent à l'utilisateur. Un *tableau figé* à
+      + Deux faits liés au contrôle des captures importent à l'utilisateur. Un *tableau gelé* à
       + l'intérieur de l'union — une méthode renvoyant `Optional[Data]`, par exemple — est
       + rafraîchi en une capture en lecture seule à chaque site d'appel dès que la méthode prend
       + aussi un paramètre de capacité (un `Loggable`, ou le sucre `logs Event`), et ce résultat ne
@@ -311,8 +311,8 @@ entry .or
       + `optional.or(fallback)` est la valeur lorsqu'elle est présente, et `fallback` sinon ; le
       + repli est passé par nom et évalué seulement si nécessaire. Son résultat est une simple
       + `value` ; `or` est donc la dernière étape habituelle d'une chaîne de `let`. C'est une
-      + macro : un récepteur qui est un bloc `optimizable` est réécrit de sorte que le repli soit
-      + fourni directement au bloc, sans `Optional` intermédiaire, et un récepteur dont le type
+      + macro : un receveur qui est un bloc `optimizable` est réécrit de sorte que le repli soit
+      + fourni directement au bloc, sans `Optional` intermédiaire, et un receveur dont le type
       + n'est pas un `Optional` est une erreur de compilation (465, _the type `T` is not an
       + `Optional`_).
 
@@ -348,7 +348,7 @@ entry .let
 
       - Needs an `Optionality` proof for the receiver's type, which is in implicit scope for
       - any `Optional`.
-      + Requiert une preuve `Optionality` pour le type du récepteur, qui se trouve dans la portée
+      + Requiert une preuve `Optionality` pour le type du receveur, qui se trouve dans la portée
       + implicite de tout `Optional`.
 
 entry .lay
@@ -420,7 +420,7 @@ entry .mask
       - of it, and otherwise the receiver unchanged. The sense is "mask out": the predicate
       - names what to *remove*.
       + `optional.mask(predicate)` vaut `Unset` lorsque la valeur est présente et que `predicate`
-      + est vrai pour elle, et sinon le récepteur inchangé. Le sens est celui de « masquer » : le
+      + est vrai pour elle, et sinon le receveur inchangé. Le sens est celui de « masquer » : le
       + prédicat désigne ce qu'il faut *retirer*.
 
       ```scala
@@ -662,7 +662,7 @@ entry .invite
       - uses if present and does without if not.
       + `invite[entity]` est une invocation `transparent inline` qui donne le given de type
       + `entity` lorsqu'il en existe un et `Unset` sinon, là où `summon` échouerait à la
-      + compilation. Pour une capacité optionnelle — un journaliseur, un contexte de diagnostic —
+      + compilation. Pour une capacité optionnelle — un logger, un contexte de diagnostic —
       + qu'une méthode utilise si elle est présente et dont elle se passe sinon.
 
 entry .Default
@@ -764,7 +764,7 @@ entry .Optionality
       + _the
       + type `value` is not an `Optional`_. Les extensions `or`, `let`, `lay`, `present`,
       + `absent`, `mask`, `assume`, `presume`, `option`, `javaOptional`, `letGiven` et `layGiven`
-      + prennent une `Optionality[optional.type]` ; elles ne se résolvent donc que sur un récepteur
+      + prennent une `Optionality[optional.type]` ; elles ne se résolvent donc que sur un receveur
       + dont le type statique admet `Unset` ; un simple `Text` n'a pas de `let`. La vérification ne
       + coûte rien à l'exécution : le given est un `null` casté vers le marqueur.
 
@@ -928,7 +928,7 @@ entry .Extractor
   entry #extract
     info
         - the extraction, or `Unset` if the scrutinee does not match
-        + l'extraction, ou `Unset` si la valeur examinée ne correspond pas
+        + l'extraction, ou `Unset` si la valeur filtrée ne correspond pas
   entry #unapply
     info
         - `extract(value).option`, for the pattern matcher
@@ -972,7 +972,7 @@ entry .internal
       + Pas destiné à un usage direct. `check[value]` est la macro d'`Optionality` et
       + d'`Optional.check` ; `concrete`, `distinct` et `mandatable` produisent les preuves
       + `Concrete`, `Distinct` et `Mandatable` ; et `optimizeOr` est la macro derrière `or`, qui
-      + réécrit un récepteur `optimizable` de sorte que le repli lui soit fourni directement.
+      + réécrit un receveur `optimizable` de sorte que le repli lui soit fourni directement.
   entry .check
     info
         - the `Optionality[value]` macro: succeeds when `Unset <: value`, else error 465
@@ -992,4 +992,4 @@ entry .internal
   entry .optimizeOr
     info
         - the macro behind `or`: inlines the fallback into an `optimizable` receiver
-        + la macro derrière `or` : inline le repli dans un récepteur `optimizable`
+        + la macro derrière `or` : inline le repli dans un receveur `optimizable`

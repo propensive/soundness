@@ -121,7 +121,7 @@ entry .as
 entry .As
   info
       - the extractor `As[T]`, which matches a scrutinee that yields a `T` and binds it
-      + l'extracteur `As[T]`, qui filtre une valeur examinée produisant un `T` et la lie
+      + l'extracteur `As[T]`, qui s'applique à une valeur filtrée produisant un `T` et la lie
   detail
       - `As[T](binding)` in a pattern summons `scrutinee.type is Extractable to T` and matches
       - when it yields a value, falling through to the next case when it yields `Unset`. Because
@@ -149,14 +149,14 @@ entry .As
       - result-fixed extractors `As.Int` and `As.Boolean` take no type argument and are usable
       - from capture-checked code.
       + Sous le contrôle des captures, l'argument de type explicite de `As[T]` fait passer la
-      + valeur examinée par un type singleton que le vérificateur ne peut lier au `Self` de
+      + valeur filtrée par un type singleton que le vérificateur ne peut lier au `Self` de
       + l'instance ; les extracteurs à résultat fixe `As.Int` et `As.Boolean` ne prennent pas
       + d'argument de type et sont utilisables depuis du code soumis au contrôle des captures.
   refer distillate.Extractable
   entry .unapply
     info
         - matches a scrutinee whose singleton type is `Extractable` to the result
-        + filtre une valeur examinée dont le type singleton est `Extractable` vers le résultat
+        + s'applique à une valeur filtrée dont le type singleton est `Extractable` vers le résultat
   entry .Int
     info
         - an extractor fixed to `Int`, with no type argument, for capture-checked code
@@ -166,14 +166,14 @@ entry .As
         - `case As.Int(number) =>` matches any scrutinee with a `scrutinee is Extractable to Int`
         - in scope, inferring the scrutinee's type from the matched value rather than from a
         - singleton, so the instance resolves cleanly under capture checking.
-        + `case As.Int(number) =>` filtre toute valeur examinée pour laquelle un
+        + `case As.Int(number) =>` s'applique à toute valeur filtrée pour laquelle un
         + `scrutinee is Extractable to Int` est dans la portée, en inférant le type de la valeur
-        + examinée à partir de la valeur filtrée plutôt que d'un singleton, de sorte que l'instance
+        + filtrée à partir de la valeur reconnue plutôt que d'un singleton, de sorte que l'instance
         + se résout proprement sous le contrôle des captures.
     entry .unapply
       info
           - matches a scrutinee which is `Extractable to Int`
-          + filtre une valeur examinée qui est `Extractable to Int`
+          + s'applique à une valeur filtrée qui est `Extractable to Int`
   entry .Boolean
     info
         - an extractor fixed to `Boolean`, with no type argument, for capture-checked code
@@ -182,13 +182,13 @@ entry .As
     detail
         - `case As.Boolean(flag) =>` matches any scrutinee with a `scrutinee is Extractable to
         - Boolean` in scope; for text that is exactly `true` or `false`.
-        + `case As.Boolean(flag) =>` filtre toute valeur examinée pour laquelle un
+        + `case As.Boolean(flag) =>` s'applique à toute valeur filtrée pour laquelle un
         + `scrutinee is Extractable to Boolean` est dans la portée ; pour du texte, celui qui vaut
         + exactement `true` ou `false`.
     entry .unapply
       info
           - matches a scrutinee which is `Extractable to Boolean`
-          + filtre une valeur examinée qui est `Extractable to Boolean`
+          + s'applique à une valeur filtrée qui est `Extractable to Boolean`
 
 entry .Decodable
   info
@@ -555,10 +555,10 @@ entry .Extractable
       + L'objet compagnon contient les conversions du texte vers chaque type primitif, chaque
       + rétrécissement entre les types numériques (chacun renonçant lorsque la valeur ne survit pas
       + à l'aller-retour), la conversion du texte vers un cas d'`enum` par son nom et d'un `Int`
-      + vers un cas par son ordinal, un relèvement à travers `Optional`, et une passerelle depuis
-      + tout `Decodable in Text` qui exécute le décodeur sous `safely`. Cette passerelle est la
-      + raison pour laquelle `As[EmailAddress]` ou `As[Uuid]` fonctionnent pour tout type qui peut
-      + être décodé depuis du texte.
+      + vers un cas par son ordinal, une conversion relevée à travers `Optional`, et une passerelle
+      + depuis tout `Decodable in Text` qui exécute le décodeur sous `safely`. Cette passerelle est
+      + la raison pour laquelle `As[EmailAddress]` ou `As[Uuid]` fonctionnent pour tout type qui
+      + peut être décodé depuis du texte.
 
       - An instance can borrow an existing one:
       + Une instance peut en emprunter une existante :

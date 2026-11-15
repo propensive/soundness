@@ -10,12 +10,12 @@
 - stub turns method calls into wire messages. This works for
 - [JSON-RPC 2.0](https://www.jsonrpc.org/specification) over HTTP, and for
 - [gRPC](https://grpc.io/) over HTTP/2 with [Protocol Buffers](protobuf.md).
-+ Un appel de procédure distante fait comme si un appel de méthode traversait le réseau. Ici,
-+ cette fiction est typée aux deux bouts. Une interface RPC est un trait ordinaire dont les
-+ méthodes sont marquées `@rpc`. À partir de cette seule définition, un *serveur* répartit les
-+ appels entrants vers une implémentation, et un stub *client* transforme les appels de méthode en
-+ messages sur le réseau. Cela fonctionne pour [JSON-RPC 2.0](https://www.jsonrpc.org/specification)
-+ sur HTTP, et pour [gRPC](https://grpc.io/) sur HTTP/2 avec [Protocol Buffers](protobuf.md).
++ Un appel de procédure distante fait comme si un appel de méthode traversait le réseau. Ici, cette
++ fiction est typée aux deux bouts. Une interface RPC est un trait ordinaire dont les méthodes sont
++ marquées `@rpc`. À partir de cette seule définition, un *serveur* répartit les appels entrants
++ vers une implémentation, et un stub *client* transforme les appels de méthode en messages de
++ transmission. Cela fonctionne pour [JSON-RPC 2.0](https://www.jsonrpc.org/specification) sur HTTP,
++ et pour [gRPC](https://grpc.io/) sur HTTP/2 avec [Protocol Buffers](protobuf.md).
 
 - Beneath the protocols is the shared plumbing of message streams:
 - [server-sent events](https://en.wikipedia.org/wiki/Server-sent_events), and *framing*, which
@@ -33,7 +33,7 @@
 - correlation, error envelopes. Writing it by hand for each interface invites the usual drift, with
 - the client and server disagreeing about the name of a parameter. A code generator avoids the
 - drift, but brings back the build machinery which [derivation] in the language avoids.
-+ Le format sur le réseau d'un protocole RPC est mécanique : noms de méthodes, encodages des
++ Le format de transmission d'un protocole RPC est mécanique : noms de méthodes, encodages des
 + paramètres, corrélation des identifiants, enveloppes d'erreur. L'écrire à la main pour chaque
 + interface invite la dérive habituelle, le client et le serveur divergeant sur le nom d'un
 + paramètre. Un générateur de code évite la dérive, mais ramène la machinerie de build qu'évite
@@ -79,7 +79,7 @@ trait Echo:
 
 - A method which returns `Unit` is a *notification*. It is fire-and-forget, with no response
 - expected, as the JSON-RPC specification distinguishes.
-+ Une méthode qui renvoie `Unit` est une *notification*. On l'envoie sans s'en soucier davantage,
++ Une méthode qui renvoie `Unit` est une *notification*. On l'envoie sans suivi,
 + sans attendre de réponse, comme le distingue la spécification JSON-RPC.
 
 - ### JSON-RPC
@@ -284,7 +284,7 @@ Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].each(Out.println(_))
 + échec de protocole est donc un diagnostic, et non un blocage.
 
 - ### Verifying a wire format
-+ ### Vérifier un format sur le réseau
++ ### Vérifier un format de transmission
 
 - A protocol implementation which only round-trips against itself proves nothing. Two matching
 - bugs look exactly like correctness. The HTTP/2 and gRPC codecs are therefore checked against

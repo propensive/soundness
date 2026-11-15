@@ -279,17 +279,17 @@ entry .Inscribable
 entry .Taggable
   info
       - a typeclass for values to which a tag of type `Operand` can be added
-      + une classe de types pour les valeurs auxquelles on peut ajouter une étiquette de type
+      + une classe de types pour les valeurs auxquelles on peut ajouter un tag de type
       + `Operand`
   detail
       - `value.tag(operand)` returns the value with a tag added. Nothing in Soundness provides
       - or uses an instance yet.
-      + `value.tag(operand)` renvoie la valeur avec une étiquette ajoutée. Rien dans Soundness ne
+      + `value.tag(operand)` renvoie la valeur avec un tag ajouté. Rien dans Soundness ne
       + fournit ni n'utilise encore d'instance.
   entry #tag
     info
         - the value with a tag added
-        + la valeur avec une étiquette ajoutée
+        + la valeur avec un tag ajouté
 
 entry .mute
   info
@@ -368,7 +368,7 @@ entry .LogPalette
 entry .Syslog
   info
       - the system log as a log destination, with an optional tag on each line
-      + le journal système comme destination de journal, avec une étiquette optionnelle sur chaque
+      + le journal système comme destination de journal, avec un tag optionnel sur chaque
       + ligne
   detail
       - `Syslog(tag)` is a destination for a `Logger` with a `Text` format: its records are
@@ -378,7 +378,7 @@ entry .Syslog
       - not logged.
       + `Syslog(tag)` est une destination pour un `Logger` doté d'un format `Text` : ses
       + enregistrements sont redirigés vers l'entrée standard de la commande `logger`, avec `-t tag`
-      + quand une étiquette est donnée, et arrivent donc dans le journal système tels que `logger`
+      + quand un tag est donné, et arrivent donc dans le journal système tels que `logger`
       + les écrit. Un échec du lancement de `logger` ou de l'écriture vers lui est ignoré plutôt que
       + levé, et le lancement lui-même n'est pas journalisé.
 
@@ -411,7 +411,7 @@ entry .Syslog
   entry #tag
     info
         - the tag `logger -t` puts on each line, or `Unset` for none
-        + l'étiquette que `logger -t` place sur chaque ligne, ou `Unset` pour aucune
+        + le tag que `logger -t` place sur chaque ligne, ou `Unset` pour aucune
 
 entry .EucalyptusGcp
   info

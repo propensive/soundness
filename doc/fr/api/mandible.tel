@@ -32,7 +32,7 @@ detail
     +   portant la ligne source dont elle provient et une simulation de la pile d'opérandes après
     +   son exécution. Elle se rend sous forme de tableau coloré dans un terminal, et
     +   `disassemble` compile un bloc quoté et en relit aussitôt le bytecode.
-    + - `ClassSurface` est la vue **déclaration** : les noms, descripteurs, drapeaux d'accès,
+    + - `ClassSurface` est la vue **déclaration** : les noms, descripteurs, indicateurs d'accès,
     +   supertypes et signatures génériques auxquels se lie un consommateur compilé, et rien de ce
     +   qui peut légitimement différer entre deux builds du même code source.
     + - `ClasspathIndex` résout les noms internes de classes JVM en leurs `ClassSurface` sur un
@@ -105,11 +105,11 @@ entry .Classfile
       - synthetic line numbers of inlined code back to where it was written. The declaration
       - surface of a class — fields, flags, supertypes, signatures — is the separate
       - `ClassSurface` view.
-      + Ses membres sont les parties dont ont besoin un désassembleur et un résolveur de piles
-      + d'appels : `#methods`, chacune une `Classfile.Method` dont le `bytecode` est décodé à la
+      + Ses membres sont les parties dont ont besoin un désassembleur et un résolveur de traces
+      + de pile : `#methods`, chacune une `Classfile.Method` dont le `bytecode` est décodé à la
       + demande ; `#sourceFile`, l'attribut `SourceFile` ; et `#sourceDebugExtension`, la SMAP
       + JSR-45 qui fait correspondre les numéros de ligne synthétiques du code inliné à l'endroit où
-      + il a été écrit. La surface de déclaration d'une classe — champs, drapeaux, supertypes,
+      + il a été écrit. La surface de déclaration d'une classe — champs, indicateurs, supertypes,
       + signatures — est la vue distincte `ClassSurface`.
 
       - A `Classfile` holds no capability: its bytes are copied in at construction, so the
@@ -864,13 +864,13 @@ entry .ClassSurface
       + Une `ClassSurface` est un fichier de classe réduit à sa **surface de liaison** : son `#name`
       + interne, ses `#flags` d'accès, sa `#superclass`, ses `#interfaces`, sa `#signature`
       + générique, et ses `#members` — champs et méthodes sous forme de `ClassSurface.Member`,
-      + chacun avec son nom, son descripteur, ses drapeaux, sa signature générique, ses exceptions
-      + déclarées et sa constante inlinable. `Code`, `SourceFile`, `LineNumberTable` et les
-      + annotations sont délibérément abandonnés : deux builds du même code source peuvent différer
-      + sur tous ces points sans changer ce à quoi se lie un consommateur. C'est la vue qui sert à
-      + comparer des versions pour la compatibilité binaire ; c'est pourquoi les membres sont triés
-      + par sélecteur et les interfaces et exceptions par nom, plutôt que conservés dans l'ordre du
-      + fichier, qui est un artefact de la compilation.
+      + chacun avec son nom, son descripteur, ses indicateurs, sa signature générique, ses
+      + exceptions déclarées et sa constante inlinable. `Code`, `SourceFile`, `LineNumberTable` et
+      + les annotations sont délibérément abandonnés : deux builds du même code source peuvent
+      + différer sur tous ces points sans changer ce à quoi se lie un consommateur. C'est la vue qui
+      + sert à comparer des versions pour la compatibilité binaire ; c'est pourquoi les membres sont
+      + triés par sélecteur et les interfaces et exceptions par nom, plutôt que conservés dans
+      + l'ordre du fichier, qui est un artefact de la compilation.
 
       ```scala
       import soundness.*
@@ -890,7 +890,7 @@ entry .ClassSurface
       - member class as package-private.
       + Les noms sont des noms internes JVM, `java/lang/String`, tels que les écrit chaque référence
       + à l'intérieur d'un fichier de classe. L'accessibilité d'une classe imbriquée est lue dans
-      + l'attribut `InnerClasses` (`#innerFlags`), là où les drapeaux propres à la classe
+      + l'attribut `InnerClasses` (`#innerFlags`), là où les indicateurs propres à la classe
       + présenteraient à tort une classe membre `protected` comme privée au package.
   refer mandible.ClasspathIndex
   refer mandible.Classfile
@@ -913,7 +913,7 @@ entry .ClassSurface
         + `Ljava/lang/String;`), ses `#flags` d'accès, une `#signature` générique optionnelle, les
         + noms internes triés de ses `#exceptions` déclarées (méthodes seulement) et, pour un champ
         + `static final`, la `#constant` que porte son attribut `ConstantValue`. Les prédicats
-        + lisent les bits des drapeaux ; `#visible` indique si le membre est `public` ou
+        + lisent les bits des indicateurs ; `#visible` indique si le membre est `public` ou
         + `protected`, les seules accessibilités auxquelles peut se lier un consommateur extérieur
         + au package.
 
@@ -1062,7 +1062,7 @@ entry .ClassSurface
   entry #innerFlags
     info
         - the flags the `InnerClasses` attribute records for this class, if it is nested
-        + les drapeaux que l'attribut `InnerClasses` enregistre pour cette classe, si elle est
+        + les indicateurs que l'attribut `InnerClasses` enregistre pour cette classe, si elle est
         + imbriquée
     detail
         - A nested class's own `access_flags` show the outer view, where a `protected` member
@@ -1088,12 +1088,12 @@ entry .ClassSurface
   entry #access
     info
         - the flags which decide accessibility: `#innerFlags` where present, else `#flags`
-        + les drapeaux qui décident de l'accessibilité : `#innerFlags` s'ils sont présents, sinon
+        + les indicateurs qui décident de l'accessibilité : `#innerFlags` s'ils sont présents, sinon
         + `#flags`
   entry #visible
     info
         - whether the class is `public` or `protected` by its `#access` flags
-        + si la classe est `public` ou `protected` d'après ses drapeaux `#access`
+        + si la classe est `public` ou `protected` d'après ses indicateurs `#access`
   entry #supertypes
     info
         - the directly named supertypes, superclass first, then interfaces
@@ -1226,8 +1226,8 @@ entry .disassemble
       + lequel le compilateur charge (son instance `java` est remise au compilateur de mise en
       + étapes), et une `Tactic[Bytecode.Error]`, levée sous la forme `ClassfileMissing`
       + lorsqu'aucun fichier de classe n'apparaît et `ClassfileUnreadable` lorsqu'il ne peut être lu
-      + ou que la méthode générée n'y figure pas. Le bloc est compilé avec le drapeau de langage
-      + expérimental activé, avec les réglages de Scala 3.6. La compilation prend un moment ; c'est
+      + ou que la méthode générée n'y figure pas. Le bloc est compilé avec l'option de langage
+      + expérimental activée, avec les réglages de Scala 3.6. La compilation prend un moment ; c'est
       + donc un outil pour examiner ce que produisent le compilateur et son optimiseur, non pour un
       + chemin critique.
   refer mandible.Bytecode

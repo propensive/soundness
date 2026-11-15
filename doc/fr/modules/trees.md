@@ -69,7 +69,7 @@ val diagram = TreeDiagram.by[Taxon](_.children)(animalia)
 ```
 
 - `render` takes a function from a node to its label, and gives the lines to print:
-+ `render` prend une fonction d'un nœud vers son libellé, et donne les lignes à afficher :
++ `render` prend une fonction d'un nœud vers son étiquette, et donne les lignes à afficher :
 
 ```scala fuel
 run
@@ -159,7 +159,7 @@ LaneDagDiagram(merged).render(node => t" $node").each(Out.println(_))
 - adding a note to another. The box-drawing characters remain the business of the style, and the
 - meaning remains the caller's.
 + Un diagramme expose ses lignes : les tuiles de chaque ligne, et le nœud auquel correspond la
-+ ligne. Un consommateur peut donc rendre les lignes lui-même, en colorant les libellés d'un
++ ligne. Un consommateur peut donc rendre les lignes lui-même, en colorant les étiquettes d'un
 + type de nœud ou en ajoutant une note à un autre. Les caractères de tracé de boîtes restent
 + l'affaire du style, et le sens reste celle de l'appelant.
 
@@ -176,7 +176,7 @@ diagram.map { tiles => node => t"${tiles.size} ${node.name}" }.each(Out.println(
 - `nodes` gives the node of each line, in drawing order, and `tiles` gives the tiles of each line.
 - Here each label is preceded by the number of tiles on its line, which is the depth of its node.
 + `nodes` donne le nœud de chaque ligne, dans l'ordre du dessin, et `tiles` donne les tuiles de
-+ chaque ligne. Ici, chaque libellé est précédé du nombre de tuiles de sa ligne, qui est la
++ chaque ligne. Ici, chaque étiquette est précédée du nombre de tuiles de sa ligne, qui est la
 + profondeur de son nœud.
 
 - A `TreeDiagram.Tile` is one of four things, and a style says what each becomes. A
@@ -214,7 +214,7 @@ val myStyle = TreeDiagram.TextualStyle[Text](t"  ", t"└─", t"├─", t"│ 
 - tree in one color and the labels in another, and with the widths still computed correctly.
 + Un style est paramétré par le type de ligne, et n'est pas figé à `Text`. Un diagramme peut donc
 + être rendu directement en [sortie de terminal](terminal.md) stylisée, avec les lignes de l'arbre
-+ d'une couleur et les libellés d'une autre, et des largeurs toujours calculées correctement.
++ d'une couleur et les étiquettes d'une autre, et des largeurs toujours calculées correctement.
 
 - ### Supplying the tree
 + ### Fournir l'arbre
@@ -292,7 +292,7 @@ alternative `Expandable`
 - All three take any graph which has a topological order: a `Dag`, a frozen `Topology` or a
 - `Hasse`. Drawing one cannot fail. A `Digraph` may hold a cycle, and has no drawing until
 - `acyclic` has converted it.
-+ Les trois prennent tout graphe qui a un ordre topologique : un `Dag`, une `Topology` figée ou un
++ Les trois prennent tout graphe qui a un ordre topologique : un `Dag`, une `Topology` gelée ou un
 + `Hasse`. En dessiner un ne peut pas échouer. Un `Digraph` peut contenir un cycle, et n'a pas de
 + dessin tant qu'`acyclic` ne l'a pas converti.
 

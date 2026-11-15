@@ -123,7 +123,7 @@ detail
     - is not, and is imported as `apoplexy.yamlEncodableInJson` where a YAML document is to be
     - read as JSON by hand.
     + La bibliothèque a un seul ensemble de sources, `apoplexy.core`, uniquement sur la JVM ; ses
-    + macros lisent la spécification à travers le classloader du compilateur, si bien que le
+    + macros lisent la spécification à travers le chargeur de classes du compilateur, si bien que le
     + document doit être une ressource du classpath nommée par l'interpolateur `cp"…"`, qui
     + n'accepte que des littéraux. `Api`, `Conformant` et `OpenApi` sont exportés vers le package
     + parapluie `soundness` ; le given de premier niveau `yamlEncodableInJson` ne l'est pas, et
@@ -249,8 +249,8 @@ entry .Api
       + L'URL de base vient du premier serveur de la spécification, avec ses `{variables}` à leurs
       + valeurs par défaut, analysée comme une URL pendant la compilation ; un serveur relatif
       + (`/api/v3`) ou l'absence de serveur exige `Api(resource, base)`. La spécification est lue
-      + depuis le classpath à travers le classloader de contexte du compilateur, si bien que la
-      + ressource doit être un littéral `cp"…"` sur le classpath du compilateur, en JSON ou en
+      + depuis le classpath à travers le chargeur de classes de contexte du compilateur, si bien que
+      + la ressource doit être un littéral `cp"…"` sur le classpath du compilateur, en JSON ou en
       + YAML, OpenAPI 3.0 ou 3.1. Les paramètres de cookie, `callbacks`, `links`, `webhooks` et les
       + références vers d'autres documents ne sont pas pris en compte, et un corps
       + `multipart/form-data` n'est pas interprété.
@@ -2276,7 +2276,7 @@ entry .Conformant3
 entry .Executor
   info
       - the transport seam: turns an `Api.Request` into a raw `Http.Response`
-      + la jointure du transport : transforme une `Api.Request` en une `Http.Response` brute
+      + la jonction du transport : transforme une `Api.Request` en une `Http.Response` brute
   detail
       - A trait with one method, `#execute`, for an implementation which answers an
       - `Api.Request` without the network, such as a test's recording backend. It is not

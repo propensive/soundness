@@ -362,7 +362,7 @@ telp"castle/city"
 ```
 
 - The path which a decoding error is tagged with, such as `/castle/city`, is itself a `Telp`.
-+ Le chemin dont est étiquetée une erreur de décodage, tel que `/castle/city`, est lui-même un
++ Le chemin dont est taguée une erreur de décodage, tel que `/castle/city`, est lui-même un
 + `Telp`.
 
 - ### Editing without destroying the file
@@ -546,7 +546,7 @@ scalar Code
 + row  un champ répétable  une `List` de chaque occurrence
 + row  une structure, ou une référence à une définition d'enregistrement  un enregistrement imbriqué
 + row  une sélection  un champ optionnel par variante
-+ row  un *drapeau*, un mot-clé sans valeur  un `Boolean` : `true` là où il est présent, `false` sinon
++ row  un *indicateur*, un mot-clé sans valeur  un `Boolean` : `true` là où il est présent, `false` sinon
 ```
 
 - A missing required field fails through the [tactic] of the code which reads it. The built-in
@@ -657,7 +657,7 @@ val frame = Bintel.selfContained(greeting, greetingSchema)
 - therefore delimit, skip or forward documents without holding their schema, and several
 - documents may share one stream:
 + Les nombres en BinTEL sont encodés sur un nombre variable d'octets, et les valeurs sont
-+ typées par le schéma, et non étiquetées dans le flux, d'où la compacité. Chaque document
++ typées par le schéma, et non taguées dans le flux, d'où la compacité. Chaque document
 + tramé déclare aussi sa propre longueur, juste après le nombre magique. Un lecteur peut donc
 + délimiter, sauter ou transmettre des documents sans détenir leur schéma, et plusieurs
 + documents peuvent partager un même flux :
@@ -783,7 +783,7 @@ file.open[Ratel]():
 + row  `text`  un scalaire, sous forme de texte, ou `Unset` s'il est absent
 + row  `data`  un scalaire, sous forme des octets stockés
 + row  `texts`  les valeurs d'un scalaire répétable
-+ row  `flag`, `count`  si un drapeau est présent, et combien de fois
++ row  `flag`, `count`  si un indicateur est présent, et combien de fois
 + row  `record`  une structure non répétable, sous forme d'une autre ligne
 + row  `/`  les enregistrements d'une structure répétable, sous forme de `Ratel.Rows`
 + row  `has`  si un membre optionnel est présent
@@ -860,7 +860,7 @@ file.open[Ratel]():
 + premier validateur s'il n'en a pas : comme `Text`, ou comme `Int`, `Long` ou `Double` si son
 + encodage est un codec standard dont chaque valeur est contenue exactement par l'un d'eux,
 + comme `u32` l'est par `Long`, ou comme un type qui vous est propre, par une instance qui vous
-+ est propre. Un drapeau est un `Boolean`, et un drapeau répétable le nombre `Long` de ses
++ est propre. Un indicateur est un `Boolean`, et un indicateur répétable le nombre `Long` de ses
 + occurrences. Une structure est un enregistrement imbriqué, un scalaire répétable une `List`,
 + et une structure répétable une `Ratel.Table`, qui a les `size`, `each` et `sorted` d'un
 + `Ratel.Rows`, et s'applique à une clé ou à une position. Son `where` trouve des
@@ -884,7 +884,7 @@ file.open[Ratel]():
 + Un lecteur qui ouvre un fichier qu'il n'a pas écrit ne s'y fie en rien : chaque décalage est
 + vérifié avant d'être suivi, et un défaut est levé sous forme de `Ratel.Error`, par l'accès
 + qui le rencontre, tandis que les autres enregistrements restent lisibles. Le `verify` du
-+ lecteur vérifie toute l'image d'un coup, ses empreintes, ses index par rapport à ses lignes
++ lecteur vérifie toute l'image d'un coup, ses condensés, ses index par rapport à ses lignes
 + et son empreinte de valeur, et ouvrir avec `Ratel.Flag.Verify` le fait avant l'exécution du
 + bloc. `materialise` restitue le document entier sous la forme du modèle à partir duquel il a
 + été écrit, si bien que les trois encodages se convertissent les uns dans les autres sans

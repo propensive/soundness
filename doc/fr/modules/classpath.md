@@ -180,7 +180,7 @@ val classpath = System.properties.java.`class`.path().as[LocalClasspath]
 + column  Son `path`
 + column  D'après `classify`
 + row  `Directory(path)`  un répertoire de classes et de ressources  le répertoire  un répertoire, ou un chemin qui n'existe pas encore
-+ row  `Jar(path)`  une archive  le fichier d'archive  un fichier se terminant par l'en-queue d'une archive ZIP
++ row  `Jar(path)`  une archive  le fichier d'archive  un fichier se terminant par le trailer d'une archive ZIP
 + row  `Url(url)`  un emplacement distant  `Unset`  jamais
 + row  `JavaRuntime`  les classes propres du JDK  `Unset`  jamais
 ```
@@ -203,7 +203,7 @@ val descriptions = classpath.entries.map:
 - name does not end in `jar`. It raises an `Io.Error` for any other file.
 + Une entrée est classée d'après ce qui se trouve sur le disque, et non d'après son nom.
 + `Classpath.Entry.classify(path)` fait d'un chemin inexistant un `Directory`, puisqu'il peut
-+ le devenir. Il fait d'un fichier se terminant par une en-queue ZIP un `Jar`, ce qu'est
++ le devenir. Il fait d'un fichier se terminant par un trailer ZIP un `Jar`, ce qu'est
 + l'exécutable d'un lanceur avec un préfixe shebang, bien que son nom ne se termine pas par
 + `jar`. Il lève une `Io.Error` pour tout autre fichier.
 

@@ -134,8 +134,8 @@ Out.println(sum.show)
 + Une tâche ne peut se terminer, que ce soit en produisant un résultat ou en étant annulée,
 + avant que ses enfants ne se soient terminés. C'est ce qui permet de raisonner sans risque
 + sur une tâche terminée. Prenons un parent qui rend la main presque immédiatement, pendant
-+ qu'un enfant continue de compter. Le sort de l'enfant est décidé par le
-+ [probate](#cancellation-in-both-directions) dans la portée, et sous `awaitProbate` le
++ qu'un enfant continue de compter. Le sort de l'enfant est décidé par
++ l'[homologation](#cancellation-in-both-directions) dans la portée, et sous `awaitProbate` le
 + parent l'attend :
 
 ```scala
@@ -589,7 +589,7 @@ def abandoned(): Optional[Unit] = supervise:
 
 - Canceling a scope cancels its children. The *probate* decides what happens to a child which
 - is still running when the body of its parent completes:
-+ Annuler une portée annule ses enfants. Le *probate* décide de ce qu'il advient d'un enfant
++ Annuler une portée annule ses enfants. L'*homologation* décide de ce qu'il advient d'un enfant
 + qui s'exécute encore lorsque le corps de son parent se termine :
 
 ```tabular
@@ -599,7 +599,7 @@ def abandoned(): Optional[Unit] = supervise:
 - row  `awaitProbate`  is waited for
 - row  `failProbate`  makes the parent's `await` raise a checked `Async.Error`
 - row  `panicProbate`  makes the parent's `await` panic
-+ column  Probate
++ column  Homologation
 + column  Un enfant inachevé
 + row  `cancelProbate`  est annulé
 + row  `awaitProbate`  est attendu
@@ -784,12 +784,12 @@ Vm.intercept[Shutdown]:
 - supervisor supplies strands, and a supervisor is a value. A scheduler which is not built on
 - threads at all, such as an event loop over WebAssembly's waitable sets, is therefore plugged
 - in as a supervisor, without any change to the code which spawns and awaits.
-+ En dessous, l'unité d'exécution est un `Strand`, et non un thread. Un strand est une
-+ abstraction dotée des quatre opérations dont la suspension a besoin : interrompre,
-+ joindre, garer et réveiller. Un superviseur fournit les strands, et un superviseur est une
-+ valeur. Un ordonnanceur qui n'est pas du tout construit sur des threads, comme une boucle
-+ d'événements sur les ensembles attendables de WebAssembly, se branche donc comme un
-+ superviseur, sans aucune modification du code qui lance et attend.
++ En dessous, l'unité d'exécution est un `Strand`, et non un thread. Un brin est une abstraction
++ dotée des quatre opérations dont la suspension a besoin : interrompre, joindre, mettre en attente
++ et réveiller. Un superviseur fournit les brins, et un superviseur est une valeur. Un ordonnanceur
++ qui n'est pas du tout construit sur des threads, comme une boucle d'événements sur les ensembles
++ attendables de WebAssembly, se branche donc comme un superviseur, sans aucune modification du code
++ qui lance et attend.
 
 - ### Related
 + ### Voir aussi

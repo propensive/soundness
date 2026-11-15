@@ -53,7 +53,7 @@ detail
     - library's implementations of all three. The same input gives the published check value
     - under each:
     + Une somme de contrôle détecte une corruption accidentelle et ne protège contre rien : `digest`
-    + avec l'une d'elles est donc soumis à la permission
+    + avec l'une d'elles est donc soumis au permis
     + `cryptoPermits.permitNonCryptographicHashes` de gastronomy, qui concède qu'aucun adversaire ne
     + figure dans le modèle de menace. Le fournisseur du JDK, `providers.javaBaseProvider`, propose
     + CRC-32 et Adler-32 ; CRC-64 n'a pas d'implémentation dans le JDK, et n'est proposé que par
@@ -108,14 +108,14 @@ entry .Algorithm
       + Un trait sans membres. Chaque algorithme avec lequel Soundness peut hacher est un type qui
       + l'étend : les sommes de contrôle `Crc32`, `Crc64` et `Adler32` ici, et les `Sha2[256]`,
       + `Sha1`, `Md5`, `Blake3` et `Murmur3` de gastronomy. Les algorithmes ne sont jamais
-      + instanciés ; un `Digest in Crc32` porte son algorithme dans son type : des empreintes issues
-      + d'algorithmes différents ne sont donc jamais confondues.
+      + instanciés ; un `Digest in Crc32` porte son algorithme dans son type : des condensés issus
+      + d'algorithmes différents ne sont donc jamais confondus.
 
 entry .Digestion
   info
       - an incremental hash or checksum computation: append bytes, then read the digest
       + un calcul incrémental de hachage ou de somme de contrôle : ajouter des octets, puis lire
-      + l'empreinte
+      + le condensé
   detail
       - A `Digestion` is the mutable state of one hash in progress. It is honestly mutable — a
       - `caps.Mutable`, whose `append` and `digest` are `update` methods — so a fresh one is an
@@ -213,7 +213,7 @@ entry .Crc32
     detail
         - A frozen `Array[Int]`, computed once, indexed by the low byte of the running CRC xor the
         - next input byte.
-        + Un `Array[Int]` figé, calculé une seule fois, indexé par l'octet de poids faible du CRC
+        + Un `Array[Int]` gelé, calculé une seule fois, indexé par l'octet de poids faible du CRC
         + courant xor le prochain octet d'entrée.
   entry .checksum
     info
@@ -326,7 +326,7 @@ entry .Crc64
         - A frozen `Array[Long]` of 2048 entries: `table(n)` for `n` under 256 is the classic
         - bytewise table, and `table(k*256 + n)` folds a byte `k` positions further into an
         - eight-byte word.
-        + Un `Array[Long]` figé de 2048 entrées : `table(n)` pour `n` inférieur à 256 est la table
+        + Un `Array[Long]` gelé de 2048 entrées : `table(n)` pour `n` inférieur à 256 est la table
         + classique octet par octet, et `table(k*256 + n)` replie un octet situé `k` positions plus
         + loin dans un mot de huit octets.
   entry .apply

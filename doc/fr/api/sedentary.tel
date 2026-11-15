@@ -249,7 +249,7 @@ entry .Bench
     detail
         - A `Plan` is what `Bench#apply` returns: the benchmark's name, tags and settings, with
         - the `Bench` which will run it. It is used in one of three ways:
-        + Un `Plan` est ce que renvoie `Bench#apply` : le nom, les étiquettes et les réglages du
+        + Un `Plan` est ce que renvoie `Bench#apply` : le nom, les tags et les réglages du
         + benchmark, avec le `Bench` qui l'exécutera. Il s'utilise de l'une de trois façons :
 
         - - applied directly to a quoted body, `plan('{ … })`, for a single measurement;
@@ -385,7 +385,7 @@ entry .Bench
     entry #tags
       info
           - the tags which label the benchmark for selection and exclusion, such as `slow`
-          + les étiquettes qui marquent le benchmark pour la sélection et l'exclusion, comme `slow`
+          + les tags qui marquent le benchmark pour la sélection et l'exclusion, comme `slow`
     entry #target
       info
           - the target measuring time, as a `Long` count of nanoseconds
@@ -580,7 +580,7 @@ entry .Bench
         - - `baseline` an axis value whose cell anchors a comparison, for a plan spread `over` an
         -   axis, and `comparison` how the comparison is made, a probably `Baseline`.
         + - `name` est un `Message`, `m"…"`, et `tags` marquent le benchmark pour la sélection
-        +   (`n"slow"`, qui requiert le `Nominative` du plan des étiquettes importé par son nom :
+        +   (`n"slow"`, qui requiert le `Nominative` du plan des tags importé par son nom :
         +   `import soundness.{nominative, taggingNominative}`) ;
         + - `target` est le temps de mesure, n'importe quelle durée (`1*Second`,
         +   `50*Milli(Second)`) ;

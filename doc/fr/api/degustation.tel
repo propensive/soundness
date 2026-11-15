@@ -282,7 +282,7 @@ entry .Pickled
         - and `#signature` is the signature a signed name carries, spelled `(paramSigs)resultSig`
         - exactly as the keys of `ScalaAtom`s spell theirs.
         + `#text` rend un nom comme le fait le `Name#toString` du compilateur, de sorte que ce que
-        + montre une trame de pile ou un fichier de classe peut lui être comparé ; `#spelled` est
+        + montre un cadre de pile ou un fichier de classe peut lui être comparé ; `#spelled` est
         + l'écriture de `fullName`, qui ne diffère que pour l'accesseur par défaut d'un
         + constructeur ; `#unsigned` supprime une signature, et `#signature` est la signature que
         + porte un nom signé, écrite `(paramSigs)resultSig` exactement comme les clés des
@@ -1847,14 +1847,14 @@ entry .Degustation
       - vocabulary drift in the toolchain is detected rather than silently absorbed.
       + La canonicalisation est structurelle, jamais textuelle : les symboles apparaissent sous
       + forme de noms pleinement qualifiés, les types sous forme d'un repliement
-      + étiquette-longueur-valeur sur les constructeurs de types, les paramètres des lambdas de
+      + tag-longueur-valeur sur les constructeurs de types, les paramètres des lambdas de
       + type sous forme d'indices de de Bruijn, et les membres dans l'ordre trié de leurs clés.
       + Les positions, les versions des outils et le partage n'entrent jamais dans l'encodage ;
       + recompiler un module, ou réordonner ses déclarations, produit donc des atomes identiques
       + à l'octet près ; ajouter une méthode concrète laisse tous les autres atomes inchangés ;
       + et modifier un corps inline ne modifie que l'atome de ce corps. Une construction hors du
       + vocabulaire de l'encodeur est une erreur bloquante, `Degustation.Unencodable`, si bien
-      + qu'une dérive du vocabulaire dans la chaîne d'outils est détectée plutôt qu'absorbée en
+      + qu'une dérive du vocabulaire dans la toolchain est détectée plutôt qu'absorbée en
       + silence.
 
       ```scala

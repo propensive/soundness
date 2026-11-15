@@ -42,7 +42,7 @@
 + column  Une valeur présente est
 + column  S'imbrique
 + row  `null`  non : elle n'échoue donc qu'au déréférencement  elle-même  non
-+ row  `Option`  oui  emballée dans un `Some`  oui : `Option[Option[T]]` a deux vides distincts
++ row  `Option`  oui  boxée dans un `Some`  oui : `Option[Option[T]]` a deux vides distincts
 + row  `Optional`  oui  elle-même  non
 ```
 

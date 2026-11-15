@@ -298,9 +298,9 @@ entry .Compiler
         + s'exécute dans une tâche à part (`Scalac`, `Javac`, `Kotlinc`) ou s'est déjà achevée (un
         + `Scalac.Session.Process`). `#complete()` attend le `Result` ; `#notices` est la liste des
         + diagnostics à ce stade, du plus ancien au plus récent ; `#errors` et `#warnings` les
-        + comptent ; et `#updates` est un flux en direct qui entrelace diagnostics et ticks de
+        + comptent ; et `#updates` est un flux en direct qui entrelace diagnostics et tics de
         + progression dans l'ordre d'arrivée, pour un outil qui montre une compilation au fur et à
-        + mesure. `#abort()` demande au compilateur de s'arrêter à son prochain tick de progression.
+        + mesure. `#abort()` demande au compilateur de s'arrêter à son prochain tic de progression.
 
         ```scala fuel
         typecheck
@@ -339,7 +339,7 @@ entry .Compiler
     entry .Update
       info
           - one element of the live feed: a diagnostic, or a progress tick
-          + un élément du flux en direct : un diagnostic, ou un tick de progression
+          + un élément du flux en direct : un diagnostic, ou un tic de progression
       detail
           - `Noticed(notice)` carries a `Notice` as the compiler reports it and `Progressed(progress)`
           - a `Progress`, in the order they arrived; `#updates` yields them. A consumer
@@ -362,7 +362,7 @@ entry .Compiler
     entry #put
       info
           - records a notice, a progress tick, the result, or the task running the compilation
-          + enregistre un diagnostic, un tick de progression, le résultat, ou la tâche qui exécute
+          + enregistre un diagnostic, un tic de progression, le résultat, ou la tâche qui exécute
           + la compilation
       detail
           - Four overloads, for the compilers which feed a process: `put(notice)` appends a
@@ -407,7 +407,7 @@ entry .Compiler
           - result it then completes with is whatever the compiler reports. `#cancelled` reads the
           - flag back.
           + Efface un indicateur atomique que le compilateur interroge par son callback de
-          + progression, si bien qu'une compilation interrompue s'arrête à son prochain tick de
+          + progression, si bien qu'une compilation interrompue s'arrête à son prochain tic de
           + progression plutôt que d'aller jusqu'au bout. Le résultat avec lequel elle s'achève
           + alors est ce qu'indique le compilateur. `#cancelled` relit l'indicateur.
     entry #cancelled
@@ -417,7 +417,7 @@ entry .Compiler
     entry #updates
       info
           - the live feed of diagnostics and progress ticks, as a stream of windows
-          + le flux en direct des diagnostics et des ticks de progression, sous forme de flux de
+          + le flux en direct des diagnostics et des tics de progression, sous forme de flux de
           + fenêtres
       detail
           - A single-owner stream over the process's relay: each window is an `Array` of
@@ -505,7 +505,7 @@ entry .Compiler
         - compiler throws; and `Start` at `info` by `Javac` and `Kotlinc` before they run. A
         - `Compiler.Event is Loggable` must be in scope for every compile; `logging.silentLogging`
         - discards them, and `Event.relay` forwards them onto a `LinkEvent` channel.
-        + Chaque `Compiler.Event` porte l'étiquette `Log.Compiler`. `Running(arguments)` est
+        + Chaque `Compiler.Event` porte le tag `Log.Compiler`. `Running(arguments)` est
         + journalisé au niveau `info` avec la liste complète des arguments du compilateur avant son
         + démarrage ; `Notice(diagnostic)` au niveau `fine` pour chaque diagnostic à mesure qu'il
         + est signalé ; `CompilerCrash` au niveau `fail` lorsque le compilateur lève une exception ;
@@ -543,16 +543,16 @@ entry .Compiler
   entry .Progress
     info
         - a progress tick: the fraction complete and the compiler's current stage
-        + un tick de progression : la fraction accomplie et l'étape courante du compilateur
+        + un tic de progression : la fraction accomplie et l'étape courante du compilateur
     detail
         - `Scalac` reports one tick per whole percentage point, with the phase name the compiler
         - is in (`typer`, `erasure`, …) as its `#stage`; `Javac` and `Kotlinc`, which expose no
         - progress, report `0.1` on starting and `1.0` on success, with the compiler's name as the
         - stage. Ticks arrive through `Process#updates` as `Update.Progressed`.
-        + `Scalac` signale un tick par point de pourcentage entier, avec le nom de la phase dans
+        + `Scalac` signale un tic par point de pourcentage entier, avec le nom de la phase dans
         + laquelle se trouve le compilateur (`typer`, `erasure`, …) comme `#stage` ; `Javac` et
         + `Kotlinc`, qui n'exposent aucune progression, signalent `0.1` au démarrage et `1.0` en cas
-        + de succès, avec le nom du compilateur comme étape. Les ticks arrivent par
+        + de succès, avec le nom du compilateur comme étape. Les tics arrivent par
         + `Process#updates` sous forme d'`Update.Progressed`.
     entry #complete
       info
@@ -625,7 +625,7 @@ entry .Compiler
 entry .Compilation
   info
       - a compilation's output directory and classpath, tagged with its `Universe`
-      + le répertoire de sortie et le classpath d'une compilation, étiquetés par son `Universe`
+      + le répertoire de sortie et le classpath d'une compilation, tagués par son `Universe`
   detail
       - A token pairing the directory a compilation wrote to with the `LocalClasspath` it was
       - compiled against, and carrying the universe it inhabits as a type parameter, so that a
@@ -1699,20 +1699,20 @@ entry .Link
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Failed(trace)`  1  _l'éditeur de liens s'est terminé anormalement_  un outil a levé une exception ; la `StackTrace` est conservée
-          + row  `NoEntryPoint`  3  _l'artefact requiert exactement un point d'entrée_  levée pour un binaire natif et pour un APK, qui a besoin de son activité de lancement
-          + row  `ManyEntryPoints`  4  _un JAR exécutable autorise au plus un point d'entrée_
-          + row  `NoPath(source, target)`  5  _la toolchain n'a pas de chemin de `source` vers `target`_
-          + row  `AmbiguousPath(source, target)`  6  _la toolchain a plusieurs plus courts chemins de `source` vers `target`, si bien qu'un format intermédiaire doit être produit explicitement_
-          + row  `InapplicableSetting`  7  _un réglage ne s'applique à aucun format produit sur le chemin_
-          + row  `DuplicateEdge(source, target)`  8  _la toolchain déclare plus d'une arête de `source` vers `target`_
-          + row  `CyclicToolchain`  9  _les arêtes de la toolchain forment un cycle_
-          + row  `UnexpectedInput(format)`  10  _l'outil qui produit `format` ne peut pas consommer le contenu qui lui a été donné_  un `Deliverable` de la mauvaise variante a atteint un outil
-          + row  `CompilationFailed(notices)`  11  _la compilation a échoué avec N erreurs_  N compte les diagnostics dont l'importance est `Error` ; la liste contient tous les diagnostics
-          + row  `MissingSetting(name)`  12  _le réglage `name` est requis mais non spécifié_
-          + row  `Packaging(detail)`  13  _l'empaquetage a échoué : `detail`_  un défaut de zip, de chemin, d'E/S ou de nom de fichier lors de la création d'un JAR, de la conversion en dex ou de l'empaquetage d'un APK, avec le message de l'erreur sous-jacente
-          + row  `CompilerCrash`  14  _le compilateur a planté_  le compilateur d'une arête de compilation a levé une exception
-          + row  `CompilerUnusable(detail)`  15  _le compilateur n'a pas pu être exécuté : `detail`_  une arête de compilation n'a pas pu configurer ou attendre son compilateur (`scalac`, `javac`, `kotlinc`)
+          + row  `Failed(trace)`  1  _the linker terminated abnormally_  un outil a levé une exception ; la `StackTrace` est conservée
+          + row  `NoEntryPoint`  3  _the artifact requires exactly one entry point_  levée pour un binaire natif et pour un APK, qui a besoin de son activité de lancement
+          + row  `ManyEntryPoints`  4  _an executable JAR permits at most one entry point_
+          + row  `NoPath(source, target)`  5  _the toolchain has no path from `source` to `target`_
+          + row  `AmbiguousPath(source, target)`  6  _the toolchain has several shortest paths from `source` to `target`, so an intermediate format must be produced explicitly_
+          + row  `InapplicableSetting`  7  _a setting applies to no format produced on the path_
+          + row  `DuplicateEdge(source, target)`  8  _the toolchain declares more than one edge from `source` to `target`_
+          + row  `CyclicToolchain`  9  _the toolchain's edges form a cycle_
+          + row  `UnexpectedInput(format)`  10  _the tool producing `format` cannot consume the content it was given_  un `Deliverable` de la mauvaise variante a atteint un outil
+          + row  `CompilationFailed(notices)`  11  _compilation failed with N errors_  N compte les diagnostics dont l'importance est `Error` ; la liste contient tous les diagnostics
+          + row  `MissingSetting(name)`  12  _the setting `name` is required but unspecified_
+          + row  `Packaging(detail)`  13  _packaging failed: `detail`_  un défaut de zip, de chemin, d'E/S ou de nom de fichier lors de la création d'un JAR, de la conversion en dex ou de l'empaquetage d'un APK, avec le message de l'erreur sous-jacente
+          + row  `CompilerCrash`  14  _the compiler crashed_  le compilateur d'une arête de compilation a levé une exception
+          + row  `CompilerUnusable(detail)`  15  _the compiler could not be run: `detail`_  une arête de compilation n'a pas pu configurer ou attendre son compilateur (`scalac`, `javac`, `kotlinc`)
           ```
       entry #number
         info
@@ -1739,7 +1739,7 @@ entry .LinkEvent
       - warnings at `warn`, its info at `info` and the rest at `fine`; D8's errors and warnings
       - at `warn`; and, through `Compiler.Event.relay`, a compile edge's `Compiler.Event`s at their
       - own levels. A `LinkEvent is Loggable` must be in scope for every `produce`.
-      + Chaque `LinkEvent` porte l'étiquette `Log.Compiler`. `Toolchain#produce` journalise `Start`
+      + Chaque `LinkEvent` porte le tag `Log.Compiler`. `Toolchain#produce` journalise `Start`
       + au niveau `info` avant le premier outil et `Linked(path)` au niveau `info` après le
       + dernier ; chaque outil relaie la sortie propre de son éditeur de liens sous forme de
       + `Message(message)` — les erreurs et avertissements de l'éditeur de liens Scala.js au niveau
@@ -1769,8 +1769,8 @@ entry .WasmObject
       - the node exists so that foreign compilers and wasm linkers can register theirs.
       + Un `Artifact.Ir` d'identifiant `wasm-object` : des objets WebAssembly relogeables qui se
       + composent par les symboles de leurs sections d'édition de liens — ce qu'émettent
-      + `rustc --target wasm32` et clang, liés par `wasm-ld` en un module WASI 0.1 ou élevés par des
-      + outils de composants dans l'univers `Component`. Aucune compilation Scala ne l'émet et
+      + `rustc --target wasm32` et clang, liés par `wasm-ld` en un module WASI 0.1 ou relevés par
+      + des outils de composants dans l'univers `Component`. Aucune compilation Scala ne l'émet et
       + aucune arête intégrée ne le produit ni ne le consomme ; le nœud existe pour que les
       + compilateurs étrangers et les éditeurs de liens wasm puissent y inscrire les leurs.
 
@@ -1877,7 +1877,7 @@ entry .Scalac
       + des `Compiler.Notice`s avec leurs étendues ; sous `scalacOptions.semanticDiagnostics`,
       + chacun conserve aussi son balisage sémantique. La progression est signalée par point de
       + pourcentage entier, avec la phase du compilateur comme étape, et `Compiler.Process#abort()`
-      + est pris en compte au tick suivant.
+      + est pris en compte au tic suivant.
   refer anthology.scalacOptions
   refer anthology.scalacEdges
   refer anthology.Toolchain.Universe
@@ -2790,7 +2790,7 @@ entry .Javac
       + une étendue d'une seule ligne lorsque le compilateur donne une position. Le `file` du
       + diagnostic n'est pas actuellement le nom donné à la source : c'est le paramètre fictif
       + `name`, si bien qu'un outil qui doit attribuer un diagnostic Java à sa source doit lire le
-      + message. La progression tient en deux ticks, `0.1` au démarrage et `1.0` en cas de succès.
+      + message. La progression tient en deux tics, `0.1` au démarrage et `1.0` en cas de succès.
       + Le compilateur est celui du JDK en cours d'exécution, si bien qu'il n'y a pas de paramètre
       + de version et que `.version` est celle du runtime.
   refer anthology.Compiler
@@ -3551,10 +3551,11 @@ entry .Bundler
       - the two through the `Artifact.Jar` edge, so the JAR carries the rig's own executor and
       - dependencies:
       + Son unique membre public, `.applicationClasspath`, est le classpath à partir duquel le
-      + programme en cours d'exécution a été chargé. Un dispositif de staging qui doit intégrer son
-      + propre classpath d'exécution aux JAR qu'il produit l'associe à sa sortie compilée sous forme
-      + de `Deliverable.Emission` et empaquette les deux par l'arête `Artifact.Jar`, si bien que le
-      + JAR porte l'exécuteur et les dépendances propres du dispositif :
+      + programme en cours d'exécution a été chargé. Un dispositif de mise en étapes qui doit
+      + intégrer son propre classpath d'exécution aux JAR qu'il produit l'associe à sa sortie
+      + compilée sous forme de `Deliverable.Emission` et empaquette les deux par l'arête
+      + `Artifact.Jar`, si bien que le JAR porte l'exécuteur et les dépendances propres du
+      + dispositif :
 
       ```scala fuel
       typecheck
@@ -4088,7 +4089,7 @@ entry .Apk
         - permissions, and the PKCS#12 keystore, its password, the key's alias and the key's
         - password. The launcher activity is not here: it is the path's `EntryPoint`.
         + Le type de réglages de l'outil APK, que modifie `apkOptions` : la plage de niveaux d'API,
-        + le nom du paquet et le libellé lisible, le code et le nom de version, les permissions
+        + le nom du paquet et l'étiquette lisible, le code et le nom de version, les permissions
         + d'exécution demandées, et le keystore PKCS#12, son mot de passe, l'alias de la clé et le
         + mot de passe de la clé. L'activité de lancement n'y figure pas : c'est l'`EntryPoint` du
         + chemin.
@@ -4103,7 +4104,7 @@ entry .Apk
           - `~/.android/debug.keystore` with store password `android`, alias `androiddebugkey`
           - and key password `android`.
           + `minApi` 26, `targetApi` 34, paquet `dev.soundness.app`, code de version 1 et nom `1.0`,
-          + libellé `Soundness App`, aucune permission, et le keystore de débogage
+          + étiquette `Soundness App`, aucune permission, et le keystore de débogage
           + `~/.android/debug.keystore` avec le mot de passe de keystore `android`, l'alias
           + `androiddebugkey` et le mot de passe de clé `android`.
     entry #minApi
@@ -4129,7 +4130,7 @@ entry .Apk
     entry #label
       info
           - the application's label
-          + le libellé de l'application
+          + l'étiquette de l'application
     entry #permissions
       info
           - the runtime permissions requested, by name
@@ -4170,7 +4171,7 @@ entry .Apk
     entry .apply
       info
           - the manifest element for the given package, versions, API levels, label, activity and permissions
-          + l'élément de manifeste pour le paquet, les versions, les niveaux d'API, le libellé,
+          + l'élément de manifeste pour le paquet, les versions, les niveaux d'API, l'étiquette,
           + l'activité et les permissions donnés
   entry .Signer
     info
@@ -4184,7 +4185,7 @@ entry .Apk
         - `java.security` directly, so the key must be an RSA key in a PKCS#12 store. No
         - Android SDK tool is involved: this replaces `apksigner`.
         + Signe un ZIP aligné et non signé en insérant un bloc de signature APK entre ses entrées et
-        + son répertoire central ; la signature couvre une empreinte SHA-256 du fichier entier par
+        + son répertoire central ; la signature couvre un condensé SHA-256 du fichier entier par
         + morceaux de 1 Mio, si bien que toute modification ultérieure d'un octet l'invalide, et
         + c'est pourquoi la signature est la dernière étape. La signature RSA (`SHA256withRSA`), le
         + keystore et le certificat utilisent directement `java.security`, si bien que la clé doit
@@ -4314,7 +4315,7 @@ entry .Axml
 entry .apkOptions
   info
       - settings for an Android package: API levels, package name, label, version, permissions, keystore
-      + les réglages d'un paquet Android : niveaux d'API, nom du paquet, libellé, version,
+      + les réglages d'un paquet Android : niveaux d'API, nom du paquet, étiquette, version,
       + permissions, keystore
   detail
       - Each is a `Toolchain.Setting` editing `Apk.Configuration` on the `Apk` node; `.minApi`
@@ -4356,7 +4357,7 @@ entry .apkOptions
   entry .label
     info
         - the application's human label
-        + le libellé lisible de l'application
+        + l'étiquette lisible de l'application
   entry .version
     info
         - the version code and version name, together

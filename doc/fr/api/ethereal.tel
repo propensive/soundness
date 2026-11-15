@@ -279,7 +279,7 @@ entry .cli
       + `resident.help()`), un `Interpreter`, un `Threading` et un `Backstop` — plus un `Watcher`,
       + avec lequel il surveille ses fichiers d'état (la valeur par défaut vient du compagnon de
       + `Watcher`). Le bloc s'exécute sur la tâche de la connexion ; il ne peut donc capturer que
-      + des capacités *durables* — le moniteur, le journaliseur et les flux standard du démon ; une
+      + des capacités *durables* — le moniteur, le logger et les flux standard du démon ; une
       + ressource exclusive est ouverte et possédée à l'intérieur du bloc.
 
       - The first invocation starts the daemon: the launcher starts the JVM with the properties
@@ -888,17 +888,18 @@ entry .Launcher
       + `propensive/xek` — et son démon. Une invocation est une connexion : elle s'ouvre par un
       + document `init` puis transporte, dans les deux sens, les documents d'une session — des
       + morceaux `data` de chaque flux, `end`, `credit`, `open`, `signal`/`signal-ack`, `mode`,
-      + `run`/`exited` et `closed` — jusqu'à ce que l'`exit-status` du démon y mette fin ; `verify`
-      + et `shutdown` sont demandés sur de courtes connexions qui leur sont propres. Le schéma TEL
-      + est la spécification : son texte est la ressource `ethereal/ethereal-launcher.tel` dans le
-      + propre jar d'ethereal, identique octet pour octet au `spec/ethereal-launcher.tel` de xek, et
-      + `.Message` le reflète variante pour variante. Chaque document sur le réseau est un document
-      + BinTEL tramé — nombre magique, longueur, la `.signature` de 33 octets du schéma, corps — et
-      + les deux côtés comparent la signature avant de lire le moindre champ, si bien qu'un lanceur
-      + et un démon construits selon des schémas différents se refusent mutuellement dès le premier
-      + document (`DaemonLogEvent.ProtocolMismatch`) au lieu de mal lire les champs. Le démon lit
-      + depuis un pair non fiable ; une longueur déclarée supérieure à `.maximumLength` est donc
-      + refusée avant d'être prise en compte.
+      + `run`/`exited` et `closed` — jusqu'à ce que l'`exit-status` du démon y mette fin ;
+      + `verify` et `shutdown` sont demandés sur de courtes connexions qui leur sont propres. Le
+      + schéma TEL est la spécification : son texte est la ressource
+      + `ethereal/ethereal-launcher.tel` dans le propre jar d'ethereal, identique octet pour octet
+      + au `spec/ethereal-launcher.tel` de xek, et `.Message` le reflète variante pour variante.
+      + Chaque document en transmission est un document BinTEL tramé — nombre magique, longueur,
+      + la `.signature` de 33 octets du schéma, corps — et les deux côtés comparent la signature
+      + avant de lire le moindre champ, si bien qu'un lanceur et un démon construits selon des
+      + schémas différents se refusent mutuellement dès le premier document
+      + (`DaemonLogEvent.ProtocolMismatch`) au lieu de mal lire les champs. Le démon lit depuis un
+      + pair non fiable ; une longueur déclarée supérieure à `.maximumLength` est donc refusée
+      + avant d'être prise en compte.
 
       ```scala
       import soundness.*
@@ -1080,7 +1081,7 @@ entry .Launcher
         - `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus`
         - and `Verdict`. `Verify` and `Shutdown` carry no fields.
         + Les quinze variantes du `select` racine du schéma, dans son ordre, si bien que l'indice de
-        + chaque cas est son indice de variante sur le réseau. Le lanceur envoie `Init`, `Data`,
+        + chaque cas est son indice de variante en transmission. Le lanceur envoie `Init`, `Data`,
         + `End`, `Credit`, `Signal`, `Closed`, `Exited`, `Verify` et `Shutdown` ; le démon envoie
         + `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus` et
         + `Verdict`. `Verify` et `Shutdown` ne portent aucun champ.
@@ -1331,14 +1332,14 @@ entry .Launcher
           - without echo is how a password is read; neither flag is raw mode. The launcher
           - answers nothing, and leaves a terminal it does not own as it is.
           - `Resident#cooked` and `Resident#concealed` send it.
-          + `canonical` demande le mode cuit (cooked), avec écho si `echo` est aussi défini ; le
-          + mode canonique sans écho est la manière de lire un mot de passe ; l'absence des deux
+          + `canonical` demande le mode canonique (cooked), avec écho si `echo` est aussi défini ;
+          + le mode canonique sans écho est la manière de lire un mot de passe ; l'absence des deux
           + indicateurs correspond au mode brut. Le lanceur ne répond rien, et laisse tel quel un
           + terminal qu'il ne possède pas. `Resident#cooked` et `Resident#concealed` l'envoient.
       entry #canonical
         info
             - cooked mode, or raw when false
-            + le mode cuit, ou brut lorsque faux
+            + le mode canonique, ou brut lorsque faux
       entry #echo
         info
             - whether the terminal echoes what is typed
@@ -1751,11 +1752,11 @@ entry .DaemonLogEvent
       - `Log.Filesystem`, `Log.Scheduler` or `Log.Runtime`). The companion gives the
       - `Communicable` which renders each as a message and the `Message transcribes
       - DaemonLogEvent` which lets a logger take them, both in implicit scope.
-      + Chaque événement que le démon journalise sous l'identité syslog `ethereal`, chacun étiqueté
+      + Chaque événement que le démon journalise sous l'identité syslog `ethereal`, chacun tagué
       + avec la catégorie `Log` à laquelle il appartient (`Log.Process`, `Log.Network`,
       + `Log.Protocol`, `Log.Filesystem`, `Log.Scheduler` ou `Log.Runtime`). Le compagnon fournit le
       + `Communicable` qui rend chacun sous forme de message et le
-      + `Message transcribes DaemonLogEvent` qui permet à un journaliseur de les recevoir, tous deux
+      + `Message transcribes DaemonLogEvent` qui permet à un logger de les recevoir, tous deux
       + dans la portée implicite.
 
       - The singleton cases: `Shutdown` (shutting down); `Termination` (terminating the client

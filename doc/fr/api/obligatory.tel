@@ -19,7 +19,7 @@ detail
     + RPC est un trait ordinaire dont les méthodes portent l'annotation `@rpc` ; à partir de
     + cette unique définition, une macro dérive un **répartiteur côté serveur**, qui achemine
     + les requêtes entrantes vers une implémentation, et un **stub client**, qui transforme
-    + chaque appel de méthode en message sur le réseau, de sorte que les deux côtés ne peuvent
+    + chaque appel de méthode en message de transmission, de sorte que les deux côtés ne peuvent
     + pas être en désaccord sur le nom d'une méthode, ses paramètres ou son résultat. La même
     + forme sert deux protocoles : JSON-RPC 2.0, dont les charges utiles sont du `Json`, et
     + gRPC sur HTTP/2, dont les charges utiles sont des messages Protocol Buffers.
@@ -2019,7 +2019,7 @@ entry .Grpc
         - so `body.frames[Grpc.Framing]` is the `Iterator[Data]` of its messages, decompressed
         - where flagged. `Grpc.Framing` is the sealed type the convention is named by; its
         - failures are `Grpc.Error`, not `Framing.Error`.
-        + Chaque message gRPC, quel que soit son codec, est précédé sur le réseau d'un octet qui
+        + Chaque message gRPC, quel que soit son codec, est précédé en transmission d'un octet qui
         + vaut `1` si la charge utile est compressée avec le `grpc-encoding` de l'appel (ici gzip)
         + et `0` sinon, puis de sa longueur sur quatre octets gros-boutistes. `.encode` préfixe un
         + message, et `.framable` réassemble des messages entiers à partir d'un corps de réponse

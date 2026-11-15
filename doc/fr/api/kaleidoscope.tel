@@ -63,7 +63,7 @@ detail
     - is chosen by importing one `Regex.Backend` given from the `regexBackends` package by name,
     - since `import soundness.*` imports no givens; a `Regex` built at runtime is retagged with
     - `Regex#re2`.
-    + Une regex est étiquetée avec son **moteur** comme `Form` d'une `Regex in JavaBaseRegex` ou
+    + Une regex est taguée avec son **moteur** comme `Form` d'une `Regex in JavaBaseRegex` ou
     + d'une `Regex in Re2`, et la classe de types `Regex.Engine` pour cette forme effectue la
     + correspondance. Le moteur par défaut est `JavaBaseRegex`, le `java.util.regex` de la
     + plateforme, dont le retour arrière accepte toutes les constructions de sa syntaxe mais peut
@@ -73,7 +73,7 @@ detail
     + (références arrière, assertions avant et arrière, quantificateurs possessifs, groupes
     + atomiques). Le moteur d'un littéral se choisit en important par son nom un given
     + `Regex.Backend` du package `regexBackends`, puisque `import soundness.*` n'importe aucun
-    + given ; une `Regex` construite à l'exécution se réétiquette avec `Regex#re2`.
+    + given ; une `Regex` construite à l'exécution se retague avec `Regex#re2`.
 
     ```scala
     import soundness.*
@@ -396,12 +396,12 @@ entry .Regex
       - against the RE2 subset as it retags. A bare `Regex` has no engine and cannot match.
       + Une regex est `Formal` : son membre de type `Form` nomme le moteur qui fait la
       + correspondance, et les opérations `#matches`, `#seek` et `#search` prennent un
-      + `Form is Regex.Engine` qui se résout à partir de cette étiquette. Une
-      + `Regex in JavaBaseRegex` — le type de `.apply`, de `.parse` et de tout littéral compilé sans
-      + `regexBackends.re2` — est confiée à `java.util.regex` ; une `Regex in Re2` est confiée à
-      + praxinoscope, et se crée à partir d'un littéral sous `import regexBackends.re2` ou de
-      + n'importe quelle regex avec `#re2`, qui vérifie le motif par rapport au sous-ensemble RE2 en
-      + la réétiquetant. Une `Regex` nue n'a pas de moteur et ne peut pas faire de correspondance.
+      + `Form is Regex.Engine` qui se résout à partir de ce tag. Une `Regex in JavaBaseRegex` — le
+      + type de `.apply`, de `.parse` et de tout littéral compilé sans `regexBackends.re2` — est
+      + confiée à `java.util.regex` ; une `Regex in Re2` est confiée à praxinoscope, et se crée à
+      + partir d'un littéral sous `import regexBackends.re2` ou de n'importe quelle regex avec
+      + `#re2`, qui vérifie le motif par rapport au sous-ensemble RE2 en changeant son tag. Une
+      + `Regex` nue n'a pas de moteur et ne peut pas faire de correspondance.
 
       ```scala
       import soundness.*
@@ -856,7 +856,7 @@ entry .Regex
   entry #re2
     info
         - this regex retagged for the RE2 engine, checked now against the RE2 subset
-        + cette regex réétiquetée pour le moteur RE2, vérifiée immédiatement par rapport au
+        + cette regex retaguée pour le moteur RE2, vérifiée immédiatement par rapport au
         + sous-ensemble RE2
     detail
         - Parses the pattern into its praxinoscope `Motif` (raising `Motif.Error` through a
@@ -1035,7 +1035,7 @@ entry .Regex
         + `Backend[form]` est un trait fantôme scellé sans membres. Les macros `r"…"` et `g"…"`
         + invoquent un `Backend[Re2]` pendant leur expansion : quand `regexBackends.re2` est
         + importé, le littéral est compilé pour le moteur de praxinoscope, vérifié par rapport au
-        + sous-ensemble RE2 et étiqueté `Regex in Re2` ; sinon il est étiqueté
+        + sous-ensemble RE2 et tagué `Regex in Re2` ; sinon il est tagué
         + `Regex in JavaBaseRegex`. `Glob#matches` prend le même given, avec
         + `regexBackends.javaBaseRegex` par défaut. Rien d'autre ne le lit, et un programme ne
         + l'implémente jamais.

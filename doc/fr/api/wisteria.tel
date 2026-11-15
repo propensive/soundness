@@ -378,7 +378,7 @@ entry .ProductDerivation
         -   product, typed with the field's type, inside any of the lambdas; `dereference` is the
         -   same access as a function.
         + - `fields(value)(lambda)` parcourt les champs d'une valeur, en donnant à la lambda la
-        +   valeur de chaque champ, et renvoie les résultats sous forme d'`Array[result]` figé.
+        +   valeur de chaque champ, et renvoie les résultats sous forme d'`Array[result]` gelé.
         +   C'est le combinateur du **consommateur** : un moteur de rendu, un encodeur, un hachage.
         +   Le paramètre de la lambda est la valeur du champ.
         + - `contexts[derivation]()(lambda)` est le même parcours sans valeur : le paramètre de la
@@ -414,7 +414,7 @@ entry .ProductDerivation
         + l'indexation (`dysasymptotics.linearAccess`) doit être importée là où la dérivation se
         + développe. Sous contrôle des captures, une valeur qu'une lambda lit dans un champ de type
         + tableau conserve l'annotation de capture du champ, de sorte qu'un produit doté d'un champ
-        + figé `Array[Long]^{}` se dérive proprement.
+        + gelé `Array[Long]^{}` se dérive proprement.
 
         - Because the rule is `inline`, a gated collection operation inside it — `.all`,
         - `.to[List]`, indexing a `List` by an ordinal — is resolved where the derivation
@@ -590,7 +590,7 @@ entry .SumDerivation
         +   `Variant.Error`.
         + - `choices(lambda)` parcourt chaque variante sans valeur sur laquelle répartir, en donnant
         +   à la lambda l'instance, le label et l'indice de chaque variante, et renvoie un
-        +   `Array[result]` figé : ce dont a besoin une dérivation qui produit un schéma plutôt
+        +   `Array[result]` gelé : ce dont a besoin une dérivation qui produit un schéma plutôt
         +   qu'une instance.
         + - `complement(sum)` lit l'autre valeur d'une classe de types à deux valeurs, restreinte à
         +   la variante courante, sous forme d'`Optional`, puisque les deux ne sont pas forcément de
@@ -900,7 +900,7 @@ entry .dereference
 entry .variant
   info
       - `wisteria.variant` reads the tagged `"variant"` value from context; the combinator is `SumDerivation.Methods#variant`
-      + `wisteria.variant` lit la valeur étiquetée `"variant"` dans le contexte ; le combinateur est
+      + `wisteria.variant` lit la valeur taguée `"variant"` dans le contexte ; le combinateur est
       + `SumDerivation.Methods#variant`
   detail
       - The package-level accessor `variant[value]` reads a contextual value tagged `"variant"`,
@@ -908,7 +908,7 @@ entry .variant
       - `variant(value) { [variant <: derivation] => variant => … }` is the inherited method of
       - `SumDerivation.Methods`, which dispatches on a sum value's actual case; inside the
       - deriving object the method shadows this accessor.
-      + L'accesseur `variant[value]` au niveau du package lit une valeur contextuelle étiquetée
+      + L'accesseur `variant[value]` au niveau du package lit une valeur contextuelle taguée
       + `"variant"`, dans le style d'`index` et de `label`. Le combinateur qu'appelle une
       + `disjunction` sous la forme `variant(value) { [variant <: derivation] => variant => … }` est
       + la méthode héritée de `SumDerivation.Methods`, qui répartit selon le cas effectif d'une
@@ -1013,7 +1013,7 @@ entry .arithmetic
 entry .Discriminable
   info
       - how a sum's variant is told apart on the wire, for a format's decoder
-      + comment on distingue la variante d'une somme dans les données transmises, pour le décodeur
+      + comment on distingue la variante d'une somme en transmission, pour le décodeur
       + d'un format
   detail
       - A format which encodes a sum must say which variant a value is, and a `value is

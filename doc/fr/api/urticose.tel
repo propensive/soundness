@@ -884,7 +884,7 @@ entry .Protocolic
       + `Http is Protocolic over (Tcp.Port of 8080)` et ses semblables, de sorte que
       + `tcp"8080".serve[Http](handler)` démarre un serveur web. La classe de types fixe un type
       + `Request` (une capacité, puisqu'une requête est une connexion active), un type `Response` et
-      + un type `Server`, et sa méthode `server` prend un handler qui reçoit chaque requête de
+      + un type `Server`, et sa méthode `server` prend un gestionnaire qui reçoit chaque requête de
       + manière contextuelle et peut renvoyer une réponse qui capture cette requête — un corps en
       + flux conserve légitimement la connexion à laquelle il répond.
   refer urticose.serve
@@ -892,11 +892,11 @@ entry .Protocolic
   entry #Request
     info
         - the type of a request the handler receives, a capability
-        + le type d'une requête que reçoit le handler, une capacité
+        + le type d'une requête que reçoit le gestionnaire, une capacité
   entry #Response
     info
         - the type of a response the handler returns
-        + le type d'une réponse que renvoie le handler
+        + le type d'une réponse que renvoie le gestionnaire
   entry #Server
     info
         - the type of the running server, such as `Service`
@@ -904,7 +904,7 @@ entry .Protocolic
   entry #server
     info
         - starts a server on a port, with a handler for each request
-        + démarre un serveur sur un port, avec un handler pour chaque requête
+        + démarre un serveur sur un port, avec un gestionnaire pour chaque requête
 
 entry .serve
   info
@@ -918,7 +918,7 @@ entry .serve
       - so those are what the call site must have in scope.
       + Une extension sur tout type de port pour lequel existe un `Protocolic over` :
       + `tcp"8080".serve[Http]: request ?=> …` démarre le serveur que décrit le given
-      + `Http is Protocolic` dans la portée, le handler étant invoqué pour chaque requête, et
+      + `Http is Protocolic` dans la portée, le gestionnaire étant invoqué pour chaque requête, et
       + renvoie le `Server` du protocole (un `Service`, pour celui de scintillate). Le given porte
       + ses propres besoins — une `Tactic`, un `Monitor`, de la journalisation — et c'est donc cela
       + que le site d'appel doit avoir dans la portée.
@@ -967,7 +967,7 @@ entry .Endpoint
   entry .showable
     info
         - renders an endpoint as `remote:port`, for a port type which is `Showable`
-        + rend un point de terminaison sous la forme `remote:port`, pour un type de port qui est
+        + rend un endpoint sous la forme `remote:port`, pour un type de port qui est
         + `Showable`
   entry .inspectable
     info
@@ -1135,7 +1135,7 @@ entry .EmailAddress
           + column  Message
           + column  Remarque
           + row  `Empty`  1  _it is empty_
-          + row  `InvalidDomain(error)`  2  _the domain is not a valid IP address: …_ ou _the domain is not a valid hostname: …_  enveloppe l'`IpAddress.Error` ou la `Hostname.Error` du domaine, dont le message suit les deux-points
+          + row  `InvalidDomain(error)`  2  _the domain is not a valid IP address: …_ or _the domain is not a valid hostname: …_  enveloppe l'`IpAddress.Error` ou la `Hostname.Error` du domaine, dont le message suit les deux-points
           + row  `LongLocalPart`  3  _the local part is more than 64 characters long_
           + row  `TerminalPeriod`  4  _the local part ends in a period, which is not allowed_  dans une partie locale sans guillemets
           + row  `SuccessivePeriods`  5  _the local part contains two adjacent periods_  dans une partie locale sans guillemets
@@ -2063,7 +2063,7 @@ entry .Dns
   info
       - the DNS vocabulary of RFC 1035: names, record types, questions, records, messages and their wire form
       + le vocabulaire DNS de la RFC 1035 : noms, types d'enregistrements, questions,
-      + enregistrements, messages et leur forme binaire
+      + enregistrements, messages et leur forme de transmission
   detail
       - `Dns` is the home of a typed DNS, in the `urticose.dns` source set. A `Dns.Name` is a
       - list of labels which may hold any UTF-8 — including dots and spaces, which DNS-SD
@@ -2246,7 +2246,7 @@ entry .Dns
     entry #octets
       info
           - the length on the wire, uncompressed: each label plus its length byte, plus the terminator
-          + la longueur en forme binaire, sans compression : chaque étiquette plus son octet de
+          + la longueur en transmission, sans compression : chaque étiquette plus son octet de
           + longueur, plus le terminateur
   entry .Type
     info
@@ -2318,7 +2318,7 @@ entry .Dns
     entry #number
       info
           - the type's number on the wire
-          + le numéro du type en forme binaire
+          + le numéro du type en transmission
   entry .NetClass
     info
         - a record's class: `Internet`, `Any`, or any number
@@ -2327,7 +2327,7 @@ entry .Dns
         - The class field without its top bit, which on the wire is an mDNS flag rather than
         - part of the class — except in an `OPT` record, whose class field is the sender's UDP
         - payload size (`Record#udpPayload`). Shows as `IN`, `ANY` or `CLASS123`.
-        + Le champ de classe sans son bit de poids fort, qui, en forme binaire, est un indicateur
+        + Le champ de classe sans son bit de poids fort, qui, en transmission, est un indicateur
         + mDNS plutôt qu'une partie de la classe — sauf dans un enregistrement `OPT`, dont le champ
         + de classe est la taille de charge utile UDP de l'émetteur (`Record#udpPayload`). S'affiche
         + `IN`, `ANY` ou `CLASS123`.
@@ -2350,7 +2350,7 @@ entry .Dns
     entry #number
       info
           - the class's number on the wire
-          + le numéro de la classe en forme binaire
+          + le numéro de la classe en transmission
   entry .Opcode
     info
         - a message's operation: `Query`, `Notify`, `Update`, or any number
@@ -2375,7 +2375,7 @@ entry .Dns
     entry #number
       info
           - the opcode's number on the wire
-          + le numéro de l'opcode en forme binaire
+          + le numéro de l'opcode en transmission
   entry .Rcode
     info
         - a response code: `NoError`, `NxDomain`, `ServFail`, …, or any number
@@ -2418,7 +2418,7 @@ entry .Dns
     entry #number
       info
           - the code's number on the wire
-          + le numéro du code en forme binaire
+          + le numéro du code en transmission
   entry .Question
     info
         - a question in a message: a name, a type and a class
@@ -2430,7 +2430,7 @@ entry .Dns
         - for ordinary DNS.
         + `Dns.Question(name, rtype, netClass = NetClass.Internet, unicast = false)`. Le champ
         + `unicast` est le bit « QU » de mDNS (RFC 6762 §5.4), activé lorsque le demandeur accepte
-        + une réponse unicast ; il s'écrit comme bit de poids fort de la classe en forme binaire et
+        + une réponse unicast ; il s'écrit comme bit de poids fort de la classe en transmission et
         + est désactivé pour le DNS ordinaire.
     entry .showable
       info
@@ -2640,7 +2640,7 @@ entry .Dns
       entry #data
         info
             - the data, as it was on the wire
-            + les données, telles qu'elles étaient en forme binaire
+            + les données, telles qu'elles étaient en transmission
     entry .showable
       info
           - renders the data as a zone file would: an address, a name, `pref name`, quoted strings, …
@@ -2666,7 +2666,7 @@ entry .Dns
         + l'enregistrement est celui de ses données. Le champ `flush` est le bit de vidage de cache
         + de mDNS (RFC 6762 §10.2) : l'ensemble d'enregistrements de l'émetteur pour ce nom et ce
         + type remplace ce qu'un récepteur a en cache. Il s'écrit comme bit de poids fort de la
-        + classe en forme binaire et est désactivé pour le DNS ordinaire. Un TTL lu en forme binaire
+        + classe en transmission et est désactivé pour le DNS ordinaire. Un TTL lu en transmission
         + avec son bit de poids fort activé est considéré comme nul (RFC
         + 2181 §8).
 
@@ -2729,7 +2729,7 @@ entry .Dns
     entry #rdataBytes
       info
           - the data in its uncompressed wire form
-          + les données sous leur forme binaire non compressée
+          + les données sous leur forme de transmission non compressée
       detail
           - What RFC 6762 §8.2.1 compares lexicographically to break a tie between two hosts
           - probing the same name at once.
@@ -2841,7 +2841,7 @@ entry .Dns
     entry .encodable
       info
           - writes a message in its RFC 1035 wire form, compressing names
-          + écrit un message sous sa forme binaire RFC 1035, en compressant les noms
+          + écrit un message sous sa forme de transmission RFC 1035, en compressant les noms
       detail
           - Owner names and the names inside the well-known types of RFC 1035 §4.1.4 are
           - compressed with backward pointers; names inside `SRV`, `TXT`, `OPT` and unknown types
@@ -2852,7 +2852,7 @@ entry .Dns
     entry .decodable
       info
           - reads a message from its wire form, raising `Dns.Error` if malformed
-          + lit un message depuis sa forme binaire, en levant `Dns.Error` s'il est mal formé
+          + lit un message depuis sa forme de transmission, en levant `Dns.Error` s'il est mal formé
       detail
           - Needs a `Tactic[Dns.Error]`. Compression pointers are followed only backwards
           - (`BadPointer` otherwise); a message cut short is `Truncated`, record data of the wrong

@@ -35,7 +35,7 @@ detail
     - Every one is an opaque type over a JVM primitive (or, for `Decimal`, a frozen array), so
     - none of the distinctions survives to runtime.
     + Chacun est un type opaque sur un type primitif de la JVM (ou, pour `Decimal`, sur un tableau
-    + figé), si bien qu'aucune de ces distinctions ne subsiste à l'exécution.
+    + gelé), si bien qu'aucune de ces distinctions ne subsiste à l'exécution.
 
     - The arithmetic operators are not methods of these types: `+`, `-`, `*`, `/` and prefix
     - `-` are symbolism's generic operators, resolved through `Addable`, `Subtractable`,
@@ -1485,7 +1485,7 @@ entry .decimalInternal
       - the package, keeping companion-scope given resolution intact everywhere outside. The
       - type and its companion are exported to `hypotenuse` as `Decimal`.
       + Pas destiné à un usage direct : l'objet existe afin que la représentation de `Decimal` (un
-      + `Array[Int]^{}` figé : signe, échelle, puis membres en base 10⁹) soit cachée même au reste
+      + `Array[Int]^{}` gelé : signe, échelle, puis membres en base 10⁹) soit cachée même au reste
       + du package, en préservant partout ailleurs la résolution des givens dans la portée du
       + compagnon. Le type et son compagnon sont exportés vers `hypotenuse` sous le nom `Decimal`.
   entry .Decimal
@@ -2250,7 +2250,7 @@ entry .Bcd
       - library need not depend on a JSON one, and it keeps a number's exact text without
       - committing to a `Double`, a `Long` or a `BigDecimal` until one is asked for.
       + Un `Bcd` contient les chiffres d'un nombre tel qu'il a été écrit — chiffres, point,
-      + exposant et son signe, un quartet chacun — dans un `Array[Double]^{}` figé dont le premier
+      + exposant et son signe, un quartet chacun — dans un `Array[Double]^{}` gelé dont le premier
       + mot est un en-tête (signe et nombre de quartets) et dont les mots restants portent seize
       + quartets chacun. C'est la représentation des nombres de l'analyseur JSON de jacinta,
       + déplacée ici afin qu'une bibliothèque YAML n'ait pas à dépendre d'une bibliothèque JSON,
@@ -2485,7 +2485,7 @@ entry .bin
 entry .hex
   info
       - the `hex"…"` literal, a frozen byte array; and the hexadecimal rendering of any integer
-      + le littéral `hex"…"`, un tableau d'octets figé ; et le rendu hexadécimal de n'importe quel
+      + le littéral `hex"…"`, un tableau d'octets gelé ; et le rendu hexadécimal de n'importe quel
       + entier
   detail
       - `hex"cafe babe"` is an `Array[Byte]^{}` of the bytes the digits spell, built while the
@@ -2920,7 +2920,7 @@ entry .apply
       + Des méthodes d'extension sur les compagnons des types primitifs. `Short(bits: B16)`,
       + `Int(bits: B32)` et `Long(bits: B64)` réinterprètent gratuitement un motif comme le type
       + primitif ; `Double(long)` est `Double.longBitsToDouble` ; et `Short(bytes)`, `Int(bytes)`
-      + et `Long(bytes)` lisent les 2, 4 ou 8 premiers octets d'un `Array[Byte]^{}` figé comme un
+      + et `Long(bytes)` lisent les 2, 4 ou 8 premiers octets d'un `Array[Byte]^{}` gelé comme un
       + entier gros-boutiste. Elles ne sont pas exportées vers le package parapluie `soundness` ;
       + elles nécessitent donc `import hypotenuse.*`.
 
@@ -4512,7 +4512,7 @@ entry .protointernal
     info
         - the macro behind `hex"…"`: validates the digits and splices a frozen byte array
         + la macro derrière `hex"…"` : valide les chiffres et insère par splice un tableau
-        + d'octets figé
+        + d'octets gelé
   entry .parseU64
     info
         - parses the digits of a `U64` literal at compile time, through `FromDigits`
@@ -4565,7 +4565,7 @@ entry .Checkable
       + Un `left is Checkable against right` décide si un `left` correspond à un `right`, et c'est
       + ce que consulte `===`. Il est délibérément plus souple que `==` : les deux côtés peuvent
       + être de types différents, si bien qu'une valeur peut être vérifiée par rapport à une
-      + `Tolerance` (`x === 1.0 ± 0.01`), un tableau figé par rapport à un autre d'après son
+      + `Tolerance` (`x === 1.0 ± 0.01`), un tableau gelé par rapport à un autre d'après son
       + contenu, ou une `Chain` par rapport à une `Chain` élément par élément, et une assertion de
       + test écrite avec `===` se lit comme la comparaison qu'elle signifie. C'est la comparaison
       + qu'utilisent les assertions de probably, et elle se trouve dans `hypotenuse.check`.
@@ -4590,7 +4590,7 @@ entry .Checkable
   entry .frozenArray
     info
         - two frozen arrays check equal when their elements do, whatever their element types
-        + deux tableaux figés sont jugés égaux lorsque leurs éléments le sont, quels que soient
+        + deux tableaux gelés sont jugés égaux lorsque leurs éléments le sont, quels que soient
         + les types de leurs éléments
   entry .stream
     info

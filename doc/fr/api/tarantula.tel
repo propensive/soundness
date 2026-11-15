@@ -78,7 +78,7 @@ detail
     + compilation. Les poignées `WebDriver.Element` sont des valeurs pures, mais chaque opération
     + sur l'une d'elles prend la session comme paramètre contextuel ; une poignée est donc inerte
     + hors de sa session, et une poignée utilisée après le changement de sa page lève une
-    + `WebDriver.Error` de motif `StaleElement`. Chaque échec — un pilote injoignable, une réponse
+    + `WebDriver.Error` de raison `StaleElement`. Chaque échec — un pilote injoignable, une réponse
     + de forme incorrecte, ou toute erreur que signale le pilote — arrive sous la forme d'une seule
     + `WebDriver.Error`, portant le code d'erreur W3C comme `WebDriver.Error.Reason`.
 
@@ -257,8 +257,8 @@ entry .WebDriver
         + Ouvrir une session lance la commande du pilote dans un processus, interroge son endpoint
         + `GET /status` toutes les 50 millisecondes pendant cinq secondes au plus jusqu'à ce qu'il
         + réponde, ouvre la session avec `#capabilities`, et arrête le pilote à la fin du bloc. Un
-        + pilote qui ne peut être lancé lève une `WebDriver.Error` de motif `SessionNotCreated`, et
-        + un pilote qui ne se met jamais à l'écoute en lève une de motif `Timeout`. Deux sessions
+        + pilote qui ne peut être lancé lève une `WebDriver.Error` de raison `SessionNotCreated`, et
+        + un pilote qui ne se met jamais à l'écoute en lève une de raison `Timeout`. Deux sessions
         + simultanées sur le même port entreront en collision ; une suite de tests qui exécute des
         + sessions en parallèle donne donc à chacune son propre port avec `#on`.
     refer tarantula.WebDriver.Driver
@@ -290,8 +290,8 @@ entry .WebDriver
             - with reason `Timeout`.
             + Exécute `lambda` avec une nouvelle `WebDriver.Session` dans la portée, puis interrompt
             + la tâche du pilote dans un `finally`. Un échec du lancement est signalé par une
-            + `WebDriver.Error` de motif `SessionNotCreated` ; un pilote qui ne répond pas à
-            + `GET /status` en cinq secondes, par une erreur de motif `Timeout`.
+            + `WebDriver.Error` de raison `SessionNotCreated` ; un pilote qui ne répond pas à
+            + `GET /status` en cinq secondes, par une erreur de raison `Timeout`.
     entry .sessional
       info
           - the given which lets `local.session: session ?=> …` resolve
@@ -489,8 +489,8 @@ entry .WebDriver
         + Erreur 589 : _the WebDriver action failed because `reason`: `detail`_, avec le numéro de
         + la `WebDriver.Error.Reason` comme sous-code. Chaque échec d'une session arrive sous ce
         + seul type : un objet d'erreur que le pilote a renvoyé dans une réponse 4xx ou 5xx, un
-        + pilote injoignable, une réponse qui n'était pas le JSON que décrit la spécification (motif
-        + `UnknownError`), une réponse tronquée, un pilote qui n'a pas pu être démarré
+        + pilote injoignable, une réponse qui n'était pas le JSON que décrit la spécification
+        + (raison `UnknownError`), une réponse tronquée, un pilote qui n'a pas pu être démarré
         + (`SessionNotCreated`) ou qui ne s'est jamais mis à l'écoute (`Timeout`). Elle est levée
         + par la `Tactic[WebDriver.Error]` qui était dans la portée à l'ouverture de la session.
 
@@ -597,7 +597,7 @@ entry .WebDriver
           - first published with, which is why `Other` sits at 8 out of alphabetical order, and
           - every code added since appends from 9. A code the enumeration does not know becomes
           - `Other`, so decoding is total and the code a driver sent is never lost.
-          + Les numéros sont le sous-code de l'erreur et sont figés : 1 à 8 gardent le sens avec
+          + Les numéros sont le sous-code de l'erreur et sont gelés : 1 à 8 gardent le sens avec
           + lequel ils ont été publiés à l'origine, ce qui explique pourquoi `Other` occupe le 8
           + hors de l'ordre alphabétique, et chaque code ajouté depuis s'inscrit à partir de 9. Un
           + code que l'énumération ne connaît pas devient `Other` ; le décodage est donc total et le
@@ -635,7 +635,7 @@ entry .WebDriver
       entry #number
         info
             - the reason's frozen subcode, from 1 to 29
-            + le sous-code figé du motif, de 1 à 29
+            + le sous-code gelé de la raison, de 1 à 29
       entry #code
         info
             - the code as the specification spells it, such as `no such element`
@@ -712,14 +712,15 @@ entry .WebDriver
         - A leaked element is a dangling id rather than a live handle. One used after its page has
         - changed raises `WebDriver.Error` with reason `StaleElement`.
         + Un élément qui s'échappe est un id orphelin plutôt qu'une poignée vivante. Un élément
-        + utilisé après le changement de sa page lève une `WebDriver.Error` de motif `StaleElement`.
+        + utilisé après le changement de sa page lève une `WebDriver.Error` de raison
+        + `StaleElement`.
     refer tarantula.WebDriver.Session
     refer tarantula.element
     entry .encodable
       info
           - encodes an element in the wire form a script argument or pointer origin takes
-          + encode un élément sous la forme filaire que prend un argument de script ou une origine
-          + de pointeur
+          + encode un élément sous la forme de transmission que prend un argument de script ou une
+          + origine de pointeur
       detail
           - The W3C _web element identifier_ form, `{"element-6066-11e4-a52e-4f735466cecf": id}`, so
           - an element can be passed in `WebDriver.Session#execute`'s arguments as `element.in[Json]`,
@@ -777,7 +778,7 @@ entry .WebDriver
         + d'un élément, et seule la recherche est valide sur elle ; c'est donc une poignée pure
         + distincte : on y cherche avec `\` pour toutes les correspondances ou avec `element` pour
         + exactement une, avec la `WebDriver.Session` dans la portée. Seules les racines shadow
-        + *ouvertes* sont accessibles ; en demander une fermée lève une `WebDriver.Error` de motif
+        + *ouvertes* sont accessibles ; en demander une fermée lève une `WebDriver.Error` de raison
         + `NoSuchShadowRoot`, et utiliser une racine dont l'hôte a quitté la page lève
         + `DetachedShadowRoot`.
 
@@ -1478,7 +1479,7 @@ entry .WebDriver
           + Les commandes s'adressent au contexte de navigation courant ; entrer dans un cadre est
           + donc un changement de mode plutôt qu'un argument de chaque commande. `#parentFrame`
           + ressort d'un niveau, et `#topFrame` revient au document de premier niveau depuis
-          + n'importe quelle profondeur. Un cadre absent lève une `WebDriver.Error` de motif
+          + n'importe quelle profondeur. Un cadre absent lève une `WebDriver.Error` de raison
           + `NoSuchFrame`.
 
           ```scala fuel
@@ -1511,7 +1512,7 @@ entry .WebDriver
           - `UnexpectedAlertOpen`, whose `WebDriver.Error#data` carries the prompt's text; with no prompt open this
           - raises `NoSuchAlert`.
           + Tant qu'une invite est ouverte, toute autre commande échoue avec une `WebDriver.Error`
-          + de motif `UnexpectedAlertOpen`, dont le `WebDriver.Error#data` porte le texte de
+          + de raison `UnexpectedAlertOpen`, dont le `WebDriver.Error#data` porte le texte de
           + l'invite ; sans invite ouverte, ceci lève `NoSuchAlert`.
     entry #dismissAlert
       info
@@ -1551,7 +1552,7 @@ entry .WebDriver
           + le cookie du nom donné visible par la page courante
       detail
           - Raises `WebDriver.Error` with reason `NoSuchCookie` if there is none.
-          + Lève une `WebDriver.Error` de motif `NoSuchCookie` s'il n'y en a aucun.
+          + Lève une `WebDriver.Error` de raison `NoSuchCookie` s'il n'y en a aucun.
     entry #addCookie
       info
           - sets a cookie on the current page's domain
@@ -1561,7 +1562,7 @@ entry .WebDriver
           - `InvalidCookieDomain`, so navigate to the domain first. A cookie which needs a `sameSite`
           - attribute can be set with `#execute` instead.
           + Prend un `Cookie.Value`. Un cookie pour un autre domaine lève une `WebDriver.Error` de
-          + motif `InvalidCookieDomain` ; naviguez donc d'abord vers le domaine. Un cookie qui a
+          + raison `InvalidCookieDomain` ; naviguez donc d'abord vers le domaine. Un cookie qui a
           + besoin d'un attribut `sameSite` peut être défini avec `#execute` à la place.
     entry #deleteCookie
       info
@@ -1643,7 +1644,7 @@ entry .WebDriver
           + Prend des options `WebDriver.Session.Print`, celles par défaut de la spécification si
           + aucune n'est donnée. C'est ce que donnerait l'impression de la page, non ce qui est
           + rendu : `#screenshotData` capture cela. Tous les pilotes ne l'implémentent pas — Safari
-          + non — et un pilote qui ne l'implémente pas lève une `WebDriver.Error` de motif
+          + non — et un pilote qui ne l'implémente pas lève une `WebDriver.Error` de raison
           + `UnknownCommand` ou `UnsupportedOperation`.
     entry #execute
       info
@@ -1659,8 +1660,8 @@ entry .WebDriver
           + fonction ; il utilise donc `return`, et ses arguments sont `arguments[0]`,
           + `arguments[1]` et ainsi de suite : un `WebDriver.Element` passé sous la forme
           + `element.in[Json]` arrive comme son nœud DOM vivant, et un élément renvoyé revient sous
-          + la forme filaire. Un script qui lève une exception lève une `WebDriver.Error` de motif
-          + `JavascriptError`.
+          + la forme de transmission. Un script qui lève une exception lève une `WebDriver.Error` de
+          + raison `JavascriptError`.
 
           ```scala fuel
           typecheck
@@ -1680,7 +1681,7 @@ entry .WebDriver
           - `WebDriver.Error` with reason `ScriptTimeout`.
           + Comme `#execute`, mais le script reçoit un callback comme dernier argument et la
           + commande se termine lorsque le script l'appelle ; un script qui ne le fait pas dans le
-          + délai `script` lève une `WebDriver.Error` de motif `ScriptTimeout`.
+          + délai `script` lève une `WebDriver.Error` de raison `ScriptTimeout`.
     entry #element
       info
           - the one element a locator matches, at page scope or beneath an element or shadow root
@@ -1696,7 +1697,7 @@ entry .WebDriver
           + `browser.element(H1)` demande au pilote la première correspondance d'un localisateur
           + `Focusable` quelconque : une balise HTML, une liste de classes `cls"…"`, un
           + `Name[DomId]`, une `SelectorList`, un `XPath`, ou un `Text` comme texte de lien.
-          + L'absence de correspondance lève une `WebDriver.Error` de motif `NoSuchElement`, après
+          + L'absence de correspondance lève une `WebDriver.Error` de raison `NoSuchElement`, après
           + le délai implicite de la session. Les formes qui prennent un `WebDriver.Element` ou une
           + `WebDriver.ShadowRoot` cherchent sous celui-ci, et s'écrivent d'ordinaire par
           + l'extension `element` : `menu.element(Li)`.
@@ -1804,7 +1805,7 @@ entry .WebDriver
           - Usually written through the `shadowRoot` extension on the element. A closed or absent
           - shadow root raises `WebDriver.Error` with reason `NoSuchShadowRoot`.
           + S'écrit d'ordinaire par l'extension `shadowRoot` de l'élément. Une racine shadow fermée
-          + ou absente lève une `WebDriver.Error` de motif `NoSuchShadowRoot`.
+          + ou absente lève une `WebDriver.Error` de raison `NoSuchShadowRoot`.
     entry #click
       info
           - clicks an element at its centre, scrolling it into view first
@@ -1814,7 +1815,7 @@ entry .WebDriver
           - another raises `WebDriver.Error` with reason `ElementClickIntercepted`, and one which
           - cannot be clicked `ElementNotInteractable`.
           + S'écrit d'ordinaire par l'extension `click` : `button.click()`. Un élément recouvert par
-          + un autre lève une `WebDriver.Error` de motif `ElementClickIntercepted`, et un élément
+          + un autre lève une `WebDriver.Error` de raison `ElementClickIntercepted`, et un élément
           + sur lequel on ne peut cliquer, `ElementNotInteractable`.
     entry #clear
       info
@@ -1926,7 +1927,7 @@ entry .click
       - An extension on `WebDriver.Element`, delegating to `WebDriver.Session#click`. An element
       - covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
       + Une extension de `WebDriver.Element`, qui délègue à `WebDriver.Session#click`. Un élément
-      + recouvert par un autre lève une `WebDriver.Error` de motif `ElementClickIntercepted`.
+      + recouvert par un autre lève une `WebDriver.Error` de raison `ElementClickIntercepted`.
 
       ```scala fuel
       typecheck
@@ -2048,7 +2049,7 @@ entry .shadowRoot
       - `NoSuchShadowRoot`.
       + Une extension de `WebDriver.Element`, qui renvoie une `WebDriver.ShadowRoot` dans laquelle
       + chercher avec `\` ou `element`. Une racine fermée ou absente lève une `WebDriver.Error` de
-      + motif `NoSuchShadowRoot`.
+      + raison `NoSuchShadowRoot`.
 
 entry .rect
   info
@@ -2133,7 +2134,7 @@ entry .element
       - empty list for none.
       + Une extension de `WebDriver.Element` et de `WebDriver.ShadowRoot`, qui prend un localisateur
       + `Focusable` quelconque et a besoin de la session dans la portée : `menu.element(Li)`.
-      + L'absence de correspondance lève une `WebDriver.Error` de motif `NoSuchElement` ; `\`
+      + L'absence de correspondance lève une `WebDriver.Error` de raison `NoSuchElement` ; `\`
       + renvoie plutôt toutes les correspondances, et une liste vide s'il n'y en a aucune.
 
       ```scala fuel

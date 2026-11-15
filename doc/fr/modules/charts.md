@@ -26,7 +26,7 @@
 - arrive tangled in one call.
 + Les bibliothèques de graphiques prennent habituellement un sac de nombres et un sac d'options,
 + et découvrent [à l'exécution][exécution] que les deux ne vont pas ensemble : un camembert de
-+ trois séries, une ligne passant par des libellés de catégories, un axe logarithmique sur une
++ trois séries, une ligne passant par des étiquettes de catégories, un axe logarithmique sur une
 + plage qui comprend zéro. Les décisions qui devraient être séparées, à savoir ce que sont les
 + données, comment elles sont dessinées, comment leurs axes sont choisis et à quoi elles
 + ressemblent, arrivent enchevêtrées dans un seul appel.
@@ -75,7 +75,7 @@ val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
 - a `Duration`, an `Instant` or any `Quantity` is `Continuous`: its values have positions on a
 - numeric axis. Either [typeclass] can be given for a type of your own.
 + Le type de l'abscisse détermine l'axe. Un `Text`, une [énumération] ou une `Category` est
-+ `Categorical` : ses valeurs sont des libellés distincts, dans l'ordre de leur première
++ `Categorical` : ses valeurs sont des étiquettes distinctes, dans l'ordre de leur première
 + apparition. Un nombre, une `Duration`, un `Instant` ou toute `Quantity` est `Continuous` : ses
 + valeurs ont des positions sur un axe numérique. L'une ou l'autre [classe de types] peut être
 + fournie pour un type de votre cru.
@@ -263,8 +263,8 @@ val scaled = sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration))
 - has `wedge`. A chart asks for the style of its kind, so a bar chart compiles against
 - `Bars.Style`.
 + Tout ce qui, dans l'apparence d'un graphique, n'est pas une donnée relève du *style* : un trait
-+ doté d'une méthode pour chaque composant que dessine le graphique, comme une graduation, un
-+ libellé de graduation, une barre, un secteur ou une pastille de légende. Chaque méthode prend la
++ doté d'une méthode pour chaque composant que dessine le graphique, comme une graduation, une
++ étiquette de graduation, une barre, un secteur ou une pastille de légende. Chaque méthode prend la
 + géométrie que le graphique a calculée, et renvoie les figures à dessiner. `Chart.Style` contient
 + ce que partagent tous les genres : le canevas, la famille de polices, la légende et la façon de
 + composer le texte. `Chart.Cartesian` ajoute les axes, les graduations, la grille, les titres,
@@ -317,12 +317,12 @@ given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units
 + row  `fontStyle`, `lettering`  la taille et la couleur du texte ; chaque segment de texte  `Chart.Style`
 + row  `backdrop`  le canevas derrière le graphique  `Chart.Style`
 + row  `swatch`, `legendLabel`  une entrée de légende  `Chart.Style`
-+ row  `leader`  la ligne qui relie un libellé déplacé à son point  `Chart.Style`
++ row  `leader`  la ligne qui relie une étiquette déplacée à son point  `Chart.Style`
 + row  `axisLine`  le trait de chaque axe  `Chart.Cartesian`
 + row  `axisBreak`  une marque de rupture là où un axe linéaire ne commence pas à zéro  `Chart.Cartesian`
 + row  `arrowhead`  l'extrémité d'un axe  `Chart.Cartesian`
 + row  `tick`, `gridLine`  une graduation et sa ligne de grille  `Chart.Cartesian`
-+ row  `tickLabel`  le libellé d'une graduation, son emplacement et sa rotation éventuelle  `Chart.Cartesian`
++ row  `tickLabel`  l'étiquette d'une graduation, son emplacement et sa rotation éventuelle  `Chart.Cartesian`
 + row  `axisTitle`  le titre d'un axe  `Chart.Cartesian`
 + row  `marker`, `errorBar`  un point et son intervalle  `Chart.Cartesian`
 + row  `pointLabel`  la note d'un point `Noted`  `Chart.Cartesian`
@@ -335,7 +335,7 @@ given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units
 
 - `labelRoom` tells the layout how much space the tick labels take, so a style which rotates them
 - overrides it beside `tickLabel`.
-+ `labelRoom` indique à la mise en page combien de place occupent les libellés des graduations ;
++ `labelRoom` indique à la mise en page combien de place occupent les étiquettes des graduations ;
 + ainsi un style qui les fait pivoter le redéfinit à côté de `tickLabel`.
 
 - Colors are a `ChartPalette`, named by role: the series ramp, the axes, the grid, the lettering.
@@ -352,10 +352,10 @@ import palettes.solarizedDarkChartPalette
 - [fonts](fonts.md#providing-a-typeface) describes. A chart can therefore be set only in a
 - typeface which its SVG will carry a `@font-face` for, or in a generic family, which is the
 - default. A provision is declared once, and the font is chosen in the style:
-+ La `font` d'un style est une `Font in Web` : un style de police associé à une provision pour sa
++ La `font` d'un style est une `Font in Web` : un style de police associé à une fourniture pour sa
 + famille, comme le décrit la page [polices](fonts.md#providing-a-typeface). Un graphique ne peut
 + donc être composé que dans une famille pour laquelle son SVG transportera un `@font-face`, ou
-+ dans une famille générique, ce qui est le cas par défaut. Une provision est déclarée une seule
++ dans une famille générique, ce qui est le cas par défaut. Une fourniture est déclarée une seule
 + fois, et la police est choisie dans le style :
 
 ```scala
@@ -368,9 +368,9 @@ val monospaced = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
 - font are used, so the face measured is the face rendered, and the margins fit their labels
 - exactly. For a font without a file to hand, an average width for each character is assumed.
 - Either can be overridden by importing a metric:
-+ Le texte est mesuré pour disposer les libellés des axes et la légende. Les chasses des glyphes
++ Le texte est mesuré pour disposer les étiquettes des axes et la légende. Les chasses des glyphes
 + d'une police incorporée sont utilisées ; ainsi le style mesuré est le style rendu, et les
-+ marges s'ajustent exactement à leurs libellés. Pour une police dont le fichier n'est pas
++ marges s'ajustent exactement à leurs étiquettes. Pour une police dont le fichier n'est pas
 + disponible, une largeur moyenne par caractère est supposée. L'une ou l'autre peut être
 + remplacée en important une métrique :
 
@@ -407,7 +407,7 @@ Out.println(tides.chart(Lines()).in[Svg].in[Xml].show.contains(t"units sold / m"
 + comme `250ms` et `1m30s`, car les pas d'horloge ne sont pas décimaux.
 
 - ### Placing labels
-+ ### Placement des libellés
++ ### Placement des étiquettes
 
 - The text on a chart is placed by [label placement](label-placement.md), so labels do not
 - collide. Tick labels, axis titles and legend entries hold still, and a tick label which would
@@ -416,21 +416,21 @@ Out.println(tides.chart(Lines()).in[Svg].in[Xml].show.contains(t"units sold / m"
 - notes, markers and lines, on another side when it is not, and further off, with a leader line
 - back to the point, when every side is taken. A wedge's percentage sits in its wedge, or is moved
 - outward with a leader when the label of a neighboring wedge is in the way.
-+ Le texte d'un graphique est placé par le [placement des libellés](label-placement.md), si bien
-+ que les libellés ne se chevauchent pas. Les libellés de graduations, les titres d'axes et les
-+ entrées de légende restent immobiles, et un libellé de graduation qui chevaucherait son voisin
-+ est omis. La note à côté d'un point `Noted`, et le pourcentage dans le secteur d'un camembert,
++ Le texte d'un graphique est placé par le [placement des étiquettes](label-placement.md), si bien
++ que les étiquettes ne se chevauchent pas. Les étiquettes de graduations, les titres d'axes et les
++ entrées de légende restent immobiles, et une étiquette de graduation qui chevaucherait sa voisine
++ est omise. La note à côté d'un point `Noted`, et le pourcentage dans le secteur d'un camembert,
 + se déplacent. La note d'un point est placée à sa droite quand ce côté est libre d'autres notes,
 + de marqueurs et de lignes, d'un autre côté quand il ne l'est pas, et plus loin, avec une ligne
 + de rappel vers le point, quand tous les côtés sont pris. Le pourcentage d'un secteur se place
-+ dans son secteur, ou est déplacé vers l'extérieur avec une ligne de rappel quand le libellé d'un
++ dans son secteur, ou est déplacé vers l'extérieur avec une ligne de rappel quand l'étiquette d'un
 + secteur voisin gêne.
 
 - The `Arranger` in scope decides the arrangement. The default places each label in turn. For a
 - crowded chart, simulated annealing considers the labels together, and is chosen by importing
 - it:
-+ L'`Arranger` dans la portée décide de la disposition. Celui par défaut place chaque libellé à
-+ tour de rôle. Pour un graphique encombré, le recuit simulé considère les libellés ensemble, et
++ L'`Arranger` dans la portée décide de la disposition. Celui par défaut place chaque étiquette à
++ tour de rôle. Pour un graphique encombré, le recuit simulé considère les étiquettes ensemble, et
 + on le choisit en l'important :
 
 ```scala
@@ -440,9 +440,9 @@ import arrangers.annealingArranger
 - A style draws each label where the arrangement put it. `tickLabel`, `pointLabel` and
 - `wedgeLabel` take a `Chart.Anchoring`, which is the point and the alignment which sets the text
 - on the right side of it, and `leader` draws the line from a moved label back to its point.
-+ Un style dessine chaque libellé là où la disposition l'a placé. `tickLabel`, `pointLabel` et
++ Un style dessine chaque étiquette là où la disposition l'a placée. `tickLabel`, `pointLabel` et
 + `wedgeLabel` prennent un `Chart.Anchoring`, c'est-à-dire le point et l'alignement qui place le
-+ texte du bon côté de celui-ci, et `leader` dessine la ligne qui relie un libellé déplacé à son
++ texte du bon côté de celui-ci, et `leader` dessine la ligne qui relie une étiquette déplacée à son
 + point.
 
 - ### Rendering
@@ -483,7 +483,7 @@ Out.println(drawing.in[Xml].show.keep(70))
 + row  `abscissa`, `ordinate`  chaque axe, ses graduations et son titre  les graphiques cartésiens
 + row  `legend`  la légende  les graphiques dotés d'une légende
 + row  `series-0`, `series-1`, …  chaque série  les graphiques cartésiens
-+ row  `wedges`  chaque secteur et son libellé  `Pie`
++ row  `wedges`  chaque secteur et son étiquette  `Pie`
 + row  `rank-0`, `rank-1`, …  chaque bande  `Doughnut`
 ```
 
@@ -573,7 +573,7 @@ Out.println(runs.chart(Boxes()).fit.summaries.size.show)
 + aiguilles d'une montre à proportion de l'achèvement du nœud, le reste étant dans une teinte
 + atténuée de la couleur du secteur. Cette couleur est la première couleur de la palette, nuancée
 + selon l'emplacement du secteur : sa teinte tourne de trente degrés de gauche à droite, et elle
-+ est plus sombre sous le milieu et plus claire au-dessus. Un graphique en anneau n'a ni libellés
++ est plus sombre sous le milieu et plus claire au-dessus. Un graphique en anneau n'a ni étiquettes
 + ni légende. Chaque bande est un groupe `rank-0`, `rank-1`, …, chaque secteur un chemin
 + `sector-0`, `sector-1`, …, et la partie inachevée d'un secteur est `sector-0-rest`.
 
@@ -633,7 +633,7 @@ Out.println(doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).s
 - - [Time](time.md) describes the durations and instants which a continuous axis may hold.
 - - [Gauges](gauges.md) and [tables](tables.md) present values in the terminal, and [testing](testing.md) charts benchmark results.
 + - [SVG](svg.md) décrit le dessin en lequel se rend un graphique.
-+ - [Placement des libellés](label-placement.md) décrit comment les libellés d'un graphique
++ - [Placement des étiquettes](label-placement.md) décrit comment les étiquettes d'un graphique
 +   s'évitent.
 + - [Polices](fonts.md) décrit les familles de polices dans lesquelles un graphique peut être
 +   composé.

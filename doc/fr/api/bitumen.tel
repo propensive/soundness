@@ -1934,14 +1934,14 @@ entry .Ar
     entry .decodeDecimal
       info
           - a decimal field: digits, then space or NUL padding
-          + un champ décimal : des chiffres, puis un complément d'espaces ou de NUL
+          + un champ décimal : des chiffres, puis un remplissage d'espaces ou de NUL
       detail
           - An entirely blank field decodes as zero, since some archivers leave `uid` and `gid`
           - empty; a non-digit, or a digit resuming after padding, raises `Ar.Error` with reason
           - `BadDecimal`, naming the field.
           + Un champ entièrement vide se décode en zéro, car certains archiveurs laissent `uid` et
-          + `gid` vides ; un caractère non numérique, ou un chiffre qui reprend après le complément,
-          + lève `Ar.Error` avec la raison `BadDecimal`, en nommant le champ.
+          + `gid` vides ; un caractère non numérique, ou un chiffre qui reprend après le
+          + remplissage, lève `Ar.Error` avec la raison `BadDecimal`, en nommant le champ.
     entry .decodeOctal
       info
           - an octal field, as `.decodeDecimal` reads a decimal one
@@ -1952,7 +1952,7 @@ entry .Ar
     entry .decodeName
       info
           - the name field with its trailing space padding removed
-          + le champ du nom sans son complément d'espaces finales
+          + le champ du nom sans son remplissage d'espaces finales
       detail
           - The SysV terminating `/` is kept: `/` and `//` name the symbol and name tables, and
           - telling those apart from a terminated name is the reader's job, which needs the raw

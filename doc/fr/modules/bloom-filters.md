@@ -161,10 +161,10 @@ Out.println(bloom.hits(t"hello").inspect)
 - are needed. An algorithm whose digest is shorter than sixteen bytes, such as a CRC, is applied
 - again under a counter until enough bytes have been gathered.
 + L'algorithme de hachage fait partie du type du filtre, et chaque position de bit est dérivée
-+ d'une unique empreinte de l'élément. Les deux premiers mots de 64 bits de l'empreinte, `h₁`
++ d'un unique condensé de l'élément. Les deux premiers mots de 64 bits du condensé, `h₁`
 + et `h₂`, donnent la position *i* sous la forme `h₁ + i·h₂`, modulo la taille du tableau de
-+ bits. C'est le schéma de double hachage qu'utilise aussi Guava, et il coûte une empreinte par
-+ élément, quel que soit le nombre de positions nécessaires. Un algorithme dont l'empreinte
++ bits. C'est le schéma de double hachage qu'utilise aussi Guava, et il coûte un condensé par
++ élément, quel que soit le nombre de positions nécessaires. Un algorithme dont le condensé
 + fait moins de seize octets, comme un CRC, est appliqué de nouveau avec un compteur jusqu'à ce
 + que suffisamment d'octets aient été rassemblés.
 
@@ -197,7 +197,7 @@ val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
 - then freezes it:
 + Un filtre tout juste issu de `BloomFilter[Text](n, p)` est *exclusif*. Il appartient au code
 + qui l'a créé, et ce code le remplit sur place, avec `add` et `addAll`, sans aucune copie,
-+ puis le fige :
++ puis le gèle :
 
 ```scala
 val filter = BloomFilter[Text](10_000, 0.01)
@@ -218,9 +218,9 @@ Out.println(frozen.hits(t"fourth").inspect)
 - held in a data structure and queried from anywhere, but never written to. This is the same
 - discipline as freezing an array, and it is what makes the immutability below free, not copied.
 + `freeze` consomme le filtre exclusif, et le contrôle de séparation du compilateur rejette
-+ toute utilisation ultérieure de `filter`. Ce qu'il donne est la forme figée, qui peut être
++ toute utilisation ultérieure de `filter`. Ce qu'il donne est la forme gelée, qui peut être
 + partagée entre threads, conservée dans une structure de données et interrogée de n'importe
-+ où, mais jamais modifiée. C'est la même discipline que pour figer un tableau, et c'est ce
++ où, mais jamais modifiée. C'est la même discipline que pour geler un tableau, et c'est ce
 + qui rend l'immuabilité décrite ci-dessous gratuite, et non copiée.
 
 - ### Immutability
@@ -233,7 +233,7 @@ Out.println(frozen.hits(t"fourth").inspect)
 + `+` et `++` donnent de nouveaux filtres, et ne modifient pas l'original, au prix d'une copie
 + des bits chacun. Construire un filtre à partir d'une grande collection avec `++` se fait en
 + une seule passe et une seule copie, et non par la suite de copies que ferait un `+` répété.
-+ Remplir un filtre exclusif avec `addAll`, avant de le figer, ne fait aucune copie.
++ Remplir un filtre exclusif avec `addAll`, avant de le geler, ne fait aucune copie.
 
 - The operations on a filter, side by side:
 + Les opérations sur un filtre, côte à côte :
@@ -253,11 +253,11 @@ Out.println(frozen.hits(t"fourth").inspect)
 + column  S'applique à
 + column  Produit
 + column  Copie les bits
-+ row  `filter + element`  tout filtre  un nouveau filtre figé  une fois
-+ row  `filter ++ elements`  tout filtre  un nouveau filtre figé  une fois
++ row  `filter + element`  tout filtre  un nouveau filtre gelé  une fois
++ row  `filter ++ elements`  tout filtre  un nouveau filtre gelé  une fois
 + row  `filter.add(element)`  un filtre exclusif  rien ; le remplit sur place  jamais
 + row  `filter.addAll(elements)`  un filtre exclusif  rien ; le remplit sur place  jamais
-+ row  `BloomFilter.freeze(filter)`  un filtre exclusif, consommé  le filtre figé  jamais
++ row  `BloomFilter.freeze(filter)`  un filtre exclusif, consommé  le filtre gelé  jamais
 + row  `filter.hits(element)`  tout filtre  `false` s'il est absent, `true` s'il est probablement présent  jamais
 ```
 

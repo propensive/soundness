@@ -100,8 +100,8 @@ Out.println(bytes.serialize[Base64])
 - `serialize` works on any value which encodes to bytes, not only on raw bytes. A value with an
 - `Encodable in Data` instance, such as a [digest](hashing.md), is serialized directly.
 + `serialize` fonctionne sur toute valeur qui s'encode en octets, pas seulement sur des octets
-+ bruts. Une valeur dotée d'une instance `Encodable in Data`, comme une
-+ [empreinte](hashing.md), se sérialise directement.
++ bruts. Une valeur dotée d'une instance `Encodable in Data`, comme un [condensé](hashing.md), se
++ sérialise directement.
 
 - With no alphabet for the base in scope, there is nothing to serialize with:
 + Sans alphabet pour la base dans la portée, il n'y a rien avec quoi sérialiser :

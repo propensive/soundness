@@ -467,9 +467,9 @@ entry .Bootstrap
       + cache — `$XDG_CACHE_HOME/soundness/jars` si cette variable est définie et non vide, sinon
       + `~/.cache/soundness/jars` — jusqu'à huit à la fois avec des délais de connexion et de
       + lecture, et vérifie le SHA-256 de chaque téléchargement par rapport au hachage du manifeste
-      + (ainsi que celui d'un fichier en cache). Elle construit ensuite un classloader sur le JAR et
-      + les dépendances requises, dans l'ordre du manifeste, l'installe comme classloader de
-      + contexte du thread, et invoque `main` sur la classe que nomme `Burdock-Main`.
+      + (ainsi que celui d'un fichier en cache). Elle construit ensuite un chargeur de classes sur
+      + le JAR et les dépendances requises, dans l'ordre du manifeste, l'installe comme chargeur de
+      + classes de contexte du thread, et invoque `main` sur la classe que nomme `Burdock-Main`.
 
       - A checksum mismatch exits with status 1; a malformed `Burdock-Require` item, an invalid
       - `Burdock-Verbosity`, a missing manifest or entry point, or any failure to launch exits
@@ -648,7 +648,7 @@ entry .GitHub
     entry #digest
       info
           - the asset's digest, `sha256:<hex>`, or `Unset` for an asset uploaded before GitHub computed them
-          + l'empreinte de la ressource, `sha256:<hex>`, ou `Unset` pour une ressource envoyée avant
+          + le condensé de la ressource, `sha256:<hex>`, ou `Unset` pour une ressource envoyée avant
           + que GitHub ne les calcule
   entry .Release
     info
@@ -667,7 +667,7 @@ entry .GitHub
         - SHA-256 is keyed by the lowercase hex; other assets are skipped. The API lists the newest
         - release first, so where one hash appears in several releases the first, newest URL wins.
         + Pure, de sorte qu'elle ne nécessite pas de réseau. Chaque ressource dont le nom se termine
-        + par .jar et dont l'empreinte est un SHA-256 est indexée par l'hexadécimal en minuscules ;
+        + par .jar et dont le condensé est un SHA-256 est indexée par l'hexadécimal en minuscules ;
         + les autres ressources sont ignorées. L'API énumère la version la plus récente en premier,
         + de sorte que lorsqu'un même hachage apparaît dans plusieurs versions, c'est la première
         + URL, la plus récente, qui l'emporte.
@@ -705,7 +705,7 @@ entry .DepsEvent
       - too. `DepsDev.mavenUrl` logs `Querying` at `fine` and `Resolved` at `info`;
       - `GitHub.releases` logs `Indexing` at `fine`, and `GitHub.index` logs `Indexed` at `info`.
       - A `DepsEvent is Loggable` must be in scope; `logging.silentLogging` discards them.
-      + Chaque événement est étiqueté `Log.Dependency`, et les deux qui effectuent des requêtes
+      + Chaque événement est tagué `Log.Dependency`, et les deux qui effectuent des requêtes
       + aussi `Log.Network`. `DepsDev.mavenUrl` journalise `Querying` au niveau `fine` et
       + `Resolved` au niveau `info` ; `GitHub.releases` journalise `Indexing` au niveau `fine`, et
       + `GitHub.index` journalise `Indexed` au niveau `info`. Un `DepsEvent is Loggable` doit être

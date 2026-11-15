@@ -332,7 +332,7 @@ entry .Markdown
     entry #label
       info
           - the label the reference is looked up by, as written
-          + le libellé par lequel la référence est recherchée, tel qu'écrit
+          + l'étiquette par laquelle la référence est recherchée, telle qu'écrite
     entry #title
       info
           - the link's title, or `Unset` if the definition gave none
@@ -340,7 +340,7 @@ entry .Markdown
     entry #destination
       info
           - the URL the label stands for
-          + l'URL que représente le libellé
+          + l'URL que représente l'étiquette
   entry .aggregable
     info
         - reads a `Markdown of Layout` from any stream of text
@@ -1068,7 +1068,7 @@ entry .MarkdownPalette
       + row  `#codeBg`  le fond d'un segment de code  `Chroma(0x2a, 0x2a, 0x2a)`
       + row  `#quoteBar`  le `▎` à côté d'une citation  `Chroma(0x82, 0xaa, 0xff)`
       + row  `#rule`  un séparateur thématique  `Chroma(0x60, 0x60, 0x60)`
-      + row  `#subdued`  les marqueurs de liste, les préfixes de titres, les libellés d'images, le HTML en ligne et de bloc, et les blocs de code non colorés  `Chroma(0x80, 0x80, 0x80)`
+      + row  `#subdued`  les marqueurs de liste, les préfixes de titres, les étiquettes d'images, le HTML en ligne et de bloc, et les blocs de code non colorés  `Chroma(0x80, 0x80, 0x80)`
       ```
 
       - The companion's `.default` given is in implicit scope, so `terminal` needs no palette
@@ -1117,8 +1117,8 @@ entry .MarkdownPalette
   entry #subdued
     info
         - list markers, heading prefixes, image labels, raw HTML and unhighlighted code
-        + les marqueurs de liste, les préfixes de titres, les libellés d'images, le HTML brut et le
-        + code non coloré
+        + les marqueurs de liste, les préfixes de titres, les étiquettes d'images, le HTML brut et
+        + le code non coloré
 
 entry .TeletypeFormattable
   info

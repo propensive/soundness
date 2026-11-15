@@ -188,7 +188,7 @@ supervise:
 + row  `innerText()`  lit le texte rendu
 + row  `attribute(name)`, `property(name)`  lit un attribut du balisage, ou une propriété DOM vivante, sous forme d'`Optional`
 + row  `cssValue(name)`  lit une valeur CSS calculée
-+ row  `tagName()`, `role()`, `label()`  lisent la balise, le rôle accessible et le libellé accessible de l'élément
++ row  `tagName()`, `role()`, `label()`  lisent la balise, le rôle accessible et l'étiquette accessible de l'élément
 + row  `enabled()`, `selected()`, `displayed()`  indiquent l'état de l'élément
 + row  `rect()`  lit la position et la taille de l'élément
 + row  `screenshot()`, `screenshotData()`  capturent l'élément sous forme de `Raster in Png`, ou d'octets PNG

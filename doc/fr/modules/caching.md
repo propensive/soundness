@@ -215,7 +215,7 @@ Out.println(loads.show)
 - - [Stack traces](stack-traces.md) describes the codepoint which keys a cached value to its call site.
 + - Les [filtres de Bloom](bloom-filters.md) ne mémorisent que le fait d'avoir vu quelque chose.
 + - [Système de fichiers](filesystem.md#content-addressed-storage) décrit un cache sur disque,
-+   indexé par l'empreinte de son contenu.
++   indexé par le condensé de son contenu.
 + - [Temps](time.md) décrit les durées dans lesquelles s'exprime une durée de vie.
 + - [Traces de pile](stack-traces.md) décrit le point de code qui associe une valeur en cache à
 +   son site d'appel.

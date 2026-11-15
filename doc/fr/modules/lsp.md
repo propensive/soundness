@@ -254,7 +254,7 @@ val observer = new Lsp.Observer:
 - which may not be answered, it is reported through `window/logMessage`. A request for a document
 - which is not open, and a command which was never registered, are answered the same way.
 + Une faute levée prend le pas sur le résultat du gestionnaire. Pour une requête, elle devient
-+ une réponse d'erreur JSON-RPC, avec le code de la raison sur le fil et l'identifiant de la
++ une réponse d'erreur JSON-RPC, avec le code de transmission de la raison et l'identifiant de la
 + requête. Pour une notification, à laquelle on ne peut pas répondre, elle est signalée par
 + `window/logMessage`. Une requête concernant un document qui n'est pas ouvert, et une commande
 + qui n'a jamais été enregistrée, reçoivent une réponse de la même manière.
@@ -290,7 +290,7 @@ def query(source: Text): Optional[Lsp.Hover] = supervise:
 + Les requêtes renvoient les mêmes types que les gestionnaires d'un serveur : `Optional[Hover]`,
 + `CompletionList`, `List[Location]`. Les notifications, à savoir `open`, `edit`, `save` et
 + `close`, ne renvoient rien. Une réponse d'erreur du serveur est levée sous forme d'une
-+ `Lsp.Error` qui porte la raison que nomme son code sur le fil, et n'est pas attendue
++ `Lsp.Error` qui porte la raison que nomme son code de transmission, et n'est pas attendue
 + indéfiniment. Les requêtes reçoivent leur réponse sur une tâche propre ; plusieurs peuvent
 + donc être en cours à la fois, et revenir dans n'importe quel ordre.
 
@@ -299,7 +299,7 @@ def query(source: Text): Optional[Lsp.Hover] = supervise:
 - acts on. A listener is supplied contextually:
 + Ce qu'un serveur dit sans qu'on le lui demande, comme les diagnostics, les messages de fenêtre
 + et la progression, parvient à un `Lsp.Listener`. Ses méthodes ne font rien par défaut ; un
-+ client n'implémente donc que ce sur quoi il agit. Un listener est fourni contextuellement :
++ client n'implémente donc que ce sur quoi il agit. Un écouteur est fourni contextuellement :
 
 ```scala
 given diagnostics: Lsp.Listener = new Lsp.Listener:

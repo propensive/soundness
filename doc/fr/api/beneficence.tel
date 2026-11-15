@@ -182,11 +182,11 @@ entry .givens
       - resolves is silently dropped, and a type with no class symbol gives `Nil`.
       + `givens(typeRepr)` est une recherche au moment de l'expansion des macros : étant donné un
       + `TypeRepr` dans un contexte `Quotes`, elle lit chaque ressource
-      + `META-INF/givens/<typeclass>` du classpath du propre classloader de la macro (la classe du
-      + type désaliasé nomme le fichier), ignore les lignes vides et les commentaires `#`, supprime
-      + les doublons, et résout chaque nom pleinement qualifié en le `Symbol` du given, en tant que
-      + méthode ou champ de l'objet ou de la classe qui le possède. Un nom qui ne se résout plus est
-      + abandonné en silence, et un type sans symbole de classe donne `Nil`.
+      + `META-INF/givens/<typeclass>` du classpath du propre chargeur de classes de la macro (la
+      + classe du type désaliasé nomme le fichier), ignore les lignes vides et les commentaires `#`,
+      + supprime les doublons, et résout chaque nom pleinement qualifié en le `Symbol` du given, en
+      + tant que méthode ou champ de l'objet ou de la classe qui le possède. Un nom qui ne se résout
+      + plus est abandonné en silence, et un type sans symbole de classe donne `Nil`.
 
       ```scala
       import scala.quoted.*

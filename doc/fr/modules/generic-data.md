@@ -9,7 +9,7 @@
 - representation carries any Scala value using only the types which every JVM context shares.
 - Those are boxed primitives, strings, and arrays of objects.
 + Une valeur doit parfois quitter le monde où sa classe est connue, et arriver intacte : dans un
-+ autre classloader, dans un autre processus, ou de l'autre côté d'une frontière de mise en
++ autre chargeur de classes, dans un autre processus, ou de l'autre côté d'une frontière de mise en
 + étapes. La représentation `Pojo` transporte n'importe quelle valeur Scala en n'utilisant que
 + les types que partagent tous les contextes de la JVM : les primitifs boxés, les chaînes, et
 + les tableaux d'objets.
@@ -21,16 +21,16 @@
 + elle.
 
 - ### On classloader-neutral data
-+ ### À propos des données indépendantes du classloader
++ ### À propos des données indépendantes du chargeur de classes
 
 - A Scala object is welded to its class, and its class to the classloader which defined it. Hand
 - the object to code which was loaded elsewhere, such as an isolated plugin or a computation
 - staged on another machine, and the receiving side cannot cast it back. The "same" class from
 - another loader is a different class.
-+ Un objet Scala est soudé à sa classe, et sa classe au classloader qui l'a définie. Remettez
-+ l'objet à du code chargé ailleurs, comme un plugin isolé ou un calcul mis en étapes sur une
-+ autre machine, et le côté récepteur ne peut pas le caster à nouveau. La « même » classe
-+ provenant d'un autre classloader est une classe différente.
++ Un objet Scala est soudé à sa classe, et sa classe au chargeur de classes qui l'a définie.
++ Remettez l'objet à du code chargé ailleurs, comme un plugin isolé ou un calcul mis en étapes sur
++ une autre machine, et le côté récepteur ne peut pas le caster à nouveau. La « même » classe
++ provenant d'un autre chargeur de classes est une classe différente.
 
 - Full serialization solves this with heavy machinery. Passing strings solves it by giving up
 - structure.
@@ -43,7 +43,7 @@
 - beneath [staged](staging.md) remote execution, and working on a generic representation in this
 - way is what [composability](../../philosophy/composability.md) between formats rests on.
 + Un `Pojo` conserve la structure et abandonne la classe. Un produit devient un tableau de ses
-+ champs, un variant devient une paire étiquetée, et un primitif devient sa propre version
++ champs, une variante devient une paire étiquetée, et un primitif devient sa propre version
 + boxée. Ce sont tous des types définis par le JDK, qui signifient la même chose des deux côtés
 + de toute frontière. C'est le transport sous-jacent à l'exécution distante
 + [mise en étapes](staging.md), et travailler ainsi sur une représentation générique est ce
@@ -145,7 +145,7 @@ val light = (Light.Green: Light).pojo
 - Both sides derive the codec from the same type definition, so the encoding needs no schema on
 - the wire. It does mean that both sides must agree on that definition.
 + Les deux côtés dérivent le codec de la même définition de type ; l'encodage n'a donc besoin
-+ d'aucun schéma sur le fil. Cela implique toutefois que les deux côtés s'accordent sur cette
++ d'aucun schéma en transmission. Cela implique toutefois que les deux côtés s'accordent sur cette
 + définition.
 
 - `Pojo` is an [opaque type] over the JDK types it permits. A `Pojo` cannot be confused with an
@@ -161,10 +161,11 @@ val light = (Light.Green: Light).pojo
 - loader, such as a plugin, a compiled fragment or a sandboxed extension, shares the JDK's
 - classes with its host, and nothing else. The JDK's classes are therefore exactly the vocabulary
 - the two can speak. [Classpath](classpath.md) describes classloaders.
-+ Le cas évident est une frontière entre classloaders. Le code chargé dans un classloader
-+ isolé, comme un plugin, un fragment compilé ou une extension en bac à sable, partage avec
++ Le cas évident est une frontière entre chargeurs de classes. Le code chargé dans un chargeur de
++ classes isolé, comme un plugin, un fragment compilé ou une extension en bac à sable, partage avec
 + son hôte les classes du JDK, et rien d'autre. Les classes du JDK sont donc exactement le
-+ vocabulaire que les deux peuvent parler. [Classpath](classpath.md) décrit les classloaders.
++ vocabulaire que les deux peuvent parler. [Classpath](classpath.md) décrit les chargeurs de
++ classes.
 
 - The same reasoning applies across a boundary between processes, which is what
 - [staged](staging.md) remote execution uses. The arguments to a staged computation are encoded

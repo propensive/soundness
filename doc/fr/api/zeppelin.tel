@@ -389,10 +389,10 @@ entry .Zip
         - parameter.
         + Les champs d'en-tête qui suivent `#alignment` existent pour qu'une archive lue en pièces
         + détachées puisse être réécrite octet pour octet : `Unset` signifie la valeur que zeppelin
-        + calcule lui-même (le drapeau UTF-8 exactement quand le nom en a besoin ; la version 20, ou
-        + 45 pour une entrée ZIP64 ; l'attribut externe `0x10` pour un répertoire et 0 sinon ; aucun
-        + champ supplémentaire), et une valeur est écrite telle quelle. On les modifie avec
-        + `#withHeaders`, l'alignement avec `#aligned` et le drapeau de répertoire avec
+        + calcule lui-même (l'indicateur UTF-8 exactement quand le nom en a besoin ; la version 20,
+        + ou 45 pour une entrée ZIP64 ; l'attribut externe `0x10` pour un répertoire et 0 sinon ;
+        + aucun champ supplémentaire), et une valeur est écrite telle quelle. On les modifie avec
+        + `#withHeaders`, l'alignement avec `#aligned` et l'indicateur de répertoire avec
         + `#asDirectory` : la méthode `copy` propre à la case class ne peut pas être appelée depuis
         + du code soumis au contrôle des captures, puisqu'elle ferait passer le producteur
         + `#storedBytes` par un paramètre pur.
@@ -498,7 +498,7 @@ entry .Zip
     entry #flags
       info
           - the general-purpose bit flags, or `Unset` for those zeppelin derives
-          + les drapeaux binaires à usage général, ou `Unset` pour ceux que zeppelin calcule
+          + les indicateurs binaires à usage général, ou `Unset` pour ceux que zeppelin calcule
       detail
           - Bit 3 marks the entry as streamed (`#streamed`): its CRC and sizes are written in a data
           - descriptor after the payload, which is how an archive is written to a sink that cannot
@@ -753,7 +753,7 @@ entry .Zip
         - `Zipfile.read` from a path logs `Read` at `info` level, tagged `Log.Serialization`. A
         - `Zip.Event is Loggable` must be in scope for that read; `logging.silentLogging`
         - discards it.
-        + `Zipfile.read` à partir d'un chemin journalise `Read` au niveau `info`, avec l'étiquette
+        + `Zipfile.read` à partir d'un chemin journalise `Read` au niveau `info`, avec le tag
         + `Log.Serialization`. Un `Zip.Event is Loggable` doit être dans la portée pour cette
         + lecture ; `logging.silentLogging` l'écarte.
     entry .communicable

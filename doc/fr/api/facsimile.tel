@@ -518,7 +518,7 @@ entry .Pdf
           + §9.6.2.2). Une police dont la `/BaseFont` est l'un de ces noms, ou l'un des alias
           + compatibles en métriques (`ArialMT` pour Helvetica, `TimesNewRomanPSMT` pour Times,
           + `CourierNewPSMT` pour Courier, avec leurs variantes grasses et italiques), avec ou sans
-          + étiquette de sous-ensemble comme `ABCDEF+`, est reconnue comme `#standard` et ses
+          + tag de sous-ensemble comme `ABCDEF+`, est reconnue comme `#standard` et ses
           + largeurs intégrées sont utilisées lorsque le dictionnaire n'en déclare aucune.
           + `Print.standard` fait correspondre une `Font in Print` à l'une d'elles.
       entry #baseFont
@@ -1801,7 +1801,7 @@ entry .Print
       - in Print` given for each, in the implicit scope of `(Typeface of "Helvetica") is
       - Typesettable in Print`, so no import is needed.
       + `Print` est un `Medium` de phoenicia, le pendant du `Web` de cataclysm : une famille de
-      + caractères est *composable à l'impression* lorsqu'un lecteur PDF peut l'afficher,
+      + polices est *composable à l'impression* lorsqu'un lecteur PDF peut l'afficher,
       + c'est-à-dire lorsque son programme est incorporé dans le document ou qu'elle fait partie des
       + quatorze polices standard dont dispose tout lecteur (ISO 32000-2 §9.6.2.2). Le compagnon
       + contient les cinq familles standard sous forme de valeurs — `.Helvetica`, `.Times`,
@@ -1832,7 +1832,7 @@ entry .Print
 
       - A typeface of one's own becomes available in print by declaring a provision for it,
       - embedded from an `Sfnt`:
-      + Une famille de caractères à soi devient disponible à l'impression en déclarant une
+      + Une famille de polices à soi devient disponible à l'impression en déclarant une
       + fourniture pour elle, incorporée à partir d'un `Sfnt` :
 
       ```scala
@@ -2239,7 +2239,7 @@ entry .embedFont
       + `/Widths` pour les codes 32 à 255 sous `WinAnsiEncoding`, puis alloue le dictionnaire
       + `/Font` autour d'eux. Le `name` vaut par défaut le nom PostScript propre du programme (ou
       + `Embedded`). Avec `subset`, seuls les glyphes nécessaires au texte donné sont incorporés,
-      + sous l'étiquette conventionnelle de six lettres (`ABCDEF+Name`, dérivée du nom et du texte,
+      + sous le tag conventionnel de six lettres (`ABCDEF+Name`, dérivée du nom et du texte,
       + de sorte que des sous-ensembles identiques s'incorporent à l'identique) ; seul un
       + `Truetype` peut être réduit à un sous-ensemble, car un `Opentype` CFF n'a pas de `glyf` ni
       + de `loca` à réécrire, et s'incorpore en entier.

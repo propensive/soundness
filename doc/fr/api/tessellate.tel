@@ -38,7 +38,7 @@ detail
     +   (`Flow.metrics`) ;
     + - `Alignment` complète une ligne jusqu'à une largeur : `Left`, `Right`, `Center` ou
     +   `Justify` ;
-    + - `Metrics` et `Flex` décrivent des pistes — colonnes, lignes, panneaux — qui se disputent
+    + - `Metrics` et `Flex` décrivent des pistes — colonnes, lignes, volets — qui se disputent
     +   l'espace le long d'un axe, et `Flex.solve` répartit l'espace entre elles ;
     + - `Reflowable` est la classe de types des contenus qui négocient avec une mise en page
     +   rectangulaire ;
@@ -408,7 +408,7 @@ entry .Flex
       - `#metrics`, the `#weight` with which it claims spare space (`1.0` by default), an optional
       - upper bound `#max`, and whether it is `#collapsible`: dropped entirely, lowest `#rank`
       - first, when the axis cannot hold every track's minimum.
-      + Un `Flex` décrit une piste — une colonne, une rangée, un panneau — à `Flex.solve` : les
+      + Un `Flex` décrit une piste — une colonne, une rangée, un volet — à `Flex.solve` : les
       + `#metrics` de son contenu, le `#weight` avec lequel elle revendique l'espace libre (`1.0`
       + par défaut), une borne supérieure optionnelle `#max`, et si elle est `#collapsible` :
       + supprimée entièrement, le plus petit `#rank` d'abord, lorsque l'axe ne peut contenir le
@@ -535,7 +535,7 @@ entry .Reflowable
 
       - escritoire's table cells and ultimatum's panes take their content through this
       - typeclass.
-      + Les cellules de tableau d'escritoire et les panneaux d'ultimatum reçoivent leur contenu au
+      + Les cellules de tableau d'escritoire et les volets d'ultimatum reçoivent leur contenu au
       + moyen de cette classe de types.
   refer tessellate.Flow
   refer tessellate.Metrics
@@ -619,7 +619,7 @@ entry .LineCharset
         - as a frozen array of 256 characters indexed by the four weights.
         + `charset(top, right, bottom, left)` donne le caractère dont les branches ont ces poids
         + `BoxLine`, chacun valant `Blank` par défaut. `charset()` donne la table entière du jeu,
-        + sous forme de tableau figé de 256 caractères indexé par les quatre poids.
+        + sous forme de tableau gelé de 256 caractères indexé par les quatre poids.
 
 entry .BoxDrawing
   info
@@ -629,7 +629,7 @@ entry .BoxDrawing
       - Each table is a frozen array of 256 characters, indexed by the weights of a junction's
       - four arms: `left + 4*bottom + 16*right + 64*top`, each the `ordinal` of a `BoxLine`. A
       - combination with no character of its own has the nearest one available.
-      + Chaque table est un tableau figé de 256 caractères, indexé par les poids des quatre branches
+      + Chaque table est un tableau gelé de 256 caractères, indexé par les poids des quatre branches
       + d'une jonction : `left + 4*bottom + 16*right + 64*top`, chacun étant l'`ordinal` d'un
       + `BoxLine`. Une combinaison sans caractère propre reçoit le plus proche disponible.
   refer tessellate.LineCharset

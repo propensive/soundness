@@ -359,7 +359,7 @@ List(40, 20, 8, 4, 1).each: width =>
 - `gauge` builds a pane. It takes a `Reading`, which is a mutable cell that holds the current
 - status. Assigning to the cell publishes the value, and repaints, so a gauge which is driven
 - from a background task updates itself. An application's [`Cli`](cli.md) provides the console:
-+ `gauge` construit un panneau. Il prend un `Reading`, une cellule mutable qui contient l'état
++ `gauge` construit un volet. Il prend un `Reading`, une cellule mutable qui contient l'état
 + courant. Affecter la cellule publie la valeur et redessine ; une jauge pilotée depuis une
 + tâche d'arrière-plan se met donc à jour d'elle-même. Le [`Cli`](cli.md) d'une application
 + fournit la console :
@@ -505,7 +505,7 @@ val checklist = gauge(Reading(steps))
 - - [Concurrency](concurrency.md) runs the work which a gauge reports on.
 - - [Charts](charts.md) draws data which is already complete, where a gauge draws work in
 -   progress.
-+ - [Terminal](terminal.md#layout) dispose les jauges avec d'autres panneaux, et gère la
++ - [Terminal](terminal.md#layout) dispose les jauges avec d'autres volets, et gère la
 +   saisie.
 + - [Couleurs](colors.md) décrit les couleurs que nomme une palette.
 + - [Concurrence](concurrency.md) exécute le travail dont une jauge rend compte.

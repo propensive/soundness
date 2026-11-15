@@ -249,8 +249,8 @@ entry .SourceCode
         - margin of the lines a multi-line one covers.
         + `Unset` sauf si elle est fixée par `#extract` ou `#fragment`.
         + `syntaxHighlighting.numberedTeletypeable` dessine un chevron (`╱╲`) ou un soulignement
-        + (`‾‾‾`) sous un foyer d'une seule ligne et un `║` dans la marge des lignes que couvre un
-        + foyer multiligne.
+        + (`‾‾‾`) sous un focus d'une seule ligne et un `║` dans la marge des lignes que couvre un
+        + focus multiligne.
   entry #diagnostics
     info
         - the compiler's diagnostics, empty at `Depth.Tokenized`
@@ -278,7 +278,7 @@ entry .SourceCode
         + proposées, à n'importe quelle profondeur, à partir de l'arbre de motifs de prophesy
         + appliqué aux jetons précédant le curseur ; avec un compilateur dans la portée, les propres
         + complétions du compilateur — membres, noms dans la portée, types en position de type, et
-        + membres d'un récepteur `Dynamic` issus de son compagnon `Completable` — y sont fusionnées.
+        + membres d'un receveur `Dynamic` issus de son compagnon `Completable` — y sont fusionnées.
         + Voir `Scala` pour des exemples.
   entry #lastLine
     info
@@ -724,10 +724,10 @@ entry .Scala
       - sits on a selection from a `Dynamic` type, the type's companion is loaded in this JVM
       - and, if it implements `prophesy.Completable`, asked which members the receiver's
       - refined type admits.
-      + Un membre d'un récepteur `scala.Dynamic` n'a pas de symbole à compléter ; lorsque le curseur
+      + Un membre d'un receveur `scala.Dynamic` n'a pas de symbole à compléter ; lorsque le curseur
       + se trouve sur une sélection depuis un type `Dynamic`, le compagnon du type est donc chargé
       + dans cette JVM et, s'il implémente `prophesy.Completable`, interrogé sur les membres
-      + qu'admet le type raffiné du récepteur.
+      + qu'admet le type raffiné du receveur.
   refer harlequin.ProgrammingLanguage
   refer harlequin.SourceCode
   refer harlequin.highlighting
@@ -1166,11 +1166,11 @@ entry .Fragment
         - being defined, imported or constructed, so it is not an infix receiver.
         + `val`, `var`, `def`, `type`, `class`, `object`, `trait`, `enum`, `given`, `package`,
         + `import`, `export`, `case`, `extension` et `new` : un nom qui suit l'un d'eux est en cours
-        + de définition, d'import ou de construction ; ce n'est donc pas un récepteur infixe.
+        + de définition, d'import ou de construction ; ce n'est donc pas un receveur infixe.
   entry .infixBase
     info
         - the value receiver before a space and partial name, with a synthetic `.`
-        + le récepteur valeur précédant un espace et un nom partiel, avec un `.` synthétique
+        + le receveur valeur précédant un espace et un nom partiel, avec un `.` synthétique
     detail
         - When the cursor sits at `<value> <space> <partial>` — a value followed by whitespace,
         - which is an infix method being typed — `infixBase(code, offset)` is the value
@@ -1185,11 +1185,11 @@ entry .Fragment
         + d'espaces, c'est-à-dire une méthode infixe en cours de saisie — `infixBase(code, offset)`
         + est l'expression valeur suivie d'un `.` ajouté, pour que le chemin de complétion de
         + membres la serve, et le nom partiel : `infixBase(t"xs ma", 5)` vaut `(t"xs.", t"ma")`. La
-        + base vaut `Unset` lorsqu'il n'y a pas de récepteur valeur : le jeton précédant l'espace
+        + base vaut `Unset` lorsqu'il n'y a pas de receveur valeur : le jeton précédant l'espace
         + est un mot-clé (réservé ou souple : chaque mot-clé de Scala 3 est rejeté, si bien que
-        + `erased ab` et `inline de` ne donnent aucun récepteur), un opérateur, une virgule ou un
+        + `erased ab` et `inline de` ne donnent aucun receveur), un opérateur, une virgule ou un
         + crochet ouvrant, ou un nom en position de définition ou d'import (`val xs ma`). Un
-        + récepteur entre crochets est parcouru comme un groupe équilibré, si bien que
+        + receveur entre crochets est parcouru comme un groupe équilibré, si bien que
         + `hal(nym, sly) ma` donne `hal(nym, sly).`.
   entry .expressionStart
     info
@@ -1485,7 +1485,7 @@ entry .syntaxHighlighting
   entry .numberedTeletypeable
     info
         - renders a `SourceCode` with a line-number margin, marking its focus
-        + rend un `SourceCode` avec une marge de numéros de ligne, en marquant son foyer
+        + rend un `SourceCode` avec une marge de numéros de ligne, en marquant son focus
     detail
         - Each line is prefixed by its number (from `SourceCode#offset`), right-aligned to the
         - width of the last line's number, in the palette's `accented` colour on its `margin`
@@ -1496,9 +1496,9 @@ entry .syntaxHighlighting
         + Chaque ligne est précédée de son numéro (à partir de `SourceCode#offset`), aligné à droite
         + sur la largeur du numéro de la dernière ligne, dans la couleur `accented` de la palette
         + sur son arrière-plan `margin`, suivi d'un séparateur `┋` en `subdued`. Un
-        + `SourceCode#focus` est marqué : un foyer d'une seule ligne de largeur nulle reçoit un
-        + chevron `╱╲` sous sa colonne, un foyer d'une certaine largeur un soulignement de `‾`, tous
-        + deux en `scalaError` ; un foyer s'étendant sur plusieurs lignes marque les lignes qu'il
+        + `SourceCode#focus` est marqué : un focus d'une seule ligne de largeur nulle reçoit un
+        + chevron `╱╲` sous sa colonne, un focus d'une certaine largeur un soulignement de `‾`, tous
+        + deux en `scalaError` ; un focus s'étendant sur plusieurs lignes marque les lignes qu'il
         + couvre avec `║` dans la marge. Nécessite une `ScalaSyntaxPalette`.
   entry .unnumberedTeletypeable
     info
@@ -1508,7 +1508,7 @@ entry .syntaxHighlighting
         - The lines joined with newlines, each token in its accent's colour, with no margin and
         - no focus marking. Needs a `ScalaSyntaxPalette`.
         + Les lignes jointes par des sauts de ligne, chaque jeton dans la couleur de son accent,
-        + sans marge ni marquage de foyer. Nécessite une `ScalaSyntaxPalette`.
+        + sans marge ni marquage de focus. Nécessite une `ScalaSyntaxPalette`.
 
 entry .CommonFormattable
   info
@@ -1523,7 +1523,7 @@ entry .CommonFormattable
       - role. A stylesheet is the styling policy for this front-end: `.keyword` colours the
       - keywords, and `.binding` can italicise bindings on top of their accent's colour.
       + Le `Formattable` de punctuation derrière `formattables.scalaFormattable` et
-      + `formattables.javaFormattable`, dans `harlequin.md` : un bloc délimité étiqueté `scala` ou
+      + `formattables.javaFormattable`, dans `harlequin.md` : un bloc délimité tagué `scala` ou
       + `java` dans un document Markdown est coloré avec `Scala.highlight` ou `Java.highlight` et
       + rendu sous la forme `<div class="amok"><pre>…</pre></div>`, chaque ligne étant un
       + `<span class="line">` et chaque jeton un `<code>` dont les classes sont son accent et son
@@ -1542,7 +1542,7 @@ entry .CommonFormattable
       - fence tag) and a `format` which highlights the content and passes the `SourceCode` to
       - the trait's `postprocess`.
       + Un frontal personnalisé pour un autre langage étend le trait avec un type `Self`
-      + (l'étiquette du bloc délimité) et un `format` qui colore le contenu et passe le `SourceCode`
+      + (le tag du bloc délimité) et un `format` qui colore le contenu et passe le `SourceCode`
       + au `postprocess` du trait.
   refer harlequin.Accent
   refer harlequin.SourceCode.Token.Role

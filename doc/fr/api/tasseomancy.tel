@@ -238,7 +238,7 @@ entry .Chart
         - `Chart.Style#legend` chooses one. `Right` stacks a swatch and name per series beside the
         - plot, `Bottom` flows them along the bottom in one row, and `Hidden` draws no legend and
         - reserves no room for one. A doughnut has no legend whatever the setting.
-        + `Chart.Style#legend` en choisit un. `Right` empile un échantillon et un nom par série à
+        + `Chart.Style#legend` en choisit un. `Right` empile une pastille et un nom par série à
         + côté du tracé, `Bottom` les dispose le long du bas sur une seule ligne, et `Hidden` ne
         + dessine aucune légende et ne lui réserve aucune place. Un anneau n'a pas de légende, quel
         + que soit le réglage.
@@ -321,7 +321,7 @@ entry .Chart
         - chart can only be set in a typeface the SVG will carry a `@font-face` for, or in a
         - generic family. A named family is a provision plus a font:
         + La `#font` est une `Font in Web` : une fonte associée à une fourniture pour sa famille de
-        + caractères, de sorte qu'un graphique ne peut être composé que dans une famille pour
+        + polices, de sorte qu'un graphique ne peut être composé que dans une famille pour
         + laquelle le SVG portera un `@font-face`, ou dans une famille générique. Une famille nommée
         + est une fourniture plus une police :
 
@@ -412,7 +412,7 @@ entry .Chart
     entry #swatchSize
       info
           - the side of a legend swatch: the font size
-          + le côté d'un échantillon de légende : la taille de police
+          + le côté d'une pastille de légende : la taille de police
     entry #swatch
       info
           - the colour sample beside a legend entry's name: a filled square by default
@@ -421,13 +421,13 @@ entry .Chart
       detail
           - Takes the swatch's top-left corner, the series' colour and its index, so a style may
           - draw a line sample for one series and a box for another.
-          + Prend le coin supérieur gauche de l'échantillon, la couleur de la série et son indice,
+          + Prend le coin supérieur gauche de la pastille, la couleur de la série et son indice,
           + de sorte qu'un style peut dessiner un échantillon en ligne pour une série et une boîte
           + pour une autre.
     entry #legendLabel
       info
           - a legend entry's name, set to the right of its swatch
-          + le nom d'une entrée de légende, placé à droite de son échantillon
+          + le nom d'une entrée de légende, placé à droite de sa pastille
     entry #leader
       info
           - the line from a label that had to move away from its point back to that point
@@ -1153,7 +1153,7 @@ entry .Continuous
     detail
         - Whatever the resolution of its timeline. The notation is sexagesimal with
         - `Labelling.Clock`, so gradations read `01:01:01`, in UTC.
-        + Quelle que soit la résolution de sa chronologie. La notation est sexagésimale avec
+        + Quelle que soit la résolution de sa ligne de temps. La notation est sexagésimale avec
         + `Labelling.Clock`, de sorte que les graduations se lisent `01:01:01`, en UTC.
   entry .estimate
     info
@@ -2491,7 +2491,7 @@ entry .FontMetric
   info
       - the width of a run of text in ems, as the chart's typeface will set it
       + la largeur d'un fragment de texte en cadratins, telle que la composera la famille de
-      + caractères du graphique
+      + polices du graphique
   detail
       - Multiplied by the style's font size, this decides how much room an axis's labels and a
       - legend need, and whether an abscissa's labels would overlap. The no-import default,

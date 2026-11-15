@@ -547,7 +547,7 @@ entry .Matrix
   entry #elements
     info
         - the elements, row-major, as a frozen `Array[element]^{}`
-        + les éléments, ligne par ligne, sous forme d'un `Array[element]^{}` figé
+        + les éléments, ligne par ligne, sous forme d'un `Array[element]^{}` gelé
   entry #apply
     info
         - `m(row, column)`: one element, zero-based
@@ -921,7 +921,7 @@ entry .internal
     entry #data
       info
           - the components, as a frozen `Array[element]^{}` of the element's own class
-          + les composantes, sous forme d'un `Array[element]^{}` figé de la classe propre à
+          + les composantes, sous forme d'un `Array[element]^{}` gelé de la classe propre à
           + l'élément
   entry .element
     info
@@ -943,7 +943,7 @@ entry .internal
   entry .iarray
     info
         - the components as the frozen `Array[element]^{}` they are stored in
-        + les composantes sous forme de l'`Array[element]^{}` figé dans lequel elles sont stockées
+        + les composantes sous forme de l'`Array[element]^{}` gelé dans lequel elles sont stockées
   entry .size
     info
         - the number of components, as a value, from the size in the type

@@ -452,11 +452,11 @@ sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
 - running command can be read and changed through its `Job`:
 + La *discipline de ligne* d'un terminal indique s'il renvoie en écho ce qui est tapé, s'il
 + rassemble l'entrée ligne par ligne, s'il transforme `^C` en signal, et ainsi de suite. C'est un
-+ `Termios`, nommé d'après la structure POSIX, avec un interrupteur pour chacun des drapeaux qu'un
-+ programme modifie le plus souvent. `Termios.raw` les désactive tous, comme le fait un programme
-+ plein écran avant de dessiner, et `Termios.cooked` les active tous. Un `Termios` donné à `pty`
-+ est appliqué avant le démarrage de la commande, et le terminal d'une commande en cours peut être
-+ lu et modifié par son `Job` :
++ `Termios`, nommé d'après la structure POSIX, avec un interrupteur pour chacun des indicateurs
++ qu'un programme modifie le plus souvent. `Termios.raw` les désactive tous, comme le fait un
++ programme plein écran avant de dessiner, et `Termios.cooked` les active tous. Un `Termios` donné à
++ `pty` est appliqué avant le démarrage de la commande, et le terminal d'une commande en cours peut
++ être lu et modifié par son `Job` :
 
 ```scala fuel
 typecheck
@@ -497,4 +497,4 @@ sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
 + - [Interfaces en ligne de commande](cli.md) couvre l'autre côté : un programme qui est lui-même
 +   exécuté depuis un shell.
 + - [ACP](acp.md), [débogage](debugging.md), [journalisation](logging.md), [LSP](lsp.md),
-+   [staging](staging.md) et [terminal](terminal.md) lancent et contrôlent des processus.
++   [mise en étapes](staging.md) et [terminal](terminal.md) lancent et contrôlent des processus.

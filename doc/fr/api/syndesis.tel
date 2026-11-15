@@ -131,7 +131,7 @@ entry .Discovery
       - and every later use of the name is total.
       + Chaque nom est calculé à la construction de sa valeur, avec validation, de sorte qu'un nom
       + qui dépasse les limites de DNS est une `Discovery.Error` à la construction plutôt qu'un
-      + échec sur le réseau, et que toute utilisation ultérieure du nom est totale.
+      + échec en transmission, et que toute utilisation ultérieure du nom est totale.
   refer syndesis.Discovery.Service
   refer syndesis.Discovery.Instance
   refer syndesis.Discovery.Backend
@@ -340,7 +340,7 @@ entry .Discovery
         + `key=value` doit tenir dans la chaîne de caractères de 255 octets. Les clés en double sont
         + conservées telles qu'écrites, mais `#apply` et `#has` lisent la première occurrence d'une
         + clé, en comparant les clés sans tenir compte de la casse ASCII, comme le §6.4 le
-        + recommande à un récepteur.
+        + recommande à un receveur.
 
         ```scala
         import soundness.*
@@ -412,8 +412,8 @@ entry .Discovery
     entry #strings
       info
           - the record's wire strings: one per entry, or a single empty string for none
-          + les chaînes de l'enregistrement sur le réseau : une par entrée, ou une seule chaîne vide
-          + s'il n'y en a aucune
+          + les chaînes de transmission de l'enregistrement : une par entrée,
+          + ou une seule chaîne vide s'il n'y en a aucune
   entry .Description
     info
         - what an instance advertises: its name, port, TXT record, host, priority and weight
@@ -547,9 +547,9 @@ entry .Discovery
         + `Discovery.Activity is Loggable`, auquel le backend signale ce qu'il fait pour ce prêt :
         + `Probing(name)` et `Yielded(name)` au niveau `fine` et `Conflicted(name)` pendant qu'un
         + nom est revendiqué ; `Claimed(instance)` et `Withdrawn(instance)` au début et à la fin
-        + d'une annonce ; `Browsing(service)` et `Resolved(instance)`. Toutes sont étiquetées
+        + d'une annonce ; `Browsing(service)` et `Resolved(instance)`. Toutes sont taguées
         + `Log.Network`, et celles de sondage également `Log.Protocol`. Un backend ne détient pas de
-        + journaliseur propre, si bien que son travail en arrière-plan entre les prêts — défendre un
+        + logger propre, si bien que son travail en arrière-plan entre les prêts — défendre un
         + nom, sonder à nouveau après un conflit — n'est pas signalé ; `logging.silentLogging`
         + satisfait l'exigence lorsqu'on ne veut rien.
 

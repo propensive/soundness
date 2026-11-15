@@ -491,7 +491,7 @@ entry .MustMatch
       + est ancrée aux deux extrémités, comme pour `String.matches` : `MustMatch["a+"]` accepte
       + `aaa` et rejette `baa` et `aab`, où le motif ne se trouve qu'à l'intérieur du nom. Le nom
       + vide échoue à un motif « un ou plusieurs ». C'est la règle à employer lorsque l'alphabet
-      + d'un espace de noms est une classe de caractères : les étiquettes de test de probably sont
+      + d'un espace de noms est une classe de caractères : les tags de test de probably sont
       + `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`.
 
 entry .MustNotMatch

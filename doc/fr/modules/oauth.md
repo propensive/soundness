@@ -15,7 +15,7 @@
 - authorization-code flow, and the `Credential` by which a scheme's token or key reaches a typed
 - client. For a web application, the authorization-code flow is also provided as middleware for
 - an [HTTP server](http-server.md).
-+ Le côté client de ce mécanisme est fourni ici : les octrois qui obtiennent un jeton, PKCE pour
++ Le côté client de ce mécanisme est fourni ici : les droits qui obtiennent un jeton, PKCE pour
 + le flux par code d'autorisation, et le `Credential` par lequel le jeton ou la clé d'un schéma
 + parvient à un client typé. Pour une application web, le flux par code d'autorisation est
 + aussi fourni sous forme de middleware pour un [serveur HTTP](http-server.md).
@@ -63,7 +63,7 @@ import logging.silentLogging
 
 - Each grant posts to the token endpoint, and reads the `Authorization` which comes back. A
 - refusal raises an `OAuth.Error`.
-+ Chaque octroi envoie une requête POST à l'endpoint de jetons, et lit l'`Authorization` qui
++ Chaque droit envoie une requête POST à l'endpoint de jetons, et lit l'`Authorization` qui
 + revient. Un refus lève une `OAuth.Error`.
 
 ```tabular
@@ -75,7 +75,7 @@ import logging.silentLogging
 - row  `authorizationUrl`  authorization code, first step (RFC 6749 §4.1.1)  the URL a user is sent to
 - row  `exchangeCode`  authorization code, second step (RFC 6749 §4.1.3)  the authorization, for the code the user brings back
 + column  Méthode
-+ column  Octroi
++ column  Droit
 + column  Donne
 + row  `clientCredentials`  identifiants client (RFC 6749 §4.4)  l'autorisation propre au client, pour les portées nommées
 + row  `refresh`  rafraîchissement (RFC 6749 §6)  une nouvelle autorisation, depuis un jeton de rafraîchissement ou une `Authorization` qui en porte un
@@ -84,7 +84,7 @@ import logging.silentLogging
 ```
 
 - A service which acts for itself uses the client-credentials grant:
-+ Un service qui agit pour son propre compte utilise l'octroi par identifiants client :
++ Un service qui agit pour son propre compte utilise le droit par identifiants client :
 
 ```scala fuel
 typecheck

@@ -332,7 +332,7 @@ sessionKey.unseal(nonce, t"another header".bytestream, box).read[Text]
 + Les clés voyagent sous forme [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail). Une
 + clé publique s'exporte librement. Exporter une clé *privée* exige le marqueur `Divulgence`,
 + un endroit de plus où la manipulation de données secrètes est délibérée. Une valeur `Pem` a
-+ une étiquette et ses octets, et se sérialise dans le texte blindé familier :
++ une étiquette et ses octets, et se sérialise dans le texte armuré familier :
 
 ```scala
 val pemText = privateKey.public.pem.serialize
@@ -518,8 +518,8 @@ Out.println((bytes.as[Asn1] == value).inspect)
 - reproduce the original bytes exactly. Verifying a signature over a certificate's
 - `TBSCertificate` depends on that property: a structure can be taken apart, inspected and put
 - back together without disturbing the bytes which the signature covers.
-+ Le décodage n'échoue jamais faute de type. Une étiquette que cette couche ne modélise pas,
-+ comme `T61String`, `BMPString`, `ENUMERATED` ou une valeur étiquetée implicitement, se
++ Le décodage n'échoue jamais faute de type. Un tag que cette couche ne modélise pas,
++ comme `T61String`, `BMPString`, `ENUMERATED` ou une valeur taguée implicitement, se
 + décode en `Asn1.Unknown`, qui contient ses octets de contenu tels quels. Décoder puis
 + réencoder reproduit donc exactement les octets d'origine. La vérification d'une signature
 + sur le `TBSCertificate` d'un certificat dépend de cette propriété : une structure peut être

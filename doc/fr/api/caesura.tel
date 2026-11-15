@@ -634,7 +634,7 @@ entry .Dsv
         + Un échec de **décodage** se lit _could not decode the cell because the cell was absent_,
         + ou _because the value `value` could not be parsed as `expected`_ ; sa position ne figure
         + pas dans l'erreur elle-même (`#row` et `#column` valent `Prim`, `#offset` vaut `0`) mais
-        + dans le ciblage `CellRef` qu'une stratégie cumulative enregistre avec elle.
+        + dans le focus `CellRef` qu'une stratégie cumulative enregistre avec elle.
 
         ```scala
         import soundness.*
@@ -1202,7 +1202,7 @@ entry .DsvReader
 entry .CellRef
   info
       - the position of a cell being decoded: the focus each accrued `Dsv.Error` is recorded with
-      + la position d'une cellule en cours de décodage : le ciblage avec lequel chaque `Dsv.Error`
+      + la position d'une cellule en cours de décodage : le focus avec lequel chaque `Dsv.Error`
       + cumulée est enregistrée
   detail
       - When a row decodes into a product under an accruing strategy, each field is decoded
@@ -1212,7 +1212,7 @@ entry .CellRef
       + Quand une ligne se décode en produit sous une stratégie cumulative, chaque champ est décodé
       + à l'intérieur d'un `focus(CellRef(…))`, de sorte que chaque erreur que recueille la
       + stratégie s'accompagne de la `CellRef` de la colonne où elle a été trouvée.
-      + `Validate[…, CellRef]` la nomme comme type de ciblage, et son gestionnaire la lit sous le
+      + `Validate[…, CellRef]` la nomme comme type de focus, et son gestionnaire la lit sous le
       + nom `prior`.
 
       ```scala

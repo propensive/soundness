@@ -317,7 +317,7 @@ entry .Traversable
         - match. Reading through a shared reference is sound under separation checking, which
         - excludes a live writer wherever a reader aliases it.
         + `(Array[element]^{refs}) is Traversable by element`, polymorphe en captures sur `refs`,
-        + de sorte qu'un `Array[e]^{}` gelé statiquement, une variable de capture encapsulée et une
+        + de sorte qu'un `Array[e]^{}` gelé statiquement, une variable de capture boxée et une
         + référence `any.rd` y correspondent tous. Lire par une référence partagée est sûr sous le
         + contrôle de séparation, qui exclut un écrivain actif partout où un lecteur l'aliase.
   entry .sizedFrozenArray
@@ -1712,7 +1712,7 @@ entry .Iterator
       - a constructor parameter.
       + Une implémentation écrit `new Iterator[e]:` avec deux membres et hérite du reste :
       + `update def advance(): Boolean`, qui passe à l'élément suivant et le matérialise dans une
-      + `var`, et `def current: e`, une simple lecture non encapsulée. Les deux sont réservés à ce
+      + `var`, et `def current: e`, une simple lecture non boxée. Les deux sont réservés à ce
       + package et aux implémenteurs, de sorte qu'un appelant ne peut pas lire `current` sans avoir
       + avancé. Une classe ne peut pas conserver un itérateur neuf dans une `val`
       + (« hides enclosing instance ») : créez-le dans une fabrique et capturez la variable
@@ -1807,8 +1807,8 @@ entry .Iterator
         - `Traversable` instances use. A primitive element is boxed as the standard library's
         - array iterator boxes it.
         + `Iterator.array(array)` sur un `scala.Array[e]^{caps.any.rd}`, qu'utilisent les instances
-        + `Traversable` du tableau gelé. Un élément primitif est encapsulé comme l'encapsule
-        + l'itérateur de tableau de la bibliothèque standard.
+        + `Traversable` du tableau gelé. Un élément primitif est boxé comme le
+        + fait l'itérateur de tableau de la bibliothèque standard.
   entry .empty
     info
         - an iterator with no elements

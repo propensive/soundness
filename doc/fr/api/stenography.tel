@@ -380,7 +380,7 @@ entry .Syntax
         + `Bindings` dans la portée. Un type de méthode devient sa liste de paramètres et son
         + résultat, `(x: Int): String` ; un membre sans paramètres ou par nom seulement son
         + résultat, `: Int` ; un membre de type borné ses bornes, `? <: Int` ; et une lambda de type
-        + ses paramètres de type et son corps. Le drapeau `method` du résultat indique s'il s'agit
+        + ses paramètres de type et son corps. L'indicateur `method` du résultat indique s'il s'agit
         + d'un membre terme (`def`) ou d'un membre de type (`type`).
   entry .clause
     info

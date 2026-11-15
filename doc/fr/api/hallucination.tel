@@ -21,8 +21,8 @@ detail
     + sorte qu'un `Raster in Png` et un `Raster in Jpeg` sont des types différents et que la
     + conversion de l'un à l'autre tient en une méthode, `to[Jpeg]`. Le `BufferedImage` de la JVM
     + est mutable, oublie le format dont il provient et laisse chaque décision d'encodage à des
-    + appels pilotés par des drapeaux ; un `Raster` est une valeur, et lire des octets qui ne sont
-    + pas au format nommé produit une `Raster.Error` typée, et non un null.
+    + appels pilotés par des indicateurs ; un `Raster` est une valeur, et lire des octets qui ne
+    + sont pas au format nommé produit une `Raster.Error` typée, et non un null.
 
     - A raster may also carry its **pixel layout** in its type — `Raster by Rgba`, or `Raster
     - by (Channel.Red[5], Channel.Green[6], Channel.Blue[5])` — which is a tuple of iridescence `Channel` types, most
@@ -394,14 +394,14 @@ entry .Raster
         + `unspecified` lorsque `Raster(data)` n'a trouvé aucun format reconnaissant les octets.
         + Elle est levée par les givens `Aggregable`, par `Rasterizable#read` et
         + `Rasterizable#decode`, et par `Raster(data)`. C'est une case class ; deux erreurs pour le
-        + même format et le même motif sont donc égales, et c'est ainsi qu'un test vérifie quel
+        + même format et la même raison sont donc égales, et c'est ainsi qu'un test vérifie quel
         + codec a rejeté son entrée :
         + `capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())`.
 
         - The `javax.imageio` backends used on the JVM report no reason; the pure codecs used
         - on Scala.js and WASI (and WebP everywhere) say why in `#reason`. Constructing one
         - needs a `Diagnostics` in scope, such as `errorDiagnostics.stackTracesDiagnostics`.
-        + Les implémentations `javax.imageio` utilisées sur la JVM ne donnent aucun motif ; les
+        + Les implémentations `javax.imageio` utilisées sur la JVM ne donnent aucune raison ; les
         + codecs purs utilisés sur Scala.js et WASI (et WebP partout) disent pourquoi dans
         + `#reason`. En construire une requiert des `Diagnostics` dans la portée, comme
         + `errorDiagnostics.stackTracesDiagnostics`.
@@ -428,7 +428,7 @@ entry .Raster
           + column  Cas
           + column  Signification
           + row  `BadSignature`  les premiers octets ne sont pas le nombre magique du format
-          + row  `BadCrc`  la somme de contrôle d'un chunk PNG ne correspond pas
+          + row  `BadCrc`  la somme de contrôle d'un morceau PNG ne correspond pas
           + row  `Truncated`  les données se sont terminées avant l'image, ou une lecture a dépassé leur fin
           + row  `UnsupportedVariant`  une forme que le codec n'implémente pas : un BMP encodé par plages, un JPEG à codage arithmétique, un bloc d'extension GIF qu'il ne connaît pas
           + row  `Bitstream`  un flux à codage entropique malformé, dans un JPEG ou un WebP
@@ -1143,12 +1143,12 @@ entry .RasterOpenable
       - so that the handle's type is stated exactly; the given which supplies it is
       - `canvasOpenable`, which is what a program imports. Nothing is gained by naming this
       - class directly.
-      + L'instance de classe de types derrière `raster.open[Canvas](…)` : son `Self` est `Raster by
-      + layout`, sa `Form` est `Canvas`, elle ne prend aucun drapeau (`Operand` vaut `Nothing`), et
-      + son `Result` est `CanvasHandle[layout]`. C'est une classe nommée plutôt qu'un given anonyme,
-      + pour que le type de la poignée soit énoncé exactement ; le given qui la fournit est
-      + `canvasOpenable`, que le programme importe. On ne gagne rien à nommer directement cette
-      + classe.
+      + L'instance de classe de types derrière `raster.open[Canvas](…)` : son `Self` est
+      + `Raster by layout`, sa `Form` est `Canvas`, elle ne prend aucun indicateur (`Operand` vaut
+      + `Nothing`), et son `Result` est `CanvasHandle[layout]`. C'est une classe nommée plutôt qu'un
+      + given anonyme, pour que le type de la poignée soit énoncé exactement ; le given qui la
+      + fournit est `canvasOpenable`, que le programme importe. On ne gagne rien à nommer
+      + directement cette classe.
   refer hallucination.canvasOpenable
   entry #Self
     info
@@ -1161,7 +1161,7 @@ entry .RasterOpenable
   entry #Operand
     info
         - `Nothing`: a canvas takes no flags
-        + `Nothing` : un canevas ne prend aucun drapeau
+        + `Nothing` : un canevas ne prend aucun indicateur
   entry #Result
     info
         - `CanvasHandle[layout]`: the handle the block receives
@@ -1300,11 +1300,11 @@ entry .Png
       - agree pixel for pixel.
       + Sur la JVM, `hallucination.png` décode et encode par `javax.imageio`. Sur Scala.js et WASI,
       + il utilise son codec en pur Scala, par-dessus le `Zlib` de pneumatic : le décodage couvre
-      + chaque chunk critique et chaque type de couleur (niveaux de gris, vraies couleurs, palette,
-      + avec et sans alpha), les profondeurs de 1 à 16 bits (les échantillons sur seize bits sont
-      + réduits à leur octet de poids fort), les cinq filtres, la transparence `tRNS` et
-      + l'entrelacement Adam7, et vérifie le CRC de chaque chunk, en levant une `Raster.Error` de
-      + motif `BadCrc` en cas de non-concordance ; l'encodage écrit en vraies couleurs sur huit
+      + chaque morceau critique et chaque type de couleur (niveaux de gris, vraies couleurs,
+      + palette, avec et sans alpha), les profondeurs de 1 à 16 bits (les échantillons sur seize
+      + bits sont réduits à leur octet de poids fort), les cinq filtres, la transparence `tRNS` et
+      + l'entrelacement Adam7, et vérifie le CRC de chaque morceau, en levant une `Raster.Error` de
+      + raison `BadCrc` en cas de non-concordance ; l'encodage écrit en vraies couleurs sur huit
       + bits, avec l'alpha lorsque la disposition du raster l'a, en choisissant le filtre de chaque
       + ligne de balayage par la plus petite somme des différences absolues. Les deux
       + implémentations concordent pixel pour pixel.
@@ -1370,7 +1370,7 @@ entry .Gif
       + il utilise son codec en pur Scala : le décodage lit GIF87a et GIF89a, avec tables de
       + couleurs globales et locales, entrelacement et transparence, en composant la première trame
       + sur l'écran logique — les trames suivantes d'une animation sont ignorées — et lève une
-      + `Raster.Error` de motif `UnsupportedVariant` pour un bloc qu'il ne connaît pas ; l'encodage
+      + `Raster.Error` de raison `UnsupportedVariant` pour un bloc qu'il ne connaît pas ; l'encodage
       + écrit une seule trame GIF89a avec la variante GIF de LZW.
   refer hallucination.Rasterizable
   refer hallucination.Raster
@@ -1429,7 +1429,7 @@ entry .Bmp
       + il utilise son codec en pur Scala : le décodage lit les images à palette sur 1, 4 et 8 bits
       + et les pixels sur 16, 24 et 32 bits, `BI_RGB` ou `BI_BITFIELDS` (un masque alpha dans un
       + en-tête V4 ou V5 donnant un raster `Rgba`), dans l'un ou l'autre ordre des lignes, et lève
-      + une `Raster.Error` de motif `UnsupportedVariant` pour un fichier encodé par plages ou doté
+      + une `Raster.Error` de raison `UnsupportedVariant` pour un fichier encodé par plages ou doté
       + d'un en-tête core OS/2 ; l'encodage écrit du `BI_RGB` sur 24 bits de bas en haut, la forme
       + la plus largement lue.
   refer hallucination.Rasterizable
@@ -1772,20 +1772,20 @@ entry .Webp
       - pixel, alpha included: `alpha` is `true` for WebP. A lossy VP8 encoder exists in the
       - component but is not reachable through the public API, so every WebP a program writes is
       - lossless; a program which needs lossy output supplies its own `Webp is Rasterizable`.
-      + Le décodeur lit les trois sortes de conteneurs d'après le premier chunk qui suit l'en-tête
+      + Le décodeur lit les trois sortes de conteneurs d'après le premier morceau qui suit l'en-tête
       + RIFF : une image `VP8L` sans perte, avec ses transformations de prédiction, de couleur, de
       + soustraction du vert et d'indexation des couleurs, ses groupes méta-Huffman, ses références
       + arrière et son cache de couleurs, qui donne un raster RGBA ; une image clé `VP8` avec perte,
       + avec prédiction intra, déquantification et filtre de boucle, qui donne un raster RGB
-      + opaque ; et un conteneur étendu `VP8X`, où une image avec perte peut porter un chunk `ALPH`
-      + (brut ou compressé en VP8L, avec l'un quelconque des quatre filtres) et se décode alors en
-      + RGBA, et où une animation se décode en sa seule première trame, composée sur le canevas.
-      + L'encodeur écrit du VP8L sans perte, avec les transformations de soustraction du vert et de
-      + prédiction et un codage par plages ; un raster fait donc l'aller-retour par `to[Webp]` pixel
-      + pour pixel, alpha compris : `alpha` vaut `true` pour WebP. Un encodeur VP8 avec perte existe
-      + dans le composant mais n'est pas accessible par l'API publique ; chaque WebP qu'écrit un
-      + programme est donc sans perte ; un programme qui a besoin d'une sortie avec perte fournit
-      + son propre `Webp is Rasterizable`.
+      + opaque ; et un conteneur étendu `VP8X`, où une image avec perte peut porter un morceau
+      + `ALPH` (brut ou compressé en VP8L, avec l'un quelconque des quatre filtres) et se décode
+      + alors en RGBA, et où une animation se décode en sa seule première trame, composée sur le
+      + canevas. L'encodeur écrit du VP8L sans perte, avec les transformations de soustraction du
+      + vert et de prédiction et un codage par plages ; un raster fait donc l'aller-retour par
+      + `to[Webp]` pixel pour pixel, alpha compris : `alpha` vaut `true` pour WebP. Un encodeur VP8
+      + avec perte existe dans le composant mais n'est pas accessible par l'API publique ; chaque
+      + WebP qu'écrit un programme est donc sans perte ; un programme qui a besoin d'une sortie avec
+      + perte fournit son propre `Webp is Rasterizable`.
 
       - Reading needs a `Tactic[Raster.Error]` and raises `Raster.Error(Webp())` with a reason:
       - `BadSignature` for bytes without the `RIFF…WEBP` header or an unknown first chunk,
@@ -1793,12 +1793,12 @@ entry .Webp
       - token, `InvalidTransform` for a VP8L transform applied twice, and `UnsupportedVariant`
       - for a VP8 inter-frame, a non-zero VP8L version, an unknown alpha compression, or an
       - extended file with none of the chunks the decoder knows.
-      + La lecture requiert une `Tactic[Raster.Error]` et lève `Raster.Error(Webp())` avec un
-      + motif : `BadSignature` pour des octets sans l'en-tête `RIFF…WEBP` ou avec un premier chunk
-      + inconnu, `Truncated` pour un flux qui s'arrête trop tôt, `Bitstream` pour un code ou un
-      + jeton de Huffman malformé, `InvalidTransform` pour une transformation VP8L appliquée deux
+      + La lecture requiert une `Tactic[Raster.Error]` et lève `Raster.Error(Webp())` avec une
+      + raison : `BadSignature` pour des octets sans l'en-tête `RIFF…WEBP` ou avec un premier
+      + morceau inconnu, `Truncated` pour un flux qui s'arrête trop tôt, `Bitstream` pour un code ou
+      + un jeton de Huffman malformé, `InvalidTransform` pour une transformation VP8L appliquée deux
       + fois, et `UnsupportedVariant` pour une trame inter VP8, une version VP8L non nulle, une
-      + compression alpha inconnue, ou un fichier étendu ne contenant aucun des chunks que connaît
+      + compression alpha inconnue, ou un fichier étendu ne contenant aucun des morceaux que connaît
       + le décodeur.
 
       - Written as a lossless WebP, an RGBA raster keeps every pixel; written as a JPEG, it loses

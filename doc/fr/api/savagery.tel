@@ -48,7 +48,7 @@ detail
     + Les figures sont `Svg.Rectangle`, `Svg.Ellipse` (et `Circle`, qui en crée une), `Svg.Outline`,
     + `Svg.Polyline`, `Svg.Lettering` et `Svg.Group`, toutes des `Svg.Figure` ; chacune peut porter
     + un `id` (un `Svg.Id`), un `style` CSS typé et une liste de `transforms`. La `font` d'un
-    + `Svg.Lettering` est une `Font in Web`, qui n'existe que pour une police dotée d'une provision
+    + `Svg.Lettering` est une `Font in Web`, qui n'existe que pour une police dotée d'une fourniture
     + dans la portée, de sorte que le `Svg` qui porte le texte porte aussi le `@font-face` qui rend
     + la police disponible. Les définitions sont des `Svg.Def` — un `Svg.LinearGradient` de `Stop` —
     + et un `Svg` assemble définitions et figures avec une taille, une `unit` et une `viewBox`.
@@ -914,12 +914,12 @@ entry .Svg
         - style, and the `Svg` writes a `<style>` of `@font-face` rules for every typeface its
         - lettering names into its definitions; a generic family such as `Web.sansSerifFont` adds
         - none.
-        + La `#font` est une `Font in Web` : une fonte associée à une provision pour sa police, qui
-        + n'existe que là où une telle provision est dans la portée, de sorte qu'une police
-        + dépourvue de provision ne peut pas servir au texte d'un SVG. Les déclarations de la police
-        + (`font-family`, `font-weight`, …) rejoignent le style en ligne, et le `Svg` écrit dans ses
-        + définitions un `<style>` de règles `@font-face` pour chaque police que nomment ses
-        + textes ; une famille générique telle que `Web.sansSerifFont` n'en ajoute aucune.
+        + La `#font` est une `Font in Web` : une fonte associée à une fourniture pour sa police, qui
+        + n'existe que là où une telle fourniture est dans la portée, de sorte qu'une police
+        + dépourvue de fourniture ne peut pas servir au texte d'un SVG. Les déclarations de la
+        + police (`font-family`, `font-weight`, …) rejoignent le style en ligne, et le `Svg` écrit
+        + dans ses définitions un `<style>` de règles `@font-face` pour chaque police que nomment
+        + ses textes ; une famille générique telle que `Web.sansSerifFont` n'en ajoute aucune.
 
         ```scala
         import soundness.*

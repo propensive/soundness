@@ -1070,7 +1070,7 @@ entry .evolve
 entry .Evolution
   info
       - a history of many versions, as one sequence of elements tagged with their versions
-      + un historique de nombreuses versions, sous forme d'une séquence unique d'éléments étiquetés
+      + un historique de nombreuses versions, sous forme d'une séquence unique d'éléments tagués
       + par leurs versions
   detail
       - Made by `evolve`. Its `#sequence` interleaves every element of every version, in an

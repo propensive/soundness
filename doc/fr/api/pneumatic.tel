@@ -19,7 +19,7 @@ detail
     + `compress` et `decompress`, pour chaque format qu'il connaît. Un format est un **type** —
     + `Gzip`, `Zlib`, `Deflate`, `Brotli`, `Xz`, `Lzma2` ou `Lzw` — et le verbe le prend comme
     + argument de type ; le format est donc vérifié là où le code compile, au lieu d'être analysé
-    + à partir d'une chaîne ou d'un drapeau à l'exécution. L'objet compagnon de chaque format
+    + à partir d'une chaîne ou d'une option à l'exécution. L'objet compagnon de chaque format
     + contient un given `Compression`, qui est la classe de types derrière les verbes, et rien
     + d'autre d'un codec n'a besoin d'être construit, alimenté ou terminé à la main.
 
@@ -220,7 +220,7 @@ entry .Compression
       - `.gz` file carries, Brotli is smaller at a similar speed, and XZ is the smallest at the
       - highest cost:
       + Les mêmes octets, sous chaque format : DEFLATE brut est le plus rapide, gzip ajoute
-      + l'encadrement que porte un fichier `.gz`, Brotli est plus compact à vitesse semblable, et XZ
+      + le tramage que porte un fichier `.gz`, Brotli est plus compact à vitesse semblable, et XZ
       + est le plus compact au coût le plus élevé :
 
       ```scala
@@ -427,7 +427,7 @@ entry .Deflate
       - PNG chunks and HTTP's `deflate` content encoding (in practice) carry, and the one to use
       - when the container supplies its own length and checksum.
       + `Deflate` désigne le flux de bits DEFLATE nu de la RFC 1951 : les blocs compressés seuls,
-      + sans aucun des encadrements que `Zlib` et `Gzip` placent autour d'eux. C'est la forme que
+      + sans aucun des tramages que `Zlib` et `Gzip` placent autour d'eux. C'est la forme que
       + portent les entrées ZIP, les morceaux PNG et l'encodage de contenu `deflate` de HTTP (en
       + pratique), et celle à utiliser lorsque le conteneur fournit sa propre longueur et sa propre
       + somme de contrôle.
@@ -465,7 +465,7 @@ entry .Deflate
 entry .Gzip
   info
       - DEFLATE in the framing of a `.gz` file: header, CRC-32 and length trailer
-      + DEFLATE dans l'encadrement d'un fichier `.gz` : en-tête, CRC-32 et trailer de longueur
+      + DEFLATE dans le tramage d'un fichier `.gz` : en-tête, CRC-32 et trailer de longueur
   detail
       - `Gzip` is the format of `.gz` files, of `tar.gz` archives and of HTTP's `gzip` content
       - encoding (RFC 1952): a ten-byte header, a raw DEFLATE stream, then the CRC-32 and length
@@ -525,7 +525,7 @@ entry .Zlib
       - method and window, the DEFLATE stream, and an Adler-32 checksum of the original bytes. It
       - is the compression inside PNG's `IDAT` chunks, of git's loose objects and packfile
       - entries, and of PDF's `FlateDecode` streams.
-      + `Zlib` est le format de la RFC 1950, l'encadrement propre au deflater : deux octets
+      + `Zlib` est le format de la RFC 1950, le tramage propre au deflater : deux octets
       + déclarant la méthode et la fenêtre, le flux DEFLATE, et une somme de contrôle Adler-32 des
       + octets d'origine. C'est la compression à l'intérieur des morceaux `IDAT` de PNG, des objets
       + non empaquetés et des entrées de packfile de git, et des flux `FlateDecode` de PDF.
@@ -684,7 +684,7 @@ entry .Xz
       - corrupt: integrity check failed_ for a check mismatch, and _the XZ data is corrupt:
       - truncated_ for a stream which ends early. A stream using a filter other than LZMA2 (the
       - BCJ branch filters, delta) throws _this XZ stream uses an unsupported filter_.
-      + `Lzma2` est le même codec sans l'encadrement du conteneur, et est à `Xz` ce que `Deflate`
+      + `Lzma2` est le même codec sans le tramage du conteneur, et est à `Xz` ce que `Deflate`
       + est à `Gzip`. Une entrée corrompue lève une `IllegalStateException` : _the data is not in XZ
       + format: bad magic bytes_ pour quelque chose qui n'est pas du tout du `.xz`, _the XZ data is
       + corrupt: integrity check failed_ pour une vérification discordante, et _the XZ data is
@@ -805,7 +805,7 @@ entry .Lzma2
       - chunk's compressed payload. Corrupt input throws `IllegalStateException` with a message
       - beginning _the LZMA2 data is corrupt_.
       + Contrairement à `Xz`, l'encodeur brut met en tampon toute son entrée avant d'encoder,
-      + puisqu'il n'y a aucun encadrement de blocs selon lequel la segmenter ; le décodeur est
+      + puisqu'il n'y a aucun tramage de blocs selon lequel la segmenter ; le décodeur est
       + incrémental et ne retient pas plus que la charge utile compressée d'un seul morceau. Une
       + entrée corrompue lève une `IllegalStateException` avec un message commençant par _the LZMA2
       + data is corrupt_.
@@ -1021,7 +1021,7 @@ entry .Brotli
       - same stage, and interoperates with the whole-value form.
       + Les deux sens ont besoin de la valeur entière avant de produire la moindre sortie — le
       + décodeur parce qu'une référence arrière peut s'étendre sur toute la fenêtre, l'encodeur
-      + parce qu'il choisit son encadrement d'après la longueur totale — de sorte qu'une étape
+      + parce qu'il choisit son tramage d'après la longueur totale — de sorte qu'une étape
       + Brotli dans un pipeline met en tampon tout ce qu'on lui donne et émet lors du vidage, là où
       + une étape DEFLATE émet au fur et à mesure. C'est toujours la même étape, et elle interopère
       + avec la forme valeur entière.
@@ -1075,7 +1075,7 @@ entry .Brotli
         - of `.prefix(base, window, block)`. `window` is WBITS, 10 to 24, and must be the value
         - the receiver's prefix declares. An empty `next` gives the empty last meta-block.
         + `Brotli.continuation(base, next, window = Brotli.Window)` est le ou les méta-blocs pour
-        + `next` seul, sans en-tête de flux, alignés sur l'octet et terminés par le drapeau de
+        + `next` seul, sans en-tête de flux, alignés sur l'octet et terminés par l'indicateur de
         + dernier bloc, dont les références arrière peuvent remonter jusqu'à `2^window - 16` octets,
         + dans `base`. C'est une queue valide de tout flux qui laisse `base` dans la fenêtre du
         + décodeur, et en particulier de `.prefix(base, window, block)`. `window` est WBITS, de 10 à

@@ -1669,7 +1669,7 @@ entry .Exec
         - a warning otherwise; `AbortProcess(pid)` at `info` by `Job#abort()`; and
         - `KillProcess(pid)` as a warning by `Job#kill()`. An `Exec.Event is Loggable` must be
         - in scope wherever these run; `logging.silentLogging` discards them.
-        + Chaque `Event` est étiqueté `Log.Process`. `ProcessStart(command)` est journalisé au
+        + Chaque `Event` est tagué `Log.Process`. `ProcessStart(command)` est journalisé au
         + niveau `info` par `fork`, `exec`, `detach` et une session de terminal ;
         + `PipelineStart(commands)` de même pour un pipeline ; `ProcessExit(pid, code)` par
         + `Job#exitStatus()`, au niveau `fine` pour zéro et comme avertissement sinon ;
@@ -2319,7 +2319,7 @@ entry .Termios
       - before the command starts, and a running command's is read and changed through
       - `Command.OnTerminal.Job#mode`.
       + Les réglages d'un pseudo-terminal qui décident de la façon dont ce qui est tapé parvient
-      + au programme et dont ce qu'il écrit parvient à l'écran, nommés d'après les drapeaux POSIX
+      + au programme et dont ce qu'il écrit parvient à l'écran, nommés d'après les indicateurs POSIX
       + `termios` qu'ils représentent, chacun étant un `Boolean` activé par défaut. `.cooked`
       + active tout — l'édition de ligne, l'écho, les signaux et les traductions qu'attend un
       + shell — et `.raw` désactive tout, comme le fait un programme plein écran avant de
@@ -2358,7 +2358,7 @@ entry .Termios
     detail
         - Each switch by its POSIX flag name, prefixed with `-` when off, in the order `echo`,
         - `icanon`, `isig`, `iexten`, `icrnl`, `ixon`, `opost`.
-        + Chaque option par son nom de drapeau POSIX, préfixé de `-` lorsqu'elle est désactivée,
+        + Chaque option par son nom d'indicateur POSIX, préfixé de `-` lorsqu'elle est désactivée,
         + dans l'ordre `echo`, `icanon`, `isig`, `iexten`, `icrnl`, `ixon`, `opost`.
   entry #echo
     info

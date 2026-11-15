@@ -102,20 +102,19 @@ detail
     +   `submit`, `Auth`, `Cookie`, `Session`, `Context`, `Parameter`, `Submission`,
     +   `Connect.Error`, et les packages de choix `httpRedirections`, `queryParameters` et
     +   `construables`. Indépendant de la plateforme ; la logique du client (redirections,
-    +   journalisation) se trouve ici et délègue le transport sur le réseau à un `Http.Backend`.
+    +   journalisation) se trouve ici et délègue la transmission à un `Http.Backend`.
     + - `telekinesis.forms` — `Orchestrate`/`orchestrate` et `Submission#form` : un aller-retour de
     +   formulaire rendu avec le HTML de honeycomb et les widgets de legerdemain.
     + - `telekinesis.sockets` — `httpBackends.soundnessHttp`, le backend qui parle directement le
-    +   codec réseau HTTP/1.1 sur les sockets de coaxial (JVM et Scala Native), avec des connexions
-    +   keep-alive mises en pool ; sur la JVM, son chemin `https` négocie HTTP/2 par ALPN.
+    +   codec de transmission HTTP/1.1 sur les sockets de coaxial (JVM et Scala Native), avec des
+    +   connexions keep-alive mises en pool ; sur la JVM, son chemin `https` négocie HTTP/2 par
+    +   ALPN.
     + - `telekinesis.jvm` — `httpBackends.javaNetHttp` sur `java.net.http`, et le client par socket
-    +   de domaine Unix (`udsFetchable`, `udsHttpClient`,
-    +   `requestTransmissible`).
+    +   de domaine Unix (`udsFetchable`, `udsHttpClient`, `requestTransmissible`).
     + - `telekinesis.http2` — la couche HTTP/2 (JVM uniquement) : `Http2` avec ses `Connection`,
-    +   `Stream`, `Frame`, `Event` et `Error`, les codecs `Hpack` et `Huffman`, `FrameReader`
-    +   et `PseudoHeaders`, les implémentations de `Http.Session` et le given `httpUrlSessional`
-    +   qui ouvre une session sur une URL (`url.session: session ?=> …`). Chacun a sa propre
-    +   page.
+    +   `Stream`, `Frame`, `Event` et `Error`, les codecs `Hpack` et `Huffman`, `FrameReader` et
+    +   `PseudoHeaders`, les implémentations de `Http.Session` et le given `httpUrlSessional` qui
+    +   ouvre une session sur une URL (`url.session: session ?=> …`). Chacun a sa propre page.
     + - `telekinesis.wasi` — `httpBackends.wasiHttp`, un backend sur `wasi:http` pour un composant
     +   Wasm, `WasiHttpServer` pour servir depuis un tel composant, et `wasiApis.wasiHttpApi`.
 
@@ -243,7 +242,7 @@ entry .Http
         - are case-insensitive, and the client sends them lower-case in kebab form
         - (`content-type`) when they come from a named argument. A `Header` is `Encodable in
         - Http.Header` (itself), so it can be added to a response with `response + header`.
-        + `Http.Header(key, value)`, tel que lu sur le réseau ou construit à partir d'une
+        + `Http.Header(key, value)`, tel que lu en transmission ou construit à partir d'une
         + `Directive`. Les clés sont insensibles à la casse, et le client les envoie en
         + minuscules, sous forme kebab (`content-type`), lorsqu'elles proviennent d'un argument
         + nommé. Un `Header` est `Encodable in Http.Header` (lui-même), si bien qu'on peut
@@ -545,7 +544,7 @@ entry .Http
 
         - On the wire, `Http.Response.serialize` frames a `Fixed` or `Empty` body with
         - `Content-Length` and a `Flowing` one with chunked transfer encoding.
-        + Sur le réseau, `Http.Response.serialize` délimite un corps `Fixed` ou `Empty` avec
+        + En transmission, `Http.Response.serialize` délimite un corps `Fixed` ou `Empty` avec
         + `Content-Length` et un corps `Flowing` avec l'encodage de transfert par morceaux.
     entry #stream
       info
@@ -615,7 +614,7 @@ entry .Http
     entry .serialize
       info
           - the request as HTTP/1.1 wire bytes: request line, `Host`, framing, headers, body
-          + la requête sous forme d'octets réseau HTTP/1.1 : ligne de requête, `Host`, délimitation,
+          + la requête sous forme d'octets réseau HTTP/1.1 : ligne de requête, `Host`, tramage,
           + en-têtes, corps
       detail
           - A fresh `Stream[Data] over Credit` of the whole message, for a transport which writes
@@ -705,7 +704,7 @@ entry .Http
           - For a request framed by `Content-Length`: the stream ends after `length` bytes and
           - never reads further, leaving the cursor at the start of the next pipelined request
           - on a kept-alive connection.
-          + Pour une requête délimitée par `Content-Length` : le flux se termine après `length`
+          + Pour une requête tramée par `Content-Length` : le flux se termine après `length`
           + octets et ne lit jamais plus loin, laissant le curseur au début de la requête suivante
           + en pipeline sur une connexion maintenue ouverte.
     entry .chunkedBody
@@ -748,11 +747,11 @@ entry .Http
             + column  Code
             + column  Message
             + column  Remarque
-            + row  `Expectation(expected, found)`  1  _`found` a été trouvé alors que `expected` était attendu_  une fin de ligne mal formée ; les deux sont des `Char`
-            + row  `Version(value)`  2  _la version HTTP `value` était invalide_
-            + row  `Host(value)`  3  _l'hôte `value` était absent ou invalide_
-            + row  `UriTooLong`  4  _la ligne de requête dépassait la longueur maximale_  `maxRequestLine` ; un serveur y répond par `414`
-            + row  `HeadersTooLarge`  5  _les en-têtes de la requête dépassaient la taille maximale_  `maxHeaders` ; un serveur y répond par `431`
+            + row  `Expectation(expected, found)`  1  _`found` was found when `expected` was expected_  une fin de ligne mal formée ; les deux sont des `Char`
+            + row  `Version(value)`  2  _the HTTP version `value` was invalid_
+            + row  `Host(value)`  3  _the host `value` was missing or invalid_
+            + row  `UriTooLong`  4  _the request line exceeded the maximum length_  `maxRequestLine` ; un serveur y répond par `414`
+            + row  `HeadersTooLarge`  5  _the request headers exceeded the maximum size_  `maxHeaders` ; un serveur y répond par `431`
             ```
       entry .communicable
         info
@@ -940,7 +939,7 @@ entry .Http
         + sa `Directive`) ; la seconde prend le corps, sous forme de valeur `Servable` ou de
         + `Http.Body`. Un en-tête nommé au site d'appel remplace celui que le `Servable`
         + dériverait pour le même champ unique (ainsi `contentType = …` avec un corps `Text` ne
-        + met `content-type` qu'une fois sur le réseau), tandis qu'un champ répétable tel que
+        + met `content-type` qu'une fois en transmission), tandis qu'un champ répétable tel que
         + `Set-Cookie` conserve les deux.
 
         - On the client, `#receive[Text]` reads the body as the type asked for, `#status`
@@ -1054,11 +1053,11 @@ entry .Http
           - `Tactic[Truncation.Error]`.
           + `Http.Response.serialize(response, includeBody = true, version = 1.1)` : la ligne de
           + statut, les en-têtes, avec un `Content-Length` ajouté pour un corps `Fixed` ou `Empty`
-          + et une délimitation `Transfer-Encoding: chunked` pour un corps `Flowing` (sauf si les
-          + en-têtes le délimitent déjà), la ligne vide et le corps. `includeBody = false` sert
-          + pour une réponse à une requête `HEAD` : les en-têtes de délimitation sont écrits, le
+          + et un tramage `Transfer-Encoding: chunked` pour un corps `Flowing` (sauf si les
+          + en-têtes le trament déjà), la ligne vide et le corps. `includeBody = false` sert
+          + pour une réponse à une requête `HEAD` : les en-têtes de tramage sont écrits, le
           + corps ne l'est pas. Après `101 Switching Protocols`, le corps est le flux brut du
-          + protocole mis à niveau et aucune délimitation n'est ajoutée ; pour un client HTTP/1.0,
+          + protocole mis à niveau et aucun tramage n'est ajouté ; pour un client HTTP/1.0,
           + un corps diffusé est écrit brut, et délimité par la fermeture de la connexion.
           + Nécessite un `Buffering` et une `Tactic[Truncation.Error]`.
 
@@ -1077,7 +1076,7 @@ entry .Http
           - The head exactly as `.serialize` would write it, framing headers included, for a
           - server which sends a fixed body as a second buffer straight from the handler's bytes
           - with no copy.
-          + L'en-tête exactement tel que `.serialize` l'écrirait, en-têtes de délimitation
+          + L'en-tête exactement tel que `.serialize` l'écrirait, en-têtes de tramage
           + compris, pour un serveur qui envoie un corps fixe dans un second tampon, directement à
           + partir des octets du gestionnaire, sans copie.
     entry .parse
@@ -1095,14 +1094,14 @@ entry .Http
           - byte after the body, so a kept-alive connection can parse the next response. Needs a
           - `Tactic[Http.Response.Error]`.
           + `parse(stream: Chain[Data], bodiless = false)` lit à partir d'une chaîne paresseuse ;
-          + `parse(input: Stream[Data] over Credit)` et `parse(input, bodiless)` consomment un
-          + point d'extraction. `bodiless` signale une réponse à une requête `HEAD`, qui reprend
-          + les en-têtes de délimitation du `GET` mais ne porte pas de corps. Le corps est
-          + délimité par les en-têtes : décodage par morceaux pour `Transfer-Encoding: chunked`,
-          + une suite de longueur fixe pour `Content-Length`, rien pour `204`, `304`, `1xx` ou une
-          + réponse sans corps, tout le reste pour `101`, et sinon tout jusqu'à la fermeture de la
-          + connexion. Le curseur est laissé au premier octet après le corps, de sorte qu'une
-          + connexion maintenue ouverte puisse analyser la réponse suivante. Nécessite une
+          + `parse(input: Stream[Data] over Credit)` et `parse(input, bodiless)` consomment un point
+          + d'extraction. `bodiless` signale une réponse à une requête `HEAD`, qui reprend les
+          + en-têtes de tramage du `GET` mais ne porte pas de corps. Le corps est tramé par les
+          + en-têtes : décodage par morceaux pour `Transfer-Encoding: chunked`, une suite de
+          + longueur fixe pour `Content-Length`, rien pour `204`, `304`, `1xx` ou une réponse sans
+          + corps, tout le reste pour `101`, et sinon tout jusqu'à la fermeture de la connexion. Le
+          + curseur est laissé au premier octet après le corps, de sorte qu'une connexion maintenue
+          + ouverte puisse analyser la réponse suivante. Nécessite une
           + `Tactic[Http.Response.Error]`.
 
           ```scala
@@ -1469,7 +1468,7 @@ entry .Http
         - sample of a request body for a transport which logs it. An `Http.Event is Loggable`
         - must be in scope for every `fetch` and `submit`; `logging.silentLogging` discards
         - them.
-        + Chaque `Event` est étiqueté `Log.Network`, et `Send` et `Redirect` le sont aussi
+        + Chaque `Event` est tagué `Log.Network`, et `Send` et `Redirect` le sont aussi
         + `Log.Protocol`. `Http.Client` journalise `Send(method, url, headers)` au niveau `info`
         + quand une requête part, `Redirect(from, to)` au niveau `fine` pour chaque saut qu'il
         + suit, et `Response(status)` au niveau `fine`, `warn` (4xx) ou `fail` (5xx) quand la
@@ -1782,11 +1781,11 @@ entry .Connect
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Dns`  1  _l'adresse du serveur n'a pas pu être résolue par le DNS_
-          + row  `Refused`  2  _la connexion a été refusée_
-          + row  `Ssl(reason)`  3  _la couche SSL/TLS n'a pas pu être établie car `reason`_  une `Connect.Error.Reason.Ssl.Reason`, indiquant où la couche TLS a échoué
-          + row  `Timeout`  4  _le serveur n'a pas répondu dans le délai imparti_
-          + row  `Unknown`  5  _une erreur non reconnue s'est produite_
+          + row  `Dns`  1  _the server address could not be resolved by DNS_
+          + row  `Refused`  2  _the connection was refused_
+          + row  `Ssl(reason)`  3  _the SSL/TLS layer could not be established because `reason`_  une `Connect.Error.Reason.Ssl.Reason`, indiquant où la couche TLS a échoué
+          + row  `Timeout`  4  _the server did not respond within the time limit_
+          + row  `Unknown`  5  _an unrecognized error occurred_
           ```
       entry .Ssl
         info
@@ -1807,10 +1806,10 @@ entry .Connect
             + column  Cas
             + column  Message
             + column  Remarque
-            + row  `Handshake`  _les pairs local et distant n'ont pas pu négocier le niveau de sécurité souhaité_  ce que signalent tous les problèmes de certificat et les incompatibilités de suites de chiffrement
-            + row  `Key`  _la clé SSL était invalide_
-            + row  `Peer`  _l'identité du pair distant n'a pas pu être vérifiée_
-            + row  `Protocol`  _l'implémentation locale ou distante du protocole SSL ne s'est pas comportée comme prévu_
+            + row  `Handshake`  _the local and remote peer could not negotiate the desired level of security_  ce que signalent tous les problèmes de certificat et les incompatibilités de suites de chiffrement
+            + row  `Key`  _the SSL key was bad_
+            + row  `Peer`  _the remote peer's identity could not be verified_
+            + row  `Protocol`  _the local or remote implementation of the SSL protocol did not behave as expected_
             ```
 
             - The socket-backed clients report every TLS failure as
@@ -2085,11 +2084,11 @@ entry .Directive
       + `MediaType`, et comment le rendre ; la macro derrière `fetch`, `submit` et
       + `Http.Response(…)` invoque la directive correspondant au nom de chaque argument et vérifie
       + le type de la valeur par rapport à elle, si bien que `accept = 3` est une erreur de
-      + compilation : _l'en-tête `Accept` ne peut pas prendre une valeur de type `Int`_. Le nom
-      + sur le réseau est l'étiquette en camelCase transformée en kebab-case : `contentType`
-      + devient `content-type`. Les mêmes directives typent les lecteurs dynamiques
-      + `request.headers.contentType` et `response.headers.setCookie`, en décodant le texte du
-      + champ dans le type de la directive.
+      + compilation : _l'en-tête `Accept` ne peut pas prendre une valeur de type `Int`_. Le nom en
+      + transmission est l'étiquette en camelCase transformée en kebab-case : `contentType` devient
+      + `content-type`. Les mêmes directives typent les lecteurs dynamiques
+      + `request.headers.contentType` et `response.headers.setCookie`, en décodant le texte du champ
+      + dans le type de la directive.
 
       - An unnamed argument is matched by its type alone, so a `MediaType` on its own is an
       - `accept`, and an `Auth` an `authorization`; a type which is a `Directive` for more
@@ -3371,7 +3370,7 @@ entry .httpBackends
         + un `Online`, un `Socket.Backend` (`socketBackends.javaBaseSockets` sur la JVM), un
         + `Every[Socket.Option.Tcp]`, un `Buffering` et un `Tls`. `http` en clair, c'est HTTP/1.1
         + sur une socket TCP brute avec keep-alive : lorsque l'étendue d'une réponse était
-        + explicite (un corps délimité, ou aucun corps) et qu'aucun des deux côtés n'a demandé la
+        + explicite (un corps tramé, ou aucun corps) et qu'aucun des deux côtés n'a demandé la
         + fermeture, sa connexion retourne dans un pool par origine (au plus huit connexions
         + inactives par origine) pour la requête suivante ; une socket du pool que le serveur a
         + fermée entre-temps est détectée à l'utilisation et remplacée par une seule nouvelle
@@ -3379,7 +3378,7 @@ entry .httpBackends
         + `http/1.1` pendant la poignée de main, et l'échange est conduit par le pilote HTTP/2 ou
         + HTTP/1.1 que le pair a choisi, sur la même socket, avec une connexion par requête ; sur
         + Scala Native, c'est un échange HTTP/1.1 unique sur la connexion OpenSSL de coaxial, sans
-        + ALPN ni HTTP/2. Les corps délimités sont vidés immédiatement avant qu'une connexion soit
+        + ALPN ni HTTP/2. Les corps tramés sont vidés immédiatement avant qu'une connexion soit
         + rendue ou fermée, si bien que les réponses ne sont pas encore diffusées en flux, et les
         + mises à niveau `101` sont refusées (le flux mis à niveau ne se terminerait jamais) sous
         + la forme `Connect.Error(Unknown)`. Une `Socket.Error` correspond à une `Connect.Error`
@@ -3422,7 +3421,7 @@ entry .Orchestrate
       + `initial` s'il est donné ; pour un `POST`, il décode les paramètres de la requête en
       + `value`, et, en cas d'échec, exécute la validation de l'appelant pour annoter les champs.
       + Dans les deux cas, la fonction `process` de l'appelant reçoit un moteur de rendu `form`
-      + (`Text => Html of Flow`, qui prend le libellé du bouton de soumission) et
+      + (`Text => Html of Flow`, qui prend l'étiquette du bouton de soumission) et
       + l'`Optional[value]` — `Unset` lorsque le formulaire doit être affiché à nouveau, la valeur
       + lorsqu'elle s'est décodée — et décide de ce qu'il faut répondre. C'est une capacité,
       + puisqu'il conserve la fonction de l'appelant. Dans `telekinesis.forms`.
@@ -3484,11 +3483,10 @@ entry .form
       - query, with the given `submit` button label and any `Validation` messages against the
       - fields. Returns an `Html of Flow`.
       + Une méthode d'extension sur `Submission[value]`, dans `telekinesis.forms` (afin que le
-      + modèle central ne dépende pas de honeycomb ni des widgets de legerdemain) : rend les
-      + champs du formulaire via le `Formulaic` de la valeur et la `Formulation` présente dans la
-      + portée, préremplis à partir de la requête soumise, avec le libellé de bouton `submit`
-      + donné et d'éventuels messages de `Validation` en regard des champs. Renvoie un
-      + `Html of Flow`.
+      + modèle central ne dépende pas de honeycomb ni des widgets de legerdemain) : rend les champs
+      + du formulaire via le `Formulaic` de la valeur et la `Formulation` présente dans la portée,
+      + préremplis à partir de la requête soumise, avec l'étiquette de bouton `submit` donnée et
+      + d'éventuels messages de `Validation` en regard des champs. Renvoie un `Html of Flow`.
 
 entry .requestTransmissible
   info
@@ -3678,7 +3676,7 @@ entry .Http2
 
       - The pipeline from a request to the bytes on the wire is a chain of these values, each a
       - step a program may take by hand:
-      + Le pipeline qui va d'une requête aux octets sur le réseau est une chaîne de ces valeurs,
+      + Le pipeline qui va d'une requête aux octets en transmission est une chaîne de ces valeurs,
       + chacune étant une étape qu'un programme peut effectuer à la main :
 
       ```scala fuel
@@ -4726,16 +4724,16 @@ entry .Http2
           + column  Cas
           + column  Message
           + column  Remarque
-          + row  `Truncated`  _les données HTTP/2 se sont terminées de manière inattendue_  une trame, un bloc d'en-têtes ou un entier tronqués
-          + row  `BadPreface`  _la préface de connexion n'était pas valide_
-          + row  `BadHuffman`  _la chaîne codée en Huffman n'était pas valide_  un code de plus de 30 bits, ou un remplissage qui n'est pas entièrement composé de uns
-          + row  `BadInteger`  _un entier HPACK était mal formé ou trop grand_
-          + row  `BadIndex(index)`  _l'index de table HPACK `index` était hors limites_
-          + row  `BadFrameType(id)`  _le type de trame `id` n'a pas été reconnu_
-          + row  `FrameTooLarge`  _une trame dépassait la taille maximale autorisée_
-          + row  `FlowControl`  _une fenêtre de contrôle de flux a été dépassée_
-          + row  `Protocol(message)`  _une erreur de protocole s'est produite : `message`_  une préface de connexion invalide, un remplissage invalide, une longueur de `SETTINGS` invalide, ou un bloc d'en-têtes dépourvu de `:status`, `:method`, `:path` ou `:authority`
-          + row  `GoAway(code)`  _le pair a fermé la connexion avec le code d'erreur `code`_
+          + row  `Truncated`  _the HTTP/2 data ended unexpectedly_  une trame, un bloc d'en-têtes ou un entier tronqués
+          + row  `BadPreface`  _the connection preface was not valid_
+          + row  `BadHuffman`  _the Huffman-coded string was not valid_  un code de plus de 30 bits, ou un remplissage qui n'est pas entièrement composé de uns
+          + row  `BadInteger`  _an HPACK integer was malformed or too large_
+          + row  `BadIndex(index)`  _the HPACK table index `index` was out of range_
+          + row  `BadFrameType(id)`  _the frame type `id` was not recognized_
+          + row  `FrameTooLarge`  _a frame exceeded the maximum permitted size_
+          + row  `FlowControl`  _a flow-control window was exceeded_
+          + row  `Protocol(message)`  _a protocol error occurred: `message`_  une préface de connexion invalide, un remplissage invalide, une longueur de `SETTINGS` invalide, ou un bloc d'en-têtes dépourvu de `:status`, `:method`, `:path` ou `:authority`
+          + row  `GoAway(code)`  _the peer closed the connection with error code `code`_
           ```
       entry .communicable
         info
@@ -4755,7 +4753,7 @@ entry .Http2
         - connection's reader logs `GoAway(lastStream)` as a warning — _received GOAWAY; the last
         - processed stream was `lastStream`_ — before it stops. An `Http2.Event is Loggable` must
         - be in scope for a fetch; `logging.silentLogging` discards them.
-        + Chaque `Event` est étiqueté `Log.Network` et `Log.Protocol`. `Connection#fetch`
+        + Chaque `Event` est tagué `Log.Network` et `Log.Protocol`. `Connection#fetch`
         + journalise `RequestSent(authority)` au niveau `fine` — _envoi d'une requête HTTP/2 à
         + `authority`_ — et le démon de lecture d'une connexion journalise `GoAway(lastStream)`
         + comme un avertissement — _GOAWAY reçu ; le dernier flux traité était `lastStream`_ —
@@ -4891,7 +4889,7 @@ entry .Hpack
     detail
         - `Hpack.Entry(t":status", t"200")`. Names are lowercase on the wire, and pseudo-headers
         - begin with `:`; `#size` is the field's cost in the dynamic table.
-        + `Hpack.Entry(t":status", t"200")`. Les noms sont en minuscules sur le réseau, et les
+        + `Hpack.Entry(t":status", t"200")`. Les noms sont en minuscules en transmission, et les
         + pseudo-en-têtes commencent par `:` ; `#size` est le coût du champ dans la table dynamique.
 
         ```scala

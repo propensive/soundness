@@ -23,7 +23,7 @@ detail
     + `react` et `duplex`. Les opérations sont pilotées par des classes de types —
     + `Bindable` pour tout ce qui peut servir, `Serviceable` pour un client
     + requête/réponse, `Connectable` pour un `Duplex` bidirectionnel persistant,
-    + `Routable` pour un datagramme envoyé sans attente, `Subscribable` pour un groupe
+    + `Routable` pour un datagramme envoyé sans suivi, `Subscribable` pour un groupe
     + multicast — et les transports ne diffèrent que par les instances qui existent.
 
     - A server is a **loan**: `listen` binds, runs a handler for each arrival on its own
@@ -38,7 +38,7 @@ detail
     + d'exécution à un bloc sous la forme d'un `Socket.Service`, et l'arrête à la fin du
     + bloc. Un client est un message sortant et un flux de réponse entrant (`transmit`),
     + une machine à états sur une conversation (`react`, `exchange`), ou un `Duplex` prêté
-    + à un bloc (`duplex`, ou le prêt `session`). Ce qui transite sur le réseau est une
+    + à un bloc (`duplex`, ou le prêt `session`). Ce qui transite en transmission est une
     + valeur, pas des octets : `Transmissible` indique comment un message devient des
     + octets, et `Ingressive` comment des octets deviennent un message.
 
@@ -128,7 +128,7 @@ detail
     +   sockets Unix ni TLS ; plus l'interface WIT `wasiApis.wasiSocketsApi` et le type
     +   `WasiSocketsApi`.
     + - `coaxial.dns` — `query` sur un `Endpoint[Udp.Port]` : un message DNS vers un
-    +   serveur de noms et sa réponse, via l'échange de datagramme en un coup du backend.
+    +   serveur de noms et sa réponse, via l'échange de datagramme à usage unique du backend.
 
     - What each platform's backend supports:
     + Ce que prend en charge le backend de chaque plateforme :
@@ -686,7 +686,7 @@ entry .Socket
         - (Scala Native) and `wasiSockets` (`wasi:sockets`). A third-party backend implements
         - every member; the higher-level loops (`listen`, `react`, `exchange`, `duplex`,
         - `subscribe`) then run over it unchanged.
-        + La jointure interchangeable entre l'API de coaxial, indépendante de la plateforme,
+        + La jonction interchangeable entre l'API de coaxial, indépendante de la plateforme,
         + et le système d'exploitation : l'ensemble complet des opérations de socket sur
         + lesquelles sont écrites les instances de `Bindable`, `Connectable`, `Serviceable`,
         + `Routable` et `Subscribable`, sans aucune référence à une API de plateforme. Un
@@ -714,8 +714,8 @@ entry .Socket
         + chacun a sa propre discipline de transfert d'octets : un *serveur* en flux
         + (`#listenTcp`/`#listenDomain`, `#accept`, `#shutdown`) lie, accepte et écrit une réponse
         + entière sur chaque connexion ; un *serveur* de datagrammes (`#listenUdp`, `#receive`,
-        + `#reply`, `#unbind`) reçoit un `Packet` et répond à son expéditeur ; un *échange* en un
-        + coup (`#exchangeUdp`) envoie un datagramme et attend une réponse ; une appartenance
+        + `#reply`, `#unbind`) reçoit un `Packet` et répond à son expéditeur ; un *échange* à usage
+        + unique (`#exchangeUdp`) envoie un datagramme et attend une réponse ; une appartenance
         + *multicast* (`#joinMulticast`, `#receiveMulticast`, `#sendGroup`, `#sendTo`,
         + `#leaveMulticast`) ; un *échange* requête/réponse (`#dialTcp`, `#dialTcpPort`,
         + `#dialDomain`, `#request`, `#response`, `#hangUp`) envoie une requête en flux en fermant à
@@ -766,7 +766,7 @@ entry .Socket
     entry #Courier
       info
           - the handle of a fire-and-forget datagram destination
-          + le descripteur d'une destination de datagrammes envoyés sans attente
+          + le descripteur d'une destination de datagrammes envoyés sans suivi
     entry #listenTcp
       info
           - binds a TCP port, on one interface or all, with the given options
@@ -999,7 +999,7 @@ entry .Socket
   entry .Event
     info
         - what a socket logs: listening, connected and closed, each tagged `Log.Network`
-        + ce que journalise un socket : écoute, connexion et fermeture, chacune étiquetée
+        + ce que journalise un socket : écoute, connexion et fermeture, chacune taguée
         + `Log.Network`
     detail
         - Every `Event` extends `Log.Network`, so a logging configuration can select or silence
@@ -1009,7 +1009,7 @@ entry .Socket
         - Every loan takes a `Socket.Event is Loggable`; `logging.silentLogging` discards them.
         - Each event carries the endpoint's rendering as `Text`.
         + Chaque `Event` étend `Log.Network`, si bien qu'une configuration de journalisation
-        + peut les sélectionner ou les faire taire par étiquette. `listen` et `subscribe`
+        + peut les sélectionner ou les faire taire par tag. `listen` et `subscribe`
         + journalisent `Listening` au niveau `info` au démarrage du serveur et `Closed` au
         + niveau `fine` à son arrêt ; `transmit`, `react` et `exchange` journalisent
         + `Connected` au niveau `fine` ; `duplex` journalise `Connected` au niveau `info` et
@@ -1275,7 +1275,7 @@ entry .Socket
         - started it. `Multicast.Subscription` extends it with sends to the group.
         + Un serveur de sockets en cours d'exécution est une capacité exclusive : il possède
         + la boucle d'acceptation et les tâches de connexion supervisées jusqu'à son arrêt, et
-        + la vérification de captures le confine au bloc auquel `listen` le prête, si bien
+        + le contrôle des captures le confine au bloc auquel `listen` le prête, si bien
         + qu'une boucle d'acceptation ne peut jamais s'échapper du code qui l'a démarrée.
         + `Multicast.Subscription` l'étend avec des envois au groupe.
 
@@ -1360,15 +1360,15 @@ entry .Socket
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Accept`  1  _une nouvelle connexion n'a pas pu être acceptée_
-          + row  `Transmit`  2  _les données n'ont pas pu être transmises à la connexion_
-          + row  `Close`  3  _la connexion n'a pas pu être fermée proprement_
-          + row  `Handshake`  4  _la poignée de main TLS avec le pair a échoué_  un certificat que la politique de confiance rejette, un nom d'hôte qui ne correspond pas, ou le refus d'un certificat client par un serveur en écoute
-          + row  `Timeout`  5  _aucune réponse n'est arrivée avant l'expiration du délai_  une réception de datagramme sous une `Socket.Option.Timeout`, ou une connexion dont le délai a expiré
-          + row  `Connect`  6  _la connexion n'a pas pu être établie_
-          + row  `Refused`  7  _le pair a refusé la connexion_
-          + row  `Dns`  8  _l'hôte n'a pas pu être résolu_
-          + row  `Unsupported`  9  _ce type de socket n'est pas pris en charge sur cette plateforme_  un socket Unix sur Scala Native ou WASI
+          + row  `Accept`  1  _a new connection could not be accepted_
+          + row  `Transmit`  2  _data could not be transmitted to the connection_
+          + row  `Close`  3  _the connection could not be closed cleanly_
+          + row  `Handshake`  4  _the TLS handshake with the peer failed_  un certificat que la politique de confiance rejette, un nom d'hôte qui ne correspond pas, ou le refus d'un certificat client par un serveur en écoute
+          + row  `Timeout`  5  _no response arrived before the timeout_  une réception de datagramme sous une `Socket.Option.Timeout`, ou une connexion dont le délai a expiré
+          + row  `Connect`  6  _the connection could not be established_
+          + row  `Refused`  7  _the peer refused the connection_
+          + row  `Dns`  8  _the host could not be resolved_
+          + row  `Unsupported`  9  _the kind of socket is not supported on this platform_  un socket Unix sur Scala Native ou WASI
           ```
     entry .communicable
       info
@@ -1437,10 +1437,10 @@ entry .Bind
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `PortInUse`  1  _un autre processus est déjà lié au port_
-          + row  `PermissionDenied`  2  _l'utilisateur n'a pas la permission de lier le port_  un port inférieur à 1024 sans privilège
-          + row  `AddressUnavailable`  3  _l'adresse demandée n'est pas disponible sur cet hôte_
-          + row  `Unsupported`  4  _ce type de socket n'est pas pris en charge sur cette plateforme_
+          + row  `PortInUse`  1  _another process is already bound to the port_
+          + row  `PermissionDenied`  2  _the user does not have permission to bind the port_  un port inférieur à 1024 sans privilège
+          + row  `AddressUnavailable`  3  _the requested address is not available on this host_
+          + row  `Unsupported`  4  _the kind of socket is not supported on this platform_
           ```
     entry .communicable
       info
@@ -1646,7 +1646,7 @@ entry .Routable
       - `Udp.Port` (on the local host) are `Routable`; `Serviceable` extends it with a response
       - and a close, which is what makes a TCP endpoint's `transmit` return a reply stream
       - where a UDP endpoint's returns `Unit`.
-      + Le rôle de l'envoi sans attente : on peut se connecter à un endpoint `Routable` et
+      + Le rôle de l'envoi sans suivi : on peut se connecter à un endpoint `Routable` et
       + lui envoyer un message sérialisé, sans rien attendre. `Endpoint[Udp.Port]` et
       + `Udp.Port` (sur l'hôte local) sont `Routable` ; `Serviceable` l'étend avec une
       + réponse et une fermeture, et c'est ce qui fait que le `transmit` d'un endpoint TCP
@@ -2166,7 +2166,7 @@ entry .Transmissible
     detail
         - Bound exactly at `Data`: a subtype parameter would instantiate the frozen array at a
         - wildcard capture which cannot flow back, so a branded `Data` needs `.sizedBytes`.
-        + Borné exactement à `Data` : un paramètre de sous-type instancierait le tableau figé
+        + Borné exactement à `Data` : un paramètre de sous-type instancierait le tableau gelé
         + avec une capture joker qui ne peut pas refluer ; une `Data` marquée exige donc
         + `.sizedBytes`.
   entry .sizedBytes
@@ -2218,7 +2218,7 @@ entry .Ingressive
       - validated on arrival, rather than text to be checked later.
       + Le pendant entrant de `Transmissible` : `react` et `exchange` décodent chaque
       + message entrant — une fenêtre de remplissage du flux de la connexion — via
-      + l'`Ingressive` du type de message du gestionnaire. Un `Port` reçu sur le réseau est
+      + l'`Ingressive` du type de message du gestionnaire. Un `Port` reçu en transmission est
       + donc un `Port`, validé à l'arrivée, plutôt qu'un texte à vérifier plus tard.
 
       ```scala
@@ -2278,7 +2278,7 @@ entry .Packet
       + Ce que reçoivent un gestionnaire `listen` UDP et un gestionnaire `subscribe`, et ce
       + que renvoie `Socket.Backend#exchangeUdp`. L'expéditeur est la destination d'une
       + réponse, et c'est pourquoi `UdpResponse.Reply` et `Multicast.Reply.Unicast` n'ont
-      + pas besoin d'une adresse propre ; et pour un échange en un coup, c'est ainsi qu'un
+      + pas besoin d'une adresse propre ; et pour un échange à usage unique, c'est ainsi qu'un
       + appelant vérifie que la réponse provient du bon endroit.
 
       ```scala
@@ -2895,7 +2895,7 @@ entry .Tls
         - certificate is already trusted out of band; a pinning `TlsAcceptance` turns it off
         - itself, since the pin names the peer. On Scala Native, off also disables certificate
         - verification altogether.
-        + Activée par défaut (identification du point de terminaison selon la RFC 2818).
+        + Activée par défaut (identification de l'endpoint selon la RFC 2818).
         + Désactivée uniquement pour un pair autosigné dont le certificat est déjà approuvé
         + par un autre canal ; une `TlsAcceptance` qui épingle la désactive elle-même, puisque
         + l'épingle nomme le pair. Sur Scala Native, la désactiver désactive aussi entièrement

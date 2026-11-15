@@ -244,8 +244,8 @@ Out.println(Syntax.name[Addable by Int to Double])
 - nodes and types. The result is a value which renders as a navigable diagram.
 - `Introspect.semantics` does the same for the flags and members of a symbol:
 + `Introspect.syntax` capture l'arbre d'une expression, tel que le voit le compilateur, avec
-+ ses étiquettes, ses nœuds et ses types. Le résultat est une valeur qui se rend sous forme de
-+ diagramme navigable. `Introspect.semantics` fait de même pour les drapeaux et les membres
++ ses tags, ses nœuds et ses types. Le résultat est une valeur qui se rend sous forme de
++ diagramme navigable. `Introspect.semantics` fait de même pour les indicateurs et les membres
 + d'un symbole :
 
 ```scala

@@ -17,7 +17,7 @@ detail
     - about the one thing every Git library must be honest about: the repository is on disk, and
     - other processes write it.
     + _Octogenarian_ pilote [Git](https://git-scm.com/) depuis Scala par des opérations typées sur
-    + un handle de dépôt, plutôt que par des chaînes de commande assemblées à la main dont la
+    + une poignée de dépôt, plutôt que par des chaînes de commande assemblées à la main dont la
     + sortie textuelle est analysée ensuite. Une branche (`Git.Branch`), un tag (`Git.Tag`) et un
     + hachage de commit (`Git.Hash`) sont des types distincts : une opération qui attend une
     + branche n'accepte donc pas un tag ; les résultats reviennent sous forme de valeurs
@@ -34,13 +34,13 @@ detail
     - compare-and-swap, `git update-ref ref new old`, made unavoidable, so that a commit cannot
     - overwrite work another process committed between the read and the write.
     + Cette honnêteté a deux volets. Toute lecture qui résout une ref, HEAD, l'index, les fichiers
-    + de travail, le reflog, le stash, la configuration, les remotes ou les worktrees liés renvoie
-    + une valeur `Stale` : ce qu'elle contient était vrai au moment de la lecture, et peut avoir
-    + changé depuis. Et toute écriture qui déplace une ref prend la lecture `Stale` dont elle
-    + dépend, et échoue avec `Git.Error(Moved(ref, expected, actual))` si la ref ne la contient
-    + plus — le compare-and-swap de Git lui-même, `git update-ref ref new old`, rendu
-    + incontournable, de sorte qu'un commit ne peut pas écraser un travail qu'un autre processus a
-    + commité entre la lecture et l'écriture.
+    + de travail, le reflog, le stash, la configuration, les dépôts distants ou les worktrees liés
+    + renvoie une valeur `Stale` : ce qu'elle contient était vrai au moment de la lecture, et peut
+    + avoir changé depuis. Et toute écriture qui déplace une ref prend la lecture `Stale` dont elle
+    + dépend, et échoue avec `Git.Error(Moved(ref, expected, actual))` si la ref ne la contient plus
+    + — le compare-and-swap de Git lui-même, `git update-ref ref new old`, rendu incontournable, de
+    + sorte qu'un commit ne peut pas écraser un travail qu'un autre processus a commité entre la
+    + lecture et l'écriture.
 
     - A repository is created with `Git.init` and opened, for the duration of a block, in one of
     - two forms. `Git.Repo` is the object database and its refs, which a bare repository has;
@@ -50,8 +50,8 @@ detail
     + Un dépôt est créé avec `Git.init` et ouvert, le temps d'un bloc, sous l'une de deux formes.
     + `Git.Repo` est la base d'objets et ses refs, ce que possède un dépôt nu ; `Git.Worktree` est
     + une arborescence extraite, avec un index et des fichiers de travail, au-dessus de son dépôt.
-    + Le mode nomme les droits que porte le handle : un handle ouvert avec `Read` seul ne peut pas
-    + servir à écrire, ce qui est une erreur à la compilation plutôt qu'à l'exécution.
+    + Le mode nomme les droits que porte la poignée : une poignée ouverte avec `Read` seul ne peut
+    + pas servir à écrire, ce qui est une erreur à la compilation plutôt qu'à l'exécution.
 
     ```scala
     import soundness.*
@@ -85,10 +85,10 @@ detail
     - `worktree / "notes.txt"`, belong to this handle alone, cannot express `..`, and may be read
     - and written with the filesystem operations under the same grants.
     + Un `Git.Worktree.Handle` est aussi un `Git.Repo.Handle`, si bien que toute opération sur le
-    + dépôt y est disponible, et c'est un handle de répertoire galilei : les chemins formés à partir
-    + de lui, comme `worktree / "notes.txt"`, appartiennent à ce seul handle, ne peuvent pas
-    + exprimer `..`, et peuvent être lus et écrits avec les opérations du système de fichiers sous
-    + les mêmes droits.
+    + dépôt y est disponible, et c'est une poignée de répertoire galilei : les chemins formés à
+    + partir d'elle, comme `worktree / "notes.txt"`, appartiennent à cette seule poignée, ne peuvent
+    + pas exprimer `..`, et peuvent être lus et écrits avec les opérations du système de fichiers
+    + sous les mêmes droits.
 
     - Underneath, the operations are carried out by a **backend**, a `Git.Backend`, chosen by
     - importing one given by name from the `gitBackends` package:
@@ -196,8 +196,8 @@ detail
     - - `octogenarian.sshNative` — `SshNative`, remote repositories over the native SSH client,
     -   as `gitTransports.soundnessSsh`.
     + - `octogenarian.core` — le modèle (`Git` et tout ce qu'il contient, `Commit`, `Git.Delta`,
-    +   `Git.Hunk`, `Git.Patch`, `Git.Remote`, `ReflogEntry`, `Notes` et `NoteRef`), les handles
-    +   `Git.Repo` et `Git.Worktree` et la classe de types `Git.Backend` qu'ils pilotent. Aucun
+    +   `Git.Hunk`, `Git.Patch`, `Git.Remote`, `ReflogEntry`, `Notes` et `NoteRef`), les poignées
+    +   `Git.Repo` et `Git.Worktree` et la classe de types `Git.Backend` qu'elles pilotent. Aucun
     +   processus n'est lancé ici, si bien qu'un utilisateur du backend natif ne compile jamais
     +   guillotine. JVM et Scala Native ; sur Scala Native, dont la javalib n'a pas de
     +   `java.time`, un nouveau commit est horodaté en UTC.
@@ -230,7 +230,7 @@ detail
     - Whichever backend is chosen, `Exclusive` arbitrates only between handles in this JVM.
     - Another process is never waited for, which is why every ref-moving operation is a
     - compare-and-swap on the `Stale` reading it was given.
-    + Quel que soit le backend choisi, `Exclusive` n'arbitre qu'entre les handles de cette JVM. Un
+    + Quel que soit le backend choisi, `Exclusive` n'arbitre qu'entre les poignées de cette JVM. Un
     + autre processus n'est jamais attendu ; c'est pourquoi toute opération qui déplace une ref est
     + un compare-and-swap sur la lecture `Stale` qu'on lui a donnée.
 
@@ -246,7 +246,7 @@ refer aperture.Stale
 entry .Git
   info
       - the namespace of Git's model and of the repository and worktree handles
-      + l'espace de noms du modèle de Git et des handles de dépôt et de worktree
+      + l'espace de noms du modèle de Git et des poignées de dépôt et de worktree
   detail
       - `Git` holds everything Git itself names: references (`Git.Ref`, `Git.Branch`, `Git.Tag`,
       - `Git.Hash`, `Git.Revision`, `Git.Refspec`), objects (`Git.Object` and its kinds), who and
@@ -267,8 +267,8 @@ entry .Git
       + `Git.Activity`), la signature (`Git.Signer`, `Git.Verifier`, `Git.Verification`), ses
       + erreurs (`Git.Error`, `Git.RefError`), et les deux formes sous lesquelles un chemin est
       + ouvert : `Git.Repo` et `Git.Worktree`, qui prêtent chacun un `Handle` le temps d'un bloc.
-      + `Git.Backend` est la classe de types que pilote un handle, implémentée par `Commandline` et
-      + `Native`.
+      + `Git.Backend` est la classe de types que pilote une poignée, implémentée par `Commandline`
+      + et `Native`.
 
       - Three operations create repositories: `.init` makes one, `.clone` copies one from a path
       - or a URL, and `.cloneCommit` fetches exactly one commit. Each takes a `Git.Backend^` and a
@@ -415,40 +415,40 @@ entry .Git
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `CannotExecuteGit`  1  _la commande `git` n'a pas pu être exécutée_
-          + row  `NoRepository(path)`  2  _`path` n'est pas un dépôt Git_  levée à l'ouverture
-          + row  `NoWorktree`  3  _le dépôt n'a pas d'arbre de travail_  il ne peut donc pas être ouvert comme `Git.Worktree`
-          + row  `Moved(ref, expected, actual)`  4  _`ref` valait `expected` à la lecture mais vaut maintenant `actual`_  un compare-and-swap a échoué ; chaque hachage peut être `Unset`, rendu _rien_ ; `ref` est nommée comme l'appelant l'a utilisée (`HEAD`), comme le fait git
-          + row  `NoSuchRef(ref)`  5  _la référence `ref` n'existe pas_
-          + row  `NoSuchObject(hash)`  6  _l'objet `hash` n'existe pas_
-          + row  `RefExists(ref)`  7  _la référence `ref` existe déjà_
-          + row  `Unmerged(branch, tip)`  8  _la branche `branch` en `tip` n'est pas entièrement fusionnée_  `deleteBranch` a refusé sans `force`
-          + row  `Conflict(paths)`  9  _il y a des conflits dans `paths`_
-          + row  `NothingToCommit`  10  _il n'y a rien à commiter_  l'arbre est inchangé et `allowEmpty` n'a pas été donné
-          + row  `Detached`  11  _HEAD est détachée_  là où une branche était nécessaire (`pull`)
-          + row  `Dirty(paths)`  12  _des modifications locales seraient écrasées dans `paths`_
-          + row  `NotFastForward`  13  _la mise à jour n'est pas une avance rapide_
-          + row  `OutsideWorktree(path)`  14  _`path` est en dehors de l'arbre de travail_
-          + row  `Untracked(path)`  15  _`path` n'est pas suivi_
-          + row  `NoOperationInProgress`  16  _aucune fusion, aucun rebase, cherry-pick ou revert n'est en cours_
-          + row  `OperationInProgress(operation)`  17  _une opération est déjà en cours_
-          + row  `NoSuchRemote(name)`  18  _le remote `name` n'existe pas_
-          + row  `RemoteExists(name)`  19  _le remote `name` existe déjà_
-          + row  `Unauthorized(remote)`  20  _l'authentification auprès de `remote` a échoué_
-          + row  `Unreachable(remote)`  21  _le remote `remote` n'a pas pu être atteint_
-          + row  `RemoteRejected(ref, reason)`  22  _le remote a rejeté `ref` : `reason`_
-          + row  `LeaseFailed(ref, expected, actual)`  23  _la `ref` du remote devait valoir `expected` mais vaut `actual`_  une attente de `Push.Force.Lease` était fausse
-          + row  `NoteNotFound`  24  _aucune note n'était attachée à l'objet donné_
-          + row  `NoSuchConfig(key)`  25  _la clé de configuration `key` n'est pas définie_  le `user.name` ou le `user.email` du committer, lors de la création d'un commit
-          + row  `InvalidConfig(key, value)`  26  _`value` n'est pas une valeur valide pour `key`_
-          + row  `BadSignature(detail)`  27  _la signature n'a pas pu être vérifiée : `detail`_
-          + row  `SigningFailed(detail)`  28  _l'objet n'a pas pu être signé : `detail`_
-          + row  `Unsupported(operation)`  29  _`operation` n'est pas pris en charge par ce backend_  aussi une ouverture exclusive concurrente qui a été refusée
-          + row  `Unexpected`  30  _git a signalé un échec inattendu_  un échec que la table des raisons ne connaît pas ; le message de git est conservé comme `detail` de l'erreur
-          + row  `NoteExists(target)`  31  _une note est déjà attachée à `target`_
-          + row  `NoSuchWorktree(path)`  32  _`path` n'est pas un arbre de travail lié_
-          + row  `NoSuchStash`  33  _l'entrée de stash n'existe pas_
-          + row  `Locked(ref)`  34  _le fichier de verrou de `ref` est détenu par un autre processus_
+          + row  `CannotExecuteGit`  1  _the `git` command could not be executed_
+          + row  `NoRepository(path)`  2  _`path` is not a Git repository_  levée à l'ouverture
+          + row  `NoWorktree`  3  _the repository has no working tree_  il ne peut donc pas être ouvert comme `Git.Worktree`
+          + row  `Moved(ref, expected, actual)`  4  _`ref` was `expected` when read but is now `actual`_  un compare-and-swap a échoué ; chaque hachage peut être `Unset`, rendu _rien_ ; `ref` est nommée comme l'appelant l'a utilisée (`HEAD`), comme le fait git
+          + row  `NoSuchRef(ref)`  5  _the reference `ref` does not exist_
+          + row  `NoSuchObject(hash)`  6  _the object `hash` does not exist_
+          + row  `RefExists(ref)`  7  _the reference `ref` already exists_
+          + row  `Unmerged(branch, tip)`  8  _the branch `branch` at `tip` is not fully merged_  `deleteBranch` a refusé sans `force`
+          + row  `Conflict(paths)`  9  _there are conflicts in `paths`_
+          + row  `NothingToCommit`  10  _there is nothing to commit_  l'arbre est inchangé et `allowEmpty` n'a pas été donné
+          + row  `Detached`  11  _HEAD is detached_  là où une branche était nécessaire (`pull`)
+          + row  `Dirty(paths)`  12  _local changes would be overwritten in `paths`_
+          + row  `NotFastForward`  13  _the update is not a fast-forward_
+          + row  `OutsideWorktree(path)`  14  _`path` is outside the working tree_
+          + row  `Untracked(path)`  15  _`path` is not tracked_
+          + row  `NoOperationInProgress`  16  _no merge, rebase, cherry-pick or revert is in progress_
+          + row  `OperationInProgress(operation)`  17  _an operation is already in progress_
+          + row  `NoSuchRemote(name)`  18  _the remote `name` does not exist_
+          + row  `RemoteExists(name)`  19  _the remote `name` already exists_
+          + row  `Unauthorized(remote)`  20  _authentication with `remote` failed_
+          + row  `Unreachable(remote)`  21  _the remote `remote` could not be reached_
+          + row  `RemoteRejected(ref, reason)`  22  _the remote rejected `ref`: `reason`_
+          + row  `LeaseFailed(ref, expected, actual)`  23  _the remote's `ref` was expected to be `expected` but is `actual`_  une attente de `Push.Force.Lease` était fausse
+          + row  `NoteNotFound`  24  _no note was attached to the given object_
+          + row  `NoSuchConfig(key)`  25  _the configuration key `key` is not set_  le `user.name` ou le `user.email` du committer, lors de la création d'un commit
+          + row  `InvalidConfig(key, value)`  26  _`value` is not a valid value for `key`_
+          + row  `BadSignature(detail)`  27  _the signature could not be verified: `detail`_
+          + row  `SigningFailed(detail)`  28  _the object could not be signed: `detail`_
+          + row  `Unsupported(operation)`  29  _`operation` is not supported by this backend_  aussi une ouverture exclusive concurrente qui a été refusée
+          + row  `Unexpected`  30  _git reported an unexpected failure_  un échec que la table des raisons ne connaît pas ; le message de git est conservé comme `detail` de l'erreur
+          + row  `NoteExists(target)`  31  _a note is already attached to `target`_
+          + row  `NoSuchWorktree(path)`  32  _`path` is not a linked working tree_
+          + row  `NoSuchStash`  33  _the stash entry does not exist_
+          + row  `Locked(ref)`  34  _the lock file for `ref` is held by another process_
           ```
     entry .communicable
       info
@@ -509,14 +509,14 @@ entry .Git
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `LeadingOrTrailingDot`  1  _un segment de chemin commence ou se termine par `.`_
-          + row  `ReservedSuffix`  2  _un segment de chemin se termine par le suffixe réservé `.lock`_
-          + row  `ReservedSequence`  3  _le nom contient la séquence réservée `@{`_
-          + row  `DoubleDot`  4  _le nom contient `..`_
-          + row  `EmptySegment`  5  _le nom contient un segment de chemin vide_
-          + row  `InvalidCharacter`  6  _le nom contient un caractère interdit par Git_  `*`, `[`, `\`, espace, `^`, `~`, `:` ou `?`
-          + row  `BadHash`  7  _la valeur n'est pas un hachage hexadécimal de 40 caractères_  hexadécimal en minuscules uniquement
-          + row  `BadRefspec`  8  _la valeur n'est pas un refspec valide_
+          + row  `LeadingOrTrailingDot`  1  _a path segment starts or ends with `.`_
+          + row  `ReservedSuffix`  2  _a path segment ends with the reserved suffix `.lock`_
+          + row  `ReservedSequence`  3  _the name contains the reserved sequence `@{`_
+          + row  `DoubleDot`  4  _the name contains `..`_
+          + row  `EmptySegment`  5  _the name contains an empty path segment_
+          + row  `InvalidCharacter`  6  _the name contains a character forbidden by Git_  `*`, `[`, `\`, espace, `^`, `~`, `:` ou `?`
+          + row  `BadHash`  7  _the value is not a 40-character hexadecimal hash_  hexadécimal en minuscules uniquement
+          + row  `BadRefspec`  8  _the value is not a valid refspec_
           ```
     entry .communicable
       info
@@ -731,7 +731,7 @@ entry .Git
         + être `Unset`, et indique si la mise à jour est forcée (`#force`, le `+` initial). Un
         + refspec sans source mais avec une destination supprime la destination lors d'un push.
         + `fetch` et `push` en prennent une liste, et `addRemote` en enregistre un comme refspec de
-        + fetch du remote, par défaut `+refs/heads/*:refs/remotes/<name>/*`.
+        + fetch du dépôt distant, par défaut `+refs/heads/*:refs/remotes/<name>/*`.
 
         ```scala
         import soundness.*
@@ -898,7 +898,7 @@ entry .Git
       entry #signature
         info
             - the armoured signature block, if the tag is signed
-            + le bloc de signature en armure ASCII, si le tag est signé
+            + le bloc de signature armuré en ASCII, si le tag est signé
     entry #text
       info
           - the tag's name
@@ -1323,8 +1323,8 @@ entry .Git
         + Ce que liste `status()` sur un `Git.Worktree.Handle`, un par chemin : l'état de l'index
         + par rapport à HEAD, l'état du fichier de travail par rapport à l'index (chacun `Unset`
         + s'il est inchangé), le chemin et, pour un renommage ou une copie, sa provenance. Les
-        + chemins sont sur le plan du handle de worktree : ils ne peuvent donc pas survivre au
-        + handle, et peuvent être lus et écrits à travers lui.
+        + chemins sont sur le plan de la poignée de worktree : ils ne peuvent donc pas survivre à la
+        + poignée, et peuvent être lus et écrits à travers elle.
     entry #index
       info
           - the index's state relative to HEAD, if changed
@@ -1336,7 +1336,7 @@ entry .Git
     entry #path
       info
           - the path, on the worktree handle's plane
-          + le chemin, sur le plan du handle de worktree
+          + le chemin, sur le plan de la poignée de worktree
     entry #origin
       info
           - where a renamed or copied path came from
@@ -1355,14 +1355,14 @@ entry .Git
         - interface polls `#report` at its own cadence, or, for a reactive one, drains `#updates`,
         - a `Relay` which exists only once asked for, so a poll-only caller pays nothing for it.
         + Une opération distante de longue durée bloque jusqu'à sa fin et signale sa progression via
-        + une `Activity` : une poignée de cellules atomiques — la phase, si c'est le remote qui la
-        + signale, la quantité faite sur la quantité totale, et les octets transférés — chacune mise
-        + à jour de façon indivisible, de sorte qu'aucun autre thread ne voit un état à moitié fait.
-        + La mise à jour n'alloue rien : un backend incrémente les compteurs à l'arrivée d'une ligne
-        + de sideband ou au traitement d'un objet. Une interface utilisateur interroge `#report` à
-        + son propre rythme ou, pour une interface réactive, vide `#updates`, un `Relay` qui
-        + n'existe que s'il est demandé, si bien qu'un appelant qui se contente d'interroger ne paie
-        + rien pour lui.
+        + une `Activity` : une poignée de cellules atomiques — la phase, si c'est le dépôt distant
+        + qui la signale, la quantité faite sur la quantité totale, et les octets transférés —
+        + chacune mise à jour de façon indivisible, de sorte qu'aucun autre thread ne voit un état à
+        + moitié fait. La mise à jour n'alloue rien : un backend incrémente les compteurs à
+        + l'arrivée d'une ligne de sideband ou au traitement d'un objet. Une interface utilisateur
+        + interroge `#report` à son propre rythme ou, pour une interface réactive, vide `#updates`,
+        + un `Relay` qui n'existe que s'il est demandé, si bien qu'un appelant qui se contente
+        + d'interroger ne paie rien pour lui.
 
         - The operations take `activity: Optional[Activity^] = Unset` and make a private one when
         - none is given. A caller who wants to watch makes one and passes it:
@@ -1505,7 +1505,7 @@ entry .Git
   entry .Config
     info
         - git configuration: keys, scopes, sources, and the handle which reads and writes them
-        + la configuration git : clés, portées, sources, et le handle qui les lit et les écrit
+        + la configuration git : clés, portées, sources, et la poignée qui les lit et les écrit
     detail
         - Configuration is read and written through a lent `Git.Config.Handle`, typed by the
         - value's codec: `repo.config { config ?=> config.get[Text](key) }` reads the repository's
@@ -1587,7 +1587,7 @@ entry .Git
     entry .Source
       info
           - the configuration file a handle reads and writes
-          + le fichier de configuration qu'un handle lit et écrit
+          + le fichier de configuration qu'une poignée lit et écrit
       detail
           - `Repository(gitDir, scope)` is a repository's own file in a scope; `File(path)` is a
           - named file, such as `~/.gitconfig`; `Effective(gitDir)` reads through every scope git
@@ -1596,12 +1596,12 @@ entry .Git
           + `Repository(gitDir, scope)` est le fichier propre d'un dépôt dans une portée ;
           + `File(path)` est un fichier nommé, comme `~/.gitconfig` ; `Effective(gitDir)` lit à
           + travers toutes les portées que git consulterait pour le dépôt, et ne peut pas être
-          + écrit. La `#source` du handle est l'un d'eux ; les méthodes `configRead`, `configWrite`
-          + et `configUnset` d'un `Git.Backend` en prennent un.
+          + écrit. La `#source` de la poignée est l'un d'eux ; les méthodes `configRead`,
+          + `configWrite` et `configUnset` d'un `Git.Backend` en prennent un.
     entry .Handle
       info
           - a lent configuration handle: `get`, `all` and `list` to read, `set`, `add` and `unset` to write
-          + un handle de configuration prêté : `get`, `all` et `list` pour lire, `set`, `add` et
+          + une poignée de configuration prêtée : `get`, `all` et `list` pour lire, `set`, `add` et
           + `unset` pour écrire
       detail
           - Lent for a block by `config`, `configure` or `effectiveConfig` on a repository handle,
@@ -1609,11 +1609,11 @@ entry .Git
           - kept beyond the block. The reads need `Grant.Read` and the writes `Grant.Write`, as
           - the mode the handle was opened with grants them; a write through a read-only handle
           - does not compile.
-          + Prêté le temps d'un bloc par `config`, `configure` ou `effectiveConfig` sur un handle de
-          + dépôt, ou en ouvrant un fichier comme `Git.Config`. C'est une capacité exclusive, qui ne
-          + peut donc pas être conservée au-delà du bloc. Les lectures exigent `Grant.Read` et les
-          + écritures `Grant.Write`, tels que les accorde le mode avec lequel le handle a été
-          + ouvert ; une écriture via un handle en lecture seule ne compile pas.
+          + Prêté le temps d'un bloc par `config`, `configure` ou `effectiveConfig` sur une poignée
+          + de dépôt, ou en ouvrant un fichier comme `Git.Config`. C'est une capacité exclusive, qui
+          + ne peut donc pas être conservée au-delà du bloc. Les lectures exigent `Grant.Read` et
+          + les écritures `Grant.Write`, tels que les accorde le mode avec lequel la poignée a été
+          + ouverte ; une écriture via une poignée en lecture seule ne compile pas.
       entry .get
         info
             - the value in force for a key, decoded, as `Stale[Optional[value]]`
@@ -1652,22 +1652,23 @@ entry .Git
       entry #source
         info
             - the file or scope this handle reads and writes
-            + le fichier ou la portée que ce handle lit et écrit
+            + le fichier ou la portée que cette poignée lit et écrit
     entry .Openable
       info
           - how a path opens as a `Git.Config`: a lent handle on that file
-          + comment un chemin s'ouvre comme `Git.Config` : un handle prêté sur ce fichier
+          + comment un chemin s'ouvre comme `Git.Config` : une poignée prêtée sur ce fichier
       detail
           - The `aperture.Openable` behind `path.open[Git.Config](mode) { config ?=> … }`: the
           - handle's source is `Git.Config.Source.File(path)`. It needs a `Git.Backend^` and a
           - `Tactic[Git.Error]` when built, which `.openable` supplies from scope.
           + L'`aperture.Openable` derrière `path.open[Git.Config](mode) { config ?=> … }` : la
-          + source du handle est `Git.Config.Source.File(path)`. Il exige un `Git.Backend^` et une
-          + `Tactic[Git.Error]` lors de sa construction, que `.openable` fournit depuis la portée.
+          + source de la poignée est `Git.Config.Source.File(path)`. Il exige un `Git.Backend^` et
+          + une `Tactic[Git.Error]` lors de sa construction, que `.openable` fournit depuis la
+          + portée.
       entry #open
         info
             - opens the path, lending a handle with the mode's grants to the block
-            + ouvre le chemin, en prêtant au bloc un handle doté des droits du mode
+            + ouvre le chemin, en prêtant au bloc une poignée dotée des droits du mode
       entry #Self
         info
             - the path type opened
@@ -1679,7 +1680,7 @@ entry .Git
       entry #Operand
         info
             - the flag type: none
-            + le type des drapeaux : aucun
+            + le type des indicateurs : aucun
       entry #Result
         info
             - what is lent: a `Git.Config.Handle`
@@ -1708,8 +1709,8 @@ entry .Git
         + s'est arrêté, ou d'une bissection en cours : `Merging(merging, conflicting)`,
         + `Rebasing(onto, originalHead, done, remaining, conflicting)`,
         + `CherryPicking(commit, conflicting)`, `Reverting(commit, conflicting)` et `Bisecting`. Une
-        + issue `Stopped` en porte une, et `operation()` sur un handle de dépôt lit celle qui est en
-        + cours. `#conflicts` nomme les chemins qui doivent être résolus et ajoutés avant
+        + issue `Stopped` en porte une, et `operation()` sur une poignée de dépôt lit celle qui est
+        + en cours. `#conflicts` nomme les chemins qui doivent être résolus et ajoutés avant
         + `continue()`.
     entry #conflicts
       info
@@ -1808,8 +1809,9 @@ entry .Git
         - `remoteRefs` gave them. `.Outcome` is what happened to each ref pushed.
         + `.Force` indique si une mise à jour qui n'est pas une avance rapide est permise : `Never`,
         + `Always`, ou `Lease(expectations)`, le `--force-with-lease` de git — le compare-and-swap
-        + côté remote, qui porte les lectures `Stale` des refs du remote dont dépend le push, telles
-        + que `remoteRefs` les a données. `.Outcome` est ce qui est arrivé à chaque ref poussée.
+        + côté dépôt distant, qui porte les lectures `Stale` des refs du dépôt distant dont dépend
+        + le push, telles que `remoteRefs` les a données. `.Outcome` est ce qui est arrivé à chaque
+        + ref poussée.
 
         ```scala fuel
         typecheck
@@ -1851,7 +1853,7 @@ entry .Git
         - `stashes()` on a worktree handle lists them as `Stale[List[Git.Stash.Entry]]`, newest
         - first; `popStash`, `applyStash` and `dropStash` take a `Stale[Git.Stash.Entry]` and
         - raise `NoSuchStash` if the entry has gone or changed since it was listed.
-        + `stashes()` sur un handle de worktree les liste sous forme de
+        + `stashes()` sur une poignée de worktree les liste sous forme de
         + `Stale[List[Git.Stash.Entry]]`, les plus récentes d'abord ; `popStash`, `applyStash` et
         + `dropStash` prennent un `Stale[Git.Stash.Entry]` et lèvent `NoSuchStash` si l'entrée a
         + disparu ou changé depuis qu'elle a été listée.
@@ -1882,16 +1884,16 @@ entry .Git
         - signer = …)`. `SshKeygen.Signer(key)` signs through `ssh-keygen -Y sign`, and
         - `Gpg.Signer()` through `gpg`; signing never leaves the process, since the object is
         - assembled here rather than by `git commit`.
-        + Un `Git.Signer` produit une signature en armure ASCII sur la charge utile d'un commit ou
-        + d'un tag, que le handle insère comme en-tête `gpgsig` d'un commit ou comme bloc final d'un
-        + tag. Passez-en un sous la forme `commit(…, signer = …)`, `amend(…, signer = …)` ou
+        + Un `Git.Signer` produit une signature armurée en ASCII sur la charge utile d'un commit ou
+        + d'un tag, que la poignée insère comme en-tête `gpgsig` d'un commit ou comme bloc final
+        + d'un tag. Passez-en un sous la forme `commit(…, signer = …)`, `amend(…, signer = …)` ou
         + `annotatedTag(…, signer = …)`. `SshKeygen.Signer(key)` signe via `ssh-keygen -Y sign`, et
         + `Gpg.Signer()` via `gpg` ; la signature ne quitte jamais le processus, puisque l'objet est
         + assemblé ici plutôt que par `git commit`.
     entry #sign
       info
           - the armoured signature over a payload, raising `Git.Error(SigningFailed)` if it cannot be made
-          + la signature en armure ASCII d'une charge utile, levant `Git.Error(SigningFailed)` si
+          + la signature armurée en ASCII d'une charge utile, levant `Git.Error(SigningFailed)` si
           + elle ne peut pas être produite
   entry .Verifier
     info
@@ -1925,7 +1927,7 @@ entry .Git
   entry .Backend
     info
         - the implementation a repository handle drives: `Commandline` or `Native`
-        + l'implémentation que pilote un handle de dépôt : `Commandline` ou `Native`
+        + l'implémentation que pilote une poignée de dépôt : `Commandline` ou `Native`
     detail
         - Every operation on a `Git.Repo.Handle` or a `Git.Worktree.Handle` is written once, over
         - the primitives this trait declares; the two backends implement them differently. The
@@ -1937,11 +1939,11 @@ entry .Git
         + Chaque opération sur un `Git.Repo.Handle` ou un `Git.Worktree.Handle` est écrite une seule
         + fois, au-dessus des primitives que déclare ce trait ; les deux backends les implémentent
         + différemment. La plomberie — refs, objets, index, configuration, notes — est assez simple
-        + pour que le compare-and-swap, l'assemblage des objets et la signature vivent dans le
-        + handle ; les verbes algorithmiques (`merge`, `rebase`, `cherryPick`, `stash`, les
+        + pour que le compare-and-swap, l'assemblage des objets et la signature vivent dans la
+        + poignée ; les verbes algorithmiques (`merge`, `rebase`, `cherryPick`, `stash`, les
         + transports) sont propres à chaque backend. Un `Git.Backend^` est une capacité : on le
-        + choisit en important par son nom l'un des givens de `gitBackends`, et chaque handle garde
-        + celui avec lequel il a été ouvert.
+        + choisit en important par son nom l'un des givens de `gitBackends`, et chaque poignée garde
+        + celui avec lequel elle a été ouverte.
 
         ```scala
         import soundness.*
@@ -1957,9 +1959,9 @@ entry .Git
         - The members are the plumbing a handle calls; a program drives a repository through the
         - handle's own operations rather than these. `Unsupported(operation)` is what a backend
         - raises for a primitive it does not implement.
-        + Les membres sont la plomberie qu'appelle un handle ; un programme pilote un dépôt via les
-        + opérations propres du handle plutôt que via ceux-ci. `Unsupported(operation)` est ce que
-        + lève un backend pour une primitive qu'il n'implémente pas.
+        + Les membres sont la plomberie qu'appelle une poignée ; un programme pilote un dépôt via
+        + les opérations propres de la poignée plutôt que via ceux-ci. `Unsupported(operation)` est
+        + ce que lève un backend pour une primitive qu'il n'implémente pas.
     refer octogenarian.gitBackends
     refer octogenarian.Commandline
     refer octogenarian.Native
@@ -2020,7 +2022,7 @@ entry .Git
       info
           - one line of status with its paths as text, before they are typed to a handle's plane
           + une ligne de status avec ses chemins sous forme de texte, avant qu'ils ne soient typés
-          + pour le plan d'un handle
+          + pour le plan d'une poignée
       entry #index
         info
             - the index's state relative to HEAD, if changed
@@ -2050,7 +2052,7 @@ entry .Git
       info
           - one linked worktree as a backend lists it; `Git.Worktree.Entry` is the handle's form
           + un worktree lié tel qu'un backend le liste ; `Git.Worktree.Entry` en est la forme côté
-          + handle
+          + poignée
       entry #path
         info
             - the worktree's root
@@ -2267,7 +2269,7 @@ entry .Git
       detail
           - The handle then moves the notes ref to it by compare-and-swap, which is what keeps two
           - writers from clobbering each other's notes.
-          + Le handle y déplace ensuite la ref de notes par compare-and-swap, ce qui empêche deux
+          + La poignée y déplace ensuite la ref de notes par compare-and-swap, ce qui empêche deux
           + écrivains d'écraser les notes l'un de l'autre.
     entry #configRead
       info
@@ -2284,16 +2286,16 @@ entry .Git
     entry #remoteRefs
       info
           - every ref a remote advertises, with its hash
-          + chaque ref qu'annonce un remote, avec son hachage
+          + chaque ref qu'annonce un dépôt distant, avec son hachage
     entry #fetch
       info
           - fetches refspecs from a remote, returning the refs updated
-          + récupère des refspecs depuis un remote, et renvoie les refs mises à jour
+          + récupère des refspecs depuis un dépôt distant, et renvoie les refs mises à jour
     entry #push
       info
           - pushes refspecs to a remote under a force policy, returning each ref's outcome
-          + pousse des refspecs vers un remote selon une politique de forçage, et renvoie l'issue de
-          + chaque ref
+          + pousse des refspecs vers un dépôt distant selon une politique de forçage, et renvoie
+          + l'issue de chaque ref
     entry #worktrees
       info
           - every linked worktree
@@ -2326,16 +2328,16 @@ entry .Git
   entry .OpenFlag
     info
         - flags an open may take: `Await`
-        + les drapeaux que peut prendre une ouverture : `Await`
+        + les indicateurs que peut prendre une ouverture : `Await`
     detail
         - `Await` waits for a conflicting exclusive handle in this JVM to close, rather than
         - failing at once. Passed as `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)`.
         - Exclusivity is arbitrated only among handles in this JVM, through the same register as
         - galilei's directory handles; another process is never waited for.
-        + `Await` attend la fermeture d'un handle exclusif concurrent dans cette JVM, plutôt que
+        + `Await` attend la fermeture d'une poignée exclusive concurrente dans cette JVM, plutôt que
         + d'échouer aussitôt. Passé sous la forme
         + `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)`. L'exclusivité n'est arbitrée
-        + qu'entre les handles de cette JVM, via le même registre que les handles de répertoire de
+        + qu'entre les poignées de cette JVM, via le même registre que les poignées de répertoire de
         + galilei ; un autre processus n'est jamais attendu.
   entry .Repo
     info
@@ -2355,11 +2357,11 @@ entry .Git
         + arbre de travail qui en contient un, ou le fichier `.git` d'un worktree lié, et prête un
         + `Git.Repo.Handle` au bloc. Le mode nomme les droits : `Read` (par défaut, avec
         + `open[Git.Repo]()`), `Read & Write`, ou `Exclusive & Write` pour refuser les autres
-        + handles exclusifs de cette JVM (avec `Git.OpenFlag.Await` pour les attendre à la place).
+        + poignées exclusives de cette JVM (avec `Git.OpenFlag.Await` pour les attendre à la place).
         + L'ouverture vérifie qu'un dépôt est bien là — en levant `Git.Error(NoRepository(path))`
-        + sinon — si bien qu'un handle désignait toujours un dépôt au moment où il a été accordé ;
-        + ce qui se passe ensuite est l'affaire d'un autre processus, c'est pourquoi toute lecture
-        + qui résout une ref est `Stale`.
+        + sinon — si bien qu'une poignée désignait toujours un dépôt au moment où elle a été
+        + accordée ; ce qui se passe ensuite est l'affaire d'un autre processus, c'est pourquoi
+        + toute lecture qui résout une ref est `Stale`.
 
         ```scala
         import soundness.*
@@ -2384,11 +2386,11 @@ entry .Git
         - & Granting[Grant.Write]` — so a write on a handle opened without `Write` is a
         - compile-time error. A `Git.Worktree.Handle` is a `Git.Repo.Handle`, so all of this is
         - available on a worktree too.
-        + Le handle est une capacité exclusive : il ne peut pas être conservé au-delà du bloc, pas
-        + plus que ce qui en dérive. Chaque opération est une extension sur le handle conditionnée
-        + par un droit — les lectures sur `Git.Repo.Handle & Granting[Grant.Read]`, les écritures
-        + sur `… & Granting[Grant.Write]` — si bien qu'une écriture sur un handle ouvert sans
-        + `Write` est une erreur à la compilation. Un `Git.Worktree.Handle` est un
+        + La poignée est une capacité exclusive : elle ne peut pas être conservée au-delà du bloc,
+        + pas plus que ce qui en dérive. Chaque opération est une extension sur la poignée
+        + conditionnée par un droit — les lectures sur `Git.Repo.Handle & Granting[Grant.Read]`, les
+        + écritures sur `… & Granting[Grant.Write]` — si bien qu'une écriture sur une poignée
+        + ouverte sans `Write` est une erreur à la compilation. Un `Git.Worktree.Handle` est un
         + `Git.Repo.Handle` : tout cela est donc disponible aussi sur un worktree.
     refer octogenarian.Git.Worktree
     refer octogenarian.Git.Backend
@@ -2396,7 +2398,7 @@ entry .Git
     entry .Handle
       info
           - a lent repository handle: every repository operation is an extension on it, gated by grant
-          + un handle de dépôt prêté : chaque opération sur le dépôt est une extension sur lui,
+          + une poignée de dépôt prêtée : chaque opération sur le dépôt est une extension sur elle,
           + conditionnée par un droit
       detail
           - The reads which resolve a ref, HEAD, a revision expression, the reflog, the stash,
@@ -2405,7 +2407,7 @@ entry .Git
           - `.treeAt`, `.blobAt`, `.annotationAt`, `.mergeBase`, `.isAncestor`, `.exists`) is a
           - plain value, since objects are immutable and content-addressed.
           + Les lectures qui résolvent une ref, HEAD, une expression de révision, le reflog, le
-          + stash, la configuration, les remotes ou les worktrees liés renvoient une valeur
+          + stash, la configuration, les dépôts distants ou les worktrees liés renvoient une valeur
           + `Stale` : vraie au moment de la lecture, et peut-être plus depuis. Une lecture indexée
           + par un hachage (`.show`, `.commitAt`, `.treeAt`, `.blobAt`, `.annotationAt`,
           + `.mergeBase`, `.isAncestor`, `.exists`) est une valeur simple, puisque les objets sont
@@ -2464,8 +2466,8 @@ entry .Git
 
           - The handle's own fields are where the repository is: `#gitDir`, `#commonDir`,
           - `#worktree` and the `#atoms` of the mode it was opened with.
-          + Les champs propres du handle indiquent où se trouve le dépôt : `#gitDir`, `#commonDir`,
-          + `#worktree` et les `#atoms` du mode avec lequel il a été ouvert.
+          + Les champs propres de la poignée indiquent où se trouve le dépôt : `#gitDir`,
+          + `#commonDir`, `#worktree` et les `#atoms` du mode avec lequel elle a été ouverte.
       entry .head
         info
             - where HEAD is, as a `Stale[Git.Head]`
@@ -2590,7 +2592,7 @@ entry .Git
             - Named `commitAt`, not `commit`, since `commit` is the worktree's write verb and a
             - grant-gated handle cannot overload.
             + Nommée `commitAt`, et non `commit`, puisque `commit` est le verbe d'écriture du
-            + worktree et qu'un handle conditionné par des droits ne peut pas surcharger.
+            + worktree et qu'une poignée conditionnée par des droits ne peut pas surcharger.
       entry .treeAt
         info
             - the entries of the tree with a hash; raises `NoSuchObject` for any other object
@@ -2663,24 +2665,24 @@ entry .Git
       entry .remotes
         info
             - every remote, read from the repository's configuration, as a `Stale[List[Remote]]`
-            + chaque remote, lu depuis la configuration du dépôt, sous forme de
+            + chaque dépôt distant, lu depuis la configuration du dépôt, sous forme de
             + `Stale[List[Remote]]`
       entry .remote
         info
             - one remote by its name, as `Stale[Optional[Remote]]`
-            + un remote par son nom, sous forme de `Stale[Optional[Remote]]`
+            + un dépôt distant par son nom, sous forme de `Stale[Optional[Remote]]`
       entry .remoteRefs
         info
             - every ref a remote advertises, with its hash, as a `Stale` map
-            + chaque ref qu'annonce un remote, avec son hachage, sous forme de map `Stale`
+            + chaque ref qu'annonce un dépôt distant, avec son hachage, sous forme de map `Stale`
         detail
             - Needs an `Internet`. The readings are what a `Git.Push.Force.Lease` carries.
             + Exige un `Internet`. Les lectures sont ce que porte un `Git.Push.Force.Lease`.
       entry .upstream
         info
             - the remote and branch a branch tracks, if configured, as a `Stale` pair
-            + le remote et la branche que suit une branche, si c'est configuré, sous forme de paire
-            + `Stale`
+            + le dépôt distant et la branche que suit une branche, si c'est configuré, sous forme de
+            + paire `Stale`
       entry .worktrees
         info
             - every linked worktree, as a `Stale[List[Git.Worktree.Entry]]`
@@ -2757,9 +2759,9 @@ entry .Git
             - identity unless given, stamped now; a `Git.Signer` appends an armoured signature,
             - which `git tag -v` accepts. The tag ref is created conditional on its absence.
             + `annotatedTag(tag, at, message, tagger, signer)` : le tagger est l'identité configurée
-            + sauf s'il est donné, horodaté à l'instant ; un `Git.Signer` ajoute une signature en
-            + armure ASCII, que `git tag -v` accepte. La ref du tag est créée sous condition de son
-            + absence.
+            + sauf s'il est donné, horodaté à l'instant ; un `Git.Signer` ajoute une signature
+            + armurée en ASCII, que `git tag -v` accepte. La ref du tag est créée sous condition de
+            + son absence.
       entry .deleteTag
         info
             - deletes a tag, conditional on a reading of its object (annotated or not, as `tags()` reports it)
@@ -2827,7 +2829,7 @@ entry .Git
       entry .addRemote
         info
             - adds a remote by name and URL, with a fetch refspec; raises `RemoteExists`
-            + ajoute un remote par son nom et son URL, avec un refspec de fetch ; lève
+            + ajoute un dépôt distant par son nom et son URL, avec un refspec de fetch ; lève
             + `RemoteExists`
         detail
             - The refspec defaults to `+refs/heads/*:refs/remotes/<name>/*`. The URL may be a
@@ -2837,36 +2839,37 @@ entry .Git
       entry .removeRemote
         info
             - removes a remote's configuration and its `refs/remotes/<name>/` refs; raises `NoSuchRemote`
-            + supprime la configuration d'un remote et ses refs `refs/remotes/<name>/` ; lève
+            + supprime la configuration d'un dépôt distant et ses refs `refs/remotes/<name>/` ; lève
             + `NoSuchRemote`
       entry .renameRemote
         info
             - renames a remote, rewriting its refspec, its tracking refs and the branches which track it
-            + renomme un remote, en réécrivant son refspec, ses refs de suivi et les branches qui le
-            + suivent
+            + renomme un dépôt distant, en réécrivant son refspec, ses refs de suivi et les branches
+            + qui le suivent
       entry .setRemoteUrl
         info
             - sets a remote's fetch URL, or with `push = true` its push URL
-            + définit l'URL de fetch d'un remote, ou avec `push = true` son URL de push
+            + définit l'URL de fetch d'un dépôt distant, ou avec `push = true` son URL de push
       entry .fetch
         info
             - fetches from a remote, returning the refs updated as a `Stale` map
-            + récupère depuis un remote, et renvoie les refs mises à jour sous forme de map `Stale`
+            + récupère depuis un dépôt distant, et renvoie les refs mises à jour sous forme de map
+            + `Stale`
         detail
             - `fetch(remote, refspecs, depth, prune, tags, activity)`: the remote's configured
             - refspec unless `refspecs` are given; shallow to `depth` commits if given; `prune`
             - deletes tracking refs the remote no longer has; `tags` fetches every tag. Needs an
             - `Internet`; progress goes to the `activity` if one is passed.
             + `fetch(remote, refspecs, depth, prune, tags, activity)` : le refspec configuré du
-            + remote sauf si des `refspecs` sont donnés ; superficiel à `depth` commits si c'est
-            + donné ; `prune` supprime les refs de suivi que le remote n'a plus ; `tags` récupère
-            + tous les tags. Exige un `Internet` ; la progression va à l'`activity` si on en passe
-            + une.
+            + dépôt distant sauf si des `refspecs` sont donnés ; superficiel à `depth` commits si
+            + c'est donné ; `prune` supprime les refs de suivi que le dépôt distant n'a plus ;
+            + `tags` récupère tous les tags. Exige un `Internet` ; la progression va à l'`activity`
+            + si on en passe une.
       entry .push
         info
             - pushes to a remote under a force policy, returning each ref's outcome as a `Stale` map
-            + pousse vers un remote selon une politique de forçage, et renvoie l'issue de chaque ref
-            + sous forme de map `Stale`
+            + pousse vers un dépôt distant selon une politique de forçage, et renvoie l'issue de
+            + chaque ref sous forme de map `Stale`
         detail
             - `push(remote, refspecs, force, tags, setUpstream, activity)`: `force` is
             - `Git.Push.Force.Never` unless given, and `Lease(expectations)` makes the push
@@ -2874,8 +2877,8 @@ entry .Git
             - not an error. Needs an `Internet`.
             + `push(remote, refspecs, force, tags, setUpstream, activity)` : `force` vaut
             + `Git.Push.Force.Never` sauf s'il est donné, et `Lease(expectations)` fait dépendre le
-            + push de lectures des refs du remote. Une ref rejetée est une issue `Rejected`, et non
-            + une erreur. Exige un `Internet`.
+            + push de lectures des refs du dépôt distant. Une ref rejetée est une issue `Rejected`,
+            + et non une erreur. Exige un `Internet`.
       entry .addWorktree
         info
             - adds a linked worktree at a path, checked out at a revision, returning the path
@@ -2917,7 +2920,7 @@ entry .Git
             + refs
         detail
             - The same as `#gitDir` unless the handle was opened on a linked worktree.
-            + Identique à `#gitDir` sauf si le handle a été ouvert sur un worktree lié.
+            + Identique à `#gitDir` sauf si la poignée a été ouverte sur un worktree lié.
       entry #worktree
         info
             - the root of the working tree, if the repository has one
@@ -2925,7 +2928,7 @@ entry .Git
       entry #atoms
         info
             - the atoms of the mode the handle was opened with
-            + les atomes du mode avec lequel le handle a été ouvert
+            + les atomes du mode avec lequel la poignée a été ouverte
     entry .Openable
       info
           - how a path opens as a `Git.Repo`: locates the repository and lends a `Handle`
@@ -2944,7 +2947,7 @@ entry .Git
       entry #open
         info
             - opens the path, lending a handle with the mode's grants to the block
-            + ouvre le chemin, en prêtant au bloc un handle doté des droits du mode
+            + ouvre le chemin, en prêtant au bloc une poignée dotée des droits du mode
       entry #Self
         info
             - the path type opened
@@ -2956,7 +2959,7 @@ entry .Git
       entry #Operand
         info
             - the flag type: `Git.OpenFlag`
-            + le type des drapeaux : `Git.OpenFlag`
+            + le type des indicateurs : `Git.OpenFlag`
       entry #Result
         info
             - what is lent: a `Git.Repo.Handle`
@@ -2989,9 +2992,9 @@ entry .Git
         + worktree lié, et prête un `Git.Worktree.Handle`, qui est à la fois un `Git.Repo.Handle` —
         + toute opération sur le dépôt s'applique sans détour — et un `Directory.Handle` de galilei,
         + si bien que les chemins formés à partir de lui (`worktree / "src" / "main.scala"`) sont
-        + typés pour ce seul handle, ne peuvent pas s'en échapper, ne peuvent pas exprimer `..`, et
-        + peuvent être lus et écrits avec les opérations de galilei sous les mêmes droits. Un dépôt
-        + nu lève `Git.Error(NoWorktree)`.
+        + typés pour cette seule poignée, ne peuvent pas s'en échapper, ne peuvent pas exprimer
+        + `..`, et peuvent être lus et écrits avec les opérations de galilei sous les mêmes droits.
+        + Un dépôt nu lève `Git.Error(NoWorktree)`.
 
         ```scala
         import soundness.*
@@ -3016,7 +3019,7 @@ entry .Git
         - `Git.Worktree.Entry` is a linked worktree as `worktrees()` lists it, and the reading
         - the worktree writes on a repository handle take.
         + `Git.Worktree.Entry` est un worktree lié tel que le liste `worktrees()`, et la lecture que
-        + prennent les écritures de worktree sur un handle de dépôt.
+        + prennent les écritures de worktree sur une poignée de dépôt.
     refer octogenarian.Git.Repo
     refer galilei.Directory
     entry .Entry
@@ -3026,7 +3029,7 @@ entry .Git
       detail
           - What `worktrees()` on a repository handle lists, wrapped in `Stale`; the reading
           - `removeWorktree`, `lockWorktree`, `unlockWorktree` and `moveWorktree` take.
-          + Ce que liste `worktrees()` sur un handle de dépôt, enveloppé dans `Stale` ; la lecture
+          + Ce que liste `worktrees()` sur une poignée de dépôt, enveloppé dans `Stale` ; la lecture
           + que prennent `removeWorktree`, `lockWorktree`, `unlockWorktree` et `moveWorktree`.
       entry #path
         info
@@ -3055,8 +3058,8 @@ entry .Git
     entry .Handle
       info
           - a lent worktree handle: the index and working-file operations, over every repository operation
-          + un handle de worktree prêté : les opérations sur l'index et les fichiers de travail, en
-          + plus de toutes les opérations sur le dépôt
+          + une poignée de worktree prêtée : les opérations sur l'index et les fichiers de travail,
+          + en plus de toutes les opérations sur le dépôt
       detail
           - Everything a `Git.Repo.Handle` offers, plus the operations which need an index and
           - working files: staging (`.add`, `.addAll`, `.rm`, `.mv`, `.unstage`, `.restore`,
@@ -3080,7 +3083,7 @@ entry .Git
           - `Path on worktree.Plane`, formed from the handle itself.
           + Toute opération qui déplace HEAD prend un `Stale[Git.Head]`, la lecture issue de
           + `head()`, et lève `Moved(HEAD, expected, actual)` si HEAD est ailleurs. Les chemins sont
-          + des `Path on worktree.Plane`, formés à partir du handle lui-même.
+          + des `Path on worktree.Plane`, formés à partir de la poignée elle-même.
 
           - A conflict is not an error: `merge`, `cherryPick`, `revert`, `rebase` and the stash
           - applications return a `Stopped(operation)` outcome naming the paths in conflict; once
@@ -3121,11 +3124,11 @@ entry .Git
       entry .tracked
         info
             - every path the index tracks, on the handle's plane, as a `Stale` list
-            + chaque chemin que suit l'index, sur le plan du handle, sous forme de liste `Stale`
+            + chaque chemin que suit l'index, sur le plan de la poignée, sous forme de liste `Stale`
       entry .conflicts
         info
             - every path in conflict, on the handle's plane, as a `Stale` list
-            + chaque chemin en conflit, sur le plan du handle, sous forme de liste `Stale`
+            + chaque chemin en conflit, sur le plan de la poignée, sous forme de liste `Stale`
       entry .currentBranch
         info
             - the branch checked out, or `Unset` when HEAD is detached, as a `Stale`
@@ -3273,8 +3276,8 @@ entry .Git
       entry .pull
         info
             - fetches a branch from a remote and merges or rebases it, conditional on a reading of HEAD
-            + récupère une branche depuis un remote et la fusionne ou la rebase, sous condition
-            + d'une lecture de HEAD
+            + récupère une branche depuis un dépôt distant et la fusionne ou la rebase, sous
+            + condition d'une lecture de HEAD
         detail
             - `pull(remote, head, branch, mode, activity)`: the current branch unless `branch` is
             - given (raising `Detached` if HEAD is on none); `Git.Pull.Mode.Merge` unless `mode`
@@ -3354,7 +3357,7 @@ entry .Git
       entry #open
         info
             - opens the path, lending a handle with the mode's grants to the block
-            + ouvre le chemin, en prêtant au bloc un handle doté des droits du mode
+            + ouvre le chemin, en prêtant au bloc une poignée dotée des droits du mode
       entry #Self
         info
             - the path type opened
@@ -3366,7 +3369,7 @@ entry .Git
       entry #Operand
         info
             - the flag type: `Git.OpenFlag`
-            + le type des drapeaux : `Git.OpenFlag`
+            + le type des indicateurs : `Git.OpenFlag`
       entry #Result
         info
             - what is lent: a `Git.Worktree.Handle`
@@ -3420,11 +3423,11 @@ entry .Git
         - built with (`Native(List(SmartHttp()))`), else `Unsupported`.
         + `Git.clone(source, target, branch, depth, bare, recursive, activity)` : la source est un
         + chemin local (de n'importe quel type), une URL (de n'importe quel type, ou du texte), ou
-        + une `SshUrl` ; `branch` extrait une autre branche que la HEAD du remote ; `depth` fait un
-        + clone superficiel ; `recursive` clone les sous-modules (backend en ligne de commande
-        + uniquement). Exige un `Internet`, un `Git.Backend^` et une `Tactic[Git.Error]` ; la
-        + progression est signalée via `activity` si on en passe une. Sous le backend natif, une URL
-        + distante exige un `Transport` avec lequel le backend a été construit
+        + une `SshUrl` ; `branch` extrait une autre branche que la HEAD du dépôt distant ; `depth`
+        + fait un clone superficiel ; `recursive` clone les sous-modules (backend en ligne de
+        + commande uniquement). Exige un `Internet`, un `Git.Backend^` et une `Tactic[Git.Error]` ;
+        + la progression est signalée via `activity` si on en passe une. Sous le backend natif, une
+        + URL distante exige un `Transport` avec lequel le backend a été construit
         + (`Native(List(SmartHttp()))`), sinon `Unsupported`.
 
         ```scala
@@ -3463,7 +3466,7 @@ entry .Git
   entry .Remote
     info
         - a remote by its name, fetch URL and push URL
-        + un remote par son nom, son URL de fetch et son URL de push
+        + un dépôt distant par son nom, son URL de fetch et son URL de push
     detail
         - What `remotes()` lists and `addRemote` returns, read from the repository's own
         - configuration (`remote.<name>.url` and `remote.<name>.pushurl`). The URL is text: a
@@ -3474,7 +3477,7 @@ entry .Git
     entry #name
       info
           - the remote's name, `origin`
-          + le nom du remote, `origin`
+          + le nom du dépôt distant, `origin`
     entry #fetchUrl
       info
           - the URL fetched from
@@ -3644,7 +3647,7 @@ entry .Commit
       + Ce que liste `log()` et que lit `commitAt(hash)` : le hachage propre du commit, le tree dont
       + il est l'instantané, ses parents (aucun pour un commit racine, deux pour une fusion), qui
       + l'a écrit et qui l'a commité (chacun une `Git.Signature`, avec un horodatage), le bloc de
-      + signature en armure ASCII s'il porte un en-tête `gpgsig`, et son message sans le saut de
+      + signature armuré en ASCII s'il porte un en-tête `gpgsig`, et son message sans le saut de
       + ligne final qu'ajoute git.
 
       ```scala
@@ -3687,7 +3690,7 @@ entry .Commit
   entry #signature
     info
         - the armoured signature from its `gpgsig` header, if it is signed
-        + la signature en armure ASCII issue de son en-tête `gpgsig`, s'il est signé
+        + la signature armurée en ASCII issue de son en-tête `gpgsig`, s'il est signé
   entry #message
     info
         - the message, without the trailing newline git stores
@@ -3781,7 +3784,7 @@ entry .NoteRef
       + Une `NoteRef` se construit comme `hash / t"namespace"` (et peut descendre plus loin :
       + `hash / t"ci" / t"attest"`). Sa racine est le commit auquel la note est attachée
       + (`target`), sa descente est l'espace de noms sous `refs/notes/` (`namespace`), et
-      + `content[value]` lit la note via le handle de dépôt de la portée.
+      + `content[value]` lit la note via la poignée de dépôt de la portée.
 
       ```scala
       import soundness.*
@@ -3827,7 +3830,7 @@ entry .namespace
 entry .content
   info
       - the note a `NoteRef` addresses, decoded, read through the repository handle in scope
-      + la note qu'adresse une `NoteRef`, décodée, lue via le handle de dépôt de la portée
+      + la note qu'adresse une `NoteRef`, décodée, lue via la poignée de dépôt de la portée
   detail
       - An extension on `NoteRef`: `(hash / t"ns").content[Text]` is the note's body as a
       - `Stale[Text]`, or decoded as any `value is Decodable in Text`. It needs a `Git.Repo.Handle
@@ -3838,7 +3841,7 @@ entry .content
       - import it by name (`import octogenarian.content`) so that it wins on specificity.
       + Une extension sur `NoteRef` : `(hash / t"ns").content[Text]` est le corps de la note sous
       + forme de `Stale[Text]`, ou décodé en n'importe quel `value is Decodable in Text`. Elle exige
-      + un `Git.Repo.Handle & Granting[Grant.Read]` dans la portée — le handle que prête un bloc
+      + un `Git.Repo.Handle & Granting[Grant.Read]` dans la portée — la poignée que prête un bloc
       + `open` — et lève `Git.Error(NoteNotFound)` si aucune note n'est attachée dans cet espace de
       + noms. Le résultat est `Stale`, puisqu'une note est atteinte via une ref qu'un autre
       + processus peut déplacer. Elle s'appelle `content` plutôt que `read`, puisqu'une `NoteRef`
@@ -3892,7 +3895,7 @@ entry .ResetMode
   entry #flag
     info
         - the flag git knows the mode by: `--soft`, `--mixed`, `--hard`, `--merge`, `--keep`
-        + le drapeau sous lequel git connaît le mode : `--soft`, `--mixed`, `--hard`, `--merge`,
+        + l'option sous laquelle git connaît le mode : `--soft`, `--mixed`, `--hard`, `--merge`,
         + `--keep`
 
 entry .SshUrl
@@ -3998,7 +4001,7 @@ entry .Commandline
         - `Exec(event)` wraps a `guillotine.Exec.Event`, tagged `Log.Process`; `.execEvent`
         - transcribes guillotine's events into it, so a `Commandline.Event is Loggable` in scope
         - is all the backend needs. `logging.silentLogging` discards them.
-        + `Exec(event)` enveloppe un `guillotine.Exec.Event`, étiqueté `Log.Process` ; `.execEvent`
+        + `Exec(event)` enveloppe un `guillotine.Exec.Event`, tagué `Log.Process` ; `.execEvent`
         + y transcrit les événements de guillotine, si bien qu'un `Commandline.Event is Loggable`
         + dans la portée est tout ce dont le backend a besoin. `logging.silentLogging` les ignore.
     entry .execEvent
@@ -4064,7 +4067,7 @@ entry .Gpg
       - rest from gpg's machine-readable status lines. Both run `gpg` in the `WorkingDirectory`
       - and `Environment` in scope, logging as `Exec.Event`s, and report a failure to run it as
       - `Git.Error(SigningFailed)`.
-      + `Gpg.Signer()` produit une signature détachée, en armure ASCII, sur la charge utile d'un
+      + `Gpg.Signer()` produit une signature détachée, armurée en ASCII, sur la charge utile d'un
       + commit ou d'un tag avec la clé par défaut, ou avec `key` (un identifiant de clé, une
       + empreinte ou un identifiant d'utilisateur) ; `Gpg.Verifier()` en vérifie une par rapport au
       + trousseau, en lisant `GOODSIG`, `BADSIG` et le reste dans les lignes d'état lisibles par
@@ -4099,8 +4102,8 @@ entry .Gpg
     entry #sign
       info
           - the armoured signature over a payload; raises `Git.Error(SigningFailed)` if gpg fails
-          + la signature en armure ASCII d'une charge utile ; lève `Git.Error(SigningFailed)` si gpg
-          + échoue
+          + la signature armurée en ASCII d'une charge utile ; lève `Git.Error(SigningFailed)` si
+          + gpg échoue
   entry .Verifier
     info
         - verifies against the keyring through `gpg --verify`
@@ -4325,7 +4328,7 @@ entry .SshKeygen
     entry #sign
       info
           - the armoured signature over a payload; raises `Git.Error(SigningFailed)` if ssh-keygen fails
-          + la signature en armure ASCII d'une charge utile ; lève `Git.Error(SigningFailed)` si
+          + la signature armurée en ASCII d'une charge utile ; lève `Git.Error(SigningFailed)` si
           + ssh-keygen échoue
   entry .Verifier
     info
@@ -4520,9 +4523,9 @@ entry .gitBackends
         - alternative which runs the `git` command.
         + `Native()` sans transports : il atteint donc les dépôts du même système de fichiers par
         + leur chemin et lève `Git.Error(Unsupported(the transport for <url>))` pour toute autre
-        + URL ; un programme qui récupère depuis un remote ou pousse vers lui en HTTP ou en SSH lie
-        + plutôt son propre `given Git.Backend = Native(List(SmartHttp(), SshCommand()))`. Importé
-        + par son nom, puisque `import soundness.*` n'importe pas les givens ;
+        + URL ; un programme qui récupère depuis un dépôt distant ou pousse vers lui en HTTP ou en
+        + SSH lie plutôt son propre `given Git.Backend = Native(List(SmartHttp(), SshCommand()))`.
+        + Importé par son nom, puisque `import soundness.*` n'importe pas les givens ;
         + `gitBackends.commandlineGit` est l'alternative qui lance la commande `git`.
 
         ```scala
@@ -4614,7 +4617,7 @@ entry .Native
       - `gitBackends.soundnessGit` is the given built from `Native()`, chosen by importing it by
       - name; `gitBackends.commandlineGit` is the alternative which runs the `git` command.
       + `Native` est l'implémentation en pur Scala de `Git.Backend` : chaque opération qu'effectue
-      + un handle `Git.Repo` ou `Git.Worktree` est réalisée en lisant et en écrivant les fichiers
+      + une poignée `Git.Repo` ou `Git.Worktree` est réalisée en lisant et en écrivant les fichiers
       + propres du dépôt, dans les formats de git, de sorte qu'un dépôt qu'il touche est toujours un
       + dépôt que `git` comprend, et qu'une opération arrêtée sur un conflit par l'un peut être
       + poursuivie par l'autre. `gitBackends.soundnessGit` est le given construit à partir de
@@ -4814,7 +4817,7 @@ entry .Native
         - reports the `Receiving` and `Checkout` phases.
         + Se connecte à la source (un chemin local, ou une URL qu'accepte un transport), demande sa
         + `HEAD` symbolique pour choisir la branche quand aucune n'est nommée, initialise la cible,
-        + écrit le remote `origin` avec le refspec de fetch habituel
+        + écrit le dépôt distant `origin` avec le refspec de fetch habituel
         + (`+refs/heads/*:refs/remotes/origin/*`, ou `+refs/heads/*:refs/heads/*` pour un clone nu),
         + récupère, et pour un clone non nu crée la branche locale avec son upstream configuré,
         + extrait l'arbre et écrit l'index. Un `depth` produit un clone superficiel dont git
@@ -4863,7 +4866,7 @@ entry .Native
         + le détient), compare la valeur courante de la ref avec la `Git.Backend.Expectation`
         + (`Git.Error(Moved)` si elle diffère), écrit ou supprime, et ajoute une ligne de reflog
         + avec le message quand `core.logallrefupdates` le demande. Une ref empaquetée mise à jour
-        + est écrite libre. C'est la primitive sur laquelle repose tout verbe d'un handle qui
+        + est écrite libre. C'est la primitive sur laquelle repose tout verbe d'une poignée qui
         + déplace une ref.
   entry #updateSymbolicRef
     info
@@ -5184,27 +5187,27 @@ entry .Native
   entry #remoteRefs
     info
         - lists a remote's refs as `ls-remote` does, `HEAD` first and tags with their peeled targets
-        + liste les refs d'un remote comme le fait `ls-remote`, `HEAD` d'abord et les tags avec
-        + leurs cibles déréférencées
+        + liste les refs d'un dépôt distant comme le fait `ls-remote`, `HEAD` d'abord et les tags
+        + avec leurs cibles déréférencées
     detail
         - Needs `Internet` evidence. The remote is a configured name, whose URL is
         - `remote.<name>.url` (`remote.<name>.pushurl` for a push, when set), or a URL or path
         - used as it is.
-        + Exige une preuve `Internet`. Le remote est un nom configuré, dont l'URL est
+        + Exige une preuve `Internet`. Le dépôt distant est un nom configuré, dont l'URL est
         + `remote.<name>.url` (`remote.<name>.pushurl` pour un push, quand il est défini), ou une
         + URL ou un chemin utilisés tels quels.
   entry #fetch
     info
         - fetches from a remote, moves the local refs the refspecs name, and writes `FETCH_HEAD`
-        + récupère depuis un remote, déplace les refs locales que nomment les refspecs, et écrit
-        + `FETCH_HEAD`
+        + récupère depuis un dépôt distant, déplace les refs locales que nomment les refspecs, et
+        + écrit `FETCH_HEAD`
     detail
         - Uses the remote's configured refspecs when none are given, negotiates with the peer's
         - `download`, stores what arrives loose, cuts history to `depth` and records the boundary
         - in `shallow`, adds `refs/tags/*:refs/tags/*` to the refspecs with `tags`, and with
         - `prune` deletes the local refs matching a pattern destination whose remote counterpart
         - has gone. Returns the refs it changed. Needs `Internet` evidence.
-        + Utilise les refspecs configurés du remote quand aucun n'est donné, négocie avec le
+        + Utilise les refspecs configurés du dépôt distant quand aucun n'est donné, négocie avec le
         + `download` du pair, stocke en objets libres ce qui arrive, coupe l'historique à `depth` et
         + enregistre la frontière dans `shallow`, ajoute `refs/tags/*:refs/tags/*` aux refspecs avec
         + `tags`, et avec `prune` supprime les refs locales correspondant à une destination à motif
@@ -5213,7 +5216,7 @@ entry .Native
   entry #push
     info
         - sends the objects a remote lacks and asks it to move its refs
-        + envoie les objets qui manquent à un remote et lui demande de déplacer ses refs
+        + envoie les objets qui manquent à un dépôt distant et lui demande de déplacer ses refs
     detail
         - Each refspec becomes a `RefUpdate` whose expectation is set by the `Git.Push.Force`
         - policy: a plain push expects the remote's current value and refuses a non-fast-forward
@@ -5222,11 +5225,11 @@ entry .Native
         - the peer's reason; `setUpstream` configures the branch's remote and merge keys. Needs
         - `Internet` evidence.
         + Chaque refspec devient un `RefUpdate` dont l'attente est fixée par la politique
-        + `Git.Push.Force` : un push simple attend la valeur courante du remote et refuse localement
-        + un déplacement qui n'est pas une avance rapide, `Always` n'attend rien, et `Lease` attend
-        + les lectures qu'il porte. Les issues qualifient chaque ref de `Created`, `Updated`,
-        + `Deleted`, `UpToDate` ou `Rejected` avec la raison du pair ; `setUpstream` configure les
-        + clés remote et merge de la branche. Exige une preuve `Internet`.
+        + `Git.Push.Force` : un push simple attend la valeur courante du dépôt distant et refuse
+        + localement un déplacement qui n'est pas une avance rapide, `Always` n'attend rien, et
+        + `Lease` attend les lectures qu'il porte. Les issues qualifient chaque ref de `Created`,
+        + `Updated`, `Deleted`, `UpToDate` ou `Rejected` avec la raison du pair ; `setUpstream`
+        + configure les clés remote et merge de la branche. Exige une preuve `Internet`.
   entry #worktrees
     info
         - the main worktree and every linked one, with its head, branch and lock state
@@ -5461,7 +5464,7 @@ entry .RefUpdate
       - the ref.
       + Une ligne d'un push : `Native#push` construit un `RefUpdate` pour chaque refspec et les
       + transmet à `Peer#upload`. La valeur `expected` est la condition du compare-and-swap — la
-      + lecture courante du remote pour un push simple,
+      + lecture courante du dépôt distant pour un push simple,
       + `Git.Backend.Expectation.Unconditional` pour un push forcé, et la lecture du lease pour
       + `Git.Push.Force.Lease` — et `to` vaut `Unset` pour supprimer la ref.
   refer octogenarian.Peer
@@ -5481,8 +5484,8 @@ entry .RefUpdate
 entry .Channel
   info
       - a connection to a remote's `git-upload-pack` or `git-receive-pack`, however it is carried
-      + une connexion au `git-upload-pack` ou au `git-receive-pack` d'un remote, quel que soit son
-      + support
+      + une connexion au `git-upload-pack` ou au `git-receive-pack` d'un dépôt distant, quel que
+      + soit son support
   detail
       - The seam between a `Transport` and the wire protocol: a channel supplies the server's
       - opening advertisement for a service and a way to send one request and read what comes
@@ -5493,7 +5496,7 @@ entry .Channel
       - and a transport of one's own would too. The readers it returns are the library's own
       - pkt-line readers, which are not part of the public API, so a `Channel` can only be
       - written inside the library at present.
-      + La jointure entre un `Transport` et le protocole réseau : un canal fournit l'annonce
+      + La jonction entre un `Transport` et le protocole réseau : un canal fournit l'annonce
       + d'ouverture du serveur pour un service et un moyen d'envoyer une requête et de lire ce qui
       + revient, en tramage pkt-line, et le client du protocole construit au-dessus fait le reste.
       + Les trois transports fournis en définissent chacun un — `SmartHttp.Channel` sur des
@@ -5531,11 +5534,11 @@ entry .SshAddress
       - slash (`localhost:/srv/repo.git`), and a local path otherwise (`./dir:x`). `SshAddress`
       - is the parsed form of either, and the SSH transports accept exactly the URLs
       - `.parse` understands.
-      + Git prend un remote SSH sous la forme de l'URL `ssh://[user@]host[:port]/path`, ou sous la
-      + forme à la manière de `scp` `[user@]host:path`, qui est une adresse SSH à condition que le
-      + deux-points vienne avant toute barre oblique (`localhost:/srv/repo.git`), et un chemin
-      + local sinon (`./dir:x`). `SshAddress` est la forme analysée de l'une ou l'autre, et les
-      + transports SSH acceptent exactement les URL que comprend `.parse`.
+      + Git prend un dépôt distant SSH sous la forme de l'URL `ssh://[user@]host[:port]/path`, ou
+      + sous la forme à la manière de `scp` `[user@]host:path`, qui est une adresse SSH à condition
+      + que le deux-points vienne avant toute barre oblique (`localhost:/srv/repo.git`), et un
+      + chemin local sinon (`./dir:x`). `SshAddress` est la forme analysée de l'une ou l'autre, et
+      + les transports SSH acceptent exactement les URL que comprend `.parse`.
 
       ```scala
       import soundness.*

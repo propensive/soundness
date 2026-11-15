@@ -272,8 +272,8 @@ entry .Acp
         - streams carries one. It is discriminated on the wire by its `type` member.
         + `Acp.ContentBlock` est `synesthesia.Content.ContentBlock`, dont la page donne la
         + description complète. Un prompt est une `List[ContentBlock]`, et chaque morceau de message
-        + ou de réflexion qu'un agent envoie en flux en porte un. Sur le fil, il est discriminé par
-        + son membre `type`.
+        + ou de réflexion qu'un agent envoie en flux en porte un. En transmission, il est discriminé
+        + par son membre `type`.
   entry .TextContent
     info
         - a block of text, with optional annotations; re-exported from `synesthesia.Content`
@@ -694,8 +694,9 @@ entry .Acp
         + pendant le tour. `EndTurn` signifie que l'agent a terminé ; `MaxTokens` et
         + `MaxTurnRequests` qu'il a épuisé son budget, en jetons ou en requêtes au modèle ;
         + `Refusal` qu'il a refusé de continuer ; et `Cancelled` que le client a annulé le tour avec
-        + `Connection#cancel`, ce à quoi l'agent est tenu de répondre de cette façon. Sur le fil,
-        + les cas sont `end_turn`, `max_tokens`, `max_turn_requests`, `refusal` et `cancelled`.
+        + `Connection#cancel`, ce à quoi l'agent est tenu de répondre de cette façon. En
+        + transmission, les cas sont `end_turn`, `max_tokens`, `max_turn_requests`, `refusal` et
+        + `cancelled`.
 
         ```scala fuel
         typecheck
@@ -710,12 +711,12 @@ entry .Acp
     entry .encodable
       info
           - encodes a stop reason as its wire string
-          + encode une raison d'arrêt sous forme de sa chaîne sur le fil
+          + encode une raison d'arrêt sous forme de sa chaîne de transmission
     entry .decodable
       info
           - decodes a stop reason from its wire string, raising `Json.Error` for any other
-          + décode une raison d'arrêt depuis sa chaîne sur le fil, en levant `Json.Error` pour toute
-          + autre
+          + décode une raison d'arrêt depuis sa chaîne de transmission, en levant `Json.Error` pour
+          + toute autre
       detail
           - Needs a `Tactic[Json.Error]`, which an unknown string raises through with the reason
           - `OutOfRange`.
@@ -754,16 +755,16 @@ entry .Acp
         - is its lower-case name.
         + Signalé dans `ToolCall#kind`, afin qu'un client puisse afficher un appel d'outil avec une
         + icône appropriée ou décider du degré de prudence avec lequel l'autoriser. Les cas sont
-        + `Read`, `Edit`, `Delete`, `Move`, `Search`, `Execute`, `Think`, `Fetch` et `Other` ; sur
-        + le fil, chacun est son nom en minuscules.
+        + `Read`, `Edit`, `Delete`, `Move`, `Search`, `Execute`, `Think`, `Fetch` et `Other` ; en
+        + transmission, chacun est son nom en minuscules.
     entry .encodable
       info
           - encodes a kind as its wire string
-          + encode un genre sous forme de sa chaîne sur le fil
+          + encode un genre sous forme de sa chaîne de transmission
     entry .decodable
       info
           - decodes a kind from its wire string; an unknown kind is `Other`
-          + décode un genre depuis sa chaîne sur le fil ; un genre inconnu vaut `Other`
+          + décode un genre depuis sa chaîne de transmission ; un genre inconnu vaut `Other`
       detail
           - Unlike the other enums' decoders, it never fails: the protocol lets agents add kinds,
           - so one this library does not know reads as `ToolKind.Other`.
@@ -778,16 +779,17 @@ entry .Acp
     detail
         - Reported in `ToolCall#status` and updated by `ToolCallUpdate#status`. On the wire the
         - cases are `pending`, `in_progress`, `completed`, `failed` and `cancelled`.
-        + Signalé dans `ToolCall#status` et mis à jour par `ToolCallUpdate#status`. Sur le fil, les
-        + cas sont `pending`, `in_progress`, `completed`, `failed` et `cancelled`.
+        + Signalé dans `ToolCall#status` et mis à jour par `ToolCallUpdate#status`. En transmission,
+        + les cas sont `pending`, `in_progress`, `completed`, `failed` et `cancelled`.
     entry .encodable
       info
           - encodes a status as its wire string
-          + encode un statut sous forme de sa chaîne sur le fil
+          + encode un statut sous forme de sa chaîne de transmission
     entry .decodable
       info
           - decodes a status from its wire string, raising `Json.Error` for any other
-          + décode un statut depuis sa chaîne sur le fil, en levant `Json.Error` pour toute autre
+          + décode un statut depuis sa chaîne de transmission, en levant `Json.Error` pour toute
+          + autre
 
   entry .ToolCallLocation
     info
@@ -816,7 +818,7 @@ entry .Acp
         - `ToolContent` (`content`) wraps an ordinary `ContentBlock`; `ToolDiff` (`diff`) is a
         - structured edit to one file; `ToolTerminal` (`terminal`) refers to a terminal the
         - client created for the agent, whose output the client can show.
-        + Une hiérarchie scellée de trois cas, discriminés sur le fil par un membre `type` :
+        + Une hiérarchie scellée de trois cas, discriminés en transmission par un membre `type` :
         + `ToolContent` (`content`) enveloppe un `ContentBlock` ordinaire ; `ToolDiff` (`diff`) est
         + une modification structurée d'un fichier ; `ToolTerminal` (`terminal`) désigne un terminal
         + que le client a créé pour l'agent, et dont le client peut afficher la sortie.
@@ -847,7 +849,7 @@ entry .Acp
         + la sortie d'un outil sous forme de bloc de contenu ordinaire
     detail
         - A `ToolCallContent` case, `type` `content` on the wire.
-        + Un cas de `ToolCallContent`, de `type` `content` sur le fil.
+        + Un cas de `ToolCallContent`, de `type` `content` en transmission.
     entry .encodable
       info
           - the derived JSON encoder
@@ -869,8 +871,8 @@ entry .Acp
     detail
         - A `ToolCallContent` case, `type` `diff` on the wire. `#oldText` is `Unset` for a file
         - the tool created.
-        + Un cas de `ToolCallContent`, de `type` `diff` sur le fil. `#oldText` vaut `Unset` pour un
-        + fichier que l'outil a créé.
+        + Un cas de `ToolCallContent`, de `type` `diff` en transmission. `#oldText` vaut `Unset`
+        + pour un fichier que l'outil a créé.
     entry .encodable
       info
           - the derived JSON encoder
@@ -899,9 +901,9 @@ entry .Acp
     detail
         - A `ToolCallContent` case, `type` `terminal` on the wire. The id is one `Terminals#create`
         - returned, so the client can show that terminal's output alongside the tool call.
-        + Un cas de `ToolCallContent`, de `type` `terminal` sur le fil. L'id est l'un de ceux qu'a
-        + renvoyés `Terminals#create`, si bien que le client peut afficher la sortie de ce terminal
-        + à côté de l'appel d'outil.
+        + Un cas de `ToolCallContent`, de `type` `terminal` en transmission. L'id est l'un de ceux
+        + qu'a renvoyés `Terminals#create`, si bien que le client peut afficher la sortie de ce
+        + terminal à côté de l'appel d'outil.
     entry .encodable
       info
           - the derived JSON encoder
@@ -993,7 +995,7 @@ entry .Acp
         - before, so `#content` is the whole content, not an addition to it. The same shape
         - carries the tool call a permission request is about, lent to a permission handler as
         - `Acp.toolCall`.
-        + Un cas de `SessionUpdate`, `tool_call_update` sur le fil. Tous les membres sauf
+        + Un cas de `SessionUpdate`, `tool_call_update` en transmission. Tous les membres sauf
         + `#toolCallId` sont optionnels, et un membre présent remplace ce qui avait été signalé
         + auparavant, si bien que `#content` est le contenu entier, non un ajout à celui-ci. La même
         + forme porte l'appel d'outil que concerne une demande de permission, prêté à un
@@ -1043,11 +1045,12 @@ entry .Acp
     entry .encodable
       info
           - encodes a priority as its wire string
-          + encode une priorité sous forme de sa chaîne sur le fil
+          + encode une priorité sous forme de sa chaîne de transmission
     entry .decodable
       info
           - decodes a priority from its wire string, raising `Json.Error` for any other
-          + décode une priorité depuis sa chaîne sur le fil, en levant `Json.Error` pour toute autre
+          + décode une priorité depuis sa chaîne de transmission, en levant `Json.Error` pour toute
+          + autre
 
   entry .PlanStatus
     info
@@ -1056,11 +1059,12 @@ entry .Acp
     entry .encodable
       info
           - encodes a status as its wire string
-          + encode un statut sous forme de sa chaîne sur le fil
+          + encode un statut sous forme de sa chaîne de transmission
     entry .decodable
       info
           - decodes a status from its wire string, raising `Json.Error` for any other
-          + décode un statut depuis sa chaîne sur le fil, en levant `Json.Error` pour toute autre
+          + décode un statut depuis sa chaîne de transmission, en levant `Json.Error` pour toute
+          + autre
 
   entry .PlanEntry
     info
@@ -1111,8 +1115,8 @@ entry .Acp
         - `Connection#loadSession`, replays from a resumed one — discriminated on the wire by
         - the `sessionUpdate` member:
         + Une hiérarchie scellée des huit choses qu'un agent envoie en flux pendant un tour — et,
-        + pendant `Connection#loadSession`, rejoue depuis une session reprise — discriminées sur le
-        + fil par le membre `sessionUpdate` :
+        + pendant `Connection#loadSession`, rejoue depuis une session reprise — discriminées en
+        + transmission par le membre `sessionUpdate` :
 
         ```tabular
         - column  Case
@@ -1179,7 +1183,7 @@ entry .Acp
         + un morceau du message de l'utilisateur, lorsqu'un agent rejoue une session reprise
     detail
         - A `SessionUpdate` case, `user_message_chunk` on the wire.
-        + Un cas de `SessionUpdate`, `user_message_chunk` sur le fil.
+        + Un cas de `SessionUpdate`, `user_message_chunk` en transmission.
     entry .encodable
       info
           - the derived JSON encoder
@@ -1201,9 +1205,9 @@ entry .Acp
         - A `SessionUpdate` case, `agent_message_chunk` on the wire. A turn's answer arrives as
         - many chunks, in order; printing each `TextContent` as it arrives shows the answer as
         - the agent writes it.
-        + Un cas de `SessionUpdate`, `agent_message_chunk` sur le fil. La réponse d'un tour arrive
-        + en de nombreux morceaux, dans l'ordre ; afficher chaque `TextContent` à son arrivée montre
-        + la réponse au fur et à mesure que l'agent l'écrit.
+        + Un cas de `SessionUpdate`, `agent_message_chunk` en transmission. La réponse d'un tour
+        + arrive en de nombreux morceaux, dans l'ordre ; afficher chaque `TextContent` à son arrivée
+        + montre la réponse au fur et à mesure que l'agent l'écrit.
     entry .encodable
       info
           - the derived JSON encoder
@@ -1224,8 +1228,8 @@ entry .Acp
     detail
         - A `SessionUpdate` case, `agent_thought_chunk` on the wire: text a client may show
         - apart from the answer, or not at all.
-        + Un cas de `SessionUpdate`, `agent_thought_chunk` sur le fil : du texte qu'un client peut
-        + afficher à part de la réponse, ou pas du tout.
+        + Un cas de `SessionUpdate`, `agent_thought_chunk` en transmission : du texte qu'un client
+        + peut afficher à part de la réponse, ou pas du tout.
     entry .encodable
       info
           - the derived JSON encoder
@@ -1246,7 +1250,7 @@ entry .Acp
     detail
         - A `SessionUpdate` case, `plan` on the wire. Each report is the whole plan, replacing
         - the last, not a change to it.
-        + Un cas de `SessionUpdate`, `plan` sur le fil. Chaque signalement est le plan entier,
+        + Un cas de `SessionUpdate`, `plan` en transmission. Chaque signalement est le plan entier,
         + remplaçant le précédent, et non une modification de celui-ci.
     entry .encodable
       info
@@ -1268,8 +1272,8 @@ entry .Acp
     detail
         - A `SessionUpdate` case, `available_commands_update` on the wire. Each report is the
         - whole list.
-        + Un cas de `SessionUpdate`, `available_commands_update` sur le fil. Chaque signalement est
-        + la liste entière.
+        + Un cas de `SessionUpdate`, `available_commands_update` en transmission. Chaque signalement
+        + est la liste entière.
     entry .encodable
       info
           - the derived JSON encoder
@@ -1290,8 +1294,8 @@ entry .Acp
     detail
         - A `SessionUpdate` case, `current_mode_update` on the wire, sent when the mode changes
         - at the agent's initiative or in answer to `Connection#setMode`.
-        + Un cas de `SessionUpdate`, `current_mode_update` sur le fil, envoyé lorsque le mode change
-        + à l'initiative de l'agent ou en réponse à `Connection#setMode`.
+        + Un cas de `SessionUpdate`, `current_mode_update` en transmission, envoyé lorsque le mode
+        + change à l'initiative de l'agent ou en réponse à `Connection#setMode`.
     entry .encodable
       info
           - the derived JSON encoder
@@ -1314,7 +1318,7 @@ entry .Acp
         - The cases are `AllowOnce`, `AllowAlways`, `RejectOnce` and `RejectAlways` (on the wire
         - `allow_once`, `allow_always`, `reject_once` and `reject_always`). The kinds let a
         - client pick an option by policy rather than by the agent's wording:
-        + Les cas sont `AllowOnce`, `AllowAlways`, `RejectOnce` et `RejectAlways` (sur le fil
+        + Les cas sont `AllowOnce`, `AllowAlways`, `RejectOnce` et `RejectAlways` (en transmission
         + `allow_once`, `allow_always`, `reject_once` et `reject_always`). Ces genres permettent à
         + un client de choisir une option selon une politique plutôt que selon la formulation de
         + l'agent :
@@ -1331,11 +1335,12 @@ entry .Acp
     entry .encodable
       info
           - encodes a kind as its wire string
-          + encode un genre sous forme de sa chaîne sur le fil
+          + encode un genre sous forme de sa chaîne de transmission
     entry .decodable
       info
           - decodes a kind from its wire string, raising `Json.Error` for any other
-          + décode un genre depuis sa chaîne sur le fil, en levant `Json.Error` pour toute autre
+          + décode un genre depuis sa chaîne de transmission, en levant `Json.Error` pour toute
+          + autre
 
   entry .PermissionOption
     info
@@ -1361,7 +1366,7 @@ entry .Acp
     entry #name
       info
           - the option's label, to show the user
-          + le libellé de l'option, à montrer à l'utilisateur
+          + l'étiquette de l'option, à montrer à l'utilisateur
     entry #kind
       info
           - what choosing the option means
@@ -1385,8 +1390,8 @@ entry .Acp
         + et la connexion la fournit elle-même : une demande qui arrive après `Connection#cancel`
         + reçoit la réponse `Cancelled` sans que le gestionnaire soit appelé, et une demande déjà
         + dans le gestionnaire lorsque l'annulation arrive reçoit la réponse `Cancelled` quand le
-        + gestionnaire rend la main, sa sélection étant ignorée. Sur le fil, l'issue est discriminée
-        + par un membre `outcome`.
+        + gestionnaire rend la main, sa sélection étant ignorée. En transmission, l'issue est
+        + discriminée par un membre `outcome`.
     entry .encodable
       info
           - encodes an outcome with its `outcome` discriminator
@@ -1555,7 +1560,7 @@ entry .Acp
   entry .Turned1
     info
         - a handler's context: the session id, one tagged payload, and an error emitter
-        + le contexte d'un gestionnaire : l'id de session, une charge utile étiquetée, et un
+        + le contexte d'un gestionnaire : l'id de session, une charge utile taguée, et un
         + émetteur d'erreurs
     detail
         - `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`.
@@ -1563,14 +1568,14 @@ entry .Acp
         - so on) find it by name. Everything lent is a context parameter and the result is pure,
         - so nothing lent to a handler can leave it. `UpdateHandler` is one.
         + `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`.
-        + Chaque charge utile est étiquetée avec `aka`, afin que les accesseurs contextuels
+        + Chaque charge utile est taguée avec `aka`, afin que les accesseurs contextuels
         + (`Acp.update`, et ainsi de suite) la trouvent par son nom. Tout ce qui est prêté est un
         + paramètre contextuel et le résultat est pur, si bien que rien de ce qui est prêté à un
         + gestionnaire ne peut en sortir. `UpdateHandler` en est un.
   entry .Turned2
     info
         - a handler's context: the session id, two tagged payloads, and an error emitter
-        + le contexte d'un gestionnaire : l'id de session, deux charges utiles étiquetées, et un
+        + le contexte d'un gestionnaire : l'id de session, deux charges utiles taguées, et un
         + émetteur d'erreurs
     detail
         - As `Turned1`, with two payloads. `PermissionHandler` and `WriteFileHandler` are ones.
@@ -1579,7 +1584,7 @@ entry .Acp
   entry .Turned3
     info
         - a handler's context: the session id, three tagged payloads, and an error emitter
-        + le contexte d'un gestionnaire : l'id de session, trois charges utiles étiquetées, et un
+        + le contexte d'un gestionnaire : l'id de session, trois charges utiles taguées, et un
         + émetteur d'erreurs
     detail
         - As `Turned1`, with three payloads. `ReadFileHandler` is one.
@@ -1985,11 +1990,11 @@ entry .Acp
         - −32000; `Incompatible` is this library's own, raised by `Acp.connect` when the agent
         - answers `initialize` with another protocol version.
         + Erreur 148 : _the ACP operation failed because `reason`_, numérotée selon la raison (148.1
-        + pour `Parse` jusqu'à 148.7 pour `Incompatible`). Chaque `Reason` porte le code JSON-RPC
-        + sur le fil que lui assigne le protocole : `Parse` −32700, `InvalidRequest` −32600,
-        + `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 et `AuthRequired`
-        + −32000 ; `Incompatible` est propre à cette bibliothèque, levée par `Acp.connect` lorsque
-        + l'agent répond à `initialize` avec une autre version du protocole.
+        + pour `Parse` jusqu'à 148.7 pour `Incompatible`). Chaque `Reason` porte le code de
+        + transmission JSON-RPC que lui assigne le protocole : `Parse` −32700, `InvalidRequest`
+        + −32600, `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 et
+        + `AuthRequired` −32000 ; `Incompatible` est propre à cette bibliothèque, levée par
+        + `Acp.connect` lorsque l'agent répond à `initialize` avec une autre version du protocole.
 
         - The connection's requests raise one, through the `Tactic[Acp.Error]` in scope, for an
         - error response from the agent, with the reason recovered from the wire code by
@@ -1997,9 +2002,9 @@ entry .Acp
         - `#details`. An agent which needs authentication answers with `AuthRequired`; the client
         - then calls `Connection#authenticate`.
         + Les requêtes de la connexion en lèvent une, par la `Tactic[Acp.Error]` dans la portée,
-        + pour une réponse d'erreur de l'agent, avec la raison retrouvée à partir du code sur le
-        + fil par `.reason` (un code hors de l'ensemble standard vaut `Internal`) et le message de
-        + l'agent comme `#details`. Un agent qui exige une authentification répond avec
+        + pour une réponse d'erreur de l'agent, avec la raison retrouvée à partir du code de
+        + transmission par `.reason` (un code hors de l'ensemble standard vaut `Internal`) et le
+        + message de l'agent comme `#details`. Un agent qui exige une authentification répond avec
         + `AuthRequired` ; le client appelle alors `Connection#authenticate`.
 
         - A handler raises one through the `Emit[Acp.Error]` it is lent, and the client answers
@@ -2026,11 +2031,11 @@ entry .Acp
     entry .Reason
       info
           - why the operation failed, each with its JSON-RPC wire `code` and its `number`
-          + pourquoi l'opération a échoué, chacune avec son `code` JSON-RPC sur le fil et son
+          + pourquoi l'opération a échoué, chacune avec son `code` JSON-RPC de transmission et son
           + `number`
       detail
           - Each case has a JSON-RPC wire code beside its `number`:
-          + Chaque cas a un code JSON-RPC sur le fil à côté de son `number` :
+          + Chaque cas a un code de transmission JSON-RPC à côté de son `number` :
 
           ```tabular
           - column  Case
@@ -2047,14 +2052,14 @@ entry .Acp
           + column  Cas
           + column  Code
           + column  Message
-          + column  Note
-          + row  `Parse`  1  _the message could not be parsed as JSON_  code sur le fil −32700
-          + row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  code sur le fil −32600
-          + row  `MethodNotFound`  3  _the method name was not recognised_  code sur le fil −32601
-          + row  `InvalidParams`  4  _the parameters were not valid for the requested method_  code sur le fil −32602
-          + row  `Internal`  5  _an internal error occurred_  code sur le fil −32603
-          + row  `AuthRequired`  6  _the agent requires authentication_  code sur le fil −32000
-          + row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  pas de code sur le fil
+          + column  Remarque
+          + row  `Parse`  1  _the message could not be parsed as JSON_  code de transmission −32700
+          + row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  code de transmission −32600
+          + row  `MethodNotFound`  3  _the method name was not recognised_  code de transmission −32601
+          + row  `InvalidParams`  4  _the parameters were not valid for the requested method_  code de transmission −32602
+          + row  `Internal`  5  _an internal error occurred_  code de transmission −32603
+          + row  `AuthRequired`  6  _the agent requires authentication_  code de transmission −32000
+          + row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  pas de code de transmission
           ```
       entry #number
         info
@@ -2063,17 +2068,17 @@ entry .Acp
       entry #code
         info
             - the JSON-RPC wire code, or `0` for `Incompatible`, which has none
-            + le code JSON-RPC sur le fil, ou `0` pour `Incompatible`, qui n'en a pas
+            + le code de transmission JSON-RPC, ou `0` pour `Incompatible`, qui n'en a pas
     entry .reason
       info
           - the reason a wire code names, or `Unset` for a code outside the standard set
-          + la raison que nomme un code sur le fil, ou `Unset` pour un code hors de l'ensemble
+          + la raison que nomme un code de transmission, ou `Unset` pour un code hors de l'ensemble
           + standard
       detail
           - The inverse of `Reason#code`, for reading an error response. `0` is never a wire code,
           - so it never yields `Incompatible`.
-          + L'inverse de `Reason#code`, pour lire une réponse d'erreur. `0` n'est jamais un code sur
-          + le fil, si bien qu'il ne donne jamais `Incompatible`.
+          + L'inverse de `Reason#code`, pour lire une réponse d'erreur. `0` n'est jamais un code de
+          + transmission, si bien qu'il ne donne jamais `Incompatible`.
     entry .communicable
       info
           - renders a reason as its message, _the agent requires authentication_ and the like
@@ -2143,23 +2148,23 @@ entry .Acp
     entry #updated0
       info
           - the `updated` handler, boxed, or `null`
-          + le gestionnaire `updated`, en boîte, ou `null`
+          + le gestionnaire `updated`, boxé, ou `null`
     entry #permission0
       info
           - the `permission` handler, boxed, or `null`
-          + le gestionnaire `permission`, en boîte, ou `null`
+          + le gestionnaire `permission`, boxé, ou `null`
     entry #readFile0
       info
           - the `readFile` handler, boxed, or `null`
-          + le gestionnaire `readFile`, en boîte, ou `null`
+          + le gestionnaire `readFile`, boxé, ou `null`
     entry #writeFile0
       info
           - the `writeFile` handler, boxed, or `null`
-          + le gestionnaire `writeFile`, en boîte, ou `null`
+          + le gestionnaire `writeFile`, boxé, ou `null`
     entry #terminal0
       info
           - the `terminals` bundle, boxed, or `null`
-          + le bundle `terminals`, en boîte, ou `null`
+          + le bundle `terminals`, boxé, ou `null`
     entry #adjust0
       info
           - the `capabilities` adjustment, or `Unset`
@@ -2234,7 +2239,7 @@ entry .Acp
       detail
           - The raw seam for an extension method or a notification this library does not model.
           - A request sent this way has its response routed nowhere, so it is for notifications.
-          + La jointure brute pour une méthode d'extension ou une notification que cette
+          + La jonction brute pour une méthode d'extension ou une notification que cette
           + bibliothèque ne modélise pas. Une requête envoyée ainsi voit sa réponse routée nulle
           + part ; elle est donc destinée aux notifications.
     entry #initialize

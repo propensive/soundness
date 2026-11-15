@@ -237,7 +237,7 @@ val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
 + Les axes enregistrés de graisse, de largeur et d'italique d'une police variable se règlent par
 + les trois premiers, de sorte qu'on demande de la même façon une police statique et une police
 + variable. Une `Variation` sert à la taille optique et aux axes propres d'une police. Les
-+ fonctionnalités sont nommées par leurs étiquettes OpenType. Les jeux stylistiques,
++ fonctionnalités sont nommées par leurs tags OpenType. Les jeux stylistiques,
 + `Face.Feature.stylisticSet(n)`, et les variantes de caractères,
 + `Face.Feature.characterVariant(n)`, sont numérotés :
 
@@ -262,7 +262,7 @@ val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
 - row  `Superscript`  `sups`
 - row  `Subscript`  `subs`
 + column  Fonctionnalité
-+ column  Étiquette
++ column  Tag
 + row  `Ligatures`  `liga`
 + row  `DiscretionaryLigatures`  `dlig`
 + row  `HistoricalLigatures`  `hlig`
@@ -435,7 +435,7 @@ given interResource: ((Typeface of "Inter") is Typesettable in Medium at "/fonts
 + column  Vérifié à la compilation du code
 + column  Vérifié seulement à l'exécution
 + row  une graisse nommée, `inter.bold`  une graisse calculée, `inter.weighing(weight)`
-+ row  une fonctionnalité nommée, `Face.Feature.OldstyleNumerals`  une fonctionnalité issue d'une étiquette, `Face.Feature(t"ss03")`
++ row  une fonctionnalité nommée, `Face.Feature.OldstyleNumerals`  une fonctionnalité issue d'un tag, `Face.Feature(t"ss03")`
 + row  un style dont le type enregistre sa demande  un style annoté simplement `Face of "Inter"`
 + row  une fourniture issue d'un fichier du classpath  toute autre fourniture
 ```

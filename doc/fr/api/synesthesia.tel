@@ -848,7 +848,7 @@ entry .Mcp
   entry .LoggingMessage
     info
         - a log notification: level, logger name and data
-        + une notification de journal : niveau, nom du journaliseur et données
+        + une notification de journal : niveau, nom du logger et données
     entry #level
       info
           - the severity, as `LoggingLevel`
@@ -856,7 +856,7 @@ entry .Mcp
     entry #logger
       info
           - the logger's name, if given
-          + le nom du journaliseur, s'il est donné
+          + le nom du logger, s'il est donné
     entry #data
       info
           - the message, as JSON
@@ -873,11 +873,11 @@ entry .Mcp
     entry .encodable
       info
           - writes the case as its wire spelling
-          + écrit le cas sous forme de sa graphie sur le fil
+          + écrit le cas sous forme de sa graphie de transmission
     entry .decodable
       info
           - reads a wire spelling, raising `Json.Error` for anything else
-          + lit une graphie sur le fil, en levant `Json.Error` pour toute autre chose
+          + lit une graphie de transmission, en levant `Json.Error` pour toute autre chose
   entry .PromptArgument
     info
         - an argument a prompt takes: name, title, description and whether required
@@ -1671,7 +1671,7 @@ entry .Mcp
       detail
           - The message is sent under the logger name `updates`, as `{"message": …}`, so the
           - client shows it as progress while the tool runs.
-          + Le message est envoyé sous le nom de journaliseur `updates`, sous la forme
+          + Le message est envoyé sous le nom de logger `updates`, sous la forme
           + `{"message": …}`, si bien que le client l'affiche comme progression pendant que l'outil
           + s'exécute.
     entry #elicit

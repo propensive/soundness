@@ -261,7 +261,7 @@ class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
 - row  `ThemeColor(color)`  `<meta name="theme-color">`
 + column  Fonctionnalité
 + column  Ajoute à l'en-tête
-+ row  `StandardMetadata(description)`  une description et un viewport adaptatif
++ row  `StandardMetadata(description)`  une description et une zone d'affichage adaptative
 + row  `Description(text)`  `<meta name="description">`
 + row  `Viewport`  `<meta name="viewport">`, à partir de `viewport`
 + row  `Author(name)`  `<meta name="author">`

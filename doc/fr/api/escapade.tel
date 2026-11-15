@@ -44,8 +44,8 @@ detail
     + À l'intérieur de `e"…"`, un marqueur `Bold`, `Italic`, `Underline`, `Strike`, `Reverse`,
     + `Conceal`, `Faint`, `DoubleUnderline`, `BlinkSlow`, `BlinkFast` ou `Overline` substitué,
     + une couleur `Fg` ou `Bg`, toute couleur `Chromatic`, une paire `Escape` ou un
-    + `Hyperlink`, suivi d'une portion entre crochets — `(…)`, `[…]`, `{…}`, `<…>` ou `«…»` —
-    + stylise cette portion, et les portions s'imbriquent : chaque substitution est une
+    + `Hyperlink`, suivi d'une étendue entre crochets — `(…)`, `[…]`, `{…}`, `<…>` ou `«…»` —
+    + stylise cette étendue, et les étendues s'imbriquent : chaque substitution est une
     + *transformation* du `TextStyle` en vigueur (une instance de `Stylize`), empilée puis
     + dépilée au crochet fermant, si bien qu'une couleur intérieure cède à nouveau la place à
     + la couleur extérieure là où elle se termine, ce que l'ANSI brut ne sait pas exprimer.
@@ -123,7 +123,7 @@ entry .Teletype
       - terminal will show and its length is the width it occupies.
       + Un `Teletype` est la valeur que produit l'interpolateur `e"…"` : son texte `#plain` et,
       + pour chaque caractère, un `StyleWord` de 64 bits qui regroupe premier plan, arrière-plan
-      + et onze drapeaux d'attributs, stockés soit de façon dense (un mot par caractère), soit
+      + et onze indicateurs d'attributs, stockés soit de façon dense (un mot par caractère), soit
       + sous forme de suites de style identique (`#boundaries` marque le début de chaque suite).
       + Les hyperliens (OSC 8) et les insertions d'échappements bruts sont conservés à côté du
       + texte, par position, si bien que le texte brut est exactement ce qu'affichera le
@@ -417,7 +417,7 @@ entry .Teletype
         - The `HyperlinkChange` flag in the style word of that position marks where the link
         - opens, and the closing one where it ends.
         + `e"hi ${Hyperlink(t"https://x.test")}[click]".hyperlinks(3)` vaut `t"https://x.test"`.
-        + Le drapeau `HyperlinkChange` du mot de style de cette position marque l'ouverture du
+        + L'indicateur `HyperlinkChange` du mot de style de cette position marque l'ouverture du
         + lien, et celui de fermeture marque sa fin.
   entry #insertions
     info
@@ -427,8 +427,8 @@ entry .Teletype
         - What an `Escape(on, off)` substitution leaves behind: the `on` sequence at the start of
         - its span and the `off` sequence at its end, each keyed by position and emitted verbatim
         - by `#render` on a terminal with ANSI support.
-        + Ce que laisse une substitution `Escape(on, off)` : la séquence `on` au début de sa
-        + portion et la séquence `off` à sa fin, chacune indexée par position et émise telle
+        + Ce que laisse une substitution `Escape(on, off)` : la séquence `on` au début de son
+        + étendue et la séquence `off` à sa fin, chacune indexée par position et émise telle
         + quelle par `#render` sur un terminal qui prend en charge l'ANSI.
   entry #boundaries
     info
@@ -467,7 +467,7 @@ entry .Teletype
         - `e"$Bold(abc)def"` it is `0L`, the default, since the bold span closed.
         + Ce dans quoi `#append` se poursuit, et ce qu'une jointure fait passer d'un côté à l'autre
         + d'une frontière. Pour `e"$Bold(abc)def"`, il vaut `0L`, la valeur par défaut, puisque
-        + la portion en gras s'est fermée.
+        + l'étendue en gras s'est fermée.
   entry #asSparseArrays
     info
         - the styles as runs: the `(styles, boundaries)` pair of the sparse form
@@ -545,7 +545,7 @@ entry .Teletype
         + sous forme de l'entrée la plus proche du cube de 256 couleurs (`38;5;n`) ; les hyperliens
         + deviennent des séquences OSC 8 et les insertions sont émises telles quelles à leurs
         + positions. Le style final est émis à la fin, si bien qu'un teletype qui se termine à
-        + l'intérieur d'une portion est tout de même réinitialisé.
+        + l'intérieur d'une étendue est tout de même réinitialisé.
 
         ```scala
         import soundness.*
@@ -577,8 +577,8 @@ entry .e
       + - une valeur de **balisage** — tout ce qui dispose d'une instance de `Stylize` (`Bold`,
       +   `Italic`, `Fg(…)`, `Bg(…)`, une couleur `Chromatic` comme `WebColors.Red`, un
       +   `Escape`) ou un `Hyperlink` — qui, lorsqu'elle est immédiatement suivie de `(`, `[`,
-      +   `{`, `<` ou `«`, stylise la portion jusqu'au crochet fermant correspondant, et
-      +   s'applique sinon au reste de la portion englobante ;
+      +   `{`, `<` ou `«`, stylise l'étendue jusqu'au crochet fermant correspondant, et
+      +   s'applique sinon au reste de l'étendue englobante ;
       + - une valeur **textuelle** — un `Teletype`, qui conserve son propre style, ou toute
       +   valeur `Teletypeable` ou `Showable`, affichée comme texte. Un crochet après une valeur
       +   textuelle est du texte ordinaire : `e"${42}(text)"` donne `42(text)`.
@@ -598,11 +598,11 @@ entry .e
       - error, _the closing brace does not match an opening brace_; a value with neither a
       - `Stylize` nor a `Teletypeable` nor a `Showable` instance is the compile error _can't
       - substitute T into an e-interpolator_.
-      + Les portions s'imbriquent et se restaurent : chaque substitution de balisage transforme
+      + Les étendues s'imbriquent et se restaurent : chaque substitution de balisage transforme
       + le `TextStyle` en vigueur, et le crochet fermant restaure le style qui était en vigueur
       + avant lui ; l'indigo ci-dessus cède donc à nouveau la place à l'or là où il se termine.
-      + Un crochet fermant du mauvais type à l'intérieur d'une portion est du texte ordinaire
-      + (`e"$Bold(a]b)"` met `a]b` en gras). Une portion laissée ouverte est une erreur de
+      + Un crochet fermant du mauvais type à l'intérieur d'une étendue est du texte ordinaire
+      + (`e"$Bold(a]b)"` met `a]b` en gras). Une étendue laissée ouverte est une erreur de
       + compilation, _the closing brace does not match an opening brace_ ; une valeur qui n'a
       + d'instance ni de `Stylize`, ni de `Teletypeable`, ni de `Showable` provoque l'erreur de
       + compilation _can't
@@ -628,7 +628,7 @@ entry .e
 entry .Bold
   info
       - the marker which emboldens a span: `e"$Bold(text)"` (SGR 1)
-      + le marqueur qui met une portion en gras : `e"$Bold(text)"` (SGR 1)
+      + le marqueur qui met une étendue en gras : `e"$Bold(text)"` (SGR 1)
   detail
       - A case object whose `Stylize[Bold.type]` instance (`Ansi.bold`) sets `bold` in the
       - prevailing `TextStyle`. On a plain `Termcap` it renders as nothing.
@@ -638,28 +638,28 @@ entry .Bold
 entry .Italic
   info
       - the marker which italicises a span: `e"$Italic(text)"` (SGR 3)
-      + le marqueur qui met une portion en italique : `e"$Italic(text)"` (SGR 3)
+      + le marqueur qui met une étendue en italique : `e"$Italic(text)"` (SGR 3)
 
 entry .Underline
   info
       - the marker which underlines a span: `e"$Underline(text)"` (SGR 4)
-      + le marqueur qui souligne une portion : `e"$Underline(text)"` (SGR 4)
+      + le marqueur qui souligne une étendue : `e"$Underline(text)"` (SGR 4)
 
 entry .Strike
   info
       - the marker which strikes a span through: `e"$Strike(text)"` (SGR 9)
-      + le marqueur qui barre une portion : `e"$Strike(text)"` (SGR 9)
+      + le marqueur qui barre une étendue : `e"$Strike(text)"` (SGR 9)
 
 entry .Reverse
   info
       - the marker which swaps a span's foreground and background: `e"$Reverse(text)"` (SGR 7)
-      + le marqueur qui intervertit le premier plan et l'arrière-plan d'une portion :
+      + le marqueur qui intervertit le premier plan et l'arrière-plan d'une étendue :
       + `e"$Reverse(text)"` (SGR 7)
 
 entry .Conceal
   info
       - the marker which hides a span's characters: `e"$Conceal(text)"` (SGR 8)
-      + le marqueur qui masque les caractères d'une portion : `e"$Conceal(text)"` (SGR 8)
+      + le marqueur qui masque les caractères d'une étendue : `e"$Conceal(text)"` (SGR 8)
   detail
       - The characters are still in `Teletype#plain` and still occupy their cells; a terminal
       - which honours SGR 8 draws them invisibly.
@@ -669,7 +669,7 @@ entry .Conceal
 entry .Faint
   info
       - the marker which dims a span: `e"$Faint(text)"` (SGR 2)
-      + le marqueur qui atténue une portion : `e"$Faint(text)"` (SGR 2)
+      + le marqueur qui atténue une étendue : `e"$Faint(text)"` (SGR 2)
   detail
       - Reached as `escapade.Faint`: it is not among the umbrella's exports.
       + S'atteint par `escapade.Faint` : il ne figure pas parmi les exports du package parapluie.
@@ -677,7 +677,7 @@ entry .Faint
 entry .DoubleUnderline
   info
       - the marker which double-underlines a span: `e"$DoubleUnderline(text)"` (SGR 21)
-      + le marqueur qui souligne doublement une portion : `e"$DoubleUnderline(text)"` (SGR 21)
+      + le marqueur qui souligne doublement une étendue : `e"$DoubleUnderline(text)"` (SGR 21)
   detail
       - Reached as `escapade.DoubleUnderline`: it is not among the umbrella's exports.
       + S'atteint par `escapade.DoubleUnderline` : il ne figure pas parmi les exports du package
@@ -686,7 +686,7 @@ entry .DoubleUnderline
 entry .BlinkSlow
   info
       - the marker which makes a span blink slowly: `e"$BlinkSlow(text)"` (SGR 5)
-      + le marqueur qui fait clignoter lentement une portion : `e"$BlinkSlow(text)"` (SGR 5)
+      + le marqueur qui fait clignoter lentement une étendue : `e"$BlinkSlow(text)"` (SGR 5)
   detail
       - Reached as `escapade.BlinkSlow`: it is not among the umbrella's exports.
       + S'atteint par `escapade.BlinkSlow` : il ne figure pas parmi les exports du package
@@ -695,7 +695,7 @@ entry .BlinkSlow
 entry .BlinkFast
   info
       - the marker which makes a span blink rapidly: `e"$BlinkFast(text)"` (SGR 6)
-      + le marqueur qui fait clignoter rapidement une portion : `e"$BlinkFast(text)"` (SGR 6)
+      + le marqueur qui fait clignoter rapidement une étendue : `e"$BlinkFast(text)"` (SGR 6)
   detail
       - Reached as `escapade.BlinkFast`: it is not among the umbrella's exports.
       + S'atteint par `escapade.BlinkFast` : il ne figure pas parmi les exports du package
@@ -704,7 +704,7 @@ entry .BlinkFast
 entry .Overline
   info
       - the marker which overlines a span: `e"$Overline(text)"` (SGR 53)
-      + le marqueur qui surligne une portion par le haut : `e"$Overline(text)"` (SGR 53)
+      + le marqueur qui surligne une étendue par le haut : `e"$Overline(text)"` (SGR 53)
   detail
       - Reached as `escapade.Overline`: it is not among the umbrella's exports.
       + S'atteint par `escapade.Overline` : il ne figure pas parmi les exports du package parapluie.
@@ -724,7 +724,7 @@ entry .Fg
       + prend toute valeur `Chromatic` (un `Color in Srgb` d'iridescence, une entrée de
       + `WebColors`, un littéral `rgb"…"`, un `Chroma`) ; `Fg(WebColors.Red)` et
       + `Fg(Chroma(255, 0, 0))` sont donc identiques. Son instance de `Stylize` (`Ansi.fg`)
-      + définit le premier plan du style en vigueur pour une portion ; une valeur `Chromatic`
+      + définit le premier plan du style en vigueur pour une étendue ; une valeur `Chromatic`
       + nue substituée dans `e"…"` fait de même via `Ansi.chromatic`, si bien que
       + `e"${WebColors.Red}(text)"` n'a besoin d'aucun `Fg`.
 
@@ -771,7 +771,7 @@ entry .Bg
       - it, which is how `Ribbon` colours its labels.
       + `Bg(color)` enveloppe un `Chroma` comme arrière-plan ; `Bg.apply` prend toute valeur
       + `Chromatic`. Son instance de `Stylize` (`Ansi.bg`) définit l'arrière-plan du style en
-      + vigueur pour une portion, et `#highContrast` choisit le premier plan — noir ou blanc —
+      + vigueur pour une étendue, et `#highContrast` choisit le premier plan — noir ou blanc —
       + le plus lisible sur cet arrière-plan ; c'est ainsi que `Ribbon` colore ses étiquettes.
 
       ```scala
@@ -818,7 +818,7 @@ entry .Bg
 entry .TextStyle
   info
       - the style of one character: its colours and eleven attribute flags, as a record
-      + le style d'un caractère : ses couleurs et onze drapeaux d'attributs, sous forme
+      + le style d'un caractère : ses couleurs et onze indicateurs d'attributs, sous forme
       + d'enregistrement
   detail
       - The record a `Stylize` transformation edits. Every field has a default — `Unset`
@@ -827,10 +827,10 @@ entry .TextStyle
       - stack of these as it parses, one pushed per opened span, and packs each into a
       - `StyleWord` (`#styleWord`) for the characters it covers.
       + L'enregistrement que modifie une transformation `Stylize`. Chaque champ a une valeur
-      + par défaut — couleurs `Unset` et drapeaux à `false` — si bien qu'une transformation
+      + par défaut — couleurs `Unset` et indicateurs à `false` — si bien qu'une transformation
       + s'écrit avec `copy` : `Stylize(_.copy(bold = true, fg = Chroma(0xff0000)))`.
       + L'interpolateur `e"…"` en conserve une pile pendant l'analyse, un étant empilé par
-      + portion ouverte, et compacte chacun en un `StyleWord` (`#styleWord`) pour les caractères
+      + étendue ouverte, et compacte chacun en un `StyleWord` (`#styleWord`) pour les caractères
       + qu'il couvre.
 
       ```scala
@@ -905,7 +905,7 @@ entry .TextStyle
         - The foreground's 24 bits in the low bytes with the `FgSet` flag, the background's 24
         - bits above them with `BgSet`, and one bit per attribute: the layout `StyleWord`
         - documents. `TextStyle().styleWord` is `0L`, the default.
-        + Les 24 bits du premier plan dans les octets de poids faible avec le drapeau `FgSet`, les
+        + Les 24 bits du premier plan dans les octets de poids faible avec l'indicateur `FgSet`, les
         + 24 bits de l'arrière-plan au-dessus avec `BgSet`, et un bit par attribut : la
         + disposition que documente `StyleWord`. `TextStyle().styleWord` vaut `0L`, la valeur par
         + défaut.
@@ -934,8 +934,8 @@ entry .Stylize
       - a marker can depend on what it finds:
       + `Stylize[T]` vaut `Substitution[Ansi.Input, T, "esc"]` : une `Insertion` dont
       + l'étiquette `esc` indique à l'interpolateur qu'un `T` substitué avant un crochet ouvre
-      + une portion stylée. Une instance s'écrit `Stylize(lambda)`, où la lambda transforme le
-      + `TextStyle` en vigueur en style de la portion — une transformation plutôt qu'un réglage
+      + une étendue stylée. Une instance s'écrit `Stylize(lambda)`, où la lambda transforme le
+      + `TextStyle` en vigueur en style de l'étendue — une transformation plutôt qu'un réglage
       + absolu, si bien qu'un marqueur peut dépendre de ce qu'il trouve :
 
       ```scala
@@ -966,19 +966,19 @@ entry .Stylize
     info
         - `Stylize(lambda)`: the markup which applies a `TextStyle -> TextStyle` transformation to a span
         + `Stylize(lambda)` : le balisage qui applique une transformation `TextStyle -> TextStyle` à
-        + une portion
+        + une étendue
     detail
         - Wraps the lambda as an `Ansi.Input.Markup`, the value a `Stylize[T]` instance returns
         - for each substituted `T`. The lambda receives the style in force where the span opens,
         - and its result styles the span's characters.
         + Enveloppe la lambda dans un `Ansi.Input.Markup`, la valeur que renvoie une instance de
         + `Stylize[T]` pour chaque `T` substitué. La lambda reçoit le style en vigueur à
-        + l'ouverture de la portion, et son résultat stylise les caractères de la portion.
+        + l'ouverture de l'étendue, et son résultat stylise les caractères de l'étendue.
 
 entry .Escape
   info
       - a raw pair of escape sequences to wrap a span in: `Escape(on, off)`
-      + une paire brute de séquences d'échappement dont envelopper une portion : `Escape(on, off)`
+      + une paire brute de séquences d'échappement dont envelopper une étendue : `Escape(on, off)`
   detail
       - `Escape` is the type `Ansi.Input.Escape`, with `Escape(code, reset)` to build one: the
       - text after the escape character which switches something on, and the text which switches
@@ -990,7 +990,7 @@ entry .Escape
       + `Escape` est le type `Ansi.Input.Escape`, avec `Escape(code, reset)` pour en construire
       + un : le texte qui suit le caractère d'échappement et qui active quelque chose, et le
       + texte qui le désactive (vide par défaut). Substituée dans `e"…"` avant un crochet, la
-      + séquence `on` est insérée à l'ouverture de la portion et la séquence `off` à sa
+      + séquence `on` est insérée à l'ouverture de l'étendue et la séquence `off` à sa
       + fermeture, toutes deux émises telles quelles par `Teletype#render` sur un terminal qui
       + prend en charge l'ANSI et ignorées sur un terminal brut ; sans crochet, seule `on` est
       + insérée. L'objet `escapes` fournit les paires SGR standard toutes faites.
@@ -1007,7 +1007,7 @@ entry .Escape
       - the `TextStyle`, so `Teletype#styleAt` does not know about it and a nested style span
       - does not restore it.
       + Contrairement à un marqueur `Stylize`, un `Escape` est opaque pour la pile de styles : il
-      + ne met pas à jour le `TextStyle` ; `Teletype#styleAt` l'ignore donc, et une portion de
+      + ne met pas à jour le `TextStyle` ; `Teletype#styleAt` l'ignore donc, et une étendue de
       + style imbriquée ne le restaure pas.
   refer escapade.escapes
   entry .apply
@@ -1019,24 +1019,24 @@ entry .Escape
         - `code` is inserted where the span opens and `reset`, which defaults to `Unset` (no
         - sequence), where it closes; both are written without the leading escape character,
         - which the `e"…"` parser adds as it records the insertion.
-        + `code` est inséré à l'ouverture de la portion et `reset`, qui vaut `Unset` par défaut
+        + `code` est inséré à l'ouverture de l'étendue et `reset`, qui vaut `Unset` par défaut
         + (aucune séquence), à sa fermeture ; tous deux s'écrivent sans le caractère d'échappement
         + initial, que l'analyseur de `e"…"` ajoute lorsqu'il enregistre l'insertion.
 
 entry .Hyperlink
   info
       - a URL to attach to a span, as an OSC 8 terminal hyperlink: `e"${Hyperlink(url)}[text]"`
-      + une URL à attacher à une portion, sous forme d'hyperlien de terminal OSC 8 :
+      + une URL à attacher à une étendue, sous forme d'hyperlien de terminal OSC 8 :
       + `e"${Hyperlink(url)}[text]"`
   detail
       - Substituted before a bracket, the span becomes a clickable link on terminals which
       - support OSC 8: `#render` emits `\e]8;;url\e\\` where it opens and `\e]8;;\e\\` where it
       - closes, and a plain `Termcap` shows just the text. The link's position is kept in
       - `Teletype#hyperlinks`, and a styled span inside a link keeps both.
-      + Substituée avant un crochet, elle fait de la portion un lien cliquable sur les terminaux
+      + Substituée avant un crochet, elle fait de l'étendue un lien cliquable sur les terminaux
       + qui prennent en charge OSC 8 : `#render` émet `\e]8;;url\e\\` à l'ouverture et
       + `\e]8;;\e\\` à la fermeture, et un `Termcap` brut n'affiche que le texte. La position
-      + du lien est conservée dans `Teletype#hyperlinks`, et une portion stylée à l'intérieur
+      + du lien est conservée dans `Teletype#hyperlinks`, et une étendue stylée à l'intérieur
       + d'un lien conserve les deux.
 
       ```scala
@@ -1107,11 +1107,11 @@ entry .Ansi
   entry .escape
     info
         - the `Stylize` instance for `Escape`: the raw pair is inserted around the span
-        + l'instance de `Stylize` pour `Escape` : la paire brute est insérée autour de la portion
+        + l'instance de `Stylize` pour `Escape` : la paire brute est insérée autour de l'étendue
   entry .chromatic
     info
         - the `Stylize` instance for any `Chromatic` colour: the span's foreground
-        + l'instance de `Stylize` pour toute couleur `Chromatic` : le premier plan de la portion
+        + l'instance de `Stylize` pour toute couleur `Chromatic` : le premier plan de l'étendue
     detail
         - `e"${WebColors.Red}(text)"` colours the text red with no `Fg` wrapper; an `rgb"…"` literal
         - or a `Chroma` works the same way.
@@ -1120,11 +1120,11 @@ entry .Ansi
   entry .bg
     info
         - the `Stylize` instance for `Bg`: the span's background
-        + l'instance de `Stylize` pour `Bg` : l'arrière-plan de la portion
+        + l'instance de `Stylize` pour `Bg` : l'arrière-plan de l'étendue
   entry .fg
     info
         - the `Stylize` instance for `Fg`: the span's foreground
-        + l'instance de `Stylize` pour `Fg` : le premier plan de la portion
+        + l'instance de `Stylize` pour `Fg` : le premier plan de l'étendue
   entry .bold
     info
         - the `Stylize` instance for `Bold`
@@ -1172,12 +1172,12 @@ entry .Ansi
   entry .hyperlink
     info
         - the substitution for `Hyperlink`: the span becomes an OSC 8 link
-        + la substitution pour `Hyperlink` : la portion devient un lien OSC 8
+        + la substitution pour `Hyperlink` : l'étendue devient un lien OSC 8
     detail
         - Labelled `esc` like a `Stylize`, so a bracket after it opens a span, but the span is a
         - link frame rather than a style frame.
-        + Étiquetée `esc` comme un `Stylize`, si bien qu'un crochet qui la suit ouvre une portion,
-        + mais la portion est un cadre de lien plutôt qu'un cadre de style.
+        + Étiquetée `esc` comme un `Stylize`, si bien qu'un crochet qui la suit ouvre une étendue,
+        + mais l'étendue est un cadre de lien plutôt qu'un cadre de style.
   entry .Input
     info
         - what a substitution into `e"…"` becomes: text, markup, a raw escape pair or a hyperlink
@@ -1192,7 +1192,7 @@ entry .Ansi
         + Une énumération à quatre cas. `TextInput(text: Teletype)` est une valeur affichée comme
         + texte, ajoutée avec son style combiné sous le style en vigueur ;
         + `Markup(transform: Transform)` est une valeur `Stylize`, en attente jusqu'à ce que le
-        + caractère suivant décide si elle ouvre une portion ; `Escape(on: Text, off: Text)` — le
+        + caractère suivant décide si elle ouvre une étendue ; `Escape(on: Text, off: Text)` — le
         + type que désigne l'alias de package `Escape` — est une paire brute ;
         + `Hyperlink(url: Text)` ouvre un lien. `Runtime.insert` en transmet un à un `State`.
   entry .Pending
@@ -1207,29 +1207,29 @@ entry .Ansi
         + L'anticipation d'un jeton de l'analyseur, sous forme d'énumération : `Style(transform)`,
         + `Link(url)` ou `Escape(on, off)`. Le caractère suivant la résout — un crochet ouvrant
         + empile un cadre, une barre oblique inverse l'annule, et tout autre caractère l'applique
-        + au reste de la portion englobante.
+        + au reste de l'étendue englobante.
   entry .Frame
     info
         - an open span on the parser's stack, with the bracket which will close it
-        + une portion ouverte sur la pile de l'analyseur, avec le crochet qui la fermera
+        + une étendue ouverte sur la pile de l'analyseur, avec le crochet qui la fermera
     detail
         - An enum: `Style(bracket)` for a styled span, `Link(bracket)` for a hyperlink and
         - `Escape(bracket, off)` for a raw escape pair, which remembers the `off` sequence to
         - insert when the span closes. Each knows the closing bracket it waits for, so a
         - closing bracket of another kind is ordinary text.
-        + Une énumération : `Style(bracket)` pour une portion stylée, `Link(bracket)` pour un
+        + Une énumération : `Style(bracket)` pour une étendue stylée, `Link(bracket)` pour un
         + hyperlien et `Escape(bracket, off)` pour une paire d'échappement brute, qui mémorise la
-        + séquence `off` à insérer à la fermeture de la portion. Chacun connaît le crochet fermant
+        + séquence `off` à insérer à la fermeture de l'étendue. Chacun connaît le crochet fermant
         + qu'il attend ; un crochet fermant d'un autre type est donc du texte ordinaire.
     entry #bracket
       info
           - the closing bracket which ends this span: `)`, `]`, `}`, `>` or `»`
-          + le crochet fermant qui termine cette portion : `)`, `]`, `}`, `>` ou `»`
+          + le crochet fermant qui termine cette étendue : `)`, `]`, `}`, `>` ou `»`
   entry .State
     info
         - the mutable accumulator the interpolator fills: text, styles, links, insertions and the open spans
         + l'accumulateur mutable que remplit l'interpolateur : texte, styles, liens, insertions et
-        + portions ouvertes
+        + étendues ouvertes
     detail
         - One `State` is created per interpolation by `Runtime.initial`, fed by `Runtime.parse`
         - and `Runtime.insert`, and turned into a `Teletype` by `Runtime.complete`. It is
@@ -1263,11 +1263,11 @@ entry .Ansi
     entry #stack
       info
           - the open spans, innermost first
-          + les portions ouvertes, de la plus intérieure à la plus extérieure
+          + les étendues ouvertes, de la plus intérieure à la plus extérieure
     entry #styleStack
       info
           - the styles in force outside each open style span, innermost first
-          + les styles en vigueur à l'extérieur de chaque portion de style ouverte, du plus
+          + les styles en vigueur à l'extérieur de chaque étendue de style ouverte, du plus
           + intérieur au plus extérieur
     entry #currentStyle
       info
@@ -1294,9 +1294,9 @@ entry .Ansi
           - An inner style wins where it sets a colour, and attribute flags from both are kept,
           - as `StyleWord.combine` defines; the teletype's hyperlinks and insertions are shifted
           - to their new positions.
-          + Un style intérieur l'emporte là où il définit une couleur, et les drapeaux d'attributs
-          + des deux sont conservés, comme le définit `StyleWord.combine` ; les hyperliens et
-          + insertions du teletype sont décalés vers leurs nouvelles positions.
+          + Un style intérieur l'emporte là où il définit une couleur, et les indicateurs
+          + d'attributs des deux sont conservés, comme le définit `StyleWord.combine` ; les
+          + hyperliens et insertions du teletype sont décalés vers leurs nouvelles positions.
     entry #addInsertion
       info
           - records a raw escape sequence to emit before the character at a position
@@ -1304,24 +1304,24 @@ entry .Ansi
     entry #pushStyleFrame
       info
           - opens a styled span: saves the current style and applies a transformation
-          + ouvre une portion stylée : sauvegarde le style courant et applique une transformation
+          + ouvre une étendue stylée : sauvegarde le style courant et applique une transformation
     entry #pushLinkFrame
       info
           - opens a hyperlink span at the current position
-          + ouvre une portion d'hyperlien à la position courante
+          + ouvre une étendue d'hyperlien à la position courante
     entry #pushEscapeFrame
       info
           - opens a raw escape span, inserting its `on` sequence
-          + ouvre une portion d'échappement brut, en insérant sa séquence `on`
+          + ouvre une étendue d'échappement brut, en insérant sa séquence `on`
     entry #popFrame
       info
           - closes the innermost span, restoring the style or inserting the `off` sequence
-          + ferme la portion la plus intérieure, en restaurant le style ou en insérant la séquence
+          + ferme l'étendue la plus intérieure, en restaurant le style ou en insérant la séquence
           + `off`
     entry #applyOnce
       info
           - applies a transformation to the current style with no span to close it
-          + applique une transformation au style courant sans portion pour la fermer
+          + applique une transformation au style courant sans étendue pour la fermer
   entry .Runtime
     info
         - the parser: feeds literal parts and substitutions to a `State`, and completes it
@@ -1385,7 +1385,7 @@ entry .Ansi
     entry .complete
       info
           - the finished `Teletype`, or `Ansi.Error` if a span is still open
-          + le `Teletype` terminé, ou `Ansi.Error` si une portion est encore ouverte
+          + le `Teletype` terminé, ou `Ansi.Error` si une étendue est encore ouverte
       detail
           - Raises `Ansi.Error`: _the closing brace does not match an opening brace_ when the
           - frame stack is not empty; otherwise appends the trailing style, compresses the styles
@@ -1396,7 +1396,7 @@ entry .Ansi
   entry .Error
     info
         - the exception for a malformed interpolation: an unclosed span or a bad text escape
-        + l'exception pour une interpolation mal formée : une portion non fermée ou un échappement
+        + l'exception pour une interpolation mal formée : une étendue non fermée ou un échappement
         + de texte invalide
     detail
         - An `Exception` whose message is `escapade: ` followed by `#detail`. The `e"…"` macro
@@ -1794,7 +1794,7 @@ entry .escapes
       - `Fg` or `Bg` with a 24-bit colour is the usual choice; these are for matching the
       - palette of the surrounding shell.
       + Les couleurs et attributs du terminal classique, chacun sous forme de paire
-      + `Escape(on, off)` pour une portion dans `e"…"`, pour un programme qui veut la palette
+      + `Escape(on, off)` pour une étendue dans `e"…"`, pour un programme qui veut la palette
       + *propre* du terminal (`escapes.foreground.Red` est ce que le thème de l'utilisateur
       + rend en rouge) plutôt qu'un `Chroma` qu'il choisit lui-même. Un `Fg` ou un `Bg` avec une
       + couleur 24 bits est le choix habituel ; ceux-ci servent à s'accorder avec la palette du
@@ -2019,7 +2019,7 @@ entry .escapes
         + `[0K` : efface du curseur jusqu'à la fin de la ligne
     detail
         - The `off` sequence is `[0m`, so used as a span it also resets styling where it closes.
-        + La séquence `off` est `[0m` ; utilisée comme portion, elle réinitialise donc aussi le
+        + La séquence `off` est `[0m` ; utilisée comme étendue, elle réinitialise donc aussi le
         + style là où elle se ferme.
   entry .title
     info
@@ -2247,7 +2247,7 @@ entry .writables
       - prints through `Out.print` or `Err.print` as it arrives, rendered by the `Stdio`'s
       - `Termcap`.
       + Un package de choix dans `escapade.io`, fusionné avec le `writables` du package
-      + parapluie. Un flux de teletypes circule sur le medium en boîte (des fenêtres
+      + parapluie. Un flux de teletypes circule sur le medium boxé (des fenêtres
       + d'`Array[Teletype]`), et chaque enregistrement est affiché via `Out.print` ou
       + `Err.print` dès son arrivée, rendu selon le `Termcap` du `Stdio`.
 
@@ -2313,8 +2313,8 @@ entry .teletypeables
 entry .StyleWord
   info
       - the style of one character packed into a `Long`: two 24-bit colours and twelve flag bits
-      + le style d'un caractère compacté dans un `Long` : deux couleurs 24 bits et douze bits de
-      + drapeaux
+      + le style d'un caractère compacté dans un `Long` : deux couleurs 24 bits et douze bits
+      + d'indicateurs
   detail
       - `StyleWord` is the opaque type `escapade.internal.StyleWord`, exported here. The low 24
       - bits hold the foreground's RGB and bits 24 to 47 the background's; bit 48 (`FgSet`) and
@@ -2342,7 +2342,7 @@ entry .StyleWord
       - enclosing one — the inner colour wins where set, and the flags of both are kept — and
       - `StyleWord.emitDiff(buffer, prev, next, depth)` writes the SGR sequence which turns one
       - style into another, which is what `Teletype#render` emits between runs.
-      + Comme il s'efface en `Long`, un `Array[StyleWord]` est un `long[]` sans boxing ; le
+      + Comme il s'efface en `Long`, un `Array[StyleWord]` est un `long[]` non boxé ; le
       + given `classTag` du compagnon permet à une grille de cellules d'en allouer un. Les
       + méthodes d'extension le lisent : `raw`, `fgRgb`, `bgRgb`, `hasFg`, `hasBg`, `isBold`,
       + `isFaint`, `isItalic`, `isUnderline`, `isDoubleUnderline`, `isBlinkSlow`,
@@ -2351,7 +2351,7 @@ entry .StyleWord
       + `clearBg`, `withBit(bit)`, `withoutBit(bit)` et `applyTransform(mask, bits)`.
       + `StyleWord.combine(outer, inner)` est la façon dont le style d'un teletype imbriqué se
       + fusionne sous le style englobant — la couleur intérieure l'emporte là où elle est
-      + définie, et les drapeaux des deux sont conservés — et
+      + définie, et les indicateurs des deux sont conservés — et
       + `StyleWord.emitDiff(buffer, prev, next, depth)` écrit la séquence SGR qui transforme un
       + style en un autre, ce qu'émet `Teletype#render` entre les suites.
 
@@ -2412,7 +2412,7 @@ entry .internal
         - `complete`. A `\\` before a markup substitution is consumed and the markup skipped.
         + Lit les parties littérales, invoque une `Insertion[Ansi.Input, T]` pour le type de
         + chaque substitution, exécute `Ansi.Runtime` sur les parties à la compilation afin qu'une
-        + portion non fermée soit une erreur de compilation, et produit par splice la chaîne
+        + étendue non fermée soit une erreur de compilation, et produit par splice la chaîne
         + équivalente d'appels à `parse` et `insert` se terminant par `complete`. Un `\\` placé
         + avant une substitution de balisage est consommé et le balisage ignoré.
   entry .CharSpan
@@ -2476,8 +2476,8 @@ entry .internal
   entry .indexes
     info
         - the bit positions of an `AnsiStyle`'s flags and colour fields, as `Interval`s and masks
-        + les positions des bits des drapeaux et des champs de couleur d'un `AnsiStyle`, sous forme
-        + d'`Interval` et de masques
+        + les positions des bits des indicateurs et des champs de couleur d'un `AnsiStyle`, sous
+        + forme d'`Interval` et de masques
     detail
         - Each attribute has a `Set…` position, saying whether a style mentions it, and the
         - position after it for its value; the colours are 24-bit `Interval`s, each preceded by
@@ -2548,11 +2548,11 @@ entry .internal
     entry .FlagChanges
       info
           - the `Set…` bits of the five attribute flags
-          + les bits `Set…` des cinq drapeaux d'attributs
+          + les bits `Set…` des cinq indicateurs d'attributs
     entry .Mask
       info
           - the value bits of the five attribute flags
-          + les bits de valeur des cinq drapeaux d'attributs
+          + les bits de valeur des cinq indicateurs d'attributs
     entry .FgMask
       info
           - the foreground colour's bits
@@ -2702,7 +2702,7 @@ entry .internal
     entry .FlagsMask
       info
           - every flag bit, from `FgSet` to `HyperlinkChange`
-          + tous les bits de drapeaux, de `FgSet` à `HyperlinkChange`
+          + tous les bits d'indicateurs, de `FgSet` à `HyperlinkChange`
     entry .Default
       info
           - `0L`: no colours, no attributes
@@ -2710,7 +2710,7 @@ entry .internal
     entry .classTag
       info
           - the `ClassTag` which lets an `Array[StyleWord]` be allocated unboxed, as a `long[]`
-          + le `ClassTag` qui permet d'allouer un `Array[StyleWord]` sans boxing, sous forme de
+          + le `ClassTag` qui permet d'allouer un `Array[StyleWord]` non boxé, sous forme de
           + `long[]`
     entry .apply
       info
@@ -2719,8 +2719,8 @@ entry .internal
     entry .combine
       info
           - an inner style merged under an outer one: the inner colour where set, else the outer; flags of both
-          + un style intérieur fusionné sous un style extérieur : la couleur intérieure si elle est
-          + définie, sinon l'extérieure ; les drapeaux des deux
+          + un style intérieur fusionné sous un style extérieur : la couleur intérieure si
+          + définie, sinon l'extérieure ; les indicateurs des deux
     entry .emitDiff
       info
           - appends to a buffer the one SGR sequence which turns a style into another, at a colour depth
@@ -2731,7 +2731,7 @@ entry .internal
           - for one that changed, and the on/off code of each flag that flipped, joined with `;`
           - in one `\e[…m`. Nothing is written when the two are equal.
           + Émet `39`/`49` pour une couleur effacée, `38;2;r;g;b` ou `38;5;n` (et `48…`) pour une
-          + couleur modifiée, et le code d'activation ou de désactivation de chaque drapeau qui a
+          + couleur modifiée, et le code d'activation ou de désactivation de chaque indicateur qui a
           + changé, joints par `;` dans un seul `\e[…m`. Rien n'est écrit lorsque les deux sont
           + égaux.
     entry .raw
@@ -2757,47 +2757,47 @@ entry .internal
     entry .isBold
       info
           - whether the bold flag is set
-          + indique si le drapeau de gras est activé
+          + indique si l'indicateur de gras est activé
     entry .isFaint
       info
           - whether the faint flag is set
-          + indique si le drapeau d'atténuation est activé
+          + indique si l'indicateur d'atténuation est activé
     entry .isItalic
       info
           - whether the italic flag is set
-          + indique si le drapeau d'italique est activé
+          + indique si l'indicateur d'italique est activé
     entry .isUnderline
       info
           - whether the underline flag is set
-          + indique si le drapeau de soulignement est activé
+          + indique si l'indicateur de soulignement est activé
     entry .isDoubleUnderline
       info
           - whether the double-underline flag is set
-          + indique si le drapeau de double soulignement est activé
+          + indique si l'indicateur de double soulignement est activé
     entry .isBlinkSlow
       info
           - whether the slow-blink flag is set
-          + indique si le drapeau de clignotement lent est activé
+          + indique si l'indicateur de clignotement lent est activé
     entry .isBlinkFast
       info
           - whether the fast-blink flag is set
-          + indique si le drapeau de clignotement rapide est activé
+          + indique si l'indicateur de clignotement rapide est activé
     entry .isReverse
       info
           - whether the reverse flag is set
-          + indique si le drapeau d'inversion est activé
+          + indique si l'indicateur d'inversion est activé
     entry .isConceal
       info
           - whether the conceal flag is set
-          + indique si le drapeau de masquage est activé
+          + indique si l'indicateur de masquage est activé
     entry .isStrike
       info
           - whether the strike flag is set
-          + indique si le drapeau de barré est activé
+          + indique si l'indicateur de barré est activé
     entry .isOverline
       info
           - whether the overline flag is set
-          + indique si le drapeau de surlignement est activé
+          + indique si l'indicateur de surlignement est activé
     entry .hasHyperlinkChange
       info
           - whether a hyperlink opens or closes here
@@ -2821,11 +2821,11 @@ entry .internal
     entry .withBit
       info
           - the word with a flag bit set
-          + le mot avec un bit de drapeau activé
+          + le mot avec un bit d'indicateur activé
     entry .withoutBit
       info
           - the word with a flag bit cleared
-          + le mot avec un bit de drapeau désactivé
+          + le mot avec un bit d'indicateur désactivé
     entry .applyTransform
       info
           - the word with the bits under a mask replaced

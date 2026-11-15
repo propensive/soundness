@@ -957,7 +957,7 @@ entry .rec
       + date ou une date avec heure (une année ou un mois seuls sont une erreur de compilation) ;
       + le résultat est donc une `Recurrence of Date`, `of Timestamp` ou `of
       + Moment` selon la précision du littéral ; la période est analysée comme `dur"…"` l'analyse.
-      + Un segment fautif est souligné à lui seul. La période est étiquetée avec la base des mois
+      + Un segment fautif est souligné à lui seul. La période est taguée avec la base des mois
       + grégoriens ; itérer une récurrence mensuelle exige donc une `Disambiguation` de
       + `monthEnds`.
 
@@ -3059,7 +3059,7 @@ entry .Chronometry
       - chronometry, since the monotonic clock has no fixed relation to wall-clock time, and so
       - a `Monotonic` instant cannot be converted or placed in a zone.
       + Une `Chronometry` est une classe de types sur un marqueur de ligne de temps (`Tai`,
-      + `Unix`) qui convertit les graduations de la ligne de temps vers et depuis TAI, le temps
+      + `Unix`) qui convertit les tics de la ligne de temps vers et depuis TAI, le temps
       + atomique international, la seule échelle strictement linéaire : `#toTai` et `#fromTai`.
       + Deux lignes de temps quelconques se convertissent par TAI, et c'est ainsi que fonctionne
       + `instant.over[Tai]`. `Chronometry.tai` est l'identité ; `Chronometry.unix` ajoute ou
@@ -3121,11 +3121,11 @@ entry .Chronometry
   entry #toTai
     info
         - a timeline's tick count as TAI milliseconds
-        + le nombre de graduations d'une ligne de temps, en millisecondes TAI
+        + le nombre de tics d'une ligne de temps, en millisecondes TAI
   entry #fromTai
     info
         - TAI milliseconds as the timeline's tick count
-        + des millisecondes TAI, en nombre de graduations de la ligne de temps
+        + des millisecondes TAI, en nombre de tics de la ligne de temps
 
 entry .LeapSeconds
   info
@@ -3858,18 +3858,18 @@ entry .protointernal
         + Le type opaque `Instant = Long`, dont la ligne de temps est le `Transport` fantôme fixé
         + par `over`. Le compagnon contient les constructeurs et les givens arithmétiques, chacun
         + générique dans le transport et prenant la `Resolution` de la ligne de temps pour
-        + fonctionner quelle que soit la durée d'une graduation — des millisecondes pour `Unix` et
+        + fonctionner quelle que soit la durée d'un tic — des millisecondes pour `Unix` et
         + `Tai`, des nanosecondes pour `Monotonic`.
     entry .inspectable
       info
           - `⧗784111777000`: the tick count behind an hourglass
-          + `⧗784111777000` : le nombre de graduations derrière un sablier
+          + `⧗784111777000` : le nombre de tics derrière un sablier
       detail
           - An inspection must be available with no context, and what the ticks mean is in the
           - type, so only the raw count can be shown; the hourglass keeps it from reading as a
           - `Long`.
           + Une inspection doit être disponible sans aucun contexte, et ce que signifient les
-          + graduations est dans le type ; seul le nombre brut peut donc être affiché ; le sablier
+          + tics est dans le type ; seul le nombre brut peut donc être affiché ; le sablier
           + évite qu'il se lise comme un `Long`.
     entry .Min
       info
@@ -3883,7 +3883,7 @@ entry .protointernal
       info
           - `Instant.of[Unix](millis)`: an instant on a named timeline, from its ticks
           + `Instant.of[Unix](millis)` : un instant sur une ligne de temps nommée, à partir de ses
-          + graduations
+          + tics
     entry .apply
       info
           - `Instant(millis)`: an instant on the `Chronometry.Ambient` timeline in scope
@@ -3908,7 +3908,7 @@ entry .protointernal
           - libraries' instant types; the `Long` is tagged with the transport, not converted.
           + L'`Abstractable` et l'`Instantiable` qui permettent à un instant de passer
           + vers et depuis les types d'instants d'autres bibliothèques ; le `Long` est
-          + étiqueté avec le transport, non converti.
+          + tagué avec le transport, non converti.
     entry .orderable
       info
           - `<`, `<=`, `>`, `>=` between instants on the same timeline
@@ -3916,11 +3916,11 @@ entry .protointernal
     entry .comparable
       info
           - orders instants on one timeline by their ticks
-          + ordonne les instants d'une même ligne de temps selon leurs graduations
+          + ordonne les instants d'une même ligne de temps selon leurs tics
     entry .plus
       info
           - `instant + duration`: any `Quantity` of time, converted to the timeline's ticks
-          + `instant + duration` : n'importe quelle `Quantity` de temps, convertie en graduations de
+          + `instant + duration` : n'importe quelle `Quantity` de temps, convertie en tics de
           + la ligne de temps
     entry .minus
       info
@@ -3975,7 +3975,7 @@ entry .protointernal
   entry .long
     info
         - an instant's tick count
-        + le nombre de graduations d'un instant
+        + le nombre de tics d'un instant
   entry .over
     info
         - `instant.over[Tai]`: the same instant on another timeline, through TAI
@@ -4337,7 +4337,7 @@ entry .timestampInternal
         + Deux extensions de ce nom : sur `Timestamp` (et donc sur `Date`),
         + `calendar.annual(date)` pour le `Calendar` dans la portée ; sur
         + `Monthstamp`, l'année grégorienne, sans exiger de calendrier, puisqu'un
-        + horodatage au mois est étiqueté avec le `Month` grégorien.
+        + horodatage au mois est tagué avec le `Month` grégorien.
   entry .month
     info
         - the month of a timestamp in the `Calendar` in scope; of a `Monthstamp`, the Gregorian `Month`
@@ -4992,7 +4992,7 @@ entry .Monthstamp
       - `(2024 - Jan) - 15`. Its `year` and `month` read back without a calendar in scope, and
       - `Date#monthstamp` recovers one from a date.
       + Un `Monthstamp` est un `Timestamp in Month` — le premier instant d'un mois grégorien,
-      + étiqueté avec la précision au mois, si bien que deux horodatages du même mois sont
+      + tagué avec la précision au mois, si bien que deux horodatages du même mois sont
       + égaux. Il s'écrit comme une année moins un mois, `2024 - Jan`, et constitue le milieu
       + d'un littéral de date : `2024-Jan-15` est `(2024 - Jan) - 15`. Son `year` et son `month`
       + se relisent sans calendrier dans la portée, et `Date#monthstamp` en retrouve un à partir
@@ -5772,7 +5772,7 @@ entry .Regime
 entry .Resolution
   info
       - how many nanoseconds one tick of an `Instant over X` is
-      + le nombre de nanosecondes d'une graduation d'un `Instant over X`
+      + le nombre de nanosecondes d'un tic d'un `Instant over X`
   detail
       - Each timeline keeps its instants as a `Long` of ticks, and `Resolution` says what a tick
       - is: the `Unix` and `Tai` timelines tick every millisecond (`nanos` = 1 000 000), and
@@ -5780,12 +5780,12 @@ entry .Resolution
       - (`instant + 1*Second`, `instant - duration`) uses the timeline's `Resolution` to turn
       - seconds into ticks, so a second advances the right count on any timeline. The three
       - givens are in implicit scope; a new timeline supplies its own.
-      + Chaque ligne de temps conserve ses instants sous forme de `Long` de graduations, et
-      + `Resolution` dit ce qu'est une graduation : les lignes de temps `Unix` et `Tai` battent
+      + Chaque ligne de temps conserve ses instants sous forme de `Long` de tics, et
+      + `Resolution` dit ce qu'est un tic : les lignes de temps `Unix` et `Tai` battent
       + toutes les millisecondes (`nanos` = 1 000 000), et `Monotonic`, une lecture de
       + `System.nanoTime`, toutes les nanosecondes. L'arithmétique des instants
       + (`instant + 1*Second`, `instant - duration`) utilise la `Resolution` de la ligne de
-      + temps pour convertir des secondes en graduations ; une seconde fait donc avancer du bon
+      + temps pour convertir des secondes en tics ; une seconde fait donc avancer du bon
       + nombre sur toute ligne de temps. Les trois givens sont dans la portée implicite ; une
       + nouvelle ligne de temps fournit le sien.
 
@@ -5813,7 +5813,7 @@ entry .Resolution
   entry #nanos
     info
         - the nanoseconds in one tick
-        + les nanosecondes d'une graduation
+        + les nanosecondes d'un tic
 
 entry .Rfc1123
   info
@@ -6591,7 +6591,7 @@ entry .Timespan
         - timeline's ticks. A span with months or years does not add to an instant: add it to a
         - date or a moment.
         + La durée vaut ses secondes physiques (semaines et jours à 86 400 chacun), ramenées aux
-        + graduations de la ligne de temps. Une durée comportant des mois ou des années ne
+        + tics de la ligne de temps. Une durée comportant des mois ou des années ne
         + s'ajoute pas à un instant : ajoutez-la à une date ou à un moment.
   entry .instantMinus
     info
@@ -7054,7 +7054,7 @@ entry .Tzdb
         - raised with reason `NoTzdbFile` if the resource is absent — and a `Tzdb.Event is
         - Loggable`.
         + `Tzdb.parseFile(t"europe")` lit la ressource `/aviation/tzdb/europe` par le
-        + classloader de la classe elle-même et l'analyse avec `.parse`. Exige une
+        + chargeur de classes de la classe elle-même et l'analyse avec `.parse`. Exige une
         + `Tactic[Tzdb.Error]` — levée avec la raison `NoTzdbFile` si la ressource est absente
         + — et un `Tzdb.Event is Loggable`.
   entry .parse
@@ -7101,14 +7101,14 @@ entry .Tzdb
         + column  Code
         + column  Message
         + column  Remarque
-        + row  `CouldNotParseTime(time)`  1  _impossible d'analyser l'heure `time`_  un `AT`, `STDOFF` ou `SAVE` mal formé
-        + row  `UnexpectedRule`  2  _règle inattendue_  une ligne `Rule` ou `Leap` aux champs erronés
-        + row  `UnexpectedLink`  3  _lien inattendu_
-        + row  `UnexpectedZoneInfo`  4  _informations de fuseau inattendues_  une ligne de continuation sans `Zone` au-dessus
-        + row  `UnparsableDate`  5  _la date n'a pas pu être analysée_  un champ `ON` qui n'a aucune des formes connues
-        + row  `BadZoneInfo(line)`  6  _informations de fuseau erronées : `line`_  les champs de la ligne, entre crochets
-        + row  `BadName(name)`  7  _le nom `name` n'est pas valide_  un nom de fuseau comportant plus d'un `/`
-        + row  `NoTzdbFile(name)`  8  _le fichier de fuseaux `name` est introuvable dans le classpath_  depuis `.parseFile`
+        + row  `CouldNotParseTime(time)`  1  _could not parse time `time`_  un `AT`, `STDOFF` ou `SAVE` mal formé
+        + row  `UnexpectedRule`  2  _unexpected rule_  une ligne `Rule` ou `Leap` aux champs erronés
+        + row  `UnexpectedLink`  3  _unexpected link_
+        + row  `UnexpectedZoneInfo`  4  _unexpected zone info_  une ligne de continuation sans `Zone` au-dessus
+        + row  `UnparsableDate`  5  _the date could not be parsed_  un champ `ON` qui n'a aucune des formes connues
+        + row  `BadZoneInfo(line)`  6  _bad zone information: `line`_  les champs de la ligne, entre crochets
+        + row  `BadName(name)`  7  _the name `name` is not valid_  un nom de fuseau comportant plus d'un `/`
+        + row  `NoTzdbFile(name)`  8  _the zonefile `name` could not be found on the classpath_  depuis `.parseFile`
         ```
     entry .communicable
       info
@@ -7134,7 +7134,7 @@ entry .Tzdb
         - `ParseTzdb(name)`, _parsing the timezone database file `name`_, logged at `fine` when
         - `.parse` begins. Tagged `Log.Time`.
         + `ParseTzdb(name)`, _analyse du fichier de base de fuseaux horaires `name`_, journalisé
-        + au niveau `fine` quand `.parse` commence. Étiqueté `Log.Time`.
+        + au niveau `fine` quand `.parse` commence. Tagué `Log.Time`.
     entry .communicable
       info
           - renders the event as its message
@@ -7570,7 +7570,7 @@ entry .clocks
         - timeline's millisecond ticks. Needs `wasiApis.wasiClockApi` in scope where it is
         - summoned.
         + L'enregistrement `datetime` de secondes et de nanosecondes de l'hôte est converti en
-        + graduations à la milliseconde de la ligne de temps `Unix`. Exige `wasiApis.wasiClockApi`
+        + tics à la milliseconde de la ligne de temps `Unix`. Exige `wasiApis.wasiClockApi`
         + dans la portée là où elle est invoquée.
   entry .wasiMonotonicClock
     info

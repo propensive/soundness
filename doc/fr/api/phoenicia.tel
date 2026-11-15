@@ -5,7 +5,7 @@ import soundness
 
 info
     - TrueType and OpenType fonts as values, and typed typefaces, faces and provisions for setting text
-    + les polices TrueType et OpenType comme valeurs, et des familles, des styles et des provisions
+    + les polices TrueType et OpenType comme valeurs, et des familles, des styles et des fournitures
     + typés pour composer du texte
 detail
     - _Phoenicia_ reads font files and types the way a document names and uses a font. It has
@@ -48,12 +48,12 @@ detail
     + `Typeface of "Inter"`) ; un `Face` indique comment la composer — une `Weight`, une
     + `Slant`, un `Stretch`, des positions sur d'éventuels autres axes de `Variation`, et les
     + `Face.Feature` à activer ou désactiver — et rien sur la provenance de la police. Une
-    + provision `Typesettable` indique comment un `Medium` (le web, l'impression, ou tout
+    + fourniture `Typesettable` indique comment un `Medium` (le web, l'impression, ou tout
     + support que définit un moteur de rendu) obtient la famille et quels styles il peut alors
-    + composer, sous forme de `Coverage`. Une `Font` associe un style à la provision dans la
+    + composer, sous forme de `Coverage`. Une `Font` associe un style à la fourniture dans la
     + portée pour sa famille dans un support, et c'est la seule forme sous laquelle un moteur
     + de rendu accepte une police ; ainsi un document ne peut ni nommer une famille qu'il ne
-    + transporte pas, ni demander à une provision un style qu'elle ne peut pas composer.
+    + transporte pas, ni demander à une fourniture un style qu'elle ne peut pas composer.
 
     ```scala
     import soundness.*
@@ -81,11 +81,11 @@ detail
     - "italic"`), the compiler reads the file and refuses the pairing while the code compiles,
     - with the same message.
     + La demande est vérifiée deux fois. Toujours à l'exécution, quand la police est créée :
-    + une graisse dont la provision est dépourvue, un italique qu'elle n'a pas, une
+    + une graisse dont la fourniture est dépourvue, un italique qu'elle n'a pas, une
     + fonctionnalité que ses tables n'implémentent pas, ou une valeur d'axe hors de la plage
     + de la police lève `Font.Error`, en nommant la famille et le problème. Et, lorsque la
-    + provision a été créée à partir d'un fichier du classpath (`Typesettable.embedded
-    + (cp"/fonts/Inter.ttf")`, dont le chemin devient le `Locus` de la provision) et que la
+    + fourniture a été créée à partir d'un fichier du classpath (`Typesettable.embedded
+    + (cp"/fonts/Inter.ttf")`, dont le chemin devient le `Locus` de la fourniture) et que la
     + demande du style est enregistrée dans son type (`inter.bold.italic` a `Weights = 700` et
     + `Slanting =
     + "italic"`), le compilateur lit le fichier et refuse l'association pendant la compilation
@@ -101,11 +101,11 @@ detail
     + La bibliothèque est un seul ensemble de sources, `phoenicia.core`, qui compile pour la
     + JVM, Scala.js et Scala Native et ne dépend de rien de propre à une plateforme ;
     + `Sfnt(source)` lit depuis tout ce qui est `Streamable by Data`. Les supports et leurs
-    + provisions se trouvent avec les moteurs de rendu : le `Web` de cataclysm contient les
+    + fournitures se trouvent avec les moteurs de rendu : le `Web` de cataclysm contient les
     + familles génériques CSS et les fabriques `Web.linked`, `Web.imported` et `Web.local`, et
     + le `Print` de facsimile contient les quatorze polices standard de PDF. Ces givens se
     + trouvent dans le compagnon du support ; ils ne nécessitent donc aucun import. Les
-    + provisions propres à un projet sont des givens qu'il déclare et importe par leur nom, car
+    + fournitures propres à un projet sont des givens qu'il déclare et importe par leur nom, car
     + `import pkg.*` n'importe pas les givens.
 
     - Everything is exported to the `soundness` umbrella: `Coverage`, `Face`, `Font`, `Glyph`,
@@ -137,7 +137,7 @@ entry .Sfnt
       - variable font's axes and the layout features.
       + Un `Sfnt` est un fichier de police, conservé sous forme de ses `#data` et lu
       + paresseusement, table par table. Le nom est celui du format : un _sfnt_ est le conteneur
-      + — un en-tête, un répertoire de tables étiquetées, et les tables — qu'utilisent TrueType et
+      + — un en-tête, un répertoire de tables taguées, et les tables — qu'utilisent TrueType et
       + OpenType, qui ne diffèrent que par la façon de stocker les contours. Tout ce que les deux
       + partagent est défini ici : la table des caractères, les métriques horizontales, l'en-tête,
       + la table des noms, les métriques OS/2, les métadonnées PostScript, les axes d'une police
@@ -207,8 +207,8 @@ entry .Sfnt
       - inverse: it serialises a set of tables as a font file, which is how `Truetype#subset`
       - writes its result.
       + Les tables d'une police se lisent au moyen de `#tables`, une `Map` de `Sfnt.Table.Tag`
-      + vers la `TableOffset` de la table ; les étiquettes que la bibliothèque ne nomme pas en
-      + sont écartées. `Sfnt.assemble` est l'inverse : il sérialise un ensemble de tables en un
+      + vers la `TableOffset` de la table ; les tags que la bibliothèque ne nomme pas en
+      + sont écartés. `Sfnt.assemble` est l'inverse : il sérialise un ensemble de tables en un
       + fichier de police, et c'est ainsi que `Truetype#subset` écrit son résultat.
   refer phoenicia.Truetype
   refer phoenicia.Opentype
@@ -291,7 +291,7 @@ entry .Sfnt
   entry .Table
     info
         - the tags of the tables a font may carry, as `Ttf` (TrueType) and `Otf` (OpenType) enums
-        + les étiquettes des tables que peut contenir une police, sous forme d'énumérations `Ttf`
+        + les tags des tables que peut contenir une police, sous forme d'énumérations `Ttf`
         + (TrueType) et `Otf` (OpenType)
     detail
         - A table's four-character tag identifies it in the directory. The tags are split into
@@ -301,27 +301,27 @@ entry .Sfnt
         - keys of `Sfnt#tables`. Each companion is an extractor from the tag's text, so a
         - directory entry is classified by matching `Sfnt.Table.Otf(tag)` and `Sfnt.Table.Ttf
         - (tag)`; a tag neither names is dropped from the table map.
-        + L'étiquette de quatre caractères d'une table l'identifie dans le répertoire. Les
-        + étiquettes sont réparties entre l'ensemble TrueType (`Sfnt.Table.Ttf` : `cmap`, `head`,
+        + Le tag de quatre caractères d'une table l'identifie dans le répertoire. Les
+        + tags sont répartis entre l'ensemble TrueType (`Sfnt.Table.Ttf` : `cmap`, `head`,
         + `hhea`, `hmtx`, `maxp`, `name`, `post`, `glyf`, `loca`, `fvar`, …) et l'ensemble OpenType
         + (`Sfnt.Table.Otf` : `CFF `, `OS/2`, `GSUB`, `GPOS`, `GDEF`, `STAT`, …), qui sont tous
         + deux des `Sfnt.Table.Tag` et les clés de `Sfnt#tables`. Chaque compagnon est un
-        + extracteur à partir du texte de l'étiquette ; ainsi une entrée du répertoire est classée
+        + extracteur à partir du texte du tag ; ainsi une entrée du répertoire est classée
         + en filtrant avec `Sfnt.Table.Otf(tag)` et `Sfnt.Table.Ttf
-        + (tag)` ; une étiquette que ni l'un ni l'autre ne nomme est écartée de la map des tables.
+        + (tag)` ; un tag que ni l'un ni l'autre ne nomme est écarté de la map des tables.
     entry .Tag
       info
           - the common type of `Ttf` and `Otf` tags
-          + le type commun des étiquettes `Ttf` et `Otf`
+          + le type commun des tags `Ttf` et `Otf`
       entry #text
         info
             - the tag as it is spelled in the file: `cmap`, `OS/2`, `CFF `, `cvt `
-            + l'étiquette telle qu'elle s'écrit dans le fichier : `cmap`, `OS/2`, `CFF `, `cvt `
+            + le tag tel qu'il s'écrit dans le fichier : `cmap`, `OS/2`, `CFF `, `cvt `
         detail
             - Four characters, including the trailing space of `CFF ` and `cvt `. A TrueType tag is
             - lowercase and an OpenType tag uppercase, with `OS/2` and `CFF ` as the exceptions.
-            + Quatre caractères, y compris l'espace finale de `CFF ` et de `cvt `. Une étiquette
-            + TrueType est en minuscules et une étiquette OpenType en majuscules, à l'exception de
+            + Quatre caractères, y compris l'espace finale de `CFF ` et de `cvt `. Un tag
+            + TrueType est en minuscules et un tag OpenType en majuscules, à l'exception de
             + `OS/2` et de `CFF `.
     entry .Ttf
       info
@@ -339,7 +339,7 @@ entry .Sfnt
       entry .extract
         info
             - the `Ttf` tag for a four-character text, or `Unset`
-            + l'étiquette `Ttf` pour un texte de quatre caractères, ou `Unset`
+            + le tag `Ttf` pour un texte de quatre caractères, ou `Unset`
     entry .Otf
       info
           - the OpenType tables: `BASE`, `CFF `, `CFF2`, `COLR`, `GDEF`, `GPOS`, `GSUB`, `OS/2`, …
@@ -356,11 +356,11 @@ entry .Sfnt
       entry .extract
         info
             - the `Otf` tag for a four-character text, or `Unset`
-            + l'étiquette `Otf` pour un texte de quatre caractères, ou `Unset`
+            + le tag `Otf` pour un texte de quatre caractères, ou `Unset`
   entry .assemble
     info
         - serialises tagged tables as a complete sfnt file, with checksums
-        + sérialise des tables étiquetées en un fichier sfnt complet, avec sommes de contrôle
+        + sérialise des tables taguées en un fichier sfnt complet, avec sommes de contrôle
     detail
         - `Sfnt.assemble(version, tables)` takes the four-byte version (the first four bytes of a
         - font: `0x00010000` for TrueType) and a list of `(tag, bytes)` pairs, and writes the
@@ -371,7 +371,7 @@ entry .Sfnt
         - adjustment zeroed. `Truetype#subset` builds its result this way.
         + `Sfnt.assemble(version, tables)` prend la version sur quatre octets (les quatre premiers
         + octets d'une police : `0x00010000` pour TrueType) et une liste de paires `(tag, bytes)`,
-        + et écrit l'en-tête, un répertoire trié par étiquette avec les champs de recherche
+        + et écrit l'en-tête, un répertoire trié par tag avec les champs de recherche
         + qu'exige le format, et les tables alignées sur quatre octets et complétées par des zéros.
         + Chaque entrée du répertoire porte la somme de contrôle de sa table, et si une table
         + `head` en fait partie, son ajustement de somme de contrôle est fixé de sorte que le
@@ -384,7 +384,7 @@ entry .Sfnt
   entry #TableOffset
     info
         - a directory entry: a table's tag, checksum, offset and length
-        + une entrée du répertoire : l'étiquette, la somme de contrôle, la position et la longueur
+        + une entrée du répertoire : le tag, la somme de contrôle, la position et la longueur
         + d'une table
     detail
         - The values of `#tables`. The offset and length locate the table within `#data`; the
@@ -428,14 +428,14 @@ entry .Sfnt
   entry #tables
     info
         - every table the library names, by tag, with its offset and length
-        + chaque table que nomme la bibliothèque, par étiquette, avec sa position et sa longueur
+        + chaque table que nomme la bibliothèque, par tag, avec sa position et sa longueur
     detail
         - A `Map[Sfnt.Table.Tag, TableOffset]` read from the directory. Tags which are neither a
         - `Ttf` nor an `Otf` case are dropped, so a font's private tables are not represented.
         - Reading the map is total; a malformed directory makes it empty, and every table accessor
         - then raises `Font.Error` with `MissingTable`.
-        + Une `Map[Sfnt.Table.Tag, TableOffset]` lue depuis le répertoire. Les étiquettes qui ne
-        + sont ni un cas de `Ttf` ni un cas d'`Otf` sont écartées ; les tables privées d'une police
+        + Une `Map[Sfnt.Table.Tag, TableOffset]` lue depuis le répertoire. Les tags qui ne
+        + sont ni un cas de `Ttf` ni un cas d'`Otf` sont écartés ; les tables privées d'une police
         + ne sont donc pas représentées. La lecture de la map est totale ; un répertoire mal formé
         + la rend vide, et chaque accesseur de table lève alors `Font.Error` avec `MissingTable`.
   entry #glyph
@@ -598,7 +598,7 @@ entry .Sfnt
   entry #features
     info
         - the layout features the font implements, by tag, from `GSUB` and `GPOS`
-        + les fonctionnalités de mise en page qu'implémente la police, par étiquette, d'après `GSUB`
+        + les fonctionnalités de mise en page qu'implémente la police, par tag, d'après `GSUB`
         + et `GPOS`
     detail
         - The feature lists of the two layout tables, as `Face.Feature`s, deduplicated. A font with
@@ -636,16 +636,16 @@ entry .Sfnt
     entry #axes
       info
           - the axes, each with its tag, range and name id
-          + les axes, chacun avec son étiquette, sa plage et son identifiant de nom
+          + les axes, chacun avec son tag, sa plage et son identifiant de nom
     entry #Axis
       info
           - one axis: its four-character tag, its minimum, default and maximum, and its `name` id
-          + un axe : son étiquette de quatre caractères, son minimum, sa valeur par défaut et son
+          + un axe : son tag de quatre caractères, son minimum, sa valeur par défaut et son
           + maximum, et son identifiant `name`
       entry #tag
         info
             - the axis tag, such as `wght`
-            + l'étiquette de l'axe, comme `wght`
+            + le tag de l'axe, comme `wght`
       entry #minimum
         info
             - the smallest value the axis admits
@@ -1605,9 +1605,9 @@ entry .Typeface
       - says nothing about where the font comes from: that is a `Typesettable` provision.
       + Un `Typeface` nomme une famille — le nom qu'écrit un document là où il fait référence à
       + la famille, une `font-family` CSS ou un `/BaseFont` PDF — et porte ce nom comme son
-      + `Topic` ; ainsi `Typeface["Inter"]` a le type `Typeface of "Inter"` et une provision pour
-      + une famille se distingue d'une provision pour une autre pendant la compilation du code.
-      + Il ne dit rien de la provenance de la police : c'est le rôle d'une provision
+      + `Topic` ; ainsi `Typeface["Inter"]` a le type `Typeface of "Inter"` et une fourniture pour
+      + une famille se distingue d'une fourniture pour une autre pendant la compilation du code.
+      + Il ne dit rien de la provenance de la police : c'est le rôle d'une fourniture
       + `Typesettable`.
 
       - A typeface's faces are reached fluently. `#face` (or `#regular`) is its regular upright
@@ -1745,7 +1745,7 @@ entry .Face
       + Un `Face` décrit une demande : une `#typeface` avec une `#weight`, une `#slant` et un
       + `#stretch`, avec des `#variations` sur d'éventuels autres axes d'une police variable et
       + les `#features` à activer ou désactiver. Il ne dit rien de la provenance de la police ;
-      + l'associer à une provision `Typesettable` produit une `Font`. Le nom de la famille est
+      + l'associer à une fourniture `Typesettable` produit une `Font`. Le nom de la famille est
       + le `Topic` du style ; ainsi `Typeface["Inter"].bold` est un `Face of "Inter"`.
 
       - Faces are built fluently from a typeface's `face`, each method returning a new face
@@ -1795,11 +1795,11 @@ entry .Face
       - runtime only.
       + Trois membres de type enregistrent ce que le code a demandé, lorsque c'est connu pendant
       + la compilation du code : `#Weights` est la graisse sous forme de littéral (`700`),
-      + `#Slanting` vaut `"upright"` ou `"italic"`, et `#Enabled` est l'union des étiquettes des
+      + `#Slanting` vaut `"upright"` ou `"italic"`, et `#Enabled` est l'union des tags des
       + fonctionnalités activées (`"onum" | "tnum"`, ou `Nothing` s'il n'y en a aucune). Une
       + partie décidée à l'exécution — `#weighing` avec une graisse calculée, `#slanted`,
-      + `#featuring` avec une fonctionnalité désignée par son étiquette — est enregistrée comme
-      + `Face.Runtime`. Quand une `Font` est créée à partir d'une provision dont le fichier est
+      + `#featuring` avec une fonctionnalité désignée par son tag — est enregistrée comme
+      + `Face.Runtime`. Quand une `Font` est créée à partir d'une fourniture dont le fichier est
       + dans le classpath, la demande enregistrée est vérifiée par rapport au fichier pendant la
       + compilation du code ; le reste est vérifié à la création de la police. Un style annoté
       + comme simple `Face of "Inter"` perd cet enregistrement, et n'est vérifié qu'à
@@ -1862,7 +1862,7 @@ entry .Face
   entry .Feature
     info
         - an OpenType layout feature by its four-character tag, which is also its type
-        + une fonctionnalité de mise en page OpenType désignée par son étiquette de quatre
+        + une fonctionnalité de mise en page OpenType désignée par son tag de quatre
         + caractères, qui est aussi son type
     detail
         - `Face.Feature.OldstyleNumerals` is a `Feature of "onum"`: the tag is the feature's
@@ -1870,11 +1870,11 @@ entry .Face
         - registered features have names; stylistic sets and character variants are numbered
         - (`.stylisticSet(3)` is `ss03`); and `Face.Feature(t"…")` admits any other tag, known
         - only at runtime as a `Feature of Runtime`.
-        + `Face.Feature.OldstyleNumerals` est une `Feature of "onum"` : l'étiquette est le `Topic`
+        + `Face.Feature.OldstyleNumerals` est une `Feature of "onum"` : le tag est le `Topic`
         + de la fonctionnalité ; ainsi un style qui l'active enregistre `"onum"` dans son type
         + `Enabled`. Les fonctionnalités enregistrées courantes ont des noms ; les jeux
         + stylistiques et les variantes de caractères sont numérotés (`.stylisticSet(3)` est
-        + `ss03`) ; et `Face.Feature(t"…")` admet toute autre étiquette, connue seulement à
+        + `ss03`) ; et `Face.Feature(t"…")` admet tout autre tag, connu seulement à
         + l'exécution comme `Feature of Runtime`.
 
         - A feature becomes a `Setting` by `#enabled`, `#disabled` or `#set(value)`, and a face
@@ -1882,8 +1882,8 @@ entry .Face
         - features are equal when their tags are; a feature shows as its tag.
         + Une fonctionnalité devient un `Setting` par `#enabled`, `#disabled` ou `#set(value)`, et
         + un style reçoit des réglages au moyen de `Face#enabling`, `Face#disabling` et
-        + `Face#featuring`. Deux fonctionnalités sont égales quand leurs étiquettes le sont ; une
-        + fonctionnalité s'affiche comme son étiquette.
+        + `Face#featuring`. Deux fonctionnalités sont égales quand leurs tags le sont ; une
+        + fonctionnalité s'affiche comme son tag.
 
         ```scala
         import soundness.*
@@ -1896,13 +1896,13 @@ entry .Face
     entry .apply
       info
           - `Face.Feature(tag)`: a feature by any tag, known at runtime only
-          + `Face.Feature(tag)` : une fonctionnalité désignée par une étiquette quelconque, connue
+          + `Face.Feature(tag)` : une fonctionnalité désignée par un tag quelconque, connue
           + seulement à l'exécution
       detail
           - The result is a `Feature of Runtime`, so enabling it adds `Face.Runtime` to a face's
           - `Enabled` type rather than the tag, and the compile-time check skips it.
           + Le résultat est une `Feature of Runtime` ; l'activer ajoute donc `Face.Runtime` au type
-          + `Enabled` d'un style plutôt que l'étiquette, et la vérification à la compilation
+          + `Enabled` d'un style plutôt que le tag, et la vérification à la compilation
           + l'ignore.
     entry .Ligatures
       info
@@ -1980,7 +1980,7 @@ entry .Face
           - The number is zero-padded to two digits. The result is a `Feature of Runtime`, since
           - the tag is made at runtime.
           + Le numéro est complété par des zéros sur deux chiffres. Le résultat est une
-          + `Feature of Runtime`, car l'étiquette est créée à l'exécution.
+          + `Feature of Runtime`, car le tag est créé à l'exécution.
     entry .characterVariant
       info
           - character variant _n_, `cv01` to `cv99`, as a runtime feature
@@ -2007,7 +2007,7 @@ entry .Face
     entry .showable
       info
           - shows a feature as its tag
-          + affiche une fonctionnalité comme son étiquette
+          + affiche une fonctionnalité comme son tag
     entry .inspectable
       info
           - inspects a feature as `Face.Feature("onum")`
@@ -2015,7 +2015,7 @@ entry .Face
     entry #tag
       info
           - the four-character tag
-          + l'étiquette de quatre caractères
+          + le tag de quatre caractères
     entry #enabled
       info
           - the setting which turns the feature on, value 1
@@ -2068,7 +2068,7 @@ entry .Face
   entry #Enabled
     info
         - the tags of the enabled features as a union type, `Nothing` for none, or with `Face.Runtime`
-        + les étiquettes des fonctionnalités activées comme type union, `Nothing` s'il n'y en a
+        + les tags des fonctionnalités activées comme type union, `Nothing` s'il n'y en a
         + aucune, ou avec `Face.Runtime`
   entry #weighing
     info
@@ -2134,7 +2134,7 @@ entry .Face
         - face is what sets it.
         + Un oblique est un style droit incliné plutôt qu'un italique dessiné séparément, mais il
         + est enregistré comme `"italic"` pour la vérification de couverture, car c'est une
-        + provision qui propose un style italique qui le compose.
+        + fourniture qui propose un style italique qui le compose.
   entry #stretched
     info
         - the face at any stretch
@@ -2180,12 +2180,12 @@ entry .Face
   entry #enabling
     info
         - the face with a feature enabled, its tag recorded in the type
-        + le style avec une fonctionnalité activée, son étiquette étant enregistrée dans le type
+        + le style avec une fonctionnalité activée, son tag étant enregistré dans le type
     detail
         - `enabling(Face.Feature.OldstyleNumerals)` adds `"onum"` to `Enabled`, so a provision
         - whose file lacks the feature refuses the font as the code compiles.
         + `enabling(Face.Feature.OldstyleNumerals)` ajoute `"onum"` à `Enabled` ; ainsi une
-        + provision dont le fichier est dépourvu de la fonctionnalité refuse la police pendant la
+        + fourniture dont le fichier est dépourvu de la fonctionnalité refuse la police pendant la
         + compilation du code.
   entry #disabling
     info
@@ -2292,7 +2292,7 @@ entry .Variation
       + `Variation(axis, value)` est ce que `Face#varying` ajoute à un style. Les axes
       + enregistrés de graisse, de chasse, d'italique et d'inclinaison se règlent au moyen des
       + `Weight`, `Stretch` et `Slant` d'un style ; une `Variation` sert donc pour la taille
-      + optique et les axes propres à une police. Une provision vérifie chaque variation par
+      + optique et les axes propres à une police. Une fourniture vérifie chaque variation par
       + rapport aux plages `fvar` de la police : un axe dont la police est dépourvue est refusé
       + avec `Font.Error.Reason.UnknownAxis`, une valeur hors de la plage avec
       + `AxisOutOfRange`.
@@ -2307,18 +2307,18 @@ entry .Variation
   entry .Axis
     info
         - a variation axis by its four-character tag
-        + un axe de variation désigné par son étiquette de quatre caractères
+        + un axe de variation désigné par son tag de quatre caractères
     detail
         - An opaque `Text`. The five registered axes have names — `.Weight` (`wght`), `.Width`
         - (`wdth`), `.Italic` (`ital`), `.Slant` (`slnt`) and `.OpticalSize` (`opsz`) — and a
         - font's own axes are made from their tags with `Variation.Axis(tag)`.
         + Un `Text` opaque. Les cinq axes enregistrés ont des noms — `.Weight` (`wght`), `.Width`
         + (`wdth`), `.Italic` (`ital`), `.Slant` (`slnt`) et `.OpticalSize` (`opsz`) — et les axes
-        + propres à une police se créent à partir de leurs étiquettes avec `Variation.Axis(tag)`.
+        + propres à une police se créent à partir de leurs tags avec `Variation.Axis(tag)`.
     entry .apply
       info
           - an axis from its tag
-          + un axe à partir de son étiquette
+          + un axe à partir de son tag
     entry .Weight
       info
           - the `wght` axis
@@ -2342,7 +2342,7 @@ entry .Variation
     entry .showable
       info
           - shows an axis as its tag
-          + affiche un axe comme son étiquette
+          + affiche un axe comme son tag
     entry .inspectable
       info
           - inspects an axis as `Variation.Axis("opsz")`
@@ -2350,7 +2350,7 @@ entry .Variation
     entry .tag
       info
           - the four-character tag
-          + l'étiquette de quatre caractères
+          + le tag de quatre caractères
   entry .Range
     info
         - the values a font admits on one axis, from its `fvar` table
@@ -2391,11 +2391,11 @@ entry .Medium
       - provision `in Medium` itself — an embedded font file — serves every medium, since a
       - file can be carried anywhere, which is why a requester asks for a provision `in (? >:
       - medium)` rather than `in medium`.
-      + Un trait ouvert. Une provision `Typesettable` nomme le support qu'elle sert comme son
+      + Un trait ouvert. Une fourniture `Typesettable` nomme le support qu'elle sert comme son
       + `Form`, et une `Font in Web` est une police pour un navigateur, une `Font in Print` une
-      + police pour un PDF. Une provision `in Medium` elle-même — un fichier de police
+      + police pour un PDF. Une fourniture `in Medium` elle-même — un fichier de police
       + incorporé — sert tous les supports, car un fichier peut être transporté partout ; c'est
-      + pourquoi un demandeur réclame une provision `in (? >:
+      + pourquoi un demandeur réclame une fourniture `in (? >:
       + medium)` plutôt que `in medium`.
 
       - Each renderer declares its own medium as a trait with a companion, and the companion is
@@ -2404,7 +2404,7 @@ entry .Medium
       - standard fourteen fonts. A test or a renderer of its own declares one in a line:
       + Chaque moteur de rendu déclare son propre support sous forme de trait doté d'un
       + compagnon, et c'est dans le compagnon, dans la portée implicite, que se trouvent les
-      + provisions que ce support peut toujours honorer : l'`object Web` de cataclysm contient
+      + fournitures que ce support peut toujours honorer : l'`object Web` de cataclysm contient
       + les familles génériques CSS, l'`object Print` de facsimile contient les quatorze polices
       + standard de PDF. Un test ou un moteur de rendu propre en déclare un en une ligne :
 
@@ -2419,7 +2419,7 @@ entry .Medium
 entry .Typesettable
   info
       - the provision of a typeface in a medium: where the font comes from, and which faces it sets
-      + la provision d'une famille dans un support : la provenance de la police, et les styles
+      + la fourniture d'une famille dans un support : la provenance de la police, et les styles
       + qu'elle compose
   detail
       - A `Typeface of "Inter" is Typesettable in Web` says how the web obtains Inter — as its
@@ -2437,7 +2437,7 @@ entry .Typesettable
       + `Form`, un membre de type hérité de `Formal` : `Medium` pour tous les supports, ou un
       + seul support comme `Web`.
       + Elle est déclarée une seule fois, comme given, et une `Font` ne peut être créée que là
-      + où une provision est dans la portée pour la famille dans le support : c'est ce qui
+      + où une fourniture est dans la portée pour la famille dans le support : c'est ce qui
       + garantit qu'un document transporte ce dont son support a besoin pour chaque famille
       + qu'il nomme.
 
@@ -2459,10 +2459,10 @@ entry .Typesettable
       - `Web.imported` for a stylesheet, `Web.local` for an installed font, each with the
       - coverage it is declared to have, since there is no file to read; `Print`'s standard
       - fourteen need no declaration, nor do the generic families on the web.
-      + `.embedded` crée une provision à partir de fichiers de polices, que tout support peut
+      + `.embedded` crée une fourniture à partir de fichiers de polices, que tout support peut
       + transporter ; elle est donc `in Medium` ; sa couverture est lue depuis les fichiers, et
-      + plusieurs fichiers — normal, gras, italique — forment une seule provision dont la
-      + couverture est leur union. Les provisions propres à un support se déclarent au moyen de
+      + plusieurs fichiers — normal, gras, italique — forment une seule fourniture dont la
+      + couverture est leur union. Les fournitures propres à un support se déclarent au moyen de
       + ce support : `Web.linked` pour un fichier à une URL, `Web.imported` pour une feuille de
       + style, `Web.local` pour une police installée, chacune avec la couverture qu'on lui
       + déclare, puisqu'il n'y a pas de fichier à lire ; les quatorze polices standard de `Print`
@@ -2472,9 +2472,9 @@ entry .Typesettable
       - every medium, while one `in Web` serves only the web, and `Font.of[Print](face)` with
       - only a `Web` provision in scope is a compile error. The `@missingContext` message says
       - so, and names the two ways to declare one.
-      + Un demandeur réclame une provision `in (? >: medium)` : une instance `in Medium` sert
+      + Un demandeur réclame une fourniture `in (? >: medium)` : une instance `in Medium` sert
       + tous les supports, tandis qu'une instance `in Web` ne sert que le web, et
-      + `Font.of[Print](face)` avec seulement une provision `Web` dans la portée est une erreur
+      + `Font.of[Print](face)` avec seulement une fourniture `Web` dans la portée est une erreur
       + de compilation. Le message `@missingContext` l'indique, et nomme les deux façons d'en
       + déclarer une.
 
@@ -2483,7 +2483,7 @@ entry .Typesettable
       - checked against the file as the code compiles. The whole type is then parenthesised in
       - a named given, since an infix chain with a literal type is not admitted in the given's
       - type otherwise:
-      + Une provision est `Locative` : créée à partir d'une ressource du classpath
+      + Une fourniture est `Locative` : créée à partir d'une ressource du classpath
       + (`Typesettable.embedded
       + (cp"/fonts/Inter.ttf")`), elle conserve le chemin comme son `Locus`, et une `Font` créée
       + à partir d'elle est vérifiée par rapport au fichier pendant la compilation du code. Le
@@ -2500,7 +2500,7 @@ entry .Typesettable
       - Provisions are pure data and live where the medium lives: in the companion of `Web` or
       - `Print` for the ones a medium always has, and in an object a project imports by name for
       - its own — `import fonts.inter`, since `import fonts.*` does not import givens.
-      + Les provisions sont de pures données et se trouvent là où se trouve le support : dans le
+      + Les fournitures sont de pures données et se trouvent là où se trouve le support : dans le
       + compagnon de `Web` ou de `Print` pour celles dont un support dispose toujours, et dans un
       + objet qu'un projet importe par son nom pour les siennes — `import fonts.inter`, car
       + `import fonts.*` n'importe pas les givens.
@@ -2537,12 +2537,12 @@ entry .Typesettable
   entry .Embedding
     info
         - the provision `.embedded` returns: files carried inside the document
-        + la provision que renvoie `.embedded` : des fichiers transportés dans le document
+        + la fourniture que renvoie `.embedded` : des fichiers transportés dans le document
     detail
         - A named class, so the provision has a stable type. It is `in Medium`, its sources are
         - one `Source.Embedded` per file, and its coverage is `Coverage.combine` over the files'
         - `Coverage.of`.
-        + Une classe nommée, pour que la provision ait un type stable. Elle est `in Medium`, ses
+        + Une classe nommée, pour que la fourniture ait un type stable. Elle est `in Medium`, ses
         + sources sont un `Source.Embedded` par fichier, et sa couverture est `Coverage.combine`
         + sur les `Coverage.of` des fichiers.
     entry #Self
@@ -2564,7 +2564,7 @@ entry .Typesettable
   entry .embedded
     info
         - a provision from font files, `in Medium`, with coverage read from the files
-        + une provision à partir de fichiers de polices, `in Medium`, dont la couverture est lue
+        + une fourniture à partir de fichiers de polices, `in Medium`, dont la couverture est lue
         + depuis les fichiers
     detail
         - Two overloads. `Typesettable.embedded[family](sfnts*)` takes any number of `Sfnt`s
@@ -2579,8 +2579,8 @@ entry .Typesettable
         + famille est donnée explicitement ou inférée à partir du type déclaré du given.
         + `Typesettable.embedded
         + (source)` prend une source `Locative` lisible en flux — une ressource `cp"…"` — la lit,
-        + et conserve son chemin comme `Locus` de la provision ; ainsi une `Font` créée à partir de
-        + la provision est vérifiée pendant la compilation du code par rapport au fichier situé à
+        + et conserve son chemin comme `Locus` de la fourniture ; ainsi une `Font` créée à partir de
+        + la fourniture est vérifiée pendant la compilation du code par rapport au fichier situé à
         + ce chemin dans le classpath du compilateur. Lorsque le fichier n'est pas dans le
         + classpath du compilateur, la vérification est laissée à l'exécution.
 
@@ -2602,12 +2602,12 @@ entry .Typesettable
   entry #coverage
     info
         - the faces the provision can set
-        + les styles que la provision peut composer
+        + les styles que la fourniture peut composer
 
 entry .Coverage
   info
       - which faces a provision can set: weights, slants, widths, axes and features
-      + les styles que peut composer une provision : graisses, inclinaisons, chasses, axes et
+      + les styles que peut composer une fourniture : graisses, inclinaisons, chasses, axes et
       + fonctionnalités
   detail
       - A `Coverage` is either `Unknown` — nothing is known of the faces a source offers, so
@@ -2617,7 +2617,7 @@ entry .Coverage
       - is not, or `Unset` if it is.
       + Une `Coverage` est soit `Unknown` — on ne sait rien des styles que propose une source ;
       + tout style est donc admis — soit `Entries(entries)`, une liste de `Coverage.Entry`,
-      + chacune étant un style que propose une provision ou la plage de styles que propose une
+      + chacune étant un style que propose une fourniture ou la plage de styles que propose une
       + police variable. Une `Font` n'est créée que pour un style qu'admet la couverture ;
       + `#complaint` donne la `Font.Error.Reason` pour laquelle il ne l'est pas, ou `Unset` s'il
       + l'est.
@@ -2666,7 +2666,7 @@ entry .Coverage
   entry .Entry
     info
         - one face a provision offers, or the range a variable font offers
-        + un style que propose une provision, ou la plage que propose une police variable
+        + un style que propose une fourniture, ou la plage que propose une police variable
     detail
         - The weights and widths spanned, whether the entry is upright, italic or both, the
         - further axes with their ranges, and the layout features implemented — or `Unset` for
@@ -2777,8 +2777,8 @@ entry .Coverage
 entry .Font
   info
       - a face paired with the provision for its typeface in a medium: what a renderer accepts
-      + un style associé à la provision pour sa famille dans un support : ce qu'accepte un moteur de
-      + rendu
+      + un style associé à la fourniture pour sa famille dans un support : ce qu'accepte un moteur
+      + de rendu
   detail
       - A `Font in Web` is a face together with the `Typesettable` provision that makes its
       - typeface available on the web; a `Font in Print` the same for a PDF. The medium is the
@@ -2786,12 +2786,12 @@ entry .Font
       - font was made in. A renderer accepts fonts only in this form, so a document cannot name
       - a typeface it does not carry a provision for; the document then collects the provisions
       - of its fonts and emits whatever its medium needs.
-      + Une `Font in Web` est un style accompagné de la provision `Typesettable` qui rend sa
+      + Une `Font in Web` est un style accompagné de la fourniture `Typesettable` qui rend sa
       + famille disponible sur le web ; une `Font in Print` est l'équivalent pour un PDF. Le
       + support est le `Form` de la police, un membre de type qu'elle hérite de `Formal` : `Web`,
       + `Print`, ou le support dans lequel la police a été créée. Un moteur de rendu n'accepte
       + les polices que sous cette forme ; ainsi un document ne peut pas nommer une famille pour
-      + laquelle il ne transporte pas de provision ; le document collecte ensuite les provisions
+      + laquelle il ne transporte pas de fourniture ; le document collecte ensuite les fournitures
       + de ses polices et émet ce dont son support a besoin.
 
       - A font is made in one of two ways. `Font(face)` infers the medium from the expected
@@ -2805,7 +2805,7 @@ entry .Font
       + un champ comme `Lettering(…, font = Font(inter.bold))` ne nécessite aucune annotation.
       + `Font.of[Web](face)` nomme le support, là où il n'y a pas de type attendu à partir
       + duquel l'inférer. Les deux nécessitent un
-      + `Typeface of family is Typesettable in (? >: medium)` dans la portée — une provision
+      + `Typeface of family is Typesettable in (? >: medium)` dans la portée — une fourniture
       + pour la famille dans ce support, ou dans tous les supports — et une
       + `Tactic[Font.Error]`.
 
@@ -2830,11 +2830,11 @@ entry .Font
       - in its type, the refusal is a compile error with the same message, _phoenicia: the font
       - at /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_. Only
       - what is known statically is checked statically; the runtime check always runs.
-      + Un style que la provision ne peut pas composer — une graisse dont elle est dépourvue, un
+      + Un style que la fourniture ne peut pas composer — une graisse dont elle est dépourvue, un
       + italique qu'elle n'a pas, une fonctionnalité que son fichier n'implémente pas, une valeur
       + d'axe hors de sa plage — est refusé plutôt que synthétisé ou ignoré silencieusement. Le
       + refus est une `Font.Error` à la création de la police, qui nomme la famille et le
-      + problème. Et lorsque le fichier de la provision est dans le classpath (son `Locus`,
+      + problème. Et lorsque le fichier de la fourniture est dans le classpath (son `Locus`,
       + issu de `Typesettable.embedded(cp"…")`) et que la demande du style est dans son type, le
       + refus est une erreur de compilation avec le même message, _phoenicia: the font
       + at /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_. Seul ce
@@ -2859,7 +2859,7 @@ entry .Font
         + Erreur 564, _the font could not be used because …_, avec une `Reason` dont le numéro est
         + le sous-code de l'erreur. Les raisons liées à la lecture des tables sont levées par les
         + accesseurs de `Sfnt` ; les raisons de couverture par `Font(…)`, `Font.of[…](…)` et
-        + `Font.paired` quand la `Coverage` de la provision refuse le style.
+        + `Font.paired` quand la `Coverage` de la fourniture refuse le style.
 
         ```scala
         import soundness.*
@@ -2872,7 +2872,7 @@ entry .Font
     entry .Reason
       info
           - why: a missing or unreadable table, or a face the provision cannot set
-          + la raison : une table manquante ou illisible, ou un style que la provision ne peut pas
+          + la raison : une table manquante ou illisible, ou un style que la fourniture ne peut pas
           + composer
       detail
           - Cases 1 to 4 are faults in the font; 5 to 10 are coverage reasons, each naming the
@@ -2925,7 +2925,7 @@ entry .Font
   entry .apply
     info
         - `Font(face)`: pairs a face with the provision in scope, in the medium the expected type names
-        + `Font(face)` : associe un style à la provision dans la portée, dans le support que nomme
+        + `Font(face)` : associe un style à la fourniture dans la portée, dans le support que nomme
         + le type attendu
     detail
         - An inline method whose medium is inferred from the expected type: `Font in Web`, or
@@ -2936,7 +2936,7 @@ entry .Font
         + Une méthode inline dont le support est inféré à partir du type attendu : `Font in Web`,
         + ou `Optional[Font in Web]`, car `Form` est un membre de type et le type attendu le fixe.
         + Nécessite un `Typeface of family is Typesettable in (? >: medium)` et une
-        + `Tactic[Font.Error]`. Lorsque la provision porte un `Locus`, la demande enregistrée du
+        + `Tactic[Font.Error]`. Lorsque la fourniture porte un `Locus`, la demande enregistrée du
         + style est vérifiée à la compilation ; la vérification à l'exécution a lieu ensuite
         + quoi qu'il arrive. Lorsqu'il n'y a pas de type attendu, utilisez `.of`.
   entry .of
@@ -2962,7 +2962,7 @@ entry .Font
     entry #apply
       info
           - pairs a face with the provision in scope for its typeface, in the named medium
-          + associe un style à la provision dans la portée pour sa famille, dans le support nommé
+          + associe un style à la fourniture dans la portée pour sa famille, dans le support nommé
   entry .paired
     info
         - the runtime pairing the inline forms expand to: the coverage check, then the font
@@ -2994,7 +2994,7 @@ entry .Font
   entry #provision
     info
         - the provision which makes the typeface available in the medium
-        + la provision qui rend la famille disponible dans le support
+        + la fourniture qui rend la famille disponible dans le support
   entry #typeface
     info
         - the face's typeface
@@ -3211,7 +3211,7 @@ entry .internal
         - checks the face's `Weights`, `Slanting` and `Enabled` type members against it, halting
         - with _phoenicia: the font at `path` cannot set this face: …_ on refusal. Then expands to
         - `Font.paired`.
-        + Lit le `Locus` de la provision depuis son type ; s'il s'agit d'un littéral de chaîne
+        + Lit le `Locus` de la fourniture depuis son type ; s'il s'agit d'un littéral de chaîne
         + nommant une ressource du classpath du compilateur, lit la police (une fois par chemin),
         + en dérive la `Coverage` et vérifie par rapport à elle les membres de type `Weights`,
         + `Slanting` et `Enabled` du style, en s'arrêtant avec _phoenicia: the font at `path`

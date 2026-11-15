@@ -139,7 +139,7 @@ val document = feed.load[Xml]
 - type, in the `Xml` companion, and not a tagged string. Beyond elements and text, they hold what
 - other libraries tend to flatten away:
 + Une valeur `Xml` est l'une des sortes de nœuds que définit la spécification. Chacune est un type
-+ distinct, dans le compagnon `Xml`, et non une chaîne étiquetée. Au-delà des éléments et du
++ distinct, dans le compagnon `Xml`, et non une chaîne taguée. Au-delà des éléments et du
 + texte, elles contiennent ce que les autres bibliothèques ont tendance à aplatir :
 
 ```tabular

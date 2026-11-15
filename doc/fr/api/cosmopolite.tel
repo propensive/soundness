@@ -86,7 +86,7 @@ entry .Language
       - the same name), so `en.Code` is `en`. Applying a language to a value makes the
       - `Polyglot` which carries that value in that language:
       + `Language` est le parent des objets de langue `en`, `fr`, `de`, `es` et `pl`. Chacun a un
-      + `#code` de deux lettres, et un membre de type `#Code` nommant son étiquette de type fantôme
+      + `#code` de deux lettres, et un membre de type `#Code` nommant son tag de type fantôme
       + (le trait du même nom) : `en.Code` est donc `en`. Appliquer une langue à une valeur crée le
       + `Polyglot` qui porte cette valeur dans cette langue :
 
@@ -104,7 +104,7 @@ entry .Language
       + La traduction est une fonction contextuelle d'une `Locale` de la langue : le code qui la
       + calcule — tri, mise en forme — voit donc la locale de cette langue, quelle que soit la
       + locale de l'appelant. Une nouvelle langue est un objet étendant `Language(code)` avec un
-      + `type Code`, associé à un trait qui lui sert d'étiquette.
+      + `type Code`, associé à un trait qui lui sert de tag.
   refer cosmopolite.Polyglot
   entry #code
     info
@@ -113,7 +113,7 @@ entry .Language
   entry #Code
     info
         - the phantom type which tags values in this language, such as `fr`
-        + le type fantôme qui étiquette les valeurs dans cette langue, tel que `fr`
+        + le type fantôme qui sert de tag aux valeurs dans cette langue, tel que `fr`
   entry #apply
     info
         - a translation in this language, as a single-language `Polyglot`
@@ -250,7 +250,7 @@ entry .Collatable
       - it is in implicit scope. Code does not usually summon it: `localeCollation` turns the
       - `Locale` in scope into its language's collation.
       + `pl is Collatable` fournit la `Collation` selon laquelle se trie le texte polonais ; le
-      + sujet est l'étiquette fantôme de la langue. Chaque objet de langue contient sa propre
+      + sujet est le tag fantôme de la langue. Chaque objet de langue contient sa propre
       + instance sous le nom `collatable` : elle est donc dans la portée implicite. Le code ne
       + l'invoque généralement pas : `localeCollation` transforme la `Locale` dans la portée en la
       + collation de sa langue.
@@ -263,19 +263,19 @@ entry .Collatable
 entry .en
   info
       - English, the language with code `en`, and its phantom type tag
-      + l'anglais, la langue de code `en`, et son étiquette de type fantôme
+      + l'anglais, la langue de code `en`, et son tag de type fantôme
   detail
       - A `Language`: `en(value)` makes a `Polyglot[V, en]`. As a type, `en` tags values and
       - locales in English. English sorts by the root Unicode collation, which keeps accented
       - letters with their bases (`cafe < café < caff`, `año < anzuelo`).
-      + Une `Language` : `en(value)` crée un `Polyglot[V, en]`. En tant que type, `en` étiquette les
-      + valeurs et les locales en anglais. L'anglais se trie selon la collation Unicode racine, qui
-      + garde les lettres accentuées avec leurs lettres de base (`cafe < café < caff`,
+      + Une `Language` : `en(value)` crée un `Polyglot[V, en]`. En tant que type, `en` sert de tag
+      + aux valeurs et aux locales en anglais. L'anglais se trie selon la collation Unicode racine,
+      + qui garde les lettres accentuées avec leurs lettres de base (`cafe < café < caff`,
       + `año < anzuelo`).
   entry .Code
     info
         - the phantom tag of English: `en`
-        + l'étiquette fantôme de l'anglais : `en`
+        + le tag fantôme de l'anglais : `en`
   entry .collatable
     info
         - English collation: the root Unicode collation table
@@ -284,21 +284,21 @@ entry .en
 entry .fr
   info
       - French, the language with code `fr`, and its phantom type tag
-      + le français, la langue de code `fr`, et son étiquette de type fantôme
+      + le français, la langue de code `fr`, et son tag de type fantôme
   detail
       - A `Language`: `fr(value)` makes a `Polyglot[V, fr]`. As a type, `fr` tags values and
       - locales in French. French sorts by the root Unicode collation with forward secondary
       - accents (`cote < coté < côte < côté`), as CLDR's `fr` does; the backward accents of
       - traditional, now Canadian, French are not used.
-      + Une `Language` : `fr(value)` crée un `Polyglot[V, fr]`. En tant que type, `fr` étiquette les
-      + valeurs et les locales en français. Le français se trie selon la collation Unicode racine
-      + avec des accents secondaires dans le sens direct (`cote < coté < côte < côté`), comme le
-      + fait le `fr` du CLDR ; les accents inversés du français traditionnel, aujourd'hui canadien,
-      + ne sont pas utilisés.
+      + Une `Language` : `fr(value)` crée un `Polyglot[V, fr]`. En tant que type, `fr` sert de tag
+      + aux valeurs et aux locales en français. Le français se trie selon la collation Unicode
+      + racine avec des accents secondaires dans le sens direct (`cote < coté < côte < côté`), comme
+      + le fait le `fr` du CLDR ; les accents inversés du français traditionnel, aujourd'hui
+      + canadien, ne sont pas utilisés.
   entry .Code
     info
         - the phantom tag of French: `fr`
-        + l'étiquette fantôme du français : `fr`
+        + le tag fantôme du français : `fr`
   entry .collatable
     info
         - French collation: the root Unicode table, with forward secondary accents
@@ -308,21 +308,21 @@ entry .fr
 entry .de
   info
       - German, the language with code `de`, and its phantom type tag
-      + l'allemand, la langue de code `de`, et son étiquette de type fantôme
+      + l'allemand, la langue de code `de`, et son tag de type fantôme
   detail
       - A `Language`: `de(value)` makes a `Polyglot[V, de]`. As a type, `de` tags values and
       - locales in German. German sorts by the root Unicode collation, in which umlauts differ
       - from their bases only at the secondary level (`ab < äb`, `äa < ab`), as CLDR's standard
       - German does; DIN phonebook order is not provided.
-      + Une `Language` : `de(value)` crée un `Polyglot[V, de]`. En tant que type, `de` étiquette les
-      + valeurs et les locales en allemand. L'allemand se trie selon la collation Unicode racine,
-      + dans laquelle les trémas ne diffèrent de leurs lettres de base qu'au niveau secondaire
-      + (`ab < äb`, `äa < ab`), comme le fait l'allemand standard du CLDR ; l'ordre de l'annuaire
-      + DIN n'est pas fourni.
+      + Une `Language` : `de(value)` crée un `Polyglot[V, de]`. En tant que type, `de` sert de tag
+      + aux valeurs et aux locales en allemand. L'allemand se trie selon la collation Unicode
+      + racine, dans laquelle les trémas ne diffèrent de leurs lettres de base qu'au niveau
+      + secondaire (`ab < äb`, `äa < ab`), comme le fait l'allemand standard du CLDR ; l'ordre de
+      + l'annuaire DIN n'est pas fourni.
   entry .Code
     info
         - the phantom tag of German: `de`
-        + l'étiquette fantôme de l'allemand : `de`
+        + le tag fantôme de l'allemand : `de`
   entry .collatable
     info
         - German collation: the root Unicode table, umlauts differing at the secondary level
@@ -331,18 +331,18 @@ entry .de
 entry .es
   info
       - Spanish, the language with code `es`, and its phantom type tag
-      + l'espagnol, la langue de code `es`, et son étiquette de type fantôme
+      + l'espagnol, la langue de code `es`, et son tag de type fantôme
   detail
       - A `Language`: `es(value)` makes a `Polyglot[V, es]`. As a type, `es` tags values and
       - locales in Spanish. Spanish sorts with ñ as a letter of its own between n and o, so
       - `ano < anzuelo < año`, with Ñ a tertiary (case) variant of ñ.
-      + Une `Language` : `es(value)` crée un `Polyglot[V, es]`. En tant que type, `es` étiquette les
-      + valeurs et les locales en espagnol. L'espagnol trie ñ comme une lettre à part entière entre
-      + n et o, d'où `ano < anzuelo < año`, Ñ étant une variante tertiaire (de casse) de ñ.
+      + Une `Language` : `es(value)` crée un `Polyglot[V, es]`. En tant que type, `es` sert de tag
+      + aux valeurs et aux locales en espagnol. L'espagnol trie ñ comme une lettre à part entière
+      + entre n et o, d'où `ano < anzuelo < año`, Ñ étant une variante tertiaire (de casse) de ñ.
   entry .Code
     info
         - the phantom tag of Spanish: `es`
-        + l'étiquette fantôme de l'espagnol : `es`
+        + le tag fantôme de l'espagnol : `es`
   entry .collatable
     info
         - Spanish collation: CLDR's, with ñ a letter between n and o
@@ -351,20 +351,20 @@ entry .es
 entry .pl
   info
       - Polish, the language with code `pl`, and its phantom type tag
-      + le polonais, la langue de code `pl`, et son étiquette de type fantôme
+      + le polonais, la langue de code `pl`, et son tag de type fantôme
   detail
       - A `Language`: `pl(value)` makes a `Polyglot[V, pl]`. As a type, `pl` tags values and
       - locales in Polish. Polish sorts its nine accented letters — ą ć ę ł ń ó ś ź ż — as letters
       - in their own right, each after its base, with ż after ź (`z < ź < ż`) and each capital a
       - tertiary variant of its small letter.
-      + Une `Language` : `pl(value)` crée un `Polyglot[V, pl]`. En tant que type, `pl` étiquette les
-      + valeurs et les locales en polonais. Le polonais trie ses neuf lettres accentuées — ą ć ę ł ń
-      + ó ś ź ż — comme des lettres à part entière, chacune après sa lettre de base, avec ż après ź
-      + (`z < ź < ż`) et chaque majuscule étant une variante tertiaire de sa minuscule.
+      + Une `Language` : `pl(value)` crée un `Polyglot[V, pl]`. En tant que type, `pl` sert de tag
+      + aux valeurs et aux locales en polonais. Le polonais trie ses neuf lettres accentuées — ą ć ę
+      + ł ń ó ś ź ż — comme des lettres à part entière, chacune après sa lettre de base, avec ż
+      + après ź (`z < ź < ż`) et chaque majuscule étant une variante tertiaire de sa minuscule.
   entry .Code
     info
         - the phantom tag of Polish: `pl`
-        + l'étiquette fantôme du polonais : `pl`
+        + le tag fantôme du polonais : `pl`
   entry .collatable
     info
         - Polish collation: CLDR's, with nine accented letters sorted after their bases
@@ -409,7 +409,7 @@ entry .localeCollation
       + la `Collation` qu'utilise l'ordre de texte de gossamer, de sorte que `sort`, `<` et
       + `minimum` sur `Text` suivent la langue de la locale. Il se trouve au niveau du package car
       + aucun des deux compagnons ne peut le contenir — `Collation` appartient à gossamer, les
-      + étiquettes de langue à cosmopolite — : il doit donc être importé par son nom,
+      + tags de langue à cosmopolite — : il doit donc être importé par son nom,
       + `import soundness.localeCollation`, avec `soundness.collationComparable`.
 
       ```scala

@@ -469,10 +469,10 @@ entry .StackTrace
         + `$uXXXX` deviennent leurs caractères, et les marqueurs synthétiques du compilateur,
         + `.Marker.all`, deviennent des glyphes, listés dans `.legend` : `λ` une lambda, `Λ` une
         + lambda adaptée, `α` une classe anonyme, `ⲛ` un constructeur, `ι` un initialiseur, `ℓ` une
-        + valeur paresseuse, `↑` un accesseur super, `⇢` un autre accesseur, `≔` un setter de trait,
-        + `⊢` une méthode d'extension, `∂` une méthode directe, `δ` un argument par défaut, `⊡` un
-        + corps inline conservé, `⊙` une référence externe, `Σ` une méthode spécialisée avec sa
-        + signature, tout nombre qui suit étant mis en indice. Une classe de module `globe.Play$`
+        + valeur paresseuse, `↑` un accesseur super, `⇢` un autre accesseur, `≔` un mutateur de
+        + trait, `⊢` une méthode d'extension, `∂` une méthode directe, `δ` un argument par défaut,
+        + `⊡` un corps inline conservé, `⊙` une référence externe, `Σ` une méthode spécialisée avec
+        + sa signature, tout nombre qui suit étant mis en indice. Une classe de module `globe.Play$`
         + devient `globe.ΞPlay` et la classe d'un objet de package est encadrée par `⁅…⁆`. Avec
         + `method = true`, le résultat se termine par `()` et `$` sert de séparateur comme `.`.
 

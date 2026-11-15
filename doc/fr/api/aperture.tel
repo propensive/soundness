@@ -74,8 +74,8 @@ detail
     + argument de type, car une même cible peut avoir plusieurs instances : un chemin s'ouvre en
     + tant que `File`, `Directory`, `Zip` ou `Pdf`. Lorsqu'une cible a exactement une instance,
     + la forme peut être omise ; s'il y en a plusieurs, l'erreur d'ambiguïté liste les
-    + possibilités. Les drapeaux qui suivent le mode sont du type `Operand` propre à l'instance :
-    + ils sont donc spécifiques à ce qui est ouvert, et un drapeau hors de propos ne passe pas la
+    + possibilités. Les indicateurs qui suivent le mode sont du type `Operand` propre à l'instance :
+    + ils sont donc spécifiques à ce qui est ouvert, et un indicateur hors de propos ne passe pas la
     + vérification des types. Chaque instance s'écrit dans le style prépositionnel,
     + `target is Openable in Form by Flag to Handle`.
 
@@ -119,9 +119,9 @@ entry .Openable
       - with a handle typed `Result & Granting[grants]`, where `grants` is the mode's `Grants`.
       + Une instance s'écrit `target is Openable in Form by Flag to Handle` : `Self` est la cible
       + (un chemin, une référence), `Form` ce en tant que quoi elle est ouverte, `Operand` le type
-      + de drapeau admissible pour ce couple, et `Result` la poignée. L'unique méthode de
-      + l'instance, `#open`, reçoit la cible, le `Mode` demandé par l'appelant et les drapeaux, et
-      + exécute le bloc avec une poignée de type `Result & Granting[grants]`, où `grants` est le
+      + d'indicateur admissible pour ce couple, et `Result` la poignée. L'unique méthode de
+      + l'instance, `#open`, reçoit la cible, le `Mode` demandé par l'appelant et les indicateurs,
+      + et exécute le bloc avec une poignée de type `Result & Granting[grants]`, où `grants` est le
       + `Grants` du mode.
 
       - Users call it through the `open` extension, never directly:
@@ -169,8 +169,8 @@ entry .Openable
   entry #open
     info
         - opens a target in a mode, with flags, and runs a block with the granted handle
-        + ouvre une cible dans un mode, avec des drapeaux, et exécute un bloc avec la poignée dotée
-        + de droits
+        + ouvre une cible dans un mode, avec des indicateurs, et exécute un bloc avec la poignée
+        + dotée de droits
     detail
         - `open(value, mode, flags)(block)`: the implementation an instance provides. The block
         - takes the handle `(Result & Granting[grants])^` as a contextual parameter, and its
@@ -184,7 +184,8 @@ entry .Openable
 entry .Opener
   info
       - the applier `open[Form]` returns, which takes an optional mode, the flags and the block
-      + l'applicateur que renvoie `open[Form]`, qui prend un mode optionnel, les drapeaux et le bloc
+      + l'applicateur que renvoie `open[Form]`, qui prend un mode optionnel, les indicateurs et le
+      + bloc
   detail
       - `value.open[Form]` resolves the `Openable` instance from the form alone and returns an
       - `Opener`; its overloaded `#apply` then takes the arguments. The two steps are
@@ -237,8 +238,8 @@ entry .Opener
         - follow the mode. The handle is the block's contextual parameter (`handle ?=> …`).
         + Deux surcharges. `apply(flags*)(block)` ouvre avec le mode `Read`, de sorte que la poignée
         + est `Granting[Grant.Read]` ; `apply(mode, flags*)(block)` ouvre avec le mode donné, de
-        + sorte que la poignée accorde exactement `mode.Grants`. Les drapeaux sont du type `Operand`
-        + de l'instance et suivent le mode. La poignée est le paramètre contextuel du bloc
+        + sorte que la poignée accorde exactement `mode.Grants`. Les indicateurs sont du type
+        + `Operand` de l'instance et suivent le mode. La poignée est le paramètre contextuel du bloc
         + (`handle ?=> …`).
 
 entry .open
@@ -251,8 +252,8 @@ entry .open
       - then flags of the instance's `Operand` type, then a block which receives the handle as
       - a contextual parameter.
       + Une extension sur toute valeur qui possède une instance `Openable` dans la forme nommée.
-      + Elle renvoie un `Opener`, dont l'`apply` prend un `Mode` optionnel (par défaut `Read`),
-      + puis des drapeaux du type `Operand` de l'instance, puis un bloc qui reçoit la poignée comme
+      + Elle renvoie un `Opener`, dont l'`apply` prend un `Mode` optionnel (par défaut `Read`), puis
+      + des indicateurs du type `Operand` de l'instance, puis un bloc qui reçoit la poignée comme
       + paramètre contextuel.
 
       - The mode chosen decides the handle's type, and so which of its operations compile:
@@ -323,7 +324,7 @@ entry .Mode
       - new one makes it an `object … extends Mode` or a top-level `val`.
       + À l'exécution, un mode composite est identifié par `#atoms`, l'ensemble des modes
       + atomiques à partir desquels il a été construit ; c'est ainsi qu'une instance `Openable`
-      + traduit un mode en drapeaux du système d'exploitation. Les modes atomiques sont des
+      + traduit un mode en indicateurs du système d'exploitation. Les modes atomiques sont des
       + valeurs globales comparées par référence : une bibliothèque qui en définit un nouveau en
       + fait donc un `object … extends Mode` ou une `val` de premier niveau.
   refer aperture.Grant
@@ -547,11 +548,11 @@ entry .Creatable
       - which may already exist is governed by per-form flags (galilei's `CreateFlag.Replace`),
       - and replacement is never the default. This differs from *opening* a possibly-absent
       - entity for writing (`OpenFlag.Create`), which accesses whatever is there.
-      + Il n'y a pas de `Mode` : ce que peut faire une portée de création ne relève pas du choix
-      + de l'appelant, et les permissions avec lesquelles l'entrée créée persiste relèvent des
-      + drapeaux. La création de quelque chose qui existe peut-être déjà est régie par des
-      + drapeaux propres à chaque forme (`CreateFlag.Replace` de galilei), et le remplacement n'est
-      + jamais le comportement par défaut. C'est différent de l'*ouverture* en écriture d'une
+      + Il n'y a pas de `Mode` : ce que peut faire une portée de création ne relève pas du choix de
+      + l'appelant, et les permissions avec lesquelles l'entrée créée persiste relèvent des
+      + indicateurs. La création de quelque chose qui existe peut-être déjà est régie par des
+      + indicateurs propres à chaque forme (`CreateFlag.Replace` de galilei), et le remplacement
+      + n'est jamais le comportement par défaut. C'est différent de l'*ouverture* en écriture d'une
       + entité peut-être absente (`OpenFlag.Create`), qui accède à ce qui s'y trouve.
   refer aperture.create
   refer aperture.Creator
@@ -598,8 +599,8 @@ entry .Creator
       - `Creator`. Its overloaded `#apply` takes the flags alone, to make an empty artifact and
       - return the target, or the flags and a block, to author the artifact's contents.
       + `value.create[Form]` résout l'instance `Creatable` à partir de la forme et renvoie un
-      + `Creator`. Son `#apply` surchargé prend soit les drapeaux seuls, pour créer un artefact
-      + vide et renvoyer la cible, soit les drapeaux et un bloc, pour composer le contenu de
+      + `Creator`. Son `#apply` surchargé prend soit les indicateurs seuls, pour créer un artefact
+      + vide et renvoyer la cible, soit les indicateurs et un bloc, pour composer le contenu de
       + l'artefact.
   refer aperture.create
   refer aperture.Creatable
@@ -658,7 +659,7 @@ entry .create
 
       - Flags are of the instance's `Operand` type; galilei's are `CreateFlag`s such as
       - `CreateFlag.Parents` and `CreateFlag.Replace`.
-      + Les drapeaux sont du type `Operand` de l'instance ; ceux de galilei sont des `CreateFlag`
+      + Les indicateurs sont du type `Operand` de l'instance ; ceux de galilei sont des `CreateFlag`
       + tels que `CreateFlag.Parents` et `CreateFlag.Replace`.
   refer aperture.Creatable
   refer aperture.Creator
@@ -676,7 +677,7 @@ entry .Archivable
       - result is a value, and where it goes — streamed, compressed, written to a file — is the
       - caller's next step.
       + Une instance s'écrit `target is Archivable in Form by Flag to Result` : la forme est le
-      + format d'archive (`Tar`, `Zip`, `Ar`), `Operand` le type de drapeau qui règle l'archivage
+      + format d'archive (`Tar`, `Zip`, `Ar`), `Operand` le type d'indicateur qui règle l'archivage
       + pour ce couple (une convention pour les noms longs, un propriétaire à enregistrer, une
       + méthode de compression), et `Result` l'archive en mémoire produite. Contrairement à
       + `Creatable`, rien n'est écrit : le résultat est une valeur, et sa destination — envoyée en
@@ -707,7 +708,7 @@ entry .Archivable
   entry #archive
     info
         - gathers a value's contents, tuned by flags, into the archive value
-        + rassemble le contenu d'une valeur, réglé par des drapeaux, dans la valeur d'archive
+        + rassemble le contenu d'une valeur, réglé par des indicateurs, dans la valeur d'archive
     detail
         - `archive(value, flags)`: the implementation an instance provides. Called by
         - `Archiver#apply`; user code writes `value.archive[Form](flags*)`.
@@ -717,13 +718,13 @@ entry .Archivable
 entry .Archiver
   info
       - the applier `archive[Form]` returns, which takes the flags
-      + l'applicateur que renvoie `archive[Form]`, qui prend les drapeaux
+      + l'applicateur que renvoie `archive[Form]`, qui prend les indicateurs
   detail
       - `value.archive[Form]` resolves the `Archivable` instance from the form and returns an
       - `Archiver`, whose `#apply` takes flags of the instance's `Operand` type and returns the
       - archive. The shape mirrors `Opener` and `Creator`.
       + `value.archive[Form]` résout l'instance `Archivable` à partir de la forme et renvoie un
-      + `Archiver`, dont l'`#apply` prend des drapeaux du type `Operand` de l'instance et renvoie
+      + `Archiver`, dont l'`#apply` prend des indicateurs du type `Operand` de l'instance et renvoie
       + l'archive. La forme reproduit celle d'`Opener` et de `Creator`.
   refer aperture.archive
   entry #archivable
@@ -737,7 +738,7 @@ entry .Archiver
   entry #apply
     info
         - archives the value with the flags given, returning the archive
-        + archive la valeur avec les drapeaux donnés, et renvoie l'archive
+        + archive la valeur avec les indicateurs donnés, et renvoie l'archive
 
 entry .archive
   info
@@ -750,7 +751,7 @@ entry .archive
       - in-memory archive value of the instance's `Result` type, which the format's library
       - then serializes or compresses.
       + Une extension sur toute valeur possédant une instance `Archivable` dans la forme nommée,
-      + qui renvoie un `Archiver` dont l'`apply` prend des drapeaux du type `Operand` de
+      + qui renvoie un `Archiver` dont l'`apply` prend des indicateurs du type `Operand` de
       + l'instance. Le résultat est une valeur d'archive en mémoire du type `Result` de
       + l'instance, que la bibliothèque du format sérialise ou compresse ensuite.
 
@@ -937,4 +938,4 @@ entry .Stale
         - `Stale(1).let(_ + 1) == Stale(2)`. A method rather than an extension, so that vacuous's
         - `let` on `Optional`, which is imported everywhere, does not claim the receiver.
         + `Stale(1).let(_ + 1) == Stale(2)`. Une méthode plutôt qu'une extension, afin que le `let`
-        + de vacuous sur `Optional`, importé partout, ne s'empare pas du récepteur.
+        + de vacuous sur `Optional`, importé partout, ne s'empare pas du receveur.

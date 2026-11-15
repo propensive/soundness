@@ -142,7 +142,7 @@ entry .internal
     detail
         - Returns the new `Flags` rather than changing the receiver, so a variable holding the
         - flags is reassigned: `flags = flags(Orange) = true`.
-        + Renvoie le nouveau `Flags` plutôt que de modifier le récepteur : une variable qui contient
+        + Renvoie le nouveau `Flags` plutôt que de modifier le receveur : une variable qui contient
         + les indicateurs est donc réaffectée : `flags = flags(Orange) = true`.
   entry .set
     info

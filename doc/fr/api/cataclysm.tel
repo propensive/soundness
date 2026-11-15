@@ -463,7 +463,7 @@ entry .Css
   entry .Value
     info
         - a rendered CSS value tagged with its value-definition type, `Css.Value of "length"`
-        + une valeur CSS rendue, étiquetée par son type de définition de valeur,
+        + une valeur CSS rendue, taguée par son type de définition de valeur,
         + `Css.Value of "length"`
     detail
         - A `Css.Value` is text already rendered for CSS, whose `Topic` type member names the
@@ -477,7 +477,7 @@ entry .Css
         + `"angle"`, `"percentage"`, `"number"`, `"integer"`, `"flex"`, ou `"*"` pour les
         + mots-clés globaux du CSS. Le trait est `into` ; une valeur native dotée d'un
         + `Css.Convertible` — une quantité, une couleur, un `Int` — est donc acceptée partout où un
-        + `Css.Value of` son sujet est attendu, élevée par `.converter`. `Css.Value(text)`
+        + `Css.Value of` son sujet est attendu, relevée par `.converter`. `Css.Value(text)`
         + enveloppe du texte sans sujet.
     refer cataclysm.Css.Convertible
     entry .apply
@@ -698,12 +698,12 @@ entry .Css
         - A number renders without a redundant `.0` (`12px`, not `12.0px`), rounded to six
         - decimal places so a converted physical length does not leak floating-point noise.
         + Les instances du compagnon couvrent les unités CSS — toute `Quantity` dans les unités
-        + `Pixels`, `Rems`, `Exs`, `Chs`, de viewport et de pourcentage, et les propres `Ems`,
-        + `Metres`, `Inches`, `Points`, `Picas` et `Seconds` de quantitative — les unités d'angle
-        + et de fraction, `Int` et `Double`, les mots-clés, et toute couleur dotée d'une instance
-        + `Chromatic`. Un nombre se rend sans `.0` redondant (`12px`, et non `12.0px`), arrondi à
-        + six décimales pour qu'une longueur physique convertie ne laisse pas fuir de bruit de
-        + virgule flottante.
+        + `Pixels`, `Rems`, `Exs`, `Chs`, de zone d'affichage et de pourcentage, et les propres
+        + `Ems`, `Metres`, `Inches`, `Points`, `Picas` et `Seconds` de quantitative — les unités
+        + d'angle et de fraction, `Int` et `Double`, les mots-clés, et toute couleur dotée d'une
+        + instance `Chromatic`. Un nombre se rend sans `.0` redondant (`12px`, et non `12.0px`),
+        + arrondi à six décimales pour qu'une longueur physique convertie ne laisse pas fuir de
+        + bruit de virgule flottante.
 
         ```scala
         import soundness.*
@@ -1595,7 +1595,7 @@ entry .Px
       + nouvelle sans rapport avec aucune autre ; `2.0*Px + 3.0*Cm` et
       + `(1.0*Px).convert[Metres]` ne compilent donc pas : la taille physique d'un pixel est
       + laissée à l'appréciation du navigateur. Il en va de même pour toutes les unités
-      + relatives et de viewport (`Rem`, `Ex`, `Ch`, `Vw`, `Vh`, `Vmin`, `Vmax`, `Pct`), les
+      + relatives et de zone d'affichage (`Rem`, `Ex`, `Ch`, `Vw`, `Vh`, `Vmin`, `Vmax`, `Pct`), les
       + angles (`Deg`, `Rad`, `Turn`) et les fractions de grille (`Fr`) ; les unités physiques
       + `Cm`, `Mm`, `Pt`, `Pc` et les propres `Inch` et `Metre` de quantitative partagent la
       + dimension `Distance` et se convertissent entre elles comme d'habitude, et `S` et `Ms`
@@ -1625,23 +1625,23 @@ entry .Ch
 entry .Vw
   info
       - one per cent of the viewport's width, `Quantity[ViewportWidths[1]]`: renders as `vw`
-      + un pour cent de la largeur du viewport, `Quantity[ViewportWidths[1]]` : se rend sous la
-      + forme `vw`
+      + un pour cent de la largeur de la zone d'affichage, `Quantity[ViewportWidths[1]]` : se rend
+      + sous la forme `vw`
 entry .Vh
   info
       - one per cent of the viewport's height, `Quantity[ViewportHeights[1]]`: renders as `vh`
-      + un pour cent de la hauteur du viewport, `Quantity[ViewportHeights[1]]` : se rend sous la
-      + forme `vh`
+      + un pour cent de la hauteur de la zone d'affichage, `Quantity[ViewportHeights[1]]` : se rend
+      + sous la forme `vh`
 entry .Vmin
   info
       - one per cent of the viewport's smaller side, `Quantity[ViewportMins[1]]`: renders as `vmin`
-      + un pour cent du plus petit côté du viewport, `Quantity[ViewportMins[1]]` : se rend sous la
-      + forme `vmin`
+      + un pour cent du plus petit côté de la zone d'affichage, `Quantity[ViewportMins[1]]` : se
+      + rend sous la forme `vmin`
 entry .Vmax
   info
       - one per cent of the viewport's larger side, `Quantity[ViewportMaxes[1]]`: renders as `vmax`
-      + un pour cent du plus grand côté du viewport, `Quantity[ViewportMaxes[1]]` : se rend sous la
-      + forme `vmax`
+      + un pour cent du plus grand côté de la zone d'affichage, `Quantity[ViewportMaxes[1]]` : se
+      + rend sous la forme `vmax`
 entry .Cm
   info
       - one centimetre, as quantitative `Metres`: `3.0*Cm` renders as `30mm`
@@ -1786,7 +1786,7 @@ entry .CssPixel
       + `CssCharacterWidth`, `CssViewportWidth`, `CssViewportHeight`, `CssViewportMin`,
       + `CssViewportMax`, `CssRatio`, `CssDegree`, `CssRadian`, `CssTurn` et `CssFlex` — est
       + délibérément non convertible, puisque sa taille physique est déterminée par le
-      + navigateur, la police ou le viewport, et non par la feuille de style.
+      + navigateur, la police ou la zone d'affichage, et non par la feuille de style.
 entry .CssRootFontSize
   info
       - the dimension of `rem` lengths, inconvertible

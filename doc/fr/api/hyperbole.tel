@@ -5,7 +5,7 @@ import soundness
 
 info
     - TASTy as data: introspecting trees and symbols, and resolving stack frames to the source definitions they came from
-    + TASTy comme données : introspection des arbres et des symboles, et résolution des trames
+    + TASTy comme données : introspection des arbres et des symboles, et résolution des cadres
     + de pile vers leurs définitions source
 detail
     - _Hyperbole_ reads what the Scala compiler knows about a program — its **TASTy** — and
@@ -25,7 +25,7 @@ detail
     + La première est l'**introspection**. `Introspect.syntax` capture l'arbre typé de toute
     + expression, tel que le compilateur le voit après le typage et l'inlining, sous forme de
     + `Tasty.Tree` ; et `Introspect.semantics` capture un symbole — celui d'un type, d'une valeur
-    + ou de la définition englobante — sous forme de `Tasty.Symbol`, avec ses drapeaux, ses
+    + ou de la définition englobante — sous forme de `Tasty.Symbol`, avec ses indicateurs, ses
     + propriétés et ses membres. Dans une macro, les extensions `syntax` et `semantics` font de
     + même pour un `Expr` ou un `Symbol` en main. Les deux se rendent dans un terminal, à travers
     + une `TastyPalette`, sous forme de diagramme en arbre ou de table, ce qui remplace
@@ -51,12 +51,12 @@ detail
     - `StackTrace` captured in scope carry a `StackTrace.Frame.Source` naming the file, the
     - chain of enclosing definitions, the definition's source name and its `Kind`; `resolved`
     - does the same to a trace already in hand.
-    + La seconde est la **résolution des trames de pile**. Une trame de pile JVM nomme une classe
+    + La seconde est la **résolution des cadres de pile**. Un cadre de pile JVM nomme une classe
     + et une méthode compilées, et le démanglage (`StackTrace.rewrite` dans digression) ne peut
     + que mettre de l'ordre dans ce nom : `$anonfun$3` devient `λ₃`, ce qui dit qu'une lambda
     + s'est exécutée, mais pas laquelle. Le compilateur enregistre l'étendue de chaque définition
     + dans le TASTy qu'il écrit à côté de chaque fichier de classe, de sorte que la ligne portée
-    + par une trame suffit à retrouver la définition à laquelle elle appartient. `StackResolver`
+    + par un cadre suffit à retrouver la définition à laquelle il appartient. `StackResolver`
     + effectue cette recherche, et importer `stackResolutions.tastyStackResolution` fait que
     + chaque `StackTrace` capturée dans la portée porte une `StackTrace.Frame.Source` nommant le
     + fichier, la chaîne des définitions englobantes, le nom source de la définition et son
@@ -93,7 +93,7 @@ detail
     +   TASTy reçu par le réseau.
     + - `hyperbole.core` — `Introspect`, les macros et extensions `syntax` et `semantics`,
     +   `TastyPalette` et les rendus `Teletypeable`. JVM uniquement, car il dépend de la
-    +   coloration syntaxique du compilateur et du compilateur de staging.
+    +   coloration syntaxique du compilateur et du compilateur de mise en étapes.
     + - `hyperbole.stacks` — `StackResolver`, le package de choix `stackResolutions` et
     +   l'extension `resolved`. JVM uniquement : il lit le TASTy et les fichiers de classe à
     +   travers le `Classloader` given dans la portée, et les fichiers source depuis le disque.
@@ -126,8 +126,8 @@ entry .Introspect
       - be compared, traversed, or rendered as `Teletype` with a `TastyPalette` in scope.
       + Deux macros qui fonctionnent en dehors de toute macro, sur n'importe quelle expression ou
       + n'importe quel type dans du code ordinaire. `Introspect.syntax` donne l'arbre typé d'une
-      + expression sous forme de `Tasty.Tree`, avec l'étiquette, le nom, le type et le code source
-      + de chaque nœud ; `Introspect.semantics` donne les drapeaux, les propriétés et les détails
+      + expression sous forme de `Tasty.Tree`, avec le tag, le nom, le type et le code source
+      + de chaque nœud ; `Introspect.semantics` donne les indicateurs, les propriétés et les détails
       + d'un symbole sous forme de `Tasty.Symbol`. Les deux produisent des valeurs simples, que
       + l'on peut comparer, parcourir, ou rendre en `Teletype` avec une `TastyPalette` dans la
       + portée.
@@ -168,7 +168,7 @@ entry .Introspect
         - the expression's own tree is shown and inlined calls stay as calls.
         + `Introspect.syntax(inlining)(expression)` est une macro transparent inline : l'expression
         + est typée, et son arbre est sérialisé en un `Tasty.Tree` dont les nœuds portent
-        + l'étiquette, la nature du nœud (`Apply`, `Ident`, `Literal`, …), son type, le code source
+        + le tag, la nature du nœud (`Apply`, `Ident`, `Literal`, …), son type, le code source
         + dont il provient et ses enfants. Avec `inlining = true` (la valeur par défaut est
         + `false`), l'arbre est celui obtenu après l'expansion inline, de sorte que le corps des
         + méthodes inline et des macros y apparaît ; avec `false`, c'est l'arbre propre de
@@ -186,7 +186,7 @@ entry .Introspect
         - (tagged `a`, of type `"hello world"`) as its `nodes`.
         + Ici, la racine est un `Apply` de type `Unit` dont l'`expr` est
         + `scala.Predef.println("hello world")`, avec un `Ident` (`println`) et un `Literal`
-        + (étiqueté `a`, de type `"hello world"`) comme `nodes`.
+        + (tagué `a`, de type `"hello world"`) comme `nodes`.
   entry .semantics
     info
         - a symbol as a `Tasty.Symbol`: of a type, of a value, or of the enclosing definition
@@ -203,9 +203,9 @@ entry .Introspect
         + alias ; `Introspect.semantics(value)` donne le symbole du terme auquel l'expression fait
         + référence ; et `Introspect.semantics()` donne le symbole de la définition dans laquelle
         + l'appel est écrit. Chaque `Tasty.Symbol` enregistre le nom complet du symbole, découpé en
-        + `prefix` et `name`, chaque drapeau du compilateur avec l'indication s'il est positionné,
-        + les propriétés du symbole, et des détails tels que son propriétaire, sa position, ses
-        + membres et ses annotations.
+        + `prefix` et `name`, chaque indicateur du compilateur avec l'indication s'il est
+        + positionné, les propriétés du symbole, et des détails tels que son propriétaire, sa
+        + position, ses membres et ses annotations.
 
 entry .syntax
   info
@@ -240,7 +240,7 @@ entry .semantics
       - flags, properties and details, which a macro may inspect, compare or render.
       + Une extension sur `Symbol`, qui requiert un `Quotes` : `symbol.semantics` est le pendant,
       + côté macro, d'`Introspect.semantics`, qui réduit un symbole de réflexion à une valeur avec
-      + ses drapeaux, ses propriétés et ses détails, qu'une macro peut inspecter, comparer ou
+      + ses indicateurs, ses propriétés et ses détails, qu'une macro peut inspecter, comparer ou
       + rendre.
 
 entry .TastyPalette
@@ -257,7 +257,7 @@ entry .TastyPalette
       + Une `Palette` en sRGB avec, outre le `background` et le `foreground` que possède toute
       + palette : `typeDefinition` et `termDefinition` pour les nœuds qui définissent un type ou un
       + terme, `typeReference` et `termReference` pour les nœuds qui y font référence,
-      + `flagOn`/`flagOff` et `propertyOn`/`propertyOff` pour les drapeaux et les propriétés d'un
+      + `flagOn`/`flagOff` et `propertyOn`/`propertyOff` pour les indicateurs et les propriétés d'un
       + symbole, `outline` pour les types et les valeurs de détail, et `accented` pour les noms de
       + paramètres. Une `TastyPalette` doit être dans la portée pour rendre un `Tasty.Tree` ou un
       + `Tasty.Symbol` en `Teletype` ; la bibliothèque n'en fournit aucune.
@@ -292,8 +292,8 @@ entry .tastySymbolTeletypeable
       - `propertyOn`, and one row per detail. It is a top-level given, so it resolves without
       - an import inside `hyperbole` and by name elsewhere:
       - `import soundness.tastySymbolTeletypeable`.
-      + Le given `Teletypeable` pour `Tasty.Symbol`, qui requiert une `TastyPalette`. La table a
-      + une ligne pour le nom (préfixe atténué, nom en gras), une ligne de drapeaux où ceux qui sont
+      + Le given `Teletypeable` pour `Tasty.Symbol`, qui requiert une `TastyPalette`. La table a une
+      + ligne pour le nom (préfixe atténué, nom en gras), une ligne d'indicateurs où ceux qui sont
       + positionnés sont mis en évidence sur la couleur `flagOff` de la palette, une ligne de
       + propriétés où celles qui sont présentes sont sur `propertyOn`, et une ligne par détail.
       + C'est un given de premier niveau ; il se résout donc sans import à l'intérieur de
@@ -312,8 +312,8 @@ entry .tastyTreeTeletypeable
       - it came from, with the common indentation cropped. A top-level given, imported by name
       - outside `hyperbole`: `import soundness.tastyTreeTeletypeable`.
       + Le given `Teletypeable` pour `Tasty.Tree`, qui requiert une `TastyPalette`. Chaque nœud est
-      + une ligne : les traits de l'arbre, l'étiquette du nœud entre chevrons (ou `▪` pour un nœud
-      + sans étiquette), son nom coloré comme une définition ou une référence de terme ou de type,
+      + une ligne : les traits de l'arbre, le tag du nœud entre chevrons (ou `▪` pour un nœud
+      + sans tag), son nom coloré comme une définition ou une référence de terme ou de type,
       + et un nom de paramètre dans la couleur `accented` ; puis son type, démanglé avec
       + `StackTrace.rewrite` ; puis le code source dont il provient, débarrassé de l'indentation
       + commune. Un given de premier niveau, importé par son nom en dehors de `hyperbole` :
@@ -380,7 +380,7 @@ entry .Tasty
   entry .Symbol
     info
         - a compiler symbol reduced to its name, flags, properties and details
-        + un symbole du compilateur réduit à son nom, ses drapeaux, ses propriétés et ses détails
+        + un symbole du compilateur réduit à son nom, ses indicateurs, ses propriétés et ses détails
     detail
         - Produced by `Introspect.semantics` or the `semantics` extension. `#prefix` and
         - `#name` split the full name at the last segment; `#flags` lists every compiler flag
@@ -390,12 +390,12 @@ entry .Tasty
         - members, annotations and the like — each a text or a list of texts. It renders with
         - `tastySymbolTeletypeable`.
         + Produit par `Introspect.semantics` ou par l'extension `semantics`. `#prefix` et `#name`
-        + découpent le nom complet au dernier segment ; `#flags` liste chaque drapeau du compilateur
-        + (`Abstract`, `Case`, `Given`, `Inline`, …) associé à l'indication s'il est positionné, et
-        + `#properties` fait de même pour chaque propriété (le symbole est-il une classe, un type,
-        + un terme, un package, …) ; `#details` est une liste de valeurs nommées — le propriétaire,
-        + la position, les membres, les annotations, etc. — chacune étant un texte ou une liste de
-        + textes. Il se rend avec `tastySymbolTeletypeable`.
+        + découpent le nom complet au dernier segment ; `#flags` liste chaque indicateur du
+        + compilateur (`Abstract`, `Case`, `Given`, `Inline`, …) associé à l'indication s'il est
+        + positionné, et `#properties` fait de même pour chaque propriété (le symbole est-il une
+        + classe, un type, un terme, un package, …) ; `#details` est une liste de valeurs nommées —
+        + le propriétaire, la position, les membres, les annotations, etc. — chacune étant un texte
+        + ou une liste de textes. Il se rend avec `tastySymbolTeletypeable`.
     entry #prefix
       info
           - the full name up to the last segment, with its trailing `.`
@@ -407,7 +407,8 @@ entry .Tasty
     entry #flags
       info
           - every compiler flag, paired with whether it is set on this symbol
-          + chaque drapeau du compilateur, associé à l'indication s'il est positionné sur ce symbole
+          + chaque indicateur du compilateur, associé à l'indication s'il est positionné sur ce
+          + symbole
     entry #properties
       info
           - every symbol property, paired with whether this symbol has it
@@ -419,7 +420,7 @@ entry .Tasty
   entry .Tree
     info
         - one node of a typed tree, with its tag, kind, type, source and children
-        + un nœud d'un arbre typé, avec son étiquette, sa nature, son type, son code source et ses
+        + un nœud d'un arbre typé, avec son tag, sa nature, son type, son code source et ses
         + enfants
     detail
         - Produced by `Introspect.syntax` or the `syntax` extension, and nested through
@@ -511,7 +512,7 @@ entry .Tasty
         - offsets of its extent and `#firstLine` and `#lastLine` the lines. A definition the
         - compiler synthesised — an `object`'s constructor — has an empty extent at whatever
         - position was to hand.
-        + Ce dont la résolution d'une trame de pile a besoin d'une définition. `#name` est le nom
+        + Ce dont la résolution d'un cadre de pile a besoin d'une définition. `#name` est le nom
         + source (`<init>` pour un constructeur) ; `#owners` la chaîne des définitions englobantes,
         + de la plus interne à la plus externe, package compris ; `#kind` un
         + `StackTrace.Frame.Kind` (`Method`, `Lambda`, `Value`, `Class`, `Constructor`, …) ;
@@ -570,7 +571,7 @@ entry .Tasty
         + enregistré — le chemin complet, ou un chemin relatif à `-sourceroot` — ou `Unset` si le
         + fichier ne porte aucun attribut source ; `#definitions` est l'ensemble des définitions du
         + fichier. `#covering` trouve les définitions qui entourent une ligne, de la plus interne à
-        + la plus externe, ce qui est la recherche qu'effectue la ligne d'une trame de pile.
+        + la plus externe, ce qui est la recherche qu'effectue la ligne d'un cadre de pile.
     entry #path
       info
           - the source path the compiler recorded, if any
@@ -600,13 +601,13 @@ entry .Tasty
           - reached only when a frame really is one of them.
           + L'imbrication se mesure à l'étendue — l'étendue d'une lambda est plus petite que celle
           + de la méthode qui l'englobe, elle est donc triée en premier — et les définitions dont
-          + l'étendue est vide sont triées en dernier, pour n'être atteintes que lorsqu'une trame en
-          + est réellement une.
+          + l'étendue est vide sont triées en dernier, pour n'être atteintes que lorsqu'un cadre en
+          + est réellement un.
 
 entry .StackResolver
   info
       - recovers the source definition behind each frame of a stack trace, from TASTy
-      + retrouve, à partir du TASTy, la définition source derrière chaque trame d'une trace de pile
+      + retrouve, à partir du TASTy, la définition source derrière chaque cadre d'une trace de pile
   detail
       - A `StackResolver` is a `StackTrace.Resolver` which, for each frame, finds the TASTy
       - file of the frame's top-level class through the `Classloader` in scope, looks up the
@@ -615,14 +616,13 @@ entry .StackResolver
       - definitions, the definition's source name, its `Kind`, and the line of source itself
       - when the file can be read. A frame whose class has no TASTy, or whose file has no line
       - for it, is returned as it was.
-      + Un `StackResolver` est un `StackTrace.Resolver` qui, pour chaque trame, trouve le fichier
-      + TASTy de la classe de premier niveau de la trame à travers le `Classloader` dans la portée,
-      + recherche les définitions couvrant la ligne de la trame, choisit celle avec laquelle la
-      + nature du nom compilé concorde, et attache une `StackTrace.Frame.Source` nommant le
-      + fichier, la chaîne des définitions englobantes, le nom source de la définition, son `Kind`,
-      + et la ligne de code source elle-même quand le fichier peut être lu. Une trame dont la
-      + classe n'a pas de TASTy, ou dont le fichier n'a pas de ligne correspondante, est renvoyée
-      + telle quelle.
+      + Un `StackResolver` est un `StackTrace.Resolver` qui, pour chaque cadre de pile, trouve le
+      + fichier TASTy de la classe de premier niveau du cadre à travers le `Classloader` dans la
+      + portée, recherche les définitions couvrant la ligne du cadre, choisit celle avec laquelle la
+      + nature du nom compilé concorde, et attache une `StackTrace.Frame.Source` nommant le fichier,
+      + la chaîne des définitions englobantes, le nom source de la définition, son `Kind`, et la
+      + ligne de code source elle-même quand le fichier peut être lu. Un cadre dont la classe n'a
+      + pas de TASTy, ou dont le fichier n'a pas de ligne correspondante, est renvoyé tel quel.
 
       - Without a resolver, a trace has only the compiled names, demangled but anonymous; with
       - one imported, every trace captured in its scope names its definitions; and a trace
@@ -704,11 +704,11 @@ entry .StackResolver
       + La construction requiert un `Classloader`, à travers lequel les ressources `.tasty` et
       + `.class` sont lues, et un `WorkingDirectory`, par rapport auquel est résolu un chemin
       + source que le TASTy enregistre relativement à `-sourceroot` : ce doit être le répertoire
-      + dans lequel le code a été compilé, faute de quoi la trame conserve tout sauf sa ligne de
-      + code source. Une trame dont la ligne est une ligne synthétique, allouée par le compilateur
-      + pour du code inliné, est d'abord développée au moyen de la SMAP du fichier de classe (lue
-      + avec `Classfile#sourceDebugExtension` de mandible) : la trame obtient sa véritable ligne
-      + d'appel, et sa liste `inlined` les niveaux d'inlining en dessous d'elle, chacun résolu par
+      + dans lequel le code a été compilé, faute de quoi le cadre conserve tout sauf sa ligne de
+      + code source. Un cadre dont la ligne est une ligne synthétique, allouée par le compilateur
+      + pour du code inliné, est d'abord développé au moyen de la SMAP du fichier de classe (lue
+      + avec `Classfile#sourceDebugExtension` de mandible) : le cadre obtient sa véritable ligne
+      + d'appel, et sa liste `inlined` les niveaux d'inlining en dessous de lui, chacun résolu par
       + rapport au TASTy pour nommer la méthode inline dans laquelle il se trouve.
 
       - TASTy and source files are read once per class and cached in the resolver, so one
@@ -741,13 +741,13 @@ entry .StackResolver
         + `$anonfun` une `Lambda` et `$adapted` un `Bridge` ; `super$`, `protected$`, `inline$` et
         + `$accessor` un `Forwarder` ; `$_setter_$` et `$retainedBody` `Synthetic` ; `$extension`
         + une `Extension` ; `$default` un `Default` ; `$mc…$sp` un `Specialized`. Un nom sans
-        + marqueur donne `Unset`, et la définition vers laquelle la trame se résout parle
+        + marqueur donne `Unset`, et la définition vers laquelle le cadre se résout parle
         + d'elle-même.
   entry .matches
     info
         - whether a definition is the one a frame's compiled name and kind hint describe
-        + indique si une définition est celle que décrivent le nom compilé d'une trame et l'indice
-        + de nature
+        + indique si une définition est celle que décrivent le nom compilé d'un cadre de pile et
+        + l'indice de nature
     detail
         - With a `Constructor` hint the definition must be `<init>`; with a `Lambda` hint its
         - kind must be `Lambda`; otherwise its source name must equal the compiled method name,
@@ -762,7 +762,8 @@ entry .StackResolver
   entry .display
     info
         - a TASTy name as a frame shows it: module `$` dropped, derived names demangled
-        + un nom TASTy tel qu'une trame l'affiche : `$` de module supprimé, noms dérivés démanglés
+        + un nom TASTy tel qu'un cadre de pile l'affiche : `$` de module supprimé, noms dérivés
+        + démanglés
     detail
         - A module class's trailing `$` is removed, `<init>` becomes `ⲛ`, and a name with a `$`
         - in it — an anonymous function, a default getter, a package file — is passed through
@@ -770,17 +771,17 @@ entry .StackResolver
         - one.
         + Le `$` final d'une classe de module est supprimé, `<init>` devient `ⲛ`, et un nom
         + contenant un `$` — une fonction anonyme, un accesseur de valeur par défaut, un fichier de
-        + package — passe par `StackTrace.rewrite`, de sorte qu'une trame résolue se lit dans le
-        + même vocabulaire qu'une trame non résolue.
+        + package — passe par `StackTrace.rewrite`, de sorte qu'un cadre résolu se lit dans le
+        + même vocabulaire qu'un cadre non résolu.
   entry #resolve
     info
         - the frame with its `source` filled in, or unchanged if nothing can be found
-        + la trame avec sa `source` renseignée, ou inchangée si rien n'est trouvé
+        + le cadre avec sa `source` renseignée, ou inchangé si rien n'est trouvé
 
 entry .stackResolutions
   info
       - the stack-frame resolvers, each a given to import by name
-      + les résolveurs de trames de pile, chacun étant un given à importer par son nom
+      + les résolveurs de cadres de pile, chacun étant un given à importer par son nom
   detail
       - Which `StackTrace.Resolver` a captured trace uses is decided by the given in scope: the
       - default, in digression, does nothing, and `import soundness.*` brings in no other.
@@ -791,7 +792,7 @@ entry .stackResolutions
       + portée : celui par défaut, dans digression, ne fait rien, et `import soundness.*`
       + n'en apporte aucun autre. En importer un de ce package par son nom fait que chaque
       + `StackTrace` capturée dans la portée englobante — chaque `error.stackTrace`, et les
-      + diagnostics de chaque erreur Soundness — porte les définitions source de ses trames.
+      + diagnostics de chaque erreur Soundness — porte les définitions source de ses cadres.
 
       ```scala
       import soundness.*
@@ -809,8 +810,8 @@ entry .stackResolutions
   entry .tastyStackResolution
     info
         - resolves frames against the TASTy beside the class files, through the classloader in scope
-        + résout les trames par rapport au TASTy situé à côté des fichiers de classe, via le
-        + classloader dans la portée
+        + résout les cadres de pile par rapport au TASTy situé à côté des fichiers de classe, via le
+        + chargeur de classes dans la portée
     detail
         - A `(Classloader, WorkingDirectory) => StackTrace.Resolver` which builds a
         - `StackResolver` over the two givens. Each trace captured in scope reads one TASTy file
@@ -826,7 +827,7 @@ entry .stackResolutions
 entry .resolved
   info
       - a stack trace with every frame resolved against TASTy, including its causes
-      + une trace de pile dont chaque trame est résolue par rapport au TASTy, causes comprises
+      + une trace de pile dont chaque cadre est résolu par rapport au TASTy, causes comprises
   detail
       - An extension on `StackTrace`, needing a `Classloader` and a `WorkingDirectory`: builds a
       - `StackResolver` and rebuilds the trace with `StackResolver#resolve` applied to each frame,
@@ -835,7 +836,7 @@ entry .resolved
       - which captures it.
       + Une extension sur `StackTrace`, qui requiert un `Classloader` et un `WorkingDirectory` :
       + elle construit un `StackResolver` et reconstruit la trace en appliquant
-      + `StackResolver#resolve` à chaque trame, récursivement le long de la chaîne des `cause`.
+      + `StackResolver#resolve` à chaque cadre, récursivement le long de la chaîne des `cause`.
       + Pour les appelants qui détiennent déjà une trace et préfèrent demander explicitement
       + plutôt qu'importer `stackResolutions.tastyStackResolution` dans la portée qui la capture.
 

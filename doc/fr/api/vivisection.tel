@@ -34,7 +34,7 @@ detail
     - The session itself, `Debug`, is confined to its block by capture checking, so it cannot be
     - used after the debuggee has gone.
     + Le protocole sous-jacent est modélisé par des valeurs. Chaque identifiant que la VM distribue
-    + est un `Jdwp.Ref` étiqueté par sa nature — `ThreadId`, `FrameId`, `MethodId`, `ObjectId` et
+    + est un `Jdwp.Ref` tagué par sa nature — `ThreadId`, `FrameId`, `MethodId`, `ObjectId` et
     + les autres — de sorte qu'on ne peut jamais passer l'un là où l'autre est attendu, alors
     + qu'aucun ne coûte quoi que ce soit à l'exécution. Un arrêt est un `Halt` : une capacité prêtée
     + à un gestionnaire de point d'arrêt ou de pas exactement aussi longtemps que le thread reste
@@ -851,12 +851,12 @@ entry .Debug
         + classe : un pas par-dessus une ligne contenant un appel inline franchit toute la ligne,
         + corps compris, là où le bytecode descendrait dans le corps inliné ; un pas dans un tel
         + appel s'arrête à la première ligne du corps inliné, comme s'il s'agissait d'un appel ; et
-        + un atterrissage dans la plomberie — un pont, une méthode de transfert de mixin ou
+        + un atterrissage dans la plomberie — un pont, un redirecteur de mixin ou
         + statique, un accesseur de champ ou de lazy val, une méthode synthétique autre qu'un corps
         + de lambda, ou toute classe sous `java.*`, `javax.*`, `jdk.*`, `sun.*`, `com.sun.*` ou
         + `scala.runtime.*` — n'est jamais montré : le pas continue vers l'intérieur pour `Into` et
         + vers l'extérieur sinon, jusqu'à s'arrêter dans du code écrit par le programmeur. Les
-        + accesseurs et les méthodes de transfert ne portent aucun indicateur ; ils sont donc
+        + accesseurs et les redirecteurs ne portent aucun indicateur ; ils sont donc
         + reconnus à la forme de leur bytecode, ce qui exige `canGetBytecodes` et
         + `canGetConstantPool` de la VM. Un atterrissage que le SMAP ne peut lire, ou la limite de
         + sécurité de 64 itérations, rapporte l'arrêt tel quel.
@@ -870,7 +870,7 @@ entry .Debug
         + unique avec un `Jdwp.StepSize` (`Line` par défaut) et des modificateurs `ClassExclude`
         + pour chaque motif de `excluding`, et renvoie l'identifiant de requête. La VM rapporte
         + l'atterrissage sous forme de `Jdwp.Event.SingleStep` sur `Debug#events`, où qu'il soit —
-        + dans le JDK, une méthode de transfert ou un corps inliné — et l'appelant reprend.
+        + dans le JDK, un redirecteur ou un corps inliné — et l'appelant reprend.
   entry #pause
     info
         - suspends a thread on the caller's initiative and hands back a `Halt` over its top frame
@@ -1056,7 +1056,7 @@ entry .Debug
         - One case, `Logpoint(message)`, tagged `Log.Runtime` and logged at `info` by
         - `Debug#logpoint`. A `Debug.Event is Loggable` must be in scope to install a logpoint;
         - `logging.silentLogging` discards them.
-        + Un seul cas, `Logpoint(message)`, étiqueté `Log.Runtime` et journalisé au niveau `info`
+        + Un seul cas, `Logpoint(message)`, tagué `Log.Runtime` et journalisé au niveau `info`
         + par `Debug#logpoint`. Un `Debug.Event is Loggable` doit être dans la portée pour installer
         + un logpoint ; `logging.silentLogging` les ignore.
     entry .communicable
@@ -1438,7 +1438,7 @@ entry .Variable
       + de la signature JVM, son type `static` lorsque `Evaluator#variables` a retrouvé le type
       + déclaré dans TASTy, sa valeur `value` sous forme de `Variable.Snapshot` (absente pour une
       + lazy val non forcée), la `provenance` qui indique où se trouve son stockage pour qu'une
-      + écriture sache où aller, si elle est `mutable` (une `var`, emballée dans une cellule de
+      + écriture sache où aller, si elle est `mutable` (une `var`, boxée dans une cellule de
       + référence), et son état `state` — `Forced` ou, pour une lazy val pas encore évaluée,
       + `Unforced`.
 
@@ -1560,7 +1560,7 @@ entry .ObjectId
       - `StringId` and `ClassLoaderId` widen to `ObjectId`, since in JDWP a thread, a thread group,
       - a string and a class loader all *are* objects; `ReferenceTypeId`, `MethodId`, `FieldId` and
       - `FrameId` do not. The null object is `Jdwp.Ref.empty`, tested with the `empty` extension.
-      + Chaque identifiant que distribue la VM est un `Jdwp.Ref` étiqueté par une nature fantôme, si
+      + Chaque identifiant que distribue la VM est un `Jdwp.Ref` tagué par une nature fantôme, si
       + bien que les neuf alias sont distincts à la compilation et gratuits à l'exécution.
       + `ThreadId`, `ThreadGroupId`, `StringId` et `ClassLoaderId` s'élargissent en `ObjectId`,
       + puisqu'en JDWP un thread, un groupe de threads, une chaîne et un chargeur de classes *sont*
@@ -1599,7 +1599,7 @@ entry .FieldId
 entry .FrameId
   info
       - a stack frame's identifier, valid while its thread is suspended: `Jdwp.Ref[Jdwp.Ref.Frame]`
-      + l'identifiant d'une trame de pile, valide tant que son thread est suspendu :
+      + l'identifiant d'un cadre de pile, valide tant que son thread est suspendu :
       + `Jdwp.Ref[Jdwp.Ref.Frame]`
 
 entry .Jdwp
@@ -1632,7 +1632,7 @@ entry .Jdwp
       + Ses composantes sont le `Ref` opaque (avec les alias d'identifiants `ThreadId`, `FrameId` et
       + les autres, construits dessus), les énumérations que porte une requête ou une réponse
       + (`TypeTag`, `SuspendPolicy`, `EventKind`, `StepDepth`, `StepSize`, `Tag`), `Location`, la
-      + `Value` étiquetée, les `Modifier` qui contraignent une requête d'événement, les structures
+      + `Value` taguée, les `Modifier` qui contraignent une requête d'événement, les structures
       + de réponse décodées (`Version`, `ClassInfo`, `MethodInfo`, `FieldInfo`, `LineTable`,
       + `VariableTable`, `Capabilities`, …), les `Event` que renvoie une VM, les codecs big-endian
       + écrits à la main `Reader` et `Writer`, le tramage `Packet`, et `Connection`, le client au
@@ -1664,7 +1664,7 @@ entry .Jdwp
   entry .Ref
     info
         - one opaque `Long` tagged by a phantom kind: the type beneath every JDWP identifier
-        + un `Long` opaque étiqueté par une nature fantôme : le type sous-jacent à tout identifiant
+        + un `Long` opaque tagué par une nature fantôme : le type sous-jacent à tout identifiant
         + JDWP
     detail
         - `Ref[kind]` is a `Long` at runtime and a distinct type per `Ref.Kind` at compile time,
@@ -1677,9 +1677,9 @@ entry .Jdwp
         + compilation, si bien qu'un `ThreadId` ne peut jamais être passé là où un `FieldId` est
         + attendu, tandis que la covariance sur la nature permet à un `ThreadId` de s'élargir en
         + `ObjectId`. `Ref(long)` en crée un et `Ref.empty` est l'objet nul (identifiant zéro) ; les
-        + extensions `long` et `empty` en relisent un. La largeur sur le réseau de chaque nature est
-        + négociée pour chaque connexion (`IdSizes`), ce qui explique pourquoi `Reader` et `Writer`
-        + sont construits avec les tailles.
+        + extensions `long` et `empty` en relisent un. La largeur de transmission de chaque nature
+        + est négociée pour chaque connexion (`IdSizes`), ce qui explique pourquoi `Reader` et
+        + `Writer` sont construits avec les tailles.
     entry .Kind
       info
           - the root of the phantom kinds a reference may carry
@@ -1793,12 +1793,12 @@ entry .Jdwp
     entry .apply
       info
           - `TypeTag(byte)`: the tag for a wire byte, `Class` for an unrecognised one
-          + `TypeTag(byte)` : l'étiquette correspondant à un octet du réseau, `Class` pour un octet
+          + `TypeTag(byte)` : le tag correspondant à un octet du réseau, `Class` pour un octet
           + non reconnu
     entry #id
       info
           - the wire byte
-          + l'octet sur le réseau
+          + l'octet de transmission
   entry .SuspendPolicy
     info
         - how much of the VM to suspend when an event fires: `None`, `EventThread` or `All`
@@ -1821,7 +1821,7 @@ entry .Jdwp
     entry #id
       info
           - the wire byte
-          + l'octet sur le réseau
+          + l'octet de transmission
   entry .EventKind
     info
         - the kinds of event a request may ask for and a composite may report, by their JDWP numbers
@@ -1846,7 +1846,7 @@ entry .Jdwp
     entry #id
       info
           - the wire number
-          + le numéro sur le réseau
+          + le numéro de transmission
   entry .StepDepth
     info
         - the direction of a step: `Into` (0), `Over` (1) or `Out` (2)
@@ -1854,7 +1854,7 @@ entry .Jdwp
     entry #id
       info
           - the wire number
-          + le numéro sur le réseau
+          + le numéro de transmission
   entry .StepSize
     info
         - the grain of a step: `Min` (0), one bytecode instruction, or `Line` (1), one source line
@@ -1863,11 +1863,11 @@ entry .Jdwp
     entry #id
       info
           - the wire number
-          + le numéro sur le réseau
+          + le numéro de transmission
   entry .Tag
     info
         - the tag byte identifying the runtime type of a value on the wire
-        + l'octet d'étiquette qui identifie le type d'exécution d'une valeur sur le réseau
+        + l'octet de tag qui identifie le type d'exécution d'une valeur en transmission
     detail
         - `ArrayTag` (`[`), `ByteTag` (`B`), `CharTag` (`C`), `ObjectTag` (`L`), `FloatTag`
         - (`F`), `DoubleTag` (`D`), `IntTag` (`I`), `LongTag` (`J`), `ShortTag` (`S`), `VoidTag`
@@ -1879,22 +1879,22 @@ entry .Jdwp
         + `DoubleTag` (`D`), `IntTag` (`I`), `LongTag` (`J`), `ShortTag` (`S`), `VoidTag` (`V`),
         + `BooleanTag` (`Z`), `StringTag` (`s`), `ThreadTag` (`t`), `GroupTag` (`g`), `LoaderTag`
         + (`l`) et `ClassTag0` (`c`, ainsi nommé pour ne pas masquer `scala.reflect.ClassTag`). Une
-        + valeur est demandée avec l'étiquette de son type déclaré — le premier caractère d'une
-        + signature JVM — et la réponse porte l'étiquette précise.
+        + valeur est demandée avec le tag de son type déclaré — le premier caractère d'une
+        + signature JVM — et la réponse porte le tag précis.
     entry .apply
       info
           - `Tag(char)`: the tag for a signature or wire character, `ObjectTag` for an unrecognised one
-          + `Tag(char)` : l'étiquette correspondant à un caractère de signature ou du réseau,
+          + `Tag(char)` : le tag correspondant à un caractère de signature ou du réseau,
           + `ObjectTag` pour un caractère non reconnu
     entry .isObject
       info
           - whether a tag's wire payload is an object identifier rather than an inline primitive
-          + si la charge utile d'une étiquette sur le réseau est un identifiant d'objet plutôt
+          + si la charge utile de transmission d'un tag est un identifiant d'objet plutôt
           + qu'une primitive en ligne
     entry #id
       info
           - the wire character
-          + le caractère sur le réseau
+          + le caractère de transmission
   entry .Location
     info
         - an executable location: a reference type, one of its methods, and a bytecode index within it
@@ -1920,7 +1920,7 @@ entry .Jdwp
   entry .Value
     info
         - a tagged value read from or written to a slot, field or array element
-        + une valeur étiquetée lue depuis ou écrite dans un slot, un champ ou un élément de tableau
+        + une valeur taguée lue depuis ou écrite dans un slot, un champ ou un élément de tableau
     detail
         - Primitives are decoded eagerly as `OfByte`, `OfChar`, `OfDouble`, `OfFloat`, `OfInt`,
         - `OfLong`, `OfShort` and `OfBoolean`; `Void` is a void result; and `Reference(tag, id)`
@@ -1928,7 +1928,7 @@ entry .Jdwp
         - interpret. `Halt#assign` takes a `Value` of the variable's erased type.
         + Les primitives sont décodées immédiatement en `OfByte`, `OfChar`, `OfDouble`, `OfFloat`,
         + `OfInt`, `OfLong`, `OfShort` et `OfBoolean` ; `Void` est un résultat void ; et
-        + `Reference(tag, id)` reste un identifiant avec son étiquette d'exécution, que `Halt` et
+        + `Reference(tag, id)` reste un identifiant avec son tag d'exécution, que `Halt` et
         + `Variable.Snapshot` interprètent. `Halt#assign` prend une `Value` du type effacé de la
         + variable.
     entry .inspectable
@@ -1993,7 +1993,7 @@ entry .Jdwp
   entry .ClassInfo
     info
         - a loaded reference type: its tag, identifier, JNI signature and status
-        + un type référence chargé : son étiquette, son identifiant, sa signature JNI et son statut
+        + un type référence chargé : son tag, son identifiant, sa signature JNI et son statut
     entry #tag
       info
           - class, interface or array
@@ -2329,24 +2329,24 @@ entry .Jdwp
     entry #location
       info
           - reads a `Location`: a type tag, reference type, method and index
-          + lit une `Location` : une étiquette de type, un type référence, une méthode et un indice
+          + lit une `Location` : un tag de type, un type référence, une méthode et un indice
     entry #value
       info
           - reads a tagged `Value`
-          + lit une `Value` étiquetée
+          + lit une `Value` taguée
     entry #untaggedValue
       info
           - reads a `Value` whose tag the caller already knows
-          + lit une `Value` dont l'appelant connaît déjà l'étiquette
+          + lit une `Value` dont l'appelant connaît déjà le tag
     entry #arrayRegion
       info
           - reads an array region: one tag for the region, a count, then the elements
-          + lit une région de tableau : une étiquette pour la région, un nombre, puis les éléments
+          + lit une région de tableau : un tag pour la région, un nombre, puis les éléments
       detail
           - A primitive region packs untagged values of its one type; an object region carries
           - ordinarily tagged values, since the elements' runtime types may differ.
-          + Une région primitive regroupe des valeurs non étiquetées de son unique type ; une région
-          + d'objets porte des valeurs étiquetées de manière ordinaire, puisque les types
+          + Une région primitive regroupe des valeurs non taguées de son unique type ; une région
+          + d'objets porte des valeurs taguées de manière ordinaire, puisque les types
           + d'exécution des éléments peuvent différer.
   entry .Writer
     info
@@ -2450,11 +2450,11 @@ entry .Jdwp
     entry #value
       info
           - writes a `Value` with its tag byte
-          + écrit une `Value` avec son octet d'étiquette
+          + écrit une `Value` avec son octet de tag
     entry #untaggedValue
       info
           - writes a `Value` with no tag, for a field write or a primitive array region
-          + écrit une `Value` sans étiquette, pour une écriture de champ ou une région de tableau
+          + écrit une `Value` sans tag, pour une écriture de champ ou une région de tableau
           + primitive
     entry #modifier
       info
@@ -2731,7 +2731,7 @@ entry .Jdwp
           - forwarder by its callee's name; it is package-private, so a caller outside the library
           - can only pass it along. Needs `canGetConstantPool`; without it the pool is empty.
           + Renvoie le pool analysé propre à la bibliothèque, que consulte le filtre de pas pour
-          + reconnaître une méthode de transfert au nom de la méthode qu'elle appelle ; il est privé
+          + reconnaître un redirecteur au nom de la méthode qu'il appelle ; il est privé
           + au package, si bien qu'un appelant extérieur à la bibliothèque ne peut que le
           + transmettre. Exige `canGetConstantPool` ; sans cela, le pool est vide.
     entry #bytecodes
@@ -2792,7 +2792,7 @@ entry .Jdwp
       info
           - `ObjectReference.ReferenceType` (9, 1): an object's runtime type, with its tag
           + `ObjectReference.ReferenceType` (9, 1) : le type d'exécution d'un objet, avec son
-          + étiquette
+          + tag
     entry #fieldValues
       info
           - `ObjectReference.GetValues` (9, 2): the values of an object's fields
@@ -2875,8 +2875,8 @@ entry .Jdwp
     entry #slotValues
       info
           - `StackFrame.GetValues` (16, 1): the values of a frame's slots, each requested with its type's tag
-          + `StackFrame.GetValues` (16, 1) : les valeurs des slots d'une trame, chacun demandé avec
-          + l'étiquette de son type
+          + `StackFrame.GetValues` (16, 1) : les valeurs des slots d'un cadre de pile, chacun
+          + demandé avec le tag de son type
     entry #setSlotValues
       info
           - `StackFrame.SetValues` (16, 2): writes a frame's slots
@@ -3312,12 +3312,12 @@ entry .Dap
       - reserved-word `type` included. They are of use to a program which drives or fakes a DAP
       - client, as the library's tests do; a program debugging a JVM uses `Debug` directly.
       + Le reste de l'objet est le modèle de messages du protocole, le sous-ensemble que parle cet
-      + adaptateur : les types d'arguments sont `Json.Decodable` (ils arrivent), les types de corps
-      + `Json.Encodable` (ils partent), chacun avec son given dans son objet compagnon, et un membre
-      + `Unset` est simplement absent sur le réseau. Les noms de champs reproduisent exactement ceux
-      + de la spécification, `camelCase` et le mot réservé `type` compris. Ils servent à un
-      + programme qui pilote ou simule un client DAP, comme le font les tests de la bibliothèque ;
-      + un programme qui débogue une JVM utilise directement `Debug`.
+      + adaptateur : les types d'arguments sont `Json.Decodable` (ils arrivent), les types de
+      + corps `Json.Encodable` (ils partent), chacun avec son given dans son objet compagnon, et
+      + un membre `Unset` est simplement absent en transmission. Les noms de champs reproduisent
+      + exactement ceux de la spécification, `camelCase` et le mot réservé `type` compris. Ils
+      + servent à un programme qui pilote ou simule un client DAP, comme le font les tests de la
+      + bibliothèque ; un programme qui débogue une JVM utilise directement `Debug`.
   refer vivisection.Debug
   refer vivisection.Debuggee
   entry .listen
@@ -3395,7 +3395,7 @@ entry .Dap
     info
         - an exception breakpoint filter the adapter advertises: its id, label and default
         + un filtre de points d'arrêt d'exception qu'annonce l'adaptateur : son identifiant, son
-        + libellé et sa valeur par défaut
+        + étiquette et sa valeur par défaut
     entry #filter
       info
           - the filter's id: `uncaught` or `caught`
@@ -3403,7 +3403,7 @@ entry .Dap
     entry #label
       info
           - the label shown to the user
-          + le libellé montré à l'utilisateur
+          + l'étiquette montrée à l'utilisateur
     entry #default
       info
           - whether the filter starts enabled
@@ -4052,7 +4052,7 @@ entry .Dap
   entry .CompletionItem
     info
         - one completion: its label, kind, and the span of the text it replaces
-        + une complétion : son libellé, sa nature, et la plage du texte qu'elle remplace
+        + une complétion : son étiquette, sa nature, et la plage du texte qu'elle remplace
     detail
         - `start` and `length` delimit the region of the request's `text` the completion
         - replaces, in the same one-based units as the request's `column`; when omitted, the

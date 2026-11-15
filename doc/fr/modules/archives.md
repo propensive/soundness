@@ -99,7 +99,7 @@ work.create[Directory](CreateFlag.Parents)
 + column  Entrée
 + column  Ouvert en
 + column  Poignée
-+ column  Drapeaux d'ouverture
++ column  Indicateurs d'ouverture
 + column  Erreur
 + row  ZIP  `Zipfile`  `Zip.Entry`  `Zip`  `zipfile`  aucun  `Zip.Error`
 + row  JAR  `Zipfile`  `Zip.Entry`  `Jar`  `zipfile`, avec `manifest`  aucun  `Zip.Error`
@@ -163,7 +163,7 @@ Out.println(hello.entry(t"hello.txt".as[Path on Zip]).read[Text])
 - row  `centralExtra`  the central directory's extra field
 + column  Champ
 + column  Contient
-+ row  `flags`  les drapeaux à usage général
++ row  `flags`  les indicateurs à usage général
 + row  `versionMadeBy`  la « version made by »
 + row  `localVersion`  la « version needed » de l'en-tête local
 + row  `centralVersion`  la « version needed » du répertoire central
@@ -308,7 +308,7 @@ Tarfile.read(tarball.gzip.decompress[Gzip]).each(entry => Out.println(entry.entr
 - Opening the archive as `Tar` scopes the underlying source, as a ZIP archive is scoped, and takes
 - the compression as a flag. `tar` is the open handle:
 + Ouvrir l'archive en tant que `Tar` délimite la portée de la source sous-jacente, comme pour une
-+ archive ZIP, et prend la compression comme drapeau. `tar` est la poignée ouverte :
++ archive ZIP, et prend la compression comme indicateur. `tar` est la poignée ouverte :
 
 ```scala fuel
 run
@@ -388,7 +388,7 @@ unpacked.archive[Ar]().entries.each(entry => Out.println(entry.name))
 + column  Résultat
 + column  Liens symboliques
 + column  Répertoires
-+ column  Drapeaux
++ column  Indicateurs
 + row  `Tar`  `Tarfile`  stockés ou suivis, selon la politique de liens symboliques de `filesystemOptions`  stockés comme entrées  `Archive.Flag`, `LongNameFormat`
 + row  `Zip`  `Zipfile`  suivis  stockés comme entrées  `Zip.Compression`
 + row  `Ar`  `Arfile`  suivis  aplatis, chaque fichier étant nommé par son chemin relatif joint par des barres obliques  `Archive.Flag`
@@ -398,7 +398,7 @@ unpacked.archive[Ar]().entries.each(entry => Out.println(entry.name))
 - timestamp of every entry. They are `tar --owner`, `--group` and `--mtime`, the knobs of a
 - reproducible build. A `LongNameFormat` chooses tar's convention for long names. A ZIP takes a
 - `Zip.Compression` instead:
-+ Des drapeaux ajustent l'archivage. `Archive.Flag.Owner` et `Archive.Flag.Mtime` remplacent le
++ Des indicateurs ajustent l'archivage. `Archive.Flag.Owner` et `Archive.Flag.Mtime` remplacent le
 + propriétaire et l'horodatage de chaque entrée. Ce sont les `tar --owner`, `--group` et
 + `--mtime`, les réglages d'un build reproductible. Un `LongNameFormat` choisit la convention de
 + tar pour les noms longs. Un ZIP prend plutôt une `Zip.Compression` :
@@ -436,7 +436,7 @@ val deb = Arfile(List(control))
 + La lecture est le miroir de `Tarfile.read`. Les entrées s'analysent paresseusement depuis un
 + flux d'octets, en une seule passe et dans l'ordre, le corps de chaque membre étant diffusé en
 + morceaux bornés, et mémoïsé si la séquence le dépasse. Ouvrir en tant que `Ar` délimite la
-+ portée de la source comme le fait `Tar`, avec `ar` comme poignée. Il n'y a pas de drapeaux, car
++ portée de la source comme le fait `Tar`, avec `ar` comme poignée. Il n'y a pas d'indicateurs, car
 + un `*.deb` est du `ar` simple, et seuls ses membres sont compressés :
 
 ```scala fuel

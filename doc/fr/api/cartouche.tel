@@ -705,7 +705,7 @@ entry .Arranger
           - not repeatable.
           + Un appel au-delà de ceux enregistrés, ou un appel dont la caption diffère de celle de la
           + première exécution à la même place dans l'ordre, reçoit une réponse provisoire et
-          + positionne ce drapeau : le corps n'était pas répétable.
+          + positionne cet indicateur : le corps n'était pas répétable.
   entry .Greedy
     info
         - places each caption in priority order at its best spot given those already placed

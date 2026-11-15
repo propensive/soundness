@@ -494,7 +494,7 @@ Out.println(enumerable.index(Direction.East).show)
 - This is the machinery beneath `As[Direction]`, beneath [bit flags](flags.md), and beneath the
 - handling of enumerations in every format's derived codecs, so all of them agree about what a
 - case is called.
-+ C'est la mécanique sous-jacente à `As[Direction]`, aux [drapeaux de bits](flags.md), et au
++ C'est la mécanique sous-jacente à `As[Direction]`, aux [indicateurs de bits](flags.md), et au
 + traitement des énumérations dans les codecs dérivés de chaque format ; tous s'accordent donc sur
 + le nom d'un cas.
 

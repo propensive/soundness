@@ -4,6 +4,45 @@ tel 1.0
 # `[tactic]`, or `[tactics][tactic]` for an inflected form — shows its definition when pointed
 # at, and leads to the page named by its `link`. doc/standards/style.md says when to add one.
 
+define accruing
+  term cumulatif
+  definition
+      - Describes a [strategy], such as `validate`, which records each error and lets the work
+      - continue, then gathers every recorded error into one, instead of stopping at the first.
+      + Se dit d'une [stratégie], comme `validate`, qui enregistre chaque erreur et laisse le
+      + travail continuer, puis réunit toutes les erreurs enregistrées en une seule, au lieu de
+      + s'arrêter à la première.
+
+define armored
+  term armuré
+  definition
+      - Describes binary data, such as a key, a certificate or a signature, written as ASCII text,
+      - in Base64 between `-----BEGIN …-----` and `-----END …-----` lines, as PEM does, so that it
+      - can be copied as text.
+      + Se dit de données binaires, comme une clé, un certificat ou une signature, écrites sous
+      + forme de texte ASCII, en Base64 entre des lignes `-----BEGIN …-----` et `-----END …-----`,
+      + comme le fait PEM, si bien qu'un texte armuré se copie comme n'importe quel texte.
+
+define boxing
+  term boxé
+  definition
+      - Wrapping a primitive value, such as an `Int` or a `Double`, in an object on the heap, so
+      - that it can be used where an object is expected, at the cost of an allocation. An unboxed
+      - value is stored as the primitive itself.
+      + Se dit d'une valeur primitive, comme un `Int` ou un `Double`, enveloppée dans un objet sur
+      + le tas pour être utilisée là où un objet est attendu, au prix d'une allocation. Une valeur
+      + non boxée est stockée sous la forme de la primitive elle-même.
+
+define brand
+  term marque
+  definition
+      - A marker in a value's type which records where the value came from, or a fact about it, as
+      - in `Ratel.Row of brand`, so that a row can be read only through the reader which it came
+      - from.
+      + Un marqueur dans le type d'une valeur qui enregistre sa provenance ou un fait la concernant,
+      + comme dans `Ratel.Row of brand`, de sorte qu'une ligne ne puisse être lue que par le lecteur
+      + dont elle provient.
+
 define capability
   term capacité
   definition
@@ -13,6 +52,26 @@ define capability
       + Une valeur qui doit être dans la portée pour qu'une opération soit permise, comme `Online`
       + pour une requête réseau. Une méthode qui en a besoin le dit dans sa signature, si bien que ce
       + qu'une méthode peut faire se voit dans son type.
+
+define capture checking
+  term contrôle des captures
+  definition
+      - An experimental check of the Scala 3 compiler which tracks the [capabilities][capability]
+      - each value captures, so that one lent to a scope cannot escape it, for example by being
+      - stored or returned.
+      + Une vérification expérimentale du compilateur Scala 3 qui suit les [capacités][capacité] que
+      + capture chaque valeur, de sorte qu'une capacité prêtée à une portée ne puisse pas s'en
+      + échapper, par exemple en étant stockée ou renvoyée.
+
+define carrier
+  term porteur
+  definition
+      - Something which carries what another thing describes: the Scala type which holds a body of
+      - a given media type, such as `Json` for `application/json`; or a thread which runs, in
+      - turn, the tasks handed to it, as in a pool.
+      + Ce qui porte ce qu'une autre chose décrit : le type Scala qui contient un corps d'un type de
+      + média donné, comme `Json` pour `application/json` ; ou un thread porteur qui exécute, à tour
+      + de rôle, les tâches qui lui sont confiées, comme dans un pool.
 
 define choice package
   term package de choix
@@ -24,6 +83,51 @@ define choice package
       + Un package de [givens][given] alternatifs pour une même décision, comme `strategies`,
       + `alphabets` ou `httpBackends`. Importer un de ses membres par son nom fait ce choix pour tout
       + ce qui est dans la portée.
+
+define chunk
+  term morceau
+  definition
+      - One of the pieces in which a stream delivers its data, such as a block of bytes. Code
+      - which reads a stream must allow for a boundary, such as the end of a line, falling between
+      - two chunks.
+      + Un des morceaux par lesquels un flux livre ses données, comme un bloc d'octets. Le code qui
+      + lit un flux doit admettre qu'une frontière, comme une fin de ligne, puisse tomber entre deux
+      + morceaux.
+
+define cipher
+  term algorithme de chiffrement
+  definition
+      - An algorithm which encrypts and decrypts data with a key, such as AES or RSA. The type of
+      - a key names its cipher, so a key cannot be used with another.
+      + Un algorithme qui chiffre et déchiffre des données au moyen d'une clé, comme AES ou RSA. Le
+      + type d'une clé nomme son algorithme de chiffrement, si bien qu'une clé ne peut pas servir
+      + avec un autre.
+
+define classloader
+  term chargeur de classes
+  definition
+      - The JVM object which finds and loads compiled classes and resources, from a classpath or
+      - elsewhere. Resources and services are looked up through the `Classloader` in scope.
+      + L'objet de la JVM qui trouve et charge les classes compilées et les ressources, depuis un
+      + classpath ou ailleurs. Les ressources et les services sont recherchés au moyen du
+      + `Classloader` dans la portée.
+
+define clock tick
+  term tic
+  definition
+      - One step of a clock which drives repeated work, such as a frame of an animation or an event
+      - reporting progress. It is a different thing from a [tick] on the axis of a chart.
+      + Un pas d'une horloge qui rythme un travail répété, comme une image d'une animation ou un
+      + événement qui signale une progression. Ce n'est pas la même chose qu'une [graduation] sur l'axe
+      + d'un graphique.
+
+define command-line flag
+  term option
+  definition
+      - A named argument to a command-line program, written with a leading `--`, such as
+      - `--verbose` or `--log-level`, which may take a value.
+      + Un argument nommé d'un programme en ligne de commande, écrit avec un `--` initial, comme
+      + `--verbose` ou `--log-level`, et qui peut prendre une valeur.
 
 define compiletime
   term compilation
@@ -44,6 +148,35 @@ define contextual value
       + Une valeur que le compilateur trouve dans la portée et passe à une méthode sans qu'elle soit
       + écrite comme argument. Elle se déclare avec `given` et se demande avec `using`.
 
+define cooked mode
+  term mode canonique
+  definition
+      - The ordinary mode of a terminal, in which input is delivered a line at a time, with echo
+      - and with line editing, such as Backspace, handled by the terminal driver. Its opposite,
+      - raw mode, delivers each keypress as it is typed.
+      + Le mode ordinaire d'un terminal, dans lequel l'entrée est livrée ligne par ligne, avec
+      + l'écho et l'édition de ligne, comme la touche Retour arrière, gérés par le pilote du
+      + terminal. Son contraire, le mode brut, livre chaque frappe de touche dès qu'elle est saisie.
+
+define daemon
+  term démon
+  definition
+      - A program which keeps running in the background and serves each invocation of a command,
+      - received from a small launcher, so that the command starts at once. In concurrency, a
+      - `daemon` is a task which is started and left to run until its scope ends.
+      + Un programme qui reste en cours d'exécution en arrière-plan et sert chaque invocation d'une
+      + commande, reçue d'un petit lanceur, de sorte que la commande démarre aussitôt. En
+      + concurrence, un `daemon` est une tâche lancée puis laissée en cours jusqu'à la fin de sa
+      + portée.
+
+define demangle
+  term démangler
+  definition
+      - To turn a name as the JVM sees it, encoded by the Scala compiler, such as `Foo$` or
+      - `$anonfun$1`, back into the name which was written in the source.
+      + Ramener un nom tel que la JVM le voit, encodé par le compilateur Scala, comme `Foo$` ou
+      + `$anonfun$1`, au nom qui était écrit dans le code source.
+
 define derivation
   term dérivation
   definition
@@ -52,6 +185,15 @@ define derivation
       + Le fait de laisser le compilateur construire une instance de [classe de types] pour une case
       + class ou une énumération à partir des instances de ses champs ou de ses cas, au lieu de
       + l'écrire à la main.
+
+define digest
+  term condensé
+  definition
+      - The fixed-length value which a hash algorithm, such as SHA-256, computes from any data or
+      - any value. Its type names the algorithm, and equal inputs always give equal digests.
+      + La valeur de longueur fixe qu'un algorithme de hachage, comme SHA-256, calcule à partir de
+      + données ou d'une valeur quelconque. Son type nomme l'algorithme, et des entrées égales
+      + donnent toujours des condensés égaux.
 
 define direct style
   term style direct
@@ -62,6 +204,14 @@ define direct style
       + utilisées directement, sans envelopper les résultats dans une monade comme `Either`, `Try` ou
       + `Future`.
 
+define endpoint
+  term endpoint
+  definition
+      - The address at which a service is reached, and which a client connects to, such as a host
+      - and a port, a URL, or a command to start.
+      + L'adresse à laquelle on atteint un service, et à laquelle un client se connecte, comme un
+      + hôte et un port, une URL, ou une commande à lancer.
+
 define enumeration
   term énumération
   keyword enum
@@ -71,6 +221,117 @@ define enumeration
       + Un type déclaré avec `enum` dont les cas forment une liste fixe de valeurs, connue du
       + compilateur, chacune avec un ordinal qui donne sa position dans la déclaration.
 
+define evidence
+  term preuve
+  definition
+      - A [contextual value] whose presence proves something which the compiler cannot otherwise
+      - know, such as that one type is a subtype of another, or that a tool is available, and
+      - which a method demands before it can be called.
+      + Une [valeur contextuelle] dont la présence prouve quelque chose que le compilateur ne peut
+      + pas savoir autrement, comme le fait qu'un type est un sous-type d'un autre, ou qu'un outil
+      + est disponible, et qu'une méthode exige comme preuve avant de pouvoir être appelée.
+
+define face
+  term fonte
+  definition
+      - One style of a [typeface], a `Face`, chosen by its weight, slant and features, such as
+      - Inter in bold italic.
+      + Un style d'une [famille de polices], un `Face`, choisi par sa graisse, son inclinaison et
+      + ses fonctionnalités, comme Inter en gras italique.
+
+define fan-out
+  term diffusion
+  definition
+      - Distributing work or data from one source to many recipients, such as a batch of small
+      - tasks spread across threads, or one stream delivered to several consumers.
+      + La diffusion d'un travail ou de données d'une source unique vers de nombreux destinataires,
+      + comme un lot de petites tâches réparties sur des threads, ou un flux livré à plusieurs
+      + consommateurs.
+
+define fingerprint
+  term empreinte
+  definition
+      - A short value computed from some content, such as a schema or a key, which identifies it:
+      - comparing fingerprints confirms that two parties hold the same content without comparing
+      - the content itself.
+      + Une valeur courte calculée à partir d'un contenu, comme un schéma ou une clé, qui
+      + l'identifie : comparer des empreintes permet de s'assurer que deux parties détiennent le
+      + même contenu sans comparer le contenu lui-même.
+
+define fire-and-forget
+  term sans suivi
+  definition
+      - Describes work which is started without waiting for it to finish or for any response, such
+      - as a notification in RPC, a datagram, or a task spawned with `daemon`.
+      + Se dit d'un travail lancé sans suivi, c'est-à-dire sans attendre qu'il se termine ni aucune
+      + réponse, comme une notification en RPC, un datagramme, ou une tâche lancée avec `daemon`.
+
+define flag
+  term indicateur
+  definition
+      - A named yes-or-no setting, often stored as one bit of an integer, as in the flags field of
+      - a binary header. A set of flags is typed by an [enumeration], so a flag from another set
+      - is rejected.
+      + Un réglage nommé à deux états, souvent stocké sur un bit d'un entier, comme dans le champ
+      + des indicateurs d'un en-tête binaire. Un ensemble d'indicateurs est typé par une
+      + [énumération], si bien qu'un indicateur d'un autre ensemble est rejeté.
+
+define focus
+  term focus
+  definition
+      - The position within a structure which code is currently working on, such as a JSON
+      - pointer, maintained by `track` as a traversal descends. An error recorded under `validate`
+      - is paired with the focus where it was raised.
+      + La position, dans une structure, sur laquelle le code travaille en ce moment, comme un
+      + pointeur JSON, maintenue par `track` à mesure qu'un parcours descend. Une erreur enregistrée
+      + sous `validate` est associée au focus où elle a été levée.
+
+define forwarder
+  term redirecteur
+  definition
+      - A method which does nothing but call another definition with the same arguments, such as
+      - one the compiler generates for an `export` clause, so that a member can be reached from
+      - somewhere else.
+      + Une méthode qui ne fait qu'appeler une autre définition avec les mêmes arguments, comme
+      + celle que le compilateur génère pour une clause `export`, afin qu'un membre soit accessible
+      + depuis un autre endroit.
+
+define frame
+  term trame
+  definition
+      - One self-contained unit of a sequence: a message carved from a stream by [framing], a
+      - BinTEL document which travels on its own, or one image of an animation. An entry of a call
+      - stack is a [stack frame].
+      + Une unité autonome d'une séquence : un message découpé dans un flux par le [tramage], un
+      + document BinTEL qui voyage seul, ou une image d'une animation. Une entrée de la pile
+      + d'appels est un [cadre de pile].
+
+define framing
+  term tramage
+  definition
+      - Carving a continuous stream of bytes or text into separate messages, by a length prefix, a
+      - `Content-Length` header or a line ending, so that each message can be read whole.
+      + Le découpage d'un flux continu d'octets ou de texte en messages distincts, au moyen d'un
+      + préfixe de longueur, d'un en-tête `Content-Length` ou d'une fin de ligne, de sorte que
+      + chaque message puisse être lu en entier.
+
+define frozen
+  term gelé
+  definition
+      - Made [immutable] once it has been built: a structure which is filled in by mutation and
+      - then frozen, such as a Bloom filter or a `Topology`, can be shared and queried, but no
+      - longer changed.
+      + Rendu [immuable] une fois construit : une structure remplie par mutation puis gelée, comme
+      + un filtre de Bloom ou une `Topology`, peut être partagée et interrogée, mais plus modifiée.
+
+define getter
+  term accesseur
+  definition
+      - A function or method which reads one part of a value, such as a field. Paired with a
+      - [setter], it makes a lens.
+      + Une fonction ou une méthode qui lit une partie d'une valeur, comme un champ. Associé à un
+      + [mutateur], un accesseur forme une lentille.
+
 define given
   term given
   definition
@@ -78,6 +339,54 @@ define given
       - that has it in scope.
       + Une définition marquée `given`, qui rend une [valeur contextuelle] disponible pour tout code
       + qui l'a dans sa portée.
+
+define grant
+  term droit
+  definition
+      - One of the kinds of access a [handle] is opened with, such as `Read`, `Write` or
+      - `Exclusive`. Grants are carried in the handle's type, so an operation which was not
+      - granted does not compile.
+      + Un des types d'accès avec lesquels une [poignée] est ouverte, comme `Read`, `Write` ou
+      + `Exclusive`. Les droits sont portés par le type de la poignée, si bien qu'une opération qui
+      + n'a pas été accordée ne compile pas.
+
+define grapheme cluster
+  term grappe de graphèmes
+  definition
+      - A sequence of one or more Unicode characters which a reader perceives as a single
+      - character, such as a letter with combining accents, or an emoji built from several code
+      - points.
+      + Une suite d'un ou plusieurs caractères Unicode qu'un lecteur perçoit comme un seul
+      + caractère, comme une lettre avec des accents combinants, ou un emoji formé de plusieurs
+      + points de code.
+
+define handle
+  term poignée
+  definition
+      - A value which gives access to an open resource, such as a file, a canvas or a repository,
+      - for the duration of a scope. Its type says which operations it was opened for, and the
+      - resource is closed when the scope ends.
+      + Une valeur qui donne accès à une ressource ouverte, comme un fichier, un canevas ou un
+      + dépôt, pour la durée d'une portée. Le type de la poignée dit pour quelles opérations elle a
+      + été ouverte, et la ressource est fermée à la fin de la portée.
+
+define handler
+  term gestionnaire
+  definition
+      - A function supplied to be run when something arrives or happens, such as a request
+      - reaching a server or a message from a peer. It decides what is done with it and, for a
+      - request, what response is returned.
+      + Une fonction fournie pour être exécutée quand quelque chose arrive ou se produit, comme une
+      + requête qui parvient à un serveur ou un message d'un pair. Le gestionnaire décide de ce qui
+      + en est fait et, pour une requête, de la réponse renvoyée.
+
+define harness
+  term harnais
+  definition
+      - The code which runs other code under controlled conditions and observes it, such as the
+      - `Harness` which runs a test and records what it captures, or a benchmark harness.
+      + Le code qui exécute un autre code dans des conditions contrôlées et l'observe, comme le
+      + `Harness` qui exécute un test et enregistre ce qu'il capture, ou un harnais de benchmark.
 
 define honest signature
   term signature honnête
@@ -103,6 +412,15 @@ define impossible state
       + Une valeur qui n'aurait pas de sens ou serait invalide, et que les types sont conçus pour
       + rendre irreprésentable, de sorte qu'aucun code n'a besoin de la vérifier.
 
+define interning
+  term internement
+  definition
+      - Storing each distinct value only once, so that storing or creating an equal value again
+      - gives the same instance or reference, and equal values can be compared by identity.
+      + Le fait de ne stocker chaque valeur distincte qu'une seule fois, de sorte que stocker ou
+      + créer à nouveau une valeur égale donne la même instance ou la même référence, et que des
+      + valeurs égales puissent être comparées par identité.
+
 define interpolator
   term interpolateur
   definition
@@ -110,6 +428,92 @@ define interpolator
       - literal's content at [compiletime] and gives a value of a precise type.
       + Un préfixe sur un littéral de chaîne, comme `t"…"`, `url"…"` ou `media"…"`, qui vérifie le
       + contenu du littéral [à la compilation][compilation] et donne une valeur d'un type précis.
+
+define keypress
+  term frappe de touche
+  definition
+      - One key, or combination of keys, pressed at a terminal, which is received as a `Keypress`
+      - value, such as a character, Enter or an arrow key.
+      + Une touche, ou une combinaison de touches, frappée dans un terminal, et reçue sous forme de
+      + valeur `Keypress`, comme un caractère, Entrée ou une touche fléchée.
+
+define label
+  term étiquette
+  definition
+      - A piece of text placed beside the thing it names, such as a point on a chart or a town on
+      - a map; more generally, the short name a value is shown by, such as the label of a PEM
+      - block.
+      + Un texte placé à côté de ce qu'il nomme, comme un point sur un graphique ou une ville sur
+      + une carte ; plus généralement, le nom court sous lequel une valeur est présentée, comme
+      + l'étiquette d'un bloc PEM.
+
+define layout
+  term disposition
+  definition
+      - The arrangement of parts in space or in memory: how a table, a terminal interface or a
+      - chart places its parts, or how the bits of a pixel are allocated among its channels.
+      + La disposition de parties dans l'espace ou en mémoire : la façon dont un tableau, une
+      + interface de terminal ou un graphique place ses éléments, ou dont les bits d'un pixel se
+      + répartissent entre ses canaux.
+
+define lenient
+  term tolérant
+  definition
+      - Describes a decoding policy which reads a missing or malformed optional value as `Unset`
+      - and reports nothing, instead of raising an error as a strict policy does.
+      + Se dit d'une politique de décodage qui lit une valeur optionnelle absente ou mal formée
+      + comme `Unset` sans rien signaler, au lieu de lever une erreur comme le fait une politique
+      + stricte.
+
+define lift
+  term relever
+  definition
+      - To carry a value into a richer setting which represents it, such as a value into a
+      - container, a constant into a quoted expression for a macro, or a fact about a value into
+      - its type.
+      + Faire passer une valeur dans un cadre plus riche qui la représente, comme une valeur dans un
+      + conteneur, une constante dans une expression quotée pour une macro, ou un fait concernant
+      + une valeur dans son type.
+
+define listener
+  term écouteur
+  definition
+      - A value or task which waits for events or connections and acts on each as it arrives, such
+      - as the `Lsp.Listener` which receives what a language server sends unbidden, or a server
+      - waiting for connections on a socket.
+      + Une valeur ou une tâche qui attend des événements ou des connexions et agit sur chacun à son
+      + arrivée, comme le `Lsp.Listener` qui reçoit ce qu'un serveur de langage envoie de lui-même,
+      + ou un serveur qui attend des connexions sur un socket.
+
+define logger
+  term logger
+  definition
+      - The [contextual value] which receives the typed events that a method logs, and writes them
+      - somewhere, such as a terminal, a file or the system log. With no logger in scope, logging
+      - is silent and costs nothing.
+      + La [valeur contextuelle] qui reçoit les événements typés qu'une méthode journalise, et les
+      + écrit quelque part, comme un terminal, un fichier ou le journal système. Sans logger dans la
+      + portée, la journalisation est silencieuse et ne coûte rien.
+
+define media type
+  term type de média
+  definition
+      - The standard name for the format of some data, such as `text/html` or `application/json`,
+      - which accompanies it in an HTTP header or an email, so that the receiver knows how to read
+      - it.
+      + Le nom standard du format de certaines données, comme `text/html` ou `application/json`, qui
+      + les accompagne dans un en-tête HTTP ou un e-mail, pour que le destinataire sache comment les
+      + lire.
+
+define one-shot
+  term à usage unique
+  definition
+      - Usable, or done, only once: a one-shot iterator can be traversed only once, and a one-shot
+      - operation, such as `gzip` on `Data`, processes a whole value in one call rather than
+      - incrementally.
+      + Qui ne sert, ou ne se fait, qu'une fois : un itérateur à usage unique ne peut être parcouru
+      + qu'une fois, et une opération à usage unique, comme `gzip` sur `Data`, traite une valeur
+      + entière en un seul appel plutôt que de façon incrémentale.
 
 define opaque type
   term type opaque
@@ -128,6 +532,78 @@ define optional
       + De type `Optional[T]` : soit une valeur de type `T`, soit `Unset`. Une valeur présente n'est
       + pas enveloppée, elle ne coûte donc rien de plus que la valeur elle-même.
 
+define padding
+  term remplissage
+  definition
+      - Characters or bytes added to a value to bring it to a required length: the spaces which
+      - fill text out to the width of a column, or the bytes which a block cipher appends to fill
+      - its last block.
+      + Des caractères ou des octets ajoutés à une valeur pour l'amener à une longueur requise : les
+      + espaces de remplissage qui complètent un texte jusqu'à la largeur d'une colonne, ou les
+      + octets qu'un algorithme de chiffrement par blocs ajoute pour compléter son dernier bloc.
+
+define pane
+  term volet
+  definition
+      - A rectangular region of a terminal interface which shows one piece of content. Panes are
+      - nested into a tree, which is solved against the size of the terminal.
+      + Une région rectangulaire d'une interface de terminal qui affiche un contenu. Les volets
+      + s'imbriquent en un arbre, résolu en fonction de la taille du terminal.
+
+define park
+  term mettre en attente
+  definition
+      - To suspend a thread or [strand], without consuming processor time, until another unparks
+      - it, as a writer does when its reader falls behind.
+      + Suspendre un thread ou un [brin], sans consommer de temps processeur, jusqu'à ce qu'un autre
+      + le réveille, comme le fait un écrivain quand son lecteur prend du retard.
+
+define pattern match
+  term filtrage par motif
+  definition
+      - Testing a value, in a `match` expression or a pattern elsewhere, against the shape of each
+      - case in turn, and extracting parts of the first one which fits.
+      + Le test d'une valeur, dans une expression `match` ou un motif ailleurs, contre la forme de
+      + chaque cas tour à tour, et l'extraction de parties du premier qui convient.
+
+define payload
+  term charge utile
+  definition
+      - The data which a message or request carries, as distinct from the envelope around it, such
+      - as its method name, its identifier or its headers.
+      + Les données que transporte un message ou une requête, par opposition à l'enveloppe qui les
+      + entoure, comme son nom de méthode, son identifiant ou ses en-têtes.
+
+define permit
+  term permis
+  definition
+      - A [contextual value] which must be imported before a weak or deprecated algorithm, such as
+      - SHA-1, can be used, so that a codebase's acceptance of it is one import, which can be
+      - searched for.
+      + Une [valeur contextuelle] qui doit être importée avant de pouvoir utiliser un algorithme
+      + faible ou obsolète, comme SHA-1, de sorte que l'acceptation de cet algorithme par un code se
+      + résume à un import, qu'on peut rechercher.
+
+define probate
+  term homologation
+  definition
+      - The [contextual value] which decides what happens to a child task that is still running
+      - when the body of its parent completes: whether it is canceled, waited for, or treated as
+      - an error.
+      + La [valeur contextuelle] qui décide du sort d'une tâche enfant encore en cours quand le
+      + corps de son parent se termine : selon l'homologation, elle est annulée, attendue, ou
+      + traitée comme une erreur.
+
+define provision
+  term fourniture
+  definition
+      - A [given] instance of `Typesettable` for a [typeface] in a medium, which says how that
+      - medium obtains the font and which faces it can then set. A font of the typeface exists
+      - only where its provision is in scope.
+      + Une instance [given] de `Typesettable` pour une [famille de polices] dans un médium, qui dit
+      + comment ce médium obtient la police et quelles fontes il peut alors composer. Une police de
+      + cette famille n'existe que là où sa fourniture est dans la portée.
+
 define raises
   term raises
   definition
@@ -135,6 +611,40 @@ define raises
       - method can fail with that error. It requires a [tactic] for the error from the caller.
       + Le type infixe d'un type de retour, comme dans `Text raises ParseError`, qui déclare qu'une
       + méthode peut échouer avec cette erreur. Il exige de l'appelant une [tactique] pour l'erreur.
+
+define reason
+  term raison
+  definition
+      - The part of an error which says why it happened, usually a case of an [enumeration], such
+      - as `Json.Error.Reason.Absent`, so that code can tell one cause from another without
+      - reading a message.
+      + La partie d'une erreur qui dit pourquoi elle s'est produite, en général un cas d'une
+      + [énumération], comme `Json.Error.Reason.Absent`, si bien que le code peut distinguer une
+      + cause d'une autre sans lire de message.
+
+define receiver
+  term receveur
+  definition
+      - The value on which a method is called, such as `x` in `x.f(y)`; also, in a protocol, the
+      - party which receives a message.
+      + La valeur sur laquelle une méthode est appelée, comme `x`, receveur de `x.f(y)` ; aussi,
+      + dans un protocole, la partie qui reçoit un message.
+
+define remote
+  term dépôt distant
+  definition
+      - Another copy of a Git repository, named in the local one, such as `origin`, which commits
+      - are fetched from and pushed to.
+      + Une autre copie d'un dépôt Git, nommée dans le dépôt local comme dépôt distant, par exemple
+      + `origin`, dont on récupère les commits et vers laquelle on les pousse.
+
+define runner
+  term exécuteur
+  definition
+      - A program or value which runs code supplied by another, such as a test runner which runs
+      - the tests of a suite, or the launcher which runs as the client of a daemon.
+      + Un programme ou une valeur qui exécute du code fourni par un autre, comme un exécuteur de
+      + tests qui lance les tests d'une suite, ou le lanceur qui s'exécute comme client d'un démon.
 
 define runtime
   term exécution
@@ -145,6 +655,34 @@ define runtime
       + Le moment où le programme s'exécute. Une erreur à l'exécution est une erreur que le
       + compilateur n'a pas pu exclure, et qui est signalée par une [tactique] quand elle survient.
 
+define scratch
+  term temporaire
+  definition
+      - Describes a file or directory which is created for the duration of a scope, and removed
+      - when the scope ends, whether it succeeds or fails, as for a throwaway index or a test
+      - fixture.
+      + Se dit d'un fichier ou d'un répertoire créé pour la durée d'une portée, et supprimé à la fin
+      + de celle-ci, qu'elle réussisse ou échoue, comme pour un index jetable ou une fixture de
+      + test.
+
+define scrutinee
+  term valeur filtrée
+  definition
+      - The value being examined by a `match` expression or an extractor, which the pattern of
+      - each case is tested against.
+      + La valeur examinée par une expression `match` ou un extracteur, à laquelle le motif de
+      + chaque cas est confronté.
+
+define seam
+  term jonction
+  definition
+      - The narrow point where one part of a system meets another which can be replaced, such as
+      - the few primitive operations through which a library reaches the platform beneath it. A
+      - different platform is supported by implementing the seam alone.
+      + Le point étroit où une partie d'un système en rencontre une autre, remplaçable, comme les
+      + quelques opérations primitives par lesquelles une bibliothèque atteint la plateforme
+      + sous-jacente. Une autre plateforme se prend en charge en implémentant seulement la jonction.
+
 define session
   term session
   definition
@@ -152,6 +690,16 @@ define session
       - scope, and closes it when the scope ends.
       + Une portée qui ouvre une ressource, comme une connexion, la prête au code à l'intérieur de la
       + portée, et la ferme quand la portée se termine.
+
+define setter
+  term mutateur
+  definition
+      - A function or method which replaces one part of a value, such as a field. For an
+      - [immutable] value it returns a new value with that part replaced. Paired with a [getter],
+      - it makes a lens.
+      + Une fonction ou une méthode qui remplace une partie d'une valeur, comme un champ. Pour une
+      + valeur [immuable], elle renvoie une nouvelle valeur où cette partie est remplacée. Associé à
+      + un [accesseur], un mutateur forme une lentille.
 
 define singleton type
   term type singleton
@@ -162,6 +710,64 @@ define singleton type
       + Le type d'une seule valeur, comme le type d'un cas particulier d'une [énumération]. Un
       + paramètre de type singleton doit recevoir une valeur que le compilateur peut identifier, et non
       + une valeur calculée [à l'exécution][exécution].
+
+define sink
+  term puits
+  definition
+      - A destination which a stream of data is written to, such as a file, a socket or the input
+      - of a process; the counterpart of a source. A log sink is where a logger writes its events.
+      + Une destination dans laquelle un flux de données est écrit, comme un fichier, un socket ou
+      + l'entrée d'un processus ; la contrepartie d'une source. Un puits de journalisation est
+      + l'endroit où un logger écrit ses événements.
+
+define span
+  term étendue
+  definition
+      - A contiguous stretch of something, given by where it starts and where it ends: a fragment
+      - of inline code in Markdown, a cell extending over several columns, or a range of a
+      - sequence.
+      + Une portion contiguë de quelque chose, délimitée par son début et sa fin : un fragment de
+      + code en ligne en Markdown, une cellule qui s'étend sur plusieurs colonnes, ou une plage
+      + d'une séquence.
+
+define stack frame
+  term cadre de pile
+  definition
+      - One entry of a [stack trace]: a method which was executing, with its class, and the file
+      - and line it had reached.
+      + Une entrée d'une [trace de pile] : une méthode en cours d'exécution, avec sa classe, ainsi
+      + que le fichier et la ligne qu'elle avait atteints.
+
+define stack trace
+  term trace de pile
+  definition
+      - The list of method calls which were in progress at one moment, innermost first, as
+      - recorded when an exception or error is created. Each entry is a [stack frame].
+      + La liste des appels de méthode en cours à un instant donné, du plus interne au plus externe,
+      + telle qu'elle est enregistrée quand une exception ou une erreur est créée. Chaque entrée est
+      + un [cadre de pile].
+
+define staging
+  term mise en étapes
+  definition
+      - Running a program in stages, where code quoted as `'{…}` in one stage is compiled and run
+      - in a later one. Soundness generalizes it, so that quoted code can run in another
+      - environment, such as a fresh JVM, and return its result.
+      + L'exécution d'un programme par étapes, où du code quoté sous la forme `'{…}` dans une étape
+      + est compilé et exécuté dans une étape ultérieure. Soundness généralise la mise en étapes,
+      + pour que le code quoté puisse s'exécuter dans un autre environnement, comme une nouvelle
+      + JVM, et renvoyer son résultat.
+
+define strand
+  term brin
+  definition
+      - The unit of execution beneath a task: an abstraction of a thread with the four operations
+      - which suspension needs, which are interrupt, join, park and unpark. A supervisor supplies
+      - strands, so a scheduler which is not built on threads can be plugged in.
+      + L'unité d'exécution sous-jacente à une tâche : une abstraction de thread dotée des quatre
+      + opérations dont la suspension a besoin, à savoir interrompre, joindre, mettre en attente et
+      + réveiller. Un superviseur fournit les brins, si bien qu'un ordonnanceur qui ne repose pas
+      + sur des threads peut y être branché.
 
 define strategy
   term stratégie
@@ -174,6 +780,22 @@ define strategy
       + lève une exception, `safely` donne `Unset`, `capture` renvoie l'erreur. Une stratégie fournit
       + la [tactique] qu'une méthode faillible demande.
 
+define summon
+  term invoquer
+  definition
+      - To ask the compiler for the [contextual value] of a type which is in scope, by writing
+      - `summon[T]`, instead of receiving it as a parameter.
+      + Demander au compilateur la [valeur contextuelle] d'un type qui est dans la portée, en
+      + écrivant `summon[T]`, au lieu de la recevoir en paramètre.
+
+define swatch
+  term pastille
+  definition
+      - A small sample of a color, such as the square beside the name of a series in the legend of
+      - a chart.
+      + Un petit échantillon d'une couleur, comme le carré placé à côté du nom d'une série dans la
+      + légende d'un graphique.
+
 define tactic
   term tactique
   definition
@@ -182,6 +804,87 @@ define tactic
       + Une [valeur contextuelle] de type `Tactic[E]` dont une méthode a besoin pour signaler une
       + erreur de type `E`. Celui qui fournit la tactique décide de la manière dont l'échec est
       + traité.
+
+define tag
+  term tag
+  definition
+      - A short marker attached to a value to say what kind of value it is or what it is called,
+      - such as the name of an HTML element, the type of a YAML node or of an ASN.1 value, or the
+      - name given to a Git commit.
+      + Un marqueur court attaché à une valeur pour dire de quel genre de valeur il s'agit ou
+      + comment elle s'appelle, comme le nom d'un élément HTML, le type d'un nœud YAML ou d'une
+      + valeur ASN.1, ou le nom donné à un commit Git.
+
+define tagged union
+  term union étiquetée
+  definition
+      - A type whose values are each one of several cases, with a [tag] saying which case it is,
+      - such as a sealed trait or an enumeration, or a JSON object with a field naming its case.
+      + Un type dont chaque valeur est l'un de plusieurs cas, avec un [tag] qui indique de quel cas il
+      + s'agit, comme un trait scellé ou une énumération, ou un objet JSON dont un champ nomme le cas.
+
+define text wrapping
+  term retour à la ligne
+  definition
+      - Breaking text into lines which fit a given width, at spaces or at permitted hyphenation
+      - points, as when text is set in a terminal or a table.
+      + Le découpage d'un texte en lignes qui tiennent dans une largeur donnée, avec un retour à la
+      + ligne aux espaces ou aux points de césure permis, comme lorsqu'un texte est disposé dans un
+      + terminal ou un tableau.
+
+define tick
+  term graduation
+  definition
+      - A short mark on the axis of a chart at a regular value, usually with a label which gives
+      - that value.
+      + Un court trait sur l'axe d'un graphique, à une valeur régulière, généralement accompagné
+      + d'une étiquette qui donne cette valeur.
+
+define timeline
+  term ligne de temps
+  definition
+      - A physical scale of time, such as Unix time or TAI, on which an instant is placed. The
+      - type of an instant names its timeline, as in `Instant over Unix`.
+      + Une échelle physique du temps, comme le temps Unix ou le TAI, sur laquelle un instant est
+      + placé. Le type d'un instant nomme sa ligne de temps, comme dans `Instant over Unix`.
+
+define timespan
+  term durée calendaire
+  definition
+      - A quantity of calendar time, in years, months, weeks, days, hours and minutes, whose
+      - length in seconds depends on when it is applied. A `Duration`, by contrast, is a fixed
+      - number of seconds.
+      + Une quantité de temps calendaire, en années, mois, semaines, jours, heures et minutes, dont
+      + la longueur en secondes dépend du moment où elle s'applique. Une `Duration`, au contraire,
+      + est un nombre fixe de secondes.
+
+define tokenizer
+  term analyseur lexical
+  definition
+      - The first stage of parsing, which splits source text into tokens, such as keywords,
+      - identifiers, literals and punctuation, before their structure is analyzed.
+      + La première étape de l'analyse, qui découpe un texte source en jetons, comme des mots-clés,
+      + des identifiants, des littéraux et de la ponctuation, avant que leur structure soit
+      + analysée.
+
+define toolchain
+  term toolchain
+  definition
+      - The set of tools which together turn source code into something which can run, such as a
+      - compiler, a linker and a packager, with the versions and settings they are run with.
+      + L'ensemble des outils qui, ensemble, transforment du code source en quelque chose
+      + d'exécutable, comme un compilateur, un éditeur de liens et un outil d'empaquetage, avec les
+      + versions et les réglages avec lesquels ils s'exécutent.
+
+define trailer
+  term trailer
+  definition
+      - Data which comes after the main content of a message or file, rather than before it, such
+      - as the HTTP trailers sent after the body of a response, or the structure at the end of a
+      - ZIP archive or a PDF file.
+      + Des données qui viennent après le contenu principal d'un message ou d'un fichier, et non
+      + avant, comme les trailers HTTP envoyés après le corps d'une réponse, ou la structure située
+      + à la fin d'une archive ZIP ou d'un fichier PDF.
 
 define typeclass
   term classe de types
@@ -195,3 +898,38 @@ define typeclass
       + comparé, avec une instance pour chaque type qui l'a. Une instance est trouvée comme une
       + [valeur contextuelle], si bien qu'un type acquiert une aptitude sans être modifié.
       + `Color is Showable` est l'instance qui rend `Color` affichable.
+
+define typeface
+  term famille de polices
+  definition
+      - A font family, such as Inter, named by a `Typeface`, independently of any weight, slant or
+      - file. A [face] chooses one style from it.
+      + Une famille de polices, comme Inter, nommée par un `Typeface`, indépendamment de toute
+      + graisse, inclinaison ou fichier. Une [fonte] y choisit un style.
+
+define variant
+  term variante
+  definition
+      - One of several alternative forms of the same thing, such as the URL-safe alphabet of
+      - Base64, a dialect of delimited text, or one alternative of a TEL select.
+      + Une des formes alternatives d'une même chose, comme l'alphabet de Base64 sûr pour les URL,
+      + un dialecte de texte délimité, ou une alternative d'une sélection TEL.
+
+define viewport
+  term zone d'affichage
+  definition
+      - The rectangle in which something is shown, such as the visible area of a browser window,
+      - which CSS units like `Vw` are fractions of, or the area an SVG image is drawn in.
+      + Le rectangle dans lequel quelque chose est affiché, comme la partie visible d'une fenêtre de
+      + navigateur, dont les unités CSS telles que `Vw` sont des fractions, ou la zone d'affichage
+      + dans laquelle une image SVG est dessinée.
+
+define wire form
+  term forme de transmission
+  definition
+      - The form a value takes when it is sent between programs, in a protocol or a serialized
+      - format, as distinct from its form in Scala: the name a field is sent under, the code an
+      - error is sent as, or the bytes of its encoding.
+      + La forme que prend une valeur quand elle est transmise entre programmes, dans un protocole
+      + ou un format sérialisé, par opposition à sa forme en Scala : le nom sous lequel un champ est
+      + transmis, le code sous lequel une erreur l'est, ou les octets de son encodage.

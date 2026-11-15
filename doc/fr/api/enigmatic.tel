@@ -40,7 +40,7 @@ detail
     + Les clés sont typées par leur algorithme de chiffrement. Une `PrivateKey[cipher]` ou
     + une `SymmetricKey[cipher]` n'expose jamais ses octets : elle s'utilise à l'intérieur
     + d'un bloc `uncloak`, qui prête la clé au bloc sous la forme d'une capacité
-    + `Encryptor` ou `Decryptor` que la vérification de captures y confine, si bien que
+    + `Encryptor` ou `Decryptor` que le contrôle des captures y confine, si bien que
     + l'endroit où le matériel secret est utilisé est visible dans la structure du code.
     + L'endroit où il est *stocké* entre deux utilisations est le `Cloak` dans la portée,
     + importé par son nom depuis le package `cloaks` : sur le tas, en mémoire hors tas, ou
@@ -442,8 +442,8 @@ entry .Crypto
         - returns the ciphertext with the tag appended; `unseal` is `Unset` when the tag does not
         - verify.
         + Le contrat que remplissent les membres structurels `aesGcm` et `chaCha20Poly1305`.
-        + `seal` renvoie le texte chiffré suivi de l'étiquette ; `unseal` vaut `Unset` lorsque
-        + l'étiquette ne se vérifie pas.
+        + `seal` renvoie le texte chiffré suivi du tag ; `unseal` vaut `Unset` lorsque
+        + le tag ne se vérifie pas.
     entry #generateKey
       info
           - fresh random key material of `bits` bits
@@ -452,11 +452,11 @@ entry .Crypto
       info
           - the ciphertext of `plaintext` under `key` and `nonce`, authenticating `associated` too, with the tag appended
           + le texte chiffré de `plaintext` sous `key` et `nonce`, authentifiant aussi
-          + `associated`, suivi de l'étiquette
+          + `associated`, suivi du tag
     entry #unseal
       info
           - the plaintext of `ciphertext`, or `Unset` if the tag does not verify
-          + le texte clair de `ciphertext`, ou `Unset` si l'étiquette ne se vérifie pas
+          + le texte clair de `ciphertext`, ou `Unset` si le tag ne se vérifie pas
   entry .Random
     info
         - a source of cryptographically strong random bytes
@@ -469,7 +469,7 @@ entry .Crypto
     info
         - raised when decryption or unsealing fails: a wrong key, corrupt data, a bad tag
         + levée lorsque le déchiffrement ou le descellement échoue : mauvaise clé, données
-        + corrompues, étiquette invalide
+        + corrompues, tag invalide
     detail
         - Error 521: _could not decrypt the data because `reason`_. Encryption is total — the
         - types guarantee a valid transformation — so only the processing side can fail:
@@ -521,12 +521,12 @@ entry .Crypto
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `BadPadding`  1  _le texte chiffré était corrompu ou la clé était mauvaise_
-          + row  `IllegalBlockSize`  2  _la longueur de l'entrée n'était pas valide pour l'algorithme_  ce que lève `BlockCipher.NoPadding` pour une entrée qui n'est pas un multiple de la taille de bloc dans un mode aligné sur les blocs
-          + row  `InvalidKey`  3  _la clé n'était pas valide pour l'algorithme_  par exemple du matériel de clé de mauvaise longueur adopté avec `SymmetricKey(bytes)`
-          + row  `InvalidAlgorithm`  4  _l'algorithme n'était pas disponible_
-          + row  `IoFailure`  5  _les données n'ont pas pu être lues ou écrites_  la conversion de toute autre `java.security.GeneralSecurityException`
-          + row  `BadTag`  6  _l'étiquette d'authentification ne s'est pas vérifiée_  provenant de `unseal` : une falsification, une mauvaise clé, ou un nonce ou des données associées différents de ceux du scellement
+          + row  `BadPadding`  1  _the ciphertext was corrupted or the key was wrong_
+          + row  `IllegalBlockSize`  2  _the input length was not valid for the cipher_  ce que lève `BlockCipher.NoPadding` pour une entrée qui n'est pas un multiple de la taille de bloc dans un mode aligné sur les blocs
+          + row  `InvalidKey`  3  _the key was not valid for the cipher_  par exemple du matériel de clé de mauvaise longueur adopté avec `SymmetricKey(bytes)`
+          + row  `InvalidAlgorithm`  4  _the algorithm was not available_
+          + row  `IoFailure`  5  _data could not be read or written_  la conversion de toute autre `java.security.GeneralSecurityException`
+          + row  `BadTag`  6  _the authentication tag did not verify_  provenant de `unseal` : une falsification, une mauvaise clé, ou un nonce ou des données associées différents de ceux du scellement
           ```
     entry #reason
       info
@@ -669,7 +669,7 @@ entry .JavaBaseCrypto
   entry .aesGcm
     info
         - AES/GCM/NoPadding with a 128-bit tag
-        + AES/GCM/NoPadding avec une étiquette de 128 bits
+        + AES/GCM/NoPadding avec un tag de 128 bits
   entry .chaCha20
     info
         - the bare ChaCha20 keystream, with the IETF nonce and counter
@@ -973,7 +973,7 @@ entry .Password
       - flag `path.open[Keystore](…)` takes.
       + Un `Password` est un secret cloaké sans algorithme de chiffrement associé. Son texte
       + clair n'est accessible qu'à l'intérieur de `#uncloak`, sous la forme d'une capacité
-      + `Cleartext` sur un tableau de caractères mutable, que la vérification de captures
+      + `Cleartext` sur un tableau de caractères mutable, que le contrôle des captures
       + confine au bloc et qui est mis à zéro à la sortie du bloc ; ses formes `show` et
       + d'inspection ne le révèlent jamais. Sa construction exige un `Cloak` dans la portée,
       + et c'est l'argument que prend `path.open[Keystore](…)`.
@@ -1124,7 +1124,7 @@ entry .Encryptor
       - with _leaks into outer capture set_. Made only by `uncloak`.
       + Une enveloppe sans état autour du matériel de clé, prêtée à un bloc `uncloak` comme
       + valeur de contexte que prennent les extensions `encrypt`. C'est une
-      + `SharedCapability`, librement partageable au sein du bloc, et la vérification de
+      + `SharedCapability`, librement partageable au sein du bloc, et le contrôle des
       + captures l'y maintient : la renvoyer, ou renvoyer une clôture qui la capture, échoue
       + avec _leaks into outer capture set_. Seul `uncloak` en crée.
 
@@ -1169,8 +1169,8 @@ entry .Authenticated
       - `InitializationVector` drawn at random. Used through the `seal` and `unseal` extensions
       - on a `SymmetricKey`, which need no permit: an AEAD is not `Unauthenticated`.
       + `seal` chiffre le texte clair et authentifie à la fois celui-ci et les données
-      + associées sous un nonce, en ajoutant l'étiquette au texte chiffré ; `unseal` fait
-      + l'inverse, et vaut `Unset` lorsque l'étiquette ne se vérifie pas — une
+      + associées sous un nonce, en ajoutant le tag au texte chiffré ; `unseal` fait
+      + l'inverse, et vaut `Unset` lorsque le tag ne se vérifie pas — une
       + falsification, une mauvaise clé, ou un nonce ou des données associées différents de
       + ceux du scellement. Le nonce ne doit jamais se répéter sous une même clé ; un
       + protocole le dérive d'un compteur, et c'est pourquoi il s'agit d'un argument
@@ -1184,15 +1184,15 @@ entry .Authenticated
   entry #tagSize
     info
         - the tag length in bytes: 16 for both ciphers
-        + la longueur de l'étiquette en octets : 16 pour les deux algorithmes
+        + la longueur du tag en octets : 16 pour les deux algorithmes
   entry #seal
     info
         - the ciphertext with the tag appended
-        + le texte chiffré suivi de l'étiquette
+        + le texte chiffré suivi du tag
   entry #unseal
     info
         - the plaintext, or `Unset` if the tag does not verify
-        + le texte clair, ou `Unset` si l'étiquette ne se vérifie pas
+        + le texte clair, ou `Unset` si le tag ne se vérifie pas
 
 entry .Keystream
   info
@@ -1693,11 +1693,11 @@ entry .PrivateKey
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Malformed(detail)`  1  _le document de clé était mal formé : `detail`_  pas du DER, pas une `PrivateKeyInfo`, pas une `RSAPrivateKey`, un conteneur OpenSSH tronqué
-          + row  `Mismatch(expected, found)`  2  _une clé `expected` était attendue mais `found` a été trouvée_  les noms sont ceux du `KeyAlgorithm`, comme `RSA-4096` et `RSA-2048`, `ECDSA P-384` et `ECDSA P-256`, ou `private` et `a public key block`
-          + row  `Encrypted`  3  _la clé est protégée par une phrase secrète_
-          + row  `Unsupported(detail)`  4  _la clé utilise un `detail` non pris en charge_  par exemple un conteneur OpenSSH contenant plusieurs clés, ou un type de clé qu'OpenSSH nomme mais que cette bibliothèque ne connaît pas
-          + row  `PublicKeyAbsent`  5  _la clé ne porte pas sa clé publique_  un document EC, Ed25519 ou ML-DSA sans son champ optionnel de clé publique, qu'aucun fournisseur ne peut recalculer
+          + row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  pas du DER, pas une `PrivateKeyInfo`, pas une `RSAPrivateKey`, un conteneur OpenSSH tronqué
+          + row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  les noms sont ceux du `KeyAlgorithm`, comme `RSA-4096` et `RSA-2048`, `ECDSA P-384` et `ECDSA P-256`, ou `private` et `a public key block`
+          + row  `Encrypted`  3  _the key is protected by a passphrase_
+          + row  `Unsupported(detail)`  4  _the key uses an unsupported `detail`_  par exemple un conteneur OpenSSH contenant plusieurs clés, ou un type de clé qu'OpenSSH nomme mais que cette bibliothèque ne connaît pas
+          + row  `PublicKeyAbsent`  5  _the key does not carry its public key_  un document EC, Ed25519 ou ML-DSA sans son champ optionnel de clé publique, qu'aucun fournisseur ne peut recalculer
           ```
     entry #reason
       info
@@ -1871,9 +1871,9 @@ entry .PublicKey
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Malformed(detail)`  1  _le document de clé était mal formé : `detail`_  pas un `SubjectPublicKeyInfo`, pas une `RSAPublicKey`, une ligne qui n'est pas du base64 ou pas une clé publique
-          + row  `Mismatch(expected, found)`  2  _une clé `expected` était attendue mais `found` a été trouvée_  avec les noms du `KeyAlgorithm`, comme `ECDSA P-256` et `Ed25519`
-          + row  `Unsupported(detail)`  3  _la clé utilise un `detail` non pris en charge_  par exemple un type de clé ou une courbe OpenSSH pour lesquels cette bibliothèque n'a pas de nom
+          + row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  pas un `SubjectPublicKeyInfo`, pas une `RSAPublicKey`, une ligne qui n'est pas du base64 ou pas une clé publique
+          + row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  avec les noms du `KeyAlgorithm`, comme `ECDSA P-256` et `Ed25519`
+          + row  `Unsupported(detail)`  3  _the key uses an unsupported `detail`_  par exemple un type de clé ou une courbe OpenSSH pour lesquels cette bibliothèque n'a pas de nom
           ```
     entry #reason
       info
@@ -2278,7 +2278,7 @@ entry .BlockCipher
         + La forme sur valeur entière lit le bloc initial comme IV lorsque le mode en utilise
         + un. La forme en flux consomme l'IV du flux avant le début de la session, exige un
         + `Buffering` et une `Tactic[Crypto.Error]`, et lève l'échec de fin de flux du
-        + fournisseur (remplissage corrompu, étiquette invalide) sous forme de `Crypto.Error`
+        + fournisseur (remplissage corrompu, tag invalide) sous forme de `Crypto.Error`
         + au moment où la dernière fenêtre est tirée.
   entry #genKey
     info
@@ -2553,7 +2553,7 @@ entry .AesGcm
   info
       - AES in Galois/Counter Mode: authenticated encryption with a 96-bit nonce and a 128-bit tag
       + AES en mode Galois/Counter : chiffrement authentifié avec un nonce de 96 bits et une
-      + étiquette de 128 bits
+      + tag de 128 bits
   detail
       - The AEAD of SSH's `aes256-gcm@openssh.com`, TLS's `AES_*_GCM` suites and most of the
       - modern internet, as `AesGcm[128]` or `AesGcm[256]`. It is a different primitive from
@@ -2613,11 +2613,11 @@ entry .AesGcm
   entry #seal
     info
         - the ciphertext with the tag appended
-        + le texte chiffré suivi de l'étiquette
+        + le texte chiffré suivi du tag
   entry #unseal
     info
         - the plaintext, or `Unset` if the tag does not verify
-        + le texte clair, ou `Unset` si l'étiquette ne se vérifie pas
+        + le texte clair, ou `Unset` si le tag ne se vérifie pas
 
 entry .Blowfish
   info
@@ -2775,11 +2775,11 @@ entry .ChaCha20Poly1305
       - 256-bit key, a 12-byte nonce which must never repeat under the key, associated data
       - authenticated but not encrypted, and the tag appended to the ciphertext. Reached through
       - the provider's structural `chaCha20Poly1305` member, which every bundled provider has.
-      + Un chiffrement authentifié bâti sur `ChaCha20` avec une étiquette Poly1305 de 128
+      + Un chiffrement authentifié bâti sur `ChaCha20` avec un tag Poly1305 de 128
       + bits, en tant que `Cipher & Symmetric & Authenticated`, utilisé via `seal` et
       + `unseal` exactement comme `AesGcm` : une clé de 256 bits, un nonce de 12 octets qui
       + ne doit jamais se répéter sous la clé, des données associées authentifiées mais non
-      + chiffrées, et l'étiquette ajoutée au texte chiffré. Accessible via le membre
+      + chiffrées, et le tag ajouté au texte chiffré. Accessible via le membre
       + structurel `chaCha20Poly1305` du fournisseur, que possèdent tous les fournisseurs
       + inclus.
   refer enigmatic.seal
@@ -2812,11 +2812,11 @@ entry .ChaCha20Poly1305
   entry #seal
     info
         - the ciphertext with the tag appended
-        + le texte chiffré suivi de l'étiquette
+        + le texte chiffré suivi du tag
   entry #unseal
     info
         - the plaintext, or `Unset` if the tag does not verify
-        + le texte clair, ou `Unset` si l'étiquette ne se vérifie pas
+        + le texte clair, ou `Unset` si le tag ne se vérifie pas
 
 entry .Rsa
   info
@@ -3391,7 +3391,7 @@ entry .encrypt
       - pure, so capture checking lets it leave the block, but a stream drained after the block
       - ends reads key bytes the cloak has already zeroed.
       + Videz un flux paresseux à l'intérieur du bloc `uncloak` qui l'a créé. La `Chain` de
-      + texte chiffré est pure, si bien que la vérification de captures la laisse sortir du
+      + texte chiffré est pure, si bien que le contrôle des captures la laisse sortir du
       + bloc, mais un flux vidé après la fin du bloc lit des octets de clé que le cloak a
       + déjà mis à zéro.
   refer enigmatic.decrypt
@@ -3471,7 +3471,7 @@ entry .uncloak
       + `privateKey.uncloak(block)` un `Decryptor[cipher]`, et `symmetricKey.uncloak(block)`
       + les deux à la fois. Chacune est une portée délimitée : le bloc est une fonction
       + contextuelle sur les capacités, que récupèrent les extensions `encrypt` et
-      + `decrypt`, et la vérification de captures les confine — renvoyer une capacité, ou
+      + `decrypt`, et le contrôle des captures les confine — renvoyer une capacité, ou
       + une clôture qui chiffrerait ou déchiffrerait plus tard, ou en ranger une dans une
       + variable extérieure, est une erreur de compilation (_leaks into outer capture set_,
       + _outlives its scope_). Le matériel de clé est matérialisé via le cloak de la clé
@@ -3541,7 +3541,7 @@ entry .seal
       - `InitializationVector` strategy. Associated data may be empty, `Data()`.
       + Une extension sur une `SymmetricKey` d'un algorithme `Authenticated` (`AesGcm`,
       + `ChaCha20Poly1305`). Le texte clair est chiffré, lui-même et les données associées
-      + sont authentifiés, et l'étiquette est ajoutée au texte chiffré. Aucun permis n'est
+      + sont authentifiés, et le tag est ajouté au texte chiffré. Aucun permis n'est
       + nécessaire, puisqu'un AEAD n'est pas `Unauthenticated` ; la discipline qu'il exige
       + bel et bien — ne jamais répéter un nonce sous une même clé — incombe à l'appelant,
       + et c'est pourquoi le nonce est un argument ordinaire plutôt qu'une stratégie
@@ -3563,7 +3563,7 @@ entry .unseal
   info
       - `key.unseal(nonce, associated, ciphertext)`: the plaintext, or `Crypto.Error` if the tag fails
       + `key.unseal(nonce, associated, ciphertext)` : le texte clair, ou une `Crypto.Error`
-      + si l'étiquette échoue
+      + si le tag échoue
   detail
       - An extension on a `SymmetricKey` of an `Authenticated` cipher. The counterpart of `seal`,
       - needing a `Tactic[Crypto.Error]` and `Diagnostics`: a tampered ciphertext, a wrong key, or
@@ -3864,7 +3864,7 @@ entry .Poly1305
       - `chacha20-poly1305@openssh.com` needs it alone, over a key taken from block zero of a
       - `ChaCha20` keystream. The arithmetic runs in constant time with respect to the message
       - content.
-      + `Poly1305.mac(key, message)` est une étiquette de 16 octets sur un message sous une
+      + `Poly1305.mac(key, message)` est un tag de 16 octets sur un message sous une
       + clé de 32 octets qui ne doit servir qu'une fois, et c'est pourquoi un protocole
       + dérive la clé d'un flux de clé pour chaque message. Il est écrit ici plutôt que pris
       + chez un fournisseur parce que le JDK ne propose Poly1305 que fusionné avec ChaCha20
@@ -3883,7 +3883,7 @@ entry .Poly1305
   entry .mac
     info
         - the 16-byte tag over `message` under a 32-byte one-time `key`
-        + l'étiquette de 16 octets sur `message` sous une `key` à usage unique de 32 octets
+        + le tag de 16 octets sur `message` sous une `key` à usage unique de 32 octets
 
 entry .blockCipherModes
   info
@@ -4057,7 +4057,7 @@ entry .cloaks
         - authenticating it against tampering), and the key needed to read it is off-heap. A
         - fresh cloak, with a fresh key, per summon site.
         + Au repos, le tas ne contient que du texte chiffré (avec un nonce neuf par secret, et
-        + l'étiquette GCM qui l'authentifie contre toute altération), et la clé nécessaire
+        + le tag GCM qui l'authentifie contre toute altération), et la clé nécessaire
         + pour le lire est hors tas. Un cloak neuf, avec une clé neuve, par point
         + d'invocation.
   entry .veiledOffHeapCloak
@@ -4283,7 +4283,7 @@ entry .Asn1
       - The cases are the universal types, each a case class whose fields are the value, with
       - the universal tag number each is written with:
       + Les cas sont les types universels, chacun étant une case class dont les champs sont
-      + la valeur, avec le numéro d'étiquette universelle sous lequel chacun est écrit :
+      + la valeur, avec le numéro de tag universel sous lequel chacun est écrit :
 
       ```tabular
       - column  Case
@@ -4305,7 +4305,7 @@ entry .Asn1
       - row  `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`  `tag`  a context-class tag: an explicit one wraps the whole inner value, and an implicit one replaces the inner value's tag
       - row  `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`  `tag`  any other value, with its content octets verbatim
       + column  Cas
-      + column  Étiquette
+      + column  Tag
       + column  Remarques
       + row  `Boolean(value: scala.Boolean)`  1
       + row  `Integer(value: BigInt)`  2  encodé de manière minimale, avec extension de signe en complément à deux
@@ -4320,7 +4320,7 @@ entry .Asn1
       + row  `GeneralizedTime(timestamp: Long)`  24  secondes depuis l'époque Unix, uniquement sous la forme DER `YYYYMMDDHHMMSSZ`, sans fractions ni décalage
       + row  `Sequence(elements: List[Asn1])`  16
       + row  `Set(elements: List[Asn1])`  17  membres triés selon leurs encodages à l'écriture, et exigés triés à la lecture
-      + row  `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`  `tag`  une étiquette de classe contextuelle : une étiquette explicite enveloppe toute la valeur intérieure, et une étiquette implicite remplace l'étiquette de la valeur intérieure
+      + row  `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`  `tag`  un tag de classe contextuelle : un tag explicite enveloppe toute la valeur intérieure, et un tag implicite remplace le tag de la valeur intérieure
       + row  `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`  `tag`  toute autre valeur, avec ses octets de contenu tels quels
       ```
 
@@ -4335,14 +4335,14 @@ entry .Asn1
       - Because nothing is dropped, decoding and re-encoding reproduce the original bytes
       - exactly, which is what verifying a signature over a certificate's `TBSCertificate`
       - depends on.
-      + Le décodage est **total** : une étiquette non modélisée ici — `T61String`,
-      + `BMPString`, `ENUMERATED`, une étiquette d'application ou privée — se décode en
-      + `Unknown`, et une étiquette contextuelle construite se décode en `Tagged(_, true,
+      + Le décodage est **total** : un tag non modélisé ici — `T61String`,
+      + `BMPString`, `ENUMERATED`, un tag d'application ou privé — se décode en
+      + `Unknown`, et un tag contextuel construit se décode en `Tagged(_, true,
       + _)` uniquement lorsque son contenu est exactement une valeur bien formée, et en
-      + `Unknown` sinon. Une étiquette *implicite* est donc en écriture seule : `[0]
+      + `Unknown` sinon. Un tag *implicite* est donc en écriture seul : `[0]
       + IMPLICIT INTEGER` et `[0] IMPLICIT OCTET STRING` sont identiques octet pour octet,
       + et les distinguer exige le schéma du module ; le décodeur produit donc
-      + `Unknown(Asn1.Context, 0, false, bytes)` pour une étiquette implicite primitive.
+      + `Unknown(Asn1.Context, 0, false, bytes)` pour un tag implicite primitif.
       + C'est pourquoi un identifiant de clé d'autorité écrit par `Certificate.issued` est
       + relu comme `Unknown`. Comme rien n'est perdu, décoder puis réencoder reproduit
       + exactement les octets d'origine, ce dont dépend la vérification d'une signature sur
@@ -4354,7 +4354,7 @@ entry .Asn1
       - the fault and the byte offset at which it was found. BER that is not also DER is
       - rejected.
       + Le codec est **strict** : il écrit du DER et n'accepte que du DER, si bien qu'une
-      + longueur indéfinie, une longueur ou une étiquette trop longue, un entier non
+      + longueur indéfinie, une longueur ou un tag trop long, un entier non
       + minimal, une chaîne construite, un ensemble non trié, un temps mal formé ou des
       + octets en trop lèvent tous une `Asn1.Error` dont la raison nomme le défaut et la
       + position en octets à laquelle il a été trouvé. Le BER qui n'est pas aussi du DER est
@@ -4377,41 +4377,41 @@ entry .Asn1
   entry .Universal
     info
         - the universal tag class, `0`
-        + la classe d'étiquette universelle, `0`
+        + la classe de tag universel, `0`
     detail
         - The two high bits of an identifier octet name the tag class; `Universal` is the class
         - of every modelled type, and the `tagClass` of an `Asn1.Unknown` holding an unmodelled
         - universal type.
-        + Les deux bits de poids fort d'un octet d'identifiant nomment la classe d'étiquette ;
+        + Les deux bits de poids fort d'un octet d'identifiant nomment la classe de tag ;
         + `Universal` est la classe de tous les types modélisés, et le `tagClass` d'un
         + `Asn1.Unknown` contenant un type universel non modélisé.
   entry .Application
     info
         - the application tag class, `1`
-        + la classe d'étiquette d'application, `1`
+        + la classe de tag d'application, `1`
     detail
         - Application-class tags are not modelled, so a value with one decodes to `Asn1.Unknown`
         - with this as its `tagClass`.
-        + Les étiquettes de classe application ne sont pas modélisées ; une valeur qui en
-        + porte une se décode donc en `Asn1.Unknown` avec celle-ci comme `tagClass`.
+        + Les tags de classe application ne sont pas modélisés ; une valeur qui en
+        + porte un se décode donc en `Asn1.Unknown` avec celle-ci comme `tagClass`.
   entry .Context
     info
         - the context-specific tag class, `2`
-        + la classe d'étiquette contextuelle, `2`
+        + la classe de tag contextuel, `2`
     detail
         - The class of every `Asn1.Tagged` value, and the `tagClass` of an `Asn1.Unknown` read
         - from an implicit context tag, as in `Asn1.Unknown(Asn1.Context, 1, false, bytes)`.
         + La classe de toute valeur `Asn1.Tagged`, et le `tagClass` d'un `Asn1.Unknown` lu
-        + depuis une étiquette contextuelle implicite, comme dans `Asn1.Unknown(Asn1.Context,
+        + depuis un tag contextuel implicite, comme dans `Asn1.Unknown(Asn1.Context,
         + 1, false, bytes)`.
   entry .Private
     info
         - the private tag class, `3`
-        + la classe d'étiquette privée, `3`
+        + la classe de tag privé, `3`
     detail
         - Private-class tags are not modelled, so a value with one decodes to `Asn1.Unknown`
         - with this as its `tagClass`.
-        + Les étiquettes de classe privée ne sont pas modélisées ; une valeur qui en porte une
+        + Les tags de classe privée ne sont pas modélisés ; une valeur qui en porte un
         + se décode donc en `Asn1.Unknown` avec celle-ci comme `tagClass`.
   entry .encodable
     info
@@ -4502,9 +4502,9 @@ entry .Asn1
         + `Asn1.Error.Reason` nommant le défaut et la position en octets. Levée par `Asn1.decodable`
         + et `Asn1.aggregable` (et donc par tout ce qui décode à travers eux :
         + `Certificate.decodable`, les décodeurs de clés, `text.read[Asn1 in Pem]`) lorsque l'entrée
-        + est tronquée, utilise une longueur indéfinie ou trop longue, une étiquette trop longue, un
+        + est tronquée, utilise une longueur indéfinie ou trop longue, un tag trop long, un
         + entier non minimal ou vide, une longueur trop grande pour être représentée, des octets en
-        + trop, l'étiquette réservée `0`, un identifiant d'objet mal formé ou un arc dépassant
+        + trop, le tag réservé `0`, un identifiant d'objet mal formé ou un arc dépassant
         + `Int`, un `SET` non trié, un temps mal formé, un booléen autre que `0x00`/`0xFF`, une
         + mauvaise longueur pour un `BOOLEAN`, un `NULL` ou une `BIT STRING`, un remplissage de bits
         + inutilisés invalide, une chaîne construite ou un `SEQUENCE`/`SET` primitif.
@@ -4554,25 +4554,25 @@ entry .Asn1
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Truncated(offset)`  1  _l'entrée était tronquée à l'octet `offset`_
-          + row  `IndefiniteLength(offset)`  2  _une longueur indéfinie a été trouvée à l'octet `offset`_
-          + row  `NonMinimalLength(offset)`  3  _une longueur trop longue a été trouvée à l'octet `offset`_
-          + row  `NonMinimalTag(offset)`  4  _un numéro d'étiquette trop long a été trouvé à l'octet `offset`_
-          + row  `NonMinimalInteger(offset)`  5  _un entier trop long a été trouvé à l'octet `offset`_
-          + row  `EmptyInteger(offset)`  6  _un entier sans contenu a été trouvé à l'octet `offset`_
-          + row  `Overflow(offset)`  7  _une longueur non représentable a été trouvée à l'octet `offset`_  une longueur ou une étiquette trop grande
-          + row  `Trailing(offset)`  8  _des octets en trop inattendus ont été trouvés à partir de l'octet `offset`_
-          + row  `InvalidUtf8(offset)`  9  _de l'UTF-8 invalide a été trouvé à l'octet `offset`_
-          + row  `ReservedTag(offset)`  10  _le numéro d'étiquette réservé 0 a été trouvé à l'octet `offset`_
-          + row  `BadOid(offset)`  11  _un identifiant d'objet mal formé a été trouvé à l'octet `offset`_
-          + row  `OidArcOverflow(offset)`  12  _un arc trop grand pour Int a été trouvé à l'octet `offset`_
-          + row  `UnsortedSet(offset)`  13  _l'ensemble à l'octet `offset` n'était pas dans l'ordre croissant_
-          + row  `BadTime(offset)`  14  _une valeur temporelle mal formée a été trouvée à l'octet `offset`_
-          + row  `BadBoolean(offset, byte)`  15  _un booléen dont l'octet de contenu est `byte` a été trouvé à l'octet `offset`_
-          + row  `BadLength(offset, tag, length)`  16  _l'étiquette `tag` avait la longueur invalide `length` à l'octet `offset`_
-          + row  `BadUnusedBits(offset, count)`  17  _une chaîne de bits déclarant `count` bits inutilisés a été trouvée à l'octet `offset`_
-          + row  `NotPrimitive(offset, tag)`  18  _l'étiquette `tag` était encodée sous forme construite à l'octet `offset`_
-          + row  `NotConstructed(offset, tag)`  19  _l'étiquette `tag` était encodée sous forme primitive à l'octet `offset`_
+          + row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_
+          + row  `IndefiniteLength(offset)`  2  _an indefinite length was found at byte `offset`_
+          + row  `NonMinimalLength(offset)`  3  _an overlong length was found at byte `offset`_
+          + row  `NonMinimalTag(offset)`  4  _an overlong tag number was found at byte `offset`_
+          + row  `NonMinimalInteger(offset)`  5  _an overlong integer was found at byte `offset`_
+          + row  `EmptyInteger(offset)`  6  _an integer with no content was found at byte `offset`_
+          + row  `Overflow(offset)`  7  _an unrepresentable length was found at byte `offset`_  une longueur ou un tag trop grand
+          + row  `Trailing(offset)`  8  _unexpected trailing bytes were found from byte `offset`_
+          + row  `InvalidUtf8(offset)`  9  _invalid UTF-8 was found at byte `offset`_
+          + row  `ReservedTag(offset)`  10  _the reserved tag number 0 was found at byte `offset`_
+          + row  `BadOid(offset)`  11  _a malformed object identifier was found at byte `offset`_
+          + row  `OidArcOverflow(offset)`  12  _an arc too large for Int was found at byte `offset`_
+          + row  `UnsortedSet(offset)`  13  _the set at byte `offset` was not in ascending order_
+          + row  `BadTime(offset)`  14  _a malformed time value was found at byte `offset`_
+          + row  `BadBoolean(offset, byte)`  15  _a boolean with the content byte `byte` was found at byte `offset`_
+          + row  `BadLength(offset, tag, length)`  16  _the tag `tag` had the invalid length `length` at byte `offset`_
+          + row  `BadUnusedBits(offset, count)`  17  _a bit string declaring `count` unused bits was found at byte `offset`_
+          + row  `NotPrimitive(offset, tag)`  18  _the tag `tag` was encoded in constructed form at byte `offset`_
+          + row  `NotConstructed(offset, tag)`  19  _the tag `tag` was encoded in primitive form at byte `offset`_
           ```
       entry .communicable
         info
@@ -4768,7 +4768,7 @@ entry .Pem
         + Analyse le premier bloc du texte et transmet le `Pem` entier, étiquette comprise, au
         + `Decodable in Pem` de `X`. Il exige ce décodable, une `Tactic[Pem.Error]` et des
         + `Diagnostics`, et l'emporte sur `Pem.aggregableIn`, hérité de `Pem2` (le même
-        + relèvement sur un `Decodable in Der`), si bien qu'une valeur qui possède les deux se
+        + given relevé sur un `Decodable in Der`), si bien qu'une valeur qui possède les deux se
         + décode selon l'étiquette : `text.read[PrivateKey[Ed25519] in Pem]` sait distinguer
         + un bloc `PRIVATE KEY` d'un bloc `OPENSSH PRIVATE KEY`.
   entry .aggregable
@@ -4853,10 +4853,10 @@ entry .Pem
         + column  Code
         + column  Message
         + column  Remarque
-        + row  `BeginMissing`  1  _la ligne BEGIN est introuvable_  la première ligne non vide n'est pas une délimitation `BEGIN` ; également une entrée vide
-        + row  `EndMissing`  2  _la ligne END est introuvable_  l'entrée se termine avant une délimitation `END`
-        + row  `BadBase64`  3  _impossible d'analyser le message PEM en BASE-64_  le corps n'est pas du base64
-        + row  `EmptyFile`  4  _le fichier était vide_  déclaré, mais pas levé par l'analyseur actuel
+        + row  `BeginMissing`  1  _the BEGIN line could not be found_  la première ligne non vide n'est pas une délimitation `BEGIN` ; également une entrée vide
+        + row  `EndMissing`  2  _the END line could not be found_  l'entrée se termine avant une délimitation `END`
+        + row  `BadBase64`  3  _could not parse the BASE-64 PEM message_  le corps n'est pas du base64
+        + row  `EmptyFile`  4  _the file was empty_  déclaré, mais pas levé par l'analyseur actuel
         ```
     entry .communicable
       info
@@ -4885,7 +4885,7 @@ entry .Pem
         - `OpensshPrivateKey` (`OPENSSH PRIVATE KEY`). Any other label parses as
         - `Proprietary(label: Text)`, holding the text as written.
         + Une énumération des étiquettes que portent en pratique les blocs PEM, chacune
-        + s'écrivant sur le réseau sous la forme de son nom découpé en mots en majuscules :
+        + s'écrivant en transmission sous la forme de son nom découpé en mots en majuscules :
         + `Certificate` (`CERTIFICATE`), `CertificateRequest`, `NewCertificateRequest`,
         + `PrivateKey` (`PRIVATE KEY`, PKCS#8), `RsaPrivateKey` (`RSA PRIVATE KEY`, PKCS#1),
         + `DsaPrivateKey`, `EcPrivateKey` (`EC PRIVATE KEY`, SEC1), `EncryptedPrivateKey`,
@@ -4905,7 +4905,7 @@ entry .Pem
     entry .index
       info
           - every known label, keyed by its wire spelling
-          + toutes les étiquettes connues, indexées par leur écriture sur le réseau
+          + toutes les étiquettes connues, indexées par leur écriture de transmission
       detail
           - A lazy `Map[Text, Pem.Label]` from `CERTIFICATE`, `PRIVATE KEY`, … to the case, which
           - `.unapply` consults.
@@ -4914,12 +4914,12 @@ entry .Pem
     entry .showable
       info
           - a label's wire spelling: upper-case words, or the proprietary text as given
-          + l'écriture d'une étiquette sur le réseau : des mots en majuscules, ou le texte
+          + l'écriture de transmission d'une étiquette : des mots en majuscules, ou le texte
           + propriétaire tel qu'il est donné
     entry .unapply
       info
           - a label from its wire text, always matching: a known case, else `Proprietary`
-          + une étiquette à partir de son texte sur le réseau, qui correspond toujours : un cas
+          + une étiquette à partir de son texte de transmission, qui correspond toujours : un cas
           + connu, sinon `Proprietary`
       detail
           - `Pem.Label(text)` as an extractor never fails, so it can sit inside a pattern such as
@@ -4948,7 +4948,7 @@ entry .Pem
 entry .Pem2
   info
       - the parent trait of the `Pem` companion, holding the lower-priority `read[X in Pem]` lifting
-      + le trait parent de l'objet compagnon de `Pem`, contenant le relèvement `read[X in
+      + le trait parent de l'objet compagnon de `Pem`, contenant le given relevé `read[X in
       + Pem]` de priorité inférieure
   hidden
   detail
@@ -4957,7 +4957,7 @@ entry .Pem2
       - `Decodable in Pem` and a `Decodable in Der`. The given is reached as
       - `Pem.aggregableIn`.
       + Pas destiné à un usage direct : le trait existe afin que `Pem.aggregableInPem`,
-      + défini dans l'objet compagnon lui-même, l'emporte sur le relèvement défini ici
+      + défini dans l'objet compagnon lui-même, l'emporte sur le given relevé défini ici
       + lorsqu'une valeur possède à la fois un `Decodable in Pem` et un `Decodable in Der`.
       + Le given est accessible sous le nom `Pem.aggregableIn`.
   entry #aggregableIn
@@ -4981,7 +4981,7 @@ entry .Cose
   info
       - a COSE message (RFC 9052): a payload signed or MACed under a key, as tagged CBOR
       + un message COSE (RFC 9052) : une charge utile signée ou authentifiée par MAC sous
-      + une clé, sous forme de CBOR étiqueté
+      + une clé, sous forme de CBOR tagué
   detail
       - `Cose` is a [CBOR Object Signing and Encryption](https://www.rfc-editor.org/rfc/rfc9052)
       - message: a `#payload`, a `#protectedHeader` (the serialized map of header parameters
@@ -4995,9 +4995,9 @@ entry .Cose
       + Encryption](https://www.rfc-editor.org/rfc/rfc9052) : une `#payload`, un
       + `#protectedHeader` (la map sérialisée des paramètres d'en-tête que couvre la
       + signature), un `#unprotectedHeader`, et les `#recipients` dont l'`authentication`
-      + est la signature ou l'étiquette MAC. Le type de la clé choisit la variante — une
-      + `SymmetricKey` produit un `COSE_Mac0` (étiquette CBOR 17) et une `PrivateKey` un
-      + `COSE_Sign1` (étiquette 18) — via le given `Cose.Authenticator` qui lui correspond,
+      + est la signature ou le tag MAC. Le type de la clé choisit la variante — une
+      + `SymmetricKey` produit un `COSE_Mac0` (tag CBOR 17) et une `PrivateKey` un
+      + `COSE_Sign1` (tag 18) — via le given `Cose.Authenticator` qui lui correspond,
       + et les types fantômes du message `#Form` (`Cose.Mac0`, `Cose.Sign1`, …) et
       + `#Operand` (l'algorithme) enregistrent ce choix.
 
@@ -5071,7 +5071,7 @@ entry .Cose
       + l'algorithme de la clé possède sous `Cose.Algorithm`, et il est encodé en CBOR
       + canonique (`CanonicalCbor`), tout comme la `Sig_structure`/`MAC_structure` qui est
       + signée. L'en-tête non protégé est vide, et l'AAD externe est vide. Un message relu
-      + avec `Cose.parse` a la `Form` et l'`Operand` généraux, car la forme sur le réseau
+      + avec `Cose.parse` a la `Form` et l'`Operand` généraux, car la forme de transmission
       + n'indique pas quel algorithme a été utilisé ; `#verifyWith` le vérifie avec une clé
       + de n'importe quel type `Cose.Verifier` dont la variante correspond.
 
@@ -5089,7 +5089,7 @@ entry .Cose
       + un autre algorithme de signature exige un given `Cose.Algorithm` pour cet algorithme
       + (son identifiant IANA, comme `-7` pour ES256), que l'appelant fournit ; *vérifier*
       + un message `Sign1` avec une `PublicKey` n'en exige aucun. Les variantes à
-      + destinataires multiples `Sign` et `Mac` (étiquettes 98 et 97) sont analysées, mais
+      + destinataires multiples `Sign` et `Mac` (tags 98 et 97) sont analysées, mais
       + aucun constructeur ne les construit et les vérificateurs fournis ne correspondent
       + qu'à `Sign1` et `Mac0`.
 
@@ -5103,7 +5103,7 @@ entry .Cose
   entry .encodable
     info
         - serializes a message to its tagged wire form, as `cose.in[Data]`
-        + sérialise un message sous sa forme étiquetée pour le réseau, sous la forme
+        + sérialise un message sous sa forme de transmission taguée, sous la forme
         + `cose.in[Data]`
     detail
         - The `cose is Encodable in Data` given, bounded by `Cose` so that the refined `Cose in
@@ -5114,7 +5114,7 @@ entry .Cose
         + Le given `cose is Encodable in Data`, borné par `Cose` afin que le type raffiné
         + `Cose in Mac0 by cipher` que renvoie un constructeur le résolve. Un message `Sign1`
         + ou `Mac0` est le tableau à quatre éléments `[protected, unprotected, payload,
-        + signature]` sous son étiquette ; un message `Sign` ou `Mac` porte un tableau de
+        + signature]` sous son tag ; un message `Sign` ou `Mac` porte un tableau de
         + triplets `[protected, unprotected, signature]` à la place de la signature unique.
   entry .apply
     info
@@ -5141,7 +5141,7 @@ entry .Cose
   entry .parse
     info
         - reads a tagged COSE envelope back from its bytes
-        + relit une enveloppe COSE étiquetée à partir de ses octets
+        + relit une enveloppe COSE taguée à partir de ses octets
     detail
         - Decodes the CBOR, requires a tag of 17, 18, 97 or 98 (else
         - `Cose.Error(UnknownTag(tag))`), and a four-element array with byte-string protected
@@ -5150,7 +5150,7 @@ entry .Cose
         - `Tactic[Cbor.Error]` and a `Tactic[Cose.Error]`. The result is a plain `Cose` whose
         - `Form` and `Operand` are their upper bounds, and whose `#verifyWith` checks it.
         - `bytes.authenticate[Cose](key)` is parse-then-verify in one call.
-        + Décode le CBOR, exige une étiquette 17, 18, 97 ou 98 (sinon
+        + Décode le CBOR, exige un tag 17, 18, 97 ou 98 (sinon
         + `Cose.Error(UnknownTag(tag))`), et un tableau à quatre éléments dont l'en-tête
         + protégé et la charge utile sont des chaînes d'octets et dont l'en-tête non protégé
         + est une map (sinon `MalformedStructure`) ; chacun des destinataires d'un message à
@@ -5170,7 +5170,7 @@ entry .Cose
         - `.apply`.
         + Construit un `Cose in scheme by cipher` à partir de ses six champs sans effectuer
         + aucune authentification : l'appelant fournit les octets de l'en-tête protégé,
-        + l'en-tête non protégé, la charge utile, la chaîne de contexte, l'étiquette CBOR et
+        + l'en-tête non protégé, la charge utile, la chaîne de contexte, le tag CBOR et
         + les destinataires. Pour un message authentifié sous une clé, utilisez `.apply`.
   entry .Algorithm
     info
@@ -5232,7 +5232,7 @@ entry .Cose
         + `key is Cose.Authenticator in form by cipher` est ce que `Cose.apply` invoque pour
         + sa clé : il fixe la variante du message (`Form`), l'algorithme, l'identifiant
         + d'algorithme, la chaîne de contexte de la structure à signer (`Signature1` ou
-        + `MAC0`), l'étiquette CBOR, et la manière dont les octets à signer sont authentifiés
+        + `MAC0`), le tag CBOR, et la manière dont les octets à signer sont authentifiés
         + avec la clé. Les deux givens se choisissent selon le type de clé :
         + `SymmetricKey[cipher]` donne `Mac0` et `PrivateKey[cipher]` donne `Sign1` ; comme
         + `SymmetricKey` étend `PrivateKey`, l'instance symétrique, plus spécifique, l'emporte
@@ -5280,7 +5280,7 @@ entry .Cose
     entry #cborTag
       info
           - the tag of the envelope: 18 for `Sign1`, 17 for `Mac0`
-          + l'étiquette de l'enveloppe : 18 pour `Sign1`, 17 pour `Mac0`
+          + le tag de l'enveloppe : 18 pour `Sign1`, 17 pour `Mac0`
     entry #authenticate
       info
           - signs or MACs the to-be-signed bytes with the key
@@ -5314,7 +5314,7 @@ entry .Cose
     entry .symmetric
       info
           - a `SymmetricKey[cipher]` recomputes a `Mac0` message's tag and compares it
-          + une `SymmetricKey[cipher]` recalcule l'étiquette d'un message `Mac0` et la compare
+          + une `SymmetricKey[cipher]` recalcule le tag d'un message `Mac0` et le compare
       detail
           - The comparison is `HmacCipher#verify`, which runs in constant time.
           + La comparaison est `HmacCipher#verify`, qui s'exécute en temps constant.
@@ -5337,7 +5337,7 @@ entry .Cose
     entry #cborTag
       info
           - the tag of the envelope the verifier expects
-          + l'étiquette d'enveloppe qu'attend le vérificateur
+          + le tag d'enveloppe qu'attend le vérificateur
     entry #check
       info
           - whether the authentication bytes are valid for the to-be-signed bytes under the key
@@ -5356,7 +5356,7 @@ entry .Cose
         - raised through the `Tactic[Cbor.Error]` the same calls take.
         + Erreur 596 : _could not process the COSE message because `reason`_. Levée par
         + `Cose.parse` (et donc par `authenticate[Cose]`) pour une enveloppe qui n'est pas une
-        + étiquette (`MalformedStructure`), une étiquette autre que 17, 18, 97 ou 98
+        + tag (`MalformedStructure`), un tag autre que 17, 18, 97 ou 98
         + (`UnknownTag(tag)`), ou un corps de mauvaise forme (`MalformedStructure`) ; par
         + `Cose#verifyWith` lorsque la variante de la clé n'est pas celle du message
         + (`VariantMismatch(expected, actual)`) ; et par `Cose.apply` via sa clause `raises`.
@@ -5384,14 +5384,14 @@ entry .Cose
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `MalformedStructure`  1  _la structure COSE n'était pas bien formée_
-          + row  `UnknownTag(tag)`  2  _l'étiquette CBOR `tag` n'est pas une étiquette de message COSE_
-          + row  `UnsupportedAlgorithm(id)`  3  _l'identifiant d'algorithme COSE `id` n'est pas pris en charge_
-          + row  `AlgorithmMismatch(expected, actual)`  4  _algorithme COSE `expected` attendu mais `actual` trouvé_
-          + row  `VariantMismatch(expected, actual)`  5  _un message COSE `expected` était attendu mais un `actual` a été trouvé_  les deux chaînes de contexte, sous forme de `Text`
-          + row  `VerificationFailed`  6  _la signature ou le MAC COSE ne s'est pas vérifié_  un échec de vérification est signalé par `false` depuis `verifyWith`, et non par ceci
-          + row  `CborParseError`  7  _le message COSE contenait du CBOR mal formé_
-          + row  `DetachedPayloadRequired`  8  _le message COSE a une charge utile détachée_
+          + row  `MalformedStructure`  1  _the COSE structure was not well-formed_
+          + row  `UnknownTag(tag)`  2  _the CBOR tag `tag` is not a COSE message tag_
+          + row  `UnsupportedAlgorithm(id)`  3  _the COSE algorithm identifier `id` is not supported_
+          + row  `AlgorithmMismatch(expected, actual)`  4  _expected COSE algorithm `expected` but found `actual`_
+          + row  `VariantMismatch(expected, actual)`  5  _expected a `expected` COSE message but found a `actual`_  les deux chaînes de contexte, sous forme de `Text`
+          + row  `VerificationFailed`  6  _the COSE signature or MAC did not verify_  un échec de vérification est signalé par `false` depuis `verifyWith`, et non par ceci
+          + row  `CborParseError`  7  _the COSE message contained malformed CBOR_
+          + row  `DetachedPayloadRequired`  8  _the COSE message has a detached payload_
           ```
 
           - Of these, the current code raises only `MalformedStructure`, `UnknownTag` and
@@ -5417,7 +5417,7 @@ entry .Cose
         - signature]` triple on the wire.
         + Un message `Sign1` ou `Mac0` a exactement un destinataire, avec des en-têtes vides ;
         + un message `Sign` ou `Mac` lu par `Cose.parse` en a un par triplet `[protected,
-        + unprotected, signature]` sur le réseau.
+        + unprotected, signature]` en transmission.
     entry #protectedHeader
       info
           - the recipient's serialized protected header; empty for `Sign1`/`Mac0`
@@ -5429,7 +5429,7 @@ entry .Cose
     entry #authentication
       info
           - the signature or MAC tag bytes
-          + les octets de la signature ou de l'étiquette MAC
+          + les octets de la signature ou du tag MAC
   entry .Structure
     info
         - the root of the variant taxonomy: the bound of a message's `Form`
@@ -5438,7 +5438,7 @@ entry .Cose
         - `Cose.Signed` and `Cose.Maced` divide it, and `Cose.Sign` (tag 98), `Cose.Sign1`
         - (18), `Cose.Mac` (97) and `Cose.Mac0` (17) are the four RFC 9052 message types. A
         - message's `Form` is one of them: `Cose in Cose.Mac0 by HmacCipher[Sha2[256]]`.
-        + `Cose.Signed` et `Cose.Maced` la divisent, et `Cose.Sign` (étiquette 98),
+        + `Cose.Signed` et `Cose.Maced` la divisent, et `Cose.Sign` (tag 98),
         + `Cose.Sign1` (18), `Cose.Mac` (97) et `Cose.Mac0` (17) sont les quatre types de
         + message de la RFC 9052. La `Form` d'un message est l'un d'eux : `Cose in Cose.Mac0
         + by HmacCipher[Sha2[256]]`.
@@ -5453,31 +5453,31 @@ entry .Cose
   entry .Sign
     info
         - `COSE_Sign`: many signers, CBOR tag 98; parsed but not constructed
-        + `COSE_Sign` : plusieurs signataires, étiquette CBOR 98 ; analysé mais pas construit
+        + `COSE_Sign` : plusieurs signataires, tag CBOR 98 ; analysé mais pas construit
   entry .Sign1
     info
         - `COSE_Sign1`: one signer, CBOR tag 18; what a `PrivateKey` makes
-        + `COSE_Sign1` : un seul signataire, étiquette CBOR 18 ; ce que produit une
+        + `COSE_Sign1` : un seul signataire, tag CBOR 18 ; ce que produit une
         + `PrivateKey`
   entry .Mac
     info
         - `COSE_Mac`: many recipients, CBOR tag 97; parsed but not constructed
-        + `COSE_Mac` : plusieurs destinataires, étiquette CBOR 97 ; analysé mais pas construit
+        + `COSE_Mac` : plusieurs destinataires, tag CBOR 97 ; analysé mais pas construit
   entry .Mac0
     info
         - `COSE_Mac0`: one MAC, CBOR tag 17; what a `SymmetricKey` makes
-        + `COSE_Mac0` : un seul MAC, étiquette CBOR 17 ; ce que produit une `SymmetricKey`
+        + `COSE_Mac0` : un seul MAC, tag CBOR 17 ; ce que produit une `SymmetricKey`
   entry .Tag
     info
         - the CBOR tag numbers of the four message types, as inline constants
-        + les numéros d'étiquette CBOR des quatre types de message, sous forme de constantes
+        + les numéros de tag CBOR des quatre types de message, sous forme de constantes
         + inline
     detail
         - `Cose.Tag.Sign1` is 18, `Mac0` 17, `Sign` 98 and `Mac` 97 (RFC 9052 §2). The first
         - byte of a `Mac0` wire message is `0xD1`: major type 6 with the tag value 17.
         + `Cose.Tag.Sign1` vaut 18, `Mac0` 17, `Sign` 98 et `Mac` 97 (RFC 9052 §2). Le premier
-        + octet d'un message `Mac0` sur le réseau est `0xD1` : le type majeur 6 avec la valeur
-        + d'étiquette 17.
+        + octet d'un message de transmission `Mac0` est `0xD1` : le type majeur 6 avec la valeur
+        + de tag 17.
     entry .Sign1
       info
           - 18
@@ -5553,7 +5553,7 @@ entry .Cose
   entry #cborTag
     info
         - the tag the envelope is written under: 18, 98, 17 or 97
-        + l'étiquette sous laquelle l'enveloppe est écrite : 18, 98, 17 ou 97
+        + le tag sous lequel l'enveloppe est écrite : 18, 98, 17 ou 97
   entry #recipients
     info
         - the signatures or MACs on the message; exactly one for `Sign1` and `Mac0`
@@ -5722,7 +5722,7 @@ entry .HmacCipher
   entry #verify
     info
         - whether a tag equals the HMAC of the data under the key, compared in constant time
-        + si une étiquette est égale au HMAC des données sous la clé, comparé en temps
+        + si un tag est égal au HMAC des données sous la clé, comparé en temps
         + constant
 
 entry .CanonicalCbor
@@ -5741,7 +5741,7 @@ entry .CanonicalCbor
       + définies, et clés de map dans l'ordre lexicographique octet par octet de leurs
       + encodages. L'encodeur `Cbor.Ast` de breviloquence produit déjà les deux premiers ;
       + `CanonicalCbor.encode` ajoute l'ordre des clés, récursivement à travers les maps,
-      + les tableaux et les étiquettes, et encode le résultat. `Cose` l'utilise pour
+      + les tableaux et les tags, et encode le résultat. `Cose` l'utilise pour
       + l'en-tête protégé et la structure à signer.
   entry .encode
     info
@@ -5790,8 +5790,8 @@ entry .OpensslCrypto
       - JVM `libcrypto` is loaded from the Homebrew paths, `/usr/local/opt/openssl@3`, or
       - `libcrypto.so.3`/`libcrypto.so`/`libcrypto.dylib` on the library path, and the JVM
       - needs `--enable-native-access=ALL-UNNAMED`. There is no Scala.js build.
-      + Ce qu'il implémente nativement : `#random` (`RAND_bytes`), `#hmac` (`HMAC` en un
-      + seul appel sur SHA-256, SHA-384, SHA-512, SHA-1 et MD5), et `#aes` via l'API de
+      + Ce qu'il implémente nativement : `#random` (`RAND_bytes`), `#hmac` (`HMAC` à usage
+      + unique sur SHA-256, SHA-384, SHA-512, SHA-1 et MD5), et `#aes` via l'API de
       + chiffrement EVP, sous la forme `aes-<bits>-<mode>` avec PKCS#7 ou sans remplissage
       + (le remplissage ISO 10126 est un schéma propre à la JCE et n'est pas proposé ; un
       + chiffrement par blocs autre qu'AES panique). Sa sortie concorde octet pour octet
@@ -5817,7 +5817,7 @@ entry .OpensslCrypto
   entry .hmac
     info
         - a one-shot HMAC under a JCE-style name: `HmacSHA256`, `HmacSHA384`, `HmacSHA512`, `HmacSHA1`, `HmacMD5`
-        + un HMAC en un seul appel sous un nom à la JCE : `HmacSHA256`, `HmacSHA384`,
+        + un HMAC à usage unique sous un nom à la JCE : `HmacSHA256`, `HmacSHA384`,
         + `HmacSHA512`, `HmacSHA1`, `HmacMD5`
     detail
         - Any other algorithm name panics. The name is what gastronomy's `Hash#hmacName` gives,
@@ -5827,7 +5827,7 @@ entry .OpensslCrypto
   entry .aes
     info
         - AES through the EVP cipher API, one-shot and streaming, in every mode the key type names
-        + AES via l'API de chiffrement EVP, en un seul appel et en flux, dans tous les modes
+        + AES via l'API de chiffrement EVP, à usage unique et en flux, dans tous les modes
         + que nomme le type de clé
     detail
         - The `Crypto.SymmetricCipher` for `Aes[128 | 192 | 256]`: a transformation
@@ -6137,10 +6137,10 @@ entry .Certificate
         + column  Code
         + column  Message
         + column  Remarque
-        + row  `UnknownAlgorithm(digest)`  1  _aucun algorithme de signature n'est associé à `digest`_  l'algorithme et le `Signature.Digest` dans la portée n'ont pas d'identifiant d'objet commun : RSA ou ECDSA avec un condensé autre que SHA-256/384/512
-        + row  `BadPublicKey`  2  _la clé publique n'était pas un SubjectPublicKeyInfo_  les octets d'une clé ne sont pas un `SubjectPublicKeyInfo`
-        + row  `BadSerialNumber`  3  _le numéro de série était négatif ou nul_
-        + row  `BadValidity`  4  _la période de validité se terminait avant de commencer_  une période qui se termine au plus tard à son début
+        + row  `UnknownAlgorithm(digest)`  1  _no signature algorithm is assigned to `digest`_  l'algorithme et le `Signature.Digest` dans la portée n'ont pas d'identifiant d'objet commun : RSA ou ECDSA avec un condensé autre que SHA-256/384/512
+        + row  `BadPublicKey`  2  _the public key was not a SubjectPublicKeyInfo_  les octets d'une clé ne sont pas un `SubjectPublicKeyInfo`
+        + row  `BadSerialNumber`  3  _the serial number was negative or zero_
+        + row  `BadValidity`  4  _the validity period ended before it began_  une période qui se termine au plus tard à son début
         ```
     entry .communicable
       info

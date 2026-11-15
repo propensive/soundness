@@ -107,8 +107,8 @@ detail
     - neither gains nor loses one.
     + Trois faits concernant les codecs méritent d'être connus avant la première surprise. Un
     + `Boolean` Scala est un *scalaire*, écrit sous la forme d'un atome explicite
-    + `true`/`false`, jamais comme un flag TEL (simple présence du mot-clé) : le schéma dérivé
-    + et BinTEL s'accordent sur cette correspondance, et une valeur encodée comme flag
+    + `true`/`false`, jamais comme un indicateur TEL (simple présence du mot-clé) : le schéma dérivé
+    + et BinTEL s'accordent sur cette correspondance, et une valeur encodée comme indicateur
     + échouerait à la validation contre son propre schéma dérivé. Un champ `Optional` lit
     + `Unset` pour un mot-clé absent ou pour un mot-clé sans atome ni enfant, et les givens de
     + `optionalityOptions` (`strictTelAbsence`, `lenientTelFaults`, …) modifient ce
@@ -144,7 +144,7 @@ detail
     +   signatures et acceptations BinTEL voyagent sous la forme d'un seul mot.
     + - `stratiform.staged` et `stratiform.binaryStaged` — `Inlinable` et `BintelInlinable`,
     +   les générateurs de code exécutés au moment des macros derrière `Tel.Parsable.staged` et
-    +   les analyseurs BinTEL par étapes, qui compilent un analyseur monomorphe pour une case
+    +   les analyseurs BinTEL mis en étapes, qui compilent un analyseur monomorphe pour une case
     +   class.
     + - `stratiform.optics` — `telLens`, `telOrdinalOptical` et `telEachOptical`, des lentilles
     +   panopticon sur un `Tel`, dans le package `optics`.
@@ -475,7 +475,7 @@ entry .Tel
         + les enfants du document. Cela nécessite un `Tel is Dynamical` (`import
         + dynamicAccess.dynamicTel`), car le champ est nommé par du texte plutôt que vérifié par
         + rapport à un schéma. Les éditions plus fines — un atome d'une ligne, une remarque, un
-        + flag — sont des `Mutation.Op` appliquées à un `Tel.Pointer`.
+        + indicateur — sont des `Mutation.Op` appliquées à un `Tel.Pointer`.
 
         ```scala
         import soundness.*
@@ -805,7 +805,7 @@ entry .Tel
         - to the same value.
         + `value.encode` conserve la forme de transmission entièrement en enfants à mot-clé, sur
         + laquelle reposent la navigation typée et les optiques ; `Tel.canonical(value)` place au
-        + contraire les champs scalaires et flags de tête de chaque enregistrement imbriqué en
+        + contraire les champs scalaires et indicateurs de tête de chaque enregistrement imbriqué en
         + position d'atome, comme une personne les écrirait. Les deux formes se décodent en la même
         + valeur.
 
@@ -1039,11 +1039,11 @@ entry .Tel
         + `Tel.Decodable` écrit à la main est dérivée structurellement sur ce chemin et diverge
         + donc de son décodeur ; le remède tient en une ligne,
         + `given MyType is Tel.Parsable = Tel.Parsable.fromDecodable(myDecodable)`. Les trois
-        + chemins de décodage — l'arbre, l'analyseur direct dérivé et l'analyseur par étapes —
+        + chemins de décodage — l'arbre, l'analyseur direct dérivé et l'analyseur mis en étapes —
         + s'accordent sur les mots-clés, les atomes positionnels, les valeurs par défaut et les
         + focus d'erreur. Les autres membres du compagnon (`wireKeywords`, `positionalTable`,
         + `focusing`, `atomInt`, …) sont les points d'appui qu'appelle le code généré d'un
-        + analyseur par étapes ; ils ne sont publics que parce que ce code est développé dans les
+        + analyseur mis en étapes ; ils ne sont publics que parce que ce code est développé dans les
         + modules de l'utilisateur, et ne sont pas destinés à un usage direct.
     entry .apply
       info
@@ -1210,8 +1210,8 @@ entry .Tel
     entry .positionalTable
       info
           - the per-field profiles a staged parser's atom phase uses, built once
-          + les profils par champ qu'utilise la phase d'atomes d'un analyseur par étapes, construits
-          + une seule fois
+          + les profils par champ qu'utilise la phase d'atomes d'un analyseur mis en étapes,
+          + construits une seule fois
     entry .positionalAssign
       info
           - runs the §20.2 atom phase for one entry line over a profile table
@@ -1300,16 +1300,16 @@ entry .Tel
         - `Telp` to the compound; outside one, the first fault aborts. A malformed schema
         - (`UnresolvedReference` 209, `DuplicateDefinition` 210) always aborts, and nesting
         - beyond 256 levels fail-stops with `NestingLimitExceeded` (501).
-        + TEL §20.2. `Tel.Type.assign(tel, schema)` parcourt l'arbre de présentation avec le
-        + schéma, en faisant correspondre chaque composé à un membre de la structure de son
-        + parent, en remplissant les membres d'abord par position à partir des atomes de la ligne
-        + puis à partir des enfants à mot-clé, en résolvant les références et les sélections, et
-        + en vérifiant les contraintes d'obligation, de répétabilité, de contiguïté et de clé. Le
-        + résultat est le modèle sémantique : un `Tel.Element.Node` pour chaque structure ou flag,
-        + un `Tel.Element.Value` pour chaque scalaire, avec les enfants dans l'ordre des membres.
+        + TEL §20.2. `Tel.Type.assign(tel, schema)` parcourt l'arbre de présentation avec le schéma,
+        + en faisant correspondre chaque composé à un membre de la structure de son parent, en
+        + remplissant les membres d'abord par position à partir des atomes de la ligne puis à partir
+        + des enfants à mot-clé, en résolvant les références et les sélections, et en vérifiant les
+        + contraintes d'obligation, de répétabilité, de contiguïté et de clé. Le résultat est le
+        + modèle sémantique : un `Tel.Element.Node` pour chaque structure ou indicateur, un
+        + `Tel.Element.Value` pour chaque scalaire, avec les enfants dans l'ordre des membres.
         + Chaque faute du document est une `Tel.Error` dont la raison est le code E3xx
-        + (`UnknownKeyword` 306, `RequiredMemberAbsent` 307, `NonRepeatableTooMany` 308, …) et
-        + dont l'emplacement est porté par le `Tel.Focus` accumulé ; ainsi, dans une frontière
+        + (`UnknownKeyword` 306, `RequiredMemberAbsent` 307, `NonRepeatableTooMany` 308, …) et dont
+        + l'emplacement est porté par le `Tel.Focus` accumulé ; ainsi, dans une frontière
         + `validate[Tel.Focus]`, le parcours continue au-delà de chaque nœud fautif et signale
         + toutes les fautes ensemble, chacune avec un `Telp` vers le composé ; hors d'une telle
         + frontière, la première faute interrompt le parcours. Un schéma mal formé
@@ -1577,7 +1577,7 @@ entry .Tel
         - the scalar's text to bytes.
         + `given Money is Tel.Encoded["decimal-varint"] = Tel.Encoded()` indique que la forme
         + scalaire TEL de `Money` doit être écrite selon l'encodage `decimal-varint`. Le nom est un
-        + type littéral, si bien que l'analyseur BinTEL par étapes le lit lors de l'expansion de
+        + type littéral, si bien que l'analyseur BinTEL mis en étapes le lit lors de l'expansion de
         + la macro et que la dérivation de schéma réifie la même déclaration dans l'`encoding` du
         + `Tels.Scalar` dérivé : une seule déclaration, cohérente à travers les deux couches. Le
         + type a aussi besoin d'un `Decodable in Text` (et, pour encoder, d'un `Encodable in
@@ -1660,7 +1660,7 @@ entry .Tel
           - inline `Acceptance[(A, B)](selfContained, anyPublished)` builds a `Typed` acceptance
           - from a tuple of types.
           + `Acceptance(first, rest*)` liste les alternatives par ordre de préférence.
-          + `Acceptance(data)` lit un document encadré — reconnu par son nombre magique et tenu de
+          + `Acceptance(data)` lit un document tramé — reconnu par son nombre magique et tenu de
           + porter la signature du schéma d'acceptation, sinon `Acceptance.Error(WrongSchema)` — ou
           + la racine nue du document. `Acceptance(text)` lit strictement le mot BASE-256, en levant
           + `Base256.Error` pour un caractère hors de l'alphabet. `Acceptance(tel)` lit un document
@@ -1696,7 +1696,7 @@ entry .Tel
       info
           - what a writer produced for an alternative: the alternative, composition, signature, schema and framed document
           + ce qu'un écrivain a produit pour une alternative : l'alternative, la composition, la
-          + signature, le schéma et le document encadré
+          + signature, le schéma et le document tramé
       detail
           - The result of `.serve` and `fulfil`. `#hashes` is the composition chosen, base
           - first; `#signature` its schema signature; `#schema` the composed `Tels` the document
@@ -1705,7 +1705,7 @@ entry .Tel
           - layer the reader did not name.
           + Le résultat de `.serve` et de `fulfil`. `#hashes` est la composition choisie, base en
           + premier ; `#signature` sa signature de schéma ; `#schema` le `Tels` composé selon lequel
-          + le document est encodé ; et `#document` les octets BinTEL encadrés, en mode schéma
+          + le document est encodé ; et `#document` les octets BinTEL tramés, en mode schéma
           + externe, ou autonomes lorsque l'alternative le permet et que la composition inclut une
           + couche que le lecteur n'a pas nommée.
       entry #alternative
@@ -1727,7 +1727,7 @@ entry .Tel
       entry #document
         info
             - the framed document, to send
-            + le document encadré, à envoyer
+            + le document tramé, à envoyer
     entry .serve
       info
           - the writer's side: the first alternative a held value can satisfy, and its document
@@ -1849,7 +1849,7 @@ entry .Tel
       entry #read
         info
             - decodes a framed reply as the member whose alternative was served, typed as the tuple's union
-            + décode une réponse encadrée en tant que le membre dont l'alternative a été servie,
+            + décode une réponse tramée en tant que le membre dont l'alternative a été servie,
             + typée comme l'union du tuple
         detail
             - Takes an optional `SchemaSignature.Library` for compositions beyond the derived
@@ -1887,8 +1887,8 @@ entry .Tel
     entry .Alternative
       info
           - one composition a reader accepts: its signature, the two flags and the components it would like
-          + une composition qu'accepte un lecteur : sa signature, les deux flags et les composants
-          + qu'il souhaiterait
+          + une composition qu'accepte un lecteur : sa signature, les deux indicateurs et les
+          + composants qu'il souhaiterait
       detail
           - `Alternative(schema, selfContained = false, anyPublished = false, components =
           - Nil)`. The flags say whether the reader accepts a document which embeds its own
@@ -1896,12 +1896,12 @@ entry .Tel
           - without being asked. Member order on the `accept` line is load-bearing: the schema
           - atom first, then the flags, then every component — a flag written after a component
           - would be read as a component and rejected by its codec.
-          + `Alternative(schema, selfContained = false, anyPublished = false, components =
-          + Nil)`. Les flags indiquent si le lecteur accepte un document qui embarque son propre
+          + `Alternative(schema, selfContained = false, anyPublished = false, components = Nil)`.
+          + Les indicateurs précisent si le lecteur accepte un document qui embarque son propre
           + schéma, et si l'écrivain peut inclure n'importe quelle couche publiée de la lignée sans
           + qu'on le lui demande. L'ordre des membres sur la ligne `accept` est déterminant :
-          + l'atome du schéma d'abord, puis les flags, puis chaque composant — un flag écrit après
-          + un composant serait lu comme un composant et rejeté par son codec.
+          + l'atome du schéma d'abord, puis les indicateurs, puis chaque composant — un indicateur
+          + écrit après un composant serait lu comme un composant et rejeté par son codec.
       entry #schema
         info
             - the invocation schema's signature
@@ -2019,7 +2019,7 @@ entry .Tel
           + column  Cas
           + column  Code
           + column  Message
-          + column  Note
+          + column  Remarque
           + row  `MalformedSignature(length)`  1  _a `length`-byte value is not structurally a schema signature_
           + row  `ComponentLength(length)`  2  _a component must be four to thirty-two bytes long, not `length`_
           + row  `WrongSchema(identifier)`  3  _the document identifies its schema as `identifier`, not the acceptance schema_
@@ -2068,7 +2068,7 @@ entry .Tel
     entry #framed
       info
           - the framed binary form, 39 bytes longer than the bare form and self-framing
-          + la forme binaire encadrée, plus longue de 39 octets que la forme nue et auto-encadrée
+          + la forme binaire tramée, plus longue de 39 octets que la forme nue et auto-tramée
     entry #text
       info
           - the bare form as one BASE-256 word
@@ -2086,17 +2086,17 @@ entry .Tel
         - them. An element encodes to BinTEL with `bintel(schema)` and hashes with
         - `valueHash(schema)`, and `Bintel.present` renders it back to a `Tel`.
         + TEL §18.2, le résultat de `Tel.Type.assign` et de `Bintel.decode`. Un `Node` est une
-        + structure, un flag ou une racine de document, avec l'indice du mot-clé de son membre,
-        + son type et ses enfants dans l'ordre des membres ; une `Value` est un scalaire, avec
-        + l'indice de son mot-clé, son type `Tels.Scalar` et son texte. Les types référence
+        + structure, un indicateur ou une racine de document, avec l'indice du mot-clé de son
+        + membre, son type et ses enfants dans l'ordre des membres ; une `Value` est un scalaire,
+        + avec l'indice de son mot-clé, son type `Tels.Scalar` et son texte. Les types référence
         + n'apparaissent jamais : l'assignation les résout. Un élément s'encode en BinTEL avec
         + `bintel(schema)` et se hache avec `valueHash(schema)`, et `Bintel.present` le rend de
         + nouveau sous forme de `Tel`.
     entry .Node
       info
           - a struct, flag or root: a keyword index (`Unset` at the root), its type and its children
-          + une structure, un flag ou une racine : un indice de mot-clé (`Unset` à la racine), son
-          + type et ses enfants
+          + une structure, un indicateur ou une racine : un indice de mot-clé (`Unset` à la racine),
+          + son type et ses enfants
       entry #keywordIndex
         info
             - the index of the member's keyword in its parent, or `Unset` for the document root
@@ -2324,7 +2324,7 @@ entry .Tel
         + indexée à partir de 1, sur laquelle commence le contenu suivant un séparateur `##`, ou
         + `Unset` lorsque le document s'est terminé à la fin de son entrée. C'est ainsi qu'un
         + appelant atteint le contenu précédé d'un en-tête TEL, puisque le séparateur est le seul
-        + encadrement et que l'analyseur ne lit pas au-delà.
+        + tramage et que l'analyseur ne lit pas au-delà.
     entry #interpreterDirective
       info
           - the `#!` line's payload, if any
@@ -2585,12 +2585,12 @@ entry .Tel
         - root, which has no keyword.
         + Le given `Positionable`, dans la portée implicite. `tel.locate(path)` est la position de
         + la valeur du composé — sa suite d'atomes en ligne, avec repli sur le mot-clé lorsqu'il
-        + n'en a pas, comme pour un parent, un flag ou une charge utile sur les lignes suivantes —
-        + et `tel.locateKey(path)` celle du mot-clé. Un segment entièrement numérique après un
-        + mot-clé est un indice d'occurrence, à partir de zéro, parmi les frères qui le
+        + n'en a pas, comme pour un parent, un indicateur ou une charge utile sur les lignes
+        + suivantes — et `tel.locateKey(path)` celle du mot-clé. Un segment entièrement numérique
+        + après un mot-clé est un indice d'occurrence, à partir de zéro, parmi les frères qui le
         + partagent ; `telp"/item/1/name"` est donc le nom du deuxième élément. Les deux valent
-        + `Unset` sans index de positions, pour un chemin impossible à résoudre, et pour
-        + `locateKey` à la racine, qui n'a pas de mot-clé.
+        + `Unset` sans index de positions, pour un chemin impossible à résoudre, et pour `locateKey`
+        + à la racine, qui n'a pas de mot-clé.
 
         ```scala
         import soundness.*
@@ -3210,7 +3210,7 @@ entry .Tel
   entry .Flag
     info
         - the flags of `open[Tel]`: `Force`, to write back even when nothing was mutated
-        + les flags d'`open[Tel]` : `Force`, pour réécrire même lorsque rien n'a été modifié
+        + les indicateurs d'`open[Tel]` : `Force`, pour réécrire même lorsque rien n'a été modifié
     detail
         - `source.open[Tel](Read & Write, Tel.Flag.Force)` re-serializes and writes the document
         - on scope close whether or not an operation was applied: a canonicalizing rewrite.
@@ -3326,12 +3326,12 @@ entry .Tel
     entry .setFlag
       info
           - sets a flag keyword under the parent at a pointer
-          + place un mot-clé de flag sous le parent situé à un pointeur
+          + place un mot-clé d'indicateur sous le parent situé à un pointeur
     entry .unsetFlag
       info
           - unsets a flag keyword under the parent at a pointer; a no-op success if absent
-          + retire un mot-clé de flag sous le parent situé à un pointeur ; un succès sans effet s'il
-          + est absent
+          + retire un mot-clé d'indicateur sous le parent situé à un pointeur ; un succès sans effet
+          + s'il est absent
     entry .reorderWithinGroup
       info
           - moves one of the siblings sharing a keyword from one index to another
@@ -3435,9 +3435,10 @@ entry .Tel
         + travers des éditions sans rapport ; mais un pointeur indexé par occurrence ne doit pas
         + être réutilisé d'une opération à l'autre lorsque celles-ci déplacent, ajoutent ou
         + suppriment des composés du même mot-clé. Les préconditions qui dépendent du schéma — qu'un
-        + membre supprimé n'était pas obligatoire, qu'un flag placé est déclaré, qu'un remplacement
-        + est bien typé — sont hors de portée, comme dans l'implémentation de référence : une
-        + couche consciente du schéma les vérifie avant de déléguer à ces primitives.
+        + membre supprimé n'était pas obligatoire, qu'un indicateur placé est déclaré, qu'un
+        + remplacement est bien typé — sont hors de portée, comme dans l'implémentation de
+        + référence : une couche consciente du schéma les vérifie avant de déléguer à ces
+        + primitives.
     refer stratiform.Tel.Revision
     refer stratiform.Tel.Pointer
     entry .Placement
@@ -3456,10 +3457,10 @@ entry .Tel
           - scalar member does because the atom phase never skips a scalar position.
           + `Value(keyword, occurrences)` est un membre scalaire avec ses occurrences présentes (une
           + pour un membre simple, plusieurs pour un membre répétable, aucune pour un membre absent
-          + qui termine la suite en ligne) ; `Flag(keyword)` un membre flag ; `Child(compound)` un
-          + enfant tout prêt ; et `Break` un membre absent qui ne contribue rien mais termine la
-          + suite en ligne, comme le fait un membre scalaire absent, puisque la phase d'atomes ne
-          + saute jamais une position scalaire.
+          + qui termine la suite en ligne) ; `Flag(keyword)` un membre indicateur ;
+          + `Child(compound)` un enfant tout prêt ; et `Break` un membre absent qui ne contribue
+          + rien mais termine la suite en ligne, comme le fait un membre scalaire absent, puisque la
+          + phase d'atomes ne saute jamais une position scalaire.
     entry .Op
       info
           - one primitive operation, addressed by a `Tel.Pointer`
@@ -3484,10 +3485,10 @@ entry .Tel
           + composé, ainsi qu'un bloc vidé avec ses commentaires ; `Replace(pointer, compound)`
           + substitue un composé, en conservant la remarque de l'original ;
           + `AttachRemark(pointer, text)` et `RemoveRemark(pointer)` placent et effacent la
-          + remarque ; `SetFlag(pointer, keyword)` ajoute un flag en ligne lorsque le composé n'a ni
-          + enfants ni atome source ou littéral, sinon comme enfant, et échoue avec
-          + `FlagAlreadySet` s'il est présent ; `UnsetFlag(pointer, keyword)` retire un flag en
-          + ligne ou un flag enfant nu, et équivaut à l'identité s'il est absent ;
+          + remarque ; `SetFlag(pointer, keyword)` ajoute un indicateur en ligne lorsque le composé
+          + n'a ni enfants ni atome source ou littéral, sinon comme enfant, et échoue avec
+          + `FlagAlreadySet` s'il est présent ; `UnsetFlag(pointer, keyword)` retire un indicateur
+          + en ligne ou un indicateur enfant nu, et équivaut à l'identité s'il est absent ;
           + `InsertBefore(pointer, compound)` et `InsertAfter(pointer, compound)` placent un frère à
           + côté de la cible, dans un nouveau bloc lorsque le bloc de la cible est tabulé, pour que
           + le nouveau composé ne soit pas lu comme une ligne de tableau.
@@ -3558,13 +3559,13 @@ entry .Tel
           - hard-space-preceded from there on, so the construction re-parses to the same atoms.
           + `construct(keyword, members)` et `construct(keyword, members, sigil)` exécutent
           + l'algorithme de présentation canonique sur une liste de `Member` : les scalaires et
-          + flags de tête à occurrence unique et sûrs en ligne deviennent des atomes en ligne ; un
-          + scalaire répétable passe entièrement en ligne lorsque chaque occurrence est sûre en
-          + ligne, et sinon chaque occurrence devient un enfant ; et chaque membre restant est un
-          + enfant dans un seul bloc, sans commentaires, tabulation ni lignes vides. Les atomes en
-          + ligne sont précédés d'une espace simple jusqu'à la première valeur contenant une espace,
-          + et d'une espace dure à partir de là, si bien que la construction se réanalyse en les
-          + mêmes atomes.
+          + indicateurs de tête à occurrence unique et sûrs en ligne deviennent des atomes en
+          + ligne ; un scalaire répétable passe entièrement en ligne lorsque chaque occurrence est
+          + sûre en ligne, et sinon chaque occurrence devient un enfant ; et chaque membre restant
+          + est un enfant dans un seul bloc, sans commentaires, tabulation ni lignes vides. Les
+          + atomes en ligne sont précédés d'une espace simple jusqu'à la première valeur contenant
+          + une espace, et d'une espace dure à partir de là, si bien que la construction se
+          + réanalyse en les mêmes atomes.
 
           ```scala
           import soundness.*
@@ -3591,9 +3592,9 @@ entry .Tel
           + indice de bloc ou un groupe qui ne se résout pas en un composé, y compris une
           + réorganisation dont les groupes sont entrelacés ou dont les indices sont hors limites,
           + et un `ResizeTabulation` sur un bloc sans tabulation ; `AtomIndexOutOfRange` un
-          + `UpdateAtom` au-delà des atomes de la cible ; `FlagAlreadySet` un `SetFlag` d'un flag
-          + que la cible a déjà ; `TabulationOverflow` un `InsertIntoBlock` dont la valeur de
-          + colonne dépasse la capacité de sa colonne ; et `WriteUnsupported`, levée par
+          + `UpdateAtom` au-delà des atomes de la cible ; `FlagAlreadySet` un `SetFlag` d'un
+          + indicateur que la cible a déjà ; `TabulationOverflow` un `InsertIntoBlock` dont la
+          + valeur de colonne dépasse la capacité de sa colonne ; et `WriteUnsupported`, levée par
           + `open[Tel]` avec `Write` lorsque la source du document ne peut pas être réécrite.
       entry .Reason
         info
@@ -3804,18 +3805,19 @@ entry .Tel
       entry #setFlag
         info
             - sets a flag on the target, inline when it can be, else as a child
-            + place un flag sur la cible, en ligne lorsque c'est possible, sinon comme enfant
+            + place un indicateur sur la cible, en ligne lorsque c'est possible, sinon comme enfant
         detail
             - Inline — hard-space-preceded if the line is already in hard-space mode — when the
             - target has no children and no source or literal atom; otherwise as a bare-keyword
             - child. A flag already present is `FlagAlreadySet`.
             + En ligne — précédé d'une espace dure si la ligne est déjà en mode espace dure —
             + lorsque la cible n'a ni enfants ni atome source ou littéral ; sinon comme enfant à
-            + mot-clé nu. Un flag déjà présent donne `FlagAlreadySet`.
+            + mot-clé nu. Un indicateur déjà présent donne `FlagAlreadySet`.
       entry #unsetFlag
         info
             - removes an inline or child flag from the target; an absent flag is the identity
-            + retire de la cible un flag en ligne ou enfant ; un flag absent équivaut à l'identité
+            + retire de la cible un indicateur en ligne ou enfant ; un indicateur absent équivaut à
+            + l'identité
       entry #reorderWithinGroup
         info
             - moves the `oldIndex`-th occurrence of a keyword to `newIndex` among the parent's children
@@ -4089,7 +4091,7 @@ entry .fulfil
       + la valeur, pour que le document reste valide selon la composition qu'il nomme — et
       + répond à la première alternative que cette composition peut servir avec la composition
       + la plus riche que l'alternative permet, sous forme d'un `Tel.Acceptance.Served`
-      + contenant le document encadré. `Unset` lorsqu'aucune alternative ne peut être servie.
+      + contenant le document tramé. `Unset` lorsqu'aucune alternative ne peut être servie.
       + Des `Tel.Codec.Bindings` facultatifs écrivent les scalaires encodés ; par défaut, ils
       + lient les codecs intégrés. Nécessite des tactiques pour `Tel.Error`, `Bintel.Error`,
       + `Tels.Resolution.Error` et `Tels.Renderer.Error`. Nommée `fulfil` parce que `serve`
@@ -4418,12 +4420,12 @@ entry .Tel2
   entry #booleanDecodable
     info
         - `Boolean` from an explicit `true` or `false` atom, never from a bare flag
-        + `Boolean` à partir d'un atome explicite `true` ou `false`, jamais d'un flag nu
+        + `Boolean` à partir d'un atome explicite `true` ou `false`, jamais d'un indicateur nu
     detail
         - A Scala `Boolean` is a value, not a TEL flag: `active true` decodes, `active` alone
         - raises `Absent`, and anything else `NotScalar`.
-        + Un `Boolean` Scala est une valeur, pas un flag TEL : `active true` se décode, `active`
-        + seul lève `Absent`, et toute autre chose `NotScalar`.
+        + Un `Boolean` Scala est une valeur, pas un indicateur TEL : `active true` se décode,
+        + `active` seul lève `Absent`, et toute autre chose `NotScalar`.
   entry #telDecodable
     info
         - `Tel` decodes as itself
@@ -4581,7 +4583,7 @@ entry .Tel2
         + `Tel.scalar(t"Hal")` est un composé sans mot-clé doté d'un atome, sous la forme qui se
         + relit telle qu'elle a été écrite (en ligne, source ou littérale). Un texte vide reste un
         + atome en ligne vide, qui se sérialise comme aucun atome mais se distingue, au niveau de
-        + la valeur, de l'absence. C'est ce que prennent `modify` et le setter de `telLens`.
+        + la valeur, de l'absence. C'est ce que prennent `modify` et le mutateur de `telLens`.
   entry #compound
     info
         - a `Tel` holding a compound built from a keyword, atoms and child compounds
@@ -4670,7 +4672,7 @@ entry .Tel4
         + qu'aucun type Scala ne la reformule. Un champ que le schéma ne déclare pas est une
         + erreur de compilation. Chaque champ se lit au type que nomme son validateur : `string`,
         + `identifier` et `type-name` comme `Text`, `sigil` comme `Char` (en échouant sur plus
-        + d'un caractère), un flag comme `Boolean` (`true` lorsqu'il est présent), et un
+        + d'un caractère), un indicateur comme `Boolean` (`true` lorsqu'il est présent), et un
         + validateur personnalisé au moyen d'un given de même étiquette dans la portée où
         + `record` est appelé, comme `given ("handle" is Intensional in Tel.Provider from Tel to
         + Handle) = Intensional(…)`. Un champ optionnel, ou introduit par une couche, se lit comme
@@ -4716,7 +4718,8 @@ entry .Tel4
     entry .flag
       info
           - a flag reads as `Boolean`: `true` where the keyword is present, `false` where not
-          + un flag se lit comme `Boolean` : `true` là où le mot-clé est présent, `false` sinon
+          + un indicateur se lit comme `Boolean` : `true` là où le mot-clé est présent, `false`
+          + sinon
     entry .tel
       info
           - the `tel` validator reads the field as a `Tel`
@@ -4794,7 +4797,7 @@ entry .Tel4
     entry #required
       info
           - a required field's compound, or `Tel.Provider.Error(Absent)`; a flag is never absent
-          + le composé d'un champ obligatoire, ou `Tel.Provider.Error(Absent)` ; un flag n'est
+          + le composé d'un champ obligatoire, ou `Tel.Provider.Error(Absent)` ; un indicateur n'est
           + jamais absent
     entry #repeated
       info
@@ -4990,7 +4993,7 @@ entry .Tels
   entry .Polarity
     info
         - whether a member's flag was loosened, tightened or left to the default
-        + si le flag d'un membre a été relâché, resserré ou laissé par défaut
+        + si l'indicateur d'un membre a été relâché, resserré ou laissé par défaut
     detail
         - The tristate of §20 for each of a member's two axes. `Implicit` means no flag was
         - written; `Loose` means a loosening flag — `optional` on the required axis, `repeatable`
@@ -5001,14 +5004,14 @@ entry .Tels
         - derived schema hash as the schema its author would have written: a `field` with no
         - flags is `Implicit`, not `Tight`.
         + L'état à trois valeurs du §20 pour chacun des deux axes d'un membre. `Implicit` signifie
-        + qu'aucun flag n'a été écrit ; `Loose` désigne un flag de relâchement — `optional` sur
-        + l'axe d'obligation, `repeatable` sur l'axe de répétabilité ; `Tight` un flag de
-        + resserrement — `required` ou `irrepeatable`. Les booléens effectifs sont
+        + qu'aucun indicateur n'a été écrit ; `Loose` désigne un indicateur de relâchement —
+        + `optional` sur l'axe d'obligation, `repeatable` sur l'axe de répétabilité ; `Tight` un
+        + indicateur de resserrement — `required` ou `irrepeatable`. Les booléens effectifs sont
         + `required = (polarity != Loose)` et `repeatable = (polarity == Loose)`, si bien qu'un
-        + membre sans flag est obligatoire et unique. Une couche peut resserrer un membre mais
-        + jamais le relâcher (E214, E215). C'est l'état à trois valeurs, plutôt que deux
-        + booléens, qui permet à un schéma dérivé d'avoir le même hachage que le schéma que son
-        + auteur aurait écrit : un `field` sans flags est `Implicit`, pas `Tight`.
+        + membre sans indicateur est obligatoire et unique. Une couche peut resserrer un membre mais
+        + jamais le relâcher (E214, E215). C'est l'état à trois valeurs, plutôt que deux booléens,
+        + qui permet à un schéma dérivé d'avoir le même hachage que le schéma que son auteur aurait
+        + écrit : un `field` sans indicateurs est `Implicit`, pas `Tight`.
   entry .Member
     info
         - one member of a struct: a field, a select reference, or a layer's exclude
@@ -5038,7 +5041,7 @@ entry .Tels
         + dernier, après `description`, pour que la construction positionnelle écrite avant
         + l'existence des clés compile toujours ; l'ordre des mots-clés du langage de schémas
         + place `key` avant `default`, ce qui explique pourquoi un atome `key` final sur une ligne
-        + `field` est lu comme le flag et jamais comme une valeur par défaut.
+        + `field` est lu comme l'indicateur et jamais comme une valeur par défaut.
 
         ```scala
         import soundness.*
@@ -5064,7 +5067,7 @@ entry .Tels
     entry #fieldType
       info
           - the field's type: a reference, a scalar, a flag or an inline struct
-          + le type du champ : une référence, un scalaire, un flag ou une structure en ligne
+          + le type du champ : une référence, un scalaire, un indicateur ou une structure en ligne
     entry #default
       info
           - the value a required scalar field takes when elided, if any
@@ -5196,7 +5199,7 @@ entry .Tels
   entry .Type
     info
         - a member's type: struct, scalar, flag or reference
-        + le type d'un membre : structure, scalaire, flag ou référence
+        + le type d'un membre : structure, scalaire, indicateur ou référence
     detail
         - The sealed trait of the four kinds of §20: `Tels.Struct`, an ordered member list;
         - `Tels.Scalar`, atom text under validators and patterns; `Tels.Flag`, a value-less
@@ -5274,7 +5277,8 @@ entry .Tels
         - is not a flag but a scalar holding `true` or `false`.
         + Un membre de type `Flag` s'écrit comme son mot-clé nu, en ligne parmi les atomes d'un
         + composé ou comme un enfant sans contenu ; un membre portant du contenu donne E311. Un
-        + champ `Boolean` dérivé n'est pas un flag mais un scalaire contenant `true` ou `false`.
+        + champ `Boolean` dérivé n'est pas un indicateur mais un scalaire contenant `true` ou
+        + `false`.
   entry .Reference
     info
         - an indirection to a definition by its `TypeName`
@@ -5531,7 +5535,7 @@ entry .Tels
           - prefixes. Its `Signature` and `Component` scalars carry the `schema-signature` and
           - `base-256` encodings, bound by `Tel.Codec.Bindings.builtins`.
           + Une racine de membres `accept` répétables, chacun étant une `Alternative` avec une
-          + signature `schema`, les flags `self-contained` et `any-published` et des préfixes
+          + signature `schema`, les indicateurs `self-contained` et `any-published` et des préfixes
           + `component` répétables. Ses scalaires `Signature` et `Component` portent les encodages
           + `schema-signature` et `base-256`, liés par `Tel.Codec.Bindings.builtins`.
   entry .Decoder
@@ -5916,7 +5920,7 @@ entry .Tels
         + lecture elle-même s'atteint par le given `Tel.telsDecodable`, avec `tel.as[Tels]` ; ce
         + qui reste public ici est `.equivalent`. Le nom d'une définition peut s'écrire comme
         + premier atome (`record Contact`) ou comme enfant `name` ; les atomes d'une ligne `field`
-        + sont assignés par position, si bien qu'un `key` final est le flag et le premier autre
+        + sont assignés par position, si bien qu'un `key` final est l'indicateur et le premier autre
         + atome la valeur par défaut.
     entry .equivalent
       info
@@ -6228,7 +6232,7 @@ entry .Tels
         + supertype sont abandonnés, et les autres sont réindexés selon les positions plates des
         + mots-clés du supertype — les indices de mots-clés BinTEL sont positionnels, si bien que
         + conserver les indices du sous-type encoderait un document différent — et typés par le
-        + membre du supertype. Les scalaires et les flags passent tels quels. Il incombe à
+        + membre du supertype. Les scalaires et les indicateurs passent tels quels. Il incombe à
         + l'appelant de s'assurer que `from <: to` est vérifié (`Tels.Subtyping`) ; un membre dont
         + les sortes ne concordent pas est abandonné plutôt que mal typé. C'est ainsi qu'un
         + écrivain sert un lecteur qui accepte moins que ce que l'écrivain détient.
@@ -6265,7 +6269,7 @@ entry .Tels2
         - AST and the staged BinTEL paths agree on its wire form by construction. In implicit
         - scope through the `Tels` companion.
         + Un type marqué `Tel.Encoded[name]` se dérive comme un scalaire dont l'`encoding` est
-        + `name`, si bien que le chemin par l'AST et le chemin BinTEL par étapes s'accordent sur
+        + `name`, si bien que le chemin par l'AST et le chemin BinTEL mis en étapes s'accordent sur
         + sa forme de transmission par construction. Dans la portée implicite par le compagnon
         + `Tels`.
   entry #text
@@ -6615,7 +6619,7 @@ entry .TelSchematic
         - `required` flag.
         + `Loose` pour `Optional[T]` et pour les collections. `Implicit` plutôt que `Tight` par
         + défaut, pour qu'un schéma dérivé ait le même hachage que le schéma que son auteur
-        + écrirait, sans flag `required`.
+        + écrirait, sans indicateur `required`.
   entry #repeatable
     info
         - the repeatable-axis polarity of a field of this type; `Loose` for collections
@@ -6636,7 +6640,7 @@ entry .TelSchematic
     detail
         - The schema itself for a scalar or flag; a `Tels.Reference` to the registered record for
         - a product; a reference to the `<Sum>Value` wrapper record for a sum.
-        + Le schéma lui-même pour un scalaire ou un flag ; une `Tels.Reference` vers
+        + Le schéma lui-même pour un scalaire ou un indicateur ; une `Tels.Reference` vers
         + l'enregistrement inscrit pour un produit ; une référence vers l'enregistrement enveloppe
         + `<Sum>Value` pour une somme.
   entry #selectDefinitions
@@ -6743,7 +6747,7 @@ entry .TelReader
       + par un appel `parse` pendant la durée de cet appel, et rien d'elle ne peut être retenu
       + ensuite. Seul le chemin de lecture de la bibliothèque en construit une. Les méthodes à
       + mots-clés compactés (`#keywordWord`, `#keywordText`) et `.reveal` sont publiques parce
-      + que les analyseurs par étapes sont générés dans les modules de l'utilisateur, non parce
+      + que les analyseurs mis en étapes sont générés dans les modules de l'utilisateur, non parce
       + qu'une instance devrait les appeler à la main.
   refer stratiform.Tel
   entry .KeywordEnd
@@ -6761,9 +6765,9 @@ entry .TelReader
     detail
         - Not for use by hand: it exists so that a capture-erased reader spliced into a staged
         - parser can reassert the parser's type at the rim.
-        + Non destiné à un usage manuel : il existe pour qu'un lecteur aux captures effacées,
-        + inséré par splice dans un analyseur par étapes, puisse réaffirmer le type de l'analyseur
-        + à la bordure.
+        + Non destiné à un usage manuel : il existe pour qu'un lecteur aux captures effacées, inséré
+        + par splice dans un analyseur mis en étapes, puisse réaffirmer le type de l'analyseur à la
+        + bordure.
   entry #keyword
     info
         - the next entry's keyword at exactly `indent`, or `Unset` when the region ends
@@ -7028,15 +7032,15 @@ entry .Telp
         - value or a flag; `AbsentMember`, a non-repeatable optional member not present;
         - `IndexOutOfRange`, an index beyond the occurrence sequence; `TypeNotKeyed`, a key
         - selector on a type with no key field; and `KeyNotFound`, no occurrence with that key.
-        + Erreur 610 : _the TELP does not resolve because …_. L'`#index` est le composant, compté
-        + à partir de zéro, auquel l'analyse ou la résolution a échoué. Les raisons sont des
-        + résultats de l'API de résolution, non des erreurs de document, et ne portent aucun code
-        + E : `Syntax`, un chemin vide, qui ne commence par aucun délimiteur, qui a un composant
-        + vide ou qui contient un saut de ligne ; `UnknownKeyword`, un composant ne correspondant
-        + à aucun mot-clé de la structure courante (le nom d'une sélection n'est pas un mot-clé ;
-        + ceux de ses variantes le sont) ; `NonStructDescent`, une descente sous une valeur ou un
-        + flag ; `AbsentMember`, un membre optionnel non répétable absent ; `IndexOutOfRange`, un
-        + indice au-delà de la suite d'occurrences ; `TypeNotKeyed`, un sélecteur de clé sur un
+        + Erreur 610 : _the TELP does not resolve because …_. L'`#index` est le composant, compté à
+        + partir de zéro, auquel l'analyse ou la résolution a échoué. Les raisons sont des résultats
+        + de l'API de résolution, non des erreurs de document, et ne portent aucun code E :
+        + `Syntax`, un chemin vide, qui ne commence par aucun délimiteur, qui a un composant vide ou
+        + qui contient un saut de ligne ; `UnknownKeyword`, un composant ne correspondant à aucun
+        + mot-clé de la structure courante (le nom d'une sélection n'est pas un mot-clé ; ceux de
+        + ses variantes le sont) ; `NonStructDescent`, une descente sous une valeur ou un
+        + indicateur ; `AbsentMember`, un membre optionnel non répétable absent ; `IndexOutOfRange`,
+        + un indice au-delà de la suite d'occurrences ; `TypeNotKeyed`, un sélecteur de clé sur un
         + type sans champ clé ; et `KeyNotFound`, aucune occurrence avec cette clé.
     entry .Reason
       info
@@ -7325,7 +7329,7 @@ entry .dynamicAccess
 entry .Bintel
   info
       - the BinTEL binary form of a typed TEL document: framing, encoding, decoding and direct parsing
-      + la forme binaire BinTEL d'un document TEL typé : encadrement, encodage, décodage et analyse
+      + la forme binaire BinTEL d'un document TEL typé : tramage, encodage, décodage et analyse
       + directe
   detail
       - BinTEL is TEL's compact binary encoding: the same data as the text form, but guided by a
@@ -7339,7 +7343,7 @@ entry .Bintel
       + BinTEL est l'encodage binaire compact de TEL : les mêmes données que la forme texte,
       + mais guidées par un schéma (un `Tels`), si bien que le flux ne porte aucun mot-clé,
       + seulement des *indices de mots-clés* encodés en varint et résolus par rapport au schéma,
-      + et des valeurs typées par le schéma plutôt qu'étiquetées dans le flux. `Bintel` est
+      + et des valeurs typées par le schéma plutôt qu'taguées dans le flux. `Bintel` est
       + l'objet qui fait tout cela : `encode` et `decode` transforment un arbre de `Tel.Element`
       + aux types assignés (ce que produit `Tel.Type.assign`) en octets de corps, et
       + inversement ; `frame`, `unframe`, `documentExtent` et la famille `decodeDocument` gèrent
@@ -7560,15 +7564,15 @@ entry .Bintel
         - kept together — so two documents with the same values encode to the same bytes, which is
         - what makes the value hash (`valueHash`) well-defined.
         + `Bintel.encode(element, schema)` écrit la racine qu'a produite `Tel.Type.assign` — un
-        + `Node` sans indice de mot-clé, dont le type est la structure `document` du schéma —
-        + sous forme d'octets de corps : un nombre d'enfants, puis pour chaque enfant son indice
-        + de mot-clé plat et sa charge utile (la longueur en octets et les octets UTF-8 d'un
-        + scalaire ; le nombre d'enfants et les enfants propres d'une structure ; rien pour un
-        + flag). Les enfants sont émis dans l'ordre canonique du §7.2 de TEL — membre par membre
-        + dans l'ordre de déclaration, l'ordre du code source étant préservé au sein d'un membre,
-        + et les enfants remplissant les variantes d'un `SelectRef` étant gardés ensemble — si
-        + bien que deux documents ayant les mêmes valeurs s'encodent en les mêmes octets, ce qui
-        + rend bien défini le hachage de valeur (`valueHash`).
+        + `Node` sans indice de mot-clé, dont le type est la structure `document` du schéma — sous
+        + forme d'octets de corps : un nombre d'enfants, puis pour chaque enfant son indice de
+        + mot-clé plat et sa charge utile (la longueur en octets et les octets UTF-8 d'un scalaire ;
+        + le nombre d'enfants et les enfants propres d'une structure ; rien pour un indicateur). Les
+        + enfants sont émis dans l'ordre canonique du §7.2 de TEL — membre par membre dans l'ordre
+        + de déclaration, l'ordre du code source étant préservé au sein d'un membre, et les enfants
+        + remplissant les variantes d'un `SelectRef` étant gardés ensemble — si bien que deux
+        + documents ayant les mêmes valeurs s'encodent en les mêmes octets, ce qui rend bien défini
+        + le hachage de valeur (`valueHash`).
 
         - It raises `Bintel.Error`: `ReferenceUnresolved` (B10) when a `SelectRef` in the schema
         - names no select definition, and `CodecUnresolved` (B13) when a scalar's schema declares
@@ -7778,9 +7782,9 @@ entry .Bintel
 
         - Together with `.unframe` this is the framing a transport uses when the schema is agreed
         - separately; `tel.bintelDocument(schema, signature)` combines the encode and the frame.
-        + Avec `.unframe`, c'est l'encadrement qu'utilise un transport lorsque le schéma est
+        + Avec `.unframe`, c'est le tramage qu'utilise un transport lorsque le schéma est
         + convenu séparément ; `tel.bintelDocument(schema, signature)` combine l'encodage et
-        + l'encadrement.
+        + le tramage.
   entry .unframe
     info
         - splits an external-schema document into its signature and body without decoding the body
@@ -8050,7 +8054,7 @@ entry .Bintel
         + column  Cas
         + column  Code
         + column  Message
-        + column  Note
+        + column  Remarque
         + row  `BadMagic`  1  _the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC (self-contained mode)_
         + row  `VarintError`  2  _a variable-length integer in the stream is invalid_  tronquée, plus large que 64 bits ou non minimale ; une `Varint.Error` de la couche inférieure est toujours signalée ainsi
         + row  `BadSignatureLength`  3  _the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)_  levée aussi par `SchemaSignature.encode` pour une liste vide ou un hachage de mauvaise taille
@@ -8182,7 +8186,7 @@ entry .Ratel
         + l'accesseur `ratel`. Il ne lit rien d'autre tant qu'on ne le lui demande pas. Le lecteur
         + capture la vue et ne peut pas survivre au bloc. Un mode `Write` est refusé avec
         + `Unwritable` : une image se remplace, en en publiant une autre, et ne se modifie jamais.
-        + Les flags sont des `Ratel.Flag`.
+        + Les indicateurs sont des `Ratel.Flag`.
   entry .Flag
     info
         - what may be asked of `open[Ratel]`: `Verify`, and `Codecs(bindings)`
@@ -8272,8 +8276,8 @@ entry .Ratel
         - A struct's row, the text of a scalar, the number of times a flag occurs, or nothing. It
         - is the `Origin` of the provider, and what an `Intensional` instance for one of its
         - scalars reads.
-        + La ligne d'une structure, le texte d'un scalaire, le nombre d'occurrences d'un flag, ou
-        + rien. C'est l'`Origin` du fournisseur, et ce que lit une instance `Intensional` pour
+        + La ligne d'une structure, le texte d'un scalaire, le nombre d'occurrences d'un indicateur,
+        + ou rien. C'est l'`Origin` du fournisseur, et ce que lit une instance `Intensional` pour
         + l'un de ses scalaires.
     entry .Struct
       info
@@ -8286,7 +8290,7 @@ entry .Ratel
     entry .Flag
       info
           - a flag, as the number of times it occurs
-          + un flag, sous forme de son nombre d'occurrences
+          + un indicateur, sous forme de son nombre d'occurrences
     entry .Absent
       info
           - a member which is not there
@@ -8348,15 +8352,15 @@ entry .Ratel
         + `open[Ratel]`, est la racine de l'image sous forme d'un `polyvinyl.Record` dont les
         + membres sont ceux du document du schéma, chacun lu sur place lorsqu'il est sélectionné,
         + dans le contexte du lecteur de l'image. Un scalaire se lit au moyen de l'instance
-        + `Intensional` nommée par son encodage, ou par son premier validateur : celles du
-        + compagnon donnent `Text`, ou `Int`, `Long` ou `Double` pour un codec standard que l'un
-        + d'eux contient exactement, et celles d'un appelant peuvent donner un autre type. Un flag
-        + est un `Boolean`, ou un compte `Long` s'il est répétable ; une structure un
-        + enregistrement imbriqué ; un scalaire répétable une `List` ; une structure répétable une
-        + `Ratel.Table` ; chaque variante d'une sélection, et chaque membre optionnel, un
-        + `Optional`. Une structure qui se contient elle-même se lit comme sa `Ratel.Cell`, et une
-        + sélection répétable n'est pas un membre. L'image doit avoir été écrite avec le schéma,
-        + sinon `Mismatched` est levée. L'objet est compilé avant le code qui l'appelle.
+        + `Intensional` nommée par son encodage, ou par son premier validateur : celles du compagnon
+        + donnent `Text`, ou `Int`, `Long` ou `Double` pour un codec standard que l'un d'eux
+        + contient exactement, et celles d'un appelant peuvent donner un autre type. Un indicateur
+        + est un `Boolean`, ou un compte `Long` s'il est répétable ; une structure un enregistrement
+        + imbriqué ; un scalaire répétable une `List` ; une structure répétable une `Ratel.Table` ;
+        + chaque variante d'une sélection, et chaque membre optionnel, un `Optional`. Une structure
+        + qui se contient elle-même se lit comme sa `Ratel.Cell`, et une sélection répétable n'est
+        + pas un membre. L'image doit avoir été écrite avec le schéma, sinon `Mismatched` est levée.
+        + L'objet est compilé avant le code qui l'appelle.
     entry #schema
       info
           - the schema the provider reads by
@@ -8476,7 +8480,7 @@ entry .BintelReader
         - length runs past the input. Framing is codec-independent, so an encoded scalar skips
         - correctly too.
         + Pour un enfant dont l'analyseur ne reconnaît pas l'indice ; `ValueTruncated` (B06) si
-        + la longueur dépasse l'entrée. L'encadrement est indépendant des codecs, si bien qu'un
+        + la longueur dépasse l'entrée. Le tramage est indépendant des codecs, si bien qu'un
         + scalaire encodé est lui aussi correctement sauté.
 
 entry .BintelParser
@@ -9317,7 +9321,7 @@ entry .internal
   info
       - the macro implementations behind `tel"…"`, `telp"…"`, the `tel` extractor, staged parsing and layer annotations
       + les implémentations de macros derrière `tel"…"`, `telp"…"`, l'extracteur `tel`, l'analyse
-      + par étapes et les annotations de couches
+      + mise en étapes et les annotations de couches
   hidden
   detail
       - Not for direct use: the object exists so that the macros have a stable home. (`object
@@ -9917,13 +9921,13 @@ entry .Framed
       - protocol is `Framed from T to T`. Both schemas are derived once, when the connection is
       - framed, rather than per message as `Bintel.read` and `value.bintel` derive them.
       + `Framed from inbound to outbound` lit des valeurs `inbound` depuis un `Duplex` et envoie
-      + des valeurs `outbound`, chaque message étant un enregistrement encadré par sa longueur
+      + des valeurs `outbound`, chaque message étant un enregistrement tramé par sa longueur
       + sur quatre octets gros-boutiste (`LengthPrefix`), dont le corps est l'encodage BinTEL de
-      + la valeur — l'encadrement qu'un démon parle en TLS avec ses pairs et sur un socket de
+      + la valeur — le tramage qu'un démon parle en TLS avec ses pairs et sur un socket de
       + domaine UNIX avec un outil local. Le `Framed from Request to Reply` d'une extrémité
       + rencontre le `Framed from Reply to Request` de l'autre, et un protocole symétrique est
       + `Framed from T to T`. Les deux schémas sont dérivés une seule fois, lorsque la connexion
-      + est encadrée, plutôt qu'à chaque message comme les dérivent `Bintel.read` et
+      + est tramée, plutôt qu'à chaque message comme les dérivent `Bintel.read` et
       + `value.bintel`.
 
       ```scala
@@ -9951,8 +9955,8 @@ entry .Framed
       + La connexion se construit avec `Framed[inbound, outbound](duplex)` ou la méthode
       + d'extension `framed` sur `Duplex`, et nécessite un `Buffering`, une
       + `Tactic[Framing.Error]`, une `Tactic[Bintel.Error]` et une `Tactic[Tel.Error]`. Les
-      + tactiques sont prises lorsque la connexion est encadrée, et non à chaque message, parce
-      + qu'un échec d'encadrement ou de décodage se manifeste paresseusement à mesure que
+      + tactiques sont prises lorsque la connexion est tramée, et non à chaque message, parce
+      + qu'un échec de tramage ou de décodage se manifeste paresseusement à mesure que
       + `#messages` est tiré ; la connexion les capture donc, et son type l'indique. C'est le
       + composant `stratiform.duplex`.
   refer stratiform.framed
@@ -9969,7 +9973,7 @@ entry .Framed
         + `Framed[Reply, Request](duplex)` dérive les deux schémas avec `Tels.tels`, si bien que
         + les deux types nécessitent un `TelSchematic`, `inbound` un `Tel.Decodable` et `outbound`
         + un `Tel.Encodable`. L'itérateur entrant est ouvert au premier tirage, et non lorsque la
-        + connexion est encadrée, si bien que l'encadrement ne bloque jamais sur un pair qui n'a
+        + connexion est tramée, si bien que le tramage ne bloque jamais sur un pair qui n'a
         + encore rien envoyé.
   entry #send
     info
@@ -9979,7 +9983,7 @@ entry .Framed
         - Writes are serialized by a mutex: two messages' frames interleaved on the wire would be
         - unreadable, and `Duplex.send` leaves that to its caller.
         + Les écritures sont sérialisées par un mutex : les trames de deux messages entrelacées
-        + sur le réseau seraient illisibles, et `Duplex.send` laisse ce soin à son appelant.
+        + en transmission seraient illisibles, et `Duplex.send` laisse ce soin à son appelant.
   entry #messages
     info
         - the inbound messages, as one iterator opened once and handed back thereafter
@@ -10102,8 +10106,8 @@ entry .optics
         - whose setter is `Tel.modify`, which replaces an existing child compound with the same
         - kebab-case keyword in place or appends a new one. It needs a `(? >: Tel) is Dynamical`
         - (`dynamicAccess.dynamicTel`) and a `Tactic[Tel.Error]`.
-        + Un nom `<: Label` se résout en une lentille dont le getter est la sélection dynamique de
-        + champ et dont le setter est `Tel.modify`, qui remplace sur place un composé enfant
+        + Un nom `<: Label` se résout en une lentille dont l'accesseur est la sélection dynamique de
+        + champ et dont le mutateur est `Tel.modify`, qui remplace sur place un composé enfant
         + existant de même mot-clé en kebab-case ou en ajoute un nouveau. Elle nécessite un
         + `(? >: Tel) is Dynamical` (`dynamicAccess.dynamicTel`) et une `Tactic[Tel.Error]`.
   entry .telOrdinalOptical

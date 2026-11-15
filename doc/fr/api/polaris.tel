@@ -168,7 +168,7 @@ entry .unpack
       - when the count is known and does not move the caller's sextant.
       + `unpack[T]` résout `T is Unpackable` et lit par le `Sextant^` contextuel. Pour un type
       + `Debufferable`, le résultat est la valeur, et le sextant avance de sa largeur ; pour un
-      + tableau figé `Array[T]^{}`, le résultat est une fonction d'un nombre vers le tableau, qui
+      + tableau gelé `Array[T]^{}`, le résultat est une fonction d'un nombre vers le tableau, qui
       + est lu quand le nombre est connu et ne fait pas avancer le sextant de l'appelant.
 
       ```scala
@@ -275,7 +275,7 @@ entry .Debufferable
       + Une disposition qui n'est pas un produit de champs à largeur fixe — une couleur empaquetée,
       + par exemple, ou un type ayant sa propre interprétation de certains octets — définit une
       + instance avec `.apply`. Seuls les produits se dérivent : il n'y a pas de dérivation pour les
-      + types somme, puisqu'une disposition binaire n'a pas d'étiquette standard.
+      + types somme, puisqu'une disposition binaire n'a pas de tag standard.
   refer polaris.Unpackable
   refer polaris.byteWidth
   entry .apply
@@ -417,7 +417,7 @@ entry .Unpackable
       - call, with the count supplied once it is known:
       + `unpack` et `unpackFrom` résolvent `T is Unpackable`, dont le type `#Wrap` indique la forme
       + du résultat : pour tout type `Debufferable`, le résultat est la valeur elle-même
-      + (`.debufferable`), et pour un tableau figé `Array[T]^{}`, c'est `Int -> Array[T]^{}`, une
+      + (`.debufferable`), et pour un tableau gelé `Array[T]^{}`, c'est `Int -> Array[T]^{}`, une
       + fonction d'un nombre vers le tableau (`.frozenArray`). La seconde forme permet de lire une
       + section préfixée par son nombre d'éléments en un seul appel, le nombre étant fourni une fois
       + connu :
@@ -436,7 +436,7 @@ entry .Unpackable
   entry .frozenArray
     info
         - reads a frozen array of `Debufferable` elements, as a function from a count
-        + lit un tableau figé d'éléments `Debufferable`, sous forme de fonction d'un nombre
+        + lit un tableau gelé d'éléments `Debufferable`, sous forme de fonction d'un nombre
     detail
         - Provides `Array[T]^{} is Unpackable` for any `T` with a `Debufferable` and a `ClassTag`.
         - Its result records the data and the start offset and makes a fresh sextant each time it is

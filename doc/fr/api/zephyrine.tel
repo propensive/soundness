@@ -24,7 +24,7 @@ detail
     + pull, un `Intake` un endpoint push, un `Duct` une transformation synchrone attachable à l'un
     + ou à l'autre, et un `Conduit` le seul endroit où les données passent d'un thread à un autre —
     + avec la demande (`Credit`) comme message de contre-pression ; et un **`Producer`**, le
-    + réceptacle dans lequel écrit un sérialiseur, que le même code d'écriture pilote soit de
+    + puits dans lequel écrit un sérialiseur, que le même code d'écriture pilote soit de
     + façon synchrone (`Producer.collect`), soit sous forme de flux de blocs (`Producer.apply`,
     + `Producer.sink`, `Producer.utf8`).
 
@@ -73,7 +73,7 @@ detail
     + Un `Cursor` se construit sur une valeur entière (`Cursor(data)`, sans copie pour `Data`), un
     + `Iterator` de fragments, une `Chain` de fragments, un `Stream`, ou un thunk de chargement, et
     + son support est n'importe quoi d'`Addressable` : `Data` (curseurs d'octets), `Text`
-    + (curseurs de caractères) ou un tableau figé d'enregistrements. Le **danger de l'anticipation
+    + (curseurs de caractères) ou un tableau gelé d'enregistrements. Le **danger de l'anticipation
     + bloquante** concerne tout analyseur sur une connexion active : `more`, `finished`, `peek` et
     + `next()` rechargent depuis la source une fois le tampon épuisé, et un rechargement bloque
     + jusqu'à ce que la source produise ; un analyseur qui s'arrête à une frontière de message
@@ -92,7 +92,7 @@ detail
     + `Charset`, une `Codepage`, un schéma de compression, un mode de chiffrement), et une
     + opération terminale — `memoize`, `drain`, `gather`, `chunks`, `records` — le vide et le
     + ferme. Un `Stream` est une capacité exclusive : il est lu une seule fois par un seul
-    + propriétaire, et les modules qui l'utilisent compilent avec la vérification des captures et
+    + propriétaire, et les modules qui l'utilisent compilent avec le contrôle des captures et
     + de la séparation, si bien que créer un alias d'un flux ou le lire après une opération
     + consommatrice est une erreur de compilation.
 
@@ -186,7 +186,7 @@ entry .Cursor
       + Un `Cursor[data, cap]` lit un élément à la fois depuis un unique tampon contigu, qu'il
       + recharge depuis sa source quand la position de lecture dépasse la fin — si bien qu'un
       + analyseur voit une suite ininterrompue d'éléments quel que soit le découpage de la source.
-      + `data` est le support (`Data`, `Text`, ou un `Array[record]^{}` figé) et `cap^` est
+      + `data` est le support (`Data`, `Text`, ou un `Array[record]^{}` gelé) et `cap^` est
       + l'ensemble de capture du chargeur : `{}` pour un curseur sur une valeur, un itérateur, une
       + chaîne ou un flux, ou les capacités dont s'alimente un chargeur en streaming, si bien qu'un
       + curseur sur un chargeur qui lit un fichier ne peut pas quitter la portée du fichier.
@@ -587,7 +587,7 @@ entry .Cursor
         + trait inline : son corps est copié dans chaque analyseur avec `operand` substitué, si bien
         + que `Snapshot[Data, Byte]` donne un champ `byte[]` et `Snapshot[Text, Char]` un champ
         + `char[]` — une spécialisation qu'un trait ordinaire ne peut pas exprimer. L'analyseur est
-        + le receveur (`this` est l'analyseur), il n'a besoin d'aucun drapeau de langage, et le
+        + le receveur (`this` est l'analyseur), il n'a besoin d'aucune option de langage, et le
         + curseur est tenu comme un `AnyRef` neutre (`cursor0`) avec un accesseur à vue exclusive,
         + si bien qu'un analyseur mis en pool peut le repointer à chaque réinitialisation.
 
@@ -680,7 +680,7 @@ entry .Cursor
         - compiles to one `int == int`. It may block to fetch the element being inspected (that
         - element must exist for any match) but never reads past it.
         + Une extension sur `Cursor[data, cap]` pour les curseurs d'octets et de caractères (tout
-        + autre support est une erreur de compilation). Sans allocation : un octet est élevé en non
+        + autre support est une erreur de compilation). Sans allocation : un octet est relevé en non
         + signé (`0..255`) et un caractère par son code, si bien que le résultat se compare
         + directement à un littéral `Char` ou `Byte` et que la comparaison se compile en un seul
         + `int == int`. Elle peut bloquer pour récupérer l'élément examiné (cet élément doit exister
@@ -1195,7 +1195,7 @@ entry .Credit
       - changes medium, and `Duct#translate` performs that conversion. `Credit(Long.MaxValue)`
       - is unbounded demand. It is the `Transport` of every endpoint the kernel's factories
       - build (`Stream[Data] over Credit`), and `Regulation.credit` is its arithmetic.
-      + Un `Long` opaque (`<: Long`, si bien que la vérification des captures le traite comme une
+      + Un `Long` opaque (`<: Long`, si bien que le contrôle des captures le traite comme une
       + valeur non suivie), exporté depuis `internal` : un nombre d'éléments du type `Operand` du
       + support — octets, caractères ou enregistrements — et non un nombre d'octets, si bien que sa
       + signification change à travers un `Duct` qui change de support, et `Duct#translate`
@@ -1312,7 +1312,7 @@ entry .Addressable
         - erase to a reference type, and the `ClassTag` makes the materialized chunks genuine
         - `element[]`s. `Text` and `Data` elements, which are not `<: AnyRef`, have the dedicated
         - instances `.texts` and `.frames`.
-        + Le support d'enregistrements : un fragment est un tableau figé d'enregistrements, le
+        + Le support d'enregistrements : un fragment est un tableau gelé d'enregistrements, le
         + stockage de travail un `scala.Array[AnyRef]` effacé, et le crédit compte des
         + enregistrements (`Substrate.Boxes`). L'élément doit s'effacer vers un type référence, et
         + le `ClassTag` fait des fragments matérialisés de véritables `element[]`. Les éléments
@@ -2018,8 +2018,8 @@ entry .Stream
         - per refill as far as the demand grants; the iterator's own production is outside the
         - stream's control, and its captures are retained alongside the stream's own.
         + `Stream(value)` est un flux en mémoire à région unique : un `Data` est partagé par
-        + référence (ses plages de région sont stables, si bien qu'un fan-out peut les partager), et
-        + tout autre support est copié une fois au premier rechargement. `Stream(chain)` force au
+        + référence (ses plages de région sont stables, si bien qu'une diffusion peut les partager),
+        + et tout autre support est copié une fois au premier rechargement. `Stream(chain)` force au
         + plus une cellule par rechargement, si bien que la demande pilote la production exactement
         + aussi loin que le permet la paresse de la chaîne. `Stream(iterator)` adapte un
         + `murmuration.Iterator` de fragments, en exposant chaque fragment à chaque rechargement
@@ -2064,7 +2064,7 @@ entry .Stream
         - For fan-out plumbing which shares region ranges by reference, and for kernels whose
         - index arithmetic outruns the region combinators. The cast from the untyped `storage0`
         - is sound because `Addressable` instances are unique per medium.
-        + Pour la plomberie de fan-out qui partage les plages de région par référence, et pour les
+        + Pour la plomberie de diffusion qui partage les plages de région par référence, et pour les
         + noyaux dont l'arithmétique d'indices dépasse les combinateurs de région. La conversion
         + depuis le `storage0` non typé est correcte parce que les instances `Addressable` sont
         + uniques par support.
@@ -2090,9 +2090,9 @@ entry .Stream
         - (`Stream(value)`, `streamOf(expanse, …)`), so a fan-out may share ranges by reference
         - rather than copying. A stream which reuses its buffer must never claim it.
         + Vrai pour un tampon fixe unique que `refill` ne fait qu'étendre et que `skip` ne fait
-        + qu'avancer (`Stream(value)`, `streamOf(expanse, …)`), si bien qu'un fan-out peut partager
-        + les plages par référence plutôt que les copier. Un flux qui réutilise son tampon ne doit
-        + jamais le prétendre.
+        + qu'avancer (`Stream(value)`, `streamOf(expanse, …)`), si bien qu'une diffusion peut
+        + partager les plages par référence plutôt que les copier. Un flux qui réutilise son tampon
+        + ne doit jamais le prétendre.
   entry #close
     info
         - releases the stream's resources, propagating upstream through the whole chain
@@ -2663,7 +2663,7 @@ entry .Pace
       - For a sink which cannot usefully count elements: `Free` asks the upstream to send
       - freely, `Measured` to pace itself between blocks, and `Halted` to stop producing until
       - demand is polled again. `Regulation.pace` is its arithmetic.
-      + Pour un réceptacle qui ne peut pas compter utilement les éléments : `Free` demande à
+      + Pour un puits qui ne peut pas compter utilement les éléments : `Free` demande à
       + l'amont d'envoyer librement, `Measured` de régler son rythme entre les blocs, et `Halted`
       + d'arrêter de produire jusqu'à ce que la demande soit à nouveau interrogée.
       + `Regulation.pace` en est l'arithmétique.
@@ -2680,14 +2680,14 @@ entry .Records
       - (`Addressable.boxed`, `texts` or `frames`) governs at stream construction. `records`
       - iterates the records of such a stream, and `memoize` materializes them into one frozen
       - array.
-      + Chaque région est un fragment d'enregistrements sous forme de tableau figé : le crédit
+      + Chaque région est un fragment d'enregistrements sous forme de tableau gelé : le crédit
       + compte donc des enregistrements et `Buffering` dimensionne les tampons en nombre de
       + références. Les enregistrements sont des valeurs immuables qui franchissent les frontières
       + d'étapes et de threads par référence (un enregistrement ne doit pas lui-même détenir un
       + endpoint actif) ; le type d'enregistrement doit s'effacer vers un type référence, et le
       + given `Addressable` qui l'admet (`Addressable.boxed`, `texts` ou `frames`) fait autorité à
       + la construction du flux. `records` itère sur les enregistrements d'un tel flux, et
-      + `memoize` les matérialise en un seul tableau figé.
+      + `memoize` les matérialise en un seul tableau gelé.
 
       ```scala
       import soundness.*
@@ -2728,9 +2728,9 @@ entry .via
       - The forwarder in the `soundness` umbrella is hand-written, since a synthesized export
       - forwarder loses the dependent `ductile.Result` refinement under capture checking; it
       - behaves identically.
-      + La redirection dans le package parapluie `soundness` est écrite à la main, puisqu'une
-      + redirection d'export synthétisée perd le raffinement dépendant `ductile.Result` sous la
-      + vérification des captures ; elle se comporte de façon identique.
+      + Le redirecteur dans le package parapluie `soundness` est écrit à la main, puisqu'un
+      + redirecteur d'export synthétisé perd le raffinement dépendant `ductile.Result` sous le
+      + contrôle des captures ; il se comporte de façon identique.
   refer zephyrine.Ductile
   refer zephyrine.viaDuct
 
@@ -2749,7 +2749,7 @@ entry .viaDuct
       + instance `Ductile`, puisque le type du duct énonce déjà son opérande, son résultat et ses
       + deux transports. Le duct et le flux sont tous deux consommés ; fermer le résultat ferme les
       + deux. Passer plutôt par `Ductile` reviendrait à l'instancier au type propre du duct, ce que
-      + la vérification des captures ne peut pas exprimer. Avec un `Duct[Data, Data]` nommé
+      + le contrôle des captures ne peut pas exprimer. Avec un `Duct[Data, Data]` nommé
       + `Doubler`, `bytes.stream.viaDuct(Doubler()).memoize` donne les octets doublés.
   refer zephyrine.Duct
 
@@ -2879,11 +2879,11 @@ entry .memoize
       - other twice. An empty stream yields the medium's `empty`. For a record stream the
       - result is one frozen array of every record. Needs a `Buffering`.
       + Le remplacement explicite et borné de la mise en cache implicite d'une liste paresseuse :
-      + le flux est vidé une fois puis fermé, et le résultat est figé et librement partageable.
+      + le flux est vidé une fois puis fermé, et le résultat est gelé et librement partageable.
       + Chaque région est copiée une fois à sa taille exacte, et les morceaux sont joints une fois
       + à la fin (`Addressable#assemble`), si bien qu'une valeur livrée en une seule région est
       + copiée une fois, et toute autre deux fois. Un flux vide produit l'`empty` du support. Pour
-      + un flux d'enregistrements, le résultat est un seul tableau figé de tous les
+      + un flux d'enregistrements, le résultat est un seul tableau gelé de tous les
       + enregistrements. Exige un `Buffering`.
 
       ```scala
@@ -3038,17 +3038,17 @@ entry .streamOf
       +   restent, si `Unset`), exposés sans copie depuis le tampon propre du curseur ; sauter dans
       +   le flux fait avancer le curseur. Le curseur est **prêté**, et non consommé : fermer le
       +   flux le laisse ouvert, positionné à la frontière, pour que l'appelant reprenne. C'est la
-      +   forme d'une charge utile délimitée à l'intérieur d'une analyse plus longue — un corps
-      +   HTTP avant la requête pipelinée suivante, une entrée d'archive avant l'en-tête suivant.
-      +   Tant que le flux prêté est vivant, l'appelant ne doit pas toucher au curseur, et les
-      +   sauts en masse contournent la lineation : ne prêtez donc que des curseurs dont la
-      +   lineation est inactive.
+      +   forme d'une charge utile délimitée à l'intérieur d'une analyse plus longue — un corps HTTP
+      +   avant la requête pipelinée suivante, une entrée d'archive avant l'en-tête suivant. Tant
+      +   que le flux prêté est vivant, l'appelant ne doit pas toucher au curseur, et les sauts en
+      +   masse contournent la lineation : ne prêtez donc que des curseurs dont la lineation est
+      +   inactive.
       + - `streamOf(cursor, delimiter)` — les octets d'un `Cursor[Data]` qui précèdent la prochaine
       +   occurrence d'un `Cursor.Delimiter`, trouvée en masse avec `distance`. Les octets
-      +   susceptibles de commencer un délimiteur à cheval sur le remplissage suivant sont
-      +   conservés dans un brouillon privé et recherchés joints à la région suivante. En fin de
-      +   flux, le curseur se trouve après le délimiteur, ou est épuisé si l'entrée s'est terminée
-      +   avant ; l'appelant distingue les deux cas avec `finished`.
+      +   susceptibles de commencer un délimiteur à cheval sur le remplissage suivant sont conservés
+      +   dans un tampon temporaire privé et recherchés joints à la région suivante. En fin de flux,
+      +   le curseur se trouve après le délimiteur, ou est épuisé si l'entrée s'est terminée avant ;
+      +   l'appelant distingue les deux cas avec `finished`.
       + - `streamOf(expanse, offset, length)` — une plage d'une `Expanse`, lue un bloc de transfert
       +   à la fois selon la demande du consommateur, si bien qu'une charge utile non consommée ne
       +   coûte rien et qu'une charge utile de n'importe quelle longueur est diffusée en mémoire
@@ -3068,8 +3068,8 @@ entry .streamOf
 entry .Producer
   info
       - the sink a serializer writes into, in pieces: driven synchronously, as a channel of blocks, or as a push sink
-      + le réceptacle où un sérialiseur écrit par morceaux : piloté de façon synchrone, comme canal
-      + de blocs ou comme réceptacle push
+      + le puits où un sérialiseur écrit par morceaux : piloté de façon synchrone, comme canal
+      + de blocs ou comme puits push
   detail
       - A `Producer[medium]` takes `#put(value)`, `#put(value, offset, size)` and `#push(element)`,
       - where `Operand` is `Char` for `Producer[Text]` and `Byte` for `Producer[Data]`. The
@@ -3312,8 +3312,8 @@ entry .Producer
         + bloc plein est prêté directement à `lending`, si bien qu'un sérialiseur de texte écrit des
         + octets vers un socket sans matérialiser un `Text` par bloc pour l'encoder ensuite, et sans
         + copier le bloc. Un surrogate isolé s'encode en U+FFFD, comme le ferait `String.getBytes`.
-        + Le bloc d'octets et le brouillon de caractères sont empruntés au `Blockpool` et rendus
-        + quand le corps se termine.
+        + Le bloc d'octets et le tampon temporaire de caractères sont empruntés au `Blockpool` et
+        + rendus quand le corps se termine.
   entry .utf8
     info
         - a text producer whose blocks are delivered as fresh UTF-8 `Data` the consumer may keep
@@ -3344,9 +3344,9 @@ entry .Producer
         - block, which is published through the `Lending` when full. A trailing high surrogate
         - is kept between calls, and a malformed pair encodes as U+FFFD.
         + L'encodage passe par le `CharsetEncoder` UTF-8 du JDK, dont le chemin ASCII est
-        + vectorisé : les caractères sont élargis dans un brouillon réutilisé et encodés dans le
-        + bloc d'octets, qui est publié via le `Lending` quand il est plein. Un surrogate haut final
-        + est conservé d'un appel à l'autre, et une paire malformée s'encode en U+FFFD.
+        + vectorisé : les caractères sont élargis dans un tampon temporaire réutilisé et encodés
+        + dans le bloc d'octets, qui est publié via le `Lending` quand il est plein. Un surrogate
+        + haut final est conservé d'un appel à l'autre, et une paire malformée s'encode en U+FFFD.
     entry #put
       info
           - writes a text, or `size` characters of it from an ordinal

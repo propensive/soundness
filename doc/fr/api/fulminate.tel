@@ -415,7 +415,7 @@ entry .Message
         - In `Message`'s own companion so that it is in implicit scope for `Message is
         - Transcribable to Message`, which is how a logger can log a bare message.
         + Dans le compagnon propre à `Message` afin d'être dans la portée implicite pour `Message is
-        + Transcribable to Message`, ce qui permet à un journaliseur de journaliser un message nu.
+        + Transcribable to Message`, ce qui permet à un logger de journaliser un message nu.
   entry #texts
     info
         - the literal pieces, one more than the embedded parts; empty text where parts abut
@@ -580,7 +580,7 @@ entry .Communicable
       - conversion as an extension method.
       + Un `Communicable` est un `Transcribable to Message` : convertir une valeur en message est
       + exactement la façon dont un événement journalisable est transcrit sur le support d'un
-      + journal, ce qui permet à un journaliseur de journaliser tout événement `Communicable` sans
+      + journal, ce qui permet à un logger de journaliser tout événement `Communicable` sans
       + autre passerelle. `value.communicate` est la conversion sous forme de méthode d'extension.
   refer fulminate.m
   refer fulminate.Message

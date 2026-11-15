@@ -66,7 +66,7 @@ detail
     + **modèle de threads** est un `Threading` de l'objet `threads` : `virtualThreads` exécute
     + chaque tâche sur un thread virtuel de la JVM, `platformThreads` sur un thread de plateforme,
     + `adaptiveThreads` sur celui dont dispose la JVM, `pooledThreads` sur des threads porteurs
-    + réutilisables pour une parallélisation à grain fin, et `javascriptThreads` de façon
+    + réutilisables pour une diffusion à grain fin, et `javascriptThreads` de façon
     + immédiate sur un seul brin pour la boucle d'événements. L'**homologation**, du package
     + `probates`, décide du sort d'un enfant encore en cours d'exécution lorsque le corps de son
     + parent se termine : `awaitProbate` l'attend, `cancelProbate` l'annule, `failProbate` lève une
@@ -114,7 +114,7 @@ detail
     - library's source sets are:
     + En dessous, un `Supervisor` crée et met en attente des `Strand` — des threads sur la JVM et
     + Scala Native, des entrées de file d'exécution sur une boucle d'événements — et constitue à
-    + lui seul toute la jointure avec la plateforme ; un given `Threading` en fournit un, et
+    + lui seul toute la jonction avec la plateforme ; un given `Threading` en fournit un, et
     + `supervise` y enracine un arbre de `Monitor`. Les ensembles de sources de la bibliothèque
     + sont :
 
@@ -298,7 +298,7 @@ entry .async
       - across threads; the worker records it as its failed outcome.
       + Il nécessite un `Monitor`, une `Probate.Shared` et un `Codepoint` dans la portée. Le corps
       + peut capturer le moniteur, d'autres poignées de tâches, des valeurs simples et toute
-      + capacité `Durable` (un journaliseur, une connexion), mais pas une `Tactic` ou un `Emit`
+      + capacité `Durable` (un logger, une connexion), mais pas une `Tactic` ou un `Emit`
       + englobant, qui appartient à la pile qui l'a installé : levez par la tactique propre du
       + corps, et l'erreur arrive à `await`. Une ressource exclusive — un `Producer`, un analyseur à
       + état, une poignée ouverte — ne peut pas non plus être capturée ; ouvrez-la dans le corps ou
@@ -644,7 +644,7 @@ entry .concurrently
       + `concurrently(count, parallelism)(job)` exécute `job(0)` à `job(count - 1)` sur au plus
       + `parallelism` tâches, chacune prenant l'indice suivant depuis un compteur partagé, et
       + renvoie tous les résultats sous forme d'`Array[result]` indexé par travail une fois qu'ils
-      + sont tous terminés. C'est la parallélisation bornée pour un lot de petits travaux : une
+      + sont tous terminés. C'est la diffusion bornée pour un lot de petits travaux : une
       + tâche est un thread, dont le démarrage et la jonction coûtent quelques microsecondes ; le
       + coût de lancement est donc payé `parallelism` fois plutôt que `count` fois — la forme à
       + préférer à un `async` par élément chaque fois que les éléments sont plus nombreux que les
@@ -739,10 +739,10 @@ entry .contain
       - probate's, unchanged.
       + `contain(handler)` construit une `Containment`, une `Probate` dont le `protect(body)`
       + l'installe pour l'étendue du corps : un `daemon` ou une tâche abandonnée lancés à
-      + l'intérieur acheminent une erreur qui leur a échappé vers le handler, une fonction partielle
-      + de `Error` vers un `Remedy`. `Accept` consomme l'erreur, `Reject` la transmet à
+      + l'intérieur acheminent une erreur qui leur a échappé vers le gestionnaire, une fonction
+      + partielle de `Error` vers un `Remedy`. `Accept` consomme l'erreur, `Reject` la transmet à
       + l'homologation englobante, et `Escalate(other)` transmet un substitut à la place ; une
-      + erreur que le handler ne reconnaît pas va aussi vers l'extérieur, si bien que les
+      + erreur que le gestionnaire ne reconnaît pas va aussi vers l'extérieur, si bien que les
       + confinements se composent en s'imbriquant, jusqu'à la racine, où une erreur non acceptée
       + atteint le gestionnaire d'exceptions non interceptées du thread. La politique de sort des
       + enfants est celle de l'homologation englobante, inchangée.
@@ -1187,7 +1187,7 @@ entry .Supervisor
       - are `PlatformSupervisor`, `VirtualSupervisor`, `AdaptiveSupervisor`, `PooledSupervisor`
       - and `JavascriptSupervisor`, each the value a `threads` given hands out.
       + Toutes les façons dont un brin peut se *suspendre* passent par son superviseur ; un
-      + superviseur constitue donc à lui seul toute la jointure avec la plateforme : un backend pour
+      + superviseur constitue donc à lui seul toute la jonction avec la plateforme : un backend pour
       + un autre modèle d'exécution — par exemple une boucle d'événements sur des ensembles
       + attendables WASI — est une implémentation de `Supervisor` sélectionnée par un given
       + `Threading`, et rien d'autre dans parasite ne touche à la plateforme. Les implémentations
@@ -1359,7 +1359,7 @@ entry .PoolingSupervisor
       + nouveau porteur que lorsqu'il n'y en a aucun ; un porteur qui termine une tâche se met en
       + attente sur la liste des inactifs pour la suivante. La transmission coûte quelques centaines
       + de nanosecondes là où le démarrage et la jonction d'un thread coûtent quelques
-      + microsecondes, si bien que la parallélisation à grain fin — une tâche par élément, un
+      + microsecondes, si bien que la diffusion à grain fin — une tâche par élément, un
       + lancement suivi d'une jonction dans une boucle — cesse d'être dominée par la création de
       + threads.
 
@@ -1388,10 +1388,11 @@ entry .PoolingSupervisor
       + ou différée jusqu'à son montage, et ne fuit jamais vers la tâche qui s'exécute ensuite sur
       + le même porteur. Les contreparties sont qu'une tâche n'a pas de thread propre — les
       + thread-locals persistent d'une tâche à l'autre sur un même porteur, et un vidage de threads
-      + montre des porteurs là où `Monitor#stack` montre des tâches — et qu'un classloader de
-      + contexte de thread défini dans une tâche peut être vu par la suivante ; le code qui charge
-      + des classes ou des ressources devrait donc partir d'un classloader connu plutôt que de celui
-      + du thread. Le `Thread.currentThread` d'une tâche est stable pendant toute sa durée.
+      + montre des porteurs là où `Monitor#stack` montre des tâches — et qu'un chargeur de classes
+      + de contexte de thread défini dans une tâche peut être vu par la suivante ; le code qui
+      + charge des classes ou des ressources devrait donc partir d'un chargeur de classes connu
+      + plutôt que de celui du thread. Le `Thread.currentThread` d'une tâche est stable pendant
+      + toute sa durée.
 
       - Subclasses supply `spawn` (how a carrier thread is started) and may override
       - `idleLimit`; `PooledSupervisor` is the instance for each platform.
@@ -2164,9 +2165,9 @@ entry .Containment
       - original to the enclosing probate's trap, `Escalate(other)` passes the substitute, and an
       - unmatched error goes to the enclosing trap too, so containments nest.
       + Délègue `cleanup` sans changement à l'homologation englobante et redéfinit `trap` avec le
-      + handler : le `Remedy.Accept` d'une erreur reconnue arrête la propagation, `Reject` transmet
-      + l'erreur d'origine au trap de l'homologation englobante, `Escalate(other)` transmet le
-      + substitut, et une erreur non reconnue va aussi au trap englobant, si bien que les
+      + gestionnaire : le `Remedy.Accept` d'une erreur reconnue arrête la propagation, `Reject`
+      + transmet l'erreur d'origine au trap de l'homologation englobante, `Escalate(other)` transmet
+      + le substitut, et une erreur non reconnue va aussi au trap englobant, si bien que les
       + confinements s'imbriquent.
   refer parasite.contain
   entry #cleanup
@@ -2176,7 +2177,7 @@ entry .Containment
   entry #trap
     info
         - the handler's remedy for an error it matches, else the enclosing probate's
-        + le remède du handler pour une erreur qu'il reconnaît, sinon celui de l'homologation
+        + le remède du gestionnaire pour une erreur qu'il reconnaît, sinon celui de l'homologation
         + englobante
   entry #protect
     info
@@ -2538,9 +2539,9 @@ entry .Fault
       + non interceptées de la JVM (un seul gestionnaire partagé, avec un registre d'actions), si
       + bien qu'elle s'exécute pour chaque exception qui met fin à un thread : un `daemon` dont
       + aucun `Probate#trap` n'a accepté l'erreur, une tâche abandonnée par son parent, ou n'importe
-      + quel thread extérieur à parasite. Là où l'erreur d'un démon ne peut atteindre le handler du
-      + code qui l'a lancé — ce code est passé à autre chose — c'est ici qu'un programme traite
-      + l'imprévu.
+      + quel thread extérieur à parasite. Là où l'erreur d'un démon ne peut atteindre le
+      + gestionnaire du code qui l'a lancé — ce code est passé à autre chose — c'est ici qu'un
+      + programme traite l'imprévu.
 
       ```scala
       import soundness.*
@@ -2719,7 +2720,7 @@ entry .threads
       - code which needs a platform thread per task; and `javascriptThreads` the event loop.
       + `virtualThreads` convient à une application JVM qui sait disposer de Java 21 ;
       + `adaptiveThreads` à une application qui ne peut pas imposer sa JVM ; `pooledThreads` à une
-      + parallélisation à grain fin ; `platformThreads` au code qui a besoin d'un thread de
+      + diffusion à grain fin ; `platformThreads` au code qui a besoin d'un thread de
       + plateforme par tâche ; et `javascriptThreads` à la boucle d'événements.
   refer parasite.Threading
   refer parasite.Supervisor
@@ -2748,7 +2749,7 @@ entry .threads
     detail
         - For fine-grained fan-out, where a thread start per task would dominate; a task has no
         - thread of its own, so thread-locals persist across the tasks a carrier runs.
-        + Pour une parallélisation à grain fin, où un démarrage de thread par tâche serait
+        + Pour une diffusion à grain fin, où un démarrage de thread par tâche serait
         + prépondérant ; une tâche n'a pas de thread propre, si bien que les thread-locals
         + persistent d'une tâche à l'autre sur un même porteur.
   entry .javascriptThreads

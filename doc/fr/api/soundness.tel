@@ -44,10 +44,10 @@ detail
     + (`export`) les noms publics de ce composant dans `package soundness` ; le package parapluie
     + grandit donc avec les composants présents dans le classpath : un programme qui dépend de
     + `galilei.jvm` y voit les backends de système de fichiers de galilei, et un programme qui
-    + n'en dépend pas ne les voit pas. Ces forwarders sont documentés là où ils sont définis, sur
+    + n'en dépend pas ne les voit pas. Ces redirecteurs sont documentés là où ils sont définis, sur
     + la page propre à chaque bibliothèque — `Classloader` sur celle de hellenism, `Json` sur
     + celle de jacinta — et non ici. Cette page ne documente que ce que le package parapluie
-    + *déclare* lui-même : une poignée de forwarders écrits à la main qu'un `export` ne peut pas
+    + *déclare* lui-même : une poignée de redirecteurs écrits à la main qu'un `export` ne peut pas
     + exprimer, les alias de collections, deux types d'annotations, le fourre-tout
     + `explainMissingContext`, et le point d'entrée `repackage`.
 
@@ -62,16 +62,16 @@ detail
     - the same given: `import soundness.monthFormats.englishMonths` and `import
     - aviation.monthFormats.englishMonths` are interchangeable.
     + **Packages de choix.** Un given qui sélectionne une implémentation — une stratégie de
-    + traitement des erreurs, un classloader, une page de codes, un format de journal, un backend
-    + de système de fichiers — réside dans un petit package nommé d'après son rôle :
+    + traitement des erreurs, un chargeur de classes, une page de codes, un format de journal, un
+    + backend de système de fichiers — réside dans un petit package nommé d'après son rôle :
     + `strategies`, `classloaders`, `codepages`, `logFormats`, `filesystemBackends`. Le package
-    + parapluie reflète chacun d'eux sous forme d'un `package` du même nom, et les blocs de même
-    + nom provenant de bibliothèques différentes fusionnent ; `soundness.construables` contient
-    + donc les givens `Construable` de jacinta, xylophone, honeycomb, caesura et d'une douzaine
-    + d'autres, et `soundness.wasiApis` ceux de toutes les bibliothèques dotées d'un backend
-    + WASI. Le chemin par le package parapluie et le chemin par la bibliothèque désignent le même
-    + given : `import soundness.monthFormats.englishMonths` et `import
-    + aviation.monthFormats.englishMonths` sont interchangeables.
+    + parapluie reflète chacun d'eux sous forme d'un `package` du même nom, et les blocs de même nom
+    + provenant de bibliothèques différentes fusionnent ; `soundness.construables` contient donc les
+    + givens `Construable` de jacinta, xylophone, honeycomb, caesura et d'une douzaine d'autres, et
+    + `soundness.wasiApis` ceux de toutes les bibliothèques dotées d'un backend WASI. Le chemin par
+    + le package parapluie et le chemin par la bibliothèque désignent le même given :
+    + `import soundness.monthFormats.englishMonths` et `import aviation.monthFormats.englishMonths`
+    + sont interchangeables.
 
     - A choice-package given is always **imported by name**, because `import strategies.*`
     - does not import givens: Scala's wildcard selects only ordinary members, and a given
@@ -161,7 +161,7 @@ detail
     - **Why some forwarders are hand-written.** A synthesized `export` forwarder is a plain
     - method, and some definitions do not survive the trip, so the umbrella re-declares them,
     - each delegating to its library's original:
-    + **Pourquoi certains forwarders sont écrits à la main.** Un forwarder `export` synthétisé
+    + **Pourquoi certains redirecteurs sont écrits à la main.** Un redirecteur `export` synthétisé
     + est une simple méthode, et certaines définitions ne survivent pas au voyage ; le package
     + parapluie les redéclare donc, chacune déléguant à l'original de sa bibliothèque :
 
@@ -186,8 +186,8 @@ detail
     + - une extension dont la preuve de classe de types est une clause `using` dépendante en
     +   tête — le groupe de désindexation `apply`, `at`, `defines`, `confine`, `pick`,
     +   `unsafeAttested`, avec `define`, `omit`, `keep` et `skip` — a besoin de cette clause
-    +   pour qu'une invocation échouée écarte le candidat, et un forwarder ne peut pas la porter ;
-    + - un forwarder perd un raffinement annoté de captures ; `via` et `accepting` de
+    +   pour qu'une invocation échouée écarte le candidat, et un redirecteur ne peut pas la porter ;
+    + - un redirecteur perd un raffinement annoté de captures ; `via` et `accepting` de
     +   zephyrine, `throwUnsafely` de contingency et les quatre givens `httpServers` de
     +   scintillate sont donc écrits en entier avec leurs ensembles de captures ;
     + - un `export` d'un objet est un `def`, un préfixe instable à travers lequel un type opaque
@@ -246,7 +246,7 @@ entry .List
       - A list built from a standard-library collection is `List.from(xs)`, not `xs.to[List]`,
       - which on a stdlib receiver reaches Scala's own `to` and fails for want of a factory.
       + Une liste construite à partir d'une collection de la bibliothèque standard s'écrit
-      + `List.from(xs)`, et non `xs.to[List]`, qui sur un récepteur de la bibliothèque standard
+      + `List.from(xs)`, et non `xs.to[List]`, qui sur un receveur de la bibliothèque standard
       + atteint le `to` propre à Scala et échoue faute de fabrique.
 
 entry .Sequence
@@ -317,7 +317,7 @@ entry .Chain
       + `type Chain[+element] = proscenium.Chain[element]` et `val Chain = proscenium.Chain` : une
       + `LazyList` derrière un type opaque, relayée sous forme d'alias et de `val` stable pour les
       + mêmes raisons que `List`. Ses `keep` et `skip` paresseux résident dans son compagnon, et
-      + les `keep` et `skip` propres au package parapluie sont conçus de sorte qu'un récepteur
+      + les `keep` et `skip` propres au package parapluie sont conçus de sorte qu'un receveur
       + `Chain` les atteigne malgré tout.
 
 entry .infer
@@ -455,7 +455,7 @@ entry .thru
       + simple `Interval`, et sur deux ordinaux confinés à la même valeur (`Ordinal in form`),
       + c'est un `Interval in form`, dont chaque ordinal lit cette valeur de façon totale. Elles
       + sont déclarées ici plutôt qu'exportées depuis denominative, car un `export` ne relaie
-      + qu'une surcharge, et un récepteur `Ordinal` simple se verrait alors proposer la surcharge
+      + qu'une surcharge, et un receveur `Ordinal` simple se verrait alors proposer la surcharge
       + confinée et échouerait.
 
       ```scala
@@ -521,7 +521,7 @@ entry .each
       + lecture à l'intérieur est donc totale. Toutes doivent partager une même portée — deux
       + définitions de premier niveau d'un même nom dans `package soundness` ne se surchargent
       + pas, et l'une est abandonnée en silence — et la surcharge confinée doit se trouver à côté
-      + de la simple, sans quoi la simple l'emporte pour un récepteur confiné et retire sa marque
+      + de la simple, sans quoi la simple l'emporte pour un receveur confiné et retire sa marque
       + sans erreur. La forme collection, `xs.each { x => … }`, est documentée sur la page de
       + rudiments.
 
@@ -548,10 +548,10 @@ entry .apply
       + La lecture de désindexation universelle pour toute valeur dotée d'une instance
       + `Applicable` — les collections par `Ordinal`, une `Map` par clé, un `Text` par `Ordinal` —
       + redéclarée ici plutôt qu'exportée, puisque sa preuve est une clause `using` dépendante en
-      + tête qu'un forwarder ne peut pas porter. Elle délègue en inline à `rudiments.apply` ; un
+      + tête qu'un redirecteur ne peut pas porter. Elle délègue en inline à `rudiments.apply` ; un
       + indice typé `Operand in xs.type` (issu de `confine`, `pick`, `each`, …) lit donc
       + l'élément directement, et tout autre indice est vérifié, donnant un `Optional`. Une
-      + seconde surcharge lit un tableau figé typé `& Sized[n]` avec un ordinal littéral, vérifié
+      + seconde surcharge lit un tableau gelé typé `& Sized[n]` avec un ordinal littéral, vérifié
       + par rapport à `n` à la compilation du code. La page de rudiments en donne la description
       + complète.
 
@@ -671,7 +671,7 @@ entry .define
       - `map.define(key, value)` on a `Map`. Out-of-range ordinals leave the container
       - unchanged, and an absent key adds an entry. Re-declared in the umbrella because its
       - evidence is a dependent leading `using` clause.
-      + Au moyen de l'instance `Definable` du récepteur : `xs.define(Sec, 9)` sur une `Sequence`,
+      + Au moyen de l'instance `Definable` du receveur : `xs.define(Sec, 9)` sur une `Sequence`,
       + `map.define(key, value)` sur une `Map`. Des ordinaux hors limites laissent le conteneur
       + inchangé, et une clé absente ajoute une entrée. Redéclarée dans le package parapluie car sa
       + preuve est une clause `using` dépendante en tête.
@@ -690,7 +690,7 @@ entry .omit
       - Through the receiver's `Omissible` instance: `map.omit(key)` removes an entry, and an
       - absent key leaves the map as it was. Re-declared in the umbrella because its evidence is
       - a dependent leading `using` clause.
-      + Au moyen de l'instance `Omissible` du récepteur : `map.omit(key)` retire une entrée, et
+      + Au moyen de l'instance `Omissible` du receveur : `map.omit(key)` retire une entrée, et
       + une clé absente laisse la map telle qu'elle était. Redéclarée dans le package parapluie car
       + sa preuve est une clause `using` dépendante en tête.
 
@@ -709,9 +709,9 @@ entry .keep
       + `xs.keep(3)` prend trois éléments, `xs.keep(3, Bidi.Rtl)` les trois derniers, et
       + `xs.keep(_ < 4)` la suite initiale qui correspond — un préfixe, pas un filtre. Préserve la
       + forme au moyen de `Segmentable` ; un `Text` reste donc un `Text`. Redéclarée dans le
-      + package parapluie plutôt qu'exportée afin qu'un récepteur `Chain`, qui n'a pas d'instance
+      + package parapluie plutôt qu'exportée afin qu'un receveur `Chain`, qui n'a pas d'instance
       + `Segmentable`, écarte ce candidat et atteigne le `keep` paresseux du compagnon de `Chain` ;
-      + un forwarder s'approprierait l'appel et échouerait.
+      + un redirecteur s'approprierait l'appel et échouerait.
 
       ```scala
       import soundness.*
@@ -745,9 +745,9 @@ entry .via
       - `ductile.Result` refinement under capture checking, so this one is written out and
       - delegates to `zephyrine.via`; it behaves identically. The *type* `via` (a value computed
       - in a locale) is cosmopolite's, in the type namespace, and does not clash.
-      + Le forwarder écrit à la main par le package parapluie pour la composition en tirage de
+      + Le redirecteur écrit à la main par le package parapluie pour la composition en tirage de
       + zephyrine : consomme le flux et l'étage, et donne un flux du type `Result` de l'étage sur
-      + son `Transport`, en requérant un `Buffering`. Un forwarder synthétisé perdrait le
+      + son `Transport`, en requérant un `Buffering`. Un redirecteur synthétisé perdrait le
       + raffinement dépendant `ductile.Result` sous contrôle des captures ; celui-ci est donc écrit
       + en entier et délègue à `zephyrine.via` ; il se comporte de manière identique. Le *type*
       + `via` (une valeur calculée dans une locale) est celui de cosmopolite, dans l'espace de
@@ -772,7 +772,7 @@ entry .accepting
       - intake and the stage, and gives an intake of the stage's `Operand` type over its
       - `Upstream`, needing a `Buffering`. Written out rather than exported for the reason `via`
       - is, and delegating to `zephyrine.accepting`.
-      + Le forwarder écrit à la main par le package parapluie pour la composition en poussée de
+      + Le redirecteur écrit à la main par le package parapluie pour la composition en poussée de
       + zephyrine : consomme l'entrée et l'étage, et donne une entrée du type `Operand` de l'étage
       + sur son `Upstream`, en requérant un `Buffering`. Écrit en entier plutôt qu'exporté pour la
       + même raison que `via`, et déléguant à `zephyrine.accepting`.
@@ -803,7 +803,7 @@ entry .threads
       - `adaptiveThreads`, `pooledThreads` and `javascriptThreads`, documented on parasite's
       - page. It is an object, not a package, as parasite's own is: its givens are
       - capabilities, which must live in an object.
-      + Un objet de forwarders vers `parasite.threads` : `platformThreads`, `virtualThreads`,
+      + Un objet de redirecteurs vers `parasite.threads` : `platformThreads`, `virtualThreads`,
       + `adaptiveThreads`, `pooledThreads` et `javascriptThreads`, documentés sur la page de
       + parasite. C'est un objet, et non un package, comme celui de parasite : ses givens sont des
       + capacités, qui doivent résider dans un objet.
@@ -855,7 +855,7 @@ entry .strategies
       + Le package de choix `strategies` du package parapluie. Ses givens sont des `Tactic`, qui
       + décident de ce qui se passe lorsqu'une erreur est levée, et chacun s'importe par son nom,
       + puisque `import
-      + strategies.*` n'importe pas les givens. La plupart sont des forwarders vers
+      + strategies.*` n'importe pas les givens. La plupart sont des redirecteurs vers
       + `contingency.strategies` (`fatalErrors`, `mitigation`, `throwSafely`,
       + `uncheckedErrors`), documentés sur la page de contingency ; seule `throwUnsafely` est
       + déclarée ici.
@@ -880,10 +880,10 @@ entry .strategies
         - outermost layer of a program; a library should state what it raises instead.
         + Une `ThrowTactic[Hazard]^{}` pure qui délègue à `contingency.strategies.throwUnsafely` ;
         + par contravariance, elle satisfait donc toutes les `Tactic[error]` à la fois. C'est un
-        + given délégant plutôt qu'un forwarder d'export : un forwarder est une méthode, et le nom,
-        + dans le package parapluie, d'un given valeur aboutirait dans l'ensemble de captures de
-        + chaque instance `^{tactic}` invoquée par son intermédiaire, où une méthode n'est pas une
-        + référence de capture légale. Convient aux scripts et à la couche la plus externe d'un
+        + given délégant plutôt qu'un redirecteur d'export : un redirecteur est une méthode, et le
+        + nom, dans le package parapluie, d'un given valeur aboutirait dans l'ensemble de captures
+        + de chaque instance `^{tactic}` invoquée par son intermédiaire, où une méthode n'est pas
+        + une référence de capture légale. Convient aux scripts et à la couche la plus externe d'un
         + programme ; une bibliothèque devrait plutôt indiquer ce qu'elle lève.
 
 entry .httpServers
@@ -900,12 +900,12 @@ entry .httpServers
       - `Httpd.Event is Loggable` and a `WebserverErrorPage` in scope.
       + Le package de choix `httpServers` du package parapluie : le serveur qui répond à
       + `tcp"8080".serve[Http]` se choisit en important l'un de ces givens par son nom. Les quatre
-      + sont déclarés ici sous forme de forwarders écrits à la main vers `scintillate.httpServers`,
-      + car un forwarder d'export synthétisé perd les types raffinés annotés de captures des
-      + givens. Chacun est typé `scintillate.httpServers.HttpdFor[port]` pour un port 80, 443,
-      + 8080 ou 8000, capture la `Tactic[Httpd.Error]` et le `Monitor` qui lui sont donnés, et
-      + requiert un `Probate`, un `Httpd.Event is Loggable` et une `WebserverErrorPage` dans la
-      + portée.
+      + sont déclarés ici sous forme de redirecteurs écrits à la main vers
+      + `scintillate.httpServers`, car un redirecteur d'export synthétisé perd les types raffinés
+      + annotés de captures des givens. Chacun est typé `scintillate.httpServers.HttpdFor[port]`
+      + pour un port 80, 443, 8080 ou 8000, capture la `Tactic[Httpd.Error]` et le `Monitor` qui lui
+      + sont donnés, et requiert un `Probate`, un `Httpd.Event is Loggable` et une
+      + `WebserverErrorPage` dans la portée.
 
       ```scala fuel
       typecheck

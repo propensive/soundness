@@ -1097,7 +1097,7 @@ entry .Topology
       + La matrice est mise en cache par rapport à une révision de modification : une poignée
       + gelée, qui ne peut pas être modifiée, la conserve, et une poignée modifiable qui a été
       + modifiée entre-temps la recalcule à chaque appel — c'est pourquoi `closure`, `reduction`
-      + et `reaches` sont destinés à la forme gelée. Les clés des nœuds sont mises en boîte et
+      + et `reaches` sont destinés à la forme gelée. Les clés des nœuds sont boxées et
       + hachées dans une table à adressage ouvert, si bien que des clés génériques coûtent ce que
       + coûterait une `HashMap` de ces clés.
   refer acyclicity.Dag
@@ -1517,7 +1517,7 @@ entry .Reachable
         - nothing. Code summoning a `Reachable` for its own graph type can call it directly.
         + Une méthode plutôt qu'un given : les extensions `reachable` et `closure` la prennent comme
         + valeur par défaut de leur paramètre `using`, afin de l'atteindre sans recherche de given
-        + imbriquée — qui, pour un récepteur opaque tel que `Map`, verrait l'alias déréférencé et ne
+        + imbriquée — qui, pour un receveur opaque tel que `Map`, verrait l'alias déréférencé et ne
         + correspondrait à rien. Du code qui invoque un `Reachable` pour son propre type de graphe
         + peut l'appeler directement.
   entry #reachable
@@ -1570,7 +1570,7 @@ entry .Invertible
         - as its default, avoiding a nested given search which an opaque receiver would defeat.
         + Une méthode, et non un given, pour la même raison que `Reachable.generic` : l'extension la
         + prend comme valeur par défaut, évitant une recherche de given imbriquée que ferait échouer
-        + un récepteur opaque.
+        + un receveur opaque.
   entry #invert
     info
         - the graph with every edge reversed, as the instance's `Result`

@@ -157,14 +157,13 @@ entry .application
       - `Stdio` and the process's `Login`, installs a handler for each of `signals` which
       - dispatches to `Cli#trap` handlers, runs the block through the executive and then calls
       - `System.exit` with the resulting `Exit`'s code. It never returns.
-      + `application(arguments)(block)` est le point d'entrée d'un programme en ligne de
-      + commande. Il construit un `Entrypoint` à partir du processus en cours (son exécutable,
-      + trouvé via `ProcessHandle`, et son nom de script), demande à l'`Executive` dans la
-      + portée un `Cli` sur les arguments, l'environnement et le répertoire de travail de la
-      + JVM, le `Stdio` des descripteurs de fichiers et le `Login` du processus, installe pour
-      + chacun des `signals` un handler qui répartit vers les handlers `Cli#trap`, exécute le
-      + bloc via l'exécutif puis appelle `System.exit` avec le code de l'`Exit` obtenu. Il ne
-      + rend jamais la main.
+      + `application(arguments)(block)` est le point d'entrée d'un programme en ligne de commande.
+      + Il construit un `Entrypoint` à partir du processus en cours (son exécutable, trouvé via
+      + `ProcessHandle`, et son nom de script), demande à l'`Executive` dans la portée un `Cli` sur
+      + les arguments, l'environnement et le répertoire de travail de la JVM, le `Stdio` des
+      + descripteurs de fichiers et le `Login` du processus, installe pour chacun des `signals` un
+      + gestionnaire qui répartit vers les gestionnaires `Cli#trap`, exécute le bloc via l'exécutif
+      + puis appelle `System.exit` avec le code de l'`Exit` obtenu. Il ne rend jamais la main.
 
       - It needs an `Executive`, an `Interpreter` and a `System` in scope, each imported by
       - name. The block's type is `(erased permit: executive.Permit) ?=> Cli ?=> executive.Return`:
@@ -179,7 +178,7 @@ entry .application
       + `executives.directExecutive`, le permis est `Effectful` et le retour un `Exit`, si bien
       + qu'une option lue n'importe où dans le bloc est sa valeur `Optional` ; sous
       + `executives.completionsExecutive`, le permis est le `Speculative` inerte et le retour
-      + une `Execution`, si bien qu'une option lue dans le prélude est un handle `Prospective`,
+      + une `Execution`, si bien qu'une option lue dans le prélude est une poignée `Prospective`,
       + et que les effets attendent `execute`.
 
       ```scala fuel
@@ -513,27 +512,27 @@ entry .Cli
   entry #trap
     info
         - installs a signal handler for the rest of the invocation
-        + installe un handler de signal pour le reste de l'invocation
+        + installe un gestionnaire de signal pour le reste de l'invocation
     detail
         - Takes a `PartialFunction[Signal, SignalResponse]`; handlers are consulted most recent
         - first by `#dispatchSignal`, and one answering `SignalResponse.Defer` passes the signal
         - on to the next. A handler matches a `Signal`, so a case reads
         - `case Signal(Interrupt.Int, _, _, _) => …`. The top-level `trap` is the same call on the
         - `Cli` in scope.
-        + Prend une `PartialFunction[Signal, SignalResponse]` ; les handlers sont consultés du plus
-        + récent au plus ancien par `#dispatchSignal`, et un handler qui répond
-        + `SignalResponse.Defer` transmet le signal au suivant. Un handler filtre un `Signal`, si
-        + bien qu'un cas s'écrit `case Signal(Interrupt.Int, _, _, _) => …`. La fonction de
+        + Prend une `PartialFunction[Signal, SignalResponse]` ; les gestionnaires sont consultés du
+        + plus récent au plus ancien par `#dispatchSignal`, et un gestionnaire qui répond
+        + `SignalResponse.Defer` transmet le signal au suivant. Un gestionnaire filtre un `Signal`,
+        + si bien qu'un cas s'écrit `case Signal(Interrupt.Int, _, _, _) => …`. La fonction de
         + premier niveau `trap` est le même appel sur le `Cli` dans la portée.
   entry #dispatchSignal
     info
         - routes a signal through the installed handlers, most recent first
-        + fait passer un signal par les handlers installés, du plus récent au plus ancien
+        + fait passer un signal par les gestionnaires installés, du plus récent au plus ancien
     detail
         - Returns the first decided `SignalResponse`, or `SignalResponse.Reject` when no handler
         - claims the signal. `application` wires each requested `UnixSignal` to this.
         + Renvoie la première `SignalResponse` décidée, ou `SignalResponse.Reject` lorsqu'aucun
-        + handler ne revendique le signal. `application` relie chaque `UnixSignal` demandé à
+        + gestionnaire ne revendique le signal. `application` relie chaque `UnixSignal` demandé à
         + cette méthode.
   entry #parameter
     info
@@ -959,7 +958,7 @@ entry .executives
 entry .trap
   info
       - installs a signal handler on the `Cli` in scope
-      + installe un handler de signal sur le `Cli` dans la portée
+      + installe un gestionnaire de signal sur le `Cli` dans la portée
   detail
       - `trap { case Signal(Interrupt.Int, _, _, _) => SignalResponse.Reject }` is
       - `summon[Cli].trap(handler)`: see `Cli#trap`. Only the signals named in `application`'s
@@ -1395,7 +1394,7 @@ entry .Effectful
       + `Effectful` n'est jamais instancié : un bloc `execute` le fait apparaître pour son
       + corps, et `executives.directExecutive` l'accorde à tout le corps comme son `Permit`.
       + `Flag#apply`, `Flag#require` et `Flag#validate` répartissent selon sa présence avec
-      + `summonFrom`, se résolvant en un handle différé (`Prospective`, `Requisite`) sans lui et
+      + `summonFrom`, se résolvant en une poignée différée (`Prospective`, `Requisite`) sans lui et
       + en la valeur avec lui, et `Prospective#apply`, `Requisite#apply` et `Flag#value`
       + l'exigent purement et simplement. Une méthode définie par l'utilisateur peut aussi
       + l'exiger, pour rendre une opération irréversible impossible à appeler depuis le prélude
@@ -1478,7 +1477,7 @@ entry .Flag
       + l'exécutif de complétions), `flag()` est la valeur `Optional`, `flag.require()` la
       + valeur ou une `Flag.Error` lancée, et `flag.validate()` la valeur ou une `Flag.Error`
       + lancée, dont la raison est `Missing` ou `Invalid`. Sans elle — le prélude sous
-      + l'exécutif de complétions — les mêmes appels renvoient des handles, un `Prospective` ou
+      + l'exécutif de complétions — les mêmes appels renvoient des poignées, un `Prospective` ou
       + un `Requisite`, résolus immédiatement depuis les arguments, dont `present` et `absent`
       + peuvent être consultés aussitôt mais dont la valeur n'est disponible qu'à l'intérieur
       + d'`execute`. Dans les deux cas, la lecture enregistre l'option, si bien qu'une option
@@ -1527,9 +1526,9 @@ entry .Flag
       - `--home` is offered always, is marked required in help, and a run without it prints
       - _The following required options were not specified_ and exits with status 2 before
       - the block runs.
-      + Après le premier cadre, `tool -<TAB>` propose `--verbose` ; après le deuxième,
+      + Après la première trame, `tool -<TAB>` propose `--verbose` ; après la deuxième,
       + `--level` n'est proposé qu'une fois `-v` présent sur la ligne, et `-v` ne l'est plus ;
-      + après le troisième, `--home` est toujours proposé, est marqué obligatoire dans l'aide,
+      + après la troisième, `--home` est toujours proposé, est marqué obligatoire dans l'aide,
       + et une exécution sans lui affiche _The following required options were not specified_
       + et sort avec le statut 2 avant que le bloc ne s'exécute.
 
@@ -1625,7 +1624,7 @@ entry .Flag
   entry #apply
     info
         - reads the flag: its `Optional` value with `Effectful` in scope, a `Prospective` handle without
-        + lit l'option : sa valeur `Optional` avec `Effectful` dans la portée, un handle
+        + lit l'option : sa valeur `Optional` avec `Effectful` dans la portée, une poignée
         + `Prospective` sans
     detail
         - Registers the flag on the `Cli`, with the `Discoverable` in scope for its operand type
@@ -1643,7 +1642,7 @@ entry .Flag
   entry #require
     info
         - reads the flag as required: the value with `Effectful`, a `Requisite` handle without
-        + lit l'option comme obligatoire : la valeur avec `Effectful`, un handle `Requisite` sans
+        + lit l'option comme obligatoire : la valeur avec `Effectful`, une poignée `Requisite` sans
     detail
         - In the prelude, a missing flag never fails fast: it is recorded with `Cli#demand`, and
         - `execute` reports every missing requisite together, exits with status 2, and never
@@ -2037,7 +2036,7 @@ entry .Status
 entry .Prospective
   info
       - the handle for a flag read in the prelude: its presence may be consulted now, its value only inside `execute`
-      + le handle d'une option lue dans le prélude : sa présence peut être consultée immédiatement,
+      + la poignée d'une option lue dans le prélude : sa présence peut être consultée immédiatement,
       + sa valeur seulement à l'intérieur d'`execute`
   detail
       - `Flag#apply` returns a `Prospective[Topic]` when no `Effectful` is in scope.
@@ -2047,9 +2046,9 @@ entry .Prospective
       - the `Effectful` which only an `execute` block provides.
       + `Flag#apply` renvoie un `Prospective[Topic]` lorsqu'aucun `Effectful` n'est dans la
       + portée. La résolution est immédiate — la `#value` a été lue depuis les arguments lors de
-      + la création du handle, si bien qu'il ne capture aucun `Cli` — et `#present` et
+      + la création de la poignée, si bien qu'elle ne capture aucun `Cli` — et `#present` et
       + `#absent` peuvent être consultés librement dans le prélude, pour décider de ce qu'il
-      + faut proposer d'autre. Appliquer le handle, `handle()`, exige l'`Effectful` que seul un
+      + faut proposer d'autre. Appliquer la poignée, `handle()`, exige l'`Effectful` que seul un
       + bloc `execute` fournit.
 
       ```scala
@@ -2070,7 +2069,7 @@ entry .Prospective
   entry #flag
     info
         - the flag this handle was read from
-        + l'option depuis laquelle ce handle a été lu
+        + l'option depuis laquelle cette poignée a été lue
   entry #value
     info
         - the value as read, an `Optional`; consultable in the prelude
@@ -2091,7 +2090,7 @@ entry .Prospective
 entry .Requisite
   info
       - the handle for a required flag read in the prelude: unconditionally a value inside `execute`
-      + le handle d'une option obligatoire lue dans le prélude : inconditionnellement une valeur à
+      + la poignée d'une option obligatoire lue dans le prélude : inconditionnellement une valeur à
       + l'intérieur d'`execute`
   detail
       - `Flag#require` and `Flag#validate` return a `Requisite[Topic]` when no `Effectful` is
@@ -2102,7 +2101,7 @@ entry .Requisite
       + `Flag#require` et `Flag#validate` renvoient un `Requisite[Topic]` lorsqu'aucun
       + `Effectful` n'est dans la portée. Sa création enregistre l'exigence sur le `Cli` ; si
       + l'option est manquante ou mal formée, `execute` signale toutes ces options en un seul
-      + message et n'exécute jamais son bloc, si bien qu'appliquer le handle à l'intérieur du
+      + message et n'exécute jamais son bloc, si bien qu'appliquer la poignée à l'intérieur du
       + bloc donne la valeur elle-même. Comme pour `Prospective`, `#value`, `#present` et
       + `#absent` peuvent être consultés dans le prélude.
 
@@ -2125,7 +2124,7 @@ entry .Requisite
   entry #flag
     info
         - the flag this handle was read from
-        + l'option depuis laquelle ce handle a été lu
+        + l'option depuis laquelle cette poignée a été lue
   entry #value
     info
         - the value as read, an `Optional`; consultable in the prelude
@@ -2969,7 +2968,7 @@ entry .Completions
       - under a daemon the resident JVM's environment is whichever client's launcher started
       - it — a `WorkingDirectory`, `Diagnostics` and a `CliEvent is Loggable`; a `Cli` in scope
       - supplies the environment and directory, `systems.javaBaseSystem` the system.
-      + `.ensure` est la forme « lancer et oublier » qu'un outil adossé à un démon appelle au
+      + `.ensure` est la forme sans suivi qu'un outil adossé à un démon appelle au
       + démarrage. Les deux nécessitent un `Entrypoint^`, un `Environment` et un `System` —
       + ceux de l'*invocation*, puisque sous un démon l'environnement de la JVM résidente est
       + celui du lanceur du client qui l'a démarrée — un `WorkingDirectory`, des `Diagnostics`
@@ -3189,8 +3188,8 @@ entry .execute
       + seule façon d'en créer une est un bloc `execute`. Le code qui le précède — le prélude —
       + s'exécute aussi bien lorsque la commande est invoquée que lorsque des complétions ou de
       + l'aide sont demandées ; le bloc ne s'exécute que lors d'une invocation réelle, avec un
-      + `Effectful` et l'`Invocation` dans la portée ; c'est donc là que les handles
-      + `Prospective` et `Requisite` sont appliqués et que la sortie est écrite.
+      + `Effectful` et l'`Invocation` dans la portée ; c'est donc là que les poignées
+      + `Prospective` et `Requisite` sont appliquées et que la sortie est écrite.
 
       ```scala
       import soundness.*
@@ -3774,12 +3773,12 @@ entry .Enclave
       + le constructeur `xek` — trouvé dans `$XEK`, sinon `dist/xek` sous le répertoire de
       + travail — en un exécutable lanceur nommé `name`, et produit un `Enclave.Launcher`.
       + `Launcher#sandbox` démarre ensuite le démon de l'outil sous un répertoire personnel
-      + jetable et remet un `Tool` à un bloc, dans lequel `shell.pane()` ouvre un vrai shell
+      + temporaire et remet un `Tool` à un bloc, dans lequel `shell.pane()` ouvre un vrai shell
       + avec le script de complétion de l'outil chargé, si bien qu'un test peut appuyer sur
       + tabulation et lire ce qui apparaît. Le corps quoté est un corps de démon d'ethereal ; il
       + enveloppe donc l'application dans `cli:`, et l'outil qu'il construit répond à chaque
       + invocation et requête de complétion depuis un unique processus résident. Le démon est
-      + tué et le répertoire personnel jetable supprimé à chaque sortie du bloc.
+      + tué et le répertoire personnel temporaire supprimé à chaque sortie du bloc.
 
       ```scala fuel
       typecheck
@@ -3854,11 +3853,11 @@ entry .Enclave
     info
         - a built, running tool: its path, its daemon's pid and the scratch home it runs under
         + un outil construit et en cours d'exécution : son chemin, le pid de son démon et le
-        + répertoire personnel jetable sous lequel il s'exécute
+        + répertoire personnel temporaire sous lequel il s'exécute
     detail
         - A shared capability, since every pane of a suite drives the one tool; its lifetime
         - is the `sandbox` block.
-        + Une capacité partagée, puisque tous les panneaux d'une suite pilotent l'unique outil ;
+        + Une capacité partagée, puisque tous les voletx d'une suite pilotent l'unique outil ;
         + sa durée de vie est celle du bloc `sandbox`.
     entry #path
       info
@@ -3871,8 +3870,8 @@ entry .Enclave
     entry #home
       info
           - the scratch home its daemon and its panes' shells run under
-          + le répertoire personnel jetable sous lequel s'exécutent son démon et les shells de ses
-          + panneaux
+          + le répertoire personnel temporaire sous lequel s'exécutent son démon et les shells de
+          + ses voletx
     entry #command
       info
           - the tool's name, as typed at a prompt
@@ -3910,8 +3909,8 @@ entry .Enclave
     entry #sandbox
       info
           - starts the tool's daemon under a scratch home, runs a block with the `Tool`, then kills it
-          + démarre le démon de l'outil sous un répertoire personnel jetable, exécute un bloc avec
-          + le `Tool`, puis le tue
+          + démarre le démon de l'outil sous un répertoire personnel temporaire, exécute un bloc
+          + avec le `Tool`, puis le tue
       detail
           - Needs an `Environment` and tactics for `Enclave.Error`, `Exec.Error`,
           - `Number.Error` and `Path.Error`. The scratch home replaces `HOME` and the XDG
@@ -3920,17 +3919,17 @@ entry .Enclave
           - it needs into the scratch home itself. The daemon is killed and the home deleted in
           - a `finally`, since an abandoned daemon holds a JVM for the rest of the session.
           + Nécessite un `Environment` et des tactiques pour `Enclave.Error`, `Exec.Error`,
-          + `Number.Error` et `Path.Error`. Le répertoire personnel jetable remplace `HOME` et les
-          + répertoires XDG (`Enclave.scratch`), si bien que rien de la configuration de
-          + l'utilisateur réel n'est lu ni écrit ; l'outil n'est pas installé — chaque panneau écrit
-          + lui-même dans le répertoire personnel jetable le script de complétion dont il a besoin.
-          + Le démon est tué et le répertoire personnel supprimé dans un `finally`, puisqu'un démon
-          + abandonné occupe une JVM pour le reste de la session.
+          + `Number.Error` et `Path.Error`. Le répertoire personnel temporaire remplace `HOME` et
+          + les répertoires XDG (`Enclave.scratch`), si bien que rien de la configuration de
+          + l'utilisateur réel n'est lu ni écrit ; l'outil n'est pas installé — chaque volet écrit
+          + lui-même dans le répertoire personnel temporaire le script de complétion dont il a
+          + besoin. Le démon est tué et le répertoire personnel supprimé dans un `finally`,
+          + puisqu'un démon abandonné occupe une JVM pour le reste de la session.
   entry .scratch
     info
         - the variables which direct a user's configuration into a scratch home
         + les variables qui dirigent la configuration d'un utilisateur vers un répertoire personnel
-        + jetable
+        + temporaire
     detail
         - `HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME` and `BASH_COMPLETION_USER_DIR`, all under
         - the given home.
@@ -3939,7 +3938,7 @@ entry .Enclave
   entry .environment
     info
         - an environment with the scratch variables over a base, or the JVM's with `XEK` naming a builder
-        + un environnement avec les variables jetables superposées à une base, ou celui de la JVM
+        + un environnement avec les variables temporaires superposées à une base, ou celui de la JVM
         + avec `XEK` nommant un constructeur
     detail
         - `Enclave.environment(base, home)` overlays `scratch(home)` on `base`.
@@ -4011,7 +4010,7 @@ entry .Enclave
 entry .Pane
   info
       - a terminal pane running a shell for a test: keys are typed at it and its screen is read
-      + un panneau de terminal exécutant un shell pour un test : on y saisit des touches et on lit
+      + un volet de terminal exécutant un shell pour un test : on y saisit des touches et on lit
       + son écran
   detail
       - A `Pane` is a capability — exclusive, since one test drives it at a time — whose
@@ -4062,16 +4061,16 @@ entry .Pane
   entry .enter
     info
         - types keypresses at the pane in scope: a key name from `.keys`, a character, or literal text
-        + saisit des frappes dans le panneau dans la portée : un nom de touche issu de `.keys`, un
+        + saisit des frappes dans le volet dans la portée : un nom de touche issu de `.keys`, un
         + caractère, ou du texte littéral
   entry .resize
     info
         - resizes the pane in scope
-        + redimensionne le panneau dans la portée
+        + redimensionne le volet dans la portée
   entry .screenshot
     info
         - the screen of the pane in scope
-        + l'écran du panneau dans la portée
+        + l'écran du volet dans la portée
   entry .waitFor
     info
         - whether some line of the screen satisfies a predicate within a timeout, twenty seconds by default
@@ -4109,7 +4108,7 @@ entry .Pane
         - include descriptions as they show them. Under PowerShell the rig's `_completions`
         - function is called instead, since PowerShell's menu cannot be read from the screen.
         - The prompt line is excluded.
-        + `Pane.completions(t"distribution ")` avec un panneau bash et l'outil du test renvoie les
+        + `Pane.completions(t"distribution ")` avec un volet bash et l'outil du test renvoie les
         + candidats que bash a affichés, par exemple `gentoo   red hat  ubuntu` ; zsh et fish
         + incluent les descriptions telles qu'ils les affichent. Sous PowerShell, c'est la
         + fonction `_completions` du banc de test qui est appelée à la place, puisque le menu de
@@ -4185,7 +4184,7 @@ entry .Pane
   entry .Emulated
     info
         - a pane on a pseudo-terminal, showing what a `Display` renders of it
-        + un panneau sur un pseudo-terminal, qui montre ce qu'un `Display` en rend
+        + un volet sur un pseudo-terminal, qui montre ce qu'un `Display` en rend
     detail
         - What `shell.pane()` hands its block: keys go to the pseudo-terminal's job, and the
         - screen comes from the display.
@@ -4194,7 +4193,7 @@ entry .Pane
     entry #shell
       info
           - the shell running in the pane
-          + le shell qui s'exécute dans le panneau
+          + le shell qui s'exécute dans le volet
     entry #width
       info
           - the columns
@@ -4243,7 +4242,7 @@ entry .Pane
         + row  `ExecFailed`  3  _could not start the terminal session_
         + row  `Unrendered(problem)`  4  _the terminal could not render its output: `problem`_  yossarian n'a pas pu rendre une séquence
         + row  `NotReady(shell)`  5  _the shell `shell` did not become ready_  le shell n'a pas affiché d'invite ni renvoyé à temps le marqueur du banc de test
-        + row  `Unconfigured(problem)`  6  _the shell could not be configured: `problem`_  un fichier de configuration n'a pas pu être écrit dans le répertoire personnel jetable
+        + row  `Unconfigured(problem)`  6  _the shell could not be configured: `problem`_  un fichier de configuration n'a pas pu être écrit dans le répertoire personnel temporaire
         ```
     entry .Reason
       info
@@ -4267,7 +4266,7 @@ entry .Pane
   entry #shell
     info
         - the shell running in the pane
-        + le shell qui s'exécute dans le panneau
+        + le shell qui s'exécute dans le volet
   entry #width
     info
         - the columns
@@ -4287,12 +4286,12 @@ entry .Pane
   entry #resize
     info
         - resizes the pane, delivering `SIGWINCH` to the shell
-        + redimensionne le panneau, en délivrant `SIGWINCH` au shell
+        + redimensionne le volet, en délivrant `SIGWINCH` au shell
 
 entry .Screenshot
   info
       - the screen of a pane: its lines, its size and the cursor
-      + l'écran d'un panneau : ses lignes, sa taille et le curseur
+      + l'écran d'un volet : ses lignes, sa taille et le curseur
   detail
       - `#screen` is one `Text` per row with trailing spaces trimmed, `#size` is `(columns,
       - rows)` and `#cursor` is `(column, row)` as ordinals. `apply()` joins the rows with
@@ -4327,7 +4326,7 @@ entry .Screenshot
 entry .Tmux
   info
       - a pane in a tmux session, an independent terminal emulator
-      + un panneau dans une session tmux, un émulateur de terminal indépendant
+      + un volet dans une session tmux, un émulateur de terminal indépendant
   detail
       - What `shell.tmux()` hands its block. Keys are sent with `tmux send-keys`, which
       - interprets tmux's own key names, and the screen is read with `tmux capture-pane`;
@@ -4374,12 +4373,12 @@ entry .Tmux
   entry #screenshot
     info
         - captures the pane and reads the cursor with `tmux display-message`
-        + capture le panneau et lit le curseur avec `tmux display-message`
+        + capture le volet et lit le curseur avec `tmux display-message`
 
 entry .pane
   info
       - runs a shell on a pseudo-terminal with the tool under test configured, and hands the pane to a block
-      + exécute un shell sur un pseudo-terminal avec l'outil testé configuré, et remet le panneau à
+      + exécute un shell sur un pseudo-terminal avec l'outil testé configuré, et remet le volet à
       + un bloc
   detail
       - An extension on `Shell`: `Shell.Zsh.pane(width = 80, height = 24)(action)` starts
@@ -4391,7 +4390,7 @@ entry .pane
       - `Environment`, an `Enclave.Tool`, a `Monitor`, a `Tactic[Pane.Error]` and a guillotine
       - `Exec.Event is Loggable`.
       + Une extension sur `Shell` : `Shell.Zsh.pane(width = 80, height = 24)(action)` démarre
-      + le shell tel que `rig.launch` le configure — sous le répertoire personnel jetable de
+      + le shell tel que `rig.launch` le configure — sous le répertoire personnel temporaire de
       + l'outil, avec le répertoire de l'outil en tête du `PATH`, une invite `> `, et le script
       + de complétion de l'outil chargé à la place de toute configuration de l'utilisateur —
       + sur un pseudo-terminal dont yossarian rend la sortie dans un `Pane.Display`, attend
@@ -4421,7 +4420,7 @@ entry .tmux
   info
       - runs a shell in a tmux session, configured exactly as `pane` does, and hands the pane to a block
       + exécute un shell dans une session tmux, configuré exactement comme le fait `pane`, et remet
-      + le panneau à un bloc
+      + le volet à un bloc
   detail
       - An extension on `Shell`, with the same parameters and contextual needs as `pane`. The
       - session is created detached at the given size, named by a UUID, and killed when the
@@ -4444,7 +4443,7 @@ entry .rig
       - for it, and `#powershell` is the PowerShell profile. Exposed for a suite which drives
       - a shell some other way.
       + Les éléments que partagent `pane` et `tmux` : `#launch` construit la commande qui
-      + démarre un shell sous le répertoire personnel jetable de l'outil avec la configuration
+      + démarre un shell sous le répertoire personnel temporaire de l'outil avec la configuration
       + propre au banc de test, `#ready` l'attend, et `#powershell` est le profil PowerShell.
       + Exposés pour une suite qui pilote un shell d'une autre manière.
   entry .launch
@@ -4459,7 +4458,7 @@ entry .rig
         - `POWERSHELL_UPDATECHECK` off, and `TERM` to `xterm-256color` when `terminal` is
         - true (tmux sets its own). Raises `Pane.Error` with `Unconfigured` if a file cannot
         - be written.
-        + Écrit dans le répertoire personnel jetable une configuration propre au banc de test —
+        + Écrit dans le répertoire personnel temporaire une configuration propre au banc de test —
         + un rcfile bash, un fichier de démarrage zsh avec la fonction de complétion dans
         + `fpath`, un `config.fish` fish, ou un profil PowerShell — chacune donnant une invite
         + `> ` et chargeant le script de complétion de l'outil tel que `Completions.script`

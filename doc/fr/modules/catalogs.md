@@ -40,8 +40,8 @@
 - depths, such as the `name` of a `hero` and of a `villain`, collide, so the key must become a
 - path. And a path which is written as text is checked by nobody: a misspelled key is found
 - when a lookup comes back empty.
-+ Certaines choses appartiennent naturellement à chaque champ : la largeur d'une colonne, le
-+ libellé sous lequel un champ s'affiche, s'il est masqué dans un journal. Une map du nom d'un
++ Certaines choses appartiennent naturellement à chaque champ : la largeur d'une colonne,
++ l'étiquette sous laquelle un champ s'affiche, s'il est masqué dans un journal. Une map du nom d'un
 + champ vers une valeur est la réponse habituelle, et elle a deux faiblesses. Deux champs de même
 + nom, à des profondeurs différentes, comme le `name` d'un `hero` et celui d'un `villain`, entrent
 + en collision : la clé doit donc devenir un chemin. Et un chemin écrit sous forme de texte n'est
@@ -128,7 +128,7 @@ val wholePlay: Text = labels(proxy ?=> proxy)
 
 - The first is the label of the villain's name, the second is the entry for the whole `hero`
 - field, and the third is the entry for the whole `Play`.
-+ La première est le libellé du nom du méchant, la deuxième est l'entrée du champ `hero` entier,
++ La première est l'étiquette du nom du méchant, la deuxième est l'entrée du champ `hero` entier,
 + et la troisième est l'entrée du `Play` entier.
 
 - A selection which the type does not have is reported where it is written:
@@ -191,8 +191,8 @@ val cell: Text = cells(proxy ?=> proxy.villain.name)
 - This is how a table of settings for each field is assembled: a catalog of labels, a catalog
 - of widths, and a catalog of whichever other property matters, built separately and braided
 - together, each addressed by the same paths. [Tables](tables.md) lays out the result.
-+ C'est ainsi que s'assemble un tableau de paramètres pour chaque champ : un catalogue de
-+ libellés, un catalogue de largeurs, et un catalogue de toute autre propriété qui compte,
++ C'est ainsi que s'assemble un tableau de paramètres pour chaque champ : un catalogue
++ d'étiquettes, un catalogue de largeurs, et un catalogue de toute autre propriété qui compte,
 + construits séparément et tressés ensemble, chacun désigné par les mêmes chemins.
 + [Tableaux](tables.md) met en page le résultat.
 

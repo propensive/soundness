@@ -218,7 +218,7 @@ alternative In a method
 - tests.
 + Un plugin de compilateur lit cela dans le code typé, et écrit un index des tests à côté de
 + l'index des suites, dans `META-INF/probably/tests` : la place de chaque test dans la
-+ hiérarchie, sa nature, son moniker, ses étiquettes et l'endroit où il est déclaré. Un outil
++ hiérarchie, sa nature, son moniker, ses tags et l'endroit où il est déclaré. Un outil
 + peut donc lister les tests d'un classpath, compléter leurs noms et les organiser en suites,
 + sans rien exécuter. Une liste obtenue en exécutant une suite, au contraire, exécute chaque
 + instruction autour de ses tests.

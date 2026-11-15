@@ -10,7 +10,7 @@
 - every Git library must be honest about: the repository is on disk, and other processes write to
 - it.
 + [Git](https://git-scm.com/) se pilote par des opérations typées sur un dépôt ouvert pour une
-+ portée. Une branche, une étiquette et un hachage de commit sont des types distincts, et non des
++ portée. Une branche, un tag et un hachage de commit sont des types distincts, et non des
 + chaînes interchangeables. Les résultats reviennent sous forme de valeurs, et non de texte à
 + analyser. Et l'API est honnête sur la seule chose dont toute bibliothèque Git doit être
 + honnête : le dépôt est sur disque, et d'autres processus y écrivent.
@@ -35,7 +35,7 @@
 - drives Git races with every other. A ref read now may have moved by the time it is written.
 + La véritable interface de Git est sa ligne de commande, conçue pour une personne devant un
 + shell. La piloter depuis un programme signifie assembler des chaînes de commande, analyser à la
-+ main une sortie textuelle, et traiter de la même façon un nom de branche, un nom d'étiquette et
++ main une sortie textuelle, et traiter de la même façon un nom de branche, un nom de tag et
 + un hachage de commit jusqu'à ce que Git en rejette un. Pire, chaque programme qui pilote Git est
 + en concurrence avec tous les autres. Une référence lue maintenant peut avoir bougé au moment où
 + on l'écrit.
@@ -209,11 +209,11 @@ directory.open[Git.Worktree](): worktree ?=>
 ```
 
 - ### Branches and tags
-+ ### Branches et étiquettes
++ ### Branches et tags
 
 - Branches and tags are created, listed and switched between with typed references. A branch is
 - created at a commit, and switching takes the reading of `HEAD` it moves from:
-+ Les branches et les étiquettes se créent, se listent et s'alternent avec des références typées.
++ Les branches et les tags se créent, se listent et s'alternent avec des références typées.
 + Une branche se crée à un commit, et le changement de branche prend la lecture de `HEAD` à partir
 + de laquelle il se déplace :
 
@@ -229,9 +229,9 @@ directory.open[Git.Worktree](Read & Write): worktree ?=>
 - Deleting a branch or a tag takes the reading of its tip, so a branch which moved since it was
 - listed is not deleted by mistake. `makeTag` makes a lightweight tag. `annotatedTag` writes a tag
 - object with a message, and optionally a signature.
-+ Supprimer une branche ou une étiquette prend la lecture de son sommet ; une branche qui a bougé
-+ depuis qu'elle a été listée n'est donc pas supprimée par erreur. `makeTag` crée une étiquette
-+ légère. `annotatedTag` écrit un objet étiquette avec un message, et éventuellement une
++ Supprimer une branche ou un tag prend la lecture de son sommet ; une branche qui a bougé
++ depuis qu'elle a été listée n'est donc pas supprimée par erreur. `makeTag` crée un tag
++ léger. `annotatedTag` écrit un objet tag avec un message, et éventuellement une
 + signature.
 
 - ### Cloning, fetching and pushing
@@ -324,7 +324,7 @@ given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
 - Signing is independent of the backend. A `Git.Signer` makes the signature which a commit or tag
 - carries, and a `Git.Verifier` checks one:
 + La signature est indépendante du backend. Un `Git.Signer` produit la signature que porte un
-+ commit ou une étiquette, et un `Git.Verifier` en vérifie une :
++ commit ou un tag, et un `Git.Verifier` en vérifie une :
 
 ```tabular
 - column  Scheme
@@ -342,7 +342,7 @@ given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
 ```
 
 - A tag signed through either is one which `git tag -v` accepts.
-+ Une étiquette signée par l'un ou l'autre est acceptée par `git tag -v`.
++ Un tag signé par l'un ou l'autre est acceptée par `git tag -v`.
 
 - Whichever backend is chosen, `Exclusive` arbitrates only between handles in this JVM. Another
 - process is never waited for, which is why every operation which moves a ref is a compare-and-swap
@@ -368,14 +368,14 @@ given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
 + column  Type
 + column  Nomme
 + row  `Git.Branch`  une branche
-+ row  `Git.Tag`  une étiquette
++ row  `Git.Tag`  un tag
 + row  `Git.Hash`  un commit, par un identifiant bien formé de quarante caractères
 + row  `Git.Revision`  l'un de ceux-ci, ou une expression relative : `Git.Revision.head(1)` est `HEAD~1`
 + row  `Git.Ref`  un chemin de référence pleinement qualifié, comme `refs/heads/main`
 ```
 
 - So an operation which expects a branch will not accept a tag:
-+ Ainsi, une opération qui attend une branche n'acceptera pas une étiquette :
++ Ainsi, une opération qui attend une branche n'acceptera pas un tag :
 
 ```scala fuel
 compile
@@ -539,5 +539,5 @@ directory.open[Git.Worktree](Read & Write): worktree ?=>
 + - [Différences](diffing.md) calcule et applique des différences hors d'un dépôt.
 + - [Processus](processes.md) décrit comment le backend en ligne de commande exécute `git`.
 + - [SSH](ssh.md) et le [client HTTP](http-client.md) portent les transports du backend natif.
-+ - [Cryptographie](cryptography.md) décrit les clés qui signent les commits et les étiquettes.
++ - [Cryptographie](cryptography.md) décrit les clés qui signent les commits et les tags.
 + - [Arbres](trees.md) dessine un historique de commits en couloirs.

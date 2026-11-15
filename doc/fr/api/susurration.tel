@@ -1067,7 +1067,7 @@ entry .Transport
         - alignment, as OpenSSH computes it), sealed, and written to the duplex. The payload's
         - first byte should be an `Ssh.Message` number.
         + RFC 4253 §6 : la charge utile est complétée par des octets aléatoires jusqu'au bloc du
-        + chiffrement (au moins quatre octets de bourrage ; avec un chiffrement AEAD, le champ de
+        + chiffrement (au moins quatre octets de remplissage ; avec un chiffrement AEAD, le champ de
         + longueur est exclu de l'alignement, comme le calcule OpenSSH), scellée, et écrite dans le
         + duplex. Le premier octet de la charge utile doit être un numéro `Ssh.Message`.
   entry #receive
@@ -1082,7 +1082,7 @@ entry .Transport
         - `Unexpected(3)`, since it means the server did not understand this client; or
         - `DISCONNECT`, which raises `Disconnected(code, text)`. A closed socket raises
         - `ClosedConnection`.
-        + Lit et descelle un paquet (`Integrity` si l'étiquette AEAD échoue), retire le bourrage, et
+        + Lit et descelle un paquet (`Integrity` si le tag AEAD échoue), retire le remplissage, et
         + renvoie la charge utile — sauf s'il s'agit de `IGNORE`, `DEBUG` ou `EXT_INFO`, qui sont
         + consommés, le paquet suivant étant lu à la place ; de `UNIMPLEMENTED`, qui lève
         + `Unexpected(3)`, puisqu'il signifie que le serveur n'a pas compris ce client ; ou de
@@ -1757,7 +1757,7 @@ entry .Agent
         - refuses (so that the server rejects it as an ordinary failure).
         + Prend une `Tactic[Ssh.Error]`. L'`algorithm` de chaque signataire est le type de la clé,
         + sauf qu'une clé `ssh-rsa` est proposée en tant que `rsa-sha2-256`, l'agent étant prié par
-        + un drapeau de produire une signature SHA-256 ; son `blob` est la clé telle que l'agent
+        + un indicateur de produire une signature SHA-256 ; son `blob` est la clé telle que l'agent
         + l'énumère ; et son `sign` envoie une requête de signature, renvoyant le blob de signature
         + complet de l'agent, ou un blob vide si l'agent refuse (afin que le serveur le rejette
         + comme un échec ordinaire).

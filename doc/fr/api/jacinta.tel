@@ -540,20 +540,20 @@ entry .Json
   entry .JsonObject
     info
         - the tree's representation of an object: a frozen `Array[Any]` of alternating keys and values
-        + la représentation d'un objet dans l'arbre : un `Array[Any]` figé de clés et de valeurs
+        + la représentation d'un objet dans l'arbre : un `Array[Any]` gelé de clés et de valeurs
         + alternées
   entry .JsonArray
     info
         - the tree's representations of an array: a frozen `Array[Any]`, `Array[Long]` or `Array[Int]`
         + les représentations d'un tableau dans l'arbre : un `Array[Any]`, `Array[Long]` ou
-        + `Array[Int]` figé
+        + `Array[Int]` gelé
     detail
         - A heterogeneous array is an `Array[Any]`, padded to odd length so that it is
         - distinguishable from an object (always even); an array of numbers alone is stored unboxed
         - as packed BCD `Long`s or `Int`s.
         + Un tableau hétérogène est un `Array[Any]`, complété jusqu'à une longueur impaire pour le
         + distinguer d'un objet (toujours de longueur paire) ; un tableau composé uniquement de
-        + nombres est stocké sans boxing sous forme de `Long` ou d'`Int` BCD compactés.
+        + nombres est stocké non boxé sous forme de `Long` ou d'`Int` BCD compactés.
   entry .aggregable
     info
         - reads a `Json` from a stream of `Data`: the given behind `source.read[Json]`
@@ -1073,7 +1073,7 @@ entry .Json
         + fonction du lecteur ; `.fromDecodable` fait le pont avec un `Json.Decodable` existant,
         + et c'est aussi ainsi qu'on fait l'emporter un décodeur personnalisé sur la dérivation. Les
         + politiques `optionalityOptions` s'appliquent aux analyseurs directs comme aux décodeurs,
-        + avec une limite : une faute tolérée en mode indulgent ne l'est que si la valeur reçue est
+        + avec une limite : une faute tolérée en mode tolérant ne l'est que si la valeur reçue est
         + du mauvais *genre*, que l'analyseur peut sauter entièrement ; une valeur du bon genre qui
         + échoue en son sein a déjà été partiellement consommée et lève toujours une erreur.
 
@@ -1121,7 +1121,7 @@ entry .Json
           - classes, curried case classes, singleton variants and generic sums stay on `.derived`.
           + L'équivalent mis en étapes de `.derived`, avec une sémantique identique : une case class
           + s'analyse via des emplacements locaux typés et une répartition sur des clés littérales
-          + compactées, et une somme scellée répartit son étiquette par une chaîne de comparaisons
+          + compactées, et une somme scellée répartit son tag par une chaîne de comparaisons
           + vers des analyseurs par variante. Une somme mise en étapes nécessite un `Discriminable`
           + discriminé par champ (`jsonByKindDiscriminable` ou un autre `DiscriminantField`) ; les
           + autres formes échouent à la construction de l'instance. Les classes locales à une
@@ -1187,7 +1187,7 @@ entry .Json
           - whole and reads as `Unset`.
           + Un `null` reçu et une clé absente se lisent tous deux comme `Unset`, sauf si la
           + politique `Nullity` ou `Absence` dans la portée est stricte ; sous la `Fault`
-          + indulgente, une valeur du mauvais genre est sautée entièrement et se lit comme `Unset`.
+          + tolérante, une valeur du mauvais genre est sautée entièrement et se lit comme `Unset`.
     entry .boxed
       info
           - an `Option[T]` parser over a `T` parser, as `.optionality` yields `None`
@@ -1210,7 +1210,7 @@ entry .Json
     entry .discriminantField
       info
           - the tag field of a field-discriminated sum, for staged parsers
-          + le champ d'étiquette d'une somme discriminée par champ, pour les analyseurs mis en
+          + le champ de tag d'une somme discriminée par champ, pour les analyseurs mis en
           + étapes
       detail
           - Panics for a `Discriminable` which is not a `Json.DiscriminantField`, since a staged
@@ -1851,7 +1851,7 @@ entry .Json
         - An opaque frozen `Array[Int]`, produced by the parser under `parsing.trackPositions` and
         - carried by `Json#positionIndex`; `json.locate(pointer)` reads it. Nothing in it is
         - addressed by hand.
-        + Un `Array[Int]` figé et opaque, produit par l'analyseur sous `parsing.trackPositions` et
+        + Un `Array[Int]` gelé et opaque, produit par l'analyseur sous `parsing.trackPositions` et
         + porté par `Json#positionIndex` ; `json.locate(pointer)` le lit. Rien n'y est adressé à la
         + main.
   entry .Ast
@@ -1871,7 +1871,7 @@ entry .Json
         - scope wherever a `Json.Ast` is used, without entering the umbrella's namespace.
         + `Json.Ast` est la représentation qu'enveloppe un `Json` : une `String`, un nombre (`Long`,
         + `Double`, `Bcd`, ou un `Int` compacté), un `Boolean`, la sentinelle `Json.JsonNull`, un
-        + objet (un `Array[Any]` figé de clés et de valeurs alternées), un tableau, ou `Unset` pour
+        + objet (un `Array[Any]` gelé de clés et de valeurs alternées), un tableau, ou `Unset` pour
         + une valeur absente. `Json.unseal(json)` expose le nœud racine d'un document et
         + `Json.ast(node)` en enveloppe un. Les méthodes d'extension de ce compagnon — les prédicats
         + `isX`, `.primitive`, et les accesseurs `.string`, `.long`, `.double`, `.bcd`, `.number`,
@@ -2141,7 +2141,7 @@ entry .Json
     entry .isNumberArray
       info
           - whether the node is an array stored unboxed as packed numbers
-          + si le nœud est un tableau stocké sans boxing sous forme de nombres compactés
+          + si le nœud est un tableau stocké non boxé sous forme de nombres compactés
     entry .isBcdIntArray
       info
           - whether the node is an array in the packed-`Int` form
@@ -2292,7 +2292,7 @@ entry .Json
   entry .DiscriminantField
     info
         - the tagged-union shape where the tag is a field beside the variant's own
-        + la forme d'union étiquetée où l'étiquette est un champ à côté de ceux de la variante
+        + la forme d'union étiquetée où le tag est un champ à côté de ceux de la variante
     detail
         - `{"radius": 1.0, "type": "Circle"}`: a `Discriminable in Json` whose tag is a field of
         - the variant's own object, under the label given. `Json.discriminatedUnion(label)`
@@ -2300,25 +2300,25 @@ entry .Json
         - `discriminables.jsonByKindDiscriminable` are the `type` and `kind` instances. Direct
         - parsing finds the tag with a bounded scan-ahead, so it need not come first; this is
         - the one shape `Json.Parsable.staged` supports for sums.
-        + `{"radius": 1.0, "type": "Circle"}` : un `Discriminable in Json` dont l'étiquette est un
-        + champ de l'objet même de la variante, sous le libellé donné.
+        + `{"radius": 1.0, "type": "Circle"}` : un `Discriminable in Json` dont le tag est un
+        + champ de l'objet même de la variante, sous l'étiquette donnée.
         + `Json.discriminatedUnion(label)` en construit un, et
         + `discriminables.jsonByTypeDiscriminable` et `discriminables.jsonByKindDiscriminable` sont
-        + les instances pour `type` et `kind`. L'analyse directe trouve l'étiquette par une lecture
-        + anticipée bornée, de sorte qu'elle n'a pas besoin de venir en premier ; c'est l'unique
+        + les instances pour `type` et `kind`. L'analyse directe trouve le tag par une lecture
+        + anticipée bornée, de sorte qu'il n'a pas besoin de venir en premier ; c'est l'unique
         + forme que `Json.Parsable.staged` prend en charge pour les sommes.
     entry #rewrite
       info
           - attaches the tag field to a variant's encoding
-          + attache le champ d'étiquette à l'encodage d'une variante
+          + attache le champ de tag à l'encodage d'une variante
     entry #discriminate
       info
           - reads the tag field, or `Unset` when there is none
-          + lit le champ d'étiquette, ou `Unset` s'il n'y en a pas
+          + lit le champ de tag, ou `Unset` s'il n'y en a pas
     entry #variant
       info
           - the variant's own fields, with the tag removed
-          + les champs propres de la variante, sans l'étiquette
+          + les champs propres de la variante, sans le tag
   entry .DiscriminantWrapper
     info
         - the tagged-union shape where the variant sits inside a single-key object named for it
@@ -2329,7 +2329,7 @@ entry .Json
         - the first token. `discriminables.jsonWrapperDiscriminable` is the instance for every
         - type; an object with more than one key is not a valid variant and raises
         - `Json.Error(Absent)` rather than guessing which key was meant.
-        + `{"Circle": {"radius": 1.0}}` : la forme la plus favorable au flux, puisque l'étiquette
+        + `{"Circle": {"radius": 1.0}}` : la forme la plus favorable au flux, puisque le tag
         + est toujours le premier jeton. `discriminables.jsonWrapperDiscriminable` est l'instance
         + pour tous les types ; un objet avec plus d'une clé n'est pas une variante valide et lève
         + `Json.Error(Absent)` plutôt que de deviner quelle clé était visée.
@@ -2348,7 +2348,7 @@ entry .Json
     entry #rewrite
       info
           - wraps a variant's encoding in an object keyed by its tag
-          + enveloppe l'encodage d'une variante dans un objet dont la clé est son étiquette
+          + enveloppe l'encodage d'une variante dans un objet dont la clé est son tag
     entry #discriminate
       info
           - the single key, or `Unset` for anything but a one-key object
@@ -2360,22 +2360,22 @@ entry .Json
   entry .DiscriminantEnvelope
     info
         - the tagged-union shape with a tag field and a payload field side by side
-        + la forme d'union étiquetée avec un champ d'étiquette et un champ de contenu côte à côte
+        + la forme d'union étiquetée avec un champ de tag et un champ de contenu côte à côte
     detail
         - `{"type": "Circle", "value": {"radius": 1.0}}`, with the two field names given.
         - `discriminables.jsonEnvelopeDiscriminable` is the `type`/`value` instance. Direct
         - parsing does not require the tag to come first.
         + `{"type": "Circle", "value": {"radius": 1.0}}`, avec les deux noms de champ donnés.
         + `discriminables.jsonEnvelopeDiscriminable` est l'instance `type`/`value`. L'analyse
-        + directe n'exige pas que l'étiquette vienne en premier.
+        + directe n'exige pas que le tag vienne en premier.
     entry #rewrite
       info
           - encloses a variant's encoding in an envelope with its tag
-          + enferme l'encodage d'une variante dans une enveloppe avec son étiquette
+          + enferme l'encodage d'une variante dans une enveloppe avec son tag
     entry #discriminate
       info
           - the tag field's string value, or `Unset`
-          + la valeur chaîne du champ d'étiquette, ou `Unset`
+          + la valeur chaîne du champ de tag, ou `Unset`
     entry #variant
       info
           - the payload field
@@ -2702,7 +2702,7 @@ entry .Json2
         + `[value] => value is Json.Encodable`. Un type doté d'un `Encodable in Text` s'encode en
         + chaîne JSON ; une case class s'encode en objet de ses champs (renommés par `@name` ou
         + `@name[Json]`, les champs `Optional`/`Option` omis quand ils sont absents) ; une
-        + énumération ou une hiérarchie scellée s'encode en sa variante, étiquetée par le
+        + énumération ou une hiérarchie scellée s'encode en sa variante, taguée par le
         + `Discriminable in Json` dans la portée. Une instance écrite à la main dans le compagnon du
         + type l'emporte sur lui.
   entry #DecodableDerivation
@@ -2730,7 +2730,7 @@ entry .Json2
     entry .disjunction
       info
           - the sum derivation: a tagged variant, by the `Discriminable in Json` in scope
-          + la dérivation de somme : une variante étiquetée, selon le `Discriminable in Json` dans
+          + la dérivation de somme : une variante taguée, selon le `Discriminable in Json` dans
           + la portée
   entry #ParsableDerivation
     info
@@ -2746,7 +2746,7 @@ entry .Json2
         + Pas destiné à un usage direct : `Json.Parsable.derived` et le repli `.field` y accèdent.
         + Un produit s'analyse via `Json.Parsable.product`, en répartissant selon les clés via une
         + `Json.KeyTable` ; une somme choisit sa stratégie au niveau des jetons d'après la forme du
-        + `Discriminable in Json` : l'étiquette d'un `DiscriminantWrapper` est son premier jeton,
+        + `Discriminable in Json` : le tag d'un `DiscriminantWrapper` est son premier jeton,
         + celles d'une enveloppe et d'un champ se trouvent par une lecture anticipée bornée, et tout
         + autre `Discriminable` matérialise une valeur et la décode.
     entry .conjunction
@@ -2767,8 +2767,8 @@ entry .Json2
         - tags it with the `Discriminable in Json` in scope, renaming the variant by `@name`.
         + Pas destiné à un usage direct : `.encodable` y accède. Un produit s'encode en objet, en
         + omettant un champ dont l'encodage est absent (un `Unset` ou `None`) ; une somme encode sa
-        + variante et l'étiquette avec le `Discriminable in Json` dans la portée, en renommant la
-        + variante d'après `@name`.
+        + variante et la marque d'un tag avec le `Discriminable in Json` dans la portée, en
+        + renommant la variante d'après `@name`.
     entry .conjunction
       info
           - the product derivation
@@ -3600,7 +3600,7 @@ entry .optionalityOptions
       + intérieur rejette est une erreur (`strictJsonFaults`, le défaut ; `lenientJsonFaults` la
       + lit comme `Unset`, sous le `tolerate` de la tactique ambiante, de sorte que rien ne
       + s'accumule). Chacune peut varier seule. Les analyseurs directs et mis en étapes respectent
-      + les mêmes politiques, avec une limite : une faute tolérée en mode indulgent ne l'est que si
+      + les mêmes politiques, avec une limite : une faute tolérée en mode tolérant ne l'est que si
       + la valeur reçue est du mauvais genre, que l'analyseur peut sauter entièrement ; une valeur
       + du bon genre qui échoue en son sein lève toujours une erreur. Une valeur par défaut
       + déclarée à `Unset` ne se distingue pas de l'absence de valeur par défaut ; elle ne
@@ -3683,8 +3683,8 @@ entry .discriminables
       - one is imported by name, or a `Json.DiscriminantField`, `Json.DiscriminantWrapper` or
       - `Json.DiscriminantEnvelope` is given in the type's companion. Each works through the
       - tree and through direct parsing; `Json.Parsable.staged` supports only the field shapes.
-      + Une énumération ou une hiérarchie scellée s'encode en sa variante plus une étiquette, et
-      + le `Discriminable in Json` dans la portée dit où va l'étiquette. Aucun n'est dans la
+      + Une énumération ou une hiérarchie scellée s'encode en sa variante plus un tag, et
+      + le `Discriminable in Json` dans la portée dit où va le tag. Aucun n'est dans la
       + portée par défaut ; on en importe un par son nom, ou on donne un
       + `Json.DiscriminantField`, un `Json.DiscriminantWrapper` ou un `Json.DiscriminantEnvelope`
       + dans le compagnon du type. Chacun fonctionne via l'arbre et via l'analyse directe ;
@@ -3705,24 +3705,24 @@ entry .discriminables
       ```
 
       - `@name` renames a case's tag value just as it renames a field.
-      + `@name` renomme la valeur d'étiquette d'un cas tout comme il renomme un champ.
+      + `@name` renomme la valeur de tag d'un cas tout comme il renomme un champ.
   entry .jsonByTypeDiscriminable
     info
         - the tag in a `type` field beside the variant's own: `{"radius":1.0,"type":"Circle"}`
-        + l'étiquette dans un champ `type` à côté de ceux de la variante :
+        + le tag dans un champ `type` à côté de ceux de la variante :
         + `{"radius":1.0,"type":"Circle"}`
   entry .jsonByKindDiscriminable
     info
         - the tag in a `kind` field beside the variant's own: `{"radius":1.0,"kind":"Circle"}`
-        + l'étiquette dans un champ `kind` à côté de ceux de la variante :
+        + le tag dans un champ `kind` à côté de ceux de la variante :
         + `{"radius":1.0,"kind":"Circle"}`
   entry .jsonWrapperDiscriminable
     info
         - the variant inside an object keyed by its tag: `{"Circle":{"radius":1.0}}`
-        + la variante dans un objet dont la clé est son étiquette : `{"Circle":{"radius":1.0}}`
+        + la variante dans un objet dont la clé est son tag : `{"Circle":{"radius":1.0}}`
     detail
         - The streaming-friendliest shape, since the tag is always the first token.
-        + La forme la plus favorable au flux, puisque l'étiquette est toujours le premier jeton.
+        + La forme la plus favorable au flux, puisque le tag est toujours le premier jeton.
   entry .jsonEnvelopeDiscriminable
     info
         - a `type` field and a `value` field: `{"type":"Circle","value":{"radius":1.0}}`
@@ -3985,8 +3985,8 @@ entry .InlinableStager
       + Pas destiné à un usage direct. `jacinta.staged`. Quand un analyseur est généré pour un
       + enregistrement, un given `Inlinable` écrit par l'utilisateur pour un type de champ est
       + évalué au moment de l'expansion dans un nouveau compilateur de mise en étapes sur le
-      + classloader des macros (le répertoire de sortie courant étant exclu, puisqu'une classe de
-      + l'exécution en cours n'a pas de fichier de classe digne de confiance), afin que le
+      + chargeur de classes des macros (le répertoire de sortie courant étant exclu, puisqu'une
+      + classe de l'exécution en cours n'a pas de fichier de classe digne de confiance), afin que le
       + générateur puisse appeler son `parse`. Un type qui ne peut pas passer dans le compilateur
       + intérieur — opaque, structurel, ou défini dans l'exécution courante — se rabat sur une
       + jonction à l'exécution. `Inlinable.Stager` charge `.Implementation` par son nom.
@@ -4516,8 +4516,8 @@ entry .internal
         - wisteria's `Variant.Error`, as the derived engine does.
         + Localise le discriminant par une lecture anticipée bornée qui revient en arrière,
         + répartit par comparaison de chaînes avec les noms de variantes reçus, et analyse la
-        + variante choisie via son `Json.Field`. Une étiquette manquante lève
-        + `Json.Error(Absent)` et une étiquette inconnue le `Variant.Error` de wisteria, comme le
+        + variante choisie via son `Json.Field`. Un tag manquant lève
+        + `Json.Error(Absent)` et un tag inconnu le `Variant.Error` de wisteria, comme le
         + fait le moteur dérivé.
 
 entry .jsonSchematics

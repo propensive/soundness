@@ -324,7 +324,7 @@ val query = Dns.Message.query(1, List(Dns.Question(dns"example.com", Dns.Type.A)
 - `Dns.resolve` reaches the platform's resolver, and
 - [Service discovery](service-discovery.md) builds on these messages.
 + mDNS ajoute deux bits : une question qui accepte une réponse unicast, et un enregistrement
-+ qui vide le cache d'un récepteur. Ce sont de simples champs, `unicast` et `flush`, désactivés
++ qui vide le cache d'un receveur. Ce sont de simples champs, `unicast` et `flush`, désactivés
 + par défaut. `Dns.resolve` atteint le résolveur de la plateforme, et la
 + [Découverte de services](service-discovery.md) s'appuie sur ces messages.
 

@@ -107,7 +107,7 @@ detail
     +   écrite à la main, ainsi que le `Discriminable in Cbor` d'une somme scellée, pendant la
     +   compilation du code. Il amène le compilateur Scala dans le classpath des macros ; c'est donc
     +   un composant séparé et optionnel ; sans lui, un champ dont le type n'a qu'une instance
-    +   écrite à la main passe par une jointure à l'exécution, et une somme n'est pas générée. JVM
+    +   écrite à la main passe par une jonction à l'exécution, et une somme n'est pas générée. JVM
     +   uniquement.
     + - `breviloquence.http` — les givens `postables`, `servables` et `construables` qui font
     +   d'un `Cbor` un corps de requête ou de réponse `application/cbor` avec telekinesis. JVM
@@ -236,7 +236,7 @@ entry .Cbor
         + `(? >: Cbor) is Dynamical` est dans la portée — `import dynamicAccess.dynamicCbor` pour
         + toute une portée, ou un bloc `dynamically[Cbor]:` pour une seule expression — afin qu'un
         + nom de champ mal orthographié ne puisse être pris pour une méthode là où l'accès dynamique
-        + n'était pas voulu. Lève une `Cbor.Error` si le récepteur n'est pas une map.
+        + n'était pas voulu. Lève une `Cbor.Error` si le receveur n'est pas une map.
   entry #applyDynamic
     info
         - `cbor.field(index)`: an element of an array-valued field
@@ -246,7 +246,7 @@ entry .Cbor
         - under the key `values`. Raises `Cbor.Error` if the receiver is not a map or the field is
         - not an array.
         + Sous `dynamicAccess.dynamicCbor`, `cbor.values(1)` est le deuxième élément du tableau sous
-        + la clé `values`. Lève une `Cbor.Error` si le récepteur n'est pas une map ou si le champ
+        + la clé `values`. Lève une `Cbor.Error` si le receveur n'est pas une map ou si le champ
         + n'est pas un tableau.
   entry #updateDynamic
     info
@@ -262,7 +262,7 @@ entry .Cbor
         + `age` contient l'encodage de `40` (toute valeur `Encodable in Cbor` ;
         + `conversions.encodableToCbor` permet aussi à une affectation par lentille d'en prendre
         + une), ajoutée comme nouvelle entrée si la clé était absente. `person.age = Unset` supprime
-        + l'entrée. Les deux lèvent une `Cbor.Error` avec `NotType(found, Map)` si le récepteur
+        + l'entrée. Les deux lèvent une `Cbor.Error` avec `NotType(found, Map)` si le receveur
         + n'est pas une map.
 
         ```scala
@@ -525,7 +525,7 @@ entry .Cbor
   entry .byteString
     info
         - decodes a CBOR byte string as frozen `Array[Byte]`, that is, `Data`
-        + décode une chaîne d'octets CBOR en `Array[Byte]` figé, c'est-à-dire en `Data`
+        + décode une chaîne d'octets CBOR en `Array[Byte]` gelé, c'est-à-dire en `Data`
     detail
         - Any other node raises `Cbor.Error(NotType(found, ByteString))`.
         + Tout autre nœud lève `Cbor.Error(NotType(found, ByteString))`.
@@ -583,7 +583,7 @@ entry .Cbor
   entry .bytesEncodable
     info
         - encodes a frozen `Array[Byte]` (`Data`) as a CBOR byte string
-        + encode un `Array[Byte]` figé (`Data`) en chaîne d'octets CBOR
+        + encode un `Array[Byte]` gelé (`Data`) en chaîne d'octets CBOR
   entry .cborEncodable
     info
         - encodes a `Cbor` as itself
@@ -830,9 +830,9 @@ entry .Cbor
         - implicit scope wherever a `Cbor.Ast` is used, through `import soundness.*` alone.
         + `Cbor.Ast` est la représentation d'un élément de données CBOR : une union opaque sur les
         + valeurs JVM qui stockent chaque type majeur — un `Long` pour un entier, un `Double` pour
-        + un flottant, une `String` pour une chaîne de texte, un `Array[Byte]` figé pour une chaîne
+        + un flottant, une `String` pour une chaîne de texte, un `Array[Byte]` gelé pour une chaîne
         + d'octets, un `Boolean`, `.CborNull` pour `null`, `Unset` pour `undefined`, un `.Tag` pour
-        + une valeur étiquetée, et un `Array[Any]` figé pour un tableau ou une map (le tableau
+        + une valeur taguée, et un `Array[Any]` gelé pour un tableau ou une map (le tableau
         + sous-jacent d'un tableau est de longueur impaire, complété par une sentinelle, et celui
         + d'une map est de longueur paire, clés et valeurs alternant, ce qui permet de les
         + distinguer). Un nœud ne fait jamais l'objet d'un filtrage par motif : les accesseurs de
@@ -889,7 +889,7 @@ entry .Cbor
       detail
           - `Cbor.Ast.map(keys, values)` interleaves the two frozen `Array[Any]`s of nodes into
           - the even-length backing array a map node is; the arrays must be the same length.
-          + `Cbor.Ast.map(keys, values)` entrelace les deux `Array[Any]` figés de nœuds en le
+          + `Cbor.Ast.map(keys, values)` entrelace les deux `Array[Any]` gelés de nœuds en le
           + tableau sous-jacent de longueur paire qu'est un nœud map ; les tableaux doivent avoir la
           + même longueur.
     entry .array
@@ -904,9 +904,9 @@ entry .Cbor
           - as a frozen `Array[Cbor.Ast]` (without the padding), and raises
           - `Cbor.Error(NotType(found, Array))` on any other node.
           + En tant que méthode de l'objet compagnon, `Cbor.Ast.array(elements)` crée un nœud
-          + tableau à partir d'un `Array[Any]` figé de nœuds, en le complétant par une sentinelle si
+          + tableau à partir d'un `Array[Any]` gelé de nœuds, en le complétant par une sentinelle si
           + sa longueur est paire afin qu'on puisse le distinguer d'une map. En tant qu'accesseur,
-          + `ast.array` donne les éléments d'un nœud tableau sous forme d'`Array[Cbor.Ast]` figé
+          + `ast.array` donne les éléments d'un nœud tableau sous forme d'`Array[Cbor.Ast]` gelé
           + (sans le remplissage), et lève `Cbor.Error(NotType(found, Array))` sur tout autre nœud.
     entry .length
       info
@@ -1012,7 +1012,7 @@ entry .Cbor
           - `null` and `undefined` are distinct on the wire (0xF6 and 0xF7) and distinct here:
           - `null` is the `.CborNull` sentinel, so that it cannot collide with the null-backed
           - `Unset` which represents `undefined` and an absent key.
-          + `null` et `undefined` sont distincts dans les données transmises (0xF6 et 0xF7) et
+          + `null` et `undefined` sont distincts en transmission (0xF6 et 0xF7) et
           + distincts ici : `null` est la sentinelle `.CborNull`, afin qu'il ne puisse pas se
           + confondre avec `Unset`, adossé à null, qui représente `undefined` et une clé absente.
     entry .isInteger
@@ -1032,7 +1032,7 @@ entry .Cbor
       info
           - whether a node is a byte string (major type 2), stored as a frozen `Array[Byte]`
           + indique si un nœud est une chaîne d'octets (type majeur 2), stockée comme un
-          + `Array[Byte]` figé
+          + `Array[Byte]` gelé
     entry .isBoolean
       info
           - whether a node is `true` or `false`
@@ -1040,7 +1040,7 @@ entry .Cbor
     entry .isTag
       info
           - whether a node is a tagged value, a `Cbor.Tag`
-          + indique si un nœud est une valeur étiquetée, un `Cbor.Tag`
+          + indique si un nœud est une valeur taguée, un `Cbor.Tag`
     entry .isArray
       info
           - whether a node is an array (major type 4)
@@ -1127,7 +1127,7 @@ entry .Cbor
     entry .byteString
       info
           - a byte string node's bytes as a frozen `Array[Byte]`; raises `NotType` otherwise
-          + les octets d'un nœud chaîne d'octets sous forme d'`Array[Byte]` figé ; lève `NotType`
+          + les octets d'un nœud chaîne d'octets sous forme d'`Array[Byte]` gelé ; lève `NotType`
           + sinon
     entry .boolean
       info
@@ -1136,7 +1136,7 @@ entry .Cbor
     entry .tag
       info
           - a tagged node as a `Cbor.Tag`; raises `NotType` otherwise
-          + un nœud étiqueté sous forme de `Cbor.Tag` ; lève `NotType` sinon
+          + un nœud tagué sous forme de `Cbor.Tag` ; lève `NotType` sinon
       detail
           ```scala
           import soundness.*
@@ -1149,7 +1149,7 @@ entry .Cbor
   entry .Tag
     info
         - a tagged value: the tag number and the node it annotates
-        + une valeur étiquetée : le numéro de tag et le nœud qu'il annote
+        + une valeur taguée : le numéro de tag et le nœud qu'il annote
     detail
         - CBOR's tags (major type 6) annotate a value with its meaning — tag 1 is an epoch
         - time, tag 2 a big integer, and the registry runs to hundreds. A parsed tag keeps both
@@ -1164,7 +1164,7 @@ entry .Cbor
         + document portant des tags fait l'aller-retour sans les perdre ; rien dans la bibliothèque
         + n'interprète la signification d'un tag. Deux tags sont égaux lorsque leurs numéros et
         + leurs valeurs le sont. Les codecs dérivés ne produisent pas de tags, et décoder un nœud
-        + étiqueté comme une primitive lève `Cbor.Error(NotType(Tag, …))` ; lisez le tag avec
+        + tagué comme une primitive lève `Cbor.Error(NotType(Tag, …))` ; lisez le tag avec
         + `ast.tag` et décodez sa `#value`.
     entry #tag
       info
@@ -1173,7 +1173,7 @@ entry .Cbor
     entry #value
       info
           - the tagged node, as `Any`; cast it to `Cbor.Ast` to read it
-          + le nœud étiqueté, en tant que `Any` ; convertissez-le en `Cbor.Ast` pour le lire
+          + le nœud tagué, en tant que `Any` ; convertissez-le en `Cbor.Ast` pour le lire
   entry .CborNull
     info
         - the sentinel which stores a CBOR `null`, distinct from `Unset`
@@ -1200,15 +1200,15 @@ entry .Cbor
   entry .CborBytes
     info
         - the storage type of a byte string node: a frozen `Array[Byte]`
-        + le type de stockage d'un nœud chaîne d'octets : un `Array[Byte]` figé
+        + le type de stockage d'un nœud chaîne d'octets : un `Array[Byte]` gelé
   entry .CborArray
     info
         - the storage type of an array node: a frozen `Array[Any]` of odd length
-        + le type de stockage d'un nœud tableau : un `Array[Any]` figé de longueur impaire
+        + le type de stockage d'un nœud tableau : un `Array[Any]` gelé de longueur impaire
   entry .CborMap
     info
         - the storage type of a map node: a frozen `Array[Any]` of even length, keys and values alternating
-        + le type de stockage d'un nœud map : un `Array[Any]` figé de longueur paire, clés et
+        + le type de stockage d'un nœud map : un `Array[Any]` gelé de longueur paire, clés et
         + valeurs alternant
   entry .CborBoolean
     info
@@ -1446,7 +1446,7 @@ entry .Cbor
     entry #byteString
       info
           - consumes a byte string item as a frozen `Array[Byte]`
-          + consomme un élément chaîne d'octets en tant qu'`Array[Byte]` figé
+          + consomme un élément chaîne d'octets en tant qu'`Array[Byte]` gelé
     entry #hasUndefined
       info
           - whether the next item is `undefined`, without consuming it
@@ -1532,7 +1532,7 @@ entry .Cbor
       detail
           - The seam back to the tree world: a field whose type has only a `Decodable in Cbor` is
           - read through this and decoded, materializing just that field's subtree.
-          + La jointure de retour vers le monde des arbres : un champ dont le type n'a qu'un
+          + La jonction de retour vers le monde des arbres : un champ dont le type n'a qu'un
           + `Decodable in Cbor` est lu par ce biais puis décodé, en matérialisant seulement le
           + sous-arbre de ce champ.
     entry #skipValue
@@ -1825,7 +1825,7 @@ entry .Cbor
     entry .writeAst
       info
           - writes a whole `Cbor.Ast` node: the seam for a field kept as a document
-          + écrit un nœud `Cbor.Ast` entier : la jointure pour un champ conservé comme document
+          + écrit un nœud `Cbor.Ast` entier : la jonction pour un champ conservé comme document
     entry .writeField
       info
           - calls a nominal `Cbor.Printable` from a generated printer, with the producer as a carrier
@@ -2359,7 +2359,7 @@ entry .CborParser
   entry #directBytes
     info
         - consumes a byte string item as a frozen `Array[Byte]`
-        + consomme un élément chaîne d'octets en tant qu'`Array[Byte]` figé
+        + consomme un élément chaîne d'octets en tant qu'`Array[Byte]` gelé
   entry #directIsUndefined
     info
         - whether the next item is `undefined` (0xF7), without consuming it
@@ -2518,10 +2518,10 @@ entry .Inlinable
       + intégrée (les givens `.int`, `.long`, `.double`, `.float`, `.boolean`, `.text`, `.string`,
       + `.byteString`, `.cbor`), puis une instance `Inlinable` trouvée par une invocation de mise en
       + étapes, puis un générateur structurel pour une collection (`.iterable`), une case class
-      + (`.derived`) ou une somme, et enfin une jointure à l'exécution : un champ dont le type a son
+      + (`.derived`) ou une somme, et enfin une jonction à l'exécution : un champ dont le type a son
       + propre `Cbor.Parsable` l'appelle, et tout le reste passe par le pont de son
       + `Decodable in Cbor`, en matérialisant seulement le sous-arbre de ce champ. Une occurrence
-      + récursive (un `Tree` avec `children: List[Tree]`) prend la jointure plutôt que de se
+      + récursive (un `Tree` avec `children: List[Tree]`) prend la jonction plutôt que de se
       + développer à l'infini.
 
       - Instances are ordinary runtime values, so a hand-written instance, and a sum's
@@ -2538,10 +2538,10 @@ entry .Inlinable
       + intégré aux macros, et avec lui les jars du compilateur. C'est le rôle de
       + `breviloquence.staged` : lorsqu'il est dans le classpath de compilation, `.Stager` les
       + évalue ; sans lui, un champ dont le type n'a qu'une instance écrite à la main passe par la
-      + jointure à l'exécution, et `Inlinable.parsable` sur une somme signale que la somme ne peut
+      + jonction à l'exécution, et `Inlinable.parsable` sur une somme signale que la somme ne peut
       + être rendue inline. Dans les deux cas, une instance (et son type) doit être compilée lors
       + d'une exécution antérieure à l'expansion : une instance de la même exécution se rabat sur la
-      + jointure.
+      + jonction.
 
       - The derived-codec alternatives, `derives Cbor.Direct` and `import codecs.direct`,
       - both expand through this generator.
@@ -2579,7 +2579,7 @@ entry .Inlinable
         + La contrepartie en écriture de `.parsable`, composée par les mêmes instances : un
         + afficheur qui écrit la valeur directement dans un producteur d'octets, en produisant
         + exactement les octets de l'encodage dérivé. Un champ dont l'instance n'affiche pas
-        + (`#prints` vaut `false`) est écrit par la jointure de son `Encodable in Cbor`.
+        + (`#prints` vaut `false`) est écrit par la jonction de son `Encodable in Cbor`.
   entry .derived
     info
         - the structural instance for a case class, by reflection when its code is generated
@@ -2632,10 +2632,10 @@ entry .Inlinable
         + l'instance `Inlinable` pour un type de champ, et `#discriminantKey`, qui évalue le
         + `Discriminable in Cbor` d'une somme et renvoie sa clé s'il s'agit d'un
         + `Cbor.DiscriminantKey` — et un objet compagnon qui charge l'implémentation,
-        + `InlinableStager.Implementation`, par son nom depuis le classloader propre de la macro
-        + lorsque `breviloquence.staged` est dans le classpath de compilation, et qui répond `None`
-        + à tout lorsqu'il n'y est pas. Le générateur principal appelle l'objet compagnon ; le code
-        + de l'utilisateur ne le fait jamais.
+        + `InlinableStager.Implementation`, par son nom depuis le chargeur de classes propre de la
+        + macro lorsque `breviloquence.staged` est dans le classpath de compilation, et qui répond
+        + `None` à tout lorsqu'il n'y est pas. Le générateur principal appelle l'objet compagnon ;
+        + le code de l'utilisateur ne le fait jamais.
     entry .summon
       info
           - the `Inlinable` for a type, evaluated by the staging compiler, or `None`
@@ -2711,7 +2711,7 @@ entry .Inlinable
         - A parse-only instance stays honest: a field of its type is written through its
         - `Encodable in Cbor` seam rather than failing.
         + Une instance qui ne fait qu'analyser reste honnête : un champ de son type est écrit par la
-        + jointure de son `Encodable in Cbor` plutôt que d'échouer.
+        + jonction de son `Encodable in Cbor` plutôt que d'échouer.
   entry #write
     info
         - generates the code which writes a value of `Self` into a producer expression
@@ -2801,14 +2801,14 @@ entry .InlinableStager
       - staging jars, which is why it is kept out of `breviloquence.core`.
       + Pas destiné à un usage direct. L'implémentation de `Inlinable.Stager` par le composant
       + `breviloquence.staged` : pour chaque type de champ, il exécute un nouveau compilateur de
-      + mise en étapes sur le classpath du classloader de la macro (en excluant le répertoire de
-      + sortie courant, puisqu'un type défini dans la compilation en cours n'a pas de fichier de
-      + classe fiable) et invoque l'instance `Inlinable`, ou le `Discriminable in Cbor` de la somme,
-      + en direct, afin que le générateur puisse la consulter. Le type passe dans le compilateur
-      + interne sous forme d'arbre de classes, ce qui restreint l'évaluation aux types en forme de
-      + classe ; les types opaques et structurels se rabattent sur une jointure à l'exécution.
-      + Chaque invocation signale sa durée par un message d'information du compilateur. JVM
-      + uniquement : ce composant dépend des jars du compilateur Scala et de la mise en étapes,
+      + mise en étapes sur le classpath du chargeur de classes de la macro (en excluant le
+      + répertoire de sortie courant, puisqu'un type défini dans la compilation en cours n'a pas de
+      + fichier de classe fiable) et invoque l'instance `Inlinable`, ou le `Discriminable in Cbor`
+      + de la somme, en direct, afin que le générateur puisse la consulter. Le type passe dans le
+      + compilateur interne sous forme d'arbre de classes, ce qui restreint l'évaluation aux types
+      + en forme de classe ; les types opaques et structurels se rabattent sur une jonction à
+      + l'exécution. Chaque invocation signale sa durée par un message d'information du compilateur.
+      + JVM uniquement : ce composant dépend des jars du compilateur Scala et de la mise en étapes,
       + c'est pourquoi il est tenu à l'écart de `breviloquence.core`.
   entry .evaluate
     info
@@ -2852,7 +2852,7 @@ entry .inlining
       - `Inlinable.Generates` expand into. Its public members exist because generated code is
       - spliced into user modules.
       + Pas destiné à un usage direct. La résolution d'instances au moment de l'expansion (feuille
-      + intégrée, invocation mise en étapes, collection, produit ou somme structurels, jointure à
+      + intégrée, invocation mise en étapes, collection, produit ou somme structurels, jonction à
       + l'exécution), les générateurs qui émettent la boucle de répartition par clé d'un
       + enregistrement, la boucle d'une collection et la répartition sur le discriminant d'une
       + somme, ainsi que les implémentations de macros en lesquelles se développent
@@ -2861,7 +2861,7 @@ entry .inlining
   entry .fieldSeam
     info
         - the runtime seam for a field with no `Inlinable`: its `Cbor.Parsable`, or its `Decodable in Cbor` bridged
-        + la jointure à l'exécution pour un champ sans `Inlinable` : son `Cbor.Parsable`, ou son
+        + la jonction à l'exécution pour un champ sans `Inlinable` : son `Cbor.Parsable`, ou son
         + `Decodable in Cbor` relayé
     detail
         - An inline method expanded where the generated parser is spliced: a nominal
@@ -2873,7 +2873,7 @@ entry .inlining
   entry .fieldSeamAbsent
     info
         - the seam's absent counterpart: what a bridged field yields when its key is missing
-        + la contrepartie d'absence de la jointure : ce que donne un champ relayé lorsque sa clé
+        + la contrepartie d'absence de la jonction : ce que donne un champ relayé lorsque sa clé
         + manque
   entry .generates
     info
@@ -2932,8 +2932,8 @@ entry .optionalityOptions
       - import.
       + Trois politiques indépendantes, chacune avec un given strict et un given souple, décident de
       + ce que donne un champ `Optional[T]` ou `Option[T]` lorsque sa clé est absente de la map (ou
-      + que les données transmises contiennent `undefined`), lorsque les données transmises
-      + contiennent `null`, et lorsque le décodeur interne rejette la valeur. Par défaut, sans rien
+      + que la forme de transmission contient `undefined`), lorsque la forme de transmission
+      + contient `null`, et lorsque le décodeur interne rejette la valeur. Par défaut, sans rien
       + importer, l'absence et les nulls sont traités avec souplesse et les défauts strictement : un
       + champ absent ou `null` se lit comme `Unset` ou `None`, et un champ de mauvais type est une
       + `Cbor.Error`. Chaque politique se modifie séparément en important un given par son nom —
@@ -2998,7 +2998,7 @@ entry .optionalityOptions
       + Les givens sont `distillate.Decodable.Absence in Cbor`, `Nullity in Cbor` et `Fault
       + in Cbor`, les mêmes types de politique qu'utilise chaque format de Soundness ; un programme
       + qui lit plusieurs formats règle donc la politique de chaque format indépendamment. Ils
-      + s'appliquent au chemin par l'arbre (`Cbor.optional` et `Cbor.option`) et, par la jointure, à
+      + s'appliquent au chemin par l'arbre (`Cbor.optional` et `Cbor.option`) et, par la jonction, à
       + un champ `Optional` d'un analyseur direct généré.
   entry .strictCborAbsence
     info
@@ -3106,7 +3106,7 @@ entry .servables
       - — so that a scintillate or telekinesis handler can respond with a `Cbor` value: a
       - fixed body of the document's encoded bytes, typed `application/cbor`.
       + Provient de `breviloquence.http` (JVM uniquement). S'importe par son nom —
-      + `import servables.cborServable` — afin qu'un handler scintillate ou telekinesis puisse
+      + `import servables.cborServable` — afin qu'un gestionnaire scintillate ou telekinesis puisse
       + répondre avec une valeur `Cbor` : un corps fixe constitué des octets encodés du document,
       + typé `application/cbor`.
   entry .cborServable

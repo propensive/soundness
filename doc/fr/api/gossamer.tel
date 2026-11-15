@@ -228,7 +228,7 @@ entry .a
       - each. A character outside ASCII is a compile error (number 824, _`é` is not a valid ASCII
       - character_) reported at that character's own position in the source, not at the start of
       - the literal. Substitutions are themselves `Ascii` values, concatenated in.
-      + `a"hello"` est un `Ascii`, un tableau figé d'octets contenant les caractères du littéral, à
+      + `a"hello"` est un `Ascii`, un tableau gelé d'octets contenant les caractères du littéral, à
       + raison d'un octet chacun. Un caractère hors d'ASCII est une erreur de compilation (numéro
       + 824, _`é` is not a valid ASCII character_) signalée à la position même de ce caractère
       + dans le code source, et non au début du littéral. Les substitutions sont elles-mêmes des
@@ -251,7 +251,7 @@ entry .SimpleTExtractor
       - with the scrutinee. It exists so that `t"…"` can be written in a pattern as well as an
       - expression; there is rarely a reason to construct one directly.
       + `case t"quit" =>` se désucre en un `SimpleTExtractor(t"quit")` dont `#unapply` est
-      + l'égalité avec la valeur examinée. Il existe pour qu'on puisse écrire `t"…"` dans un motif
+      + l'égalité avec la valeur filtrée. Il existe pour qu'on puisse écrire `t"…"` dans un motif
       + aussi bien que dans une expression ; il y a rarement une raison d'en construire un
       + directement.
   entry #text
@@ -261,7 +261,7 @@ entry .SimpleTExtractor
   entry #unapply
     info
         - whether the scrutinee equals `#text`
-        + si la valeur examinée est égale à `#text`
+        + si la valeur filtrée est égale à `#text`
 
 entry .Textual
   info
@@ -659,7 +659,7 @@ entry .build
       - elements, hands it to the lambda to fill, and returns it frozen as `Array[element]^{}`;
       - `Pue.apply` and `Ascii`'s concatenation use it. The lambda's array must not escape.
       + `Array.build[element](size) { array => … }` alloue un tableau JVM mutable de `size`
-      + éléments, le confie à la lambda pour qu'elle le remplisse, et le renvoie figé sous la
+      + éléments, le confie à la lambda pour qu'elle le remplisse, et le renvoie gelé sous la
       + forme `Array[element]^{}` ; `Pue.apply` et la concaténation d'`Ascii` l'utilisent. Le
       + tableau de la lambda ne doit pas s'échapper.
 
@@ -925,7 +925,7 @@ entry .join
       - type is the element type, so joining `List[Text]` gives `Text` and joining `List[Teletype]`
       - gives `Teletype`, with the separators of that same type.
       + Une extension sur toute collection `Traversable` — `List`, `Set`, `Chain`, `Sequence`, un
-      + tableau figé ou un `Iterable` de la bibliothèque standard — dont les éléments sont
+      + tableau gelé ou un `Iterable` de la bibliothèque standard — dont les éléments sont
       + `Joinable` : des textes de tout type textuel, des `Message` ou des collections, qui se
       + joignent par concaténation. Le type du résultat est celui des éléments ; ainsi joindre
       + une `List[Text]` donne un `Text` et joindre une `List[Teletype]` donne un `Teletype`, avec
@@ -1186,19 +1186,19 @@ entry .init
 entry .chars
   info
       - the characters of a textual value as a frozen `Array[Char]`
-      + les caractères d'une valeur textuelle sous forme d'`Array[Char]` figé
+      + les caractères d'une valeur textuelle sous forme d'`Array[Char]` gelé
   detail
       - `t"Hello".chars.to[List]` is `List('H', 'e', 'l', 'l', 'o')`. The array is of the plain
       - text's characters, whatever the textual type. `text` on a frozen `Array[Char]` is the
       - inverse.
       + `t"Hello".chars.to[List]` vaut `List('H', 'e', 'l', 'l', 'o')`. Le tableau contient les
       + caractères du texte simple, quel que soit le type textuel. `text` sur un `Array[Char]`
-      + figé est l'inverse.
+      + gelé est l'inverse.
 
 entry .text
   info
       - a frozen `Array[Char]` as a `Text`; and the contents of a `StringBuilder` as a `Text`
-      + un `Array[Char]` figé sous forme de `Text` ; et le contenu d'un `StringBuilder` sous forme
+      + un `Array[Char]` gelé sous forme de `Text` ; et le contenu d'un `StringBuilder` sous forme
       + de `Text`
   detail
       - `chars.text` is the inverse of `chars`. On a `StringBuilder`, `builder.text` reads the
@@ -1668,7 +1668,7 @@ entry .punycode
 entry .sysData
   info
       - the bytes of a `Text` in the system codepage, as a frozen array
-      + les octets d'un `Text` dans la page de codes du système, sous forme de tableau figé
+      + les octets d'un `Text` dans la page de codes du système, sous forme de tableau gelé
   detail
       - `t"hello".sysData` is the bytes `104, 101, 108, 108, 111`. For a chosen encoding, use
       - `text.in[Data]` with a `codepages` given in scope.
@@ -2489,13 +2489,13 @@ entry .Writing
     detail
         - A frozen array with one more element than there are graphemes; grapheme `i` is the
         - characters between `boundaries(i)` and `boundaries(i + 1)`.
-        + Un tableau figé comportant un élément de plus qu'il n'y a de graphèmes ; le graphème `i`
+        + Un tableau gelé comportant un élément de plus qu'il n'y a de graphèmes ; le graphème `i`
         + est formé des caractères entre `boundaries(i)` et `boundaries(i + 1)`.
 
 entry .Grapheme
   info
       - one grapheme cluster: a base character with its combining marks, or a joined sequence
-      + un groupe de graphèmes : un caractère de base avec ses marques combinantes, ou une séquence
+      + une grappe de graphèmes : un caractère de base avec ses marques combinantes, ou une séquence
       + jointe
   detail
       - The element type of `Writing`: an opaque type over `String` holding the code points of
@@ -2535,7 +2535,7 @@ entry .Ascii
       - (`cut`, `keep`, `starts`, `offsetOf`, `slices`, `+`, …) work on it directly and `plain`
       - converts it to `Text`. The `a"…"` interpolator checks every character is ASCII as the
       - code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
-      + Un type opaque sur un `Array[Byte]` figé, à raison d'un octet par caractère, avec une
+      + Un type opaque sur un `Array[Byte]` gelé, à raison d'un octet par caractère, avec une
       + instance de `Textual` dont les éléments sont des `Byte` ; ainsi les opérations
       + positionnelles et sur les sous-chaînes (`cut`, `keep`, `starts`, `offsetOf`, `slices`,
       + `+`, …) y fonctionnent directement et `plain` le convertit en `Text`. L'interpolateur
@@ -2777,10 +2777,10 @@ entry .Dictionary
       - A dictionary is immutable once built, and its arrays are frozen, so it may be shared
       - freely; `#add`, `#+` and `#++` rebuild a new one with a widened value type. The value
       - type should be a reference type, since values are stored boxed in an `AnyRef` array.
-      + Un dictionnaire est immuable une fois construit, et ses tableaux sont figés ; il peut donc
+      + Un dictionnaire est immuable une fois construit, et ses tableaux sont gelés ; il peut donc
       + être partagé librement ; `#add`, `#+` et `#++` en reconstruisent un nouveau avec un type
       + de valeur élargi. Le type de valeur devrait être un type référence, car les valeurs sont
-      + stockées encapsulées dans un tableau d'`AnyRef`.
+      + stockées boxées dans un tableau d'`AnyRef`.
   refer gossamer.Lexicon
   entry .Alphabet
     info
@@ -3027,7 +3027,7 @@ entry .internal
     entry .Grapheme
       info
           - one grapheme cluster; see `gossamer.Grapheme`
-          + un groupe de graphèmes ; voir `gossamer.Grapheme`
+          + une grappe de graphèmes ; voir `gossamer.Grapheme`
       detail
           - The companion of the opaque type `Grapheme`, exported with it to the `gossamer` package.
           + Le compagnon du type opaque `Grapheme`, exporté avec lui vers le package `gossamer`.

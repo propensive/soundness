@@ -58,7 +58,7 @@ detail
     + sont des varints `uint`, `S32` et `S64` des `sint` zig-zag, `B32` et `B64` des
     + `fixed32` et `fixed64`. `Optional` exprime la présence explicite, une `List`, un
     + `Set` ou une `Sequence` est un champ répété (compacté lorsque son élément est
-    + `Packable`), un `Array[Long]^{}` figé est le même champ sans boxing, et une `Map`
+    + `Packable`), un `Array[Long]^{}` gelé est le même champ non boxé, et une `Map`
     + est le message d'entrée répété standard.
 
     - There are three paths through the library, which produce identical bytes:
@@ -141,7 +141,7 @@ detail
     +   l'analyseur en flux `ProtobufParser`, la bordure `ProtobufReader`, `ProtobufPrinter`
     +   et `ProtobufSizes`, ainsi qu'`Inlinable` et ses générateurs (l'objet `inlining`). Se
     +   compile pour la JVM, Scala.js et Scala Native.
-    + - `locomotion.staged` — `InlinableStager`, le compilateur de staging intégré aux macros
+    + - `locomotion.staged` — `InlinableStager`, le compilateur de mise en étapes intégré aux macros
     +   qui évalue un given `Inlinable` *écrit à la main* au moment de l'expansion. Il est
     +   trouvé par son nom dans le classpath des macros ; sans lui, un champ dont le type n'a
     +   qu'une instance écrite à la main est décodé au travers de son `Decodable in Protobuf`
@@ -190,9 +190,9 @@ entry .Protobuf
       -   order, for repeated fields and for proto3's last-one-wins rule on scalars.
       - - `Absent` — a field that was not present on decode, or should be omitted on encode.
       + - `Wire(wireType, bytes)` — une valeur de transmission : les octets utiles d'un varint,
-      +   d'une valeur fixe de 32 ou 64 bits, ou d'une chaîne, d'un tableau d'octets, d'une
-      +   suite compactée ou d'un message imbriqué délimités par leur longueur, étiquetés avec
-      +   leur `WireType`. Un message entier est un `Wire(Len, bytes)`.
+      +   d'une valeur fixe de 32 ou 64 bits, ou d'une chaîne, d'un tableau d'octets, d'une suite
+      +   compactée ou d'un message imbriqué délimités par leur longueur, tagués avec leur
+      +   `WireType`. Un message entier est un `Wire(Len, bytes)`.
       + - `Repeated(values)` — toutes les occurrences d'un même numéro de champ dans un message,
       +   dans l'ordre de transmission, pour les champs répétés et pour la règle proto3 selon
       +   laquelle la dernière occurrence l'emporte sur les scalaires.
@@ -226,7 +226,7 @@ entry .Protobuf
       - resolve from implicit scope with no import.
       + Le compagnon contient les codecs. Les instances scalaires sont des givens de l'objet
       + lui-même (`intEncodable`, `textDecodable`, `u32Encodable`, …), de même que les instances
-      + de collections compactées et de tableaux figés, `optionalEncodable`, `mapEncodable` et
+      + de collections compactées et de tableaux gelés, `optionalEncodable`, `mapEncodable` et
       + les sélecteurs de mode. Les couches de priorité inférieure `Protobuf2` (les codecs
       + dérivés, les instances de collections non compactées et le chemin `read` qui matérialise
       + l'arbre) et `Protobuf1` (le chemin direct, choisi dès qu'un `Protobuf.Parsable` ou un
@@ -601,7 +601,7 @@ entry .Protobuf
         - writes its tag and value. Applies to any type `Mandatable` to its inner type, so
         - `Optional[Text]`, `Optional[Point]` and `Optional[List[Int]]` all work.
         + Présence explicite : un champ non défini n'écrit rien, là où un scalaire présent et nul
-        + écrit son étiquette et sa valeur. S'applique à tout type `Mandatable` vers son type
+        + écrit son tag et sa valeur. S'applique à tout type `Mandatable` vers son type
         + interne, si bien que `Optional[Text]`, `Optional[Point]` et `Optional[List[Int]]`
         + fonctionnent tous.
   entry .optionalDecodable
@@ -666,7 +666,7 @@ entry .Protobuf
   entry .intArrayEncodable
     info
         - a frozen `Array[Int]^{}` as a packed field, with the `List` form's bytes
-        + un `Array[Int]^{}` figé sous forme de champ compacté, avec les octets de la forme `List`
+        + un `Array[Int]^{}` gelé sous forme de champ compacté, avec les octets de la forme `List`
     detail
         - A frozen array of packable scalars is the unboxed representation of a repeated
         - numeric field: a generated parser fills it through an unboxed builder and a generated
@@ -674,49 +674,48 @@ entry .Protobuf
         - exactly those of the `List` form, so the two are interchangeable on the wire. One pair
         - of instances per scalar, each pure like the scalar's own; `Array[Byte]^{}` is `Data`,
         - a scalar.
-        + Un tableau figé de scalaires compactables est la représentation sans boxing d'un champ
-        + numérique répété : un analyseur généré le remplit au moyen d'un constructeur sans
-        + boxing et un afficheur généré le parcourt par indice, si bien qu'aucun élément n'est
-        + boxé sur l'un ou l'autre chemin. Les octets sont exactement ceux de la forme `List`, si
-        + bien que les deux sont interchangeables lors de la transmission. Une paire d'instances
-        + par scalaire, chacune pure comme celle du scalaire lui-même ; `Array[Byte]^{}` est
-        + `Data`, un scalaire.
+        + Un tableau gelé de scalaires compactables est la représentation non boxée d'un champ
+        + numérique répété : un analyseur généré le remplit au moyen d'un constructeur non boxé et
+        + un afficheur généré le parcourt par indice, si bien qu'aucun élément n'est boxé sur l'un
+        + ou l'autre chemin. Les octets sont exactement ceux de la forme `List`, si bien que les
+        + deux sont interchangeables lors de la transmission. Une paire d'instances par scalaire,
+        + chacune pure comme celle du scalaire lui-même ; `Array[Byte]^{}` est `Data`, un scalaire.
   entry .longArrayEncodable
     info
         - a frozen `Array[Long]^{}` as a packed field
-        + un `Array[Long]^{}` figé sous forme de champ compacté
+        + un `Array[Long]^{}` gelé sous forme de champ compacté
   entry .booleanArrayEncodable
     info
         - a frozen `Array[Boolean]^{}` as a packed field
-        + un `Array[Boolean]^{}` figé sous forme de champ compacté
+        + un `Array[Boolean]^{}` gelé sous forme de champ compacté
   entry .doubleArrayEncodable
     info
         - a frozen `Array[Double]^{}` as a packed field
-        + un `Array[Double]^{}` figé sous forme de champ compacté
+        + un `Array[Double]^{}` gelé sous forme de champ compacté
   entry .floatArrayEncodable
     info
         - a frozen `Array[Float]^{}` as a packed field
-        + un `Array[Float]^{}` figé sous forme de champ compacté
+        + un `Array[Float]^{}` gelé sous forme de champ compacté
   entry .intArrayDecodable
     info
         - a packed or unpacked repeated field as a frozen `Array[Int]^{}`
-        + un champ répété compacté ou non compacté sous forme d'`Array[Int]^{}` figé
+        + un champ répété compacté ou non compacté sous forme d'`Array[Int]^{}` gelé
   entry .longArrayDecodable
     info
         - a packed or unpacked repeated field as a frozen `Array[Long]^{}`
-        + un champ répété compacté ou non compacté sous forme d'`Array[Long]^{}` figé
+        + un champ répété compacté ou non compacté sous forme d'`Array[Long]^{}` gelé
   entry .booleanArrayDecodable
     info
         - a packed or unpacked repeated field as a frozen `Array[Boolean]^{}`
-        + un champ répété compacté ou non compacté sous forme d'`Array[Boolean]^{}` figé
+        + un champ répété compacté ou non compacté sous forme d'`Array[Boolean]^{}` gelé
   entry .doubleArrayDecodable
     info
         - a packed or unpacked repeated field as a frozen `Array[Double]^{}`
-        + un champ répété compacté ou non compacté sous forme d'`Array[Double]^{}` figé
+        + un champ répété compacté ou non compacté sous forme d'`Array[Double]^{}` gelé
   entry .floatArrayDecodable
     info
         - a packed or unpacked repeated field as a frozen `Array[Float]^{}`
-        + un champ répété compacté ou non compacté sous forme d'`Array[Float]^{}` figé
+        + un champ répété compacté ou non compacté sous forme d'`Array[Float]^{}` gelé
   entry .mapEncodable
     info
         - a `Map[K, V]` as repeated entry messages, `{ key = 1; value = 2 }`
@@ -822,11 +821,11 @@ entry .Protobuf
         - `import codecs.direct` a type that derives `Protobuf.Direct` uses them rather than
         - generating again at each use site, so the staging compile is paid once. Under
         - `import codecs.derived` they are bypassed like any other direct codec.
-        + Les instances servent chaque lecture et chaque écriture du type sans aucun import, et
-        + sous `import codecs.direct` un type qui dérive `Protobuf.Direct` les utilise au lieu de
-        + les générer à nouveau à chaque site d'utilisation, si bien que la compilation de staging
-        + n'est payée qu'une fois. Sous `import codecs.derived`, elles sont contournées comme tout
-        + autre codec direct.
+        + Les instances servent chaque lecture et chaque écriture du type sans aucun import, et sous
+        + `import codecs.direct` un type qui dérive `Protobuf.Direct` les utilise au lieu de les
+        + générer à nouveau à chaque site d'utilisation, si bien que la compilation de mise en
+        + étapes n'est payée qu'une fois. Sous `import codecs.derived`, elles sont contournées comme
+        + tout autre codec direct.
     entry .derived
       info
           - generates the type's `Parsable` and `Printable` and wraps them
@@ -902,7 +901,7 @@ entry .Protobuf
         - type — is gathered as wire values and decoded once through its `Decodable in
         - Protobuf`: the *seam*, which yields the same value more slowly.
         + Un analyseur généré lit sur place les scalaires d'un message, recueille un champ
-        + `List`, `Set`, `Sequence` ou tableau figé occurrence par occurrence (compacté ou non),
+        + `List`, `Set`, `Sequence` ou tableau gelé occurrence par occurrence (compacté ou non),
         + lit un champ `Map` entrée par entrée dans le constructeur de la map, aiguille un `oneof`
         + en parcourant le message à la recherche du plus petit numéro de variante présent (sa
         + dernière occurrence), remplit un scalaire absent avec son zéro et un champ absent avec
@@ -993,7 +992,7 @@ entry .Protobuf
           + lecteur sous forme d'`AnyRef` à la méthode protégée `parseCarrier`, qu'implémente le
           + code généré, en réaffirmant la capacité avec `ProtobufReader.of` à chaque utilisation.
           + Une redéfinition générée de `parse` lui-même restreindrait le paramètre `Reader^` du
-          + trait à un type pur, ce que la vérification des captures rejette, si bien que le passage
+          + trait à un type pur, ce que le contrôle des captures rejette, si bien que le passage
           + par le support constitue la bordure. Inutile pour les instances écrites à la main, qui
           + utilisent `Protobuf.Parsable.apply`.
       entry #parse
@@ -1353,11 +1352,11 @@ entry .Protobuf
           + column  Cas
           + column  Message
           + column  Remarque
-          + row  `Truncated(offset)`  _les données protobuf se sont terminées de manière inattendue au décalage `offset`_  un préfixe de longueur, une valeur fixe ou un varint a dépassé la fin de sa fenêtre
-          + row  `MalformedVarint(offset)`  _un varint était mal formé au décalage `offset`_  plus de dix octets de continuation
-          + row  `UnexpectedWireType(found, offset)`  _un type de transmission inattendu, `found`, a été rencontré au décalage `offset`_  le code de transmission d'une étiquette valait 3, 4 (les groupes obsolètes), 6 ou 7
-          + row  `Overflow(offset)`  _une valeur numérique était trop grande pour son type au décalage `offset`_  un dixième octet de varint contribuant au-delà du bit 63
-          + row  `MissingField(number)`  _le champ requis numéro `number` était manquant_  un `oneof` sans variante présente ; une faute au niveau du décodage, sans décalage
+          + row  `Truncated(offset)`  _the protobuf data ended unexpectedly at offset `offset`_  un préfixe de longueur, une valeur fixe ou un varint a dépassé la fin de sa fenêtre
+          + row  `MalformedVarint(offset)`  _a varint was malformed at offset `offset`_  plus de dix octets de continuation
+          + row  `UnexpectedWireType(found, offset)`  _an unexpected wire type, `found`, was encountered at offset `offset`_  le code de transmission d'un tag valait 3, 4 (les groupes obsolètes), 6 ou 7
+          + row  `Overflow(offset)`  _a numeric value was too large for its type at offset `offset`_  un dixième octet de varint contribuant au-delà du bit 63
+          + row  `MissingField(number)`  _the required field number `number` was missing_  un `oneof` sans variante présente ; une faute au niveau du décodage, sans décalage
           ```
       entry .communicable
         info
@@ -1404,7 +1403,7 @@ entry .Protobuf2
   entry #listEncodable
     info
         - any `Iterable` as an unpacked repeated field, one tag per element
-        + tout `Iterable` sous forme de champ répété non compacté, une étiquette par élément
+        + tout `Iterable` sous forme de champ répété non compacté, un tag par élément
     detail
         - The fallback for elements with no `Packable` instance — strings, byte arrays and
         - nested messages — each written as a separate occurrence of the field. An element's
@@ -1458,7 +1457,7 @@ entry .Protobuf2
   entry #arrayEncodable
     info
         - a frozen `Array[T]^{}` of messages, text or bytes as an unpacked repeated field
-        + un `Array[T]^{}` figé de messages, de texte ou d'octets sous forme de champ répété non
+        + un `Array[T]^{}` gelé de messages, de texte ou d'octets sous forme de champ répété non
         + compacté
     detail
         - The bytes of the `List` form, so a repeated message field may be declared
@@ -1467,12 +1466,12 @@ entry .Protobuf2
         - `Protobuf.longArrayEncodable` and its siblings.
         + Les octets de la forme `List`, si bien qu'un champ de message répété peut être déclaré
         + `Array[Message]^{}` et recueilli par un analyseur généré sans cellule par élément.
-        + Requiert un `ClassTag`. Un tableau figé d'un scalaire `Packable` se compacte au
+        + Requiert un `ClassTag`. Un tableau gelé d'un scalaire `Packable` se compacte au
         + contraire, au travers de `Protobuf.longArrayEncodable` et de ses semblables.
   entry #arrayDecodable
     info
         - a repeated field as a frozen `Array[T]^{}`, for non-scalar elements
-        + un champ répété sous forme d'`Array[T]^{}` figé, pour des éléments non scalaires
+        + un champ répété sous forme d'`Array[T]^{}` gelé, pour des éléments non scalaires
   entry #aggregableIn
     info
         - `read[T in Protobuf]` through the tree: aggregate the bytes, then `as[T]`
@@ -1588,13 +1587,13 @@ entry .WireType
       - runs and map entries; and `I32` (code 5) for `fixed32`, `sfixed32` and `float`. The
       - deprecated group types, codes 3 and 4, are not supported: a tag carrying either is
       - rejected with `Protobuf.Error.Reason.UnexpectedWireType`.
-      + Les trois bits de poids faible de l'étiquette d'un champ indiquent la disposition de sa
+      + Les trois bits de poids faible du tag d'un champ indiquent la disposition de sa
       + valeur : `Varint` (code 0) pour `int32`, `int64`, `uint`, `sint`, `bool` et les
       + énumérations ; `I64` (code 1) pour `fixed64`, `sfixed64` et `double` ; `Len` (code 2)
       + pour les chaînes, les octets, les messages imbriqués, les suites compactées et les
       + entrées de map ; et `I32` (code 5) pour `fixed32`, `sfixed32` et `float`. Les types de
-      + groupes obsolètes, codes 3 et 4, ne sont pas pris en charge : une étiquette portant
-      + l'un d'eux est rejetée avec `Protobuf.Error.Reason.UnexpectedWireType`.
+      + groupes obsolètes, codes 3 et 4, ne sont pas pris en charge : un tag portant
+      + l'un d'eux est rejeté avec `Protobuf.Error.Reason.UnexpectedWireType`.
 
       ```scala
       import soundness.*
@@ -1610,7 +1609,7 @@ entry .WireType
   entry #id
     info
         - the 3-bit code packed into a field tag: 0, 1, 2 or 5
-        + le code de 3 bits compacté dans l'étiquette d'un champ : 0, 1, 2 ou 5
+        + le code de 3 bits compacté dans le tag d'un champ : 0, 1, 2 ou 5
 
 entry .Packable
   info
@@ -1625,7 +1624,7 @@ entry .Packable
       - `Long`, `Boolean`, `Float`, `Double` and the six sized integers — since strings, byte
       - arrays and messages are length-delimited and always repeat as separate fields.
       + proto3 compacte un champ numérique répété : les octets de tous les éléments sont
-      + concaténés en un unique champ `Len`, au lieu d'être écrits avec une étiquette par
+      + concaténés en un unique champ `Len`, au lieu d'être écrits avec un tag par
       + élément. `Packable` est la preuve qu'un type d'élément se compacte, et enregistre le
       + `#wireType` qu'utilisent ses valeurs afin qu'un lecteur puisse redécouper une suite
       + compactée en éléments. Seuls les scalaires numériques ont une instance — `Int`, `Long`,
@@ -1822,17 +1821,17 @@ entry .Inlinable
       - the macro classpath every hand-written instance degrades to the seam. Generated
       - structural instances need neither. A message whose instance is a `derives` clause
       - (`derives Inlinable.ForProtobuf`) is found in its companion by the staging summon.
-      + Une instance écrite à la main (`given (MyLeaf is Inlinable) = new Inlinable { … }`) est
-      + une valeur ordinaire à l'exécution, et le générateur ne peut appeler son `parse` qu'en
-      + l'évaluant à l'intérieur de la macro — ce qui demande un compilateur de staging intégré
-      + aux macros, apporté par `locomotion.staged` sous forme de `.Stager`. Il en découle deux
-      + contraintes : l'instance et son type doivent être compilés lors d'une exécution
-      + *antérieure* à l'expansion (une instance de la même exécution, qui n'a pas encore de
-      + fichier de classe fiable, se replie sur la jonction), et sans `locomotion.staged` dans
-      + le classpath des macros, chaque instance écrite à la main se replie sur la jonction. Les
-      + instances structurelles générées n'ont besoin ni de l'un ni de l'autre. Un message dont
-      + l'instance est une clause `derives` (`derives Inlinable.ForProtobuf`) est trouvé dans
-      + son compagnon par l'invocation de staging.
+      + Une instance écrite à la main (`given (MyLeaf is Inlinable) = new Inlinable { … }`) est une
+      + valeur ordinaire à l'exécution, et le générateur ne peut appeler son `parse` qu'en
+      + l'évaluant à l'intérieur de la macro — ce qui demande un compilateur de mise en étapes
+      + intégré aux macros, apporté par `locomotion.staged` sous forme de `.Stager`. Il en découle
+      + deux contraintes : l'instance et son type doivent être compilés lors d'une exécution
+      + *antérieure* à l'expansion (une instance de la même exécution, qui n'a pas encore de fichier
+      + de classe fiable, se replie sur la jonction), et sans `locomotion.staged` dans le classpath
+      + des macros, chaque instance écrite à la main se replie sur la jonction. Les instances
+      + structurelles générées n'ont besoin ni de l'un ni de l'autre. Un message dont l'instance est
+      + une clause `derives` (`derives Inlinable.ForProtobuf`) est trouvé dans son compagnon par
+      + l'invocation par mise en étapes.
 
       - `Inlinable` is not exported to the umbrella: write `import locomotion.Inlinable`.
       + `Inlinable` n'est pas exporté vers le package parapluie : écrivez
@@ -1966,11 +1965,12 @@ entry .Inlinable
     entry .summon
       info
           - the staged `Inlinable` for a field type, or `None` when `locomotion.staged` is absent
-          + l'`Inlinable` stagé d'un type de champ, ou `None` lorsque `locomotion.staged` est absent
+          + l'`Inlinable` obtenu par mise en étapes d'un type de champ, ou `None` lorsque
+          + `locomotion.staged` est absent
     entry #summon
       info
           - evaluates the `Inlinable` given for a type inside a staging compiler
-          + évalue le given `Inlinable` d'un type à l'intérieur d'un compilateur de staging
+          + évalue le given `Inlinable` d'un type à l'intérieur d'un compilateur de mise en étapes
   entry .int
     info
         - `Int` reads as a varint and prints as one; `0` when absent
@@ -2113,7 +2113,7 @@ entry .ProtobufParser
       + d'analyse, sous forme de décalage absolu dans l'entrée, si bien que les messages
       + imbriqués s'analysent sur place plutôt que sur une copie de leur contenu.
       + `#directEnterField` restreint la fenêtre à la valeur de transmission d'un champ selon
-      + le code de transmission de son étiquette, et `#directLeaveField` rétablit la fenêtre
+      + le code de transmission de son tag, et `#directLeaveField` rétablit la fenêtre
       + englobante, en sautant ce qui reste du champ ; chaque lecture scalaire vérifie la
       + fenêtre et signale une `Protobuf.Error` avec le décalage absolu. Un `oneof` se lit en
       + mettant en tampon la fenêtre entière (`#directBufferWindow`), en la parcourant pour y
@@ -2154,7 +2154,7 @@ entry .ProtobufParser
       - `Data` has no cursor at all. Window positions cross the rim as `Int`s: a message is at
       - most 2 GiB, as its `int32` length prefixes require.
       + Remarques de performance sur lesquelles un utilisateur peut compter : un varint d'un
-      + octet (une étiquette, un booléen, une longueur courte) est lu sur place ; les varints de
+      + octet (un tag, un booléen, une longueur courte) est lu sur place ; les varints de
       + deux à quatre octets empruntent un chemin linéaire ; un champ chaîne dont les octets
       + sont tous ASCII, lu sur un `Data` entier, est décodé au travers d'une copie Latin-1
       + plutôt que du constructeur UTF-8, avec un `Text` identique ; et une lecture sur un
@@ -2250,7 +2250,7 @@ entry .ProtobufParser
         - The record loop's test: `while !parser.directAtLimit` reads tags until the window is
         - consumed. On an unbounded window it asks the cursor for more before answering, so a
         - live stream's complete field reads without waiting for the next.
-        + Le test de la boucle d'enregistrement : `while !parser.directAtLimit` lit des étiquettes
+        + Le test de la boucle d'enregistrement : `while !parser.directAtLimit` lit des tags
         + jusqu'à ce que la fenêtre soit consommée. Sur une fenêtre non bornée, il demande
         + davantage au curseur avant de répondre, si bien que le champ complet d'un flux en direct
         + se lit sans attendre le suivant.
@@ -2266,7 +2266,7 @@ entry .ProtobufParser
   entry #directTag
     info
         - the next field's tag, `(number << 3) | wireCode`; call only below the limit
-        + l'étiquette du champ suivant, `(number << 3) | wireCode` ; à n'appeler qu'en deçà de la
+        + le tag du champ suivant, `(number << 3) | wireCode` ; à n'appeler qu'en deçà de la
         + limite
   entry #directVarint
     info
@@ -2300,7 +2300,7 @@ entry .ProtobufParser
         - token is for `#directLeaveField`.
         + Le code 0 couvre les propres octets du varint, 1 les huit suivants, 5 les quatre
         + suivants, et 2 consomme le préfixe de longueur et couvre ce nombre d'octets ; un code 3,
-        + 4, 6 ou 7 donne `UnexpectedWireType` au décalage de l'étiquette. Un champ qui
+        + 4, 6 ou 7 donne `UnexpectedWireType` au décalage du tag. Un champ qui
         + dépasserait la fenêtre englobante donne `Truncated` ; une fenêtre englobante non bornée
         + ne peut pas prouver l'existence des octets à l'entrée, si bien que ce sont ses lectures
         + qui signalent la troncature, au même décalage. Le jeton renvoyé est destiné à
@@ -2509,8 +2509,8 @@ entry .ProtobufReader
         - read-only in a module that is capture-checked but not separation-checked.
         + L'entrée du `parseCarrier(reader: AnyRef)` d'un analyseur généré, insérée dans le module
         + de l'utilisateur ; inline afin que la conversion s'y retrouve, là où le résultat `^`
-        + d'une méthode serait en lecture seule dans un module soumis à la vérification des
-        + captures mais pas à celle de la séparation.
+        + d'une méthode serait en lecture seule dans un module soumis au contrôle des
+        + captures mais pas à celui de la séparation.
   entry #more
     info
         - whether the window has more content: the record loop's test
@@ -2518,7 +2518,7 @@ entry .ProtobufReader
   entry #tag
     info
         - the next field's tag, `(number << 3) | wireCode`
-        + l'étiquette du champ suivant, `(number << 3) | wireCode`
+        + le tag du champ suivant, `(number << 3) | wireCode`
   entry #enterField
     info
         - narrows the window to the next field's value by its wire code; returns the token to leave with
@@ -2580,7 +2580,7 @@ entry .ProtobufPrinter
       - to `deliver` directly. The printer is a stateful, exclusive capability
       - (`ProtobufPrinter^`) with update-classified writes.
       + `ProtobufPrinter` écrit des octets transmis de Protocol Buffers : les varints en LEB128,
-      + les valeurs fixes en petit-boutiste, un champ sous forme de son étiquette suivie de sa
+      + les valeurs fixes en petit-boutiste, un champ sous forme de son tag suivi de sa
       + valeur (préfixée par sa longueur pour `Len`). Il possède son tampon selon l'un de trois
       + modes, choisi par le constructeur du compagnon : `.exact(size)` est un tableau
       + exactement de la taille mesurée, que `#data` renvoie sans copie ; `.growing(hint)`
@@ -2655,7 +2655,7 @@ entry .ProtobufPrinter
   entry .tagSize
     info
         - the length of a field's tag: one byte up to field 15, a varint thereafter
-        + la longueur de l'étiquette d'un champ : un octet jusqu'au champ 15, un varint au-delà
+        + la longueur du tag d'un champ : un octet jusqu'au champ 15, un varint au-delà
   entry .fieldSize
     info
         - the number of bytes `#field` writes for a number and a wire value
@@ -2663,7 +2663,7 @@ entry .ProtobufPrinter
     detail
         - `Absent` is 0, `Repeated` the sum of its values, and a `Wire` its tag plus — for `Len` —
         - a length prefix, plus the payload.
-        + `Absent` vaut 0, `Repeated` la somme de ses valeurs, et un `Wire` son étiquette plus —
+        + `Absent` vaut 0, `Repeated` la somme de ses valeurs, et un `Wire` son tag plus —
         + pour `Len` — un préfixe de longueur, plus le contenu.
   entry .varintData
     info
@@ -2736,17 +2736,17 @@ entry .ProtobufPrinter
   entry #tag
     info
         - writes a field tag, `(number << 3) | wireType.id`, as a varint
-        + écrit l'étiquette d'un champ, `(number << 3) | wireType.id`, sous forme de varint
+        + écrit le tag d'un champ, `(number << 3) | wireType.id`, sous forme de varint
   entry #field
     info
         - writes a numbered field from a `Protobuf` value: tag, length prefix for `Len`, payload
-        + écrit un champ numéroté à partir d'une valeur `Protobuf` : étiquette, préfixe de
+        + écrit un champ numéroté à partir d'une valeur `Protobuf` : tag, préfixe de
         + longueur pour `Len`, contenu
     detail
         - `Absent` writes nothing, `Repeated` writes every value under the same number, and a
         - `Wire` writes its tag and bytes. Exactly `ProtobufPrinter.fieldSize` bytes.
         + `Absent` n'écrit rien, `Repeated` écrit chaque valeur sous le même numéro, et un `Wire`
-        + écrit son étiquette et ses octets. Exactement `ProtobufPrinter.fieldSize` octets.
+        + écrit son tag et ses octets. Exactement `ProtobufPrinter.fieldSize` octets.
 
 entry .ProtobufSizes
   info
@@ -2878,8 +2878,8 @@ entry .inlining
 entry .InlinableStager
   info
       - the in-macro staging compiler which evaluates a hand-written `Inlinable` at expansion time
-      + le compilateur de staging intégré aux macros, qui évalue un `Inlinable` écrit à la main
-      + au moment de l'expansion
+      + le compilateur de mise en étapes intégré aux macros, qui évalue un `Inlinable` écrit à la
+      + main au moment de l'expansion
   hidden
   detail
       - Not for direct use. The `locomotion.staged` component's one object: `Inlinable.Stager`
@@ -2893,21 +2893,20 @@ entry .InlinableStager
       - `Decodable`/`Encodable in Protobuf`. Each summon reports its duration as a compiler
       - info message, _locomotion: staged summon for `T` took `n`ms_.
       + Pas pour un usage direct. L'unique objet du composant `locomotion.staged` :
-      + `Inlinable.Stager` charge `.Implementation` par son nom lorsque `locomotion.staged` est
-      + dans le classpath des macros, et `.evaluate` lance un nouveau compilateur de staging —
-      + sur le classpath du chargeur de classes des macros, en excluant le répertoire de sortie
-      + courant — pour invoquer le given `Inlinable` d'un type de champ et remettre l'instance
-      + vivante au générateur. Seul un type de forme classe (une classe ou une application de
-      + classe) dont le fichier de classe existe déjà peut passer dans le compilateur interne :
-      + un type opaque ou structurel, ou un type défini dans la compilation en cours, donne
-      + `None`, et le champ emprunte la jonction à l'exécution au travers de son
-      + `Decodable`/`Encodable in Protobuf`. Chaque invocation signale sa durée par un message
-      + d'information du compilateur, _locomotion : l'invocation stagée pour `T` a pris
-      + `n` ms_.
+      + `Inlinable.Stager` charge `.Implementation` par son nom lorsque `locomotion.staged` est dans
+      + le classpath des macros, et `.evaluate` lance un nouveau compilateur de mise en étapes — sur
+      + le classpath du chargeur de classes des macros, en excluant le répertoire de sortie courant
+      + — pour invoquer le given `Inlinable` d'un type de champ et remettre l'instance vivante au
+      + générateur. Seul un type de forme classe (une classe ou une application de classe) dont le
+      + fichier de classe existe déjà peut passer dans le compilateur interne : un type opaque ou
+      + structurel, ou un type défini dans la compilation en cours, donne `None`, et le champ
+      + emprunte la jonction à l'exécution au travers de son `Decodable`/`Encodable in Protobuf`.
+      + Chaque invocation signale sa durée par un message d'information du compilateur, _locomotion:
+      + staged summon for `T` took `n`ms_.
   entry .evaluate
     info
         - the staged summon: `Some(instance)` for an evaluable type, `None` otherwise
-        + l'invocation stagée : `Some(instance)` pour un type évaluable, `None` sinon
+        + l'invocation par mise en étapes : `Some(instance)` pour un type évaluable, `None` sinon
   entry .Implementation
     info
         - the `Inlinable.Stager` that `Inlinable.Stager.summon` delegates to

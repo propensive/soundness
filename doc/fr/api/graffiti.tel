@@ -85,7 +85,7 @@ refer cataclysm.Css
 entry .Archetype
   info
       - the base of every page: its content, title, direction, stylesheet and the seams features compose through
-      + la base de toute page : contenu, titre, direction, feuille de style et jointures par
+      + la base de toute page : contenu, titre, direction, feuille de style et jonctions par
       + lesquelles se composent les fonctionnalités
   detail
       - A concrete page extends `Archetype` and the feature traits it wants, and defines
@@ -96,7 +96,7 @@ entry .Archetype
       - `super.head`. A page author rarely touches them: each feature exposes its own hooks
       - instead.
       + Une page concrète étend `Archetype` et les traits de fonctionnalité qu'elle souhaite, et
-      + définit `#content`. Les traits se composent par trois jointures protégées : `#frame`, le
+      + définit `#content`. Les traits se composent par trois jonctions protégées : `#frame`, le
       + pipeline d'enveloppement, qu'un trait de mise en page redéfinit comme une décoration de
       + `super.frame` ; `#styles`, l'accumulateur de feuille de style, redéfini en
       + `super.styles + ownRules` ; et `#head`, l'accumulateur de `<head>`, redéfini comme un
@@ -801,7 +801,7 @@ entry .Description
       - `Description(text)` contributes the description element and nothing to the body.
       - `StandardMetadata` supplies the same together with a viewport.
       + `Description(text)` apporte l'élément de description et rien au corps.
-      + `StandardMetadata` fournit le même, accompagné d'un viewport.
+      + `StandardMetadata` fournit le même, accompagné d'une zone d'affichage.
 
 entry .Viewport
   info
@@ -815,7 +815,7 @@ entry .Viewport
   entry #viewport
     info
         - the viewport directive, `width=device-width, initial-scale=1` by default
-        + la directive de viewport, `width=device-width, initial-scale=1` par défaut
+        + la directive de zone d'affichage, `width=device-width, initial-scale=1` par défaut
 
 entry .Keywords
   info
@@ -863,7 +863,8 @@ entry .Canonical
 entry .StandardMetadata
   info
       - the metadata nearly every page wants: a description and a responsive viewport
-      + les métadonnées que presque toute page souhaite : une description et un viewport adaptatif
+      + les métadonnées que presque toute page souhaite : une description et une zone d'affichage
+      + adaptative
   detail
       - `StandardMetadata(description)` extends `Viewport` and adds a `<meta name="description">`
       - from its parameter, so a page mixes in one trait instead of wiring each element. Add

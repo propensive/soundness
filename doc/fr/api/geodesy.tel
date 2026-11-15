@@ -163,7 +163,7 @@ entry .Degree
       - A constant to multiply: `45.0*Degree` is 45°, and `Degree/60.0` is `ArcMinute`. The
       - `deg` extension is the same angle times its receiver.
       + Une constante à multiplier : `45.0*Degree` vaut 45°, et `Degree/60.0` vaut `ArcMinute`.
-      + L'extension `deg` donne le même angle multiplié par son récepteur.
+      + L'extension `deg` donne le même angle multiplié par son receveur.
 
 entry .ArcMinute
   info
@@ -713,8 +713,8 @@ entry .Locatable
       - `Location` extensions still need a `Location`; `Locatable` is the seam for a library
       - built on top.
       + Geodesy lui-même ne définit aucune instance ni aucune opération qui en prenne une ; les
-      + extensions de `Location` requièrent donc toujours une `Location` ; `Locatable` est le point
-      + de jonction pour une bibliothèque construite par-dessus.
+      + extensions de `Location` requièrent donc toujours une `Location` ; `Locatable` est la
+      + jonction pour une bibliothèque construite par-dessus.
   refer geodesy.Location
   entry #location
     info

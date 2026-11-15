@@ -3928,13 +3928,13 @@ entry .Gaugeable
         - when it is `Unset`; it reports a `#period` of the inner design's or 80 ms, since an
         - absent value may have to sweep even where the definite design never animates.
         + Un given qui dérive `Optional[T] is Gaugeable` de n'importe quel `T is Gaugeable` dans la
-        + portée. La contrainte `Mandatable` identifie le type obligatoire, si bien que l'élévation
-        + ne s'applique qu'à de véritables optionnels et n'entre jamais en concurrence avec
+        + portée. La contrainte `Mandatable` identifie le type obligatoire, si bien que le given
+        + relevé ne s'applique qu'à de véritables optionnels et n'entre jamais en concurrence avec
         + l'instance définie — ce qui garde `Tui.Captioned(Tui.Fraction(0.5), …)` non ambigu lorsque
-        + les deux sont dans la portée. Le design élevé dessine les `#rows` du design défini lorsque
-        + la valeur est présente et ses lignes `#absent` lorsqu'elle vaut `Unset` ; il indique comme
-        + `#period` celle du design interne ou 80 ms, puisqu'une valeur absente peut devoir balayer
-        + même là où le design défini n'est jamais animé.
+        + les deux sont dans la portée. Le design relevé dessine les `#rows` du design défini
+        + lorsque la valeur est présente et ses lignes `#absent` lorsqu'elle vaut `Unset` ; il
+        + indique comme `#period` celle du design interne ou 80 ms, puisqu'une valeur absente peut
+        + devoir balayer même là où le design défini n'est jamais animé.
 
         ```scala
         import soundness.*
@@ -4540,8 +4540,8 @@ entry .internal
       + enveloppe synthétisée, et une variable de type inférée à partir de lui s'élargit jusqu'à sa
       + représentation). Les deux sont exportés vers le package `ultimatum`, et documentés sous
       + `ultimatum.Fraction` et `ultimatum.Countdown`. Chacun est borné par `caps.Pure`, si bien
-      + qu'un état est une donnée et peut être affecté à une `Tui.Reading` sans que le vérificateur
-      + de captures proteste.
+      + qu'un état est une donnée et peut être affecté à une `Tui.Reading` sans que le contrôle
+      + des captures proteste.
   entry .Fraction
     info
         - a proportion in `[0, 1]`, clamped; see `ultimatum.Fraction`

@@ -58,12 +58,12 @@ detail
     - rather than stopping at the first.
     + Le décodage est la dérivation qu'utilise tout autre format (celle de wisteria, sur
     + `Decodable in Yaml` et `Encodable in Yaml`) ; un enregistrement n'a donc besoin d'aucune
-    + annotation : `@name` renomme un champ ou une variante dans les données transmises, une
+    + annotation : `@name` renomme un champ ou une variante en transmission, une
     + énumération s'encode avec un champ discriminant nommé par le given `discriminables` dans la
     + portée, et un champ `Optional` ou `Option` lit une clé absente ou un `null` comme
     + `Unset`/`None` selon des politiques que fait varier le package `optionalityOptions`. Avec une
     + stratégie accumulatrice (`validate`), un décodage recueille tous les défauts du document,
-    + chacun étiqueté par un `Yaml.Focus` — son chemin et, pour un document suivi, sa position —
+    + chacun tagué par un `Yaml.Focus` — son chemin et, pour un document suivi, sa position —
     + au lieu de s'arrêter au premier.
 
     - A record can also carry a _direct_ parser and printer (`Yaml.Parsable` and
@@ -740,7 +740,7 @@ entry .Yaml
         - boolean or null, or any scalar tagged `!!str`. A number is not coerced: `42` registers
         - `Reason.NotType(Integer, Str)`; write `!!str 42` or `"42"` for the text.
         + Un scalaire entre guillemets, un scalaire de bloc, un scalaire sans guillemets qui ne se
-        + résout pas en nombre, booléen ou null, ou tout scalaire étiqueté `!!str`. Un nombre n'est
+        + résout pas en nombre, booléen ou null, ou tout scalaire tagué `!!str`. Un nombre n'est
         + pas converti : `42` enregistre `Reason.NotType(Integer, Str)` ; écrivez `!!str 42` ou
         + `"42"` pour obtenir le texte.
   entry .string
@@ -754,7 +754,7 @@ entry .Yaml
     detail
         - `null`, `~`, an empty value or anything tagged `!!null`; any other node registers
         - `Reason.NotType(found, Null)`.
-        + `null`, `~`, une valeur vide ou tout ce qui est étiqueté `!!null` ; tout autre nœud
+        + `null`, `~`, une valeur vide ou tout ce qui est tagué `!!null` ; tout autre nœud
         + enregistre `Reason.NotType(found, Null)`.
   entry .memory
     info
@@ -922,7 +922,7 @@ entry .Yaml
         - `kind`, as importable givens; call this for any other field name and bind the result as
         - a local given.
         + `Yaml.discriminatedUnion[Shape](t"kind")` est la façon dont la variante d'un type somme
-        + est nommée dans les données transmises : `discriminate` lit la chaîne sous `kind`,
+        + est nommée en transmission : `discriminate` lit la chaîne sous `kind`,
         + `rewrite` ajoute ou remplace le champ avec le nom de la variante lors de l'encodage, et
         + `variant` le retire avant que le décodeur propre de la variante ne s'exécute. Le package
         + `discriminables` contient les deux choix courants, `type` et `kind`, sous forme de givens
@@ -988,7 +988,7 @@ entry .Yaml
     info
         - `"field" is Lens from Yaml onto Yaml`: a mapping entry as a lens, by its label
         + `"field" is Lens from Yaml onto Yaml` : une entrée de mapping sous forme de lentille, par
-        + son libellé
+        + son étiquette
     detail
         - The given which makes `doc.lens(_.inner.n = value)` work: each label in the path is a
         - lens whose getter is `#selectDynamic` and whose setter replaces (or inserts) the entry,
@@ -996,9 +996,9 @@ entry .Yaml
         - It is gated on a `Yaml is Dynamical` (`dynamicAccess.dynamicYaml`) and needs a
         - `Tactic[Yaml.Error]`. The assigned value must be a `Yaml`: encode it with `in[Yaml]`,
         - or import `conversions.encodableToYaml` to assign any encodable value directly.
-        + Le given qui fait fonctionner `doc.lens(_.inner.n = value)` : chaque libellé du chemin est
-        + une lentille dont l'accesseur est `#selectDynamic` et dont le modificateur remplace (ou
-        + insère) l'entrée, si bien qu'une mise à jour imbriquée reconstruit le mapping à chaque
+        + Le given qui fait fonctionner `doc.lens(_.inner.n = value)` : chaque étiquette du chemin
+        + est une lentille dont l'accesseur est `#selectDynamic` et dont le modificateur remplace
+        + (ou insère) l'entrée, si bien qu'une mise à jour imbriquée reconstruit le mapping à chaque
         + niveau et renvoie un nouveau document. Il est conditionné par un `Yaml is Dynamical`
         + (`dynamicAccess.dynamicYaml`) et nécessite une `Tactic[Yaml.Error]`. La valeur affectée
         + doit être un `Yaml` : encodez-la avec `in[Yaml]`, ou importez
@@ -1101,7 +1101,7 @@ entry .Yaml
   entry .YamlSequence
     info
         - the representation of a sequence: a frozen `Array[Any]` of odd length
-        + la représentation d'une séquence : un `Array[Any]` figé de longueur impaire
+        + la représentation d'une séquence : un `Array[Any]` gelé de longueur impaire
     detail
         - Sequences and mappings share one array representation and are told apart by length
         - parity: a sequence array is always odd-length, padded with a sentinel when the item
@@ -1113,7 +1113,7 @@ entry .Yaml
   entry .YamlMapping
     info
         - the representation of a mapping: a frozen `Array[Any]` of alternating keys and values
-        + la représentation d'un mapping : un `Array[Any]` figé de clés et de valeurs alternées
+        + la représentation d'un mapping : un `Array[Any]` gelé de clés et de valeurs alternées
     detail
         - Always even-length, `[k0, v0, k1, v1, …]`, in document order. Keys are nodes, and only
         - string keys are addressable by `Yaml#apply`, `YamlPath` and the derived decoders.
@@ -1131,7 +1131,7 @@ entry .Yaml
         - `parsing.trackPositions` is in scope, carried as `Yaml#positionIndex`, and walked by
         - `.positionable` to answer `locate` and `locateKey`; there is no public way to read it
         - directly.
-        + Un `Array[Int]` figé et opaque de descripteurs de position, un par nœud, disposé de telle
+        + Un `Array[Int]` gelé et opaque de descripteurs de position, un par nœud, disposé de telle
         + sorte que la tranche à n'importe quelle frontière de descripteur soit elle-même un index
         + valide. Il n'est construit que lorsque `parsing.trackPositions` est dans la portée, porté
         + comme `Yaml#positionIndex`, et parcouru par `.positionable` pour répondre à `locate` et
@@ -1184,12 +1184,12 @@ entry .Yaml
           - `focus.withPosition(doc)` is `focus` with `position` set to `doc.locate(pointer)`;
           - `Yaml#as` applies it to every registered focus, so a handler rarely needs to.
           + `focus.withPosition(doc)` est `focus` avec `position` fixé à `doc.locate(pointer)` ;
-          + `Yaml#as` l'applique à chaque focus enregistré, si bien qu'un handler a rarement à le
-          + faire.
+          + `Yaml#as` l'applique à chaque focus enregistré, si bien qu'un gestionnaire a rarement à
+          + le faire.
   entry .Ast
     info
         - a node of the tree: an unboxed scalar, a sequence or a mapping, inspected through extensions
-        + un nœud de l'arbre : un scalaire non emballé, une séquence ou un mapping, inspecté par des
+        + un nœud de l'arbre : un scalaire non boxé, une séquence ou un mapping, inspecté par des
         + extensions
     detail
         - `Yaml.Ast` is an opaque type over the JVM representations of YAML's values — a
@@ -1201,7 +1201,7 @@ entry .Yaml
         - `objectIndexOf`, …) as extension methods, `deepEquals` for structural comparison,
         - and the `Position` and `Issue` types a parse reports.
         + `Yaml.Ast` est un type opaque sur les représentations JVM des valeurs YAML — un scalaire
-        + `String`, `Long`, `Double`, `Boolean` ou `Bcd`, la sentinelle `YamlNull`, un tableau figé
+        + `String`, `Long`, `Double`, `Boolean` ou `Bcd`, la sentinelle `YamlNull`, un tableau gelé
         + pour une séquence ou un mapping, et `Unset` pour une valeur absente — si bien qu'un
         + scalaire est stocké sans enveloppe. L'objet compagnon constitue toute l'API : des
         + constructeurs (`Str`, `Integer`, `Sequence`, …) qui servent aussi d'extracteurs pour le
@@ -1266,7 +1266,7 @@ entry .Yaml
           - `Array[Any]`, `YamlNull` or `Unset`; the typed constructors `.Str`, `.Integer`, … are
           - clearer where the kind is known.
           + `Yaml.Ast(value)` pour un `Long`, un `Double`, un `Bcd`, un `Boolean`, une `String`, un
-          + `Array[Any]` figé, `YamlNull` ou `Unset` ; les constructeurs typés `.Str`, `.Integer`, …
+          + `Array[Any]` gelé, `YamlNull` ou `Unset` ; les constructeurs typés `.Str`, `.Integer`, …
           + sont plus clairs lorsque la sorte est connue.
     entry .Null
       info
@@ -1306,13 +1306,13 @@ entry .Yaml
     entry .Sequence
       info
           - `Yaml.Ast.Sequence(items)` makes a sequence from a frozen array of nodes; matches one
-          + `Yaml.Ast.Sequence(items)` crée une séquence à partir d'un tableau figé de nœuds ; en
+          + `Yaml.Ast.Sequence(items)` crée une séquence à partir d'un tableau gelé de nœuds ; en
           + filtre une
       detail
           - The extractor yields the items as a frozen `Array[Yaml.Ast]`, without the padding
           - sentinel the representation may carry; both the constructor and the extractor copy
           - when the count is even.
-          + L'extracteur donne les éléments sous forme d'`Array[Yaml.Ast]` figé, sans la sentinelle
+          + L'extracteur donne les éléments sous forme d'`Array[Yaml.Ast]` gelé, sans la sentinelle
           + de remplissage que la représentation peut porter ; le constructeur comme l'extracteur
           + font une copie lorsque le nombre est pair.
     entry .Mapping
@@ -1322,7 +1322,7 @@ entry .Yaml
       detail
           - The constructor takes a frozen `Array[(Yaml.Ast, Yaml.Ast)]` and flattens it; the
           - extractor yields the pairs, in document order.
-          + Le constructeur prend un `Array[(Yaml.Ast, Yaml.Ast)]` figé et l'aplatit ; l'extracteur
+          + Le constructeur prend un `Array[(Yaml.Ast, Yaml.Ast)]` gelé et l'aplatit ; l'extracteur
           + donne les paires, dans l'ordre du document.
     entry .sequenceLength
       info
@@ -2416,7 +2416,7 @@ entry .Yaml2
         + défaut ; un type somme lit sa variante depuis le champ discriminant nommé par le
         + `Discriminable in Yaml` dans la portée (`discriminables.yamlByTypeDiscriminable`). Les
         + annotations `@name[Yaml](t"full_name")` et `@name` simple renomment un champ ou une
-        + variante dans les données transmises.
+        + variante en transmission.
   entry #encodable
     info
         - any type's `Encodable in Yaml`, from its text encoder or by derivation
@@ -2967,7 +2967,7 @@ entry .optionalityOptions
 entry .discriminables
   info
       - how a sum type's variant is named on the wire: by a `type` or a `kind` field
-      + la façon dont la variante d'un type somme est nommée dans les données transmises : par un
+      + la façon dont la variante d'un type somme est nommée en transmission : par un
       + champ `type` ou `kind`
   detail
       - Encoding or decoding an enumeration or sealed hierarchy needs a `Discriminable in
@@ -3083,10 +3083,9 @@ entry .servables
       - `import servables.yamlServable` lets a handler respond with a `Yaml` value; the
       - response is the rendered text as a fixed-length body with the `application/yaml;
       - charset=UTF-8` media type.
-      + `import servables.yamlServable` permet à un handler de répondre avec une valeur `Yaml` ; la
-      + réponse est le texte rendu sous forme de corps de longueur fixe avec le type de média
-      + `application/yaml;
-      + charset=UTF-8`.
+      + `import servables.yamlServable` permet à un gestionnaire de répondre avec une valeur
+      + `Yaml` ; la réponse est le texte rendu sous forme de corps de longueur fixe avec le type de
+      + média `application/yaml; charset=UTF-8`.
   entry .yamlServable
     info
         - `Yaml is Servable` with the `application/yaml; charset=UTF-8` media type

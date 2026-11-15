@@ -64,10 +64,9 @@ detail
     + `r"…"` de kaleidoscope, avec `import regexBackends.re2` : chaque littéral dans la portée est
     + alors analysé et compilé lors de la compilation du code, rejeté à ce moment s'il sort du
     + sous-ensemble RE2, et mis en étapes dans son extracteur de sorte que rien ne soit analysé à
-    + l'exécution, tandis qu'un littéral sans capture est en outre compilé en un automate
-    + statique, `Fsa`. Le type marqueur `Re2` est ce qui étiquette une telle `Regex in Re2` ; son
-    + instance `Regex.Engine` réside dans kaleidoscope, qui se situe au-dessus de cette
-    + bibliothèque.
+    + l'exécution, tandis qu'un littéral sans capture est en outre compilé en un automate statique,
+    + `Fsa`. Le type marqueur `Re2` est ce qui sert de tag à une telle `Regex in Re2` ; son instance
+    + `Regex.Engine` réside dans kaleidoscope, qui se situe au-dessus de cette bibliothèque.
 
     - The syntax accepted is RE2's: literals and `.`; the escapes `\n \t \r \f \a \v \e`,
     - `\xHH`, `\x{…}` and escaped punctuation; the ASCII classes `\d \w \s` and their
@@ -86,15 +85,15 @@ detail
     + `\d \w \s` et leurs compléments ; les classes POSIX à l'intérieur de crochets, `[[:alpha:]]`
     + et `[[:^alpha:]]` ; les catégories générales et les écritures Unicode, `\pL`, `\p{Lu}`,
     + `\p{Greek}`, `\P{…}` et `\p{^…}` ; les classes entre crochets avec intervalles et négation ;
-    + les séquences citées `\Q…\E` ; l'alternative ; les groupes capturants, non capturants
-    + `(?:…)` et nommés `(?<name>…)`/`(?P<name>…)` (un nom ne joue aucun rôle, le groupe est
-    + numéroté selon sa position) ; les quantificateurs `* + ? {n} {n,} {n,m}` avec un suffixe
-    + réticent `?`, un nombre de répétitions d'au plus `Motif.maxRepetition` (1000) ; les drapeaux
-    + en ligne `i` (insensibilité à la casse), `m` (ancres multilignes), `s` (le point reconnaît
-    + le saut de ligne) et `U` (inversion de l'avidité), sous la forme `(?i)` jusqu'à la fin du
-    + groupe englobant ou `(?i:…)` pour un seul groupe, et `(?-i)` pour les désactiver ; et les
-    + ancres `^ $ \A \z \b \B`. La correspondance porte sur des points de code Unicode, de sorte
-    + qu'un caractère astral est un seul symbole.
+    + les séquences citées `\Q…\E` ; l'alternative ; les groupes capturants, non capturants `(?:…)`
+    + et nommés `(?<name>…)`/`(?P<name>…)` (un nom ne joue aucun rôle, le groupe est numéroté selon
+    + sa position) ; les quantificateurs `* + ? {n} {n,} {n,m}` avec un suffixe réticent `?`, un
+    + nombre de répétitions d'au plus `Motif.maxRepetition` (1000) ; les indicateurs en ligne `i`
+    + (insensibilité à la casse), `m` (ancres multilignes), `s` (le point reconnaît le saut de
+    + ligne) et `U` (inversion de l'avidité), sous la forme `(?i)` jusqu'à la fin du groupe
+    + englobant ou `(?i:…)` pour un seul groupe, et `(?-i)` pour les désactiver ; et les ancres
+    + `^ $ \A \z \b \B`. La correspondance porte sur des points de code Unicode, de sorte qu'un
+    + caractère astral est un seul symbole.
 
     - The library is a single source set, `praxinoscope.core`, which compiles for the JVM,
     - Scala.js and Scala Native, and is not capture-checked: the Pike VM is mutable by design.
@@ -124,8 +123,8 @@ entry .Re2
       - `Regex.Engine.re2` in kaleidoscope — still in implicit scope, so no import is needed to
       - match a `Regex in Re2`.
       + Un trait fantôme scellé sans membres. Une `Regex in Re2` de kaleidoscope est une expression
-      + régulière étiquetée pour être reconnue par cette bibliothèque : c'est le type d'un littéral
-      + `r"…"` compilé sous `import regexBackends.re2`, et de `Regex#re2`, qui réétiquette une
+      + régulière taguée pour être reconnue par cette bibliothèque : c'est le type d'un littéral
+      + `r"…"` compilé sous `import regexBackends.re2`, et de `Regex#re2`, qui retague une
       + regex après l'avoir vérifiée par rapport au sous-ensemble RE2. L'instance `Regex.Engine`
       + pour `Re2` ne peut résider dans l'objet compagnon de ce trait, puisque `Regex` est défini
       + au-dessus de cette bibliothèque ; c'est donc `Regex.Engine.re2` dans kaleidoscope —
@@ -204,7 +203,7 @@ entry .Motif
         + Un analyseur à descente récursive pour la syntaxe RE2 énumérée sur le package
         + `praxinoscope` : les classes de caractères sont résolues en `Ranges` au fur et à mesure
         + (de sorte qu'une classe niée et son complément sont le même nœud), les groupes capturants
-        + sont numérotés à partir de 1 dans l'ordre d'ouverture, les drapeaux en ligne ont pour
+        + sont numérotés à partir de 1 dans l'ordre d'ouverture, les indicateurs en ligne ont pour
         + portée le groupe englobant, et l'arbre de nœuds est compilé en un `Program` à la fin.
         + Nécessite une `Tactic[Motif.Error]`.
 
@@ -231,8 +230,8 @@ entry .Motif
         + Ce qui est rejeté, et pourquoi : une référence arrière `\1` ou `\k<name>`
         + (`Backreference`), les assertions `(?=…)`, `(?!…)`, `(?<=…)`, `(?<!…)` (`Lookaround`), un
         + quantificateur possessif `*+` (`PossessiveQuantifier`), un groupe atomique `(?>…)`
-        + (`AtomicGroup`), une lettre de drapeau autre que `i`, `m`, `s`, `U` (`Flag`), un nombre de
-        + répétitions supérieur à 1000 (`RepetitionTooLarge`), un échappement d'une lettre sans
+        + (`AtomicGroup`), une lettre d'indicateur autre que `i`, `m`, `s`, `U` (`Flag`), un nombre
+        + de répétitions supérieur à 1000 (`RepetitionTooLarge`), un échappement d'une lettre sans
         + signification (`InvalidEscape`), et les défauts structurels que sont un groupe, une classe
         + ou une répétition non fermés, un `)` isolé, un `[]` vide ou un `[z-a]` inversé. Un `{` non
         + suivi d'un chiffre est un littéral, comme le lit RE2, de sorte que `a{x}` reconnaît ces
@@ -319,8 +318,8 @@ entry .Motif
           + row  `End`  `$` ou `\z`  la fin de l'entrée entière
           + row  `WordBoundary`  `\b`  là où un caractère de mot (`\w`, ASCII) rencontre un caractère qui n'en est pas un
           + row  `NonWordBoundary`  `\B`  là où ce n'est pas le cas
-          + row  `LineStart`  `^` sous le drapeau `m`  le début de l'entrée, ou juste après un saut de ligne
-          + row  `LineEnd`  `$` sous le drapeau `m`  la fin de l'entrée, ou juste avant un saut de ligne
+          + row  `LineStart`  `^` sous l'indicateur `m`  le début de l'entrée, ou juste après un saut de ligne
+          + row  `LineEnd`  `$` sous l'indicateur `m`  la fin de l'entrée, ou juste avant un saut de ligne
           ```
 
           - The containment analyses cannot model the last four, and raise `Unverifiable` for a
@@ -346,7 +345,7 @@ entry .Motif
         + `Motif#intersects` et le `Regex#subsumes` de kaleidoscope) pour un motif comportant une
         + limite de mot ou de ligne, ou pour une exploration au-delà de `Subsumption.maxStates` ; et
         + par le `Regex#re2` de kaleidoscope, qui analyse une regex pour ce moteur en la
-        + réétiquetant.
+        + retaguant.
 
         ```scala
         import soundness.*
@@ -409,7 +408,7 @@ entry .Motif
           + row  `PossessiveQuantifier`  13  _possessive quantifiers are not part of RE2 syntax_
           + row  `AtomicGroup`  14  _atomic groups are not part of RE2 syntax_
           + row  `UnsupportedGroup`  15  _the group syntax is not supported_  un `(?P` non suivi de `<`
-          + row  `Flag`  16  _inline flags are not supported_  une lettre de drapeau autre que `i`, `m`, `s` ou `U`
+          + row  `Flag`  16  _inline flags are not supported_  une lettre d'indicateur autre que `i`, `m`, `s` ou `U`
           + row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  un nombre supérieur à `Motif.maxRepetition`, ou un programme dépassant `Motif.Program.maxOps`
           + row  `BudgetExceeded`  18  _the analysis exceeded its computation budget_  une analyse d'inclusion au-delà de `Subsumption.maxStates`
           + row  `Unverifiable`  19  _the pattern contains constructs which the analysis cannot verify_  une question d'inclusion portant sur un motif comportant une limite de mot ou de ligne
@@ -799,11 +798,11 @@ entry .Motif
           + `.` : tout point de code sauf le saut de ligne
       detail
           - Under the `s` flag, `.` is `.anySymbol` instead.
-          + Sous le drapeau `s`, `.` est `.anySymbol` à la place.
+          + Sous l'indicateur `s`, `.` est `.anySymbol` à la place.
     entry .anySymbol
       info
           - every codepoint: `\p{Any}`, and `.` under the `s` flag
-          + tout point de code : `\p{Any}`, et `.` sous le drapeau `s`
+          + tout point de code : `\p{Any}`, et `.` sous l'indicateur `s`
     entry .where
       info
           - every symbol a predicate admits, as coalesced runs
@@ -871,7 +870,8 @@ entry .Motif
     entry #folded
       info
           - the closure of the set under simple case folding, as the `i` flag defines it
-          + la fermeture de l'ensemble par repli de casse simple, tel que le définit le drapeau `i`
+          + la fermeture de l'ensemble par repli de casse simple, tel que le définit l'indicateur
+          + `i`
       detail
           - A fold orbit is not always a pair — `K`, `k` and the Kelvin sign fold together — so
           - the closure is computed over orbits rather than by mapping each symbol up and down.

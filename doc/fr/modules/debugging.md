@@ -291,7 +291,7 @@ def trace()(using Debug): Unit =
 - exposes. The identifier types are tagged views of one [opaque type]. They cost nothing
 - at [runtime], and cannot be interchanged at [compiletime]:
 + `Jdwp` contient le modèle du protocole lui-même, pour un travail en dessous du niveau
-+ qu'expose la session. Les types d'identifiants sont des vues étiquetées d'un même
++ qu'expose la session. Les types d'identifiants sont des vues taguées d'un même
 + [type opaque]. Ils ne coûtent rien [à l'exécution][exécution], et ne peuvent pas être
 + intervertis [à la compilation][compilation] :
 
@@ -317,12 +317,12 @@ def trace()(using Debug): Unit =
 + row  `ReferenceTypeId`  une classe, une interface ou un type tableau
 + row  `MethodId`  une méthode
 + row  `FieldId`  un champ
-+ row  `FrameId`  une trame de pile
++ row  `FrameId`  un cadre de pile
 ```
 
 - Beside them sit `Jdwp.Location`, the tagged `Jdwp.Value`s, the `Jdwp.Modifier`s which constrain
 - an event request, and the `Jdwp.Event`s which a suspended VM sends back.
-+ À côté d'eux se trouvent `Jdwp.Location`, les `Jdwp.Value` étiquetées, les `Jdwp.Modifier`
++ À côté d'eux se trouvent `Jdwp.Location`, les `Jdwp.Value` taguées, les `Jdwp.Modifier`
 + qui restreignent une requête d'événement, et les `Jdwp.Event` que renvoie une VM suspendue.
 
 - `Jdwp.Reader` and `Jdwp.Writer` are the hand-written big-endian codecs. They know the sizes of

@@ -57,7 +57,7 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 + Un type de service est un nom enregistré d'au plus quinze caractères et un transport. Une
 + instance est une étiquette UTF-8, espaces et points compris, sous ce type. Les deux calculent
 + leurs noms DNS-SD à leur construction, avec validation : un nom qui dépasse les limites de DNS
-+ est donc signalé à ce moment-là, et non sur le réseau :
++ est donc signalé à ce moment-là, et non en transmission :
 
 ```scala
 val fury = Discovery.Service(t"fury", Tcp)

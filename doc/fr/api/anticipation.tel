@@ -1302,7 +1302,7 @@ entry .Durable
       - raises only through its own tactic.
       + Un classificateur du contrôle des captures (une `caps.SharedCapability`) pour les
       + moniteurs, les processus en cours d'exécution, les connexions, les canaux, les
-      + journaliseurs et les puits de journalisation. Le corps d'une tâche s'exécute sur un autre
+      + loggers et les puits de journalisation. Le corps d'une tâche s'exécute sur un autre
       + thread et est conservé par un worker ; il est donc typé `->{caps.any.only[Durable]}` : il
       + peut capturer des capacités `Durable` mais pas, par exemple, une `Tactic`, qui est une
       + capacité `caps.Control` détenant un point de retour sur la pile de celui qui l'a
@@ -1481,7 +1481,7 @@ entry .Data
         - populate, and returns it frozen. With a literal length the result is branded
         - `Data & Sized[n]`; with a non-literal one it is plain `Data`.
         + `Data.build(n)(array => …)` alloue un tableau de `n` octets, le passe à la fonction pour
-        + qu'elle le remplisse, et le renvoie figé. Avec une longueur littérale, le résultat est
+        + qu'elle le remplisse, et le renvoie gelé. Avec une longueur littérale, le résultat est
         + marqué `Data & Sized[n]` ; avec une longueur non littérale, c'est un simple `Data`.
   entry .fill
     info
@@ -1735,7 +1735,7 @@ entry .Morphology
   entry .OneOf
     info
         - a tagged disjunction of shapes
-        + une disjonction étiquetée de formes
+        + une disjonction taguée de formes
     entry #variants
       info
           - the shape of each variant
@@ -2024,11 +2024,11 @@ entry .Loggable
   entry .silent
     info
         - a logger for an event type which records nothing, as a pure value
-        + un journaliseur pour un type d'événement qui n'enregistre rien, sous forme de valeur pure
+        + un logger pour un type d'événement qui n'enregistre rien, sous forme de valeur pure
   entry .fanOut
     info
         - derives a logger from every `LogSink` in scope, through the event's `Transcribable`
-        + dérive un journaliseur de chaque `LogSink` dans la portée, au moyen du `Transcribable` de
+        + dérive un logger de chaque `LogSink` dans la portée, au moyen du `Transcribable` de
         + l'événement
     detail
         - For each logged event, if any sink accepts its level, the by-name event is forced once
@@ -2045,11 +2045,11 @@ entry .Loggable
   entry #contramap
     info
         - a logger for another type, by first mapping each event to this one
-        + un journaliseur pour un autre type, obtenu en transformant d'abord chaque événement en
+        + un logger pour un autre type, obtenu en transformant d'abord chaque événement en
         + celui-ci
     detail
         - The function may capture only `Durable` capabilities, since the logger retains it.
-        + La fonction ne peut capturer que des capacités `Durable`, puisque le journaliseur la
+        + La fonction ne peut capturer que des capacités `Durable`, puisque le logger la
         + conserve.
 
 entry .LogSink

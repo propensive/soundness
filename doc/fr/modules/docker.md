@@ -9,13 +9,13 @@
 - can load, with its content digests computed correctly. A separate client speaks to a running
 - [containerd](https://containerd.io/) daemon over gRPC. It lists and creates containers, images
 - and namespaces, and starts and stops the tasks which run inside containers.
-+ Une image de conteneur [OCI](https://opencontainers.org/) est assemblée en mémoire à partir
-+ de couches de système de fichiers et d'une configuration, puis rendue sous forme d'archive
-+ OCI standard que n'importe quel runtime de conteneurs peut charger, avec ses empreintes de
-+ contenu correctement calculées. Un client distinct dialogue avec un démon
++ Une image de conteneur [OCI](https://opencontainers.org/) est assemblée en mémoire à partir de
++ couches de système de fichiers et d'une configuration, puis rendue sous forme d'archive OCI
++ standard que n'importe quel runtime de conteneurs peut charger, avec ses condensés de contenu
++ correctement calculés. Un client distinct dialogue avec un démon
 + [containerd](https://containerd.io/) en cours d'exécution via gRPC. Il liste et crée des
-+ conteneurs, des images et des espaces de noms, et démarre et arrête les tâches qui
-+ s'exécutent dans les conteneurs.
++ conteneurs, des images et des espaces de noms, et démarre et arrête les tâches qui s'exécutent
++ dans les conteneurs.
 
 - An image and everything in it, its layers, its manifest and its configuration, are [immutable]
 - typed values. Each container, task and namespace on the daemon is a typed value too, and not a
@@ -39,9 +39,9 @@
 + Une image de conteneur n'est pas un fichier unique. C'est une pile de
 + [couches](https://en.wikipedia.org/wiki/OverlayFS) de système de fichiers, plus une
 + configuration qui indique comment les exécuter. Chaque élément est adressé par
-+ l'[empreinte](https://en.wikipedia.org/wiki/Content-addressable_storage) de ses octets. Le
-+ format est exact. Une couche a une empreinte pour son tar non compressé et une autre pour son
-+ blob compressé, et un manifeste les relie par ces empreintes. Qu'une empreinte soit fausse,
++ le [condensé](https://en.wikipedia.org/wiki/Content-addressable_storage) de ses octets. Le
++ format est exact. Une couche a un condensé pour son tar non compressé et un autre pour son
++ blob compressé, et un manifeste les relie par ces condensés. Qu'un condensé soit faux,
 + et l'image est invalide sans que rien ne le signale.
 
 - Running such an image is the job of a daemon. containerd, the runtime beneath Docker and
@@ -53,7 +53,7 @@
 - the daemon is a set of methods which exchange typed values. Building an image as a value, and not
 - by running a tool, is [direct style](../../philosophy/direct-style.md): the steps are ordinary code,
 - checked as it compiles.
-+ Ici, le format d'image est un ensemble de valeurs dont les empreintes sont calculées pour
++ Ici, le format d'image est un ensemble de valeurs dont les condensés sont calculés pour
 + vous, et le protocole du démon est un ensemble de méthodes qui échangent des valeurs typées.
 + Construire une image comme une valeur, et non en exécutant un outil, relève du
 + [style direct](../../philosophy/direct-style.md) : les étapes sont du code ordinaire,
@@ -82,7 +82,7 @@ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 - A layer is a tar archive of files. Given a `Tarfile`, `Oci.Layer` wraps it and computes the
 - digests which the format requires:
 + Une couche est une archive tar de fichiers. À partir d'un `Tarfile`, `Oci.Layer` l'enveloppe
-+ et calcule les empreintes qu'exige le format :
++ et calcule les condensés qu'exige le format :
 
 ```scala
 def entry(name: Text, content: Text): Tar.Entry =
@@ -113,8 +113,7 @@ val image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bi
 - digests. `diffId` is the digest of the uncompressed tar, and `digest` is the digest of the
 - compressed blob:
 + L'image assemblée expose chaque partie que définit le format. Une couche indique ses deux
-+ empreintes. `diffId` est l'empreinte du tar non compressé, et `digest` celle du blob
-+ compressé :
++ condensés. `diffId` est le condensé du tar non compressé, et `digest` celle du blob compressé :
 
 ```scala fuel
 run
@@ -190,7 +189,7 @@ val artifact =
 + column  Artefact Wasm
 + row  config  la configuration d'exécution d'un système de fichiers  `application/vnd.wasm.config.v0+json`, décrivant un composant
 + row  couches  des tars compressés, un ou plusieurs  le composant lui-même, `application/wasm`
-+ row  empreintes des couches  `diffId` et `digest` diffèrent  `diffId` et `digest` coïncident, puisqu'il est stocké non compressé
++ row  condensés des couches  `diffId` et `digest` diffèrent  `diffId` et `digest` coïncident, puisqu'il est stocké non compressé
 ```
 
 - The configuration describes the component, with the WASI generation as its `os`:
@@ -258,7 +257,7 @@ archive.open[Oci.Image](): handle ?=>
 
 - `handle.verified(descriptor)` reads a layer and checks its digest. The three ways to reach a
 - layer make the cost explicit:
-+ `handle.verified(descriptor)` lit une couche et vérifie son empreinte. Les trois manières
++ `handle.verified(descriptor)` lit une couche et vérifie son condensé. Les trois manières
 + d'atteindre une couche rendent le coût explicite :
 
 ```tabular
@@ -270,7 +269,7 @@ archive.open[Oci.Image](): handle ?=>
 - row  `verified`  the stored bytes, gathered eagerly  yes, and the size
 + column  Méthode
 + column  Produit
-+ column  Vérifie l'empreinte
++ column  Vérifie le condensé
 + row  `compressed`  les octets stockés, intacts, sous forme de flux  non
 + row  `layer`  le tar non compressé, sous forme de flux  non
 + row  `verified`  les octets stockés, rassemblés immédiatement  oui, ainsi que la taille
@@ -279,7 +278,7 @@ archive.open[Oci.Image](): handle ?=>
 - `verified` raises an `Oci.Error` if the bytes disagree with the digest or the size which the
 - manifest declares. Checking a stream would mean draining it, which is why `verified` gathers
 - the bytes first.
-+ `verified` lève une `Oci.Error` si les octets ne concordent pas avec l'empreinte ou la
++ `verified` lève une `Oci.Error` si les octets ne concordent pas avec le condensé ou la
 + taille que déclare le manifeste. Vérifier un flux impliquerait de le vider, c'est pourquoi
 + `verified` rassemble d'abord les octets.
 
@@ -428,8 +427,8 @@ def run(client: Containerd)(using Monitor): Unit =
 - - [Compression](compression.md) describes the gzip which layers are compressed with, and [processes](processes.md) the commands a task runs.
 + - [Archives](archives.md) décrit les archives tar dont sont faites les couches.
 + - [Compilateur](compiler.md#wasi-components) produit les composants WASI et les images OCI
-+   que lie une chaîne d'outils.
-+ - [Hachage](hashing.md) décrit les empreintes qui adressent chaque partie d'une image.
++   que lie une toolchain.
++ - [Hachage](hashing.md) décrit les condensés qui adressent chaque partie d'une image.
 + - [RPC](rpc.md) décrit le gRPC que le client parle à containerd.
 + - [Sockets](sockets.md) décrit le socket Unix sur lequel écoute le démon.
 + - [Concurrence](concurrency.md) décrit `supervise`, à l'intérieur duquel vit le client.

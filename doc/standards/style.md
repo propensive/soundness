@@ -272,7 +272,9 @@ when the term is pointed at, and links it to the page named in its entry.
   nothing else, and it names the page that explains the term in full as its `link`.
 - Add a term when a tutorial relies on a word whose everyday meaning would mislead, or which
   Soundness uses more narrowly than Scala does. Ordinary Scala vocabulary a reader is assumed to
-  know — *trait*, *case class* — is not defined.
+  know — *trait*, *case class* — is not defined. A term is also defined when its translation
+  must be the same everywhere, so that every language renders it alike, even if it is ordinary
+  vocabulary.
 - Fuel does not report a bracketed term with no definition; it is shown as plain bracketed
   text, so search the tutorial for bracketed words before committing.
 

@@ -469,7 +469,7 @@ entry .root
       - Resolves to the proxy which `specifically` provides as a contextual value tagged `"root"`, so
       - `case root.opponent.name() =>` needs no binder. Outside a `specifically` block there is no such
       - value, and `root` does not compile.
-      + Se résout en le proxy que `specifically` fournit comme valeur contextuelle étiquetée
+      + Se résout en le proxy que `specifically` fournit comme valeur contextuelle taguée
       + `"root"` ; `case root.opponent.name() =>` n'a donc besoin d'aucun lieur. Hors d'un bloc
       + `specifically`, il n'existe pas de telle valeur, et `root` ne compile pas.
 

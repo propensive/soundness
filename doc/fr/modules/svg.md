@@ -323,10 +323,10 @@ Out.println(Lettering((50, 70), t"time", Lettering.Anchor.Middle, Lettering.Base
 - SVG writes a `<style>` of `@font-face` rules into its definitions, for every typeface which
 - its lettering names, so the drawing looks alike wherever it is shown:
 + Une `Lettering` peut aussi nommer sa `font`. C'est une `Font in Web` : une fonte, associée à une
-+ fourniture de sa famille de caractères, qui n'existe que là où une telle fourniture est dans la
++ fourniture de sa famille de polices, qui n'existe que là où une telle fourniture est dans la
 + portée, comme le décrit [Polices](fonts.md). Les déclarations de la police rejoignent le style
 + en ligne de l'élément. Le SVG écrit dans ses définitions un `<style>` de règles `@font-face`,
-+ pour chaque famille de caractères que nomme son texte : le dessin a ainsi le même aspect partout
++ pour chaque famille de polices que nomme son texte : le dessin a ainsi le même aspect partout
 + où il est affiché :
 
 ```scala fuel

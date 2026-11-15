@@ -63,16 +63,15 @@ detail
     - translated onto each wire by a private `Llm.Dialect` the provider's `Sessional` constructs.
     - A block the wire does not model is kept verbatim as `Llm.Content.Opaque`, so a transcript
     - never lies.
-    + L'API de chaque fournisseur est un dialecte JSON : une requête avec le modèle, les
-    + messages échangés jusque-là et quelques paramètres de réglage ; une réponse avec des
-    + blocs de contenu, une raison d'arrêt et des nombres de jetons ; une variante en
-    + streaming à base de server-sent events ; et un protocole d'appel d'outils. Les dialectes
-    + diffèrent dans chaque détail et s'accordent sur chaque concept ; les concepts sont donc
-    + modélisés une seule fois — `Llm.Message`, `Llm.Content`, `Llm.Reply`, `Llm.Usage`,
-    + `Llm.Tool`, `Llm.Stop`, `Llm.Event` — et traduits vers chaque format d'échange par un
-    + `Llm.Dialect` privé que construit le `Sessional` du fournisseur. Un bloc que le format
-    + d'échange ne modélise pas est conservé tel quel sous forme de `Llm.Content.Opaque`, si
-    + bien qu'une transcription ne ment jamais.
+    + L'API de chaque fournisseur est un dialecte JSON : une requête avec le modèle, les messages
+    + échangés jusque-là et quelques paramètres de réglage ; une réponse avec des blocs de contenu,
+    + une raison d'arrêt et des nombres de jetons ; une variante en streaming à base de server-sent
+    + events ; et un protocole d'appel d'outils. Les dialectes diffèrent dans chaque détail et
+    + s'accordent sur chaque concept ; les concepts sont donc modélisés une seule fois —
+    + `Llm.Message`, `Llm.Content`, `Llm.Reply`, `Llm.Usage`, `Llm.Tool`, `Llm.Stop`, `Llm.Event` —
+    + et traduits vers chaque format de transmission par un `Llm.Dialect` privé que construit le
+    + `Sessional` du fournisseur. Un bloc que le format de transmission ne modélise pas est conservé
+    + tel quel sous forme de `Llm.Content.Opaque`, si bien qu'une transcription ne ment jamais.
 
     - A session is a capability confined to its block by capture checking: the pure values it
     - produces (a `Reply`, a snapshot of `history`, the folded `usage`) leave freely, while the
@@ -166,15 +165,14 @@ entry .solicit
       - that schema, and the arguments are decoded. The caller names a type and receives a value,
       - on every provider, including local servers with no structured-output mode.
       + Une extension sur `Llm.Session`. `llm.solicit[T](prompt)` dérive le schéma JSON de `T`
-      + (`T is Schematic over JsonSchema`, dérivé pour une case class), envoie `prompt` comme
-      + tour de l'utilisateur, et décode la réponse en `T` (`T is Decodable in Json`). La
-      + manière dont le schéma parvient au modèle relève du dialecte : sur un dialecte dont le
-      + format d'échange contraint nativement une réponse (`Anthropic`, par le format de sortie
-      + de la Messages API), c'est le `format` de la réponse ; sur les autres, le modèle est
-      + forcé d'appeler un unique outil synthétique nommé `answer` dont les arguments ont ce
-      + schéma, et ce sont les arguments qui sont décodés. L'appelant nomme un type et reçoit
-      + une valeur, chez tout fournisseur, y compris les serveurs locaux dépourvus de mode de
-      + sortie structurée.
+      + (`T is Schematic over JsonSchema`, dérivé pour une case class), envoie `prompt` comme tour
+      + de l'utilisateur, et décode la réponse en `T` (`T is Decodable in Json`). La manière dont le
+      + schéma parvient au modèle relève du dialecte : sur un dialecte dont le format de
+      + transmission contraint nativement une réponse (`Anthropic`, par le format de sortie de la
+      + Messages API), c'est le `format` de la réponse ; sur les autres, le modèle est forcé
+      + d'appeler un unique outil synthétique nommé `answer` dont les arguments ont ce schéma, et ce
+      + sont les arguments qui sont décodés. L'appelant nomme un type et reçoit une valeur, chez
+      + tout fournisseur, y compris les serveurs locaux dépourvus de mode de sortie structurée.
 
       ```scala
       import soundness.*
@@ -407,14 +405,14 @@ entry .Llm
       - `.Event`s; a tool is a `.Tool`; the knobs every wire expresses are `.Settings`; a
       - failure is an `.Error`. A provider adapter is a `.Dialect`, which encodes an `.Exchange`
       - to its wire and translates the reply or the stream back.
-      + `Llm` est l'objet qui contient tout ce que partagent les dialectes. Une conversation est
-      + une `.Session`, obtenue uniquement par la `session` d'un fournisseur et accessible sous
-      + le nom `llm` ; un tour est un `.Message` d'un `.Role` et d'une liste de blocs
-      + `.Content` ; un tour d'assistant achevé est une `.Reply` avec sa raison `.Stop` et son
-      + `.Usage` ; un tour en streaming est une `.Response` d'`.Event` ; un outil est un
-      + `.Tool` ; les réglages qu'exprime tout format d'échange sont les `.Settings` ; un échec
-      + est une `.Error`. Un adaptateur de fournisseur est un `.Dialect`, qui encode un
-      + `.Exchange` dans son format d'échange et retraduit la réponse ou le flux.
+      + `Llm` est l'objet qui contient tout ce que partagent les dialectes. Une conversation est une
+      + `.Session`, obtenue uniquement par la `session` d'un fournisseur et accessible sous le nom
+      + `llm` ; un tour est un `.Message` d'un `.Role` et d'une liste de blocs `.Content` ; un tour
+      + d'assistant achevé est une `.Reply` avec sa raison `.Stop` et son `.Usage` ; un tour en
+      + streaming est une `.Response` d'`.Event` ; un outil est un `.Tool` ; les réglages qu'exprime
+      + tout format de transmission sont les `.Settings` ; un échec est une `.Error`. Un adaptateur
+      + de fournisseur est un `.Dialect`, qui encode un `.Exchange` dans son format de transmission
+      + et retraduit la réponse ou le flux.
 
       ```scala
       import soundness.*
@@ -633,10 +631,10 @@ entry .Llm
         - Not every block has a form on every wire: OpenAI's Chat Completions drops a
         - `Document`, and Gemini carries no identifier on a tool call, so there the tool's name
         - serves as the `ToolUse` id and a `ToolResult` addresses its call by that name.
-        + Tous les blocs n'ont pas de forme dans chaque format d'échange : les Chat Completions
-        + d'OpenAI suppriment un `Document`, et Gemini ne porte aucun identifiant sur un appel
-        + d'outil ; le nom de l'outil y sert donc d'identifiant au `ToolUse`, et un `ToolResult`
-        + désigne son appel par ce nom.
+        + Tous les blocs n'ont pas de forme dans chaque format de transmission : les Chat
+        + Completions d'OpenAI suppriment un `Document`, et Gemini ne porte aucun identifiant sur un
+        + appel d'outil ; le nom de l'outil y sert donc d'identifiant au `ToolUse`, et un
+        + `ToolResult` désigne son appel par ce nom.
     refer sibylline.Llm.Message
     entry .Source
       info
@@ -851,7 +849,7 @@ entry .Llm
   entry .Settings
     info
         - the request knobs every wire expresses
-        + les réglages de requête qu'exprime tout format d'échange
+        + les réglages de requête qu'exprime tout format de transmission
     detail
         - `maxTokens`, `temperature`, `topP`, `stopSequences`, `toolChoice` and `iterations`,
         - each optional: a knob left `Unset` is omitted from the request, so the provider's own
@@ -972,7 +970,7 @@ entry .Llm
         - accumulator sums them); and `Finished` ends the message. `Response#events` yields
         - these, and `Response#reply()` folds them into a `Reply`; a stream which ends without
         - `Finished`, or with a block still open, raises `Llm.Error(Interrupted)`.
-        + Le flux d'événements de chaque format d'échange se ramène à la même forme adressée
+        + Le flux d'événements de chaque format de transmission se ramène à la même forme adressée
         + par indice. `Started(id, model)` commence le message ; `Opened(index, content)`
         + ouvre un bloc de contenu, tel qu'il apparaît d'abord ; `Delta(index, increment)` le
         + fait croître d'un `.Increment` ; `Closed(index)` le ferme ; `Update(stop, usage)`
@@ -1019,7 +1017,7 @@ entry .Llm
   entry .Dialect
     info
         - the seam a provider adapter implements: encode an exchange, make the call, translate the reply
-        + la jointure qu'implémente un adaptateur de fournisseur : encoder un échange, faire
+        + la jonction qu'implémente un adaptateur de fournisseur : encoder un échange, faire
         + l'appel, traduire la réponse
     detail
         - A dialect speaks two methods: `#exchange` for one full reply, `#stream` for the
@@ -1032,8 +1030,8 @@ entry .Llm
         - dialect cannot be driven through a `Session` from outside the library.
         + Un dialecte parle par deux méthodes : `#exchange` pour une réponse complète, `#stream`
         + pour le flux d'événements, toutes deux à partir d'un `Exchange` pur ; `#name` nomme le
-        + format d'échange, et `#structured` dit s'il respecte nativement `Exchange#format`. Les
-        + quatre dialectes de la bibliothèque (la Messages API d'Anthropic, les Chat Completions
+        + format de transmission, et `#structured` dit s'il respecte nativement `Exchange#format`.
+        + Les quatre dialectes de la bibliothèque (la Messages API d'Anthropic, les Chat Completions
         + et Responses d'OpenAI, Gemini) sont privés et construits par le `Sessional` de chaque
         + fournisseur, qui capture les capacités HTTP et la tactique de l'appelant, si bien que la
         + session ne touche jamais à HTTP. Le trait est public pour qu'un test puisse en simuler
@@ -1065,7 +1063,7 @@ entry .Llm
     entry #name
       info
           - the wire's name: `anthropic`, `openai`, `openai-responses`, `gemini`
-          + le nom du format d'échange : `anthropic`, `openai`, `openai-responses`, `gemini`
+          + le nom du format de transmission : `anthropic`, `openai`, `openai-responses`, `gemini`
     entry #exchange
       info
           - one non-streamed round trip: the exchange to a `Reply`
@@ -1083,8 +1081,8 @@ entry .Llm
     entry #structured
       info
           - whether the wire constrains a reply to a JSON schema natively; `false` unless overridden
-          + si le format d'échange contraint nativement une réponse à un schéma JSON ; `false` sauf
-          + redéfinition
+          + si le format de transmission contraint nativement une réponse à un schéma JSON ; `false`
+          + sauf redéfinition
       detail
           - Anthropic's dialect is `true`. When `false`, `solicit` obtains a structured answer
           - through a forced tool call instead, and the caller sees no difference; a fake dialect
@@ -1133,16 +1131,16 @@ entry .Llm
         - A wire error envelope is mapped onto a reason by its type or its status, and an error
         - code which matches no reason is kept under `Provider(code)`, so the wire's own error is
         - never lost.
-        + Une enveloppe d'erreur du format d'échange est associée à une raison selon son type ou
-        + son statut, et un code d'erreur qui ne correspond à aucune raison est conservé sous
-        + `Provider(code)` ; l'erreur propre au format d'échange n'est donc jamais perdue.
+        + Une enveloppe d'erreur du format de transmission est associée à une raison selon son type
+        + ou son statut, et un code d'erreur qui ne correspond à aucune raison est conservé sous
+        + `Provider(code)` ; l'erreur propre au format de transmission n'est donc jamais perdue.
     entry .Reason
       info
           - the fixed set of failure kinds, each the error's subcode
           + l'ensemble fixe des sortes d'échec, chacune étant le sous-code de l'erreur
       detail
           - The numbers are frozen; a reason added later appends:
-          + Les numéros sont figés ; une raison ajoutée plus tard vient à la suite :
+          + Les numéros sont gelés ; une raison ajoutée plus tard vient à la suite :
 
           ```tabular
           - column  Case
@@ -1164,17 +1162,17 @@ entry .Llm
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Unreachable`  1  _le fournisseur n'a pas pu être joint_
-          + row  `Unauthorized`  2  _la clé d'API était absente, invalide ou expirée_
-          + row  `Invalid`  3  _le fournisseur a rejeté la requête comme invalide_  aussi un outil inconnu, un argument mal formé ou un mauvais identifiant de requête
-          + row  `NotFound`  4  _le modèle ou l'endpoint n'existe pas_
-          + row  `TooLarge`  5  _la conversation dépasse la fenêtre de contexte du modèle_
-          + row  `RateLimited`  6  _le fournisseur a imposé une limitation de débit_
-          + row  `Overloaded`  7  _le fournisseur est temporairement surchargé_
-          + row  `Malformed`  8  _la réponse du fournisseur n'a pas pu être interprétée_  la réponse, une trame du flux ou une réponse structurée
-          + row  `Interrupted`  9  _le flux s'est terminé avant que le message soit complet_
-          + row  `ToolLoopExceeded`  10  _la boucle d'utilisation d'outils a dépassé sa limite d'itérations_  sa borne `iterations`
-          + row  `Provider(code0)`  11  _le fournisseur a signalé le code d'erreur `code0`_  un code qui ne correspond à aucun des autres
+          + row  `Unreachable`  1  _the provider could not be reached_
+          + row  `Unauthorized`  2  _the API key was missing, invalid or expired_
+          + row  `Invalid`  3  _the provider rejected the request as invalid_  aussi un outil inconnu, un argument mal formé ou un mauvais identifiant de requête
+          + row  `NotFound`  4  _the model or endpoint does not exist_
+          + row  `TooLarge`  5  _the conversation exceeds the model's context window_
+          + row  `RateLimited`  6  _the provider imposed a rate limit_
+          + row  `Overloaded`  7  _the provider is temporarily overloaded_
+          + row  `Malformed`  8  _the provider's reply could not be interpreted_  la réponse, une trame du flux ou une réponse structurée
+          + row  `Interrupted`  9  _the stream ended before the message was complete_
+          + row  `ToolLoopExceeded`  10  _the tool-use loop exceeded its iteration limit_  sa borne `iterations`
+          + row  `Provider(code0)`  11  _the provider reported the error code `code0`_  un code qui ne correspond à aucun des autres
           ```
     entry .communicable
       info
@@ -1507,12 +1505,12 @@ entry .Anthropic
       + Ouvrir une session exige un `Online`, un `Http.Backend`, un `Http.Event is Loggable` et
       + une `Tactic[Llm.Error]` dans la portée (`internetAccess.online`,
       + `httpBackends.javaNetHttp`, `logging.silentLogging`, `strategies.throwUnsafely`). Les
-      + en-têtes d'échange (`x-api-key`, `anthropic-version`, `anthropic-beta`) sont déclarés
+      + en-têtes de transmission (`x-api-key`, `anthropic-version`, `anthropic-beta`) sont déclarés
       + comme givens dans le compagnon ; utiliser `Anthropic` n'exige donc aucun import. La
       + Messages API est sans état d'une requête à l'autre ; une session n'est donc que de la
       + mémoire, et son dialecte est celui qui contraint nativement une réponse structurée ;
       + `solicit[T]` envoie donc le schéma comme format de la réponse plutôt qu'un outil forcé.
-      + Un réglage non fixé est omis de la requête, sauf `max_tokens`, que le format d'échange
+      + Un réglage non fixé est omis de la requête, sauf `max_tokens`, que le format de transmission
       + exige et qui est envoyé avec la valeur 4096 quand `limit` n'a pas été appelée.
 
       - The class is deliberately not a case class: `Anthropic(…)` is typed as plain `Anthropic`,
@@ -1687,7 +1685,7 @@ entry .Anthropic
           - One `GET` of the batch resource; raises `Llm.Error` (`NotFound` for an identifier the
           - provider does not know). The receiver is unchanged.
           + Un seul `GET` de la ressource du lot ; lève `Llm.Error` (`NotFound` pour un identifiant
-          + que le fournisseur ne connaît pas). Le récepteur reste inchangé.
+          + que le fournisseur ne connaît pas). Le receveur reste inchangé.
     entry #await
       info
           - polls until the batch has ended, sleeping `seconds` (30 by default) between polls
@@ -1767,7 +1765,7 @@ entry .Anthropic
         - Sent as `max_tokens`; 4096 is sent when this has not been called, since the wire
         - requires a value.
         + Envoyé comme `max_tokens` ; 4096 est envoyé quand cette méthode n'a pas été appelée,
-        + puisque le format d'échange exige une valeur.
+        + puisque le format de transmission exige une valeur.
   entry #warmth
     info
         - a copy with a sampling temperature
@@ -1905,7 +1903,7 @@ entry .OpenAI
       - API instead.
       + `OpenAI(model, key)` nomme un modèle sur `api.openai.com` ;
       + `OpenAI.compatible(base, model, key)` en nomme un sur tout serveur parlant le même
-      + format d'échange — vLLM, Ollama, Groq, Mistral et les autres — où seule l'URL de
+      + format de transmission — vLLM, Ollama, Groq, Mistral et les autres — où seule l'URL de
       + base change et où un serveur local peut n'exiger aucune clé. Les méthodes de réglage
       + renvoient de nouvelles valeurs, et la valeur est la cible de `session` par le given
       + `.sessional`. `#responses` est le même modèle, interrogé plutôt par l'API Responses
@@ -1933,10 +1931,10 @@ entry .OpenAI
       - class, so `OpenAI(…)` is typed as plain `OpenAI`, which the `Sessional` instance matches.
       + La clé, quand il y en a une, est envoyée comme jeton bearer ; le prompt système devient
       + un message `system` initial ; une requête en streaming demande le fragment final de
-      + consommation ; les arguments d'un appel d'outil, que ce format d'échange porte sous
+      + consommation ; les arguments d'un appel d'outil, que ce format de transmission porte sous
       + forme de chaîne de JSON, sont analysés en `Json`. Le dialecte Chat n'est pas
       + `structured` ; `solicit[T]` force donc un appel à un outil synthétique `answer`. Un bloc
-      + `Document` n'a pas de forme dans ce format d'échange et est supprimé. La classe n'est
+      + `Document` n'a pas de forme dans ce format de transmission et est supprimé. La classe n'est
       + pas une case class ; `OpenAI(…)` a donc pour type `OpenAI` tout court, ce que filtre
       + l'instance `Sessional`.
   refer sibylline.Llm.Session
@@ -1948,8 +1946,8 @@ entry .OpenAI
   entry .compatible
     info
         - `OpenAI.compatible(base, model, key)`: the same wire on another server, the key optional
-        + `OpenAI.compatible(base, model, key)` : le même format d'échange sur un autre serveur, la
-        + clé étant optionnelle
+        + `OpenAI.compatible(base, model, key)` : le même format de transmission sur un autre
+        + serveur, la clé étant optionnelle
     detail
         - `OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")` for a keyless local
         - server; with a key, it is sent as a bearer token. Endpoints are addressed beneath the
@@ -2153,13 +2151,13 @@ entry .Gemini
       - dialect is not `structured`, so `solicit[T]` forces a call to a synthetic `answer` tool.
       - The class is not a case class, so `Gemini(…)` is typed as plain `Gemini`, which the
       - `Sessional` instance matches.
-      + Les conventions du format d'échange sont traduites : le prompt système devient
+      + Les conventions du format de transmission sont traduites : le prompt système devient
       + l'instruction système, le rôle d'assistant est `model`, une réponse contenant un appel
       + de fonction est `Llm.Stop.ToolCall` même si l'API dit qu'elle s'est arrêtée
       + normalement, un blocage pour raison de sécurité ou de récitation est
       + `Llm.Stop.Filtered(code)`, et le nombre de jetons de raisonnement est signalé comme
       + `Llm.Usage#reasoning`. Les appels de fonction ne portent aucun identifiant dans ce
-      + format d'échange ; l'identifiant d'un bloc `ToolUse` est donc le nom de l'outil, et un
+      + format de transmission ; l'identifiant d'un bloc `ToolUse` est donc le nom de l'outil, et un
       + `ToolResult` désigne son appel par ce nom. Le dialecte n'est pas `structured` ;
       + `solicit[T]` force donc un appel à un outil synthétique `answer`. La classe n'est pas
       + une case class ; `Gemini(…)` a donc pour type `Gemini` tout court, ce que filtre

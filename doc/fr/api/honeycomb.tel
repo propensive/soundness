@@ -837,7 +837,7 @@ entry .Html
         - `document.locate(path)` through `Html.positionable`; it has no public members of its
         - own. An element the parser inferred starts at the token which prompted it and carries
         - no attribute positions.
-        + Un type opaque sur un tableau figé de descripteurs, un par élément et par attribut,
+        + Un type opaque sur un tableau gelé de descripteurs, un par élément et par attribut,
         + construit après l'analyse en parcourant l'arbre achevé — la construction de l'arbre HTML
         + réordonne les nœuds en inférant des ancêtres, en déplaçant le contenu de tableau mal placé
         + et en reconstruisant les éléments de mise en forme, de sorte que les positions ne peuvent
@@ -1182,7 +1182,7 @@ entry .Html
     entry #children
       info
           - the child nodes, as a frozen `Array[Html.Node]`
-          + les nœuds enfants, sous forme d'`Array[Html.Node]` figé
+          + les nœuds enfants, sous forme d'`Array[Html.Node]` gelé
     entry #foreign
       info
           - whether the element is in a foreign namespace (SVG, MathML)
@@ -1485,7 +1485,7 @@ entry .Attributes
       - `removed`, `++`) returns a new value. It is declared in `honeycomb.internal` and
       - exported to the `honeycomb` package.
       + Les attributs d'un `Html.Element`, dans l'ordre du document, sous forme d'un type opaque sur
-      + un tableau figé de clés et de valeurs entrelacées plutôt que d'une `Map`. Une valeur est un
+      + un tableau gelé de clés et de valeurs entrelacées plutôt que d'une `Map`. Une valeur est un
       + `Optional[Text]` : un attribut de présence tel que `disabled` ou `checked` a pour valeur
       + `Unset` et se rend par son seul nom. Une analyse en construit un en lisant une balise
       + ouvrante, toute application de balise en construit un à partir de ses préréglages et de ses
@@ -1873,7 +1873,7 @@ entry .internal
         - The opaque type over a frozen array of interleaved keys and optional values, with its
         - constructors, givens and extensions. Its page under the `honeycomb` package has the
         - full account.
-        + Le type opaque sur un tableau figé de clés et de valeurs optionnelles entrelacées, avec
+        + Le type opaque sur un tableau gelé de clés et de valeurs optionnelles entrelacées, avec
         + ses constructeurs, ses givens et ses extensions. Sa page sous le package `honeycomb` en
         + donne la description complète.
     entry .empty
@@ -2361,7 +2361,7 @@ entry .Whatwg
   entry .Language
     info
         - the value marker of `lang`, `hreflang` and `srclang`: a BCP 47 language tag
-        + le marqueur de valeur de `lang`, `hreflang` et `srclang` : une étiquette de langue BCP 47
+        + le marqueur de valeur de `lang`, `hreflang` et `srclang` : un tag de langue BCP 47
   entry .Laziness
     info
         - the value marker of `loading`: `lazy` or `eager`
@@ -2469,14 +2469,14 @@ entry .Whatwg
   entry .Scripting
     info
         - the value marker of an event-handler attribute, which takes a script rather than text
-        + le marqueur de valeur d'un attribut handler d'événements, qui prend un script plutôt
+        + le marqueur de valeur d'un attribut gestionnaire d'événements, qui prend un script plutôt
         + que du texte
     detail
         - No `Attributive` for `Text` exists for it, deliberately: a handler is supplied as a
         - typed scripting value, such as a querencia foreign DOM expression, for which the
         - scripting library provides the `Attributive to Whatwg.Scripting`. The WHATWG vocabulary
         - declares no `on…` attribute givens itself; `Html4Transitional` does.
-        + Il n'existe délibérément pas d'`Attributive` pour `Text` à son égard : un handler se
+        + Il n'existe délibérément pas d'`Attributive` pour `Text` à son égard : un gestionnaire se
         + fournit sous forme de valeur de script typée, telle qu'une expression DOM étrangère de
         + querencia, pour laquelle la bibliothèque de script fournit
         + l'`Attributive to Whatwg.Scripting`. Le vocabulaire WHATWG ne déclare lui-même aucun given
@@ -4630,7 +4630,7 @@ entry .Html4Transitional
       + avec `attributives.textAttributive`. Les marqueurs propres au dialecte (`Align`, `Charset`,
       + `Clear`, `Frame`, `Rules`, `Scope`, `Size`, `Valign`, `Valuetype`, `Wrap`) sont des alias de
       + `Whatwg.Textual`. Les attributs d'événements intrinsèques (`onclick`, `onload`, …) sont
-      + typés `of Script`, un alias de `Whatwg.Scripting`, de sorte qu'un handler doit être
+      + typés `of Script`, un alias de `Whatwg.Scripting`, de sorte qu'un gestionnaire doit être
       + une valeur de script typée plutôt que du texte.
 
       - An attribute of this dialect is an `Attribute in Html4Transitional`, distinct from
@@ -4801,12 +4801,12 @@ entry .Html4Transitional
   entry .Script
     info
         - the value marker of an intrinsic event handler: `Whatwg.Scripting`, which plain text does not satisfy
-        + le marqueur de valeur d'un handler d'événements intrinsèque : `Whatwg.Scripting`, que
+        + le marqueur de valeur d'un gestionnaire d'événements intrinsèque : `Whatwg.Scripting`, que
         + du texte simple ne satisfait pas
     detail
         - `onclick = t"…"` does not compile, deliberately: a handler is a typed scripting value
         - for which a scripting library supplies the `Attributive to Whatwg.Scripting`.
-        + `onclick = t"…"` ne compile pas, délibérément : un handler est une valeur de script
+        + `onclick = t"…"` ne compile pas, délibérément : un gestionnaire est une valeur de script
         + typée pour laquelle une bibliothèque de script fournit
         + l'`Attributive to Whatwg.Scripting`.
   entry .Size
@@ -5927,7 +5927,7 @@ entry .Html4Transitional
         - Takes `name`, `rows`, `cols`, `wrap`, `readonly`, `disabled`, `accesskey`, `tabindex`
         - and the `onfocus`, `onblur`, `onselect` and `onchange` handlers.
         + Prend `name`, `rows`, `cols`, `wrap`, `readonly`, `disabled`, `accesskey`, `tabindex` et
-        + les handlers `onfocus`, `onblur`, `onselect` et `onchange`.
+        + les gestionnaires `onfocus`, `onblur`, `onselect` et `onchange`.
   entry #Tfoot
     info
         - `<tfoot>`: footer rows, over `<tr>`; autoclosing, whitespace between
@@ -6541,7 +6541,7 @@ entry .Attributive
       - querencia's `scripting` lets a foreign DOM expression stand as an event handler.
       + D'autres bibliothèques ajoutent les leurs : l'`urlText` de graffiti permet à un `Text` de
       + figurer comme une `Url`, et le `scripting` de querencia permet à une expression DOM
-      + étrangère de figurer comme handler d'événements.
+      + étrangère de figurer comme gestionnaire d'événements.
 
       - The set is not yet complete — many markers (`Target`, `Method`, `Sandbox`, `Rel`, …)
       - have no given of their own, so the enums which name their values are passed as
@@ -6907,14 +6907,14 @@ entry .Renderable
     info
         - a `StackTrace` as flow content: a `<div class="stack">` with headings and a table of frames
         + une `StackTrace` comme contenu de flux : un `<div class="stack">` avec des titres et un
-        + tableau des cadres
+        + tableau des cadres de pile
     detail
         - The component, class name and message as `<h2>`, `<h3>` and `<h4>`, then a `<table>`
         - with a `<tr>` per frame, each cell classed `class`, `method`, `file`, `line` or `code`,
         - for a stylesheet to pick out.
         + Le composant, le nom de classe et le message en `<h2>`, `<h3>` et `<h4>`, puis un
-        + `<table>` avec un `<tr>` par cadre, chaque cellule ayant la classe `class`, `method`,
-        + `file`, `line` ou `code`, pour qu'une feuille de style puisse les cibler.
+        + `<table>` avec un `<tr>` par cadre de pile, chaque cellule ayant la classe `class`,
+        + `method`, `file`, `line` ou `code`, pour qu'une feuille de style puisse les cibler.
   entry #render
     info
         - the HTML for a value, as an `Html of Form`

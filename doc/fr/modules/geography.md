@@ -193,7 +193,7 @@ Out.println(here.geohash(6).inspect)
 - wherever a location is. The geographic operations therefore apply to values of the domain
 - directly, without their coordinates being extracted first.
 + Une `Location` est stockée sous forme d'une paire compacte d'angles à virgule fixe, et non de
-+ deux doubles encapsulés : une collection de positions coûte donc un mot machine chacune. Un type
++ deux doubles boxés : une collection de positions coûte donc un mot machine chacune. Un type
 + qui a une position, comme une ville, une station ou une photographie, fournit une instance de
 + `Locatable`, et est alors accepté partout où une position l'est. Les opérations géographiques
 + s'appliquent donc directement aux valeurs du domaine, sans qu'il faille d'abord en extraire les

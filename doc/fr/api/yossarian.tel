@@ -468,7 +468,7 @@ entry .Pty
         - returning a new `Pty`; the receiver is unchanged. It needs a `Tactic[Pty.Error]`, raised
         - for a sequence which cannot be interpreted.
         + `pty.consume(text)` écrit chaque graphème au curseur et exécute chaque séquence
-        + d'échappement, en renvoyant un nouveau `Pty` ; le récepteur est inchangé. Requiert une
+        + d'échappement, en renvoyant un nouveau `Pty` ; le receveur est inchangé. Requiert une
         + `Tactic[Pty.Error]`, levée pour une séquence qui ne peut pas être interprétée.
 
         ```scala
@@ -810,7 +810,7 @@ entry .internal
     entry #styles
       info
           - a frozen copy of every cell's style, read row by row
-          + une copie figée du style de chaque cellule, lue ligne par ligne
+          + une copie gelée du style de chaque cellule, lue ligne par ligne
     entry #scroll
       info
           - moves the screen's rows, or a region's, up by a number of rows, or down if negative

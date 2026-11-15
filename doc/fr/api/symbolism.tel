@@ -1402,7 +1402,7 @@ entry .Comparable
         - For the seams where a standard library API insists on an `Ordering`, such as the key
         - order of a `TreeMap`. It is a method rather than a given, since a given would form a
         - cycle with the `Ordering` bridge, `Comparable2#ordering`.
-        + Pour les jointures où une API de la bibliothèque standard exige un `Ordering`, comme
+        + Pour les jonctions où une API de la bibliothèque standard exige un `Ordering`, comme
         + l'ordre des clés d'une `TreeMap`. C'est une méthode plutôt qu'un given, puisqu'un given
         + formerait un cycle avec le pont `Ordering`, `Comparable2#ordering`.
   entry #on

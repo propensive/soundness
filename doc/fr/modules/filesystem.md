@@ -28,7 +28,7 @@
 + Au-delà des fichiers individuels, les répertoires standard d'un système, comme le
 + répertoire personnel, le cache et `/usr/share`, sont des valeurs nommées. Un répertoire
 + peut être surveillé pour détecter les changements. Un fichier peut être verrouillé,
-+ projeté en mémoire, étiqueté avec des attributs étendus, ou recherché le long d'une liste
++ projeté en mémoire, tagué avec des attributs étendus, ou recherché le long d'une liste
 + de répertoires.
 
 - ### On the filesystem
@@ -41,13 +41,13 @@
 - A program which gets one wrong destroys data.
 + L'API de système de fichiers de la JVM regorge d'aspérités non typées. Un chemin est une
 + chaîne, ou un objet non typé. Un fichier absent est un `null` ici et une exception là. Les
-+ questions de politique cruciales sont enfouies dans des arguments de type drapeau, ou
++ questions de politique cruciales sont enfouies dans des arguments de type indicateur, ou
 + fixées par le choix de la méthode, et sont invisibles dans le type : cette copie
 + remplace-t-elle ce qui s'y trouve déjà, et cette suppression vide-t-elle toute une
 + arborescence ? Un programme qui se trompe sur l'une d'elles détruit des données.
 
 - Here these are lifted into the types:
-+ Ici, elles sont élevées au niveau des types :
++ Ici, elles sont relevées au niveau des types :
 
 - - A path carries its platform, so its rules are known.
 - - An operation declares `raises Io.Error`, and the error has a specific reason: a missing
@@ -204,7 +204,7 @@ Out.println(file.open[File]()(file.read[Text]))
 - *grants*. Opening with the default mode, `Read`, gives a handle which grants only reading, and
 - `Read & Write` grants both. Writing through a handle which was opened only for reading does
 - not compile:
-+ Le mode n'est pas un simple drapeau à l'exécution. Il est porté dans le type de la poignée,
++ Le mode n'est pas un simple indicateur à l'exécution. Il est porté dans le type de la poignée,
 + sous forme d'un ensemble d'*autorisations*. Ouvrir avec le mode par défaut, `Read`, donne
 + une poignée qui n'autorise que la lecture, et `Read & Write` autorise les deux. Écrire à
 + travers une poignée qui n'a été ouverte qu'en lecture ne compile pas :
@@ -835,11 +835,11 @@ val canonical = (directory / "renamed.txt").canonical()
 - store*. A blob is written once, verified as it is written, and found by anything which knows
 - its digest. `Cas` is that store. The [hash algorithm](hashing.md) is in its type, and in the
 - type of every digest it accepts, so a SHA-256 store cannot be asked for a BLAKE3 digest:
-+ Un répertoire de blobs, chacun nommé par l'empreinte de ses propres octets, est un
++ Un répertoire de blobs, chacun nommé par le condensé de ses propres octets, est un
 + *stockage adressé par contenu*. Un blob est écrit une seule fois, vérifié au moment de son
-+ écriture, et trouvé par quiconque connaît son empreinte. `Cas` est ce stockage.
++ écriture, et trouvé par quiconque connaît son condensé. `Cas` est ce stockage.
 + L'[algorithme de hachage](hashing.md) figure dans son type, et dans le type de chaque
-+ empreinte qu'il accepte, si bien qu'on ne peut pas demander une empreinte BLAKE3 à un
++ condensé qu'il accepte, si bien qu'on ne peut pas demander un condensé BLAKE3 à un
 + stockage SHA-256 :
 
 ```scala
@@ -873,12 +873,12 @@ Out.println(store.missing(List(digest)).inspect)
 - row  `store.prune(digests)`  deletes every blob not in the set, and returns how many it deleted
 + column  Expression
 + column  Effet
-+ row  `store() = data`  stocke les données sous leur propre empreinte, et renvoie celle-ci ; ne fait rien si le blob est déjà présent
-+ row  `store(digest) = data`  la même chose, après avoir vérifié que les données ont cette empreinte, en levant une `Cas.Error` sinon
++ row  `store() = data`  stocke les données sous leur propre condensé, et renvoie celui-ci ; ne fait rien si le blob est déjà présent
++ row  `store(digest) = data`  la même chose, après avoir vérifié que les données ont ce condensé, en levant une `Cas.Error` sinon
 + row  `store(digest)`  les octets, ou `Unset`
 + row  `store.has(digest)`  si le blob est stocké
-+ row  `store.missing(digests)`  celles d'une liste d'empreintes qui ne sont pas encore stockées
-+ row  `store.digests`  toutes les empreintes stockées
++ row  `store.missing(digests)`  ceux d'une liste de condensés qui ne sont pas encore stockés
++ row  `store.digests`  tous les condensés stockés
 + row  `store.prune(digests)`  supprime chaque blob absent de l'ensemble, et renvoie le nombre de blobs supprimés
 ```
 
@@ -894,7 +894,7 @@ Out.println(store.missing(List(digest)).inspect)
 + place, si bien qu'un lecteur ne voit jamais un blob partiel. La racine du stockage est ici
 + un `Path`, mais son type est celui de cette racine, et une instance `Cas.Storage` pour un
 + autre genre de racine crée sur celle-ci un stockage doté de la même interface. En tant que
-+ [collection](collections.md), un stockage est l'ensemble de ses empreintes : `store.size`,
++ [collection](collections.md), un stockage est l'ensemble de ses condensés : `store.size`,
 + `store.has(digest)`, `store.at(digest)` et le parcours fonctionnent tous sur lui.
 
 - ### Extended attributes and volumes

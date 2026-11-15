@@ -78,7 +78,7 @@ detail
     +   indice est prouvé dans les bornes), `survey` prête un `Surveyor` (un curseur d'avancement
     +   dont les segments reviennent sous forme d'intervalles marqués), `lattice` adresse un plan à
     +   deux dimensions, `pairs`/`triples`/`quads` parcourent une collection par groupes, et
-    +   `Scroll` est un tableau extensible sans boxing.
+    +   `Scroll` est un tableau extensible non boxé.
     + - **Primitives de concurrence** : des cellules `Atomic` au-dessus des atomiques du JDK, lues
     +   par `cell()`, écrites par `cell() = v`, et modifiées par `ere` et `since`, qui compilent un
     +   lambda littéral tel que `_ + 1` vers l'intrinsèque du JDK ; `Mutex` ; des valeurs `Scoped`
@@ -370,11 +370,10 @@ entry .state
       - next element. `state` reads the first: `xs.fuse(0)(state + next)`. The tag is the type
       - `value aka "state"`, which only a `fuse` supplies, so `state` outside one is a compile error
       - saying no given of that type was found.
-      + Un lambda de `fuse` est une fonction contextuelle qui reçoit deux valeurs étiquetées, l'état
-      + courant et l'élément suivant. `state` lit la première : `xs.fuse(0)(state + next)`.
-      + L'étiquette est le type `value aka "state"`, que seul un `fuse` fournit, si bien que `state`
-      + ailleurs est une erreur de compilation signalant qu'aucun given de ce type n'a
-      + été trouvé.
+      + Un lambda de `fuse` est une fonction contextuelle qui reçoit deux valeurs marquées d'un tag,
+      + l'état courant et l'élément suivant. `state` lit la première : `xs.fuse(0)(state + next)`.
+      + Le tag est le type `value aka "state"`, que seul un `fuse` fournit, si bien que `state`
+      + ailleurs est une erreur de compilation signalant qu'aucun given de ce type n'a été trouvé.
 
 entry .next
   info
@@ -383,8 +382,8 @@ entry .next
   detail
       - The second tagged value a `fuse` lambda receives: `xs.fuse(t"")(state + next.show)`. See
       - `state` for the tagging.
-      + La seconde valeur étiquetée que reçoit un lambda de `fuse` :
-      + `xs.fuse(t"")(state + next.show)`. Voir `state` pour l'étiquetage.
+      + La seconde valeur marquée d'un tag que reçoit un lambda de `fuse` :
+      + `xs.fuse(t"")(state + next.show)`. Voir `state` pour le tag.
 
 entry .prior
   info
@@ -506,8 +505,8 @@ entry .reflectClass
 entry .!!
   info
       - `!![T]`: an erased value of any type, for an erased proof or evidence parameter
-      + `!![T]` : une valeur effacée de n'importe quel type, pour un paramètre de preuve ou
-      + d'attestation effacé
+      + `!![T]` : une valeur effacée de n'importe quel type, pour un paramètre effacé servant de
+      + preuve
   detail
       - Written `!![T]`, this is the compiler's erased-value summoner: it yields a `T` which exists
       - only at compile time and has no runtime representation, so it may be passed where an
@@ -1703,8 +1702,8 @@ entry .Atomic
       - cell is written `Atomic.Ref[List[x]]`.
       + `Atomic[value]` est un match type qui désigne la bonne cellule pour un type : `Atomic[Int]`
       + est `Atomic.Int`, `Atomic[Boolean]` est `Atomic.Bool`, et tout autre type est `Atomic.Ref`.
-      + Il fait de la cellule sans boxing l'écriture évidente (`Atomic.Ref[Int]` est légal et
-      + emballe chaque écriture). `Atomic(initial)` construit selon le type de l'argument, si bien
+      + Il fait de la cellule non boxée l'écriture évidente (`Atomic.Ref[Int]` est légal et
+      + boxe chaque écriture). `Atomic(initial)` construit selon le type de l'argument, si bien
       + que `Atomic(0)` est un `Atomic.Int` ; `Atomic[Int](0)` sélectionnerait la branche générique
       + `Ref` et ne serait pas conforme, ce qui est une erreur de type plutôt qu'un boxing
       + silencieux. Le match type ne se réduit pas pour un type de collection opaque ni pour un
@@ -2453,7 +2452,7 @@ entry .dynamically
 entry .Defaulting
   info
       - evidence that a type parameter defaults to a type when nothing constrains it
-      + l'attestation qu'un paramètre de type prend par défaut un type donné quand rien ne le
+      + la preuve qu'un paramètre de type prend par défaut un type donné quand rien ne le
       + contraint
   detail
       - `topic is Defaulting to Text` is an erased given which is resolved when `topic` has been
@@ -2514,7 +2513,7 @@ entry .&
       - extractor and `y` from the second on the same value, which otherwise needs a nested
       - match or a guard.
       + Un objet extracteur, exporté depuis `rudiments.internal`, dont l'`unapply` produit deux
-      + fois la valeur examinée : `value match case AsInt(x) & AsLong(y) => …` lie `x` depuis le
+      + fois la valeur filtrée : `value match case AsInt(x) & AsLong(y) => …` lie `x` depuis le
       + premier extracteur et `y` depuis le second sur la même valeur, ce qui exigerait sinon un
       + filtrage imbriqué ou une garde.
 
@@ -2619,12 +2618,12 @@ entry .internal
     detail
         - The object whose `unapply` returns its scrutinee twice, so that `case A(x) & B(y)`
         - matches one value against two extractors.
-        + L'objet dont l'`unapply` renvoie deux fois la valeur examinée, si bien que
+        + L'objet dont l'`unapply` renvoie deux fois la valeur filtrée, si bien que
         + `case A(x) & B(y)` confronte une valeur à deux extracteurs.
     entry .unapply
       info
           - yields the scrutinee paired with itself, always matching
-          + produit la valeur examinée associée à elle-même, et correspond toujours
+          + produit la valeur filtrée associée à elle-même, et correspond toujours
   entry .probe
     info
         - the macro behind `probe[T]`: halts with the type's name
@@ -3481,7 +3480,7 @@ entry .collect
 entry .Scroll
   info
       - a growable array of primitives (or anything), unboxed, indexed by `Int`
-      + un tableau extensible de primitives (ou de n'importe quoi), sans boxing, indexé par `Int`
+      + un tableau extensible de primitives (ou de n'importe quoi), non boxé, indexé par `Int`
   detail
       - `Scroll[Int]()` is the unboxed replacement for a stdlib `ArrayBuffer[Int]`, whose
       - backing store holds boxed references: a scroll of a concrete element type reads and
@@ -3492,8 +3491,8 @@ entry .Scroll
       - `freeze` yields the elements so far as an exact-size frozen array and leaves the scroll
       - usable. Shipping in the `concordance` library; not exported to the umbrella, so
       - `import rudiments.Scroll`.
-      + `Scroll[Int]()` est le remplaçant sans boxing d'un `ArrayBuffer[Int]` de la bibliothèque
-      + standard, dont le stockage support contient des références emballées : un scroll d'un type
+      + `Scroll[Int]()` est le remplaçant non boxé d'un `ArrayBuffer[Int]` de la bibliothèque
+      + standard, dont le stockage support contient des références boxées : un scroll d'un type
       + d'élément concret lit et écrit directement un tableau JVM primitif, si bien que
       + `scroll.append(1)` est un `iastore`. C'est le frère de `Scribe` pour les constructeurs de
       + descripteurs et les piles de styles qui écrivent à des positions calculées et sont

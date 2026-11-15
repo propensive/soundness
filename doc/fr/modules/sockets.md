@@ -268,7 +268,7 @@ val received: Int = endpoint.react(0)[Text]: state ?=> message =>
 
 - A `Port` which is received over the wire is therefore a `Port`, validated on arrival, and not
 - text to be checked later.
-+ Un `Port` reçu sur le réseau est donc un `Port`, validé à son arrivée, et non un texte à
++ Un `Port` reçu en transmission est donc un `Port`, validé à son arrivée, et non un texte à
 + vérifier plus tard.
 
 - ### Multicast
@@ -374,7 +374,7 @@ val addresses = resolver.query(dns"example.com").map(_.rdata)
 + Les options de socket de la plateforme sous-jacente, comme `SO_REUSEADDR`, le keep-alive, les
 + tailles de tampons et les délais d'expiration, sont des valeurs typées, rassemblées depuis la
 + portée. Chacune n'est valide que pour les transports qui la prennent en charge ; une option
-+ propre à TCP ne peut donc pas s'appliquer à un socket UDP. Un drapeau est un given, importé par
++ propre à TCP ne peut donc pas s'appliquer à un socket UDP. Un indicateur est un given, importé par
 + son nom :
 
 ```scala
@@ -488,7 +488,7 @@ import socketOptions.broadcastSocketOption
 - approximated. Narrowing the platform's surface to a seam this small is
 - [decoupling](../../philosophy/decoupling.md) applied within one library.
 + Une opération qu'un backend ne peut prendre en charge lève l'erreur appropriée. Elle n'est
-+ jamais approximée. Réduire la surface de la plateforme à une jointure aussi étroite, c'est le
++ jamais approximée. Réduire la surface de la plateforme à une jonction aussi étroite, c'est le
 + [découplage](../../philosophy/decoupling.md) appliqué au sein d'une même bibliothèque.
 
 - ### Related

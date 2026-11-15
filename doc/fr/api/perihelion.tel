@@ -90,7 +90,7 @@ detail
     + package parapluie `soundness`. Trois noms ne le sont pas : `Message`, car le `Message` de
     + fulminate occupe déjà ce nom dans le package parapluie
     + (`import perihelion.Websocket.Message`), et les givens client `wsClient` et `wsSessional`,
-    + dont un forwarder d'export synthétisé perdrait les types raffinés annotés de captures
+    + dont un redirecteur d'export synthétisé perdrait les types raffinés annotés de captures
     + (`import perihelion.wsClient`, `import perihelion.wsSessional`). `Channel` et `Reader` sont
     + publics dans le package mais non exportés.
 
@@ -481,7 +481,7 @@ entry .Websocket
         - server's loop for each message handled, and `Closed` at `info` by `Channel#close`
         - with the close code. A `Websocket.Event is Loggable` must be in scope wherever
         - `Channel#send` or `Channel#close` is called; `logging.silentLogging` discards them.
-        + Chaque `Event` est étiqueté `Log.Network` et `Log.Protocol`. `Sent` est journalisé au
+        + Chaque `Event` est tagué `Log.Network` et `Log.Protocol`. `Sent` est journalisé au
         + niveau `fine` par `Channel#send` avec le nombre d'octets du message, `Received` au niveau
         + `fine` par la boucle du serveur pour chaque message traité, et `Closed` au niveau `info`
         + par `Channel#close` avec le code de fermeture. Un `Websocket.Event is Loggable` doit être
@@ -518,7 +518,8 @@ entry .Websocket
   entry .Frame
     info
         - one WebSocket frame: the wire format, parsed from a cursor and encoded to bytes
-        + une trame WebSocket : le format sur le fil, analysé depuis un curseur et encodé en octets
+        + une trame WebSocket : la forme de transmission, analysée depuis un curseur et encodée en
+        + octets
     detail
         - The enum of frame types, each with its `#opcode` and `#payload`: `Continuation(last,
         - data)`, `Text(last, data)` and `Binary(last, data)` are the data frames, whose
@@ -566,7 +567,7 @@ entry .Websocket
     entry .validCloseCode
       info
           - whether a close code may appear on the wire
-          + si un code de fermeture peut apparaître sur le fil
+          + si un code de fermeture peut apparaître en transmission
       detail
           - `1000`–`1003`, `1007`–`1011` and the application range `3000`–`4999`. The codes
           - `1004`, `1005` and `1006` never travel, and `1012`–`2999` are unassigned, so a close
@@ -828,7 +829,7 @@ entry .Reader
 entry .over
   info
       - tags a value with the format it rides, `value.over[Json]`, so a reply serializes through it
-      + étiquette une valeur avec le format qui la transporte, `value.over[Json]`, de sorte qu'une
+      + associe à une valeur le tag du format qui la transporte, `value.over[Json]`, de sorte qu'une
       + réponse se sérialise par son intermédiaire
   detail
       - `over` is a phantom type member, so `value.over[Json]` is a no-op cast to `value over
@@ -946,7 +947,7 @@ entry .wsClient
       + serveur ferme. Le given requiert un `Online` (`internetAccess.online`), un `Monitor` et un
       + `Probate`, un `Every[Socket.Option.Tcp]`, un `Tls`, et des tactiques pour
       + `Websocket.Error`, `Http.Response.Error` et `Port.Error`, et il les retient ; c'est donc une
-      + capacité. Il n'est pas exporté dans `soundness`, puisqu'un forwarder synthétisé perdrait
+      + capacité. Il n'est pas exporté dans `soundness`, puisqu'un redirecteur synthétisé perdrait
       + son raffinement : `import perihelion.wsClient`.
 
 entry .WsSessional
@@ -1014,5 +1015,5 @@ entry .wsSessional
       - retains. Not exported to `soundness`, since a synthesized forwarder would lose its
       - capture-annotated type.
       + Construit à partir du given `wsClient`, d'un `Monitor` et d'une `Tactic[Socket.Error]`,
-      + qu'il retient. Non exporté dans `soundness`, puisqu'un forwarder synthétisé perdrait son
+      + qu'il retient. Non exporté dans `soundness`, puisqu'un redirecteur synthétisé perdrait son
       + type annoté de captures.

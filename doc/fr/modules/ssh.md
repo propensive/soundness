@@ -285,7 +285,7 @@ Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
 ```
 
 - ### The wire encoding
-+ ### L'encodage sur le réseau
++ ### L'encodage de transmission
 
 - Every SSH message is a sequence of the types which RFC 4251 defines. They are read and written
 - with `Wire.Reader` and `Wire.Writer`:

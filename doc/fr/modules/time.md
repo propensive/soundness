@@ -8,7 +8,7 @@
 - absolute instants on a physical timeline, the spans between them, the time zones which connect
 - human time to physical time, and the rules by which events recur.
 + Le temps est représenté et manipulé sous toutes ses formes : les dates d'un calendrier, les
-+ heures d'une horloge, les instants absolus sur une chronologie physique, les intervalles qui
++ heures d'une horloge, les instants absolus sur une ligne de temps physique, les intervalles qui
 + les séparent, les fuseaux horaires qui relient le temps humain au temps physique, et les règles
 + selon lesquelles les événements se répètent.
 
@@ -84,7 +84,7 @@
 - chosen in context, and are not left to chance: a 31st which some months lack, a 29th of
 - February which most years lack, and a clock reading which falls in a daylight-saving gap.
 + Tout ce qui peut en être rendu systématique l'est, en encodant les distinctions dans les types.
-+ Une date sait à quel calendrier elle appartient. Un instant sait sur quelle chronologie il est
++ Une date sait à quel calendrier elle appartient. Un instant sait sur quelle ligne de temps il est
 + mesuré. Un moment connaît son fuseau. Et les cas délicats sont résolus par des politiques
 + choisies selon le contexte, et non laissés au hasard : un 31 que certains mois n'ont pas, un
 + 29 février que la plupart des années n'ont pas, et une lecture d'horloge qui tombe dans le
@@ -124,7 +124,7 @@
 + row  `Duration`  une quantité physique de secondes
 + row  `Timespan`  une quantité calendaire : années, mois, semaines, jours, heures, minutes
 + row  `Period`  un intervalle semi-ouvert entre deux points
-+ row  `Instant`  un moment du temps physique, sur une chronologie
++ row  `Instant`  un moment du temps physique, sur une ligne de temps
 + row  `Timezone`  les règles d'un lieu pour le temps civil
 + row  `Moment`  un horodatage ancré dans un fuseau
 + row  `Recurrence`  un événement qui se répète à intervalle fixe
@@ -441,7 +441,7 @@ locally:
 + Une année bissextile n'est pas concernée.
 
 - ### Durations and timespans
-+ ### Durées et intervalles calendaires
++ ### Durées et durées calendaires
 
 - A firm line is drawn between two kinds of elapsed time, and the distinction is deliberate.
 + Une ligne ferme sépare deux sortes de temps écoulé, et la distinction est délibérée.
@@ -487,8 +487,8 @@ Out.println(Duration(1000L).value.inspect)
 
 - A timespan is built by multiplying a number by a unit, and several units combine into one
 - span. Its components are read back by name:
-+ Un intervalle calendaire se construit en multipliant un nombre par une unité, et plusieurs
-+ unités se combinent en un seul intervalle. Ses composantes se relisent par leur nom :
++ Une durée calendaire se construit en multipliant un nombre par une unité, et plusieurs
++ unités se combinent en une seule durée. Ses composantes se relisent par leur nom :
 
 ```scala
 val span = 2*Year + 3*Month + 14*Day
@@ -505,7 +505,7 @@ Out.println(span.days.show)
 - A timespan is encoded as an
 - [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations), and is parsed back
 - from one. The `dur` interpolator writes such a duration as a checked literal:
-+ Un intervalle calendaire est encodé comme une
++ Une durée calendaire est encodée comme une
 + [durée ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations), et se relit à partir d'une
 + telle durée. L'interpolateur `dur` écrit une telle durée comme un littéral vérifié :
 
@@ -684,8 +684,8 @@ locally:
 - timeline, which is POSIX time, counts milliseconds from the
 - [Unix epoch](https://en.wikipedia.org/wiki/Unix_time), the start of 1970:
 + Un instant est un moment du temps physique, sans référence à aucun calendrier ni aucune
-+ horloge. Un `Instant` est mesuré le long d'une chronologie, et la chronologie fait partie de
-+ son type. La chronologie `Unix`, qui est le temps POSIX, compte les millisecondes depuis
++ horloge. Un `Instant` est mesuré le long d'une ligne de temps, et la ligne de temps fait partie de
++ son type. La ligne de temps `Unix`, qui est le temps POSIX, compte les millisecondes depuis
 + l'[époque Unix](https://en.wikipedia.org/wiki/Unix_time), le début de 1970 :
 
 ```scala
@@ -744,7 +744,7 @@ Out.println((Instant(3600000L) - Instant(0L)).inspect)
 - timeline, without overlapping where they meet.
 + Deux points de même sorte délimitent une `Period`, écrite avec `~`. Une période est un
 + intervalle semi-ouvert : son début est inclus, et sa fin ne l'est pas. Des périodes
-+ consécutives pavent donc une chronologie, sans se chevaucher là où elles se rejoignent.
++ consécutives pavent donc une ligne de temps, sans se chevaucher là où elles se rejoignent.
 
 - A period reports its duration, and tests whether a point lies within it:
 + Une période indique sa durée, et teste si un point s'y trouve :
@@ -1303,7 +1303,7 @@ Out.println(dates(RecurrenceSet(include = List(weekly.occurrences), rdates = Lis
 - A rule, a recurrence or a timespan describes itself in words. The description is localized,
 - and the language is enforced by the types. It needs a `Locale` in scope, and the names of the
 - months and of the days of the week for that language, or it does not compile:
-+ Une règle, une récurrence ou un intervalle calendaire se décrit en mots. La description est
++ Une règle, une récurrence ou une durée calendaire se décrit en mots. La description est
 + localisée, et la langue est imposée par les types. Elle nécessite une `Locale` dans la portée,
 + ainsi que les noms des mois et des jours de la semaine dans cette langue, faute de quoi elle
 + ne compile pas :
@@ -1339,7 +1339,7 @@ Out.println(french)
 
 - A timespan describes itself relative to now, and reads forward or backward according to its
 - sign:
-+ Un intervalle calendaire se décrit par rapport à maintenant, et se lit vers l'avant ou vers
++ Une durée calendaire se décrit par rapport à maintenant, et se lit vers l'avant ou vers
 + l'arrière selon son signe :
 
 ```scala fuel
@@ -1447,7 +1447,7 @@ import yearFormats.fullYears
 - original instant exactly:
 + Le [temps atomique international](https://en.wikipedia.org/wiki/International_Atomic_Time)
 + (TAI) n'a pas de telles discontinuités. `over[Tai]` convertit un instant `Unix` vers la
-+ chronologie TAI, en tenant compte des secondes intercalaires accumulées jusqu'à cet instant. La
++ ligne de temps TAI, en tenant compte des secondes intercalaires accumulées jusqu'à cet instant. La
 + conversion inverse redonne exactement l'instant d'origine :
 
 ```scala
@@ -1463,7 +1463,7 @@ Out.println((instant.over[Tai].over[Unix] == instant).inspect)
 - The timelines are distinct types, so subtracting an instant on one from an instant on the
 - other is a compile error. A whole class of bugs, which are wrong by the leap seconds, simply
 - cannot be written:
-+ Les chronologies sont des types distincts, si bien que soustraire un instant de l'une d'un
++ Les lignes de temps sont des types distincts, si bien que soustraire un instant de l'une d'un
 + instant de l'autre est une erreur de compilation. Toute une catégorie de bogues, faux du nombre
 + de secondes intercalaires, ne peut tout simplement pas s'écrire :
 
@@ -1477,10 +1477,10 @@ Instant(0L).over[Tai] - Instant(0L)
 - By default, arithmetic on moments is lenient. It works in civil time, and steps over leap
 - seconds as though they were not there. Choosing the exact mode counts them. Adding two hours
 - across the leap second at the end of 2016 then lands one second short of the lenient answer:
-+ Par défaut, l'arithmétique sur les moments est indulgente. Elle travaille en temps civil, et
++ Par défaut, l'arithmétique sur les moments est tolérante. Elle travaille en temps civil, et
 + enjambe les secondes intercalaires comme si elles n'existaient pas. Choisir le mode exact les
 + compte. Ajouter deux heures en traversant la seconde intercalaire de la fin de 2016 tombe
-+ alors une seconde avant la réponse indulgente :
++ alors une seconde avant la réponse tolérante :
 
 ```scala fuel
 run

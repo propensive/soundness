@@ -320,7 +320,7 @@ entry .Emit
       + Un émetteur est une capacité `caps.Control`, et est `Findable` : un émetteur manquant est
       + donc signalé avec les packages de choix qui le fourniraient. Il ne peut conserver que
       + d'autres capacités `Control` : une lambda de gestionnaire passée à `.apply` peut lever vers
-      + une tactique externe, mais ne peut pas capturer un journaliseur ou un flux.
+      + une tactique externe, mais ne peut pas capturer un logger ou un flux.
   refer contingency.Tactic
   refer contingency.handle
   entry .apply
@@ -976,7 +976,7 @@ entry .recover
       + compilation : un `recover` ne peut pas traiter un type à moitié. Un `recover` écrit
       + directement dans une `inline def` ne résout pas ses tactiques ; déléguez le corps à une
       + méthode auxiliaire non inline. Un corps de cas peut lever vers une tactique externe, mais ne
-      + peut pas capturer une capacité non `Control` comme un journaliseur.
+      + peut pas capturer une capacité non `Control` comme un logger.
 
 entry .Recovery
   info
@@ -1167,7 +1167,7 @@ entry .accrue
       - The accrual type must be a `Hazard`, because it is raised; `validate` is the twin whose
       - accumulation is returned as a plain value instead. `track` adds a focus to each error.
       + Le type d'accumulation doit être un `Hazard`, puisqu'il est levé ; `validate` est le jumeau
-      + dont l'accumulation est plutôt renvoyée comme simple valeur. `track` ajoute un foyer à
+      + dont l'accumulation est plutôt renvoyée comme simple valeur. `track` ajoute un focus à
       + chaque erreur.
 
 entry .Accrual
@@ -1301,7 +1301,7 @@ entry .handle
       - of the case body.
       + Un corps de cas devient le gestionnaire d'une capacité `caps.Control` ; il peut donc lever
       + vers une tactique externe mais ne peut pas capturer une capacité qui n'est pas de contrôle,
-      + comme un journaliseur : sortez ce travail du corps du cas.
+      + comme un logger : sortez ce travail du corps du cas.
 
 entry .Handler
   info
@@ -1329,7 +1329,7 @@ entry .Handler
 entry .track
   info
       - collects chosen errors, each with the focus it was raised at, into one accumulated error
-      + rassemble les erreurs choisies, chacune avec le foyer où elle a été levée, en une seule
+      + rassemble les erreurs choisies, chacune avec le focus où elle a été levée, en une seule
       + erreur accumulée
   detail
       - `track[focus](initial) { cases }.protect(block)` is `accrue` with positions. The block
@@ -1342,7 +1342,7 @@ entry .track
       - Each case returns the new accumulation.
       + `track[focus](initial) { cases }.protect(block)` est un `accrue` avec positions. Le bloc
       + s'exécute avec un `Foci[focus]` et une `TrackTactic` pour chaque type d'erreur que couvrent
-      + les cas ; chaque erreur couverte est enregistrée auprès des foyers, avec le foyer courant à
+      + les cas ; chaque erreur couverte est enregistrée auprès des focus, avec le focus courant à
       + ce moment (fixé par `focus`), et le bloc poursuit. Lorsqu'il se termine, si quelque chose a
       + été enregistré, les erreurs sont repliées — chaque cas reçoit l'erreur, avec `prior` (le
       + `Optional[focus]` où elle a été levée) et `accrual` (l'accumulation jusqu'ici) comme valeurs
@@ -1375,7 +1375,7 @@ entry .track
       - path for XML, a cell reference for a spreadsheet — so a position is reported in the
       - data's own vocabulary. `validate` is the same construct returning the accumulation as a
       - plain value rather than raising it.
-      + Le type de foyer est choisi selon la structure parcourue — un `JsonPointer` pour JSON, un
+      + Le type de focus est choisi selon la structure parcourue — un `JsonPointer` pour JSON, un
       + chemin pour XML, une référence de cellule pour un tableur — si bien qu'une position est
       + signalée dans le vocabulaire propre aux données. `validate` est la même construction, qui
       + renvoie l'accumulation comme simple valeur au lieu de la lever.
@@ -1402,7 +1402,7 @@ entry .Tracking
   entry .protect
     info
         - runs a block, registering covered errors with their foci; aborts with the fold if any
-        + exécute un bloc, en enregistrant les erreurs couvertes avec leurs foyers ; s'interrompt
+        + exécute un bloc, en enregistrant les erreurs couvertes avec leurs focus ; s'interrompt
         + avec le repli s'il y en a
   entry #initial
     info
@@ -1411,13 +1411,13 @@ entry .Tracking
   entry #lambda
     info
         - the fold: each error, with its `prior` focus and the `accrual` so far, to a new accumulation
-        + le repli : chaque erreur, avec son foyer `prior` et l'`accrual` jusqu'ici, vers une
+        + le repli : chaque erreur, avec son focus `prior` et l'`accrual` jusqu'ici, vers une
         + nouvelle accumulation
 
 entry .validate
   info
       - collects chosen errors with their foci into a value which is returned, not raised
-      + rassemble les erreurs choisies avec leurs foyers en une valeur qui est renvoyée, et non
+      + rassemble les erreurs choisies avec leurs focus en une valeur qui est renvoyée, et non
       + levée
   detail
       - `validate[focus](initial) { cases }.protect(block)` is `track` whose result is the
@@ -1474,7 +1474,7 @@ entry .Validate
   entry .protect
     info
         - runs a block, registering covered errors with their foci; returns the fold
-        + exécute un bloc, en enregistrant les erreurs couvertes avec leurs foyers ; renvoie le
+        + exécute un bloc, en enregistrant les erreurs couvertes avec leurs focus ; renvoie le
         + repli
   entry #initial
     info
@@ -1483,7 +1483,7 @@ entry .Validate
   entry #lambda
     info
         - the fold: each error, with its `prior` focus and the `accrual` so far, to a new accumulation
-        + le repli : chaque erreur, avec son foyer `prior` et l'`accrual` jusqu'ici, vers une
+        + le repli : chaque erreur, avec son focus `prior` et l'`accrual` jusqu'ici, vers une
         + nouvelle accumulation
 
 entry .accrual
@@ -1501,7 +1501,7 @@ entry .accrual
 entry .focus
   info
       - runs a block, and tags each error registered within it with a focus
-      + exécute un bloc, et étiquette chaque erreur enregistrée en son sein avec un foyer
+      + exécute un bloc, et associe un focus à chaque erreur enregistrée en son sein
   detail
       - `focus(transform)(block)` evaluates the block, then — however it ended — supplements
       - every error the `Foci[focus]` in scope registered during it with the focus `transform`
@@ -1511,7 +1511,7 @@ entry .focus
       - nothing, and `Foci#active` lets a hot loop skip the wrapping entirely.
       + `focus(transform)(block)` évalue le bloc, puis — quelle que soit la manière dont il s'est
       + terminé — complète chaque erreur que le `Foci[focus]` dans la portée a enregistrée pendant
-      + son exécution avec le foyer que produit `transform`. La transformation reçoit `prior`, le
+      + son exécution avec le focus que produit `transform`. La transformation reçoit `prior`, le
       + `Optional[focus]` déjà attaché (par un `focus` interne), si bien qu'un parcours qui descend
       + dans une structure compose les positions de l'intérieur vers l'extérieur :
       + `focus(prior.or(Pointer.Self)(t"name"))`. Le `Foci.default` inerte n'enregistre rien, et
@@ -1571,7 +1571,7 @@ entry .Foci
         - A hot decode loop checks this to skip its per-field `focus` wrapping, and the closure
         - each wrap allocates, when no focus would ever be observed.
         + Une boucle de décodage critique le vérifie pour éviter son enveloppement `focus` par
-        + champ, et la fermeture qu'alloue chaque enveloppement, lorsqu'aucun foyer ne serait jamais
+        + champ, et la fermeture qu'alloue chaque enveloppement, lorsqu'aucun focus ne serait jamais
         + observé.
   entry #length
     info
@@ -1584,20 +1584,20 @@ entry .Foci
   entry #register
     info
         - records an error, with no focus yet
-        + enregistre une erreur, encore sans foyer
+        + enregistre une erreur, encore sans focus
   entry #fold
     info
         - folds the registered errors, each with its focus, into an accumulation
-        + replie les erreurs enregistrées, chacune avec son foyer, en une accumulation
+        + replie les erreurs enregistrées, chacune avec son focus, en une accumulation
     detail
         - `fold(initial)((focus, accumulation) => { case error => … })`: the lambda receives the
         - focus and accumulation and returns a partial function over the error.
-        + `fold(initial)((focus, accumulation) => { case error => … })` : la lambda reçoit le foyer
+        + `fold(initial)((focus, accumulation) => { case error => … })` : la lambda reçoit le focus
         + et l'accumulation et renvoie une fonction partielle sur l'erreur.
   entry #supplement
     info
         - applies a transform to the focus of the last `count` errors registered
-        + applique une transformation au foyer des `count` dernières erreurs enregistrées
+        + applique une transformation au focus des `count` dernières erreurs enregistrées
     detail
         - How `focus` attaches a position: the transform takes the `Optional[focus]` already
         - there and returns the new one.
@@ -1618,28 +1618,28 @@ entry .Foci
 entry .TrackFoci
   info
       - the recording `Foci`: keeps every registered error with its focus
-      + le `Foci` qui enregistre : conserve chaque erreur enregistrée avec son foyer
+      + le `Foci` qui enregistre : conserve chaque erreur enregistrée avec son focus
   detail
       - The implementation `track` and `validate` install, with an `ArrayBuffer` of errors and
       - one of their `Optional[focus]`es. It can be bound as a local given to observe foci
       - without a `track` (`given Foci[Pointer] = TrackFoci()`).
       + L'implémentation qu'installent `track` et `validate`, avec un `ArrayBuffer` d'erreurs et un
       + autre de leurs `Optional[focus]`. Elle peut être liée comme given local pour observer les
-      + foyers sans `track` (`given Foci[Pointer] = TrackFoci()`).
+      + focus sans `track` (`given Foci[Pointer] = TrackFoci()`).
 
 entry .Pointer
   info
       - a dotted path into a structure, as the focus of an error
-      + un chemin pointé dans une structure, comme foyer d'une erreur
+      + un chemin pointé dans une structure, comme focus d'une erreur
   detail
       - The simplest focus type: `Pointer.Self` is the root, and `Pointer.Child(parent, label)`
       - one step down. `Pointer(t"a")(t"b")(t"c")` builds a path, which renders as `a.b.c`, and
       - is the focus type the `validate` examples use where the structure has no pointer type
       - of its own. It is `Encodable in Text` and `Communicable`, so it interpolates into a
       - message as its dotted text.
-      + Le type de foyer le plus simple : `Pointer.Self` est la racine, et
+      + Le type de focus le plus simple : `Pointer.Self` est la racine, et
       + `Pointer.Child(parent, label)` un pas plus bas. `Pointer(t"a")(t"b")(t"c")` construit un
-      + chemin, qui se rend sous la forme `a.b.c`, et c'est le type de foyer qu'utilisent les
+      + chemin, qui se rend sous la forme `a.b.c`, et c'est le type de focus qu'utilisent les
       + exemples de `validate` lorsque la structure n'a pas de type de pointeur propre. Il est
       + `Encodable in Text` et `Communicable` ; il s'interpole donc dans un message sous forme de
       + son texte pointé.
@@ -1674,7 +1674,7 @@ entry .Pointer
 entry .TrackTactic
   info
       - the tactic `track` and `validate` inject: registers each error with the foci and continues
-      + la tactique qu'injectent `track` et `validate` : enregistre chaque erreur auprès des foyers
+      + la tactique qu'injectent `track` et `validate` : enregistre chaque erreur auprès des focus
       + et poursuit
   detail
       - A `Tactic[error]` over a `boundary` label, an initial accumulation and the `Foci` to
@@ -1685,7 +1685,7 @@ entry .TrackTactic
       + Une `Tactic[error]` sur une étiquette `boundary`, une accumulation initiale et le `Foci`
       + auprès duquel enregistrer, avec le `Diagnostics` avec lequel elle construit les erreurs.
       + `record` enregistre l'erreur et retourne ; `abort` l'enregistre et sort du bloc ; `certify`
-      + sort si les foyers sont entachés ; `tolerate` tronque les foyers à ce qu'ils étaient avant
+      + sort si les focus sont entachés ; `tolerate` tronque les focus à ce qu'ils étaient avant
       + son bloc.
   entry #diagnostics
     info
@@ -1694,7 +1694,7 @@ entry .TrackTactic
   entry #record
     info
         - registers the error with the foci and returns
-        + enregistre l'erreur auprès des foyers et retourne
+        + enregistre l'erreur auprès des focus et retourne
   entry #finish
     info
         - a no-op, kept for the tactic's shape
@@ -1706,11 +1706,11 @@ entry .TrackTactic
   entry #tainted
     info
         - whether the foci hold any error
-        + si les foyers contiennent une erreur
+        + si les focus contiennent une erreur
   entry #tolerate
     info
         - a block's value, or `Unset` with the errors it registered dropped from the foci
-        + la valeur d'un bloc, ou `Unset` avec les erreurs qu'il a enregistrées retirées des foyers
+        + la valeur d'un bloc, ou `Unset` avec les erreurs qu'il a enregistrées retirées des focus
   entry #abort
     info
         - registers the error and breaks out of the tracked block
@@ -1719,14 +1719,14 @@ entry .TrackTactic
 entry .Errors
   info
       - several errors reported together, each keyed by the text of its focus
-      + plusieurs erreurs signalées ensemble, chacune indexée par le texte de son foyer
+      + plusieurs erreurs signalées ensemble, chacune indexée par le texte de son focus
   detail
       - Error 218: _`n` accrued errors: `message` at `focus`; …_. An `Error` holding
       - `(Text, Error)` pairs, for a validation which collects every problem before failing.
       - It is built empty and grown with `+`, and a focus's error is looked up with `apply`.
       + Erreur 218 : _`n` accrued errors: `message` at `focus`; …_. Une `Error` contenant des paires
       + `(Text, Error)`, pour une validation qui rassemble tous les problèmes avant d'échouer. Elle
-      + est construite vide et augmentée avec `+`, et l'erreur d'un foyer se consulte avec `apply`.
+      + est construite vide et augmentée avec `+`, et l'erreur d'un focus se consulte avec `apply`.
 
       ```scala
       import soundness.*
@@ -1747,7 +1747,7 @@ entry .Errors
   entry #apply
     info
         - the error recorded at a focus, or `Unset`
-        + l'erreur consignée en un foyer, ou `Unset`
+        + l'erreur consignée en un focus, ou `Unset`
 
 entry .Validation
   info
@@ -2505,7 +2505,7 @@ entry .survive
       - `collection.survive[error](element => …)` applies the lambda to each element under
       - `safely`, keeps only the results which did not raise, and returns them as a
       - `List[result]`.
-      + Une extension sur tout récepteur `Traversable by element` :
+      + Une extension sur tout receveur `Traversable by element` :
       + `collection.survive[error](element => …)` applique la lambda à chaque élément sous
       + `safely`, ne garde que les résultats qui n'ont pas levé d'erreur, et les renvoie sous forme
       + de `List[result]`.

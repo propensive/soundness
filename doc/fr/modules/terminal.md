@@ -77,7 +77,7 @@ import termcapDefinitions.xtermTrueColorTermcap
 
 - The `e"…"` interpolator styles the spans which it marks. The styles are values, and the
 - [colors](colors.md) are colors:
-+ L'interpolateur `e"…"` applique un style aux portions qu'il marque. Les styles sont des
++ L'interpolateur `e"…"` applique un style aux étendues qu'il marque. Les styles sont des
 + valeurs, et les [couleurs](colors.md) sont des couleurs :
 
 ```scala
@@ -91,7 +91,7 @@ Out.println(message)
 ```
 
 - `Bold`, `Italic`, `Underline` and their siblings mark spans, and `Fg` and `Bg` color them.
-+ `Bold`, `Italic`, `Underline` et leurs semblables marquent des portions, et `Fg` et `Bg` les
++ `Bold`, `Italic`, `Underline` et leurs semblables marquent des étendues, et `Fg` et `Bg` les
 + colorent.
 
 - Colors nest, which raw ANSI does not allow. An escape code sets a color. It cannot restore

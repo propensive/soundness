@@ -428,7 +428,7 @@ entry .Pkce
       - verifier with `Issuer#exchangeCode`, so an authorization code intercepted on its way
       - back cannot be exchanged by anyone without the verifier. A public client — one with no
       - secret, such as a command-line tool or a mobile app — should always use one.
-      + RFC 7636. Un `Pkce` contient un `#verifier` aléatoire ; son `#challenge`, l'empreinte
+      + RFC 7636. Un `Pkce` contient un `#verifier` aléatoire ; son `#challenge`, le condensé
       + SHA-256 du vérificateur en base 64 sûre pour les URL et sans remplissage, accompagne
       + `Issuer#authorizationUrl`, et le vérificateur accompagne `Issuer#exchangeCode`, si bien
       + qu'un code d'autorisation intercepté sur le chemin du retour ne peut être échangé par

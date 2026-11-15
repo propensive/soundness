@@ -1011,7 +1011,7 @@ entry .terminalFeatures
         - `Shift`+`Enter`, `Ctrl`+`I` and `Tab`, or `Escape` and `Alt` combinations are reported
         - distinctly, decoded by `Keyboard.csiu`. A terminal which does not implement the protocol
         - ignores both sequences.
-        + `\e[>1u` empile le drapeau de désambiguïsation du protocole, et `\e[<u` le dépile. Avec
+        + `\e[>1u` empile l'indicateur de désambiguïsation du protocole, et `\e[<u` le dépile. Avec
         + lui, `Shift`+`Enter`, `Ctrl`+`I` et `Tab`, ou les combinaisons d'`Escape` et d'`Alt`
         + sont signalés distinctement, et décodés par `Keyboard.csiu`. Un terminal qui
         + n'implémente pas le protocole ignore les deux séquences.

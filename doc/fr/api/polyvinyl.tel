@@ -149,7 +149,7 @@ entry .Specification
       + Elle dispose alors de `#record` et `#tuple` sans rien déclarer de plus : les deux sont
       + `transparent
       + inline`, développées là où elles sont appelées avec l'objet de spécification comme
-      + récepteur ; la macro trouve donc cet objet par son type, le charge et évalue ses
+      + receveur ; la macro trouve donc cet objet par son type, le charge et évalue ses
       + `#fields`. L'objet doit par conséquent être compilé avant le code appelant, dans un
       + fichier à part.
 
@@ -253,7 +253,7 @@ entry .Specification
         + localise l'objet à partir de son type singleton, évalue ses `#fields`, et construit le
         + type `Record` raffiné ainsi que la transformation par laquelle ses champs sont lus. Elle
         + s'arrête avec _record and tuple can only be called on a specification object_ lorsque le
-        + récepteur n'est pas un objet.
+        + receveur n'est pas un objet.
   entry .tuple
     info
         - the macro implementation behind `Specification#tuple`

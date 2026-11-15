@@ -440,7 +440,7 @@ Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
 + Un discriminant à côté des champs propres du cas n'est qu'une des conventions en usage. Les
 + autres se choisissent aussi par un given `Discriminable`, et non en écrivant un codec. Une
 + *enveloppe simple* place toute la variante dans un objet à clé unique, nommée d'après le cas.
-+ Une *enveloppe* nomme un champ pour l'étiquette et un autre pour la charge utile :
++ Une *enveloppe* nomme un champ pour le tag et un autre pour la charge utile :
 
 ```scala fuel
 alternative Discriminator field
@@ -477,7 +477,7 @@ alternative Envelope
 - `value` reads just as well. A wrapper object with more than one key is not a valid variant, and
 - raises `Json.Error.Reason.Absent` instead of guessing which key was meant.
 + Chaque convention fonctionne avec l'arbre et avec les [analyseurs directs](#skipping-the-tree).
-+ Un analyseur direct n'a pas besoin que l'étiquette vienne en premier : un document dont le champ
++ Un analyseur direct n'a pas besoin que le tag vienne en premier : un document dont le champ
 + `type` suit son `value` se lit tout aussi bien. Un objet d'enveloppe simple ayant plus d'une clé
 + n'est pas une variante valide, et lève `Json.Error.Reason.Absent` plutôt que de deviner quelle
 + clé était voulue.
@@ -486,7 +486,7 @@ alternative Envelope
 - to attach a tag, how to read one, and how to reach the variant. Codecs derived from it work
 - unchanged.
 + Tout ce qui est plus inhabituel est un `Discriminable` écrit à la main. Il a trois méthodes, qui
-+ disent comment attacher une étiquette, comment en lire une, et comment atteindre la variante.
++ disent comment attacher un tag, comment en lire un, et comment atteindre la variante.
 + Les codecs qui en sont dérivés fonctionnent sans changement.
 
 - ### Building JSON
@@ -885,7 +885,7 @@ Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
 - [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) to the field that failed, so all of a
 - document's problems are reported at once.
 + Sous une stratégie qui [accumule les échecs](errors.md#accumulating-failures), le décodage ne
-+ s'arrête pas à la première erreur. Chaque erreur est collectée, et chacune est étiquetée par un
++ s'arrête pas à la première erreur. Chaque erreur est collectée, et chacune est taguée par un
 + [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) vers le champ en échec, de sorte que
 + tous les problèmes d'un document sont signalés en une fois.
 

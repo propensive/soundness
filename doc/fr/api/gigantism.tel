@@ -171,7 +171,7 @@ entry .Lifts
       - The counterparts of `Expr.ofList` and `Varargs` for macro code which holds its lifted
       - expressions in a Soundness `List` rather than a standard-library `Seq`.
       + Les équivalents d'`Expr.ofList` et de `Varargs` pour un code de macro qui conserve ses
-      + expressions élevées dans une `List` Soundness plutôt que dans une `Seq` de la bibliothèque
+      + expressions relevées dans une `List` Soundness plutôt que dans une `Seq` de la bibliothèque
       + standard.
   entry .list
     info

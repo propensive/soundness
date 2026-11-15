@@ -141,7 +141,7 @@ detail
     + `CharDevice` ; `filesize()`, `modified()`, `accessed()`, `hidden()`, `volume()`,
     + `entryIdentity`, `hardLinks()` lisent ses métadonnées. `canonical()` est le chemin tel que le
     + système de fichiers lui-même le connaît, tous les liens symboliques résolus.
-    + `checksum[Sha2[256]]` calcule l'empreinte des octets d'un fichier, ou des fichiers d'un
+    + `checksum[Sha2[256]]` calcule le condensé des octets d'un fichier, ou des fichiers d'un
     + répertoire avec leurs noms relatifs.
 
     - **Storage-filesystem axis.** Which filesystem an entry is stored on — `Btrfs`, `Ext4`,
@@ -304,12 +304,12 @@ entry .Platform
         - `DereferenceSymlinks`, a `Tactic[Io.Error]` and an `Every[Fdtable]` (satisfied by the
         - default), and the usual gastronomy `Hash` for the algorithm.
         + Le given `Checksummable` pour tout `Path on <platform>`. Un fichier apporte ses octets, si
-        + bien que sa somme de contrôle est l'empreinte de son contenu. Un répertoire apporte ses
+        + bien que sa somme de contrôle est le condensé de son contenu. Un répertoire apporte ses
         + fichiers ordinaires dans l'ordre de leurs chemins relatifs à lui, chacun sous forme de son
         + chemin relatif et de son contenu, chaque partie précédée de sa longueur — si bien qu'un
-        + renommage, un déplacement ou un changement de contenu modifie l'empreinte, que deux
-        + répertoires contenant les mêmes fichiers ont la même empreinte où qu'ils soient, et qu'un
-        + répertoire vide a l'empreinte du vide. Les liens symboliques sont suivis, ou non, selon ce
+        + renommage, un déplacement ou un changement de contenu modifie le condensé, que deux
+        + répertoires contenant les mêmes fichiers ont le même condensé où qu'ils soient, et qu'un
+        + répertoire vide a le condensé du vide. Les liens symboliques sont suivis, ou non, selon ce
         + que décide le `DereferenceSymlinks` dans la portée. Il requiert un `FilesystemBackend`, un
         + `DereferenceSymlinks`, une `Tactic[Io.Error]` et un `Every[Fdtable]` (satisfait par la
         + valeur par défaut), ainsi que le `Hash` habituel de gastronomy pour l'algorithme.
@@ -1325,7 +1325,7 @@ entry .Io
       + elle nomme le chemin, l'`Operation` tentée et la `Reason` de l'échec, si bien qu'un
       + programme filtre selon ce qui s'est mal passé. `Io.Event` est ce que journalisent les
       + opérations de modification — créations, suppressions, déplacements, copies, liens et mises à
-      + jour de date — chacun étiqueté `Log.Filesystem`.
+      + jour de date — chacun tagué `Log.Filesystem`.
 
       ```scala fuel
       typecheck
@@ -1443,8 +1443,8 @@ entry .Io
         - silence them by tag. `create`, `delete`, `wipe`, `copyTo`, `moveTo`, `hardLinkTo` and
         - `symlinkTo` log at `info`; `touch` at `fine`. Each of those operations takes an
         - `Io.Event is Loggable` in scope.
-        + Chaque `Event` est étiqueté `Log.Filesystem`, si bien qu'une configuration de
-        + journalisation peut les sélectionner ou les faire taire par étiquette. `create`, `delete`,
+        + Chaque `Event` porte le tag `Log.Filesystem`, si bien qu'une configuration de
+        + journalisation peut les sélectionner ou les faire taire par tag. `create`, `delete`,
         + `wipe`, `copyTo`, `moveTo`, `hardLinkTo` et `symlinkTo` journalisent au niveau `info` ;
         + `touch` au niveau `fine`. Chacune de ces opérations requiert un `Io.Event is Loggable`
         + dans la portée.
@@ -1914,7 +1914,7 @@ entry .filesystemTraversal
       + valeur par défaut : un programme qui parcourt un arbre en importe un par son nom. L'ordre
       + préfixe place chaque répertoire avant son contenu, comme l'exige l'affichage ou la copie
       + d'un arbre ; l'ordre postfixe le place après, comme pour sa suppression ou le calcul de son
-      + empreinte. Le même arbre, parcouru dans les deux sens :
+      + condensé. Le même arbre, parcouru dans les deux sens :
 
       ```scala fuel
       alternative Pre-order
@@ -2019,7 +2019,7 @@ entry .Explorable
       - `filesize()` and the `deleteRecursively` policy.
       + `plane is Explorable` indique qu'un `Path on plane` peut être listé. Tout plan doté d'un
       + `FilesystemBackend` s'explore de façon identique — `.explorable` demande au backend les noms
-      + des enfants et ajoute chacun au parent — si bien que la classe de types est un point de
+      + des enfants et ajoute chacun au parent — si bien que la classe de types est une
       + jonction, et non quelque chose qu'un utilisateur implémente : elle borne `children`,
       + `descendants`, `glob`, `filesize()` et la politique `deleteRecursively`.
   entry .explorable
@@ -2499,7 +2499,7 @@ entry .hardLinkTo
       - returns the link's path.
       + Une extension sur tout `Path on <plane: Filesystem>`, qui requiert un
       + `OverwritePreexisting on plane`, un `CreateNonexistentParents on plane`, un backend, une
-      + `Tactic[Io.Error]` et un `Io.Event is Loggable`. Le récepteur est l'entrée existante et
+      + `Tactic[Io.Error]` et un `Io.Event is Loggable`. Le receveur est l'entrée existante et
       + l'argument le nouveau nom ; ensuite, les deux ont la même `entryIdentity`. Journalise
       + `Io.Event.HardLink` et renvoie le chemin du lien.
 
@@ -2515,8 +2515,8 @@ entry .symlinkTo
       - the link's path.
       + Une extension sur tout `Path on <plane: Filesystem>`, qui requiert un
       + `OverwritePreexisting on plane`, un `CreateNonexistentParents on plane`, un backend, une
-      + `Tactic[Io.Error]` et un `Io.Event is Loggable`. Le récepteur est la cible et l'argument le
-      + lien, qui est créé ; le lien stocke le texte complet du récepteur. Journalise
+      + `Tactic[Io.Error]` et un `Io.Event is Loggable`. Le receveur est la cible et l'argument le
+      + lien, qui est créé ; le lien stocke le texte complet du receveur. Journalise
       + `Io.Event.Symlink` et renvoie le chemin du lien.
 
       ```scala fuel
@@ -4538,7 +4538,7 @@ entry .Fdtable
 entry .Cas
   info
       - a content-addressed store: one blob per digest of its bytes, under one root
-      + un stockage adressé par contenu : un blob par empreinte de ses octets, sous une même racine
+      + un stockage adressé par contenu : un blob par condensé de ses octets, sous une même racine
   detail
       - A directory of blobs, each named by the digest of its own bytes, is a store in which a
       - blob is written once, verified as it is written, and found by anything which knows its
@@ -4547,11 +4547,11 @@ entry .Cas
       - the storage in the type of its root: `Cas in Sha2[256] on (Path on Linux)`. A store is
       - made with `Cas[Sha2[256]](root, suffix)` for any root with a `Cas.Storage` instance; a
       - directory on any platform with a backend is one.
-      + Un répertoire de blobs, chacun nommé d'après l'empreinte de ses propres octets, est un
+      + Un répertoire de blobs, chacun nommé d'après le condensé de ses propres octets, est un
       + stockage dans lequel un blob est écrit une seule fois, vérifié à l'écriture, et retrouvé par
-      + quiconque connaît son empreinte. `Cas` est ce stockage, avec l'algorithme de hachage dans
-      + son type et dans le type de chaque empreinte qu'il accepte — on ne peut pas demander une
-      + empreinte BLAKE3 à un `Cas in Sha2[256]` — et le stockage sous-jacent dans le type de sa
+      + quiconque connaît son condensé. `Cas` est ce stockage, avec l'algorithme de hachage dans
+      + son type et dans le type de chaque condensé qu'il accepte — on ne peut pas demander un
+      + condensé BLAKE3 à un `Cas in Sha2[256]` — et le stockage sous-jacent dans le type de sa
       + racine : `Cas in Sha2[256] on (Path on Linux)`. Un stockage se crée avec
       + `Cas[Sha2[256]](root, suffix)` pour toute racine dotée d'une instance `Cas.Storage` ; un
       + répertoire sur n'importe quelle plateforme dotée d'un backend en est une.
@@ -4581,12 +4581,12 @@ entry .Cas
       - sees a partial blob. As a collection, a store is its digests: `size`, `has`, `at` and
       - traversal all work on it, through pure views which treat an unreadable store as empty;
       - the methods are where an `Io.Error` is raised.
-      + `store() = data` stocke les données sous leur propre empreinte, qu'il renvoie, et ne fait
+      + `store() = data` stocke les données sous leur propre condensé, qu'il renvoie, et ne fait
       + rien si le blob est déjà présent ; `store(digest) = data` fait de même après avoir vérifié
-      + que les données ont bien cette empreinte, en levant `Cas.Error` sinon. Un blob est écrit
+      + que les données ont bien ce condensé, en levant `Cas.Error` sinon. Un blob est écrit
       + dans un fichier voisin au nom unique puis mis en place atomiquement, si bien qu'un lecteur
       + ne voit jamais un blob partiel. En tant que collection, un stockage est l'ensemble de ses
-      + empreintes : `size`, `has`, `at` et le parcours fonctionnent tous dessus, par des vues pures
+      + condensés : `size`, `has`, `at` et le parcours fonctionnent tous dessus, par des vues pures
       + qui traitent un stockage illisible comme vide ; ce sont les méthodes qui lèvent une
       + `Io.Error`.
   refer galilei.Cas.Storage
@@ -4639,20 +4639,20 @@ entry .Cas
   entry .Error
     info
         - raised by `store(digest) = data` when the data's digest is not the one given
-        + levée par `store(digest) = data` lorsque l'empreinte des données n'est pas celle donnée
+        + levée par `store(digest) = data` lorsque le condensé des données n'est pas celui donné
     detail
         - The message reads _the data's digest, `actual`, is not `expected`_, both in
         - lowercase hexadecimal. Nothing is written when it is raised.
-        + Le message se lit _l'empreinte des données, `actual`, n'est pas `expected`_, toutes deux
+        + Le message se lit _le condensé des données, `actual`, n'est pas `expected`_, tous deux
         + en hexadécimal minuscule. Rien n'est écrit lorsqu'elle est levée.
     entry #expected
       info
           - the digest the caller claimed, as hex
-          + l'empreinte que l'appelant a revendiquée, en hexadécimal
+          + le condensé que l'appelant a revendiqué, en hexadécimal
     entry #actual
       info
           - the digest the data really has, as hex
-          + l'empreinte qu'ont réellement les données, en hexadécimal
+          + le condensé qu'ont réellement les données, en hexadécimal
   entry .apply
     info
         - `Cas[Algorithm](root, suffix)`: the store at `root` whose blobs are named `<digest><suffix>`
@@ -4669,11 +4669,11 @@ entry .Cas
   entry .countable
     info
         - a store's `size` is how many digests it holds
-        + la `size` d'un stockage est le nombre d'empreintes qu'il contient
+        + la `size` d'un stockage est le nombre de condensés qu'il contient
   entry .traversable
     info
         - a store traverses as its digests
-        + un stockage se parcourt comme ses empreintes
+        + un stockage se parcourt comme ses condensés
   entry .inclusive
     info
         - `store.has(digest)` through the collection vocabulary
@@ -4711,7 +4711,7 @@ entry .Cas
   entry #digest
     info
         - `store.digest(data)`: the data's digest in the store's algorithm
-        + `store.digest(data)` : l'empreinte des données selon l'algorithme du stockage
+        + `store.digest(data)` : le condensé des données selon l'algorithme du stockage
   entry #has
     info
         - `store.has(digest)`: whether the blob is stored
@@ -4719,7 +4719,7 @@ entry .Cas
   entry #missing
     info
         - `store.missing(digests)`: which of the digests are not stored
-        + `store.missing(digests)` : celles des empreintes qui ne sont pas stockées
+        + `store.missing(digests)` : ceux des condensés qui ne sont pas stockés
   entry #apply
     info
         - `store(digest)`: the blob's bytes, or `Unset` if not stored; raises `Io.Error`
@@ -4727,24 +4727,24 @@ entry .Cas
   entry #update
     info
         - `store() = data` stores under the data's own digest; `store(digest) = data` checks it first
-        + `store() = data` stocke sous l'empreinte propre des données ; `store(digest) = data` la
+        + `store() = data` stocke sous le condensé propre des données ; `store(digest) = data` le
         + vérifie d'abord
     detail
         - The first returns the digest and needs a `Tactic[Io.Error]`; the second also needs a
         - `Tactic[Cas.Error]`. Neither rewrites a blob already present.
-        + La première forme renvoie l'empreinte et requiert une `Tactic[Io.Error]` ; la seconde
+        + La première forme renvoie le condensé et requiert une `Tactic[Io.Error]` ; la seconde
         + requiert aussi une `Tactic[Cas.Error]`. Aucune ne réécrit un blob déjà présent.
   entry #digests
     info
         - every digest stored: the names with the suffix whose remainder is hexadecimal
-        + toutes les empreintes stockées : les noms portant le suffixe dont le reste est hexadécimal
+        + tous les condensés stockés : les noms portant le suffixe dont le reste est hexadécimal
     detail
         - Other files under the root are ignored. Raises `Io.Error`.
         + Les autres fichiers sous la racine sont ignorés. Lève `Io.Error`.
   entry #prune
     info
         - `store.prune(keep)`: deletes every blob whose digest is not in the set; how many were deleted
-        + `store.prune(keep)` : supprime chaque blob dont l'empreinte n'est pas dans l'ensemble ; le
+        + `store.prune(keep)` : supprime chaque blob dont le condensé n'est pas dans l'ensemble ; le
         + nombre de blobs supprimés
 
 entry .Searchpaths

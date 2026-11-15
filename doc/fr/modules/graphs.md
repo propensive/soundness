@@ -36,7 +36,7 @@
 + row  `Dag`  jamais  renvoie une nouvelle valeur  les structures de dépendances en tant que valeurs
 + row  `Digraph`  autorisés  renvoie une nouvelle valeur  les graphes qui peuvent contenir un cycle
 + row  `Topology[node]^`  jamais  en place  les graphes construits arête par arête
-+ row  `Topology[node]^{}`  jamais  aucune : figé  les graphes construits une fois et souvent interrogés
++ row  `Topology[node]^{}`  jamais  aucune : gelé  les graphes construits une fois et souvent interrogés
 ```
 
 - All of these share one vocabulary through the `Nodal` [typeclass], so the same operations apply
@@ -220,7 +220,7 @@ dag.reachable(5)
 + row  `lineage(n)`  ancêtres et descendants ensemble  requiert `linearScan`
 + row  `linearized`  un ordre topologique
 + row  `invert`  le graphe avec toutes les arêtes inversées
-+ row  `reaches(a, b)`  si `a` dépend de `b`, transitivement  `Topology` figée uniquement
++ row  `reaches(a, b)`  si `a` dépend de `b`, transitivement  `Topology` gelée uniquement
 ```
 
 - As a collection, a graph is its nodes, and those of a `Dag` are in topological order. The
@@ -311,8 +311,8 @@ val reduced = dag.reduction
 
 - Both are answered from the reachability matrix of a frozen topology, which the next section
 - describes. A graph which is queried this way more than once is best frozen once.
-+ Toutes deux sont obtenues à partir de la matrice d'accessibilité d'une topologie figée, que
-+ décrit la section suivante. Un graphe interrogé ainsi plus d'une fois gagne à être figé une seule
++ Toutes deux sont obtenues à partir de la matrice d'accessibilité d'une topologie gelée, que
++ décrit la section suivante. Un graphe interrogé ainsi plus d'une fois gagne à être gelé une seule
 + fois.
 
 - ### Freezing
@@ -325,12 +325,12 @@ val reduced = dag.reduction
 + Qu'une `Topology` puisse être modifiée dépend de son ensemble de captures, comme pour les
 + tableaux. Une `Topology[node]^` peut être modifiée. Une `Topology[node]^{}` ne le peut pas,
 + puisque les méthodes de modification exigent une poignée exclusive. `dag.freeze` donne la forme
-+ figée, tout comme `Topology.freeze`, qui consomme une topologie modifiable.
++ gelée, tout comme `Topology.freeze`, qui consomme une topologie modifiable.
 
 - The frozen form is laid out for querying. It holds both directions of adjacency in dense arrays,
 - and maintains its sources and sinks. It builds a bit matrix of reachability on first use, so
 - whether one node reaches another is a single bit:
-+ La forme figée est organisée pour l'interrogation. Elle contient les deux sens d'adjacence dans
++ La forme gelée est organisée pour l'interrogation. Elle contient les deux sens d'adjacence dans
 + des tableaux denses, et tient à jour ses sources et ses puits. Elle construit à la première
 + utilisation une matrice de bits d'accessibilité ; savoir si un nœud en atteint un autre se
 + résume donc à un seul bit :
@@ -354,8 +354,8 @@ Out.println(frozen.predecessors(2).inspect)
 - since an edit would make the matrix stale. To edit, take an editable copy with
 - `Topology(frozen)`, edit it, and freeze again.
 + `closure`, `reduction` et `reaches` lisent la matrice. Elles ne sont proposées que sur la forme
-+ figée, puisqu'une modification rendrait la matrice obsolète. Pour modifier, prenez une copie
-+ modifiable avec `Topology(frozen)`, modifiez-la, et figez-la de nouveau.
++ gelée, puisqu'une modification rendrait la matrice obsolète. Pour modifier, prenez une copie
++ modifiable avec `Topology(frozen)`, modifiez-la, et gelez-la de nouveau.
 
 - ### Editing
 + ### Modifier
@@ -627,4 +627,4 @@ Out.println(dag.map(_.show).acyclic.dot.serialize)
 + - [États impossibles](../../philosophy/impossible-states.md) explique pourquoi un `Dag` ne peut
 +   contenir de cycle.
 + - [Graphiques](charts.md) dessine un graphe en anneau, et [compilateur](compiler.md) construit
-+   une chaîne d'outils sous forme de graphe.
++   une toolchain sous forme de graphe.

@@ -40,7 +40,7 @@
 - not a lazy sequence of chunks. It is an endpoint which is pulled from, over a buffer whose
 - readable window is handed to exactly one consumer, without copying.
 + Sous ces opérations se trouve un *noyau* de flux, dont le type central est un `Stream`. Ce
-+ n'est pas une séquence paresseuse de morceaux. C'est un point d'extrémité dans lequel on
++ n'est pas une séquence paresseuse de morceaux. C'est un endpoint dans lequel on
 + puise, sur un tampon dont la fenêtre lisible est remise à exactement un consommateur, sans
 + copie.
 
@@ -69,7 +69,7 @@
 - Here a third route is taken. A `Stream` is a *pull endpoint*. A consumer calls `refill` with
 - the amount it is prepared to take, and gets back a window into a buffer, which it reads and
 - then skips past. Nothing is copied, and nothing is retained.
-+ Ici, une troisième voie est suivie. Un `Stream` est un *point d'extrémité de tirage*. Un
++ Ici, une troisième voie est suivie. Un `Stream` est un *endpoint de tirage*. Un
 + consommateur appelle `refill` avec la quantité qu'il est prêt à prendre, et reçoit en retour
 + une fenêtre sur un tampon, qu'il lit puis dépasse. Rien n'est copié, et rien n'est retenu.
 
@@ -200,7 +200,7 @@ Out.println(Row(t"apples", 3).read[Text])
 
 - `stream` turns a value into a pull endpoint. `source` does the same through a `Streamable`
 - instance, and names the type of element:
-+ `stream` transforme une valeur en point d'extrémité de tirage. `source` fait de même via une
++ `stream` transforme une valeur en endpoint de tirage. `source` fait de même via une
 + instance `Streamable`, et nomme le type d'élément :
 
 ```scala
@@ -247,7 +247,7 @@ compressed.stream.viaDuct(decompressor).via(decoder)
 + s'attache avec `via`.
 
 - A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
-+ Un pipeline se termine par une opération *terminale*, qui vide le point d'extrémité et le
++ Un pipeline se termine par une opération *terminale*, qui vide l'endpoint et le
 + ferme :
 
 ```scala fuel
@@ -265,7 +265,7 @@ compressed.stream.drain: region =>
 - elements, so a reduction over bytes runs over the array with no cost for each element.
 + `memoize` vide le flux dans une seule valeur immuable. `drain` remet chaque fenêtre brute à
 + une fonction, et `gather` en est l'équivalent accumulateur. Tous deux exposent la fenêtre
-+ brute, et non des éléments emballés, si bien qu'une réduction sur des octets parcourt le
++ brute, et non des éléments boxés, si bien qu'une réduction sur des octets parcourt le
 + tableau sans coût par élément.
 
 - `truncate` and `discard` bound a stream without draining it, and release the rest of the

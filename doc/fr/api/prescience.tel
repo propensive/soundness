@@ -41,8 +41,8 @@ detail
     - - **Runtime**: anything else — a lexically scoped given, or one compiled in the same run as
     -   the use site — gets a spliced call to its `Inlinable#readRuntime` instead.
     + - **Niveau A** : une instance qui est une référence à un objet statique précompilé, ou un
-    +   membre sans paramètre d'un tel objet, est chargée au moyen du classloader des macros et
-    +   utilisée directement, comme l'interpréteur de splices du compilateur charge lui-même une
+    +   membre sans paramètre d'un tel objet, est chargée au moyen du chargeur de classes des macros
+    +   et utilisée directement, comme l'interpréteur de splices du compilateur charge lui-même une
     +   implémentation de macro.
     + - **Niveau B** (`Prescience.readStaging` uniquement) : une instance que la recherche implicite
     +   peut trouver depuis la portée globale (compagnons et givens de niveau package dans le
@@ -80,12 +80,12 @@ detail
     - exported to the `soundness` umbrella: import `prescience.*`, and the sample givens by name
     - from `prescience.inlinables`, since `import pkg.*` does not import givens.
     + La bibliothèque a deux ensembles de sources, tous deux limités à la JVM, puisque la technique
-    + nécessite le classloader des macros et les artefacts `scala3-compiler` et `scala3-staging` :
-    + `prescience.core` (`Inlinable`, `Prescience` et la macro) et `prescience.leaves` (des
-    + instances d'exemple, compilées une étape avant tout site d'utilisation, pour que le niveau A
-    + puisse les charger). Rien n'est exporté vers le package parapluie `soundness` : importez
-    + `prescience.*`, et les givens d'exemple par leur nom depuis `prescience.inlinables`, puisque
-    + `import pkg.*` n'importe pas les givens.
+    + nécessite le chargeur de classes des macros et les artefacts `scala3-compiler` et
+    + `scala3-staging` : `prescience.core` (`Inlinable`, `Prescience` et la macro) et
+    + `prescience.leaves` (des instances d'exemple, compilées une étape avant tout site
+    + d'utilisation, pour que le niveau A puisse les charger). Rien n'est exporté vers le package
+    + parapluie `soundness` : importez `prescience.*`, et les givens d'exemple par leur nom depuis
+    + `prescience.inlinables`, puisque `import pkg.*` n'importe pas les givens.
 
 refer prescience.Inlinable
 refer prescience.Prescience

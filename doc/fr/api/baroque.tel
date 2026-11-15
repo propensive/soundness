@@ -6,7 +6,7 @@ import soundness
 info
     - complex numbers over any numeric component type, including quantities, with unboxed doubles
     + nombres complexes sur tout type numérique de composante, quantités comprises, avec des doubles
-    + non emballés
+    + non boxés
 detail
     - _Baroque_ provides `Complex`, a complex number whose real and imaginary parts may be any
     - type with the arithmetic an operation needs: `Int`, `Double`, a rational `Q64`, or a

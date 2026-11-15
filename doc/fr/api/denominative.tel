@@ -61,7 +61,7 @@ detail
     + (`contains` et `access` par un index ou une clé, derrière `apply`, `at`, `defines`, `confine`
     + et `pick` de rudiments), `Definable` et `Omissible` (`define` et `omit` en copie sur
     + écriture), et `Terminable` et `Truncable` (`last` et `lead`). Leurs instances couvrent le
-    + tableau figé `Array[e]^{}` et `Data`, `Sequence`, `Text`, `Set`, `Map`, `Ledger`,
+    + tableau gelé `Array[e]^{}` et `Data`, `Sequence`, `Text`, `Set`, `Map`, `Ledger`,
     + l'`IndexedSeq` de la bibliothèque standard et quelques tampons mutables — et, moyennant une
     + reconnaissance explicite, `List` et `Chain`.
 
@@ -218,7 +218,7 @@ entry .nil
       - pointer test, so `list.nil` needs no acknowledgement where `list.size` does, and
       - `!xs.nil` is the idiom the standard library's `nonEmpty` becomes.
       + Sur `Vacuiscible`, qu'étend tout `Countable` : `List`, `Chain`, `Set`, `Map`, `Text`, le
-      + tableau figé, `Option`, un `StringBuilder`, … Jamais soumis à la barrière : la vacuité d'une
+      + tableau gelé, `Option`, un `StringBuilder`, … Jamais soumis à la barrière : la vacuité d'une
       + `List` est un seul test de pointeur ; `list.nil` ne demande donc aucune reconnaissance là où
       + `list.size` en demande une, et `!xs.nil` est l'idiome que devient le `nonEmpty` de la
       + bibliothèque standard.
@@ -233,7 +233,7 @@ entry .size
       - dysasymptotics.linearSize`, and on a `Chain` it forces the whole stream and resolves only
       - under `unboundedSize`. An `Int` counts itself (`5.size` is `5`), and an `Option` has size
       - zero or one.
-      + O(1) sur `Sequence`, `Set`, `Map`, `Ledger`, `Text`, le tableau figé et l'`IndexedSeq` de la
+      + O(1) sur `Sequence`, `Set`, `Map`, `Ledger`, `Text`, le tableau gelé et l'`IndexedSeq` de la
       + bibliothèque standard ; sur une `List` c'est un parcours, qui ne se résout qu'avec
       + `import dysasymptotics.linearSize`, et sur une `Chain` il force tout le flux et ne se résout
       + qu'avec `unboundedSize`. Un `Int` se compte lui-même (`5.size` vaut `5`), et une `Option`
@@ -542,7 +542,7 @@ entry .coextent
 entry .aka
   info
       - `value.aka["label"]`: a value tagged with a label type, for named contextual parameters
-      + `value.aka["label"]` : une valeur étiquetée par un type d'étiquette, pour des paramètres
+      + `value.aka["label"]` : une valeur taguée par un type d'étiquette, pour des paramètres
       + contextuels nommés
   detail
       - The infix type `subject aka "label"` and the extension which makes one. A lambda written
@@ -676,12 +676,12 @@ entry .Span
       - (a line, a column and a length within that line), `Lines` (whole lines) and `Area` (a
       - start line and column to an end line and column).
       + `Span` est le type opaque `denominative.internal.Span`, exporté ici : une position dans un
-      + texte source, regroupée dans un seul `Long` étiqueté par un `Span.Mode` dans ses trois bits
-      + de poids fort, pour qu'un analyseur puisse enregistrer une position sur chaque nœud qu'il
+      + texte source, regroupée dans un seul `Long` tagué par un `Span.Mode` dans ses trois bits de
+      + poids fort, pour qu'un analyseur puisse enregistrer une position sur chaque nœud qu'il
       + construit sans coût d'allocation. Les cinq modes sont `Empty` (pas de position :
-      + `Span.empty`, tout à zéro, de sorte qu'un span absent n'a pas besoin d'`Optional`), `Offset`
-      + (un décalage en caractères et une longueur, pour les sources sans lignes), `Line` (une
-      + ligne, une colonne et une longueur dans cette ligne), `Lines` (des lignes entières) et
+      + `Span.empty`, tout à zéro, de sorte qu'une étendue absente n'a pas besoin d'`Optional`),
+      + `Offset` (un décalage en caractères et une longueur, pour les sources sans lignes), `Line`
+      + (une ligne, une colonne et une longueur dans cette ligne), `Lines` (des lignes entières) et
       + `Area` (d'une ligne et colonne de départ à une ligne et colonne de fin).
 
       ```scala
@@ -700,10 +700,10 @@ entry .Span
       - span to 2²³ lines and 2¹⁹ columns, and an `Area` to 2²² lines, 2¹⁴ columns and 2¹¹ lines of
       - extent. The XML, TEL, YAML and source-code parsers record their nodes' positions as spans.
       + Tout accesseur qu'un mode ne porte pas renvoie `Unset`. Lignes, colonnes et décalages sont
-      + des ordinaux à base zéro ; la largeur des champs limite un span `Offset` aux décalages
-      + inférieurs à 2³¹, un span `Line` à 2²³ lignes et 2¹⁹ colonnes, et un `Area` à 2²² lignes,
-      + 2¹⁴ colonnes et 2¹¹ lignes d'étendue. Les analyseurs XML, TEL, YAML et de code source
-      + enregistrent la position de leurs nœuds sous forme de spans.
+      + des ordinaux à base zéro ; la largeur des champs limite une étendue `Offset` aux décalages
+      + inférieurs à 2³¹, une étendue `Line` à 2²³ lignes et 2¹⁹ colonnes, et un `Area` à 2²²
+      + lignes, 2¹⁴ colonnes et 2¹¹ lignes de hauteur. Les analyseurs XML, TEL, YAML et de code
+      + source enregistrent la position de leurs nœuds sous forme d'étendues.
 
 entry .Coextent
   info
@@ -860,7 +860,7 @@ entry .internal
   entry .Span
     info
         - the opaque source span, a mode and its fields packed into a `Long`
-        + le span source opaque, un mode et ses champs regroupés dans un `Long`
+        + l'étendue source opaque, un mode et ses champs regroupés dans un `Long`
     detail
         - The type which `denominative.Span` exports, with its companion of constructors. Each
         - constructor masks its fields to their widths, so an out-of-range line or column is
@@ -883,11 +883,11 @@ entry .internal
     entry .equality
       info
           - `CanEqual[Span, Span]`, so two spans compare with `==`
-          + `CanEqual[Span, Span]`, pour que deux spans se comparent avec `==`
+          + `CanEqual[Span, Span]`, pour que deux étendues se comparent avec `==`
     entry .empty
       info
           - the span which records no position, all bits zero
-          + le span qui n'enregistre aucune position, tous les bits à zéro
+          + l'étendue qui n'enregistre aucune position, tous les bits à zéro
     entry .offset
       info
           - `Span.offset(start, length)`: `length` characters from offset `start`, for a source without lines
@@ -1068,7 +1068,7 @@ entry .internal
         - current ordinal), each tagged with `aka` so that the names select them without a
         - parameter list: `(Sec span 3).fuse(0)(state + next.n0)` is `1 + 2 + 3`, which is `6`.
         + La lambda est une fonction contextuelle de `state` (la valeur accumulée) et de `next`
-        + (l'ordinal courant), chacun étiqueté avec `aka` pour que les noms les sélectionnent sans
+        + (l'ordinal courant), chacun tagué avec `aka` pour que les noms les sélectionnent sans
         + liste de paramètres : `(Sec span 3).fuse(0)(state + next.n0)` donne `1 + 2 + 3`, soit `6`.
   entry .nil
     info
@@ -1077,57 +1077,63 @@ entry .internal
   entry .bits
     info
         - a span's raw `Long` encoding, for storing or transmitting it
-        + l'encodage `Long` brut d'un span, pour le stocker ou le transmettre
+        + l'encodage `Long` brut d'une étendue, pour le stocker ou le transmettre
   entry .vacant
     info
         - whether a span is `Span.empty`, recording no position
-        + si un span est `Span.empty`, sans position enregistrée
+        + si une étendue est `Span.empty`, sans position enregistrée
   entry .exists
     info
         - whether a span records a position of any mode
-        + si un span enregistre une position, quel qu'en soit le mode
+        + si une étendue enregistre une position, quel qu'en soit le mode
   entry .mode
     info
         - which of the five `Span.Mode`s a span is in
-        + celui des cinq `Span.Mode` dans lequel se trouve un span
+        + celui des cinq `Span.Mode` dans lequel se trouve une étendue
   entry .startLine
     info
         - the zero-based line a span starts on, or `Unset` for an `Offset` or `Empty` span
-        + la ligne à base zéro où commence un span, ou `Unset` pour un span `Offset` ou `Empty`
+        + la ligne à base zéro où commence une étendue, ou `Unset` pour une étendue `Offset` ou
+        + `Empty`
   entry .startColumn
     info
         - the zero-based column a span starts at, or `Unset` unless it is a `Line` or `Area` span
-        + la colonne à base zéro où commence un span, ou `Unset` sauf pour un span `Line` ou `Area`
+        + la colonne à base zéro où commence une étendue, ou `Unset` sauf pour une étendue `Line` ou
+        + `Area`
   entry .endLine
     info
         - the zero-based line a span ends on, inclusive, or `Unset` for an `Offset` or `Empty` span
-        + la ligne à base zéro où se termine un span, incluse, ou `Unset` pour un span `Offset` ou
-        + `Empty`
+        + la ligne à base zéro où se termine une étendue, incluse, ou `Unset` pour une étendue
+        + `Offset` ou `Empty`
   entry .endColumn
     info
         - the column a span ends at, or `Unset` unless it is a `Line` or `Area` span
-        + la colonne où se termine un span, ou `Unset` sauf pour un span `Line` ou `Area`
+        + la colonne où se termine une étendue, ou `Unset` sauf pour une étendue `Line` ou `Area`
     detail
         - For a `Line` span it is the start column plus the length, so the column just after the
         - last character.
-        + Pour un span `Line`, c'est la colonne de départ plus la longueur, donc la colonne qui suit
-        + immédiatement le dernier caractère.
+        + Pour une étendue `Line`, c'est la colonne de départ plus la longueur, donc la colonne qui
+        + suit immédiatement le dernier caractère.
   entry .length
     info
         - a span's length in characters, or `Unset` unless it is an `Offset` or `Line` span
-        + la longueur d'un span en caractères, ou `Unset` sauf pour un span `Offset` ou `Line`
+        + la longueur d'une étendue en caractères, ou `Unset` sauf pour une étendue `Offset` ou
+        + `Line`
   entry .offset
     info
         - a span's zero-based character offset, or `Unset` unless it is an `Offset` span
-        + le décalage en caractères à base zéro d'un span, ou `Unset` sauf pour un span `Offset`
+        + le décalage en caractères à base zéro d'une étendue, ou `Unset` sauf pour une étendue
+        + `Offset`
   entry .lineCount
     info
         - how many lines a span covers, or `Unset` for an `Offset` or `Empty` span
-        + le nombre de lignes que couvre un span, ou `Unset` pour un span `Offset` ou `Empty`
+        + le nombre de lignes que couvre une étendue, ou `Unset` pour une étendue `Offset` ou
+        + `Empty`
   entry .singleLine
     info
         - whether a span lies on one line: a `Line` span, or an `Area` within one line
-        + si un span tient sur une seule ligne : un span `Line`, ou un `Area` sur une seule ligne
+        + si une étendue tient sur une seule ligne : une étendue `Line`, ou un `Area` sur une seule
+        + ligne
 
 entry .protointernal
   info
@@ -1138,15 +1144,15 @@ entry .protointernal
       - Not for direct use: `subject aka label` is an alias of `Tagged[subject, label]`, and a
       - tagged value is made with `value.aka["label"]` and unwrapped with `()`.
       + Pas destiné à un usage direct : `subject aka label` est un alias de
-      + `Tagged[subject, label]`, et une valeur étiquetée se crée avec `value.aka["label"]` et se
+      + `Tagged[subject, label]`, et une valeur taguée se crée avec `value.aka["label"]` et se
       + déballe avec `()`.
   entry .Tagged
     info
         - a value tagged at the type level with a label, the representation of `aka`
-        + une valeur étiquetée au niveau des types par une étiquette, la représentation de `aka`
+        + une valeur taguée au niveau des types par une étiquette, la représentation de `aka`
     detail
         - An opaque alias of the value's own type, so tagging costs nothing at runtime.
-        + Un alias opaque du type propre de la valeur ; l'étiquetage ne coûte donc rien à
+        + Un alias opaque du type propre de la valeur ; taguer ne coûte donc rien à
         + l'exécution.
     entry .apply
       info
@@ -1260,7 +1266,7 @@ entry .Dysasymptotic
         - `dysasymptotics.linearSize`.
         + Soumet à la barrière `size` sur une `List` et tout ce qui en dérive (`gamut`, `limit`,
         + `ult`, `pen`, `ant`, `extent`, `iterate`, `retrace`), `last` et `lead` sur une `List`, et
-        + les modifications en copie sur écriture d'un tableau figé (`define`, `omit`, `lead`, et
+        + les modifications en copie sur écriture d'un tableau gelé (`define`, `omit`, `lead`, et
         + l'ajout d'un élément à la fin ou au début), dont chacune copie le tableau entier. Activé
         + par `dysasymptotics.linearSize`.
   entry .LinearAccess
@@ -1346,7 +1352,7 @@ entry .dysasymptotics
     info
         - opens `size` and the size-derived operations on a `List`, and copying edits of a frozen array
         + ouvre `size` et les opérations dérivées de la taille sur une `List`, et les modifications
-        + par copie d'un tableau figé
+        + par copie d'un tableau gelé
   entry .linearAccess
     info
         - opens positional access into a `List`: `at`, an ordinal `apply`, and `define`
@@ -1480,7 +1486,7 @@ entry .Countable
       - dysasymptotics.linearSize`; a `Chain`'s forces the whole stream, so `.chain` needs
       - `import dysasymptotics.unboundedSize`. Neither gate applies to `nil`, which `Vacuiscible`
       - answers in O(1) for both.
-      + Des instances existent, sans barrière, pour le tableau figé (et sa forme `Sized`),
+      + Des instances existent, sans barrière, pour le tableau gelé (et sa forme `Sized`),
       + `Sequence`, `Set`, `Map`, `Ledger`, `Text`, l'`IndexedSeq` et l'`Iterable` de la
       + bibliothèque standard, `Option` (zéro ou un), `Int` (qui se compte lui-même), et les
       + `ArrayBuffer`, `HashMap`, `TrieMap` et `StringBuilder` mutables. La taille d'une `List` est
@@ -1508,11 +1514,11 @@ entry .Countable
   entry .frozenArray
     info
         - a frozen `Array[e]^{}` counts its length, in O(1)
-        + un `Array[e]^{}` figé compte sa longueur, en O(1)
+        + un `Array[e]^{}` gelé compte sa longueur, en O(1)
   entry .sizedFrozenArray
     info
         - a `Sized[length]` frozen array, by its own instance
-        + un tableau figé `Sized[length]`, par sa propre instance
+        + un tableau gelé `Sized[length]`, par sa propre instance
     detail
         - A separate instance rather than a widening of `.frozenArray`: a type variable bounded by
         - a capturing type would be elaborated as `array^{any.rd}` and fail evidence declared for
@@ -1687,7 +1693,7 @@ entry .Applicable
       - and `Text` (by `Char`), by ordinal; `Map`, `Ledger` and the mutable `HashMap`, by key;
       - and `List`, by ordinal, behind `import dysasymptotics.linearAccess`, since reaching a
       - position walks from the head.
-      + Instances : le tableau figé et sa forme `Sized`, `Sequence`, l'`IndexedSeq` de la
+      + Instances : le tableau gelé et sa forme `Sized`, `Sequence`, l'`IndexedSeq` de la
       + bibliothèque standard et `Text` (par `Char`), par ordinal ; `Map`, `Ledger` et la `HashMap`
       + mutable, par clé ; et `List`, par ordinal, moyennant `import dysasymptotics.linearAccess`,
       + puisque atteindre une position demande de parcourir depuis la tête.
@@ -1709,12 +1715,12 @@ entry .Applicable
   entry .frozenArray
     info
         - a frozen `Array[e]^{}` read at an ordinal, by a bounds check and an unchecked read
-        + un `Array[e]^{}` figé lu à un ordinal, par un contrôle de bornes et une lecture non
+        + un `Array[e]^{}` gelé lu à un ordinal, par un contrôle de bornes et une lecture non
         + vérifiée
   entry .sizedFrozenArray
     info
         - a `Sized[length]` frozen array read at a variable ordinal
-        + un tableau figé `Sized[length]` lu à un ordinal variable
+        + un tableau gelé `Sized[length]` lu à un ordinal variable
     detail
         - A literal index into a `Sized` array is checked at compile time and never reaches this
         - instance; a variable ordinal is still a bounds-checked, `Optional` read.
@@ -1777,7 +1783,7 @@ entry .Definable
       - array.
       + Des instances existent pour `Sequence`, l'`IndexedSeq` de la bibliothèque standard, `Map` et
       + `Ledger`, sans barrière ; pour `List` moyennant `dysasymptotics.linearAccess`, puisqu'elle
-      + reconstruit le préfixe ; et pour le tableau figé moyennant `dysasymptotics.linearSize`,
+      + reconstruit le préfixe ; et pour le tableau gelé moyennant `dysasymptotics.linearSize`,
       + puisque chaque modification copie le tableau entier.
   refer denominative.Applicable
   refer denominative.Omissible
@@ -1792,11 +1798,11 @@ entry .Definable
   entry .frozenArray
     info
         - a fresh frozen array with one position replaced; needs `dysasymptotics.linearSize`
-        + un nouveau tableau figé dont une position est remplacée ; exige
+        + un nouveau tableau gelé dont une position est remplacée ; exige
         + `dysasymptotics.linearSize`
     detail
         - Needs a `ClassTag` for the element. The copy is fresh, so freezing it needs no proof.
-        + Exige un `ClassTag` pour l'élément. La copie est neuve ; la figer ne demande donc aucune
+        + Exige un `ClassTag` pour l'élément. La copie est neuve ; la geler ne demande donc aucune
         + preuve.
   entry .list
     info
@@ -1832,7 +1838,7 @@ entry .Omissible
       + L'inverse de `define`, derrière le `xs.omit(index)` de rudiments. C'est une classe de types
       + à part entière parce que les formes chaînées et séquentielles ne peuvent l'offrir
       + honnêtement : supprimer une position décale chaque index ultérieur ; `List` et `Sequence`
-      + n'ont donc pas d'instance, et `omit` ne compile pas sur elles. Le tableau figé fait
+      + n'ont donc pas d'instance, et `omit` ne compile pas sur elles. Le tableau gelé fait
       + exception, puisque chaque modification le copie de toute façon en entier ; supprimer une
       + case coûte donc ce que coûte `define` ; il est soumis à la même barrière
       + `dysasymptotics.linearSize`. Un ordinal hors limites, ou une clé absente, renvoie la valeur
@@ -1851,7 +1857,7 @@ entry .Omissible
   entry .frozenArray
     info
         - a fresh frozen array one slot shorter; needs `dysasymptotics.linearSize` and a `ClassTag`
-        + un nouveau tableau figé plus court d'une case ; exige `dysasymptotics.linearSize` et un
+        + un nouveau tableau gelé plus court d'une case ; exige `dysasymptotics.linearSize` et un
         + `ClassTag`
   entry .map
     info
@@ -1888,7 +1894,7 @@ entry .Terminable
       - stdlib `IndexedSeq`, in O(1); `List` behind `dysasymptotics.linearSize`, since it walks
       - to the end; and `Chain` behind `dysasymptotics.unboundedSize`, since it forces the whole
       - stream.
-      + Instances : `Sequence`, le tableau figé et sa forme `Sized`, `Text` (par `Char`) et
+      + Instances : `Sequence`, le tableau gelé et sa forme `Sized`, `Text` (par `Char`) et
       + l'`IndexedSeq` de la bibliothèque standard, en O(1) ; `List` moyennant
       + `dysasymptotics.linearSize`, puisqu'elle est parcourue jusqu'à la fin ; et `Chain` moyennant
       + `dysasymptotics.unboundedSize`, puisque tout le flux est forcé.
@@ -1904,11 +1910,11 @@ entry .Terminable
   entry .frozenArray
     info
         - a frozen array's last slot, in O(1)
-        + la dernière case d'un tableau figé, en O(1)
+        + la dernière case d'un tableau gelé, en O(1)
   entry .sizedFrozenArray
     info
         - a `Sized[length]` frozen array's last slot, by its own instance
-        + la dernière case d'un tableau figé `Sized[length]`, par sa propre instance
+        + la dernière case d'un tableau gelé `Sized[length]`, par sa propre instance
   entry .text
     info
         - a `Text`'s last `Char`
@@ -1953,7 +1959,7 @@ entry .Truncable
       - `List` and the frozen array behind `dysasymptotics.linearSize`, since each copies its
       - whole structure; and `Chain` behind `dysasymptotics.unboundedSize`.
       + Instances : `Sequence` (O(1) amorti), `Text` et l'`IndexedSeq` de la bibliothèque standard,
-      + sans barrière ; `List` et le tableau figé moyennant `dysasymptotics.linearSize`, puisque
+      + sans barrière ; `List` et le tableau gelé moyennant `dysasymptotics.linearSize`, puisque
       + chacun copie toute sa structure ; et `Chain` moyennant `dysasymptotics.unboundedSize`.
   refer denominative.Terminable
   entry #lead
@@ -1980,7 +1986,7 @@ entry .Truncable
   entry .frozenArray
     info
         - a fresh frozen array one slot shorter; needs `dysasymptotics.linearSize` and a `ClassTag`
-        + un nouveau tableau figé plus court d'une case ; exige `dysasymptotics.linearSize` et un
+        + un nouveau tableau gelé plus court d'une case ; exige `dysasymptotics.linearSize` et un
         + `ClassTag`
     detail
         - An empty array truncates to an empty array.

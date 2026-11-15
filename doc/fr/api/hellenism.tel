@@ -5,7 +5,8 @@ import soundness
 
 info
     - the JVM classpath, its classloaders and its resources as typed values
-    + le classpath de la JVM, ses classloaders et ses ressources sous forme de valeurs typées
+    + le classpath de la JVM, ses chargeurs de classes et ses ressources sous forme de valeurs
+    + typées
 detail
     - _Hellenism_ represents the three things the JVM uses to find code and data — the
     - **classpath** (an ordered list of directories, JAR files and the Java runtime), the
@@ -13,8 +14,8 @@ detail
     - typed values, in place of the standard API's nullable lookups and mutable global state.
     + _Hellenism_ représente les trois choses qu'utilise la JVM pour trouver du code et des données
     + — le **classpath** (une liste ordonnée de répertoires, de fichiers JAR et de l'environnement
-    + d'exécution Java), les **classloaders** qui le parcourent, et les **ressources** qui y sont
-    + fournies — sous forme de valeurs typées et immuables, à la place des recherches pouvant
+    + d'exécution Java), les **chargeurs de classes** qui le parcourent, et les **ressources** qui y
+    + sont fournies — sous forme de valeurs typées et immuables, à la place des recherches pouvant
     + renvoyer une valeur nulle et de l'état global mutable de l'API standard.
 
     - A resource is a path on the `Classpath` plane, read with the same `read[Data]` or
@@ -26,7 +27,7 @@ detail
     + Une ressource est un chemin sur le plan `Classpath`, lu avec le même `read[Data]` ou
     + `read[Text]` que toute autre source, et l'interpolateur `cp"…"` vérifie que la ressource
     + existe pendant la compilation du code. Un classpath est une valeur dont les
-    + `Classpath.Entry` peuvent être énumérées et filtrées, et un classloader est une valeur
+    + `Classpath.Entry` peuvent être énumérées et filtrées, et un chargeur de classes est une valeur
     + `Classloader`, choisie explicitement comme valeur contextuelle à partir du package
     + `classloaders` plutôt qu'obtenue au moyen de l'état mutable du thread.
 
@@ -69,7 +70,7 @@ detail
     - imports one classloader by name.
     + Tout est exporté vers le package parapluie `soundness`, et le package de choix
     + `classloaders` fusionne avec celui du package parapluie, de sorte qu'un utilisateur écrit
-    + `import soundness.*` puis importe un classloader par son nom.
+    + `import soundness.*` puis importe un chargeur de classes par son nom.
 
 refer hellenism.Classpath
 refer hellenism.Classloader
@@ -95,8 +96,8 @@ entry .Classloader
       - Two classloaders may resolve the same path to different resources, or one to nothing at
       - all, which is why the choice is never implicit: a `Classloader` is always a value or a
       - named given in scope.
-      + Deux classloaders peuvent résoudre le même chemin en des ressources différentes, ou l'un
-      + d'eux en rien du tout, et c'est pourquoi le choix n'est jamais implicite : un
+      + Deux chargeurs de classes peuvent résoudre le même chemin en des ressources différentes, ou
+      + l'un d'eux en rien du tout, et c'est pourquoi le choix n'est jamais implicite : un
       + `Classloader` est toujours une valeur ou un given nommé dans la portée.
 
       ```scala
@@ -113,26 +114,27 @@ entry .Classloader
       - A classloader is `Findable`, with the `Classpath` as its `#Plane`, so a `Path on
       - Classpath` can be tested for existence against it (`classpathSubstantiable`, in
       - `hellenism.jvm`).
-      + Un classloader est `Findable`, avec le `Classpath` comme `#Plane`, de sorte qu'on peut
-      + tester l'existence d'un `Path on Classpath` auprès de lui (`classpathSubstantiable`, dans
-      + `hellenism.jvm`).
+      + Un chargeur de classes est `Findable`, avec le `Classpath` comme `#Plane`, de sorte qu'on
+      + peut tester l'existence d'un `Path on Classpath` auprès de lui (`classpathSubstantiable`,
+      + dans `hellenism.jvm`).
   refer hellenism.classloaders
   refer hellenism.classloader
   entry .threadContext
     info
         - the current thread's context classloader, as a value
-        + le classloader de contexte du thread courant, sous forme de valeur
+        + le chargeur de classes de contexte du thread courant, sous forme de valeur
     detail
         - The classloader `Thread.currentThread.getContextClassLoader` returns at the moment of
         - the call. `classloaders.threadContextClassloader` is the given built from it, and
         - `#use` installs another classloader as the thread's context for the duration of a block.
-        + Le classloader que renvoie `Thread.currentThread.getContextClassLoader` au moment de
-        + l'appel. `classloaders.threadContextClassloader` est le given construit à partir de lui,
-        + et `#use` installe un autre classloader comme contexte du thread pour la durée d'un bloc.
+        + Le chargeur de classes que renvoie `Thread.currentThread.getContextClassLoader` au moment
+        + de l'appel. `classloaders.threadContextClassloader` est le given construit à partir de
+        + lui, et `#use` installe un autre chargeur de classes comme contexte du thread pour la
+        + durée d'un bloc.
   entry .apply
     info
         - the classloader which loaded a type, as `Classloader[T]`
-        + le classloader qui a chargé un type, sous la forme `Classloader[T]`
+        + le chargeur de classes qui a chargé un type, sous la forme `Classloader[T]`
     detail
         - `Classloader[T]` is a macro which finds the class of `T` through `ClassRef[T]` and
         - returns the classloader which loaded it. This is how a plugin's own classloader is
@@ -140,10 +142,11 @@ entry .Classloader
         - loaded from (`LocalClasspath.of(Classloader[Main.type])`), which under a host such as a
         - test runner differs from the `java.class.path` property.
         + `Classloader[T]` est une macro qui trouve la classe de `T` au moyen de `ClassRef[T]` et
-        + renvoie le classloader qui l'a chargée. C'est ainsi qu'on atteint le propre classloader
-        + d'un plugin à partir de l'une de ses classes, et qu'un programme trouve le classpath
-        + depuis lequel il a lui-même été chargé (`LocalClasspath.of(Classloader[Main.type])`), qui,
-        + sous un hôte tel qu'un lanceur de tests, diffère de la propriété `java.class.path`.
+        + renvoie le chargeur de classes qui l'a chargée. C'est ainsi qu'on atteint le propre
+        + chargeur de classes d'un plugin à partir de l'une de ses classes, et qu'un programme
+        + trouve le classpath depuis lequel il a lui-même été chargé
+        + (`LocalClasspath.of(Classloader[Main.type])`), qui, sous un hôte tel qu'un exécuteur de
+        + tests, diffère de la propriété `java.class.path`.
 
         - The type may be a proper type, an object's type or an unapplied type constructor, and
         - may be nested in an object or a class: the macro resolves it to its JVM binary name
@@ -170,8 +173,8 @@ entry .Classloader
         - first; the reverse prefers the loader's own entries, which isolates a plugin's
         - versions of shared libraries from its host's. The choice is always spelled out, since
         - the two give different classes for the same name and neither is right for every use.
-        + Un classloader construit sur un classpath avec `classloader` doit indiquer comment il
-        + résout un nom que lui et son parent peuvent tous deux charger. L'ordre propre de la JVM
+        + Un chargeur de classes construit sur un classpath avec `classloader` doit indiquer comment
+        + il résout un nom que lui et son parent peuvent tous deux charger. L'ordre propre de la JVM
         + consulte d'abord le parent ; l'ordre inverse privilégie les entrées du chargeur lui-même,
         + ce qui isole les versions des bibliothèques partagées d'un plugin de celles de son hôte.
         + Le choix est toujours explicite, car les deux donnent des classes différentes pour le même
@@ -217,34 +220,36 @@ entry .Classloader
     detail
         - The raw Java classloader, for the Java APIs which take one. Two `Classloader`s are the
         - same loader when their `java` instances are.
-        + Le classloader Java brut, pour les API Java qui en prennent un. Deux `Classloader` sont le
-        + même chargeur lorsque leurs instances `java` le sont.
+        + Le chargeur de classes Java brut, pour les API Java qui en prennent un. Deux `Classloader`
+        + sont le même chargeur lorsque leurs instances `java` le sont.
   entry #Plane
     info
         - the plane this classloader finds paths on: `Classpath`
-        + le plan sur lequel ce classloader trouve des chemins : `Classpath`
+        + le plan sur lequel ce chargeur de classes trouve des chemins : `Classpath`
   entry #parent
     info
         - the parent classloader, or `Unset` for the bootstrap loader
-        + le classloader parent, ou `Unset` pour le chargeur d'amorçage
+        + le chargeur de classes parent, ou `Unset` pour le chargeur d'amorçage
     detail
         - Every JVM classloader but the bootstrap loader has a parent it delegates to; this walks
         - one step up the chain, wrapped as a `Classloader`.
-        + Tout classloader de la JVM, à l'exception du chargeur d'amorçage, a un parent auquel il
-        + délègue ; ceci remonte d'un cran dans la chaîne, enveloppé dans un `Classloader`.
+        + Tout chargeur de classes de la JVM, à l'exception du chargeur d'amorçage, a un parent
+        + auquel il délègue ; ceci remonte d'un cran dans la chaîne, enveloppé dans un
+        + `Classloader`.
   entry #use
     info
         - runs a block with this as the thread's context classloader
-        + exécute un bloc avec celui-ci comme classloader de contexte du thread
+        + exécute un bloc avec celui-ci comme chargeur de classes de contexte du thread
     detail
         - Installs this classloader as the current thread's context classloader, evaluates the
         - block, and restores the previous one in a `finally`, so a change of classloader is
         - scoped to exactly the code which needs it — loading a plugin, or calling a Java library
         - which reads the context loader — rather than left set for the thread.
-        + Installe ce classloader comme classloader de contexte du thread courant, évalue le bloc,
-        + et restaure le précédent dans un `finally`, de sorte qu'un changement de classloader est
-        + limité exactement au code qui en a besoin — charger un plugin, ou appeler une bibliothèque
-        + Java qui lit le chargeur de contexte — plutôt que laissé en place pour le thread.
+        + Installe ce chargeur de classes comme chargeur de classes de contexte du thread courant,
+        + évalue le bloc, et restaure le précédent dans un `finally`, de sorte qu'un changement de
+        + chargeur de classes est limité exactement au code qui en a besoin — charger un plugin, ou
+        + appeler une bibliothèque Java qui lit le chargeur de contexte — plutôt que laissé en place
+        + pour le thread.
 
         ```scala
         import soundness.*
@@ -332,9 +337,9 @@ entry .Classpath
       - On the JVM, the extensions `classloader` and `services` build a classloader over a
       - classpath and enumerate its service providers; `Classpath.of` reads one back from a
       - `URLClassLoader`.
-      + Sur la JVM, les extensions `classloader` et `services` construisent un classloader sur un
-      + classpath et énumèrent ses fournisseurs de services ; `Classpath.of` en relit un à partir
-      + d'un `URLClassLoader`.
+      + Sur la JVM, les extensions `classloader` et `services` construisent un chargeur de classes
+      + sur un classpath et énumèrent ses fournisseurs de services ; `Classpath.of` en relit un à
+      + partir d'un `URLClassLoader`.
   refer hellenism.LocalClasspath
   refer hellenism.OnlineClasspath
   refer hellenism.Resource
@@ -406,7 +411,8 @@ entry .Classpath
         - which is raised when the classloader does not have the resource.
         + Le given qui permet de lire un chemin du classpath avec `read[Data]` (ou `read[Text]`, ou
         + comme tout type décodable depuis un flux). Il nécessite un given `Classloader` et une
-        + `Tactic[Classpath.Error]`, levée lorsque le classloader ne possède pas la ressource.
+        + `Tactic[Classpath.Error]`, levée lorsque le chargeur de classes ne possède pas la
+        + ressource.
   entry .source
     info
         - reads a `Path on Classpath` as a stream metered by `Credit`
@@ -528,15 +534,15 @@ entry .Classpath
   entry .Event
     info
         - what a classloader logs as it reads resources
-        + ce que journalise un classloader lorsqu'il lit des ressources
+        + ce que journalise un chargeur de classes lorsqu'il lit des ressources
     detail
         - Every `Event` is tagged `Log.Runtime` and `Log.Resource`, so a logging configuration
         - can select or silence them by tag. `Classloader#apply` logs `ResourceLoaded` at
         - `fine`, and a failed read logs `ResourceMissing` as a warning before raising
         - `Classpath.Error`. A `Classpath.Event is Loggable` must be in scope for the logged
         - reads; `logging.silentLogging` discards them.
-        + Chaque `Event` est étiqueté `Log.Runtime` et `Log.Resource`, de sorte qu'une configuration
-        + de journalisation peut les sélectionner ou les faire taire par étiquette.
+        + Chaque `Event` porte les tags `Log.Runtime` et `Log.Resource`, de sorte qu'une
+        + configuration de journalisation peut les sélectionner ou les faire taire par tag.
         + `Classloader#apply` journalise `ResourceLoaded` au niveau `fine`, et une lecture en échec
         + journalise `ResourceMissing` comme avertissement avant de lever `Classpath.Error`. Un
         + `Classpath.Event is Loggable` doit être dans la portée pour les lectures journalisées ;
@@ -613,8 +619,8 @@ entry .Resource
 
       - The runtime classloader may still lack what the compiler's classpath had, in which case
       - the read raises `Classpath.Error`.
-      + Le classloader d'exécution peut toutefois ne pas posséder ce que possédait le classpath du
-      + compilateur, auquel cas la lecture lève `Classpath.Error`.
+      + Le chargeur de classes d'exécution peut toutefois ne pas posséder ce que possédait le
+      + classpath du compilateur, auquel cas la lecture lève `Classpath.Error`.
   refer hellenism.cp
   entry .streamable
     info
@@ -660,9 +666,9 @@ entry .cp
       - compiler's classpath is another, _hellenism: the path `/missing.txt` is not on the
       - classpath_.
       + `cp"/path/to/resource"` nomme une ressource sur le classpath et vérifie, pendant la
-      + compilation du code, qu'elle existe sur le classpath du compilateur (au moyen du
-      + classloader de contexte du thread du compilateur). Le résultat est une `Resource` dont le
-      + membre de type `Locus` est le type littéral du chemin. Un chemin qui n'est pas un chemin de
+      + compilation du code, qu'elle existe sur le classpath du compilateur (au moyen du chargeur de
+      + classes de contexte du thread du compilateur). Le résultat est une `Resource` dont le membre
+      + de type `Locus` est le type littéral du chemin. Un chemin qui n'est pas un chemin de
       + classpath valide est une erreur de compilation, _hellenism: the path `elsinore` is not a
       + valid classpath path_, et un chemin qui n'existe nulle part sur le classpath du compilateur
       + en est une autre, _hellenism: the path `/missing.txt` is not on the classpath_.
@@ -687,14 +693,14 @@ entry .cp
 entry .classloaders
   info
       - the standard classloaders, each a given to import by name
-      + les classloaders standard, chacun un given à importer par son nom
+      + les chargeurs de classes standard, chacun un given à importer par son nom
   detail
       - Which classloader resolves a resource is decided by the `Classloader` given in scope,
       - and the choice is deliberately never implicit: `import soundness.*` brings none of
       - these in, and one is imported by name.
-      + Le classloader qui résout une ressource est déterminé par le `Classloader` given dans la
-      + portée, et le choix n'est délibérément jamais implicite : `import soundness.*` n'en apporte
-      + aucun, et on en importe un par son nom.
+      + Le chargeur de classes qui résout une ressource est déterminé par le `Classloader` given
+      + dans la portée, et le choix n'est délibérément jamais implicite : `import soundness.*` n'en
+      + apporte aucun, et on en importe un par son nom.
 
       ```scala
       import soundness.*
@@ -705,14 +711,14 @@ entry .classloaders
       - loaders are the JVM's own, and `scalaClassloader` is whichever loaded the Scala
       - library. A classloader built from a `Classpath` with `classloader` can be bound as a
       - local given instead.
-      + Le classloader de contexte du thread convient à la plupart des applications. Les chargeurs
-      + système et de plateforme sont ceux de la JVM, et `scalaClassloader` est celui qui a chargé
-      + la bibliothèque Scala. Un classloader construit à partir d'un `Classpath` avec
-      + `classloader` peut à la place être lié comme given local.
+      + Le chargeur de classes de contexte du thread convient à la plupart des applications. Les
+      + chargeurs système et de plateforme sont ceux de la JVM, et `scalaClassloader` est celui qui
+      + a chargé la bibliothèque Scala. Un chargeur de classes construit à partir d'un `Classpath`
+      + avec `classloader` peut à la place être lié comme given local.
   entry .threadContextClassloader
     info
         - the current thread's context classloader
-        + le classloader de contexte du thread courant
+        + le chargeur de classes de contexte du thread courant
     detail
         - Built from `Classloader.threadContext` when the given is first used, so it is the
         - context loader of the thread which first asked for it.
@@ -721,7 +727,7 @@ entry .classloaders
   entry .systemClassloader
     info
         - the JVM's system (application) classloader
-        + le classloader système (d'application) de la JVM
+        + le chargeur de classes système (d'application) de la JVM
     detail
         - `ClassLoader.getSystemClassLoader`: the loader over the `java.class.path` property, at
         - the top of the application's delegation chain.
@@ -730,16 +736,16 @@ entry .classloaders
   entry .platformClassloader
     info
         - the JVM's platform classloader
-        + le classloader de plateforme de la JVM
+        + le chargeur de classes de plateforme de la JVM
     detail
         - `ClassLoader.getPlatformClassLoader`: the loader of the JDK's own modules, and the
         - default parent of a classloader built with `classloader`.
         + `ClassLoader.getPlatformClassLoader` : le chargeur des propres modules du JDK, et le
-        + parent par défaut d'un classloader construit avec `classloader`.
+        + parent par défaut d'un chargeur de classes construit avec `classloader`.
   entry .scalaClassloader
     info
         - the classloader which loaded the Scala library
-        + le classloader qui a chargé la bibliothèque Scala
+        + le chargeur de classes qui a chargé la bibliothèque Scala
     detail
         - `Classloader[List]`: the loader the Scala standard library came from, which is the
         - application loader in a plain `java -cp` process and the host's under a plugin system.
@@ -827,7 +833,7 @@ entry .internal
   entry .classloader
     info
         - the classloader which loaded a `ClassRef`'s class
-        + le classloader qui a chargé la classe d'un `ClassRef`
+        + le chargeur de classes qui a chargé la classe d'un `ClassRef`
     detail
         - An extension on `ClassRef`: `classRef.getClassLoader`, wrapped as a `Classloader`.
         - `Classloader[T]` is `ClassRef[T].classloader`.
@@ -842,7 +848,7 @@ entry .internal
         - up on the compiler's context classloader, and splices a `Resource` whose `Locus` type is
         - the literal.
         + Lit l'unique partie littérale de l'interpolateur, la décode en `Path on Classpath`, la
-        + recherche sur le classloader de contexte du compilateur, et insère par splice une
+        + recherche sur le chargeur de classes de contexte du compilateur, et insère par splice une
         + `Resource` dont le type `Locus` est le littéral.
 
 entry .Hellenism2
@@ -862,7 +868,7 @@ entry .Hellenism2
 entry .classloader
   info
       - builds a classloader over a classpath, with a chosen delegation and parent
-      + construit un classloader sur un classpath, avec une délégation et un parent choisis
+      + construit un chargeur de classes sur un classpath, avec une délégation et un parent choisis
   detail
       - A JVM-only extension on `Classpath` (absent on Scala Native, where the classpath is
       - linked into the binary). It builds a `URLClassLoader` over the classpath's entries —
@@ -891,7 +897,7 @@ entry .classloader
       + La délégation est obligatoire : `Deferential` est l'ordre parent d'abord de la JVM, qui
       + partage les classes du parent avec ce qui est chargé ; `Preferential` est l'ordre enfant
       + d'abord, qui isole les propres versions des bibliothèques du classpath de celles du parent.
-      + Voir `Classloader.Delegation`. Le parent est le classloader de plateforme
+      + Voir `Classloader.Delegation`. Le parent est le chargeur de classes de plateforme
       + (`classloaders.platformClassloader`) sauf si un autre est fourni.
 
 entry .services
@@ -969,8 +975,8 @@ entry .classpathSubstantiable
       - an optional resource rather than handle a `Classpath.Error`. It is a top-level given, so
       - it must be imported by name: `import soundness.classpathSubstantiable`.
       + Le given `Substantiable` pour les chemins du classpath, dans `hellenism.jvm` :
-      + `path.existent()` indique si le classloader dans la portée possède une ressource à ce
-      + chemin, de sorte qu'un programme peut vérifier la présence d'une ressource optionnelle
+      + `path.existent()` indique si le chargeur de classes dans la portée possède une ressource à
+      + ce chemin, de sorte qu'un programme peut vérifier la présence d'une ressource optionnelle
       + plutôt que de traiter une `Classpath.Error`. C'est un given de premier niveau ; il doit donc
       + être importé par son nom : `import soundness.classpathSubstantiable`.
 
@@ -986,7 +992,7 @@ entry .classpathSubstantiable
 entry .classpath
   info
       - the classpath a classloader loads from, if it is a `URLClassLoader`
-      + le classpath depuis lequel charge un classloader, s'il s'agit d'un `URLClassLoader`
+      + le classpath depuis lequel charge un chargeur de classes, s'il s'agit d'un `URLClassLoader`
   detail
       - An extension on `Classloader` in `hellenism.jvm`. Walks the loader and its parents to the
       - nearest `URLClassLoader` and reads its URLs back as a `Classpath` with `Classpath.of`; a
@@ -1103,7 +1109,7 @@ entry .LocalClasspath
   entry .of
     info
         - the classpath a classloader loads from, or one of a single path
-        + le classpath depuis lequel charge un classloader, ou celui d'un chemin unique
+        + le classpath depuis lequel charge un chargeur de classes, ou celui d'un chemin unique
     detail
         - `LocalClasspath.of(classloader)` is the classpath a `URLClassLoader` over local entries
         - loads from, found through `Classloader#classpath`, and otherwise the `java.class.path`
@@ -1115,8 +1121,8 @@ entry .LocalClasspath
         + `LocalClasspath.of(classloader)` est le classpath depuis lequel charge un `URLClassLoader`
         + sur des entrées locales, trouvé au moyen de `Classloader#classpath`, et sinon la propriété
         + `java.class.path`. Du code qui lance une JVM pour exécuter ses propres classes devrait en
-        + tirer son classpath, avec le classloader de l'une de ses propres classes
-        + (`LocalClasspath.of(Classloader[Main.type])`) : sous un hôte tel qu'un lanceur de tests,
+        + tirer son classpath, avec le chargeur de classes de l'une de ses propres classes
+        + (`LocalClasspath.of(Classloader[Main.type])`) : sous un hôte tel qu'un exécuteur de tests,
         + qui isole chaque suite dans un `URLClassLoader`, la propriété nomme les propres jars de
         + l'hôte, et non ceux du code.
 

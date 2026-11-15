@@ -77,7 +77,7 @@ detail
     + forme stdlib, dans un sens comme dans l'autre : une conversion s'applique aussi lors de la
     + sélection de membres et rétablirait silencieusement toute l'API partielle. Le passage
     + vers une API stdlib ou Java s'écrit `xs.stdlib` — une vue sans copie, et un marqueur
-    + repérable par grep de chaque jointure — et le retour s'écrit avec le `from` du compagnon
+    + repérable par grep de chaque jonction — et le retour s'écrit avec le `from` du compagnon
     + ou `.to(List)`. Un splice de varargs, `f(xs*)`, fonctionne directement sur une collection
     + opaque, grâce aux givens `Spreadable` placés à côté de chaque collection. N'utilisez pas
     + `stdlib` pour contourner une barrière de coût : `xs.stdlib.length` masque précisément le
@@ -135,7 +135,7 @@ detail
     - `scala.annotation`, `scala.util`) cannot be exported and are imported per file.
     + Ce qui n'est *pas* consacré l'est aussi délibérément que ce qui l'est. Les collections
     + concrètes de la stdlib (`Seq`, `Vector`, `IndexedSeq`, `Range`, `LazyList`) sont
-    + absentes, si bien qu'une collection de la stdlib à une jointure d'interopérabilité doit
+    + absentes, si bien qu'une collection de la stdlib à une jonction d'interopérabilité doit
     + s'annoncer avec `import scala.collection…` ; `Ordering` et `Ordered` sont absents,
     + puisque la comparaison passe par `Comparable` et que les quelques API qui prennent encore
     + un `Ordering` importent `scala.math.Ordering` explicitement ; `Iterator` est absent,
@@ -722,7 +722,7 @@ entry .List
         - used to bypass a cost gate (`xs.stdlib.length` for a gated `size`).
         + Le pont repérable par grep vers une API de la stdlib ou de Java, sous forme de
         + transtypage inline. C'est l'unique moyen d'atteindre la surface partielle de la stdlib,
-        + et chaque usage est une jointure visible ; il ne doit pas servir à contourner une
+        + et chaque usage est une jonction visible ; il ne doit pas servir à contourner une
         + barrière de coût (`xs.stdlib.length` pour un `size` soumis à barrière).
   entry .factory
     info
@@ -758,7 +758,7 @@ entry .List
         - `Expr(list)` works for a `List[element]` whose element has a `ToExpr`; the lifted tree
         - is `List.from(…)`.
         + `Expr(list)` fonctionne pour une `List[element]` dont l'élément dispose d'un `ToExpr` ;
-        + l'arbre élevé est `List.from(…)`.
+        + l'arbre relevé est `List.from(…)`.
   entry .fromExpr
     info
         - unlifts an `Expr[List[element]]` which was produced by lifting
@@ -776,7 +776,7 @@ entry .List
         - The native counterpart of `Expr.ofList`, for macro code holding a native list of
         - lifted elements; `Expr.ofList(xs.stdlib)` wrapped in `List.from` is `List.quoted(xs)`.
         + Le pendant natif d'`Expr.ofList`, pour le code de macro qui détient une liste native
-        + d'éléments élevés ; `Expr.ofList(xs.stdlib)` enveloppé dans `List.from` équivaut à
+        + d'éléments relevés ; `Expr.ofList(xs.stdlib)` enveloppé dans `List.from` équivaut à
         + `List.quoted(xs)`.
   entry .size
     info
@@ -1847,7 +1847,7 @@ entry .Comparison
       + `also` compose les comparaisons lexicographiquement — celle-ci, sauf si elle vaut
       + `Same`, auquel cas la suivante, qui est passée par nom et donc non évaluée lorsque la
       + première est décisive — et `sign` et `.apply` convertissent vers et depuis la convention
-      + de signe de `java.util.Comparator` et de `scala.math.Ordering` aux jointures.
+      + de signe de `java.util.Comparator` et de `scala.math.Ordering` aux jonctions.
   entry .apply
     info
         - a `Comparison` from a `compareTo`-style sign: negative, zero or positive
@@ -1877,7 +1877,7 @@ entry .Comparison
   entry #sign
     info
         - `-1`, `0` or `1`: the `Comparator`/`Ordering` convention, for stdlib and JDK seams
-        + `-1`, `0` ou `1` : la convention de `Comparator`/`Ordering`, pour les jointures avec la
+        + `-1`, `0` ou `1` : la convention de `Comparator`/`Ordering`, pour les jonctions avec la
         + stdlib et le JDK
   entry #also
     info
@@ -1986,7 +1986,7 @@ entry .classOf
       - version summons the `ClassTag` at each call site, where the type argument is concrete,
       - and takes `runtimeClass` from it.
       + Le `classOf` de Predef n'est un intrinsèque du compilateur que lorsque son appel porte un
-      + type de classe concret ; à travers une redirection d'export, chaque appel produisait donc
+      + type de classe concret ; à travers un redirecteur d'export, chaque appel produisait donc
       + `Class[Object]`. Cette version inline invoque le `ClassTag` à chaque site d'appel, où
       + l'argument de type est concret, et en tire `runtimeClass`.
 
@@ -2224,7 +2224,7 @@ entry .$conforms
 entry .augmentString
   info
       - Predef's `String` to `StringOps` conversion, for the few `String` seams
-      + La conversion de `String` en `StringOps` de Predef, pour les rares jointures avec `String`
+      + La conversion de `String` en `StringOps` de Predef, pour les rares jonctions avec `String`
 
 entry .intWrapper
   info
@@ -2263,7 +2263,7 @@ entry .refArrayOps
       - The array-ops conversions apply to the raw `scala.Array` at a JDK seam, not to the
       - opaque `Array`, whose vocabulary is the typeclass one.
       + Les conversions vers les opérations de tableaux s'appliquent au `scala.Array` brut à une
-      + jointure avec le JDK, et non à l'`Array` opaque, dont le vocabulaire est celui des
+      + jonction avec le JDK, et non à l'`Array` opaque, dont le vocabulaire est celui des
       + classes de types.
 entry .genericArrayOps
   info
@@ -2364,7 +2364,7 @@ entry .IteratorHasAsScala
   detail
       - The Java-interop converters are re-exported so that a JDK seam needs no extra import;
       - the result is a stdlib collection, crossed back with the companion's `from`.
-      + Les convertisseurs d'interopérabilité Java sont réexportés afin qu'une jointure avec le
+      + Les convertisseurs d'interopérabilité Java sont réexportés afin qu'une jonction avec le
       + JDK ne nécessite aucun import supplémentaire ; le résultat est une collection de la
       + stdlib, qu'on reconvertit avec le `from` du compagnon.
 entry .ListHasAsScala
@@ -2542,7 +2542,7 @@ entry .Option
       - Soundness code represents absence as an `Optional`; `Option` is kept for stdlib and
       - third-party APIs, converted at the seam with `optional` and `option`.
       + Le code de Soundness représente l'absence par un `Optional` ; `Option` est conservé pour
-      + les API de la stdlib et des tiers, et converti à la jointure avec `optional` et `option`.
+      + les API de la stdlib et des tiers, et converti à la jonction avec `optional` et `option`.
 entry .Some
   info
       - `scala.Some`, re-exported
@@ -2630,7 +2630,7 @@ entry .Numeric
   detail
       - The numeric abstractions are kept for the stdlib seams which take them; `Ordering`
       - and `Ordered` are deliberately not, since comparison in Soundness is `Comparable`.
-      + Les abstractions numériques sont conservées pour les jointures avec la stdlib qui les
+      + Les abstractions numériques sont conservées pour les jonctions avec la stdlib qui les
       + prennent ; `Ordering` et `Ordered` ne le sont délibérément pas, puisque la comparaison
       + dans Soundness passe par `Comparable`.
 entry .deprecated

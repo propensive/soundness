@@ -137,7 +137,7 @@ detail
     +   nomme les deux et `call` utilise celui qu'il trouve.
     + - `xenophile.wit` et `xenophile.wasm` — l'écosystème `Wit` et `WitDialect`, et le backend
     +   Wasm : `WasmInvoke`, la forme de marshalling `Wasm` avec ses codecs, et `Wasm.Handle`,
-    +   `Wasm.Case`, `Wasm.Variant` et `Wasm.Error` pour les ressources, variants et résultats
+    +   `Wasm.Case`, `Wasm.Variant` et `Wasm.Error` pour les ressources, variantes et résultats
     +   WIT.
     + - `xenophile.typescript`, `xenophile.webidl` et `xenophile.js` — les écosystèmes
     +   `Typescript` et `WebIdl` avec leurs dialectes, et `JsInvoke` avec la forme `Js`, le
@@ -253,7 +253,7 @@ entry .Foreign
       - receiver's foreign type, read from the definitions the type's `Locus` records, so a
       - foreign type completes in an editor like a Scala one.
       + `Foreign` est `Completable` : un moteur de complétion demande à `.completions` les membres
-      + du type étranger d'un récepteur, lus dans les définitions que le `Locus` du type
+      + du type étranger d'un receveur, lus dans les définitions que le `Locus` du type
       + enregistre, si bien qu'un type étranger se complète dans un éditeur comme un type Scala.
   refer xenophile.Interface
   refer xenophile.Interoperable
@@ -299,17 +299,17 @@ entry .Foreign
   entry .completions
     info
         - the members of a receiver's foreign type, for a completion engine
-        + les membres du type étranger d'un récepteur, pour un moteur de complétion
+        + les membres du type étranger d'un receveur, pour un moteur de complétion
     detail
         - Invoked reflectively through `prophesy.Completable`: given the receiver's `TypeRepr` and
         - the prefix typed so far, it reads `Topic`, `Origin` and `Locus` from the refinement,
         - parses the definitions at the locus, and lists each member as a term or a method with
         - its signature (`(string): Play`) rendered symbolically. A receiver with a compound topic,
         - or whose root recorded no `Locus`, offers nothing.
-        + Invoqué par réflexion via `prophesy.Completable` : à partir du `TypeRepr` du récepteur et
+        + Invoqué par réflexion via `prophesy.Completable` : à partir du `TypeRepr` du receveur et
         + du préfixe saisi jusque-là, il lit `Topic`, `Origin` et `Locus` dans le raffinement,
         + analyse les définitions situées au locus, et liste chaque membre comme un terme ou une
-        + méthode avec sa signature (`(string): Play`) rendue symboliquement. Un récepteur dont le
+        + méthode avec sa signature (`(string): Play`) rendue symboliquement. Un receveur dont le
         + topic est composé, ou dont la racine n'a enregistré aucun `Locus`, n'offre rien.
   entry .converter
     info
@@ -329,7 +329,7 @@ entry .Foreign
         + of "tcp-socket"` comme `Foreign of "tcp-socket" from Wit` puis de naviguer dedans. La
         + valeur est transportée telle quelle dans un `Foreign.Expression.Literal`, et le type
         + étranger est le `Topic` de l'instance. C'est le fait de fixer l'écosystème à l'`Origin` du
-        + récepteur dans `#applyDynamic` qui permet à la conversion d'inférer ses paramètres de
+        + receveur dans `#applyDynamic` qui permet à la conversion d'inférer ses paramètres de
         + type ; ainsi un littéral `String` nu `"…"` n'est pas convertible là où un `Text` l'est :
         + les instances C et WIT sont pour `Text`.
   entry .Expression
@@ -415,7 +415,7 @@ entry .Foreign
         - _xenophile: greet is a method of Play and must be called with arguments_. An unknown name
         - is _xenophile: the foreign type Play has no member nonexistent_.
         + Une macro transparent inline, atteinte via `Dynamic`. Le membre est recherché dans le type
-        + étranger du récepteur ; le résultat est un `Foreign` du type déclaré du membre, avec
+        + étranger du receveur ; le résultat est un `Foreign` du type déclaré du membre, avec
         + `Origin` et `Locus` reportés. Un champ et une méthode sans paramètre peuvent tous deux
         + être sélectionnés seuls — une fonction WIT nullaire comme `` `get-random-u64` `` est
         + sélectionnée puis appelée par `call`, sans liste d'arguments vide — mais une méthode avec
@@ -452,10 +452,10 @@ entry .Foreign
         - element type, and the result is a `Foreign` of that element type. Any other receiver is
         - _xenophile: this foreign type is not an indexable array type_.
         + Un véritable `apply`, prioritaire sur `Dynamic`, si bien que `tags(0)` est résolu ici. Le
-        + topic du récepteur doit être l'un des constructeurs de tableau — `sequence` et
+        + topic du receveur doit être l'un des constructeurs de tableau — `sequence` et
         + `FrozenArray` en WebIDL, `Array` et `ReadonlyArray` en TypeScript, `list` en WIT —
         + appliqué à un seul type d'élément, et le résultat est un `Foreign` de ce type d'élément.
-        + Tout autre récepteur donne _xenophile: this foreign type is not an indexable array type_.
+        + Tout autre receveur donne _xenophile: this foreign type is not an indexable array type_.
 
 entry .Interface
   info
@@ -471,7 +471,7 @@ entry .Interface
       + Une `Interface in Typescript at "/xenophile/definitions.ts"` est une valeur dont le type
       + enregistre l'écosystème (`Form`) et le chemin de ses définitions sur le classpath
       + (`Locus`, un type littéral de chaîne). Les macros de navigation invoquent l'`Interface`
-      + correspondant à l'`Origin` du récepteur et lisent les définitions depuis son `Locus` ; le
+      + correspondant à l'`Origin` du receveur et lisent les définitions depuis son `Locus` ; le
       + fichier est lu et analysé à la compilation, il doit donc se trouver sur le classpath du
       + compilateur, et pas seulement sur celui du programme.
 
@@ -677,7 +677,7 @@ entry .Prototype
       + écosystèmes dont les membres doivent être adressés au point d'appel : `#module` est
       + l'identifiant de module WIT (`wasi:random/random@0.2.0`) depuis lequel le membre est
       + importé, `#resource` la ressource WIT dont il est une méthode, et `#static` indique s'il
-      + s'agit d'une fonction `static` ou d'un `constructor` de cette ressource, sans récepteur.
+      + s'agit d'une fonction `static` ou d'un `constructor` de cette ressource, sans receveur.
 
       ```scala
       import soundness.*
@@ -715,11 +715,11 @@ entry .Prototype
         - When set, `WasmInvoke` imports the member as `[method]resource.name` and passes the
         - receiver's `Wasm.Handle` as its first parameter.
         + Lorsqu'il est défini, `WasmInvoke` importe le membre comme `[method]resource.name` et
-        + transmet le `Wasm.Handle` du récepteur comme premier paramètre.
+        + transmet le `Wasm.Handle` du receveur comme premier paramètre.
   entry #static
     info
         - whether a resource member takes no receiver: a WIT `static` function or `constructor`
-        + si un membre de ressource ne prend pas de récepteur : une fonction `static` ou un
+        + si un membre de ressource ne prend pas de receveur : une fonction `static` ou un
         + `constructor` WIT
     detail
         - A `constructor` is imported as `[constructor]resource`, another static as
@@ -754,7 +754,7 @@ entry .Interoperable
       + Les instances résident dans les objets compagnons des écosystèmes et sont résolues par la
       + portée implicite : `Native` possède `int`, `long`, `short`, `char`, `double`, `float`,
       + `boolean`, `string` et `pointer` ; `Wasm.Handle`, `Wasm.Case` et `Wasm.Variant` sont
-      + interopérables dans `Wit` avec pour topic la ressource ou le variant qu'ils portent ; et
+      + interopérables dans `Wit` avec pour topic la ressource ou la variante qu'ils portent ; et
       + les compagnons de `Wit`, `Typescript`, `WebIdl` et `Kotlin` contiennent les leurs. Une
       + nouvelle instance tient en une ligne :
 
@@ -821,7 +821,7 @@ entry .call
       - downcall when `xenophile.native` is on the classpath and a `dlsym`/`CFuncPtr` call when
       - `xenophile.scalanative` is, so one source compiles for both.
       + L'unique terminal pour tous les écosystèmes et toutes les plateformes cibles. Une
-      + extension inline sur `Foreign` : elle lit l'`Origin` du récepteur, trouve le
+      + extension inline sur `Foreign` : elle lit l'`Origin` du receveur, trouve le
       + `Materializer` que nomme l'`Emission` de l'écosystème et que porte le classpath, et insère
       + par splice l'appel émis par ce backend, typé comme `Result`. Le backend utilisé découle
       + du build : une navigation C devient un downcall Panama lorsque `xenophile.native` est sur
@@ -850,9 +850,9 @@ entry .call
       + `call` doit être appliqué directement à une chaîne de navigation inline —
       + `interface.function(…)` ou la simple sélection d'une fonction nullaire,
       + `interface.function` — et non à une navigation liée à un `val` : on obtient sinon
-      + _xenophile: `call` expects a foreign function invocation, `interface.function(…)`_. Un
-      + handle de ressource WIT peut être lié à un `val` puis parcouru, puisque son handle est
-      + récupéré depuis l'expression à l'exécution.
+      + _xenophile: `call` expects a foreign function invocation, `interface.function(…)`_. Une
+      + poignée de ressource WIT peut être liée à un `val` puis parcourue, puisque sa poignée est
+      + récupérée depuis l'expression à l'exécution.
 
       - The result type is the caller's to choose, and each backend checks it against the
       - declaration: a C `string` result as `Text`, a pointer result as `Address`, `void` as
@@ -893,7 +893,7 @@ entry .Xenophile
   entry .invoke
     info
         - the macro behind `call`: finds the receiver's materializer and lets it emit the call
-        + la macro derrière `call` : trouve le materializer du récepteur et le laisse émettre
+        + la macro derrière `call` : trouve le materializer du receveur et le laisse émettre
         + l'appel
   entry .definitions
     info
@@ -948,7 +948,7 @@ entry .Address
       - to a `Ptr[Byte]`; a pointer-typed result comes back as an `Address`.
       + `Address` est un `Long` opaque contenant une adresse mémoire brute — la monnaie
       + indépendante de la plateforme pour tout pointeur qu'un en-tête C déclare au-delà du cas
-      + particulier `char*`↔`Text` : un tampon (`ForeignBuffer#pointer`), un handle opaque comme
+      + particulier `char*`↔`Text` : un tampon (`ForeignBuffer#pointer`), une poignée opaque comme
       + l'`EVP_MD*` d'OpenSSL renvoyé par un appel et passé au suivant, ou un paramètre de
       + sortie. Sur la JVM, un argument `pointer` voyage sous forme de `MemorySegment.ofAddress`,
       + et en Scala Native il est converti en `Ptr[Byte]` ; un résultat de type pointeur revient
@@ -1184,8 +1184,8 @@ entry .Native
   entry .pointer
     info
         - `Address` stands for any other C pointer: `T*`, `void*`, an opaque handle, an out-parameter
-        + `Address` représente tout autre pointeur C : `T*`, `void*`, un handle opaque, un paramètre
-        + de sortie
+        + `Address` représente tout autre pointeur C : `T*`, `void*`, une poignée opaque, un
+        + paramètre de sortie
     detail
         - The navigation macro accepts the `pointer` topic for every `ptr<T>` parameter, so one
         - `Address` type serves every pointee.
@@ -1647,7 +1647,7 @@ entry .ForeignLibrary
         - declare panics with _no such foreign function: name_, and one the library does not
         - export throws from the symbol lookup.
         + JVM uniquement. On l'invoque avec `invokeWithArguments`, en passant des `MemorySegment`
-        + pour les paramètres pointeurs et chaînes et des primitives encapsulées pour le reste. Une
+        + pour les paramètres pointeurs et chaînes et des primitives boxées pour le reste. Une
         + fonction que l'en-tête n'a pas déclarée provoque une panique avec _no such foreign
         + function: name_, et une fonction que la bibliothèque n'exporte pas lève une exception
         + lors de la recherche du symbole.
@@ -1678,11 +1678,11 @@ entry .PanamaInvoke
       - result is read back as `Text` with `ForeignLibrary.text`, a pointer result becomes an
       - `Address`, a primitive is unboxed, and `void` yields `Unit`. Arity is checked against the
       - prototype: _xenophile: wrong number of arguments for library.abs_.
-      + Marshalling : une primitive C est encapsulée pour `invokeWithArguments` ; un argument
+      + Marshalling : une primitive C est boxée pour `invokeWithArguments` ; un argument
       + `string` (`Text`) est copié dans une `Arena` confinée ouverte pour l'appel et fermée dans
       + un `finally` ; tout autre pointeur voyage sous forme de `MemorySegment.ofAddress` de son
       + `Address`. Un résultat `string` est relu comme `Text` avec `ForeignLibrary.text`, un
-      + résultat pointeur devient une `Address`, une primitive est désencapsulée, et `void` donne
+      + résultat pointeur devient une `Address`, une primitive est rendue non boxée, et `void` donne
       + `Unit`. L'arité est vérifiée par rapport au prototype : _xenophile: wrong number of
       + arguments for library.abs_.
 
@@ -1914,7 +1914,7 @@ entry .Wasm
   info
       - the uniform form a value takes crossing a WIT boundary, with the codecs and the handle, case, variant and error types
       + la forme uniforme que prend une valeur pour franchir une frontière WIT, avec les codecs et
-      + les types handle, cas, variant et erreur
+      + les types poignée, cas, variante et erreur
   detail
       - A `Wasm` wraps a value marshalled to the carrier type it crosses a WIT function as: a
       - `String` for `Text`, a `Long` for `U64`, an `Array[Byte]` for `Data`, and so on. A
@@ -1949,10 +1949,10 @@ entry .Wasm
       + une `list<T>` comme `List`, une `option<T>` comme `Optional`, un `result<ok, err>` déballé
       + avec son `err` levé comme `.Error`, et une `resource` comme `.Handle`. L'objet compagnon
       + contient aussi les valeurs côté Scala pour les types à état et les types somme de WIT :
-      + `.Handle` pour une ressource, `.Case` pour un cas de variant ou d'enum sans charge utile,
+      + `.Handle` pour une ressource, `.Case` pour un cas de variante ou d'enum sans charge utile,
       + et `.Variant` pour un cas porteur d'une charge utile, chacun étant
       + `Interoperable in Wit` avec le type WIT pour topic, de sorte qu'il peut être passé en
-      + argument et, pour un handle, parcouru.
+      + argument et, pour une poignée, parcouru.
 
       ```scala fuel
       typecheck
@@ -2146,14 +2146,14 @@ entry .Wasm
         - enum *result* is read back as a `Wasm.Case of "name"` when requested as one; a
         - payload-carrying case loses its payload that way.
         + `Wasm.Case["ip-address-family"]("ipv4")` est une valeur du type WIT `ip-address-family`
-        + dont le cas est `ipv4` : l'argument de type est le nom du variant et l'argument le nom du
-        + cas en lower-kebab-case. Le `Topic` fantôme enregistre le variant, si bien que la valeur
-        + est `Interoperable in Wit of "ip-address-family"` et se convertit en argument de ce type
-        + étranger ; au point d'appel lié en Wasm, `call` sélectionne à l'exécution l'objet de cas
-        + de la façade correspondant par son nom, et un nom qui n'est pas un cas du variant lève
-        + alors une exception. Un *résultat* de variant ou d'enum est relu comme `Wasm.Case of
-        + "name"` lorsqu'il est demandé ainsi ; un cas porteur d'une charge utile perd alors sa
-        + charge utile.
+        + dont le cas est `ipv4` : l'argument de type est le nom de la variante et l'argument le nom
+        + du cas en lower-kebab-case. Le `Topic` fantôme enregistre la variante, si bien que la
+        + valeur est `Interoperable in Wit of "ip-address-family"` et se convertit en argument de ce
+        + type étranger ; au point d'appel lié en Wasm, `call` sélectionne à l'exécution l'objet de
+        + cas de la façade correspondant par son nom, et un nom qui n'est pas un cas de la variante
+        + lève alors une exception. Un *résultat* de variante ou d'enum est relu comme
+        + `Wasm.Case of "name"` lorsqu'il est demandé ainsi ; un cas porteur d'une charge utile perd
+        + alors sa charge utile.
 
         ```scala fuel
         typecheck
@@ -2168,7 +2168,7 @@ entry .Wasm
     entry .apply
       info
           - `Wasm.Case["variant"]("case")`: the named case of the named variant
-          + `Wasm.Case["variant"]("case")` : le cas nommé du variant nommé
+          + `Wasm.Case["variant"]("case")` : le cas nommé de la variante nommée
     entry .caseName
       info
           - the lower-kebab-case name of a facade case object, recovered from its class
@@ -2177,7 +2177,7 @@ entry .Wasm
           - `DnsTimeout` gives `dns-timeout`: the same spelling `apply` accepts, used by the
           - decoder when a variant result is read as a `Wasm.Case`.
           + `DnsTimeout` donne `dns-timeout` : la même écriture que celle qu'accepte `apply`,
-          + utilisée par le décodeur lorsqu'un résultat de variant est lu comme `Wasm.Case`.
+          + utilisée par le décodeur lorsqu'un résultat de variante est lu comme `Wasm.Case`.
     entry .interoperable
       info
           - a `Wasm.Case of topic` passes where the WIT type `topic` is expected
@@ -2189,7 +2189,7 @@ entry .Wasm
   entry .Handle
     info
         - an opaque handle to a WIT resource: a stateful foreign value, navigable and disposable
-        + un handle opaque vers une ressource WIT : une valeur étrangère à état, navigable et
+        + une poignée opaque vers une ressource WIT : une valeur étrangère à état, navigable et
         + libérable
     detail
         - A `Wasm.Handle of "tcp-socket"` is what `call[Wasm.Handle of "tcp-socket"]()` returns
@@ -2202,15 +2202,15 @@ entry .Wasm
         - receiver. A handle receiver may be a `val`, unlike other navigations, since its handle
         - is recovered from the expression at runtime.
         + Un `Wasm.Handle of "tcp-socket"` est ce que renvoie `call[Wasm.Handle of "tcp-socket"]()`
-        + pour une fonction WIT dont le résultat est la ressource `tcp-socket`, et ce que renvoie
-        + un constructeur (`Foreign["fields", Wit].constructor.call[Wasm.Handle of "fields"]()`).
-        + La valeur sous-jacente est conservée non typée ; le `Topic` fantôme enregistre le type de
-        + la ressource, ce qui rend le handle `Interoperable in Wit of "tcp-socket"`, si bien qu'il
-        + peut être passé en argument et — lié comme `Foreign of "tcp-socket" from Wit` — permet
+        + pour une fonction WIT dont le résultat est la ressource `tcp-socket`, et ce que renvoie un
+        + constructeur (`Foreign["fields", Wit].constructor.call[Wasm.Handle of "fields"]()`). La
+        + valeur sous-jacente est conservée non typée ; le `Topic` fantôme enregistre le type de la
+        + ressource, ce qui rend la poignée `Interoperable in Wit of "tcp-socket"`, si bien qu'elle
+        + peut être passée en argument et — liée comme `Foreign of "tcp-socket" from Wit` — permet
         + de naviguer vers les méthodes de la ressource, chacune importée comme
-        + `[method]tcp-socket.name` avec le handle transmis comme récepteur. Un récepteur handle
-        + peut être un `val`, contrairement aux autres navigations, puisque son handle est récupéré
-        + depuis l'expression à l'exécution.
+        + `[method]tcp-socket.name` avec la poignée transmise comme receveur. Un receveur qui est
+        + une poignée peut être un `val`, contrairement aux autres navigations, puisque sa poignée
+        + est récupérée depuis l'expression à l'exécution.
 
         ```scala fuel
         typecheck
@@ -2233,8 +2233,8 @@ entry .Wasm
         - when it is done with it, typically in a `finally`.
         + Une ressource est possédée : `handle.dispose()` — une extension inline exportée par le
         + package parapluie `soundness` depuis `xenophile.wasm`, reposant sur `WasmInvoke.dispose`
-        + — émet l'import `[resource-drop]` de la ressource. Chaque handle qu'obtient un programme
-        + devrait être libéré lorsqu'il n'en a plus besoin, typiquement dans un `finally`.
+        + — émet l'import `[resource-drop]` de la ressource. Chaque poignée qu'obtient un programme
+        + devrait être libérée lorsqu'il n'en a plus besoin, typiquement dans un `finally`.
     refer xenophile.WasmInvoke
     entry .interoperable
       info
@@ -2260,16 +2260,16 @@ entry .Wasm
         - a record or tuple payload built element-wise from a Scala tuple, each leaf through its
         - `Encodable in Wasm` codec. A case which the variant does not declare is a compile
         - error, _xenophile: the variant ip-socket-address has no case ipv7_.
-        + `Wasm.Variant["ip-socket-address", "ipv4"](payload)` est une valeur du variant WIT
-        + `ip-socket-address` dans son cas `ipv4`, portant `payload`. Le variant et le cas sont des
+        + `Wasm.Variant["ip-socket-address", "ipv4"](payload)` est une valeur de la variante WIT
+        + `ip-socket-address` dans son cas `ipv4`, portant `payload`. La variante et le cas sont des
         + arguments de type littéraux (tous deux en lower-kebab-case), car le type de la charge
         + utile diffère d'un cas à l'autre et le cas de la façade est construit sans répartition à
         + l'exécution ; le type Scala de la charge utile est inféré par la seconde application, via
-        + `.Applier`. Le `Topic` fantôme enregistre le variant, si bien que la valeur est
+        + `.Applier`. Le `Topic` fantôme enregistre la variante, si bien que la valeur est
         + `Interoperable in Wit of "ip-socket-address"`, et au point d'appel lié en Wasm, `call`
         + construit le cas de façade nommé autour de la charge utile — une charge utile record ou
         + tuple étant construite élément par élément depuis un tuple Scala, chaque feuille via son
-        + codec `Encodable in Wasm`. Un cas que le variant ne déclare pas est une erreur de
+        + codec `Encodable in Wasm`. Un cas que la variante ne déclare pas est une erreur de
         + compilation, _xenophile: the variant ip-socket-address has no case ipv7_.
 
         ```scala
@@ -2294,7 +2294,7 @@ entry .Wasm
       detail
           - Holds the variant and case fixed by the type arguments; its `apply` takes the payload
           - and gives the `(Variant[payload] of topic) { type Case = name }` value.
-          + Conserve le variant et le cas fixés par les arguments de type ; son `apply` prend la
+          + Conserve la variante et le cas fixés par les arguments de type ; son `apply` prend la
           + charge utile et donne la valeur `(Variant[payload] of topic) { type Case = name }`.
       entry #apply
         info
@@ -2303,7 +2303,7 @@ entry .Wasm
     entry .interoperable
       info
           - a `Wasm.Variant` of a topic passes where that WIT variant is expected
-          + un `Wasm.Variant` d'un topic peut être passé là où ce variant WIT est attendu
+          + un `Wasm.Variant` d'un topic peut être passé là où cette variante WIT est attendu
     entry #payload
       info
           - the payload, at its Scala type
@@ -2347,7 +2347,7 @@ entry .WasmInvoke
       + `result<…>` est vérifié et son `err` lancé comme `Wasm.Error` ; une `option<T>` devient
       + un `Optional` ; une ressource demandée comme `Wasm.Handle of "name"` est enveloppée ; un
       + `tuple<…>` ou un record demandé comme tuple Scala est décodé élément par élément ; une
-      + `list<T>` demandée comme `List[T]` de même ; un variant demandé comme `Wasm.Case of
+      + `list<T>` demandée comme `List[T]` de même ; une variante demandée comme `Wasm.Case of
       + "name"` donne le nom du cas ; une fonction `unit` demandée comme `Unit` ne décode rien ;
       + et une feuille utilise le `Decodable in Wasm` du type. Demander `Unit` pour autre chose
       + qu'un `result` ou une fonction void donne _xenophile: `call[Unit]` requires a WIT
@@ -2361,7 +2361,7 @@ entry .WasmInvoke
       - against a `result<…>` as its `Ok`.
       + Chaque argument franchit la frontière via son codec `Encodable in Wasm` : un
       + `Optional[T]` (ou un `Unset` nu) face à une `option<T>` comme `java.util.Optional` ; un
-      + `Wasm.Handle` comme son handle brut ; un `Wasm.Case` comme l'objet de cas de la façade
+      + `Wasm.Handle` comme sa poignée brute ; un `Wasm.Case` comme l'objet de cas de la façade
       + sélectionné par son nom ; un `Wasm.Variant` comme le cas de façade nommé construit autour
       + de sa charge utile ; un tuple Scala face à un `tuple<…>` ou un record élément par
       + élément ; une valeur simple face à une `option<T>` comme un optionnel présent, et face à
@@ -2390,7 +2390,7 @@ entry .WasmInvoke
         - it is declared in the `soundness` package, so it is available after `import soundness.*`.
         + Lit le type de la ressource dans le `Topic` du `Wasm.Handle`, trouve son module dans les
         + définitions WIT que nomme l'`Interface in Wit` dans la portée, et émet
-        + `[resource-drop]name` avec le handle pour seul paramètre. L'extension `dispose()` sur
+        + `[resource-drop]name` avec la poignée pour seul paramètre. L'extension `dispose()` sur
         + `Wasm.Handle` qui l'appelle est déclarée dans le package `soundness`, elle est donc
         + disponible après `import soundness.*`.
 
@@ -2448,15 +2448,14 @@ entry .Facade
       - assignment through its setter (`parameter.name = t"y"`), and assigning to a `val` is a
       - compile error. A `const` or `@JvmField` property is read as the bare field it compiles to.
       + Ce qu'apportent les métadonnées est exactement ce qu'une signature Java ne peut pas
-      + exprimer. Un résultat Kotlin `String` se lit comme `Text` ; un résultat nullable `T?` est
-      + un `Optional`, absent là où Kotlin renverrait null, et une primitive nullable se
-      + désencapsule en sa primitive Scala à l'intérieur de l'`Optional` ; un résultat primitif,
-      + `Unit` ou de paramètre de type substitué est transmis tel quel ; et tout autre résultat
-      + de type Kotlin est enveloppé dans une nouvelle façade, si bien que la navigation continue.
-      + Une propriété se lit comme un membre (`regex.pattern`), une propriété `var` accepte
-      + l'affectation via son setter (`parameter.name = t"y"`), et affecter un `val` est une
-      + erreur de compilation. Une propriété `const` ou `@JvmField` est lue comme le simple champ
-      + en lequel elle est compilée.
+      + exprimer. Un résultat Kotlin `String` se lit comme `Text` ; un résultat nullable `T?` est un
+      + `Optional`, absent là où Kotlin renverrait null, et une primitive nullable est déboxée en sa
+      + primitive Scala à l'intérieur de l'`Optional` ; un résultat primitif, `Unit` ou de paramètre
+      + de type substitué est transmis tel quel ; et tout autre résultat de type Kotlin est
+      + enveloppé dans une nouvelle façade, si bien que la navigation continue. Une propriété se lit
+      + comme un membre (`regex.pattern`), une propriété `var` accepte l'affectation via son setter
+      + (`parameter.name = t"y"`), et affecter un `val` est une erreur de compilation. Une propriété
+      + `const` ou `@JvmField` est lue comme le simple champ en lequel elle est compilée.
 
       - Arguments are adapted to the parameter Kotlin declares: a `Text` satisfies a `String` or
       - `CharSequence` parameter; a facade unwraps to its underlying value; an `Int` widens to a
@@ -2493,7 +2492,7 @@ entry .Facade
       + paramètres peuvent être déclarés comme façades, de sorte que la valeur à l'intérieur se
       + parcourt aussi, et un résultat façade se désenveloppe pour Kotlin. Une lambda satisfait
       + de même une interface fonctionnelle Java (`Runnable`, `Predicate`, `Comparator`, un
-      + listener) via un proxy dynamique. Lorsque l'unique paramètre fonctionnel de la méthode a
+      + écouteur) via un proxy dynamique. Lorsque l'unique paramètre fonctionnel de la méthode a
       + un résultat simple, le type de la façade est raffiné afin qu'une lambda *non typée*
       + infère ses types de paramètres (`list.removeIf(text => text.length > 1)`) ; ailleurs, les
       + paramètres d'une lambda doivent être écrits (`(m: Facade over MatchResult) => …`),
@@ -2609,15 +2608,15 @@ entry .Facade
   entry #selectDynamic
     info
         - reads a property, a `const`/`@JvmField` field or a Java bean getter
-        + lit une propriété, un champ `const`/`@JvmField` ou un getter de bean Java
+        + lit une propriété, un champ `const`/`@JvmField` ou un accesseur de bean Java
     detail
         - `facade.name` reads a Kotlin property through its getter, a `const` or `@JvmField`
         - property as its field, or — for a class without Kotlin metadata — the bean getter
         - `getName()` or `isName()`. A `String` result reads as `Text`, a nullable one as an
         - `Optional`, and a Kotlin-typed one as a further facade. An unknown member is a compile
         - error naming near misses in Kotlin syntax.
-        + `facade.name` lit une propriété Kotlin via son getter, une propriété `const` ou
-        + `@JvmField` comme son champ, ou — pour une classe sans métadonnées Kotlin — le getter de
+        + `facade.name` lit une propriété Kotlin via son accesseur, une propriété `const` ou
+        + `@JvmField` comme son champ, ou — pour une classe sans métadonnées Kotlin — l'accesseur de
         + bean `getName()` ou `isName()`. Un résultat `String` se lit comme `Text`, un résultat
         + nullable comme `Optional`, et un résultat de type Kotlin comme une nouvelle façade. Un
         + membre inconnu est une erreur de compilation qui nomme les noms proches en syntaxe
@@ -2664,16 +2663,16 @@ entry .Facade
   entry #updateDynamic
     info
         - assigns to a `var` property or a Java bean setter
-        + affecte une propriété `var` ou un setter de bean Java
+        + affecte une propriété `var` ou un mutateur de bean Java
     detail
         - `facade.name = value` emits the Kotlin setter, or `setName(value)` for a class without
         - metadata. Where the setter is overloaded (`setColor(int)` and `setColor(long)`), the
         - overload the value fits exactly wins over one reached by a conversion. Assigning to a
         - `val`, or to a name with no setter, is a compile error.
-        + `facade.name = value` émet le setter Kotlin, ou `setName(value)` pour une classe sans
-        + métadonnées. Lorsque le setter est surchargé (`setColor(int)` et `setColor(long)`), la
+        + `facade.name = value` émet le mutateur Kotlin, ou `setName(value)` pour une classe sans
+        + métadonnées. Lorsque le mutateur est surchargé (`setColor(int)` et `setColor(long)`), la
         + surcharge à laquelle la valeur correspond exactement l'emporte sur celle atteinte par
-        + une conversion. Affecter un `val`, ou un nom sans setter, est une erreur de compilation.
+        + une conversion. Affecter un `val`, ou un nom sans mutateur, est une erreur de compilation.
   entry #tuple
     info
         - a data class's components as a Scala tuple
@@ -2953,7 +2952,7 @@ entry .Kotlin
     entry .forwarder
       info
           - the invocation handler behind a functional-interface proxy
-          + le handler d'invocation derrière un proxy d'interface fonctionnelle
+          + le gestionnaire d'invocation derrière un proxy d'interface fonctionnelle
       detail
           - Answers `equals`, `hashCode` and `toString` locally and forwards the single abstract
           - method to the lambda.
@@ -2968,7 +2967,7 @@ entry .Kotlin
           - declared parameter with absent ones zero-filled, the bitmask of absent positions and a
           - null marker). Throws `IllegalStateException` if the class has no such bridge.
           + Prend la classe propriétaire, le nom du pont et le tableau complet des arguments
-          + (récepteur, chaque paramètre déclaré avec les absents remplis de zéros, le masque de
+          + (receveur, chaque paramètre déclaré avec les absents remplis de zéros, le masque de
           + bits des positions absentes et un marqueur nul). Lève une `IllegalStateException` si la
           + classe n'a pas ce pont.
   entry #Grammar
@@ -3002,7 +3001,7 @@ entry .KotlinDialect
       + `#resolve` charge la classe nommée via le chargeur de classes de la macro — sans
       + exécuter ses initialiseurs statiques —, lit son annotation `kotlin.Metadata` avec
       + kotlin-metadata-jvm, et renvoie les membres sous forme de `Prototype` indépendants de
-      + l'écosystème : fonctions, propriétés `val` et `var` (via leurs getters, ou comme simples
+      + l'écosystème : fonctions, propriétés `val` et `var` (via leurs accesseurs, ou comme simples
       + champs pour `const` et `@JvmField`) et constructeurs (sous le nom `<init>`). Les membres
       + d'une façade multifichier sont rassemblés depuis ses classes parties ; une classe
       + imbriquée peut être nommée avec des points (`Regex.Companion`), et le nom binaire séparé
@@ -3022,7 +3021,7 @@ entry .KotlinDialect
       + Les types sont associés au modèle étranger tels que Kotlin les nomme : une classe par son
       + nom pleinement qualifié, une application générique via `Applied`, un `T?` nullable comme
       + l'union avec `"null"`, et une référence à un paramètre de type comme `#<id>`, que
-      + `Facade` résout par rapport aux arguments de type du récepteur. Une classe sans
+      + `Facade` résout par rapport aux arguments de type du receveur. Une classe sans
       + métadonnées Kotlin — le JDK, `android.jar`, toute bibliothèque Java simple — se replie
       + sur le même modèle construit par réflexion sur ses méthodes, champs et constructeurs
       + publics, les primitives de Java et `String` étant lues sous leurs noms Kotlin ; Java ne
@@ -3427,7 +3426,7 @@ entry .Typescript
         - order — and the modifiers `#visibility`, `#static`, `#readonly`, `#optional` and
         - `#isAbstract`. A property and a method of the same name are different contracts even
         - when their types agree, which is why the kind is part of the member.
-        + Un membre a un `#name`, une `#kind` (propriété, méthode, getter, setter, signature
+        + Un membre a un `#name`, une `#kind` (propriété, méthode, accesseur, mutateur, signature
         + d'appel, signature de construction ou signature d'index), ses `#signatures` — plusieurs
         + lorsqu'une méthode est surchargée, dans l'ordre de déclaration, puisque TypeScript résout
         + un appel en les parcourant dans l'ordre — et les modificateurs `#visibility`, `#static`,
@@ -3491,8 +3490,8 @@ entry .Typescript
           - a getter, a setter and a property of one name stay distinct.
           + Le nom seul pour une propriété ou une méthode, `get x` et `set x` pour les accesseurs,
           + `()` pour une signature d'appel, `new()` pour une signature de construction et `[]` pour
-          + une signature d'index, si bien qu'un getter, un setter et une propriété d'un même nom
-          + restent distincts.
+          + une signature d'index, si bien qu'un accesseur, un mutateur et une propriété d'un même
+          + nom restent distincts.
     entry #visible
       info
           - whether the member is part of a consumer's contract: everything but `private`
@@ -3677,7 +3676,7 @@ entry .Typescript
         + discipline de calculer le hachage de ce qu'il lit. Il gère les interfaces et classes
         + génériques, les clauses `extends` et `implements`, les namespaces (imbriqués, et
         + `declare module`/`global`), les surcharges (regroupées en un seul membre à plusieurs
-        + signatures, dans l'ordre), les getters et setters, les signatures d'appel, de
+        + signatures, dans l'ordre), les accesseurs et mutateurs, les signatures d'appel, de
         + construction et d'index, les types objets inline, les types fonction, les tuples, les
         + types littéraux, `keyof`, `typeof`, l'accès indexé et les prédicats de type ; les
         + instructions `import` et les formes de réexportation ne lient aucun contrat et sont
@@ -3772,8 +3771,8 @@ entry .TypescriptDialect
       - becomes a named type of its value; and `null` reads as `undefined`.
       + Les signatures d'index, d'appel et de construction n'ont aucun nom qu'une sélection
       + pourrait utiliser, et un membre `private` n'est pas au consommateur d'appeler ; aucun
-      + des deux n'est donc projeté. Une propriété ou un getter se projette en champ ; une
-      + méthode ou un setter en fonction, en prenant la *première* signature déclarée
+      + des deux n'est donc projeté. Une propriété ou un accesseur se projette en champ ; une
+      + méthode ou un mutateur en fonction, en prenant la *première* signature déclarée
       + lorsqu'elle est surchargée (un prototype enregistre une seule arité, et TypeScript
       + résout en parcourant les signatures dans l'ordre) ; un membre ou un paramètre optionnel
       + devient l'union avec `undefined` ; `T[]` devient `Array` appliqué à `T` ; un type
@@ -4053,7 +4052,7 @@ entry .WebIdl
           + Le nom seul pour un attribut ou une constante, le nom avec ses types d'arguments pour
           + une opération (afin que les surcharges aient des sélecteurs distincts,
           + `describe(string)`), `new(…)` pour un constructeur, et le mot-clé spécial entre crochets
-          + pour un getter, un setter ou un deleter anonyme.
+          + pour un accesseur, un mutateur ou un deleter anonyme.
   entry .Field
     info
         - one member of a dictionary: its name, type, and whether it is `required` or has a default
@@ -4401,12 +4400,12 @@ entry .Wit
       - as Component Model ids, which is what a packager needs to describe a component from the
       - world it was linked against.
       + L'objet compagnon contient aussi le modèle de déclarations et son analyseur :
-      + `Wit.Parser.parse` lit une source en un `Wit.Document` par section `package`, chacun
-      + avec ses `Wit.Interface` (records, variants, enums, flags, ressources, alias, fonctions
-      + et clauses `use`, sous forme de `Wit.Item`) et ses `Wit.WorldModel`, et lève une
-      + `Wit.Error` pour tout ce qui sort de sa grammaire. `WitDialect.worlds` lit les imports et
-      + exports d'un monde sous forme d'identifiants Component Model, ce dont un empaqueteur a
-      + besoin pour décrire un composant à partir du monde avec lequel il a été lié.
+      + `Wit.Parser.parse` lit une source en un `Wit.Document` par section `package`, chacun avec
+      + ses `Wit.Interface` (records, variantes, enums, indicateurs, ressources, alias, fonctions et
+      + clauses `use`, sous forme de `Wit.Item`) et ses `Wit.WorldModel`, et lève une `Wit.Error`
+      + pour tout ce qui sort de sa grammaire. `WitDialect.worlds` lit les imports et exports d'un
+      + monde sous forme d'identifiants Component Model, ce dont un empaqueteur a besoin pour
+      + décrire un composant à partir du monde avec lequel il a été lié.
   refer xenophile.WitDialect
   refer xenophile.Foreign
   refer xenophile.Interface
@@ -4717,7 +4716,7 @@ entry .Wit
         - since the lineage already records when an item arrived, while `@unstable` is refused.
         - A construct outside the vocabulary raises `Wit.Error` rather than being skipped.
         + Lit une source WIT en `Wit.Document`, en conservant la surface déclarée en entier : les
-        + packages avec leurs versions, les interfaces avec records, variants, enums, flags,
+        + packages avec leurs versions, les interfaces avec records, variantes, enums, indicateurs,
         + ressources (avec méthodes, fonctions `static` et constructeurs), alias `type`,
         + fonctions et clauses `use`, et les mondes avec leurs imports et exports, référencés ou
         + inline. Les identifiants sont en kebab-case ; `%` échappe un mot-clé et est retiré ; une
@@ -4783,13 +4782,13 @@ entry .WitDialect
       + composant ; les champs d'un `record` deviennent les membres d'un type nommé d'après le
       + record ; les méthodes d'une `resource` deviennent ses membres, en enregistrant la
       + ressource et si chacune est `static` ou un constructeur, afin qu'une invocation puisse
-      + transmettre le handle du récepteur. Une `enum` se réduit au discriminant non signé qui
+      + transmettre la poignée du receveur. Une `enum` se réduit au discriminant non signé qui
       + contient ses cas (`u8` jusqu'à 256, `u16` jusqu'à 65536, `u32` au-delà), `flags` au
       + vecteur de bits qui contient ses membres (`b8`, `b16`, `b32` ou `b64`), `option<T>` à
       + l'union `T | none`, un `result` porte toujours exactement deux branches (les branches
       + manquantes étant complétées par `_`), et les alias `type` se résolvent transitivement.
-      + Un variant ou une ressource sans corps n'a aucun membre navigable mais enregistre
-      + toujours le module qui le définit, si bien qu'une fonction définie ailleurs qui le
+      + Une variante ou une ressource sans corps n'a aucun membre navigable mais enregistre
+      + toujours le module qui la définit, si bien qu'une fonction définie ailleurs qui la
       + mentionne est résolue.
 
       ```scala
@@ -4815,7 +4814,7 @@ entry .WitDialect
   entry .parse
     info
         - every interface, record, resource and variant of a source, by name, with its members' prototypes
-        + chaque interface, record, ressource et variant d'une source, par nom, avec les prototypes
+        + chaque interface, record, ressource et variante d'une source, par nom, avec les prototypes
         + de ses membres
     detail
         - Total: an unreadable source gives an empty `Map`.

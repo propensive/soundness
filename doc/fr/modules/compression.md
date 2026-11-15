@@ -270,9 +270,9 @@ Out.println((decoded.length == base.length + next.length).inspect)
 - - [PDF](pdf.md) content streams are stored compressed.
 + - Les [archives](archives.md) stockent leurs entrées compressées, et les archives tar voyagent
 +   compressées.
-+ - Les corps [HTTP](http-client.md) sont encodés avec elle sur le réseau.
++ - Les corps [HTTP](http-client.md) sont encodés avec elle en transmission.
 + - Les couches des images de [conteneur](docker.md) sont compressées, et désignées par leur
-+   [empreinte](hashing.md#hashing-a-stream).
++   [condensé](hashing.md#hashing-a-stream).
 + - Les flux de contenu [PDF](pdf.md) sont stockés compressés.
 
 - In each case the format is one of the types named here, so a layer, an entry or a body

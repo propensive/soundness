@@ -17,7 +17,7 @@
 - This is the machinery beneath [staged execution](staging.md) and the compiletime
 - [benchmarks](../../standards/benchmarking.md), and it serves any tool which compiles Scala on a
 - user's behalf.
-+ C'est la mécanique sous-jacente à l'[exécution par étapes](staging.md) et aux
++ C'est la mécanique sous-jacente à l'[exécution par mise en étapes](staging.md) et aux
 + [benchmarks](../../standards/benchmarking.md) de compilation, et elle sert tout outil qui
 + compile du Scala pour le compte d'un utilisateur.
 
@@ -48,7 +48,7 @@
 - compilation described as a value and run by a toolchain is
 - [direct style](../../philosophy/direct-style.md): the build is code, checked like any other code.
 + `Scalac` fournit cela. Il invoque le compilateur dans le même processus, sur des sources en
-+ mémoire. Une compilation décrite comme une valeur et exécutée par une chaîne d'outils relève du
++ mémoire. Une compilation décrite comme une valeur et exécutée par une toolchain relève du
 + [style direct](../../philosophy/direct-style.md) : le build est du code, vérifié comme
 + n'importe quel autre code.
 
@@ -120,7 +120,7 @@ supervise:
 + `Compiler.Notice` porte son importance, qui est information, avertissement ou erreur, son
 + fichier et son étendue. Un outil peut souligner le code fautif, et n'a pas besoin de
 + reproduire la sortie du compilateur. Un plantage arrive lui aussi sous forme de valeur, avec sa
-+ [trace d'appels](stack-traces.md), et le processus peut être interrompu avant la fin de la
++ [trace de pile](stack-traces.md), et le processus peut être interrompu avant la fin de la
 + compilation.
 
 - ### Semantic diagnostics
@@ -368,7 +368,7 @@ val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Univers
 - A staging rig must fold its own running classpath into the JARs it produces. It pairs
 - `Bundler.applicationClasspath`, which is the classpath of the running application, introspected
 - from the classloader which loaded it, with its compiled output:
-+ Un dispositif d'exécution par étapes doit intégrer son propre classpath d'exécution dans les
++ Un dispositif de mise en étapes doit intégrer son propre classpath d'exécution dans les
 + JAR qu'il produit. Il associe `Bundler.applicationClasspath`, qui est le classpath de
 + l'application en cours d'exécution, obtenu par introspection du chargeur de classes qui l'a
 + chargée, à sa sortie compilée :
@@ -531,7 +531,7 @@ def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = s
 - cross-compile to it.
 + Chaque triplet est son propre nœud, rendu comme un triplet cible LLVM tel que
 + `aarch64-apple-darwin` ou `x86_64-unknown-linux-gnu`. Une cible autre que l'hôte de build
-+ requiert une chaîne d'outils C capable de compiler de façon croisée pour elle.
++ requiert une toolchain C capable de compiler de façon croisée pour elle.
 
 - ### Other languages
 + ### Autres langages
@@ -594,11 +594,11 @@ def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
 -   languages.
 - - [Concurrency](concurrency.md) describes `supervise`, which a compilation runs inside.
 - - [Containers](docker.md), [metaprogramming](metaprogramming.md) and [syntax highlighting](syntax-highlighting.md) use the compiler's output and model.
-+ - [Exécution par étapes](staging.md) compile du code quoté avec un `Scalac` et l'exécute
++ - [Mise en étapes](staging.md) compile du code quoté avec un `Scalac` et l'exécute
 +   ailleurs.
 + - [Classpath](classpath.md) décrit les classpaths qu'une compilation lit et produit.
-+ - [Empaquetage](packaging.md) décrit les fichiers JAR et autres archives qu'écrit une chaîne
-+   d'outils.
++ - [Empaquetage](packaging.md) décrit les fichiers JAR et autres archives qu'écrit une
++   toolchain.
 + - [Graphes](graphs.md) décrit le `Dag` qu'est une `Toolchain`.
 + - [Interopérabilité avec d'autres langages](foreign-interop.md) permet d'appeler du Kotlin
 +   compilé et d'autres langages.

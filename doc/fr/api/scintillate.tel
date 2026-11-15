@@ -110,8 +110,8 @@ detail
     + Les packages de choix sont reflétés dans le package parapluie (`soundness.frontends`,
     + `soundness.httpServers`, `soundness.webserverErrorPages`) ; leurs givens s'importent par
     + leur nom, car `import soundness.*` n'importe pas les givens. Les givens `httpServers` du
-    + package parapluie sont des redirections écrites à la main plutôt qu'un `export`, car une
-    + redirection d'export synthétisée perd le type raffiné annoté de captures d'un given.
+    + package parapluie sont des redirecteurs écrits à la main plutôt qu'un `export`, car un
+    + redirecteur d'export synthétisé perd le type raffiné annoté de captures d'un given.
 
 refer scintillate.SocketServer
 refer scintillate.Httpd
@@ -415,7 +415,7 @@ entry .Httpd
         - short, and `ConnectionFailed` is logged at `fail` when a connection's handling throws
         - something which was not turned into a response. An `Httpd.Event is Loggable` must be
         - in scope to serve at all; `logging.silentLogging` discards them.
-        + Chaque `Event` est étiqueté `Log.Network`, et `Received` aussi `Log.Protocol`. Les deux
+        + Chaque `Event` est tagué `Log.Network`, et `Received` aussi `Log.Protocol`. Les deux
         + backends journalisent `Received` au niveau `fine` lorsque la tête d'une requête a été
         + analysée et `Processed` au niveau `info` une fois sa réponse délivrée, avec le temps
         + écoulé ; `BrokenStream` est un avertissement lorsque l'écriture d'une réponse (ou la
@@ -1172,7 +1172,7 @@ entry .httpServers
       - an `export`, since a synthesized export forwarder would lose their capture-annotated
       - refinement type; they have the same names.
       + Dans le package parapluie `soundness`, les quatre sont des givens de redirection écrits à
-      + la main plutôt qu'un `export`, car une redirection d'export synthétisée perdrait leur type
+      + la main plutôt qu'un `export`, car un redirecteur d'export synthétisé perdrait leur type
       + raffiné annoté de captures ; ils portent les mêmes noms.
   refer urticose.Protocolic
   refer scintillate.SocketServer

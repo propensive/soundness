@@ -113,7 +113,7 @@ detail
 
     - Only in the last frame is `serialise`'s result known to be a `Text`: through
     - `anySerialiser`, it is the abstract `Result`.
-    + Ce n'est que dans le dernier cadre que l'on sait que le résultat de `serialise` est un
+    + Ce n'est que dans la dernière trame que l'on sait que le résultat de `serialise` est un
     + `Text` : via `anySerialiser`, c'est le `Result` abstrait.
 
     - The library is a single source set, `prepositional.core`, with no dependencies beyond

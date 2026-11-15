@@ -234,12 +234,12 @@ entry .Streamable
   entry .transported
     info
         - bytes tagged with a format, `Data over transport`, stream as plain bytes
-        + des octets étiquetés par un format, `Data over transport`, forment un flux d'octets bruts
+        + des octets tagués par un format, `Data over transport`, forment un flux d'octets bruts
     detail
         - What `value.in[Data over Protobuf]` writes reads back through the ordinary byte
         - pipeline: the tag is a phantom and the stream is `Stream(data)`.
         + Ce qu'écrit `value.in[Data over Protobuf]` se relit par le pipeline d'octets ordinaire :
-        + l'étiquette est fantôme et le flux est `Stream(data)`.
+        + le tag est fantôme et le flux est `Stream(data)`.
   entry .text
     info
         - a `Text` (or any subtype) streams as itself, in one window
@@ -1017,7 +1017,7 @@ entry .Eof
       - wrapper itself is just the case class with its one field.
       + `Eof(path)` enveloppe un chemin de sorte que l'ouvrir revienne à ouvrir le fichier en
       + ajout. La bibliothèque de système de fichiers rend `Eof[file]` ouvrable partout où `file`
-      + l'est, en ajoutant en tête le drapeau `Append` ; `Eof(path).open(...)` ajoute donc là où
+      + l'est, en ajoutant en tête l'indicateur `Append` ; `Eof(path).open(...)` ajoute donc là où
       + `path.open(...)` écraserait. L'enveloppe elle-même n'est que la case class et son unique
       + champ.
   entry #file
@@ -1768,7 +1768,7 @@ entry .Relay
         - up to its capacity; a stop found mid-drain still delivers the batch and the next
         - refill ends the stream. Drain it with `records`.
         + `(Stream[Array[record]^{}] over Credit)^`, qui nécessite l'`Addressable` du tableau
-        + d'enregistrements (l'instance générique en boîte convient à tout type référence) et un
+        + d'enregistrements (l'instance générique boxée convient à tout type référence) et un
         + `Buffering`. Une recharge bloque jusqu'à un premier enregistrement, puis vide dans la
         + même fenêtre tous les enregistrements déjà en file, dans la limite de sa capacité ; un
         + arrêt constaté en cours de vidage livre tout de même le lot, et la recharge suivante
@@ -2421,7 +2421,7 @@ entry .Divergence
       - next refill. In `turbulence.async`: needs the medium's `Addressable`, a `Buffering`,
       - and a parasite `Monitor` and `Probate`, so it runs inside `supervise`; the source is
       - consumed.
-      + `Divergence(source, count)` réalise la divergence (fan-out) : une tâche de pompe tire
+      + `Divergence(source, count)` réalise la diffusion : une tâche de pompe tire
       + la source et livre chaque morceau à chacun des `count` endpoints abonnés via un anneau
       + borné par abonné. Les morceaux sont matérialisés une seule fois et partagés en lecture
       + seule entre les abonnés ; un anneau plein met la pompe en attente, si bien que l'abonné
@@ -2466,7 +2466,7 @@ entry .convey
       - and cancelling the scope releases a pump blocked on an empty conduit.
       + Une extension de `turbulence.async` sur un `(Stream[medium] over transport)^` consommé :
       + `stream.convey(intake)` est `stream.pump(intake)` exécuté sur une tâche parasite, qui
-      + renvoie la `Task[Unit]`, pour les transferts « lancer et oublier » et pour les pipelines
+      + renvoie la `Task[Unit]`, pour les transferts sans suivi et pour les pipelines
       + comportant une frontière asynchrone, où c'est l'unique thread de pompage. Les deux
       + endpoints passent à la tâche ; l'appelant n'en conserve aucun. Nécessite un `Monitor` et
       + un `Probate` ; s'exécute donc à l'intérieur de `supervise`, et l'annulation de la portée

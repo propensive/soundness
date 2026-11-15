@@ -24,8 +24,8 @@ detail
     + filtre. Le filtre est construit à partir des deux nombres qui comptent — à peu près combien
     + d'éléments il contiendra, et le taux à tolérer — et en déduit la taille de son tableau de bits
     + et le nombre de ses positions de hachage. Toute valeur `Digestible` peut être un élément, et
-    + l'algorithme de hachage est un paramètre de type, choisi comme n'importe quelle autre
-    + empreinte de `gastronomy`.
+    + l'algorithme de hachage est un paramètre de type, choisi comme n'importe quel autre
+    + condensé de `gastronomy`.
 
     ```scala
     import soundness.*
@@ -57,7 +57,7 @@ detail
     - out. This is the encoding of BinTEL's schema signatures.
     + Un **palimpseste**, `Palimpsest`, est l'encodage compact d'une séquence ordonnée de hachages
     + de longueur fixe tirés d'une bibliothèque que détiennent à la fois l'émetteur et le
-    + récepteur : les hachages sont combinés par XOR les uns sur les autres à des décalages fixés
+    + receveur : les hachages sont combinés par XOR les uns sur les autres à des décalages fixés
     + par une `Cadence`, si bien que `n` hachages de `H` octets occupent `H + k_i + k_r·(n − 2) + 1`
     + octets au lieu de `H·n`. Le décodage (`Palimpsest#resolve`) cherche dans une `Bibliography`
     + des hachages connus la combinaison qui annule le corps. C'est l'encodage des signatures de
@@ -98,7 +98,7 @@ entry .BloomFilter
       + forme de bits. Chaque élément est condensé une fois avec `algorithm`, et ses deux premiers
       + mots de 64 bits `h₁` et `h₂` donnent les `#hashCount` positions de bits
       + `(h₁ + i·h₂) mod #bitSize` (le double hachage de Kirsch–Mitzenmacher, le schéma qu'utilise
-      + Guava) ; un algorithme dont l'empreinte fait moins de seize octets, tel qu'un CRC, est
+      + Guava) ; un algorithme dont le condensé fait moins de seize octets, tel qu'un CRC, est
       + réappliqué avec un compteur jusqu'à ce que suffisamment d'octets soient réunis. Ajouter un
       + élément active ses positions ; `#hits` les vérifie.
 
@@ -214,8 +214,8 @@ entry .BloomFilter
         - checksums need `cryptoPermits.permitNonCryptographicHashes`.
         + L'algorithme est la seconde liste de paramètres de type, optionnelle, inférée à partir du
         + given `Hash` dans la portée lorsqu'elle est omise. Elle requiert un `Hash in algorithm` et
-        + un `Permit[HashWeakness[algorithm]]` effacé : BLAKE3 et SHA-2 ne requièrent aucune
-        + permission, tandis que `Murmur3` (environ un cinquième du coût de BLAKE3, et suffisant,
+        + un `Permit[HashWeakness[algorithm]]` effacé : BLAKE3 et SHA-2 ne requièrent aucun
+        + permis, tandis que `Murmur3` (environ un cinquième du coût de BLAKE3, et suffisant,
         + puisqu'un filtre de Bloom n'a pas d'adversaire) et les sommes de contrôle requièrent
         + `cryptoPermits.permitNonCryptographicHashes`.
 
@@ -262,7 +262,7 @@ entry .BloomFilter
         - An `update` method, callable only through an exclusive (`^`) reference: on a frozen filter
         - it does not compile. It allocates nothing beyond the element's digest.
         + Une méthode `update`, appelable uniquement via une référence exclusive (`^`) : sur un
-        + filtre gelé, elle ne compile pas. Elle n'alloue rien au-delà de l'empreinte de l'élément.
+        + filtre gelé, elle ne compile pas. Elle n'alloue rien au-delà du condensé de l'élément.
   entry #addAll
     info
         - adds every element of a collection in place, on an exclusive filter
@@ -304,7 +304,7 @@ entry .BloomFilter
         - nothing beyond the digest. A `true` for an element never added happens at about the rate
         - the filter was sized for, while it holds no more elements than it was sized for.
         + Vérifie les positions de bits de l'élément, en répondant `false` à la première qui est
-        + inactive ; elle n'alloue rien au-delà de l'empreinte. Un `true` pour un élément jamais
+        + inactive ; elle n'alloue rien au-delà du condensé. Un `true` pour un élément jamais
         + ajouté se produit à peu près au taux pour lequel le filtre a été dimensionné, tant qu'il
         + ne contient pas plus d'éléments que ce pour quoi il a été dimensionné.
 
@@ -463,7 +463,7 @@ entry .Bibliography
   detail
       - A `Bibliography` holds every hash a receiver knows, so that `Palimpsest#resolve` can find
       - the hashes a palimpsest layers. `Palimpsest#resolve` takes one as a contextual value:
-      + Une `Bibliography` contient chaque hachage que connaît un récepteur, afin que
+      + Une `Bibliography` contient chaque hachage que connaît un receveur, afin que
       + `Palimpsest#resolve` puisse trouver les hachages que superpose un palimpseste.
       + `Palimpsest#resolve` en prend une comme valeur contextuelle :
 
@@ -537,13 +537,13 @@ entry .Palimpsest
       + un corps commun au décalage que donne sa `Cadence`, de sorte que chacun recouvre une partie
       + de ses voisins. Un octet final est choisi de sorte que tous les octets du palimpseste
       + combinés par XOR donnent l'octet de cadence, ce qui rend l'encodage autodescriptif (le
-      + récepteur n'a besoin d'aucun paramètre) et fournit un contrôle d'intégrité d'un octet.
+      + receveur n'a besoin d'aucun paramètre) et fournit un contrôle d'intégrité d'un octet.
 
       - The saving costs work at the receiver: `#resolve` must search a `Bibliography` of the
       - hashes it knows for the sequence which cancels the body to zero. The first hash is
       - looked up by its first `initial` bytes, each later one by `regular` bytes at its offset,
       - XORed out, and the search backtracks when a choice leads nowhere.
-      + L'économie se paie par du travail chez le récepteur : `#resolve` doit chercher dans une
+      + L'économie se paie par du travail chez le receveur : `#resolve` doit chercher dans une
       + `Bibliography` des hachages qu'il connaît la séquence qui ramène le corps à zéro. Le premier
       + hachage est recherché par ses `initial` premiers octets, chacun des suivants par `regular`
       + octets à son décalage, retiré par XOR, et la recherche revient en arrière lorsqu'un choix ne
@@ -615,7 +615,7 @@ entry .Palimpsest
         + (`Cadence.default` lorsqu'aucune autre n'est donnée). Chaque hachage doit faire exactement
         + `cadence.hashSize` octets, et il doit y en avoir au moins un : toute violation provoque
         + une panique, et non une erreur levée, puisqu'il s'agit d'une faute dans le code de
-        + l'appelant. Une séquence d'empreintes BLAKE3 avec la cadence de 12 octets par défaut doit
+        + l'appelant. Une séquence de condensés BLAKE3 avec la cadence de 12 octets par défaut doit
         + donc d'abord être tronquée à douze octets.
   entry #data
     info

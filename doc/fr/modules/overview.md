@@ -78,7 +78,7 @@
 + - [Enregistrements](records.md) — des enregistrements typés à partir d'une spécification
 + - [Catalogues](catalogs.md) — une valeur pour chaque champ d'un type, adressée par chemin
 + - [Optiques](optics.md) — mettre à jour des valeurs immuables imbriquées
-+ - [Drapeaux binaires](flags.md) — des ensembles de drapeaux sous forme de bits
++ - [Indicateurs binaires](flags.md) — des ensembles d'indicateurs sous forme de bits
 + - [Filtres de Bloom](bloom-filters.md) — l'appartenance probabiliste
 + - [Cache](caching.md) — un cache LRU et des valeurs qui expirent
 + - [UUID](uuid.md) — générer, analyser et combiner des UUID
@@ -107,9 +107,9 @@
 - - [Cryptography](cryptography.md) — encryption, signing, keys and certificates
 - - [Media Types](media-types.md) — media types, and types that know theirs
 + - [JSON](json.md) — analyse, accès typé, construction, schémas et validation
-+ - [YAML](yaml.md) — analyse, étiquettes, ancres et encodage
++ - [YAML](yaml.md) — analyse, tags, ancres et encodage
 + - [XML](xml.md) — nœuds, espaces de noms, XPath et schémas
-+ - [CBOR](cbor.md) — encodage binaire proche de JSON, avec étiquettes et notation de diagnostic
++ - [CBOR](cbor.md) — encodage binaire proche de JSON, avec tags et notation de diagnostic
 + - [CSV](csv.md) — lignes, en-têtes et formats, décodés en case classes
 + - [TEL](tel.md) — le langage de données fondé sur l'indentation, ses schémas et son édition
 + - [Protocol Buffers](protobuf.md) — messages, champs et compatibilité
@@ -118,7 +118,7 @@
 + - [Données binaires](binary-data.md) — décrire et lire une disposition binaire
 + - [Compression](compression.md) — compresser des valeurs et des flux
 + - [Archives](archives.md) — ZIP, tar et ar
-+ - [Hachage](hashing.md) — empreintes, sommes de contrôle et hachage rapide
++ - [Hachage](hashing.md) — condensés, sommes de contrôle et hachage rapide
 + - [Cryptographie](cryptography.md) — chiffrement, signature, clés et certificats
 + - [Types de média](media-types.md) — les types de média, et les types qui connaissent le leur
 
@@ -165,7 +165,7 @@
 + - [Flux](streams.md) — lire, écrire et composer des flux de données
 + - [Processus](processes.md) — définir, exécuter et chaîner des commandes
 + - [Concurrence](concurrency.md) — tâches supervisées, annulation et promesses
-+ - [Journalisation](logging.md) — journaliseurs, niveaux et routage
++ - [Journalisation](logging.md) — loggers, niveaux et routage
 + - [Classpaths](classpath.md) — ressources, chargeurs de classes et services
 + - [Empaquetage](packaging.md) — des JAR allégés dont les dépendances sont récupérées par empreinte
 + - [Démons](daemons.md) — des applications de longue durée avec des clients rapides
@@ -260,7 +260,7 @@
 + - [Mise en étapes](staging.md) — quotes, splices et bancs
 + - [Tests](testing.md) — suites, tests, contrastes et benchmarks
 + - [Débogage](debugging.md) — sessions, points d'arrêt et pas à pas
-+ - [Traces de pile](stack-traces.md) — capturer, décoder et résoudre des traces
++ - [Traces de pile](stack-traces.md) — capturer, démangler et résoudre des traces
 + - [Interopérabilité étrangère](foreign-interop.md) — charger et parcourir des interfaces
 +   étrangères
 + - [Language Server Protocol](lsp.md) — définir et exécuter un serveur

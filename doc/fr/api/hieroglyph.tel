@@ -378,10 +378,10 @@ entry .Charset
         - around each fault it reports, so that a `validate[Charset.Focus]` block, which
         - accumulates the faults, learns where each occurred: `prior` in the block is the focus,
         - an `Optional[Charset.Focus]`.
-        + Un `Charset.Focus(position)` est ce que `textSanitizers.accrueSanitizer` met au point
-        + focal autour de chaque faute qu'il signale, pour qu'un bloc `validate[Charset.Focus]`, qui
+        + Un `Charset.Focus(position)` est ce que `textSanitizers.accrueSanitizer` met en focus
+        + autour de chaque faute qu'il signale, pour qu'un bloc `validate[Charset.Focus]`, qui
         + accumule les fautes, apprenne où chacune s'est produite : `prior` dans le bloc est le
-        + point focal, un `Optional[Charset.Focus]`.
+        + focus, un `Optional[Charset.Focus]`.
 
         ```scala
         import soundness.*
@@ -1764,12 +1764,12 @@ entry .textSanitizers
         - `validate[Charset.Focus](accumulator)` block provides: its first block says how each
         - error joins the accumulator (with `prior` the focus) and its `protect` block does the
         - decoding.
-        + Lève une `Charset.Error` à chaque faute, avec pour point focal un
-        + `Charset.Focus(position)`, puis substitue `?` et continue ; le décodage va donc jusqu'au
-        + bout et chaque faute est signalée. Requiert une `Tactic[Charset.Error]` et un
-        + `Foci[Charset.Focus]`, que fournit un bloc `validate[Charset.Focus](accumulator)` : son
-        + premier bloc dit comment chaque erreur rejoint l'accumulateur (`prior` étant le point
-        + focal) et son bloc `protect` effectue le décodage.
+        + Lève une `Charset.Error` à chaque faute, avec pour focus un `Charset.Focus(position)`,
+        + puis substitue `?` et continue ; le décodage va donc jusqu'au bout et chaque faute est
+        + signalée. Requiert une `Tactic[Charset.Error]` et un `Foci[Charset.Focus]`, que fournit un
+        + bloc `validate[Charset.Focus](accumulator)` : son premier bloc dit comment chaque erreur
+        + rejoint l'accumulateur (`prior` étant le focus) et son bloc `protect` effectue le
+        + décodage.
 
         ```scala
         import soundness.*

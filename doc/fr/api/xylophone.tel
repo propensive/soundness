@@ -119,15 +119,15 @@ detail
     -   generated direct parser evaluate a user-written `Inlinable` instance at expansion time.
     -   It is loaded by name from `Inlinable.Stager` when it is on the classpath, and nothing
     -   refers to it directly.
-    + - `xylophone.core` — tout ce qui précède ; l'analyseur lit lui-même les octets UTF-8, si
-    +   bien qu'une source d'octets (un fichier, un corps HTTP, une ressource du classpath)
-    +   est analysée au fil de son arrivée sans `Charset` dans la portée, et une source
-    +   textuelle est d'abord encodée en UTF-8.
-    + - `xylophone.http` — les packages de choix `construables`, `postables` et `servables`,
-    +   de sorte qu'une valeur `Xml` soit un corps de requête ou de réponse HTTP avec le type
-    +   de média `application/xml`, et qu'un corps s'analyse en `Xml` à son arrivée.
-    + - `xylophone.staged` — `InlinableStager`, le compilateur de staging intégré aux macros qui
-    +   permet à un analyseur direct généré d'évaluer, au moment de l'expansion, une instance
+    + - `xylophone.core` — tout ce qui précède ; l'analyseur lit lui-même les octets UTF-8, si bien
+    +   qu'une source d'octets (un fichier, un corps HTTP, une ressource du classpath) est analysée
+    +   au fil de son arrivée sans `Charset` dans la portée, et une source textuelle est d'abord
+    +   encodée en UTF-8.
+    + - `xylophone.http` — les packages de choix `construables`, `postables` et `servables`, de
+    +   sorte qu'une valeur `Xml` soit un corps de requête ou de réponse HTTP avec le type de média
+    +   `application/xml`, et qu'un corps s'analyse en `Xml` à son arrivée.
+    + - `xylophone.staged` — `InlinableStager`, le compilateur de mise en étapes intégré aux macros
+    +   qui permet à un analyseur direct généré d'évaluer, au moment de l'expansion, une instance
     +   `Inlinable` écrite par l'utilisateur. Il est chargé par son nom depuis `Inlinable.Stager`
     +   lorsqu'il est présent dans le classpath, et rien n'y fait référence directement.
 
@@ -404,8 +404,8 @@ entry .Xml
         - Positions stay `Unset` on the foci; decode a `Document[Xml]` loaded with
         - `parsing.trackPositions` through `asTracked` to have each focus carry its source
         - line and column.
-        + Les positions restent `Unset` sur les foyers ; décodez un `Document[Xml]` chargé avec
-        + `parsing.trackPositions` au travers de `asTracked` pour que chaque foyer porte la ligne et
+        + Les positions restent `Unset` sur les focus ; décodez un `Document[Xml]` chargé avec
+        + `parsing.trackPositions` au travers de `asTracked` pour que chaque focus porte la ligne et
         + la colonne de sa source.
   entry #elements
     info
@@ -919,14 +919,14 @@ entry .Xml
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `Malformed(text, expected)`  1  _le texte `text` n'est pas un `expected` valide_
-          + row  `Untextual(expected)`  2  _l'élément n'a pas de texte à lire comme `expected`_  pas de segment de texte unique
-          + row  `Absent(expected)`  3  _aucun élément ni attribut n'a fourni le `expected` requis_  un type primitif requis
-          + row  `AbsentProduct(product)`  4  _aucun élément n'a fourni le `product` requis, qui n'a pas de valeur par défaut_  un enregistrement imbriqué
-          + row  `AbsentVariant(sum)`  5  _aucun élément n'a fourni le `sum` requis, qui n'a pas de valeur par défaut_  une énumération
-          + row  `UnknownVariant(discriminant, sum)`  6  _`discriminant` ne nomme aucune variante de `sum`_  une étiquette d'élément
-          + row  `Empty`  7  _l'élément n'a pas de texte_  là où le pont textuel en avait besoin
-          + row  `Missing`  8  _l'élément ou l'attribut était absent_  là où le type ne peut pas être nommé au point de levée
+          + row  `Malformed(text, expected)`  1  _the text `text` is not a valid `expected`_
+          + row  `Untextual(expected)`  2  _the element has no text to read as `expected`_  pas de segment de texte unique
+          + row  `Absent(expected)`  3  _no element or attribute supplied the required `expected`_  un type primitif requis
+          + row  `AbsentProduct(product)`  4  _no element supplied the required `product`, which has no default_  un enregistrement imbriqué
+          + row  `AbsentVariant(sum)`  5  _no element supplied the required `sum`, which has no default_  une énumération
+          + row  `UnknownVariant(discriminant, sum)`  6  _`discriminant` does not name a variant of `sum`_  une étiquette d'élément
+          + row  `Empty`  7  _the element has no text_  là où le pont textuel en avait besoin
+          + row  `Missing`  8  _the element or attribute was not present_  là où le type ne peut pas être nommé au point de levée
           ```
     entry .communicable
       info
@@ -1036,7 +1036,7 @@ entry .Xml
         - raised while decoding a document together with the `XPath` of the field at fault.
         - `position` is `Unset` unless the document was loaded with `parsing.trackPositions`
         - and decoded through `asTracked`, which looks each path up in the position index.
-        + Le type de foyer du décodage XML : `validate[Xml.Focus]` recueille chaque
+        + Le type de focus du décodage XML : `validate[Xml.Focus]` recueille chaque
         + `Xml.Error` levée pendant le décodage d'un document avec le `XPath` du champ fautif.
         + `position` vaut `Unset` sauf si le document a été chargé avec
         + `parsing.trackPositions` et décodé au travers de `asTracked`, qui recherche chaque
@@ -1079,7 +1079,7 @@ entry .Xml
   entry .asTracked
     info
         - decodes a tracked document, giving every accrued focus its source position
-        + décode un document suivi, en donnant à chaque foyer accumulé sa position dans la source
+        + décode un document suivi, en donnant à chaque focus accumulé sa position dans la source
     detail
         - An extension on `Document[Xml]`. `document.asTracked[T]` decodes like `Xml#as`, then
         - supplements each `Xml.Focus` accumulated inside the surrounding `validate[Xml.Focus]`
@@ -1090,7 +1090,7 @@ entry .Xml
         + Une extension de `Document[Xml]`. `document.asTracked[T]` décode comme `Xml#as`, puis
         + complète chaque `Xml.Focus` accumulé dans le `validate[Xml.Focus]` englobant par la
         + position vers laquelle son XPath se résout dans l'index du document, si bien qu'un rapport
-        + de validation peut nommer la ligne et la colonne. Hors d'un bloc `validate`, les foyers
+        + de validation peut nommer la ligne et la colonne. Hors d'un bloc `validate`, les focus
         + sont inertes et l'appel ne coûte rien ; pour un document non suivi, les positions restent
         + `Unset`. Nommée `asTracked` plutôt que `as` parce que `as` est l'extension générique de
         + décodage.
@@ -1852,8 +1852,8 @@ entry .Xml
         - annotation.
         + Un type sans espace de noms propre filtre les éléments de ses champs selon leur seul nom
         + local, quel que soit l'espace de noms dans lequel le document les place. Les analyseurs
-        + directs et stagés (`Xml.Parsable.derived`, `.staged`) filtrent les étiquettes brutes et ne
-        + consultent pas l'annotation.
+        + directs et mis en étapes (`Xml.Parsable.derived`, `.staged`) filtrent les étiquettes
+        + brutes et ne consultent pas l'annotation.
     entry #uri
       info
           - the namespace URI
@@ -1890,7 +1890,7 @@ entry .Xml
         + sous la forme `@attribute` au travers de l'alias de type du package parapluie
         + `soundness.attribute` (un terme nommé `attribute` entrerait en conflit avec ceux de
         + galilei et de tarantula), sous la forme `@Xml.attribute`, ou sous la forme
-        + `@xylophone.attribute`. Les analyseurs directs et stagés la respectent aussi.
+        + `@xylophone.attribute`. Les analyseurs directs et mis en étapes la respectent aussi.
 
         ```scala
         import soundness.*
@@ -2219,8 +2219,8 @@ entry .Xml
         + `given Shape is Discriminable in Xml = Xml.DiscriminantAttribute[Shape](t"kind")` fait
         + écrire au codec dérivé un attribut `kind="Circle"` sur l'élément et lire la variante
         + depuis celui-ci, à la place du schéma par défaut où l'étiquette est la variante
-        + (`.xmlDiscriminable`). L'analyseur stagé le reconnaît aussi, au travers du compilateur de
-        + staging de `xylophone.staged`.
+        + (`.xmlDiscriminable`). L'analyseur mis en étapes le reconnaît aussi, au travers du
+        + compilateur de mise en étapes de `xylophone.staged`.
     entry #attribute
       info
           - the attribute's name
@@ -2261,7 +2261,7 @@ entry .Xml
         + erreur `AbsentProduct` au lieu d'une cascade d'erreurs sur ses sous-champs. Le texte, les
         + commentaires et les instructions de traitement situés entre les enfants sont ignorés. Une
         + somme sélectionne sa variante au travers du `Discriminable in Xml` dans la portée. Chaque
-        + champ est décodé sous un foyer qui nomme son chemin, pour `validate[Xml.Focus]`. Les types
+        + champ est décodé sous un focus qui nomme son chemin, pour `validate[Xml.Focus]`. Les types
         + récursifs se referment au travers de leur propre dérivation. Pas d'appel direct :
         + `.decodable` y parvient.
     entry .conjunction
@@ -2449,7 +2449,7 @@ entry .Xml
         - other routes. The direct parsers match raw labels: `@xmlns` is not consulted.
         + La sémantique reflète exactement celle du chemin par arbre : noms sérialisés, champs
         + `@attribute`, doublons où la première correspondance l'emporte, regroupement des champs
-        + répétés, valeurs par défaut, champs absents et foyers d'erreur. Une case class qui a à la
+        + répétés, valeurs par défaut, champs absents et focus d'erreur. Une case class qui a à la
         + fois une `Reflection` et un `Decodable in Xml` écrit à la main serait dérivée ici et
         + divergerait de son décodeur ; le remède tient en une ligne,
         + `given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(summon[MyType is
@@ -2510,7 +2510,7 @@ entry .Xml
           - boxing. Same semantics as `derived`. Requires a top-level or object-nested case class
           - with a single parameter list; sums, method-local classes and other shapes use
           - `derived`.
-          + La contrepartie stagée de `derived` : les valeurs des champs vivent dans des
+          + La contrepartie mise en étapes de `derived` : les valeurs des champs vivent dans des
           + variables locales typées, les éléments enfants sont aiguillés par des comparaisons
           + de littéraux `Long` compactés, et l'enregistrement est construit par un appel direct
           + au constructeur — pas de tampon `Array[Any]`, pas de `Mirror`, pas de boxing par
@@ -2578,7 +2578,7 @@ entry .Xml
     entry .focusing
       info
           - runs a block under a focus naming a field, for generated parsers
-          + exécute un bloc sous un foyer qui nomme un champ, pour les analyseurs générés
+          + exécute un bloc sous un focus qui nomme un champ, pour les analyseurs générés
     entry .childIndex
       info
           - the index of a child's label among a record's non-attribute field keys, or `-1`
@@ -2947,7 +2947,7 @@ entry .Xml
         + tactique de l'appel de lecture, ainsi que la `Tactic[Xml.Error]` et les `Foci[Xml.Focus]`
         + du site de lecture, si bien que les erreurs de décodage que lève un analyseur
         + s'accumulent à la même frontière `validate` que celles du chemin par arbre, avec les
-        + mêmes foyers de champ.
+        + mêmes focus de champ.
 
         ```scala
         import soundness.*
@@ -3016,7 +3016,7 @@ entry .Xml
       detail
           - For staged parsers, which compare field names as literal constants; with
           - `childWordHigh` for the high word, and `childLabel` for a name which cannot pack.
-          + Pour les analyseurs stagés, qui comparent les noms de champs à des constantes
+          + Pour les analyseurs mis en étapes, qui comparent les noms de champs à des constantes
           + littérales ; avec `childWordHigh` pour le mot de poids fort, et `childLabel` pour un nom
           + qui ne peut pas être compacté.
     entry #childWordHigh
@@ -3102,7 +3102,7 @@ entry .Xml1
         + la valeur est lue directement depuis l'entrée au travers d'un `Xml.Reader`, sans
         + construire d'arbre `Xml`. Requiert le contexte d'analyse, une `Tactic[Parse.Error]`, une
         + `Tactic[Xml.Error]`, des `Foci[Xml.Focus]` (afin que les erreurs de décodage direct
-        + s'accumulent avec les mêmes foyers de champ que celles du chemin par arbre) et un
+        + s'accumulent avec les mêmes focus de champ que celles du chemin par arbre) et un
         + `Buffering`.
   entry #aggregableParsedText
     info
@@ -3629,13 +3629,13 @@ entry .Xml4
             + column  Code
             + column  Message
             + column  Remarque
-            + row  `OutOfRange(value, minimum, maximum)`  1  _la valeur `value` est hors de l'intervalle de `minimum` à `maximum`_  une facette de borne, ou la borne implicite d'un type entier
-            + row  `LengthOutOfRange(value, minimum, maximum)`  2  _la longueur de `value` est hors de l'intervalle de `minimum` à `maximum`_
-            + row  `PatternMismatch(value, pattern)`  3  _la valeur `value` ne correspond pas au motif `pattern`_
-            + row  `NotPermitted(value, permitted)`  4  _la valeur `value` ne fait pas partie de `permitted`_  une facette d'énumération
-            + row  `TooManyDigits(value, total, fraction)`  5  _la valeur `value` a plus de chiffres que les `total` chiffres au total ou `fraction` chiffres décimaux autorisés_
-            + row  `Absent(name)`  6  _l'élément ou l'attribut `name` est requis_  un élément ou un attribut requis
-            + row  `Malformed(value, expected)`  7  _le texte `value` n'est pas un `expected` valide_, ou _la valeur n'a pas de texte à lire comme `expected`_  une valeur que son type ne peut pas lire ; `value` vaut `Unset` pour un élément sans texte
+            + row  `OutOfRange(value, minimum, maximum)`  1  _the value `value` is outside the range `minimum` to `maximum`_  une facette de borne, ou la borne implicite d'un type entier
+            + row  `LengthOutOfRange(value, minimum, maximum)`  2  _the length of `value` is outside the range `minimum` to `maximum`_
+            + row  `PatternMismatch(value, pattern)`  3  _the value `value` does not match the pattern `pattern`_
+            + row  `NotPermitted(value, permitted)`  4  _the value `value` is not one of `permitted`_  une facette d'énumération
+            + row  `TooManyDigits(value, total, fraction)`  5  _the value `value` has more digits than the `total` total or `fraction` fraction digits permitted_
+            + row  `Absent(name)`  6  _the element or attribute `name` is required_  un élément ou un attribut requis
+            + row  `Malformed(value, expected)`  7  _the text `value` is not a valid `expected`_, or _the value has no text to read as `expected`_  une valeur que son type ne peut pas lire ; `value` vaut `Unset` pour un élément sans texte
             ```
 
             - An unset bound renders as _…_.
@@ -3869,7 +3869,7 @@ entry .servables
 entry .InlinableStager
   info
       - the in-macro staging compiler which evaluates an `Inlinable` instance at expansion time
-      + le compilateur de staging intégré aux macros, qui évalue une instance `Inlinable` au
+      + le compilateur de mise en étapes intégré aux macros, qui évalue une instance `Inlinable` au
       + moment de l'expansion
   hidden
   detail
@@ -3895,7 +3895,7 @@ entry .InlinableStager
   entry .evaluate
     info
         - summons the `Inlinable` for a field type in a staged compiler, or `None`
-        + invoque l'`Inlinable` d'un type de champ dans un compilateur stagé, ou `None`
+        + invoque l'`Inlinable` d'un type de champ dans un compilateur de mise en étapes, ou `None`
   entry .discriminantAttribute
     info
         - the discriminator attribute of a sum whose `Discriminable in Xml` is an `Xml.DiscriminantAttribute`
@@ -4541,12 +4541,12 @@ entry .XPath
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `UnknownFunction(name)`  1  _la fonction `name` n'est pas une fonction de base de XPath 1.0_
-          + row  `BadArity(name)`  2  _la fonction `name` a été appliquée à un mauvais nombre d'arguments_
-          + row  `UnboundVariable(name)`  3  _la variable $`name` n'a pas de liaison_
-          + row  `NotNodeSet`  4  _un ensemble de nœuds était attendu_  levée par `select` lorsque la valeur de l'expression n'est pas un ensemble de nœuds
-          + row  `Unsupported(feature)`  5  _`feature` n'est pas pris en charge_
-          + row  `Unresolved`  6  _l'expression contient une substitution non résolue_
+          + row  `UnknownFunction(name)`  1  _the function `name` is not an XPath 1.0 core function_
+          + row  `BadArity(name)`  2  _the function `name` was applied to the wrong number of arguments_
+          + row  `UnboundVariable(name)`  3  _the variable $`name` has no binding_
+          + row  `NotNodeSet`  4  _a node-set was expected_  levée par `select` lorsque la valeur de l'expression n'est pas un ensemble de nœuds
+          + row  `Unsupported(feature)`  5  _`feature` is not supported_
+          + row  `Unresolved`  6  _the expression contains an unresolved substitution_
           ```
     entry .communicable
       info
@@ -4573,7 +4573,7 @@ entry .XPath
         + compilation ne peut pas diverger du comportement à l'exécution, et reporte le
         + décalage d'un échec sur le caractère fautif du code source. Les substitutions sont
         + permises partout où la grammaire autorise une expression primaire, et l'arbre
-        + analysé, avec les insertions greffées, est élevé dans le code, si bien que rien
+        + analysé, avec les insertions greffées, est relevé dans le code, si bien que rien
         + n'est réanalysé à l'exécution. Les préfixes qu'utilise le littéral sont liés au
         + travers des givens `Namespace` dans la portée.
   entry .decodable
@@ -5071,13 +5071,13 @@ entry .Xsd
           + column  Code
           + column  Message
           + column  Remarque
-          + row  `NotSchema(found)`  1  _l'élément du document est `found`, et non un XML Schema_  l'élément du document n'est pas `xs:schema`
-          + row  `Unexpected(element, within)`  2  _`element` ne peut pas apparaître dans `within`_  un élément que la grammaire n'autorise pas à cet endroit
-          + row  `MissingAttribute(element, attribute)`  3  _le `element` n'a pas d'attribut `attribute`_
-          + row  `BadOccurs(value)`  4  _`value` n'est pas un nombre d'occurrences valide_  un `minOccurs` ou un `maxOccurs` qui n'est ni un nombre ni `unbounded`
-          + row  `UnknownPrefix(prefix)`  5  _le préfixe `prefix` n'est lié à aucun espace de noms_  dans un attribut dont la valeur est un QName
-          + row  `BadFacet(facet, value)`  6  _`value` n'est pas une valeur valide pour la facette `facet`_  une facette dont la valeur n'est pas un nombre
-          + row  `Duplicate(kind, name)`  7  _le `kind` `name` est déclaré plus d'une fois_  une déclaration globale faite deux fois
+          + row  `NotSchema(found)`  1  _the document element is `found`, not an XML Schema_  l'élément du document n'est pas `xs:schema`
+          + row  `Unexpected(element, within)`  2  _`element` may not appear in `within`_  un élément que la grammaire n'autorise pas à cet endroit
+          + row  `MissingAttribute(element, attribute)`  3  _the `element` has no `attribute` attribute_
+          + row  `BadOccurs(value)`  4  _`value` is not a valid number of occurrences_  un `minOccurs` ou un `maxOccurs` qui n'est ni un nombre ni `unbounded`
+          + row  `UnknownPrefix(prefix)`  5  _the prefix `prefix` is not bound to a namespace_  dans un attribut dont la valeur est un QName
+          + row  `BadFacet(facet, value)`  6  _`value` is not a valid value for the `facet` facet_  une facette dont la valeur n'est pas un nombre
+          + row  `Duplicate(kind, name)`  7  _the `kind` `name` is declared more than once_  une déclaration globale faite deux fois
           ```
     entry .communicable
       info
@@ -5556,23 +5556,23 @@ entry .Inlinable
       - then a structural generator for a case class, a collection or a sealed sum, and
       - finally the runtime seam, a spliced call through the field's `Xml.Parsing` instance.
       - A recursive occurrence (`Tree` above) takes the seam rather than expanding forever.
-      + Les instances sont des valeurs ordinaires à l'exécution, si bien que `derived` ne
-      + requiert aucune macro propre, et l'échelle de résolution lors de l'expansion de
-      + `parsable[T]` est la suivante : une feuille intégrée (les givens `int`, `text`, … du
-      + compagnon, qui reflètent les instances primitives de `Xml.Parsable`, si bien que les
-      + lectures directes, stagées et intégrées en ligne donnent des valeurs égales et des
-      + erreurs égales), puis une instance écrite par l'utilisateur, évaluée en direct dans un
-      + compilateur de staging intégré aux macros, puis un générateur structurel pour une case
-      + class, une collection ou une somme scellée, et enfin la jonction à l'exécution, un appel
-      + inséré au travers de l'instance `Xml.Parsing` du champ. Une occurrence récursive
-      + (`Tree` ci-dessus) emprunte la jonction au lieu de se développer indéfiniment.
+      + Les instances sont des valeurs ordinaires à l'exécution, si bien que `derived` ne requiert
+      + aucune macro propre, et l'échelle de résolution lors de l'expansion de `parsable[T]` est la
+      + suivante : une feuille intégrée (les givens `int`, `text`, … du compagnon, qui reflètent les
+      + instances primitives de `Xml.Parsable`, si bien que les lectures directes, mises en étapes
+      + et intégrées en ligne donnent des valeurs égales et des erreurs égales), puis une instance
+      + écrite par l'utilisateur, évaluée en direct dans un compilateur de mise en étapes intégré
+      + aux macros, puis un générateur structurel pour une case class, une collection ou une somme
+      + scellée, et enfin la jonction à l'exécution, un appel inséré au travers de l'instance
+      + `Xml.Parsing` du champ. Une occurrence récursive (`Tree` ci-dessus) emprunte la jonction au
+      + lieu de se développer indéfiniment.
 
       - The staging step needs the `xylophone.staged` module on the macro classpath, which
       - supplies the `Inlinable.Stager`; without it, a field whose type has only a
       - user-written instance takes the runtime seam. An instance (and its type) must also be
       - compiled in an earlier run than the expansion: a same-run instance degrades to the
       - seam through `Xml.Field`.
-      + L'étape de staging requiert le module `xylophone.staged` dans le classpath des macros,
+      + La mise en étapes requiert le module `xylophone.staged` dans le classpath des macros,
       + qui fournit l'`Inlinable.Stager` ; sans lui, un champ dont le type n'a qu'une instance
       + écrite par l'utilisateur emprunte la jonction à l'exécution. Une instance (et son type)
       + doit en outre être compilée lors d'une exécution antérieure à l'expansion : une instance
@@ -5622,7 +5622,7 @@ entry .Inlinable
   entry .Stager
     info
         - the in-macro staging compiler which evaluates a user-written instance at expansion
-        + le compilateur de staging intégré aux macros, qui évalue une instance écrite par
+        + le compilateur de mise en étapes intégré aux macros, qui évalue une instance écrite par
         + l'utilisateur lors de l'expansion
     detail
         - An `Inlinable` given is an ordinary runtime value, so the generator can only call its
@@ -5633,7 +5633,7 @@ entry .Inlinable
         - field takes the runtime seam.
         + Un given `Inlinable` est une valeur ordinaire à l'exécution, si bien que le générateur
         + ne peut appeler son `parse` qu'en évaluant le given à l'intérieur de la macro, ce qui
-        + demande un compilateur de staging, et avec lui les JAR du compilateur dont
+        + demande un compilateur de mise en étapes, et avec lui les JAR du compilateur dont
         + `xylophone.core` ne dépend pas. Le module `xylophone.staged` en contient
         + l'implémentation, que le compagnon charge par son nom lorsqu'elle est dans le classpath
         + des macros ; sans elle, `summon` vaut `None` et un tel champ emprunte la jonction à
@@ -5641,8 +5641,8 @@ entry .Inlinable
     entry .summon
       info
           - the live instance for a field type, if the staging compiler is available and finds one
-          + l'instance vivante pour un type de champ, si le compilateur de staging est disponible et
-          + en trouve une
+          + l'instance vivante pour un type de champ, si le compilateur de mise en étapes est
+          + disponible et en trouve une
     entry .discriminantAttribute
       info
           - the attribute a sealed sum's `Discriminable in Xml` dispatches on, if any
@@ -5677,10 +5677,9 @@ entry .Inlinable
         - generator identities.
         + Une classe de types typée par `Self` n'a pas de paramètres de type, si bien qu'elle ne
         + peut pas figurer dans une clause `derives` ; `ForXml[value]` est un sous-trait paramétré
-        + qui *est* un `value is
-        + Inlinable`, synthétisé dans le compagnon du type, où l'invocation de staging le trouve.
-        + L'échelle de résolution déballe le délégué, si bien que les instances structurelles
-        + conservent l'identité de leurs générateurs.
+        + qui *est* un `value is Inlinable`, synthétisé dans le compagnon du type, où l'invocation
+        + lors de la mise en étapes le trouve. L'échelle de résolution déballe le délégué, si bien
+        + que les instances structurelles conservent l'identité de leurs générateurs.
     entry .derived
       info
           - the carrier over `Inlinable.derived[value]`
@@ -5780,8 +5779,8 @@ entry .inlining
         - fallback chain, so that occurrence reads, repeatability and absence consult one
         - instance.
         + Une méthode inline que le corps d'enregistrement généré lie une fois par analyse, en
-        + préférant un `Xml.Parsable` nominal (une instance personnalisée, une instance stagée
-        + voisine) à la chaîne de replis de `Xml.Field`, afin que les lectures d'occurrences, la
+        + préférant un `Xml.Parsable` nominal (une instance personnalisée, une instance voisine mise
+        + en étapes) à la chaîne de replis de `Xml.Field`, afin que les lectures d'occurrences, la
         + répétabilité et l'absence consultent une seule instance.
   entry .generates
     info
@@ -5832,7 +5831,7 @@ entry .internal
   info
       - the macros behind `x"…"`, `xp"…"`, the XML extractor, tag application and staged parsers
       + les macros derrière `x"…"`, `xp"…"`, l'extracteur XML, l'application de balises et les
-      + analyseurs stagés
+      + analyseurs mis en étapes
   hidden
   detail
       - Not for direct use: the object which houses xylophone's macro implementations. It also
@@ -5913,7 +5912,7 @@ entry .internal
     detail
         - The opaque type over a frozen interleaved array, exported to the `xylophone` package,
         - whose page has the full account.
-        + Le type opaque sur un tableau figé entrelacé, exporté vers le package `xylophone`, dont
+        + Le type opaque sur un tableau gelé entrelacé, exporté vers le package `xylophone`, dont
         + la page en donne la description complète.
     entry .empty
       info
@@ -5969,8 +5968,8 @@ entry .internal
       detail
           - The lookup the staged parsers' `@attribute` steps use: `at` without the `Applicable`
           - detour.
-          + La recherche qu'utilisent les étapes `@attribute` des analyseurs stagés : `at` sans le
-          + détour par `Applicable`.
+          + La recherche qu'utilisent les étapes `@attribute` des analyseurs mis en étapes : `at`
+          + sans le détour par `Applicable`.
     entry .declaresNamespace
       info
           - whether any attribute is an `xmlns` or `xmlns:prefix` declaration
@@ -6056,7 +6055,7 @@ entry .internal
     detail
         - The opaque type over a frozen interleaved array, exported to the `xylophone` package
         - and re-exported as `Xml.Scope`, whose page has the full account.
-        + Le type opaque sur un tableau figé entrelacé, exporté vers le package `xylophone` et
+        + Le type opaque sur un tableau gelé entrelacé, exporté vers le package `xylophone` et
         + réexporté sous le nom `Xml.Scope`, dont la page en donne la description complète.
     entry .xmlNamespace
       info
@@ -6358,7 +6357,7 @@ entry .Attributes
       - (`updated`, `removed`, `++`) returns a new value. It is declared in
       - `xylophone.internal` and exported to the `xylophone` package.
       + Les attributs d'un `Xml.Element`, dans l'ordre du document, sous forme de type opaque
-      + sur un tableau figé de clés et de valeurs entrelacées plutôt que d'une `Map` : une
+      + sur un tableau gelé de clés et de valeurs entrelacées plutôt que d'une `Map` : une
       + analyse en construit un en découpant la balise ouvrante en lexèmes, les `attributes`
       + d'un élément en sont un, et chaque mise à jour (`updated`, `removed`, `++`) renvoie une
       + nouvelle valeur. Il est déclaré dans `xylophone.internal` et exporté vers le package

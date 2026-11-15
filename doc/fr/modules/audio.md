@@ -311,7 +311,7 @@ Audio.Outlet.list.head.let: outlet =>
 + longtemps que le programme le souhaite. Lorsque le périphérique doit être détenu pour
 + exactement un bloc, on *ouvre* plutôt une ligne, comme [on ouvre un fichier](filesystem.md).
 + La ligne dure précisément aussi longtemps que la portée. La disposition et la configuration
-+ sont données sous forme de la forme et de ses drapeaux, qui sont `PcmFlag.Rate`,
++ sont données sous forme de la forme et de ses indicateurs, qui sont `PcmFlag.Rate`,
 + `PcmFlag.Bits` et `PcmFlag.Chunk` :
 
 ```scala

@@ -16,7 +16,7 @@ detail
     - to register containers, run tasks inside them, and manage images and namespaces.
     + _Embarcadero_ couvre les deux moitiés de l'exécution de logiciels dans des conteneurs. La
     + première est l'**image** : une pile de couches de système de fichiers et une configuration,
-    + chaque élément étant adressé par l'empreinte de ses octets, dans le format que normalise
+    + chaque élément étant adressé par le condensé de ses octets, dans le format que normalise
     + l'Open Container Initiative (OCI) et que comprennent Docker, containerd, podman et tous les
     + registres. La seconde est le **démon** : containerd, l'environnement d'exécution sous-jacent
     + à Docker et à Kubernetes, piloté en gRPC sur un socket local pour enregistrer des
@@ -39,7 +39,7 @@ detail
     + compressé avec gzip et haché deux fois, une fois non compressé pour son `diffId` et une
     + fois tel que stocké pour son `digest`) et d'une `Oci.Image.Config` dont la
     + `Oci.ContainerConfig` indique quoi exécuter. La bibliothèque calcule le blob de
-    + configuration, l'`Oci.Manifest` qui relie configuration et couches par empreinte, et
+    + configuration, l'`Oci.Manifest` qui relie configuration et couches par condensé, et
     + l'`Oci.Index` à entrée unique ; `Oci.Image#archive` rend le tout sous la forme d'un tar au
     + format image-layout OCI (une « oci-archive ») qu'accepteront `docker load`,
     + `ctr images import`, `podman load` ou `skopeo`. `Oci.Image.wasm` construit la même
@@ -49,7 +49,7 @@ detail
     + archive existante se lit en l'ouvrant, `data.open[Oci.Image]()` ou
     + `path.open[Oci.Image]()`, ce qui donne un `Oci.Image.Handle` pour la portée d'un bloc :
     + son `index`, son `manifest`, sa `config` et chaque `layer`, vérifiés par rapport aux
-    + empreintes que déclare le manifeste, avec une `Oci.Error` pour tout élément manquant,
+    + condensés que déclare le manifeste, avec une `Oci.Error` pour tout élément manquant,
     + corrompu ou non pris en charge.
 
     ```scala
@@ -98,7 +98,7 @@ detail
     + `Containerd.ProcessStatus`. L'ouvrable `Workload` lie tout ce cycle de vie à une portée,
     + `container.open[Workload](Read & Launch & Signalling)`, si bien qu'une tâche est créée,
     + éventuellement démarrée, et toujours tuée, récupérée et supprimée à la fin du bloc. Les
-    + messages qui circulent sur le réseau — chaque `…Request` et `…Response`,
+    + messages en transmission — chaque `…Request` et `…Response`,
     + `Containerd.AnyMessage`, `Containerd.Timestamp`, `Containerd.Empty` — sont des case
     + classes ordinaires dotées de numéros de champs protobuf, si bien qu'ils font l'aller-retour
     + avec le démon et peuvent être encodés et décodés directement à travers le `Protobuf` de
@@ -208,7 +208,7 @@ entry .Oci
         - `application/vnd.wasm.config.v0+json`); everything above the config blob — manifest,
         - index, image layout — is shared. `Image#config` and `Image.Handle#config` have this
         - type, and a `match` on `Image.Config` and `WasmConfig` separates them.
-        + Un alias de type. Les deux se distinguent sur le réseau par le type de média du
+        + Un alias de type. Les deux se distinguent en transmission par le type de média du
         + descripteur de configuration (`application/vnd.oci.image.config.v1+json` ou
         + `application/vnd.wasm.config.v0+json`) ; tout ce qui se trouve au-dessus du blob de
         + configuration — manifeste, index, structure de l'image — est partagé. `Image#config` et
@@ -229,9 +229,9 @@ entry .Oci
         + Le document (type de média `application/vnd.oci.image.manifest.v1+json`) qui relie les
         + éléments d'une image : `#config` est le `Descriptor` du blob de configuration et `#layers`
         + le `Descriptor` de chaque couche, la plus basse en premier, si bien qu'un lecteur peut
-        + récupérer et vérifier chaque blob par son empreinte. `#schemaVersion` vaut toujours `2`.
+        + récupérer et vérifier chaque blob par son condensé. `#schemaVersion` vaut toujours `2`.
         + `Image.apply` et `Image.wasm` en construisent un ; `Image.Handle#manifest` en relit un,
-        + empreinte vérifiée. Il s'encode et se décode en JSON à travers jacinta.
+        + condensé vérifié. Il s'encode et se décode en JSON à travers jacinta.
     entry #schemaVersion
       info
           - the manifest schema version: always `2`
@@ -256,8 +256,8 @@ entry .Oci
   entry .Error
     info
         - raised when an OCI archive cannot be read: a missing document, a bad digest, an unsupported form
-        + levée lorsqu'une archive OCI ne peut pas être lue : un document manquant, une empreinte
-        + erronée, une forme non prise en charge
+        + levée lorsqu'une archive OCI ne peut pas être lue : un document manquant, un condensé
+        + erroné, une forme non prise en charge
     detail
         - Error 285: _the OCI image archive could not be read because `reason`_. Raised by
         - `Image.Handle`'s methods and by the openables, with a `.Reason` saying what went
@@ -274,10 +274,10 @@ entry .Oci
         + `UnsupportedLayout
         + (version)` (une version de structure ne commençant pas par `1.`), `MissingIndex` (pas
         + d'`index.json`), `MissingBlob(digest)`, `DigestMismatch(expected, actual)` (un blob dont
-        + les octets ne se hachent pas en l'empreinte par laquelle il est adressé),
+        + les octets, hachés, ne donnent pas le condensé par lequel il est adressé),
         + `InvalidBlob(digest, detail)` (un document qui ne s'analyse pas, ou un blob dont la
-        + taille ne correspond pas à son descripteur), `UnsupportedDigest(algorithm)` (une
-        + empreinte sans préfixe `sha256:`), `NoManifest` (un index ne listant aucun manifeste) et
+        + taille ne correspond pas à son descripteur), `UnsupportedDigest(algorithm)` (un
+        + condensé sans préfixe `sha256:`), `NoManifest` (un index ne listant aucun manifeste) et
         + `WriteUnsupported` (une archive ouverte avec `Write`).
 
         ```scala
@@ -355,11 +355,11 @@ entry .Oci
         - image back is a scoped *open*: `.Handle` is what `data.open[Image]()` (through
         - `.dataOpenable`) or `path.open[Image]()` (through `imagePathOpenable`, JVM only)
         - provides for the duration of a block.
-        + Une `Image` est le contenu complet et cohérent en empreintes d'une image OCI : ses
+        + Une `Image` est le contenu complet et cohérent en condensés d'une image OCI : ses
         + `#layers`, le document `#config` et ses `#configBytes` rendus, le `#manifest` qui nomme
         + la configuration et chaque couche par `Descriptor`, et l'`#index` à entrée unique qui
         + nomme le manifeste. Tout cela est calculé lors de la construction de l'image, si bien que
-        + les empreintes et les tailles sont justes par construction, et `#archive` la rend sous la
+        + les condensés et les tailles sont justes par construction, et `#archive` la rend sous la
         + forme du tar au format image-layout OCI qu'importe un environnement d'exécution. Le
         + compagnon construit une image de deux manières : `.apply` à partir de couches de système
         + de fichiers et d'une `ContainerConfig`, et `.wasm` à partir d'un composant Wasm compilé.
@@ -369,7 +369,7 @@ entry .Oci
 
         - The pieces come together in a fixed order, each addressed by the digest of the one
         - before:
-        + Les éléments s'assemblent dans un ordre fixe, chacun étant adressé par l'empreinte du
+        + Les éléments s'assemblent dans un ordre fixe, chacun étant adressé par le condensé du
         + précédent :
 
         ```scala fuel
@@ -487,8 +487,8 @@ entry .Oci
           + une), la rend en JSON compact pour son blob de configuration, lui crée un descripteur
           + avec le type de média `application/vnd.oci.image.config.v1+json`, l'enveloppe avec les
           + descripteurs des couches dans un `Oci.Manifest` (portant `annotations`, s'il y en a), et
-          + nomme ce manifeste depuis un `Index` à entrée unique. Rien n'est levé : chaque empreinte
-          + est calculée à partir d'octets déjà en mémoire.
+          + nomme ce manifeste depuis un `Index` à entrée unique. Rien n'est levé : chaque condensé
+          + est calculé à partir d'octets déjà en mémoire.
 
           ```scala
           import soundness.*
@@ -598,11 +598,11 @@ entry .Oci
           + Le blob de configuration d'une image de système de fichiers (type de média
           + `application/vnd.oci.image.config.v1+json`), tel qu'`Image.apply` l'écrit et
           + qu'`Image.Handle#imageConfig` le relit. Il enregistre l'`#architecture` et l'`#os`
-          + cibles, le `#rootfs` dont les `diff_ids` sont les empreintes des couches non compressées
+          + cibles, le `#rootfs` dont les `diff_ids` sont les condensés des couches non compressées
           + dans l'ordre, la `#config` optionnelle (une `ContainerConfig` décrivant quoi exécuter),
           + l'`#history` du build ainsi que la date `#created` et l'`#author`. Son encodage et son
           + décodage JSON sont dérivés à travers jacinta, et les noms des membres sont les noms
-          + utilisés sur le réseau, si bien que `created` se rend `created`. Avec `WasmConfig`, il
+          + de transmission, si bien que `created` se rend `created`. Avec `WasmConfig`, il
           + forme `Oci.Config`, l'union qu'obtient un lecteur depuis `Image.Handle#config` lorsqu'il
           + ne sait pas quel type d'artefact il a ouvert.
       entry #architecture
@@ -678,7 +678,7 @@ entry .Oci
           - which dispatches on the config descriptor's media type.
           + On atteint une couche de trois manières, ce qui rend le coût explicite : `#compressed`
           + diffuse les octets stockés sans les toucher, `#layer` les décompresse sous forme de
-          + flux, et `#verified` les rassemble et vérifie l'empreinte et la taille par rapport au
+          + flux, et `#verified` les rassemble et vérifie le condensé et la taille par rapport au
           + descripteur. Un lecteur qui ne sait pas s'il a une image de système de fichiers ou un
           + artefact Wasm demande `#config`, qui répartit selon le type de média du descripteur de
           + configuration.
@@ -691,7 +691,7 @@ entry .Oci
       entry #blob
         info
             - a blob by its `sha256:…` digest, as a stream of its stored chunks, unverified
-            + un blob par son empreinte `sha256:…`, sous forme de flux de ses morceaux stockés, non
+            + un blob par son condensé `sha256:…`, sous forme de flux de ses morceaux stockés, non
             + vérifié
         detail
             - The raw stored bytes (for a layer, the gzip-compressed tar) under
@@ -701,7 +701,7 @@ entry .Oci
             - read.
             + Les octets bruts stockés (pour une couche, le tar compressé avec gzip) sous
             + `blobs/sha256/<hex>`, sous forme de `Stream[Data] over Credit`. Lève `Oci.Error` avec
-            + `UnsupportedDigest` pour une empreinte dont l'algorithme n'est pas `sha256`, et
+            + `UnsupportedDigest` pour un condensé dont l'algorithme n'est pas `sha256`, et
             + `MissingBlob` lorsque l'archive n'a pas un tel blob. Rien n'est vérifié : `#verified`
             + est la lecture vérifiée.
       entry #index
@@ -790,7 +790,7 @@ entry .Oci
         detail
             - `#blob` by the descriptor's digest, as a `Stream[Data] over Credit`; the cheapest
             - way to copy a layer from one archive to another.
-            + `#blob` par l'empreinte du descripteur, sous forme de `Stream[Data] over Credit` ; la
+            + `#blob` par le condensé du descripteur, sous forme de `Stream[Data] over Credit` ; la
             + manière la moins coûteuse de copier une couche d'une archive à une autre.
       entry #layer
         info
@@ -804,12 +804,12 @@ entry .Oci
             + Fait passer `#compressed` par un décodeur gzip lorsque le type de média du descripteur
             + porte le suffixe `+gzip`, et le transmet tel quel sinon — si bien que la couche
             + `application/wasm` d'un artefact Wasm revient sous la forme des octets propres au
-            + composant. Le flux n'est pas vérifié par rapport à l'empreinte, puisque le vérifier
+            + composant. Le flux n'est pas vérifié par rapport au condensé, puisque le vérifier
             + exigerait de l'épuiser d'abord.
       entry #verified
         info
             - a blob gathered eagerly and checked against its descriptor's digest and size
-            + un blob rassemblé de manière stricte et vérifié par rapport à l'empreinte et à la
+            + un blob rassemblé de manière stricte et vérifié par rapport au condensé et à la
             + taille de son descripteur
         detail
             - Reads the whole blob into a `Data`, computes its SHA-256 and compares it with the
@@ -877,7 +877,7 @@ entry .Oci
       info
           - the config blob as rendered: compact JSON, the bytes the config digest is taken over
           + le blob de configuration tel que rendu : du JSON compact, les octets sur lesquels est
-          + calculée l'empreinte de configuration
+          + calculé le condensé de configuration
     entry #configDescriptor
       info
           - the descriptor of the config blob, as the manifest references it
@@ -919,7 +919,7 @@ entry .Oci
       detail
           - The content `#archive` writes under `blobs/sha256/`, keyed by the canonical
           - `sha256:<hex>` digest of each.
-          + Le contenu qu'écrit `#archive` sous `blobs/sha256/`, indexé par l'empreinte canonique
+          + Le contenu qu'écrit `#archive` sous `blobs/sha256/`, indexé par le condensé canonique
           + `sha256:<hex>` de chacun.
     entry #archive
       info
@@ -934,8 +934,8 @@ entry .Oci
           - `docker load`, `ctr images import`, `podman load` and `skopeo copy oci-archive:…`
           - accept, and what `data.open[Image]()` reads back.
           + Un `Tarfile` contenant le marqueur `oci-layout` (`{"imageLayoutVersion":"1.0.0"}`),
-          + l'`index.json`, et un fichier par entrée de `#blobs` nommé d'après son empreinte
-          + hexadécimale, chacun avec le mode `UnixMode()`, le propriétaire et le groupe `0` et la
+          + l'`index.json`, et un fichier par entrée de `#blobs` nommé d'après son condensé
+          + hexadécimal, chacun avec le mode `UnixMode()`, le propriétaire et le groupe `0` et la
           + date de modification `0`, si bien que l'archive est reproductible. Lisez-le sous forme
           + d'octets avec `image.archive.source[Data]` et écrivez-le dans un fichier : le résultat
           + est ce qu'acceptent `docker load`, `ctr images import`, `podman load` et
@@ -975,7 +975,7 @@ entry .Oci
   entry .Layer
     info
         - one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
-        + une couche d'image, avec ses deux empreintes : `diffId` du contenu brut et `digest` du
+        + une couche d'image, avec ses deux condensés : `diffId` du contenu brut et `digest` du
         + blob stocké
     detail
         - A layer carries two distinct digests, and the OCI format depends on both being right.
@@ -984,7 +984,7 @@ entry .Oci
         - recorded in the manifest's layer descriptor alongside its `size`. For a filesystem
         - layer the two differ, because storage gzip-compresses the tar; for a blob layer they
         - coincide. Both are computed lazily from the content, once.
-        + Une couche porte deux empreintes distinctes, et le format OCI dépend de la justesse des
+        + Une couche porte deux condensés distincts, et le format OCI dépend de la justesse des
         + deux. Le `#diffId` est le SHA-256 du contenu *non compressé*, enregistré dans le
         + `rootfs.diff_ids` de la configuration de l'image ; le `#digest` est le SHA-256 du blob
         + *tel que stocké*, enregistré dans le descripteur de couche du manifeste avec sa `size`.
@@ -1024,7 +1024,7 @@ entry .Oci
           - Nothing is read until a digest or the blob is first asked for.
           + `Layer(tar)` lit les octets du tar comme contenu brut, les compresse avec gzip pour le
           + blob stocké, et type le descripteur `application/vnd.oci.image.layer.v1.tar+gzip`. Rien
-          + n'est lu tant qu'une empreinte ou le blob n'est pas demandé pour la première fois.
+          + n'est lu tant qu'un condensé ou le blob n'est pas demandé pour la première fois.
     entry .blob
       info
           - a layer whose content is one opaque blob, stored verbatim under its own media type
@@ -1061,7 +1061,7 @@ entry .Oci
   entry .Descriptor
     info
         - an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
-        + un descripteur de contenu OCI : un type de média, une empreinte `sha256:…` et une taille,
+        + un descripteur de contenu OCI : un type de média, un condensé `sha256:…` et une taille,
         + pointant vers un blob
     detail
         - The typed, digest-addressed pointer every OCI document uses to name a blob: a
@@ -1089,7 +1089,7 @@ entry .Oci
     entry #digest
       info
           - the `sha256:<hex>` digest of the stored blob
-          + l'empreinte `sha256:<hex>` du blob stocké
+          + le condensé `sha256:<hex>` du blob stocké
     entry #size
       info
           - the stored blob's length in bytes
@@ -1113,7 +1113,7 @@ entry .Oci
         - names, so `created_by` and `empty_layer` keep their underscores.
         + Un enregistrement de `Image.Config#history`, un par couche ou par changement vide, dans
         + l'ordre. Chaque champ est optionnel et omis du JSON lorsqu'il n'est pas défini ; les noms
-        + des membres sont les noms utilisés sur le réseau, si bien que `created_by` et
+        + des membres sont les noms de transmission, si bien que `created_by` et
         + `empty_layer` conservent leurs tirets bas.
     entry #created
       info
@@ -1216,7 +1216,7 @@ entry .Oci
   entry .WasmConfig
     info
         - a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
-        + un document de configuration d'artefact Wasm : la génération de WASI, l'empreinte du blob
+        + un document de configuration d'artefact Wasm : la génération de WASI, le condensé du blob
         + du composant et ses interfaces
     detail
         - The config blob of a Wasm OCI Artifact (media type
@@ -1261,7 +1261,7 @@ entry .Oci
     entry #layerDigests
       info
           - the digests of the artifact's layers: the one `application/wasm` blob
-          + les empreintes des couches de l'artefact : l'unique blob `application/wasm`
+          + les condensés des couches de l'artefact : l'unique blob `application/wasm`
     entry #component
       info
           - the `WasmComponent` naming the exports, imports and target world, or `Unset`
@@ -1691,7 +1691,7 @@ entry .Containerd
     entry #code
       info
           - the numeric value containerd sends on the wire
-          + la valeur numérique que containerd envoie sur le réseau
+          + la valeur numérique que containerd envoie en transmission
 
   entry .Event
     info
@@ -1708,8 +1708,8 @@ entry .Containerd
         + Chaque modification que `Containerd` apporte au démon est journalisée au niveau `info` :
         + `ContainerCreated(id)`, `ContainerDeleted(id)`, `ImageDeleted(name)`,
         + `TaskCreated(container)`, `TaskStarted(container, pid)`, `TaskKilled(container, signal)`
-        + et `TaskDeleted(container)`. Tous sauf `ImageDeleted` sont étiquetés `Log.Process` ;
-        + `ImageDeleted` est étiqueté `Log.Resource`. Les lectures (`containers`, `version`,
+        + et `TaskDeleted(container)`. Tous sauf `ImageDeleted` sont tagués `Log.Process` ;
+        + `ImageDeleted` est tagué `Log.Resource`. Les lectures (`containers`, `version`,
         + `task`, …) ne journalisent rien. Un `Containerd.Event is Loggable` doit être dans la
         + portée pour chaque méthode du client ; `logging.silentLogging` les ignore.
     entry .communicable
@@ -1758,7 +1758,7 @@ entry .Containerd
           + Un type opaque sur un tableau d'octets gelé plutôt qu'un simple champ `Data`, afin que
           + la dérivation protobuf puisse le voir comme une valeur simple, sans capture.
           + `Payload(data)` enveloppe une `Data`, `.empty` est la charge utile de longueur nulle, et
-          + l'extension `data` sur `AnyMessage` la relit. Elle s'encode sur le réseau comme un champ
+          + l'extension `data` sur `AnyMessage` la relit. Elle s'encode en transmission comme un champ
           + délimité par sa longueur.
       entry .empty
         info
@@ -1908,7 +1908,7 @@ entry .Containerd
   entry .ContentDescriptor
     info
         - containerd's protobuf descriptor of a blob: media type, digest, size and annotations
-        + le descripteur protobuf d'un blob selon containerd : type de média, empreinte, taille et
+        + le descripteur protobuf d'un blob selon containerd : type de média, condensé, taille et
         + annotations
     detail
         - The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
@@ -1927,7 +1927,7 @@ entry .Containerd
     entry #digest
       info
           - the `sha256:<hex>` digest of the blob
-          + l'empreinte `sha256:<hex>` du blob
+          + le condensé `sha256:<hex>` du blob
     entry #size
       info
           - the blob's length in bytes

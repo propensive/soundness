@@ -7,10 +7,10 @@
 - Scala's quoted code, `'{…}`, normally runs in the next stage of the *same* program. Here the
 - idea is generalized, so that quoted code runs in a different *environment*: a fresh JVM, an
 - isolated classloader, or in principle any machine which can receive compiled code.
-+ Le code quoté de Scala, `'{…}`, s'exécute normalement à l'étape suivante du *même* programme.
-+ Ici, l'idée est généralisée, de sorte que le code quoté s'exécute dans un *environnement*
-+ différent : une nouvelle JVM, un classloader isolé, ou en principe toute machine capable de
-+ recevoir du code compilé.
++ Le code quoté de Scala, `'{…}`, s'exécute normalement à l'étape suivante du *même* programme. Ici,
++ l'idée est généralisée, de sorte que le code quoté s'exécute dans un *environnement* différent :
++ une nouvelle JVM, un chargeur de classes isolé, ou en principe toute machine capable de recevoir
++ du code compilé.
 
 - A `dispatch` block quotes ordinary Scala, splices in values from the enclosing scope, and
 - returns the result. The code is compiled, shipped and executed elsewhere, and its answer is
@@ -19,7 +19,7 @@
 + Un bloc `dispatch` quote du Scala ordinaire, y insère par splice des valeurs de la portée
 + englobante, et renvoie le résultat. Le code est compilé, expédié et exécuté ailleurs, et sa
 + réponse est rapportée. Les valeurs franchissent la frontière sous forme de
-+ [données neutres vis-à-vis du classloader](generic-data.md) ou de [JSON](json.md).
++ [données neutres vis-à-vis du chargeur de classes](generic-data.md) ou de [JSON](json.md).
 
 - ### On multi-stage programs
 + ### Sur les programmes à plusieurs étapes
@@ -189,7 +189,7 @@ def runElsewhere(job: Job): Job = Jvm.dispatch:
 - isolated classloader, which is cheap and contained:
 + Deux rigs sont fournis. `Jvm` compile le bloc et l'exécute dans un nouveau sous-processus JVM,
 + avec une isolation complète, au prix du démarrage d'un processus. `Isolation` l'exécute dans le
-+ même processus sous un classloader isolé, ce qui est peu coûteux et cloisonné :
++ même processus sous un chargeur de classes isolé, ce qui est peu coûteux et cloisonné :
 
 ```scala fuel
 typecheck
@@ -217,7 +217,7 @@ Isolation.dispatch:
 + column  Exécute le bloc
 + column  Un dispatch renvoie
 + row  `Jvm`  dans un nouveau sous-processus JVM  la sortie
-+ row  `Isolation`  dans le même processus, sous un classloader isolé  la sortie
++ row  `Isolation`  dans le même processus, sous un chargeur de classes isolé  la sortie
 + row  `Enclave`  empaqueté en exécutable autonome, pour les tests  un `Enclave.Launcher`
 + row  `Bench`, `Stress`, `Profile`  dans une JVM contrôlée, mesuré comme un [benchmark](../../standards/benchmarking.md)  la sortie
 ```
@@ -230,8 +230,8 @@ Isolation.dispatch:
 - spliced inputs, and encodes them into a single transportable value. One narrow job is left for
 - the rig: run some code somewhere, given that value, and bring back the value it produced.
 + `dispatch` fait les parties difficiles avant qu'un rig ne voie quoi que ce soit. Il extrait le
-+ classpath du classloader en cours, compile le code quoté s'il ne l'est pas déjà, capture les
-+ entrées insérées, et les encode en une seule valeur transportable. Il reste au rig une seule
++ classpath du chargeur de classes en cours, compile le code quoté s'il ne l'est pas déjà, capture
++ les entrées insérées, et les encode en une seule valeur transportable. Il reste au rig une seule
 + tâche étroite : exécuter du code quelque part, étant donné cette valeur, et rapporter la valeur
 + qu'il a produite.
 
@@ -341,10 +341,10 @@ object Jvm extends Rig:
 - failure of the rig itself, such as a subprocess which would not start or a classloader which
 - could not be built, is distinct, since the two call for different responses.
 + Le code qui s'exécute ailleurs peut échouer, et l'échec doit revenir. Une erreur levée dans le
-+ bloc mis en étapes est transportée et levée de nouveau au site d'appel. Ainsi, `dispatch`
-+ signale l'échec du calcul distant, et non l'impossibilité d'atteindre le calcul distant. Un
-+ échec du rig lui-même, comme un sous-processus qui ne démarre pas ou un classloader qui n'a pas
-+ pu être construit, est distinct, puisque les deux appellent des réponses différentes.
++ bloc mis en étapes est transportée et levée de nouveau au site d'appel. Ainsi, `dispatch` signale
++ l'échec du calcul distant, et non l'impossibilité d'atteindre le calcul distant. Un échec du rig
++ lui-même, comme un sous-processus qui ne démarre pas ou un chargeur de classes qui n'a pas pu être
++ construit, est distinct, puisque les deux appellent des réponses différentes.
 
 - ### Related
 + ### Voir aussi

@@ -260,7 +260,7 @@ Out.println(Cbor.Ast.parse(hex"4401020304").show)
 - so a document which carries tags is read and written without losing them. These bytes are
 - tag 1 around the integer 1363896240:
 + Les tags de CBOR annotent une valeur avec sa signification. Le tag 1 est un temps epoch, le
-+ tag 2 un grand entier, et le registre en compte des centaines. Une valeur étiquetée conserve à
++ tag 2 un grand entier, et le registre en compte des centaines. Une valeur taguée conserve à
 + la fois son tag et la valeur qu'il enveloppe : un document qui porte des tags se lit et s'écrit
 + donc sans les perdre. Ces octets sont le tag 1 autour de l'entier 1363896240 :
 

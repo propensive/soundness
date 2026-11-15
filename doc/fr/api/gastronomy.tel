@@ -544,7 +544,7 @@ entry .Digestible
       + sous forme d'`Int` avant les champs du cas. Il est déterministe et portable d'une
       + plateforme à l'autre, mais pas injectif — `(t"ab", t"c")` et `(t"a", t"bc")` ont le même
       + condensé — c'est donc une empreinte d'une valeur, et non une sérialisation. Pour un
-      + encodage avec délimitation, condensez plutôt la forme `serialize` de la valeur.
+      + encodage avec tramage, condensez plutôt la forme `serialize` de la valeur.
 
       - The typeclass is `Pure`: an instance may be handed any exclusive `Digestion^`, and holds
       - no capability of its own. `#contramap` builds an instance for another type from a

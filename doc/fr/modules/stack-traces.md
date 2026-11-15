@@ -1,5 +1,5 @@
 - ## Stack Traces
-+ ## Traces d'appels
++ ## Traces de pile
 
 - ### About
 + ### Présentation
@@ -7,7 +7,7 @@
 - A JVM stack trace describes compiled classes, not the Scala which produced them. A lambda
 - appears as `$anonfun`, an extension method gains `$extension`, and an operator is spelled
 - `$plus`.
-+ Une trace d'appels de la JVM décrit des classes compilées, et non le Scala qui les a
++ Une trace de pile de la JVM décrit des classes compilées, et non le Scala qui les a
 + produites. Une lambda apparaît sous la forme `$anonfun`, une méthode d'extension se voit
 + ajouter `$extension`, et un opérateur s'écrit `$plus`.
 
@@ -25,12 +25,12 @@
 + qualifié validé.
 
 - ### On stack traces
-+ ### À propos des traces d'appels
++ ### À propos des traces de pile
 
 - The stack trace of a `Throwable` is mutable, printable state. The standard idiom writes it to a
 - stream. Inspecting it in a program means picking through `StackTraceElement`s, whose names are
 - the compiler's and not the programmer's.
-+ La trace d'appels d'un `Throwable` est un état mutable et affichable. L'idiome standard
++ La trace de pile d'un `Throwable` est un état mutable et affichable. L'idiome standard
 + l'écrit dans un flux. L'inspecter dans un programme revient à fouiller parmi des
 + `StackTraceElement`, dont les noms sont ceux du compilateur et non ceux du programmeur.
 
@@ -286,7 +286,7 @@ val resolved = trace.resolved
 - native binary, or inside a WebAssembly component.
 + La [capacité] de lire ces fichiers est une capacité dont cette couche est délibérément
 + dépourvue. Le résolveur par défaut ne fait rien, et une implémentation provient d'un module qui
-+ dispose d'un classpath. C'est ce qui permet aux traces d'appels de fonctionner sans
++ dispose d'un classpath. C'est ce qui permet aux traces de pile de fonctionner sans
 + changement là où une telle capacité n'existe pas : dans un navigateur, dans un binaire natif,
 + ou à l'intérieur d'un composant WebAssembly.
 

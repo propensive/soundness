@@ -248,7 +248,7 @@ java -cp app.jar:burdock.jar soundness.repackage --github propensive/soundness
 +   réempaqueté.
 + - [Démons](daemons.md) et [LSP](lsp.md#a-thin-launcher) décrivent les lanceurs distribués
 +   sous forme de JAR allégés.
-+ - [Hachage](hashing.md) décrit les empreintes SHA-256 qui identifient chaque dépendance.
++ - [Hachage](hashing.md) décrit les condensés SHA-256 qui identifient chaque dépendance.
 + - [Classpath](classpath.md) décrit le classpath qu'assemble l'amorçage.
 + - [CLI](cli.md) et [versions](versioning.md) décrivent les applications et les manifestes
 +   qui sont empaquetés.

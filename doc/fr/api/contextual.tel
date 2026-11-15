@@ -436,7 +436,7 @@ entry .Extrapolable
   entry #extrapolate
     info
         - matches a scrutinee against the literal's parts, giving an `Extrapolation`
-        + confronte une valeur examinée aux parties du littéral, donnant une `Extrapolation`
+        + confronte une valeur filtrée aux parties du littéral, donnant une `Extrapolation`
     detail
         - Receives the parts and origins as type parameters, exactly as `Interpolable#interpolate`
         - does, and the value being matched. It returns a `Boolean` for a pattern with no holes, and
