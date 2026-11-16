@@ -2,7 +2,8 @@
 # `repository  version`. A tool is always a release (never a snapshot), is not a dependency —
 # it appears in no POM — and does not gate a release; that is what keeps the release graph free
 # of cycles. `make sync-deps` installs a tool's jars (the flare compiler plugin), `make tools`
-# installs its command (fume). See propensive/.github.
-propensive/flare	0.10.0
-propensive/fume	0.8.3
-propensive/flame	0.8.0
+# installs its command (fume, flare, flame, fuel). See propensive/.github.
+propensive/flare	0.14.0
+propensive/fume	0.13.0
+propensive/flame	0.13.0
+propensive/fuel	0.7.0

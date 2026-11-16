@@ -325,9 +325,9 @@ object flareToolchain extends CruxDeps:
   // rules and the unsafety census are `flare check` and `flare metrics`, run over the sources,
   // not the build.
   //
-  // `S1.1` — a method gated by `Unsafe` must say so in its name — is `strict`, because a gate
-  // nobody can see from the call site is a boundary that is not really there, and that is a
-  // soundness claim rather than a style one. `S1.2` — an `unsafe`-named method must take the
+  // `↯/c.9.1.1` — a method gated by `Unsafe` must say so in its name — is `strict`, because a
+  // gate nobody can see from the call site is a boundary that is not really there, and that is a
+  // soundness claim rather than a style one. `↯/c.9.1.2` — an `unsafe`-named method must take the
   // token — stays advisory; `doc/standards/naming.md` lists the definitions that break it.
   def options: Seq[String] =
     Seq(s"-P:flare:header=${mill.api.BuildCtx.workspaceRoot / "etc" / "header.txt"}",
@@ -336,7 +336,7 @@ object flareToolchain extends CruxDeps:
         "-P:flare:moduleRoot=lib",
         "-P:flare:interpolators=m;j;x;y;tel",
         "-P:flare:gate=Unsafe:unsafe",
-        "-P:flare:strict=S1.1")
+        "-P:flare:strict=c.9.1.1")
 
 // Resolves the stock Scala Native artifacts from Maven Central (they are not fork-built, so no
 // local repository view is needed). `nscplugin` is the compiler plugin that lowers to NIR, added
