@@ -323,6 +323,31 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
                 rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
               }
 
+      // Under `-Zbolt-codes`, each notice carries the bolt code Proscala gives it: a type
+      // mismatch is upstream's `E007`, `↯/p.1.7`. Without the option, none does.
+      supervise:
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
+          val source: Map[Text, Text] = Map(t"mismatch.scala" -> t"val count: Int = \"three\"\n")
+
+          def codes(options: List[Scalac.Option[3.9]]): List[Text] =
+            val process = Scalac[3.9](options)(classpath)(source, out)
+            process.complete()
+            process.notices.to[List].map(_.code.let(_.text).or(t""))
+
+          val coded: List[Text] = codes(List(scalacOptions.boltCodes))
+          val uncoded: List[Text] = codes(Nil)
+
+          test(m"A notice carries Proscala's bolt code under -Zbolt-codes"):
+            coded
+
+          . assert(_ == List(t"↯/p.1.7"))
+
+          test(m"A notice has no code without -Zbolt-codes"):
+            uncoded
+
+          . assert(_ == List(t""))
+
     // The running JVM's own classpath carries stenography's classes together with its
     // `soundness` export file, so under `import soundness.*` the alias `soundness.Syntax`
     // re-exports `stenography.Syntax` — the same shape as `jacinta.Json` in a REPL session.

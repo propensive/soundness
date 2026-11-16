@@ -163,12 +163,16 @@ object Compiler:
 
   case class Progress(complete: Double, stage: Text)
 
+  // A diagnostic the compiler reported. `code` is its bolt code, `↯/p.1.7`, where the compiler
+  // gives it one: Proscala does, for an error or a warning, under `-Zbolt-codes`
+  // (`scalacOptions.boltCodes`).
   case class Notice
     ( importance: Importance,
-     file:       Text,
-     message:    Text,
-     span:       Optional[Span],
-     markup:     Optional[Text] = Unset )
+      file:       Text,
+      message:    Text,
+      span:       Optional[Span],
+      markup:     Optional[Text]          = Unset,
+      code:       Optional[fulminate.Bolt] = Unset )
 
 trait Compiler:
   // The version of the compiler this drives, as the compiler itself reports it (`3.9.0-p16`,

@@ -311,7 +311,7 @@ entry .Compiler   the shape of an in-process compiler: a version, and sources pl
     entry #complete   the fraction of the compilation done, from `0.0` to `1.0`
     entry #stage   the compiler's current phase, as it names it
 
-  entry .Notice   one diagnostic: its importance, file, message, span and semantic markup
+  entry .Notice   one diagnostic: its importance, file, message, span, semantic markup and bolt code
     detail
         What a compiler reports about the sources, as a value: `#importance` is `Info`,
         `Warning` or `Error`; `#file` the name the source was given in the compile's `Map`
@@ -332,11 +332,17 @@ entry .Compiler   the shape of an in-process compiler: a version, and sources pl
         preserved, which the delicious library parses into a `SemanticMessage` of styled spans,
         placeholders and pickled types, so that a "found `A`, required `B`" message arrives as
         two types to render and compare rather than as text to re-parse.
+
+        `#code` is only set by `Scalac` under `scalacOptions.boltCodes`, and only for an error or
+        a warning: the bolt code Proscala gives the diagnostic, as a `fulminate.Bolt`, such as
+        `↯/p.1.7` for a type mismatch (upstream's `E007`). Proscala writes the code in the heading
+        of its own report, not in the message, so it is read here from the diagnostic itself.
     entry #importance   whether the notice is informational, a warning or an error
     entry #file   the name the source was given when it was compiled
     entry #message   the diagnostic's text, with any semantic markers stripped
     entry #span   the region of the source the notice concerns, or `Unset`
     entry #markup   the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
+    entry #code   the diagnostic's bolt code, under `-Zbolt-codes`, else `Unset`
 
 entry .Compilation   a compilation's output directory and classpath, tagged with its `Universe`
   detail
@@ -1202,6 +1208,9 @@ entry .scalacOptions   the Scala compiler's options as typed values, each valid 
       with pickled TASTy for the types among them, and a `Compiler.Notice` keeps that marked-up form
       as its `markup` alongside the plain `message`, for the delicious library to parse into
       a `SemanticMessage`.
+  entry .boltCodes   `-Zbolt-codes`, at 3.9: gives each error and warning notice its bolt code
+      Under this option Proscala gives every error and warning a bolt code, `↯/p.1.7`, and a
+      `Compiler.Notice` carries it as its `code`.
   entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
     detail
         Each is a `Scalac.Option` typed by the versions it exists at; `.unused` takes an

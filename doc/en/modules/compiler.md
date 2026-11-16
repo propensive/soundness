@@ -74,7 +74,8 @@ supervise:
 
 `complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each
 `Compiler.Notice` carries its importance, which is info, warning or error, its file and its
-span. A tool can underline the offending code, and need not echo the compiler's output. A crash
+span, and, under `scalacOptions.boltCodes`, the bolt code Proscala gives an error or a warning,
+such as `↯/p.1.7`. A tool can underline the offending code, and need not echo the compiler's output. A crash
 arrives as a value too, with its [stack trace](stack-traces.md), and the process can be aborted
 before the compilation ends.
 
