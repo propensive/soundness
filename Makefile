@@ -91,9 +91,9 @@ doccheck:
 	python3 etc/doccheck.py $(DOC)
 
 # Compile every tutorial's fences with fuel, each document as one session, against the test
-# assembly `.pyrocosm/fuel/config.tel` names (`./mill test.assembly` builds it). Fuel is not yet
-# a released tool, so it is not pinned in etc/tools: `make install` in a fuel checkout puts it on
-# the PATH, or FUEL names it. Exit status 4 means a fence did not do as its preamble said.
+# assembly `.pyrocosm/fuel/config.tel` names (`./mill test.assembly` builds it). Fuel is the
+# release pinned in etc/tools, which `make tools` installs, or FUEL names another. Exit status 4
+# means a fence did not do as its preamble said.
 FUEL ?= fuel
 fuelcheck:
 	./mill test.assembly + ambience.wasi.jar + aviation.wasi.jar + capricious.wasi.jar + coaxial.wasi.jar + galilei.wasi.jar + telekinesis.wasi.jar + turbulence.wasi.jar + telekinesis.forms.jar + breviloquence.http.jar + caesura.http.jar + locomotion.http.jar + eucalyptus.gcp.jar + caduceus.resend.jar + orthodoxy.server.jar
@@ -126,7 +126,7 @@ release:
 	@echo "See propensive/.github." >&2
 	@exit 1
 
-# Install the commands pinned in etc/tools (fume, flare) through their releases' installers.
+# Install the commands pinned in etc/tools (fume, flare, flame, fuel) through their releases' installers.
 tools:
 	./etc/shared tools.sh
 

@@ -7,8 +7,9 @@ tel 1.0
 # ── Rules ────────────────────────────────────────────────────────────────────────────────────
 
 # Claims of unsafety: the `unsafely` block that supplies the token, every `unsafe`-prefixed
-# call (each backed by a `using erased Unsafe` gate, which S1 checks), and the capture-checking
-# escape hatches, which bypass a guarantee the same way a gate does but without a token.
+# call (each backed by a `using erased Unsafe` gate, which ↯/c.9.1 checks), and the
+# capture-checking escape hatches, which bypass a guarantee the same way a gate does but without
+# a token.
 rule unsafe
   invokes unsafely
   invokes unsafe*
