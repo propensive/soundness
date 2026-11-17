@@ -95,10 +95,12 @@ class Database(size: Int) extends Findable:
   protected inline def corelate[left, right]: Map[Ref, Ref] =
     corelations(!![Topic].indexOf[left -< right])
 
+  // The lookup, the allocation and the two writes happen under one lock: otherwise two threads
+  // storing the same value could each find it absent and give it two references.
   inline def store[left](left: left): Ref of left in this.type =
-    references(left).or:
-      allocate[left]().tap: ref =>
-        mutex:
+    mutex:
+      references(left).or:
+        allocate[left]().tap: ref =>
           references = references.define(left, ref)
           dereferences = dereferences.define(ref, left)
 
@@ -115,12 +117,15 @@ class Database(size: Int) extends Findable:
   :   Unit raises Database.Error =
 
     val relationIndex = !![Topic].indexOf[left -< right]
-    val relation = relate[left, right]
-    val corelation = corelate[left, right]
-    val relation2 = relation.define(left, relation(left).or(Set()) :+ right)
-    val corelation2 = corelation.define(right, left)
-    relations(relationIndex) = relation2
-    corelations(relationIndex) = corelation2
+
+    // A read-modify-write of a shared slot, so it holds the lock throughout.
+    mutex:
+      val relation = relate[left, right]
+      val corelation = corelate[left, right]
+      val relation2 = relation.define(left, relation(left).or(Set()) :+ right)
+      val corelation2 = corelation.define(right, left)
+      relations(relationIndex) = relation2
+      corelations(relationIndex) = corelation2
 
 
   inline def lookup[left, right](left: Ref of left in this.type)
@@ -135,12 +140,14 @@ class Database(size: Int) extends Findable:
   :   Unit raises Database.Error =
 
     val relationIndex = !![Topic].indexOf[left -< right]
-    val relation = relate[left, right]
-    val corelation = corelate[left, right]
 
-    val relation2: Map[Ref, Set[Ref]] =
-      relation.define(left, relation(left).let(_.except(Set(right))).or(Set()))
+    mutex:
+      val relation = relate[left, right]
+      val corelation = corelate[left, right]
 
-    val corelation2 = corelation.omit(right)
-    relations(relationIndex) = relation2
-    corelations(relationIndex) = corelation2
+      val relation2: Map[Ref, Set[Ref]] =
+        relation.define(left, relation(left).let(_.except(Set(right))).or(Set()))
+
+      val corelation2 = corelation.omit(right)
+      relations(relationIndex) = relation2
+      corelations(relationIndex) = corelation2
