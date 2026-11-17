@@ -105,9 +105,8 @@ entry .random   a random value of any `Randomizable` type, from the shared globa
     ```
 
 entry .toss   a fair coin-toss: `true` or `false`, evenly
-    `toss()` needs a `Random` in scope, as a mark that the code is stochastic, but draws from
-    `scala.math.random`, the JDK's shared generator, rather than from that `Random`: a toss is
-    therefore not reproducible from a `Seed`. For a reproducible coin, use `arbitrary[Boolean]()`.
+    `toss()` draws from the `Random` in scope, by the same rule as `arbitrary[Boolean]()`
+    (the sign of a `Long`), so a toss is reproducible from a `Seed`.
 
     ```scala
     import soundness.*
@@ -139,11 +138,10 @@ entry .Random   a pseudorandom generator, as a capability whose state advances w
       Each call wraps the same process-wide generator, made lazily by
       `randomization.unseededRandomization`, so draws from it are never reproducible. `random`
       uses it.
-  entry .apply   a new `Random` from the `Randomization` in scope
-      `Random(seed)` initializes a generator from the contextual `Randomization`. The `seed`
-      argument is not passed to it: a seeded generator takes its seed from the `Seed` given
-      which `seededRandomization` itself requires, so `Seed#stochastic` is the reliable way to
-      seed a scope.
+  entry .apply   a new `Random` from the `Randomization` in scope, seeded with the given `Seed`
+      `Random(seed)` initializes a generator from the contextual `Randomization`, which is
+      resolved with `seed` in scope: under `seededRandomization` the generator starts from
+      `seed`, as it does in `Seed#stochastic`, and an unseeded randomization ignores it.
   entry .Size   how many elements a random collection has, as a contextual value
     detail
         A single-method trait: `generate(random)` draws a size. `Randomizable.list`,
@@ -223,8 +221,8 @@ entry .Randomizable   the typeclass of types whose values can be drawn at random
       kind of `Double` it means, which prevents treating a uniform draw as if it were normal.
       Import one from `randomDistributions` or declare a `Gaussian`, `PolarGaussian`,
       `UniformDistribution` or `Gamma` as a given.
-  entry .conjunction   the derived instance of a product: each field drawn in turn
-  entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn
+  entry .conjunction   the derived instance of a product: each field drawn in turn from the same `Random`
+  entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn from the same `Random`
 
 entry .Randomization   a source of pseudorandom generators: seeded, unseeded or secure, chosen by import
   detail

@@ -86,16 +86,13 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Randomizable =
-    random =>
-      stochastic(using infer[Randomization]):
-        build[derivation]: [field] => _.randomize(summon[Random])
+    random => build[derivation]: [field] => _.randomize(random)
 
   inline def disjunction[derivation: SumReflection]: derivation is Randomizable = random =>
-    stochastic(using infer[Randomization]):
-      val labels = variantLabels.stdlib
+    val labels = variantLabels.stdlib
 
-      delegate(labels(random.long().toInt.abs%labels.length)):
-        [variant <: derivation] => _.randomize(summon[Random])
+    delegate(labels(random.long().toInt.abs%labels.length)):
+      [variant <: derivation] => _.randomize(random)
 
 trait Randomizable extends Typeclass:
   def apply()(using random: Random): Self = randomize(random)

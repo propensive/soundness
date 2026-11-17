@@ -47,8 +47,12 @@ object Random:
 
   def global: Random = new Random(globalGenerator)
 
-  def apply(seed: Seed)(using randomization: Randomization): Random =
-    new Random(randomization.initialize())
+  // The `Randomization` is resolved with `seed` in scope, as `Seed#stochastic` does, so that a
+  // seeded randomization starts from this seed, not from an ambient one.
+  inline def apply(seed: Seed): Random =
+    given seed0: Seed = seed
+
+    new Random(infer[Randomization].initialize())
 
   // RandomSize → Random.Size
   trait Size:
