@@ -62,14 +62,11 @@ package logFormats:
           case Nil => e""
 
           case head :: tail =>
-            val date = dateFormat.format(timestamp).nn.tt
+            val date = dateFormat.format(java.time.Instant.ofEpochMilli(timestamp)).nn.tt
             val color = palette.subdued
             val first = e"$color($date) $level > $head"
 
-            (first :: tail.map(indent+_)).join(e"\n").render:
-              termcapDefinitions.xterm256Termcap
-
-            (first :: tail.map(indent+_)).join(e"\n")
+            (first :: tail.map(indent+_)).join(e"", e"\n", e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
 
 type LogPalette = Palette:

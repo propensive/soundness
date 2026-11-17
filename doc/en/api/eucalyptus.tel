@@ -128,12 +128,10 @@ entry .Logger   a log sink which renders each event through a format and writes 
       `Buffering`, a `Monitor` (from `supervise`), a `Probate` and a `Codepoint`, which the
       compiler supplies.
 
-      The queue and the writer daemon belong to the **call site**: every `Logger` built at
-      the same source position shares one, so a given re-evaluated on each summon does not
-      start a new thread each time. The consequence is that the destination is fixed by the
-      first call at that position: a helper which builds `Logger(path)` for different paths
-      from one line writes all of them to the first path. Build loggers for different
-      destinations at different call sites.
+      The queue and the writer daemon belong to the **call site** and the destination: every
+      `Logger` built at the same source position for an equal destination shares one, so a
+      given re-evaluated on each summon does not start a new thread each time, and a helper
+      which builds `Logger(path)` for different paths from one line gets a queue for each.
   entry #accepts   whether the logger records events at a level: at or above its threshold
   entry #submit   queues a transcribed event for formatting and writing, at a level and timestamp
       Called by `Loggable.fanOut` once `#accepts` and `admits` have passed; the event is
@@ -196,10 +194,9 @@ entry .mute   runs a block with logging of one event type suppressed, whatever l
     ```
 
 entry .dateFormat   the date and time pattern of the timestamped formats: `2026-Nov-04 09:30:00.250`
-    A `java.text.SimpleDateFormat` for `yyyy-MMM-dd HH:mm:ss.SSS` in the JVM's default time
-    zone, used by `timestampedLogFormat` and `ansiTimestampedLogFormat`. A
-    `SimpleDateFormat` is not safe for concurrent use, so it should not be called directly
-    from several threads.
+    A `java.time.format.DateTimeFormatter` for `yyyy-MMM-dd HH:mm:ss.SSS` in the JVM's
+    default time zone, used by `timestampedLogFormat` and `ansiTimestampedLogFormat`. It is
+    immutable, so it is safe to use from several threads.
 
 entry .LogPalette   the colours `ansiTimestampedLogFormat` paints levels and dates with
     A `Palette` in `Srgb` with four further colours: `error` for `Fail`, `warning` for
@@ -289,8 +286,7 @@ entry .logFormats   the standard log formats, each a given to import by name
       `timestampedLogFormat` and `untimestampedLogFormat` format any `Communicable` value,
       `ansiTimestampedLogFormat` and `googleCloudPlatformLogFormat` only a `Message`, which a
       `Logger[…, Message]` transcribes every event to. `textLevelLogFormat` and
-      `teletypeableLogFormat`, which render a `Log.Level`, are used by the others and are not
-      exported to the umbrella's `logFormats`.
+      `teletypeableLogFormat`, which render a `Log.Level`, are used by the others.
   entry .timestampedLogFormat   a line of text: date and time, the level in brackets, and the message
       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, ending with a newline, for
       any `Communicable` event, with the timestamp formatted by `dateFormat`.
@@ -298,8 +294,7 @@ entry .logFormats   the standard log formats, each a given to import by name
       `[INFO] server listening on 8080`, ending with a newline, for any `Communicable`
       event. Suits a destination which adds its own timestamp, such as `Syslog`.
   entry .textLevelLogFormat   renders a `Log.Level` as `FINE`, `INFO`, `WARN` or `FAIL`
-      The `Showable` for `Log.Level` the text formats interpolate. It is not exported to the
-      umbrella's `logFormats` package; import it as `eucalyptus.logFormats.textLevelLogFormat`.
+      The `Showable` for `Log.Level` the text formats interpolate.
   entry .ansiTimestampedLogFormat   a teletype: dimmed date and time, the level on a coloured ground, `>` and the message
       A `Message is Inscribable in Teletype`, for terminals, in `eucalyptus.ansi`. It needs a
       `LogPalette` in scope for its colours. Messages are cut into lines of at most 76
@@ -332,18 +327,17 @@ entry .logFormats   the standard log formats, each a given to import by name
         Log.warn(m"retrying after timeout")
       ```
 
-      The records carry no trailing newline, so consecutive events written to `Out` are not
-      separated by one.
+      Each record ends with a newline.
   entry .teletypeableLogFormat   renders a `Log.Level` as a bold label on the `LogPalette` colour for its level
       The `Teletypeable` for `Log.Level` that `ansiTimestampedLogFormat` uses, in
-      `eucalyptus.ansi`. It needs a `LogPalette`, and is not exported to the umbrella's
-      `logFormats` package.
+      `eucalyptus.ansi`. It needs a `LogPalette`.
   entry .googleCloudPlatformLogFormat   one compact JSON object per event, with `severity` and `message`
       A `Message is Inscribable in Text`, in `eucalyptus.gcp`, which writes
       `{"severity":"WARNING","message":"…"}`, the structured form Google Cloud's logging
       agent reads from a container's standard output. The levels map to `DEBUG`, `INFO`,
       `WARNING` and `ERROR`; the message is its plain text, without styling. No timestamp is
-      written, as the agent records its own, and the record has no trailing newline.
+      written, as the agent records its own. Each record ends with a newline: one object
+      per line.
 
 entry .logging   loggers to import by name, overriding those in scope
   detail

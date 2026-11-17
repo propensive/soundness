@@ -35,4 +35,4 @@ package soundness
 export eucalyptus.{LogPalette}
 
 package logFormats:
-  export eucalyptus.logFormats.ansiTimestampedLogFormat
+  export eucalyptus.logFormats.{ansiTimestampedLogFormat, teletypeableLogFormat}
