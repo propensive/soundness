@@ -883,6 +883,57 @@ entry .Malleable   an `Expanse` whose bytes may also be replaced in place, as a 
       The region is fixed: `write` may not extend beyond `size`.
   entry #write   replaces the bytes at `offset` with `data`
 
+entry .Terrain   an `Expanse` whose bytes are in memory, and are read where they lie: a mapped file, or bytes on the heap
+  detail
+      Integers are loaded at any offset, little-endian, with no copy, and a `slice` is a
+      narrower view of the same memory. A terrain belongs to a scope -- a file is mapped for
+      the length of a block -- so it is lent as a tracked `Terrain^`, and nothing loads from
+      memory which is no longer mapped. `Terrain(data)` is one over bytes which are already on
+      the heap.
+  entry #u8   the unsigned byte at an offset, as an `Int`
+  entry #u16   the unsigned 16-bit integer at an offset, as an `Int`
+  entry #u32   the unsigned 32-bit integer at an offset, as a `Long`
+  entry #u64   the 64-bit integer at an offset, as a `Long`
+  entry #i32   the 32 bits at an offset as a signed `Int`
+  entry #slice   a view of part of the memory, sharing it and its lifetime
+  entry #same   whether the bytes at an offset are those of some `Data`, compared in place
+  entry #compare   the order of some bytes relative to some `Data`, compared in place, a proper prefix sorting first
+
+entry .Tilth   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
+  detail
+      What a format which is kept and altered in place is altered through: a file mapped for
+      writing by the one process which owns it (galilei's `tilled`), or bytes on the heap
+      (`Tilth(size)`, `Tilth(data)`). Every store is at an offset, and no address into its
+      memory is handed out, since `expand` may move it; a `slice` reads through the tilth it
+      came from, and stays good across an expansion.
+  entry #set8   stores a byte at an offset
+  entry #set16   stores a 16-bit integer at an offset, little-endian
+  entry #set32   stores a 32-bit integer at an offset, little-endian
+  entry #set64   stores a 64-bit integer at an offset, little-endian
+  entry #write   stores the bytes of some `Data` from an offset
+  entry #zero   stores zero bytes over a range
+  entry #move   copies a range to another offset, which it may overlap
+  entry #expand   makes the tilth at least a given size, the new bytes zero; it never shrinks
+  entry #flush   makes what has been stored durable, where there is a file for it to be durable in
+
+entry .Viewable   the typeclass of a value whose bytes can be lent as a `Terrain` for the length of a block
+  detail
+      A path is `Viewable`, its file being mapped for the block; so are an image which is
+      already on the heap, and a terrain which is already in hand. A format which is read in
+      place is opened from any of them alike.
+  entry #view   lends the value's bytes as a `Terrain`
+  entry #till   lends the value's bytes for changing, as a `Tilth`, or answers `otherwise` if they cannot be changed
+      A file is mapped for writing under an exclusive lock, and a tilth in hand is lent as it
+      is; bytes which are immutable, like anything which does not say otherwise, answer
+      `otherwise`.
+
+entry .Surveyable   the typeclass of a form which is read in place from a view of its bytes: `Form is Surveyable by Flag to Handle`
+  detail
+      It is an instance for the form, and not for what lends the view, which is what lets a
+      lender which is itself a capability -- an `Observer` of a published name -- open the
+      view as a form.
+  entry #survey   opens a view as the form, with flags, and provides the handle contextually for the length of a block
+
 entry .Spring   a re-materializable source of streams: each pull mints a fresh, exclusive endpoint over the same content
   detail
       A `Stream` is read once; a `Spring[medium]` can be pulled any number of times, each

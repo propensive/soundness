@@ -132,7 +132,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
   // The one declaration which a publisher and its observers share.
   case class Part(@key name: Text, play: Text)
-  case class Company(@index(t"/play") part: List[Part])
+  case class Playbill(@index(t"/play") part: List[Part])
   case class Troupe(player: List[Text])
 
   def run(): Unit =
@@ -1027,37 +1027,37 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       val directory: Text = Uuid().show
       val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
       unsafely(root.create[Directory]())
-      val file: Path on Linux = unsafely((% / "tmp" / directory / "company.ratel").on[Linux])
+      val file: Path on Linux = unsafely((% / "tmp" / directory / "playbill.ratel").on[Linux])
 
-      val company = Company(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
-      val recast = Company(List(Part(t"Hamlet", t"Hamlet"), Part(t"Feste", t"Twelfth Night")))
+      val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
+      val recast = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Feste", t"Twelfth Night")))
 
       test(m"an image of a value is published under a name claimed for its type"):
         unsafely:
-          file.claim[Ratel of Company](_.publish(company.ratel))
-          file.open[Ratel of Company]()(ratel.root.as[Company])
-      . assert(_ == company)
+          file.claim[Ratel of Playbill](_.publish(playbill.ratel))
+          file.open[Ratel of Playbill]()(ratel.root.as[Playbill])
+      . assert(_ == playbill)
 
       test(m"a name claimed for a type takes no image of another type"):
         demilitarize:
-          unsafely(file.claim[Ratel of Company](_.publish(Troupe(List(t"Snug")).ratel)))
+          unsafely(file.claim[Ratel of Playbill](_.publish(Troupe(List(t"Snug")).ratel)))
         . map(_.message.tt)
       . assert(!_.nil)
 
       test(m"a name claimed for a type takes no image of no declared type"):
         demilitarize:
-          unsafely(file.claim[Ratel of Company](_.publish(catalogue.ratel(catalogueSchema))))
+          unsafely(file.claim[Ratel of Playbill](_.publish(catalogue.ratel(catalogueSchema))))
         . map(_.message.tt)
       . assert(!_.nil)
 
       test(m"an observer opens the image in one block, and finds a record by its key"):
         unsafely:
-          file.observe[Ratel of Company]: observer =>
+          file.observe[Ratel of Playbill]: observer =>
             observer.open()((ratel.root / t"part").find(t"Viola").let(_.as[Part]))
       . assert(_ == Part(t"Viola", t"Twelfth Night"))
 
       test(m"an observer opens the image with flags, as a file is opened"):
-        unsafely(file.observe[Ratel of Company](_.open(Ratel.Flag.Verify)((ratel.root / t"part").size)))
+        unsafely(file.observe[Ratel of Playbill](_.open(Ratel.Flag.Verify)((ratel.root / t"part").size)))
       . assert(_ == 2L)
 
       test(m"an observer of any image opens it with no type declared"):
@@ -1077,15 +1077,15 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == Ratel.Error.Reason.Mismatched)
 
       test(m"an image of the declared type on the heap is opened as its type"):
-        company.ratel.open[Ratel of Company]()(ratel.root.as[Company])
-      . assert(_ == company)
+        playbill.ratel.open[Ratel of Playbill]()(ratel.root.as[Playbill])
+      . assert(_ == playbill)
 
       test(m"an observer's block sees a new edition once the observer refreshes"):
         unsafely:
-          file.observe[Ratel of Company]: observer =>
+          file.observe[Ratel of Playbill]: observer =>
             def feste: Boolean = observer.open()((ratel.root / t"part").find(t"Feste").present)
             val before = feste
-            file.claim[Ratel of Company](_.publish(recast.ratel))
+            file.claim[Ratel of Playbill](_.publish(recast.ratel))
             val stale = feste
             val moved = observer.refresh()
             (before, stale, moved, feste)
@@ -1093,10 +1093,10 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"a block which is open across a refresh keeps its edition"):
         unsafely:
-          file.observe[Ratel of Company]: observer =>
+          file.observe[Ratel of Playbill]: observer =>
             observer.open():
               val parts = ratel.root / t"part"
-              file.claim[Ratel of Company](_.publish(company.ratel))
+              file.claim[Ratel of Playbill](_.publish(playbill.ratel))
               observer.refresh()
               parts.find(t"Feste").present
       . assert(_ == true)
@@ -1108,7 +1108,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
         val observing: Runnable = () =>
           unsafely:
-            file.observe[Ratel of Company]: observer =>
+            file.observe[Ratel of Playbill]: observer =>
               ready.countDown()
               published.await()
               observer.refresh()
@@ -1118,7 +1118,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
         reader.start()
         ready.await()
-        unsafely(file.claim[Ratel of Company](_.publish(recast.ratel)))
+        unsafely(file.claim[Ratel of Playbill](_.publish(recast.ratel)))
         published.countDown()
         reader.join()
         seen.get
@@ -1421,26 +1421,26 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       val directory: Text = Uuid().show
       val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
       unsafely(root.create[Directory]())
-      val work: Path on Linux = unsafely((% / "tmp" / directory / "company.work").on[Linux])
-      val file: Path on Linux = unsafely((% / "tmp" / directory / "company.ratel").on[Linux])
-      val company = Company(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
+      val work: Path on Linux = unsafely((% / "tmp" / directory / "playbill.work").on[Linux])
+      val file: Path on Linux = unsafely((% / "tmp" / directory / "playbill.ratel").on[Linux])
+      val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
 
       test(m"a working file is begun from an image, and changed where it lies"):
         unsafely:
-          work.claim[Ratel of Company](_.publish(company.ratel))
+          work.claim[Ratel of Playbill](_.publish(playbill.ratel))
 
-          work.open[Ratel of Company](Read & Write):
+          work.open[Ratel of Playbill](Read & Write):
             (ratel.root / t"part").insert(Part(t"Feste", t"Twelfth Night"))
             (ratel.root / t"part").find(t"Hamlet").let(_.delete())
 
-          work.open[Ratel of Company](Ratel.Flag.Verify)(ratel.root.as[Company])
-      . assert(_ == Company(List(Part(t"Viola", t"Twelfth Night"), Part(t"Feste", t"Twelfth Night"))))
+          work.open[Ratel of Playbill](Ratel.Flag.Verify)(ratel.root.as[Playbill])
+      . assert(_ == Playbill(List(Part(t"Viola", t"Twelfth Night"), Part(t"Feste", t"Twelfth Night"))))
 
       test(m"what was changed is sealed, and published for observers of the name"):
         unsafely:
-          work.open[Ratel of Company]()(file.claim[Ratel of Company](_.publish(ratel.sealAs[Company])))
+          work.open[Ratel of Playbill]()(file.claim[Ratel of Playbill](_.publish(ratel.sealAs[Playbill])))
 
-          file.observe[Ratel of Company]: observer =>
+          file.observe[Ratel of Playbill]: observer =>
             observer.open(Ratel.Flag.Verify):
               (ratel.state, (ratel.root / t"part").where(t"/play", t"Twelfth Night").size)
       . assert(_ == (Ratel.State.Sealed, 2))

@@ -56,7 +56,7 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
 
   // A type whose schema is derived with its layout: a key, and an encoded scalar.
   case class Actor(@key name: Text, @encoding(t"u32") lines: Optional[Int])
-  case class Company(actor: List[Actor])
+  case class Players(actor: List[Actor])
 
   def run(): Unit =
     suite(m"product decoders"):
@@ -159,19 +159,19 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
       . assert(_ == List(t"Bottom", t"Snug"))
 
       test(m"a value is written under the schema of its type, and a record decoded"):
-        val company = Company(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset)))
+        val players = Players(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset)))
 
-        company.ratel.open[Ratel](Ratel.Flag.Verify):
+        players.ratel.open[Ratel](Ratel.Flag.Verify):
           (ratel.root / t"actor").find(t"Burbage").let(_.as[Actor])
 
       . assert(_ == Actor(t"Burbage", 1506))
 
       test(m"a value is read back whole through a tracked view"):
-        val company = Company(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset)))
-        def whole(view: Terrain^): Company = view.open[Ratel]()(ratel.root.as[Company])
-        whole(company.ratel.terrain)
+        val players = Players(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset)))
+        def whole(view: Terrain^): Players = view.open[Ratel]()(ratel.root.as[Players])
+        whole(players.ratel.terrain)
 
-      . assert(_ == Company(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset))))
+      . assert(_ == Players(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset))))
 
       test(m"a row is held as a value, and read later in the block"):
         image.open[Ratel]():
