@@ -143,7 +143,7 @@ object internal:
       '{${Expr[Long](isin)}.asInstanceOf[Isin]}
 
   object Money:
-    inline given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
+    inline given underlying: [currency <: Label] => Underlying[Money in currency, Long] = !!
 
 
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)

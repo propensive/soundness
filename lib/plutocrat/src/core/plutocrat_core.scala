@@ -81,7 +81,7 @@ package currencies:
   given Sar: ("SAR" is Currency of "Saudi Riyal" in "SR" over 100) = Currency()
   given Php: ("PHP" is Currency of "Philippine Peso" in "₱" over 100) = Currency()
   given Myr: ("MYR" is Currency of "Malaysian Ringgit" in "RM" over 100) = Currency()
-  given Cop: ("COP" is Currency of "Colombian Peso" in "$$" over 100) = Currency()
+  given Cop: ("COP" is Currency of "Colombian Peso" in "$" over 100) = Currency()
   given Rub: ("RUB" is Currency of "Russian Ruble" in "₽" over 100) = Currency()
   given Ron: ("RON" is Currency of "Romanian Leu" in "lei" over 100) = Currency()
   given Pen: ("PEN" is Currency of "Peruvian Sol" in "S/" over 100) = Currency()

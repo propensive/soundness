@@ -292,7 +292,7 @@ entry .currencies   thirty-six of the most traded currencies, each a given to im
   entry .Sar   the Saudi Riyal, `SAR`, shown with the symbol `SR`
   entry .Php   the Philippine Peso, `PHP`, shown with the symbol `₱`
   entry .Myr   the Malaysian Ringgit, `MYR`, shown with the symbol `RM`
-  entry .Cop   the Colombian Peso, `COP`, shown with the symbol `$$`
+  entry .Cop   the Colombian Peso, `COP`, shown with the symbol `$`
   entry .Rub   the Russian Ruble, `RUB`, shown with the symbol `₽`
   entry .Ron   the Romanian Leu, `RON`, shown with the symbol `lei`
   entry .Pen   the Peruvian Sol, `PEN`, shown with the symbol `S/`
