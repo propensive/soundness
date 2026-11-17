@@ -77,7 +77,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
       val content: List[Html of Flow] = nested.flat
 
-      List(Fieldset(Legend(legend): Html of Flow, Html.Fragment(content*): Html of Flow))
+      List(Fieldset(Legend(legend), Html.Fragment(content*): Html of Flow))
 
 trait Formulaic extends Typeclass:
   def fields
