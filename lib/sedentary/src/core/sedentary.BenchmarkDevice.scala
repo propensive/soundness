@@ -137,7 +137,7 @@ object NetworkDevice:
       val user = device.user
       val host = device.host
 
-      safely(sh"ssh -o ControlPath=$socket $user@$host rm $path".exec[Text]())
+      safely(sh"ssh -o ControlPath=$socket $user@$host rm $uuid.jar".exec[Text]())
       . lest(Bench.Error())
 
 class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
@@ -160,7 +160,7 @@ class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
     val user = this.user
     val host = this.host
-    safely(sh"ssh $user@$host rm $path".exec[Text]()).lest(Bench.Error())
+    safely(sh"ssh $user@$host rm $uuid.jar".exec[Text]()).lest(Bench.Error())
 
 // A scoped session on a `NetworkDevice`: an OpenSSH ControlMaster connection is opened
 // (and authenticated) once, the multiplexing `Session` device is lent to the lambda, and
