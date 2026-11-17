@@ -91,6 +91,23 @@ object Tests extends Suite("decode", m"Distillate Tests"):
       summon[Decodable.Absence in Text].strict
     . assert(_ == true)
 
+    suite(m"Integer decoding errors"):
+      test(m"An Int too large to represent is out of range"):
+        capture[Number.Error](t"3000000000".as[Int]).reason
+      . assert(_ == Number.Error.Reason.OutOfRange)
+
+      test(m"A Long too large to represent is out of range"):
+        capture[Number.Error](t"10000000000000000000".as[Long]).reason
+      . assert(_ == Number.Error.Reason.OutOfRange)
+
+      test(m"Text which is not an integer is unparseable as an Int"):
+        capture[Number.Error](t"twelve".as[Int]).reason
+      . assert(_ == Number.Error.Reason.Unparseable)
+
+      test(m"A Byte far beyond an Int is still out of range"):
+        capture[Number.Error](t"3000000000".as[Byte]).reason
+      . assert(_ == Number.Error.Reason.OutOfRange)
+
     suite(m"Boolean decoding"):
       test(m"true decodes as a Boolean"):
         t"true".as[Boolean]

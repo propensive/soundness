@@ -52,10 +52,10 @@ object Irrefutable:
   given byteDouble: Byte is Irrefutable to Double = _.toDouble
   given shortInt: Short is Irrefutable to Int = _.toInt
   given shortLong: Short is Irrefutable to Long = _.toLong
-  given shortFloat: Short is Irrefutable to Float = _.toShort
+  given shortFloat: Short is Irrefutable to Float = _.toFloat
   given shortDouble: Short is Irrefutable to Double = _.toDouble
   given intLong: Int is Irrefutable to Long = _.toLong
-  given intDoule: Int is Irrefutable to Double = _.toDouble
+  given intDouble: Int is Irrefutable to Double = _.toDouble
   given floatDouble: Float is Irrefutable to Double = _.toDouble
 
 trait Irrefutable extends Typeclass.Pure, Resultant:

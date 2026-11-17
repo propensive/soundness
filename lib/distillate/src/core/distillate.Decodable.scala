@@ -46,19 +46,24 @@ trait Decodable2:
   given generic: [value] => value is Decodable in value = identity(_)
 
 object Decodable extends Decodable2:
+  // Why an integer failed to parse: well-formed digits can only have been out of range.
+  private def reason(text: Text): Number.Error.Reason =
+    if text.s.matches("[+-]?[0-9]+") then Number.Error.Reason.OutOfRange
+    else Number.Error.Reason.Unparseable
+
   // The SAM instances below raise through their resolution-scoped tactic, which shares each
   // instance's given-resolution lifetime: honest capabilities (every given that includes a
   // tactic is a capability; Jon, 2026-07-12). See rep/DECISIONS.md.
   given int: (number: Tactic[Number.Error]^) => ((Int is Decodable in Text)^{number, caps.any}) =
     text =>
       try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-        abort(Number.Error(text, Int, Number.Error.Reason.Unparseable))
+        abort(Number.Error(text, Int, reason(text)))
 
   given byte: (tactic: Tactic[Number.Error]^)
   =>  ( (Byte is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-        abort(Number.Error(text, Byte, Number.Error.Reason.Unparseable))
+        abort(Number.Error(text, Byte, reason(text)))
 
       if int < Byte.MinValue || int > Byte.MaxValue
       then abort(Number.Error(text, Byte, Number.Error.Reason.OutOfRange))
@@ -68,7 +73,7 @@ object Decodable extends Decodable2:
   =>  ( (Short is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-        abort(Number.Error(text, Short, Number.Error.Reason.Unparseable))
+        abort(Number.Error(text, Short, reason(text)))
 
       if int < Short.MinValue || int > Short.MaxValue
       then abort(Number.Error(text, Short, Number.Error.Reason.OutOfRange))
@@ -78,7 +83,7 @@ object Decodable extends Decodable2:
   =>  ( (Long is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-        abort(Number.Error(text, Long, Number.Error.Reason.Unparseable))
+        abort(Number.Error(text, Long, reason(text)))
 
   given double: (tactic: Tactic[Number.Error]^)
   =>  ( (Double is Decodable in Text)^{tactic, caps.any} ) =
