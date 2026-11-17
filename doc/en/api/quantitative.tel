@@ -554,7 +554,8 @@ entry .Amount   the physical name of a combination of dimensions: `velocity`, `e
   entry .spin   `spin`
   entry .SurfaceTension   mass·time⁻²
   entry .surfaceTension   `surface tension`
-  entry .TempratureGradient   distance⁻¹·temperature; a type alias with no `Amount` given, so it has no name
+  entry .TemperatureGradient   distance⁻¹·temperature
+  entry .temperatureGradient   `temperature gradient`
   entry .ThermalConductance   distance²·mass·time⁻³·temperature⁻¹
   entry .thermalConductance   `thermal conductance`
   entry .ThermalConductivity   distance·mass·time⁻³·temperature⁻¹
@@ -895,7 +896,7 @@ entry .Debye   the debye, 3.335×10⁻³⁰ coulomb-metres: a unit of electric d
 entry .Lambert   the lambert, the CGS unit of luminance, a `MetricUnit`
 entry .Phot   the phot, the CGS unit of illuminance, a `MetricUnit`
 entry .Langley   the langley, 41840 joules per square metre, a `MetricUnit`
-entry .Kayser   the kayser, a wavenumber of one per second as defined here, a `MetricUnit`
+entry .Kayser   the kayser, a wavenumber of one per centimetre, a `MetricUnit`
 entry .Darcy   the darcy, 0.987×10⁻¹² square metres: a unit of permeability, a `MetricUnit`
 
 entry .Inch   the inch, one `Inches[1]`
@@ -1029,9 +1030,8 @@ entry .Hours   the hour, a unit of `Time`: `Hours[power]`
   entry .ratio   `Ratio[Seconds[1] & Hours[-1], 3600.0]`: an hour is 3600 seconds
 entry .Days   the solar day, a unit of `Time`: `Days[power]`
   detail
-      86400 seconds. Its unit value is `SolarDay`. Its `designation` given is declared for
-      `Hours[1]` rather than `Days[1]`, so a day currently renders by its type's name.
-  entry .designation   the symbol `d`, declared (as the source stands) for `Hours[1]`
+      86400 seconds. Its unit value is `SolarDay`.
+  entry .designation   the symbol `d`
   entry .ratio   `Ratio[Seconds[1] & Days[-1], 86400.0]`: a day is 86400 seconds
 entry .SiderealDays   the sidereal day, a unit of `Time`: `SiderealDays[power]`
   detail
@@ -1072,7 +1072,7 @@ entry .constants   the physical constants, as quantities with their units
   entry .ElectricConstant   ε₀, the vacuum permittivity, 8.854×10⁻¹² F·m⁻¹
   entry .CharacteristicImpedanceOfVacuum   Z₀, 376.73 Ω
   entry .PlanckConstant   h, 6.626×10⁻³⁴ m²·kg·s⁻¹
-  entry .GravitationalConstant   G, 6.674×10⁻¹¹, in newtons per kilogram squared as defined here
+  entry .GravitationalConstant   G, 6.674×10⁻¹¹ N·m²·kg⁻²
   entry .ElementaryCharge   e, 1.602×10⁻¹⁹ C
   entry .AvogadroConstant   N_A, 6.022×10²³ mol⁻¹
   entry .BoltzmannConstant   k, the Boltzmann constant, in J·K⁻¹
