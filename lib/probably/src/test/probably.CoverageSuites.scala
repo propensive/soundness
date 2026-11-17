@@ -75,16 +75,20 @@ object Probed:
     constructor.newInstance(Int.box(threshold)).asInstanceOf[Lottery]
 
   // What each name is credited with since the last time this was asked: every probe reached,
-  // as its kind and the method it is in.
-  def drained(): scala.collection.immutable.Map[String, scala.List[String]] =
+  // as its kind and the method it is in, with the number of times it was reached.
+  def counted(): scala.collection.immutable.Map[String, scala.List[(String, Long)]] =
     Instrumenter.drain(parent).map: reached =>
-      val described: scala.List[String] = reached.probes.flatMap: (unit, index) =>
+      val described: scala.List[(String, Long)] = reached.probes.flatMap: (unit, index, count) =>
         probes.filter { probe => unit == 0 && probe.index == index }.map: probe =>
-          probe.kind+":"+probe.scope.substring(probe.scope.lastIndexOf('.') + 1).nn
+          (probe.kind+":"+probe.scope.substring(probe.scope.lastIndexOf('.') + 1).nn, count)
 
-      reached.test -> described.sorted
+      reached.test -> described.sortBy(_(0))
 
     . toMap
+
+  // The same, without the counts.
+  def drained(): scala.collection.immutable.Map[String, scala.List[String]] =
+    counted().map { (test, described) => test -> described.map(_(0)) }
 
 // A suite whose one test does whatever it is given to do, run through `invoke` by the test
 // which checks that the runner brackets a test's body.

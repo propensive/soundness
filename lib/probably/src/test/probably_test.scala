@@ -288,6 +288,39 @@ object Tests extends Suite("testing", m"Probably Tests"):
           reached ==
             List(t"and:choose", t"case:choose", t"else:choose", t"method:choose", t"then:choose")
 
+      test(m"a probe counts each time it is reached"):
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+        val antonio = Coverage.enter("antonio")
+        casket.sum(4)
+        casket.sum(3)
+        Coverage.exit(antonio)
+        Probed.counted()("antonio").map { (probe, count) => (probe.tt, count) }.to(List)
+      . assert(_ == List((t"loop:sum", 7L), (t"method:sum", 2L)))
+
+      test(m"what threads started by a test reach is counted for the test"):
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+        val lorenzo = Coverage.enter("lorenzo")
+        casket.delegate(3)
+        casket.delegate(1)
+        casket.choose(3)
+        Coverage.exit(lorenzo)
+        Probed.counted()("lorenzo").filter(_(0) == "method:choose").map(_(1)).to(List)
+      . assert(_ == List(3L))
+
+      test(m"a test run twice is credited with the sum of its counts"):
+        val casket: Lottery = Probed.make(5)
+        Probed.drained()
+
+        List(1, 3).each: value =>
+          val jessica = Coverage.enter("jessica")
+          casket.choose(value)
+          Coverage.exit(jessica)
+
+        Probed.counted()("jessica").filter(_(0) == "method:choose").map(_(1)).to(List)
+      . assert(_ == List(2L))
+
       test(m"the runner credits a test's body to the test, by its key"):
         val casket: Lottery = Probed.make(5)
         Probed.drained()
