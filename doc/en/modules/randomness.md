@@ -196,8 +196,9 @@ Out.println(sample().inspect)
 Out.println(sample().inspect)
 ```
 
-Nesting is deterministic too. A scope's generator is derived from that of the scope enclosing
-it, so restoring the outer seed restores the inner sequence.
+Nesting is deterministic too, but a nested scope does not continue the sequence of the scope
+enclosing it. Each scope starts afresh from the `Randomization` in scope, so under the same seed
+an inner scope repeats the first draws of the outer one.
 
 What is determined is the *sequence of draws*, and that is only as reproducible as the code
 which makes them. Single-threaded code draws in a fixed order, and reproduces exactly.

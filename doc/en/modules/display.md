@@ -158,10 +158,15 @@ turn:
 column  Tried
 column  Rendering
 row  1  the type's own `Inspectable` instance
-row  2  its `Showable` instance
-row  3  a structural rendering derived from its shape
-row  4  a last-resort rendering
+row  2  its `Encodable in Text` instance, between `⸤` and `⸥`
+row  3  its `Showable` instance, between `⸢` and `⸣`
+row  4  for an `Optional`, the value it holds, between `｢` and `｣`, or `○` if it is unset
+row  5  a structural rendering derived from its shape
+row  6  a last-resort rendering, its `toString` between `“` and `”`
 ```
+
+The brackets mark a rendering which was borrowed from another typeclass, or from `toString`, and
+is not the type's own.
 
 A type which has said how it should look is therefore shown in that way in debugging output
 too. `Money` has a `Showable` and no `Inspectable`, so `inspect` uses the former:

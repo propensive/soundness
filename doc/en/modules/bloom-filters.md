@@ -11,8 +11,9 @@ it will hold, and the rate of false positives to tolerate. The size of the bit a
 number of hashes are worked out from them.
 
 Any [digestible](hashing.md#hashing-your-own-types) value can be added, and the hash algorithm
-is chosen as a type. A filter is [immutable]: adding an element gives a new filter, so filters
-are shared and accumulated as safely as any other value.
+is chosen as a type. A filter can be filled in place while it is new, and is then frozen. A
+frozen filter is [immutable]: `+` and `++` give a new filter and leave the old one unchanged, so
+frozen filters are shared and accumulated as safely as any other value.
 
 ### On probabilistic membership
 

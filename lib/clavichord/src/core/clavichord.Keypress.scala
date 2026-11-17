@@ -50,7 +50,7 @@ object Keypress:
 
   // Renders a keypress with a Unicode symbol in square brackets for each special
   // key (and modifier), joining a modifier to the key it modifies with `+`; an
-  // ordinary character is shown as itself. E.g. `[⇧]+[↵]`, `[⌃]+C`, `[⌥]+[→]`.
+  // ordinary character is bracketed too. E.g. `[⇧]+[↵]`, `[⌃]+[C]`, `[⌥]+[→]`.
   private def render(keypress: Keypress): Text =
     def key(symbol: Text): Text = t"[$symbol]"
 
