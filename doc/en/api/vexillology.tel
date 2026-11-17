@@ -87,5 +87,7 @@ entry .internal   the home of the opaque `Flags` type and its operations
   entry .update   a copy of some flags with a case set or cleared, `flags(case) = enabled`
       Returns the new `Flags` rather than changing the receiver, so a variable holding the
       flags is reassigned: `flags = flags(Orange) = true`.
+  entry .bits   the flags as their underlying bits, a `B64`: the case of index `n` owns bit `n`
+      Needs no `Enumerable`. A `B64` converts to a `Long` with `.long`.
   entry .set   the cases set in some flags, as a `Set` of the enumeration
       Visits only the set bits, lowest first.

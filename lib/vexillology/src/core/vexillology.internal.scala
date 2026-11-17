@@ -35,6 +35,7 @@ package vexillology
 import java.lang as jl
 
 import distillate.*
+import hypotenuse.*
 import rudiments.`:+`
 
 object internal:
@@ -42,6 +43,10 @@ object internal:
 
   object Flags:
     def apply[enumeration](): Flags[enumeration] = 0L
+
+  extension [enumeration](flags: Flags[enumeration])
+    // The flags as their underlying bits: the case of index `n` owns bit `n`.
+    def bits: B64 = B64(flags)
 
   extension [enumeration: Enumerable](flags: Flags[enumeration])
     def apply(value: enumeration & Singleton): Boolean =
