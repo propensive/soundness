@@ -119,17 +119,21 @@ object protointernal extends anteprotointernal:
     inline def showQuanta[base <: AnyUnit, quanta <: Quanta[base]]: quanta is Showable = summonFrom:
       case names: UnitsNames[quanta] =>
         count =>
-        // A quantity has few units, so counting them is cheap.
-        import denominative.dysasymptotics.linearSize
-        val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
-        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
-        val units = nonzeroUnits.stdlib.head :: nonzeroUnits.stdlib.tail.map(names.separator+_)
-        units.weave(names.units().stdlib.takeRight(nonzeroUnits.size)).mkString.tt
+        // A name belongs to the unit in its position, so the two are paired before the zero
+        // components are dropped. A quantity of zero is shown as a zero of its smallest unit.
+        val named = count.components.stdlib.zip(names.units().stdlib)
+        val nonzero = named.filter(_(0)(1) != 0)
+        val shown = if nonzero.isEmpty then named.takeRight(1) else nonzero
+
+        shown.map { case ((_, value), name) => value.toString+name.s }
+        . mkString(names.separator.s).tt
 
       case _ =>
         count =>
-        val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
-        nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
+        val components = count.components.stdlib
+        val nonzero = components.filter(_(1) != 0)
+        val shown = if nonzero.isEmpty then components.takeRight(1) else nonzero
+        shown.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
     // The components of a `Quanta` are recovered by a macro reading its type, so inspection has to
     // be inline too — and therefore comes as the same pair as `showable`, with structured `Self`
