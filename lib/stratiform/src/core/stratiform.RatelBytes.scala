@@ -40,11 +40,23 @@ import zephyrine.*
 // padding, and the encoding of index keys (RaTEL §3, §9.2).
 private[stratiform] object RatelBytes:
   // The header's size, and the magic number `ᾱτελ` which opens it.
-  val header: Int = 144
-  // The size of the digests section (§5.7): a digest of each of the five sections before it,
-  // and one of the header. (The specification's draft says `7 × 32` bytes while naming these
-  // six digests; the six are what is written.)
-  val digests: Int = 6*32
+  val header: Int = 200
+
+  // The size of the digests section (§5.7): a digest of the body, then one of the header.
+  val digests: Int = 2*32
+
+  // NONE (§3): no row, no item, no page.
+  val none: Long = 0xffffffffL
+
+  // The flags of the header (§5.1), and the one flag of a row's header (§6.2).
+  val digested: Int = 1
+  val hashed: Int = 2
+  val sealing: Int = 4
+  val dirty: Int = 8
+  val live: Int = 1
+
+  // The link of the root's row, and of a free row.
+  val unlinked: Int = 0xffff
 
   val magic: Data = Array[Byte](0xb1.toByte, 0xc4.toByte, 0xb5.toByte, 0xbb.toByte)
 
@@ -76,12 +88,22 @@ private[stratiform] object RatelBytes:
 
   def utf8(text: Text): Data = Array.collect[Byte](text.s.length + 8)(_.appendUtf8(text.s))
 
-  // An item of a region (§5.3, §5.4): a header word, a body, and zero bytes to a multiple of
-  // four.
+  // A value item of a region (§5.3, §5.4): its length, its bytes, and zero bytes to a
+  // multiple of four.
   def item(header: Long, body: Data): Data = Array.collect[Byte](body.length + 8): out =>
     u32(out, header)
     out.append(body)
     pad(out, 4)
+
+  // A growable item of the variable region (§5.4): its capacity and its count, then its
+  // elements, of `unit` bytes each, and zero bytes for those it has room for and does not hold.
+  def growable(capacity: Long, count: Long, unit: Int, body: Data): Data =
+    Array.collect[Byte]((capacity*unit).toInt + 12): out =>
+      u32(out, capacity)
+      u32(out, count)
+      out.append(body)
+      zeros(out, ((capacity - count)*unit).toInt)
+      pad(out, 4)
 
   // §9.2: one component of an index key. An absent value sorts below every value; a value of
   // fixed width is its bytes; any other is escaped so that it ends where its terminator is.

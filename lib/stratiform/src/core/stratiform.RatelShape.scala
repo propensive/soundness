@@ -86,7 +86,7 @@ private[stratiform] object RatelShape:
           case Kind.Record(table, _) =>
             List(slot.keyword -> struct(layout, table, visited, arity))
 
-          case Kind.Range(table, _) =>
+          case Kind.Children(table, _) =>
             List(slot.keyword -> struct(layout, table, visited, Multiplicity.Series))
 
           // Whichever variant of a select is chosen, the others are absent.

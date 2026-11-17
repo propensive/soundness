@@ -51,8 +51,20 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
   // A section of an image, by its position in the header's directory.
   private def section(image: Data, number: Int): Data =
-    val offset = image.u64(16 + 16*number).toInt
-    image.segment(offset.z till (offset + image.u64(24 + 16*number).toInt).z)
+    val offset = image.u64(16 + 24*number).toInt
+    image.segment(offset.z till (offset + image.u64(24 + 24*number).toInt).z)
+
+  // An entry of the header's directory: where a section is, how much of it is in use, and
+  // how much it has room for.
+  private def directory(image: Data, number: Int): (Long, Long, Long) =
+    (image.u64(16 + 24*number), image.u64(24 + 24*number), image.u64(32 + 24*number))
+
+  // Where the rows of a table begin, and where the pages of an index do.
+  private def rows(image: Data, table: Int): Int = image.u64(start(image, 3) + 32*table).toInt
+  private def pages(image: Data, index: Int): Int = image.u64(start(image, 4) + 32*index).toInt
+
+  private def slice(image: Data, offset: Int, length: Int): Data =
+    image.segment(offset.z till (offset + length).z)
 
   // An image with the bytes from `offset` replaced.
   private def patched(image: Data, offset: Int, bytes: List[Int]): Data =
@@ -66,7 +78,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
     List.range(0, width).map { index => ((value >>> 8*index) & 0xff).toInt }
 
   // Where a section begins.
-  private def start(image: Data, number: Int): Int = image.u64(16 + 16*number).toInt
+  private def start(image: Data, number: Int): Int = image.u64(16 + 24*number).toInt
 
   // The condition a verifying reader reports for an image.
   private def reason(image: Data): Ratel.Error.Reason =
@@ -101,48 +113,92 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
     suite(m"The worked example (§13)"):
       val image: Data = Ratel.encode(Tel.Type.assign(catalogue, catalogueSchema), catalogueSchema).data
 
-      test(m"the image begins with the magic number and version"):
+      val schemaEnd: Long = 200L + directory(image, 0)(1)
+
+      test(m"the image begins with the magic number, version and flags"):
         hex(image.segment(Prim till 8.z))
-      . assert(_ == t"b1c4b5bb01000300")
+      . assert(_ == t"b1c4b5bb01000700")
 
       test(m"the committed length is the length of the image"):
         image.u64(8)
       . assert(_ == image.length.toLong)
 
-      test(m"the string table is empty"):
-        section(image, 1).length
-      . assert(_ == 0)
+      test(m"the schema section follows the header, and is a multiple of eight"):
+        directory(image, 0)
+      . assert { (offset, length, capacity) => offset == 200L && length == capacity && length%8 == 0 }
 
-      test(m"the variable region holds each value as an item"):
+      test(m"the string table is empty"):
+        directory(image, 1)
+      . assert(_ == (schemaEnd, 0L, 0L))
+
+      test(m"the variable region has no room to spare beyond its padding"):
+        directory(image, 2)
+      . assert(_ == (schemaEnd, 52L, 56L))
+
+      test(m"the variable region holds the child list, then each value"):
         hex(section(image, 2))
       . assert: bytes =>
           bytes == List
-            ( t"05000000616c7068610000000c0000004669727374206c657474657204000000",
-              t"6265746100000000" ).join
+            ( t"02000000020000000000000001000000",
+              t"05000000616c706861000000",
+              t"0c0000004669727374206c6574746572",
+              t"0400000062657461" ).join
 
-      test(m"the tables section holds the directory and the rows"):
+      test(m"the directories and the digests are where the extents before them end"):
+        (directory(image, 3), directory(image, 4), directory(image, 5))
+      . assert: directories =>
+          directories ==
+            ( (schemaEnd + 56, 64L, 64L), (schemaEnd + 184, 32L, 32L), (schemaEnd + 4312, 64L, 64L) )
+
+      test(m"the table directory places each table's rows"):
         hex(section(image, 3))
       . assert: bytes =>
           bytes == List
-            ( t"300000000000000001000000080000000000000000000000",
-              t"380000000000000002000000100000000000000000000000",
-              t"0000000002000000",
-              t"01000000000000000c00000000000000",
-              t"000000001c0000000000000000000000" ).join
+            ( hex(Array.tabulate[Byte](8)(index => ((schemaEnd + 120) >>> 8*index).toByte)),
+              t"010000000100000010000000ffffffff0000000000000000",
+              hex(Array.tabulate[Byte](8)(index => ((schemaEnd + 136) >>> 8*index).toByte)),
+              t"020000000200000018000000ffffffff0000000000000000" ).join
 
-      test(m"the indexes section holds the sorted entries of the primary index"):
+      test(m"the root's row has no parent, and refers to its child list"):
+        hex(slice(image, rows(image, 0), 16))
+      . assert(_ == t"ffffffffffff01000000000000000000")
+
+      test(m"each record's row names its parent and link, then holds its slots"):
+        hex(slice(image, rows(image, 1), 48))
+      . assert: bytes =>
+          bytes == List
+            ( t"000000000000010001000000100000001c00000000000000",
+              t"0000000000000100000000002c0000000000000000000000" ).join
+
+      test(m"the index directory describes a tree of one leaf"):
         hex(section(image, 4))
       . assert: bytes =>
           bytes == List
-            ( t"10000000000000000200000000000000",
-              t"00000000100000001f000000",
-              t"0000000001616c706861000000000000",
-              t"000000000162657461000000000001",
-              t"0000000000" ).join
+            ( hex(Array.tabulate[Byte](8)(index => ((schemaEnd + 216) >>> 8*index).toByte)),
+              t"010000000100000000000000ffffffff02000000000c0100" ).join
+
+      test(m"the leaf's header and cell pointers are in key order"):
+        hex(slice(image, pages(image, 0), 20))
+      . assert(_ == t"01000200d80f0000ffffffff00000000ec0fd80f")
+
+      test(m"the leaf's cells are placed from the end of the page downwards"):
+        hex(slice(image, pages(image, 0) + 0xfd8, 40))
+      . assert: bytes =>
+          bytes == List
+            ( t"0f00000000000162657461000000000001000000",
+              t"10000000000001616c7068610000000000000000" ).join
+
+      test(m"the rest of the leaf is zero"):
+        hex(slice(image, pages(image, 0) + 20, 0xfd8 - 20)).s.forall(_ == '0')
+      . assert(_ == true)
 
       test(m"the header carries the document's value hash"):
-        hex(image.segment(112.z till 144.z))
+        hex(image.segment(168.z till 200.z))
       . assert(_ == hex(catalogue.valueHash(catalogueSchema).data))
+
+      test(m"a sealed image says that it is"):
+        Ratel(image).open[Ratel]()(ratel.state)
+      . assert(_ == Ratel.State.Sealed)
 
       test(m"a record is found by its key"):
         Ratel(image).open[Ratel]():
@@ -523,69 +579,89 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       val variable = start(image, 2)
       val tables = start(image, 3)
       val indexes = start(image, 4)
+      val root = rows(image, 0)
+      val entries = rows(image, 1)
+      val leaf = pages(image, 0)
 
       test(m"an untouched image is sound"):
         Ratel.open(Terrain(image)).verify()
       . assert(_ == ())
 
-      test(m"R01: another magic number is refused"):
+      test(m"↯/t.5.1: another magic number is refused"):
         reason(patched(image, 0, List(0xb2)))
       . assert(_ == Reason.BadMagic)
 
-      test(m"R02: another version is refused"):
+      test(m"↯/t.5.2: another version is refused"):
         reason(patched(image, 4, List(2)))
       . assert(_ == Reason.UnsupportedVersion)
 
-      test(m"R03: a reserved byte which is set is refused"):
+      test(m"↯/t.5.3: a reserved byte which is set is refused"):
         reason(patched(image, 5, List(1)))
       . assert(_ == Reason.ReservedSet)
 
-      test(m"R03: a reserved flag which is set is refused"):
-        reason(patched(image, 6, List(6)))
+      test(m"↯/t.5.3: a reserved flag which is set is refused"):
+        reason(patched(image, 6, List(0x16)))
       . assert(_ == Reason.ReservedSet)
 
-      test(m"R04: a file shorter than a header is refused"):
+      test(m"↯/t.5.4: a file shorter than a header is refused"):
         reason(image.segment(Prim till 100.z))
       . assert(_ == Reason.BadLength)
 
-      test(m"R04: a committed length beyond the file is refused"):
+      test(m"↯/t.5.4: a committed length beyond the file is refused"):
         reason(patched(image, 8, little(image.length + 8, 8)))
       . assert(_ == Reason.BadLength)
 
-      test(m"R05: a misaligned section is refused"):
-        reason(patched(image, 48, little(variable + 4, 8)))
+      test(m"↯/t.5.5: a misaligned section is refused"):
+        reason(patched(image, 64, little(variable + 4, 8)))
       . assert(_ == Reason.BadDirectory)
 
-      test(m"R05: a section beyond the committed length is refused"):
-        reason(patched(image, 56, little(image.length, 8)))
+      test(m"↯/t.5.5: a section beyond the committed length is refused"):
+        reason(patched(image, 80, little(image.length, 8)))
       . assert(_ == Reason.BadDirectory)
 
-      test(m"R06: sections which overlap are refused"):
-        reason(patched(image, 64, little(variable, 8)))
-      . assert(_ == Reason.SectionsOverlap)
+      test(m"↯/t.5.5: a section which holds more than it has room for is refused"):
+        reason(patched(image, 72, little(64, 8)))
+      . assert(_ == Reason.BadDirectory)
 
-      test(m"R07: a digests flag with no digests is refused"):
-        reason(patched(image, 6, List(3)))
+      test(m"↯/t.5.5: a directory which is not as long as its capacity is refused"):
+        reason(patched(image, 96, little(32, 8)))
+      . assert(_ == Reason.BadDirectory)
+
+      test(m"↯/t.5.6: sections which overlap are refused"):
+        reason(patched(image, 88, little(variable, 8)))
+      . assert(_ == Reason.ExtentsOverlap)
+
+      test(m"↯/t.5.6: a table whose rows lie over a section is refused"):
+        reason(patched(image, tables + 32, little(variable, 8)))
+      . assert(_ == Reason.ExtentsOverlap)
+
+      test(m"↯/t.5.7: a digests flag with no digests is refused"):
+        reason(patched(image, 6, List(7)))
       . assert(_ == Reason.DigestMismatch)
 
-      test(m"R07: a section which does not match its digest fails verification"):
+      test(m"↯/t.5.7: a body which does not match its digest fails verification"):
         val digested = catalogue.ratel(catalogueSchema).data
-        reason(patched(digested, start(digested, 2) + 4, List(0x62)))
+        reason(patched(digested, start(digested, 2) + 0x14, List(0x62)))
       . assert(_ == Reason.DigestMismatch)
 
-      test(m"R08: a signature which is not structurally one is refused"):
-        reason(patched(image, 145, List(image.u8(145) ^ 1)))
+      test(m"↯/t.5.7: a header which does not match its digest fails verification"):
+        val digested = catalogue.ratel(catalogueSchema).data
+        reason(patched(digested, 168, List(digested.u8(168) ^ 1)))
+      . assert(_ == Reason.DigestMismatch)
+
+      test(m"↯/t.5.8: a signature which is not structurally one is refused"):
+        reason(patched(image, 201, List(image.u8(201) ^ 1)))
       . assert(_ == Reason.BadSignature)
 
-      test(m"R09: a schema which does not decode is refused"):
-        reason(patched(image, 178, List(0)))
+      test(m"↯/t.5.9: a schema which does not decode is refused"):
+        reason(patched(image, 234, List(0)))
       . assert(_ == Reason.SchemaUndecodable)
 
-      test(m"R10: a schema which does not have its signature is refused"):
-        reason(patched(image, 145, List(image.u8(145) ^ 1, image.u8(146) ^ 1)))
+      test(m"↯/t.5.10: a schema which does not have its signature is refused"):
+        reason(patched(image, 201, List(image.u8(201) ^ 1, image.u8(202) ^ 1)))
       . assert(_ == Reason.SignatureMismatch)
 
-      test(m"R11: a schema which interns a fixed-width scalar cannot be laid out"):
+      test(m"↯/t.5.11: a schema which interns a fixed-width scalar cannot be laid out"):
         val schema = schemaOf:
           Text("""|tel 1.0 specification.tel/tels:2.1.0
               |
@@ -602,32 +678,48 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         capture[Ratel.Error](t"tel 1.0\n\nplayers 6\n".read[Tel].ratel(schema)).reason
       . assert(_ == Reason.SchemaUnlayoutable)
 
-      test(m"R12: a table whose rows are not the size of its layout is refused"):
-        reason(patched(image, tables + 36, little(24, 4)))
+      test(m"↯/t.5.12: a table whose rows are not the size of its layout is refused"):
+        reason(patched(image, tables + 48, little(32, 4)))
       . assert(_ == Reason.BadTableDirectory)
 
-      test(m"R12: a table whose rows run beyond the section is refused"):
-        reason(patched(image, tables + 32, little(3, 4)))
+      test(m"↯/t.5.12: a table with more rows than it has room for is refused"):
+        reason(patched(image, tables + 40, little(3, 4)))
       . assert(_ == Reason.BadTableDirectory)
 
-      test(m"R13: a root table of two rows is refused"):
-        reason(patched(image, tables + 8, little(2, 4)))
+      test(m"↯/t.5.12: a free list which begins beyond the table is refused"):
+        reason(patched(image, tables + 52, little(9, 4)))
+      . assert(_ == Reason.BadTableDirectory)
+
+      test(m"↯/t.5.13: a root table of two rows is refused"):
+        reason(patched(image, tables + 8, little(2, 4) + little(2, 4)))
       . assert(_ == Reason.BadRootTable)
 
-      test(m"R14: a ref which is not a multiple of four fails its access"):
-        reason(patched(image, tables + 0x4c, little(2, 4)))
+      test(m"↯/t.5.13: a root row which is not live is refused"):
+        reason(patched(image, root + 6, List(0)))
+      . assert(_ == Reason.BadRootTable)
+
+      test(m"↯/t.5.14: a ref which is not a multiple of four fails its access"):
+        reason(patched(image, entries + 36, little(2, 4)))
       . assert(_ == Reason.BadRef)
 
-      test(m"R14: an item which runs beyond its region fails its access"):
+      test(m"↯/t.5.14: an item which runs beyond its region fails its access"):
         reason(patched(image, variable + 0x1c, little(400, 4)))
       . assert(_ == Reason.BadRef)
 
-      test(m"R15: a range which runs beyond its table fails its access"):
-        reason(patched(image, tables + 0x34, little(3, 4)))
+      test(m"↯/t.5.14: a list which holds more than it has room for fails its access"):
+        reason(patched(image, variable + 4, little(3, 4)))
+      . assert(_ == Reason.BadRef)
+
+      test(m"↯/t.5.15: a child beyond the end of its table fails its access"):
+        reason(patched(image, variable + 12, little(5, 4)))
+      . assert(_ == Reason.BadRecordIndex)
+
+      test(m"↯/t.5.15: a child which is a free row fails its access"):
+        reason(patched(image, entries + 30, List(0)))
       . assert(_ == Reason.BadRecordIndex)
 
       test(m"a lazy reader still serves the records which are sound"):
-        val damaged = patched(image, tables + 0x4c, little(2, 4))
+        val damaged = patched(image, entries + 36, little(2, 4))
 
         Ratel(damaged).open[Ratel]():
           val entries = ratel.root / t"entry"
@@ -637,7 +729,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       . assert(_ == (t"First letter", Reason.BadRef))
 
-      test(m"R16: a row which is reached twice is refused"):
+      test(m"↯/t.5.16: a row which is reached twice is refused"):
         val schema = schemaOf:
           Text("""|tel 1.0 specification.tel/tels:2.1.0
               |
@@ -652,7 +744,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
               |""".stripMargin)
 
         val cast = plain(t"tel 1.0\n\nplayer Bottom\nplayer Flute\nlead Snug\n".read[Tel], schema)
-        reason(patched(cast, start(cast, 3) + 60, little(0, 4)))
+        reason(patched(cast, rows(cast, 0) + 16, little(0, 4)))
       . assert(_ == Reason.RowRevisited)
 
       val verdictSchema = schemaOf:
@@ -669,21 +761,21 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
             |  select Ending
             |""".stripMargin)
 
-      test(m"R17: a tag which is no variant's keyword index fails its access"):
+      test(m"↯/t.5.17: a tag which is no variant's keyword index fails its access"):
         val verdict = plain(t"tel 1.0\n\ntitle Hamlet\ndeath\n".read[Tel], verdictSchema)
-        reason(patched(verdict, start(verdict, 3) + 28, little(7, 4)))
+        reason(patched(verdict, rows(verdict, 0) + 12, little(7, 4)))
       . assert(_ == Reason.BadTag)
 
-      test(m"R18: a text which is not UTF-8 fails its access"):
-        reason(patched(image, variable + 4, List(0xff)))
+      test(m"↯/t.5.18: a text which is not UTF-8 fails its access"):
+        reason(patched(image, variable + 0x14, List(0xff)))
       . assert(_ == Reason.BadUtf8)
 
-      test(m"R19: an encoding with no codec bound to it is refused"):
+      test(m"↯/t.5.19: an encoding with no codec bound to it is refused"):
         val folioImage = folio.ratel(folioSchema)
         capture[Ratel.Error](Ratel.open(folioImage.terrain, Tel.Codec.Bindings.none)).reason
       . assert(_ == Reason.CodecUnresolved)
 
-      test(m"R20: bytes which a codec rejects fail their access"):
+      test(m"↯/t.5.20: bytes which a codec rejects fail their access"):
         val schema = schemaOf:
           Text("""|tel 1.0 specification.tel/tels:2.1.0
               |
@@ -697,10 +789,10 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
               |""".stripMargin)
 
         val measure = plain(t"tel 1.0\n\nreading 0.5\n".read[Tel], schema)
-        reason(patched(measure, start(measure, 3) + 24, List(0xff, 0xf8, 0, 0, 0, 0, 0, 0)))
+        reason(patched(measure, rows(measure, 0) + 8, List(0xff, 0xf8, 0, 0, 0, 0, 0, 0)))
       . assert(_ == Reason.CodecDecodeFailed)
 
-      test(m"R22: a value which does not have its declared width is not written"):
+      test(m"↯/t.5.22: a value which does not have its declared width is not written"):
         val schema = schemaOf:
           Text("""|tel 1.0 specification.tel/tels:2.1.0
               |
@@ -718,24 +810,88 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         capture[Ratel.Error](t"tel 1.0\n\nmark $mark\n".read[Tel].ratel(schema)).reason
       . assert(_ == Reason.WidthMismatch)
 
-      test(m"R23: an index whose offsets run beyond it is malformed"):
-        reason(patched(image, indexes + 20, little(0xffff, 4)))
+      test(m"↯/t.5.23: an index of a kind which is not known is refused"):
+        reason(patched(image, indexes + 28, List(1)))
       . assert(_ == Reason.BadIndex)
 
-      test(m"R24: entries which are out of order fail verification"):
-        val beta = List(0, 0, 0, 0, 1, 0x62, 0x65, 0x74, 0x61, 0, 0, 0, 0, 0, 1)
-        val alpha = List(0, 0, 0, 0, 1, 0x61, 0x6c, 0x70, 0x68, 0x61, 0, 0, 0, 0, 0, 0)
-        val swapped = little(0, 4) + little(15, 4) + little(31, 4) + beta + alpha
-        reason(patched(image, indexes + 16, swapped))
-      . assert(_ == Reason.IndexUnsorted)
+      test(m"↯/t.5.23: an index whose root is beyond its pages is refused"):
+        reason(patched(image, indexes + 16, little(4, 4)))
+      . assert(_ == Reason.BadIndex)
 
-      test(m"R25: an entry which names the wrong child fails verification"):
-        reason(patched(image, indexes + 0x3a, List(0)))
+      test(m"↯/t.5.23: a page of a type which is not known fails its lookup"):
+        val damaged = patched(image, leaf, List(3))
+        capture[Ratel.Error](Ratel(damaged).open[Ratel]()((ratel.root / t"entry").find(t"beta"))).reason
+      . assert(_ == Reason.BadIndex)
+
+      test(m"↯/t.5.23: a cell which begins outside the cell area fails verification"):
+        reason(patched(image, leaf + 16, little(0x20, 2)))
+      . assert(_ == Reason.BadIndex)
+
+      test(m"↯/t.5.23: an entry which does not end where its key does fails verification"):
+        reason(patched(image, leaf + 0xfd8 + 2 + 9, List(1)))
+      . assert(_ == Reason.BadIndex)
+
+      test(m"↯/t.5.24: entries which are out of order fail verification"):
+        reason(patched(image, leaf + 16, little(0xfd8, 2) + little(0xfec, 2)))
+      . assert(_ == Reason.BadTree)
+
+      test(m"↯/t.5.24: a branch where a leaf should be fails its lookup"):
+        val damaged = patched(image, leaf, List(2))
+        capture[Ratel.Error](Ratel(damaged).open[Ratel]()((ratel.root / t"entry").find(t"beta"))).reason
+      . assert(_ == Reason.BadTree)
+
+      test(m"↯/t.5.24: a leaf which is chained to itself fails verification"):
+        reason(patched(image, leaf + 8, little(0, 4)))
+      . assert(_ == Reason.BadTree)
+
+      test(m"↯/t.5.25: an entry which names the wrong child fails verification"):
+        reason(patched(image, leaf + 0xfd8 + 2 + 14, List(0)))
       . assert(_ == Reason.IndexDisagrees)
 
-      test(m"R27: a document which does not have its value hash fails verification"):
-        reason(patched(image, 112, List(image.u8(112) ^ 1)))
+      test(m"↯/t.5.25: an index with fewer entries than children fails verification"):
+        val single = patched(patched(image, leaf + 2, little(1, 2)), indexes + 24, little(1, 4))
+        reason(single)
+      . assert(_ == Reason.IndexDisagrees)
+
+      test(m"↯/t.5.27: a document which does not have its value hash fails verification"):
+        reason(patched(image, 168, List(image.u8(168) ^ 1)))
       . assert(_ == Reason.ValueHashMismatch)
+
+      test(m"↯/t.5.28: digests in a file which is not sealed are refused"):
+        reason(patched(image, 6, List(3)))
+      . assert(_ == Reason.InvalidState)
+
+      test(m"↯/t.5.28: a file which is both sealed and dirty is refused"):
+        reason(patched(image, 6, List(14)))
+      . assert(_ == Reason.InvalidState)
+
+      test(m"↯/t.5.28: a sealed file which counts garbage is refused"):
+        reason(patched(image, 160, little(8, 8)))
+      . assert(_ == Reason.InvalidState)
+
+      test(m"↯/t.5.28: a sealed file with a gap between its extents is refused"):
+        reason(patched(image, 16, little(208, 8)))
+      . assert(_ == Reason.InvalidState)
+
+      test(m"↯/t.5.28: a sealed list with room to spare fails verification"):
+        reason(patched(image, variable, little(2, 4) + little(1, 4)))
+      . assert(_ == Reason.InvalidState)
+
+      test(m"↯/t.5.29: a dirty file is refused"):
+        reason(patched(image, 6, List(8)))
+      . assert(_ == Reason.Dirty)
+
+      test(m"↯/t.5.30: a row which names another parent fails verification"):
+        reason(patched(image, entries, little(1, 4)))
+      . assert(_ == Reason.BadRowHeader)
+
+      test(m"↯/t.5.30: a row which names another link fails verification"):
+        reason(patched(image, entries + 4, little(1, 2)))
+      . assert(_ == Reason.BadRowHeader)
+
+      test(m"↯/t.5.30: a row with a reserved flag set fails verification"):
+        reason(patched(image, entries + 6, little(3, 2)))
+      . assert(_ == Reason.BadRowHeader)
 
     suite(m"Sharing a published image between readers"):
       val directory: Text = Uuid().show
