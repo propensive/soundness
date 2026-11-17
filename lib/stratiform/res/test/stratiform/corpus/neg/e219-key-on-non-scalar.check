@@ -167,4 +167,4 @@ Document {
     ],
 }
 errors:
-  E219 [0,0): Key field's type does not resolve to a Scalar: key field `contents` in record `Box` does not resolve to a Scalar
+  ↯/t.2.19 [0,0): Key field's type does not resolve to a Scalar: key field `contents` in record `Box` does not resolve to a Scalar

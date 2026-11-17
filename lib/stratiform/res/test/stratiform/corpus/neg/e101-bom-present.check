@@ -19,4 +19,4 @@ Document {
     ],
 }
 errors:
-  E101 [0,1): BOM present at start of document
+  ↯/t.1.1 [0,1): BOM present at start of document

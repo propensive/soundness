@@ -78,6 +78,129 @@ object TelSchematic:
   case class Definitions
     ( records: List[Tels.RecordDefinition], selects: List[Tels.SelectDefinition] )
 
+  // What the layout annotations of a field declare of it: that it is the `@key` of its record,
+  // the paths of each `@index` over it, and the `@encoding`, the `@width` and the `@intern` of
+  // its scalar. None of them changes the documents the schema admits.
+  case class Storage
+    ( key:      Boolean,
+      indexes:  List[List[Text]],
+      encoding: Optional[Text],
+      width:    Optional[Int],
+      intern:   Boolean ):
+
+    // The scalar a field of this storage is declared with, given the one its type derives to.
+    def apply(scalar: Tels.Scalar): Tels.Scalar =
+      scalar.copy
+        ( encoding = encoding.or(scalar.encoding),
+          width    = width.or(scalar.width),
+          intern   = intern || scalar.intern )
+
+  // The name of the definition which declares a scalar by what it stores: `U32` for an
+  // encoding, `Base256Of4` for one of a declared width, `TextInterned` for text which is
+  // interned.
+  private def scalarName(scalar: Tels.Scalar, taken: List[Text]): Text =
+    // Each run of letters and digits, capitalised: `blake3-256` is `Blake3256`.
+    def typeName(text: Text): Text =
+      val name: java.lang.StringBuilder = java.lang.StringBuilder()
+
+      @scala.annotation.tailrec
+      def recur(index: Int, initial: Boolean): Unit = if index < text.s.length then
+        val char = text.s.codePointAt(index)
+
+        if char >= 128 || !Character.isLetterOrDigit(char) then recur(index + 1, true) else
+          name.appendCodePoint(if initial then Character.toUpperCase(char) else char)
+          recur(index + 1, false)
+
+      recur(0, true)
+      name.toString.tt
+
+    val stored: Text = scalar.encoding.lay(t"Text")(typeName(_))
+    val sized: Text = scalar.width.lay(stored) { width => t"${stored}Of$width" }
+    val name: Text = if scalar.intern then t"${sized}Interned" else sized
+    if taken.has(name) then t"${name}Scalar" else name
+
+  // Whether a schema declares anything of its layout: a scalar definition, a key or an index.
+  private[stratiform] def laidOut(schema: Tels): Boolean =
+    def declares(members: Array[Tels.Member]^{}): Boolean = members.to[List].exists:
+      case field: Tels.Field => field.key || !field.indexes.nil
+      case other             => false
+
+    val records = schema.records.to[List].exists { record => declares(record.members) }
+    schema.scalars.length > 0 || declares(schema.document.members) || records
+
+  // A field names its type, and cannot constrain it (§20.6): a scalar with an encoding, a
+  // width or interning is declared by a definition alone, and has no form within a field. So
+  // each such scalar which the fields of a derived schema hold is given a definition, named by
+  // what it declares, and the fields refer to it, as the fields of a schema written by hand
+  // would. A scalar which declares none of these is the built-in `String`, and stays within
+  // its field, so the schema of a type which uses none of them is what it always was.
+  private[stratiform] def defined(schema: Tels): Tels =
+    val taken: List[Text] =
+      schema.records.to[List].map(_.name) + schema.selects.to[List].map(_.name)
+      + schema.scalars.to[List].map(_.name)
+
+    val found: java.util.LinkedHashMap[Text, Tels.ScalarDefinition] = java.util.LinkedHashMap()
+
+    def storing(scalar: Tels.Scalar): Boolean =
+      val constrained = scalar.encoding.present || scalar.width.present || scalar.intern
+      constrained && scalar.patterns.nil && scalar.validators.nil
+
+    def retype(fieldType: Tels.Type): Tels.Type = fieldType match
+      case scalar: Tels.Scalar if storing(scalar) =>
+        val name = scalarName(scalar, taken)
+
+        val definition =
+          Tels.ScalarDefinition
+            ( name, Array.empty, Unset, scalar.encoding, Array.empty, scalar.width, scalar.intern )
+
+        found.put(name, definition)
+        Tels.Reference(name)
+
+      case struct: Tels.Struct =>
+        restruct(struct)
+
+      case other =>
+        other
+
+    def remember(members: Array[Tels.Member]^{}): Array[Tels.Member]^{} =
+      val retyped: List[Tels.Member] = members.to[List].map:
+        case field: Tels.Field => field.copy(fieldType = retype(field.fieldType))
+        case other             => other
+
+      retyped.to[Array]
+
+    def restruct(struct: Tels.Struct): Tels.Struct =
+      Tels.Struct(remember(struct.members), struct.validators)
+
+    def records(records: Array[Tels.RecordDefinition]^{}): Array[Tels.RecordDefinition]^{} =
+      records.to[List].map { record => record.copy(members = remember(record.members)) }.to[Array]
+
+    def selects(selects: Array[Tels.SelectDefinition]^{}): Array[Tels.SelectDefinition]^{} =
+      val retyped: List[Tels.SelectDefinition] = selects.to[List].map: select =>
+        val variants: List[Tels.Variant] = select.variants.to[List].map: variant =>
+          variant.copy(variantType = retype(variant.variantType))
+
+        select.copy(variants = variants.to[Array])
+
+      retyped.to[Array]
+
+    val document = restruct(schema.document)
+    val records0 = records(schema.records)
+    val selects0 = selects(schema.selects)
+
+    val layers: List[Tels.Layer] = schema.layers.to[List].map: layer =>
+      Tels.Layer
+        ( layer.name, restruct(layer.overlay), records(layer.records), layer.scalars,
+          selects(layer.selects) )
+
+    if found.isEmpty then schema else
+      val definitions: java.util.ArrayList[Tels.ScalarDefinition] = java.util.ArrayList(found.values)
+      val added: List[Tels.ScalarDefinition] = List.range(0, definitions.size).map(definitions.get(_).nn)
+
+      Tels
+        ( schema.name, document, layers.to[Array], schema.sigil, records0,
+          (schema.scalars.to[List] + added).to[Array], selects0 )
+
   // The identity of a derived definition — a product's record or a sum's select — as its type: the
   // type's simple name, which the definition takes when no other type in the schema shares it, and
   // the names of the packages, objects and classes enclosing the type, innermost first. Keying
@@ -571,15 +694,24 @@ trait Tels2:
         val root   = Tels.Struct(Array(member), Array.empty)
         Tels(name, root, layers.to[Array], Unset, records.to[Array], Array.empty, selects.to[Array])
 
-    Tels.Validation.checkBase(schema)
-    schema
+    val defined = TelSchematic.defined(schema)
+    Tels.Validation.checkBase(defined)
+
+    // A layout is checked as that of a schema written by hand is, once its layers are
+    // composed: a key which may be absent, an index over what is not a collection.
+    if TelSchematic.laidOut(defined) then Tels.Validation.checkComposed(Tels.Layers.compose(defined))
+    defined
 
 object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   import TelSchematic.{Identity, Naming}
 
   // One derived field: its keyword, the layer it is annotated with, and the schematic of its type,
   // which gives the field's declaration and the definitions and layers the type contributes.
-  private case class Member(keyword: Text, layer: Optional[Text], schematic: TelSchematic):
+  private case class Member
+    ( keyword:   Text,
+      layer:     Optional[Text],
+      schematic: TelSchematic,
+      storage:   Optional[TelSchematic.Storage] ):
 
     // Plain members rather than `Optional`'s extensions, which applied inside a traversal's
     // lambda trip the compiler's `wildApprox` assertion (scala/scala3#24824).
@@ -591,9 +723,22 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       case name: Text => name
       case _          => t""
 
+    // A field with no layout annotation is declared exactly as it was before there were any.
     def field(naming: Naming): Tels.Field =
-      Tels.Field
-        ( schematic.polarity, schematic.repeatable, keyword, schematic.fieldType(naming), Unset )
+      val declared = schematic.fieldType(naming)
+
+      storage match
+        case storage: TelSchematic.Storage =>
+          val fieldType: Tels.Type = declared match
+            case scalar: Tels.Scalar => storage(scalar)
+            case other               => other
+
+          Tels.Field
+            ( schematic.polarity, schematic.repeatable, keyword, fieldType, Unset, Unset, storage.key,
+              storage.indexes.map(Tels.Index(_)) )
+
+        case _ =>
+          Tels.Field(schematic.polarity, schematic.repeatable, keyword, declared, Unset)
 
   // The members a layer groups, by the layer's name.
   private case class Group(name: Text, members: List[Member])
@@ -685,6 +830,17 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   private[stratiform] inline def retractions[sum]: scala.List[(Text, Text)] =
     ${stratiform.internal.retractions[sum]}
 
+  // The layout annotations of the fields, read and checked at compile time.
+  private[stratiform] inline def storage[product]: scala.List[(Text, TelSchematic.Storage)] =
+    ${stratiform.internal.storage[product]}
+
+  private def storageOf(storage: scala.List[(Text, TelSchematic.Storage)], label: Text)
+  :   Optional[TelSchematic.Storage] =
+
+    storage.find(_(0) == label) match
+      case scala.Some((_, found)) => found
+      case scala.None             => Unset
+
   // The identity of the type a definition derives from, read at compile time.
   private[stratiform] inline def identityOf[derivation]: Identity =
     ${stratiform.internal.identityOf[derivation]}
@@ -692,10 +848,18 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   // One field's `Member`, built outside the polymorphic lambda `contexts` types the fields
   // under, where the closures it holds would be typed against live type variables.
   private def member
-    ( schematic: TelSchematic, keyword: Text, layerName: Optional[Text] )
+    ( schematic: TelSchematic,
+      keyword:   Text,
+      layerName: Optional[Text],
+      storage:   Optional[TelSchematic.Storage] )
   :   Member =
 
-    Member(keyword, layerName, schematic)
+    Member(keyword, layerName, schematic, storage)
+
+  // The fields as a list. A plain method, since an array which is read within the expansion,
+  // in a capture-checked module, is taken afresh for one which might hold something, and an
+  // array which might cannot be listed.
+  private def listed(members: Array[Member]^{}): List[Member] = members.to[proscenium.List]
 
   inline def conjunction[derivation <: Product: ProductReflection]
   :   derivation is TelSchematic over Tels.Type =
@@ -703,15 +867,19 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
     val identity: Identity = TelsDerivation.identityOf[derivation]
     val renames: Map[Text, Text] = relabelling[derivation, Tel]
     val grouping: scala.List[(Text, Text)] = TelsDerivation.assignments[derivation]
+    val layout: scala.List[(Text, TelSchematic.Storage)] = TelsDerivation.storage[derivation]
 
     def members: List[Member] =
-      val array =
+      TelsDerivation.listed:
         contexts[derivation]():
           [field] => schematic =>
             val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
-            TelsDerivation.member(schematic, keyword, TelsDerivation.layerOf(grouping, label))
 
-      array.to[proscenium.List]
+            TelsDerivation.member
+              ( schematic,
+                keyword,
+                TelsDerivation.layerOf(grouping, label),
+                TelsDerivation.storageOf(layout, label) )
 
     productSchematic(identity, () => members)
     . asInstanceOf[derivation is TelSchematic over Tels.Type]

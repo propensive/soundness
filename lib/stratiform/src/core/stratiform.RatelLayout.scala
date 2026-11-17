@@ -67,15 +67,20 @@ private[stratiform] object RatelLayout:
     case Packed(scalar: Tels.Scalar, width: Int)
     case Refs(scalar: Tels.Scalar, intern: Boolean)
     case Record(table: Int, struct: Tels.Struct)
-    case Range(table: Int, struct: Tels.Struct)
+    case Children(table: Int, struct: Tels.Struct)
     case Select(variants: List[Variant])
     case SelectList(variants: List[Variant])
 
     def size: Int = this match
-      case Always | Flag           => 0
-      case Inline(_, width)        => width
-      case Range(_, _) | Select(_) => 8
-      case _                       => 4
+      case Always | Flag    => 0
+      case Inline(_, width) => width
+      case Select(_)        => 8
+      case _                => 4
+
+    // Whether a slot of this kind refers to rows, and so has a link number (§6.2).
+    def linking: Boolean = this match
+      case Record(_, _) | Children(_, _) | Select(_) | SelectList(_) => true
+      case _                                                         => false
 
     // The largest power of two not exceeding the lesser of the size and eight.
     def align: Int = this match
@@ -83,8 +88,9 @@ private[stratiform] object RatelLayout:
       case _                => 4
 
   // One slot of a row: `number` is its position in slot order, `presence` the number of its
-  // bit in the row's presence bitmap, or -1 if it has none, and `keywordIndex` the keyword
-  // index of its member in the struct which declares it -- for a select, of its first variant.
+  // bit in the row's presence bitmap, or -1 if it has none, `keywordIndex` the keyword index
+  // of its member in the struct which declares it -- for a select, of its first variant --
+  // and `link` its link number, or -1 if it is not of a kind which refers to rows.
   case class Slot
     ( number:       Int,
       keywordIndex: Int,
@@ -93,7 +99,8 @@ private[stratiform] object RatelLayout:
       kind:         Kind,
       offset:       Int,
       presence:     Int,
-      indexes:      List[Tels.Index] )
+      indexes:      List[Tels.Index],
+      link:         Int )
 
   // A member of a struct as it is stored: in a slot of the row, or flattened into the row as
   // the members of the struct it holds.
@@ -122,14 +129,14 @@ private[stratiform] object RatelLayout:
       case Kind.Ref(scalar, _)    => scalar
       case _                      => Tels.Scalar(Array.empty)
 
-  // An index (§9.1): over the children of the `Range` slot `slot` of table `table`, keyed by
+  // An index (§9.1): over the children of the `Children` slot `slot` of table `table`, keyed by
   // `components`, or over the elements of an array slot, keyed by the elements themselves.
   case class Index
     ( table: Int, slot: Slot, primary: Boolean, paths: List[Text], components: List[Component] ):
 
     def child: Optional[Int] = slot.kind match
-      case Kind.Range(table, _) => table
-      case _                    => Unset
+      case Kind.Children(table, _) => table
+      case _                       => Unset
 
     // The width of an element of an indexed array, if it is fixed.
     def element: Optional[Tels.Scalar] = slot.kind match
@@ -141,8 +148,14 @@ private[stratiform] object RatelLayout:
       case Kind.Packed(_, width) => width
       case _                     => Unset
 
-  case class Layout(schema: Tels, tables: Array[Table]^{}, indexes: Array[Index]^{}):
+  // A link (§6.2): the slot of a table which refers to a row, as the row's header names it.
+  case class Link(table: Int, slot: Slot)
+
+  case class Layout
+    ( schema: Tels, tables: Array[Table]^{}, indexes: Array[Index]^{}, links: Array[Link]^{} ):
+
     def table(number: Int): Optional[Table] = if number < 0 then Unset else tables.at(number.z)
+    def link(number: Int): Optional[Link] = if number < 0 then Unset else links.at(number.z)
 
   // The fixed width of a scalar's values, if it has one: that of a standard codec, or the
   // width its definition declares.
@@ -186,7 +199,7 @@ private[stratiform] object RatelLayout:
         numbered.seek(_(0).name == name).lay(scalar): (record, table) =>
           Resolved.Record(table, record.name, Tels.Struct(record.members, record.validators))
 
-    // `intern` has no meaning for a value of fixed width (R11).
+    // `intern` has no meaning for a value of fixed width (↯/t.5.11).
     def fixed(scalar: Tels.Scalar): Optional[Int] =
       width(scalar).let { width => if scalar.intern || width < 1 then unlayoutable else width }
 
@@ -214,6 +227,10 @@ private[stratiform] object RatelLayout:
     enum Sketch:
       case Stored(number: Int)
       case Flattened(keywordIndex: Int, keyword: Text, struct: Tels.Struct, entries: List[Sketch])
+
+    // Links are numbered through the tables in table order, and the slots of each in slot
+    // order: `linked` is the number of them so far.
+    var linked: Int = 0
 
     def layout(name: Optional[Text], struct: Tels.Struct, stack: List[Text]): Table =
       val drafts: java.util.ArrayList[Draft] = java.util.ArrayList()
@@ -256,7 +273,7 @@ private[stratiform] object RatelLayout:
                   else slot(Kind.Inline(scalar, width), optional)
 
               case Resolved.Record(table, name, inner) =>
-                if repeatable then slot(Kind.Range(table, inner), false)
+                if repeatable then slot(Kind.Children(table, inner), false)
                 else if !required then slot(Kind.Record(table, inner), true)
                 else if stack.has(name) then slot(Kind.Record(table, inner), false)
                 else
@@ -290,10 +307,11 @@ private[stratiform] object RatelLayout:
       val bits: java.util.HashMap[Int, Int] = java.util.HashMap()
       presences.zip(List.range(0, presences.size)).each(bits.put(_, _))
 
-      // Slots are packed by descending alignment, each pass in slot order.
+      // Slots are packed by descending alignment, each pass in slot order, after the row's
+      // header and its presence bitmap.
       val offsets: java.util.HashMap[Int, Int] = java.util.HashMap()
 
-      val end = List(8, 4, 2, 1).fuse(bitmapBytes):
+      val end = List(8, 4, 2, 1).fuse(8 + bitmapBytes):
         val align = next
 
         numbers.fuse(state):
@@ -308,9 +326,14 @@ private[stratiform] object RatelLayout:
         val draft = drafts.get(number)
         val offset = if offsets.containsKey(number) then offsets.get(number).toInt else 0
 
+        val link = if !draft.kind.linking then -1 else
+          linked += 1
+          linked - 1
+
         Slot
           ( number, draft.keywordIndex, draft.keyword, draft.required, draft.kind, offset,
-            if bits.containsKey(number) then bits.get(number).toInt else -1, draft.indexes )
+            if bits.containsKey(number) then bits.get(number).toInt else -1, draft.indexes,
+            link )
 
       val indexed: java.util.ArrayList[Slot] = java.util.ArrayList()
       slots.each(indexed.add(_))
@@ -330,6 +353,13 @@ private[stratiform] object RatelLayout:
       layout(record.name, Tels.Struct(record.members, record.validators), List(record.name))
 
     val arranged: Array[Table]^{} = tables.to[Array]
+
+    // A row's header names its link in sixteen bits, of which one value is the root's.
+    if linked > 65535 then unlayoutable
+
+    val links: List[Link] =
+      tables.zip(List.range(0, tables.size)).bind: (table, number) =>
+        table.slots.filter(_.link >= 0).map(Link(number, _))
 
     // A static index path (§9.1): each component names a field which is not repeatable, every
     // one but the last a struct and the last a scalar.
@@ -371,7 +401,7 @@ private[stratiform] object RatelLayout:
       tables.zip(List.range(0, tables.size)).bind: (table, number) =>
         table.slots.bind: slot =>
           slot.kind match
-            case Kind.Range(childNumber, _) =>
+            case Kind.Children(childNumber, _) =>
               val child = arranged.at(childNumber.z).or(unlayoutable)
 
               val primary: List[Index] = key(child).lay(Nil): key =>
@@ -397,4 +427,4 @@ private[stratiform] object RatelLayout:
             case _ =>
               if !slot.indexes.nil then unlayoutable else Nil
 
-    Layout(schema, arranged, indexes.to[Array])
+    Layout(schema, arranged, indexes.to[Array], links.to[Array])

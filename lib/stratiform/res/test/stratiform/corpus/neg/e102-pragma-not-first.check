@@ -30,4 +30,4 @@ Document {
     ],
 }
 errors:
-  E102 [6,9): Pragma is not the first non-blank line
+  ↯/t.1.2 [6,9): Pragma is not the first non-blank line

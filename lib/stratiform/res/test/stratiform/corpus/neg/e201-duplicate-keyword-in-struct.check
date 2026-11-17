@@ -88,4 +88,4 @@ Document {
     ],
 }
 errors:
-  E201 [0,0): Duplicate keyword within a Struct: duplicate keyword `act` within a Struct
+  ↯/t.2.1 [0,0): Duplicate keyword within a Struct: duplicate keyword `act` within a Struct

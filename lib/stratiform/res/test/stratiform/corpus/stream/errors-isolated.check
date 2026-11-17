@@ -31,7 +31,7 @@ Document {
     ],
 }
 errors:
-  E111 [17,23): Over-indentation
+  ↯/t.1.11 [17,23): Over-indentation
 
 === document 1 ===
 Document {

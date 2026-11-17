@@ -37,4 +37,4 @@ Document {
     ],
 }
 errors:
-  E315 [0,0): Scalar value does not match a declared pattern: `code` value `XY-12` does not match pattern `[A-Z]{2}-[0-9]{4}`
+  ↯/t.3.15 [0,0): Scalar value does not match a declared pattern: `code` value `XY-12` does not match pattern `[A-Z]{2}-[0-9]{4}`

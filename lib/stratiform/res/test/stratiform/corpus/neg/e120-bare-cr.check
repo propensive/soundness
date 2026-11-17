@@ -19,4 +19,4 @@ Document {
     ],
 }
 errors:
-  E120 [5,6): Line-ending inconsistency: CR not followed by LF
+  ↯/t.1.20 [5,6): Line-ending inconsistency: CR not followed by LF

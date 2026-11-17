@@ -16,4 +16,4 @@ Document {
     ],
 }
 errors:
-  E111 [10,12): Over-indentation
+  ↯/t.1.11 [10,12): Over-indentation

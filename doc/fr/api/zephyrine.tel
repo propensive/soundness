@@ -161,7 +161,6 @@ detail
     + agrandir le tampon. Les lectures `readUnchecked` et `charAt` à l'intérieur du noyau sont
     + chacune justifiées par un commentaire qui nomme l'invariant maintenant l'indice dans les
     + bornes ; le code consommateur doit préférer les combinateurs marqués.
-
 refer zephyrine.Cursor
 refer zephyrine.Stream
 refer zephyrine.Intake
@@ -1154,7 +1153,6 @@ entry .Cursor
         val cursor = Cursor(Data.fill(20)(_.toByte): Data)
         cursor.take(Data())(10)   // the first ten bytes
         ```
-
 entry .Datum
   info
       - a byte or char read by `peek`, or `Datum.End`, comparing directly with a `Char` or `Byte` literal
@@ -1222,7 +1220,6 @@ entry .Mark
       + Le type opaque des marques est exporté (`export`) depuis le compagnon de `Cursor` : il est
       + donc accessible sous le nom `zephyrine.Mark` aussi bien que `Cursor.Mark` ; voir
       + `Cursor.Mark`.
-
 entry .Offset
   info
       - `Cursor.Offset`, exported at the package level
@@ -1233,7 +1230,6 @@ entry .Offset
       + Le type regroupant ligne et colonne est exporté (`export`) depuis le compagnon de `Cursor` :
       + il est donc accessible sous le nom `zephyrine.Offset` aussi bien que `Cursor.Offset` ; voir
       + `Cursor.Offset`.
-
 entry .Addressable
   info
       - the typeclass of a streaming medium: its element, its storage, its builder, and the copies between them
@@ -1430,7 +1426,6 @@ entry .Addressable
         + `Data` renvoie son tableau ; `Text` renvoie `Unset`, et les appelants copient. Un stockage
         + sous-jacent exposé ne doit jamais servir à écrire : un curseur construit dessus est
         + statique, et un flux qui en prête un signale `regionStable`.
-
 entry .Substrate
   info
       - how a buffer is physically represented: `Bytes`, `Chars` or `Boxes`
@@ -1445,7 +1440,6 @@ entry .Substrate
       + mémoire n'est pas bornée de façon déterministe, et `Buffering.standard` les dimensionne plus
       + petits (256 par bloc intermédiaire contre 4096 octets ou 2048 caractères). Une instance
       + `Addressable` nomme son substrat.
-
 entry .Buffering
   info
       - the contextual sizing policy every stage consults when it allocates a buffer
@@ -1533,7 +1527,6 @@ entry .Buffering
         - measurement.
         + Le désactiver rétablit une allocation stricte par bloc, ou isole l'effet du pool dans une
         + mesure.
-
 entry .Lineation
   info
       - the policy deciding which element ends a line, so a cursor can track line and column
@@ -1711,7 +1704,6 @@ entry .locate
       val json = t"""{"name": "zephyrine"}""".read[Json]
       json.locate(JsonPointer / "name").let(_.describe)
       ```
-
 entry .locateKey
   info
       - the source position of the object or mapping key a path's final segment names, or `Unset`
@@ -1720,7 +1712,6 @@ entry .locateKey
   detail
       - As `locate`, but for the key rather than its value.
       + Comme `locate`, mais pour la clé plutôt que pour sa valeur.
-
 entry .Format
   info
       - a parsed format's name and the position and issue types its parse errors carry
@@ -1830,7 +1821,6 @@ entry .Formatting
       + définit son propre sous-type avec les paramètres qui lui conviennent (YAML interdit
       + l'indentation par tabulations ; en HTML, les espaces sont structurels) et expose des
       + instances importables dans son espace de noms `formatting`.
-
 entry .Truncation
   info
       - a stream which ended before it had delivered everything
@@ -1898,6 +1888,156 @@ entry .Malleable
     info
         - replaces the bytes at `offset` with `data`
         + remplace les octets situés à `offset` par `data`
+
+entry .Terrain
+  info
+      - an `Expanse` whose bytes are in memory, and are read where they lie: a mapped file, or bytes on the heap
+      + une `Expanse` dont les octets sont en mémoire, et se lisent là où ils se trouvent : un
+      + fichier projeté, ou des octets sur le tas
+  detail
+      - Integers are loaded at any offset, little-endian, with no copy, and a `slice` is a
+      - narrower view of the same memory. A terrain belongs to a scope -- a file is mapped for
+      - the length of a block -- so it is lent as a tracked `Terrain^`, and nothing loads from
+      - memory which is no longer mapped. `Terrain(data)` is one over bytes which are already on
+      - the heap.
+      + Les entiers sont chargés à n'importe quel décalage, en petit-boutiste, sans copie, et une
+      + `slice` est une vue plus étroite de la même mémoire. Un terrain appartient à une portée --
+      + un fichier est projeté pendant la durée d'un bloc -- si bien qu'il est prêté comme
+      + `Terrain^` suivi, et que rien ne charge depuis une mémoire qui n'est plus projetée.
+      + `Terrain(data)` en est un sur des octets qui sont déjà sur le tas.
+  entry #u8
+    info
+        - the unsigned byte at an offset, as an `Int`
+        + l'octet non signé à un décalage, comme `Int`
+  entry #u16
+    info
+        - the unsigned 16-bit integer at an offset, as an `Int`
+        + l'entier non signé de 16 bits à un décalage, comme `Int`
+  entry #u32
+    info
+        - the unsigned 32-bit integer at an offset, as a `Long`
+        + l'entier non signé de 32 bits à un décalage, comme `Long`
+  entry #u64
+    info
+        - the 64-bit integer at an offset, as a `Long`
+        + l'entier de 64 bits à un décalage, comme `Long`
+  entry #i32
+    info
+        - the 32 bits at an offset as a signed `Int`
+        + les 32 bits à un décalage comme `Int` signé
+  entry #slice
+    info
+        - a view of part of the memory, sharing it and its lifetime
+        + une vue d'une partie de la mémoire, qui la partage ainsi que sa durée de vie
+  entry #same
+    info
+        - whether the bytes at an offset are those of some `Data`, compared in place
+        + si les octets à un décalage sont ceux de certaines `Data`, comparés sur place
+  entry #compare
+    info
+        - the order of some bytes relative to some `Data`, compared in place, a proper prefix sorting first
+        + l'ordre de certains octets par rapport à des `Data`, comparés sur place, un préfixe
+        + propre venant en premier
+
+entry .Holding
+  info
+      - a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
+      + un `Terrain` qui peut être modifié là où il se trouve : on y stocke à un décalage, et on
+      + l'étend
+  detail
+      - What a format which is kept and altered in place is altered through: a file mapped for
+      - writing by the one process which owns it (galilei's `hold`), or bytes on the heap
+      - (`Holding(size)`, `Holding(data)`). Every store is at an offset, and no address into its
+      - memory is handed out, since `expand` may move it; a `slice` reads through the holding it
+      - came from, and stays good across an expansion.
+      + Ce par quoi un format conservé et modifié sur place est modifié : un fichier projeté en
+      + écriture par le seul processus qui le possède (le `hold` de galilei), ou des octets sur
+      + le tas (`Holding(size)`, `Holding(data)`). Chaque stockage se fait à un décalage, et aucune
+      + adresse dans sa mémoire n'est donnée, puisque `expand` peut la déplacer ; une `slice` lit
+      + à travers la tenure dont elle provient, et reste valable après une extension.
+  entry #set8
+    info
+        - stores a byte at an offset
+        + stocke un octet à un décalage
+  entry #set16
+    info
+        - stores a 16-bit integer at an offset, little-endian
+        + stocke un entier de 16 bits à un décalage, en petit-boutiste
+  entry #set32
+    info
+        - stores a 32-bit integer at an offset, little-endian
+        + stocke un entier de 32 bits à un décalage, en petit-boutiste
+  entry #set64
+    info
+        - stores a 64-bit integer at an offset, little-endian
+        + stocke un entier de 64 bits à un décalage, en petit-boutiste
+  entry #write
+    info
+        - stores the bytes of some `Data` from an offset
+        + stocke les octets de certaines `Data` à partir d'un décalage
+  entry #zero
+    info
+        - stores zero bytes over a range
+        + stocke des octets nuls sur une plage
+  entry #move
+    info
+        - copies a range to another offset, which it may overlap
+        + copie une plage vers un autre décalage, qu'elle peut chevaucher
+  entry #expand
+    info
+        - makes the holding at least a given size, the new bytes zero; it never shrinks
+        + porte la tenure à une taille donnée au moins, les nouveaux octets étant nuls ; il ne
+        + rétrécit jamais
+  entry #flush
+    info
+        - makes what has been stored durable, where there is a file for it to be durable in
+        + rend durable ce qui a été stocké, là où il y a un fichier dans lequel cela peut l'être
+
+entry .Viewable
+  info
+      - the typeclass of a value whose bytes can be lent as a `Terrain` for the length of a block
+      + la classe de types d'une valeur dont les octets peuvent être prêtés comme `Terrain`
+      + pendant la durée d'un bloc
+  detail
+      - A path is `Viewable`, its file being mapped for the block; so are an image which is
+      - already on the heap, and a terrain which is already in hand. A format which is read in
+      - place is opened from any of them alike.
+      + Un chemin est `Viewable`, son fichier étant projeté pour le bloc ; le sont aussi une image
+      + déjà sur le tas, et un terrain déjà en main. Un format qui se lit sur place s'ouvre de la
+      + même façon depuis chacun d'eux.
+  entry #view
+    info
+        - lends the value's bytes as a `Terrain`
+        + prête les octets de la valeur comme `Terrain`
+  entry #hold
+    info
+        - lends the value's bytes for changing, as a `Holding`, or answers `otherwise` if they cannot be changed
+        + prête les octets de la valeur pour modification, comme `Holding`, ou renvoie `otherwise`
+        + s'ils ne peuvent pas être modifiés
+    detail
+        - A file is mapped for writing under an exclusive lock, and a holding in hand is lent as it
+        - is; bytes which are immutable, like anything which does not say otherwise, answer
+        - `otherwise`.
+        + Un fichier est projeté en écriture sous un verrou exclusif, et une tenure en main est
+        + prêtée telle quelle ; des octets immuables, comme tout ce qui ne dit pas le contraire,
+        + renvoient `otherwise`.
+entry .Surveyable
+  info
+      - the typeclass of a form which is read in place from a view of its bytes: `Form is Surveyable by Flag to Handle`
+      + la classe de types d'une forme qui se lit sur place depuis une vue de ses octets : `Form
+      + is Surveyable by Flag to Handle`
+  detail
+      - It is an instance for the form, and not for what lends the view, which is what lets a
+      - lender which is itself a capability -- an `Observer` of a published name -- open the
+      - view as a form.
+      + C'est une instance pour la forme, et non pour ce qui prête la vue, ce qui permet à un
+      + prêteur qui est lui-même une capacité -- un `Observer` d'un nom publié -- d'ouvrir la vue
+      + comme une forme.
+  entry #survey
+    info
+        - opens a view as the form, with flags, and provides the handle contextually for the length of a block
+        + ouvre une vue comme la forme, avec des indicateurs, et fournit la poignée
+        + contextuellement pendant la durée d'un bloc
 
 entry .Spring
   info
@@ -2118,7 +2258,6 @@ entry .stream
       bytes.stream.memoize                                // a copy of the bytes
       Iterator(t"a", t"b").stream.memoize                 // t"ab"
       ```
-
 entry .Intake
   info
       - the push endpoint of a pipeline: a buffer whose writable region is lent zero-copy to one producer
@@ -2667,7 +2806,6 @@ entry .Pace
       + l'amont d'envoyer librement, `Measured` de régler son rythme entre les blocs, et `Halted`
       + d'arrêter de produire jusqu'à ce que la demande soit à nouveau interrogée.
       + `Regulation.pace` en est l'arithmétique.
-
 entry .Records
   info
       - a stream of parsed records: `Stream[Array[record]^{}] over Credit`
@@ -2696,7 +2834,6 @@ entry .Records
       val rows: Records[Row] = Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3))))
       rows.records.to[List]   // List(Row(1), Row(2), Row(3))
       ```
-
 entry .via
   info
       - `stream.via(stage)`: a differently-typed stream pulling through a stage with a `Ductile` instance
@@ -2796,7 +2933,6 @@ entry .ingest
       + terminé, si bien que ce qu'il a recueilli peut être lu via l'unique référence renvoyée —
       + `Gather().ingest(bytes.stream).data` — sans qu'une seconde référence n'existe jamais. Le
       + flux est consommé et fermé.
-
 entry .accepting
   info
       - `intake.accepting(stage)`: a differently-typed intake pushing through a stage with a `Ductile` instance
@@ -2837,7 +2973,6 @@ entry .acceptingDuct
       - when the result is finished, and its `close` on finish or failure.
       + Comme `accepting`, pour un `Duct` déjà disponible plutôt qu'un descripteur. Le `flush` du
       + duct s'exécute quand le résultat est terminé, et son `close` à la fin ou en cas d'échec.
-
 entry .drain
   info
       - `stream.drain(operation)`: a terminal applying an operation to each successive region and its branded interval
@@ -2891,7 +3026,6 @@ entry .memoize
 
       Stream(Iterator(t"ab", t"cd", t"e")).memoize   // t"abcde"
       ```
-
 entry .gather
   info
       - `stream.gather(initial)(operation)`: a terminal threading an accumulator through each region
@@ -2919,7 +3053,6 @@ entry .gather
           region.visit(range) { index => total += region(index) }
           total
       ```
-
 entry .truncate
   info
       - `stream.truncate(count)`: the first `count` elements, then end-of-stream
@@ -2940,7 +3073,6 @@ entry .truncate
       val bytes: Data = Data.fill(20)(_.toByte)
       bytes.stream.discard(5).truncate(5).memoize   // bytes 5 to 9
       ```
-
 entry .discard
   info
       - `stream.discard(count)`: skips the first `count` elements, then passes the rest through unchanged
@@ -2951,7 +3083,6 @@ entry .discard
       - the medium, not collection elements, which is why it is not called `drop`.
       + Les éléments sautés sont tirés et ignorés au premier `refill`. Compte des éléments du
       + support, et non des éléments de collection, c'est pourquoi elle ne s'appelle pas `drop`.
-
 entry .chunks
   info
       - `stream.chunks`: a single-consumer iterator of materialized chunks, one per refill
@@ -2968,7 +3099,6 @@ entry .chunks
       + entier. L'itérateur possède l'endpoint : il ferme le flux quand il signale l'épuisement, si
       + bien qu'un consommateur doit le vider, ou fermer le flux par un autre moyen, pour libérer
       + l'amont. Exige un `Buffering`.
-
 entry .chain
   info
       - `stream.chain`: a lazy `Chain` of one materialized chunk per refill, strictly demand-driven
@@ -2985,7 +3115,6 @@ entry .chain
       + elle ne peut donc pas porter la capacité d'endpoint que capturent ses cellules, et au-delà
       + de ce point la discipline de propriété est suspendue et chaque fragment forcé est retenu.
       + Préférez les opérations terminales du noyau (`memoize`, `drain`, `gather`, `chunks`).
-
 entry .records
   info
       - `stream.records`: an iterator over the records of a `Records[record]` stream, in order
@@ -3006,7 +3135,6 @@ entry .records
       case class Row(id: Int)
       Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3)))).truncate(2).records.to[List]   // List(Row(1), Row(2))
       ```
-
 entry .streamOf
   info
       - a stream lending part of a cursor — by length or up to a delimiter — or a range of an `Expanse`
@@ -3647,7 +3775,6 @@ entry .Region
         + `Deflater.setInput` et l'`update` d'un condensé prennent un triplet qui est dans les
         + bornes par construction, si bien qu'aucun `Unsafe` n'est nécessaire ; le tableau n'est
         + visible que pendant l'appel, qui ne doit ni le retenir ni l'indexer hors du triplet.
-
 entry .Slate
   info
       - the writable counterpart of `Region`: a duct's output storage, written through branded ordinals

@@ -183,4 +183,4 @@ Document {
     ],
 }
 errors:
-  E226 [0,0): Layer declares a conflicting width for an existing scalar, or the width contradicts the encoding's fixed width: scalar `Count` declares width `8` but its encoding `u16` has fixed width 2
+  ↯/t.2.26 [0,0): Layer declares a conflicting width for an existing scalar, or the width contradicts the encoding's fixed width: scalar `Count` declares width `8` but its encoding `u16` has fixed width 2

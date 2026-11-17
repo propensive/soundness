@@ -77,4 +77,4 @@ Document {
     ],
 }
 errors:
-  E302 [0,0): More atoms than assignable member positions: Scalar compound `name` has more than one atom
+  ↯/t.3.2 [0,0): More atoms than assignable member positions: Scalar compound `name` has more than one atom

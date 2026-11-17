@@ -211,7 +211,6 @@ detail
     + `pathOnPosix`), qui permettent de demander un `Path on Linux` partout où un type de chemin est
     + attendu (`temporaryDirectory[Path on Linux]`, `Home[Path on Linux]()`), sont déclarés dans le
     + package `anticipation` et documentés là-bas.
-
 refer galilei.Platform
 refer galilei.FilesystemBackend
 refer galilei.Io
@@ -439,7 +438,6 @@ entry .Platform
         Eof(log).open(Write): handle ?=>
           handle.write(Chain(t"another line\n".in[Data]))
         ```
-
 entry .Posix
   info
       - the POSIX platform: `/`-rooted paths whose names may not contain `/` or `:`
@@ -661,7 +659,6 @@ entry .Windows
         - `Path.Error(InvalidRoot)` through the `Tactic[Path.Error]` in scope.
         + La racine fait trois caractères : une lettre, `:` et `\`. Un texte qui ne les contient pas
         + échoue avec `Path.Error(InvalidRoot)` par la `Tactic[Path.Error]` dans la portée.
-
 entry .Local
   info
       - the platform of the running machine, whichever it is
@@ -722,7 +719,6 @@ entry .Local
         - The root's length is 1 or 3 accordingly; any other text raises `Path.Error(InvalidRoot)`.
         + La longueur de la racine est 1 ou 3 en conséquence ; tout autre texte lève
         + `Path.Error(InvalidRoot)`.
-
 entry .Dos
   info
       - the DOS 8.3 naming rules, as a nominative plane
@@ -795,7 +791,6 @@ entry .C
       - path.
       + Une valeur de premier niveau pour le lecteur système habituel, de sorte que `C / "Windows"`
       + se lise comme un chemin Windows.
-
 entry .D
   info
       - the drive `D:\`, as `Drive('D')`
@@ -832,7 +827,6 @@ entry .p
       - so `p"/tmp/x".write(t"…")` needs no `on[Linux]`.
       + Un `Path on Posix` se lit et s'écrit comme tout chemin de plateforme (`Posix` a un
       + `Filesystem`), si bien que `p"/tmp/x".write(t"…")` ne requiert pas de `on[Linux]`.
-
 entry .internal
   info
       - the macro behind `p"…"`
@@ -1140,7 +1134,6 @@ entry .FilesystemBackend
         + lecture seule ne pouvant pas poser de verrou exclusif, un verrou partagé est posé à la
         + place (l'exclusivité au sein du processus est déjà arbitrée par l'`AccessRegister`), et
         + `Await` attend le verrou au lieu d'échouer avec `Busy`.
-
 entry .filesystemBackends
   info
       - the filesystem backends, each a given to import by name
@@ -1272,7 +1265,6 @@ entry .filesystemBackends
         + correspondent jamais), les attributs étendus, les modifications de permissions, l'identité
         + des entrées, et toute ouverture avec verrouillage (`Exclusive`, `Shared`,
         + `OpenFlag.Lock`).
-
 entry .wasiApis
   info
       - the WIT interface the WASI backend is typechecked against, as a given to import by name
@@ -1310,7 +1302,6 @@ entry .WasiFilesystemApi
       + Les définitions WIT par rapport auxquelles `wasiFilesystem` est vérifié, situées sur le
       + classpath à ce chemin de ressource ; `wasiApis.wasiFilesystemApi` en est l'unique valeur.
       + Dans `galilei.wasi`.
-
 entry .Io
   info
       - galilei's I/O vocabulary: the `Io.Error` every disk operation raises, and the `Io.Event`s it logs
@@ -1780,7 +1771,6 @@ entry .filesystemOptions
         - `Io.Error` with `Reason.Nonexistent` for the missing parent.
         + Le `CreateNonexistentParents` strict : rien n'est créé, et le backend lève `Io.Error` avec
         + `Reason.Nonexistent` pour le parent manquant.
-
 entry .DereferenceSymlinks
   info
       - the policy for a final-component symbolic link: follow it, or act on the link
@@ -2039,7 +2029,6 @@ entry .Explorable
         - deferred into the chain.
         + Strict : un échec de listage (`Nonexistent`, `PermissionDenied`) est levé ici, et non
         + différé dans la chaîne.
-
 entry .Substantiable
   info
       - the typeclass behind `existent()`: whether a value names something which exists
@@ -2090,7 +2079,6 @@ entry .existent
       + pendante vaut `false`. Dans un bloc `open[Directory]`, l'opération correspondante sur le
       + chemin d'une poignée est `extant()`, nommée différemment parce qu'une extension importée
       + lexicalement la masquerait.
-
 entry .children
   info
       - `path.children`: a directory's immediate entries, as paths
@@ -2119,7 +2107,6 @@ entry .children
       val home: Path on Linux = (% / "tmp").on[Linux]
       home.children.map(_.name)
       ```
-
 entry .descendants
   info
       - `path.descendants`: every entry beneath a directory, in the `TraversalOrder` in scope
@@ -2149,7 +2136,6 @@ entry .descendants
       val root: Path on Linux = (% / "tmp" / "project").on[Linux]
       root.descendants.filter(_.name.ends(t".scala")).to[List]
       ```
-
 entry .glob
   info
       - `path.glob(pattern)`: the entries beneath a directory which a `Glob` matches
@@ -2186,7 +2172,6 @@ entry .glob
       root.glob(Glob.parse(t"**/*.jar"))       // every jar at any depth
       root.glob(Glob.parse(t"lib/[ab]*.jar"))  // jars under lib whose name starts with a or b
       ```
-
 entry .write
   info
       - `path.write(content)`: replaces the file's whole content, in one direct operation
@@ -2217,7 +2202,6 @@ entry .write
       file.write(t"Hello world")
       file.read[Text]   // t"Hello world"
       ```
-
 entry .expanse
   info
       - `path.expanse(lambda)`: positional reads of a file within a scope, without mapping it
@@ -2250,7 +2234,6 @@ entry .expanse
       file.expanse: expanse =>
         (expanse.size, expanse.read(4L, 6).utf8)
       ```
-
 entry .filesize
   info
       - `path.filesize()`: the size of a file, or of everything beneath a directory, in `Bytes`
@@ -2267,7 +2250,6 @@ entry .filesize
       + répertoire est la sienne plus les tailles de tous ses descendants, parcourus sans suivre les
       + liens symboliques. Nommée `filesize` plutôt que `size` afin de ne pas entrer en concurrence
       + avec le `size` des collections dans le package parapluie `soundness`.
-
 entry .delete
   info
       - `path.delete()`: deletes an entry, recursing into a directory as the `DeleteRecursively` policy allows
@@ -2284,7 +2266,6 @@ entry .delete
       + un backend, une `Tactic[Io.Error]` et un `Io.Event is Loggable`. Une entrée manquante lève
       + `Io.Error` avec `Nonexistent` ; un répertoire non vide sous `deleteOnlyEmpty` lève
       + `DirectoryNotEmpty`. Journalise `Io.Event.Delete` et renvoie le chemin.
-
 entry .wipe
   info
       - `path.wipe()`: deletes an entry if it exists, recursing as the `DeleteRecursively` policy allows
@@ -2310,7 +2291,6 @@ entry .wipe
       build.wipe()
       build.existent()   // false
       ```
-
 entry .volume
   info
       - `path.volume()`: the storage volume the entry is on, by name and filesystem type
@@ -2324,7 +2304,6 @@ entry .volume
       + `Io.Error`. Le `volumeType` du `Volume` (`ext4`, `apfs`, `btrfs`, `ntfs`, …) est ce que
       + testent les extracteurs de l'axe de stockage `Ext4`, `Apfs`, `Btrfs` et `Ntfs`. WASI lève
       + `Unsupported`.
-
 entry .entryIdentity
   info
       - `path.entryIdentity`: the entry's device and inode numbers, or `Unset`
@@ -2352,7 +2331,6 @@ entry .entryIdentity
       val b: Path on Linux = unsafely((% / "tmp" / "b").on[Linux])
       a.entryIdentity == b.entryIdentity   // true only if they are hard links to one file
       ```
-
 entry .entry
   info
       - `path.entry()`: what kind of entry the path names
@@ -2385,7 +2363,6 @@ entry .entry
         case Symlink   => t"a symbolic link"
         case _         => t"something else"
       ```
-
 entry .copyTo
   info
       - `path.copyTo(destination)`: copies an entry to a path, consulting the policies in scope
@@ -2422,7 +2399,6 @@ entry .copyTo
       val file: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
       file.copyTo((% / "tmp" / "backup" / "notes.txt").on[Linux])
       ```
-
 entry .copyInto
   info
       - `path.copyInto(directory)`: copies an entry into a directory, keeping its name
@@ -2436,7 +2412,6 @@ entry .copyInto
       + de l'entrée est utilisé en dessous. Requiert un `OverwritePreexisting on plane`, un
       + `DereferenceSymlinks`, un backend et une `Tactic[Io.Error]` ; les parents sont créés,
       + puisque le répertoire de destination est nommé explicitement.
-
 entry .moveTo
   info
       - `path.moveTo(destination)`: moves an entry to a path, consulting the policies in scope
@@ -2474,7 +2449,6 @@ entry .moveTo
       val draft: Path on Linux = (% / "tmp" / "draft.txt").on[Linux]
       val renamed: Path on Linux = draft.moveTo((% / "tmp" / "final.txt").on[Linux])
       ```
-
 entry .moveInto
   info
       - `path.moveInto(directory)`: moves an entry into a directory, keeping its name
@@ -2486,7 +2460,6 @@ entry .moveInto
       + Comme `moveTo(directory / path.name)`. Requiert un `OverwritePreexisting on plane`, un
       + `MoveAtomically`, un `DereferenceSymlinks`, un backend et une `Tactic[Io.Error]` ; les
       + parents sont créés.
-
 entry .hardLinkTo
   info
       - `path.hardLinkTo(link)`: makes a hard link at `link` to this entry
@@ -2502,7 +2475,6 @@ entry .hardLinkTo
       + `Tactic[Io.Error]` et un `Io.Event is Loggable`. Le receveur est l'entrée existante et
       + l'argument le nouveau nom ; ensuite, les deux ont la même `entryIdentity`. Journalise
       + `Io.Event.HardLink` et renvoie le chemin du lien.
-
 entry .symlinkTo
   info
       - `path.symlinkTo(link)`: makes a symbolic link at `link` pointing at this path
@@ -2532,7 +2504,6 @@ entry .symlinkTo
       val target: Path on Linux = (% / "tmp" / "current.log").on[Linux]
       target.symlinkTo((% / "tmp" / "latest.log").on[Linux])
       ```
-
 entry .symlinkInto
   info
       - `path.symlinkInto(directory)`: makes a symbolic link to this path inside a directory
@@ -2544,7 +2515,6 @@ entry .symlinkInto
       + Comme `symlinkTo(directory / path.name)`. Requiert un `OverwritePreexisting on plane`, un
       + `MoveAtomically`, un `DereferenceSymlinks`, un backend et une `Tactic[Io.Error]` ; les
       + parents sont créés.
-
 entry .canonical
   info
       - `path.canonical()`: the path as the filesystem knows it, every symbolic link resolved
@@ -2575,7 +2545,6 @@ entry .canonical
       val link: Path on Linux = (% / "tmp" / "latest.log").on[Linux]
       link.canonical()   // the path of the file the link points at
       ```
-
 entry .modified
   info
       - `path.modified[Instant]()`: when the entry was last modified
@@ -2590,7 +2559,6 @@ entry .modified
       + `Instantiable across Instants from Long` — l'`Instant` d'aviation, ou un simple `Long` de
       + millisecondes depuis l'époque via `instantiables.epochMillisecondsInstantiable`. Suit un
       + lien symbolique final.
-
 entry .accessed
   info
       - `path.accessed[Instant]()`: when the entry was last accessed
@@ -2598,7 +2566,6 @@ entry .accessed
   detail
       - As `modified()`, for the access time; `noatime` mounts do not update it.
       + Comme `modified()`, pour la date d'accès ; les montages `noatime` ne la mettent pas à jour.
-
 entry .created
   info
       - `path.created[Instant]()`: when a Windows entry was created
@@ -2613,7 +2580,6 @@ entry .created
       + qui n'en enregistre pas, elle lève `Io.Error` avec `Unsupported`. Sur les autres
       + plateformes, `creation()` est le même accesseur, conditionné par le fait que le système de
       + fichiers de stockage soit `CreationTimed`.
-
 entry .creation
   info
       - `path.creation[Instant]()`: the creation time of an entry on a `CreationTimed` filesystem
@@ -2646,7 +2612,6 @@ entry .creation
         case Btrfs(path) => path.creation[Long]()
         case _           => 0L
       ```
-
 entry .readable
   info
       - `path.readable()` and `path.readable = false`: the entry's read permission for the current user
@@ -2659,7 +2624,6 @@ entry .readable
       + Une extension sur tout `Path on <plane: Filesystem>`, qui requiert un backend. Elle renvoie
       + un `FilesystemAttribute.Readable`, dont `apply()` est l'indicateur courant (total) et dont
       + `update` le définit, en levant `Io.Error` avec `PermissionDenied` si la plateforme refuse.
-
 entry .writable
   info
       - `path.writable()` and `path.writable = false`: the entry's write permission for the current user
@@ -2668,7 +2632,6 @@ entry .writable
   detail
       - As `readable`, returning a `FilesystemAttribute.Writable`.
       + Comme `readable`, en renvoyant un `FilesystemAttribute.Writable`.
-
 entry .executable
   info
       - `path.executable()` and `path.executable = true`: a POSIX entry's execute permission
@@ -2691,7 +2654,6 @@ entry .executable
       script.executable = true
       script.executable()   // true
       ```
-
 entry .hidden
   info
       - `path.hidden()`: whether the entry is hidden by the platform's convention
@@ -2701,7 +2663,6 @@ entry .hidden
       - raises `Io.Error`.
       + Un `.` au début du nom sous POSIX, l'attribut caché sous Windows. Requiert un backend et
       + lève `Io.Error`.
-
 entry .touch
   info
       - `path.touch()`: sets the entry's modification time to now
@@ -2714,7 +2675,6 @@ entry .touch
       + `Tactic[Io.Error]` et un `Io.Event is Loggable`. Contrairement au `touch` du shell, elle ne
       + crée pas un fichier manquant : cela lève `Nonexistent`. Journalise `Io.Event.Touch` au
       + niveau `fine`.
-
 entry .hardLinks
   info
       - `path.hardLinks()`: how many hard links point at a POSIX entry
@@ -2724,7 +2684,6 @@ entry .hardLinks
       - backend, and raising `Io.Error`. A freshly created file has one.
       + Une extension sur `Path on <plane <: Posix>`, qui requiert un `DereferenceSymlinks` et un
       + backend, et qui lève `Io.Error`. Un fichier fraîchement créé en a un.
-
 entry .attributes
   info
       - `path.attributes()`: the names of an entry's extended attributes
@@ -2740,7 +2699,6 @@ entry .attributes
       + `Apfs(path)` ou `Ntfs(path)`, comme l'un de ceux qui prennent en charge les attributs
       + définis par l'utilisateur. Requiert un backend et lève `Io.Error`. Sans ce filtrage,
       + l'extension n'est pas disponible : le type indique que le système de fichiers est inconnu.
-
 entry .attribute
   info
       - `path.attribute[Data](name)` reads an extended attribute; `path.attribute(name, data)` sets one
@@ -2777,7 +2735,6 @@ entry .attribute
           path.attribute[Data](t"origin").let(_.utf8)
         case _ => Unset
       ```
-
 entry .subvolume
   info
       - `path.subvolume()`: the btrfs subvolume an entry is stored in
@@ -2793,7 +2750,6 @@ entry .subvolume
       + racine du sous-volume se trouve en remontant tant que le numéro de périphérique reste le
       + même, à partir du seul `stat`. Le résultat est un `Btrfs.Subvolume` qui nomme cette racine ;
       + une plateforme qui ne peut pas indiquer l'identité des entrées lève `Unsupported`.
-
 entry .subvolumeRoot
   info
       - `path.subvolumeRoot`: whether a btrfs entry is itself the root of a subvolume
@@ -2806,7 +2762,6 @@ entry .subvolumeRoot
       + sous-volume btrfs est l'inode 256, si bien que cette extension est totale, comme
       + `existent()` : une entrée dont l'inode ne peut être lu n'est pas une racine de sous-volume
       + pour tout ce qui en dépend.
-
 entry .file
   info
       - the contextual `Handle` inside an `open[File]` block, as a value
@@ -2832,7 +2787,6 @@ entry .file
       val path: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
       path.open[File]()(file.stream.read[Data]).utf8
       ```
-
 entry .dir
   info
       - the contextual `Directory.Handle` inside an `open[Directory]` block, as a value
@@ -2842,7 +2796,6 @@ entry .dir
       - opened directory without naming a binder.
       + Comme `file`, pour une portée de répertoire : `path.open[Directory]()(dir.base.entries)`
       + liste le répertoire ouvert sans nommer de liaison.
-
 entry .Entry
   info
       - what a filesystem entry can be: the common type of `File`, `Directory`, `Symlink` and the rest
@@ -3066,7 +3019,6 @@ entry .Fifo
       + `Unsupported` sur WASI). Seule la forme d'instanciation existe : composer une FIFO dans sa
       + portée de création est refusé comme `Unsupported`, puisque l'ouverture de l'une ou l'autre
       + extrémité bloque jusqu'à l'apparition d'un pair.
-
 entry .BlockDevice
   info
       - a block device node, as an entry kind
@@ -3076,7 +3028,6 @@ entry .BlockDevice
       - marker; `Device.create` (JVM) makes one.
       + Ce que renvoie `entry()` pour un périphérique bloc. L'objet est le genre d'entrée et le
       + trait un marqueur ; `Device.create` (JVM) en crée un.
-
 entry .CharDevice
   info
       - a character device node, as an entry kind
@@ -3084,7 +3035,6 @@ entry .CharDevice
   detail
       - What `entry()` returns for a character device, such as a terminal.
       + Ce que renvoie `entry()` pour un périphérique caractère, comme un terminal.
-
 entry .Symlink
   info
       - a symbolic link, as an entry kind, and a value naming one by its path
@@ -3248,7 +3198,6 @@ entry .CreationTimed
       + chemin filtré comme `Path on plane over <transport <: CreationTimed>` gagne l'accesseur
       + total `creation()`, là où `Stat#created` est optionnel parce que la plupart des systèmes de
       + fichiers POSIX n'en enregistrent aucune.
-
 entry .Attributed
   info
       - the storage filesystems which support extended attributes: `Btrfs`, `Ext4`, `Apfs`, `Ntfs`
@@ -3260,7 +3209,6 @@ entry .Attributed
       + Un marqueur scellé de l'axe du système de fichiers de stockage. Un chemin filtré comme
       + `Path on plane over <transport <: Attributed>` gagne `attributes()` et les deux accesseurs
       + `attribute`.
-
 entry .Btrfs
   info
       - the btrfs storage filesystem: an extractor which types a path as stored on btrfs
@@ -4404,7 +4352,6 @@ entry .Umask
         - a backend sets at creation.
         + `bits & ~umask` : `Umask.fileBits` ou `Umask.directoryBits` avec le masque appliqué, qu'un
         + backend définit à la création.
-
 entry .Fdtable
   info
       - a process's file-descriptor table as paths name it, consulted before the filesystem
@@ -4534,7 +4481,6 @@ entry .Fdtable
     detail
         - The path is in its encoded form, as the platform would name it.
         + Le chemin est sous sa forme encodée, telle que la plateforme le nommerait.
-
 entry .Cas
   info
       - a content-addressed store: one blob per digest of its bytes, under one root
@@ -4861,7 +4807,6 @@ entry .search
       + le plan et un `FilesystemBackend` pour sa cible. La première correspondance l'emporte, selon
       + la spécification XDG ; le résultat est un `Path on stems.Target`. Nommée `search` plutôt que
       + `locate`, que zephyrine exporte dans le package parapluie.
-
 entry .locations
   info
       - `path.locations()`: every real path of a searchpath at which the path exists, in precedence order
@@ -4872,7 +4817,6 @@ entry .locations
       - read every copy of a configuration file.
       + Une extension sur `Path on <plane <: Searchpath>`, pour les consommateurs qui fusionnent en
       + cascade et lisent chaque copie d'un fichier de configuration.
-
 entry .listing
   info
       - `path.listing()`: the merged listing of a searchpath directory across every stem
@@ -4886,7 +4830,6 @@ entry .listing
       + et une `Tactic[Io.Error]`. Les enfants sont dédoublonnés par nom, les premières racines
       + masquant les suivantes, et renvoyés sur le plan du chemin de recherche, si bien que l'arbre
       + virtuel est navigable.
-
 entry .destination
   info
       - `path.destination()`: the path's place under the head stem, where the XDG specification directs writes
@@ -4899,7 +4842,6 @@ entry .destination
       + Une extension sur `Path on <plane <: Searchpath>`. Totale : rien n'est vérifié sur le
       + disque. Créer les éventuels répertoires intermédiaires manquants incombe à l'appelant, au
       + moyen de `filesystemOptions.createNonexistentParents` lors de l'écriture elle-même.
-
 entry .searchpathCompliant
   info
       - lets a `Linux`-style relative or literal path be reinterpreted on a searchpath plane
@@ -4916,7 +4858,6 @@ entry .searchpathCompliant
       + la bibliothèque, puisque l'objet compagnon d'aucun des deux sujets ne peut l'accueillir ; il
       + est inline et ne requiert aucun import au-delà de `soundness.*` lorsque l'export du package
       + parapluie est dans la portée.
-
 entry .dataSearch
   info
       - `Xdg.dataSearch()`: the XDG data searchpath, as `Searchpaths.Stems on Xdg.Data onto Linux`
@@ -4942,7 +4883,6 @@ entry .dataSearch
 
       given Searchpaths.Stems on Xdg.Data onto Linux = Xdg.dataSearch()
       ```
-
 entry .configSearch
   info
       - `Xdg.configSearch()`: the XDG configuration searchpath, as `Searchpaths.Stems on Xdg.Config onto Linux`
@@ -4951,7 +4891,6 @@ entry .configSearch
   detail
       - As `dataSearch()`, for `XDG_CONFIG_HOME` followed by `XDG_CONFIG_DIRS`.
       + Comme `dataSearch()`, pour `XDG_CONFIG_HOME` suivi de `XDG_CONFIG_DIRS`.
-
 entry .Ram
   info
       - the form for random access to a file's bytes through memory mapping: `path.open[Ram](mode)`
@@ -5219,7 +5158,6 @@ entry .socketCreatable
       socket.create[Sock](CreateFlag.Replace): sock ?=>
         sock.channel.isOpen   // true: bound, and closed when the block ends
       ```
-
 entry .javaPath
   info
       - `path.javaPath`: the `java.nio.file.Path` for a platform path, for Java APIs which take one
@@ -5242,7 +5180,6 @@ entry .javaPath
       val path: Path on Linux = unsafely((% / "tmp").on[Linux])
       path.javaPath.toAbsolutePath
       ```
-
 entry .javaFile
   info
       - `path.javaFile`: the `java.io.File` for a platform path
@@ -5251,3 +5188,121 @@ entry .javaFile
       - As `javaPath`, for the older API; in `galilei.jvm` and not exported to the umbrella.
       + Comme `javaPath`, pour l'ancienne API ; dans `galilei.jvm` et non exportée vers le package
       + parapluie.
+entry .mapped
+  info
+      - `path.mapped { view => … }`: the whole file mapped into memory, read-only, as a `Terrain` for the length of a block
+      + `path.mapped { view => … }` : le fichier entier projeté en mémoire, en lecture seule,
+      + comme `Terrain` pendant la durée d'un bloc
+  detail
+      - Nothing is copied: integers are loaded from the page cache in place, and processes which
+      - map one file share one copy of it. The file is unmapped when the block ends, and the view
+      - is a capability which is confined to it. The JVM and Scala Native backends map files;
+      - WASI raises `Io.Error` with the reason `Unsupported`.
+      + Rien n'est copié : les entiers sont chargés sur place depuis le cache de pages, et les
+      + processus qui projettent un même fichier en partagent une seule copie. La projection est
+      + défaite lorsque le bloc se termine, et la vue est une capacité qui y est confinée. Les
+      + backends JVM et Scala Native projettent les fichiers ; WASI lève `Io.Error` avec la raison
+      + `Unsupported`.
+entry .hold
+  info
+      - `path.hold(reserve) { holding => … }`: the whole file mapped for changing in place, as a `Holding`, under an exclusive lock
+      + `path.hold(reserve) { holding => … }` : le fichier entier projeté pour être modifié sur
+      + place, comme `Holding`, sous un verrou exclusif
+  detail
+      - The file is created if it is not there, and extended to `reserve` bytes if it is
+      - shorter; the holding's `expand` extends it further. The lock is on the file itself, and is
+      - held for the block: a second `hold` of the file, in this process or another, raises
+      - `Io.Error` with the reason `Busy`. What was stored is durable when the block ends. Only
+      - the JVM backend maps a file for changing; the others raise `Unsupported`.
+      + Le fichier est créé s'il n'existe pas, et étendu à `reserve` octets s'il est plus court ;
+      + le `expand` de la tenure l'étend davantage. Le verrou porte sur le fichier lui-même, et il est
+      + tenu pendant le bloc : un second `hold` du fichier, dans ce processus ou dans un autre,
+      + lève `Io.Error` avec la raison `Busy`. Ce qui a été stocké est durable lorsque le bloc se
+      + termine. Seul le backend JVM projette un fichier pour modification ; les autres lèvent
+      + `Unsupported`.
+entry .claim
+  info
+      - `path.claim[record] { owner => … }`: ownership of a name for the length of a block, to publish versions of `record` under it
+      + `path.claim[record] { owner => … }` : la propriété d'un nom pendant la durée d'un bloc,
+      + pour y publier des versions de `record`
+  detail
+      - An exclusive operating-system lock is held on the sibling `<name>.lock` throughout, so
+      - one process, and one scope within it, publishes under the name at a time; a second
+      - raises `Io.Error` with the reason `Busy`. The lock is advisory, and dependable between
+      - cooperating processes on a local filesystem.
+      + Un verrou exclusif du système d'exploitation est tenu sur le voisin `<name>.lock` tout du
+      + long, si bien qu'un seul processus, et une seule portée en son sein, publie sous le nom à
+      + la fois ; un second lève `Io.Error` avec la raison `Busy`. Le verrou est consultatif, et
+      + fiable entre des processus coopérants sur un système de fichiers local.
+entry .observe
+  info
+      - `path.observe[record] { observer => … }`: the version of a name which is now published, mapped, with the means to move on to a newer one
+      + `path.observe[record] { observer => … }` : la version publiée d'un nom, projetée, avec le moyen de passer à une plus récente
+  detail
+      - No lock is taken, so an observer never delays the owner, nor the owner an observer.
+      - Whatever is mapped is unmapped when the block ends. A name under which nothing has been
+      - published raises `Io.Error`.
+      + Aucun verrou n'est pris, si bien qu'un observateur ne retarde jamais le propriétaire, ni
+      + le propriétaire un observateur. Ce qui est projeté cesse de l'être lorsque le bloc se
+      + termine. Un nom sous lequel rien n'a été publié lève `Io.Error`.
+entry .Edition
+  info
+      - the identity of one published version: which file the name led to, and when it was written
+      + l'identité d'une version publiée : le fichier auquel menait le nom, et le moment où il a
+      + été écrit
+  detail
+      - Two editions are the same version exactly when they are equal; they have no order.
+      + Deux éditions sont la même version exactement lorsqu'elles sont égales ; elles n'ont pas
+      + d'ordre.
+entry .Owner
+  info
+      - ownership of a name, for the block of `claim`: the capability to publish versions of `record` under it
+      + la propriété d'un nom, pour le bloc de `claim` : la capacité de publier des versions de
+      + `record` sous ce nom
+  entry #publish
+    info
+        - replaces the published file with the encoding of a value, atomically, and answers the new `Edition`
+        + remplace le fichier publié par l'encodage d'une valeur, atomiquement, et renvoie la
+        + nouvelle `Edition`
+    detail
+        - The value is written to the temporary sibling `.<name>.part`, synchronously, and moved
+        - over the name, so an observer which has mapped an earlier version is undisturbed.
+        + La valeur est écrite dans le voisin temporaire `.<name>.part`, de façon synchrone, puis
+        + déplacée sur le nom, si bien qu'un observateur qui a projeté une version antérieure
+        + n'est pas dérangé.
+entry .Observer
+  info
+      - a reader's hold on a published name, for the block of `observe`: the current version, mapped, and the means to move on
+      + la prise d'un lecteur sur un nom publié, pour le bloc de `observe` : la version courante,
+      + projetée, et le moyen de passer à la suivante
+  detail
+      - A shared capability: it takes no lock, and may be used from several threads. It keeps
+      - the version it has mapped in existence until it moves on, or its block ends.
+      + Une capacité partagée : elle ne prend aucun verrou, et peut être utilisée depuis plusieurs
+      + threads. Elle maintient en existence la version qu'elle a projetée jusqu'à ce qu'elle
+      + passe à une autre, ou que son bloc se termine.
+  entry #edition
+    info
+        - the edition of the version which is mapped
+        + l'édition de la version qui est projetée
+  entry #map
+    info
+        - lends a `Terrain` view of the mapped version for the length of a block, which a `refresh` meanwhile does not disturb
+        + prête une vue `Terrain` de la version projetée pendant la durée d'un bloc, qu'un
+        + `refresh` survenant entre-temps ne dérange pas
+  entry #refresh
+    info
+        - maps the version the name now leads to, if it is not the one already mapped, and answers whether it did
+        + projette la version vers laquelle mène désormais le nom, si ce n'est pas celle qui l'est
+        + déjà, et indique s'il l'a fait
+  entry #open
+    info
+        - opens the mapped version as `record`, through its `zephyrine.Surveyable` instance, for the length of a block
+        + ouvre la version projetée comme `record`, par son instance de `zephyrine.Surveyable`,
+        + pendant la durée d'un bloc
+    detail
+        - The type the observer was given is the form its version is read in: an observer of a
+        - `Ratel of Playbill` opens an image of a `Playbill`, and refuses any other.
+        + Le type donné à l'observateur est la forme sous laquelle sa version est lue : un
+        + observateur d'un `Ratel of Playbill` ouvre une image d'un `Playbill`, et refuse toute
+        + autre.

@@ -679,17 +679,16 @@ val frame = Bintel.selfContained(greeting, greetingSchema)
 + ### RaTEL
 
 - BinTEL is read from front to back. *RaTEL*, the random-access encoding, is read in place: it
-- lays a document out as tables of fixed-width rows, one table for each record type, with sorted
+- lays a document out as tables of fixed-width rows, one table for each record type, with
 - indexes beside them. A program which [maps the file](filesystem.md#positional-access) finds one
 - record by touching that record and nothing else, and several programs which map it share one
 - copy. It is the form for a large document which one program writes and others consult.
-+ BinTEL se lit du début à la fin. *RaTEL*, l'encodage à accès aléatoire, se lit sur place : il
++ BinTEL se lit du début à la fin. *RaTEL*, l'encodage à accès aléatoire, se lit sur place : il
 + dispose un document en tables de lignes à largeur fixe, une table par type d'enregistrement,
-+ avec des index triés à côté. Un programme qui
-+ [mappe le fichier](filesystem.md#positional-access) trouve un enregistrement en touchant cet
-+ enregistrement et rien d'autre, et plusieurs programmes qui le mappent en partagent une
-+ seule copie. C'est la forme d'un grand document qu'un programme écrit et que d'autres
-+ consultent.
++ avec des index à côté. Un programme qui [mappe le fichier](filesystem.md#positional-access)
++ trouve un enregistrement en touchant cet enregistrement et rien d'autre, et plusieurs programmes
++ qui le mappent en partagent une seule copie. C'est la forme d'un grand document qu'un programme
++ écrit et que d'autres consultent.
 
 - A schema says how its records are found. A record's `key` field gives the records of a
 - repeatable field a *primary index*, and an `index` beneath the field declares another, over one
@@ -723,6 +722,23 @@ val castSchema = t"""
 val cast = t"role Hamlet\n  play Hamlet\n  lines 1506\nrole Viola\n  play Twelfth Night\n".read[Tel]
 ```
 
+- The examples which follow publish to a file of their own:
++ Les exemples qui suivent publient dans un fichier qui leur est propre :
+
+```scala
+import environments.javaBaseEnvironment
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
+import pathInterfaces.pathOnLinux
+import systems.javaBaseSystem
+import temporaryDirectories.javaBaseTemporaryDirectory
+
+val folder = temporaryDirectory[Path on Linux] / "soundness-tel-tutorial"
+val file = folder / "cast.ratel"
+```
+
 - `ratel` encodes a document under its schema as a `Ratel`, an image which carries the schema
 - with it. An image is `Encodable in Data`, so it is
 - [published](filesystem.md#publishing-versions) like any other value:
@@ -739,15 +755,14 @@ file.claim[Ratel](_.publish(image))
 - the block, and the block is given a reader, `ratel`. Opening checks only what decides how the
 - rest is read: the header, the schema and its signature, and the directories of tables and
 - indexes. Records are then read as they are asked for. `/` gives the records of a repeatable
-- field, `find` looks one up by its key with a binary search of the primary index, and `where`
+- field, `find` looks one up by its key, by a descent through the primary index, and `where`
 - gives those with a value at an indexed path:
-+ Un fichier s'ouvre en tant que `Ratel`, comme un fichier sous toute autre forme. Il est mappé
-+ pour la durée du bloc, et le bloc reçoit un lecteur, `ratel`. L'ouverture ne vérifie que ce
-+ qui détermine comment le reste est lu : l'en-tête, le schéma et sa signature, et les
-+ répertoires des tables et des index. Les enregistrements sont ensuite lus au fur et à mesure
-+ qu'on les demande. `/` donne les enregistrements d'un champ répétable, `find` en recherche un
-+ par sa clé avec une recherche dichotomique dans l'index primaire, et `where` donne ceux qui
-+ ont une valeur à un chemin indexé :
++ Un fichier s'ouvre comme `Ratel`, comme un fichier sous toute autre forme. Il est mappé pendant
++ la durée du bloc, et le bloc reçoit un lecteur, `ratel`. L'ouverture ne vérifie que ce qui
++ détermine la lecture du reste : l'en-tête, le schéma et sa signature, et les répertoires des
++ tables et des index. Les enregistrements sont ensuite lus à mesure qu'ils sont demandés. `/`
++ donne les enregistrements d'un champ répétable, `find` en cherche un par sa clé, par une
++ descente dans l'index primaire, et `where` donne ceux qui ont une valeur à un chemin indexé :
 
 ```scala
 file.open[Ratel]():
@@ -757,11 +772,11 @@ file.open[Ratel]():
   val twelfth = roles.where(t"/play", t"Twelfth Night")
 ```
 
-- An image in memory, and a `Terrain` view which is already in hand, such as the one a
-- [published](filesystem.md#publishing-versions) reader lends, are opened the same way, as
+- An image in memory, and a `Terrain` view which is already in hand, such as the one an
+- [observer](filesystem.md#publishing-versions) lends, are opened the same way, as
 - `image.open[Ratel]()` and `view.open[Ratel]()`.
-+ Une image en mémoire, et une vue `Terrain` déjà en main, comme celle que prête un lecteur
-+ [publié](filesystem.md#publishing-versions), s'ouvrent de la même façon, sous la forme
++ Une image en mémoire, et une vue `Terrain` déjà en main, comme celle que prête un
++ [observateur](filesystem.md#publishing-versions), s'ouvrent de la même façon, par
 + `image.open[Ratel]()` et `view.open[Ratel]()`.
 
 - A `Ratel.Row` reads its members by keyword:
@@ -889,6 +904,142 @@ file.open[Ratel]():
 + bloc. `materialise` restitue le document entier sous la forme du modèle à partir duquel il a
 + été écrit, si bien que les trois encodages se convertissent les uns dans les autres sans
 + perte. Un encodage propre à l'application est lié à son codec avec `Ratel.Flag.Codecs`.
+
+- A schema need not be written out. The schema which is [derived](#schemas) from a case class
+- says how its records are found, and how its scalars are stored, if its fields say so, with
+- annotations which are named as the schema's own words are:
++ Un schéma n'a pas besoin d'être écrit. Le schéma [dérivé](#schemas) d'une case class indique
++ comment ses enregistrements sont trouvés, et comment ses scalaires sont stockés, si ses champs
++ le disent, par des annotations nommées comme le sont les mots du schéma lui-même :
+
+```tabular
+- column  Annotation
+- column  Declares
+- row  `@key`  the field as the key of its record, which gives a collection of the records a primary index
+- row  `@index(paths)`  an index over a collection, by one or more paths into each of its records
+- row  `@encoding(name)`  the encoding of a scalar, such as `u32`, by which it is stored as its codec's bytes
+- row  `@width(bytes)`  the width which every value of an encoded scalar has, so that it is stored in its row
+- row  `@intern`  that each distinct value of a scalar is stored once
++ column  Annotation
++ column  Déclare
++ row  `@key`  le champ comme clé de son enregistrement, ce qui donne un index primaire à une collection de ces enregistrements
++ row  `@index(paths)`  un index sur une collection, par un ou plusieurs chemins dans chacun de ses enregistrements
++ row  `@encoding(name)`  l'encodage d'un scalaire, comme `u32`, par lequel il est stocké sous la forme des octets de son codec
++ row  `@width(bytes)`  la largeur qu'a chaque valeur d'un scalaire encodé, si bien qu'elle est stockée dans sa ligne
++ row  `@intern`  que chaque valeur distincte d'un scalaire est stockée une seule fois
+```
+
+```scala
+case class Part(@key name: Text, play: Text, @encoding(t"u32") lines: Optional[Int])
+case class Playbill(@index(t"/play") part: List[Part])
+
+val playbill =
+  Playbill(List(Part(t"Hamlet", t"Hamlet", 1506), Part(t"Viola", t"Twelfth Night", 337)))
+```
+
+- The `ratel` of a value, with no schema given, is its image under the schema of its type, and
+- the image's own type says so: it is a `Ratel of Playbill`. The case class is then the one
+- declaration which the program that publishes and the programs that read have in common. A
+- name which is claimed for `Ratel of Playbill` takes no other image, and a program which
+- [observes](filesystem.md#publishing-versions) the name opens its current version in one
+- block, which is refused, with `Mismatched`, if the image was written under any other schema:
++ Le `ratel` d'une valeur, sans schéma donné, est son image selon le schéma de son type, et le
++ type même de l'image le dit : c'est un `Ratel of Playbill`. La case class est alors l'unique
++ déclaration qu'ont en commun le programme qui publie et les programmes qui lisent. Un nom
++ revendiqué pour `Ratel of Playbill` n'accepte aucune autre image, et un programme qui
++ [observe](filesystem.md#publishing-versions) le nom ouvre sa version courante en un seul bloc,
++ lequel est refusé, avec `Mismatched`, si l'image a été écrite selon un autre schéma :
+
+```scala fuel
+run
+##
+if !folder.existent() then folder.create[Directory]()
+file.claim[Ratel of Playbill](_.publish(playbill.ratel))
+
+file.observe[Ratel of Playbill]: observer =>
+  val viola = observer.open():
+    (ratel.root / t"part").find(t"Viola").let(_.as[Part])
+
+  Out.println(viola.inspect)
+```
+
+- An image which is published is *sealed*: it is compact, it carries its value hash and its
+- digests, and it is never changed. The program which owns a document keeps a working copy of
+- it, which it changes where it lies. A file is opened for that with `Read & Write`, which
+- holds an exclusive lock on it, and the block's reader then changes records as well as reading
+- them:
++ Une image publiée est *scellée* : elle est compacte, elle porte son hachage de valeur et ses
++ condensés, et elle n'est jamais modifiée. Le programme qui possède un document en garde une
++ copie de travail, qu'il modifie là où elle se trouve. Un fichier s'ouvre pour cela avec `Read &
++ Write`, ce qui tient un verrou exclusif sur lui, et le lecteur du bloc modifie alors des
++ enregistrements aussi bien qu'il les lit :
+
+```scala fuel
+run
+##
+if !folder.existent() then folder.create[Directory]()
+val work = folder / "playbill.work"
+work.claim[Ratel of Playbill](_.publish(playbill.ratel))
+
+work.open[Ratel of Playbill](Read & Write):
+  val parts = ratel.root / t"part"
+  parts.insert(Part(t"Feste", t"Twelfth Night", 328))
+  parts.find(t"Hamlet").let(_.lines = t"1507")
+  parts.find(t"Viola").let(_.delete())
+  file.claim[Ratel of Playbill](_.publish(ratel.sealAs[Playbill]))
+
+Out.println(file.open[Ratel of Playbill]()(ratel.root.as[Playbill]).inspect)
+```
+
+```tabular
+- column  Method
+- column  Changes
+- row  `insert`  a `Ratel.Rows`, by a value which becomes a new record, after the others or before a position
+- row  `move`  a `Ratel.Rows`, by the record at one position going to another
+- row  `row.lines = …`  a scalar member's value, or the values of a repeatable scalar, by assignment to its name
+- row  `set`  a scalar member's value, the values of a repeatable scalar, or a flag, which is made present
+- row  `unset`  a scalar member which may be absent, or a flag
+- row  `delete`  the collection a record is one of, which loses it and every record within it
+- row  `replace`  a record, by a value which takes its place in its collection
++ column  Méthode
++ column  Modifie
++ row  `insert`  un `Ratel.Rows`, par une valeur qui devient un nouvel enregistrement, après les autres ou avant une position
++ row  `move`  un `Ratel.Rows`, par le déplacement de l'enregistrement d'une position à une autre
++ row  `row.lines = …`  la valeur d'un membre scalaire, ou les valeurs d'un scalaire répétable, par affectation à son nom
++ row  `set`  la valeur d'un membre scalaire, les valeurs d'un scalaire répétable, ou un indicateur, qui est rendu présent
++ row  `unset`  un membre scalaire qui peut être absent, ou un indicateur
++ row  `delete`  la collection dont un enregistrement fait partie, qui le perd avec tout enregistrement qu'il contient
++ row  `replace`  un enregistrement, par une valeur qui prend sa place dans sa collection
+```
+
+- An assignment names a member as a field of a case class names it, so `row.firstLine = …`
+- changes the member whose keyword is `first-line`; `set` takes the keyword itself, and is the
+- way to a member whose name a method of `Ratel.Row` already has.
++ Une affectation nomme un membre comme le nomme un champ d'une classe de cas, si bien que
++ `row.firstLine = …` modifie le membre dont le mot-clé est `first-line` ; `set` prend le mot-clé
++ lui-même, et c'est par lui qu'on atteint un membre dont une méthode de `Ratel.Row` porte déjà le
++ nom.
+
+- A change is checked before any of it is written. A value which its scalar does not admit, a
+- key which another record has, and a member which may not be absent are each refused, with a
+- `Tel.Error`, and leave the image as it was; the indexes are kept in step with what is
+- accepted. While the block runs the file is marked as being changed, and a reader will not
+- open it. `seal` gives the document as a sealed image, whose bytes are those of the document,
+- whatever was done to reach it, and `sealAs` gives it as an image of a type; `repack` gives a
+- working image afresh, with room to grow. An image which is opened for writing while sealed is
+- unsealed first, so it must be a copy of the owner's own, and never a file which other
+- programs have mapped. `ratel.state` says which an image is, `Sealed` or `Unsealed`.
++ Une modification est vérifiée avant que rien n'en soit écrit. Une valeur que son scalaire
++ n'admet pas, une clé qu'un autre enregistrement possède, et un membre qui ne peut pas être
++ absent sont chacun refusés, avec une `Tel.Error`, et laissent l'image telle qu'elle était ; les
++ index sont tenus à jour de ce qui est accepté. Tant que le bloc s'exécute, le fichier est marqué
++ comme en cours de modification, et un lecteur ne l'ouvrira pas. `seal` donne le document sous
++ forme d'image scellée, dont les octets sont ceux du document, quoi qu'on ait fait pour y
++ parvenir, et `sealAs` le donne comme image d'un type ; `repack` donne à neuf une image de
++ travail, avec de la place pour grandir. Une image ouverte en écriture alors qu'elle est scellée
++ est d'abord descellée, si bien qu'elle doit être une copie propre au propriétaire, et jamais un
++ fichier que d'autres programmes ont mappé. `ratel.state` indique ce qu'est une image, `Sealed`
++ ou `Unsealed`.
 
 - ### Acceptances
 + ### Acceptations

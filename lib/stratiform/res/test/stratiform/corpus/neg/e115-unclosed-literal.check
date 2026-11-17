@@ -24,4 +24,4 @@ Document {
     ],
 }
 errors:
-  E115 [5,14): Unclosed literal atom
+  ↯/t.1.15 [5,14): Unclosed literal atom

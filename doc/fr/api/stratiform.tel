@@ -170,7 +170,6 @@ detail
     + encodables.instantTelEncodable` ou `import parsing.trackPositions` (l'interrupteur de
     + zephyrine, qui fait porter à un `Tel` analysé les positions dans le code source pour
     + `locate`, `locateKey` et `enclosing`).
-
 refer stratiform.Tel
 refer stratiform.Tels
 refer stratiform.Telp
@@ -3865,7 +3864,6 @@ entry .Tel
           - Raises `Mutation.Error`. `Tel#edited(revision)` is the same call as an extension.
           + Lève `Mutation.Error`. `Tel#edited(revision)` est le même appel sous forme de méthode
           + d'extension.
-
 entry .optionalityOptions
   info
       - how an `Optional` field treats absence and faults, each a given to import by name
@@ -3942,7 +3940,6 @@ entry .tel
         case tel"name $who" => who.primaryAtom
         case _              => t"anonymous"
       ```
-
 entry .telp
   info
       - the `telp"…"` literal: a `Telp` path checked as the code compiles
@@ -3961,7 +3958,6 @@ entry .telp
       + et les substitutions sont rejetées, puisqu'un chemin est une constante. Un chemin est le
       + même quel que soit le délimiteur qui l'écrit : `telp"/office/city" ==
       + telp".office.city"`.
-
 entry .bintel
   info
       - a document, element or value as BinTEL body bytes, guided by a schema
@@ -4001,7 +3997,6 @@ entry .bintel
       val body: Data = document.bintel(schema)
       Person(t"Percy", 30).bintel == body   // true
       ```
-
 entry .ratel
   info
       - a document, element or value as a RaTEL image, under a schema which the image carries; or the reader an `open[Ratel]` block has open
@@ -4023,7 +4018,6 @@ entry .ratel
       + `Tel.Error` pour un document non conforme et `Ratel.Error` pour un schéma ou une valeur
       + qui ne peut pas être disposé. Sans receveur, à l'intérieur d'un bloc `open[Ratel]`,
       + `ratel` est le `Ratel.Reader` qui a été fourni au bloc.
-
 entry .valueHash
   info
       - the BLAKE3 digest of a document's, element's or acceptance's BinTEL body: a hash of content, not bytes
@@ -4055,7 +4049,6 @@ entry .valueHash
       t"name Percy\nage 30\n".read[Tel].valueHash(schema)
         == t"# a person\nage 30\n\nname Percy\n".read[Tel].valueHash(schema)   // true
       ```
-
 entry .bintelDocument
   info
       - a document as a complete, self-framing BinTEL byte sequence under a schema signature
@@ -4069,7 +4062,6 @@ entry .bintelDocument
       + document, de la longueur de la signature, de la signature et du corps (TEL §6) : ce que
       + `Bintel.frame` construit à partir de `tel.bintel(schema)`. La signature doit avoir une
       + longueur valide, sinon `Bintel.Error(BadSignatureLength)`.
-
 entry .fulfil
   info
       - a writer's answer to an acceptance from a value: the first alternative its derived schema can serve
@@ -4105,7 +4097,6 @@ entry .fulfil
       Contact(t"Nym", t"nym@example.com", Unset).fulfil(accepting.acceptance).let: served =>
         send(served.document)
       ```
-
 entry .documents
   info
       - the documents of a byte stream, one at a time, each parsed only when it is reached
@@ -4119,7 +4110,6 @@ entry .documents
       + `read[List[Tel]]`, qui analyse d'abord chaque document d'une source séparée par des
       + `##`. Le résultat est un itérateur à consommateur unique ; il nécessite une
       + `Tactic[Tel.Error]` et un `Buffering`.
-
 entry .Stratiform
   info
       - the macros behind a verified `Tel`'s compile-checked field and index access
@@ -4604,7 +4594,6 @@ entry .Tel2
         + Ce que donne la navigation par `field` pour un champ manquant et ce que décode par
         + défaut la méthode `absent()` d'un décodeur ; un primitif lève alors `Absent`, un
         + `Optional` lit `Unset`.
-
 entry .Tel3
   info
       - the trait holding the universal `Tel.Field` fallback for direct parsing
@@ -4635,7 +4624,6 @@ entry .Tel3
         + fois une `Reflection` et un `Tel.Decodable` écrit à la main se dérive ici
         + structurellement et diverge donc de son décodeur ; donnez-lui
         + `Tel.Parsable.fromDecodable(…)` pour que le décodeur l'emporte.
-
 entry .Tel4
   info
       - the trait holding `Tel.Provider`, the type provider over a TEL schema
@@ -6243,7 +6231,6 @@ entry .Tels
       detail
           - Raises `Bintel.Error` from the keyword flattening of the two schemas.
           + Lève `Bintel.Error` à partir de l'aplatissement des mots-clés des deux schémas.
-
 entry .Tels2
   info
       - the trait which holds the schema-derivation givens and `tels`
@@ -6401,7 +6388,6 @@ entry .Tels2
         + peut pas encore être écrite selon le schéma dérivé : le codec et le schéma sont en
         + désaccord sur la forme d'un tel champ, et l'écriture échoue avec `ReferenceKindMismatch`
         + (E217).
-
 entry .telSchematics
   info
       - fused codec-plus-schema instances built from a type's `Tel.Encodable` or `Tel.Decodable`
@@ -6904,7 +6890,6 @@ entry .TelReader
         - pointer does on the tree path.
         + Il n'y a pas d'entrée sur laquelle pointer ; l'erreur ne porte donc aucune étendue, comme
         + le fait un pointeur impossible à résoudre sur le chemin par l'arbre.
-
 entry .Telp
   info
       - a TEL path: a delimiter-first sequence of keywords and selectors over the semantic model
@@ -7168,7 +7153,6 @@ entry .Telp
         + dans l'élément assigné, si bien qu'une clé fournie par une valeur par défaut sélectionne
         + tout de même ; la sélection par indice et par clé ne compte que les occurrences de même
         + mot-clé, si bien qu'un `dog` entre deux `cat` ne perturbe pas la suite des chats.
-
 entry .Patterns
   info
       - compiled RE2 pattern constraints, memoised by pattern text
@@ -7199,7 +7183,6 @@ entry .Patterns
         + L'appelant décide de ce que signifie `Unset` : E222 lors de la vérification de la
         + validité du schéma, et échec fermé partout ailleurs — une valeur n'est jamais considérée
         + comme correspondant à un motif qui n'a pas compilé.
-
 entry .assign
   info
       - `@assign(layer)`: declares a case-class field in a schema layer
@@ -7235,7 +7218,6 @@ entry .assign
       + Dans le package parapluie `soundness`, `assign` n'est exporté que comme type, pour que
       + son proxy de constructeur ne masque pas la méthode `assign` d'anamnesis ; l'annotation
       + `@assign(…)` n'est pas affectée.
-
 entry .retract
   info
       - `@retract(layer)`: removes a case of a sum from a schema layer
@@ -7267,7 +7249,6 @@ entry .retract
         @retract(lean) case Data(payload: Text)
         case Stop
       ```
-
 entry .conversions
   info
       - a given to import by name: any TEL-encodable value where a `Tel` is wanted
@@ -8108,21 +8089,42 @@ entry .Ratel
       - RaTEL is TEL's random-access encoding. Where BinTEL is read front to back, a RaTEL image
       - is read in place: every struct type has a fixed-width *row* with a *slot* for each member
       - at an offset the schema determines, the instances of a record type form a *table*,
-      - variable-width values lie in regions addressed by offset, and sorted *indexes* over keyed
-      - and `index`-declared members make a lookup a binary search. A `Ratel` is the image as a
-      - value — its bytes, `data` — and is `Encodable in Data`, so galilei's `claim` publishes it.
-      - The object `Ratel` writes one (`encode`); one is read by opening whatever holds it as
-      - `Ratel`, with aperture's `open`.
-      + RaTEL est l'encodage à accès aléatoire de TEL. Là où BinTEL se lit du début à la fin,
-      + une image RaTEL se lit sur place : chaque type structure a une *ligne* de largeur fixe
-      + avec un *emplacement* pour chaque membre, à un décalage que détermine le schéma ; les
-      + instances d'un type d'enregistrement forment une *table* ; les valeurs de largeur
-      + variable se trouvent dans des régions adressées par décalage ; et des *index* triés sur
-      + les membres à clé et les membres déclarés par `index` font d'une recherche une recherche
-      + dichotomique. Un `Ratel` est l'image sous forme de valeur — ses octets, `data` — et est
-      + `Encodable in Data`, si bien que le `claim` de galilei la publie. L'objet `Ratel` en
-      + écrit une (`encode`) ; on en lit une en ouvrant ce qui la contient en tant que `Ratel`,
-      + avec l'`open` d'aperture.
+      - variable-width values lie in regions addressed by offset, and *indexes* over keyed and
+      - `index`-declared members, each a B+tree, make a lookup a descent through a few pages. A
+      - `Ratel` is the image as a value — its bytes, `data` — and is `Encodable in Data`, so
+      - galilei's `claim` publishes it. The object `Ratel` writes one (`encode`); one is read by
+      - opening whatever holds it as `Ratel`, with aperture's `open`, and changed in place by
+      - opening it for writing.
+      + RaTEL est l'encodage à accès aléatoire de TEL. Là où BinTEL se lit du début à la fin, une
+      + image RaTEL se lit sur place : chaque type de struct a une *ligne* à largeur fixe, avec un
+      + *emplacement* pour chaque membre à un décalage que détermine le schéma, les instances d'un
+      + type d'enregistrement forment une *table*, les valeurs à largeur variable se trouvent dans
+      + des régions adressées par décalage, et des *index* sur les membres à clé et sur ceux que
+      + déclare `index`, chacun un arbre B+, font d'une recherche une descente à travers quelques
+      + pages. Un `Ratel` est l'image en tant que valeur — ses octets, `data` — et il est
+      + `Encodable in Data`, si bien que le `claim` de galilei le publie. L'objet `Ratel` en écrit
+      + une (`encode`) ; on en lit une en ouvrant ce qui la contient comme `Ratel`, avec le `open`
+      + d'aperture, et on la modifie sur place en l'ouvrant en écriture.
+
+      - An image is in one of the states of the specification. What is written, and what is
+      - published, is *sealed*: compact, never changed, and shared by any number of readers. The
+      - one process which owns a document keeps an *unsealed* working image, which it changes
+      - where it lies, and seals to publish. An image which is being changed is *dirty*, and no
+      - reader opens it.
+      + Une image est dans l'un des états de la spécification. Ce qui est écrit, et ce qui est
+      + publié, est *scellé* : compact, jamais modifié, et partagé par un nombre quelconque de
+      + lecteurs. Le seul processus qui possède un document garde une image de travail *non
+      + scellée*, qu'il modifie là où elle se trouve, et qu'il scelle pour publier. Une image en
+      + cours de modification est *sale*, et aucun lecteur ne l'ouvre.
+
+      - `Ratel of T` is an image of a value of the type `T`, written under the schema derived
+      - from `T`: what `value.ratel` gives. It is published under a name claimed for it, and
+      - opened as it, so that a case class is the one declaration a publisher and its readers
+      - share.
+      + `Ratel of T` est une image d'une valeur du type `T`, écrite selon le schéma dérivé de `T`
+      + : ce que donne `value.ratel`. Elle est publiée sous un nom revendiqué pour elle, et
+      + ouverte comme telle, si bien qu'une case class est l'unique déclaration que partagent
+      + celui qui publie et ses lecteurs.
 
       ```scala
       import soundness.*
@@ -8135,13 +8137,18 @@ entry .Ratel
         (ratel.root / t"role").find(t"Hamlet").let(_.text(t"play"))
       ```
 
-      - An image always carries its composed schema, with its signature, and may carry the
-      - document's value hash and a digest of each section. It is not byte-deterministic: the
-      - value hash, not the bytes, is a document's identity.
-      + Une image porte toujours son schéma composé, avec sa signature, et peut porter le
-      + hachage de valeur du document et un condensé de chaque section. Elle n'est pas
-      + déterministe à l'octet près : c'est le hachage de valeur, non les octets, qui constitue
-      + l'identité d'un document.
+      - An image always carries its composed schema, with its signature, and a sealed one
+      - carries the document's value hash, and may carry digests of its body and its header. A
+      - working image is not byte-deterministic, but a sealed one is: its bytes are a function of
+      - the document alone.
+      + Une image porte toujours son schéma composé, avec sa signature, et une image scellée porte
+      + le hachage de valeur du document, et peut porter des condensés de son corps et de son
+      + en-tête. Une image de travail n'est pas déterministe à l'octet près, mais une image
+      + scellée l'est : ses octets sont une fonction du seul document.
+  entry #Topic
+    info
+        - the type whose value the image is of, if that is known: `Ratel of Cast`
+        + le type dont l'image est celle d'une valeur, s'il est connu : `Ratel of Cast`
   entry .encode
     info
         - a type-assigned `Tel.Element` root as a RaTEL image, by the specification's canonical writer
@@ -8151,21 +8158,23 @@ entry .Ratel
         - `Ratel.encode(element, schema, codecs, digests)` lays the document out under `schema`,
         - which is given as it is declared — with its layers — and is embedded as BinTEL beside
         - its signature. `codecs` defaults to `Tel.Codec.Bindings.all`; `digests` (by default
-        - `true`) adds the digests section. It raises `Ratel.Error`: `SchemaUnlayoutable` (R11),
-        - `CodecUnresolved` (R19), `WidthMismatch` (R22) for a value whose bytes are not the width
+        - `true`) adds the digests section. What it writes is sealed. It raises `Ratel.Error`:
+        - `SchemaUnlayoutable` (`↯/t.5.11`), `CodecUnresolved` (`↯/t.5.19`), `WidthMismatch`
+        - (`↯/t.5.22`) for a value whose bytes are not the width
         - its scalar declares, `Unencodable` for a model the schema does not describe, and
         - `Oversized` for an image of 2 GiB or more; and `Tel.Error(EncodingRejected)` for a value
         - its codec rejects. The extensions `tel.ratel(schema)`, `element.ratel(schema)` and
         - `value.ratel` call this.
         + `Ratel.encode(element, schema, codecs, digests)` dispose le document selon `schema`, qui
-        + est donné tel qu'il est déclaré — avec ses couches — et qui est embarqué en BinTEL à
-        + côté de sa signature. `codecs` vaut par défaut `Tel.Codec.Bindings.all` ; `digests`
-        + (`true` par défaut) ajoute la section des condensés. Lève `Ratel.Error` :
-        + `SchemaUnlayoutable` (R11), `CodecUnresolved` (R19), `WidthMismatch` (R22) pour une
-        + valeur dont les octets n'ont pas la largeur que déclare son scalaire, `Unencodable` pour
-        + un modèle que le schéma ne décrit pas, et `Oversized` pour une image de 2 Gio ou plus ;
-        + et `Tel.Error(EncodingRejected)` pour une valeur que son codec rejette. Les méthodes
-        + d'extension `tel.ratel(schema)`, `element.ratel(schema)` et `value.ratel` l'appellent.
+        + est donné tel qu'il est déclaré — avec ses couches — et qui est incorporé en BinTEL à
+        + côté de sa signature. `codecs` vaut par défaut `Tel.Codec.Bindings.all` ; `digests` (par
+        + défaut `true`) ajoute la section des condensés. Ce qu'il écrit est scellé. Il lève
+        + `Ratel.Error` : `SchemaUnlayoutable` (`↯/t.5.11`), `CodecUnresolved` (`↯/t.5.19`),
+        + `WidthMismatch` (`↯/t.5.22`) pour une valeur dont les octets n'ont pas la largeur que
+        + déclare son scalaire, `Unencodable` pour un modèle que le schéma ne décrit pas, et
+        + `Oversized` pour une image de 2 Gio ou plus ; et `Tel.Error(EncodingRejected)` pour une
+        + valeur que son codec rejette. Les extensions `tel.ratel(schema)`,
+        + `element.ratel(schema)` et `value.ratel` l'appellent.
   entry .openable
     info
         - opens anything `Viewable` — a path, an image, a `Terrain` in hand — as `Ratel`, for reading in place
@@ -8175,18 +8184,61 @@ entry .Ratel
         - `source.open[Ratel]()` lends a `Terrain` view of the source through its `zephyrine.Viewable`
         - instance, copies and checks the header, decodes the embedded schema, recomputes its
         - signature, derives the layout and checks the table and index directories against it
-        - (R01–R13, R19), and gives the block a `Ratel.Reader`, which the accessor `ratel` names. It
-        - reads nothing else until it is asked. The reader captures the view, and cannot outlive
-        - the block. A `Write` mode is refused with `Unwritable`: an image is replaced, by
-        - publishing another, and never changed. The flags are `Ratel.Flag`s.
-        + `source.open[Ratel]()` prête une vue `Terrain` de la source par son instance
-        + `zephyrine.Viewable`, copie et vérifie l'en-tête, décode le schéma embarqué, recalcule sa
-        + signature, en déduit la disposition et vérifie par rapport à celle-ci les répertoires
-        + de tables et d'index (R01–R13, R19), et donne au bloc un `Ratel.Reader`, que nomme
-        + l'accesseur `ratel`. Il ne lit rien d'autre tant qu'on ne le lui demande pas. Le lecteur
-        + capture la vue et ne peut pas survivre au bloc. Un mode `Write` est refusé avec
-        + `Unwritable` : une image se remplace, en en publiant une autre, et ne se modifie jamais.
-        + Les indicateurs sont des `Ratel.Flag`.
+        - (`↯/t.5.1`–`↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28`, `↯/t.5.29`), and gives the block a
+        - `Ratel.Reader`, which the accessor `ratel` names. It reads nothing else until it is
+        - asked. The reader captures the view, and cannot outlive the block. The flags are
+        - `Ratel.Flag`s.
+        + `source.open[Ratel]()` prête une vue `Terrain` de la source par son instance de
+        + `zephyrine.Viewable`, copie et vérifie l'en-tête, décode le schéma incorporé, recalcule
+        + sa signature, en dérive la disposition et vérifie par rapport à elle les répertoires des
+        + tables et des index (`↯/t.5.1`–`↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28`, `↯/t.5.29`), puis
+        + donne au bloc un `Ratel.Reader`, que nomme l'accesseur `ratel`. Il ne lit rien d'autre
+        + tant qu'on ne le lui demande pas. Le lecteur capture la vue, et ne peut pas survivre au
+        + bloc. Les indicateurs sont des `Ratel.Flag`.
+
+        - With a mode which includes `Write`, the source lends its bytes for changing, through
+        - `Viewable#hold` -- a file is mapped under an exclusive lock, a `Holding` is taken as it
+        - is -- and the image is opened by its owner: a sealed one is unsealed, it is marked dirty
+        - for the length of the block, and the reader accepts the changes of `Ratel.Row` and
+        - `Ratel.Rows`. A source which cannot be changed, such as a `Ratel` value, is refused with
+        - `Unwritable`.
+        + Avec un mode qui inclut `Write`, la source prête ses octets pour modification, par
+        + `Viewable#hold` -- un fichier est projeté sous un verrou exclusif, un `Holding` est pris
+        + tel quel -- et l'image est ouverte par son propriétaire : une image scellée est
+        + descellée, elle est marquée sale pendant la durée du bloc, et le lecteur accepte les
+        + modifications de `Ratel.Row` et de `Ratel.Rows`. Une source qui ne peut pas être
+        + modifiée, comme une valeur `Ratel`, est refusée avec `Unwritable`.
+  entry .typedOpenable
+    info
+        - opens anything `Viewable` as `Ratel of topic`: an image of a value of the type `topic`, and of nothing else
+        + ouvre tout ce qui est `Viewable` comme `Ratel of topic` : une image d'une valeur du type
+        + `topic`, et de rien d'autre
+    detail
+        - As `openable`, but an image whose schema signature is not that of the schema derived
+        - from `topic` is refused with `Mismatched`, before the block runs.
+        + Comme `openable`, mais une image dont la signature de schéma n'est pas celle du schéma
+        + dérivé de `topic` est refusée avec `Mismatched`, avant que le bloc ne s'exécute.
+  entry .surveyable
+    info
+        - reads an image in place from a view which something else lends: what an `Observer` of a published name opens it through
+        + lit une image sur place depuis une vue que prête autre chose : ce par quoi un `Observer`
+        + d'un nom publié l'ouvre
+  entry .typedSurveyable
+    info
+        - as `surveyable`, for an image of a value of the type `topic`, refusing any other with `Mismatched`
+        + comme `surveyable`, pour une image d'une valeur du type `topic`, en refusant toute autre
+        + avec `Mismatched`
+  entry .State
+    info
+        - the state an image is read in: `Sealed`, or `Unsealed`
+        + l'état dans lequel une image est lue : `Sealed`, ou `Unsealed`
+    detail
+        - A sealed image is compact and unchanging, and may be shared; an unsealed one is a
+        - working image which its owner has closed. One which is being changed is dirty, and is
+        - not read at all.
+        + Une image scellée est compacte et immuable, et peut être partagée ; une image non
+        + scellée est une image de travail que son propriétaire a fermée. Une image en cours de
+        + modification est sale, et n'est pas lue du tout.
   entry .Flag
     info
         - what may be asked of `open[Ratel]`: `Verify`, and `Codecs(bindings)`
@@ -8234,9 +8286,27 @@ entry .Ratel
           + le modèle sémantique qu'encode l'image, tel que le donnerait `Bintel.decode`
     entry #verify
       info
-          - checks the digests, the whole document, every index against its rows, and the value hash
-          + vérifie les condensés, le document entier, chaque index par rapport à ses lignes, et le
-          + hachage de valeur
+          - checks the digests, the whole document, each row's header, every index as a tree and against its rows, and the value hash
+          + vérifie les condensés, le document, l'en-tête de chaque ligne, chaque index comme arbre et selon ses lignes, et le hachage de valeur
+    entry #state
+      info
+          - whether the image was opened sealed, or as a working image
+          + si l'image a été ouverte scellée, ou comme image de travail
+    entry #seal
+      info
+          - the document of this image, written afresh as a sealed image: the same bytes whatever its history
+          + le document de cette image, écrit à neuf comme image scellée : les mêmes octets quelle
+          + que soit son histoire
+    entry #sealAs
+      info
+          - as `seal`, for an image of a value of a type: a `Ratel of topic`, or `Mismatched`
+          + comme `seal`, pour une image d'une valeur d'un type : un `Ratel of topic`, ou
+          + `Mismatched`
+    entry #repack
+      info
+          - the document of this image, written afresh as a working image, with room to grow and no garbage
+          + le document de cette image, écrit à neuf comme image de travail, avec de la place pour
+          + grandir et sans déchets
   entry .Row
     info
         - one record, read in place: `text`, `data`, `texts`, `flag`, `count`, `record`, `/`, `has`, `holds`, `as`
@@ -8258,15 +8328,73 @@ entry .Ratel
         + chaque accesseur demande un `Ratel.Reader of brand` : lorsque plusieurs images sont
         + ouvertes, une ligne se lit par son propre lecteur, et elle ne peut pas être lue par le
         + lecteur d'une autre image, ni une fois son bloc terminé.
+
+        - In an image which was opened for writing, `set`, `unset`, `delete` and `replace`
+        - change the record. Each is checked before anything is written -- a value against its
+        - scalar, a key against those of the record's siblings, a member which may not be absent
+        - -- and one which is refused, with a `Tel.Error`, leaves the image as it was. Through a
+        - reader which was not opened for writing each raises `Ratel.Error` with the reason
+        - `Unwritable`.
+        + Dans une image ouverte en écriture, `set`, `unset`, `delete` et `replace` modifient
+        + l'enregistrement. Chacun est vérifié avant que rien ne soit écrit -- une valeur par
+        + rapport à son scalaire, une clé par rapport à celles des voisins de l'enregistrement, un
+        + membre qui ne peut pas être absent -- et celui qui est refusé, avec une `Tel.Error`,
+        + laisse l'image telle qu'elle était. Par un lecteur qui n'a pas été ouvert en écriture,
+        + chacun lève `Ratel.Error` avec la raison `Unwritable`.
     entry #Topic
       info
           - the brand of the reader this row came from
           + la marque du lecteur dont provient cette ligne
+    entry #set
+      info
+          - gives a scalar member a value, a repeatable scalar its values, or makes a flag present
+          + donne une valeur à un membre scalaire, ses valeurs à un scalaire répétable, ou rend un
+          + indicateur présent
+    entry #updateDynamic
+      info
+          - `set`, as an assignment to the member's name: `row.firstLine = value` sets `first-line`
+          + `set`, comme affectation au nom du membre : `row.firstLine = value` modifie `first-line`
+    entry #unset
+      info
+          - leaves a scalar member which may be absent without a value, or makes a flag absent
+          + laisse sans valeur un membre scalaire qui peut être absent, ou rend un indicateur
+          + absent
+    entry #delete
+      info
+          - takes the record, which must be one of a collection, out of it, with every record within it
+          + retire l'enregistrement, qui doit faire partie d'une collection, de celle-ci, avec
+          + tout enregistrement qu'il contient
+    entry #replace
+      info
+          - puts a value in the record's place in its collection, and answers the record which is there now
+          + met une valeur à la place de l'enregistrement dans sa collection, et renvoie
+          + l'enregistrement qui s'y trouve désormais
   entry .Rows
     info
-        - the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`
-        + les enregistrements d'un membre répétable : `size`, `apply`, `each`, `find`, `where`,
-        + `sorted`
+        - the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`, and `insert` and `move`
+        + les enregistrements d'un membre répétable : `size`, `apply`, `each`, `find`, `where`,
+        + `sorted`, ainsi que `insert` et `move`
+    entry #count
+      info
+          - how many records there are now, which for an image that is being changed may not be `size`
+          + le nombre d'enregistrements qu'il y a maintenant, qui pour une image en cours de
+          + modification peut ne pas être `size`
+    entry #insert
+      info
+          - puts a value into the collection as a new record, after the others or before a position, and answers the record
+          + met une valeur dans la collection comme nouvel enregistrement, après les autres ou
+          + avant une position, et renvoie l'enregistrement
+      detail
+          - The image must have been opened for writing. The value is checked as a document of
+          - the record's type is, and its key against those of the other records, before anything
+          - is written.
+          + L'image doit avoir été ouverte en écriture. La valeur est vérifiée comme l'est un
+          + document du type de l'enregistrement, et sa clé par rapport à celles des autres
+          + enregistrements, avant que rien ne soit écrit.
+    entry #move
+      info
+          - moves the record at one position to another
+          + déplace l'enregistrement d'une position à une autre
   entry .Cell
     info
         - what a record of a `Ratel.Provider` is made over, and what its members are read from
@@ -8372,37 +8500,90 @@ entry .Ratel
         + spécification
     detail
         - Error `↯/s.118.11`: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
-        - numbers its cases 1 to 27 by the R-code of the RaTEL specification — `BadMagic`,
-        - `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`, `SectionsOverlap`,
-        - `DigestMismatch`, `BadSignature`, `SchemaUndecodable`, `SignatureMismatch`,
-        - `SchemaUnlayoutable`, `BadTableDirectory`, `BadRootTable`, `BadRef`, `BadRecordIndex`,
-        - `RowRevisited`, `BadTag`, `BadUtf8`, `CodecUnresolved`, `CodecDecodeFailed`,
-        - `CodecNoncanonical`, `WidthMismatch`, `BadIndex`, `IndexUnsorted`, `IndexDisagrees`,
-        - `NonzeroPadding`, `ValueHashMismatch` — and continues with those outside that taxonomy:
-        - `NestingLimitExceeded` (28), `Unencodable` (29), `Oversized` (30), `Unindexed` (31) for
-        - a lookup no index answers, and `Unknown` (32), `Inapplicable` (33) and `Absent` (34)
-        - for a member which a row does not have, has in another kind, or has not got a value
-        - for, `Unwritable` (35) for an image opened for writing, and `Mismatched` (36) for one a
-        - `Ratel.Provider` is asked to read which was written with another schema. R01–R13 and R19 are raised
-        - as an image is opened; the others by the access which meets them, or by `verify`. `CodecNoncanonical` and `NonzeroPadding`, the specification's optional
-        - checks, are not yet raised.
-        + Erreur `↯/s.118.11` : _the RaTEL image cannot be used because `reason`_.
-        + `Ratel.Error.Reason` numérote ses cas de 1 à 27 d'après le code R de la spécification
-        + RaTEL — `BadMagic`, `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`,
-        + `SectionsOverlap`, `DigestMismatch`, `BadSignature`, `SchemaUndecodable`,
-        + `SignatureMismatch`, `SchemaUnlayoutable`, `BadTableDirectory`, `BadRootTable`, `BadRef`,
-        + `BadRecordIndex`, `RowRevisited`, `BadTag`, `BadUtf8`, `CodecUnresolved`,
-        + `CodecDecodeFailed`, `CodecNoncanonical`, `WidthMismatch`, `BadIndex`, `IndexUnsorted`,
-        + `IndexDisagrees`, `NonzeroPadding`, `ValueHashMismatch` — et continue avec ceux qui sont
-        + hors de cette taxonomie : `NestingLimitExceeded` (28), `Unencodable` (29), `Oversized`
-        + (30), `Unindexed` (31) pour une recherche à laquelle aucun index ne répond, et `Unknown`
-        + (32), `Inapplicable` (33) et `Absent` (34) pour un membre qu'une ligne n'a pas, a sous une
-        + autre sorte, ou pour lequel elle n'a pas de valeur, `Unwritable` (35) pour une image
-        + ouverte en écriture, et `Mismatched` (36) pour une image qu'un `Ratel.Provider` doit lire
-        + et qui a été écrite avec un autre schéma. R01–R13 et R19 sont levées à l'ouverture d'une
-        + image ; les autres par l'accès qui les rencontre, ou par `verify`. `CodecNoncanonical` et
+        - numbers its cases 1 to 30 by the `↯/t.5` code of the RaTEL specification, which the
+        - error's bolt code carries — `BadMagic`, `UnsupportedVersion`, `ReservedSet`,
+        - `BadLength`, `BadDirectory`, `ExtentsOverlap`, `DigestMismatch`, `BadSignature`,
+        - `SchemaUndecodable`, `SignatureMismatch`, `SchemaUnlayoutable`, `BadTableDirectory`,
+        - `BadRootTable`, `BadRef`, `BadRecordIndex`, `RowRevisited`, `BadTag`, `BadUtf8`,
+        - `CodecUnresolved`, `CodecDecodeFailed`, `CodecNoncanonical`, `WidthMismatch`,
+        - `BadIndex`, `BadTree`, `IndexDisagrees`, `NonzeroPadding`, `ValueHashMismatch`,
+        - `InvalidState`, `Dirty`, `BadRowHeader` — and continues with those outside that
+        - taxonomy: `NestingLimitExceeded` (31), `Unencodable` (32), `Oversized` (33),
+        - `Unindexed` (34) for a lookup no index answers, and `Unknown` (35), `Inapplicable` (36)
+        - and `Absent` (37) for a member which a row does not have, has in another kind, or has
+        - not got a value for, `Unwritable` (38) for an image which cannot be changed, or a
+        - change through a reader which was not opened for writing, and `Mismatched` (39) for an
+        - image which was written with another schema than the one it is read by. `↯/t.5.1` to
+        - `↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28` and `↯/t.5.29` are raised as an image is opened; the
+        - others by the access which meets them, or by `verify`. `CodecNoncanonical` and
+        - `NonzeroPadding`, the specification's optional checks, are not yet raised.
+        + Erreur `↯/s.118.11` : _the RaTEL image cannot be used because `reason`_.
+        + `Ratel.Error.Reason` numérote ses cas de 1 à 30 selon le code `↯/t.5` de la
+        + spécification RaTEL, que porte le code bolt de l'erreur — `BadMagic`,
+        + `UnsupportedVersion`, `ReservedSet`, `BadLength`, `BadDirectory`, `ExtentsOverlap`,
+        + `DigestMismatch`, `BadSignature`, `SchemaUndecodable`, `SignatureMismatch`,
+        + `SchemaUnlayoutable`, `BadTableDirectory`, `BadRootTable`, `BadRef`, `BadRecordIndex`,
+        + `RowRevisited`, `BadTag`, `BadUtf8`, `CodecUnresolved`, `CodecDecodeFailed`,
+        + `CodecNoncanonical`, `WidthMismatch`, `BadIndex`, `BadTree`, `IndexDisagrees`,
+        + `NonzeroPadding`, `ValueHashMismatch`, `InvalidState`, `Dirty`, `BadRowHeader` — et
+        + continue avec ceux qui sont hors de cette taxonomie : `NestingLimitExceeded` (31),
+        + `Unencodable` (32), `Oversized` (33), `Unindexed` (34) pour une recherche à laquelle
+        + aucun index ne répond, et `Unknown` (35), `Inapplicable` (36) et `Absent` (37) pour un
+        + membre qu'une ligne n'a pas, a sous une autre nature, ou pour lequel elle n'a pas de
+        + valeur, `Unwritable` (38) pour une image qui ne peut pas être modifiée, ou une
+        + modification par un lecteur qui n'a pas été ouvert en écriture, et `Mismatched` (39)
+        + pour une image écrite avec un autre schéma que celui par lequel elle est lue. `↯/t.5.1`
+        + à `↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28` et `↯/t.5.29` sont levés à l'ouverture d'une image
+        + ; les autres par l'accès qui les rencontre, ou par `verify`. `CodecNoncanonical` et
         + `NonzeroPadding`, les vérifications facultatives de la spécification, ne sont pas encore
         + levées.
+entry .key
+  info
+      - `@key`: marks a case-class field as the key of its record, in the schema derived from it
+      + `@key` : marque un champ de case class comme la clé de son enregistrement, dans le schéma
+      + qui en est dérivé
+  detail
+      - The field is declared `key`, so no two records of one collection may share its value, and
+      - a RaTEL image of the type has a primary index, by which `find` looks a record up.
+      + Le champ est déclaré `key`, si bien que deux enregistrements d'une même collection ne
+      + peuvent pas partager sa valeur, et qu'une image RaTEL du type a un index primaire, par
+      + lequel `find` cherche un enregistrement.
+entry .index
+  info
+      - `@index(paths)`: declares a secondary index over a case-class field which is a collection
+      + `@index(paths)` : déclare un index secondaire sur un champ de case class qui est une
+      + collection
+  detail
+      - Each path is a TELP, such as `/play` or `/stage/city`, from an element of the collection
+      - to a scalar member of it; the root path, `/`, indexes the values of a collection of
+      - scalars themselves. A field may carry several, each one index.
+      + Chaque chemin est un TELP, comme `/play` ou `/stage/city`, d'un élément de la collection à
+      + l'un de ses membres scalaires ; le chemin racine, `/`, indexe les valeurs mêmes d'une
+      + collection de scalaires. Un champ peut en porter plusieurs, chacun étant un index.
+entry .encoding
+  info
+      - `@encoding(name)`: names the binary encoding of a case-class field which is a scalar
+      + `@encoding(name)` : nomme l'encodage binaire d'un champ de case class qui est un scalaire
+  detail
+      - BinTEL and RaTEL store its values as the bytes of the codec bound to the name -- `u32`,
+      - `uuid` and the other standard codecs, or one the application binds -- instead of as text.
+      + BinTEL et RaTEL stockent ses valeurs sous la forme des octets du codec lié à ce nom --
+      + `u32`, `uuid` et les autres codecs standard, ou un codec que lie l'application -- plutôt
+      + que comme du texte.
+entry .width
+  info
+      - `@width(bytes)`: promises that every value of an encoded scalar field is that many bytes, so that RaTEL stores it within its record
+      + `@width(bytes)` : promet que toute valeur d'un champ scalaire encodé a ce nombre d'octets, pour que RaTEL la stocke dans sa ligne
+  detail
+      - A value of another length is refused when it is written. A width with no encoding, or
+      - with `@intern`, does not compile.
+      + Une valeur d'une autre longueur est refusée lorsqu'elle est écrite. Une largeur sans
+      + encodage, ou avec `@intern`, ne compile pas.
+entry .intern
+  info
+      - `@intern`: has RaTEL store each distinct value of a scalar field once, in the string table of the image
+      + `@intern` : fait stocker par RaTEL chaque valeur distincte d'un champ scalaire une seule
+      + fois, dans la table des chaînes de l'image
 
 entry .BintelReader
   info
@@ -8482,7 +8663,6 @@ entry .BintelReader
         + Pour un enfant dont l'analyseur ne reconnaît pas l'indice ; `ValueTruncated` (B06) si
         + la longueur dépasse l'entrée. Le tramage est indépendant des codecs, si bien qu'un
         + scalaire encodé est lui aussi correctement sauté.
-
 entry .BintelParser
   info
       - the direct BinTEL body parser generated parsers step through; constructed only by `Bintel.parse`
@@ -9121,7 +9301,6 @@ entry .SchemaSignature
           - which composes invalidly raises `Tels.Resolution.Error`.
           + `#decode` suivi de `Lineage#compose`, si bien qu'une signature qu'une lignée sert
           + *effectivement* mais qui se compose de manière invalide lève `Tels.Resolution.Error`.
-
 entry .SchemaResolver
   info
       - resolves a pragma's schema identification to a composed, signature-verified schema
@@ -9316,7 +9495,6 @@ entry .SchemaResolver
         + liste de documents de schéma `Tel` ; `embedded` est la paire signature et corps de
         + schéma que porte un conteneur BinTEL autonome, à laquelle doit correspondre une
         + signature revendiquée par un pragma. Le résultat est un `.Resolved`.
-
 entry .internal
   info
       - the macro implementations behind `tel"…"`, `telp"…"`, the `tel` extractor, staged parsing and layer annotations
@@ -9389,7 +9567,6 @@ entry .internal
         + Exige une case class de niveau supérieur ou imbriquée dans un objet, avec une seule
         + liste de paramètres ; les mots-clés se compilent en comparaisons de mots compactés
         + lorsqu'aucune annotation `@name` ne peut les renommer.
-
 entry .Base256
   info
       - the BASE-256 binary-to-text codec: one Unicode character per byte, each congruent to it mod 256
@@ -9712,7 +9889,6 @@ entry .BintelInlinable
         + Une interruption avec `Tel.Error(Absent)` sauf redéfinition ; les instances primitives
         + lèvent l'erreur et continuent avec une sentinelle (`0`, `false`, `t""`), comme le font
         + les instances d'exécution.
-
 entry .Inlinable
   info
       - compile-time generation of a `Tel.Parsable`: a flat text-format parser composed from instances
@@ -9868,7 +10044,6 @@ entry .Inlinable
         - continue with a sentinel.
         + Une interruption avec `Tel.Error(Absent)` sauf redéfinition ; les instances primitives
         + lèvent l'erreur et continuent avec une sentinelle.
-
 entry .stagedInternal
   info
       - the machinery behind `Inlinable.parsable`
@@ -10016,7 +10191,6 @@ entry .framed
       + — un `Framed from Reply to Request` — avec les mêmes besoins contextuels : un
       + `Buffering`, une `Tactic[Framing.Error]`, une `Tactic[Bintel.Error]` et une
       + `Tactic[Tel.Error]`, que capture le résultat. Dans `stratiform.duplex`.
-
 entry .postables
   info
       - the given which sends a `Tel` as an HTTP request body, to import by name
@@ -10131,7 +10305,6 @@ entry .optics
     detail
         - Applies the transform to each child, keeping each child's keyword.
         + Applique la transformation à chaque enfant, en conservant le mot-clé de chacun.
-
 entry .encodables
   info
       - the Aviation time codecs for writing TEL atoms, to import by name

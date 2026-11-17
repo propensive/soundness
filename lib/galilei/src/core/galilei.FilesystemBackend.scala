@@ -60,6 +60,12 @@ object FilesystemBackend:
   trait Mapping extends zephyrine.Terrain:
     def unmap(): Unit
 
+  // A file mapped into memory for changing, under an exclusive lock, until `close` is called:
+  // what a backend's `holding` answers. As with a `Mapping`, the user-facing `hold` scope
+  // is what guarantees that it is not used afterwards.
+  trait Hold extends zephyrine.Holding:
+    def close(): Unit
+
 trait FilesystemBackend extends Planar:
   // The entry's type, size, timestamps and Unix inode fields, in one read. (`created` is
   // `Unset` on filesystems that do not record creation times; the inode fields where the
@@ -131,6 +137,14 @@ trait FilesystemBackend extends Planar:
   // descriptor, and addresses files of any size. A backend with no memory mapping (WASI)
   // raises `Unsupported`.
   def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^
+
+  // Maps the whole of a file into memory for changing in place, creating it with `mode` if it
+  // is not there, and extending it to `reserve` bytes if it is shorter. An exclusive
+  // operating-system lock is taken on the file itself, and held until the holding is closed:
+  // `Busy` if another holds it. A backend with no writable mapping raises `Unsupported`.
+  def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
+    ( using Tactic[Io.Error] )
+  :   FilesystemBackend.Hold^
 
   // Extended (user-defined) attributes (issue #567). Support depends on the storage
   // filesystem, so the typed accessors are gated on the `Attributed` axis marker; at the

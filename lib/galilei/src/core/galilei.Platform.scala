@@ -194,6 +194,14 @@ object Platform:
       def view[result](value: path)(lambda: zephyrine.Terrain^ => result): result =
         value.mapped(lambda)
 
+      // The file is mapped for changing, under an exclusive lock, for the length of the block.
+      override def hold[result](value: path)(lambda: zephyrine.Holding^ => result)
+        ( otherwise: => result )
+      :   result =
+
+        val holding = backend.holding(value, 0L, Unset)
+        try lambda(holding) finally holding.close()
+
   // The `Openable` instance for the `Directory` form: anchored here for the same reason as
   // the `File` instance above. With both in scope, a bare `path.open(...)` is ambiguous, and
   // the form must be stated: `path.open[File](...)` or `path.open[Directory](...)`.

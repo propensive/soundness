@@ -121,4 +121,4 @@ Document {
     ],
 }
 errors:
-  E225 [0,0): Scalar `width` is not a positive decimal byte count: scalar `Uuid` declares width `0x10`, which is not a positive decimal byte count
+  ↯/t.2.25 [0,0): Scalar `width` is not a positive decimal byte count: scalar `Uuid` declares width `0x10`, which is not a positive decimal byte count

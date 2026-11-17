@@ -25,4 +25,4 @@ Document {
     ],
 }
 errors:
-  E108 [5,8): Trailing spaces on ordinary line
+  ↯/t.1.8 [5,8): Trailing spaces on ordinary line

@@ -178,4 +178,4 @@ Document {
     ],
 }
 errors:
-  E230 [0,0): Index path does not resolve statically to a non-repeatable Scalar through non-repeatable Field members: field `address` in document has index path `/region` which does not resolve statically: final component `region` resolves to a Struct, not a Scalar
+  ↯/t.2.30 [0,0): Index path does not resolve statically to a non-repeatable Scalar through non-repeatable Field members: field `address` in document has index path `/region` which does not resolve statically: final component `region` resolves to a Struct, not a Scalar

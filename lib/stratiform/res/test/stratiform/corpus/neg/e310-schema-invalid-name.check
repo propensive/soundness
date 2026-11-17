@@ -73,4 +73,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,14): Scalar value failed validation: `name` failed validation: identifier must start with a lowercase ASCII letter (after any leading primes)
+  ↯/t.3.10 [0,14): Scalar value failed validation: `name` failed validation: identifier must start with a lowercase ASCII letter (after any leading primes)

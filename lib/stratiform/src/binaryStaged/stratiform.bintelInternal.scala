@@ -306,6 +306,32 @@ object bintelInternal:
 
       case _ => None
 
+  // The encoding a field's `@encoding` annotation names, read from the annotation's tree, on
+  // the constructor parameter or on the field. A field which carries one is written as its
+  // codec's bytes whatever its type, so it is read as an encoded leaf, like a type which
+  // declares its encoding with the `Tel.Encoded` marker.
+  private def fieldEncoding[product: Type](fieldName: String)(using Quotes): Option[String] =
+    import quotes.reflect.*
+
+    val symbol = TypeRepr.of[product].dealias.classSymbol.getOrElse(TypeRepr.of[product].typeSymbol)
+    val parameters = symbol.primaryConstructor.paramSymss.flatten.filter(_.name == fieldName)
+    val fields = symbol.caseFields.filter(_.name == fieldName)
+    val annotation = TypeRepr.of[stratiform.encoding]
+
+    def literal(tree: Tree): Option[String] =
+      var found: Option[String] = None
+
+      val traverser = new TreeTraverser:
+        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
+          case Literal(StringConstant(string)) => if found.isEmpty then found = Some(string)
+          case other                           => super.traverseTree(other)(owner)
+
+      traverser.traverseTree(tree)(Symbol.spliceOwner)
+      found
+
+    (parameters ::: fields).flatMap(_.annotations).filter(_.tpe <:< annotation).flatMap(literal(_))
+    . headOption
+
   // A custom scalar leaf: its `Decodable in Text`, resolved at expansion
   // time with a reflection-level search and an erasing cast across the
   // capability boundary (the protobuf port's lesson: neither `summonInline`
@@ -367,15 +393,26 @@ object bintelInternal:
         ( s"stratiform: the field `$fieldName` of ${TypeRepr.of[product].show} is $shape, " +
           "which the BinTEL parser generator does not support; use `Bintel.read`" )
 
+    // A field with an `@encoding` is its codec's bytes on the wire, and never plain text: it
+    // is read through its type's `Decodable in Text`, as a custom scalar is, or not at all.
+    val annotated: Option[String] = fieldEncoding[product](fieldName)
+
+    def encoded(leaf: TypeRepr): Any = leaf.asType match
+      case '[leafType] =>
+        textDecoder[leafType].getOrElse(reject("an encoded scalar of a type with no decoder"))
+
     builtinKind(tpe) match
       case Some(kind) =>
-        Plan.Leaf(kind)
+        annotated match
+          case Some(name) => Plan.SeamText(encoded(tpe), Some(name))
+          case None       => Plan.Leaf(kind)
 
       case None if optionalInner(tpe).isDefined =>
         val inner = optionalInner(tpe).get
 
         builtinKind(inner) match
           case Some(kind) =>
+            if annotated.isDefined then reject("an optional scalar with an `@encoding`")
             Plan.OptionalLeaf(kind)
 
           case None =>
@@ -404,7 +441,12 @@ object bintelInternal:
 
             builtinKind(elementType) match
               case Some(kind) =>
-                Plan.Gather(Elem.Scalar(kind), elementType)
+                annotated match
+                  case Some(name) =>
+                    Plan.Gather(Elem.SeamText(encoded(elementType), Some(name)), elementType)
+
+                  case None =>
+                    Plan.Gather(Elem.Scalar(kind), elementType)
 
               case None =>
                 elementType.asType match
@@ -418,7 +460,8 @@ object bintelInternal:
                         textDecoder[element] match
                           case Some(decoder) =>
                             Plan.Gather
-                              ( Elem.SeamText(decoder, staticEncoding[element]), elementType )
+                              ( Elem.SeamText(decoder, annotated.orElse(staticEncoding[element])),
+                                elementType )
 
                           case None =>
                             reject("a collection of an unsupported element")
@@ -437,7 +480,8 @@ object bintelInternal:
 
                 case _ =>
                   textDecoder[field] match
-                    case Some(decoder) => Plan.SeamText(decoder, staticEncoding[field])
+                    case Some(decoder) =>
+                      Plan.SeamText(decoder, annotated.orElse(staticEncoding[field]))
 
                     case None =>
                       if cache.active.contains(tpe.show) then reject("recursive")

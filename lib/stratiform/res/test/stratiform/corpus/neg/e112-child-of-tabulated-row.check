@@ -49,4 +49,4 @@ Document {
     ],
 }
 errors:
-  E112 [36,36): Child of comment, tabulation, or tabulated row
+  ↯/t.1.12 [36,36): Child of comment, tabulation, or tabulated row

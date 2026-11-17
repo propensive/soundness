@@ -777,19 +777,19 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == false)
 
       test(m"A reader maps the published version"):
-        unsafely(indexFile.published[Text](_.map(text)))
+        unsafely(indexFile.observe[Text](_.map(text)))
       . assert(_ == t"fourth")
 
       test(m"A reader's edition is the edition which was published"):
         unsafely:
           indexFile.claim[Text]: owner =>
             val edition = owner.publish(t"fifth")
-            indexFile.published[Text](_.edition == edition)
+            indexFile.observe[Text](_.edition == edition)
       . assert(_ == true)
 
       test(m"A reader keeps its version until it refreshes"):
         unsafely:
-          indexFile.published[Text]: reader =>
+          indexFile.observe[Text]: reader =>
             val before = reader.map(text)
             indexFile.claim[Text](_.publish(t"sixth"))
             val unrefreshed = reader.map(text)
@@ -798,12 +798,12 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == (t"fifth", t"fifth", true, t"sixth"))
 
       test(m"Refreshing with nothing new published does nothing"):
-        unsafely(indexFile.published[Text](_.refresh()))
+        unsafely(indexFile.observe[Text](_.refresh()))
       . assert(_ == false)
 
       test(m"A view survives a refresh made while it is being read"):
         unsafely:
-          indexFile.published[Text]: reader =>
+          indexFile.observe[Text]: reader =>
             reader.map: view =>
               indexFile.claim[Text](_.publish(t"seventh"))
               reader.refresh()
@@ -812,13 +812,13 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"A reader does not prevent the owner publishing, nor take the lock"):
         unsafely:
-          indexFile.published[Text]: reader =>
+          indexFile.observe[Text]: reader =>
             indexFile.claim[Text](_.publish(t"eighth"))
             indexFile.read[Text]
       . assert(_ == t"eighth")
 
       test(m"A name with nothing published cannot be read"):
-        unsafely(capture[Io.Error](absentFile.published[Text](_.edition)).reason)
+        unsafely(capture[Io.Error](absentFile.observe[Text](_.edition)).reason)
       . assert(_ == Io.Error.Reason.Nonexistent)
 
       test(m"An owner cannot escape its scope"):
@@ -831,16 +831,125 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A reader cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = indexFile.published[Text](identity(_))
+          val escaped = indexFile.observe[Text](identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 
       test(m"A published view cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = indexFile.published[Text](_.map(identity(_)))
+          val escaped = indexFile.observe[Text](_.map(identity(_)))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"An observer opens its version as the form it was given"):
+        // A form which is read in place: here, the first bytes of the view, as a number.
+        given surveyable: (Text is Surveyable by Nothing to Terrain) = new Surveyable:
+          type Self = Text
+          type Operand = Nothing
+          type Result = Terrain
+
+          def survey[result](view: Terrain^, flags: List[Nothing])(block: (Terrain^) ?=> result)
+          :   result =
+
+            block(using view)
+
+        unsafely(indexFile.observe[Text](_.open() { (view: Terrain^) ?=> view.size }))
+      . assert(_ > 0L)
+
+    suite(m"Changing a file in place"):
+      import errorDiagnostics.emptyDiagnostics
+
+      val heldDir: Text = Uuid().show
+      val heldRoot: Path on Linux = unsafely((% / "tmp" / heldDir).on[Linux])
+      unsafely(heldRoot.create[Directory]())
+      val ledger: Path on Linux = unsafely((% / "tmp" / heldDir / "ledger").on[Linux])
+
+      test(m"A file which is not there is created at the size reserved"):
+        unsafely(ledger.hold(64L)(_.size))
+      . assert(_ == 64L)
+
+      test(m"What is stored is loaded back through the same holding"):
+        unsafely:
+          ledger.hold(): holding =>
+            holding.set32(8L, 0xdeadbeefL)
+            holding.set16(12L, 0x1603)
+            holding.set8(14L, 0x7f)
+            holding.set64(16L, 0x0102030405060708L)
+            (holding.u32(8L), holding.u16(12L), holding.u8(14L), holding.u64(16L))
+      . assert(_ == (0xdeadbeefL, 0x1603, 0x7f, 0x0102030405060708L))
+
+      test(m"What was stored is in the file once the scope has ended"):
+        unsafely(ledger.mapped { view => (view.u32(8L), view.u16(12L), view.u64(16L)) })
+      . assert(_ == (0xdeadbeefL, 0x1603, 0x0102030405060708L))
+
+      test(m"Integers are stored least significant byte first"):
+        unsafely(ledger.mapped(_.read(8L, 4))).to[List].map(_ & 0xff)
+      . assert(_ == List(0xef, 0xbe, 0xad, 0xde))
+
+      test(m"Bytes are written, moved over themselves and zeroed"):
+        unsafely:
+          ledger.hold(): holding =>
+            holding.write(32L, t"Hamlet".in[Data])
+            holding.move(32L, 34L, 6L)
+            holding.zero(32L, 2L)
+            (holding.read(32L, 2).to[List].map(_.toInt), holding.read(34L, 6).utf8)
+      . assert(_ == (List(0, 0), t"Hamlet"))
+
+      test(m"A holding is expanded, and the file with it"):
+        unsafely:
+          ledger.hold(): holding =>
+            holding.expand(8192L)
+            holding.set32(8188L, 1599L)
+            (holding.size, holding.u32(8188L), holding.u32(8L))
+      . assert(_ == (8192L, 1599L, 0xdeadbeefL))
+
+      test(m"A view taken before an expansion reads what is stored after it"):
+        unsafely:
+          ledger.hold(): holding =>
+            val view = holding.slice(8L, 4L)
+            holding.expand(16384L)
+            holding.set32(8L, 1616L)
+            view.u32(0L)
+      . assert(_ == 1616L)
+
+      test(m"The expanded file keeps its size, and what was stored in it"):
+        unsafely(ledger.mapped { view => (view.size, view.u32(8188L)) })
+      . assert(_ == (16384L, 1599L))
+
+      test(m"A file which is being changed cannot be changed by another"):
+        unsafely(ledger.hold()(holding => capture[Io.Error](ledger.hold()(_.size)).reason))
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"The file is released when its scope ends"):
+        unsafely(ledger.hold()(_.size))
+      . assert(_ == 16384L)
+
+      test(m"A store beyond the end of a holding is refused"):
+        unsafely(ledger.hold()(holding => safely(holding.set32(16384L, 1L)).absent))
+      . assert(_ == true)
+
+      test(m"A holding cannot escape its scope"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = ledger.hold()(identity(_))
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A holding on the heap is stored to, loaded from and expanded"):
+        val holding = Holding(16L)
+        holding.set64(8L, 42L)
+        holding.expand(24L)
+        holding.write(16L, t"Yorick".in[Data])
+        holding.move(16L, 18L, 6L)
+        (holding.size, holding.u64(8L), holding.read(18L, 6).utf8, holding.compare(18L, 6L, t"Yorick".in[Data]))
+      . assert(_ == (24L, 42L, t"Yorick", 0))
+
+      test(m"A holding on the heap begins as a copy of the bytes it is given"):
+        val holding = Holding(t"Ophelia".in[Data])
+        holding.set8(0L, 'o'.toInt)
+        (holding.read(0L, 7).utf8, holding.same(0L, t"ophelia".in[Data]))
+      . assert(_ == (t"ophelia", true))
 
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics

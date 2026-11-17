@@ -241,16 +241,16 @@ object CheckFormat:
     while cursor.position < cursor.input.length do
       cursor.skipLineWhitespace()
 
-      // An entry starts with `E` followed by its digits; anything else is a
-      // continuation of the preceding message. The reference implementation
-      // wraps a diagnostic over several lines when it quotes the offending
-      // input (an invalid RE2 pattern, for instance, is echoed with a caret
-      // and a trailing `error:` line), so those lines are skipped wholesale.
-      // Discarding the rest of the line is also what keeps this loop
-      // advancing: without it, a non-`E` line would never be consumed.
-      if cursor.peek() == 'E' && isDigit(cursor.peekAhead(1)) then
-        cursor.advance(1)
-        val code = parseInt(cursor)
+      // An entry starts with its code; anything else is a continuation of the
+      // preceding message. The code is a bolt code, `↯/t.F.N`, or, in a file not
+      // yet regenerated, the `E` number it replaced, which is `100·F + N`: the two
+      // are read as the same number. The reference implementation wraps a
+      // diagnostic over several lines when it quotes the offending input (an
+      // invalid RE2 pattern, for instance, is echoed with a caret and a trailing
+      // `error:` line), so those lines are skipped wholesale. Discarding the rest
+      // of the line is also what keeps this loop advancing: without it, a line
+      // which is not an entry would never be consumed.
+      def entry(code: Int): Unit =
         cursor.skipInlineWhitespace()
         cursor.expect('[')
         val start = parseInt(cursor)
@@ -262,6 +262,15 @@ object CheckFormat:
         cursor.skipInlineWhitespace()
         val message = cursor.takeUntil(_ == '\n')
         builder += ExpectedError(code, start, end, Text(message))
+
+      if cursor.peek() == '↯' && cursor.peekAhead(1) == '/' && cursor.peekAhead(2) == 't' then
+        cursor.advance(4)
+        val family = parseInt(cursor)
+        cursor.expect('.')
+        entry(family*100 + parseInt(cursor))
+      else if cursor.peek() == 'E' && isDigit(cursor.peekAhead(1)) then
+        cursor.advance(1)
+        entry(parseInt(cursor))
       else cursor.takeUntil(_ == '\n')
 
       cursor.skipLineWhitespace()

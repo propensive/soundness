@@ -25,4 +25,4 @@ Document {
     ],
 }
 errors:
-  E106 [10,13): Line does not begin with the margin: non-space within margin
+  ↯/t.1.6 [10,13): Line does not begin with the margin: non-space within margin

@@ -166,4 +166,4 @@ Document {
     ],
 }
 errors:
-  E223 [0,0): Layer pattern replacement is not contained in the inherited patterns: layer `regional` replaces the patterns of scalar `Code`, but the new set is not contained in inherited pattern `[A-Z]{2}-[0-9]{4}`
+  ↯/t.2.23 [0,0): Layer pattern replacement is not contained in the inherited patterns: layer `regional` replaces the patterns of scalar `Code`, but the new set is not contained in inherited pattern `[A-Z]{2}-[0-9]{4}`

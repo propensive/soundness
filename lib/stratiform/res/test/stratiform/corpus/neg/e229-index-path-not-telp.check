@@ -137,4 +137,4 @@ Document {
     ],
 }
 errors:
-  E229 [0,0): Index path is not a syntactically valid TELP, or is the root path on a non-Scalar field: field `address` in document has index path `city` which is not a valid TELP: `c` is not one of the twenty-two delimiter characters
+  ↯/t.2.29 [0,0): Index path is not a syntactically valid TELP, or is the root path on a non-Scalar field: field `address` in document has index path `city` which is not a valid TELP: `c` is not one of the twenty-two delimiter characters

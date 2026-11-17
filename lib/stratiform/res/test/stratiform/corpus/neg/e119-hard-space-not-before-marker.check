@@ -25,4 +25,4 @@ Document {
     ],
 }
 errors:
-  E119 [7,10): Malformed tabulation heading: hard space not followed by marker
+  ↯/t.1.19 [7,10): Malformed tabulation heading: hard space not followed by marker

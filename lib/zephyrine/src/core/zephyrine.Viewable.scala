@@ -41,7 +41,22 @@ import prepositional.*
 trait Viewable extends Typeclass:
   def view[result](value: Self)(lambda: Terrain^ => result): result
 
+  // Lends the value's bytes for changing where they lie, as a `Holding`, for the length of a
+  // block, if they can be changed at all: a file can, and is mapped for writing under an
+  // exclusive lock; a holding which is already in hand can; bytes which are immutable cannot,
+  // and for them, as for anything which does not say otherwise, the answer is `otherwise`.
+  def hold[result](value: Self)(lambda: Holding^ => result)(otherwise: => result): result =
+    otherwise
+
 object Viewable:
   // A terrain is lent as it is: whoever holds it has already mapped it.
   given terrain: [captures^, terrain <: Terrain^{captures}] => terrain is Viewable:
     def view[result](value: terrain)(lambda: Terrain^ => result): result = lambda(value)
+
+    // A terrain which is a holding is lent as one.
+    override def hold[result](value: terrain)(lambda: Holding^ => result)(otherwise: => result)
+    :   result =
+
+      value match
+        case holding: Holding => lambda(holding)
+        case _            => otherwise

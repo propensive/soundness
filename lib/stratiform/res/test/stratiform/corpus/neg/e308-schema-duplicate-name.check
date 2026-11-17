@@ -84,4 +84,4 @@ Document {
     ],
 }
 errors:
-  E308 [0,0): Non-repeatable member is filled more than once: non-repeatable member `name` is filled 2 times
+  ↯/t.3.8 [0,0): Non-repeatable member is filled more than once: non-repeatable member `name` is filled 2 times

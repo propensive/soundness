@@ -84,4 +84,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,1): Scalar value failed validation: `sigil` failed validation: sigil must not be a letter
+  ↯/t.3.10 [0,1): Scalar value failed validation: `sigil` failed validation: sigil must not be a letter

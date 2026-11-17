@@ -60,5 +60,5 @@ Document {
     ],
 }
 errors:
-  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `active` for the document root
-  E307 [0,0): Required member absent and no default available: required member `name` is absent and has no default
+  ↯/t.3.6 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `active` for the document root
+  ↯/t.3.7 [0,0): Required member absent and no default available: required member `name` is absent and has no default

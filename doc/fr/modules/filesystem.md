@@ -588,6 +588,50 @@ Out.println(letters)
 + disposé de sorte qu'un enregistrement se trouve sans lire le reste, et
 + `file.open[Ratel]()` projette le fichier pendant la durée de son bloc.
 
+- `hold` maps a whole file for changing where it lies, and lends a `Holding`: a `Terrain` which
+- is stored to as well as loaded from. `set8`, `set16`, `set32` and `set64` store an integer at
+- an offset, `write` stores some `Data`, `zero` clears a range and `move` copies one within the
+- file, and `expand` makes the holding longer, and the file with it. A file which is not there is
+- created, at the size which `hold` is given. An exclusive lock is held on the file for the
+- length of the block, so a second `hold` of the same file, in this program or another, is
+- refused with `Busy`:
++ `hold` projette un fichier entier pour le modifier là où il se trouve, et prête un `Holding` :
++ un `Terrain` dans lequel on stocke aussi bien qu'on charge. `set8`, `set16`, `set32` et `set64`
++ stockent un entier à un décalage, `write` stocke des `Data`, `zero` efface une plage et `move`
++ en copie une à l'intérieur du fichier, et `expand` allonge la tenure, et le fichier avec lui. Un
++ fichier qui n'existe pas est créé, à la taille donnée à `hold`. Un verrou exclusif est tenu
++ sur le fichier pendant la durée du bloc, si bien qu'un second `hold` du même fichier, dans ce
++ programme ou dans un autre, est refusé avec `Busy` :
+
+```scala fuel
+run
+##
+val ledger = directory / "ledger"
+
+ledger.hold(16L): holding =>
+  holding.set32(0L, 1599L)
+  holding.expand(32L)
+  holding.set64(24L, 1616L)
+
+val first = ledger.mapped(_.u32(0L))
+val last = ledger.mapped(_.u64(24L))
+Out.println(t"${first.show}, then ${last.show}")
+```
+
+- A holding hands out no address into its memory, since `expand` may move it: every load and store
+- is at an offset, and a `slice` of a holding reads through it, so it stays good afterwards. What
+- was stored is in the file when the block ends. It is what a format which is altered in place
+- is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
+- `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
+- changing on the JVM; the other platforms report `Unsupported`.
++ Une tenure ne donne aucune adresse dans sa mémoire, puisque `expand` peut la déplacer : chaque
++ chargement et chaque stockage se fait à un décalage, et une `slice` d'une tenure lit à travers
++ elle, si bien qu'elle reste valable ensuite. Ce qui a été stocké est dans le fichier lorsque le
++ bloc se termine. C'est par elle qu'un format modifié sur place est modifié, comme l'est une image
++ [RaTEL](tel.md#ratel) par le programme qui la possède. `Holding(size)` en est une sur le tas, pour
++ une image qui n'est pas encore un fichier. Un fichier est projeté pour modification sur la JVM ;
++ les autres plateformes signalent `Unsupported`.
+
 - ### Publishing versions
 + ### Publier des versions
 
@@ -626,47 +670,55 @@ val edition = file.claim[Text]: owner =>
 Out.println(file.read[Text])
 ```
 
-- `published` gives a reader, a `Published`. Its `map` lends a `Terrain` view of the version it
-- holds, and its `refresh` moves it to the version which the name now leads to, and says whether
-- there was one:
-+ `published` donne un lecteur, un `Published`. Son `map` prête une vue `Terrain` de la
-+ version qu'il détient, et son `refresh` le fait passer à la version vers laquelle mène
-+ désormais le nom, et indique s'il y en avait une :
+- `observe` gives an `Observer`, which reads what the owner publishes. Its `map` lends a
+- `Terrain` view of the version it holds, and its `refresh` moves it to the version which the
+- name now leads to, and says whether there was one:
++ `observe` donne un `Observer`, qui lit ce que le propriétaire publie. Son `map` prête une vue
++ `Terrain` de la version qu'il détient, et son `refresh` le fait passer à la version vers
++ laquelle mène désormais le nom, et indique s'il y en avait une :
 
 ```scala fuel
 run
 ##
 file.claim[Text](_.publish(t"one"))
 
-file.published[Text]: reader =>
+file.observe[Text]: observer =>
   file.claim[Text](_.publish(t"two"))
-  val before = reader.map(_.u8(0L))
-  val moved = reader.refresh()
-  val after = reader.map(_.u8(0L))
+  val before = observer.map(_.u8(0L))
+  val moved = observer.refresh()
+  val after = observer.map(_.u8(0L))
   Out.println(t"$before, then $after")
 ```
 
-- A reader takes no lock, so it never delays the owner, and the owner never delays it. A view
+- An observer takes no lock, so it never delays the owner, and the owner never delays it. A view
 - which is in use when a `refresh` happens, on this thread or another, stays valid until its
 - block ends. Two editions are equal exactly when they are the same version of the file; they
 - have no order.
-+ Un lecteur ne prend aucun verrou, si bien qu'il ne retarde jamais le propriétaire, et que
-+ le propriétaire ne le retarde jamais. Une vue en cours d'utilisation lorsqu'un `refresh` a
-+ lieu, sur ce thread ou un autre, reste valide jusqu'à la fin de son bloc. Deux éditions
-+ sont égales exactement lorsqu'elles sont la même version du fichier ; elles n'ont pas
-+ d'ordre.
++ Un observateur ne prend aucun verrou, si bien qu'il ne retarde jamais le propriétaire, et que le
++ propriétaire ne le retarde jamais. Une vue en cours d'utilisation lorsqu'un `refresh` a lieu,
++ sur ce thread ou un autre, reste valide jusqu'à la fin de son bloc. Deux éditions sont égales
++ exactement lorsqu'elles sont la même version du fichier ; elles n'ont pas d'ordre.
 
-- A reader keeps the version it has mapped in existence, even after a newer one has replaced it
-- under the name, so a long-lived reader should `refresh` when it learns that there is something
-- new, whether from a message or from [watching](#watching-for-changes) the name. The lock is
-- advisory, and is dependable between cooperating programs on one machine's own filesystems,
-- but not over a network filesystem.
-+ Un lecteur maintient en existence la version qu'il a projetée, même après qu'une plus
-+ récente l'a remplacée sous le nom, si bien qu'un lecteur de longue durée doit appeler
+- The type which `claim` and `observe` are given is what is published under the name. For a
+- form which is read in place, an observer's `open` maps the current version and opens it as
+- that type, in one block: an observer of a `Ratel of Playbill` opens an image of a `Playbill`,
+- and refuses one of anything else, as [RaTEL](tel.md#ratel) shows.
++ Le type donné à `claim` et à `observe` est ce qui est publié sous le nom. Pour une forme qui se
++ lit sur place, le `open` d'un observateur projette la version courante et l'ouvre comme ce type,
++ en un seul bloc : un observateur d'un `Ratel of Playbill` ouvre une image d'un `Playbill`, et
++ refuse celle de toute autre chose, comme le montre [RaTEL](tel.md#ratel).
+
+- An observer keeps the version it has mapped in existence, even after a newer one has replaced
+- it under the name, so a long-lived observer should `refresh` when it learns that there is
+- something new, whether from a message or from [watching](#watching-for-changes) the name. The
+- lock is advisory, and is dependable between cooperating programs on one machine's own
+- filesystems, but not over a network filesystem.
++ Un observateur maintient en existence la version qu'il a projetée, même après qu'une plus
++ récente l'a remplacée sous le nom, si bien qu'un observateur de longue durée doit appeler
 + `refresh` lorsqu'il apprend qu'il y a du nouveau, que ce soit par un message ou en
-+ [surveillant](#watching-for-changes) le nom. Le verrou est consultatif, et il est fiable
-+ entre programmes coopératifs sur les systèmes de fichiers propres d'une machine, mais pas
-+ sur un système de fichiers réseau.
++ [surveillant](#watching-for-changes) le nom. Le verrou est consultatif, et fiable entre des
++ programmes coopérants sur les systèmes de fichiers propres à une machine, mais pas sur un
++ système de fichiers en réseau.
 
 - A `Slice` is a window onto part of a file, with an offset and an extent. It is opened for
 - reading or writing like a file of its own. A region of a large file can therefore be streamed

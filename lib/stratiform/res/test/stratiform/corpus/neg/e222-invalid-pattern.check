@@ -110,7 +110,7 @@ Document {
     ],
 }
 errors:
-  E222 [0,0): Invalid RE2 pattern: scalar `Code` declares an invalid pattern `[unclosed`: regex parse error:
+  ↯/t.2.22 [0,0): Invalid RE2 pattern: scalar `Code` declares an invalid pattern `[unclosed`: regex parse error:
     \A(?:[unclosed)\z
          ^
 error: unclosed character class

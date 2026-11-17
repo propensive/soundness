@@ -165,11 +165,27 @@ extension [plane: Filesystem](path: Path on plane)
     val mapping = backend.mapping(path)
     try lambda(mapping) finally mapping.unmap()
 
+  // Scoped changing in place: maps the whole file into memory for writing, creating it if it
+  // is not there, and passes a `zephyrine.Holding` of it, through which integers are stored and
+  // loaded where they lie. An exclusive operating-system lock is held on the file for the
+  // scope, so one process at a time -- and one scope within it -- can change it: `Busy` if it
+  // is already held. A file shorter than `reserve` bytes is extended to that, and the holding's
+  // `expand` extends it further. What was stored is made durable when the scope ends, when
+  // the file is unmapped; the holding is a capability which capture checking confines to the
+  // scope. Supported by the JVM backend; the others raise `Unsupported`.
+  def hold[result](reserve: Long = 0L)(lambda: zephyrine.Holding^ => result)
+    ( using backend: FilesystemBackend on plane, umask: Umask )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    val holding = backend.holding(path, reserve, umask.mode(Umask.fileBits))
+    try lambda(holding) finally holding.close()
+
   // Claims ownership of this name for the scope of `lambda` (issue #2472): an exclusive
   // operating-system lock on the sibling `<name>.lock` is held throughout, so one process at
   // a time -- and one scope within it -- can publish under the name. `Busy` if it is already
   // owned. The `Owner` publishes each version of `record` by writing a temporary sibling and
-  // moving it over the name atomically; see `Published`.
+  // moving it over the name atomically; see `Observer`.
   def claim[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
     ( using backend: FilesystemBackend on plane, umask: Umask )
     ( using Tactic[Io.Error]^ )
@@ -184,18 +200,18 @@ extension [plane: Filesystem](path: Path on plane)
     val flags = List(OpenFlag.Write, OpenFlag.Create, OpenFlag.Lock)
 
     backend.open(lock, flags, umask.mode(Umask.fileBits)): handle =>
-      lambda(Published.Publisher[record, plane](path, part, backend, umask))
+      lambda(Observer.Publisher[record, plane](path, part, backend, umask))
 
   // Maps the version of this name which is currently published, for the scope of `lambda`
-  // (issue #2472): the `Published` lends views of it, and moves on to a newer version when
+  // (issue #2472): the `Observer` lends views of it, and moves on to a newer version when
   // asked to `refresh`. No lock is taken, so a reader never delays the owner, nor the owner
   // a reader. Whatever is mapped is unmapped when the scope ends.
-  def published[record](using erased void: Void)[result](lambda: Published[record]^ => result)
+  def observe[record](using erased void: Void)[result](lambda: Observer[record]^ => result)
     ( using backend: FilesystemBackend on plane )
     ( using Tactic[Io.Error]^ )
   :   result =
 
-    val reader = Published.Reader[record, plane](path, backend)
+    val reader = Observer.Reader[record, plane](path, backend)
     reader.open()
     try lambda(reader) finally reader.close()
 

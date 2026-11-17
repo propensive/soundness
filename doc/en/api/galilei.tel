@@ -2575,3 +2575,46 @@ entry .javaPath   `path.javaPath`: the `java.nio.file.Path` for a platform path,
 
 entry .javaFile   `path.javaFile`: the `java.io.File` for a platform path
     As `javaPath`, for the older API; in `galilei.jvm` and not exported to the umbrella.
+
+entry .mapped   `path.mapped { view => … }`: the whole file mapped into memory, read-only, as a `Terrain` for the length of a block
+    Nothing is copied: integers are loaded from the page cache in place, and processes which
+    map one file share one copy of it. The file is unmapped when the block ends, and the view
+    is a capability which is confined to it. The JVM and Scala Native backends map files;
+    WASI raises `Io.Error` with the reason `Unsupported`.
+
+entry .hold   `path.hold(reserve) { holding => … }`: the whole file mapped for changing in place, as a `Holding`, under an exclusive lock
+    The file is created if it is not there, and extended to `reserve` bytes if it is
+    shorter; the holding's `expand` extends it further. The lock is on the file itself, and is
+    held for the block: a second `hold` of the file, in this process or another, raises
+    `Io.Error` with the reason `Busy`. What was stored is durable when the block ends. Only
+    the JVM backend maps a file for changing; the others raise `Unsupported`.
+
+entry .claim   `path.claim[record] { owner => … }`: ownership of a name for the length of a block, to publish versions of `record` under it
+    An exclusive operating-system lock is held on the sibling `<name>.lock` throughout, so
+    one process, and one scope within it, publishes under the name at a time; a second
+    raises `Io.Error` with the reason `Busy`. The lock is advisory, and dependable between
+    cooperating processes on a local filesystem.
+
+entry .observe   `path.observe[record] { observer => … }`: the version of a name which is now published, mapped, with the means to move on to a newer one
+    No lock is taken, so an observer never delays the owner, nor the owner an observer.
+    Whatever is mapped is unmapped when the block ends. A name under which nothing has been
+    published raises `Io.Error`.
+
+entry .Edition   the identity of one published version: which file the name led to, and when it was written
+    Two editions are the same version exactly when they are equal; they have no order.
+
+entry .Owner   ownership of a name, for the block of `claim`: the capability to publish versions of `record` under it
+  entry #publish   replaces the published file with the encoding of a value, atomically, and answers the new `Edition`
+      The value is written to the temporary sibling `.<name>.part`, synchronously, and moved
+      over the name, so an observer which has mapped an earlier version is undisturbed.
+
+entry .Observer   a reader's hold on a published name, for the block of `observe`: the current version, mapped, and the means to move on
+  detail
+      A shared capability: it takes no lock, and may be used from several threads. It keeps
+      the version it has mapped in existence until it moves on, or its block ends.
+  entry #edition   the edition of the version which is mapped
+  entry #map   lends a `Terrain` view of the mapped version for the length of a block, which a `refresh` meanwhile does not disturb
+  entry #refresh   maps the version the name now leads to, if it is not the one already mapped, and answers whether it did
+  entry #open   opens the mapped version as `record`, through its `zephyrine.Surveyable` instance, for the length of a block
+      The type the observer was given is the form its version is read in: an observer of a
+      `Ratel of Playbill` opens an image of a `Playbill`, and refuses any other.

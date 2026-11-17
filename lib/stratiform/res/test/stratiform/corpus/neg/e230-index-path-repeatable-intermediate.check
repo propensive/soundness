@@ -182,4 +182,4 @@ Document {
     ],
 }
 errors:
-  E230 [0,0): Index path does not resolve statically to a non-repeatable Scalar through non-repeatable Field members: field `address` in document has index path `/line/text` which does not resolve statically: component 0 `line` is a repeatable Field
+  ↯/t.2.30 [0,0): Index path does not resolve statically to a non-repeatable Scalar through non-repeatable Field members: field `address` in document has index path `/line/text` which does not resolve statically: component 0 `line` is a repeatable Field

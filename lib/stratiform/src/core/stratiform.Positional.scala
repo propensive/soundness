@@ -34,8 +34,10 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import denominative.dysasymptotics.linearSize
-import rudiments.`:+`
+import rudiments.*
+import vacuous.*
 
 // The schema-free §19.2/§20.2 atom phase shared by both derivation engines
 // (issue #1694). A derived product codec approximates the schema's member
@@ -53,6 +55,51 @@ private[stratiform] object Positional:
       nature:     Tel.Nature,
       repeatable: Boolean,
       required:   Boolean )
+
+  // What a repeatable field of a derived product contributes to the record which holds it,
+  // from the document its collection encodes to. They are plain methods, and not part of the
+  // derivation's inline body, since an array which is read within the expansion, in a
+  // capture-checked module, is taken afresh for one which might hold something, and so
+  // cannot be traversed.
+  //
+  // A repeatable scalar field: all occurrences inline or none (§22.2). A single occurrence
+  // still terminates the run -- a repeatable member holds its atom position and would consume
+  // any atom that followed -- so it takes the child form. An empty collection (or an unset
+  // `Optional`) contributes nothing but breaks the run, exactly like an absent scalar member.
+  def scalars(document: Tel.Document, keyword: Text): Tel.Mutation.Member =
+    val children = document.children.bind(_.compounds)
+
+    if children.length == 0 then Tel.Mutation.Member.Break
+    else if children.length == 1 then
+      children.at(Prim).lay(Tel.Mutation.Member.Break): child =>
+        Tel.Mutation.Member.Child(child.copy(keyword = keyword))
+    else
+      val texts = scala.collection.mutable.ListBuffer.empty[Text]
+      children.each { child => texts += child.atoms.at(Prim).lay("".tt)(text(_)) }
+      Tel.Mutation.Member.Value(keyword, texts.to(List))
+
+  // The compounds of a collection's document, each under the keyword of the field which holds
+  // the collection: a repeated field is its keyword repeated.
+  def rekeyed(document: Tel.Document, keyword: Text)
+  :   scala.collection.immutable.List[Tel.Compound] =
+
+    val compounds = scala.collection.mutable.ListBuffer.empty[Tel.Compound]
+
+    document.children.bind(_.compounds).each: compound =>
+      compounds += compound.copy(keyword = keyword)
+
+    compounds.toList
+
+  // A repeatable struct field: each occurrence as a child, or a break if there are none.
+  def structs(document: Tel.Document, keyword: Text)
+  :   scala.collection.immutable.List[Tel.Mutation.Member] =
+
+    val children = document.children.bind(_.compounds)
+
+    if children.length == 0 then scala.collection.immutable.List(Tel.Mutation.Member.Break) else
+      val members = scala.collection.mutable.ListBuffer.empty[Tel.Mutation.Member]
+      children.each { child => members += Tel.Mutation.Member.Child(child.copy(keyword = keyword)) }
+      members.toList
 
   def text(atom: Tel.Atom): Text = atom match
     case Tel.Atom.Inline(value, _)  => value

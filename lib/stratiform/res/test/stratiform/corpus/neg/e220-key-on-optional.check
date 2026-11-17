@@ -130,4 +130,4 @@ Document {
     ],
 }
 errors:
-  E220 [0,0): Key field must be effectively required and non-repeatable: key field `label` in record `Item` must be effectively required and non-repeatable
+  ↯/t.2.20 [0,0): Key field must be effectively required and non-repeatable: key field `label` in record `Item` must be effectively required and non-repeatable

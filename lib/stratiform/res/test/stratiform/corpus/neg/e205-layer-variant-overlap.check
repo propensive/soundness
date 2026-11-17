@@ -186,4 +186,4 @@ Document {
     ],
 }
 errors:
-  E205 [0,0): Layer Select variant keyword overlaps existing keyword in base Struct: layer `extension` adds select `Status` to overlay, but its variant keyword(s) name are already present in the merged struct
+  ↯/t.2.5 [0,0): Layer Select variant keyword overlaps existing keyword in base Struct: layer `extension` adds select `Status` to overlay, but its variant keyword(s) name are already present in the merged struct

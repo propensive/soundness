@@ -30,4 +30,4 @@ Document {
     ],
 }
 errors:
-  E104 [4,8): Invalid pragma version: -1.0
+  ↯/t.1.4 [4,8): Invalid pragma version: -1.0

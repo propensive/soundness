@@ -155,4 +155,4 @@ Document {
     ],
 }
 errors:
-  E210 [0,0): Two or more Definitions share the same name: duplicate definition name `DupName` in base schema
+  ↯/t.2.10 [0,0): Two or more Definitions share the same name: duplicate definition name `DupName` in base schema
