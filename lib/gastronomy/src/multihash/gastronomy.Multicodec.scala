@@ -55,17 +55,12 @@ import vacuous.*
 //     one is nevertheless wanted. Since content addressing is the reason multihash exists, no
 //     instance is provided for either: a checksum is not a content address, and a caller who
 //     genuinely wants that envelope can construct the `Multihash` directly from its code.
-//
-// `Sha384`/`Sha512` share the codes of `Sha2[384]`/`Sha2[512]`: they are the same functions,
-// and the table has one entry apiece.
 object Multicodec:
   given sha1: Sha1 is Multicodec = Multicodec(0x11, t"sha1")
   given sha2_256: Sha2[256] is Multicodec = Multicodec(0x12, t"sha2-256")
   given sha2_512: Sha2[512] is Multicodec = Multicodec(0x13, t"sha2-512")
   given sha2_384: Sha2[384] is Multicodec = Multicodec(0x20, t"sha2-384")
   given sha2_224: Sha2[224] is Multicodec = Multicodec(0x1013, t"sha2-224")
-  given sha384: Sha384 is Multicodec = Multicodec(0x20, t"sha2-384")
-  given sha512: Sha512 is Multicodec = Multicodec(0x13, t"sha2-512")
 
   // Draft entries in the table, but unambiguous and widely implemented.
   given blake3: Blake3 is Multicodec = Multicodec(0x1e, t"blake3")

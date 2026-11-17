@@ -677,17 +677,6 @@ entry .Murmur3   MurmurHash3, x64 128-bit: a fast non-cryptographic hash, under 
       until `digest()`.
   entry #Bits   128
 
-entry .Sha384   SHA-384 as its own algorithm type, with a multihash code but no `Hash` of its own
-    A 384-bit `Algorithm` whose `Multicodec` instance shares the code of `Sha2[384]`, `0x20`,
-    since they are the same function. Digesting is done through `Sha2[384]`: no `Hash in
-    Sha384` is derived, so `digest[Sha384]` does not compile; the type exists for a value
-    which names the algorithm without a bit-count parameter.
-
-entry .Sha512   SHA-512 as its own algorithm type, with a multihash code but no `Hash` of its own
-    A 512-bit `Algorithm` whose `Multicodec` instance shares the code of `Sha2[512]`, `0x13`.
-    Digesting is done through `Sha2[512]`: no `Hash in Sha512` is derived, so `digest[Sha512]`
-    does not compile.
-
 entry .Feistel   a Feistel network over a 64-bit value, from a list of subkeys and a round function
     `Feistel(subkeys, round)(input)` runs one round per subkey: each round moves the low 32-bit
     word of the value to the high word and sets the low word to the old high word XOR
@@ -902,8 +891,8 @@ entry .Multicodec   the multiformats code of a hash algorithm, for enveloping it
       column  Name
       row  `Sha1`  `0x11`  `sha1`
       row  `Sha2[256]`  `0x12`  `sha2-256`
-      row  `Sha2[512]`, `Sha512`  `0x13`  `sha2-512`
-      row  `Sha2[384]`, `Sha384`  `0x20`  `sha2-384`
+      row  `Sha2[512]`  `0x13`  `sha2-512`
+      row  `Sha2[384]`  `0x20`  `sha2-384`
       row  `Sha2[224]`  `0x1013`  `sha2-224`
       row  `Blake3`  `0x1e`  `blake3`
       row  `Md5`  `0xd5`  `md5`
@@ -926,8 +915,6 @@ entry .Multicodec   the multiformats code of a hash algorithm, for enveloping it
   entry .sha2_512   `0x13`, `sha2-512`
   entry .sha2_384   `0x20`, `sha2-384`
   entry .sha2_224   `0x1013`, `sha2-224`: a two-byte varint in the envelope
-  entry .sha384   `0x20`, `sha2-384`, for the `Sha384` type
-  entry .sha512   `0x13`, `sha2-512`, for the `Sha512` type
   entry .blake3   `0x1e`, `blake3`: a draft entry in the table, but unambiguous and widely implemented
   entry .md5   `0xd5`, `md5`: a draft entry in the table
   entry .name   the registered name of a code this library knows, or `Unset`
