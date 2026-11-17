@@ -374,6 +374,12 @@ package filesystemBackends:
       def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^ =
         abort(Io.Error(path, Operation.Open, Reason.Unsupported))
 
+      def tilling(path: Path on Plane, reserve: Long, mode: Optional[Int])
+        ( using Tactic[Io.Error] )
+      :   FilesystemBackend.Tilling^ =
+
+        abort(Io.Error(path, Operation.Open, Reason.Unsupported))
+
       def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse^ => result)
         ( using Tactic[Io.Error] )
       :   result =

@@ -45,7 +45,7 @@ export
       FilesystemAttribute, FilesystemBackend,
       glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local, locations,
       dataSearch, configSearch, destination, listing, search,
-      MacOs, mapped, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
+      MacOs, mapped, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag, tilled,
       OverwritePreexisting, Observer, observe, Owner, p, Platform, Posix, Fdtable, readable, filesize, Sock, Stat,
       Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, subvolume,
       subvolumeRoot, Symlink, symlinkInto, symlinkTo, touch,

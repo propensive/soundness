@@ -34,6 +34,8 @@ package galilei
 
 import java.lang.foreign as jlf
 import java.nio as jn
+import java.nio.channels as jnc
+import java.util.concurrent.atomic as juca
 
 import anticipation.*
 import zephyrine.u8
@@ -55,7 +57,10 @@ private[galilei] object SegmentTerrain:
 
 // A `zephyrine.Terrain` over a `MemorySegment`: every load is the segment's own, so it is
 // bounds-checked, and fails once the arena which owns the memory has been closed.
-private[galilei] class SegmentTerrain(segment: jlf.MemorySegment) extends zephyrine.Terrain:
+private[galilei] class SegmentTerrain(initial: jlf.MemorySegment) extends zephyrine.Terrain:
+  // The segment which is read: the one this was made over, unless it is one which is remapped.
+  protected def segment: jlf.MemorySegment = initial
+
   def size: Long = segment.byteSize
 
   def u8(offset: Long): Int = segment.get(SegmentTerrain.Byte, offset) & 0xff
@@ -91,6 +96,58 @@ private[galilei] class SegmentTerrain(segment: jlf.MemorySegment) extends zephyr
     if differ == -1L then 0
     else if differ == length || differ == other then java.lang.Long.compare(length, other)
     else u8(offset + differ) - data.u8(differ.toInt)
+
+// A whole-file mapping for changing in place: the JVM's `FilesystemBackend.Tilling`. The
+// channel stays open, and its lock held, for as long as the file is mapped; the arena and the
+// segment are each in a cell, since `expand` extends the file and maps it again, in an arena
+// of its own, before the old one is closed.
+private[galilei] class SegmentTilling
+  ( channel: jnc.FileChannel, lock: jnc.FileLock, first: jlf.Arena, initial: jlf.MemorySegment )
+extends SegmentTerrain(initial), FilesystemBackend.Tilling:
+  private val arena: juca.AtomicReference[jlf.Arena] = juca.AtomicReference(first)
+  private val mapped: juca.AtomicReference[jlf.MemorySegment] = juca.AtomicReference(initial)
+
+  override protected def segment: jlf.MemorySegment = mapped.get.nn
+
+  override def slice(offset: Long, length: Long): zephyrine.Terrain =
+    if offset < 0L || length < 0L || offset > size - length
+    then throw IndexOutOfBoundsException(s"$length bytes at $offset of $size")
+
+    zephyrine.Tilth.window(this, offset, length)
+
+  def set8(offset: Long, value: Int): Unit = segment.set(SegmentTerrain.Byte, offset, value.toByte)
+
+  def set16(offset: Long, value: Int): Unit =
+    segment.set(SegmentTerrain.Short, offset, value.toShort)
+
+  def set32(offset: Long, value: Long): Unit = segment.set(SegmentTerrain.Int, offset, value.toInt)
+  def set64(offset: Long, value: Long): Unit = segment.set(SegmentTerrain.Long, offset, value)
+
+  // [java-boundary] the array is only read, into the mapped segment
+  def write(offset: Long, data: Data): Unit =
+    val bytes = Array.unsafeJvm(data)
+    jlf.MemorySegment.copy(bytes, 0, segment, SegmentTerrain.Byte, offset, data.length)
+
+  def zero(offset: Long, length: Long): Unit = segment.asSlice(offset, length).nn.fill(0.toByte)
+
+  def move(from: Long, to: Long, length: Long): Unit =
+    jlf.MemorySegment.copy(segment, from, segment, to, length)
+
+  // The file is extended by writing its last byte, and mapped afresh at its new size.
+  def expand(size: Long): Unit = if size > this.size then
+    segment.force()
+    channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, size - 1)
+    val grown = jlf.Arena.ofShared().nn
+    val mode = jnc.FileChannel.MapMode.READ_WRITE.nn
+    mapped.set(channel.map(mode, 0L, size, grown).nn)
+    arena.getAndSet(grown).nn.close()
+
+  def flush(): Unit = segment.force()
+
+  def close(): Unit =
+    try segment.force() finally
+      try arena.get.nn.close() finally
+        try lock.release() finally channel.close()
 
 // A whole-file, read-only mapping: the segment's memory belongs to `arena`, and is unmapped
 // -- deterministically, rather than whenever the garbage collector notices -- by closing it.

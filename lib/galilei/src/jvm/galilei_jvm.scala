@@ -368,6 +368,47 @@ package filesystemBackends:
               throw throwable
           finally channel.close()
 
+      def tilling(path: Path on Plane, reserve: Long, mode: Optional[Int])
+        ( using Tactic[Io.Error] )
+      :   FilesystemBackend.Tilling =
+
+        protect(path, Operation.Open):
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          optionSet.add(jnf.StandardOpenOption.READ)
+          optionSet.add(jnf.StandardOpenOption.WRITE)
+          optionSet.add(jnf.StandardOpenOption.CREATE)
+          val created = !jnf.Files.exists(javaPath(path))
+          val channel = jnc.FileChannel.open(javaPath(path), optionSet).nn
+          if created then apply(path, mode)
+
+          // One owner at a time: another process which holds the lock, or another scope of
+          // this one, is `Busy`.
+          val lock: Option[jnc.FileLock] =
+            try Option(channel.tryLock()) catch
+              case _: jnc.OverlappingFileLockException => None
+
+          lock match
+            case None =>
+              channel.close()
+              abort(Io.Error(path, Operation.Open, Reason.Busy))
+
+            case Some(held) =>
+              try
+                if channel.size < reserve
+                then channel.write(java.nio.ByteBuffer.wrap(scala.Array[Byte](0)).nn, reserve - 1)
+
+                val arena = java.lang.foreign.Arena.ofShared().nn
+
+                try
+                  val mapMode = jnc.FileChannel.MapMode.READ_WRITE.nn
+                  new SegmentTilling(channel, held, arena, channel.map(mapMode, 0L, channel.size, arena).nn)
+                catch case throwable: Throwable =>
+                  arena.close()
+                  throw throwable
+              catch case throwable: Throwable =>
+                try held.release() finally channel.close()
+                throw throwable
+
       private def attributeView(path: Path on Plane)(using Tactic[Io.Error])
       :   jnf.attribute.UserDefinedFileAttributeView =
 

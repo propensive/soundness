@@ -165,6 +165,22 @@ extension [plane: Filesystem](path: Path on plane)
     val mapping = backend.mapping(path)
     try lambda(mapping) finally mapping.unmap()
 
+  // Scoped changing in place: maps the whole file into memory for writing, creating it if it
+  // is not there, and passes a `zephyrine.Tilth` of it, through which integers are stored and
+  // loaded where they lie. An exclusive operating-system lock is held on the file for the
+  // scope, so one process at a time -- and one scope within it -- can change it: `Busy` if it
+  // is already held. A file shorter than `reserve` bytes is extended to that, and the tilth's
+  // `expand` extends it further. What was stored is made durable when the scope ends, when
+  // the file is unmapped; the tilth is a capability which capture checking confines to the
+  // scope. Supported by the JVM backend; the others raise `Unsupported`.
+  def tilled[result](reserve: Long = 0L)(lambda: zephyrine.Tilth^ => result)
+    ( using backend: FilesystemBackend on plane, umask: Umask )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    val tilling = backend.tilling(path, reserve, umask.mode(Umask.fileBits))
+    try lambda(tilling) finally tilling.close()
+
   // Claims ownership of this name for the scope of `lambda` (issue #2472): an exclusive
   // operating-system lock on the sibling `<name>.lock` is held throughout, so one process at
   // a time -- and one scope within it -- can publish under the name. `Busy` if it is already
