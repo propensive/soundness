@@ -159,6 +159,121 @@ object internal:
 
     Expr.ofList(pairs.map { (field, layer) => '{(${Expr(field)}.tt, ${Expr(layer)}.tt)} })
 
+  // The layout annotations of each field of `product` which carries any -- `@key`, `@index`,
+  // `@encoding`, `@width` and `@intern` -- as (field, storage) pairs. Their arguments are read
+  // from the annotations' trees, so each must be a literal; and what can be seen to be a mistake
+  // where the type is declared is a compile error there, in the words the schema's own
+  // validation would use of it.
+  def storage[product: Type](using Quotes): Expr[scala.List[(Text, TelSchematic.Storage)]] =
+    import quotes.reflect.*
+
+    def classOf(tpe: TypeRepr): Symbol = tpe.dealias.simplified match
+      case AndType(left, right) =>
+        val symbol = classOf(left)
+        if symbol.isClassDef then symbol else classOf(right)
+
+      case Refinement(parent, _, _) => classOf(parent)
+      case other                    => other.classSymbol.getOrElse(other.typeSymbol)
+
+    // The literals among an annotation's arguments, in the order they are written.
+    def literals(annotation: Term): scala.List[Constant] =
+      val found = scala.collection.mutable.ListBuffer[Constant]()
+
+      val traverser = new TreeTraverser:
+        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
+          case Literal(constant) => found += constant
+          case other             => super.traverseTree(other)(owner)
+
+      traverser.traverseTree(annotation)(Symbol.spliceOwner)
+      found.toList
+
+    def texts(annotation: Term): scala.List[String] =
+      literals(annotation).collect { case StringConstant(string) => string }
+
+    // Whether a field's type derives to a record or a select, which no scalar's storage
+    // describes: a case class or a sum, or an optional one, or a collection of them.
+    def structural(tpe: TypeRepr): Boolean = tpe.dealias match
+      case OrType(left, right) => structural(left) || structural(right)
+
+      case AppliedType(_, scala.List(element)) =>
+        structural(element)
+
+      case other =>
+        val symbol = other.typeSymbol
+        val product = symbol.flags.is(Flags.Case) && !symbol.flags.is(Flags.Module)
+        symbol.isClassDef && (product || symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum))
+
+    val symbol = classOf(TypeRepr.of[product])
+    val parameters = symbol.primaryConstructor.paramSymss.flatten.filter(_.isTerm)
+
+    val pairs: scala.List[(String, Expr[TelSchematic.Storage])] = parameters.flatMap: parameter =>
+      val field = symbol.caseFields.find(_.name == parameter.name).toList
+
+      // An annotation may sit on the constructor parameter and on the field alike; a symbol
+      // gives its annotations last first, and they are wanted in the order they are written.
+      def all(annotation: TypeRepr): scala.List[Term] =
+        annotated(parameter :: field, annotation).distinctBy(_.show).reverse
+
+      val keys = all(TypeRepr.of[key])
+      val interns = all(TypeRepr.of[intern])
+
+      val indexes: scala.List[scala.List[String]] = all(TypeRepr.of[index]).map: annotation =>
+        texts(annotation) match
+          case Nil =>
+            halt(m"an index is declared by its paths, each written as a literal", annotation.pos)
+
+          case paths =>
+            paths
+
+      val encodings: scala.List[String] = all(TypeRepr.of[encoding]).map: annotation =>
+        texts(annotation) match
+          case scala.List(name) => name
+          case _                => halt(m"an encoding is named by a literal", annotation.pos)
+
+      val widths: scala.List[Int] = all(TypeRepr.of[width]).map: annotation =>
+        literals(annotation).collect { case IntConstant(bytes) => bytes } match
+          case scala.List(bytes) => bytes
+          case _                 => halt(m"a width is a literal number of bytes", annotation.pos)
+
+      val scalars = all(TypeRepr.of[encoding]) ::: all(TypeRepr.of[width]) ::: interns
+
+      scalars.headOption.foreach: annotation =>
+        if structural(parameter.info) then halt
+          ( m"""the field ${parameter.name} is not a scalar, so it has no encoding, width or
+                interning to declare""",
+            annotation.pos )
+
+      if widths.nonEmpty && interns.nonEmpty
+      then halt(m"a scalar declares both a `width` and `intern` (↯/t.2.31)", interns.head.pos)
+
+      if widths.nonEmpty && encodings.isEmpty then
+        val encoded = parameter.info.asType match
+          case '[fieldType] => Expr.summon[fieldType is Tel.Encoded[?]].isDefined
+
+        if !encoded then halt
+          ( m"a scalar declares a `width` but no `encoding` (↯/t.2.27)",
+            all(TypeRepr.of[width]).head.pos )
+
+      if encodings.distinct.length > 1 || widths.distinct.length > 1
+      then halt(m"the field ${parameter.name} declares its storage twice", scalars.last.pos)
+
+      if keys.isEmpty && indexes.isEmpty && scalars.isEmpty then Nil else
+        val paths = indexes.map: index =>
+          '{proscenium.List(${Varargs(index.map { path => '{${Expr(path)}.tt} })}*)}
+
+        val encoding: Expr[Optional[Text]] =
+          encodings.headOption.fold('{Unset})(name => '{${Expr(name)}.tt})
+
+        val width: Expr[Optional[Int]] = widths.headOption.fold('{Unset})(Expr(_))
+
+        val key = Expr(keys.nonEmpty)
+        val intern = Expr(interns.nonEmpty)
+        val all = '{proscenium.List(${Varargs(paths)}*)}
+        val storage = '{TelSchematic.Storage($key, $all, $encoding, $width, $intern)}
+        scala.List(parameter.name -> storage)
+
+    Expr.ofList(pairs.map { (field, storage) => '{(${Expr(field)}.tt, $storage)} })
+
   // The `@retract` layers of each case of the sum `sum`, as (case, layer) pairs. Retracting every
   // case of a sum from one layer would leave its `select` empty under that layer, so that a
   // required member of the type could never be written (E212); that is a compile error at the

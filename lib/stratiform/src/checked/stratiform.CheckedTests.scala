@@ -54,6 +54,10 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
   case class Shapes(shape: Shape, tags: List[Text] = Nil)
   case class Tree(name: Text, children: List[Tree] = Nil)
 
+  // A type whose schema is derived with its layout: a key, and an encoded scalar.
+  case class Actor(@key name: Text, @encoding(t"u32") lines: Optional[Int])
+  case class Company(actor: List[Actor])
+
   def run(): Unit =
     suite(m"product decoders"):
       test(m"scalar fields"):
@@ -153,6 +157,21 @@ object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked de
         names(image.terrain)
 
       . assert(_ == List(t"Bottom", t"Snug"))
+
+      test(m"a value is written under the schema of its type, and a record decoded"):
+        val company = Company(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset)))
+
+        company.ratel.open[Ratel](Ratel.Flag.Verify):
+          (ratel.root / t"actor").find(t"Burbage").let(_.as[Actor])
+
+      . assert(_ == Actor(t"Burbage", 1506))
+
+      test(m"a value is read back whole through a tracked view"):
+        val company = Company(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset)))
+        def whole(view: Terrain^): Company = view.open[Ratel]()(ratel.root.as[Company])
+        whole(company.ratel.terrain)
+
+      . assert(_ == Company(List(Actor(t"Burbage", 1506), Actor(t"Kemp", Unset))))
 
       test(m"a row is held as a value, and read later in the block"):
         image.open[Ratel]():

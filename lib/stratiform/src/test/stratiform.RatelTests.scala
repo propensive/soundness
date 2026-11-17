@@ -362,6 +362,62 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         hex(play(t"Hamlet").record(t"stage").let(_.materialise()).let(_.bintel(folioSchema.copy(document = Tels.Struct(Array.empty, Array.empty)))).or(Array.empty[Byte])).length > 0
       . assert(_ == true)
 
+    suite(m"Indexes as trees (§9)"):
+      // A key of `length` bytes which sorts as its number does.
+      def key(number: Int, length: Int): Text = "%04d".format(number).repeat(length/4).nn.tt
+
+      // A catalogue of `count` entries, whose keys are not in order.
+      def entries(count: Int, length: Int): Tel =
+        List.range(0, count).fuse("tel 1.0\n"):
+          state+"\nentry\n  name "+key(next*7919%count, length).s+"\n"
+
+        . tt.read[Tel]
+
+      val deep: Data = plain(entries(1000, 400), catalogueSchema)
+      val spilled: Data = plain(entries(100, 600), catalogueSchema)
+
+      test(m"an index of many long keys is several levels deep"):
+        deep.u8(start(deep, 4) + 30)
+      . assert(_ >= 3)
+
+      test(m"an image whose index is a deep tree passes verification"):
+        Ratel.open(Terrain(deep)).verify()
+      . assert(_ == ())
+
+      test(m"a key is found by a descent through the branches"):
+        Ratel(deep).open[Ratel]()((ratel.root / t"entry").find(key(613, 400)).let(_.text(t"name")))
+      . assert(_ == key(613, 400))
+
+      test(m"a key which no leaf holds finds nothing in a deep tree"):
+        Ratel(deep).open[Ratel]()((ratel.root / t"entry").find(key(1000, 400)).absent)
+      . assert(_ == true)
+
+      test(m"the leaves are walked in the order of their keys"):
+        Ratel(deep).open[Ratel]()((ratel.root / t"entry").sorted.map(_.text(t"name").or(t"")))
+      . assert(_ == List.range(0, 1000).map(key(_, 400)))
+
+      test(m"records keep the order they were written in, whatever their keys"):
+        Ratel(deep).open[Ratel]()((ratel.root / t"entry")(Ter).text(t"name"))
+      . assert(_ == key(2*7919%1000, 400))
+
+      test(m"a deep tree materialises to the model which was written"):
+        hex(Ratel.open(Terrain(deep)).materialise().bintel(catalogueSchema, Tel.Codec.Bindings.all))
+      . assert: bytes =>
+          val element = Tel.Type.assign(entries(1000, 400), catalogueSchema)
+          bytes == hex(element.bintel(catalogueSchema, Tel.Codec.Bindings.all))
+
+      test(m"an entry longer than an eighth of a page is spilled, and still found"):
+        Ratel(spilled).open[Ratel]()((ratel.root / t"entry").find(key(61, 600)).let(_.text(t"name")))
+      . assert(_ == key(61, 600))
+
+      test(m"an image with spilled entries passes verification"):
+        Ratel.open(Terrain(spilled)).verify()
+      . assert(_ == ())
+
+      test(m"spilled entries are walked in the order of their keys"):
+        Ratel(spilled).open[Ratel]()((ratel.root / t"entry").sorted.map(_.text(t"name").or(t"")))
+      . assert(_ == List.range(0, 100).map(key(_, 600)))
+
     suite(m"Opening an image"):
       val image: Ratel = folio.ratel(folioSchema)
 
@@ -869,8 +925,11 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         reason(patched(image, 160, little(8, 8)))
       . assert(_ == Reason.InvalidState)
 
-      test(m"↯/t.5.28: a sealed file with a gap between its extents is refused"):
-        reason(patched(image, 16, little(208, 8)))
+      test(m"↯/t.5.28: a sealed file with room beyond its last extent is refused"):
+        val longer = Array.tabulate[Byte](image.length + 8): index =>
+          if index < image.length then image.u8(index).toByte else 0.toByte
+
+        reason(patched(longer, 8, little(image.length + 8, 8)))
       . assert(_ == Reason.InvalidState)
 
       test(m"↯/t.5.28: a sealed list with room to spare fails verification"):

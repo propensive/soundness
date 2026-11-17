@@ -43,6 +43,14 @@ export
 // constructor proxy, a term `assign`, which would hide anamnesis's `assign` method in `soundness`.
 type assign = stratiform.assign
 
+// The annotations of a derived schema's layout, as types alone for the same reason: `index` in
+// particular is also wisteria's term for the position of a field.
+type key = stratiform.key
+type index = stratiform.index
+type encoding = stratiform.encoding
+type width = stratiform.width
+type intern = stratiform.intern
+
 package dynamicAccess:
   export stratiform.dynamicAccess.dynamicTel
 

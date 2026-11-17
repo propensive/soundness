@@ -306,10 +306,13 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         Bintel.encode(element, schema, bindings)
 
       test(m"the derived schema carries the declared encoding"):
-        Tels.tels[Payment](t"payment").document.members.head.absolve match
-          case f: Tels.Field => f.fieldType.absolve match
-            case s: Tels.Scalar => s.encoding
-      . assert(_ == t"decimal-varint")
+        val schema = Tels.tels[Payment](t"payment")
+
+        val reference = schema.document.members.head.absolve match
+          case field: Tels.Field => field.fieldType
+
+        (reference, schema.scalars.head.let { scalar => (scalar.name, scalar.encoding) })
+      . assert(_ == (Tels.Reference(t"DecimalVarint"), (t"DecimalVarint", t"decimal-varint")))
 
       test(m"an encoded scalar is written as codec bytes under the derived schema"):
         paymentBytes.stdlib

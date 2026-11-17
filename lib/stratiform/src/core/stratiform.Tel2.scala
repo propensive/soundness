@@ -549,8 +549,7 @@ trait Tel2 extends Tel3:
                 // flatten them as repeated fields, each re-keyed to the field label
                 // (TEL's representation of a repeated field — see `#1291`).
                 case d: Tel.Document =>
-                  d.children.each: child =>
-                    child.compounds.each: compound => compounds += compound.copy(keyword = keyword)
+                  compounds ++= Positional.rekeyed(d, keyword)
 
           Tel.compound(t"", Array.empty, Array.from(compounds))
 
@@ -583,29 +582,7 @@ trait Tel2 extends Tel3:
                       members += Tel.Mutation.Member.Value(keyword, List(encoded.primaryAtom))
 
                     case d: Tel.Document =>
-                      // A repeatable scalar field: all occurrences inline or
-                      // none (§22.2). A single occurrence still terminates
-                      // the run — a repeatable member holds its atom
-                      // position and would consume any atom that followed —
-                      // so it takes the child form. An empty collection (or
-                      // Unset Optional) contributes nothing but breaks the
-                      // run, exactly like an absent Scalar member.
-                      val children = d.children.bind(_.compounds)
-
-                      if children.length == 0 then members += Tel.Mutation.Member.Break
-                      else if children.length == 1
-                      then
-                        members +=
-                          Tel.Mutation.Member.Child(children.readUnchecked(0).copy(keyword = keyword))
-                      else
-                        val texts = scala.collection.mutable.ListBuffer.empty[Text]
-
-                        children.each: child =>
-                          texts +=
-                            ( if child.atoms.length == 0 then t""
-                              else Positional.text(child.atoms.readUnchecked(0)) )
-
-                        members += Tel.Mutation.Member.Value(keyword, texts.to(List))
+                      members += Positional.scalars(d, keyword)
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
@@ -615,11 +592,7 @@ trait Tel2 extends Tel3:
                       members += Tel.Mutation.Member.Child(c.copy(keyword = keyword))
 
                     case d: Tel.Document =>
-                      val children = d.children.bind(_.compounds)
-
-                      if children.length == 0 then members += Tel.Mutation.Member.Break
-                      else children.each: child =>
-                        members += Tel.Mutation.Member.Child(child.copy(keyword = keyword))
+                      members ++= Positional.structs(d, keyword)
 
           members.toList
 
