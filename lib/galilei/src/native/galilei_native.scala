@@ -373,9 +373,9 @@ package filesystemBackends:
             abort(Io.Error(path, Operation.Open, Reason.PermissionDenied))
 
       // Not yet: a file is mapped for reading alone on this platform.
-      def tilling(path: Path on Plane, reserve: Long, mode: Optional[Int])
+      def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
         ( using Tactic[Io.Error] )
-      :   FilesystemBackend.Tilling^ =
+      :   FilesystemBackend.Hold^ =
 
         abort(Io.Error(path, Operation.Open, Reason.Unsupported))
 

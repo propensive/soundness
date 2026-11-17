@@ -984,7 +984,7 @@ work.claim[Ratel of Playbill](_.publish(playbill.ratel))
 work.open[Ratel of Playbill](Read & Write):
   val parts = ratel.root / t"part"
   parts.insert(Part(t"Feste", t"Twelfth Night", 328))
-  parts.find(t"Hamlet").let(_.set(t"lines", t"1507"))
+  parts.find(t"Hamlet").let(_.lines = t"1507")
   parts.find(t"Viola").let(_.delete())
   file.claim[Ratel of Playbill](_.publish(ratel.sealAs[Playbill]))
 
@@ -996,6 +996,7 @@ Out.println(file.open[Ratel of Playbill]()(ratel.root.as[Playbill]).inspect)
 - column  Changes
 - row  `insert`  a `Ratel.Rows`, by a value which becomes a new record, after the others or before a position
 - row  `move`  a `Ratel.Rows`, by the record at one position going to another
+- row  `row.lines = …`  a scalar member's value, or the values of a repeatable scalar, by assignment to its name
 - row  `set`  a scalar member's value, the values of a repeatable scalar, or a flag, which is made present
 - row  `unset`  a scalar member which may be absent, or a flag
 - row  `delete`  the collection a record is one of, which loses it and every record within it
@@ -1004,11 +1005,20 @@ Out.println(file.open[Ratel of Playbill]()(ratel.root.as[Playbill]).inspect)
 + column  Modifie
 + row  `insert`  un `Ratel.Rows`, par une valeur qui devient un nouvel enregistrement, après les autres ou avant une position
 + row  `move`  un `Ratel.Rows`, par le déplacement de l'enregistrement d'une position à une autre
++ row  `row.lines = …`  la valeur d'un membre scalaire, ou les valeurs d'un scalaire répétable, par affectation à son nom
 + row  `set`  la valeur d'un membre scalaire, les valeurs d'un scalaire répétable, ou un indicateur, qui est rendu présent
 + row  `unset`  un membre scalaire qui peut être absent, ou un indicateur
 + row  `delete`  la collection dont un enregistrement fait partie, qui le perd avec tout enregistrement qu'il contient
 + row  `replace`  un enregistrement, par une valeur qui prend sa place dans sa collection
 ```
+
+- An assignment names a member as a field of a case class names it, so `row.firstLine = …`
+- changes the member whose keyword is `first-line`; `set` takes the keyword itself, and is the
+- way to a member whose name a method of `Ratel.Row` already has.
++ Une affectation nomme un membre comme le nomme un champ d'une classe de cas, si bien que
++ `row.firstLine = …` modifie le membre dont le mot-clé est `first-line` ; `set` prend le mot-clé
++ lui-même, et c'est par lui qu'on atteint un membre dont une méthode de `Ratel.Row` porte déjà le
++ nom.
 
 - A change is checked before any of it is written. A value which its scalar does not admit, a
 - key which another record has, and a member which may not be absent are each refused, with a

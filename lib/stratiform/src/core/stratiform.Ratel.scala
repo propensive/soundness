@@ -175,7 +175,7 @@ object Ratel:
       if !mode.atoms.has(Write)
       then viewable.view(value)(reading(_, mode, flags, Array.empty[Byte])(block))
       else
-        viewable.till(value)(owning(_, mode, flags, Array.empty[Byte])(block)):
+        viewable.hold(value)(owning(_, mode, flags, Array.empty[Byte])(block)):
           fail(Error.Reason.Unwritable)
 
   class TypedOpenable[source, topic]
@@ -197,7 +197,7 @@ object Ratel:
 
       if !mode.atoms.has(Write) then viewable.view(value)(reading(_, mode, flags, expected)(block))
       else
-        viewable.till(value)(owning(_, mode, flags, expected)(block)):
+        viewable.hold(value)(owning(_, mode, flags, expected)(block)):
           fail(Error.Reason.Unwritable)
 
   // `expected` is the signature the image must carry, or nothing if any will do.
@@ -232,29 +232,29 @@ object Ratel:
         case Flag.Verify           => state
 
   // §10.1: an image is opened for changing by the one process which owns it, which has it
-  // as a tilth: a file mapped under an exclusive lock, or bytes on the heap. It is inspected
+  // as a holding: a file mapped under an exclusive lock, or bytes on the heap. It is inspected
   // as any reader inspects it, so that one which is dirty is refused; a sealed one is unsealed,
   // which is for a copy of the owner's own, never for a file which others may have mapped;
   // and it is marked dirty for as long as the block runs. If the block ends without a change
   // left half-written, the mark is cleared; if not, the image stays dirty.
   private def owning[grants <: Grant, result]
-    ( soil: Tilth^, mode: Mode granting grants, flags: List[Ratel.Flag], expected: Data )
+    ( ground: Holding^, mode: Mode granting grants, flags: List[Ratel.Flag], expected: Data )
     ( block: ((Reader & Granting[grants])^) ?=> result )
     ( using tactic: Tactic[Ratel.Error] )
   :   result =
 
-    val opening = inspect(soil, bound(flags))
+    val opening = inspect(ground, bound(flags))
 
     if expected.length > 0 && RatelBytes.order(expected, opening.signature) != 0
     then fail(Error.Reason.Mismatched)
 
-    val held: Tilth^{soil} = soil
+    val held: Holding^{ground} = ground
     if flags.has(Flag.Verify) then new Unbranded(held, opening).verify()
 
     val editor = new RatelEditor(opening) with Granting[grants]:
       type Topic = Unit
       protected def view: Terrain^{this} = held
-      protected def tilth: Tilth^{this} = held
+      protected def holding: Holding^{this} = held
 
     editor.begin()
     try block(using editor) finally editor.end()
@@ -1248,7 +1248,8 @@ object Ratel:
     ( table:   Int,
       val index: Long,
       entries: List[Entry],
-      struct:  Tels.Struct ):
+      struct:  Tels.Struct )
+  extends Dynamic:
 
     // The brand of the reader this row came from.
     type Topic
@@ -1571,6 +1572,24 @@ object Ratel:
 
         case _ =>
           fail(Reason.Inapplicable(keyword))
+
+    // `set` written as an assignment to the member, whose keyword is the name in kebab case,
+    // as a derived schema has it. A member whose name is that of a method of a row is not
+    // reached this way, but by `set`.
+    //
+    //     row.lines = t"1507"
+    def updateDynamic(keyword: String)(value: Text)
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      set(Tel.camelToKebab(keyword), value)
+
+    @targetName("updateDynamicAll")
+    def updateDynamic(keyword: String)(values: List[Text])
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      set(Tel.camelToKebab(keyword), values)
 
     // `set-flag`: makes a flag present, or counts one which may be repeated once more.
     def set(keyword: Text)

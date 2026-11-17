@@ -3562,7 +3562,7 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
       `Ratel.Flag`s.
 
       With a mode which includes `Write`, the source lends its bytes for changing, through
-      `Viewable#till` -- a file is mapped under an exclusive lock, a `Tilth` is taken as it
+      `Viewable#hold` -- a file is mapped under an exclusive lock, a `Holding` is taken as it
       is -- and the image is opened by its owner: a sealed one is unsealed, it is marked dirty
       for the length of the block, and the reader accepts the changes of `Ratel.Row` and
       `Ratel.Rows`. A source which cannot be changed, such as a `Ratel` value, is refused with
@@ -3611,6 +3611,7 @@ entry .Ratel   a RaTEL image: a TEL document and its schema laid out for random 
         `Unwritable`.
     entry #Topic   the brand of the reader this row came from
     entry #set   gives a scalar member a value, a repeatable scalar its values, or makes a flag present
+    entry #updateDynamic   `set`, as an assignment to the member's name: `row.firstLine = value` sets `first-line`
     entry #unset   leaves a scalar member which may be absent without a value, or makes a flag absent
     entry #delete   takes the record, which must be one of a collection, out of it, with every record within it
     entry #replace   puts a value in the record's place in its collection, and answers the record which is there now

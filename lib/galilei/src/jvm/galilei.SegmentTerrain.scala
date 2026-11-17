@@ -97,13 +97,13 @@ private[galilei] class SegmentTerrain(initial: jlf.MemorySegment) extends zephyr
     else if differ == length || differ == other then java.lang.Long.compare(length, other)
     else u8(offset + differ) - data.u8(differ.toInt)
 
-// A whole-file mapping for changing in place: the JVM's `FilesystemBackend.Tilling`. The
+// A whole-file mapping for changing in place: the JVM's `FilesystemBackend.Hold`. The
 // channel stays open, and its lock held, for as long as the file is mapped; the arena and the
 // segment are each in a cell, since `expand` extends the file and maps it again, in an arena
 // of its own, before the old one is closed.
-private[galilei] class SegmentTilling
+private[galilei] class SegmentHolding
   ( channel: jnc.FileChannel, lock: jnc.FileLock, first: jlf.Arena, initial: jlf.MemorySegment )
-extends SegmentTerrain(initial), FilesystemBackend.Tilling:
+extends SegmentTerrain(initial), FilesystemBackend.Hold:
   private val arena: juca.AtomicReference[jlf.Arena] = juca.AtomicReference(first)
   private val mapped: juca.AtomicReference[jlf.MemorySegment] = juca.AtomicReference(initial)
 
@@ -113,7 +113,7 @@ extends SegmentTerrain(initial), FilesystemBackend.Tilling:
     if offset < 0L || length < 0L || offset > size - length
     then throw IndexOutOfBoundsException(s"$length bytes at $offset of $size")
 
-    zephyrine.Tilth.window(this, offset, length)
+    zephyrine.Holding.window(this, offset, length)
 
   def set8(offset: Long, value: Int): Unit = segment.set(SegmentTerrain.Byte, offset, value.toByte)
 

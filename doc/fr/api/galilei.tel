@@ -5203,20 +5203,20 @@ entry .mapped
       + défaite lorsque le bloc se termine, et la vue est une capacité qui y est confinée. Les
       + backends JVM et Scala Native projettent les fichiers ; WASI lève `Io.Error` avec la raison
       + `Unsupported`.
-entry .tilled
+entry .hold
   info
-      - `path.tilled(reserve) { tilth => … }`: the whole file mapped for changing in place, as a `Tilth`, under an exclusive lock
-      + `path.tilled(reserve) { tilth => … }` : le fichier entier projeté pour être modifié sur
-      + place, comme `Tilth`, sous un verrou exclusif
+      - `path.hold(reserve) { holding => … }`: the whole file mapped for changing in place, as a `Holding`, under an exclusive lock
+      + `path.hold(reserve) { holding => … }` : le fichier entier projeté pour être modifié sur
+      + place, comme `Holding`, sous un verrou exclusif
   detail
       - The file is created if it is not there, and extended to `reserve` bytes if it is
-      - shorter; the tilth's `expand` extends it further. The lock is on the file itself, and is
-      - held for the block: a second `tilled` of the file, in this process or another, raises
+      - shorter; the holding's `expand` extends it further. The lock is on the file itself, and is
+      - held for the block: a second `hold` of the file, in this process or another, raises
       - `Io.Error` with the reason `Busy`. What was stored is durable when the block ends. Only
       - the JVM backend maps a file for changing; the others raise `Unsupported`.
       + Le fichier est créé s'il n'existe pas, et étendu à `reserve` octets s'il est plus court ;
-      + le `expand` du tilth l'étend davantage. Le verrou porte sur le fichier lui-même, et il est
-      + tenu pendant le bloc : un second `tilled` du fichier, dans ce processus ou dans un autre,
+      + le `expand` de la tenure l'étend davantage. Le verrou porte sur le fichier lui-même, et il est
+      + tenu pendant le bloc : un second `hold` du fichier, dans ce processus ou dans un autre,
       + lève `Io.Error` avec la raison `Busy`. Ce qui a été stocké est durable lorsque le bloc se
       + termine. Seul le backend JVM projette un fichier pour modification ; les autres lèvent
       + `Unsupported`.

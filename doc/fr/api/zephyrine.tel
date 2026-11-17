@@ -1939,22 +1939,22 @@ entry .Terrain
         + l'ordre de certains octets par rapport à des `Data`, comparés sur place, un préfixe
         + propre venant en premier
 
-entry .Tilth
+entry .Holding
   info
       - a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
       + un `Terrain` qui peut être modifié là où il se trouve : on y stocke à un décalage, et on
       + l'étend
   detail
       - What a format which is kept and altered in place is altered through: a file mapped for
-      - writing by the one process which owns it (galilei's `tilled`), or bytes on the heap
-      - (`Tilth(size)`, `Tilth(data)`). Every store is at an offset, and no address into its
-      - memory is handed out, since `expand` may move it; a `slice` reads through the tilth it
+      - writing by the one process which owns it (galilei's `hold`), or bytes on the heap
+      - (`Holding(size)`, `Holding(data)`). Every store is at an offset, and no address into its
+      - memory is handed out, since `expand` may move it; a `slice` reads through the holding it
       - came from, and stays good across an expansion.
       + Ce par quoi un format conservé et modifié sur place est modifié : un fichier projeté en
-      + écriture par le seul processus qui le possède (le `tilled` de galilei), ou des octets sur
-      + le tas (`Tilth(size)`, `Tilth(data)`). Chaque stockage se fait à un décalage, et aucune
+      + écriture par le seul processus qui le possède (le `hold` de galilei), ou des octets sur
+      + le tas (`Holding(size)`, `Holding(data)`). Chaque stockage se fait à un décalage, et aucune
       + adresse dans sa mémoire n'est donnée, puisque `expand` peut la déplacer ; une `slice` lit
-      + à travers le tilth dont elle provient, et reste valable après une extension.
+      + à travers la tenure dont elle provient, et reste valable après une extension.
   entry #set8
     info
         - stores a byte at an offset
@@ -1985,8 +1985,8 @@ entry .Tilth
         + copie une plage vers un autre décalage, qu'elle peut chevaucher
   entry #expand
     info
-        - makes the tilth at least a given size, the new bytes zero; it never shrinks
-        + porte le tilth à une taille donnée au moins, les nouveaux octets étant nuls ; il ne
+        - makes the holding at least a given size, the new bytes zero; it never shrinks
+        + porte la tenure à une taille donnée au moins, les nouveaux octets étant nuls ; il ne
         + rétrécit jamais
   entry #flush
     info
@@ -2009,17 +2009,17 @@ entry .Viewable
     info
         - lends the value's bytes as a `Terrain`
         + prête les octets de la valeur comme `Terrain`
-  entry #till
+  entry #hold
     info
-        - lends the value's bytes for changing, as a `Tilth`, or answers `otherwise` if they cannot be changed
-        + prête les octets de la valeur pour modification, comme `Tilth`, ou renvoie `otherwise`
+        - lends the value's bytes for changing, as a `Holding`, or answers `otherwise` if they cannot be changed
+        + prête les octets de la valeur pour modification, comme `Holding`, ou renvoie `otherwise`
         + s'ils ne peuvent pas être modifiés
     detail
-        - A file is mapped for writing under an exclusive lock, and a tilth in hand is lent as it
+        - A file is mapped for writing under an exclusive lock, and a holding in hand is lent as it
         - is; bytes which are immutable, like anything which does not say otherwise, answer
         - `otherwise`.
-        + Un fichier est projeté en écriture sous un verrou exclusif, et un tilth en main est
-        + prêté tel quel ; des octets immuables, comme tout ce qui ne dit pas le contraire,
+        + Un fichier est projeté en écriture sous un verrou exclusif, et une tenure en main est
+        + prêtée telle quelle ; des octets immuables, comme tout ce qui ne dit pas le contraire,
         + renvoient `otherwise`.
 entry .Surveyable
   info

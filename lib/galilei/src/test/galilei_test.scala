@@ -860,23 +860,23 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
     suite(m"Changing a file in place"):
       import errorDiagnostics.emptyDiagnostics
 
-      val tilledDir: Text = Uuid().show
-      val tilledRoot: Path on Linux = unsafely((% / "tmp" / tilledDir).on[Linux])
-      unsafely(tilledRoot.create[Directory]())
-      val ledger: Path on Linux = unsafely((% / "tmp" / tilledDir / "ledger").on[Linux])
+      val heldDir: Text = Uuid().show
+      val heldRoot: Path on Linux = unsafely((% / "tmp" / heldDir).on[Linux])
+      unsafely(heldRoot.create[Directory]())
+      val ledger: Path on Linux = unsafely((% / "tmp" / heldDir / "ledger").on[Linux])
 
       test(m"A file which is not there is created at the size reserved"):
-        unsafely(ledger.tilled(64L)(_.size))
+        unsafely(ledger.hold(64L)(_.size))
       . assert(_ == 64L)
 
-      test(m"What is stored is loaded back through the same tilth"):
+      test(m"What is stored is loaded back through the same holding"):
         unsafely:
-          ledger.tilled(): tilth =>
-            tilth.set32(8L, 0xdeadbeefL)
-            tilth.set16(12L, 0x1603)
-            tilth.set8(14L, 0x7f)
-            tilth.set64(16L, 0x0102030405060708L)
-            (tilth.u32(8L), tilth.u16(12L), tilth.u8(14L), tilth.u64(16L))
+          ledger.hold(): holding =>
+            holding.set32(8L, 0xdeadbeefL)
+            holding.set16(12L, 0x1603)
+            holding.set8(14L, 0x7f)
+            holding.set64(16L, 0x0102030405060708L)
+            (holding.u32(8L), holding.u16(12L), holding.u8(14L), holding.u64(16L))
       . assert(_ == (0xdeadbeefL, 0x1603, 0x7f, 0x0102030405060708L))
 
       test(m"What was stored is in the file once the scope has ended"):
@@ -889,27 +889,27 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"Bytes are written, moved over themselves and zeroed"):
         unsafely:
-          ledger.tilled(): tilth =>
-            tilth.write(32L, t"Hamlet".in[Data])
-            tilth.move(32L, 34L, 6L)
-            tilth.zero(32L, 2L)
-            (tilth.read(32L, 2).to[List].map(_.toInt), tilth.read(34L, 6).utf8)
+          ledger.hold(): holding =>
+            holding.write(32L, t"Hamlet".in[Data])
+            holding.move(32L, 34L, 6L)
+            holding.zero(32L, 2L)
+            (holding.read(32L, 2).to[List].map(_.toInt), holding.read(34L, 6).utf8)
       . assert(_ == (List(0, 0), t"Hamlet"))
 
-      test(m"A tilth is expanded, and the file with it"):
+      test(m"A holding is expanded, and the file with it"):
         unsafely:
-          ledger.tilled(): tilth =>
-            tilth.expand(8192L)
-            tilth.set32(8188L, 1599L)
-            (tilth.size, tilth.u32(8188L), tilth.u32(8L))
+          ledger.hold(): holding =>
+            holding.expand(8192L)
+            holding.set32(8188L, 1599L)
+            (holding.size, holding.u32(8188L), holding.u32(8L))
       . assert(_ == (8192L, 1599L, 0xdeadbeefL))
 
       test(m"A view taken before an expansion reads what is stored after it"):
         unsafely:
-          ledger.tilled(): tilth =>
-            val view = tilth.slice(8L, 4L)
-            tilth.expand(16384L)
-            tilth.set32(8L, 1616L)
+          ledger.hold(): holding =>
+            val view = holding.slice(8L, 4L)
+            holding.expand(16384L)
+            holding.set32(8L, 1616L)
             view.u32(0L)
       . assert(_ == 1616L)
 
@@ -918,37 +918,37 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == (16384L, 1599L))
 
       test(m"A file which is being changed cannot be changed by another"):
-        unsafely(ledger.tilled()(tilth => capture[Io.Error](ledger.tilled()(_.size)).reason))
+        unsafely(ledger.hold()(holding => capture[Io.Error](ledger.hold()(_.size)).reason))
       . assert(_ == Io.Error.Reason.Busy)
 
       test(m"The file is released when its scope ends"):
-        unsafely(ledger.tilled()(_.size))
+        unsafely(ledger.hold()(_.size))
       . assert(_ == 16384L)
 
-      test(m"A store beyond the end of a tilth is refused"):
-        unsafely(ledger.tilled()(tilth => safely(tilth.set32(16384L, 1L)).absent))
+      test(m"A store beyond the end of a holding is refused"):
+        unsafely(ledger.hold()(holding => safely(holding.set32(16384L, 1L)).absent))
       . assert(_ == true)
 
-      test(m"A tilth cannot escape its scope"):
+      test(m"A holding cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = ledger.tilled()(identity(_))
+          val escaped = ledger.hold()(identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 
-      test(m"A tilth on the heap is stored to, loaded from and expanded"):
-        val tilth = Tilth(16L)
-        tilth.set64(8L, 42L)
-        tilth.expand(24L)
-        tilth.write(16L, t"Yorick".in[Data])
-        tilth.move(16L, 18L, 6L)
-        (tilth.size, tilth.u64(8L), tilth.read(18L, 6).utf8, tilth.compare(18L, 6L, t"Yorick".in[Data]))
+      test(m"A holding on the heap is stored to, loaded from and expanded"):
+        val holding = Holding(16L)
+        holding.set64(8L, 42L)
+        holding.expand(24L)
+        holding.write(16L, t"Yorick".in[Data])
+        holding.move(16L, 18L, 6L)
+        (holding.size, holding.u64(8L), holding.read(18L, 6).utf8, holding.compare(18L, 6L, t"Yorick".in[Data]))
       . assert(_ == (24L, 42L, t"Yorick", 0))
 
-      test(m"A tilth on the heap begins as a copy of the bytes it is given"):
-        val tilth = Tilth(t"Ophelia".in[Data])
-        tilth.set8(0L, 'o'.toInt)
-        (tilth.read(0L, 7).utf8, tilth.same(0L, t"ophelia".in[Data]))
+      test(m"A holding on the heap begins as a copy of the bytes it is given"):
+        val holding = Holding(t"Ophelia".in[Data])
+        holding.set8(0L, 'o'.toInt)
+        (holding.read(0L, 7).utf8, holding.same(0L, t"ophelia".in[Data]))
       . assert(_ == (t"ophelia", true))
 
     suite(m"Creating mapped files"):

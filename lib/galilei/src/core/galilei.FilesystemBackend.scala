@@ -61,9 +61,9 @@ object FilesystemBackend:
     def unmap(): Unit
 
   // A file mapped into memory for changing, under an exclusive lock, until `close` is called:
-  // what a backend's `tilling` answers. As with a `Mapping`, the user-facing `tilled` scope
+  // what a backend's `holding` answers. As with a `Mapping`, the user-facing `hold` scope
   // is what guarantees that it is not used afterwards.
-  trait Tilling extends zephyrine.Tilth:
+  trait Hold extends zephyrine.Holding:
     def close(): Unit
 
 trait FilesystemBackend extends Planar:
@@ -140,11 +140,11 @@ trait FilesystemBackend extends Planar:
 
   // Maps the whole of a file into memory for changing in place, creating it with `mode` if it
   // is not there, and extending it to `reserve` bytes if it is shorter. An exclusive
-  // operating-system lock is taken on the file itself, and held until the tilling is closed:
+  // operating-system lock is taken on the file itself, and held until the holding is closed:
   // `Busy` if another holds it. A backend with no writable mapping raises `Unsupported`.
-  def tilling(path: Path on Plane, reserve: Long, mode: Optional[Int])
+  def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
     ( using Tactic[Io.Error] )
-  :   FilesystemBackend.Tilling^
+  :   FilesystemBackend.Hold^
 
   // Extended (user-defined) attributes (issue #567). Support depends on the storage
   // filesystem, so the typed accessors are gated on the `Attributed` axis marker; at the

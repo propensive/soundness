@@ -112,6 +112,10 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
   // A record of the catalogue, as a value which is put into it.
   case class Entry(name: Text, info: Optional[Text] = Unset)
 
+  // A sonnet, whose second member has a keyword of two words.
+  case class Sonnet(@key number: Text, firstLine: Text)
+  case class Sonnets(sonnet: List[Sonnet])
+
   // A key of `length` bytes which sorts as its number does.
   private def key(number: Int, length: Int): Text = "%04d".format(number).repeat(length/4).nn.tt
 
@@ -128,7 +132,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
     hex(Ratel.encode(Tel.Type.assign(document, schema), schema).data)
 
   // The condition a verifying reader reports for a working image, or nothing.
-  private def sound(tilth: Tilth): Unit = Ratel.open(tilth).verify()
+  private def sound(holding: Holding): Unit = Ratel.open(holding).verify()
 
   // The one declaration which a publisher and its observers share.
   case class Part(@key name: Text, play: Text)
@@ -1144,28 +1148,28 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
             |""".stripMargin)
 
       // The names of the catalogue's entries, in the order the document has them.
-      def names(tilth: Tilth): List[Text] =
+      def names(holding: Holding): List[Text] =
         var found: List[Text] = Nil
-        tilth.open[Ratel]()((ratel.root / t"entry").each { row => found = row.text(t"name").or(t"") :: found })
+        holding.open[Ratel]()((ratel.root / t"entry").each { row => found = row.text(t"name").or(t"") :: found })
         found.reverse
 
       test(m"a sealed image which is opened for writing is unsealed"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
-        val within = tilth.open[Ratel](Read & Write)(ratel.state)
-        (within, tilth.u16(6L), tilth.open[Ratel]()(ratel.state))
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
+        val within = holding.open[Ratel](Read & Write)(ratel.state)
+        (within, holding.u16(6L), holding.open[Ratel]()(ratel.state))
       . assert(_ == (Ratel.State.Unsealed, 0, Ratel.State.Unsealed))
 
       test(m"an image which was unsealed and not changed is sound"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
-        tilth.open[Ratel](Read & Write)(())
-        sound(tilth)
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
+        holding.open[Ratel](Read & Write)(())
+        sound(holding)
       . assert(_ == ())
 
       test(m"an image is dirty for as long as it is open for writing"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
 
-        tilth.open[Ratel](Read & Write):
-          val copy = Ratel(tilth.read(0L, tilth.size.toInt))
+        holding.open[Ratel](Read & Write):
+          val copy = Ratel(holding.read(0L, holding.size.toInt))
           capture[Ratel.Error](copy.open[Ratel]()(ratel.state)).reason
       . assert(_ == Reason.Dirty)
 
@@ -1180,14 +1184,14 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == Reason.Unwritable)
 
       // The history of §13: the worked example's document, reached by changes.
-      val history: Tilth = Tilth(empty.ratel(listSchema).data)
+      val history: Holding = Holding(empty.ratel(listSchema).data)
 
       test(m"records are inserted, before and after others"):
         history.open[Ratel](Read & Write):
           val entries = ratel.root / t"entry"
           entries.insert(Entry(t"beta"))
           entries.insert(Prim, Entry(t"alpha"))
-          entries.find(t"alpha").let(_.set(t"info", t"First letter"))
+          entries.find(t"alpha").let(_.info = t"First letter")
           entries.insert(Entry(t"gamma"))
 
         names(history)
@@ -1247,18 +1251,18 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == Tel.Error.Reason.RequiredMemberAbsent)
 
       test(m"a record which is given another key is found by it, and not by the old one"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
 
-        tilth.open[Ratel](Read & Write):
+        holding.open[Ratel](Read & Write):
           val entries = ratel.root / t"entry"
           entries.find(t"alpha").let(_.set(t"name", t"omega"))
           (entries.find(t"omega").let(_.text(t"info")), entries.find(t"alpha").absent, entries.sorted.size)
       . assert(_ == (t"First letter", true, 2))
 
       test(m"an optional member is unset, and set again"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
 
-        tilth.open[Ratel](Read & Write):
+        holding.open[Ratel](Read & Write):
           val alpha = (ratel.root / t"entry").find(t"alpha")
           alpha.let(_.unset(t"info"))
           val absent = alpha.let(_.text(t"info"))
@@ -1267,39 +1271,39 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == (Unset, t"The first"))
 
       test(m"a record is replaced where it lies in its collection"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
 
-        tilth.open[Ratel](Read & Write):
+        holding.open[Ratel](Read & Write):
           (ratel.root / t"entry").find(t"alpha").let(_.replace(Entry(t"aleph", t"Another first")))
 
-        sound(tilth)
-        (names(tilth), tilth.open[Ratel]()((ratel.root / t"entry").find(t"aleph").let(_.text(t"info"))))
+        sound(holding)
+        (names(holding), holding.open[Ratel]()((ratel.root / t"entry").find(t"aleph").let(_.text(t"info"))))
       . assert(_ == (List(t"aleph", t"beta"), t"Another first"))
 
       test(m"the last record of a member which must have one is not deleted"):
-        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        val holding = Holding(catalogue.ratel(catalogueSchema).data)
 
-        tilth.open[Ratel](Read & Write):
+        holding.open[Ratel](Read & Write):
           val entries = ratel.root / t"entry"
           entries.find(t"alpha").let(_.delete())
           (capture[Tel.Error](entries.find(t"beta").let(_.delete())).reason, entries.count)
       . assert(_ == (Tel.Error.Reason.RequiredMemberAbsent, 1L))
 
       test(m"a record is moved among its siblings, and found by its key as before"):
-        val tilth = Tilth(listing(List(1, 2, 3, 4), 4).ratel(catalogueSchema).data)
+        val holding = Holding(listing(List(1, 2, 3, 4), 4).ratel(catalogueSchema).data)
 
-        tilth.open[Ratel](Read & Write):
+        holding.open[Ratel](Read & Write):
           val entries = ratel.root / t"entry"
           entries.move(Prim, Ter)
           entries.move(Quat, Prim)
 
-        sound(tilth)
-        (names(tilth), tilth.open[Ratel]()(hex(ratel.seal().data)))
+        sound(holding)
+        (names(holding), holding.open[Ratel]()(hex(ratel.seal().data)))
       . assert(_ == (List(t"0004", t"0002", t"0003", t"0001"), canonical(listing(List(4, 2, 3, 1), 4), catalogueSchema)))
 
       // Growth past every capacity: the tables, the regions, the child list and the index.
       val numbers: List[Int] = List.range(0, 1500).map(_*7919%1500)
-      val grown: Tilth = Tilth(empty.ratel(listSchema).data)
+      val grown: Holding = Holding(empty.ratel(listSchema).data)
 
       test(m"many records are inserted into an image which began empty"):
         grown.open[Ratel](Read & Write):
@@ -1350,35 +1354,35 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == true)
 
       test(m"keys too long for a page are inserted and deleted through spilled entries"):
-        val tilth = Tilth(empty.ratel(listSchema).data)
+        val holding = Holding(empty.ratel(listSchema).data)
 
-        tilth.open[Ratel](Read & Write):
+        holding.open[Ratel](Read & Write):
           val entries = ratel.root / t"entry"
           List.range(0, 60).each { number => entries.insert(Entry(key(number*37%60, 600))) }
           List.range(0, 20).each { number => entries.find(key(3*number, 600)).let(_.delete()) }
 
-        sound(tilth)
-        tilth.open[Ratel]()((ratel.root / t"entry").sorted.map(_.text(t"name").or(t"")))
+        sound(holding)
+        holding.open[Ratel]()((ratel.root / t"entry").sorted.map(_.text(t"name").or(t"")))
       . assert(_ == List.range(0, 60).filter(_%3 != 0).map(key(_, 600)))
 
       test(m"a repacked image has room to grow, and holds the same document"):
         val repacked = grown.open[Ratel]()(ratel.repack())
-        val tilth = Tilth(repacked.data)
-        sound(tilth)
+        val holding = Holding(repacked.data)
+        sound(holding)
 
-        ( tilth.open[Ratel]()(ratel.state),
-          tilth.u64(160L),
-          tilth.open[Ratel]()(hex(ratel.seal().data)) == grown.open[Ratel]()(hex(ratel.seal().data)) )
+        ( holding.open[Ratel]()(ratel.state),
+          holding.u64(160L),
+          holding.open[Ratel]()(hex(ratel.seal().data)) == grown.open[Ratel]()(hex(ratel.seal().data)) )
       . assert(_ == (Ratel.State.Unsealed, 0L, true))
 
       // The folio: secondary indexes, arrays which are indexed, flags and interned values.
-      val shelf: Tilth = Tilth(folio.ratel(folioSchema).data)
+      val shelf: Holding = Holding(folio.ratel(folioSchema).data)
 
       // The index is over the genre and then the acts, so the comedy of four acts comes first.
       test(m"a value on the path of a secondary index is changed, and the index with it"):
         shelf.open[Ratel](Read & Write):
           val plays = ratel.root / t"play"
-          plays.find(t"Cardenio").let(_.set(t"genre", t"comedy"))
+          plays.find(t"Cardenio").let(_.genre = t"comedy")
 
           ( plays.where(t"/genre", t"comedy").map(_.text(t"title").or(t"")),
             plays.where(t"/genre", t"tragedy").map(_.text(t"title").or(t"")) )
@@ -1387,14 +1391,14 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       test(m"a value within a record's own record changes the index over its path"):
         shelf.open[Ratel](Read & Write):
           val plays = ratel.root / t"play"
-          plays.find(t"Hamlet").let(_.record(t"author")).let(_.set(t"born", t"1579"))
+          plays.find(t"Hamlet").let(_.record(t"author")).let(_.born = t"1579")
           plays.where(t"/author/born", t"1579").map(_.text(t"title").or(t""))
       . assert(_ == List(t"Hamlet", t"Cardenio"))
 
       test(m"the values of an indexed array are replaced, and found"):
         shelf.open[Ratel](Read & Write):
           val hamlet = (ratel.root / t"play").find(t"Hamlet")
-          hamlet.let(_.set(t"role", List(t"Hamlet", t"Horatio", t"Yorick")))
+          hamlet.let(_.role = List(t"Hamlet", t"Horatio", t"Yorick"))
           (hamlet.let(_.holds(t"role", t"Yorick")), hamlet.let(_.holds(t"role", t"Ophelia")))
       . assert(_ == (true, false))
 
@@ -1410,8 +1414,18 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       test(m"a value which its scalar does not admit is refused"):
         shelf.open[Ratel](Read & Write):
-          capture[Tel.Error]((ratel.root / t"play").find(t"Hamlet").let(_.set(t"acts", t"five"))).reason
+          capture[Tel.Error]((ratel.root / t"play").find(t"Hamlet").let(_.acts = t"five")).reason
       . assert(_ == Tel.Error.Reason.EncodingRejected)
+
+      test(m"a member is assigned by its name, whose keyword is in kebab case"):
+        val sonnets = Sonnets(List(Sonnet(t"18", t"Shall I compare thee")))
+        val quarto = Holding(sonnets.ratel.data)
+
+        quarto.open[Ratel](Read & Write):
+          val sonnet = (ratel.root / t"sonnet").find(t"18")
+          sonnet.let(_.firstLine = t"Shall I compare thee to a summer's day?")
+          sonnet.let(_.text(t"first-line"))
+      . assert(_ == t"Shall I compare thee to a summer's day?")
 
       test(m"the folio which was changed is sound"):
         sound(shelf)

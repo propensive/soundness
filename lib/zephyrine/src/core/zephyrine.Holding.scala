@@ -42,10 +42,10 @@ import anticipation.*
 // a file mapped for writing by the one process which owns it, or bytes on the heap -- and,
 // like a terrain, it is a capability which belongs to a scope.
 //
-// Every store, like every load, is at an offset: a tilth hands out no address into its
-// memory, because `expand` may move it. A view taken with `slice` reads through the tilth it
+// Every store, like every load, is at an offset: a holding hands out no address into its
+// memory, because `expand` may move it. A view taken with `slice` reads through the holding it
 // came from, so it stays good across an expansion, and sees whatever is stored afterwards.
-trait Tilth extends Terrain:
+trait Holding extends Terrain:
   def set8(offset: Long, value: Int): Unit
   def set16(offset: Long, value: Int): Unit
   def set32(offset: Long, value: Long): Unit
@@ -60,25 +60,25 @@ trait Tilth extends Terrain:
   // Copies `length` bytes from `from` to `to`, which may overlap.
   def move(from: Long, to: Long, length: Long): Unit
 
-  // Makes the tilth at least `size` bytes, the new ones zero; it never shrinks.
+  // Makes the holding at least `size` bytes, the new ones zero; it never shrinks.
   def expand(size: Long): Unit
 
   // Makes what has been stored durable, where there is anything for it to be durable in.
   def flush(): Unit
 
-object Tilth:
-  // A tilth on the heap, of `size` zero bytes: for building, or altering, an image which is
+object Holding:
+  // A holding on the heap, of `size` zero bytes: for building, or altering, an image which is
   // not, or not yet, a file.
-  def apply(size: Long = 0L): Tilth = Heap(size)
+  def apply(size: Long = 0L): Holding = Heap(size)
 
-  // A tilth on the heap which begins as a copy of `data`.
-  def apply(data: Data): Tilth =
-    val tilth = Heap(data.length.toLong)
-    tilth.write(0L, data)
-    tilth
+  // A holding on the heap which begins as a copy of `data`.
+  def apply(data: Data): Holding =
+    val holding = Heap(data.length.toLong)
+    holding.write(0L, data)
+    holding
 
-  // A view of part of a tilth, which reads through it.
-  private[zephyrine] final class Window(tilth: Tilth^, start: Long, extent: Long) extends Terrain:
+  // A view of part of a holding, which reads through it.
+  private[zephyrine] final class Window(holding: Holding^, start: Long, extent: Long) extends Terrain:
     def size: Long = extent
 
     private inline def at(offset: Long, width: Long): Long =
@@ -87,32 +87,32 @@ object Tilth:
 
       start + offset
 
-    def u8(offset: Long): Int = tilth.u8(at(offset, 1L))
-    def u16(offset: Long): Int = tilth.u16(at(offset, 2L))
-    def u32(offset: Long): Long = tilth.u32(at(offset, 4L))
-    def u64(offset: Long): Long = tilth.u64(at(offset, 8L))
-    def i32(offset: Long): Int = tilth.i32(at(offset, 4L))
-    def read(offset: Long, length: Int): Data = tilth.read(at(offset, length.toLong), length)
-    def slice(offset: Long, length: Long): Terrain^{this} = Window(tilth, at(offset, length), length)
+    def u8(offset: Long): Int = holding.u8(at(offset, 1L))
+    def u16(offset: Long): Int = holding.u16(at(offset, 2L))
+    def u32(offset: Long): Long = holding.u32(at(offset, 4L))
+    def u64(offset: Long): Long = holding.u64(at(offset, 8L))
+    def i32(offset: Long): Int = holding.i32(at(offset, 4L))
+    def read(offset: Long, length: Int): Data = holding.read(at(offset, length.toLong), length)
+    def slice(offset: Long, length: Long): Terrain^{this} = Window(holding, at(offset, length), length)
 
     def same(offset: Long, data: Data): Boolean =
-      offset >= 0L && offset <= extent - data.length && tilth.same(start + offset, data)
+      offset >= 0L && offset <= extent - data.length && holding.same(start + offset, data)
 
     def compare(offset: Long, length: Long, data: Data): Int =
-      tilth.compare(at(offset, length), length, data)
+      holding.compare(at(offset, length), length, data)
 
-  // A view of part of a tilth, for whatever implements one.
-  def window(tilth: Tilth^, offset: Long, length: Long): Terrain^{tilth} =
-    Window(tilth, offset, length)
+  // A view of part of a holding, for whatever implements one.
+  def window(holding: Holding^, offset: Long, length: Long): Terrain^{holding} =
+    Window(holding, offset, length)
 
-  private final class Heap(initial: Long) extends Tilth:
+  private final class Heap(initial: Long) extends Holding:
     private val order: jn.ByteOrder = jn.ByteOrder.LITTLE_ENDIAN.nn
 
     private def allocate(size: Long): jn.ByteBuffer =
       if size > Int.MaxValue then throw IndexOutOfBoundsException(s"$size bytes on the heap")
       jn.ByteBuffer.allocate(size.toInt).nn.order(order).nn
 
-    // The bytes, and how many of them are the tilth: each in a cell, since `expand` replaces
+    // The bytes, and how many of them are the holding: each in a cell, since `expand` replaces
     // the one and advances the other.
     private val held: juca.AtomicReference[jn.ByteBuffer] = juca.AtomicReference(allocate(initial))
     private val reached: juca.AtomicLong = juca.AtomicLong(initial)

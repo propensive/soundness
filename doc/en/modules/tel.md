@@ -679,7 +679,7 @@ work.claim[Ratel of Playbill](_.publish(playbill.ratel))
 work.open[Ratel of Playbill](Read & Write):
   val parts = ratel.root / t"part"
   parts.insert(Part(t"Feste", t"Twelfth Night", 328))
-  parts.find(t"Hamlet").let(_.set(t"lines", t"1507"))
+  parts.find(t"Hamlet").let(_.lines = t"1507")
   parts.find(t"Viola").let(_.delete())
   file.claim[Ratel of Playbill](_.publish(ratel.sealAs[Playbill]))
 
@@ -691,11 +691,16 @@ column  Method
 column  Changes
 row  `insert`  a `Ratel.Rows`, by a value which becomes a new record, after the others or before a position
 row  `move`  a `Ratel.Rows`, by the record at one position going to another
+row  `row.lines = …`  a scalar member's value, or the values of a repeatable scalar, by assignment to its name
 row  `set`  a scalar member's value, the values of a repeatable scalar, or a flag, which is made present
 row  `unset`  a scalar member which may be absent, or a flag
 row  `delete`  the collection a record is one of, which loses it and every record within it
 row  `replace`  a record, by a value which takes its place in its collection
 ```
+
+An assignment names a member as a field of a case class names it, so `row.firstLine = …`
+changes the member whose keyword is `first-line`; `set` takes the keyword itself, and is the
+way to a member whose name a method of `Ratel.Row` already has.
 
 A change is checked before any of it is written. A value which its scalar does not admit, a
 key which another record has, and a member which may not be absent are each refused, with a

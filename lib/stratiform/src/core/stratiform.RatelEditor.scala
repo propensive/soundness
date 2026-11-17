@@ -79,7 +79,7 @@ extends Ratel.Reader(opening):
   import RatelEditor.{Anchor, Cell, Posting}
 
   // The image, as what it is stored to: the same bytes as the reader's view of it.
-  protected def tilth: Tilth^{this}
+  protected def holding: Holding^{this}
 
   private def round4(size: Long): Long = (size + 3)/4*4
   private def round8(size: Long): Long = (size + 7)/8*8
@@ -91,29 +91,29 @@ extends Ratel.Reader(opening):
     abort(Tel.Error(reason))
 
   // Where the directories say things are, now.
-  private def tableEntry(table: Int): Long = tilth.u64(16 + 24L*3) + 32L*table
-  private def indexEntry(index: Int): Long = tilth.u64(16 + 24L*4) + 32L*index
+  private def tableEntry(table: Int): Long = holding.u64(16 + 24L*3) + 32L*table
+  private def indexEntry(index: Int): Long = holding.u64(16 + 24L*4) + 32L*index
 
   override private[stratiform] def section(number: Int): Extent =
-    Extent(tilth.u64(16 + 24L*number), tilth.u64(24 + 24L*number))
+    Extent(holding.u64(16 + 24L*number), holding.u64(24 + 24L*number))
 
   override private[stratiform] def rows(table: Int): Optional[Extent] =
     if table < 0 || table >= arrangement.tables.length then Unset else
       val entry = tableEntry(table)
-      Extent(tilth.u64(entry), tilth.u32(entry + 8))
+      Extent(holding.u64(entry), holding.u32(entry + 8))
 
   override private[stratiform] def tree(index: Int)(using Tactic[Ratel.Error]): Tree =
     if index < 0 || index >= arrangement.indexes.length then fail(Reason.BadIndex)
     val entry = indexEntry(index)
 
     Tree
-      ( tilth.u64(entry), tilth.u32(entry + 8), tilth.u32(entry + 16), tilth.u32(entry + 20),
-        tilth.u32(entry + 24), tilth.u8(entry + 29), tilth.u8(entry + 30) )
+      ( holding.u64(entry), holding.u32(entry + 8), holding.u32(entry + 16), holding.u32(entry + 20),
+        holding.u32(entry + 24), holding.u8(entry + 29), holding.u8(entry + 30) )
 
   override def state: Ratel.State = Ratel.State.Unsealed
   override private[stratiform] def digested: Boolean = false
 
-  private def garbage(bytes: Long): Unit = tilth.set64(160L, tilth.u64(160L) + bytes)
+  private def garbage(bytes: Long): Unit = holding.set64(160L, holding.u64(160L) + bytes)
 
   // Whether a change is being written: one which does not finish leaves this set, and the
   // image dirty.
@@ -128,57 +128,57 @@ extends Ratel.Reader(opening):
   // §10.1: an owner unseals a sealed image -- which it does to a copy of its own, never to one
   // which others may have mapped -- and marks the image dirty before its first change.
   private[stratiform] def begin(): Unit =
-    if (tilth.u16(6L) & RatelBytes.sealing) != 0 then
+    if (holding.u16(6L) & RatelBytes.sealing) != 0 then
       val digests = 16 + 24L*5
-      garbage(tilth.u64(digests + 16))
-      tilth.set64(digests + 8, 0L)
-      tilth.set64(digests + 16, 0L)
-      tilth.zero(168L, 32L)
+      garbage(holding.u64(digests + 16))
+      holding.set64(digests + 8, 0L)
+      holding.set64(digests + 16, 0L)
+      holding.zero(168L, 32L)
 
-    tilth.set16(6L, RatelBytes.dirty)
-    tilth.flush()
+    holding.set16(6L, RatelBytes.dirty)
+    holding.flush()
 
   // On a clean close every change is made durable, and then the dirty flag is cleared.
   private[stratiform] def end(): Unit = if !changing.get then
-    tilth.flush()
-    tilth.set16(6L, 0)
-    tilth.flush()
+    holding.flush()
+    holding.set16(6L, 0)
+    holding.flush()
 
   // §10.2: room for a new extent, at the committed length, which advances past it. The image
   // is extended if it is too short, by at least as much again, so that it is seldom remapped.
   private def allocate(size: Long): Long =
-    val start = tilth.u64(8L)
+    val start = holding.u64(8L)
     val end = start + size
-    if end > tilth.size then tilth.expand(end.max(2L*tilth.size))
-    tilth.zero(start, size)
-    tilth.set64(8L, end)
+    if end > holding.size then holding.expand(end.max(2L*holding.size))
+    holding.zero(start, size)
+    holding.set64(8L, end)
     start
 
   // Appends an item to a region, which is moved to one of twice the capacity if it is full.
   private def append(region: Int, item: Data)(using Tactic[Ratel.Error]): Long =
     val entry = 16 + 24L*region
-    val length = tilth.u64(entry + 8)
-    val capacity = tilth.u64(entry + 16)
+    val length = holding.u64(entry + 8)
+    val capacity = holding.u64(entry + 16)
 
     if length + item.length > capacity then
       val room = round8((2L*capacity).max(length + item.length).max(64L))
       if room > 0xffffffffL then fail(Reason.Oversized)
       val moved = allocate(room)
-      tilth.move(tilth.u64(entry), moved, length)
+      holding.move(holding.u64(entry), moved, length)
       garbage(capacity)
-      tilth.set64(entry, moved)
-      tilth.set64(entry + 16, room)
+      holding.set64(entry, moved)
+      holding.set64(entry + 16, room)
 
-    tilth.write(tilth.u64(entry) + length, item)
-    tilth.set64(entry + 8, length + item.length)
+    holding.write(holding.u64(entry) + length, item)
+    holding.set64(entry + 8, length + item.length)
     length
 
   // The size of a value item, and of a growable item, as they lie in their regions.
   private def valueSize(strings: Boolean, ref: Long): Long =
-    4L + round4(tilth.u32(section(if strings then 1 else 2).offset + ref))
+    4L + round4(holding.u32(section(if strings then 1 else 2).offset + ref))
 
   private def listSize(ref: Long, unit: Int): Long =
-    8L + round4(tilth.u32(section(2).offset + ref)*unit)
+    8L + round4(holding.u32(section(2).offset + ref)*unit)
 
   // A value which is no longer referred to: garbage, unless it is interned, in which case
   // something else may refer to it still.
@@ -190,42 +190,42 @@ extends Ratel.Reader(opening):
   private def allocateRow(table: Int, parent: Long, link: Int)(using Tactic[Ratel.Error]): Long =
     val entry = tableEntry(table)
     val rowSize = plan(table).rowSize.toLong
-    val freeHead = tilth.u32(entry + 20)
+    val freeHead = holding.u32(entry + 20)
 
     val row =
       if freeHead != none then
-        tilth.set32(entry + 20, tilth.u32(tilth.u64(entry) + freeHead*rowSize))
+        holding.set32(entry + 20, holding.u32(holding.u64(entry) + freeHead*rowSize))
         freeHead
       else
-        val count = tilth.u32(entry + 8)
-        val capacity = tilth.u32(entry + 12)
+        val count = holding.u32(entry + 8)
+        val capacity = holding.u32(entry + 12)
 
         if count == capacity then
           val room = (2L*capacity).max(1L)
           val moved = allocate(room*rowSize)
-          tilth.move(tilth.u64(entry), moved, count*rowSize)
+          holding.move(holding.u64(entry), moved, count*rowSize)
           garbage(capacity*rowSize)
-          tilth.set64(entry, moved)
-          tilth.set32(entry + 12, room)
+          holding.set64(entry, moved)
+          holding.set32(entry + 12, room)
 
-        tilth.set32(entry + 8, count + 1)
+        holding.set32(entry + 8, count + 1)
         count
 
-    val start = tilth.u64(entry) + row*rowSize
-    tilth.zero(start, rowSize)
-    tilth.set32(start, parent)
-    tilth.set16(start + 4, link)
-    tilth.set16(start + 6, RatelBytes.live)
+    val start = holding.u64(entry) + row*rowSize
+    holding.zero(start, rowSize)
+    holding.set32(start, parent)
+    holding.set16(start + 4, link)
+    holding.set16(start + 6, RatelBytes.live)
     row
 
   private def freeRow(table: Int, row: Long)(using Tactic[Ratel.Error]): Unit =
     val entry = tableEntry(table)
     val rowSize = plan(table).rowSize.toLong
-    val start = tilth.u64(entry) + row*rowSize
-    tilth.zero(start, rowSize)
-    tilth.set32(start, tilth.u32(entry + 20))
-    tilth.set16(start + 4, RatelBytes.unlinked)
-    tilth.set32(entry + 20, row)
+    val start = holding.u64(entry) + row*rowSize
+    holding.zero(start, rowSize)
+    holding.set32(start, holding.u32(entry + 20))
+    holding.set16(start + 4, RatelBytes.unlinked)
+    holding.set32(entry + 20, row)
 
   private def at(table: Int, row: Long, slot: Slot)(using Tactic[Ratel.Error]): Long =
     address(table, row) + slot.offset
@@ -236,7 +236,7 @@ extends Ratel.Reader(opening):
     if slot.presence >= 0 then
       val byte = address(table, row) + 8 + (slot.presence >> 3)
       val bit = 1 << (slot.presence & 7)
-      tilth.set8(byte, if present then tilth.u8(byte) | bit else tilth.u8(byte) & ~bit)
+      holding.set8(byte, if present then holding.u8(byte) | bit else holding.u8(byte) & ~bit)
 
   // The bytes of a scalar's value: UTF-8, or what the codec of its encoding makes of it, which
   // for a scalar of a declared width must be of that width (↯/t.5.22).
@@ -273,19 +273,19 @@ extends Ratel.Reader(opening):
 
     val ref = word(at(table, row, slot))
     val region = section(2).offset
-    val capacity = if ref == none then 0L else tilth.u32(region + ref)
-    val count = if ref == none then 0L else tilth.u32(region + ref + 4)
+    val capacity = if ref == none then 0L else holding.u32(region + ref)
+    val count = if ref == none then 0L else holding.u32(region + ref + 4)
 
     if count == capacity then
       val body: Data = if count == 0L then Array.empty[Byte] else copy(region + ref + 8, (count*unit).toInt)
       val moved = append(2, RatelBytes.growable((2L*capacity).max(1L), count, unit, body))
       if ref != none then garbage(listSize(ref, unit))
-      tilth.set32(at(table, row, slot), moved)
+      holding.set32(at(table, row, slot), moved)
 
     val base = section(2).offset + word(at(table, row, slot)) + 8
-    tilth.move(base + position*unit, base + (position + 1)*unit, (count - position)*unit)
-    tilth.write(base + position*unit, element)
-    tilth.set32(base - 4, count + 1)
+    holding.move(base + position*unit, base + (position + 1)*unit, (count - position)*unit)
+    holding.write(base + position*unit, element)
+    holding.set32(base - 4, count + 1)
 
   // Takes an element out of a growable item, which keeps its capacity for what comes later.
   private def excise(table: Int, row: Long, slot: Slot, unit: Int, position: Long)
@@ -293,10 +293,10 @@ extends Ratel.Reader(opening):
   :   Unit =
 
     val base = section(2).offset + word(at(table, row, slot)) + 8
-    val count = tilth.u32(base - 4)
-    tilth.move(base + (position + 1)*unit, base + position*unit, (count - position - 1)*unit)
-    tilth.zero(base + (count - 1)*unit, unit.toLong)
-    tilth.set32(base - 4, count - 1)
+    val count = holding.u32(base - 4)
+    holding.move(base + (position + 1)*unit, base + position*unit, (count - position - 1)*unit)
+    holding.zero(base + (count - 1)*unit, unit.toLong)
+    holding.set32(base - 4, count - 1)
 
   private def little(value: Long): Data = Array.collect[Byte](4)(RatelBytes.u32(_, value))
 
@@ -403,44 +403,44 @@ extends Ratel.Reader(opening):
           case Kind.Flag   => if !mine.nil then mark(table, row, slot, true)
 
           case Kind.FlagCount =>
-            tilth.set32(at(table, row, slot), mine.size.toLong)
+            holding.set32(at(table, row, slot), mine.size.toLong)
 
           case Kind.Inline(scalar, _) => mine.head.let: element =>
-            tilth.write(at(table, row, slot), encode(scalar, text(element)))
+            holding.write(at(table, row, slot), encode(scalar, text(element)))
             mark(table, row, slot, true)
 
           case Kind.Ref(scalar, _) => mine.head.let: element =>
             val ref = store(scalar, text(element))
-            tilth.set32(at(table, row, slot), ref)
+            holding.set32(at(table, row, slot), ref)
             mark(table, row, slot, true)
 
           case Kind.Packed(scalar, width) =>
             val values = mine.map { element => encode(scalar, text(element)) }
             val body = Array.collect[Byte](width*values.size + 8)(out => values.each(out.append(_)))
             val ref = grow(values.size, width, body)
-            tilth.set32(at(table, row, slot), ref)
+            holding.set32(at(table, row, slot), ref)
 
           case Kind.Refs(scalar, _) =>
             val refs = mine.map { element => store(scalar, text(element)) }
             val body = Array.collect[Byte](4*refs.size + 8) { out => refs.each(RatelBytes.u32(out, _)) }
             val ref = grow(refs.size, 4, body)
-            tilth.set32(at(table, row, slot), ref)
+            holding.set32(at(table, row, slot), ref)
 
           case Kind.Record(inner, _) => mine.head.let: element =>
             val child = emit(inner, node(element), row, slot.link)
-            tilth.set32(at(table, row, slot), child)
+            holding.set32(at(table, row, slot), child)
             mark(table, row, slot, true)
 
           case Kind.Children(inner, _) =>
             val numbers = mine.map { element => emit(inner, node(element), row, slot.link) }
             val body = Array.collect[Byte](4*numbers.size + 8) { out => numbers.each(RatelBytes.u32(out, _)) }
             val ref = grow(numbers.size, 4, body)
-            tilth.set32(at(table, row, slot), ref)
+            holding.set32(at(table, row, slot), ref)
 
           case Kind.Select(variants) => mine.head.let: element =>
             val (tag, payload) = choice(variants, element, slot)
-            tilth.set32(at(table, row, slot), tag)
-            tilth.set32(at(table, row, slot) + 4, payload)
+            holding.set32(at(table, row, slot), tag)
+            holding.set32(at(table, row, slot) + 4, payload)
             mark(table, row, slot, true)
 
           case Kind.SelectList(variants) =>
@@ -452,7 +452,7 @@ extends Ratel.Reader(opening):
                 RatelBytes.u32(out, payload)
 
             val ref = grow(pairs.size, 8, body)
-            tilth.set32(at(table, row, slot), ref)
+            holding.set32(at(table, row, slot), ref)
 
   // The rows a collection slot refers to, in order.
   private def listed(table: Int, row: Long, slot: Slot, unit: Long)(using Tactic[Ratel.Error])
@@ -611,7 +611,7 @@ extends Ratel.Reader(opening):
 
   private def pageSize(index: Int)(using Tactic[Ratel.Error]): Long = tree(index).pageSize
   private def pageAt(index: Int, number: Long)(using Tactic[Ratel.Error]): Long =
-    tilth.u64(indexEntry(index)) + number*pageSize(index)
+    holding.u64(indexEntry(index)) + number*pageSize(index)
 
   // A cell for an entry: spilled to the variable region if it is longer than an eighth of a
   // page.
@@ -621,15 +621,15 @@ extends Ratel.Reader(opening):
 
   private def cells(index: Int, number: Long)(using Tactic[Ratel.Error]): List[Cell] =
     val start = pageAt(index, number)
-    val head = if tilth.u8(start) == 2 then 4 else 0
+    val head = if holding.u8(start) == 2 then 4 else 0
 
-    List.range(0, tilth.u16(start + 2)).map: position =>
-      val pointer = start + tilth.u16(start + 16 + 2*position)
-      val child = if head == 4 then tilth.u32(pointer) else none
-      val length = tilth.u16(pointer + head)
+    List.range(0, holding.u16(start + 2)).map: position =>
+      val pointer = start + holding.u16(start + 16 + 2*position)
+      val child = if head == 4 then holding.u32(pointer) else none
+      val length = holding.u16(pointer + head)
 
       if length == 0xffff then
-        val ref = tilth.u32(pointer + head + 4)
+        val ref = holding.u32(pointer + head + 4)
         Cell(child, bytes(false, ref), ref)
       else Cell(child, copy(pointer + head + 2, length), none)
 
@@ -659,7 +659,7 @@ extends Ratel.Reader(opening):
     val start = pageAt(index, number)
     val size = pageSize(index)
     val head = if kind == 2 then 4 else 0
-    tilth.zero(start, size)
+    holding.zero(start, size)
 
     @scala.annotation.tailrec
     def recur(rest: List[Cell], position: Int, end: Long): Long = rest match
@@ -667,48 +667,48 @@ extends Ratel.Reader(opening):
 
       case cell :: more =>
         val pointer = end - cellSize(kind, cell)
-        tilth.set16(start + 16 + 2*position, pointer.toInt)
-        if kind == 2 then tilth.set32(start + pointer, cell.child)
+        holding.set16(start + 16 + 2*position, pointer.toInt)
+        if kind == 2 then holding.set32(start + pointer, cell.child)
 
         if cell.ref != none then
-          tilth.set16(start + pointer + head, 0xffff)
-          tilth.set32(start + pointer + head + 4, cell.ref)
+          holding.set16(start + pointer + head, 0xffff)
+          holding.set32(start + pointer + head + 4, cell.ref)
         else
-          tilth.set16(start + pointer + head, cell.key.length)
-          tilth.write(start + pointer + head + 2, cell.key)
+          holding.set16(start + pointer + head, cell.key.length)
+          holding.write(start + pointer + head + 2, cell.key)
 
         recur(more, position + 1, pointer)
 
     val reached = recur(all, 0, size)
 
-    tilth.set8(start, kind)
-    tilth.set16(start + 2, all.size)
-    tilth.set32(start + 4, reached)
-    tilth.set32(start + 8, link)
+    holding.set8(start, kind)
+    holding.set16(start + 2, all.size)
+    holding.set32(start + 4, reached)
+    holding.set32(start + 8, link)
 
   // A page: from the index's free list, or at its end, or -- once its pages are moved to an
   // extent of twice as many -- at its new end.
   private def allocatePage(index: Int)(using Tactic[Ratel.Error]): Long =
     val entry = indexEntry(index)
     val size = pageSize(index)
-    val freeHead = tilth.u32(entry + 20)
+    val freeHead = holding.u32(entry + 20)
 
     if freeHead != none then
-      tilth.set32(entry + 20, tilth.u32(tilth.u64(entry) + freeHead*size + 8))
+      holding.set32(entry + 20, holding.u32(holding.u64(entry) + freeHead*size + 8))
       freeHead
     else
-      val count = tilth.u32(entry + 8)
-      val capacity = tilth.u32(entry + 12)
+      val count = holding.u32(entry + 8)
+      val capacity = holding.u32(entry + 12)
 
       if count == capacity then
         val room = (2L*capacity).max(1L)
         val moved = allocate(room*size)
-        tilth.move(tilth.u64(entry), moved, count*size)
+        holding.move(holding.u64(entry), moved, count*size)
         garbage(capacity*size)
-        tilth.set64(entry, moved)
-        tilth.set32(entry + 12, room)
+        holding.set64(entry, moved)
+        holding.set32(entry + 12, room)
 
-      tilth.set32(entry + 8, count + 1)
+      holding.set32(entry + 8, count + 1)
       count
 
   // The pages from the root to the leaf where an entry belongs: each branch with the position
@@ -721,7 +721,7 @@ extends Ratel.Reader(opening):
       if level == tree.height - 1 then (path, number) else
         val all = cells(index, number)
         val below = all.filter { cell => RatelBytes.order(cell.key, entry) <= 0 }.size
-        val link = tilth.u32(pageAt(index, number) + 8)
+        val link = holding.u32(pageAt(index, number) + 8)
         val next = if below == 0 then link else all.skip(below - 1).head.let(_.child).or(link)
         descend(next, level + 1, (number, below) :: path)
 
@@ -743,17 +743,17 @@ extends Ratel.Reader(opening):
   private def enter(index: Int, entry: Data)(using Tactic[Ratel.Error]): Unit =
     val directory = indexEntry(index)
 
-    if tilth.u32(directory + 16) == none then
+    if holding.u32(directory + 16) == none then
       val page = allocatePage(index)
       lay(index, page, 1, none, List(cell(index, none, entry)))
-      tilth.set32(indexEntry(index) + 16, page)
-      tilth.set8(indexEntry(index) + 30, 1)
+      holding.set32(indexEntry(index) + 16, page)
+      holding.set8(indexEntry(index) + 30, 1)
     else
       val (path, leaf) = route(index, entry)
       val before = cells(index, leaf)
       val position = before.filter { cell => RatelBytes.order(cell.key, entry) < 0 }.size
       val all: List[Cell] = before.keep(position) + List(cell(index, none, entry)) + before.skip(position)
-      val link = tilth.u32(pageAt(index, leaf) + 8)
+      val link = holding.u32(pageAt(index, leaf) + 8)
 
       if fits(index, 1, all) then lay(index, leaf, 1, link, all) else
         val split = halves(1, all)
@@ -763,7 +763,7 @@ extends Ratel.Reader(opening):
         val separator = all.skip(split).head.let(_.key).or(entry)
         raise(index, path, cell(index, right, separator))
 
-    tilth.set32(indexEntry(index) + 24, tilth.u32(indexEntry(index) + 24) + 1)
+    holding.set32(indexEntry(index) + 24, holding.u32(indexEntry(index) + 24) + 1)
 
   // Puts the separator of a page which has just been split off into the branch above it.
   private def raise(index: Int, path: List[(Long, Int)], added: Cell)(using Tactic[Ratel.Error])
@@ -772,16 +772,16 @@ extends Ratel.Reader(opening):
     path match
       case Nil =>
         val directory = indexEntry(index)
-        val root = tilth.u32(directory + 16)
+        val root = holding.u32(directory + 16)
         val page = allocatePage(index)
         lay(index, page, 2, root, List(added))
-        tilth.set32(indexEntry(index) + 16, page)
-        tilth.set8(indexEntry(index) + 30, tilth.u8(indexEntry(index) + 30) + 1)
+        holding.set32(indexEntry(index) + 16, page)
+        holding.set8(indexEntry(index) + 30, holding.u8(indexEntry(index) + 30) + 1)
 
       case (branch, position) :: above =>
         val before = cells(index, branch)
         val all: List[Cell] = before.keep(position) + List(added) + before.skip(position)
-        val link = tilth.u32(pageAt(index, branch) + 8)
+        val link = holding.u32(pageAt(index, branch) + 8)
 
         if fits(index, 2, all) then lay(index, branch, 2, link, all) else
           val split = halves(2, all)
@@ -793,14 +793,14 @@ extends Ratel.Reader(opening):
 
   // Takes an entry out of an index. Its leaf is left where it is, however little it holds.
   private def leave(index: Int, entry: Data)(using Tactic[Ratel.Error]): Unit =
-    if tilth.u32(indexEntry(index) + 16) == none then fail(Reason.IndexDisagrees)
+    if holding.u32(indexEntry(index) + 16) == none then fail(Reason.IndexDisagrees)
     val (path, leaf) = route(index, entry)
     val before = cells(index, leaf)
     val found = before.seek { cell => RatelBytes.order(cell.key, entry) == 0 }.or(fail(Reason.IndexDisagrees))
     if found.ref != none then garbage(valueSize(false, found.ref))
     val all = before.filter { cell => RatelBytes.order(cell.key, entry) != 0 }
-    lay(index, leaf, 1, tilth.u32(pageAt(index, leaf) + 8), all)
-    tilth.set32(indexEntry(index) + 24, tilth.u32(indexEntry(index) + 24) - 1)
+    lay(index, leaf, 1, holding.u32(pageAt(index, leaf) + 8), all)
+    holding.set32(indexEntry(index) + 24, holding.u32(indexEntry(index) + 24) - 1)
 
   // The row of a collection which a record belongs to, if it belongs to one: found by
   // following the links of row headers up through members which are single records, to the
@@ -808,13 +808,13 @@ extends Ratel.Reader(opening):
   // may alter (§10.3).
   private[stratiform] def anchor(table: Int, row: Long)(using Tactic[Ratel.Error]): Optional[Anchor] =
     val start = address(table, row)
-    val link = tilth.u16(start + 4)
+    val link = holding.u16(start + 4)
 
     if link == RatelBytes.unlinked then Unset else
       arrangement.link(link).let: found =>
         found.slot.kind match
-          case Kind.Children(inner, _) => Anchor(found.table, tilth.u32(start), found.slot, inner, row)
-          case Kind.Record(_, _)       => anchor(found.table, tilth.u32(start))
+          case Kind.Children(inner, _) => Anchor(found.table, holding.u32(start), found.slot, inner, row)
+          case Kind.Record(_, _)       => anchor(found.table, holding.u32(start))
           case _                       => Unset
 
   // Makes a change to a record, keeping the indexes in step: the entries of the row it is
@@ -912,10 +912,10 @@ extends Ratel.Reader(opening):
   // The collection a record is one of, and its place in it.
   private def placed(table: Int, row: Long)(using Tactic[Ratel.Error]): Anchor =
     val start = address(table, row)
-    val found = arrangement.link(tilth.u16(start + 4)).or(fail(Reason.Inapplicable(t"")))
+    val found = arrangement.link(holding.u16(start + 4)).or(fail(Reason.Inapplicable(t"")))
 
     found.slot.kind match
-      case Kind.Children(inner, _) => Anchor(found.table, tilth.u32(start), found.slot, inner, row)
+      case Kind.Children(inner, _) => Anchor(found.table, holding.u32(start), found.slot, inner, row)
       case _                       => fail(Reason.Inapplicable(found.slot.keyword))
 
   // §10.3, `delete`: a record is taken out of the collection it belongs to, with every record
@@ -961,9 +961,9 @@ extends Ratel.Reader(opening):
     if from != to then change:
       val base = section(2).offset + word(at(table, host, slot)) + 8
       val moved = word(base + 4*from)
-      if from < to then tilth.move(base + 4*(from + 1), base + 4*from, 4*(to - from))
-      else tilth.move(base + 4*to, base + 4*(to + 1), 4*(from - to))
-      tilth.set32(base + 4*to, moved)
+      if from < to then holding.move(base + 4*(from + 1), base + 4*from, 4*(to - from))
+      else holding.move(base + 4*to, base + 4*(to + 1), 4*(from - to))
+      holding.set32(base + 4*to, moved)
 
   // §10.3, `update-value`: a scalar member of a record is given a value, or, if it may be
   // absent, none. A value which is stored within the row is overwritten; one which is
@@ -996,15 +996,15 @@ extends Ratel.Reader(opening):
 
         slot.kind match
           case Kind.Inline(_, width) =>
-            stored.lay(tilth.zero(at(table, row, slot), width.toLong)): bytes =>
-              tilth.write(at(table, row, slot), bytes)
+            stored.lay(holding.zero(at(table, row, slot), width.toLong)): bytes =>
+              holding.write(at(table, row, slot), bytes)
 
           case Kind.Ref(_, intern) =>
             if held then abandon(intern, word(at(table, row, slot)))
 
-            stored.lay(tilth.set32(at(table, row, slot), 0L)): bytes =>
+            stored.lay(holding.set32(at(table, row, slot), 0L)): bytes =>
               val ref = append(if intern then 1 else 2, RatelBytes.item(bytes.length, bytes))
-              tilth.set32(at(table, row, slot), ref)
+              holding.set32(at(table, row, slot), ref)
 
           case _ => ()
 
@@ -1032,7 +1032,7 @@ extends Ratel.Reader(opening):
           if old != none then garbage(listSize(old, width))
           val body = Array.collect[Byte](width*stored.size + 8)(out => stored.each(out.append(_)))
           val ref = grow(stored.size, width, body)
-          tilth.set32(at(table, row, slot), ref)
+          holding.set32(at(table, row, slot), ref)
 
         case Kind.Refs(_, intern) =>
           listed(table, row, slot, 4L).each { element => abandon(intern, word(element)) }
@@ -1043,7 +1043,7 @@ extends Ratel.Reader(opening):
 
           val body = Array.collect[Byte](4*refs.size + 8) { out => refs.each(RatelBytes.u32(out, _)) }
           val ref = grow(refs.size, 4, body)
-          tilth.set32(at(table, row, slot), ref)
+          holding.set32(at(table, row, slot), ref)
 
         case _ => ()
 
@@ -1062,7 +1062,7 @@ extends Ratel.Reader(opening):
       case Kind.FlagCount =>
         val count = word(at(table, row, slot))
         if !on && count == 0L then invalid(Tel.Error.Reason.RequiredMemberAbsent)
-        change(tilth.set32(at(table, row, slot), if on then count + 1 else count - 1))
+        change(holding.set32(at(table, row, slot), if on then count + 1 else count - 1))
 
       case Kind.Always =>
         if !on then invalid(Tel.Error.Reason.RequiredMemberAbsent)

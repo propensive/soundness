@@ -374,9 +374,9 @@ package filesystemBackends:
       def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^ =
         abort(Io.Error(path, Operation.Open, Reason.Unsupported))
 
-      def tilling(path: Path on Plane, reserve: Long, mode: Optional[Int])
+      def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
         ( using Tactic[Io.Error] )
-      :   FilesystemBackend.Tilling^ =
+      :   FilesystemBackend.Hold^ =
 
         abort(Io.Error(path, Operation.Open, Reason.Unsupported))
 

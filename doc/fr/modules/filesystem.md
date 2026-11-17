@@ -588,19 +588,19 @@ Out.println(letters)
 + disposé de sorte qu'un enregistrement se trouve sans lire le reste, et
 + `file.open[Ratel]()` projette le fichier pendant la durée de son bloc.
 
-- `tilled` maps a whole file for changing where it lies, and lends a `Tilth`: a `Terrain` which
+- `hold` maps a whole file for changing where it lies, and lends a `Holding`: a `Terrain` which
 - is stored to as well as loaded from. `set8`, `set16`, `set32` and `set64` store an integer at
 - an offset, `write` stores some `Data`, `zero` clears a range and `move` copies one within the
-- file, and `expand` makes the tilth longer, and the file with it. A file which is not there is
-- created, at the size which `tilled` is given. An exclusive lock is held on the file for the
-- length of the block, so a second `tilled` of the same file, in this program or another, is
+- file, and `expand` makes the holding longer, and the file with it. A file which is not there is
+- created, at the size which `hold` is given. An exclusive lock is held on the file for the
+- length of the block, so a second `hold` of the same file, in this program or another, is
 - refused with `Busy`:
-+ `tilled` projette un fichier entier pour le modifier là où il se trouve, et prête un `Tilth` :
++ `hold` projette un fichier entier pour le modifier là où il se trouve, et prête un `Holding` :
 + un `Terrain` dans lequel on stocke aussi bien qu'on charge. `set8`, `set16`, `set32` et `set64`
 + stockent un entier à un décalage, `write` stocke des `Data`, `zero` efface une plage et `move`
-+ en copie une à l'intérieur du fichier, et `expand` allonge le tilth, et le fichier avec lui. Un
-+ fichier qui n'existe pas est créé, à la taille donnée à `tilled`. Un verrou exclusif est tenu
-+ sur le fichier pendant la durée du bloc, si bien qu'un second `tilled` du même fichier, dans ce
++ en copie une à l'intérieur du fichier, et `expand` allonge la tenure, et le fichier avec lui. Un
++ fichier qui n'existe pas est créé, à la taille donnée à `hold`. Un verrou exclusif est tenu
++ sur le fichier pendant la durée du bloc, si bien qu'un second `hold` du même fichier, dans ce
 + programme ou dans un autre, est refusé avec `Busy` :
 
 ```scala fuel
@@ -608,27 +608,27 @@ run
 ##
 val ledger = directory / "ledger"
 
-ledger.tilled(16L): tilth =>
-  tilth.set32(0L, 1599L)
-  tilth.expand(32L)
-  tilth.set64(24L, 1616L)
+ledger.hold(16L): holding =>
+  holding.set32(0L, 1599L)
+  holding.expand(32L)
+  holding.set64(24L, 1616L)
 
 val first = ledger.mapped(_.u32(0L))
 val last = ledger.mapped(_.u64(24L))
 Out.println(t"${first.show}, then ${last.show}")
 ```
 
-- A tilth hands out no address into its memory, since `expand` may move it: every load and store
-- is at an offset, and a `slice` of a tilth reads through it, so it stays good afterwards. What
+- A holding hands out no address into its memory, since `expand` may move it: every load and store
+- is at an offset, and a `slice` of a holding reads through it, so it stays good afterwards. What
 - was stored is in the file when the block ends. It is what a format which is altered in place
 - is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
-- `Tilth(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
+- `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
 - changing on the JVM; the other platforms report `Unsupported`.
-+ Un tilth ne donne aucune adresse dans sa mémoire, puisque `expand` peut la déplacer : chaque
-+ chargement et chaque stockage se fait à un décalage, et une `slice` d'un tilth lit à travers
-+ lui, si bien qu'elle reste valable ensuite. Ce qui a été stocké est dans le fichier lorsque le
-+ bloc se termine. C'est par lui qu'un format modifié sur place est modifié, comme l'est une image
-+ [RaTEL](tel.md#ratel) par le programme qui la possède. `Tilth(size)` en est un sur le tas, pour
++ Une tenure ne donne aucune adresse dans sa mémoire, puisque `expand` peut la déplacer : chaque
++ chargement et chaque stockage se fait à un décalage, et une `slice` d'une tenure lit à travers
++ elle, si bien qu'elle reste valable ensuite. Ce qui a été stocké est dans le fichier lorsque le
++ bloc se termine. C'est par elle qu'un format modifié sur place est modifié, comme l'est une image
++ [RaTEL](tel.md#ratel) par le programme qui la possède. `Holding(size)` en est une sur le tas, pour
 + une image qui n'est pas encore un fichier. Un fichier est projeté pour modification sur la JVM ;
 + les autres plateformes signalent `Unsupported`.
 

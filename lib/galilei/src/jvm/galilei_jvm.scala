@@ -368,9 +368,9 @@ package filesystemBackends:
               throw throwable
           finally channel.close()
 
-      def tilling(path: Path on Plane, reserve: Long, mode: Optional[Int])
+      def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
         ( using Tactic[Io.Error] )
-      :   FilesystemBackend.Tilling =
+      :   FilesystemBackend.Hold =
 
         protect(path, Operation.Open):
           val optionSet = java.util.HashSet[jnf.OpenOption]()
@@ -401,7 +401,7 @@ package filesystemBackends:
 
                 try
                   val mapMode = jnc.FileChannel.MapMode.READ_WRITE.nn
-                  new SegmentTilling(channel, held, arena, channel.map(mapMode, 0L, channel.size, arena).nn)
+                  new SegmentHolding(channel, held, arena, channel.map(mapMode, 0L, channel.size, arena).nn)
                 catch case throwable: Throwable =>
                   arena.close()
                   throw throwable

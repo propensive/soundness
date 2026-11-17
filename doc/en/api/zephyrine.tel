@@ -899,12 +899,12 @@ entry .Terrain   an `Expanse` whose bytes are in memory, and are read where they
   entry #same   whether the bytes at an offset are those of some `Data`, compared in place
   entry #compare   the order of some bytes relative to some `Data`, compared in place, a proper prefix sorting first
 
-entry .Tilth   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
+entry .Holding   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
   detail
       What a format which is kept and altered in place is altered through: a file mapped for
-      writing by the one process which owns it (galilei's `tilled`), or bytes on the heap
-      (`Tilth(size)`, `Tilth(data)`). Every store is at an offset, and no address into its
-      memory is handed out, since `expand` may move it; a `slice` reads through the tilth it
+      writing by the one process which owns it (galilei's `hold`), or bytes on the heap
+      (`Holding(size)`, `Holding(data)`). Every store is at an offset, and no address into its
+      memory is handed out, since `expand` may move it; a `slice` reads through the holding it
       came from, and stays good across an expansion.
   entry #set8   stores a byte at an offset
   entry #set16   stores a 16-bit integer at an offset, little-endian
@@ -913,7 +913,7 @@ entry .Tilth   a `Terrain` which can be changed where it lies: stored to at an o
   entry #write   stores the bytes of some `Data` from an offset
   entry #zero   stores zero bytes over a range
   entry #move   copies a range to another offset, which it may overlap
-  entry #expand   makes the tilth at least a given size, the new bytes zero; it never shrinks
+  entry #expand   makes the holding at least a given size, the new bytes zero; it never shrinks
   entry #flush   makes what has been stored durable, where there is a file for it to be durable in
 
 entry .Viewable   the typeclass of a value whose bytes can be lent as a `Terrain` for the length of a block
@@ -922,8 +922,8 @@ entry .Viewable   the typeclass of a value whose bytes can be lent as a `Terrain
       already on the heap, and a terrain which is already in hand. A format which is read in
       place is opened from any of them alike.
   entry #view   lends the value's bytes as a `Terrain`
-  entry #till   lends the value's bytes for changing, as a `Tilth`, or answers `otherwise` if they cannot be changed
-      A file is mapped for writing under an exclusive lock, and a tilth in hand is lent as it
+  entry #hold   lends the value's bytes for changing, as a `Holding`, or answers `otherwise` if they cannot be changed
+      A file is mapped for writing under an exclusive lock, and a holding in hand is lent as it
       is; bytes which are immutable, like anything which does not say otherwise, answer
       `otherwise`.
 
