@@ -54,7 +54,7 @@ object escapes:
     val BrightBlue = Escape(t"[94m", t"[39m")
     val BrightMagenta = Escape(t"[95m", t"[39m")
     val BrightCyan = Escape(t"[96m", t"[39m")
-    val BrightWhite = Escape(t"[97m", t"[49m")
+    val BrightWhite = Escape(t"[97m", t"[39m")
 
   object background:
     val Black = Escape(t"[40m", t"[49m")
