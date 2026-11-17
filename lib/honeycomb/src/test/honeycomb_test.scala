@@ -781,6 +781,30 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
           A(href = url"https://example.com/a?b=c#d")(Html.Text(t"link")).show
         . assert(_ == t"""<a href="https://example.com/a?b=c#d">link</a>""")
 
+        test(m"a preset area is an area element"):
+          Area.Rect(alt = "x").show
+        . assert(_ == t"""<area shape="rect" alt="x">""")
+
+        test(m"a legend is a legend element, admissible in a fieldset"):
+          Fieldset(Legend(t"Name")).show
+        . assert(_ == t"<fieldset><legend>Name</legend></fieldset>")
+
+        test(m"an iframe is written with its end tag"):
+          Div(Iframe).show
+        . assert(_ == t"<div><iframe></iframe></div>")
+
+        test(m"an iframe is read with its end tag"):
+          t"""<div><iframe name="frame"></iframe><p>x</p></div>""".read[Html of "div"].show
+        . assert(_ == t"""<div><iframe name="frame"></iframe><p>x</p></div>""")
+
+        test(m"headingreset is written under its own name"):
+          Div(headingreset = true).show
+        . assert(_ == t"<div headingreset></div>")
+
+        test(m"a meta element is admissible in a head"):
+          Head(Meta).show
+        . assert(_ == t"<head><meta></head>")
+
       suite(m"Template content"):
         test(m"a template shows its children"):
           Template(P("x")).show
