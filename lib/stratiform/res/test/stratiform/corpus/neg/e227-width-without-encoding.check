@@ -121,4 +121,4 @@ Document {
     ],
 }
 errors:
-  E227 [0,0): Scalar declares a `width` but no `encoding`: scalar `Code` declares width `4` but no encoding
+  ↯/t.2.27 [0,0): Scalar declares a `width` but no `encoding`: scalar `Code` declares width `4` but no encoding

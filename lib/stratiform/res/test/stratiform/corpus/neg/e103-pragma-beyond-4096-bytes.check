@@ -32,4 +32,4 @@ Document {
     ],
 }
 errors:
-  E103 [4080,4200): Pragma line extends beyond first 4096 bytes
+  ↯/t.1.3 [4080,4200): Pragma line extends beyond first 4096 bytes

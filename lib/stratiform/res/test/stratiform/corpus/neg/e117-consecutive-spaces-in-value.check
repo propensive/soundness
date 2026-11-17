@@ -39,4 +39,4 @@ Document {
     ],
 }
 errors:
-  E117 [37,39): Hard space does not end at a column boundary
+  ↯/t.1.17 [37,39): Hard space does not end at a column boundary

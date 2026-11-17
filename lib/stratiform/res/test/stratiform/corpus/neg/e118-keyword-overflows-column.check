@@ -35,4 +35,4 @@ Document {
     ],
 }
 errors:
-  E118 [17,19): Column value exceeds maximum width
+  ↯/t.1.18 [17,19): Column value exceeds maximum width

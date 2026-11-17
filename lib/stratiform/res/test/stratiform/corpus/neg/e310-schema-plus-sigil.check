@@ -32,4 +32,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,1): Scalar value failed validation: `sigil` failed validation: the sigil must not be the layer-selection marker '+'
+  ↯/t.3.10 [0,1): Scalar value failed validation: `sigil` failed validation: the sigil must not be the layer-selection marker '+'

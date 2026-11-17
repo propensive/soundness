@@ -72,4 +72,4 @@ Document {
     ],
 }
 errors:
-  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `unknown-top-level-thing` for the document root
+  ↯/t.3.6 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `unknown-top-level-thing` for the document root

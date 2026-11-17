@@ -78,4 +78,4 @@ Document {
     ],
 }
 errors:
-  E314 [0,0): Duplicate key value among keyed children of one parent: duplicate key value `ned` among keyed children (`contact` and `contact`)
+  ↯/t.3.14 [0,0): Duplicate key value among keyed children of one parent: duplicate key value `ned` among keyed children (`contact` and `contact`)

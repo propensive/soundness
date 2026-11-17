@@ -30,4 +30,4 @@ Document {
     ],
 }
 errors:
-  E122 [0,19): Misplaced pragma phrase
+  ↯/t.1.22 [0,19): Misplaced pragma phrase

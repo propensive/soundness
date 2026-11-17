@@ -73,4 +73,4 @@ Document {
     ],
 }
 errors:
-  E208 [0,0): Keyword `tel` is reserved and must not be used as a Field or Variant keyword: keyword `tel` is reserved (§8)
+  ↯/t.2.8 [0,0): Keyword `tel` is reserved and must not be used as a Field or Variant keyword: keyword `tel` is reserved (§8)

@@ -127,4 +127,4 @@ Document {
     ],
 }
 errors:
-  E231 [0,0): Scalar declares both `width` and `intern`: scalar `Uuid` declares both width `16` and intern
+  ↯/t.2.31 [0,0): Scalar declares both `width` and `intern`: scalar `Uuid` declares both width `16` and intern

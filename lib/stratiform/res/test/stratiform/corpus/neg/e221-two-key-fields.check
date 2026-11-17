@@ -145,4 +145,4 @@ Document {
     ],
 }
 errors:
-  E221 [0,0): More than one key field in a Struct: record `Item` declares 2 key fields (label, serial); at most one is permitted
+  ↯/t.2.21 [0,0): More than one key field in a Struct: record `Item` declares 2 key fields (label, serial); at most one is permitted

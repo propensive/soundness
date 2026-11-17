@@ -23,4 +23,4 @@ Document {
     ],
 }
 errors:
-  E119 [7,14): Malformed tabulation heading: heading contains sigil
+  ↯/t.1.19 [7,14): Malformed tabulation heading: heading contains sigil

@@ -134,4 +134,4 @@ Document {
     ],
 }
 errors:
-  E206 [0,0): Layer Field merge requires both base and layer types to be Struct: layer `extension` field `act` in overlay: type mismatch
+  ↯/t.2.6 [0,0): Layer Field merge requires both base and layer types to be Struct: layer `extension` field `act` in overlay: type mismatch

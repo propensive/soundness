@@ -204,4 +204,4 @@ Document {
     ],
 }
 errors:
-  E230 [0,0): Index path does not resolve statically to a non-repeatable Scalar through non-repeatable Field members: field `person` in document has index path `/email` which does not resolve statically: component 0 `email` is a Select variant keyword, not a Field
+  ↯/t.2.30 [0,0): Index path does not resolve statically to a non-repeatable Scalar through non-repeatable Field members: field `person` in document has index path `/email` which does not resolve statically: component 0 `email` is a Select variant keyword, not a Field

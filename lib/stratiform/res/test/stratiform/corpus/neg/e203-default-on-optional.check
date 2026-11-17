@@ -81,4 +81,4 @@ Document {
     ],
 }
 errors:
-  E203 [0,0): Scalar has non-null default but member is not required: Field `act` has default `fallback` but is not required
+  ↯/t.2.3 [0,0): Scalar has non-null default but member is not required: Field `act` has default `fallback` but is not required

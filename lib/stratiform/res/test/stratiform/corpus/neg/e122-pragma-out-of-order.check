@@ -32,4 +32,4 @@ Document {
     ],
 }
 errors:
-  E122 [0,60): Pragma phrases violate the positional order or multiplicity
+  ↯/t.1.22 [0,60): Pragma phrases violate the positional order or multiplicity

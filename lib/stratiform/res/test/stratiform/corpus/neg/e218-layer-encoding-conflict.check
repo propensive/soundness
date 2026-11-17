@@ -194,4 +194,4 @@ Document {
     ],
 }
 errors:
-  E218 [0,0): Layer declares a conflicting encoding for an existing scalar: layer `conflicting-tokens` declares encoding `decimal-varint` for scalar `Token`, conflicting with the base's encoding `hex-bytes`
+  ↯/t.2.18 [0,0): Layer declares a conflicting encoding for an existing scalar: layer `conflicting-tokens` declares encoding `decimal-varint` for scalar `Token`, conflicting with the base's encoding `hex-bytes`

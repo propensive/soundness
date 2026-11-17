@@ -24,4 +24,4 @@ Document {
     ],
 }
 errors:
-  E114 [31,40): Literal atom already present on this compound
+  ↯/t.1.14 [31,40): Literal atom already present on this compound

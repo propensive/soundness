@@ -32,4 +32,4 @@ Document {
     ],
 }
 errors:
-  E121 [0,28): Pragma phrase matches no pragma form
+  ↯/t.1.21 [0,28): Pragma phrase matches no pragma form

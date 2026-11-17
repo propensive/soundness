@@ -50,6 +50,6 @@ Document {
     ],
 }
 errors:
-  E118 [21,23): Column value exceeds maximum width
-  E109 [26,26): Comment must follow a blank line, another comment, or start of document
-  E118 [73,75): Column value exceeds maximum width
+  ↯/t.1.18 [21,23): Column value exceeds maximum width
+  ↯/t.1.9 [26,26): Comment must follow a blank line, another comment, or start of document
+  ↯/t.1.18 [73,75): Column value exceeds maximum width

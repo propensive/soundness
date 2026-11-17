@@ -195,4 +195,4 @@ Document {
     ],
 }
 errors:
-  E204 [0,0): Two or more Layers share the same name: duplicate Layer name `same-name`
+  ↯/t.2.4 [0,0): Two or more Layers share the same name: duplicate Layer name `same-name`

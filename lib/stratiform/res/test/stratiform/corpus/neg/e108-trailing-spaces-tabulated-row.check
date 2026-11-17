@@ -35,5 +35,5 @@ Document {
     ],
 }
 errors:
-  E108 [24,27): Trailing spaces on ordinary line
-  E117 [24,27): Hard space does not end at a column boundary
+  ↯/t.1.8 [24,27): Trailing spaces on ordinary line
+  ↯/t.1.17 [24,27): Hard space does not end at a column boundary

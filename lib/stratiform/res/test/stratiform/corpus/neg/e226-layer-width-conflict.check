@@ -183,4 +183,4 @@ Document {
     ],
 }
 errors:
-  E226 [0,0): Layer declares a conflicting width for an existing scalar, or the width contradicts the encoding's fixed width: layer `wider` declares width `64` for scalar `Blob`, conflicting with the base's width `32`
+  ↯/t.2.26 [0,0): Layer declares a conflicting width for an existing scalar, or the width contradicts the encoding's fixed width: layer `wider` declares width `64` for scalar `Blob`, conflicting with the base's width `32`
