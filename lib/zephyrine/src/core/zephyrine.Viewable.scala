@@ -41,7 +41,22 @@ import prepositional.*
 trait Viewable extends Typeclass:
   def view[result](value: Self)(lambda: Terrain^ => result): result
 
+  // Lends the value's bytes for changing where they lie, as a `Tilth`, for the length of a
+  // block, if they can be changed at all: a file can, and is mapped for writing under an
+  // exclusive lock; a tilth which is already in hand can; bytes which are immutable cannot,
+  // and for them, as for anything which does not say otherwise, the answer is `otherwise`.
+  def till[result](value: Self)(lambda: Tilth^ => result)(otherwise: => result): result =
+    otherwise
+
 object Viewable:
   // A terrain is lent as it is: whoever holds it has already mapped it.
   given terrain: [captures^, terrain <: Terrain^{captures}] => terrain is Viewable:
     def view[result](value: terrain)(lambda: Terrain^ => result): result = lambda(value)
+
+    // A terrain which is a tilth is lent as one.
+    override def till[result](value: terrain)(lambda: Tilth^ => result)(otherwise: => result)
+    :   result =
+
+      value match
+        case tilth: Tilth => lambda(tilth)
+        case _            => otherwise

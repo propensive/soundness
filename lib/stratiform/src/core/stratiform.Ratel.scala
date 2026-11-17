@@ -172,7 +172,11 @@ object Ratel:
       ( block: ((Reader & Granting[grants])^) ?=> result )
     :   result =
 
-      viewable.view(value)(reading(_, mode, flags, Array.empty[Byte])(block))
+      if !mode.atoms.has(Write)
+      then viewable.view(value)(reading(_, mode, flags, Array.empty[Byte])(block))
+      else
+        viewable.till(value)(owning(_, mode, flags, Array.empty[Byte])(block)):
+          fail(Error.Reason.Unwritable)
 
   class TypedOpenable[source, topic]
     ( using viewable:  (source is Viewable)^,
@@ -190,7 +194,11 @@ object Ratel:
     :   result =
 
       val expected = signatureOf[topic]
-      viewable.view(value)(reading(_, mode, flags, expected)(block))
+
+      if !mode.atoms.has(Write) then viewable.view(value)(reading(_, mode, flags, expected)(block))
+      else
+        viewable.till(value)(owning(_, mode, flags, expected)(block)):
+          fail(Error.Reason.Unwritable)
 
   // `expected` is the signature the image must carry, or nothing if any will do.
   private def reading[grants <: Grant, result]
@@ -199,13 +207,9 @@ object Ratel:
     ( using tactic: Tactic[Ratel.Error] )
   :   result =
 
-    // An image is never changed where it lies: a new one is published over it.
+    // An image which is read is not changed: one is changed through `owning`, below.
     if mode.atoms.has(Write) then fail(Error.Reason.Unwritable)
-
-    val codecs = flags.fuse(Tel.Codec.Bindings.all):
-      next match
-        case Flag.Codecs(bindings) => bindings.orElse(state)
-        case Flag.Verify           => state
+    val codecs = bound(flags)
 
     val terrain: Terrain^{view} = view
 
@@ -221,10 +225,60 @@ object Ratel:
     if flags.has(Flag.Verify) then reader.verify()
     block(using reader)
 
+  private def bound(flags: List[Ratel.Flag]): Tel.Codec.Bindings =
+    flags.fuse(Tel.Codec.Bindings.all):
+      next match
+        case Flag.Codecs(bindings) => bindings.orElse(state)
+        case Flag.Verify           => state
+
+  // §10.1: an image is opened for changing by the one process which owns it, which has it
+  // as a tilth: a file mapped under an exclusive lock, or bytes on the heap. It is inspected
+  // as any reader inspects it, so that one which is dirty is refused; a sealed one is unsealed,
+  // which is for a copy of the owner's own, never for a file which others may have mapped;
+  // and it is marked dirty for as long as the block runs. If the block ends without a change
+  // left half-written, the mark is cleared; if not, the image stays dirty.
+  private def owning[grants <: Grant, result]
+    ( soil: Tilth^, mode: Mode granting grants, flags: List[Ratel.Flag], expected: Data )
+    ( block: ((Reader & Granting[grants])^) ?=> result )
+    ( using tactic: Tactic[Ratel.Error] )
+  :   result =
+
+    val opening = inspect(soil, bound(flags))
+
+    if expected.length > 0 && RatelBytes.order(expected, opening.signature) != 0
+    then fail(Error.Reason.Mismatched)
+
+    val held: Tilth^{soil} = soil
+    if flags.has(Flag.Verify) then new Unbranded(held, opening).verify()
+
+    val editor = new RatelEditor(opening) with Granting[grants]:
+      type Topic = Unit
+      protected def view: Terrain^{this} = held
+      protected def tilth: Tilth^{this} = held
+
+    editor.begin()
+    try block(using editor) finally editor.end()
+
+  // The reader as the editor it is, if the image was opened for changing.
+  private[stratiform] def editing(reader: Reader^)(using Tactic[Ratel.Error]): RatelEditor^{reader} =
+    reader match
+      case editor: RatelEditor => editor
+      case _                   => fail(Error.Reason.Unwritable)
+
+  // A value's model under a record's type, checked as a document of that type is: what is
+  // put into an image is valid before it is.
+  private[stratiform] def element(tel: Tel, reader: Reader^, struct: Tels.Struct)
+    ( using Tactic[Tel.Error] )
+  :   Tel.Element =
+
+    val under = reader.schema.copy(document = struct)
+    Tel.Type.assign(tel, under, Tel.Validator.Registry.builtins, reader.bindings)
+
   // What `open` learns of an image before anything is read from it: its schema and layout,
   // its state, and where its sections, tables and indexes lie.
   private[stratiform] case class Opening
     ( schema:    Tels,
+      declared:  Tels,
       signature: Data,
       valueHash: Optional[Digest in Blake3],
       layout:    Layout,
@@ -349,7 +403,7 @@ object Ratel:
     val body: Data = section.segment(bodyLength.next.z till bodyEnd.z)
     val axiom = Tels.Axiom.tels
 
-    val (schema, recomputed) =
+    val (schema, declared, recomputed) =
       mitigate:
         case _: Tel.Error    => error(Reason.SchemaUndecodable)
         case _: Bintel.Error => error(Reason.SchemaUndecodable)
@@ -357,8 +411,8 @@ object Ratel:
       . protect:
           Bintel.decode(body, axiom) match
             case root: Tel.Element.Node =>
-              ( Tels.Layers.compose((root: Tel.Element).as[Tels]),
-                SchemaSignature.fromElement(root, axiom) )
+              val declared = (root: Tel.Element).as[Tels]
+              (Tels.Layers.compose(declared), declared, SchemaSignature.fromElement(root, axiom))
 
             case value: Tel.Element.Value =>
               fail(Reason.SchemaUndecodable)
@@ -447,7 +501,7 @@ object Ratel:
       if hashed then Digest[Blake3](header.segment(168.z till 200.z)) else Unset
 
     Opening
-      ( schema, signature, hash, layout, codecs, if sealing then State.Sealed else State.Unsealed,
+      ( schema, declared, signature, hash, layout, codecs, if sealing then State.Sealed else State.Unsealed,
         digested, spans.map(span => Extent(span.offset, span.length)).to[Array], tables.to[Array],
         indexes.to[Array] )
 
@@ -508,7 +562,7 @@ object Ratel:
     type Topic
 
     import Error.Reason
-    import opening.{codecs, indexes, layout, sections, tables}
+    import opening.{codecs, layout}
 
     // The composed schema which the image carries, and the signature it carries it under. A
     // reader which requires a schema it trusts compares the signature with those it knows.
@@ -518,21 +572,37 @@ object Ratel:
     // The document's value hash, if the header carries it.
     def valueHash: Optional[Digest in Blake3] = opening.valueHash
 
+    // The layout the schema determines, and the codecs the image was opened with.
+    private[stratiform] def arrangement: Layout = layout
+    private[stratiform] def bindings: Tel.Codec.Bindings = codecs
+
     // The state the image was opened in: sealed, or a working file its owner has closed.
     def state: State = opening.state
 
-    private def section(number: Int): Extent = sections.at(number.z).or(Extent(0L, 0L))
+    // Where a section, a table's rows and an index lie: as they were when the image was
+    // opened, which for an image that nothing changes is where they stay. A reader through
+    // which its owner changes it finds them afresh each time, since a change may move them.
+    private[stratiform] def section(number: Int): Extent =
+      opening.sections.at(number.z).or(Extent(0L, 0L))
+
+    private[stratiform] def rows(table: Int): Optional[Extent] =
+      if table < 0 then Unset else opening.tables.at(table.z)
+
+    private[stratiform] def tree(index: Int)(using Tactic[Ratel.Error]): Tree =
+      opening.indexes.at(index.z).or(fail(Reason.BadIndex))
+
+    private[stratiform] def digested: Boolean = opening.digested
 
     private[stratiform] def plan(table: Int)(using Tactic[Ratel.Error]): RatelLayout.Table =
       layout.table(table).or(fail(Reason.BadRecordIndex))
 
     // The number of rows in a table, live or free.
     private[stratiform] def count(table: Int): Long =
-      tables.at(table.z).let(_.length).or(0L)
+      rows(table).let(_.length).or(0L)
 
     // Where a row lies, if its record index is within its table.
-    private def position(table: Int, row: Long)(using Tactic[Ratel.Error]): Long =
-      val extent = tables.at(table.z).or(fail(Reason.BadRecordIndex))
+    private[stratiform] def position(table: Int, row: Long)(using Tactic[Ratel.Error]): Long =
+      val extent = rows(table).or(fail(Reason.BadRecordIndex))
       if row < 0 || row >= extent.length then fail(Reason.BadRecordIndex)
       extent.offset + row*plan(table).rowSize
 
@@ -602,6 +672,26 @@ object Ratel:
     // The document's root: the one row of table 0.
     def root(using Tactic[Ratel.Error]): Row of Topic =
       Row[Topic](0, 0L, plan(0).entries, plan(0).struct)
+
+    // §10.5: the document of this image, written afresh as a sealed image: compact, with its
+    // value hash and its digests, and the same bytes whatever the history of the image it is
+    // made from. It is what an owner publishes; the image it is made from is left as it is.
+    def seal()(using Tactic[Ratel.Error], Tactic[Tel.Error]): Ratel =
+      Ratel(RatelWriter.write(materialise(), opening.declared, codecs, true))
+
+    // As `seal`, for an image which is known to be of a value of the type `topic`.
+    def sealAs[topic](using topic is TelSchematic over Tels.Type)
+      ( using Tactic[Ratel.Error], Tactic[Tel.Error] )
+    :   Ratel of topic =
+
+      if RatelBytes.order(signatureOf[topic], signature) != 0 then fail(Reason.Mismatched)
+      Ratel.of[topic](seal().data)
+
+    // §10.5: the document of this image, written afresh as a working image, with nothing in
+    // it which is garbage, and with `slack` times the room it needs in everything which can
+    // grow. Rows are numbered anew, so a record index of this image is not one of that.
+    def repack(slack: Double = 2.0)(using Tactic[Ratel.Error], Tactic[Tel.Error]): Ratel =
+      Ratel(RatelWriter.write(materialise(), opening.declared, codecs, false, false, slack.max(1.0)))
 
     // §8: the semantic model which the image encodes, from which it may be written again as
     // text or as BinTEL. Every row is visited once, and at most once.
@@ -737,9 +827,6 @@ object Ratel:
       layout.indexes.to[List].zip(List.range(0, layout.indexes.length)).filter: (index, number) =>
         index.table == table && index.slot.number == slot.number
 
-    private def tree(index: Int)(using Tactic[Ratel.Error]): Tree =
-      indexes.at(index.z).or(fail(Reason.BadIndex))
-
     // §9.4: a page of an index, whose header is checked before anything in it is read
     // (↯/t.5.23).
     private[stratiform] def page(index: Int, number: Long)(using Tactic[Ratel.Error]): Page =
@@ -782,8 +869,6 @@ object Ratel:
         val fits = length >= 1 && length <= page.size/8 && pointer + 2 + length <= page.size
         if !fits then fail(Reason.BadIndex)
         Extent(at + 2, length)
-
-    private[stratiform] def entries(index: Int): Long = indexes.at(index.z).let(_.count).or(0L)
 
     // §9.5: the record indices of the children whose entries begin with `probe`, in the order
     // of the index: a descent from the root to the leaf where the first of them would be, and
@@ -878,7 +963,7 @@ object Ratel:
     def verify()(using Tactic[Ratel.Error]): Unit =
       val digests = section(5)
 
-      if opening.digested then
+      if digested then
         if digests.offset - RatelBytes.header > Int.MaxValue then fail(Reason.Oversized)
         val body = view.read(RatelBytes.header.toLong, (digests.offset - RatelBytes.header).toInt)
         if !view.same(digests.offset, Blake3.hashOf(body, 32)) then fail(Reason.DigestMismatch)
@@ -1437,6 +1522,99 @@ object Ratel:
 
       texts(keyword).map(Cell.Value(_))
 
+    // What follows changes the record, in an image which was opened for writing (§10.3). A
+    // change is checked before anything is written, and one which is refused -- a value its
+    // scalar does not admit, a key another record has, a member which may not be absent --
+    // leaves the image as it was. The indexes are kept in step.
+
+    // The declaration of a scalar member, by which a value for it is checked.
+    private def field(keyword: Text)(using Tactic[Ratel.Error]): Tels.Field =
+      struct.members.to[List].sweep { case field: Tels.Field if field.keyword == keyword => field }
+      . head.or(fail(Reason.Inapplicable(keyword)))
+
+    // Checks values for a member as a document which had only that member would be checked:
+    // against its scalar's validators, its patterns and its codec.
+    private def admit(keyword: Text, values: List[Text])
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      val member: Tels.Member = field(keyword).copy(key = false, indexes = Nil)
+      val alone = Tels.Struct(Array(member), Array.empty)
+      val plain = Tels.Scalar(Array.empty)
+      val children: List[Tel.Element] = values.map(Tel.Element.Value(0, plain, _))
+      val under = reader.schema.copy(document = alone)
+      val model = Tel.Element.Node(Unset, alone, children.to[Array])
+      Tel.Type.assign(Bintel.present(model, under), under, Tel.Validator.Registry.builtins, reader.bindings)
+
+    // `update-value`: gives a scalar member a value.
+    def set(keyword: Text, value: Text)
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      lookup(keyword) match
+        case Found.Member(slot) =>
+          admit(keyword, List(value))
+          editing(reader).assign(table, index, slot, value)
+
+        case _ =>
+          fail(Reason.Inapplicable(keyword))
+
+    // Gives a repeatable scalar member its values, in place of those it has.
+    def set(keyword: Text, values: List[Text])
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      lookup(keyword) match
+        case Found.Member(slot) =>
+          admit(keyword, values)
+          editing(reader).assignAll(table, index, slot, values)
+
+        case _ =>
+          fail(Reason.Inapplicable(keyword))
+
+    // `set-flag`: makes a flag present, or counts one which may be repeated once more.
+    def set(keyword: Text)
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      lookup(keyword) match
+        case Found.Member(slot) => editing(reader).flag(table, index, slot, true)
+        case _                  => fail(Reason.Inapplicable(keyword))
+
+    // `unset-flag`, or an `update-value` to no value: makes a flag absent, or counts one which
+    // may be repeated once less; or leaves a scalar member which may be absent without a value.
+    def unset(keyword: Text)
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      lookup(keyword) match
+        case Found.Member(slot) => slot.kind match
+          case Kind.Always | Kind.Flag | Kind.FlagCount =>
+            editing(reader).flag(table, index, slot, false)
+
+          case _ =>
+            editing(reader).assign(table, index, slot, Unset)
+
+        case _ =>
+          fail(Reason.Inapplicable(keyword))
+
+    // `delete`: takes this record, which must be one of a collection, out of it, with every
+    // record within it. Nothing may be read through this row afterwards.
+    def delete()
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Unit =
+
+      editing(reader).remove(table, index)
+
+    // `replace`: puts a value in this record's place in its collection, and answers the record
+    // which is there now. Nothing may be read through this row afterwards.
+    def replace[value: Tel.Encodable](value: value)
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error], telling: Tactic[Tel.Error] )
+    :   Row of Topic =
+
+      val fresh = editing(reader).replace(table, index, element(value.encode, reader, struct))
+      Row[Topic](table, fresh, entries, struct)
+
     // This record as a value of a type which is read from TEL. Only this record's rows, and
     // those it refers to, are read.
     def as[value: Tel.Decodable]
@@ -1464,7 +1642,7 @@ object Ratel:
       slot:   Slot,
       table:  Int,
       struct: Tels.Struct,
-      ref:    Long,
+      ref0:   Long,
       val size: Long ):
 
     // The brand of the reader these rows came from.
@@ -1485,8 +1663,55 @@ object Ratel:
     :   Row of Topic =
 
       val children = reader.list(ref, 4L)
-      if position >= children.length then fail(Reason.BadRecordIndex)
+      if position < 0 || position >= children.length then fail(Reason.BadRecordIndex)
       row(reader.word(children.offset + 4*position))
+
+    // The child list, found through the slot which refers to it each time it is wanted: an
+    // owner may have moved it since these rows were taken.
+    private def ref(using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error]): Long =
+      reader.word(reader.address(host, parent) + slot.offset)
+
+    // How many records there are now: `size` is how many there were when these were taken,
+    // which for an image that nothing is changing is the same.
+    def count(using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error]): Long =
+      reader.list(ref, 4L).length
+
+    // §10.3, `insert`: puts a value into the collection as a new record, after the others, and
+    // answers the record. The image must have been opened for writing. The value is checked
+    // as a document of the record's type is, and its key against those of the other records,
+    // before anything is written: one which is refused leaves the image as it was.
+    def insert[value: Tel.Encodable](value: value)
+      ( using reader:  (Reader of Topic)^,
+              tactic:  Tactic[Ratel.Error],
+              telling: Tactic[Tel.Error] )
+    :   Row of Topic =
+
+      place(count, value)
+
+    // As `insert`, before the record which is now at a position.
+    def insert[value: Tel.Encodable](ordinal: Ordinal, value: value)
+      ( using reader:  (Reader of Topic)^,
+              tactic:  Tactic[Ratel.Error],
+              telling: Tactic[Tel.Error] )
+    :   Row of Topic =
+
+      place(ordinal.n0.toLong, value)
+
+    private def place[value: Tel.Encodable](position: Long, value: value)
+      ( using reader:  (Reader of Topic)^,
+              tactic:  Tactic[Ratel.Error],
+              telling: Tactic[Tel.Error] )
+    :   Row of Topic =
+
+      val editor = editing(reader)
+      row(editor.insert(host, parent, slot, position, element(value.encode, reader, struct)))
+
+    // §10.3, `reorder-within-group`: moves the record at one position to another.
+    def move(from: Ordinal, to: Ordinal)
+      ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error] )
+    :   Unit =
+
+      editing(reader).move(host, parent, slot, from.n0.toLong, to.n0.toLong)
 
     // A child which an index names, by its record index: a live row of the children's table.
     private def child(number: Long)
@@ -1501,7 +1726,6 @@ object Ratel:
       ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error] )
     :   Row of Topic =
 
-      if ordinal.n0 >= size then fail(Reason.BadRecordIndex)
       listed(ordinal.n0)
 
     // Each record, in the order the document has them.
@@ -1509,8 +1733,10 @@ object Ratel:
       ( using reader: (Reader of Topic)^, tactic: Tactic[Ratel.Error] )
     :   Unit =
 
+      val length = count
+
       @scala.annotation.tailrec
-      def recur(number: Long): Unit = if number < size then
+      def recur(number: Long): Unit = if number < length then
         lambda(listed(number))
         recur(number + 1)
 

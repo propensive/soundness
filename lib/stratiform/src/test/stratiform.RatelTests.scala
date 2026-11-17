@@ -109,6 +109,27 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
   case class Author(name: Text, born: Int)
 
+  // A record of the catalogue, as a value which is put into it.
+  case class Entry(name: Text, info: Optional[Text] = Unset)
+
+  // A key of `length` bytes which sorts as its number does.
+  private def key(number: Int, length: Int): Text = "%04d".format(number).repeat(length/4).nn.tt
+
+  // A catalogue of the entries numbered by `numbers`, in that order.
+  private def listing(numbers: List[Int], length: Int): Tel =
+    numbers.fuse("tel 1.0\n")(state+"\nentry\n  name "+key(next, length).s+"\n").tt.read[Tel]
+
+  // A catalogue of `count` entries, whose keys are not in order.
+  private def entries(count: Int, length: Int): Tel =
+    listing(List.range(0, count).map(_*7919%count), length)
+
+  // The image of a document as its canonical writer seals it.
+  private def canonical(document: Tel, schema: Tels): Text =
+    hex(Ratel.encode(Tel.Type.assign(document, schema), schema).data)
+
+  // The condition a verifying reader reports for a working image, or nothing.
+  private def sound(tilth: Tilth): Unit = Ratel.open(tilth).verify()
+
   // The one declaration which a publisher and its observers share.
   case class Part(@key name: Text, play: Text)
   case class Company(@index(t"/play") part: List[Part])
@@ -368,16 +389,6 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == true)
 
     suite(m"Indexes as trees (§9)"):
-      // A key of `length` bytes which sorts as its number does.
-      def key(number: Int, length: Int): Text = "%04d".format(number).repeat(length/4).nn.tt
-
-      // A catalogue of `count` entries, whose keys are not in order.
-      def entries(count: Int, length: Int): Tel =
-        List.range(0, count).fuse("tel 1.0\n"):
-          state+"\nentry\n  name "+key(next*7919%count, length).s+"\n"
-
-        . tt.read[Tel]
-
       val deep: Data = plain(entries(1000, 400), catalogueSchema)
       val spilled: Data = plain(entries(100, 600), catalogueSchema)
 
@@ -1112,3 +1123,334 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         reader.join()
         seen.get
       . assert(_ == List(t"Feste", t"Hamlet"))
+
+    suite(m"Changing an image in place (§10)"):
+      import Ratel.Error.Reason
+      val empty: Tel = t"tel 1.0\n".read[Tel]
+
+      // The catalogue's schema, but for a catalogue which may have no entries, as one which
+      // is begun empty has.
+      val listSchema: Tels = schemaOf:
+        Text("""|tel 1.0 specification.tel/tels:2.1.0
+            |
+            |name catalogue
+            |
+            |record Entry
+            |  field name String key
+            |  field info String optional
+            |
+            |document
+            |  field entry Entry optional repeatable
+            |""".stripMargin)
+
+      // The names of the catalogue's entries, in the order the document has them.
+      def names(tilth: Tilth): List[Text] =
+        var found: List[Text] = Nil
+        tilth.open[Ratel]()((ratel.root / t"entry").each { row => found = row.text(t"name").or(t"") :: found })
+        found.reverse
+
+      test(m"a sealed image which is opened for writing is unsealed"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        val within = tilth.open[Ratel](Read & Write)(ratel.state)
+        (within, tilth.u16(6L), tilth.open[Ratel]()(ratel.state))
+      . assert(_ == (Ratel.State.Unsealed, 0, Ratel.State.Unsealed))
+
+      test(m"an image which was unsealed and not changed is sound"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+        tilth.open[Ratel](Read & Write)(())
+        sound(tilth)
+      . assert(_ == ())
+
+      test(m"an image is dirty for as long as it is open for writing"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          val copy = Ratel(tilth.read(0L, tilth.size.toInt))
+          capture[Ratel.Error](copy.open[Ratel]()(ratel.state)).reason
+      . assert(_ == Reason.Dirty)
+
+      test(m"an image which cannot be changed is not opened for writing"):
+        capture[Ratel.Error](catalogue.ratel(catalogueSchema).open[Ratel](Read & Write)(())).reason
+      . assert(_ == Reason.Unwritable)
+
+      test(m"a record is not put into an image which was opened for reading"):
+        capture[Ratel.Error]:
+          catalogue.ratel(catalogueSchema).open[Ratel]()((ratel.root / t"entry").insert(Entry(t"gamma")))
+        . reason
+      . assert(_ == Reason.Unwritable)
+
+      // The history of §13: the worked example's document, reached by changes.
+      val history: Tilth = Tilth(empty.ratel(listSchema).data)
+
+      test(m"records are inserted, before and after others"):
+        history.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          entries.insert(Entry(t"beta"))
+          entries.insert(Prim, Entry(t"alpha"))
+          entries.find(t"alpha").let(_.set(t"info", t"First letter"))
+          entries.insert(Entry(t"gamma"))
+
+        names(history)
+      . assert(_ == List(t"alpha", t"beta", t"gamma"))
+
+      test(m"a record keeps its row when another is put before it"):
+        history.open[Ratel]():
+          val entries = ratel.root / t"entry"
+          (entries.find(t"beta").let(_.index), entries.find(t"alpha").let(_.index))
+      . assert(_ == (0L, 1L))
+
+      test(m"a record is deleted, and its row left free"):
+        history.open[Ratel](Read & Write)((ratel.root / t"entry").find(t"gamma").let(_.delete()))
+        names(history)
+      . assert(_ == List(t"alpha", t"beta"))
+
+      test(m"the image which was changed is sound, with a free row and garbage in it"):
+        sound(history)
+        val image = history.read(0L, history.size.toInt)
+        (image.u32(start(image, 3) + 32 + 20), image.u64(160) > 0L)
+      . assert(_ == (2L, true))
+
+      test(m"the image holds the document which the changes make"):
+        history.open[Ratel]()(hex(ratel.materialise().bintel(listSchema, Tel.Codec.Bindings.all)))
+      . assert: bytes =>
+          val element = Tel.Type.assign(catalogue, listSchema)
+          bytes == hex(element.bintel(listSchema, Tel.Codec.Bindings.all))
+
+      test(m"sealing it gives the bytes which the document seals to, whatever its history"):
+        history.open[Ratel]()(hex(ratel.seal().data))
+      . assert(_ == canonical(catalogue, listSchema))
+
+      test(m"a record with the key of another is refused"):
+        history.open[Ratel](Read & Write):
+          capture[Tel.Error]((ratel.root / t"entry").insert(Entry(t"alpha"))).reason
+      . assert(_ == Tel.Error.Reason.DuplicateKeyValue)
+
+      test(m"a change which is refused leaves every byte as it was"):
+        val before = hex(history.read(0L, history.size.toInt))
+
+        history.open[Ratel](Read & Write):
+          safely((ratel.root / t"entry").insert(Entry(t"beta", t"Second letter")))
+          safely((ratel.root / t"entry").find(t"beta").let(_.set(t"name", t"alpha")))
+          safely((ratel.root / t"entry").find(t"beta").let(_.unset(t"name")))
+
+        hex(history.read(0L, history.size.toInt)) == before
+      . assert(_ == true)
+
+      test(m"a record is not given the key of another"):
+        history.open[Ratel](Read & Write):
+          capture[Tel.Error]((ratel.root / t"entry").find(t"beta").let(_.set(t"name", t"alpha"))).reason
+      . assert(_ == Tel.Error.Reason.DuplicateKeyValue)
+
+      test(m"a member which must be present is not unset"):
+        history.open[Ratel](Read & Write):
+          capture[Tel.Error]((ratel.root / t"entry").find(t"beta").let(_.unset(t"name"))).reason
+      . assert(_ == Tel.Error.Reason.RequiredMemberAbsent)
+
+      test(m"a record which is given another key is found by it, and not by the old one"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          entries.find(t"alpha").let(_.set(t"name", t"omega"))
+          (entries.find(t"omega").let(_.text(t"info")), entries.find(t"alpha").absent, entries.sorted.size)
+      . assert(_ == (t"First letter", true, 2))
+
+      test(m"an optional member is unset, and set again"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          val alpha = (ratel.root / t"entry").find(t"alpha")
+          alpha.let(_.unset(t"info"))
+          val absent = alpha.let(_.text(t"info"))
+          alpha.let(_.set(t"info", t"The first"))
+          (absent, alpha.let(_.text(t"info")))
+      . assert(_ == (Unset, t"The first"))
+
+      test(m"a record is replaced where it lies in its collection"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          (ratel.root / t"entry").find(t"alpha").let(_.replace(Entry(t"aleph", t"Another first")))
+
+        sound(tilth)
+        (names(tilth), tilth.open[Ratel]()((ratel.root / t"entry").find(t"aleph").let(_.text(t"info"))))
+      . assert(_ == (List(t"aleph", t"beta"), t"Another first"))
+
+      test(m"the last record of a member which must have one is not deleted"):
+        val tilth = Tilth(catalogue.ratel(catalogueSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          entries.find(t"alpha").let(_.delete())
+          (capture[Tel.Error](entries.find(t"beta").let(_.delete())).reason, entries.count)
+      . assert(_ == (Tel.Error.Reason.RequiredMemberAbsent, 1L))
+
+      test(m"a record is moved among its siblings, and found by its key as before"):
+        val tilth = Tilth(listing(List(1, 2, 3, 4), 4).ratel(catalogueSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          entries.move(Prim, Ter)
+          entries.move(Quat, Prim)
+
+        sound(tilth)
+        (names(tilth), tilth.open[Ratel]()(hex(ratel.seal().data)))
+      . assert(_ == (List(t"0004", t"0002", t"0003", t"0001"), canonical(listing(List(4, 2, 3, 1), 4), catalogueSchema)))
+
+      // Growth past every capacity: the tables, the regions, the child list and the index.
+      val numbers: List[Int] = List.range(0, 1500).map(_*7919%1500)
+      val grown: Tilth = Tilth(empty.ratel(listSchema).data)
+
+      test(m"many records are inserted into an image which began empty"):
+        grown.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          numbers.each { number => entries.insert(Entry(key(number, 40))) }
+          entries.count
+      . assert(_ == 1500L)
+
+      test(m"the image which grew is sound"):
+        sound(grown)
+      . assert(_ == ())
+
+      test(m"its index is a tree of several levels, and orders the records by key"):
+        val image = grown.read(0L, grown.size.toInt)
+        val height = image.u8(start(image, 4) + 30)
+        val sorted = grown.open[Ratel]()((ratel.root / t"entry").sorted.map(_.text(t"name").or(t"")))
+        (height >= 2, sorted == List.range(0, 1500).map(key(_, 40)))
+      . assert(_ == (true, true))
+
+      test(m"sealing the image which grew gives the bytes its document seals to"):
+        grown.open[Ratel]()(hex(ratel.seal().data))
+      . assert(_ == canonical(listing(numbers, 40), listSchema))
+
+      test(m"every other record is deleted, and the image is sound"):
+        grown.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          List.range(0, 750).each { number => entries.find(key(2*number, 40)).let(_.delete()) }
+
+        sound(grown)
+        grown.open[Ratel]()((ratel.root / t"entry").count)
+      . assert(_ == 750L)
+
+      test(m"what is left seals to the bytes its document seals to"):
+        grown.open[Ratel]()(hex(ratel.seal().data))
+      . assert(_ == canonical(listing(numbers.filter(_%2 == 1), 40), listSchema))
+
+      test(m"rows which were freed are taken again by records which are inserted"):
+        val before = grown.read(0L, grown.size.toInt)
+        val allocated = before.u32(start(before, 3) + 32 + 8)
+
+        grown.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          List.range(0, 500).each { number => entries.insert(Entry(key(2*number, 40))) }
+
+        sound(grown)
+        val after = grown.read(0L, grown.size.toInt)
+        after.u32(start(after, 3) + 32 + 8) == allocated
+      . assert(_ == true)
+
+      test(m"keys too long for a page are inserted and deleted through spilled entries"):
+        val tilth = Tilth(empty.ratel(listSchema).data)
+
+        tilth.open[Ratel](Read & Write):
+          val entries = ratel.root / t"entry"
+          List.range(0, 60).each { number => entries.insert(Entry(key(number*37%60, 600))) }
+          List.range(0, 20).each { number => entries.find(key(3*number, 600)).let(_.delete()) }
+
+        sound(tilth)
+        tilth.open[Ratel]()((ratel.root / t"entry").sorted.map(_.text(t"name").or(t"")))
+      . assert(_ == List.range(0, 60).filter(_%3 != 0).map(key(_, 600)))
+
+      test(m"a repacked image has room to grow, and holds the same document"):
+        val repacked = grown.open[Ratel]()(ratel.repack())
+        val tilth = Tilth(repacked.data)
+        sound(tilth)
+
+        ( tilth.open[Ratel]()(ratel.state),
+          tilth.u64(160L),
+          tilth.open[Ratel]()(hex(ratel.seal().data)) == grown.open[Ratel]()(hex(ratel.seal().data)) )
+      . assert(_ == (Ratel.State.Unsealed, 0L, true))
+
+      // The folio: secondary indexes, arrays which are indexed, flags and interned values.
+      val shelf: Tilth = Tilth(folio.ratel(folioSchema).data)
+
+      // The index is over the genre and then the acts, so the comedy of four acts comes first.
+      test(m"a value on the path of a secondary index is changed, and the index with it"):
+        shelf.open[Ratel](Read & Write):
+          val plays = ratel.root / t"play"
+          plays.find(t"Cardenio").let(_.set(t"genre", t"comedy"))
+
+          ( plays.where(t"/genre", t"comedy").map(_.text(t"title").or(t"")),
+            plays.where(t"/genre", t"tragedy").map(_.text(t"title").or(t"")) )
+      . assert(_ == (List(t"Cardenio", t"Twelfth Night"), List(t"Hamlet")))
+
+      test(m"a value within a record's own record changes the index over its path"):
+        shelf.open[Ratel](Read & Write):
+          val plays = ratel.root / t"play"
+          plays.find(t"Hamlet").let(_.record(t"author")).let(_.set(t"born", t"1579"))
+          plays.where(t"/author/born", t"1579").map(_.text(t"title").or(t""))
+      . assert(_ == List(t"Hamlet", t"Cardenio"))
+
+      test(m"the values of an indexed array are replaced, and found"):
+        shelf.open[Ratel](Read & Write):
+          val hamlet = (ratel.root / t"play").find(t"Hamlet")
+          hamlet.let(_.set(t"role", List(t"Hamlet", t"Horatio", t"Yorick")))
+          (hamlet.let(_.holds(t"role", t"Yorick")), hamlet.let(_.holds(t"role", t"Ophelia")))
+      . assert(_ == (true, false))
+
+      test(m"a flag is set and unset, and one which repeats is counted"):
+        shelf.open[Ratel](Read & Write):
+          val hamlet = (ratel.root / t"play").find(t"Hamlet")
+          hamlet.let(_.set(t"lost"))
+          hamlet.let(_.set(t"revised"))
+          val during = (hamlet.let(_.flag(t"lost")), hamlet.let(_.count(t"revised")))
+          hamlet.let(_.unset(t"lost"))
+          (during, hamlet.let(_.flag(t"lost")))
+      . assert(_ == ((true, 3L), false))
+
+      test(m"a value which its scalar does not admit is refused"):
+        shelf.open[Ratel](Read & Write):
+          capture[Tel.Error]((ratel.root / t"play").find(t"Hamlet").let(_.set(t"acts", t"five"))).reason
+      . assert(_ == Tel.Error.Reason.EncodingRejected)
+
+      test(m"the folio which was changed is sound"):
+        sound(shelf)
+      . assert(_ == ())
+
+    suite(m"Owning a file which is changed in place"):
+      val directory: Text = Uuid().show
+      val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
+      unsafely(root.create[Directory]())
+      val work: Path on Linux = unsafely((% / "tmp" / directory / "company.work").on[Linux])
+      val file: Path on Linux = unsafely((% / "tmp" / directory / "company.ratel").on[Linux])
+      val company = Company(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
+
+      test(m"a working file is begun from an image, and changed where it lies"):
+        unsafely:
+          work.claim[Ratel of Company](_.publish(company.ratel))
+
+          work.open[Ratel of Company](Read & Write):
+            (ratel.root / t"part").insert(Part(t"Feste", t"Twelfth Night"))
+            (ratel.root / t"part").find(t"Hamlet").let(_.delete())
+
+          work.open[Ratel of Company](Ratel.Flag.Verify)(ratel.root.as[Company])
+      . assert(_ == Company(List(Part(t"Viola", t"Twelfth Night"), Part(t"Feste", t"Twelfth Night"))))
+
+      test(m"what was changed is sealed, and published for observers of the name"):
+        unsafely:
+          work.open[Ratel of Company]()(file.claim[Ratel of Company](_.publish(ratel.sealAs[Company])))
+
+          file.observe[Ratel of Company]: observer =>
+            observer.open(Ratel.Flag.Verify):
+              (ratel.state, (ratel.root / t"part").where(t"/play", t"Twelfth Night").size)
+      . assert(_ == (Ratel.State.Sealed, 2))
+
+      test(m"a file which is open for writing is not opened for writing again"):
+        unsafely:
+          work.open[Ratel](Read & Write):
+            capture[Io.Error](work.open[Ratel](Read & Write)(())).reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"the working file is left clean when its scope ends"):
+        unsafely(work.open[Ratel]()(ratel.state))
+      . assert(_ == Ratel.State.Unsealed)

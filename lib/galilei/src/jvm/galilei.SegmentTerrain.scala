@@ -78,7 +78,7 @@ private[galilei] class SegmentTerrain(initial: jlf.MemorySegment) extends zephyr
     Array.freeze(array)
 
   // [java-boundary] the heap side of a comparison is read, never written or retained
-  private def heap(data: Data): jlf.MemorySegment =
+  protected def heap(data: Data): jlf.MemorySegment =
     jlf.MemorySegment.ofArray(Array.unsafeJvm(data)).nn
 
   def same(offset: Long, data: Data): Boolean =
@@ -123,10 +123,8 @@ extends SegmentTerrain(initial), FilesystemBackend.Tilling:
   def set32(offset: Long, value: Long): Unit = segment.set(SegmentTerrain.Int, offset, value.toInt)
   def set64(offset: Long, value: Long): Unit = segment.set(SegmentTerrain.Long, offset, value)
 
-  // [java-boundary] the array is only read, into the mapped segment
   def write(offset: Long, data: Data): Unit =
-    val bytes = Array.unsafeJvm(data)
-    jlf.MemorySegment.copy(bytes, 0, segment, SegmentTerrain.Byte, offset, data.length)
+    jlf.MemorySegment.copy(heap(data), 0L, segment, offset, data.length.toLong)
 
   def zero(offset: Long, length: Long): Unit = segment.asSlice(offset, length).nn.fill(0.toByte)
 
