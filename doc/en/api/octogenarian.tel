@@ -1760,7 +1760,7 @@ entry .Commandline   the backend which runs the `git` command, as `gitBackends.c
         transcribes guillotine's events into it, so a `Commandline.Event is Loggable` in scope
         is all the backend needs. `logging.silentLogging` discards them.
     entry .execEvent   transcribes a guillotine `Exec.Event` into a `Commandline.Event`
-    entry .communicable   renders an event as _the git operation did not execute: `reason`_
+    entry .communicable   renders an event as _git: `event`_
   entry .Outcome   what one `git` invocation produced: its exit status, standard output and standard error
     entry #exit   the exit status
     entry #stdout   standard output, as text
