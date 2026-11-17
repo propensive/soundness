@@ -291,10 +291,10 @@ extension (byte: Byte)
   inline def long: Long = byte.toLong
 
   @targetName("intByte")
-  inline def int: Long = byte.toInt
+  inline def int: Int = byte.toInt
 
   @targetName("shortByte")
-  inline def short: Long = byte.toShort
+  inline def short: Short = byte.toShort
 
   @targetName("absByte")
   inline def abs: Byte = math.abs(byte).toByte
