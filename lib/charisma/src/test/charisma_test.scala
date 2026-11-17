@@ -101,6 +101,10 @@ object Tests extends Suite("chemistry", m"Charisma Tests"):
         PeriodicTable.element(122).name
       . assert(_ == t"Unbibium")
 
+      test(m"A doubled `n` is elided where `enn` meets `nil`"):
+        PeriodicTable.element(190).name
+      . assert(_ == t"Unennilium")
+
       test(m"A systematic element keeps its atomic number"):
         PeriodicTable.element(126).number
       . assert(_ == 126)
@@ -263,7 +267,7 @@ object Tests extends Suite("chemistry", m"Charisma Tests"):
 
       test(m"Reactions are rendered with distinct arrows"):
         Array.unsafeFrozen(Reaction.values).to[List].map(_.show)
-      . assert(_ == List(t"→", t"⇄", t"⇋", t"↔", t"="))
+      . assert(_ == List(t"→", t"⇄", t"⇋", t"=", t"↔"))
 
       test(m"A resonance equation has a resonance reaction"):
         (water <-> water).reaction

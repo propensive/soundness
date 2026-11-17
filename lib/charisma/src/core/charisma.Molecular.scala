@@ -57,10 +57,10 @@ trait Molecular extends Formulable:
         molecule.charge*multiplier,
         Unset )
 
-  @targetName("cation")
+  @targetName("anion")
   def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)
 
-  @targetName("anion")
+  @targetName("cation")
   def `unary_+`: Molecule = molecule.copy(charge = molecule.charge + 1)
 
   def ion(charge: Int): Molecule = molecule.copy(charge = charge)

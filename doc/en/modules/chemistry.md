@@ -108,8 +108,8 @@ column  Renders as
 row  `-->`  `Reaction.NetForward`, a net forward reaction  `→`
 row  `<=>`  `Reaction.BothDirections`, a reaction proceeding in both directions  `⇄`
 row  `<~>`  `Reaction.Equilibrium`, a reaction at equilibrium  `⇋`
-row  `<->`  `Reaction.Resonance`  `=`
-row  `===`  `Reaction.Stoichiometric`  `↔`
+row  `<->`  `Reaction.Resonance`  `↔`
+row  `===`  `Reaction.Stoichiometric`  `=`
 ```
 
 Which arrow a chemist writes carries information, and the equation keeps it.
