@@ -565,9 +565,9 @@ entry .Compiler
 
   entry .Notice
     info
-        - one diagnostic: its importance, file, message, span and semantic markup
-        + un diagnostic : son importance, son fichier, son message, son étendue et son balisage
-        + sémantique
+        - one diagnostic: its importance, file, message, span, semantic markup and bolt code
+        + un diagnostic : son importance, son fichier, son message, son étendue, son balisage
+        + sémantique et son code bolt
     detail
         - What a compiler reports about the sources, as a value: `#importance` is `Info`,
         - `Warning` or `Error`; `#file` the name the source was given in the compile's `Map`
@@ -600,6 +600,16 @@ entry .Compiler
         + fragments stylés, de paramètres fictifs et de types sérialisés, si bien qu'un message «
         + found `A`, required `B` » arrive sous forme de deux types à rendre et à comparer plutôt
         + que de texte à réanalyser.
+
+        - `#code` is only set by `Scalac` under `scalacOptions.boltCodes`, and only for an error or
+        - a warning: the bolt code Proscala gives the diagnostic, as a `fulminate.Bolt`, such as
+        - `↯/p.1.7` for a type mismatch (upstream's `E007`). Proscala writes the code in the heading
+        - of its own report, not in the message, so it is read here from the diagnostic itself.
+        + `#code` n'est défini que par `Scalac` sous `scalacOptions.boltCodes`, et seulement pour
+        + une erreur ou un avertissement : le code bolt que Proscala donne au diagnostic, sous forme
+        + de `fulminate.Bolt`, comme `↯/p.1.7` pour une incompatibilité de types (le `E007` de
+        + l'amont). Proscala écrit le code dans l'en-tête de son propre rapport, et non dans le
+        + message, si bien qu'il est lu ici directement sur le diagnostic.
     entry #importance
       info
           - whether the notice is informational, a warning or an error
@@ -621,6 +631,10 @@ entry .Compiler
           - the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
           + le message brut avec les marqueurs sémantiques, sous `-Zsemantic-diagnostics`, sinon
           + `Unset`
+    entry #code
+      info
+          - the diagnostic's bolt code, under `-Zbolt-codes`, else `Unset`
+          + le code bolt du diagnostic, sous `-Zbolt-codes`, sinon `Unset`
 
 entry .Compilation
   info
@@ -2329,6 +2343,16 @@ entry .scalacOptions
         + message, avec du TASTy sérialisé pour les types qui s'y trouvent, et un `Compiler.Notice`
         + conserve cette forme balisée comme son `markup` à côté du `message` brut, pour que la
         + bibliothèque delicious l'analyse en un `SemanticMessage`.
+  entry .boltCodes
+    info
+        - `-Zbolt-codes`, at 3.9: gives each error and warning notice its bolt code
+        + `-Zbolt-codes`, en 3.9 : donne à chaque diagnostic d'erreur et d'avertissement son code
+        + bolt
+    detail
+        - Under this option Proscala gives every error and warning a bolt code, `↯/p.1.7`, and a
+        - `Compiler.Notice` carries it as its `code`.
+        + Sous cette option, Proscala donne à chaque erreur et à chaque avertissement un code bolt,
+        + `↯/p.1.7`, et un `Compiler.Notice` le porte comme son `code`.
   entry .warnings
     info
         - the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
