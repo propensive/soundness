@@ -55,6 +55,9 @@ object scalacOptions:
 
   val semanticDiagnostics = Scalac.Option[3.9](t"-Zsemantic-diagnostics")
 
+  // Proscala's bolt codes, which a `Compiler.Notice` then carries as its `code`.
+  val boltCodes = Scalac.Option[3.9](t"-Zbolt-codes")
+
   object warnings:
     val feature = Scalac.Option[Scalac.Versions](t"-feature")
     val deprecation = Scalac.Option[Scalac.Versions](t"-deprecation")
@@ -133,7 +136,9 @@ object scalacOptions:
 
       val betterFors = Scalac.Option[3.6](t"-language:experimental.betterFors")
 
-private[anthology] def notice(diagnostic: Diagnostic): Compiler.Notice =
+private[anthology] def notice(diagnostic: Diagnostic)(using dtdc.Contexts.Context)
+:   Compiler.Notice =
+
   val importance: Importance = Importance.fromOrdinal(diagnostic.level)
   val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
   val message: Text = diagnostic.message.tt
@@ -145,6 +150,14 @@ private[anthology] def notice(diagnostic: Diagnostic): Compiler.Notice =
     val raw = diagnostic.msg.message
     if raw.exists(_ == '\uE000') then raw.tt else Unset
 
+  // Under `-Zbolt-codes`, Proscala gives an error or a warning a bolt code, which it writes in
+  // the heading of its own report rather than in the message.
+  val code: Optional[fulminate.Bolt] =
+    if !BoltCodes.enabled || !BoltCodes.applies(diagnostic.level, diagnostic.msg) then Unset
+    else
+      val bolt = fulminate.Bolt.parse(BoltCodes.code(diagnostic.msg).tt)
+      if bolt.coded then bolt else Unset
+
   diagnostic.position.map: position =>
     position.nn.pipe: position =>
       val span =
@@ -154,10 +167,10 @@ private[anthology] def notice(diagnostic: Diagnostic): Compiler.Notice =
             position.endLine.nn.z,
             position.endColumn.nn.z )
 
-      Compiler.Notice(importance, file, message, span, markup)
+      Compiler.Notice(importance, file, message, span, markup, code)
 
   . nn
-  . orElse(Compiler.Notice(importance, file, message, Unset, markup))
+  . orElse(Compiler.Notice(importance, file, message, Unset, markup, code))
   . nn
 
 // A reporter which relays each diagnostic to the given `Compiler.Process` as a `Compiler.Notice`.
