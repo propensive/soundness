@@ -174,7 +174,7 @@ entry .TastyPalette   the colours TASTy trees and symbols are rendered with
 entry .tastySymbolTeletypeable   renders a `Tasty.Symbol` as a two-column table of its properties
     The `Teletypeable` given for `Tasty.Symbol`, needing a `TastyPalette`. The table has a
     row for the name (prefix dimmed, name bold), a row of flags with the set ones highlighted
-    on the palette's `flagOff` colour, a row of properties with the set ones on
+    on the palette's `flagOn` colour, a row of properties with the set ones on
     `propertyOn`, and one row per detail. It is a top-level given, so it resolves without
     an import inside `hyperbole` and by name elsewhere:
     `import soundness.tastySymbolTeletypeable`.

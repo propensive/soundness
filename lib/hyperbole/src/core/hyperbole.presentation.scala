@@ -58,7 +58,7 @@ given tastySymbolTeletypeable: (palette: TastyPalette) => Tasty.Symbol is Telety
 
     val flags =
       symbol.flags.map: (flag, on) =>
-        if on then e"${Bg(palette.flagOff)}(${Fg(palette.black)}(·${flag}·))"
+        if on then e"${Bg(palette.flagOn)}(${Fg(palette.black)}(·${flag}·))"
         else e"${Fg(palette.flagOff)}($flag)"
 
       . join(e" ")
