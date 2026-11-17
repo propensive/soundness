@@ -45,7 +45,7 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
-import zephyrine.Terrain
+import zephyrine.{Surveyable, Terrain}
 import Io.Error.{Operation, Reason}
 
 // Sharing a file between processes through the page cache (issue #2472): one process *owns* a
@@ -76,10 +76,10 @@ trait Owner[record] extends caps.ExclusiveCapability:
   // version's edition. Readers which have mapped an earlier version are undisturbed.
   def publish(value: record)(using (record is Encodable in Data)^, Tactic[Io.Error]): Edition
 
-// A reader's hold on a published name, for the scope of `path.published`: the current version,
+// A reader's hold on a published name, for the scope of `path.observe`: the current version,
 // mapped into memory, and the means to move on to a newer one. It takes no lock, and may be
 // shared between threads.
-trait Published[record] extends caps.SharedCapability:
+trait Observer[record] extends caps.SharedCapability:
   // The edition of the version which is mapped.
   def edition: Edition
 
@@ -92,7 +92,18 @@ trait Published[record] extends caps.SharedCapability:
   // whether it did.
   def refresh()(using Tactic[Io.Error]): Boolean
 
-object Published:
+  // Opens the mapped version as `record`, for reading in place, for the length of `block`:
+  // the type which was given to `observe` is the form it is read in, and no other is. As with
+  // `map`, a `refresh` meanwhile does not disturb the block, which goes on reading the version
+  // it began with.
+  def open[result](using surveyable: (record is Surveyable)^)
+    ( flags: surveyable.Operand* )
+    ( block: (surveyable.Result^) ?=> result )
+  :   result =
+
+    map { view => surveyable.survey(view, flags)(block) }
+
+object Observer:
   // One mapped version, counted: `readers` is the number of `map` scopes now over it, and it is
   // unmapped when it has been `retired` -- superseded, or the reader's scope ended -- and that
   // number has fallen to zero. Both fields are guarded by the owning `Reader`'s monitor.
@@ -116,7 +127,7 @@ object Published:
 
   private[galilei] final class Reader[record, plane: Filesystem]
     ( path: Path on plane, backend: FilesystemBackend on plane )
-  extends Published[record]:
+  extends Observer[record]:
 
     // [synchronized] the mapped version, replaced under this reader's monitor
     @caps.unsafe.untrackedCaptures

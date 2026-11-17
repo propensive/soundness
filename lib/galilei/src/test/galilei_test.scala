@@ -777,19 +777,19 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == false)
 
       test(m"A reader maps the published version"):
-        unsafely(indexFile.published[Text](_.map(text)))
+        unsafely(indexFile.observe[Text](_.map(text)))
       . assert(_ == t"fourth")
 
       test(m"A reader's edition is the edition which was published"):
         unsafely:
           indexFile.claim[Text]: owner =>
             val edition = owner.publish(t"fifth")
-            indexFile.published[Text](_.edition == edition)
+            indexFile.observe[Text](_.edition == edition)
       . assert(_ == true)
 
       test(m"A reader keeps its version until it refreshes"):
         unsafely:
-          indexFile.published[Text]: reader =>
+          indexFile.observe[Text]: reader =>
             val before = reader.map(text)
             indexFile.claim[Text](_.publish(t"sixth"))
             val unrefreshed = reader.map(text)
@@ -798,12 +798,12 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == (t"fifth", t"fifth", true, t"sixth"))
 
       test(m"Refreshing with nothing new published does nothing"):
-        unsafely(indexFile.published[Text](_.refresh()))
+        unsafely(indexFile.observe[Text](_.refresh()))
       . assert(_ == false)
 
       test(m"A view survives a refresh made while it is being read"):
         unsafely:
-          indexFile.published[Text]: reader =>
+          indexFile.observe[Text]: reader =>
             reader.map: view =>
               indexFile.claim[Text](_.publish(t"seventh"))
               reader.refresh()
@@ -812,13 +812,13 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
       test(m"A reader does not prevent the owner publishing, nor take the lock"):
         unsafely:
-          indexFile.published[Text]: reader =>
+          indexFile.observe[Text]: reader =>
             indexFile.claim[Text](_.publish(t"eighth"))
             indexFile.read[Text]
       . assert(_ == t"eighth")
 
       test(m"A name with nothing published cannot be read"):
-        unsafely(capture[Io.Error](absentFile.published[Text](_.edition)).reason)
+        unsafely(capture[Io.Error](absentFile.observe[Text](_.edition)).reason)
       . assert(_ == Io.Error.Reason.Nonexistent)
 
       test(m"An owner cannot escape its scope"):
@@ -831,16 +831,31 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A reader cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = indexFile.published[Text](identity(_))
+          val escaped = indexFile.observe[Text](identity(_))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
 
       test(m"A published view cannot escape its scope"):
         demilitarize:
           import strategies.throwUnsafely
-          val escaped = indexFile.published[Text](_.map(identity(_)))
+          val escaped = indexFile.observe[Text](_.map(identity(_)))
         . map(_.message)
       . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"An observer opens its version as the form it was given"):
+        // A form which is read in place: here, the first bytes of the view, as a number.
+        given surveyable: (Text is Surveyable by Nothing to Terrain) = new Surveyable:
+          type Self = Text
+          type Operand = Nothing
+          type Result = Terrain
+
+          def survey[result](view: Terrain^, flags: List[Nothing])(block: (Terrain^) ?=> result)
+          :   result =
+
+            block(using view)
+
+        unsafely(indexFile.observe[Text](_.open() { (view: Terrain^) ?=> view.size }))
+      . assert(_ > 0L)
 
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics

@@ -46,7 +46,7 @@ export
       glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local, locations,
       dataSearch, configSearch, destination, listing, search,
       MacOs, mapped, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
-      OverwritePreexisting, Owner, p, Platform, Posix, Published, published, Fdtable, readable, filesize, Sock, Stat,
+      OverwritePreexisting, Observer, observe, Owner, p, Platform, Posix, Fdtable, readable, filesize, Sock, Stat,
       Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, subvolume,
       subvolumeRoot, Symlink, symlinkInto, symlinkTo, touch,
       TraversalOrder,

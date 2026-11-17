@@ -56,11 +56,22 @@ import RatelLayout.{Component, Entry, Kind, Layout, Payload, Slot}
 // its predecessor; it is read in place, through `Ratel.open`, from a view of the file which
 // any number of processes may map.
 case class Ratel(data: Data):
+  // The type whose value the image is of, if that is known: `Ratel of Cast` is an image
+  // written under the schema derived from `Cast`, which is what a value's `ratel` gives. An
+  // owner which claims a name as `Ratel of Cast` publishes nothing else under it, and an
+  // observer which opens it as `Ratel of Cast` reads nothing else from it.
+  type Topic
+
   // A view of the image where it lies on the heap, for reading it without a file.
   def terrain: Terrain = Terrain(data)
 
 object Ratel:
-  given encodable: Ratel is Encodable in Data = _.data
+  // An image of a value of the type `topic`, under the schema derived from it.
+  private[stratiform] def of[topic](data: Data): Ratel of topic =
+    new Ratel(data) { type Topic = topic }
+
+  // An image is published as its bytes, whatever it is an image of.
+  given encodable: [ratel <: Ratel] => ratel is Encodable in Data = _.data
 
   // The image of a document's semantic model under a schema, which is given as it is
   // declared, with its layers, and is carried in the image (§5.2). Scalars with an encoding
@@ -78,8 +89,8 @@ object Ratel:
 
   // An image is `Viewable`, as the view of its bytes where they lie on the heap, so it is
   // opened as a file which holds it is.
-  given viewable: Ratel is Viewable:
-    def view[result](value: Ratel)(lambda: Terrain^ => result): result = lambda(value.terrain)
+  given viewable: [ratel <: Ratel] => ratel is Viewable:
+    def view[result](value: ratel)(lambda: Terrain^ => result): result = lambda(value.terrain)
 
   // Anything `Viewable` -- a path, an image, a view -- is opened as `Ratel` for reading in
   // place: `file.open[Ratel]()`. The reader is given to the block, and to nothing beyond it.
@@ -88,6 +99,58 @@ object Ratel:
         tactic:   Tactic[Ratel.Error] )
   =>  ( Ratel.Openable[source]^{viewable, tactic} ) =
     Ratel.Openable[source]()
+
+  // Anything `Viewable` is opened as `Ratel of topic` likewise, where `topic` is the type the
+  // image is expected to be of: an image written under any schema but the one derived from
+  // `topic` is refused, as `Mismatched`, before the block runs.
+  given typedOpenable: [source, topic]
+  =>  ( viewable:  (source is Viewable)^,
+        schematic: topic is TelSchematic over Tels.Type,
+        tactic:    Tactic[Ratel.Error] )
+  =>  ( Ratel.TypedOpenable[source, topic]^{viewable, tactic} ) =
+    Ratel.TypedOpenable[source, topic]()
+
+  // An image is read in place from a view of its bytes, whoever lends the view: this is what
+  // an observer of a published name opens it through.
+  given surveyable: (tactic: Tactic[Ratel.Error])
+  =>  ( (Ratel is Surveyable by Ratel.Flag to Reader)^{tactic} ) =
+    new Surveyable:
+      type Self = Ratel
+      type Operand = Ratel.Flag
+      type Result = Reader
+
+      def survey[result](view: Terrain^, flags: List[Ratel.Flag])(block: (Reader^) ?=> result)
+      :   result =
+
+        reading(view, Read, flags, Array.empty[Byte])(block)
+
+  given typedSurveyable: [topic]
+  =>  ( schematic: topic is TelSchematic over Tels.Type, tactic: Tactic[Ratel.Error] )
+  =>  ( ((Ratel of topic) is Surveyable by Ratel.Flag to Reader)^{tactic} ) =
+    new Surveyable:
+      type Self = Ratel of topic
+      type Operand = Ratel.Flag
+      type Result = Reader
+
+      def survey[result](view: Terrain^, flags: List[Ratel.Flag])(block: (Reader^) ?=> result)
+      :   result =
+
+        reading(view, Read, flags, signatureOf[topic])(block)
+
+  // The signature of the schema derived from a type, as an image of a value of the type
+  // carries it. A type which has no such schema has no images to be mistaken for.
+  private[stratiform] def signatureOf[topic]
+    ( using schematic: topic is TelSchematic over Tels.Type, tactic: Tactic[Ratel.Error] )
+  :   Data =
+
+    mitigate:
+      case _: Tel.Error           => error(Error.Reason.Mismatched)
+      case _: Bintel.Error        => error(Error.Reason.Mismatched)
+      case _: Tels.Renderer.Error => error(Error.Reason.Mismatched)
+
+    . protect:
+        val axiom = Tels.Axiom.tels
+        SchemaSignature.fromElement(Tels.Renderer.element(Tels.tels[topic](t"root"), axiom), axiom)
 
   // What may be asked of `open[Ratel]`: `Verify` makes it a verifying reader (§7.2), which
   // checks the whole image before the block runs, and `Codecs` binds the codecs of encodings
@@ -109,10 +172,29 @@ object Ratel:
       ( block: ((Reader & Granting[grants])^) ?=> result )
     :   result =
 
-      viewable.view(value)(reading(_, mode, flags)(block))
+      viewable.view(value)(reading(_, mode, flags, Array.empty[Byte])(block))
 
+  class TypedOpenable[source, topic]
+    ( using viewable:  (source is Viewable)^,
+            schematic: topic is TelSchematic over Tels.Type,
+            tactic:    Tactic[Ratel.Error] )
+  extends aperture.Openable:
+    type Self = source
+    type Form = Ratel of topic
+    type Operand = Ratel.Flag
+    type Result = Reader
+
+    def open[grants <: Grant, result]
+      ( value: source, mode: Mode granting grants, flags: List[Ratel.Flag] )
+      ( block: ((Reader & Granting[grants])^) ?=> result )
+    :   result =
+
+      val expected = signatureOf[topic]
+      viewable.view(value)(reading(_, mode, flags, expected)(block))
+
+  // `expected` is the signature the image must carry, or nothing if any will do.
   private def reading[grants <: Grant, result]
-    ( view: Terrain^, mode: Mode granting grants, flags: List[Ratel.Flag] )
+    ( view: Terrain^, mode: Mode granting grants, flags: List[Ratel.Flag], expected: Data )
     ( block: ((Reader & Granting[grants])^) ?=> result )
     ( using tactic: Tactic[Ratel.Error] )
   :   result =
@@ -127,7 +209,12 @@ object Ratel:
 
     val terrain: Terrain^{view} = view
 
-    val reader = new Reader(inspect(view, codecs)) with Granting[grants]:
+    val opening = inspect(view, codecs)
+
+    if expected.length > 0 && RatelBytes.order(expected, opening.signature) != 0
+    then fail(Error.Reason.Mismatched)
+
+    val reader = new Reader(opening) with Granting[grants]:
       type Topic = Unit
       protected def view: Terrain^{this} = terrain
 

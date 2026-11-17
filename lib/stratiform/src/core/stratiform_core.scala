@@ -249,13 +249,14 @@ extension (element: Tel.Element)
     Ratel.encode(element, schema, codecs)
 
 extension [value: Tel.Encodable](value: value)
-  // Any value as a RaTEL image, under the schema derived from its type.
+  // Any value as a RaTEL image, under the schema derived from its type, which the image's
+  // own type records: it is what `Ratel of value` is opened as, and published as.
   def ratel
     ( using value is TelSchematic over Tels.Type )
     ( using Tactic[Tel.Error], Tactic[Ratel.Error] )
-  :   Ratel =
+  :   Ratel of value =
 
-    value.encode.ratel(Tels.tels[value](t"root"))
+    Ratel.of[value](value.encode.ratel(Tels.tels[value](t"root")).data)
 
 extension [value: Tel.Encodable](value: value)
   // Encode any value to BinTEL body bytes, deriving the schema from its type:

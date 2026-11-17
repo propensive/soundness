@@ -169,7 +169,7 @@ extension [plane: Filesystem](path: Path on plane)
   // operating-system lock on the sibling `<name>.lock` is held throughout, so one process at
   // a time -- and one scope within it -- can publish under the name. `Busy` if it is already
   // owned. The `Owner` publishes each version of `record` by writing a temporary sibling and
-  // moving it over the name atomically; see `Published`.
+  // moving it over the name atomically; see `Observer`.
   def claim[record](using erased void: Void)[result](lambda: Owner[record]^ => result)
     ( using backend: FilesystemBackend on plane, umask: Umask )
     ( using Tactic[Io.Error]^ )
@@ -184,18 +184,18 @@ extension [plane: Filesystem](path: Path on plane)
     val flags = List(OpenFlag.Write, OpenFlag.Create, OpenFlag.Lock)
 
     backend.open(lock, flags, umask.mode(Umask.fileBits)): handle =>
-      lambda(Published.Publisher[record, plane](path, part, backend, umask))
+      lambda(Observer.Publisher[record, plane](path, part, backend, umask))
 
   // Maps the version of this name which is currently published, for the scope of `lambda`
-  // (issue #2472): the `Published` lends views of it, and moves on to a newer version when
+  // (issue #2472): the `Observer` lends views of it, and moves on to a newer version when
   // asked to `refresh`. No lock is taken, so a reader never delays the owner, nor the owner
   // a reader. Whatever is mapped is unmapped when the scope ends.
-  def published[record](using erased void: Void)[result](lambda: Published[record]^ => result)
+  def observe[record](using erased void: Void)[result](lambda: Observer[record]^ => result)
     ( using backend: FilesystemBackend on plane )
     ( using Tactic[Io.Error]^ )
   :   result =
 
-    val reader = Published.Reader[record, plane](path, backend)
+    val reader = Observer.Reader[record, plane](path, backend)
     reader.open()
     try lambda(reader) finally reader.close()
 
