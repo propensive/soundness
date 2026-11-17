@@ -113,12 +113,14 @@ supervise:
 
 - `complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each
 - `Compiler.Notice` carries its importance, which is info, warning or error, its file and its
-- span. A tool can underline the offending code, and need not echo the compiler's output. A crash
+- span, and, under `scalacOptions.boltCodes`, the bolt code Proscala gives an error or a warning,
+- such as `↯/p.1.7`. A tool can underline the offending code, and need not echo the compiler's output. A crash
 - arrives as a value too, with its [stack trace](stack-traces.md), and the process can be aborted
 - before the compilation ends.
 + `complete()` donne un `Compiler.Result`, qui est `Success`, `Failure` ou `Crash`. Chaque
 + `Compiler.Notice` porte son importance, qui est information, avertissement ou erreur, son
-+ fichier et son étendue. Un outil peut souligner le code fautif, et n'a pas besoin de
++ fichier, son étendue et, sous `scalacOptions.boltCodes`, le code bolt que Proscala donne à une
++ erreur ou à un avertissement, comme `↯/p.1.7`. Un outil peut souligner le code fautif, et n'a pas besoin de
 + reproduire la sortie du compilateur. Un plantage arrive lui aussi sous forme de valeur, avec sa
 + [trace de pile](stack-traces.md), et le processus peut être interrompu avant la fin de la
 + compilation.
