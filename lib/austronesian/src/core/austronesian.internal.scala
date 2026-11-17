@@ -106,6 +106,11 @@ object internal:
 
       inline def encoded(value: Byte): Pojo = java.lang.Byte.valueOf(value).nn
 
+    given short: Short is Encodable:
+      type Form = Pojo
+
+      inline def encoded(value: Short): Pojo = java.lang.Short.valueOf(value).nn
+
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
@@ -165,6 +170,16 @@ object internal:
       type Form = Pojo
 
       inline def decoded(value: Pojo): Boolean = value.asInstanceOf[Boolean]
+
+    given byte2: Byte is Decodable:
+      type Form = Pojo
+
+      inline def decoded(value: Pojo): Byte = value.asInstanceOf[Byte]
+
+    given short2: Short is Decodable:
+      type Form = Pojo
+
+      inline def decoded(value: Pojo): Short = value.asInstanceOf[Short]
 
     // The element decoder is taken by-name (not as a context bound) so that a type recursive
     // through a collection (`case class Tree(…, children: List[Tree])`) derives: wisteria's
