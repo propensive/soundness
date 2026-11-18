@@ -190,6 +190,26 @@ object Tests extends Suite("text", m"Gossamer Tests"):
 
       . assert(_ == t"(one, two)")
 
+      test(m"justify shares spare space evenly between gaps"):
+        t"one two three".justify(19)
+      . assert(_ == t"one    two    three")
+
+      test(m"justify spreads an uneven remainder along the line"):
+        t"a b c d".justify(12)
+      . assert(_ == t"a  b   c   d")
+
+      test(m"justify fills the width exactly"):
+        t"to be or not to be".justify(40).length
+      . assert(_ == 40)
+
+      test(m"justify leaves a single word alone"):
+        t"one".justify(20)
+      . assert(_ == t"one")
+
+      test(m"justify keeps single spaces in a text wider than the width"):
+        t"one two three".justify(5)
+      . assert(_ == t"one two three")
+
       test(m"kebab a native List of words"):
         List(t"one", t"two", t"three").kebab
 
