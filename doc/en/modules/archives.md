@@ -38,7 +38,7 @@ import codepages.utf8Codepage
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import logging.silentLogging
 import pathInterfaces.pathOnLinux

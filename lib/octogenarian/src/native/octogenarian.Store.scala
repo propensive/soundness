@@ -49,7 +49,7 @@ import vacuous.*
 
 import alphabets.hexLowerCase
 import cryptoPermits.permitDeprecatedCrypto
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically

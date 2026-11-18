@@ -1966,9 +1966,8 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       import classloaders.threadContextClassloader
 
       def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
-        Classfile[AtomicProbes.type]
-        . let(_.methods.seek(_.name == method))
-        . let(_.bytecode)
+        safely:
+          Classfile[AtomicProbes.type].let(_.methods.seek(_.name == method)).let(_.bytecode)
 
       // The JDK atomic method a probe compiled down to, if it reached exactly one.
       def atomicCalls(bytecode: Bytecode): Set[Text] =

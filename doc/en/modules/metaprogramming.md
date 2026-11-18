@@ -187,12 +187,13 @@ attached to a position in the source.
 
 Occasionally the question is not what the compiler *typed*, but what it *emitted*: whether a
 combinator inlines away, or what a hot path compiles to. A classfile parses into typed methods
-and instructions, and each instruction carries the state of the operand stack, reconstructed:
+and instructions, and each instruction carries the state of the operand stack, reconstructed.
+Bytes which are not a classfile raise a `Classfile.Error`:
 
 ```scala
 import classloaders.threadContextClassloader
 
-val methods = Classfile[Exit].let(_.methods.map(_.name))
+val methods = safely(Classfile[Exit]).let(_.methods.map(_.name))
 ```
 
 The `bytecode` of each method is its JVM instructions, with their stack states, ready to render.

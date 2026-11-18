@@ -213,7 +213,8 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
 extension (consume stream: (Stream[Data] over Credit)^)
   // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
-  // refills with `limit` credit and materializes the delivered region.
+  // refills with `limit` credit and materializes the delivered region. Internal plumbing
+  // for HTTP backends, so deliberately not exported to `soundness`.
   def httpBody: HttpStreams.Body^ = limit =>
     stream.refill(Credit(limit)) match
       case count: Int =>
@@ -227,7 +228,8 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
 extension (body: HttpStreams.Body)
   // View an HTTP-body interchange value as a pull endpoint, one chunk per
-  // block-sized request.
+  // block-sized request. Not exported to `soundness`, where it would sit beside
+  // zephyrine's `stream`.
   def stream(using buffering: Buffering): (Stream[Data] over Credit)^ =
     new Stream[Data]:
       type Transport = Credit

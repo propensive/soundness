@@ -69,6 +69,14 @@ object Tests extends Suite("hashing", m"Gastronomy tests"):
         t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c".as[Digest in Sha2[256]]
     . assert(_ == t"Hello world".digest[Sha2[256]])
 
+    // Monotonous's own suite also runs as a native binary, where `demilitarize` (a JVM compiler
+    // plugin) is unavailable, so this is tested from here. The alphabet's size and character
+    // checks are not: they are raised while inlining, which `demilitarize` does not capture in
+    // a clean build.
+    test(m"An alphabet cannot be constructed without the compile-time check"):
+      demilitarize(new Alphabet[Hex](t"0123", false, Map(), 4)).nil
+    . assert(!_)
+
     test(m"Md5, Base64"):
       import alphabets.base64Standard
       t"Hello world".digest[Md5].serialize[Base64]

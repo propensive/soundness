@@ -482,17 +482,17 @@ entry .Sheet   delimited data held in memory: every row, with the format and col
         code
             locally:
               import dsvFormats.csvFormat
-              Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
+              Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
       alternative TSV
         code
             locally:
               import dsvFormats.tsvFormat
-              Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
+              Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
       alternative Space-separated
         code
             locally:
               import dsvFormats.ssvFormat
-              Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
+              Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
       ##
       ```
 

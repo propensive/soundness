@@ -92,7 +92,7 @@ object Amount:
 
   type Magnetization = Units[-1, Distance] & Units[1, Current]
   type OpticalPower = Units[-1, Distance]
-  type TempratureGradient = Units[-1, Distance] & Units[1, Heat]
+  type TemperatureGradient = Units[-1, Distance] & Units[1, Heat]
   type Pressure = Units[-1, Distance] & Units[1, Mass] & Units[-2, Time]
   type DynamicViscosity = Units[-1, Distance] & Units[1, Mass] & Units[-1, Time]
   type LinearDensity = Units[-1, Distance] & Units[1, Mass]
@@ -298,6 +298,9 @@ object Amount:
 
   erased given specificHeatCapacity: Amount[SpecificHeatCapacity, "specific heat capacity"] =
     Amount.Evidence[SpecificHeatCapacity, "specific heat capacity"]()
+
+  erased given temperatureGradient: Amount[TemperatureGradient, "temperature gradient"] =
+    Amount.Evidence[TemperatureGradient, "temperature gradient"]()
 
   erased given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] =
     Amount.Evidence[ThermalConductivity, "thermal conductivity"]()

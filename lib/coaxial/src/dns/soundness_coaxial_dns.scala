@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export coaxial.query
+export coaxial.ask

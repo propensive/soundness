@@ -51,11 +51,11 @@ object Device:
 
   def create[plane <: Posix: Filesystem]
     ( path: Path on plane, kind: Kind, major: Int, minor: Int )
-    ( using createNonexistentParents: CreateNonexistentParents on plane,
+    ( using createParents: CreateParents on plane,
             overwritePreexisting:     OverwritePreexisting on plane )
   :   Path on plane raises Io.Error =
 
-    createNonexistentParents(path):
+    createParents(path):
       overwritePreexisting(path):
         // A raw `ProcessBuilder`, as `createFifo` uses: `mknod` is the only way to make a device
         // node from the JVM, and shelling out through guillotine would make a filesystem backend

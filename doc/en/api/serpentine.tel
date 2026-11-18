@@ -87,7 +87,7 @@ entry .Path   an absolute path: a root and a descent of names, typed by plane, n
       import soundness.*
       import strategies.throwUnsafely
 
-      val path: Path of ("capulet", "verona") = % / "verona" / "capulet"
+      val path = % / "verona" / "capulet"   // a `Path of ("capulet", "verona")`
       val linux: Path on Linux = path.on[Linux]
       linux.parent                       // % / "verona"
       linux.name                         // t"capulet"

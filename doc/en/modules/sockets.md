@@ -193,12 +193,12 @@ unprompted. That is the shape of a service announcing itself, as mDNS does. A ha
 to the group, to the one sender, or not at all:
 
 ```scala fuel
-parse
+typecheck
 ##
 import socketOptions.multicastLoopSocketOption
 
 supervise:
-  val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
+  val group = Multicast(ip"224.0.0.251", udp"mdns")
 
   group.subscribe(packet => Multicast.Reply.Group(packet.data)):
     summon[Multicast.Subscription].send(t"hello, group".in[Data])
@@ -217,7 +217,7 @@ Some protocols over UDP send one datagram out, and get one back: a DNS query, or
 request. The backend's `exchangeUdp` does exactly that, from an ephemeral port, bounded by a
 `Socket.Option.Timeout` in scope. `coaxial.dns` builds a typed DNS client on it.
 
-A nameserver is an `Endpoint` of a UDP port. `query` sends a
+A nameserver is an `Endpoint` of a UDP port. `ask` sends a
 [`Dns.Message`](network-addresses.md#dns-names-and-messages), and returns the reply which
 answers it. Given a name and a type of record, which is `A` by default, it asks the common
 question directly, and returns the records which answer it:
@@ -225,10 +225,8 @@ question directly, and returns the records which answer it:
 ```scala fuel
 typecheck
 ##
-import coaxial.query
-
 val resolver = ip"9.9.9.9" on udp"domain"
-val addresses = resolver.query(dns"example.com").map(_.rdata)
+val addresses = resolver.ask(dns"example.com").map(_.rdata)
 ```
 
 A reply whose ID or question differs from the query's is a stray datagram, and is a

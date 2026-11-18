@@ -40,6 +40,7 @@ object JavaLongDuration extends Abstractable, Instantiable:
   type Self = Long
   type Origin = Long
   type Result = Long
+  type Domain = Durations
 
   def genericize(long: Long): Long = long
   def apply(value: Long): Long = value

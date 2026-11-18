@@ -203,7 +203,7 @@ object Ansi extends Ansi2:
 
       case (escape: Frame.Escape) :: tail =>
         stack = tail
-        addInsertion(plain.length, t"\e"+escape.off)
+        if escape.off.length > 0 then addInsertion(plain.length, t"\e"+escape.off)
 
       case Nil =>
         ()

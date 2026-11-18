@@ -19,7 +19,7 @@ detail
     import charsets.utf8Charset
     import codepages.utf8Codepage
     import filesystemBackends.javaBaseFilesystem
-    import filesystemOptions.{createNonexistentParents, overwritePreexisting}
+    import filesystemOptions.{createParents, overwritePreexisting}
     import logging.silentLogging
     import strategies.throwUnsafely
     import temporaryDirectories.systemTemporaryDirectory
@@ -412,7 +412,7 @@ entry .Zipfile   a ZIP archive as an immutable value: its entries, comment and l
       import soundness.*
       import charsets.utf8Charset
       import filesystemBackends.javaBaseFilesystem
-      import filesystemOptions.{createNonexistentParents, overwritePreexisting}
+      import filesystemOptions.{createParents, overwritePreexisting}
       import logging.silentLogging
       import strategies.throwUnsafely
       import temporaryDirectories.systemTemporaryDirectory
@@ -492,7 +492,7 @@ entry .Jar   the form for Java archives: `path.open[Jar]()` gives a ZIP handle w
       import soundness.*
       import charsets.utf8Charset
       import filesystemBackends.javaBaseFilesystem
-      import filesystemOptions.{createNonexistentParents, overwritePreexisting}
+      import filesystemOptions.{createParents, overwritePreexisting}
       import strategies.throwUnsafely
       import temporaryDirectories.systemTemporaryDirectory
 

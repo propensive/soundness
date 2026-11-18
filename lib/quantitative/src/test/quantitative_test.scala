@@ -275,6 +275,38 @@ object Tests extends Suite("units", m"Quantitative Tests"):
         11*Foot*Foot > Metre*Metre
       . assert(_ == true)
 
+    suite(m"CGS units and constants"):
+      def close(expected: Double)(actual: Double): Boolean =
+        Math.abs(actual/expected - 1.0) < 1e-9
+
+      test(m"A newton is a hundred thousand dynes"):
+        ((1.0*Newton)/(1.0*Dyne))
+      . assert(close(1e5))
+
+      test(m"A joule is ten million ergs"):
+        ((1.0*Joule)/(1.0*Erg))
+      . assert(close(1e7))
+
+      test(m"A tesla is ten thousand gauss"):
+        ((1.0*Tesla)/(1.0*Gauss))
+      . assert(close(1e4))
+
+      test(m"A poise is a tenth of a pascal-second"):
+        ((1.0*Poise)/(1.0*Pascal*Second))
+      . assert(close(0.1))
+
+      test(m"A kayser is a hundred per metre"):
+        ((1.0*Kayser)*(1.0*Metre))
+      . assert(close(100.0))
+
+      test(m"The Boltzmann constant is of the order of 10⁻²³"):
+        (constants.BoltzmannConstant/(1.0*Joule/Kelvin))
+      . assert(close(1.380649e-23))
+
+      test(m"The magnetic constant is 4π×10⁻⁷"):
+        (constants.MagneticConstant/(1.0*Newton/(Ampere*Ampere)))
+      . assert(close(4*Math.PI*1e-7))
+
     suite(m"Rendering tests"):
       test(m"Show a value in metres"):
         (7.567*Metre).show
@@ -484,9 +516,8 @@ object Tests extends Suite("units", m"Quantitative Tests"):
       import classloaders.threadContextClassloader
 
       def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
-        Classfile[Probes.type]
-        . let(_.methods.seek(_.name == method))
-        . let(_.bytecode)
+        safely:
+          Classfile[Probes.type].let(_.methods.seek(_.name == method)).let(_.bytecode)
 
       // True when the bytecode contains a virtual / interface dispatch to a
       // typeclass operation (`negate`, `add`, etc.). Virtual calls to a

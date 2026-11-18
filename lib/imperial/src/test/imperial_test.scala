@@ -61,6 +61,39 @@ object Tests extends Suite("directories", m"Imperial tests"):
       Home.Local.Bin()
     . assert(_ == t"/home/work/.local/bin")
 
+    suite(m"XDG relocation"):
+      given relocated: Environment =
+        case t"HOME"            => t"/home/work"
+        case t"XDG_CONFIG_HOME" => t"/cfg"
+        case t"XDG_CACHE_HOME"  => t"/var/cache/work/"
+        case t"XDG_DATA_HOME"   => t"relative/data"
+        case t"XDG_STATE_HOME"  => t""
+        case _                  => Unset
+
+      test(m"Home.Config follows XDG_CONFIG_HOME"):
+        Home.Config()
+      . assert(_ == t"/cfg")
+
+      test(m"A trailing slash on the variable is dropped"):
+        Home.Cache()
+      . assert(_ == t"/var/cache/work")
+
+      test(m"A relative XDG path is ignored, as the specification requires"):
+        Home.Local.Share()
+      . assert(_ == t"/home/work/.local/share")
+
+      test(m"An empty XDG variable is ignored"):
+        Home.Local.State()
+      . assert(_ == t"/home/work/.local/state")
+
+      test(m"A layout with an unset variable stays under home"):
+        Home.Local.Bin()
+      . assert(_ == t"/home/work/.local/bin")
+
+      test(m"A layout which names no variable is unaffected"):
+        Home.Local.Lib()
+      . assert(_ == t"/home/work/.local/lib")
+
     test(m"/ path"):
       Base()
     . assert(_ == t"/")

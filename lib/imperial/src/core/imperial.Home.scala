@@ -37,11 +37,21 @@ import gossamer.*
 import vacuous.*
 
 object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
-  object Cache extends BaseLayout[(".cache", Home.type)](t".cache")
-  object Config extends BaseLayout[(".config", Home.type)](t".config")
+  // The layouts below which name a variable are those the XDG Base Directory specification
+  // lets a user relocate; each is where the variable says, when it is set.
+  object Cache extends BaseLayout[(".cache", Home.type)](t".cache", variable = t"XDG_CACHE_HOME")
+
+  object Config
+  extends BaseLayout[(".config", Home.type)](t".config", variable = t"XDG_CONFIG_HOME")
 
   object Local extends BaseLayout[(".local", Home.type)](t".local"):
-    object Bin extends BaseLayout[("bin", ".local", Home.type)](t"bin")
+    object Bin
+    extends BaseLayout[("bin", ".local", Home.type)](t"bin", variable = t"XDG_BIN_HOME")
+
     object Lib extends BaseLayout[("lib", ".local", Home.type)](t"lib")
-    object Share extends BaseLayout[("share", ".local", Home.type)](t"share")
-    object State extends BaseLayout[("state", ".local", Home.type)](t"state")
+
+    object Share
+    extends BaseLayout[("share", ".local", Home.type)](t"share", variable = t"XDG_DATA_HOME")
+
+    object State
+    extends BaseLayout[("state", ".local", Home.type)](t"state", variable = t"XDG_STATE_HOME")

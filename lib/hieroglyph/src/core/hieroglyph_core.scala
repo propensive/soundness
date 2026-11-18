@@ -73,16 +73,42 @@ package charsets:
   given asciiCharset: (sanitizer: TextSanitizer) => (Charset) =
     Charset.unapply("ASCII".tt).get
 
-  given iso88591Charset: Charset =
-    Charset.unapply("ISO-8859-1".tt)(using textSanitizers.skipSanitizer).get
+  given iso88591Charset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("ISO-8859-1".tt).get
 
 package codepages:
-  given utf8Codepage: Codepage = Codepage.unapply("UTF-8".tt).get
-  given utf16Codepage: Codepage = Codepage.unapply("UTF-16".tt).get
-  given utf16LeCodepage: Codepage = Codepage.unapply("UTF-16LE".tt).get
-  given utf16BeCodepage: Codepage = Codepage.unapply("UTF-16BE".tt).get
-  given asciiCodepage: Codepage = Codepage.unapply("ASCII".tt).get
-  given iso88591Codepage: Codepage = Codepage.unapply("ISO-8859-1".tt).get
+  // One instance of each under the default sanitizer, which `sanitized` returns unchanged, so
+  // the usual case allocates nothing when a codepage is summoned.
+  private val utf8: Codepage = Codepage.unapply("UTF-8".tt).get
+  private val utf16: Codepage = Codepage.unapply("UTF-16".tt).get
+  private val utf16Le: Codepage = Codepage.unapply("UTF-16LE".tt).get
+  private val utf16Be: Codepage = Codepage.unapply("UTF-16BE".tt).get
+  private val ascii: Codepage = Codepage.unapply("ASCII".tt).get
+  private val iso88591: Codepage = Codepage.unapply("ISO-8859-1".tt).get
+
+  given utf8Codepage: (sanitizer: EncodingSanitizer) => Codepage = utf8.sanitized(sanitizer)
+  given utf16Codepage: (sanitizer: EncodingSanitizer) => Codepage = utf16.sanitized(sanitizer)
+
+  given utf16LeCodepage: (sanitizer: EncodingSanitizer) => Codepage =
+    utf16Le.sanitized(sanitizer)
+
+  given utf16BeCodepage: (sanitizer: EncodingSanitizer) => Codepage =
+    utf16Be.sanitized(sanitizer)
+
+  given asciiCodepage: (sanitizer: EncodingSanitizer) => Codepage = ascii.sanitized(sanitizer)
+
+  given iso88591Codepage: (sanitizer: EncodingSanitizer) => Codepage =
+    iso88591.sanitized(sanitizer)
+
+package encodingSanitizers:
+  // Sealed like `textSanitizers.strictSanitizer` below: the resolution-scoped tactic shares the
+  // sanitizer's given-resolution lifetime, keeping `Codepage` untracked.
+  given strictEncodingSanitizer: (Tactic[Codepage.Error]^) => (EncodingSanitizer) =
+    // [field-purity] given sanitizer over resolution-scoped tactic
+    caps.unsafe.unsafeAssumePure: (char, encoding) => abort(Codepage.Error(char, encoding))
+
+  // The default, named so that it can be chosen again inside a scope which imports the strict one.
+  given substituteEncodingSanitizer: EncodingSanitizer = EncodingSanitizer.substitute
 
 package textSanitizers:
   // Sealed per the codec-thunk pattern (rep/DECISIONS.md): the resolution-scoped tactic

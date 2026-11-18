@@ -64,7 +64,7 @@ given tarPathCreatable: [path: Abstractable across Paths to Text]
 extension (tarfile: Tarfile)
   // Extract an archive to a directory tree on a filesystem.
   def extractTo[plane <: Posix: Filesystem](root: Path on plane)
-    ( using CreateNonexistentParents on plane,
+    ( using CreateParents on plane,
             OverwritePreexisting on plane,
             Tactic[Io.Error],
             Tactic[Tar.Error] )

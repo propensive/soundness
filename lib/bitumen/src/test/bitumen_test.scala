@@ -555,7 +555,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       import logging.silentLogging
       import filesystemOptions.dereferenceSymlinks
       import filesystemOptions.overwritePreexisting
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
 
       val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
@@ -633,7 +633,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       import temporaryDirectories.systemTemporaryDirectory
       import filesystemOptions.preserveSymlinks
       import filesystemOptions.overwritePreexisting
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
 
       def freshDir(): Path on Linux =
@@ -811,7 +811,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
     suite(m"Scoped opening"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -846,7 +846,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
     suite(m"Creating archives"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -1205,7 +1205,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
     suite(m"AR: scoped opening"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 

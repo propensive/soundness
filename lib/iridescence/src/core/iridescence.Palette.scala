@@ -57,4 +57,4 @@ into trait Palette extends Selectable:
 
   final def selectDynamic(name: String): Form =
     try getClass.getMethod(name).nn.invoke(this).asInstanceOf[Form]
-    catch case _: NoSuchFieldException => panic(m"field $name is not defined for this palette")
+    catch case _: NoSuchMethodException => panic(m"field $name is not defined for this palette")

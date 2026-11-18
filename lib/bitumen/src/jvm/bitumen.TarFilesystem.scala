@@ -57,7 +57,7 @@ private[bitumen] object TarFilesystem:
   // extraction, since the disk may change between runs.
   def applyEntry[plane <: Posix: Filesystem]
     ( root: Path on plane, entry: Tar.Entry, created: scm.HashSet[jnf.Path] )
-    ( using CreateNonexistentParents on plane,
+    ( using CreateParents on plane,
             OverwritePreexisting on plane,
             Tactic[Io.Error],
             Tactic[Tar.Error] )

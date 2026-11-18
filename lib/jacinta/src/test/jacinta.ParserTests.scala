@@ -52,7 +52,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import scala.compiletime.*
 
 import filesystemOptions.dereferenceSymlinks
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 
 import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize

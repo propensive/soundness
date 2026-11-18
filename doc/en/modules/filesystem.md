@@ -46,7 +46,7 @@ import termcapDefinitions.basicTermcap
 import charsets.utf8Charset
 import codepages.utf8Codepage
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
 import pathInterfaces.pathOnLinux
@@ -87,9 +87,10 @@ directory.create[Directory]()
 file.create[File]()
 ```
 
-By default, creating refuses to destroy anything. Creating over something which exists, or
-under a parent which does not, is an `Io.Error`. Where either is the intent, a flag says so,
-at the place where it happens, instead of an import saying it for the whole file:
+By default, creating refuses to destroy anything. Creating over something which exists is an
+`Io.Error`, and so is creating under a parent which does not exist, unless
+`filesystemOptions.createParents` is imported, as it is here. A flag states either
+intent at the place where it happens, whatever is imported:
 
 ```scala fuel
 run
@@ -521,7 +522,7 @@ column  Yes
 column  No
 row  Replace what is already at the destination?  `overwritePreexisting`  `failOnPreexisting`
 row  Empty a directory before deleting it?  `deleteRecursively`  `deleteOnlyEmpty`
-row  Create missing parent directories?  `createNonexistentParents`  `requireParents`
+row  Create missing parent directories?  `createParents`  `requireParents`
 row  Follow symbolic links?  `dereferenceSymlinks`  `preserveSymlinks`
 row  Move atomically?  `moveAtomically`  `moveNonAtomically`
 ```
@@ -675,13 +676,13 @@ column  Layout
 column  Directory
 column  Read-only
 row  `Home`  `~`  no
-row  `Home.Cache`  `~/.cache`  no
-row  `Home.Config`  `~/.config`  no
+row  `Home.Cache`  `~/.cache`, or `$XDG_CACHE_HOME`  no
+row  `Home.Config`  `~/.config`, or `$XDG_CONFIG_HOME`  no
 row  `Home.Local`  `~/.local`  no
-row  `Home.Local.Bin`  `~/.local/bin`  no
+row  `Home.Local.Bin`  `~/.local/bin`, or `$XDG_BIN_HOME`  no
 row  `Home.Local.Lib`  `~/.local/lib`  no
-row  `Home.Local.Share`  `~/.local/share`  no
-row  `Home.Local.State`  `~/.local/state`  no
+row  `Home.Local.Share`  `~/.local/share`, or `$XDG_DATA_HOME`  no
+row  `Home.Local.State`  `~/.local/state`, or `$XDG_STATE_HOME`  no
 row  `Base`  `/`  no
 row  `Base.Boot`  `/boot`  yes
 row  `Base.Dev`  `/dev`  no
@@ -716,10 +717,10 @@ row  `Base.Var.Spool`  `/var/spool`  no
 row  `Base.Var.Tmp`  `/var/tmp`  no
 ```
 
-A layout is a fixed place. `Home.Config` is always `$HOME/.config`, and only `$HOME` is read
-from the environment. The locations which the
-[XDG specification](environment.md#standard-directories) lets the user move, such as
-`$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout constructs a value of
+Most layouts are fixed places. The five which the
+[XDG specification](environment.md#standard-directories) lets the user move are not:
+`Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
+that to an absolute path. Applying a layout constructs a value of
 whichever directory type is asked for, so the same names serve a `Path on Linux` and any
 other representation.
 
@@ -728,20 +729,18 @@ other representation.
 Many files are looked up not at one location, but along a list of them: an icon in whichever
 of the XDG data directories holds it, or a configuration file in the first of several places.
 A `Searchpaths.Stems` instance names the directories to try, in order. A relative path on the
-corresponding plane is resolved with `search` to the first of them which holds it, or to
+corresponding plane is resolved with `discover` to the first of them which holds it, or to
 `Unset`:
 
 ```scala fuel
 typecheck
 ##
-import galilei.search
-
 given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
   type Plane = Xdg.Data
   type Target = Linux
   val stems: List[Path on Linux] = List(directory, directory / "inner")
 
-val found = (% / "inner.txt").on[Xdg.Data].search()
+val found = (% / "inner.txt").on[Xdg.Data].discover()
 ```
 
 `dataSearch` and `configSearch` supply the XDG search paths for data and configuration, from

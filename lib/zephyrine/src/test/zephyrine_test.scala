@@ -1228,6 +1228,11 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](4, 5))).memoize.to[List]
       . assert(_.to[List].map(_.toInt) == List(1, 2, 3, 4, 5))
 
+      test(m"a spring made from an expression gives a fresh stream each time"):
+        val spring = Spring[Data](small.stream)
+        (spring().memoize.to[List], spring().memoize.to[List])
+      . assert(_ == (small.to[List], small.to[List]))
+
       test(m"memoize of an empty stream yields an empty value"):
         Iterator.empty[Data].stream.memoize.to[List]
       . assert(_ == List())

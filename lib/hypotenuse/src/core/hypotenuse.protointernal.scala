@@ -154,7 +154,7 @@ object protointernal:
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < 0 then halt(27, 8, m"a U8 may not be less than ${0}")
-      if int > 0xffff then halt(27, 9, m"a U8 may not be greater than ${0xffff}")
+      if int > 0xff then halt(27, 9, m"a U8 may not be greater than ${0xff}")
 
       Expr(int.toByte)
 

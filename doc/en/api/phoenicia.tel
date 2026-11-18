@@ -23,7 +23,7 @@ detail
     to be set — a `Weight`, a `Slant`, a `Stretch`, positions on any further `Variation` axes,
     and the `Face.Feature`s to enable or disable — and nothing about where the font comes from.
     A `Typesettable` provision says how a `Medium` (the web, print, or any a renderer defines)
-    obtains the typeface and which faces it can then set, as a `Coverage`. A `Font` pairs a
+    obtains the typeface and which faces it can then set, as a `Font.Coverage`. A `Font` pairs a
     face with the provision in scope for its typeface in a medium, and is the only form in
     which a renderer accepts a font, so a document cannot name a typeface it does not carry,
     nor ask a provision for a face it cannot set.
@@ -62,9 +62,9 @@ detail
     the medium's companion, so they need no import. A project's own provisions are givens it
     declares and imports by name, since `import pkg.*` does not import givens.
 
-    Everything is exported to the `soundness` umbrella: `Coverage`, `Face`, `Font`, `Glyph`,
-    `Medium`, `Opentype`, `Sfnt`, `Slant`, `Stretch`, `Truetype`, `Typeface`, `Typesettable`,
-    `Variation` and `Weight`.
+    Everything is exported to the `soundness` umbrella: `Face`, `Font` (with `Font.Coverage`),
+    `Glyph`, `Medium`, `Opentype`, `Sfnt`, `Slant`, `Stretch`, `Truetype`, `Typeface`,
+    `Typesettable`, `Variation` and `Weight`.
 
 refer phoenicia.Sfnt
 refer phoenicia.Truetype
@@ -72,7 +72,7 @@ refer phoenicia.Typeface
 refer phoenicia.Face
 refer phoenicia.Font
 refer phoenicia.Typesettable
-refer phoenicia.Coverage
+refer phoenicia.Font.Coverage
 
 entry .Sfnt   a font file as a value: the sfnt table container TrueType and OpenType share
   detail
@@ -271,11 +271,11 @@ entry .Sfnt   a font file as a value: the sfnt table container TrueType and Open
   entry #familyName   the font's family name, or `Unset`
       `name(Sfnt.NameId.Family)`, with any `Font.Error` absorbed.
   entry #fvar   a variable font's `fvar` table, or `Unset` for a static font
-      The axes along which a variable font's outlines move, each with its range. `Coverage.of`
+      The axes along which a variable font's outlines move, each with its range. `Font.Coverage.of`
       reads the weight and width ranges from here when the table is present.
   entry #features   the layout features the font implements, by tag, from `GSUB` and `GPOS`
       The feature lists of the two layout tables, as `Face.Feature`s, deduplicated. A font with
-      neither table implements none. These are what `Coverage.of` records, so a face which
+      neither table implements none. These are what `Font.Coverage.of` records, so a face which
       enables a feature the font lacks is refused.
 
       ```scala
@@ -375,7 +375,7 @@ entry .Sfnt   a font file as a value: the sfnt table container TrueType and Open
   entry #PostTable   PostScript metadata: italic angle, underline position and thickness, fixed pitch
     detail
         The `post` table. The italic angle is a fixed-point number of degrees, negative for a
-        rightward lean, and is one of the signs `Coverage.of` reads to decide that a file is
+        rightward lean, and is one of the signs `Font.Coverage.of` reads to decide that a file is
         italic.
 
         ```scala
@@ -393,7 +393,7 @@ entry .Sfnt   a font file as a value: the sfnt table container TrueType and Open
     detail
         The `OS/2` table, read field by field at the offsets its version defines. The weight
         class (1–1000, the scale `Weight` uses) and width class (1–9, which
-        `Stretch.widthClass` names) are what `Coverage.of` records for a static font; the
+        `Stretch.widthClass` names) are what `Font.Coverage.of` records for a static font; the
         selection bits say whether the face is italic; the typographic ascender, descender and
         line gap, the Windows ascent and descent, the x-height and the cap height are what a
         PDF font descriptor needs. Fields which a table's version predates are `Unset`.
@@ -870,7 +870,7 @@ entry .Weight   a weight on the 1–1000 scale CSS and OpenType share, with the 
       Its companion's members are declared in `internal.Weight`, from which the type is
       exported, and documented there.
   refer phoenicia.Face
-  refer phoenicia.Coverage
+  refer phoenicia.Font.Coverage
 
 entry .Slant   whether a face leans: upright, a true italic, or an oblique at an angle
   detail
@@ -907,7 +907,7 @@ entry .Variation   a position on one axis of a variable font
       val display = Typeface["Inter"].face.varying(Variation.Axis.OpticalSize, 24.0)
       ```
   refer phoenicia.Face
-  refer phoenicia.Coverage
+  refer phoenicia.Font.Coverage
   entry .Axis   a variation axis by its four-character tag
     detail
         An opaque `Text`. The five registered axes have names — `.Weight` (`wght`), `.Width`
@@ -1004,7 +1004,7 @@ entry .Typesettable   the provision of a typeface in a medium: where the font co
       its own — `import fonts.inter`, since `import fonts.*` does not import givens.
   refer phoenicia.Typeface
   refer phoenicia.Font
-  refer phoenicia.Coverage
+  refer phoenicia.Font.Coverage
   refer phoenicia.Medium
   entry .Source   how a medium obtains a typeface: embedded, linked, local, imported, or generic
     detail
@@ -1020,8 +1020,8 @@ entry .Typesettable   the provision of a typeface in a medium: where the font co
   entry .Embedding   the provision `.embedded` returns: files carried inside the document
     detail
         A named class, so the provision has a stable type. It is `in Medium`, its sources are
-        one `Source.Embedded` per file, and its coverage is `Coverage.combine` over the files'
-        `Coverage.of`.
+        one `Source.Embedded` per file, and its coverage is `Font.Coverage.combine` over the files'
+        `Font.Coverage.of`.
     entry #Self   the typeface provided
     entry #Form   `Medium`: an embedded file serves every medium
     entry #sources   one `Typesettable.Source.Embedded` per font file
@@ -1045,82 +1045,6 @@ entry .Typesettable   the provision of a typeface in a medium: where the font co
   entry #Self   the typeface provided, a `Typeface of family`
   entry #sources   how the medium obtains the typeface, one `Typesettable.Source` per part
   entry #coverage   the faces the provision can set
-
-entry .Coverage   which faces a provision can set: weights, slants, widths, axes and features
-  detail
-      A `Coverage` is either `Unknown` — nothing is known of the faces a source offers, so
-      every face is admitted — or `Entries(entries)`, a list of `Coverage.Entry`s, each one
-      face a provision offers or the range of faces a variable font offers. A `Font` is made
-      only for a face the coverage admits; `#complaint` gives the `Font.Error.Reason` why it
-      is not, or `Unset` if it is.
-
-      Coverage is matched as a browser matches a `@font-face` declaration: the entries which
-      span the weight are found first, then of those the ones with the slant, then the
-      stretch, and the face's variations and features are checked against what remains. The
-      first failing step names the refusal: `UncoveredWeight`, `UncoveredSlant`,
-      `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` or `MissingFeature`.
-
-      `.of(sfnt)` reads a font file's coverage from its tables — the `fvar` axes of a
-      variable font, else the single weight and width the `OS/2` table records, the italic
-      bits of `OS/2` and `post`, and the features of `GSUB` and `GPOS` — and `.combine` unions
-      several files'. `Coverage(weights = …, italic = …)` declares the coverage of a source
-      whose file is not to hand, a URL or an installed font; only what is declared is admitted,
-      so a linked font declared at one weight rejects a request for another rather than
-      letting the browser synthesize it.
-
-      ```scala
-      import soundness.*
-      import strategies.throwUnsafely
-
-      val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
-      Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
-      Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
-
-      val declared: Coverage = Coverage(weights = Weight.Light to Weight.Bold, italic = true)
-      ```
-  refer phoenicia.Typesettable
-  refer phoenicia.Font
-  refer phoenicia.Face
-  entry .Entry   one face a provision offers, or the range a variable font offers
-    detail
-        The weights and widths spanned, whether the entry is upright, italic or both, the
-        further axes with their ranges, and the layout features implemented — or `Unset` for
-        the features of a face declared without a file, which then admits any feature.
-
-        ```scala
-        import soundness.*
-
-        val boldItalic = Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
-        ```
-    entry #weights   the span of weights
-    entry #upright   whether an upright face is offered
-    entry #italic   whether an italic face is offered
-    entry #stretches   the span of widths
-    entry #axes   the further variation axes, each with its range
-    entry #features   the features implemented, or `Unset` if unknown
-    entry #sets   whether the entry's weight, slant and stretch admit a face
-    entry #complaint   the first variation or feature setting the entry cannot give, or `Unset`
-        `complaint(name, variations, settings)` checks each variation's axis and value against
-        `axes` (`UnknownAxis`, `AxisOutOfRange`) and each setting's feature against `features`
-        (`MissingFeature`), naming the typeface in the reason. Unknown features admit anything.
-  entry .apply   a declared coverage, for a source whose file is not to hand
-      `Coverage(weights, upright, italic, stretches, axes)`, each with a default — regular,
-      upright only, normal width, no axes — making one `Entry` with unknown features. For a
-      URL or an installed font, whose faces are what the declaration says and nothing more.
-  entry .of   a font file's coverage, read from its tables
-      From a variable font's `fvar`: the `wght` axis as the weight span, `wdth` as the width
-      span, an `ital` or `slnt` axis as offering both postures, and every axis as a
-      `Variation.Range`. From a static font: the `OS/2` weight and width classes as single
-      weights and widths. The italic bits of `OS/2` and a nonzero `post` italic angle make the entry
-      italic. The features are `Sfnt#features`. A file whose tables cannot be read has
-      `Unknown` coverage, which admits everything, rather than refusing faces it may well
-      have.
-  entry .combine   the union of several coverages; any `Unknown` makes the whole `Unknown`
-  entry #complaint   why a face cannot be set from this coverage, or `Unset` if it can
-      Two overloads. `complaint(face)` checks a whole face. `complaint(name, weight, slant,
-      stretch, variations, features)` checks only what is given: a part passed as `Unset` is
-      not checked, which is the form the compile-time check uses when a face's weight or slant
-      is decided at runtime. `Unknown` coverage never complains.
 
 entry .Font   a face paired with the provision for its typeface in a medium: what a renderer accepts
   detail
@@ -1164,13 +1088,12 @@ entry .Font   a face paired with the provision for its typeface in a medium: wha
   refer phoenicia.Face
   refer phoenicia.Typesettable
   refer phoenicia.Medium
-  refer phoenicia.Coverage
   entry .Error   raised when a font cannot be read or a face cannot be set
     detail
         Error `↯/s.89.1`, _the font could not be used because …_, with a `Reason` whose number is the
         error's subcode. The table-reading reasons are raised by `Sfnt`'s accessors; the
         coverage reasons by `Font(…)`, `Font.of[…](…)` and `Font.paired` when the provision's
-        `Coverage` refuses the face.
+        `Font.Coverage` refuses the face.
 
         ```scala
         import soundness.*
@@ -1204,6 +1127,80 @@ entry .Font   a face paired with the provision for its typeface in a medium: wha
       entry #number   the reason's number, 1 to 10, which is the error's subcode
     entry .communicable   renders each reason as its message
     entry #reason   the reason
+  entry .Coverage   which faces a provision can set: weights, slants, widths, axes and features
+    detail
+        A `Font.Coverage` is either `Unknown` — nothing is known of the faces a source offers, so
+        every face is admitted — or `Entries(entries)`, a list of `Font.Coverage.Entry`s, each one
+        face a provision offers or the range of faces a variable font offers. A `Font` is made
+        only for a face the coverage admits; `#complaint` gives the `Font.Error.Reason` why it
+        is not, or `Unset` if it is.
+
+        Coverage is matched as a browser matches a `@font-face` declaration: the entries which
+        span the weight are found first, then of those the ones with the slant, then the
+        stretch, and the face's variations and features are checked against what remains. The
+        first failing step names the refusal: `UncoveredWeight`, `UncoveredSlant`,
+        `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` or `MissingFeature`.
+
+        `.of(sfnt)` reads a font file's coverage from its tables — the `fvar` axes of a
+        variable font, else the single weight and width the `OS/2` table records, the italic
+        bits of `OS/2` and `post`, and the features of `GSUB` and `GPOS` — and `.combine` unions
+        several files'. `Font.Coverage(weights = …, italic = …)` declares the coverage of a source
+        whose file is not to hand, a URL or an installed font; only what is declared is admitted,
+        so a linked font declared at one weight rejects a request for another rather than
+        letting the browser synthesize it.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
+        Font.Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
+        Font.Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
+
+        val declared: Font.Coverage = Font.Coverage(weights = Weight.Light to Weight.Bold, italic = true)
+        ```
+    refer phoenicia.Typesettable
+    refer phoenicia.Face
+    entry .Entry   one face a provision offers, or the range a variable font offers
+      detail
+          The weights and widths spanned, whether the entry is upright, italic or both, the
+          further axes with their ranges, and the layout features implemented — or `Unset` for
+          the features of a face declared without a file, which then admits any feature.
+
+          ```scala
+          import soundness.*
+
+          val boldItalic = Font.Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
+          ```
+      entry #weights   the span of weights
+      entry #upright   whether an upright face is offered
+      entry #italic   whether an italic face is offered
+      entry #stretches   the span of widths
+      entry #axes   the further variation axes, each with its range
+      entry #features   the features implemented, or `Unset` if unknown
+      entry #sets   whether the entry's weight, slant and stretch admit a face
+      entry #complaint   the first variation or feature setting the entry cannot give, or `Unset`
+          `complaint(name, variations, settings)` checks each variation's axis and value against
+          `axes` (`UnknownAxis`, `AxisOutOfRange`) and each setting's feature against `features`
+          (`MissingFeature`), naming the typeface in the reason. Unknown features admit anything.
+    entry .apply   a declared coverage, for a source whose file is not to hand
+        `Font.Coverage(weights, upright, italic, stretches, axes)`, each with a default — regular,
+        upright only, normal width, no axes — making one `Entry` with unknown features. For a
+        URL or an installed font, whose faces are what the declaration says and nothing more.
+    entry .of   a font file's coverage, read from its tables
+        From a variable font's `fvar`: the `wght` axis as the weight span, `wdth` as the width
+        span, an `ital` or `slnt` axis as offering both postures, and every axis as a
+        `Variation.Range`. From a static font: the `OS/2` weight and width classes as single
+        weights and widths. The italic bits of `OS/2` and a nonzero `post` italic angle make the entry
+        italic. The features are `Sfnt#features`. A file whose tables cannot be read has
+        `Unknown` coverage, which admits everything, rather than refusing faces it may well
+        have.
+    entry .combine   the union of several coverages; any `Unknown` makes the whole `Unknown`
+    entry #complaint   why a face cannot be set from this coverage, or `Unset` if it can
+        Two overloads. `complaint(face)` checks a whole face. `complaint(name, weight, slant,
+        stretch, variations, features)` checks only what is given: a part passed as `Unset` is
+        not checked, which is the form the compile-time check uses when a face's weight or slant
+        is decided at runtime. `Unknown` coverage never complains.
   entry .apply   `Font(face)`: pairs a face with the provision in scope, in the medium the expected type names
       An inline method whose medium is inferred from the expected type: `Font in Web`, or
       `Optional[Font in Web]`, since `Form` is a type member and the expected type pins it.
@@ -1291,7 +1288,7 @@ entry .internal   the opaque types `Glyph`, `Weight` and `Stretch`, and the macr
   entry .id   the glyph's id within its font; 0 is the missing-glyph
   entry .font   the macro behind `Font(face)` and `Font.of[medium](face)`
       Reads the provision's `Locus` from its type; if it is a string literal naming a resource
-      on the compiler's classpath, reads the font (once per path), derives its `Coverage` and
+      on the compiler's classpath, reads the font (once per path), derives its `Font.Coverage` and
       checks the face's `Weights`, `Slanting` and `Enabled` type members against it, halting
       with _phoenicia: the font at `path` cannot set this face: …_ on refusal. Then expands to
       `Font.paired`.

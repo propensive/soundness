@@ -484,7 +484,7 @@ val x: 0.0 ~ 1.0 = 0.2
 val y: -1.0 ~ 1.0 = 0.2
 val z: 1e3 ~ 1e8 = 10000
 
-val combined: -2.0e8 ~ 3.0e8 = (x + y*3.0)*z
+val combined: -3.0e8 ~ 4.0e8 = (x + y*3.0)*z
 ```
 
 Ordinary unbounded `Double`s are everywhere, though, and a program must be able to bring one

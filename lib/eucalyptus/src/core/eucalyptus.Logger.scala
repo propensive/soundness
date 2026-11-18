@@ -49,10 +49,12 @@ import vacuous.*
 import zephyrine.*
 
 object Logger:
-  // Every construction site (a `Codepoint`) owns exactly one spool + writer daemon, so a `given`
-  // re-evaluated on each summon (a context-parameterised given is a method, not a lazy val) reuses
-  // the same resource instead of leaking a fresh thread per log call.
-  private val registry: juc.ConcurrentHashMap[Codepoint, Relay[?]] = juc.ConcurrentHashMap()
+  // Every construction site (a `Codepoint`) owns exactly one spool + writer daemon for each
+  // destination it is given, so a `given` re-evaluated on each summon (a context-parameterised
+  // given is a method, not a lazy val) reuses the same resource instead of leaking a fresh thread
+  // per log call, while a site which makes loggers for several destinations gets one spool each.
+  private val registry: juc.ConcurrentHashMap[(Codepoint, Any), Relay[?]] =
+    juc.ConcurrentHashMap()
 
   def apply[eventType, loggingType, format, target]
     ( destination: target,
@@ -70,7 +72,7 @@ object Logger:
 
     val spool: Relay[format] =
       registry
-      . computeIfAbsent(codepoint, _ =>
+      . computeIfAbsent((codepoint, destination), _ =>
           establish[format, target](destination)
             ( using writable, addressable, buffering, monitor, codepoint, probate ))
 

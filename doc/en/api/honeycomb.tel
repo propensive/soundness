@@ -1205,11 +1205,8 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
   entry .Utf8   the value marker of `charset` and `accept-charset`, whose only valid value is `utf-8`
   entry .abbr   `abbr` on `<th>`: an abbreviated header, as `Textual`
   entry .accept   `accept` on `<input>`: the file types accepted, as `MimeList`
-  entry .acceptCharset   the form's accepted encoding, on `<form>`, as `Utf8`
-      The given is registered under the name `acceptCharset` rather than the
-      specification's `accept-charset`, so `Form(acceptCharset = …)` is how it is written and
-      `accept-charset` is what the parser would need to see; the HTML 4 dialect spells it
-      correctly.
+  entry .acceptCharset   `accept-charset` on `<form>`: the form's accepted encoding, as `Utf8`
+      The given is named `acceptCharset`; the attribute it registers is `accept-charset`.
   entry .accesskey   `accesskey` on every element: keyboard shortcut labels, as `AccessKeys`
   entry .action   `action` on `<form>`: the URL the form submits to, as `Url`
   entry .allow   `allow` on `<iframe>`: the frame's permissions policy, as `PermissionsPolicy`
@@ -1274,8 +1271,6 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
   entry .headers   `headers` on `<td>` and `<th>`: the ids of the cell's header cells, as `Ids`
   entry .headingoffset   `headingoffset` on every element: 0 to 8, as `Upto8`
   entry .headingreset   `headingreset` on every element, as `Presence`
-      The given is registered under the attribute name `headingoffset`, not `headingreset`,
-      so `headingreset = true` writes a bare `headingoffset`.
   entry .height   `height` on `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` and `<svg>`, as `PositiveInt`
   entry .hidden   `hidden` on every element: present, or `until-found`, as `Hidden`
       Its marker is `Hidden`, not `Presence`, so `hidden = true` needs a given from
@@ -1392,9 +1387,7 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
       Rarely written: `#Input` has a preset tag per type (`Input.Email`, `Input.Range`, …).
   entry .type5   `type` on `<ol>`: the numbering style, as `OlType`
   entry .type6   `type` on `<script>`, as `ScriptType`
-  entry .usemap   the image-map reference on `<img>`, `<input>` and `<object>`, as `HashName`
-      The given is registered under the attribute name `usemaptype`, not the specification's
-      `usemap`, so what it writes is `usemaptype="#map"`.
+  entry .usemap   `usemap` on `<img>`, `<input>` and `<object>`: the image-map reference, as `HashName`
   entry .value   `value` on `<button>` and `<option>`, as `Textual`
   entry .value2   `value` on `<data>`: the machine-readable value, as `Textual`
   entry .value3   `value` on `<input>`, as `InputValue`
@@ -1472,8 +1465,7 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
     detail
         A `Tag.Void` whose `Topic` is `"area"`, taking `alt`, `coords`, `shape`, `href`,
         `target`, `download`, `ping`, `rel` and `referrerpolicy`. Its four members preset
-        the `shape` attribute; note that in the current source they are built with the
-        label `input`, so `Area.Rect` serializes as `<input shape="rect">`.
+        the `shape` attribute, so `Area.Rect` serializes as `<area shape="rect">`.
     entry .Default   a `shape="default"` area: the whole image
     entry .Rect   a `shape="rect"` area, with `coords` as left, top, right, bottom
     entry .Circle   a `shape="circle"` area, with `coords` as centre x, centre y, radius
@@ -1548,11 +1540,11 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
   entry #Hgroup   `<hgroup>`: a heading with its subheadings, over `<p>` and `<h1>` to `<h6>`
   entry #Hr   `<hr>`: a thematic break; void
   entry #I   `<i>`: text in an alternate voice, over phrasing content
-  entry #Iframe   `<iframe>`: a nested browsing context; void in this vocabulary
+  entry #Iframe   `<iframe>`: a nested browsing context, with no content
       Takes `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
-      `height`, `referrerpolicy` and `loading`. It is defined as a `Tag.Void`, so it takes
-      no children and serializes as `<iframe …>` with no end tag, where the specification
-      requires `</iframe>`.
+      `height`, `referrerpolicy` and `loading`. It admits no children, but it is not a void
+      element: it serializes as `<iframe …></iframe>`, with the end tag the specification
+      requires.
   entry #Img   `<img>`: an image; void
       Takes `src`, `alt`, `srcset`, `sizes`, `crossorigin`, `usemap`, `ismap`, `width`,
       `height`, `referrerpolicy`, `decoding`, `loading` and `fetchpriority`. `alt` is read
@@ -1620,9 +1612,6 @@ entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and 
   entry #Kbd   `<kbd>`: user input, over phrasing content
   entry #Label   `<label>`: a caption for a form control, over phrasing content; `for` names the control
   entry #Legend   `<legend>`: a `<fieldset>`'s caption, over phrasing content and headings
-      In the current source the tag is built with the label `label`, so a `Legend(…)`
-      serializes as `<label>`; the parser's `<legend>` resolves through `#elements` by that
-      label too.
   entry #Li   `<li>`: a list item, over flow content; autoclosing; `value` sets its ordinal in an `<ol>`
   entry #Link   `<link>`: a link to an external resource; a void tag with a preset for every `rel`
     detail

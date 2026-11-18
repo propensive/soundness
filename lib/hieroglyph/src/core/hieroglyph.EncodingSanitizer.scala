@@ -30,42 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package embarcadero
+package hieroglyph
 
-import anticipation.*
-import coaxial.*
-import contingency.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import jacinta.*
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import symbolism.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
+import beneficence.*
 
-import formatting.indentedJsonFormatting
-import logging.silentLogging
+// What a `Codepage` does with a character its encoding cannot represent: the encoding
+// counterpart of `TextSanitizer`. The default, in the companion, substitutes the encoding's own
+// replacement silently; `encodingSanitizers.strictEncodingSanitizer` raises `Codepage.Error`.
+object EncodingSanitizer:
+  given substitute: EncodingSanitizer:
+    override def substitutes: Boolean = true
+    def unmappable(char: Char, encoding: Encoding): Unit = ()
 
-case class ContainerImage(id: Text)
+trait EncodingSanitizer extends Findable:
+  // Whether unmappable characters are replaced without `unmappable` being told of them, which
+  // lets a `Codepage` leave the replacement to the JDK's encoder.
+  def substitutes: Boolean = false
 
-case class Container(id: Text, created: Long, virtualSize: Bytes)
-
-case class DockerEngine(port: Int)
-
-@main
-def run(): Unit =
-  import internetAccess.online
-  import strategies.throwUnsafely
-
-  val response =
-    DomainSocket(% / "var" / "run" / "docker.sock")(t"/images/json").fetch()
-
-  import hieroglyph.*, codepages.utf8Codepage
-
-  println(response.receive[Json].as[List[Container]])
+  // Called for each character which cannot be encoded; if it returns, the encoding's
+  // replacement is written in the character's place.
+  def unmappable(char: Char, encoding: Encoding): Unit

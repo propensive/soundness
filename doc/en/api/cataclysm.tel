@@ -921,7 +921,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
 
             given (Typeface of "Inter") is Typesettable in Web =
               Web.linked(url"https://fonts.example/inter.woff2",
-                Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+                Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
                 Typesettable.Source.Format.Woff2)
       frame
         label The face paired with its provision: a font for the web
@@ -934,7 +934,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
 
             given (Typeface of "Inter") is Typesettable in Web =
               Web.linked(url"https://fonts.example/inter.woff2",
-                Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+                Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
                 Typesettable.Source.Format.Woff2)
 
             val heading: Font in Web = Web.font(inter.bold.italic)
@@ -949,7 +949,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
 
             given (Typeface of "Inter") is Typesettable in Web =
               Web.linked(url"https://fonts.example/inter.woff2",
-                Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+                Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
                 Typesettable.Source.Format.Woff2)
 
             val heading: Font in Web = Web.font(inter.bold.italic)
@@ -975,7 +975,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
         The class every factory in `Web` returns, so that a provision has a stable type:
         `Web.Provision[family](sources, coverage)` is a `(Typeface of family) is
         Typesettable in Web` whose `#sources` are the `Typesettable.Source`s the browser
-        obtains the typeface from and whose `#coverage` is the `Coverage` it was declared
+        obtains the typeface from and whose `#coverage` is the `Font.Coverage` it was declared
         with. `FontFace.rules` renders one source at a time.
     entry #sources   where the browser gets the typeface: linked, imported, local or generic
     entry #coverage   the weights, slants, widths and axes the provision was declared to offer
@@ -983,7 +983,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
     entry #Form   the medium, `Web`
   entry .sansSerif   the generic `sans-serif` family, provided on the web with no declaration
       A browser sets each generic family from whatever it has, so the provision has a
-      single `Generic` source and `Coverage.Unknown`, which admits every face; it renders
+      single `Generic` source and `Font.Coverage.Unknown`, which admits every face; it renders
       no at-rule, and `font-family: sans-serif` unquoted.
   entry .serif   the generic `serif` family, provided with no declaration
   entry .monospace   the generic `monospace` family, provided with no declaration
@@ -992,7 +992,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
   entry .systemUi   the generic `system-ui` family, provided with no declaration
   entry .linked   a provision from a font file the browser fetches from a URL
       `Web.linked[family](url, coverage, format)` takes any URL type `Abstractable across
-      Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Coverage` the file is
+      Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Font.Coverage` the file is
       declared to have — since the file is not to hand to be read, only what is declared
       is admitted, so a font declared at one weight refuses a request for another rather
       than letting the browser synthesize it — and an optional
@@ -1002,7 +1002,7 @@ entry .Web   the web as a typesetting medium: how a browser obtains a typeface, 
   entry .local   a provision from a font the reader is expected to have installed
       `Web.local[family](coverage)` names the typeface in a `src: local("Name")`, the
       typeface's family name being the `family` literal. Nothing guarantees the reader has
-      it, so this is the weakest provision, and its coverage — `Coverage.Unknown` unless
+      it, so this is the weakest provision, and its coverage — `Font.Coverage.Unknown` unless
       given, which admits every face — says only what is declared.
 
       ```scala

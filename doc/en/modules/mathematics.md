@@ -264,8 +264,8 @@ Permutation(Sequence(3, 1, 1))
 ```
 
 Internally, a permutation is stored as its
-[Lehmer code](https://en.wikipedia.org/wiki/Lehmer_code) in factorial-base form, which is a
-single integer that uniquely identifies it. That makes permutations compact to store and to
+[inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
+factorial-base form, which is a single integer that uniquely identifies it. That makes permutations compact to store and to
 enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
 [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
 O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
@@ -276,14 +276,15 @@ read back:
 ```scala fuel
 run
 ##
-Out.println((Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
-Out.println(shuffle.lehmer.inspect)
+Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+Out.println(shuffle.inversions.inspect)
 Out.println(shuffle.expansion.inspect)
 ```
 
-A permutation leaves alone every position outside its own range. Applying one to a longer
-sequence is therefore not an error: it rearranges the positions it covers, and leaves the rest
-where they were.
+A permutation leaves alone every position after the last one it moves, so `shuffle`, whose
+sixth index stays in place, is a permutation of five. Applying one to a longer sequence is
+therefore not an error: it rearranges the leading positions it covers, and leaves the rest
+where they were. A single index is mapped the same way, with `shuffle(3)`.
 
 ### Related
 

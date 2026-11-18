@@ -151,10 +151,11 @@ entry .Decodable   a typeclass reading `Self` out of a `Form`, raising a typed e
   refer distillate.Extractable
   refer distillate.Parsable
   refer anticipation.Encodable
-  entry .int   decodes an `Int` from decimal text, raising `Number.Error` if it is unparseable
+  entry .int   decodes an `Int` from decimal text, distinguishing unparseable from out-of-range
       Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
-      optionally-signed decimal integer with no surrounding space; any failure, including
-      overflow, is `Number.Error.Reason.Unparseable`.
+      optionally-signed decimal integer with no surrounding space. Text which is not an
+      integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the range
+      of an `Int` raises it with `Reason.OutOfRange`.
   entry .byte   decodes a `Byte` from decimal text, distinguishing unparseable from out-of-range
       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
       `Reason.Unparseable`; an integer outside −128 to 127 raises it with `Reason.OutOfRange`.
@@ -162,8 +163,10 @@ entry .Decodable   a typeclass reading `Self` out of a `Form`, raising a typed e
       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
       `Reason.Unparseable`; an integer outside the range of a `Short` raises it with
       `Reason.OutOfRange`.
-  entry .long   decodes a `Long` from decimal text, raising `Number.Error` if it is unparseable
-      Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`.
+  entry .long   decodes a `Long` from decimal text, distinguishing unparseable from out-of-range
+      Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`. Text which is
+      not an integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the
+      range of a `Long` raises it with `Reason.OutOfRange`.
   entry .double   decodes a `Double` from text, raising `Number.Error` if it is unparseable
       Needs a `Tactic[Number.Error]`; parses with `java.lang.Double.parseDouble`, so exponents,
       `NaN` and `Infinity` are accepted as Java accepts them.
@@ -377,7 +380,7 @@ entry .Irrefutable   a typeclass converting `Self` to a `Result` in a way that c
   entry .shortFloat   widens a `Short` to a `Float`
   entry .shortDouble   widens a `Short` to a `Double`
   entry .intLong   widens an `Int` to a `Long`
-  entry .intDoule   widens an `Int` to a `Double` (the name is misspelt in the source)
+  entry .intDouble   widens an `Int` to a `Double`
   entry .floatDouble   widens a `Float` to a `Double`
   entry #unapply   converts a value; it cannot fail
   entry #contramap   an irrefutable conversion from a new type, applying a pure function first

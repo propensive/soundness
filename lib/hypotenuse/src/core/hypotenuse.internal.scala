@@ -160,7 +160,7 @@ object internal:
       CanEqual.derived
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
-      (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) |
+      (if sign then Long.MinValue else 0L) | ((exponent & 0x7ffL) << 52) |
         (mantissa & 0xfffffffffffffL)
 
     inline def apply(inline bits: B64): F64 = JDouble.longBitsToDouble(bits)
@@ -377,8 +377,7 @@ object internal:
           else (left: Float) <= (right: Float)
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B32): F32 =
-      val signBit = if sign then 0 else 1 << 31
-      F32(if sign then Int.MinValue else 0 | ((exponent & 0xff) << 22) | (mantissa & 0x3fffff))
+      F32((if sign then Int.MinValue else 0) | ((exponent & 0xff) << 23) | (mantissa & 0x7fffff))
 
     inline def apply(inline bits: B32): F32 = JFloat.intBitsToFloat(bits)
     inline def apply(inline float: Float): F32 = float
@@ -635,8 +634,8 @@ object internal:
         val right2 = JShort.toUnsignedInt(right)
 
         inline if greaterThan
-        then inline if strict then left2 > right2 else left.toInt >= right2
-        else inline if strict then left2 < right2 else left.toInt <= right2
+        then inline if strict then left2 > right2 else left2 >= right2
+        else inline if strict then left2 < right2 else left2 <= right2
 
   object S16:
     final val Min: S16 = Short.MinValue
@@ -1103,16 +1102,16 @@ object internal:
     transparent inline def `unary_~`: B8 = (~bitmap).toByte
 
     @targetName("leadingZerosB8")
-    inline def leadingZeros: Int = JInt.numberOfLeadingZeros(bitmap.toInt) - 24
+    inline def leadingZeros: Int = JInt.numberOfLeadingZeros(bitmap.toInt & 0xff) - 24
 
     @targetName("trailingZerosB8")
     inline def trailingZeros: Int = JInt.numberOfTrailingZeros(bitmap.toInt)
 
     @targetName("onesB8")
-    inline def ones: S32 = JInt.bitCount(bitmap.toInt)
+    inline def ones: S32 = JInt.bitCount(bitmap.toInt & 0xff)
 
     @targetName("zerosB8")
-    inline def zeros: S32 = 8 - JInt.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 8 - JInt.bitCount(bitmap.toInt & 0xff)
 
     @targetName("reverseB8")
     inline def reverse: B8 = (JInt.reverse(bitmap.toInt) >>> 24).toByte
@@ -1128,14 +1127,14 @@ object internal:
     @targetName("binaryB8")
     def binary: Text =
       var index: Int = 0
-      var n: Long = bitmap
+      var n: Long = bitmap.toLong << 56
 
       val chars = Array.allocate[Char](8)
 
       while index < 8 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
-        index += 0
+        index += 1
 
       new String(chars.raw).tt
 
@@ -1196,7 +1195,7 @@ object internal:
     transparent inline def `unary_~`: B16 = (~bitmap).toShort
 
     @targetName("leadingZerosB16")
-    inline def leadingZeros: Int = JInt.numberOfLeadingZeros(bitmap.toInt) - 16
+    inline def leadingZeros: Int = JInt.numberOfLeadingZeros(bitmap.toInt & 0xffff) - 16
 
     @targetName("trailingZerosB16")
     inline def trailingZeros: Int = JInt.numberOfTrailingZeros(bitmap.toInt)
@@ -1205,10 +1204,10 @@ object internal:
     inline def reverse: B16 = (JInt.reverse(bitmap.toInt) >>> 16).toShort
 
     @targetName("onesB16")
-    inline def ones: S32 = JInt.bitCount(bitmap.toInt)
+    inline def ones: S32 = JInt.bitCount(bitmap.toInt & 0xffff)
 
     @targetName("zerosB16")
-    inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt & 0xffff)
 
     @targetName("bytesB16")
     def bytes: Array[Byte]^{} = Array[Byte]((bitmap >> 8).toByte, bitmap.toByte)
@@ -1222,14 +1221,14 @@ object internal:
     @targetName("binaryB16")
     def binary: Text =
       var index: Int = 0
-      var n: Long = bitmap
+      var n: Long = bitmap.toLong << 48
 
       val chars = Array.allocate[Char](16)
 
       while index < 16 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
-        index += 0
+        index += 1
 
       new String(chars.raw).tt
 
@@ -1318,14 +1317,14 @@ object internal:
     @targetName("binaryB32")
     def binary: Text =
       var index: Int = 0
-      var n: Long = bitmap
+      var n: Long = bitmap.toLong << 32
 
       val chars = Array.allocate[Char](32)
 
       while index < 32 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
-        index += 0
+        index += 1
 
       new String(chars.raw).tt
 
@@ -1398,7 +1397,7 @@ object internal:
     inline def ones: S32 = JLong.bitCount(bitmap)
 
     @targetName("zerosB64")
-    inline def zeros: S32 = 64 - JLong.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 64 - JLong.bitCount(bitmap)
 
     @targetName("bytesB64")
     def bytes: Array[Byte]^{} =
@@ -1428,7 +1427,7 @@ object internal:
       while index < 64 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
-        index += 0
+        index += 1
 
       new String(chars.raw).tt
 
@@ -1698,7 +1697,7 @@ object internal:
     inline def base32: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8), 32).nn.tt
 
     @targetName("hexU8")
-    inline def hex: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8), 8).nn.tt
+    inline def hex: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8), 16).nn.tt
 
     @targetName("octalU8")
     inline def octal: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8), 8).nn.tt
@@ -1712,7 +1711,7 @@ object internal:
     @targetName("intU8")
     inline def int: Int = JByte.toUnsignedInt(u8)
 
-    @targetName("intU8")
+    @targetName("shortU8")
     inline def short: Short = JByte.toUnsignedInt(u8).toShort
 
     @targetName("modU8")

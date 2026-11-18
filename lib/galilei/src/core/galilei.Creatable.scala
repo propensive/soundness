@@ -53,15 +53,25 @@ import Io.Error.{Operation, Reason}
 // behind. FIFOs are instantiation-only: opening one just to have a handle would block until
 // a peer appears.
 object Creation:
-  // Walk up from the parent, creating missing ancestors — the behavior the retired
-  // `createNonexistentParents.enabled` given supplied implicitly, now selected by the
-  // `Parents` flag.
+  // The `CreateParents` policy in scope where an entry is created, if there is one:
+  // `filesystemOptions.createParents` makes `create` behave as if the `Parents` flag
+  // had been given, as it does for the destination of a copy, move or link. Unlike those,
+  // `create` does not demand a policy, so this is resolved where the instance is summoned.
+  inline def policy[filesystem]: Optional[CreateParents on filesystem] =
+    scala.compiletime.summonFrom:
+      case policy: (CreateParents on `filesystem`) => policy
+      case _                                                  => Unset
+
+  // Walk up from the parent, creating missing ancestors: selected by the `Parents` flag, or
+  // left to the `CreateParents` policy, if one was in scope.
   private[galilei] def ensure[filesystem: Filesystem]
-    ( path: Path on filesystem, flags: List[CreateFlag] )
+    ( path:   Path on filesystem,
+      flags:  List[CreateFlag],
+      policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error], umask: Umask )
   :   Unit =
 
-    if flags.has(Parents) then
+    if !flags.has(Parents) then policy.let(_(path)(())) else
       def ancestors(current: Path on filesystem): List[Path on filesystem] =
         safely(current.parent)
         . let: parent => (parent :: ancestors(parent)): List[Path on filesystem]
@@ -89,6 +99,7 @@ object Creation:
     backend.delete(path)
 
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
             loggable: (Io.Event is Loggable)^,
@@ -103,7 +114,7 @@ object Creation:
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
       Log.info(Io.Event.Create((value: Path on filesystem).show))
-      ensure(value, flags)
+      ensure(value, flags, policy)
       replace(value, flags)
       backend.createDirectory(value, umask.mode(Umask.directoryBits))
 
@@ -138,6 +149,7 @@ object Creation:
       finally AccessRegister.release(real, atoms)
 
   class FileCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
             loggable: (Io.Event is Loggable)^,
@@ -152,7 +164,7 @@ object Creation:
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
       Log.info(Io.Event.Create((value: Path on filesystem).show))
-      ensure(value, flags)
+      ensure(value, flags, policy)
       replace(value, flags)
       backend.createFile(value, umask.mode(Umask.fileBits))
 
@@ -165,7 +177,7 @@ object Creation:
     :   result =
 
       Log.info(Io.Event.Create((value: Path on filesystem).show))
-      ensure(value, flags)
+      ensure(value, flags, policy)
 
       if !flags.has(Replace) && backend.exists(value, false)
       then abort(Io.Error(value, Operation.Create, Reason.AlreadyExists))
@@ -190,6 +202,7 @@ object Creation:
         throw throwable
 
   class FifoCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
             loggable: (Io.Event is Loggable)^,
@@ -204,7 +217,7 @@ object Creation:
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
       Log.info(Io.Event.Create((value: Path on filesystem).show))
-      ensure(value, flags)
+      ensure(value, flags, policy)
       replace(value, flags)
       backend.createFifo(value, umask.mode(Umask.fileBits))
 

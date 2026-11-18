@@ -37,7 +37,7 @@ import denominative.dysasymptotics.linearAccess // the suite indexes small fixtu
 
 import charsets.utf8Charset
 import codepages.utf8Codepage
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting

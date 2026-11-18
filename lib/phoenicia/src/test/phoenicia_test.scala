@@ -311,7 +311,7 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
         type Self = Typeface of "Other"
         type Form = Screen
         def sources: List[Typesettable.Source] = Nil
-        def coverage: Coverage = Coverage.Unknown
+        def coverage: Font.Coverage = Font.Coverage.Unknown
 
       // A one-axis `fvar` table: weights from 100 to 900, defaulting to 400.
       val fvarTable: Data =
@@ -337,8 +337,8 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
       . assert(_ == t"Test Sans 700 italic")
 
       test(m"A file's coverage reads the OS/2 weight and the post italic angle"):
-        Coverage.of(font())
-      . assert(_ == Coverage.Entries(List(Coverage.Entry(Weight.Bold.range, false, true,
+        Font.Coverage.of(font())
+      . assert(_ == Font.Coverage.Entries(List(Font.Coverage.Entry(Weight.Bold.range, false, true,
             Stretch.Normal.range, Nil, Nil))))
 
       test(m"The face the file has is admitted"):
@@ -366,12 +366,12 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
       . assert(_ == t"liga,onum")
 
       test(m"A variable font's weight axis spans its weights"):
-        Coverage.of(font(extra = t"fvar" -> fvarTable)).complaint(sans.light.italic).absent
+        Font.Coverage.of(font(extra = t"fvar" -> fvarTable)).complaint(sans.light.italic).absent
       . assert(_ == true)
 
       test(m"A value beyond an axis's range is refused"):
         val face = sans.italic.varying(Variation.Axis.Weight, 950.0)
-        Coverage.of(font(extra = t"fvar" -> fvarTable)).complaint(face).let(_.number)
+        Font.Coverage.of(font(extra = t"fvar" -> fvarTable)).complaint(face).let(_.number)
       . assert(_ == 9)
 
       test(m"A provision in Medium serves a medium named by an optional expected type"):

@@ -847,7 +847,7 @@ object soundness extends Fork:
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, escapade.io,
     escapade.graphics, digression.ansi, imperial.core, profanity.core, clavichord.core,
-    surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
+    surveillance.core, punctuation.ansi, hallucination.canvas,
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
     tessellate.core,
@@ -899,7 +899,7 @@ object soundness extends Fork:
     phoenicia.core, phoenicia.media,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
     scintillate.servlet,
-    telekinesis.jvm, telekinesis.sockets, plutocrat.core, eucalyptus.gcp, punctuation.html,
+    telekinesis.jvm, telekinesis.sockets, plutocrat.core, eucalyptus.gcp,
     perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
@@ -2368,10 +2368,7 @@ object hallucination extends Library:
   object canvas extends Component(core, aperture.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object ansi extends Component(escapade.core, core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(ansi, canvas, formats):
+  object test extends Tests(escapade.core, canvas, formats):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2401,7 +2398,7 @@ object harlequin extends Library:
     override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object md extends Component(core, punctuation.html):
+  object md extends Component(core, punctuation.core):
     override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3107,15 +3104,12 @@ object punctuation extends Library:
   object core extends Component(honeycomb.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object html extends Component(core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object ansi extends Component(core, harlequin.core, harlequin.ansi, escapade.core,
       polysyllabic.core, tessellate.core):
     override def scalaJs = false // depends on JVM-only `harlequin` (syntax highlighting)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units):
+  object test extends Tests(core, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
@@ -3655,7 +3649,7 @@ object vacuous extends Library:
   object test extends Tests(core)
 
 object vexillology extends Library:
-  object core extends Component(distillate.core):
+  object core extends Component(distillate.core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

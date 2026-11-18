@@ -912,6 +912,11 @@ object Tests extends Suite("ansi", m"Escapade tests"):
         emulate(e"a${esc}(b)c").buffer.style(2.z, 0.z).bold
       . assert(_ == false)
 
+      test(m"an escape with no reset writes no lone ESC when its span closes"):
+        val esc = Escape(t"[5m")
+        e"a${esc}(b)c".render(termcapDefinitions.xtermTrueColorTermcap).s.count(_ == '\u001b')
+      . assert(_ == 1)
+
     // ─── Round-trip via Pty: comprehensive ────────────────────────────────
 
     suite(m"Round-trip"):

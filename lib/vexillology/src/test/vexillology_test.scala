@@ -87,3 +87,10 @@ object Tests extends Suite("flags", m"Vexillology tests"):
       flags = flags(Green) = false
       flags.set
     . assert(_ == Set(Orange, Violet))
+
+    test(m"The underlying bits have one bit per set case"):
+      var flags = Flags[Color]()
+      flags = flags(Orange) = true
+      flags = flags(Green) = true
+      flags.bits
+    . assert(_ == B64(10L))

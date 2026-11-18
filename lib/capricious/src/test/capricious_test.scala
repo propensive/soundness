@@ -95,6 +95,19 @@ object Tests extends Suite("random", m"Capricious Tests"):
         draw == draw
       . assert(_ == true)
 
+      test(m"a toss is replayed by the same seed"):
+        def draw(seed: Seed): List[Boolean] = seed.stochastic(List.fill(64)(toss()))
+        draw(Seed(42L)) == draw(Seed(42L))
+      . assert(_ == true)
+
+      test(m"a Random made from a seed starts from that seed"):
+        def draw(seed: Seed): Long =
+          given random: Random = Random(seed)
+          arbitrary[Long]()
+
+        (draw(Seed(42L)) == draw(Seed(42L)), draw(Seed(42L)) == draw(Seed(43L)))
+      . assert(_ == (true, false))
+
       test(m"successive draws within one block differ"):
         stochastic(List.fill(16)(arbitrary[Long]())).to[Set].size
       . assert(_ == 16)
@@ -207,6 +220,14 @@ object Tests extends Suite("random", m"Capricious Tests"):
       test(m"a product's fields are not all equal"):
         stochastic(List.fill(32)(arbitrary[Point]())).exists { p => p.x != p.y }
       . assert(_ == true)
+
+      test(m"successive derived products in one block differ"):
+        stochastic(List.fill(8)(arbitrary[Point]())).to[Set].size
+      . assert(_ > 1)
+
+      test(m"a derived product follows the seed of its block"):
+        Seed(42L).stochastic(arbitrary[Point]()) == Seed(43L).stochastic(arbitrary[Point]())
+      . assert(_ == false)
 
       test(m"a sum type is randomizable"):
         Seed(5L).stochastic(arbitrary[Colour]()) == Seed(5L).stochastic(arbitrary[Colour]())

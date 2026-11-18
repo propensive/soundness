@@ -214,29 +214,29 @@ object Platform:
   // The `Creatable` instances for filesystem entries, anchored here for the same reason as
   // the `Openable` instances above: resolvable, with the form inferred where unique, from
   // any `Path on <platform>` with no import.
-  given directoryCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  inline given directoryCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
         loggable: (Io.Event is Loggable)^,
         umask:    Umask )
   =>  ( Creation.DirectoryCreatable[filesystem, path]^{tactic, loggable} ) =
-    Creation.DirectoryCreatable[filesystem, path]
+    Creation.DirectoryCreatable[filesystem, path](Creation.policy[filesystem])
 
-  given fileCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  inline given fileCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
         loggable: (Io.Event is Loggable)^,
         umask:    Umask )
   =>  ( Creation.FileCreatable[filesystem, path]^{tactic, loggable} ) =
-    Creation.FileCreatable[filesystem, path]
+    Creation.FileCreatable[filesystem, path](Creation.policy[filesystem])
 
-  given fifoCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  inline given fifoCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
         loggable: (Io.Event is Loggable)^,
         umask:    Umask )
   =>  ( Creation.FifoCreatable[filesystem, path]^{tactic, loggable} ) =
-    Creation.FifoCreatable[filesystem, path]
+    Creation.FifoCreatable[filesystem, path](Creation.policy[filesystem])
 
   // Opening `Eof(path)` opens the file's content for appending: the instance prepends the
   // `Append` flag and delegates to the file's own instance. Named capturing evidence and an

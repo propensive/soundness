@@ -206,6 +206,20 @@ object Tests extends Suite("count", m"Abacist Tests"):
           (Quanta(5, 9): Height).show
         . assert(_ == t"5' 9\"")
 
+        test(m"A name stays with its own unit when a smaller unit is zero"):
+          given UnitsNames[Height] = () => List(t"'", t"\"")
+          (Quanta(5, 0): Height).show
+        . assert(_ == t"5'")
+
+        test(m"A zero quantity is shown in its smallest named unit"):
+          given UnitsNames[Height] = () => List(t"'", t"\"")
+          (Quanta(0, 0): Height).show
+        . assert(_ == t"0\"")
+
+        test(m"A zero quantity is shown in its smallest unit"):
+          (Quanta(0): Weight).show
+        . assert(_ == t"0oz")
+
       suite(m"Aggregate tests"):
         test(m"Total of several values"):
           List(Quanta(10): Weight, Quanta(1, 6), Quanta(2, 4, 1)).total

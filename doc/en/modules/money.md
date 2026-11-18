@@ -10,7 +10,7 @@ pounds is not a sum but a mistake. Making the currency a type parameter is how t
 Within one currency, amounts add, subtract, scale, divide and compare. An amount splits into
 equal shares without losing a penny, and a price carries its tax beside its principal.
 
-Thirty-seven currencies are defined, each as a value which constructs amounts. An amount is
+Thirty-six currencies are defined, each as a value which constructs amounts. An amount is
 written with either its symbol or its ISO code, as a style in scope decides.
 
 ### On money
@@ -155,9 +155,8 @@ Out.println(priced.tax.show)
 Out.println(priced.inclusive.show)
 ```
 
-Tax is rounded *up* to the minor unit. That is what tax authorities require, and what naive
-rounding gets wrong in exactly the cases which matter. Twenty per cent of £2.94 is £0.588,
-which is charged as £0.59:
+Tax is rounded to the nearest minor unit, with a half rounded up. Twenty per cent of £2.94 is
+£0.588, which is charged as £0.59:
 
 ```scala fuel
 run

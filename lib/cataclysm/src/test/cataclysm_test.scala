@@ -331,7 +331,7 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
         given (Typeface of "Inter") is Typesettable in Web =
           Web.linked
             ( Link(t"https://x/inter.woff2"),
-              Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+              Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
               Typesettable.Source.Format.Woff2 )
 
         Css.fontFace(Web.font(inter.bold)).show
@@ -339,7 +339,7 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
 
       test(m"A stylesheet provision is imported"):
         given (Typeface of "Roboto") is Typesettable in Web =
-          Web.imported(Link(t"https://fonts/css"), Coverage.Unknown)
+          Web.imported(Link(t"https://fonts/css"), Font.Coverage.Unknown)
 
         Css.fontFace(Web.font(Typeface["Roboto"].face)).show
       . assert(_ == t"""@import url("https://fonts/css");""")

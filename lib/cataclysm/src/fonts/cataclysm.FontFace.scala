@@ -80,7 +80,7 @@ object FontFace:
 
     recur(provision.sources)
 
-  private def source(typeface: Text, source: Typesettable.Source, coverage: Coverage)
+  private def source(typeface: Text, source: Typesettable.Source, coverage: Font.Coverage)
   :   List[Css.Node] =
 
     source match
@@ -91,7 +91,7 @@ object FontFace:
 
         val data = sfnt.data.serialize[Base64]
         val src = t"url(data:$mime;base64,$data) format(\"$format\")"
-        List(fontFace(typeface, src, Coverage.of(sfnt)))
+        List(fontFace(typeface, src, Font.Coverage.of(sfnt)))
 
       case Typesettable.Source.Linked(url, format) =>
         val hint = format.lay(t""): format =>
@@ -114,7 +114,7 @@ object FontFace:
       case Typesettable.Source.Generic =>
         Nil
 
-  private def fontFace(typeface: Text, src: Text, coverage: Coverage): Css.Node =
+  private def fontFace(typeface: Text, src: Text, coverage: Font.Coverage): Css.Node =
     val declarations =
       List
         ( Css.Node.Declaration(t"font-family", t"\"$typeface\""),
@@ -125,10 +125,10 @@ object FontFace:
   // The faces a `@font-face` covers, as its `font-weight`, `font-style` and `font-stretch`
   // descriptors, merged across the coverage's entries. A browser matches a requested face
   // against these, so they must span what the file has.
-  private def descriptors(coverage: Coverage): List[Css.Node] = coverage match
-    case Coverage.Unknown => Nil
+  private def descriptors(coverage: Font.Coverage): List[Css.Node] = coverage match
+    case Font.Coverage.Unknown => Nil
 
-    case Coverage.Entries(entries) => span(entries).lay(Nil): span =>
+    case Font.Coverage.Entries(entries) => span(entries).lay(Nil): span =>
       val weight =
         if span.weights.lower == span.weights.upper then span.weights.lower.show
         else t"${span.weights.lower.show} ${span.weights.upper.show}"
@@ -148,7 +148,7 @@ object FontFace:
   private case class Span
     ( weights: Weight.Range, upright: Boolean, italic: Boolean, stretches: Stretch.Range )
 
-  private def span(entries: List[Coverage.Entry]): Optional[Span] = entries match
+  private def span(entries: List[Font.Coverage.Entry]): Optional[Span] = entries match
     case head :: tail =>
       val first = Span(head.weights, head.upright, head.italic, head.stretches)
 

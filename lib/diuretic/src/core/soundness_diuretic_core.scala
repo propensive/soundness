@@ -35,7 +35,7 @@ package soundness
 export
   diuretic
   . { JavaIoFile, JavaLongDuration, JavaLongInstant, JavaNetUrl, JavaNioPath, JavaTimeInstant,
-      JavaUtilDate }
+      JavaUtilDate, javaIoFileRepresentative, javaNioPathRepresentative }
 
 package instantInterfaces:
   export anticipation.instantInterfaces.{javaLongInstant, javaTimeInstant, javaUtilDate}

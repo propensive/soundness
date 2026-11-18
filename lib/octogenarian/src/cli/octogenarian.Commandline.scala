@@ -63,7 +63,7 @@ object Commandline:
     given execEvent: Commandline.Event transcribes guillotine.Exec.Event = Commandline.Event.Exec(_)
 
     given communicable: Commandline.Event is Communicable =
-      case Exec(reason) => m"the git operation did not execute: $reason"
+      case Exec(event) => m"git: $event"
 
   enum Event:
     case Exec(event: guillotine.Exec.Event) extends Event, Log.Process

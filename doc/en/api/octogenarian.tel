@@ -34,7 +34,7 @@ detail
     import codepages.utf8Codepage
     import environments.javaBaseEnvironment
     import filesystemBackends.javaBaseFilesystem
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     import gitBackends.commandlineGit
     import gitCommands.searchpathGitCommand
     import internetAccess.online
@@ -1318,7 +1318,7 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
         import gitCommands.searchpathGitCommand
         import environments.javaBaseEnvironment
         import workingDirectories.javaBaseWorkingDirectory
-        import filesystemOptions.createNonexistentParents
+        import filesystemOptions.createParents
         import logging.silentLogging
         import strategies.throwUnsafely
 
@@ -1760,7 +1760,7 @@ entry .Commandline   the backend which runs the `git` command, as `gitBackends.c
         transcribes guillotine's events into it, so a `Commandline.Event is Loggable` in scope
         is all the backend needs. `logging.silentLogging` discards them.
     entry .execEvent   transcribes a guillotine `Exec.Event` into a `Commandline.Event`
-    entry .communicable   renders an event as _the git operation did not execute: `reason`_
+    entry .communicable   renders an event as _git: `event`_
   entry .Outcome   what one `git` invocation produced: its exit status, standard output and standard error
     entry #exit   the exit status
     entry #stdout   standard output, as text
@@ -2039,7 +2039,7 @@ entry .gitBackends   the two implementations of `Git.Backend`, each a given to i
       import gitBackends.soundnessGit
       import strategies.throwUnsafely
       import temporaryDirectories.javaBaseTemporaryDirectory
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemBackends.javaBaseFilesystem
 
       val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
@@ -2096,7 +2096,7 @@ entry .Native   the `Git.Backend` which reads and writes a repository's files it
       import gitBackends.soundnessGit
       import strategies.throwUnsafely
       import temporaryDirectories.javaBaseTemporaryDirectory
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemBackends.javaBaseFilesystem
 
       val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show

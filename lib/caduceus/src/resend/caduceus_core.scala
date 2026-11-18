@@ -84,7 +84,7 @@ package couriers:
             bcc:          List[EmailAddress],
             cc:           List[EmailAddress],
             scheduled_at: Optional[Text],
-            replyTo:      List[EmailAddress],
+            reply_to:     List[EmailAddress],
             headers:      Map[Text, Text],
             html:         Optional[Text],
             text:         Optional[Text],

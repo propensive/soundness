@@ -59,23 +59,40 @@ object BaseLayout:
 // `caps.Pure`: a layout is pure path data (`part`, `readOnly`, `Dir`); the marker also keeps the
 // `Home.type`/`Base.type` members of nested layouts' `Topic` tuples pure, without which the
 // nested objects' parent types acquire capture variables their pure self types reject.
-case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly: Boolean = false)
+//
+// `variable` names an environment variable which relocates the layout: the XDG Base Directory
+// variables, for the `Home` layouts which the specification lets a user move. It is honoured
+// when it is set to an absolute path, as the specification requires; otherwise the layout is
+// where its position under `$HOME` puts it.
+case class BaseLayout[topic <: Tuple]
+  ( private val part: Optional[Text],
+    readOnly:         Boolean        = false,
+    variable:         Optional[Text] = Unset )
   ( using baseDir: BaseLayout.Dir )
 extends caps.Pure:
 
   type Topic = topic
 
-  inline def absolutePath(using Environment, System)
+  inline def absolutePath(using environment: Environment, system: System)
   :   Text raises Environment.Error raises Property.Error =
 
-    val dir = part.let(baseDir/_).or(baseDir)
-    // Only home-relative layouts need `$HOME`; the `/`-rooted `Base.*` layouts render without it.
-    val home2: Text =
-      if !dir.home then t"" else
-        val home: Text = Environment.home[Text]
-        if home.ends(t"/") then home.skip(1, Rtl) else home
+    relocation.or:
+      val dir = part.let(baseDir/_).or(baseDir)
+      // Only home-relative layouts need `$HOME`; the `/`-rooted `Base.*` layouts render
+      // without it.
+      val home2: Text =
+        if !dir.home then t"" else
+          val home: Text = Environment.home[Text]
+          if home.ends(t"/") then home.skip(1, Rtl) else home
 
-    dir.render(home2)
+      dir.render(home2)
+
+  // Where `variable` puts the layout, if it is set to an absolute path.
+  def relocation(using environment: Environment): Optional[Text] =
+    variable.let(environment.variable(_)).let: path =>
+      if !path.starts(t"/") then Unset
+      else if path.length > 1 && path.ends(t"/") then path.skip(1, Rtl)
+      else path
 
 
   given dir: BaseLayout.Dir =

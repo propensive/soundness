@@ -53,4 +53,5 @@ package logFormats:
       case Log.Level.Warn => t"WARNING"
       case Log.Level.Fail => t"ERROR"
 
-    GcpLog(severity, event.text).in[Json].show
+    // One JSON object per line is what Google Cloud Logging reads.
+    t"${GcpLog(severity, event.text).in[Json].show}\n"

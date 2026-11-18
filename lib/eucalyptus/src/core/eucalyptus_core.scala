@@ -32,7 +32,7 @@
                                                                                                   */
 package eucalyptus
 
-import java.text as jt
+import java.time as jt
 
 import scala.language.experimental.pureFunctions
 
@@ -51,12 +51,16 @@ package logFormats:
 
   given timestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
-      t"${dateFormat.format(timestamp).nn} [$level] ${event.communicate}\n"
+      t"${dateFormat.format(jt.Instant.ofEpochMilli(timestamp)).nn} [$level] ${event.communicate}\n"
 
   given untimestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) => t"[$level] ${event.communicate}\n"
 
-val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
+// A `DateTimeFormatter` is immutable, so it is safe to share between the threads which log; the
+// `SimpleDateFormat` it replaces was not.
+val dateFormat: jt.format.DateTimeFormatter =
+  jt.format.DateTimeFormatter.ofPattern(t"yyyy-MMM-dd HH:mm:ss.SSS".s).nn
+  . withZone(jt.ZoneId.systemDefault).nn
 
 // Runs `lambda` with logging of `event` suppressed, regardless of any ambient `LogSink`s. The
 // silent

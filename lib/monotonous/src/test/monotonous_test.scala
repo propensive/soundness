@@ -203,6 +203,11 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
               arb.serialize[Hex].deserialize[Hex].to[List]
             . assert(_ == arbList)
 
+        test(m"A custom alphabet made from a literal round-trips"):
+          given Alphabet[Hex] = Alphabet("ZYXWVUTSRQPONMLK", false)
+          arb.serialize[Hex].deserialize[Hex].to[List]
+        . assert(_ == arbList)
+
         test(m"Roundtrip Octal tests"):
           import alphabets.octalStandard
           arb.serialize[Octal].deserialize[Octal].to[List]

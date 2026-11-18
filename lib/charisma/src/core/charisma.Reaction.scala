@@ -41,8 +41,8 @@ object Reaction:
     case NetForward     => t"→"
     case BothDirections => t"⇄"
     case Equilibrium    => t"⇋"
-    case Stoichiometric => t"↔"
-    case Resonance      => t"="
+    case Stoichiometric => t"="
+    case Resonance      => t"↔"
 
 enum Reaction:
   case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance

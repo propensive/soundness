@@ -205,19 +205,32 @@ extension [textual: Textual as instance](text: textual)
   inline def length: Int = textual.length(text)
   def plain: Text = textual.text(text)
 
-  // FIXME
+  // Spreads the words of the text across `width` columns. The space left over once the words
+  // are counted is shared among the gaps between them as evenly as it divides: gap `n` of `g`
+  // ends where `n/g` of the space has been used, so the wider gaps are spread along the line,
+  // not gathered at one end. A gap is never narrower than one space, so a text too long for
+  // the width comes back with single spaces, and a single word comes back alone.
   def justify(width: Int): textual =
     val words = text.words
-    val extra = width - text.length
+    val gaps = List.size(words) - 1
 
-    def recur(word: Ordinal, spaces: Int, result: textual): textual =
-      if word == Prim then result else
-        val gap = ((spaces.toDouble/word.n0) + 0.5).toInt
+    def extent(todo: List[textual], total: Int): Int = todo match
+      case word :: more => extent(more, total + textual.length(word))
+      case _            => total
 
-        recur(word - 1, spaces - gap,
-              result+instance.apply(t" "*(gap + 1))+List.at(words, List.size(words) - word.n0))
+    val spare = (width - extent(words, 0)).max(gaps)
 
-    recur(Prim, extra, List.at(words, 0))
+    def recur(todo: List[textual], gap: Int, result: textual): textual = todo match
+      case word :: more =>
+        val spaces = gap*spare/gaps - (gap - 1)*spare/gaps
+        recur(more, gap + 1, result+instance.apply(t" "*spaces)+word)
+
+      case _ =>
+        result
+
+    words match
+      case word :: more => recur(more, 1, word)
+      case _            => text
 
   def slices(size: Int): List[textual] =
     val length = text.length

@@ -83,6 +83,11 @@ object Tests extends Suite("i18n", m"Cosmopolite tests"):
       . assert(_ == proscenium.List(t"cote", t"coté", t"côte", t"côté"))
 
     suite(m"Locale integration"):
+      test(m"a locale is decoded from its primary subtag, in any case"):
+        proscenium.List(t"FR", t"fr-CA", t"de_AT", t"pl", t"xx").map: code =>
+          code.as[Locale[en & pl & fr & de & es]].language.code
+      . assert(_ == proscenium.List(t"fr", t"fr", t"de", t"pl", t"en"))
+
       test(m"a via-typed value sees its language's collation"):
         // `minimum` rather than sorting and taking the first: the smallest element is what the
         // test is after, and it needs no algorithm — nor a proof that the list is non-empty.

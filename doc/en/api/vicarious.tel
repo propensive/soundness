@@ -216,7 +216,7 @@ entry .Specific   typeclass instances for named field paths of a type, for a der
       case class Person(name: Text, age: Int)
       case class Duel(challenger: Person, opponent: Person)
 
-      val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+      val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str)(text => Json(text.upper))
 
       given (Duel is Specific over Json.Encodable) =
         specifically:

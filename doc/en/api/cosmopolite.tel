@@ -130,8 +130,8 @@ entry .Locale   the language a program is speaking, as a contextual value
       The constructor form, so it is not mistaken for the bare code `.encodable` writes.
   entry .decodable   reads a locale from a language code, falling back to English
       Decodes to `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` and `t"es"` are
-      their languages, and any other text — including a regional form such as `t"fr-CA"`, or
-      upper case — is silently `en`. Normalise the code first if the fallback matters.
+      their languages, in any case and with any region subtag ignored, so `t"FR"`, `t"fr-CA"`
+      and `t"fr_CA"` are all French. Any other text is silently `en`.
   entry #language   the language this locale speaks
 
 entry .Collatable   a typeclass giving a language its sort order, as a `Collation`

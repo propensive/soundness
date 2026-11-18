@@ -160,6 +160,66 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
         (-1: Short).octal
       . assert(_ == t"177777")
 
+      test(m"B8.binary shows eight bits"):
+        (5: Byte).bits.binary
+      . assert(_ == t"00000101")
+
+      test(m"B8.binary shows a set top bit"):
+        (0x80.toByte).bits.binary
+      . assert(_ == t"10000000")
+
+      test(m"B16.binary shows sixteen bits"):
+        (0x0105: Short).bits.binary
+      . assert(_ == t"0000000100000101")
+
+      test(m"B32.binary shows thirty-two bits"):
+        B32(5).binary
+      . assert(_ == t"00000000000000000000000000000101")
+
+      test(m"B64.binary shows sixty-four bits"):
+        B64(-1L).binary
+      . assert(_ == t"1"*64)
+
+      test(m"U8.hex is hexadecimal"):
+        U8((-1: Byte).bits).hex
+      . assert(_ == t"ff")
+
+      test(m"B8.ones counts only its own eight bits"):
+        (0x80.toByte).bits.ones
+      . assert(_ == 1)
+
+      test(m"B8.zeros counts only its own eight bits"):
+        (0x80.toByte).bits.zeros
+      . assert(_ == 7)
+
+      test(m"B16.ones counts only its own sixteen bits"):
+        (-1: Short).bits.ones
+      . assert(_ == 16)
+
+      test(m"B64.zeros counts all sixty-four bits"):
+        B64(-1L).zeros
+      . assert(_ == 0)
+
+      test(m"U16 at its maximum is not less than or equal to one"):
+        U16((-1: Short).bits) <= U16((1: Short).bits)
+      . assert(_ == false)
+
+      test(m"U16 at its maximum is greater than or equal to one"):
+        U16((-1: Short).bits) >= U16((1: Short).bits)
+      . assert(_ == true)
+
+      test(m"F32 from sign, exponent and mantissa is IEEE 754"):
+        F32(false, (127: Short).bits, B32(0))
+      . assert(_ == F32(1.0f))
+
+      test(m"A negative F32 keeps its exponent and mantissa"):
+        F32(true, (128: Short).bits, B32(0x400000))
+      . assert(_ == F32(-3.0f))
+
+      test(m"F64 from sign, exponent and mantissa is IEEE 754"):
+        F64(false, (1023: Short).bits, B64(0L))
+      . assert(_ == F64(1.0))
+
     suite(m"Fixed-width arithmetic"):
       import arithmeticOptions.uncheckedOverflow, arithmeticOptions.uncheckedDivision
 

@@ -150,7 +150,7 @@ object Whatwg:
 
   given abbr: ("abbr" is Attribute on "th" of Textual) = attribute()
   given accept: ("accept" is Attribute on "input" of MimeList) = attribute()
-  given acceptCharset: ("acceptCharset" is Attribute on "form" of Utf8) = attribute()
+  given acceptCharset: ("accept-charset" is Attribute on "form" of Utf8) = attribute()
   given accesskey: ("accesskey" is Attribute of AccessKeys) = globalAttribute()
   given action: ("action" is Attribute on "form" of Url) = attribute()
   given allow: ("allow" is Attribute on "iframe" of PermissionsPolicy) = attribute()
@@ -222,7 +222,7 @@ object Whatwg:
   given formtarget: ("formtarget" is Attribute on "input" | "button" of Target) = attribute()
   given headers: ("headers" is Attribute on "td" | "th" of Ids) = attribute()
   given headingoffset: ("headingoffset" is Attribute of Upto8) = globalAttribute()
-  given headingreset: ("headingoffset" is Attribute of Presence) = globalAttribute()
+  given headingreset: ("headingreset" is Attribute of Presence) = globalAttribute()
   given height: ("height" is Attribute on HeightTags of PositiveInt) = attribute()
   given hidden: ("hidden" is Attribute of Hidden) = globalAttribute()
   given high: ("high" is Attribute on "meter" of Decimal) = attribute()
@@ -341,7 +341,7 @@ object Whatwg:
   given type4: ("type" is Attribute on "input" of InputType) = attribute()
   given type5: ("type" is Attribute on "ol" of OlType) = attribute()
   given type6: ("type" is Attribute on "script" of ScriptType) = attribute()
-  given usemap: ("usemaptype" is Attribute on "img" | "input" | "object" of HashName) = attribute()
+  given usemap: ("usemap" is Attribute on "img" | "input" | "object" of HashName) = attribute()
   given value: ("value" is Attribute on "button" | "option" of Textual) = attribute()
   given value2: ("value" is Attribute on "data" of Textual) = attribute()
   given value3: ("value" is Attribute on "input" of InputValue) = attribute()
@@ -416,10 +416,10 @@ class Whatwg() extends Dom:
     type Transport = ""
     type Form = Whatwg
 
-    val Default = Tag.void["input", Whatwg](presets = proscenium.Map(t"shape" -> t"default"))
-    val Rect = Tag.void["input", Whatwg](presets = proscenium.Map(t"shape" -> t"rect"))
-    val Circle = Tag.void["input", Whatwg](presets = proscenium.Map(t"shape" -> t"circle"))
-    val Poly = Tag.void["input", Whatwg](presets = proscenium.Map(t"shape" -> t"poly"))
+    val Default = Tag.void["area", Whatwg](presets = proscenium.Map(t"shape" -> t"default"))
+    val Rect = Tag.void["area", Whatwg](presets = proscenium.Map(t"shape" -> t"rect"))
+    val Circle = Tag.void["area", Whatwg](presets = proscenium.Map(t"shape" -> t"circle"))
+    val Poly = Tag.void["area", Whatwg](presets = proscenium.Map(t"shape" -> t"poly"))
 
   val Article = Tag.container["article", Flow, Whatwg]()
   val Aside = Tag.container["aside", Flow, Whatwg]()
@@ -487,7 +487,9 @@ class Whatwg() extends Dom:
   val Hr = Tag.void["hr", Whatwg]()
   lazy val Html = honeycomb.Html
   val I = Tag.container["i", Phrasing, Whatwg]()
-  val Iframe = Tag.void["iframe", Whatwg]()
+  // An `iframe` has no content, but it is not a void element: it must be written with an end
+  // tag, or a browser reads the rest of the document as its fallback text.
+  val Iframe = Tag.container["iframe", "", Whatwg]()
   val Img = Tag.void["img", Whatwg]()
 
   object Input extends Tag.Void("input", proscenium.Map(), false):
@@ -525,7 +527,7 @@ class Whatwg() extends Dom:
   val Label = Tag.container["label", Phrasing, Whatwg]()
 
   val Legend =
-    Tag.container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Whatwg]()
+    Tag.container["legend", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Whatwg]()
 
   val Li = Tag.container["li", Flow, Whatwg](autoclose = true)
 
@@ -570,6 +572,10 @@ class Whatwg() extends Dom:
   val Menu = Tag.container["menu", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)
 
   object Meta extends Tag.Void("meta", proscenium.Map(), false):
+    type Topic = "meta"
+    type Transport = ""
+    type Form = Whatwg
+
     val ApplicationName =
       Tag.void["meta", Whatwg](presets = proscenium.Map(t"name" -> t"application-name"))
 

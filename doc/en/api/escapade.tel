@@ -840,7 +840,7 @@ entry .escapes   the raw SGR sequences of the sixteen-colour terminal, as `Escap
     entry .BrightBlue   SGR 94
     entry .BrightMagenta   SGR 95
     entry .BrightCyan   SGR 96
-    entry .BrightWhite   SGR 97, though its reset is `[49m` (the background default) rather than `[39m`
+    entry .BrightWhite   SGR 97
   entry .background   the sixteen background colours, SGR 40–47 and 100–107, each reset by SGR 49
     detail
         `Black` to `White` are SGR 40 to 47; the `Bright…` eight are SGR 100 to 107. Each

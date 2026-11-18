@@ -70,6 +70,18 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
       . lay((-1, -1))(bytecode => (bytecode.maxStack, bytecode.maxLocals))
     . assert((s, l) => s >= 0 && l >= 0)
 
+    test(m"Bytes which are not a classfile raise Classfile.Error"):
+      safely(Classfile(Data(1, 2, 3, 4))).absent
+    . assert(identity)
+
+    test(m"An abstract method has no bytecode"):
+      Classfile[Runnable].let(_.methods.seek(_.name == t"run")).let(_.bytecode)
+    . assert(_ == Unset)
+
+    test(m"Dup on an empty stack leaves the stack unchanged"):
+      Bytecode.Opcode.Dup.transform(Nil)
+    . assert(_ == Nil)
+
     test(m"Method descriptor parser handles primitives and references"):
       Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")
     . assert: parsed =>

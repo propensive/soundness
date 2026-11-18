@@ -42,13 +42,14 @@ import vacuous.*
 
 object Web:
   // The instance the factories below return; a named class gives it a stable type.
-  class Provision[family <: Label](val sources: List[Typesettable.Source], val coverage: Coverage)
+  class Provision[family <: Label]
+    ( val sources: List[Typesettable.Source], val coverage: Font.Coverage )
   extends Typesettable:
     type Self = Typeface of family
     type Form = Web
 
   private def generic[family <: Label]: Typeface of family is Typesettable in Web =
-    Provision[family](List(Typesettable.Source.Generic), Coverage.Unknown)
+    Provision[family](List(Typesettable.Source.Generic), Font.Coverage.Unknown)
 
   // The CSS generic families: a browser sets each from whatever it has, so they are provided on
   // the web without anything being declared. These live here, in the medium's companion, which
@@ -63,7 +64,7 @@ object Web:
   // A font file the browser fetches from a URL, declared with the faces it offers, since the
   // file is not to hand to be read.
   def linked[family <: Label, url: Abstractable across Urls to Text]
-    ( url: url, coverage: Coverage, format: Optional[Typesettable.Source.Format] = Unset )
+    ( url: url, coverage: Font.Coverage, format: Optional[Typesettable.Source.Format] = Unset )
   :   Typeface of family is Typesettable in Web =
 
     Provision[family](List(Typesettable.Source.Linked(url.generic, format)), coverage)
@@ -71,14 +72,15 @@ object Web:
   // A font the reader is expected to have installed, matched by the typeface's name. Nothing
   // guarantees they do, so this is the weakest provision, and its coverage says only what is
   // declared.
-  inline def local[family <: Label](coverage: Coverage = Coverage.Unknown)
+  inline def local[family <: Label](coverage: Font.Coverage = Font.Coverage.Unknown)
   :   Typeface of family is Typesettable in Web =
 
     Provision[family](List(Typesettable.Source.Local(constValue[family].tt)), coverage)
 
   // A stylesheet, such as a font service's, that declares the typeface's `@font-face` rules
   // itself; the page imports it.
-  def imported[family <: Label, url: Abstractable across Urls to Text](url: url, coverage: Coverage)
+  def imported[family <: Label, url: Abstractable across Urls to Text]
+    ( url: url, coverage: Font.Coverage )
   :   Typeface of family is Typesettable in Web =
 
     Provision[family](List(Typesettable.Source.Imported(url.generic)), coverage)

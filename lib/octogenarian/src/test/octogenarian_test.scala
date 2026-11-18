@@ -180,6 +180,15 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
     // ----- Reference validation (unit tests, no git) ------------------------
 
+    suite(m"SSH addresses"):
+      test(m"an SSH URL with a user is rendered in git's scp-like form"):
+        SshUrl(t"git", t"github.com".as[Hostname], t"propensive/soundness.git").text
+      . assert(_ == t"git@github.com:propensive/soundness.git")
+
+      test(m"an SSH URL with no user has no stray separator"):
+        SshUrl(Unset, t"github.com".as[Hostname], t"propensive/soundness.git").text
+      . assert(_ == t"github.com:propensive/soundness.git")
+
     suite(m"Reference validation"):
 
       test(m"a valid branch name parses unchanged"):

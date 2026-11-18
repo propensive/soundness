@@ -333,13 +333,10 @@ object internal:
                           // user interface, or the plainest type for its form.
                           def mimeType(plain: Expr[Text]): Expr[Text] =
                             ' {
-                                $annotation.mimeType match
-                                  case mimeType: Text => mimeType
-
-                                  case Unset =>
-                                    if List(${Varargs(uiUris)}*).exists(_ == $uri)
-                                    then t"text/html;profile=mcp-app"
-                                    else $plain
+                                ($annotation.mimeType: Optional[Text]).or:
+                                  if List(${Varargs(uiUris)}*).exists(_ == $uri)
+                                  then t"text/html;profile=mcp-app"
+                                  else $plain
                               }
 
                           // The aggregation is spelled out rather than bound as a given for
@@ -555,13 +552,10 @@ object internal:
                 title       = $title,
                 description = $about,
                 mimeType    =
-                  $annotation.mimeType match
-                    case mimeType: Text => mimeType
-
-                    case Unset =>
-                      if List(${Varargs(uiUris)}*).exists(_ == $uri)
-                      then t"text/html;profile=mcp-app"
-                      else $plain )
+                  ($annotation.mimeType: Optional[Text]).or:
+                    if List(${Varargs(uiUris)}*).exists(_ == $uri)
+                    then t"text/html;profile=mcp-app"
+                    else $plain )
           }
 
       val result: TypeRepr = method.info.widen

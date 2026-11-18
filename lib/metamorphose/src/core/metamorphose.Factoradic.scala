@@ -52,7 +52,7 @@ object Factoradic:
     unchecked(sequence)
 
   // The number of a sequence of digits each already known to be below its base: what `apply`
-  // checks, and what a Lehmer code is by construction.
+  // checks, and what an inversion table is by construction.
   private[metamorphose] def unchecked(sequence: List[Int]): Factoradic =
     def recur(sequence: List[Int], bases: List[BigInt], result: BigInt): BigInt =
       sequence match

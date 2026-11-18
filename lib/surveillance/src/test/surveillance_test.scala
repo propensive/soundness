@@ -35,7 +35,7 @@ package surveillance
 import soundness.*
 
 import errorDiagnostics.emptyDiagnostics
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.failOnPreexisting
 import strategies.throwUnsafely
 import systems.javaBaseSystem

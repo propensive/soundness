@@ -132,7 +132,7 @@ object internal:
   // as its type records it, is checked against the file's coverage; a refusal halts compilation
   // with the same message the runtime check would raise. A face or provision without static
   // information is left to the runtime check, which always runs.
-  private val coverages: scala.collection.mutable.HashMap[Text, Optional[Coverage]] =
+  private val coverages: scala.collection.mutable.HashMap[Text, Optional[Font.Coverage]] =
     scala.collection.mutable.HashMap()
 
   def font[family <: Label: Type, medium <: Medium: Type]
@@ -212,8 +212,8 @@ object internal:
 
   // The coverage of the font file at a classpath path, or nothing if it is not there or cannot
   // be read, in which case the check is left to runtime.
-  private def read(path: Text): Optional[Coverage] =
+  private def read(path: Text): Optional[Font.Coverage] =
     Optional(getClass.getResourceAsStream(path.s)).let: stream =>
       val bytes = stream.readAllBytes().nn
       stream.close()
-      Coverage.of(Sfnt(Array.unsafeFrozen(bytes)))
+      Font.Coverage.of(Sfnt(Array.unsafeFrozen(bytes)))

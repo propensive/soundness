@@ -48,7 +48,7 @@ import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.overwritePreexisting
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 
 import gitBackends.soundnessGit
 

@@ -140,9 +140,7 @@ object Api:
     val base = request.base
     val url: HttpUrl = Url(base.origin, t"${base.location}$substituted", query, base.fragment)
 
-    val empty: Spring[Data] = new Spring[Data]:
-      def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
-        Iterator.empty[Data].stream
+    val empty: Spring[Data] = Spring(Iterator.empty[Data].stream)
 
     val (contentType, body): (Optional[MediaType], Spring[Data]) = request.body match
       case Api.Body.Empty                  => (Unset, empty)
@@ -186,9 +184,7 @@ object Api:
     def content[carrier](mediaType: MediaType, value: carrier)(using postable: carrier is Postable)
     :   Body =
 
-      val spring: Spring[Data] = new Spring[Data]:
-        def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
-          postable.stream(value)
+      val spring: Spring[Data] = Spring(postable.stream(value))
 
       Body.Content(mediaType, spring)
 

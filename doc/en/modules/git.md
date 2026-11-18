@@ -33,7 +33,7 @@ samples work in a fresh repository under the temporary directory:
 import soundness.*
 
 import codepages.utf8Codepage
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import gitBackends.commandlineGit
 import gitCommands.searchpathGitCommand
 import internetAccess.online

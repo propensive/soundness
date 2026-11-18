@@ -153,7 +153,8 @@ extends StackTrace.Resolver:
 
   private def loadSmap(name: Text): Optional[Smap] =
     val resource = (name.s.replace('.', '/').nn+".class").tt
-    Classfile(resource).let(_.sourceDebugExtension).let(Smap.parse(_))
+    // A classfile which does not parse has no mapping to offer.
+    safely(Classfile(resource)).let(_.sourceDebugExtension).let(Smap.parse(_))
 
   // The definition an inline origin falls inside: the innermost definition covering its line in
   // the TASTy of the top-level class the SMAP's `ScalaClass` stratum names for it. The recorded

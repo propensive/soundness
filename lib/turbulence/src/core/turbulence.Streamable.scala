@@ -45,7 +45,8 @@ import rudiments.*
 import vacuous.*
 // The kernel `.stream` constructor is excluded from the wildcard so it does not
 // shadow this module's own `HttpStreams.Body.stream` extension (a same-module
-// package member); downstream sees both as siblings and resolves by receiver.
+// package member). That extension is deliberately not exported to `soundness`, where
+// zephyrine's `stream` is the only one; it is reached with `import turbulence.*`.
 import zephyrine.{stream as _, *}
 
 // A value which can be opened as a pull endpoint: a demand-aware `Stream`

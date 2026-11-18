@@ -36,7 +36,7 @@ export
   galilei
   . { accessed, Apfs, attribute, attributes, Attributed, BlockDevice, Btrfs, C, CharDevice,
       canonical, Cas, children, claim, CopyAttributes, copyInto, copyTo, created, CreateFlag,
-      CreateNonexistentParents,
+      CreateParents,
       Creation, creation, CreationTimed,
       D, delete, Edition, Ext4,
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
@@ -44,7 +44,7 @@ export
       FileOpenable,
       FilesystemAttribute, FilesystemBackend,
       glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local, locations,
-      dataSearch, configSearch, destination, listing, search,
+      dataSearch, configSearch, destination, discover, listing,
       MacOs, mapped, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag, hold,
       OverwritePreexisting, Observer, observe, Owner, p, Platform, Posix, Fdtable, readable, filesize, Sock, Stat,
       Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, subvolume,
@@ -60,7 +60,7 @@ package pathInterfaces:
 package filesystemOptions:
   export
     galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteOnlyEmpty, deleteRecursively,
+    . { copyAttributes, createParents, deleteOnlyEmpty, deleteRecursively,
         dereferenceSymlinks, discardAttributes, failOnPreexisting, moveAtomically,
         moveNonAtomically, overwritePreexisting, preserveSymlinks, requireParents }
 

@@ -44,7 +44,7 @@ object Err:
     stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
 
   def println[textual: Printable as printable, C^](lines: (Termcap ?->{C} textual)*)
-    ( using stdio: Stdio )
+    ( using stdio: Stdio^ )
   :   Unit =
 
     mutex:

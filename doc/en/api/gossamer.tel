@@ -592,10 +592,12 @@ entry .punch   splits a textual value at an ordinal, dropping the element there
     which splits between elements and keeps them all.
 
 entry .justify   widens a text to a width by distributing extra spaces among its inter-word gaps
-    The intent is full justification: the difference between `width` and the text's length
-    is shared out as additional spaces between the words, so a line fills its column. Only
-    the plain character count is considered, not display width. The implementation is marked
-    as needing attention in the source and should not be relied on yet.
+    Full justification: the space left in `width` once the words are counted is shared
+    among the gaps between them as evenly as it divides, with any wider gaps spread along
+    the line, so `t"a b c d".justify(12)` is `t"a  b   c   d"`. A gap is never narrower
+    than one space, so a text already wider than `width` comes back with single spaces, and
+    a single word comes back alone. Only the plain character count is considered, not
+    display width.
 
 entry .contains   whether a textual value contains a substring, or a character
     `t"hello world".contains(t"ello")` and `t"hello".contains('e')` are `true`; every text

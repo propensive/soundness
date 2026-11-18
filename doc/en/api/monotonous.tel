@@ -132,6 +132,7 @@ entry .Serialization   the supertype of the encodings, and the home of `Serializ
       `Octal`, `Quaternary` and `Binary` — used only as a type argument, to `serialize[Base64]`
       or `Alphabet[Hex]`, and never instantiated.
   refer monotonous.Serialization.Error
+  entry .Bits   the bits each character of an encoding carries, as a type: `Serialization.Bits[Hex]` is `4`
   entry .Error   raised when text to be deserialized holds a character not in the alphabet
     detail
         Error `↯/s.61.1`: _the character `char` at `position` was not valid_. Raised by `deserialize`
@@ -238,13 +239,16 @@ entry .Alphabet   the characters a base encoding uses, its padding, and the alte
       ```scala
       import soundness.*
 
-      given Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", padding = false)
+      given Alphabet[Hex] = Alphabet("0123456789ABCDEF", false)
       Data(-5, -1).serialize[Hex]   // t"FBFF"
       ```
 
-      The text must have exactly `2^bits` characters for the encoding, plus one for padding
-      when `padding` is `true`; nothing checks this, and a wrong length gives wrong output.
-      An alphabet is pure (`caps.Pure`), so it may not capture a capability.
+      `Alphabet(chars, padding)` is the only way to make one, and `chars` must be a string
+      literal, because it is checked as the call is compiled: it must have exactly `2^bits`
+      characters for the encoding, plus one for padding when `padding` is `true`; no
+      character may appear twice; and every character must be ASCII. An alphabet which
+      breaks any of these does not compile, so a wrong one cannot exist at runtime. An
+      alphabet is pure (`caps.Pure`), so it may not capture a capability.
 
       An alphabet is also a stream stage, through the companion's `.serialization` and
       `.deserialization` givens: `stream.via(alphabet)` serializes a `Stream[Data]` or
@@ -269,7 +273,11 @@ entry .Alphabet   the characters a base encoding uses, its padding, and the alte
       into a `Stream[Data] over Credit`. It needs a `Tactic[Serialization.Error]`, raised for
       a character not in the alphabet, and the instance captures that tactic. Groups and
       padding split between chunks are carried across.
+  entry .apply        `Alphabet("…", padding)`: an alphabet from a string literal, its size and characters checked at compile time
+      A third argument gives the `#tolerance`. The encoding is taken from the expected type,
+      or written as `Alphabet[Hex]("…", false)`.
   entry #chars        the encoding's characters in order of value, then the padding character if any
+  entry #bits         the bits each character carries, from the encoding: 4 for `Hex`, 6 for `Base64`
   entry #padding      whether output is padded to a whole group with the last character of `#chars`
   entry #tolerance    further characters accepted when deserializing, mapped to the values they stand for
       Empty for a strict alphabet. For a tolerant one, usually the inverse of the strict

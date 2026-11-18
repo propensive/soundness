@@ -209,6 +209,34 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
           joined(codepages.utf8Codepage.encoded(chunks)).to[List]
         . assert(_ == codepages.utf8Codepage.encoded(astral).to[List])
 
+      test(m"an unmappable character is replaced by default"):
+        codepages.asciiCodepage.encoded(t"caf\u00e9").to[List].map(_.toChar)
+      . assert(_ == List('c', 'a', 'f', '?'))
+
+      test(m"the strict sanitizer raises Codepage.Error for the character"):
+        import encodingSanitizers.strictEncodingSanitizer
+        capture[Codepage.Error](codepages.asciiCodepage.encoded(t"caf\u00e9")).char
+      . assert(_ == '\u00e9')
+
+      test(m"the strict sanitizer raises from a chunked encoding too"):
+        import encodingSanitizers.strictEncodingSanitizer
+
+        capture[Codepage.Error]:
+          joined(codepages.asciiCodepage.encoded(Chain(t"ca", t"f\u00e9", t"s")))
+        . char
+      . assert(_ == '\u00e9')
+
+      test(m"the strict sanitizer leaves encodable text alone"):
+        import encodingSanitizers.strictEncodingSanitizer
+        codepages.asciiCodepage.encoded(t"cafe").to[List].map(_.toChar)
+      . assert(_ == List('c', 'a', 'f', 'e'))
+
+      test(m"a strict chunked encoding agrees with the default for encodable text"):
+        import encodingSanitizers.strictEncodingSanitizer
+        val chunks = Chain.from(astral.s.grouped(3).map(_.tt))
+        joined(codepages.utf8Codepage.encoded(chunks)).to[List]
+      . assert(_ == codepages.utf8Codepage.encoded(astral).to[List])
+
       test(m"a chunked encoding round-trips through the decoder"):
         import textSanitizers.skipSanitizer
         val chunks = Chain.from(astral.s.grouped(3).map(_.tt))

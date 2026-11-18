@@ -42,7 +42,7 @@ import vacuous.*
 
 object Print:
   // The instance the standard fonts share; a named class gives it a stable type.
-  class Provision[family <: Label](name: Text, val coverage: Coverage) extends Typesettable:
+  class Provision[family <: Label](name: Text, val coverage: Font.Coverage) extends Typesettable:
     type Self = Typeface of family
     type Form = Print
     val sources: List[Typesettable.Source] = List(Typesettable.Source.Local(name))
@@ -55,15 +55,17 @@ object Print:
 
   // Regular and bold, each upright and slanted: the four faces of a standard text font. The
   // features are unknown: these are Type 1 fonts, and a PDF applies no layout features anyway.
-  private val textFaces: Coverage =
-    Coverage.Entries
+  private val textFaces: Font.Coverage =
+    Font.Coverage.Entries
       ( List
-          ( Coverage.Entry(Weight.Regular.range, true, true, Stretch.Normal.range, Nil, Unset),
-            Coverage.Entry(Weight.Bold.range, true, true, Stretch.Normal.range, Nil, Unset) ) )
+          ( Font.Coverage.Entry(Weight.Regular.range, true, true, Stretch.Normal.range, Nil, Unset),
+            Font.Coverage.Entry(Weight.Bold.range, true, true, Stretch.Normal.range, Nil, Unset) ) )
 
-  private val singleFace: Coverage =
-    Coverage.Entries
-      ( List(Coverage.Entry(Weight.Regular.range, true, false, Stretch.Normal.range, Nil, Unset)) )
+  private val singleFace: Font.Coverage =
+    Font.Coverage.Entries
+      ( List
+          ( Font.Coverage.Entry
+              ( Weight.Regular.range, true, false, Stretch.Normal.range, Nil, Unset ) ) )
 
   // The standard fourteen fonts (ISO 32000-2 §9.6.2.2), which every PDF reader has, are provided
   // in print without anything being embedded. They live here, in the medium's companion, which
@@ -112,7 +114,7 @@ object Print:
 
     def admitting(sfnts: List[Sfnt]): Optional[Sfnt] = sfnts match
       case head :: tail =>
-        if Coverage.of(head).complaint(font.face).absent then head else admitting(tail)
+        if Font.Coverage.of(head).complaint(font.face).absent then head else admitting(tail)
 
       case _ =>
         Unset

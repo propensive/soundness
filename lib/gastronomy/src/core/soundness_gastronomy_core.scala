@@ -36,7 +36,7 @@ export
   gastronomy
   . { Blake3, checksum, Checksummable, Concession, Digest, digest, Digester, Digestible,
       Feistel, Hash, Hashing, JavaBaseHashing, Md5, Murmur3, Permit, ProcessingPermit, Provider,
-      Sha1, Sha2, Sha384, Sha512, SoundnessHashing }
+      Sha1, Sha2, SoundnessHashing }
 
 package providers:
   export gastronomy.providers.{javaBaseProvider, soundnessProvider}
