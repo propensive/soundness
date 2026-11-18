@@ -59,7 +59,7 @@ object Typesettable:
     type Self = Typeface of family
     type Form = Medium
     val sources: List[Source] = sfnts.map(Source.Embedded(_))
-    val coverage: Coverage = Coverage.combine(sfnts.map(Coverage.of(_)))
+    val coverage: Font.Coverage = Font.Coverage.combine(sfnts.map(Font.Coverage.of(_)))
 
   // A provision made of font files, which every medium can carry, so it is `in Medium`. Several
   // files — regular, bold, italic — make one provision whose coverage is their union; a variable
@@ -97,4 +97,4 @@ object Typesettable:
 trait Typesettable extends Typeclass.Pure, Formal, Locative:
   type Self <: Typeface
   def sources: List[Typesettable.Source]
-  def coverage: Coverage
+  def coverage: Font.Coverage
