@@ -69,6 +69,22 @@ object Tests extends Suite("hashing", m"Gastronomy tests"):
         t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c".as[Digest in Sha2[256]]
     . assert(_ == t"Hello world".digest[Sha2[256]])
 
+    // Monotonous's own suite also runs as a native binary, where `demilitarize` (a JVM compiler
+    // plugin) is unavailable, so its alphabets' compile-time checks are tested from here.
+    suite(m"Alphabets are checked at compile time"):
+      test(m"An alphabet of the wrong length does not compile"):
+        demilitarize(Alphabet[Octal]("01234567=", false)).map(_.message)
+      . assert:
+          _ == List(t"an unpadded alphabet for this scheme needs 8 characters, but this has 9")
+
+      test(m"An alphabet with a repeated character does not compile"):
+        demilitarize(Alphabet[Quaternary]("ATCA", false)).map(_.message)
+      . assert(_ == List(t"an alphabet may not use the same character twice"))
+
+      test(m"An alphabet cannot be constructed without the check"):
+        demilitarize(new Alphabet[Hex](t"0123", false, Map(), 4)).nil
+      . assert(!_)
+
     test(m"Md5, Base64"):
       import alphabets.base64Standard
       t"Hello world".digest[Md5].serialize[Base64]

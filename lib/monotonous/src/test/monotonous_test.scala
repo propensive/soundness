@@ -208,19 +208,6 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
           arb.serialize[Hex].deserialize[Hex].to[List]
         . assert(_ == arbList)
 
-        test(m"An alphabet of the wrong length does not compile"):
-          demilitarize(Alphabet[Octal]("01234567=", false)).map(_.message)
-        . assert:
-            _ == List(t"an unpadded alphabet for this scheme needs 8 characters, but this has 9")
-
-        test(m"An alphabet with a repeated character does not compile"):
-          demilitarize(Alphabet[Quaternary]("ATCA", false)).map(_.message)
-        . assert(_ == List(t"an alphabet may not use the same character twice"))
-
-        test(m"An alphabet cannot be constructed without the check"):
-          demilitarize(new Alphabet[Hex](t"0123", false, Map(), 4)).nil
-        . assert(!_)
-
         test(m"Roundtrip Octal tests"):
           import alphabets.octalStandard
           arb.serialize[Octal].deserialize[Octal].to[List]
