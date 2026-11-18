@@ -372,12 +372,33 @@ package filesystemBackends:
           PointerMapping(file.toString, size).or:
             abort(Io.Error(path, Operation.Open, Reason.PermissionDenied))
 
-      // Not yet: a file is mapped for reading alone on this platform.
       def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
         ( using Tactic[Io.Error] )
       :   FilesystemBackend.Hold^ =
 
-        abort(Io.Error(path, Operation.Open, Reason.Unsupported))
+        protect(path, Operation.Open):
+          val file = javaPath(path).toAbsolutePath.nn.normalize.nn
+
+          if jnf.Files.isDirectory(file)
+          then abort(Io.Error(path, Operation.Open, Reason.IsDirectory))
+
+          val created = !jnf.Files.exists(file)
+          val length = if created then 0L else jnf.Files.size(file)
+
+          // One owner at a time: another process which holds the lock, or another scope of
+          // this one, is `Busy`.
+          PointerHolding.open(file.toString, length, reserve) match
+            case PointerHolding.Busy =>
+              abort(Io.Error(path, Operation.Open, Reason.Busy))
+
+            case PointerHolding.Denied =>
+              abort(Io.Error(path, Operation.Open, Reason.PermissionDenied))
+
+            case descriptor =>
+              if created then apply(path, mode)
+
+              PointerHolding(descriptor, file.toString, length.max(reserve)).or:
+                abort(Io.Error(path, Operation.Open, Reason.PermissionDenied))
 
       def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text] =
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))

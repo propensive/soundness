@@ -374,6 +374,8 @@ package filesystemBackends:
       def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^ =
         abort(Io.Error(path, Operation.Open, Reason.Unsupported))
 
+      // Nor can a file be held for changing: besides the mapping, that takes a lock on the
+      // file, and `wasi:filesystem` has no call for one.
       def holding(path: Path on Plane, reserve: Long, mode: Optional[Int])
         ( using Tactic[Io.Error] )
       :   FilesystemBackend.Hold^ =

@@ -5213,13 +5213,13 @@ entry .hold
       - shorter; the holding's `expand` extends it further. The lock is on the file itself, and is
       - held for the block: a second `hold` of the file, in this process or another, raises
       - `Io.Error` with the reason `Busy`. What was stored is durable when the block ends. Only
-      - the JVM backend maps a file for changing; the others raise `Unsupported`.
+      - the JVM and Scala Native backends map a file for changing; WASI's raises `Unsupported`.
       + Le fichier est créé s'il n'existe pas, et étendu à `reserve` octets s'il est plus court ;
       + le `expand` de la tenure l'étend davantage. Le verrou porte sur le fichier lui-même, et il est
       + tenu pendant le bloc : un second `hold` du fichier, dans ce processus ou dans un autre,
       + lève `Io.Error` avec la raison `Busy`. Ce qui a été stocké est durable lorsque le bloc se
-      + termine. Seul le backend JVM projette un fichier pour modification ; les autres lèvent
-      + `Unsupported`.
+      + termine. Les backends JVM et Scala Native projettent un fichier pour modification ; celui
+      + de WASI lève `Unsupported`.
 entry .claim
   info
       - `path.claim[record] { owner => … }`: ownership of a name for the length of a block, to publish versions of `record` under it

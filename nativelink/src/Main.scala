@@ -13,6 +13,50 @@ object Main:
   given libc: (Interface in Native at "/nativelink/libc.h") =
     Interface[Native]("/nativelink/libc.h")
 
+  // A file held for changing in place: in a method of its own, since its `try` would otherwise
+  // make every call in `main` one which may unwind, and Scala Native 0.5.12 miscompiles a
+  // `Unit` call through a function pointer there.
+  // What is stored, moved and written is read back through a second, read-only mapping once
+  // the holding is closed; the file grows across pages; and a second holding is refused.
+  private def held(fs: FilesystemBackend on Linux): Boolean =
+    import codepages.utf8Codepage
+    val ledger: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-ledger").on[Linux])
+    if fs.exists(ledger, false) then unsafely(fs.delete(ledger))
+    val holding = unsafely(fs.holding(ledger, 16L, Unset))
+    holding.set32(0L, 1599L)
+    holding.set16(4L, 0x1616)
+    holding.set8(6L, 0x23)
+    holding.expand(24576L)
+    holding.set64(16384L, 0x0102030405060708L)
+    holding.write(20000L, t"Hamlet".in[Data])
+    holding.move(0L, 8L, 8L)
+    holding.zero(4L, 4L)
+    val within = holding.u32(8L) == 1599L && holding.u64(16384L) == 0x0102030405060708L
+
+    val refused =
+      try
+        unsafely(fs.holding(ledger, 0L, Unset)).close()
+        false
+      catch case _: Io.Error => true
+
+    holding.close()
+    val mapping = unsafely(fs.mapping(ledger))
+
+    val kept =
+      mapping.size == 24576L && mapping.u32(0L) == 1599L && mapping.u32(4L) == 0L
+      && mapping.u32(8L) == 1599L && mapping.u16(12L) == 0x1616 && mapping.u8(14L) == 0x23
+      && mapping.u64(16384L) == 0x0102030405060708L && mapping.same(20000L, t"Hamlet".in[Data])
+
+    mapping.unmap()
+    val again = unsafely(fs.holding(ledger, 0L, Unset))
+    val reopened = again.size == 24576L && again.u32(8L) == 1599L
+    again.close()
+    unsafely(fs.delete(ledger))
+    val out = java.lang.System.out.nn
+    out.println("hold: stored and read back = "+(within && kept)+", second refused = "+refused)
+    out.println("hold: reopened at its size = "+reopened)
+    within && kept && refused && reopened
+
   def main(args: Array[String]): Unit =
     val out = java.lang.System.out.nn
 
@@ -85,6 +129,8 @@ object Main:
     val readBytes = unsafely(fs.open(file, List(OpenFlag.Read), Unset)(_.reader().stdlib.map(_.length).sum))
     out.println("fs: bytes read back       = "+readBytes)
     unsafely(fs.delete(file))
+
+    if !held(fs) then java.lang.System.exit(1)
 
     // ambience: read an environment variable through the core `Environment` backend, which uses
     // `System.getenv` — SN-supported, so it works on native with no separate backend (the same is

@@ -418,7 +418,8 @@ is at an offset, and a `slice` of a holding reads through it, so it stays good a
 was stored is in the file when the block ends. It is what a format which is altered in place
 is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
 `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
-changing on the JVM; the other platforms report `Unsupported`.
+changing on the JVM and on Scala Native; WASI, which can neither map nor lock a file, reports
+`Unsupported`.
 
 ### Publishing versions
 
