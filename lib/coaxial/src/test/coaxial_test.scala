@@ -437,6 +437,18 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
             . data.utf8
         . assert(_ == t"pong")
 
+        test(m"A group made with a literal port can be subscribed to"):
+          import socketOptions.multicastLoopSocketOption
+          val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+          // Compiled, not run: joining the real mDNS group is not the test's business.
+          def announce(): Unit =
+            group.subscribe(packet => Multicast.Reply.Group(packet.data)):
+              summon[Multicast.Subscription].send(ascii(t"hello"))
+
+          group.show
+        . assert(_ == t"224.0.0.251:5353")
+
         // Aspirational: both tests need the host's multicast route to loop the group traffic
         // back, which a VPN tunnel owning that route prevents (the send fails, or the packet
         // never returns); the waits are time-boxed so that such a host fails the aspiration

@@ -193,12 +193,12 @@ unprompted. That is the shape of a service announcing itself, as mDNS does. A ha
 to the group, to the one sender, or not at all:
 
 ```scala fuel
-parse
+typecheck
 ##
 import socketOptions.multicastLoopSocketOption
 
 supervise:
-  val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
+  val group = Multicast(ip"224.0.0.251", udp"mdns")
 
   group.subscribe(packet => Multicast.Reply.Group(packet.data)):
     summon[Multicast.Subscription].send(t"hello, group".in[Data])

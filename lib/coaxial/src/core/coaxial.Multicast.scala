@@ -47,7 +47,10 @@ import vacuous.*
 // address, hence one address family: a protocol spoken over both IPv4 and IPv6 multicast, such
 // as mDNS, subscribes to two groups.
 object Multicast:
-  given showable: Multicast is Showable = multicast =>
+  // Each given here is for any subtype of `Multicast`: a group made with a literal port has a
+  // type refined by that port (`Multicast { val port: Udp.Port of 5353 }`), and a typeclass's
+  // `Self` is invariant.
+  given showable: [multicast <: Multicast] => multicast is Showable = multicast =>
     val group = multicast.group.absolve match
       case ipv4: (Ipv4 @unchecked) => ipv4.show
       case ipv6: Ipv6              => t"[${ipv6.show}]"
@@ -79,11 +82,12 @@ object Multicast:
     def send(data: Data, destination: Ipv4 | Ipv6, port: Udp.Port): Unit raises Socket.Error =
       subscribable.sendTo(binding, destination, port, data)
 
-  given subscribable: (backend: Socket.Backend, options: Every[Socket.Option.Udp])
-  =>  Multicast is Subscribable:
+  given subscribable: [multicast <: Multicast]
+  =>  ( backend: Socket.Backend, options: Every[Socket.Option.Udp] )
+  =>  multicast is Subscribable:
     type Binding = backend.MulticastSocket
 
-    def join(multicast: Multicast, interface: Optional[MacAddress]): Binding =
+    def join(multicast: multicast, interface: Optional[MacAddress]): Binding =
       backend.joinMulticast(multicast, interfaces(interface), options.values.to(List))
 
     def receive(binding: Binding): Packet raises Socket.Error = backend.receiveMulticast(binding)
@@ -106,12 +110,13 @@ object Multicast:
 
   // `listen`'s loan form for a group, for a subscriber that only responds; `subscribe` adds the
   // unprompted sends.
-  given bindable: (subscribable: Multicast is Subscribable) => Multicast is Bindable:
+  given bindable: [multicast <: Multicast] => (subscribable: multicast is Subscribable)
+  =>  multicast is Bindable:
     type Binding = subscribable.Binding
     type Input = Packet
     type Output = Reply
 
-    def bind(multicast: Multicast, interface: Optional[MacAddress]): Binding raises Bind.Error =
+    def bind(multicast: multicast, interface: Optional[MacAddress]): Binding raises Bind.Error =
       subscribable.join(multicast, interface)
 
     def connect(binding: Binding): Packet raises Socket.Error = subscribable.receive(binding)

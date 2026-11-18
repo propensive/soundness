@@ -1208,7 +1208,7 @@ entry .Multicast   a multicast group and port, subscribed to with `subscribe` or
         leaving, a response to something seen rather than received.
     entry #send   `send(data)` to the whole group; `send(data, destination, port)` to one member
         Both raise `Socket.Error(Transmit)` on failure.
-  entry .subscribable   `Multicast is Subscribable`, over the `Socket.Backend` and `Every[Socket.Option.Udp]` in scope
+  entry .subscribable   any `Multicast` (or a type refined by its literal port) `is Subscribable`, over the `Socket.Backend` and `Every[Socket.Option.Udp]` in scope
       Joins through `Socket.Backend#joinMulticast` on the interfaces `.interfaces` chooses.
   entry .bindable   `Multicast is Bindable`, derived from the `Subscribable`: `listen` on a group
       For a member which only responds: the handler is `Packet => Multicast.Reply`, and
