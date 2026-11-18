@@ -105,9 +105,7 @@ object SmartHttp:
     // front, skipped.
     def advertise(service: Text)(using Tactic[Git.Error]): Pktline.Reader =
       val target = t"$base/info/refs?service=$service"
-      val empty: Spring[Data] = new Spring[Data]:
-        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-          Http.emptyBody()
+      val empty: Spring[Data] = Spring[Data](Http.emptyBody())
 
       val reader = request(target, Http.Get, headers(service, Nil), empty)
       val input = java.io.PushbackInputStream(reader.underlying, 65540)
@@ -131,9 +129,7 @@ object SmartHttp:
           ( Http.Header(t"content-type", t"application/x-$service-request"),
             Http.Header(t"accept", t"application/x-$service-result") )
 
-      val body: Spring[Data] = new Spring[Data]:
-        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-          request.stream
+      val body: Spring[Data] = Spring[Data](request.stream)
 
       this.request(t"$base/$service", Http.Post, headers(service, extra), body)
 

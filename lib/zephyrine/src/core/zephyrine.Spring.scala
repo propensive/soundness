@@ -41,7 +41,19 @@ import prepositional.*
 // `Stream` is a scoped capability: a lambda may not mint a fresh scoped
 // capability as its result (the closure's fresh is not visible from the
 // function type's result capture at the binder's level), but a method may —
-// its result is re-leveled at each call site. Being a SAM trait, `Spring`
-// is still constructed from plain lambdas: `() => ....stream`.
+// its result is re-leveled at each call site. A lambda does not convert to a
+// `Spring`, since `apply` has a second, contextual parameter clause; write
+// `Spring(….stream)`, which the companion expands to the anonymous class.
 trait Spring[medium]:
   def apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^
+
+object Spring:
+  // `Spring(expression)`: a spring which evaluates `expression` anew at each `apply()`. Inline,
+  // so that the expression becomes the body of a method, which may mint a fresh stream where
+  // a function value may not.
+  transparent inline def apply[medium]
+    ( inline stream: Tactic[Truncation.Error] ?=> (Stream[medium] over Credit)^ )
+  :   Spring[medium]^ =
+
+    new Spring[medium]:
+      def apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^ = stream

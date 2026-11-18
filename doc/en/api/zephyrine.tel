@@ -940,8 +940,10 @@ entry .Spring   a re-materializable source of streams: each pull mints a fresh, 
       `apply()` giving a new stream over the same content. It is a trait rather than a
       function type because a lambda may not mint a fresh scoped capability as its result,
       where a method's result is re-leveled at each call site; and since `apply` takes a
-      `Tactic[Truncation.Error]` (the pull is where a source cut short is reported), it is not
-      a single abstract method, so a spring is written as an anonymous class.
+      `Tactic[Truncation.Error]` (the pull is where a source cut short is reported), a lambda
+      does not convert to one. `Spring(expression)` makes a spring which evaluates the
+      expression anew at each `apply()`; give the type argument, as `Spring[Data](…)`, where
+      the expected type alone does not fix it. An anonymous class also works.
 
       ```scala
       import soundness.*
@@ -949,9 +951,9 @@ entry .Spring   a re-materializable source of streams: each pull mints a fresh, 
 
       val payload: Data = t"body".in[Data]
 
-      val spring: Spring[Data] = new Spring[Data]:
-        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = payload.stream
+      val spring: Spring[Data] = Spring[Data](payload.stream)
       ```
+  entry .apply   `Spring(expression)`: a spring whose every pull evaluates the expression for a fresh stream
   entry #apply   a fresh stream over the content, raising `Truncation.Error` if it is cut short
 
 entry .Stream   the pull endpoint of a pipeline: a buffer whose readable region is lent zero-copy to one consumer

@@ -176,9 +176,7 @@ import soundness.httpUrlSessional
 import socketBackends.javaBaseSockets
 
 val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil,
-    new Spring[Data]:
-      def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
-        Http.emptyBody())
+    Spring[Data](Http.emptyBody()))
 
 url"https://example.com".session: session ?=>
   session.fetch(request).status
