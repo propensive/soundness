@@ -1308,10 +1308,8 @@ object Bytecode:
 
     // The stack simulation stays a stdlib-list interior behind the opaque
     // `transform` bridge: chained cons expressions (`a :: b :: a :: rest`)
-    // mis-type against the opaque alias under an expected type, and `Dup`'s
-    // `stack.head` is partial — the native `head` wants a `Populated` proof
-    // the simulation cannot produce, and totalizing it would quietly change
-    // what an under-full stack does.
+    // mis-type against the opaque alias under an expected type. Every case is
+    // total: an operation which finds the stack too short leaves it unchanged.
     private def transform0(stack: scala.collection.immutable.List[Frame])
     :   scala.collection.immutable.List[Frame] =
 
@@ -1367,7 +1365,10 @@ object Bytecode:
 
         case Pop  => stack.drop(1)
         case Pop2 => stack.drop(2)
-        case Dup  => stack.head :: stack
+
+        case Dup => stack match
+          case a :: _ => a :: stack
+          case _      => stack
 
         case DupX1 => stack match
           case a :: b :: rest => a :: b :: a :: rest

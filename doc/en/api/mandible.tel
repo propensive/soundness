@@ -50,14 +50,16 @@ refer mandible.disassemble
 
 entry .Classfile   a parsed JVM class file: its methods, their bytecode and its source attributes
   detail
-      A `Classfile` wraps the bytes of one `.class` file, parsed on first use through the
-      JDK's `java.lang.classfile` API. It is found on the classpath by name or by type, through
+      A `Classfile` is one `.class` file, parsed when it is made through the JDK's
+      `java.lang.classfile` API; bytes the JDK rejects raise `Classfile.Error`, so each way
+      of making one needs a `Tactic[Classfile.Error]` in scope. It is found on the classpath by name or by type, through
       the `Classloader` given in scope, or read from any source of bytes — a file, a resource,
       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
 
       ```scala
       import soundness.*
       import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
 
       Classfile[StackTrace].let(_.methods.map(_.name))
       Classfile(t"scala/Option.class").let(_.sourceFile)
@@ -70,20 +72,20 @@ entry .Classfile   a parsed JVM class file: its methods, their bytecode and its 
       surface of a class — fields, flags, supertypes, signatures — is the separate
       `ClassSurface` view.
 
-      A `Classfile` holds no capability: its bytes are copied in at construction, so the
-      value may be kept, shared and passed freely.
+      A `Classfile` holds no capability: it is parsed at construction, so the value may be
+      kept, shared and passed freely.
   refer mandible.Bytecode
   refer mandible.ClassSurface
   refer mandible.disassemble
   entry .Error   raised when a class file cannot be read
-      Error `↯/s.88.2`: _there was an error reading the classfile_. Declared for readers of class
-      files to raise; the `Classfile` constructor itself defers parsing until a member is
-      first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
-      have rather than raising.
+      Error `↯/s.88.2`: _there was an error reading the classfile_. Raised by `Classfile(data)`,
+      `Classfile(name)`, `Classfile[type]` and `read[Classfile]` when the header, constant
+      pool, attributes or method table do not parse. A class the classloader does not have
+      is still `Unset`, not an error; a method's code is decoded only by `Method#bytecode`.
   entry .aggregable   reads a `Classfile` from any stream of bytes, as `read[Classfile]`
       The `Aggregable by Data` given which lets a file, a classpath resource or any other
       `Readable` source be read as a class file: the whole stream is collected into one `Data`
-      and wrapped. The bytes are not parsed until a member of the result is used.
+      and parsed, raising `Classfile.Error` if it is not a class file.
 
       ```scala
       import soundness.*
@@ -92,12 +94,13 @@ entry .Classfile   a parsed JVM class file: its methods, their bytecode and its 
 
       val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
       ```
-  entry .apply   the class file of a resource name, or of a type, through the `Classloader` in scope
-      `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+  entry .apply   the class file of some bytes, or of a resource name or a type through the `Classloader` in scope
+      `Classfile(data)` parses the bytes of a class file. `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
       extension, `scala/Option.class` — through the `Classloader` given in scope, and
       `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
       binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
-      `Unset` when the classloader has no such resource.
+      `Unset` when the classloader has no such resource. All three raise `Classfile.Error`
+      for bytes which do not parse.
 
       ```scala
       import soundness.*
@@ -620,14 +623,3 @@ entry .BytecodePalette   the colours a bytecode listing is rendered with
       def sourceCode: Color in Srgb = WebColors.YellowGreen
       def outline: Color in Srgb    = WebColors.Gray
     ```
-
-entry .internal   the home of a macro which disassembles a method selected by a lambda
-  hidden
-  detail
-      Not for direct use. Holds `disassemble`, a macro implementation which, given a lambda
-      of the form `_.method` over a type and a `Classloader` expression, splices a lookup of
-      that method's `Bytecode` through `Classfile`; no public inline entry point currently
-      invokes it.
-  entry .disassemble   the macro: a `target => Any` selecting a method, to that method's bytecode
-      Halts with _this type of lambda is not supported_ (code 91) for a lambda which is not a
-      plain member selection.

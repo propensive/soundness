@@ -74,12 +74,13 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   mitigate:
     case Io.Error(_, _, _, _)     => Bytecode.Error(Bytecode.Error.Reason.ClassfileMissing)
     case Truncation.Error(_)      => Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)
+    case Classfile.Error()        => Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)
 
   . protect:
       val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
       val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
       staging.run(code)
-      val classfile: Classfile = new Classfile(file.read[Data])
+      val classfile: Classfile = Classfile(file.read[Data])
       classfile.methods.seek(_.name == t"_code$$1").let(_.bytecode)
       . lay(abort(Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)))(_.embed(codepoint))
 

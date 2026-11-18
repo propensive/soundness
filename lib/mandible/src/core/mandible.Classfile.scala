@@ -38,6 +38,7 @@ import java.lang.classfile.instruction as jlci
 import java.nio.charset.StandardCharsets
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import gossamer.*
 import hellenism.*
@@ -51,20 +52,33 @@ object Classfile:
   case class Error()(using Diagnostics)
   extends fulminate.Error(88, 2, 0)(m"there was an error reading the classfile")
 
-  given aggregable: Classfile is Aggregable by Data =
-    stream => new Classfile(stream.read[Data])
+  given aggregable: (tactic: Tactic[Error])
+  =>  ( (Classfile is Aggregable by Data)^{tactic} ) =
 
-  def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
-    classloader(name).let: data => new Classfile(data)
+    stream => Classfile(stream.read[Data])
 
-  def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
+  // Parses the header, constant pool, and the class's attributes and method table, raising
+  // `Error` if the JDK rejects any of them. A method's code is still read on demand, by
+  // `Method#bytecode`.
+  def apply(data: Data): Classfile raises Error =
+    try
+      val model = jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
+      model.attributes.nn
+      model.methods.nn
+      new Classfile(model)
+    catch case error: IllegalArgumentException => abort(Error())
+
+  def apply(name: Text)(using classloader: Classloader): Optional[Classfile] raises Error =
+    classloader(name).let: data => Classfile(data)
+
+  def apply[classtype: ClassTag](using classloader: Classloader)
+  :   Optional[Classfile] raises Error =
+
     val cls = classtype.runtimeClass
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
-    classloader(name).let: data => new Classfile(data)
+    classloader(name).let: data => Classfile(data)
 
-// `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
-// field would make `Classfile` itself a capability. Conversion happens in the companion.
-class Classfile(data: Data):
+class Classfile private (model: jlc.ClassModel):
   val sourceFile: Optional[Text] =
     model.attributes.nn.to[List].reap:
       case attribute: jlca.SourceFileAttribute =>
@@ -159,8 +173,5 @@ class Classfile(data: Data):
       val instructions = recur(elements, Unset, Nil, Nil, 0)
 
       Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
-
-  private lazy val model: jlc.ClassModel =
-    jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
 
   lazy val methods: List[Method] = model.methods.nn.to[List].map(Method(_))

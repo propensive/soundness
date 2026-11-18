@@ -516,7 +516,7 @@ object Tests extends Suite("units", m"Quantitative Tests"):
       import classloaders.threadContextClassloader
 
       def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
-        Classfile[Probes.type]
+        safely(Classfile[Probes.type])
         . let(_.methods.seek(_.name == method))
         . let(_.bytecode)
 

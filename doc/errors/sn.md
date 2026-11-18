@@ -29,7 +29,6 @@ row  `SN-079`  [`↯/s.68.1`](68.1.md)  Nomenclature
 row  `SN-080`  [`↯/s.68.2`](68.2.md)  Nomenclature
 row  `SN-081`  [`↯/s.73.1`](73.1.md)  Aviation
 row  `SN-089`  [`↯/s.68.3`](68.3.md)  Nomenclature
-row  `SN-091`  [`↯/s.88.1`](88.1.md)  Mandible
 row  `SN-093`  [`↯/s.73.2`](73.2.md)  Aviation
 row  `SN-114`  [`↯/s.24.4`](24.4.md)  Contingency
 row  `SN-117`  [`↯/s.15.1`](15.1.md)  Fulminate
