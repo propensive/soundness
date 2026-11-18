@@ -36,6 +36,16 @@ import anticipation.*
 import fulminate.*
 
 object Serialization:
+  // The bits each character of a scheme carries, at the type level: what fixes the size of an
+  // `Alphabet` for the scheme, and the one place the width comes from.
+  type Bits[scheme <: Serialization] <: Int = scheme match
+    case Binary     => 1
+    case Quaternary => 2
+    case Octal      => 3
+    case Hex        => 4
+    case Base32     => 5
+    case Base64     => 6
+
   // SerializationError → Serialization.Error
   case class Error(position: Int, char: Char)(using Diagnostics)
   extends fulminate.Error(61, 1, 0)(m"the character $char at $position was not valid")

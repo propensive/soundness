@@ -52,10 +52,57 @@ import zephyrine.*
 // base: a downstream credit of 1024 hex chars translates to an upstream
 // credit of 512 bytes.
 object Alphabet:
-  // Bits per serialized character: alphabets have 2^bits characters, plus
-  // one for padding.
-  private def bits(alphabet: Alphabet[?]): Int =
-    31 - Integer.numberOfLeadingZeros(alphabet.chars.length)
+  import scala.compiletime.{constValue, error}
+  import scala.compiletime.ops.any.ToString
+  import scala.compiletime.ops.int.<<
+  import scala.compiletime.ops.string.{Length, Matches, + as Join}
+
+  // The only way to make an `Alphabet`: from a string literal, whose characters are checked
+  // as the call is compiled. There must be exactly `2^bits` of them for the scheme, and one
+  // more, the padding character, if `padding` is `true`; all distinct; and all ASCII. A
+  // wrong alphabet is therefore a compile error, and cannot exist at runtime.
+  inline def apply[encoding <: Serialization]
+    ( chars: String & Singleton, inline padding: Boolean, tolerance: Map[Char, Int] = Map() )
+  :   Alphabet[encoding] =
+
+    inline if constValue[Matches[chars.type, ".*(.).*\\1.*"]]
+    then error("an alphabet may not use the same character twice")
+
+    inline if !constValue[Matches[chars.type, "\\p{ASCII}*"]]
+    then error("every character of an alphabet must be ASCII")
+
+    inline if padding then
+      inline if constValue[Length[chars.type]] != constValue[1 << Serialization.Bits[encoding]] + 1
+      then error:
+        constValue
+          [ Join
+              [ Join
+                  [ Join
+                      [ "a padded alphabet for this scheme needs ",
+                        ToString[1 << Serialization.Bits[encoding]] ],
+                    " characters and a padding character, but this has " ],
+                Join[ToString[Length[chars.type]], " characters in total"] ] ]
+    else
+      inline if constValue[Length[chars.type]] != constValue[1 << Serialization.Bits[encoding]]
+      then error:
+        constValue
+          [ Join
+              [ Join
+                  [ "an unpadded alphabet for this scheme needs ",
+                    ToString[1 << Serialization.Bits[encoding]] ],
+                Join[" characters, but this has ", ToString[Length[chars.type]]] ] ]
+
+    checked[encoding](chars.tt, padding, tolerance, constValue[Serialization.Bits[encoding]])
+
+  // Reached only through the expansion of `apply`, with characters it has checked.
+  private def checked[encoding <: Serialization]
+    ( chars: Text, padding: Boolean, tolerance: Map[Char, Int], bits: Int )
+  :   Alphabet[encoding] =
+
+    new Alphabet[encoding](chars, padding, tolerance, bits)
+
+  // Bits per serialized character, fixed by the scheme when the alphabet was made.
+  private def bits(alphabet: Alphabet[?]): Int = alphabet.bits
 
   given serialization: [encoding <: Serialization]
   =>  Ductile.Instance[Alphabet[encoding], Data, Text, Credit, Credit] =
@@ -312,8 +359,8 @@ object Alphabet:
 
             Duct.Progress(consumed, produced)
 
-case class Alphabet[encoding <: Serialization]
-  ( chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map() )
+case class Alphabet[encoding <: Serialization] private
+  ( chars: Text, padding: Boolean, tolerance: Map[Char, Int], bits: Int )
 extends caps.Pure:
 
   def apply(index: Int): Char = chars.s.charAt(index)
