@@ -323,7 +323,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
-            createNonexistentParents: CreateNonexistentParents on plane,
+            createParents: CreateParents on plane,
             backend:                  FilesystemBackend on plane )
   (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
@@ -331,7 +331,7 @@ extension [plane: Filesystem](path: Path on plane)
     // Created and consumed under the same ambient tactic; no aliased writer.
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
-      createNonexistentParents(destination):
+      createParents(destination):
         overwritePreexisting(destination):
           backend.hardLink(destination, path)
 
@@ -349,7 +349,7 @@ extension [plane: Filesystem](path: Path on plane)
   def copyTo(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             dereferenceSymlinks:      DereferenceSymlinks,
-            createNonexistentParents: CreateNonexistentParents on plane )
+            createParents: CreateParents on plane )
     ( using FilesystemBackend on plane )
   (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
@@ -357,7 +357,7 @@ extension [plane: Filesystem](path: Path on plane)
     // Created and consumed under the same ambient tactic; no aliased writer.
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
-      createNonexistentParents(destination):
+      createParents(destination):
         overwritePreexisting(destination):
           summon[FilesystemBackend on plane]
           . copy(path, destination, dereferenceSymlinks.dereference)
@@ -373,8 +373,8 @@ extension [plane: Filesystem](path: Path on plane)
     ( using FilesystemBackend on plane )
   :   Path on plane raises Io.Error =
 
-    given CreateNonexistentParents on plane =
-      filesystemOptions.createNonexistentParents[plane]
+    given CreateParents on plane =
+      filesystemOptions.createParents[plane]
 
     val file2: Path on plane = destination.unsafeChild(path.descent.head)(using Unsafe)
     copyTo(file2)
@@ -384,7 +384,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             moveAtomically:           MoveAtomically,
             dereferenceSymlinks:      DereferenceSymlinks,
-            createNonexistentParents: CreateNonexistentParents on plane )
+            createParents: CreateParents on plane )
     ( using backend: FilesystemBackend on plane )
   (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
@@ -392,7 +392,7 @@ extension [plane: Filesystem](path: Path on plane)
     // Created and consumed under the same ambient tactic; no aliased writer.
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
-      createNonexistentParents(destination):
+      createParents(destination):
         overwritePreexisting(destination):
           backend.move(path, destination, moveAtomically.atomic, dereferenceSymlinks.dereference)
 
@@ -409,13 +409,13 @@ extension [plane: Filesystem](path: Path on plane)
     ( using FilesystemBackend on plane )
   :   Path on plane raises Io.Error =
 
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     moveTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
 
   def symlinkTo(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
-            createNonexistentParents: CreateNonexistentParents on plane,
+            createParents: CreateParents on plane,
             backend:                  FilesystemBackend on plane )
   (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
@@ -423,7 +423,7 @@ extension [plane: Filesystem](path: Path on plane)
     // Created and consumed under the same ambient tactic; no aliased writer.
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
-      createNonexistentParents(destination):
+      createParents(destination):
         overwritePreexisting(destination):
           backend.symlink(destination, path)
 
@@ -440,7 +440,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using FilesystemBackend on plane )
   :   Path on plane raises Io.Error =
 
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     symlinkTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
 
@@ -573,9 +573,9 @@ package filesystemOptions:
 
       operation
 
-  given createNonexistentParents: [plane: Filesystem]
+  given createParents: [plane: Filesystem]
   =>  ( backend: FilesystemBackend on plane )
-  =>  CreateNonexistentParents on plane:
+  =>  CreateParents on plane:
 
     def apply[result](path: Path on plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
@@ -588,7 +588,7 @@ package filesystemOptions:
       safely(path.parent).let(ensure(_))
       operation
 
-  given requireParents: [plane: Filesystem] => CreateNonexistentParents on plane:
+  given requireParents: [plane: Filesystem] => CreateParents on plane:
 
     type Plane = plane
 

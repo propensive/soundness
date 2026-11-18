@@ -167,7 +167,7 @@ object Ram:
   // since an empty mapping is useless and growth is not supported. The named file is
   // created, sized, mapped read-write for the scope, and removed if the scope fails.
   class RamCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( policy: Optional[CreateNonexistentParents on filesystem] )
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
   extends Creatable:
 

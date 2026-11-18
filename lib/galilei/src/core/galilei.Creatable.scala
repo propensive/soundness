@@ -53,21 +53,21 @@ import Io.Error.{Operation, Reason}
 // behind. FIFOs are instantiation-only: opening one just to have a handle would block until
 // a peer appears.
 object Creation:
-  // The `CreateNonexistentParents` policy in scope where an entry is created, if there is one:
-  // `filesystemOptions.createNonexistentParents` makes `create` behave as if the `Parents` flag
+  // The `CreateParents` policy in scope where an entry is created, if there is one:
+  // `filesystemOptions.createParents` makes `create` behave as if the `Parents` flag
   // had been given, as it does for the destination of a copy, move or link. Unlike those,
   // `create` does not demand a policy, so this is resolved where the instance is summoned.
-  inline def policy[filesystem]: Optional[CreateNonexistentParents on filesystem] =
+  inline def policy[filesystem]: Optional[CreateParents on filesystem] =
     scala.compiletime.summonFrom:
-      case policy: (CreateNonexistentParents on `filesystem`) => policy
+      case policy: (CreateParents on `filesystem`) => policy
       case _                                                  => Unset
 
   // Walk up from the parent, creating missing ancestors: selected by the `Parents` flag, or
-  // left to the `CreateNonexistentParents` policy, if one was in scope.
+  // left to the `CreateParents` policy, if one was in scope.
   private[galilei] def ensure[filesystem: Filesystem]
     ( path:   Path on filesystem,
       flags:  List[CreateFlag],
-      policy: Optional[CreateNonexistentParents on filesystem] )
+      policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error], umask: Umask )
   :   Unit =
 
@@ -99,7 +99,7 @@ object Creation:
     backend.delete(path)
 
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( policy: Optional[CreateNonexistentParents on filesystem] )
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
             loggable: (Io.Event is Loggable)^,
@@ -149,7 +149,7 @@ object Creation:
       finally AccessRegister.release(real, atoms)
 
   class FileCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( policy: Optional[CreateNonexistentParents on filesystem] )
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
             loggable: (Io.Event is Loggable)^,
@@ -202,7 +202,7 @@ object Creation:
         throw throwable
 
   class FifoCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( policy: Optional[CreateNonexistentParents on filesystem] )
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
             loggable: (Io.Event is Loggable)^,

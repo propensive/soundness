@@ -508,7 +508,7 @@ The examples which follow publish to a file of their own:
 ```scala
 import environments.javaBaseEnvironment
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
 import pathInterfaces.pathOnLinux

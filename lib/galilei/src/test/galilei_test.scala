@@ -191,7 +191,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == t"Hello world!")
 
     suite(m"Opening directories"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -360,8 +360,8 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           target.existent()
       . assert(_ == true)
 
-      test(m"The createNonexistentParents option creates missing ancestors"):
-        import filesystemOptions.createNonexistentParents
+      test(m"The createParents option creates missing ancestors"):
+        import filesystemOptions.createParents
 
         unsafely:
           val target: Path on Linux = base / "d" / "e" / "f"
@@ -370,7 +370,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == true)
 
       test(m"The option creates a new file's missing ancestors too"):
-        import filesystemOptions.createNonexistentParents
+        import filesystemOptions.createParents
 
         unsafely:
           val target: Path on Linux = base / "g" / "h" / "note.txt"
@@ -512,7 +512,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == false)
 
     suite(m"Scratch directories"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -1001,7 +1001,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == Io.Error.Reason.Unsupported)
 
     suite(m"The access register"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -1105,7 +1105,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == false)
 
     suite(m"Glob expansion"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.dereferenceSymlinks
 
@@ -1155,7 +1155,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
     suite(m"File locking"):
       import errorDiagnostics.stackTracesDiagnostics
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -1208,7 +1208,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == true)
 
     suite(m"Positional reading"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
       val expanseLeaf: Text = Uuid().show
@@ -1269,7 +1269,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == true)
 
     suite(m"Entry identity"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
       import filesystemOptions.overwritePreexisting
 
@@ -1297,7 +1297,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
     suite(m"Inode metadata"):
       import errorDiagnostics.emptyDiagnostics
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
       import filesystemOptions.overwritePreexisting
 
@@ -1353,7 +1353,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
     suite(m"Shared locking"):
       import errorDiagnostics.stackTracesDiagnostics
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
       val sharedLeaf: Text = Uuid().show
@@ -1389,7 +1389,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == Io.Error.Reason.Busy)
 
     suite(m"Awaited locking"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import threads.platformThreads
 
@@ -1423,7 +1423,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
     suite(m"Slice locking"):
       import errorDiagnostics.stackTracesDiagnostics
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
       val sliceLeaf: Text = Uuid().show
@@ -1465,7 +1465,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == Io.Error.Reason.Busy)
 
     suite(m"Extended attributes"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
       val xattrLeaf: Text = Uuid().show
@@ -1493,7 +1493,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == true)
 
     suite(m"Slice windows write"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import charsets.utf8Charset
       import textSanitizers.skipSanitizer
@@ -1527,7 +1527,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == 0)
 
     suite(m"Searchpaths"):
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import pathInterfaces.pathOnLinux
 

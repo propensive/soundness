@@ -132,7 +132,7 @@ extension [plane <: Searchpath](path: Path on plane)
 
   // The head-stem realization of the path — where the XDG spec directs writes. Creating any
   // missing intermediate directories is the caller's, e.g. through galilei's
-  // `createNonexistentParents` option on the write itself.
+  // `createParents` option on the write itself.
   transparent inline def destination()
     ( using stems: Searchpaths.Stems { type Plane = plane } )
     ( using filesystem: stems.Target is Filesystem )

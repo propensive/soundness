@@ -46,7 +46,7 @@ import termcapDefinitions.basicTermcap
 import charsets.utf8Charset
 import codepages.utf8Codepage
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
 import pathInterfaces.pathOnLinux
@@ -89,7 +89,7 @@ file.create[File]()
 
 By default, creating refuses to destroy anything. Creating over something which exists is an
 `Io.Error`, and so is creating under a parent which does not exist, unless
-`filesystemOptions.createNonexistentParents` is imported, as it is here. A flag states either
+`filesystemOptions.createParents` is imported, as it is here. A flag states either
 intent at the place where it happens, whatever is imported:
 
 ```scala fuel
@@ -522,7 +522,7 @@ column  Yes
 column  No
 row  Replace what is already at the destination?  `overwritePreexisting`  `failOnPreexisting`
 row  Empty a directory before deleting it?  `deleteRecursively`  `deleteOnlyEmpty`
-row  Create missing parent directories?  `createNonexistentParents`  `requireParents`
+row  Create missing parent directories?  `createParents`  `requireParents`
 row  Follow symbolic links?  `dereferenceSymlinks`  `preserveSymlinks`
 row  Move atomically?  `moveAtomically`  `moveNonAtomically`
 ```

@@ -36,6 +36,6 @@ import contingency.*
 import prepositional.*
 import serpentine.*
 
-trait CreateNonexistentParents extends Planar:
+trait CreateParents extends Planar:
   def apply[ResultType](path: Path on Plane)(operation: => ResultType)
   :   (Tactic[Io.Error]^) ?->{operation} ResultType

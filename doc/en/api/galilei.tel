@@ -19,7 +19,7 @@ detail
     ##
     import soundness.*
     import filesystemBackends.javaBaseFilesystem
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     import filesystemOptions.dereferenceSymlinks
     import filesystemOptions.deleteRecursively
     import filesystemOptions.moveAtomically
@@ -717,7 +717,7 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
       refuses to; deleting a directory either empties it or refuses; copying a symlink either
       follows it or copies the link. Neither answer is right in general, so galilei never
       chooses silently: each question is a policy trait — `OverwritePreexisting`,
-      `DeleteRecursively`, `CreateNonexistentParents`, `DereferenceSymlinks`, `MoveAtomically`,
+      `DeleteRecursively`, `CreateParents`, `DereferenceSymlinks`, `MoveAtomically`,
       `CopyAttributes` — and the operation which must answer it takes the policy as a
       contextual parameter. Calling `moveTo` with neither `overwritePreexisting` nor
       `failOnPreexisting` in scope is a compile error which names the missing policy. The
@@ -727,14 +727,14 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
       Which policies an operation needs:
 
       - `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo`: `OverwritePreexisting` and
-        `CreateNonexistentParents` (and `DereferenceSymlinks` for copy and move,
+        `CreateParents` (and `DereferenceSymlinks` for copy and move,
         `MoveAtomically` for move).
       - `copyInto`, `moveInto`, `symlinkInto`: `OverwritePreexisting` and `DereferenceSymlinks`
         (and `MoveAtomically`); parents are created, since the destination directory is named.
       - `delete`, `wipe`: `DeleteRecursively`.
       - `entry()`, `descendants`, `glob`, `hardLinks()`, `checksum`: `DereferenceSymlinks`.
       - `create[…]`: none is required. `CreateFlag.Parents` and `CreateFlag.Replace` state the
-        intent at the call site; a `CreateNonexistentParents` policy, if one is in scope where
+        intent at the call site; a `CreateParents` policy, if one is in scope where
         `create` is called, is honoured too.
 
       The same file, written, read, moved and deleted, as the imports accumulate:
@@ -773,7 +773,7 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
             import filesystemBackends.javaBaseFilesystem
             import strategies.throwUnsafely
             import filesystemOptions.overwritePreexisting
-            import filesystemOptions.createNonexistentParents
+            import filesystemOptions.createParents
             import filesystemOptions.deleteRecursively
             import filesystemOptions.dereferenceSymlinks
             import filesystemOptions.moveAtomically
@@ -799,7 +799,7 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
       `DeleteRecursively` in scope, since replacing a directory means emptying it.
   refer galilei.OverwritePreexisting
   refer galilei.DeleteRecursively
-  refer galilei.CreateNonexistentParents
+  refer galilei.CreateParents
   refer galilei.DereferenceSymlinks
   refer galilei.MoveAtomically
   refer galilei.CopyAttributes
@@ -841,15 +841,15 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
       The strict `OverwritePreexisting`: the operation proceeds untouched, and the backend
       raises `Io.Error` with `Reason.AlreadyExists` when it collides with an existing entry,
       which the caller must then handle.
-  entry .createNonexistentParents   a destination's missing ancestor directories are created
-      The permissive `CreateNonexistentParents on <plane>`, needing a backend. Before the
+  entry .createParents   a destination's missing ancestor directories are created
+      The permissive `CreateParents on <plane>`, needing a backend. Before the
       operation, each absent ancestor of the destination is created, walking up from the
       nearest. The directories are created with the process's own mask. `copyInto`,
       `moveInto` and `symlinkInto` use it implicitly, since their destination directory is
       named. With it in scope, `create[…]` makes missing ancestors too, as if
       `CreateFlag.Parents` had been given.
   entry .requireParents   a destination whose parent is missing is an `Io.Error`
-      The strict `CreateNonexistentParents`: nothing is created, and the backend raises
+      The strict `CreateParents`: nothing is created, and the backend raises
       `Io.Error` with `Reason.Nonexistent` for the missing parent.
 
 entry .DereferenceSymlinks   the policy for a final-component symbolic link: follow it, or act on the link
@@ -894,14 +894,14 @@ entry .OverwritePreexisting   the policy for a destination which already exists:
       `symlinkTo`, `symlinkInto` and `Device.create`.
   entry #apply   runs an operation at `path`, after removing an existing entry there or not
 
-entry .CreateNonexistentParents   the policy for a destination whose parent is missing: create it, or fail
+entry .CreateParents   the policy for a destination whose parent is missing: create it, or fail
   detail
-      A planar policy (`CreateNonexistentParents on Linux`) whose `#apply` wraps the
-      operation. `filesystemOptions.createNonexistentParents` makes each missing ancestor;
+      A planar policy (`CreateParents on Linux`) whose `#apply` wraps the
+      operation. `filesystemOptions.createParents` makes each missing ancestor;
       `filesystemOptions.requireParents` leaves the backend to raise `Nonexistent`. Needed
       by `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` and `Device.create`. The `create[…]`
       operations do not need one, but honour one which is in scope where they are called:
-      under `createNonexistentParents` they make missing ancestors without
+      under `createParents` they make missing ancestors without
       `CreateFlag.Parents`.
   entry #apply   runs an operation at `path`, after creating its missing ancestors or not
 
@@ -955,7 +955,7 @@ entry .TraversalOrder   whether `descendants` yields a directory before or after
 entry .CreateFlag   what `create[…]` may do beyond making the entry: `Parents` or `Replace`
   detail
       Absent flags mean strictness: creating an entry whose parent is missing raises
-      `Io.Error` with `Nonexistent` (unless `filesystemOptions.createNonexistentParents` is
+      `Io.Error` with `Nonexistent` (unless `filesystemOptions.createParents` is
       in scope), and creating one which already exists raises `AlreadyExists`, unless the
       caller says otherwise at the call site. `Parents` creates
       every missing ancestor directory (under the `Umask` in scope); `Replace` deletes an
@@ -1204,7 +1204,7 @@ entry .entry   `path.entry()`: what kind of entry the path names
 
 entry .copyTo   `path.copyTo(destination)`: copies an entry to a path, consulting the policies in scope
     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
-    plane`, a `DereferenceSymlinks`, a `CreateNonexistentParents on plane`, a backend, a
+    plane`, a `DereferenceSymlinks`, a `CreateParents on plane`, a backend, a
     `Tactic[Io.Error]` and an `Io.Event is Loggable`. Under `failOnPreexisting` an existing
     destination raises `AlreadyExists`; under `overwritePreexisting` it is removed first.
     Under `requireParents` a missing parent raises `Nonexistent`. A directory is copied
@@ -1216,7 +1216,7 @@ entry .copyTo   `path.copyTo(destination)`: copies an entry to a path, consultin
     ##
     import soundness.*
     import filesystemBackends.javaBaseFilesystem
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     import filesystemOptions.dereferenceSymlinks
     import filesystemOptions.deleteRecursively
     import filesystemOptions.overwritePreexisting
@@ -1234,7 +1234,7 @@ entry .copyInto   `path.copyInto(directory)`: copies an entry into a directory, 
 
 entry .moveTo   `path.moveTo(destination)`: moves an entry to a path, consulting the policies in scope
     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
-    plane`, a `MoveAtomically`, a `DereferenceSymlinks`, a `CreateNonexistentParents on
+    plane`, a `MoveAtomically`, a `DereferenceSymlinks`, a `CreateParents on
     plane`, a backend, a `Tactic[Io.Error]` and an `Io.Event is Loggable`. With
     `moveAtomically` the move is a single rename, and one across volumes is `Unsupported`;
     with `moveNonAtomically` it may be a copy and a delete. `AlreadyExists` and
@@ -1246,7 +1246,7 @@ entry .moveTo   `path.moveTo(destination)`: moves an entry to a path, consulting
     ##
     import soundness.*
     import filesystemBackends.javaBaseFilesystem
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     import filesystemOptions.dereferenceSymlinks
     import filesystemOptions.deleteRecursively
     import filesystemOptions.moveAtomically
@@ -1264,14 +1264,14 @@ entry .moveInto   `path.moveInto(directory)`: moves an entry into a directory, k
 
 entry .hardLinkTo   `path.hardLinkTo(link)`: makes a hard link at `link` to this entry
     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
-    plane`, a `CreateNonexistentParents on plane`, a backend, a `Tactic[Io.Error]` and an
+    plane`, a `CreateParents on plane`, a backend, a `Tactic[Io.Error]` and an
     `Io.Event is Loggable`. The receiver is the existing entry and the argument the new
     name; afterwards both have the same `entryIdentity`. Logs `Io.Event.HardLink` and
     returns the link's path.
 
 entry .symlinkTo   `path.symlinkTo(link)`: makes a symbolic link at `link` pointing at this path
     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
-    plane`, a `CreateNonexistentParents on plane`, a backend, a `Tactic[Io.Error]` and an
+    plane`, a `CreateParents on plane`, a backend, a `Tactic[Io.Error]` and an
     `Io.Event is Loggable`. The receiver is the target and the argument the link, which is
     created; the link stores the receiver's full text. Logs `Io.Event.Symlink` and returns
     the link's path.
@@ -1281,7 +1281,7 @@ entry .symlinkTo   `path.symlinkTo(link)`: makes a symbolic link at `link` point
     ##
     import soundness.*
     import filesystemBackends.javaBaseFilesystem
-    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.createParents
     import filesystemOptions.deleteRecursively
     import filesystemOptions.overwritePreexisting
     import strategies.throwUnsafely
@@ -2406,7 +2406,7 @@ entry .listing   `path.listing()`: the merged listing of a searchpath directory 
 entry .destination   `path.destination()`: the path's place under the head stem, where the XDG specification directs writes
     An extension on `Path on <plane <: Searchpath>`. Total: nothing is checked on disk.
     Creating any missing intermediate directories is the caller's, through
-    `filesystemOptions.createNonexistentParents` on the write itself.
+    `filesystemOptions.createParents` on the write itself.
 
 entry .searchpathCompliant   lets a `Linux`-style relative or literal path be reinterpreted on a searchpath plane
     The `Compliant` given which makes `(% / "icons" / "app.png").on[Xdg.Data]` typecheck: a
@@ -2511,7 +2511,7 @@ entry .RamFlag   the flags of `create[Ram]`: `Size(bytes)`, the mapped file's si
 entry .Device   creates a block or character device node on a POSIX filesystem, through `mknod`
   detail
       In `galilei.jvm`. `Device.create(path, Device.Kind.Block, major, minor)` runs the
-      `mknod` command, consulting the `CreateNonexistentParents` and `OverwritePreexisting`
+      `mknod` command, consulting the `CreateParents` and `OverwritePreexisting`
       policies in scope, and raises `Io.Error` with `PermissionDenied` if the command fails
       — making a device node ordinarily needs root.
 
@@ -2520,7 +2520,7 @@ entry .Device   creates a block or character device node on a POSIX filesystem, 
       ##
       import soundness.*
       import filesystemBackends.javaBaseFilesystem
-      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
       import filesystemOptions.overwritePreexisting
       import strategies.throwUnsafely

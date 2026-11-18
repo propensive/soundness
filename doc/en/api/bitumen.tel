@@ -1419,7 +1419,7 @@ entry .extractTo   unpacks a `Tarfile` onto a filesystem, beneath a root directo
       code
           import soundness.*
           import filesystemBackends.javaBaseFilesystem
-          import filesystemOptions.createNonexistentParents
+          import filesystemOptions.createParents
           import filesystemOptions.overwritePreexisting
           import filesystemOptions.preserveSymlinks
           import pathInterfaces.pathOnLinux
@@ -1434,7 +1434,7 @@ entry .extractTo   unpacks a `Tarfile` onto a filesystem, beneath a root directo
       code
           import soundness.*
           import filesystemBackends.javaBaseFilesystem
-          import filesystemOptions.createNonexistentParents
+          import filesystemOptions.createParents
           import filesystemOptions.overwritePreexisting
           import filesystemOptions.preserveSymlinks
           import pathInterfaces.pathOnLinux
@@ -1451,7 +1451,7 @@ entry .extractTo   unpacks a `Tarfile` onto a filesystem, beneath a root directo
       code
           import soundness.*
           import filesystemBackends.javaBaseFilesystem
-          import filesystemOptions.createNonexistentParents
+          import filesystemOptions.createParents
           import filesystemOptions.overwritePreexisting
           import filesystemOptions.preserveSymlinks
           import pathInterfaces.pathOnLinux
@@ -1468,7 +1468,7 @@ entry .extractTo   unpacks a `Tarfile` onto a filesystem, beneath a root directo
     ##
     ```
 
-    It needs `CreateNonexistentParents` and `OverwritePreexisting` policies for the plane
+    It needs `CreateParents` and `OverwritePreexisting` policies for the plane
     (imported from `filesystemOptions` by name), a `Tactic[Io.Error]` and a
     `Tactic[Tar.Error]`. Modes are set through the `unix:mode` attribute, and silently left
     as the filesystem's default where that is unsupported. To extract an archive too large

@@ -59,7 +59,7 @@ object SocketCreation:
   // file remains, as before; an exception escaping the scope removes it). The no-block form
   // binds and immediately closes, leaving just the socket file.
   class SocketCreatable[filesystem <: Posix: Filesystem, path <: Path on filesystem]
-    ( policy: Optional[CreateNonexistentParents on filesystem] )
+    ( policy: Optional[CreateParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
   extends Creatable:
 

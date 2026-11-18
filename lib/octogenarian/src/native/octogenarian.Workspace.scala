@@ -44,7 +44,7 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting

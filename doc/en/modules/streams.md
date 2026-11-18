@@ -67,7 +67,7 @@ import charsets.utf8Charset
 import strategies.throwUnsafely
 import pathInterfaces.pathOnLinux
 import filesystemOptions.overwritePreexisting
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import stdios.javaLangSystemStdio
 import termcapDefinitions.basicTermcap
 ```

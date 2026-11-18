@@ -56,7 +56,7 @@ import vacuous.*
 import zeppelin.*
 
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting

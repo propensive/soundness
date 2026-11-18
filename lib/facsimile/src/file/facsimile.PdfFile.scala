@@ -48,7 +48,7 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
+import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically

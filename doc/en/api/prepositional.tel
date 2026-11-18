@@ -160,7 +160,7 @@ entry .Planar   declares the `Plane` member, which `on` refines
       A *plane* is the space a value lives on: a filesystem for a path (`Path on Linux`,
       `Path on Classpath`), a classloader's search space, or the nodes a graph is drawn
       over. A typeclass or a value type extends `Planar` so that `on` can name the plane,
-      and galilei's filesystem policies (`CreateNonexistentParents`, `DeleteRecursively`)
+      and galilei's filesystem policies (`CreateParents`, `DeleteRecursively`)
       are `Planar` so that one policy is chosen per filesystem.
   entry #Plane   the space, such as a filesystem or a classpath, a value is located on
 
