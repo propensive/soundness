@@ -43,9 +43,9 @@ import reporting.{Diagnostic, StoreReporter}
 import util.Spans.Span
 
 // Recompiles classes from their TASTy with a probe at every method entry and every branch, for a
-// host — fume — which wants to know which of them a test reaches. Each probe is a store of `true`
-// into an array which the method gets, once, from `probably.Coverage`: that object, on the
-// classpath of the code under test, decides which test the array belongs to.
+// host — fume — which wants to know how often a test reaches each of them. Each probe is an
+// increment of a counter in an array which the method gets, once, from `probably.Coverage`: that
+// object, on the classpath of the code under test, decides which test the array belongs to.
 //
 // TASTy is what the compiler had before it inlined anything, so a recompilation inlines again,
 // and the probes go in afterwards: only into code written in the unit itself, and never into
@@ -86,9 +86,10 @@ object Instrumenter:
   // rest of the classpath, and the units they were recompiled from; or, with neither, why not.
   final case class Plan(classes: String, units: List[Unit], problems: List[String])
 
-  // The probes a test reached, each as a unit's index and a probe's. The test is known by the
-  // key of its `TestEvent.Ref`; the empty name is what was reached outside any test.
-  final case class Reached(test: String, probes: List[(Int, Int)])
+  // The probes a test reached, each as a unit's index, a probe's, and the number of times the
+  // probe was reached. The test is known by the key of its `TestEvent.Ref`; the empty name is
+  // what was reached outside any test.
+  final case class Reached(test: String, probes: List[(Int, Int, Long)])
 
   // Where, beneath the output directory, each unit's probes are listed.
   val directory: String = "META-INF/probably/coverage"
@@ -455,18 +456,19 @@ object Instrumenter:
     try
       val (module, instance) = runtime(loader)
 
-      val drained: java.util.Map[String, Array[Array[Boolean]]] =
+      val drained: java.util.Map[String, Array[Array[Long]]] =
         module.getMethod("drain").nn.invoke(instance)
-        . asInstanceOf[java.util.Map[String, Array[Array[Boolean]]]]
+        . asInstanceOf[java.util.Map[String, Array[Array[Long]]]]
 
       val reached: ListBuffer[Reached] = ListBuffer()
 
       drained.forEach: (test, reachedUnits) =>
-        val units: Array[Array[Boolean]] = reachedUnits.nn
+        val units: Array[Array[Long]] = reachedUnits.nn
 
-        val probes: List[(Int, Int)] =
+        val probes: List[(Int, Int, Long)] =
           units.indices.toList.flatMap: unit =>
-            units(unit).indices.toList.filter(units(unit)(_)).map((unit, _))
+            units(unit).indices.toList.filter(units(unit)(_) > 0L).map: probe =>
+              (unit, probe, units(unit)(probe))
 
         reached += Reached(test.nn, probes)
 
@@ -547,7 +549,7 @@ object Instrumenter:
 
       if !array.exists then
         val name: TermName = UniqueName.fresh(termName("probes"))
-        val info = defn.ArrayOf(defn.BooleanType)
+        val info = defn.ArrayOf(defn.LongType)
         array = newSymbol(holder, name, Synthetic, info, coord = span)
 
       val position = tree.sourcePos
@@ -564,10 +566,16 @@ object Instrumenter:
                 position.endColumn + 1,
                 scope ) )
 
+      val index: Tree = Literal(Constant(probes.length - 1)).withSpan(span)
+
+      val count: Tree =
+        ref(array).withSpan(span).select(nme.apply).withSpan(span).appliedTo(index).withSpan(span)
+        . select(defn.Long_+).withSpan(span)
+        . appliedTo(Literal(Constant(1L)).withSpan(span))
+        . withSpan(span)
+
       ref(array).withSpan(span).select(nme.update).withSpan(span)
-      . appliedTo
-          ( Literal(Constant(probes.length - 1)).withSpan(span),
-            Literal(Constant(true)).withSpan(span) )
+      . appliedTo(index, count)
       . withSpan(span)
 
     // Whether a tree is the unit's own code: not within the expansion of an inlined call,

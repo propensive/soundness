@@ -321,7 +321,7 @@ object Runner:
       // the bracket closes is this test's (see `Coverage`). The name is the one a host derives
       // from the test's `TestEvent.Ref`; unless a host has asked for coverage, it is not even
       // computed.
-      val coverage: Coverage.Collector | Null = Coverage.enter(Runner.coverageName(test.id))
+      val coverage: Coverage.Tally | Null = Coverage.enter(Runner.coverageName(test.id))
       val ns0 = System.nanoTime
 
       Runner.harness(context):
