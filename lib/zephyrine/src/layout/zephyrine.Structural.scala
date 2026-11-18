@@ -30,49 +30,56 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polaris
+package zephyrine
 
+import scala.compiletime.*
+
+import anticipation.*
+import fulminate.*
 import prepositional.*
-import rudiments.{fuse, next, state}
-import wisteria.*
 
-object Bufferable extends ProductDerivable[Bufferable]:
+// A type with a fixed layout in bytes: a record of fixed-width fields, such as the header of a
+// file or a network packet. An instance is derived from a case class of sized integers, with
+// `Structural.derived`, and serves both directions: `unpack` reads a value from `Data`, or from
+// any `Expanse`, at an offset, and `pack` writes one.
+//
+// Derivation computes each field's offset when the layout is declared, and expands to a load
+// (or a store) per field at that offset, in the byte order in scope. A field whose type is not a
+// sized integer needs an instance of its own, which is how records nest, and how a field is
+// given a representation the sized integers do not offer.
+object Structural:
+  // The number of bytes a value of the type occupies, without a value in hand.
+  def width[record: Structural]: Int = record.width
 
-  // given b8: B8 is Bufferable = Bufferable(1)(_(_).bits)
-  // given b16: B16 is Bufferable = Bufferable(2)(B16(_, _))
-  // given b32: B32 is Bufferable = Bufferable(4)(B32(_, _))
-  // given b64: B64 is Bufferable = Bufferable(8)(B64(_, _))
+  inline def derived[record <: Product]: record is Structural = summonFrom:
+    case given ByteOrder.BigEndian.type    => bigEndian[record]
+    case given ByteOrder.LittleEndian.type => littleEndian[record]
 
-  // given i8: I8 is Bufferable = Bufferable(1)(_(_).bits.i8)
-  // given i16: I16 is Bufferable = Bufferable(2)(B16(_, _).i16)
-  // given i32: I32 is Bufferable = Bufferable(4)(B32(_, _).i32)
-  // given i64: I64 is Bufferable = Bufferable(8)(B64(_, _).i64)
+    case _ =>
+      error
+        ( "a layout needs a byte order where it is derived: import " +
+          "byteOrders.bigEndianByteOrder or byteOrders.littleEndianByteOrder" )
 
-  // given u8: U8 is Bufferable = Bufferable(1)(_(_).bits.u8)
-  // given u16: U16 is Bufferable = Bufferable(2)(B16(_, _).u16)
-  // given u32: U32 is Bufferable = Bufferable(4)(B32(_, _).u32)
-  // given u64: U64 is Bufferable = Bufferable(8)(B64(_, _).u64)
+  inline def bigEndian[record <: Product]: record is Structural =
+    ${layoutInternal.derive[record]('{true})}
 
-  // given byte: Byte is Bufferable = Bufferable(1)(_(_))
-  // given short: Short is Bufferable = Bufferable(2)(B16(_, _).i16.short)
-  // given int: Int is Bufferable = Bufferable(4)(B32(_, _).i32.int)
-  // given long: Long is Bufferable = Bufferable(8)(B64(_, _).i64.long)
+  inline def littleEndian[record <: Product]: record is Structural =
+    ${layoutInternal.derive[record]('{false})}
 
-  class Join[derivation <: Product: ProductReflection]
-    ( val width: Int, buffer0: (Sextant^, derivation) -> Unit )
-  extends Bufferable:
-    type Self = derivation
-    def sextant(sextant: Sextant^, value: derivation): Unit = buffer0(sextant, value)
+  // Offset ranges outside the bytes being read: a record of `width` bytes was asked for at
+  // `offset`, of only `size` bytes.
+  case class Error(offset: Long, width: Int, size: Long)(using Diagnostics)
+  extends fulminate.Error(60, 3, 0)
+    ( m"a record of $width bytes cannot be read at offset $offset of $size bytes" )
 
-  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Bufferable =
-    // The sextant parameter is ascribed for the same reason as Debufferable.conjunction's:
-    // an inferred type adopts a memoized root capability from the unit's first expansion,
-    // failing any second expansion (upstream #26547).
-    Join[derivation]
-      ( contexts[derivation]() { [field] => _.width }.fuse(0)(state + next),
-        (sextant: Sextant^, value) =>
-          fields(value) { [field] => field => contextual.sextant(sextant, field) } )
-
-trait Bufferable extends Typeclass:
+trait Structural extends Typeclass:
+  // The number of bytes the layout occupies.
   def width: Int
-  def sextant(sextant: Sextant^, value: Self): Unit
+
+  // The value laid out in the `width` bytes from `offset`, which the caller has checked are
+  // there; `unpack` is the checked entry point.
+  def load(data: Data, offset: Int): Self
+
+  // Lays the value out in the `width` bytes of `target` from `offset`, which the caller has
+  // checked are there; `pack` is the checked entry point.
+  def store(value: Self, target: Array[Byte]^, offset: Int): Unit

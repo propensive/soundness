@@ -30,54 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polaris
+package zephyrine
 
-import anticipation.*
-import hypotenuse.*
-import prepositional.*
-import rudiments.*
-import wisteria.*
-
-object Debufferable extends ProductDerivable[Debufferable]:
-  def apply[data](byteWidth: Int)(lambda: (Data, Int) -> data): data is Debufferable =
-    new:
-      def width: Int = byteWidth
-
-      def debuffer(sextant: Sextant^): data =
-        lambda(sextant.bytes, sextant.offset).also(sextant.advance(width))
-
-  given b8: B8 is Debufferable = Debufferable(1)(_.readUnchecked(_).bits)
-  given b16: B16 is Debufferable = Debufferable(2)(B16(_, _))
-  given b32: B32 is Debufferable = Debufferable(4)(B32(_, _))
-  given b64: B64 is Debufferable = Debufferable(8)(B64(_, _))
-  given s8: S8 is Debufferable = Debufferable(1)(_.readUnchecked(_).bits.s8)
-  given s16: S16 is Debufferable = Debufferable(2)(B16(_, _).s16)
-  given s32: S32 is Debufferable = Debufferable(4)(B32(_, _).s32)
-  given s64: S64 is Debufferable = Debufferable(8)(B64(_, _).s64)
-  given u8: U8 is Debufferable = Debufferable(1)(_.readUnchecked(_).bits.u8)
-  given u16: U16 is Debufferable = Debufferable(2)(B16(_, _).u16)
-  given u32: U32 is Debufferable = Debufferable(4)(B32(_, _).u32)
-  given u64: U64 is Debufferable = Debufferable(8)(B64(_, _).u64)
-  given byte: Byte is Debufferable = Debufferable(1)(_.readUnchecked(_))
-  given short: Short is Debufferable = Debufferable(2)(B16(_, _).s16.short)
-  given int: Int is Debufferable = Debufferable(4)(B32(_, _).s32.int)
-  given long: Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
-
-  class Join[derivation <: Product: ProductReflection]
-    ( val width: Int, debuffer0: Sextant^ -> derivation )
-  extends Debufferable:
-    type Self = derivation
-    def debuffer(sextant: Sextant^): derivation = debuffer0(sextant)
-
-  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Debufferable =
-    // The lambda parameter is ascribed so its type is not inferred from the expected arrow:
-    // inferred, it adopts a memoized root capability minted by the unit's first expansion of
-    // this derivation, and any second expansion in the same unit fails the root-visibility
-    // check (upstream #26547, from 2026-07-17 nightlies).
-    Join[derivation]
-      ( contexts[derivation]() { [field] => _.width }.fuse(0)(state + next),
-        (sextant: Sextant^) => build { [field] => context => context.debuffer(sextant) } )
-
-trait Debufferable extends Typeclass:
-  def width: Int
-  def debuffer(sextant: Sextant^): Self
+// The order in which the bytes of a multi-byte field are laid out. It belongs to a layout, not to
+// whoever reads it, so `Structural.derived` consults it where the layout is declared, and the
+// loads it expands to are fixed there: one is chosen by importing it from `byteOrders`.
+enum ByteOrder:
+  case BigEndian, LittleEndian

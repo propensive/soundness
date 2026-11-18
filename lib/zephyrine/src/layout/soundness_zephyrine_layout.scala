@@ -30,36 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polaris
+package soundness
 
-import denominative.*
-import prepositional.*
-import rudiments.*
+export zephyrine.{ByteOrder, Structural, pack, unpack}
 
-object Unpackable:
-  given frozenArray: [pack: Debufferable] => ClassTag[pack] => (Array[pack]^{}) is Unpackable:
-    type Wrap[Type] = Int -> Type
-
-    // The continuation records the (pure) backing data and start offset, and mints its own
-    // sextant per invocation, so it does not capture the caller's `Sextant` capability: the
-    // arrow stays pure, and the caller's read position is unaffected by a later invocation.
-    def unpack(sextant: Sextant^): Int -> Array[pack]^{} =
-      val bytes = sextant.bytes
-      val start = sextant.offset
-
-      count =>
-        val local = Sextant(bytes, start)
-
-        Array.scribe[pack](count): scribe => extent =>
-          extent.each: index => scribe(index) = pack.debuffer(local)
-
-  given debufferable: [pack: Debufferable] => pack is Unpackable:
-    type Wrap[Type] = Type
-
-    def unpack(sextant: Sextant^): pack = pack.debuffer(sextant)
-
-trait Unpackable extends Typeclass:
-  type Wrap[_]
-  type Result = Wrap[Self]
-
-  def unpack(sextant: Sextant^): Wrap[Self]
+package byteOrders:
+  export zephyrine.byteOrders.{bigEndianByteOrder, littleEndianByteOrder}

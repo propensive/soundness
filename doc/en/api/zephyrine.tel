@@ -899,6 +899,71 @@ entry .Terrain   an `Expanse` whose bytes are in memory, and are read where they
   entry #same   whether the bytes at an offset are those of some `Data`, compared in place
   entry #compare   the order of some bytes relative to some `Data`, compared in place, a proper prefix sorting first
 
+entry .Structural   the typeclass of a type with a fixed layout in bytes: a record of sized integers, read by `unpack` and written by `pack`
+  detail
+      A case class whose fields are sized integers (`B32`, `U16`, `S64`, …, or the plain `Byte`,
+      `Short`, `Int` and `Long`) *is* a binary layout: each field's type states its width and
+      its interpretation, and `Structural.derived` composes them in declaration order, computing
+      every offset where the layout is declared. The order of the bytes within a field belongs
+      to the format, so one of the `byteOrders` givens must be in scope at the derivation, and
+      is fixed there.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import byteOrders.bigEndianByteOrder
+
+      case class Header(magic: B32, version: U16, flags: B16, length: U32)
+
+      object Header:
+        given Header is Structural = Structural.derived
+
+      val data = hex"cafebabe0001000000000010"
+
+      Structural.width[Header]               // 12
+      data.unpack[Header](0).length          // 16
+      data.unpack[Header](0).pack            // the same twelve bytes
+      ```
+
+      Derivation expands to one load (and one store) per field at its offset, so reading a
+      record is one bounds check and as many loads as there are fields. A field of any other
+      type needs a `Structural` instance of its own: that is how records nest, each keeping the
+      byte order it was declared with, and how a field is given a representation the sized
+      integers do not offer.
+
+      It is in the component `zephyrine.layout`, which adds a dependency on hypotenuse for the
+      sized integers, and compiles for every platform.
+  refer zephyrine.unpack
+  refer zephyrine.pack
+  refer zephyrine.ByteOrder
+  entry .derived   the layout of a case class, in the byte order in scope; it does not compile without one, or for a field with no fixed layout
+  entry .width   the number of bytes a value of a type occupies, without a value in hand
+  entry .Error   a record was asked for at an offset where its whole width is not there
+      Carries the `offset`, the record's `width`, and the `size` of the data or expanse.
+      `↯/s.60.3`.
+  entry #width   the number of bytes the layout occupies
+  entry #load   the value laid out at an offset, unchecked: `unpack` is the checked entry point
+  entry #store   lays a value out in a byte array at an offset, unchecked: `pack` is the checked entry point
+
+entry .unpack   reads a record of fixed layout from `Data`, or from an `Expanse`, at an offset
+    `data.unpack[T](offset)` checks once that the whole record is there, raising
+    `Structural.Error` if it is not, and then loads it. `data.unpack[T](offset, count)` reads a
+    repeated section of `count` records as an array. On an `Expanse`, such as a `Terrain` of
+    mapped memory, the offset is a `Long`, and only the record's own bytes are read.
+
+entry .pack   the bytes of a value of fixed layout: exactly as many as its layout is wide
+
+entry .ByteOrder   the order of the bytes of a multi-byte field: `BigEndian` or `LittleEndian`
+    Consulted by `Structural.derived` where a layout is declared, through a given imported from
+    `byteOrders`.
+
+entry .byteOrders   the byte orders, each a given to import by name where a layout is derived
+  entry .bigEndianByteOrder   most significant byte first, as network formats and font files are
+  entry .littleEndianByteOrder   least significant byte first
+
+entry .layoutInternal   the macro behind `Structural.derived`, and the stores it expands to
+  hidden
+
 entry .Holding   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
   detail
       What a format which is kept and altered in place is altered through: a file mapped for

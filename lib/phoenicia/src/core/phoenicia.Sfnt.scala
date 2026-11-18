@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
-import polaris.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
@@ -232,9 +231,17 @@ trait Sfnt:
           case Sfnt.Table.Ttf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
           case _                   => None
 
+  // A table too short for its fixed layout is reported as the font's fault, by its tag.
+  private def record[table: Structural](tag: Sfnt.Table.Tag, offset: Int): table raises Font.Error =
+    mitigate:
+      case error: Structural.Error =>
+        Font.Error(Font.Error.Reason.TruncatedTable(tag))(using error.diagnostics)
+
+    . protect(data.unpack[table](offset))
+
   def head: HeadTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Head).let: ref =>
-      data.unpackFrom[HeadTable](ref.offset).tap: table =>
+      record[HeadTable](Sfnt.Table.Ttf.Head, ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits
         then raise(Font.Error(Font.Error.Reason.MagicNumber))
 
@@ -245,7 +252,7 @@ trait Sfnt:
     . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Cmap)))
 
   def hhea: HheaTable raises Font.Error =
-    tables(Sfnt.Table.Ttf.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
+    tables(Sfnt.Table.Ttf.Hhea).let: ref => record[HheaTable](Sfnt.Table.Ttf.Hhea, ref.offset)
     . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Hhea)))
 
   def hmtx: HmtxTable raises Font.Error =
@@ -309,6 +316,11 @@ trait Sfnt:
 
     case class Axis(tag: Text, minimum: Double, default: Double, maximum: Double, nameId: Int)
 
+  // The tables of fixed layout, which are big-endian as every table of a font is.
+  object HeadTable:
+    import byteOrders.bigEndianByteOrder
+    given structural: HeadTable is Structural = Structural.derived
+
   case class HeadTable
     ( majorVersion:       U16,
       minorVersion:       U16,
@@ -329,6 +341,10 @@ trait Sfnt:
       fontDirectionHint:  S16,
       indexToLocFormat:   S16,
       glyphDataFormat:    S16 )
+
+  object HheaTable:
+    import byteOrders.bigEndianByteOrder
+    given structural: HheaTable is Structural = Structural.derived
 
   case class HheaTable
     ( majorVersion:        U16,

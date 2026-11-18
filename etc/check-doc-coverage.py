@@ -27,7 +27,7 @@ INTERNAL = {
     'rudiments',      # foundation utilities used by every tutorial; nothing to teach on their own
     'anticipation', 'prepositional', 'proscenium', 'murmuration', 'corpuscular', 'tessellate',
     'beneficence', 'umbrageous', 'prescience', 'frontier', 'symbolism', 'denominative',
-    'concordance', 'delicious', 'prophesy', 'stenography', 'wisteria', 'polaris',
+    'concordance', 'delicious', 'prophesy', 'stenography', 'wisteria',
     'degustation',    # the TASTy reader; its only tutorial was the LIRA topic, retired by dist-10
 }
 

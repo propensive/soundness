@@ -30,20 +30,46 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polaris
+package zephyrine
 
-import scala.caps
+import scala.reflect.ClassTag
 
 import anticipation.*
-import beneficence.*
+import contingency.*
 
-// A `Sextant` is a *capability*: it carries a mutable read position, so unpacking is an effect
-// and the sextant's lifetime is the `sextant { ... }` block that introduces it. `Exclusive`
-// because two readers sharing a position would corrupt each other's decoding, and `Mutable` so
-// that only an exclusive reference may advance it.
-class Sextant(private[polaris] val bytes: Data, initialPosition: Int = 0)
-extends Findable, caps.Mutable:
-  private[polaris] var position: Int = initialPosition
+package byteOrders:
+  // Singleton-typed, so that a derivation knows the order as it expands.
+  given bigEndianByteOrder: ByteOrder.BigEndian.type = ByteOrder.BigEndian
+  given littleEndianByteOrder: ByteOrder.LittleEndian.type = ByteOrder.LittleEndian
 
-  def offset: Int = position
-  update def advance(count: Int): Unit = position += count
+extension (data: Data)
+  // The record laid out from `offset`, after one check that the whole of it is there.
+  def unpack[record: Structural](offset: Int): record raises Structural.Error =
+    if offset < 0 || offset > data.length - record.width
+    then abort(Structural.Error(offset, record.width, data.length))
+    else record.load(data, offset)
+
+  // `count` records laid out one after another from `offset`, as a repeated section is.
+  def unpack[record: {Structural, ClassTag}](offset: Int, count: Int)
+  :   Array[record]^{} raises Structural.Error =
+
+    val width = record.width
+
+    if offset < 0 || count < 0 || offset > data.length - width.toLong*count
+    then abort(Structural.Error(offset, width, data.length))
+    else Array.tabulate[record](count): index => record.load(data, offset + index*width)
+
+extension (expanse: Expanse^)
+  // The record laid out from `offset` of an expanse, such as a mapped file: its bytes alone
+  // are read. The tactic is a parameter, where a `raises` result would capture the expanse.
+  def unpack[record: Structural](offset: Long)(using Tactic[Structural.Error]): record =
+    if offset < 0L || offset > expanse.size - record.width
+    then abort(Structural.Error(offset, record.width, expanse.size))
+    else record.load(expanse.read(offset, record.width), 0)
+
+extension [record: Structural](value: record)
+  // The value's bytes: exactly as many as its layout is wide.
+  def pack: Data =
+    val target: Array[Byte]^ = Array.allocate[Byte](record.width)
+    record.store(value, target, 0)
+    Array.freeze(target)

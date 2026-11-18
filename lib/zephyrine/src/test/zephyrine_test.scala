@@ -44,6 +44,47 @@ import threads.virtualThreads
 import strategies.throwUnsafely
 import probates.panicProbate
 
+// Layouts for the fixed-layout suite: big-endian ones, as network formats are, and one
+// little-endian twin, each fixed where it is derived.
+object network:
+  import byteOrders.bigEndianByteOrder
+
+  case class Preamble(magic: Int, version: Short, flags: Byte)
+
+  object Preamble:
+    given structural: Preamble is Structural = Structural.derived
+
+  case class Extent(left: Short, right: Short)
+
+  object Extent:
+    given structural: Extent is Structural = Structural.derived
+
+  case class Envelope(preamble: Preamble, extent: Extent, tail: Byte)
+
+  object Envelope:
+    given structural: Envelope is Structural = Structural.derived
+
+  case class Sized
+    ( b8: B8, u8: U8, s8: S8, b16: B16, u16: U16, s16: S16, b32: B32, u32: U32, s32: S32, b64: B64,
+      u64: U64, s64: S64, long: Long )
+
+  object Sized:
+    given structural: Sized is Structural = Structural.derived
+
+object intel:
+  import byteOrders.littleEndianByteOrder
+
+  case class Preamble(magic: Int, version: Short, flags: Byte)
+
+  object Preamble:
+    given structural: Preamble is Structural = Structural.derived
+
+  // Mixed order: a little-endian record holding a big-endian one.
+  case class Mixed(count: U16, extent: network.Extent, total: U32)
+
+  object Mixed:
+    given structural: Mixed is Structural = Structural.derived
+
 object Tests extends Suite("parsing", m"Zephyrine tests"):
   val bytes: Data = Data.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
@@ -862,6 +903,110 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val raw = scala.Array.tabulate[Byte](12)(index => (index + 0xf1).toByte)
         sample.u64(4) == zephyrine.Words.load(raw, 4)
       . assert(_ == true)
+
+    suite(m"Fixed layout tests"):
+      import network.{Envelope, Extent, Sized}
+
+      val preamble = Data(0, 0, 1, 0, 0, 3, 7)
+      val envelope = Data(0, 0, 1, 0, 0, 3, 7, 0, 1, 0, 2, 9)
+
+      // f1 f2 f3 …: every byte has its high bit set, so a stray sign extension shows.
+      val sample: Data = Data.fill(53)(index => (index + 0xf1).toByte)
+
+      test(m"a layout's width is the sum of its fields' widths"):
+        Structural.width[network.Preamble]
+      . assert(_ == 7)
+
+      test(m"a nested layout's width includes the layouts it holds"):
+        Structural.width[Envelope]
+      . assert(_ == 12)
+
+      test(m"every sized integer contributes its width"):
+        Structural.width[Sized]
+      . assert(_ == 53)
+
+      test(m"a big-endian record is unpacked in declaration order"):
+        preamble.unpack[network.Preamble](0)
+      . assert(_ == network.Preamble(256, 3.toShort, 7.toByte))
+
+      test(m"the same bytes unpack differently in little-endian order"):
+        preamble.unpack[intel.Preamble](0)
+      . assert(_ == intel.Preamble(0x10000, 0x300.toShort, 7.toByte))
+
+      test(m"a record is unpacked from an offset"):
+        envelope.unpack[Extent](7)
+      . assert(_ == Extent(1.toShort, 2.toShort))
+
+      test(m"a nested record is unpacked, and the field after it"):
+        envelope.unpack[Envelope](0)
+      . assert: value =>
+          value == Envelope(network.Preamble(256, 3.toShort, 7.toByte), Extent(1, 2), 9.toByte)
+
+      test(m"a record keeps its own byte order inside another's"):
+        Data(1, 0, 0, 1, 0, 2, 4, 0, 0, 0).unpack[intel.Mixed](0)
+      . assert(_ == intel.Mixed(1.toShort.bits.u16, Extent(1, 2), 4.bits.u32))
+
+      test(m"sized integers are unsigned, signed or raw as declared"):
+        val sized = sample.unpack[Sized](0)
+        (sized.u8.int, sized.s8.int, sized.u16.int, sized.s16.int, sized.u32.long, sized.s32.int)
+      . assert(_ == (0xf2, 0xf3 - 0x100, 0xf6f7, 0xf8f9 - 0x10000, 0xfeff0001L, 0x02030405))
+
+      test(m"a 64-bit field is loaded whole"):
+        sample.unpack[Sized](0).long
+      . assert(_ == 0x1e1f202122232425L)
+
+      test(m"a repeated section is unpacked by its count"):
+        Data(0, 1, 0, 2, 0, 3, 0, 4).unpack[Extent](0, 2).to[List]
+      . assert(_ == List(Extent(1, 2), Extent(3, 4)))
+
+      test(m"an empty section is unpacked from the end of the data"):
+        Data(0, 1).unpack[Extent](2, 0).length
+      . assert(_ == 0)
+
+      test(m"a record which runs off the end of the data is an error"):
+        try preamble.unpack[Envelope](0).toString.tt
+        catch case error: Structural.Error => t"${error.offset}/${error.width}/${error.size}"
+      . assert(_ == t"0/12/7")
+
+      test(m"a negative offset is an error"):
+        try preamble.unpack[Extent](-1).toString.tt
+        catch case error: Structural.Error => t"refused"
+      . assert(_ == t"refused")
+
+      test(m"a section longer than the data is an error"):
+        try Data(0, 1, 0, 2).unpack[Extent](0, 3).length.toString.tt
+        catch case error: Structural.Error => t"refused"
+      . assert(_ == t"refused")
+
+      test(m"a record is packed into exactly its width"):
+        network.Preamble(256, 3.toShort, 7.toByte).pack.to[List]
+      . assert(_ == preamble.to[List])
+
+      test(m"a little-endian record is packed low byte first"):
+        intel.Preamble(256, 3.toShort, 7.toByte).pack.to[List]
+      . assert(_ == Data(0, 1, 0, 0, 3, 0, 7).to[List])
+
+      test(m"a nested record is packed at its offset"):
+        Envelope(network.Preamble(256, 3.toShort, 7.toByte), Extent(1, 2), 9.toByte).pack.to[List]
+      . assert(_ == envelope.to[List])
+
+      test(m"packing every sized integer restores the bytes it was unpacked from"):
+        sample.unpack[Sized](0).pack.to[List]
+      . assert(_ == sample.to[List])
+
+      test(m"a mixed-order record survives a round trip"):
+        val bytes = Data(1, 0, 0, 1, 0, 2, 4, 0, 0, 0)
+        bytes.unpack[intel.Mixed](0).pack.to[List]
+      . assert(_ == Data(1, 0, 0, 1, 0, 2, 4, 0, 0, 0).to[List])
+
+      test(m"a record is unpacked from a view of mapped memory"):
+        Terrain(envelope).unpack[Extent](7L)
+      . assert(_ == Extent(1.toShort, 2.toShort))
+
+      test(m"a record beyond the end of a view is an error"):
+        try Terrain(envelope).unpack[Extent](11L).toString.tt
+        catch case error: Structural.Error => t"refused"
+      . assert(_ == t"refused")
 
     suite(m"Region tests"):
       def sample(size: Int): scala.Array[Byte]^ =

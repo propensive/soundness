@@ -53,7 +53,7 @@ of the related tutorials, and most link to the philosophy behind their design:
 - [Protocol Buffers](protobuf.md) — messages, fields and compatibility
 - [Markdown](markdown.md) — parsing, rendering and writing back
 - [Base Encoding](base-encoding.md) — Base64, hexadecimal and other alphabets
-- [Binary Data](binary-data.md) — describing and reading a binary layout
+- [Binary Data](binary-data.md) — describing, reading and writing a binary layout
 - [Compression](compression.md) — compressing values and streams
 - [Archives](archives.md) — ZIP, tar and ar
 - [Hashing](hashing.md) — digests, checksums and fast hashing
