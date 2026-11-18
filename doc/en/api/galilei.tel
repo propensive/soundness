@@ -733,8 +733,9 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
         (and `MoveAtomically`); parents are created, since the destination directory is named.
       - `delete`, `wipe`: `DeleteRecursively`.
       - `entry()`, `descendants`, `glob`, `hardLinks()`, `checksum`: `DereferenceSymlinks`.
-      - `create[…]`: none — `CreateFlag.Parents` and `CreateFlag.Replace` state the intent at
-        the call site instead.
+      - `create[…]`: none is required. `CreateFlag.Parents` and `CreateFlag.Replace` state the
+        intent at the call site; a `CreateNonexistentParents` policy, if one is in scope where
+        `create` is called, is honoured too.
 
       The same file, written, read, moved and deleted, as the imports accumulate:
 
@@ -845,7 +846,8 @@ entry .filesystemOptions   the policies for the awkward cases, each a given to i
       operation, each absent ancestor of the destination is created, walking up from the
       nearest. The directories are created with the process's own mask. `copyInto`,
       `moveInto` and `symlinkInto` use it implicitly, since their destination directory is
-      named.
+      named. With it in scope, `create[…]` makes missing ancestors too, as if
+      `CreateFlag.Parents` had been given.
   entry .requireParents   a destination whose parent is missing is an `Io.Error`
       The strict `CreateNonexistentParents`: nothing is created, and the backend raises
       `Io.Error` with `Reason.Nonexistent` for the missing parent.
@@ -898,7 +900,9 @@ entry .CreateNonexistentParents   the policy for a destination whose parent is m
       operation. `filesystemOptions.createNonexistentParents` makes each missing ancestor;
       `filesystemOptions.requireParents` leaves the backend to raise `Nonexistent`. Needed
       by `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` and `Device.create`. The `create[…]`
-      operations do not consult it: they take `CreateFlag.Parents` at the call instead.
+      operations do not need one, but honour one which is in scope where they are called:
+      under `createNonexistentParents` they make missing ancestors without
+      `CreateFlag.Parents`.
   entry #apply   runs an operation at `path`, after creating its missing ancestors or not
 
 entry .filesystemTraversal   the order a directory tree is walked in, each a given to import by name
@@ -951,12 +955,13 @@ entry .TraversalOrder   whether `descendants` yields a directory before or after
 entry .CreateFlag   what `create[…]` may do beyond making the entry: `Parents` or `Replace`
   detail
       Absent flags mean strictness: creating an entry whose parent is missing raises
-      `Io.Error` with `Nonexistent`, and creating one which already exists raises
-      `AlreadyExists`, unless the caller says otherwise at the call site. `Parents` creates
+      `Io.Error` with `Nonexistent` (unless `filesystemOptions.createNonexistentParents` is
+      in scope), and creating one which already exists raises `AlreadyExists`, unless the
+      caller says otherwise at the call site. `Parents` creates
       every missing ancestor directory (under the `Umask` in scope); `Replace` deletes an
       existing entry at the path first — recursively, if it is a directory. Flags are the
       arguments after the form: `path.create[Directory](CreateFlag.Parents)`,
-      `path.create[File](CreateFlag.Replace)`. They are deliberately not policies from
+      `path.create[File](CreateFlag.Replace)`. `Replace` is deliberately not a policy from
       `filesystemOptions`: destructive intent at creation is stated where it happens.
 
       ```scala fuel

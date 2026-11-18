@@ -167,6 +167,7 @@ object Ram:
   // since an empty mapping is useless and growth is not supported. The named file is
   // created, sized, mapped read-write for the scope, and removed if the scope fails.
   class RamCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( policy: Optional[CreateNonexistentParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
   extends Creatable:
 
@@ -188,7 +189,7 @@ object Ram:
       then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
 
       val createFlags = flags.sweep { case flag: CreateFlag => flag }
-      Creation.ensure(value, createFlags)
+      Creation.ensure(value, createFlags, policy)
       Creation.replace(value, createFlags)
 
       if backend.exists(value, false)
@@ -217,10 +218,10 @@ object Ram:
             throw throwable
         finally channel.close()
 
-  given creatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  inline given creatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( FilesystemBackend on filesystem, Tactic[Io.Error] )
   =>  RamCreatable[filesystem, path] =
-    RamCreatable[filesystem, path]
+    RamCreatable[filesystem, path](Creation.policy[filesystem])
 
 // The form for random access to a file's bytes through memory mapping:
 // `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`

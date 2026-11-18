@@ -41,6 +41,7 @@ import aperture.*
 import contingency.*
 import prepositional.*
 import serpentine.*
+import vacuous.*
 
 // The `java.nio` representations of a path, for interoperating with Java APIs directly. Not
 // exported into `soundness`: these are an escape hatch from the typed API, so reaching them
@@ -58,6 +59,7 @@ object SocketCreation:
   // file remains, as before; an exception escaping the scope removes it). The no-block form
   // binds and immediately closes, leaving just the socket file.
   class SocketCreatable[filesystem <: Posix: Filesystem, path <: Path on filesystem]
+    ( policy: Optional[CreateNonexistentParents on filesystem] )
     ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
   extends Creatable:
 
@@ -72,7 +74,7 @@ object SocketCreation:
       ( block: (Sock & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
-      Creation.ensure(value, flags)
+      Creation.ensure(value, flags, policy)
       Creation.replace(value, flags)
 
       val address = jn.UnixDomainSocketAddress.of(value.javaPath).nn
@@ -86,9 +88,9 @@ object SocketCreation:
           throw throwable
       finally channel.close()
 
-  given socket: [filesystem <: Posix: Filesystem, path <: Path on filesystem]
+  inline given socket: [filesystem <: Posix: Filesystem, path <: Path on filesystem]
   =>  ( FilesystemBackend on filesystem, Tactic[Io.Error] )
   =>  SocketCreatable[filesystem, path] =
-    SocketCreatable[filesystem, path]
+    SocketCreatable[filesystem, path](Creation.policy[filesystem])
 
 export SocketCreation.socket as socketCreatable

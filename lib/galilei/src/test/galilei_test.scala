@@ -360,6 +360,32 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           target.existent()
       . assert(_ == true)
 
+      test(m"The createNonexistentParents option creates missing ancestors"):
+        import filesystemOptions.createNonexistentParents
+
+        unsafely:
+          val target: Path on Linux = base / "d" / "e" / "f"
+          target.create[Directory]()
+          target.existent()
+      . assert(_ == true)
+
+      test(m"The option creates a new file's missing ancestors too"):
+        import filesystemOptions.createNonexistentParents
+
+        unsafely:
+          val target: Path on Linux = base / "g" / "h" / "note.txt"
+          target.create[File]()
+          target.existent()
+      . assert(_ == true)
+
+      test(m"Creating beneath a missing parent fails under requireParents"):
+        import filesystemOptions.requireParents
+
+        unsafely:
+          val target: Path on Linux = base / "no" / "such" / "place"
+          capture[Io.Error](target.create[Directory]()).reason
+      . assert(_ == Io.Error.Reason.Nonexistent)
+
       test(m"Directory authoring provides a fresh-plane handle over the new directory"):
         unsafely:
           val target: Path on Linux = base / "authored"

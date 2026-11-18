@@ -87,9 +87,10 @@ directory.create[Directory]()
 file.create[File]()
 ```
 
-By default, creating refuses to destroy anything. Creating over something which exists, or
-under a parent which does not, is an `Io.Error`. Where either is the intent, a flag says so,
-at the place where it happens, instead of an import saying it for the whole file:
+By default, creating refuses to destroy anything. Creating over something which exists is an
+`Io.Error`, and so is creating under a parent which does not exist, unless
+`filesystemOptions.createNonexistentParents` is imported, as it is here. A flag states either
+intent at the place where it happens, whatever is imported:
 
 ```scala fuel
 run
