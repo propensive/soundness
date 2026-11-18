@@ -58,8 +58,8 @@ object Classfile:
     stream => Classfile(stream.read[Data])
 
   // Parses the header, constant pool, and the class's attributes and method table, raising
-  // `Error` if the JDK rejects any of them. A method's code is still read on demand, by
-  // `Method#bytecode`.
+  // `Error` if the JDK rejects any of them. A method's code is read on demand, by
+  // `Method#bytecode`, which raises the same error.
   def apply(data: Data): Classfile raises Error =
     try
       val model = jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
@@ -95,83 +95,96 @@ class Classfile private (model: jlc.ClassModel):
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
 
-    def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: codeModel =>
-      val code: jlca.CodeAttribute = codeModel match
-        case attr: jlca.CodeAttribute => attr
-        case _                        => panic(m"code attribute not present")
+    // The JDK decodes a method's code only when it is asked for, so this is where a malformed
+    // code attribute shows: as the JDK's `IllegalArgumentException`, or as one of the failures
+    // which reading past the end of a corrupt table causes. Each is raised as `Classfile.Error`.
+    def bytecode: Optional[Bytecode] raises Classfile.Error =
+      try decode() catch
+        case error: IllegalArgumentException  => abort(Classfile.Error())
+        case error: IndexOutOfBoundsException => abort(Classfile.Error())
+        case error: NoSuchElementException    => abort(Classfile.Error())
+        case error: ClassCastException        => abort(Classfile.Error())
+        case error: MatchError                => abort(Classfile.Error())
 
-      val elements = code.elementList.nn.to[List]
+    // A method with no code, an abstract or native one, has no bytecode.
+    private def decode(): Optional[Bytecode] =
+      Optional(model.code().nn.orElse(null)).let: codeModel =>
+        val code: jlca.CodeAttribute = codeModel match
+          case attr: jlca.CodeAttribute => attr
+          case _                        => panic(m"code attribute not present")
 
-      val labels: Map[jlc.Label, Int] =
-        val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
-        var offset = 0
+        val elements = code.elementList.nn.to[List]
 
-        elements.each:
-          case instr: jlc.Instruction       => offset += instr.sizeInBytes
-          case target: jlci.LabelTarget     => builder += target.label.nn -> offset
-          case _                            => ()
+        val labels: Map[jlc.Label, Int] =
+          val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
+          var offset = 0
 
-        builder.result().to(Map)
+          elements.each:
+            case instr: jlc.Instruction       => offset += instr.sizeInBytes
+            case target: jlci.LabelTarget     => builder += target.label.nn -> offset
+            case _                            => ()
 
-      val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
-        val attr =
-          code.attributes.nn.iterator.nn.asScala.collectFirst:
-            case smt: jlca.StackMapTableAttribute => smt
+          builder.result().to(Map)
 
-        attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
-          smt.entries.nn.to[List].map: entry =>
-            val frames: List[Bytecode.Frame] =
-              entry.stack.nn.to[List].map(Bytecode.Frame.fromVerificationType).reverse
+        val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
+          val attr =
+            code.attributes.nn.iterator.nn.asScala.collectFirst:
+              case smt: jlca.StackMapTableAttribute => smt
 
-            entry.target.nn -> frames
+          attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
+            smt.entries.nn.to[List].map: entry =>
+              val frames: List[Bytecode.Frame] =
+                entry.stack.nn.to[List].map(Bytecode.Frame.fromVerificationType).reverse
 
-          . to[Map]
+              entry.target.nn -> frames
 
-      def recur
-        ( todo:  List[jlc.CodeElement],
-          line:  Optional[Int],
-          done:  List[Bytecode.Instruction],
-          stack: Optional[List[Bytecode.Frame]],
-          count: Int )
-      :   List[Bytecode.Instruction] =
+            . to[Map]
 
-        todo match
-          case Nil => done.reverse
+        def recur
+          ( todo:  List[jlc.CodeElement],
+            line:  Optional[Int],
+            done:  List[Bytecode.Instruction],
+            stack: Optional[List[Bytecode.Frame]],
+            count: Int )
+        :   List[Bytecode.Instruction] =
 
-          case next :: todo =>
-            next match
-              case instruction: jlc.Instruction =>
-                val opcode = Bytecode.Opcode(instruction, labels)
-                val stack2 = stack.let(opcode.transform(_))
+          todo match
+            case Nil => done.reverse
 
-                recur
-                  ( todo,
-                    Unset,
-                    Bytecode.Instruction(opcode, line, stack2, count) :: done,
-                    stack2,
-                    count + instruction.sizeInBytes )
+            case next :: todo =>
+              next match
+                case instruction: jlc.Instruction =>
+                  val opcode = Bytecode.Opcode(instruction, labels)
+                  val stack2 = stack.let(opcode.transform(_))
 
-              case lineNo: jlci.LineNumber =>
-                recur(todo, lineNo.line, done, stack, count)
+                  recur
+                    ( todo,
+                      Unset,
+                      Bytecode.Instruction(opcode, line, stack2, count) :: done,
+                      stack2,
+                      count + instruction.sizeInBytes )
 
-              case other: jlci.LocalVariable =>
-                recur(todo, line, done, stack, count)
+                case lineNo: jlci.LineNumber =>
+                  recur(todo, lineNo.line, done, stack, count)
 
-              case other: jlci.LabelTarget =>
-                // Bound first: passed inline to `at`, the `.nn` null-elision proxy leaks into
-                // the inferred index type and fails to conform.
-                val label = other.label.nn
+                case other: jlci.LocalVariable =>
+                  recur(todo, line, done, stack, count)
 
-                val resetStack: Optional[List[Bytecode.Frame]] = stackMaps.at(label).or(stack)
+                case other: jlci.LabelTarget =>
+                  // Bound first: passed inline to `at`, the `.nn` null-elision proxy leaks into
+                  // the inferred index type and fails to conform.
+                  val label = other.label.nn
 
-                recur(todo, line, done, resetStack, count)
+                  val resetStack: Optional[List[Bytecode.Frame]] = stackMaps.at(label).or(stack)
 
-              case other =>
-                panic(m"did not handle ${other.toString.tt}")
+                  recur(todo, line, done, resetStack, count)
+
+                case other =>
+                  panic(m"did not handle ${other.toString.tt}")
 
 
-      val instructions = recur(elements, Unset, Nil, Nil, 0)
+        val instructions = recur(elements, Unset, Nil, Nil, 0)
 
-      Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
+        Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
 
   lazy val methods: List[Method] = model.methods.nn.to[List].map(Method(_))

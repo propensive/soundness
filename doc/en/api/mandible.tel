@@ -81,7 +81,8 @@ entry .Classfile   a parsed JVM class file: its methods, their bytecode and its 
       Error `↯/s.88.2`: _there was an error reading the classfile_. Raised by `Classfile(data)`,
       `Classfile(name)`, `Classfile[type]` and `read[Classfile]` when the header, constant
       pool, attributes or method table do not parse. A class the classloader does not have
-      is still `Unset`, not an error; a method's code is decoded only by `Method#bytecode`.
+      is still `Unset`, not an error. A method's code is decoded only by `Method#bytecode`,
+      which raises the same error if the code does not decode.
   entry .aggregable   reads a `Classfile` from any stream of bytes, as `read[Classfile]`
       The `Aggregable by Data` given which lets a file, a classpath resource or any other
       `Readable` source be read as a class file: the whole stream is collected into one `Data`
@@ -146,6 +147,7 @@ entry .Classfile   a parsed JVM class file: its methods, their bytecode and its 
         `+` is `$plus`, and a lambda body is `$anonfun$…`. `StackTrace.rewrite` in digression
         turns such a name back toward its source spelling.
     entry #bytecode   the method's `Code` attribute decoded to a `Bytecode`, or `Unset` for an abstract method
+        Needs a `Tactic[Classfile.Error]`, raised if the code attribute is malformed.
         Decodes every instruction of the method to a `Bytecode.Opcode`, resolving branch
         targets to byte offsets, and threads a simulation of the operand stack through them:
         the stack after each instruction is computed by `Bytecode.Opcode#transform`, and reset

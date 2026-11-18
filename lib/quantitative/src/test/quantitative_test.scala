@@ -516,9 +516,8 @@ object Tests extends Suite("units", m"Quantitative Tests"):
       import classloaders.threadContextClassloader
 
       def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
-        safely(Classfile[Probes.type])
-        . let(_.methods.seek(_.name == method))
-        . let(_.bytecode)
+        safely:
+          Classfile[Probes.type].let(_.methods.seek(_.name == method)).let(_.bytecode)
 
       // True when the bytecode contains a virtual / interface dispatch to a
       // typeclass operation (`negate`, `add`, etc.). Virtual calls to a

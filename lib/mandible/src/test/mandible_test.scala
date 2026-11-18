@@ -74,6 +74,10 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
       safely(Classfile(Data(1, 2, 3, 4))).absent
     . assert(identity)
 
+    test(m"An abstract method has no bytecode"):
+      Classfile[Runnable].let(_.methods.seek(_.name == t"run")).let(_.bytecode)
+    . assert(_ == Unset)
+
     test(m"Dup on an empty stack leaves the stack unchanged"):
       Bytecode.Opcode.Dup.transform(Nil)
     . assert(_ == Nil)
