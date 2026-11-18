@@ -46,7 +46,7 @@ object Out:
   def println()(using Stdio^): Unit = print("\n".tt)
 
   def println[textual: Printable as printable, C^](lines: (Termcap ?->{C} textual)*)
-    ( using stdio: Stdio )
+    ( using stdio: Stdio^ )
   :   Unit =
 
     mutex:
