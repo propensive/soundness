@@ -73,8 +73,8 @@ package charsets:
   given asciiCharset: (sanitizer: TextSanitizer) => (Charset) =
     Charset.unapply("ASCII".tt).get
 
-  given iso88591Charset: Charset =
-    Charset.unapply("ISO-8859-1".tt)(using textSanitizers.skipSanitizer).get
+  given iso88591Charset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("ISO-8859-1".tt).get
 
 package codepages:
   // One instance of each under the default sanitizer, which `sanitized` returns unchanged, so

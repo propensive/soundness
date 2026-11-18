@@ -64,9 +64,7 @@ detail
     `communication` — merge with the umbrella's own packages of those names. Since
     `import soundness.*` imports no givens, a program names the encoding, sanitiser and metric
     it wants: `import codepages.utf8Codepage`, `import textSanitizers.strictSanitizer`,
-    `import textMetrics.uniformMetric`. The `iso88591Charset` and `iso88591Codepage` givens are
-    declared only in `hieroglyph.charsets` and `hieroglyph.codepages`, not re-exported in the
-    umbrella's packages.
+    `import textMetrics.uniformMetric`.
 
 refer hieroglyph.Charset
 refer hieroglyph.Codepage
@@ -239,9 +237,7 @@ entry .Charset   decodes bytes as text in one encoding, treating bad input as it
   entry #sanitizer   the sanitiser consulted at each undecodable byte sequence
       The `TextSanitizer` which was in scope when the charset was made. A `charsets` given
       takes it from the use site, so the same `charsets.utf8Charset` is strict in one block and
-      tolerant in another according to which sanitiser is imported there; `iso88591Charset`
-      alone fixes `skipSanitizer`, since every byte is valid Latin-1 and there is nothing to
-      sanitise.
+      tolerant in another according to which sanitiser is imported there.
   entry #Self   what this charset produces: `Text`
   entry #Form   what this charset consumes: `Data`
   entry #decoded   the text of some bytes, or a stream of text from a stream of bytes
@@ -792,8 +788,7 @@ entry .charsets   the standard decoders, each a `Charset` given to import by nam
       choice is never implicit: `import soundness.*` brings none of these in, and one is
       imported by name. Each resolves the `TextSanitizer` in scope at the use site, so the
       same `utf8Charset` is strict where `strictSanitizer` is imported and tolerant where
-      `skipSanitizer` is; `iso88591Charset` alone fixes the skipping sanitiser, since every
-      byte is valid Latin-1.
+      `skipSanitizer` is.
 
       ```scala
       import soundness.*
@@ -815,11 +810,9 @@ entry .charsets   the standard decoders, each a `Charset` given to import by nam
   entry .utf16BeCharset   UTF-16 big-endian, with the sanitiser in scope
   entry .asciiCharset   US-ASCII, with the sanitiser in scope
       Any byte above `0x7f` is a fault, handled as the sanitiser says.
-  entry .iso88591Charset   ISO-8859-1 (Latin-1), always with the skipping sanitiser
-      Every byte is a valid Latin-1 character, so there is nothing to sanitise and no
-      `TextSanitizer` is needed in scope. Declared in `hieroglyph.charsets` only; the
-      `soundness` umbrella's `charsets` package does not re-export it, so it is imported as
-      `hieroglyph.charsets.iso88591Charset`.
+  entry .iso88591Charset   ISO-8859-1 (Latin-1), with the sanitiser in scope
+      Every byte is a valid Latin-1 character, so the sanitiser is never consulted, but one
+      must be in scope, as for the other charsets.
 
 entry .codepages   the standard encoders, each a `Codepage` given to import by name
   detail
