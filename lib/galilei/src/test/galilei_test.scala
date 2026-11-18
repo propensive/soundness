@@ -1526,15 +1526,15 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         val stems: List[Path on Linux] & Populated = List(stemA, stemB)
 
       test(m"locate finds the first stem's match"):
-        unsafely((% / "icons" / "app.png").on[Xdg.Data].search())
+        unsafely((% / "icons" / "app.png").on[Xdg.Data].discover())
       . assert(_ == unsafely(stemA / "icons" / "app.png"))
 
       test(m"locate falls through to a later stem"):
-        unsafely((% / "icons" / "extra.png").on[Xdg.Data].search())
+        unsafely((% / "icons" / "extra.png").on[Xdg.Data].discover())
       . assert(_ == unsafely(stemB / "icons" / "extra.png"))
 
       test(m"a path present nowhere locates to Unset"):
-        unsafely((% / "icons" / "missing.png").on[Xdg.Data].search())
+        unsafely((% / "icons" / "missing.png").on[Xdg.Data].discover())
       . assert(_ == Unset)
 
       test(m"locations lists every extant match in precedence order"):
@@ -1546,7 +1546,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == List(t"app.png", t"extra.png"))
 
       test(m"a later-stem-only directory is found"):
-        unsafely((% / "themes").on[Xdg.Data].search().present)
+        unsafely((% / "themes").on[Xdg.Data].discover().present)
       . assert(_ == true)
 
       test(m"destination is the head-stem realization"):

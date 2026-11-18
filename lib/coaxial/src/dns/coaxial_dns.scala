@@ -50,7 +50,7 @@ extension (endpoint: Endpoint[Udp.Port])
   // its first question, or it is some other exchange's. The wait is bounded by a
   // `Socket.Option.Timeout` in scope, or five seconds. No retransmission in this first cut:
   // a lost datagram is a `Dns.Error(Timeout)`, and the caller decides whether to ask again.
-  def query(message: Dns.Message)
+  def ask(message: Dns.Message)
     ( using backend: Socket.Backend, options: Every[Socket.Option.Udp] )
   :   Dns.Message raises Dns.Error raises Socket.Error =
 
@@ -80,11 +80,12 @@ extension (endpoint: Endpoint[Udp.Port])
     reply
 
   // The records answering a question for `name`'s `rtype`, through the nameserver, with
-  // recursion requested, under a fresh ID. An overload of `query` rather than a `lookup`, a name
-  // which anamnesis's `ref.lookup[T]` holds in `soundness`.
-  def query(name: Dns.Name, rtype: Dns.Type = Dns.Type.A)
+  // recursion requested, under a fresh ID. Named `ask`, for the `Dns.Question` it sends and the
+  // answers it returns: `lookup`, `resolve` and `query` are held in `soundness` by anamnesis,
+  // syndesis and telekinesis.
+  def ask(name: Dns.Name, rtype: Dns.Type = Dns.Type.A)
     ( using backend: Socket.Backend, options: Every[Socket.Option.Udp] )
   :   List[Dns.Record] raises Dns.Error raises Socket.Error =
 
     val id = juc.ThreadLocalRandom.current.nn.nextInt(0x10000)
-    query(Dns.Message.query(id, List(Dns.Question(name, rtype)))).answers
+    ask(Dns.Message.query(id, List(Dns.Question(name, rtype)))).answers

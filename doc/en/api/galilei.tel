@@ -92,7 +92,7 @@ detail
 
     Beyond single paths: `Cas` is a content-addressed store of blobs under a directory;
     `Searchpaths.Stems` resolves an XDG searchpath plane (`Xdg.Data`, `Xdg.Config`) onto real
-    directories with `search`, `locations`, `listing` and `destination`; `Umask` and `Fdtable`
+    directories with `discover`, `locations`, `listing` and `destination`; `Umask` and `Fdtable`
     are contextual values a daemon supplies on behalf of a client (the mask its creations
     honour, and the descriptor table its `/dev/fd/N` paths open through).
 
@@ -2339,7 +2339,7 @@ entry .Searchpaths   the machinery which resolves a searchpath plane onto an ord
       places. An ambience `Searchpath` plane (`Xdg.Data`, `Xdg.Config`) is such a list
       presented as one navigable tree, and resolution onto the real platform goes through a
       contextual `Searchpaths.Stems`: the ordered directories to try, the head stem being the
-      writable one. A relative path on the plane then resolves with `search()` to the first
+      writable one. A relative path on the plane then resolves with `discover()` to the first
       stem holding it, with `locations()` to every stem holding it, with `listing()` to the
       merged directory listing, and with `destination()` to its place under the head stem.
 
@@ -2358,7 +2358,7 @@ entry .Searchpaths   the machinery which resolves a searchpath plane onto an ord
         type Target = Linux
         val stems: List[Path on Linux] & Populated = List(stemA, stemB)
 
-      (% / "icons" / "app.png").on[Xdg.Data].search()        // the first stem's copy, or Unset
+      (% / "icons" / "app.png").on[Xdg.Data].discover()        // the first stem's copy, or Unset
       (% / "icons" / "app.png").on[Xdg.Data].locations()     // every stem's copy
       (% / "icons").on[Xdg.Data].listing().map(_.name)       // merged, earlier stems shadowing
       (% / "themes" / "new.css").on[Xdg.Data].destination()  // under stemA
@@ -2367,7 +2367,7 @@ entry .Searchpaths   the machinery which resolves a searchpath plane onto an ord
       `dataSearch()` and `configSearch()` build the `Stems` for the XDG data and
       configuration searchpaths from the environment. The helpers in the object are public
       only because the operations are transparent inline; call the operations.
-  refer galilei.search
+  refer galilei.discover
   refer galilei.dataSearch
   entry .Stems   the ordered real directories a searchpath plane resolves onto
     detail
@@ -2383,11 +2383,11 @@ entry .Searchpaths   the machinery which resolves a searchpath plane onto an ord
   entry .locationsResolved   every stem under which the path exists, in precedence order
   entry .entryNames   the merged child names across all stems, deduplicated, earlier stems first
 
-entry .search   `path.search()`: the first real directory of a searchpath in which the path exists, or `Unset`
+entry .discover   `path.discover()`: the first real directory of a searchpath in which the path exists, or `Unset`
     An extension on `Path on <plane <: Searchpath>`, needing a `Searchpaths.Stems` for the
     plane and a `FilesystemBackend` for its target. First-match-wins, per the XDG
-    specification; the result is a `Path on stems.Target`. Named `search` rather than
-    `locate`, which zephyrine exports at the umbrella.
+    specification; the result is a `Path on stems.Target`. Named `discover` rather than
+    `locate` or `search`, which zephyrine and gossamer export at the umbrella.
 
 entry .locations   `path.locations()`: every real path of a searchpath at which the path exists, in precedence order
     An extension on `Path on <plane <: Searchpath>`, for cascade-merging consumers which

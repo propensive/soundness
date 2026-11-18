@@ -44,7 +44,7 @@ export
       FileOpenable,
       FilesystemAttribute, FilesystemBackend,
       glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local, locations,
-      dataSearch, configSearch, destination, listing, search,
+      dataSearch, configSearch, destination, discover, listing,
       MacOs, mapped, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag, hold,
       OverwritePreexisting, Observer, observe, Owner, p, Platform, Posix, Fdtable, readable, filesize, Sock, Stat,
       Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, subvolume,

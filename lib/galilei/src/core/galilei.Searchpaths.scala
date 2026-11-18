@@ -101,7 +101,7 @@ object Searchpaths:
 extension [plane <: Searchpath](path: Path on plane)
   // The first stem in which the path exists — first-match-wins, per the XDG Base Directory
   // spec.
-  transparent inline def search()
+  transparent inline def discover()
     ( using stems: Searchpaths.Stems { type Plane = plane } )
     ( using filesystem: stems.Target is Filesystem )
     ( using backend: FilesystemBackend on stems.Target )

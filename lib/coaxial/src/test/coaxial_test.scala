@@ -490,7 +490,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
             UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
 
           port.listen[Data](nameserver):
-            (Localhost on port).query(Dns.Message.query(7, List(question))).answers
+            (Localhost on port).ask(Dns.Message.query(7, List(question))).answers
         . assert(_ == List(answer))
 
         test(m"A query by name returns the answering records"):
@@ -501,7 +501,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
             UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
 
           port.listen[Data](nameserver):
-            (Localhost on port).query(example)
+            (Localhost on port).ask(example)
         . assert(_ == List(answer))
 
         test(m"A reply with the wrong ID is rejected"):
@@ -512,7 +512,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
             UdpResponse.Reply(Dns.Message.response(query, List(answer)).copy(id = 8).in[Data])
 
           port.listen[Data](nameserver):
-            capture[Dns.Error]((Localhost on port).query(Dns.Message.query(7, List(question)))).reason
+            capture[Dns.Error]((Localhost on port).ask(Dns.Message.query(7, List(question)))).reason
         . assert(_ == Dns.Error.Reason.Mismatch(8))
 
         test(m"A query with no reply times out"):
@@ -520,7 +520,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
           val port = Port[Udp]()
 
           port.listen[Data]((packet: Packet) => UdpResponse.Ignore):
-            capture[Dns.Error]((Localhost on port).query(Dns.Message.query(7, List(question)))).reason
+            capture[Dns.Error]((Localhost on port).ask(Dns.Message.query(7, List(question)))).reason
         . assert(_ == Dns.Error.Reason.Timeout)
 
         test(m"A datagram exchange times out when no reply arrives"):

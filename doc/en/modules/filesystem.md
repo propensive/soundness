@@ -728,20 +728,18 @@ other representation.
 Many files are looked up not at one location, but along a list of them: an icon in whichever
 of the XDG data directories holds it, or a configuration file in the first of several places.
 A `Searchpaths.Stems` instance names the directories to try, in order. A relative path on the
-corresponding plane is resolved with `search` to the first of them which holds it, or to
+corresponding plane is resolved with `discover` to the first of them which holds it, or to
 `Unset`:
 
 ```scala fuel
 typecheck
 ##
-import galilei.search
-
 given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
   type Plane = Xdg.Data
   type Target = Linux
   val stems: List[Path on Linux] = List(directory, directory / "inner")
 
-val found = (% / "inner.txt").on[Xdg.Data].search()
+val found = (% / "inner.txt").on[Xdg.Data].discover()
 ```
 
 `dataSearch` and `configSearch` supply the XDG search paths for data and configuration, from

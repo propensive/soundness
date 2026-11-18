@@ -73,7 +73,7 @@ detail
     - `coaxial.wasi` (a Wasm component) — `socketBackends.wasiSockets` over `wasi:sockets`:
       TCP only, to IPv4 literals, with no UDP, multicast, Unix-domain or TLS; plus the
       `wasiApis.wasiSocketsApi` WIT interface and the `WasiSocketsApi` type.
-    - `coaxial.dns` — `query` on an `Endpoint[Udp.Port]`: one DNS message to a nameserver and
+    - `coaxial.dns` — `ask` on an `Endpoint[Udp.Port]`: one DNS message to a nameserver and
       its answer, over the backend's one-shot datagram exchange.
 
     What each platform's backend supports:
@@ -122,7 +122,7 @@ refer coaxial.Connection
 refer coaxial.listen
 refer coaxial.duplex
 refer coaxial.socketBackends
-refer coaxial.query
+refer coaxial.ask
 
 entry .listen   serves a socket for the duration of a block: a handler per arrival, each on its own task
   detail
@@ -486,7 +486,7 @@ entry .Socket   the socket vocabulary: the platform backend, the options, the ev
         query: a fresh socket, one datagram out, one `Packet` in, the socket closed. A
         `Socket.Option.Timeout` in `options` bounds the wait, surfacing as
         `Socket.Error(Timeout)`; the reply carries its sender, so a caller can check it came
-        from the right place. `query` in `coaxial.dns` is built on it. Raises `Transmit` on
+        from the right place. `ask` in `coaxial.dns` is built on it. Raises `Transmit` on
         WASI, which has no UDP.
     entry #joinMulticast   binds a group's port with address and port reuse, and joins the group on each interface
         `joinMulticast(multicast, interfaces, options)` binds the port with `SO_REUSEADDR` and
@@ -597,7 +597,7 @@ entry .Socket   the socket vocabulary: the platform backend, the options, the ev
       entry #bytes   the buffer size
     entry .Timeout   `SO_TIMEOUT`: how long a blocking read or receive waits, in milliseconds; every transport
       detail
-          A receive on a datagram socket which elapses raises `Socket.Error(Timeout)`; `query`
+          A receive on a datagram socket which elapses raises `Socket.Error(Timeout)`; `ask`
           in `coaxial.dns` adds a five-second one when none is in scope. Not meaningful for a
           selectable channel, where it is skipped. Made with `socketOptions.timeout(ms)`.
       entry #milliseconds   the wait
@@ -1303,13 +1303,13 @@ entry .WasiSocketsApi   the type of the `wasi:sockets` WIT interface: `Interface
     The type alias `wasiApis.wasiSocketsApi` provides, which the WASI backend's `Foreign`
     navigation is typechecked against. In `coaxial.wasi` only.
 
-entry .query   a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
+entry .ask   a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
   detail
       Two overloads, both extensions on an `Endpoint[Udp.Port]` naming the nameserver.
-      `endpoint.query(message: Dns.Message)` sends the message as one datagram from an
+      `endpoint.ask(message: Dns.Message)` sends the message as one datagram from an
       ephemeral port (`Socket.Backend#exchangeUdp`) and returns the reply, which must carry
       the query's ID and its first question or it is some other exchange's and a
-      `Dns.Error(Mismatch(id))` is raised. `endpoint.query(name, rtype = Dns.Type.A)` asks
+      `Dns.Error(Mismatch(id))` is raised. `endpoint.ask(name, rtype = Dns.Type.A)` asks
       the common question — the records of `rtype` for `name`, with recursion requested,
       under a fresh random ID — and returns the answering `Dns.Record`s.
 
@@ -1321,8 +1321,8 @@ entry .query   a DNS query to a nameserver over UDP: one message out, its answer
       import socketBackends.javaBaseSockets
 
       val resolver = ip"9.9.9.9" on udp"domain"
-      val addresses = resolver.query(dns"example.com").map(_.rdata)
-      val mail = resolver.query(dns"example.com", Dns.Type.MX)
+      val addresses = resolver.ask(dns"example.com").map(_.rdata)
+      val mail = resolver.ask(dns"example.com", Dns.Type.MX)
       ```
 
       The wait is bounded by a `Socket.Option.Timeout` in scope, or five seconds; a lost
@@ -1330,7 +1330,8 @@ entry .query   a DNS query to a nameserver over UDP: one message out, its answer
       is no retransmission. Any other socket failure passes through as a `Socket.Error`. The
       method needs a `Socket.Backend` and the `Every[Socket.Option.Udp]` in scope, and raises
       `Dns.Error` and `Socket.Error`. The message and record types are urticose's `Dns`.
-      It is `query` rather than `lookup`, a name `soundness` reserves for anamnesis.
+      It is `ask` rather than `lookup`, `resolve` or `query`, names `soundness` reserves for
+      anamnesis, syndesis and telekinesis.
   refer coaxial.Socket.Backend
 
 entry .Tls   the configuration of a TLS connection: trust and keys, verification, ALPN, versions, mutual auth
