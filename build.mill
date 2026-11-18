@@ -859,7 +859,7 @@ object soundness extends Fork:
     facsimile.core, facsimile.file, gastronomy.core, gastronomy.multihash, chiaroscuro.core,
     chiaroscuro.render, jacinta.core,
     monotonous.core,
-    panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
+    panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, zephyrine.layout, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
     enigmatic.x509,
@@ -2861,7 +2861,7 @@ object perihelion extends Library:
   object test extends Tests(core, jacinta.core, scintillate.server, eucalyptus.core)
 
 object phoenicia extends Library:
-  object core extends Component(quantitative.units, polaris.core, turbulence.core):
+  object core extends Component(quantitative.units, zephyrine.layout, turbulence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The `detectables` which recognise a font file: phoenicia's only use of gesticulate.
@@ -3888,7 +3888,11 @@ object zephyrine extends Library:
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, capricious.core, parasite.core):
+  // Fixed layouts: records of sized integers, which are hypotenuse's, derived from case classes.
+  object layout extends Component(core, hypotenuse.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, layout, capricious.core, parasite.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units):

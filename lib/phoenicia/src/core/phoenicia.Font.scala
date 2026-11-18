@@ -60,6 +60,7 @@ object Font:
       extends Reason(9)
 
       case MissingFeature(typeface: Text, feature: Face.Feature) extends Reason(10)
+      case TruncatedTable(tag: Sfnt.Table.Tag) extends Reason(11)
 
     given communicable: Reason is Communicable =
       case Reason.MissingTable(tag)     => m"the table ${tag.text} was not found"
@@ -84,6 +85,9 @@ object Font:
 
       case Reason.MissingFeature(typeface, feature) =>
         m"$typeface does not implement the layout feature ${feature.show}"
+
+      case Reason.TruncatedTable(tag) =>
+        m"the table ${tag.text} is shorter than its layout"
 
   case class Error(reason: Font.Error.Reason)(using Diagnostics)
   extends fulminate.Error(89, 1, reason.number)(m"the font could not be used because $reason")
