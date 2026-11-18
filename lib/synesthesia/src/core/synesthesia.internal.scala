@@ -333,7 +333,7 @@ object internal:
                           // user interface, or the plainest type for its form.
                           def mimeType(plain: Expr[Text]): Expr[Text] =
                             ' {
-                                $annotation.mimeType.or:
+                                ($annotation.mimeType: Optional[Text]).or:
                                   if List(${Varargs(uiUris)}*).exists(_ == $uri)
                                   then t"text/html;profile=mcp-app"
                                   else $plain
@@ -552,7 +552,7 @@ object internal:
                 title       = $title,
                 description = $about,
                 mimeType    =
-                  $annotation.mimeType.or:
+                  ($annotation.mimeType: Optional[Text]).or:
                     if List(${Varargs(uiUris)}*).exists(_ == $uri)
                     then t"text/html;profile=mcp-app"
                     else $plain )
