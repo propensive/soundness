@@ -158,7 +158,6 @@ lib/plutocrat/src/core/plutocrat.internal.scala	1	0	6
 lib/pneumatic/src/core/pneumatic.ByteSink.scala	1	0	0
 lib/pneumatic/src/core/pneumatic.Deflater.scala	40	20	0
 lib/pneumatic/src/core/pneumatic.Inflater.scala	48	17	0
-lib/polaris/src/core/polaris.Debufferable.scala	0	4	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	8	8	2
 lib/polysyllabic/src/core/polysyllabic.TexPatterns.scala	7	0	8
 lib/polysyllabic/src/core/polysyllabic_core.scala	8	2	5

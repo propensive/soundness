@@ -2928,14 +2928,6 @@ object pneumatic extends Library:
     override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(mvn"org.tukaani:xz:1.10")
 
-object polaris extends Library:
-  object core extends Component(hypotenuse.core, wisteria.core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions())
-
 object polyvinyl extends Library:
   object core extends Component(fulminate.core, contingency.core):
     override def scalacOptions = Task:
@@ -3941,7 +3933,7 @@ val allLibraries: Seq[Library] = Seq(
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
   mosquito, murmuration, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
-  perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, praxinoscope,
+  perihelion, phoenicia, plutocrat, pneumatic, polysyllabic, polyvinyl, praxinoscope,
   prepositional,
   prescience,
   probably, profanity, prophesy,

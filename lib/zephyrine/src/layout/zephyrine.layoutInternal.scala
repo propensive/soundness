@@ -43,19 +43,19 @@ import rudiments.*
 object layoutInternal:
   // Stores of a fixed-width integer at a position in a mutable array, in each byte order: the
   // counterparts of the loads on `Data`.
-  def store8(target: scala.Array[Byte]^, offset: Int, value: Byte): Unit = target(offset) = value
+  def store8(target: Array[Byte]^, offset: Int, value: Byte): Unit = target(offset) = value
 
-  def store16(target: scala.Array[Byte]^, offset: Int, value: Short, big: Boolean): Unit =
+  def store16(target: Array[Byte]^, offset: Int, value: Short, big: Boolean): Unit =
     val high = if big then offset else offset + 1
     target(high) = (value >> 8).toByte
     target(2*offset + 1 - high) = value.toByte
 
-  def store32(target: scala.Array[Byte]^, offset: Int, value: Int, big: Boolean): Unit =
+  def store32(target: Array[Byte]^, offset: Int, value: Int, big: Boolean): Unit =
     val high = if big then offset else offset + 2
     store16(target, high, (value >> 16).toShort, big)
     store16(target, 2*offset + 2 - high, value.toShort, big)
 
-  def store64(target: scala.Array[Byte]^, offset: Int, value: Long, big: Boolean): Unit =
+  def store64(target: Array[Byte]^, offset: Int, value: Long, big: Boolean): Unit =
     val high = if big then offset else offset + 4
     store32(target, high, (value >> 32).toInt, big)
     store32(target, 2*offset + 4 - high, value.toInt, big)
@@ -71,7 +71,7 @@ object layoutInternal:
     if !symbol.isClassDef || !symbol.flags.is(Flags.Case) then
       report.errorAndAbort(s"a layout can be derived only for a case class, not ${record.show}")
 
-    type Target = scala.Array[Byte]^
+    type Target = Array[Byte]^
 
     // What is known of one field: its width in bytes if it is a sized integer, or the instance
     // its type defers to if it is not.
@@ -201,6 +201,6 @@ object layoutInternal:
           def width: Int = ${offsets('{0}).last}
           def load(data: Data, offset: Int): record = ${loader('data, 'offset)}
 
-          def store(value: record, target: scala.Array[Byte]^, offset: Int): Unit =
+          def store(value: record, target: Array[Byte]^, offset: Int): Unit =
             ${storer('value, 'target, 'offset)}
       }

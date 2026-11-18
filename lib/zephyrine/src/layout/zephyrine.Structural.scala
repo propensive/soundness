@@ -82,4 +82,4 @@ trait Structural extends Typeclass:
 
   // Lays the value out in the `width` bytes of `target` from `offset`, which the caller has
   // checked are there; `pack` is the checked entry point.
-  def store(value: Self, target: scala.Array[Byte]^, offset: Int): Unit
+  def store(value: Self, target: Array[Byte]^, offset: Int): Unit

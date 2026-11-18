@@ -70,6 +70,6 @@ extension (expanse: Expanse^)
 extension [record: Structural](value: record)
   // The value's bytes: exactly as many as its layout is wide.
   def pack: Data =
-    val target = new scala.Array[Byte](record.width)
+    val target: Array[Byte]^ = Array.allocate[Byte](record.width)
     record.store(value, target, 0)
-    Array.unsafeFrozen(target)
+    Array.freeze(target)

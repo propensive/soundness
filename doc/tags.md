@@ -92,7 +92,6 @@ perihelion: websocket frame ws-protocol
 phoenicia: fonts typography ttf truetype font-metrics opentype
 plutocrat: currency money price finance luhn isin fixed-point
 pneumatic: compression deflate gzip zlib brotli xz lzma2 lzw
-polaris: binary-serialization buffer pack unpack byte-buffer
 polysyllabic: hyphenation liang-algorithm line-breaking typesetting
 polyvinyl: structural-types records anonymous-records type-providers
 praxinoscope: regex re2 automaton linear-time regex-engine redos
@@ -141,5 +140,5 @@ xenophile: ffi foreign-interop wit webidl typescript kotlin wasm native
 xylophone: xml xml-schema typesafe-xml dynamic-xml
 yossarian: pty terminal-emulator ansi-escape screen-buffer vt100 cursor
 ypsiloid: yaml parser serialization yaml-ast anchors
-zephyrine: parser parsing cursor emitter sparse-format
+zephyrine: parser parsing cursor emitter sparse-format binary-layout pack unpack
 zeppelin: zip archive zip-file compression

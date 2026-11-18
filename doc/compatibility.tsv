@@ -116,7 +116,6 @@ perihelion	yes	no	no	no		depends on JVM-only `exoskeleton.core` and `telekinesis
 phoenicia	yes	yes	yes	js		
 plutocrat	yes	yes	yes	js		
 pneumatic	yes	yes	yes	js		
-polaris	yes	yes	yes	js		
 polysyllabic	yes	yes	yes	js		
 polyvinyl	yes	yes	yes	js		
 praxinoscope	yes	yes	yes	js		

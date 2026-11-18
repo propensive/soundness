@@ -73,7 +73,6 @@ echo —————————— STAGE 4 ——————————
   lib/revolution/src/core/*.scala \
   lib/zeppelin/src/core/*.scala \
   lib/burdock/src/core/*.scala \
-  lib/polaris/src/core/*.scala \
   lib/ulysses/src/core/*.scala \
   lib/camouflage/src/core/*.scala \
   lib/panopticon/src/core/*.scala \

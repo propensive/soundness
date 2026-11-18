@@ -45,7 +45,7 @@ row  36  Stenography
 row  37  Vexillology
 row  38  Vicarious
 row  39  Wisteria
-row  40  Polaris
+row  40  Polaris (retired)
 row  41  Spectacular
 row  42  Gossamer
 row  43  Charisma
