@@ -33,9 +33,9 @@ detail
 
     A layout also says whether it is meant to be written to: `readOnly` is `true` for
     `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the per-process
-    directories under `/proc`. The layouts are fixed paths: `Home.Config` is always
-    `$HOME/.config`, whatever `XDG_CONFIG_HOME` says; for the XDG-aware locations, use
-    ambience's `Xdg` values.
+    directories under `/proc`. The five `Home` layouts which the XDG Base Directory
+    specification lets a user move follow its variables: `Home.Config` is `$HOME/.config`
+    unless `XDG_CONFIG_HOME` is set to an absolute path, when it is that path.
 
     The library has a single source set, `imperial.core`, and everything is exported to the
     `soundness` umbrella.
@@ -87,9 +87,12 @@ entry .BaseLayout   a directory in a standard layout, resolved to any path type 
       directories of `/proc`; `false` for every layout under `Home`.
   entry #Topic   the directory names from this node up to its root, as a tuple type
   entry #absolutePath   the layout's absolute path, as text
-      Needs an `Environment` and a `System`. A layout under `Home` reads the `HOME`
-      environment variable, without a trailing `/`, and raises `Environment.Error` if it
-      is unset.
+      Needs an `Environment` and a `System`. A layout which names a `#variable` is that
+      variable's value, if it is an absolute path. Otherwise a layout under `Home` reads
+      the `HOME` environment variable, without a trailing `/`, and raises
+      `Environment.Error` if it is unset.
+  entry #variable   the environment variable which relocates the layout, if there is one
+  entry #relocation   where `#variable` puts the layout: its value, if set to an absolute path
   entry #dir   the `BaseLayout.Dir` of this layout, given to the layouts nested in it
   entry #apply   the layout's absolute path, as a path type of the caller's choosing
       `layout[Path on Linux]()` makes a value of any type which is `Instantiable across
@@ -113,21 +116,23 @@ entry .Home   the user's home directory, `$HOME`, and the standard directories b
       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
       ```
 
-      The paths are fixed: `Home.Config` is `$HOME/.config` even where `XDG_CONFIG_HOME`
-      names another directory, so a program which should honour the XDG variables should
-      use ambience's `Xdg` instead.
+      `Cache`, `Config`, `Local.Bin`, `Local.Share` and `Local.State` are the directories
+      the XDG Base Directory specification lets a user move, and each is where its variable
+      says when that is set to an absolute path: `Home.Config` is `$XDG_CONFIG_HOME`, and
+      `$HOME/.config` otherwise. A relative or empty value is ignored, as the specification
+      requires. The other layouts are fixed.
   refer imperial.BaseLayout
   refer imperial.Base
-  entry .Cache   the user's cache directory, `~/.cache`
-  entry .Config   the user's configuration directory, `~/.config`
+  entry .Cache   the user's cache directory, `$XDG_CACHE_HOME` or `~/.cache`
+  entry .Config   the user's configuration directory, `$XDG_CONFIG_HOME` or `~/.config`
   entry .Local   the user's local installation prefix, `~/.local`
     detail
         The per-user counterpart of `/usr`, holding a user's own programs, libraries, data
         and state.
-    entry .Bin   the user's own executables, `~/.local/bin`
+    entry .Bin   the user's own executables, `$XDG_BIN_HOME` or `~/.local/bin`
     entry .Lib   the user's own libraries, `~/.local/lib`
-    entry .Share   the user's own application data, `~/.local/share`
-    entry .State   the user's application state, `~/.local/state`
+    entry .Share   the user's own application data, `$XDG_DATA_HOME` or `~/.local/share`
+    entry .State   the user's application state, `$XDG_STATE_HOME` or `~/.local/state`
 
 entry .Base   the filesystem root, `/`, and the standard system directories beneath it
   detail

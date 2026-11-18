@@ -676,13 +676,13 @@ column  Layout
 column  Directory
 column  Read-only
 row  `Home`  `~`  no
-row  `Home.Cache`  `~/.cache`  no
-row  `Home.Config`  `~/.config`  no
+row  `Home.Cache`  `~/.cache`, or `$XDG_CACHE_HOME`  no
+row  `Home.Config`  `~/.config`, or `$XDG_CONFIG_HOME`  no
 row  `Home.Local`  `~/.local`  no
-row  `Home.Local.Bin`  `~/.local/bin`  no
+row  `Home.Local.Bin`  `~/.local/bin`, or `$XDG_BIN_HOME`  no
 row  `Home.Local.Lib`  `~/.local/lib`  no
-row  `Home.Local.Share`  `~/.local/share`  no
-row  `Home.Local.State`  `~/.local/state`  no
+row  `Home.Local.Share`  `~/.local/share`, or `$XDG_DATA_HOME`  no
+row  `Home.Local.State`  `~/.local/state`, or `$XDG_STATE_HOME`  no
 row  `Base`  `/`  no
 row  `Base.Boot`  `/boot`  yes
 row  `Base.Dev`  `/dev`  no
@@ -717,10 +717,10 @@ row  `Base.Var.Spool`  `/var/spool`  no
 row  `Base.Var.Tmp`  `/var/tmp`  no
 ```
 
-A layout is a fixed place. `Home.Config` is always `$HOME/.config`, and only `$HOME` is read
-from the environment. The locations which the
-[XDG specification](environment.md#standard-directories) lets the user move, such as
-`$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout constructs a value of
+Most layouts are fixed places. The five which the
+[XDG specification](environment.md#standard-directories) lets the user move are not:
+`Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
+that to an absolute path. Applying a layout constructs a value of
 whichever directory type is asked for, so the same names serve a `Path on Linux` and any
 other representation.
 
