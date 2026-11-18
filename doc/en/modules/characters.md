@@ -194,6 +194,11 @@ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`, which always skips bad b
 
 Every other charset uses the sanitizer in scope.
 
+Encoding has the opposite problem: a character which the encoding has no bytes for, such as `é`
+in ASCII. By default a `Codepage` writes the encoding's substitute, `?`, in its place. With
+`encodingSanitizers.strictEncodingSanitizer` imported, it raises a `Codepage.Error` which names
+the character instead.
+
 Encoding and decoding also work as stages of a [stream](streams.md#composing-a-pipeline). A
 multi-byte character which is split across two chunks is carried over the boundary, not
 corrupted. That includes a surrogate pair split between chunks, which is where a naive

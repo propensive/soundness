@@ -312,7 +312,7 @@ lib/hieroglyph/src/core/hieroglyph.Codepage.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	
 lib/hieroglyph/src/core/hieroglyph.CollationTable.scala	0	0	0	0	1	0	0	0	0	0	2	0	2	0	2	0	0
 lib/hieroglyph/src/core/hieroglyph.Normalization.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	2	0	0
 lib/hieroglyph/src/core/hieroglyph.Unicode.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/hieroglyph/src/core/hieroglyph_core.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+lib/hieroglyph/src/core/hieroglyph_core.scala	3	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/hieroglyph/src/test/hieroglyph_test.scala	0	0	0	0	4	0	0	0	0	0	6	0	2	0	0	0	0
 lib/honeycomb/src/core/honeycomb.Dom.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/honeycomb/src/core/honeycomb.Html.scala	2	0	1	0	3	5	0	0	5	5	1	0	1	0	0	0	0

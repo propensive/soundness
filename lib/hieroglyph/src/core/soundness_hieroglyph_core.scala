@@ -35,10 +35,14 @@ package soundness
 export
   hieroglyph
   . { Bel, Bs, Bsl, Charset, Codepage, Chars, Cr,
-      description, Dqt, enc, Encoding, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule, Measurable,
+      description, Dqt, enc, Encoding, EncodingSanitizer, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule,
+      Measurable,
       metrics, minuscule, Normalization, Nul, Sqt, subscript, superscript, TextSanitizer, ucs,
       Unicode, WideCharacterWidth, whitespace, control, designation, printable, unicode, letter,
       digit, alphanumeric, majuscular, minuscular }
+
+package encodingSanitizers:
+  export hieroglyph.encodingSanitizers.{strictEncodingSanitizer, substituteEncodingSanitizer}
 
 package textSanitizers:
   export hieroglyph.textSanitizers.{skipSanitizer, strictSanitizer, substituteSanitizer,

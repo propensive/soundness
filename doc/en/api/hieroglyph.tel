@@ -302,8 +302,9 @@ entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of
       ```
 
       A character the encoding cannot represent is replaced (with the encoding's substitute,
-      `?` for ASCII) rather than raised: `Codepage.Error` exists for a caller which wants to
-      report one, but `#encoded` itself does not raise it. Encoding a stream is incremental
+      `?` for ASCII) by default. Under `encodingSanitizers.strictEncodingSanitizer` it raises
+      `Codepage.Error` instead; the `EncodingSanitizer` in scope where the codepage is
+      summoned decides. Encoding a stream is incremental
       and stages characters through a buffer, so a surrogate pair split across two chunks is
       encoded as one astral character, where encoding each chunk alone would corrupt it.
 
@@ -324,13 +325,15 @@ entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of
   entry .Error   a character which the encoding cannot represent
     detail
         Error `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_. The
-        error type for a character outside an encoding's repertoire. `Codepage#encoded` does
-        not raise it — an unmappable character is replaced, as `String#getBytes` replaces it —
-        so it is for callers which detect the condition themselves.
+        error type for a character outside an encoding's repertoire. `Codepage#encoded`
+        raises it under `encodingSanitizers.strictEncodingSanitizer`; by default an unmappable
+        character is replaced, as `String#getBytes` replaces it.
     entry #char   the character which could not be encoded
     entry #encoding   the encoding which could not encode it
   entry #encoding   the encoding this codepage encodes with, known to be able to encode
       Typed `Encoding { type CanEncode = true }`.
+  entry #sanitizer   the `EncodingSanitizer` consulted at each character which cannot be encoded
+  entry #sanitized   the same codepage under another `EncodingSanitizer`
   entry #Self   what this codepage consumes: `Text`
   entry #Form   what this codepage produces: `Data`
   entry #encoded   the bytes of a text, or a stream of bytes from a stream of text
@@ -339,7 +342,8 @@ entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of
       encoding buffer-load by buffer-load: a surrogate pair whose halves fall in different
       chunks is carried across and encoded whole, a stateful encoding is flushed once at the
       end, and empty chunks are dropped from the output. Malformed or unmappable input is
-      replaced, never raised.
+      replaced, or reported to the codepage's `EncodingSanitizer`, which the strict one
+      raises as `Codepage.Error`.
 
       ```scala
       import soundness.*
@@ -839,8 +843,37 @@ entry .codepages   the standard encoders, each a `Codepage` given to import by n
   entry .utf16BeCodepage   UTF-16 big-endian, without a byte-order mark
   entry .asciiCodepage   US-ASCII; a character above `0x7f` is written as `?`
   entry .iso88591Codepage   ISO-8859-1 (Latin-1); a character above `0xff` is written as `?`
-      Declared in `hieroglyph.codepages` only; the `soundness` umbrella's `codepages` package
-      does not re-export it, so it is imported as `hieroglyph.codepages.iso88591Codepage`.
+
+entry .encodingSanitizers   the policies for unencodable characters, each an `EncodingSanitizer` given to import by name
+  detail
+      A `Codepage` consults the `EncodingSanitizer` in scope where it is summoned for each
+      character its encoding cannot represent. Unlike a `TextSanitizer`, one is always
+      available: the default, in `EncodingSanitizer`'s companion, substitutes silently, so
+      importing from here is needed only to be strict.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import encodingSanitizers.strictEncodingSanitizer
+
+      codepages.asciiCodepage.encoded(t"café")   // raises Codepage.Error('é', ASCII)
+      ```
+  refer hieroglyph.EncodingSanitizer
+  refer hieroglyph.Codepage
+  entry .strictEncodingSanitizer   an unencodable character raises `Codepage.Error`; needs a `Tactic[Codepage.Error]`
+  entry .substituteEncodingSanitizer   an unencodable character is written as the encoding's substitute: the default, by name
+
+entry .EncodingSanitizer   what a `Codepage` does with a character its encoding cannot represent
+  detail
+      The encoding counterpart of `TextSanitizer`. The codepage calls `#unmappable` with each
+      character it cannot encode; if that returns, the encoding's substitute is written in
+      the character's place. An instance whose `#substitutes` is `true` is never called, and
+      the substitution is left to the JDK's encoder, which is the fast path the default
+      takes.
+  refer hieroglyph.encodingSanitizers
+  entry .substitute   the default: substitute silently
+  entry #substitutes   whether unencodable characters are replaced without `#unmappable` being called
+  entry #unmappable   called with each character which cannot be encoded, and the encoding
 
 entry .textSanitizers   the policies for undecodable bytes, each a `TextSanitizer` given to import by name
   detail
