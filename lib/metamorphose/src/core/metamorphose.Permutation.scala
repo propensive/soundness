@@ -71,19 +71,24 @@ object Permutation:
 
     unchecked(sequence)
 
-  // The Lehmer code of a sequence already known to be a permutation of its own indices: what
-  // `apply` checks, and what `inverse` constructs.
+  // The number of a sequence already known to be a permutation of its own indices: what `apply`
+  // checks, and what `inverse` constructs. The digit for each position is its entry in the
+  // inversion table: how many of the indices before it are greater than it. Position `i` has
+  // at most `i` of those, so it is a digit in base `i + 1`, with weight `i!`; and an index
+  // which stays in place after every moved one has none, so adds nothing. The number is
+  // therefore the same however many fixed indices follow, which is what lets a permutation
+  // act on the front of any longer sequence.
   private def unchecked(sequence: Sequence[Int]): Permutation =
-    val array: scala.Array[Int]^ = new scala.Array(sequence.size)
     val seen: BitSet = BitSet()
     var index = 0
+    var digits: List[Int] = Nil
 
     sequence.each: element =>
-      array(index) = element - seen.count(_ < element)
+      digits = (index - seen.count(_ < element)) :: digits
       seen(element) = true
       index += 1
 
-    Permutation(Factoradic.unchecked(array.iterator.to(List)))
+    Permutation(Factoradic.unchecked(digits))
 
   // PermutationError → Permutation.Error
   object Error:
@@ -111,9 +116,43 @@ object Permutation:
   case class Error(reason: Permutation.Error.Reason)(using Diagnostics)
   extends fulminate.Error(28, 1, reason.number)(m"could not construct permutation because $reason")
 
+// A permutation of the natural numbers which moves only finitely many of them: it rearranges
+// the first `extent` positions, and fixes every position from `extent` on. So it is not tied to
+// one length: `Permutation(Sequence(0, 2, 1))` and `Permutation(Sequence(0, 2, 1, 3, 4))` are the
+// same permutation, which acts on any sequence of three elements or more.
 case class Permutation(factoradic: Factoradic):
-  lazy val lehmer: List[Int] = factoradic.expand
-  lazy val expansion: List[Int] = permute(List.range(0, lehmer.size))
+  // The inversion table, most significant digit first: the entry for position `extent - 1`,
+  // which is never zero, down to the entry for position 0, which always is.
+  private lazy val digits: List[Int] = factoradic.expand
+
+  // The number of leading positions the permutation rearranges: one more than the last
+  // position it moves, or zero for the identity.
+  lazy val extent: Int = digits.size
+
+  // For each of the first `extent` positions in order, how many earlier positions hold a
+  // greater index.
+  lazy val inversions: List[Int] = digits.reverse
+
+  // The index at each of the first `extent` positions.
+  lazy val expansion: List[Int] =
+    // Decoded from the last position back: among the indices not yet placed, which are those
+    // of positions `0` to `position`, the one with `digit` greater indices beside it.
+    def recur(digits: List[Int], position: Int, remaining: List[Int], result: List[Int])
+    :   List[Int] =
+
+      digits match
+        case digit :: more =>
+          remaining.skip(position - digit) match
+            case index :: after =>
+              recur(more, position - 1, remaining.keep(position - digit) + after, index :: result)
+
+            case _ =>
+              result
+
+        case _ =>
+          result
+
+    recur(digits, extent - 1, List.range(0, extent), Nil)
 
   def apply(n: Int): Int =
     // A permutation fixes every point outside its domain; `List` positional access is
@@ -122,44 +161,23 @@ case class Permutation(factoradic: Factoradic):
     expansion(Ordinal.zerary(n)).or(n)
 
   def apply[element](sequence: List[element]): List[element] raises Permutation.Error =
-    if sequence.size < lehmer.size then
-      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.size, lehmer.size)))
+    if sequence.size < extent then
+      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.size, extent)))
 
     permute(sequence)
 
-  // Applies the permutation to a sequence of at least `lehmer.size` elements: what `apply`
-  // checks, and what `List.range(0, lehmer.size)` is by construction.
+  // Applies the permutation to a sequence of at least `extent` elements: what `apply` checks.
+  // The first `extent` elements are rearranged, each position taking the element at the index
+  // `expansion` gives it, and the rest follow unmoved.
   private def permute[element](sequence: List[element]): List[element] =
-    def recur
-      ( lehmer:  List[Int],
-        prefix:  List[element],
-        list:    List[element],
-        current: Int,
-        result:  List[element] )
-    :   List[element] =
+    // `List` positional access is O(n), accepted here explicitly through the asymptotic gate.
+    import denominative.dysasymptotics.linearAccess
+    val moved = sequence.keep(extent)
+    expansion.flatMap { index => moved(Ordinal.zerary(index)).lay(Nil)(List(_)) } +
+      sequence.skip(extent)
 
-      lehmer match
-        case head :: tail =>
-          if current == head then list match
-            case first :: rest => recur(tail, prefix, rest, current, first :: result)
-            case Nil           => result.reverse
-          else if current < head then list match
-            case first :: rest => recur(lehmer, first :: prefix, rest, current + 1, result)
-            case Nil           => result.reverse
-          else prefix match
-            case first :: rest => recur(lehmer, rest, first :: list, current - 1, result)
-            case Nil           => result.reverse
-
-        case Nil =>
-          result.reverse
-
-
-    val prefix = sequence.size - lehmer.size
-    sequence.keep(prefix) + recur(lehmer, Nil, sequence.skip(prefix), 0, Nil)
-
-  def inverse: Permutation = if lehmer.nil then this else
-    val length = lehmer.size
-    val array: scala.Array[Int]^ = new scala.Array(lehmer.size)
+  def inverse: Permutation = if extent == 0 then this else
+    val array: scala.Array[Int]^ = new scala.Array(extent)
     var index = 0
     var sequence: List[Int] = expansion
 

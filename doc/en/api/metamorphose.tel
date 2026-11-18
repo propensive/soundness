@@ -3,7 +3,7 @@ tel 1.0
 base metamorphose
 import soundness
 
-info   permutations as reversible rearrangements, stored compactly as factorial-base Lehmer codes
+info   permutations as reversible rearrangements, stored compactly as factorial-base inversion tables
 detail
     _Metamorphose_ represents a permutation — a reversible rearrangement of a sequence — as a
     single number. A `Permutation` is built from the reordered indexes, applied to any list at
@@ -21,7 +21,8 @@ detail
     shuffle.inverse(shuffle(items)) == items   // true
     ```
 
-    Internally a permutation is its [Lehmer code](https://en.wikipedia.org/wiki/Lehmer_code)
+    Internally a permutation is its
+    [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))
     written in the factorial number system, a `Factoradic`: one integer which uniquely
     identifies it, so permutations are compact to store and to enumerate, and
     `Permutation.bySize(n)` lists all `n!` of them in order. A permutation of *n* elements takes
@@ -35,7 +36,7 @@ refer metamorphose.Permutation
 refer metamorphose.Factoradic
 refer metamorphose.Factorial
 
-entry .Permutation   a reversible rearrangement of a sequence, stored as its factoradic Lehmer code
+entry .Permutation   a reversible rearrangement of a sequence, stored as its factoradic inversion table
   detail
       A `Permutation` is made from the reordered indexes of a sequence with `.apply`, which
       checks that they are exactly `0` to `n - 1` once each, or directly from its number with
@@ -45,19 +46,21 @@ entry .Permutation   a reversible rearrangement of a sequence, stored as its fac
       import soundness.*
       import strategies.throwUnsafely
 
-      Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
+      Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
 
       val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
-      shuffle.lehmer      // the Lehmer code, as a List[Int]
-      shuffle.expansion   // List(3, 1, 4, 2, 0, 5)
+      shuffle.inversions   // List(0, 1, 0, 2, 4)
+      shuffle.expansion    // List(3, 1, 4, 2, 0)
+      shuffle.extent       // 5: the sixth index stays in place
       ```
 
       Applied to a list, it rearranges the elements (`#apply`); `#inverse` undoes it. A
-      permutation does not record the length it was built from, only the shortest suffix it
-      moves: the identity of any size is `Permutation(Factoradic(0))`, and a permutation which
-      leaves its leading elements in place has a shorter `#lehmer` than its index sequence.
-      Applied to a longer list, it leaves the excess leading elements where they are and
-      rearranges the rest.
+      permutation does not record the length it was built from, only the leading positions it
+      rearranges, its `#extent`: the identity of any size is `Permutation(Factoradic(0))`, and
+      `Permutation(Sequence(0, 2, 1))` equals `Permutation(Sequence(0, 2, 1, 3, 4))`. It is a
+      permutation of the natural numbers which moves finitely many of them. Applied to a
+      longer list, it rearranges the first `#extent` elements and leaves the rest where they
+      are.
 
       A permutation encodes as `Data` (`.encodable`), the big-endian two's-complement bytes of
       its factoradic number: `permutation.in[Data]`.
@@ -106,7 +109,7 @@ entry .Permutation   a reversible rearrangement of a sequence, stored as its fac
         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  a digit given to `Factoradic(List(…))` is not below its position's base
         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` met an index for the second time; `element` is the position at which it reappeared
         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  an index given to `Permutation(Sequence(…))` is negative or not below the sequence's length
-        row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` was given a list shorter than the permutation's Lehmer code
+        row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` was given a list shorter than the permutation's extent
         ```
 
         ```scala
@@ -124,18 +127,22 @@ entry .Permutation   a reversible rearrangement of a sequence, stored as its fac
     entry .communicable   renders each `Permutation.Error.Reason` as a message
     entry #reason   why the permutation could not be made or applied
   entry #factoradic   the permutation's number, in the factorial number system
-  entry #lehmer   the permutation's Lehmer code: for each position, how many smaller indexes come after it
-      `#factoradic` expanded into its digits, most significant first, with no leading zeros, so
-      it is as long as the suffix the permutation moves. Each digit counts how many of the
-      remaining indexes are smaller than the one chosen at that position.
-  entry #expansion   the reordered indexes: the permutation applied to `0` to `n - 1`
-      The indexes `.apply` was given, for a permutation whose first element moves: for
-      `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0, 5)`. It is as long as
-      `#lehmer`, so it omits any leading indexes the permutation leaves in place.
+  entry #extent   how many leading positions the permutation rearranges: one more than the last position it moves
+      Zero for the identity. Every position from `#extent` on is fixed.
+  entry #inversions   the inversion table: for each position, how many earlier positions hold a greater index
+      One entry for each of the first `#extent` positions, in order. The entry for position
+      *i* is at most *i*, so it is a digit in base *i* + 1: these are the digits of
+      `#factoradic`, least significant first. A position which stays in place after every
+      moved one has no greater index before it, which is why trailing fixed positions add
+      nothing to the number.
+  entry #expansion   the reordered indexes: the permutation applied to `0` to `extent - 1`
+      The indexes `.apply` was given, up to the last one which moves: for
+      `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0)`. It is as long as
+      `#extent`, so it omits any trailing indexes the permutation leaves in place.
   entry #apply   rearranges a list, or gives the index one position takes its element from
-      `permutation(list)` rearranges a list at least as long as `#lehmer`, raising
-      `Permutation.Error` with `TooShort` otherwise; a longer list keeps its excess leading
-      elements in place and has the rest rearranged.
+      `permutation(list)` rearranges a list at least as long as `#extent`, raising
+      `Permutation.Error` with `TooShort` otherwise; a longer list has its first `#extent`
+      elements rearranged and keeps the rest in place.
 
       ```scala
       import soundness.*
@@ -154,7 +161,7 @@ entry .Permutation   a reversible rearrangement of a sequence, stored as its fac
       For every list `xs` long enough, `p.inverse(p(xs)) == xs`. The identity is its own
       inverse.
 
-entry .Factoradic   a non-negative integer in the factorial number system, as a Lehmer code is written
+entry .Factoradic   a non-negative integer in the factorial number system, as an inversion table is written
   detail
       In the factorial number system, the digit at position *i* from the right has base *i* + 1
       and place value *i*!, so every non-negative integer has one representation, and the
@@ -178,7 +185,7 @@ entry .Factoradic   a non-negative integer in the factorial number system, as a 
   entry #number   the integer, as a `BigInt`
   entry #expand   the number's digits, most significant first, with no leading zeros
       `Factoradic(0).expand` is `Nil`; otherwise the list ends in the always-zero units digit.
-      This is a permutation's `#lehmer`.
+      Reversed, this is a permutation's `#inversions`.
 
 entry .Factorial   factorials as `BigInt`s, and the factorial sequences the factoradic encoding uses
   detail

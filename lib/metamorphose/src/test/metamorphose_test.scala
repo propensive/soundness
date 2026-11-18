@@ -130,7 +130,7 @@ object Tests extends Suite("permutations", m"Metamorphose tests"):
       test(m"Check input is long enough"):
         val permutation = Permutation(Sequence(3, 1, 4, 2, 0, 5))
         capture[Permutation.Error](permutation(List(1, 2, 3)))
-      . assert(_ == Permutation.Error(Permutation.Error.Reason.TooShort(3, 6)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.TooShort(3, 5)))
 
       test(m"Check uniqueness of permutations"):
         val list = List("one", "two", "three", "four", "five", "six", "seven")
@@ -145,6 +145,51 @@ object Tests extends Suite("permutations", m"Metamorphose tests"):
           inversion(applied)
         . assert(_ == list)
 
+
+      Permutation.bySize(6).each: permutation =>
+        val images = permutation(List(0, 1, 2, 3, 4, 5))
+
+        test(m"Index-wise application agrees with applying to a list"):
+          List(0, 1, 2, 3, 4, 5).map(permutation(_))
+        . assert(_ == images)
+
+        test(m"A permutation is recovered from its images"):
+          Permutation(images.to[Sequence])
+        . assert(_ == permutation)
+
+      test(m"A permutation which fixes its first index maps each index correctly"):
+        val permutation = Permutation(Sequence(0, 2, 1))
+        List(permutation(0), permutation(1), permutation(2))
+      . assert(_ == List(0, 2, 1))
+
+      test(m"Fixed indices after the moved ones do not change the permutation"):
+        Permutation(Sequence(0, 2, 1, 3, 4))
+      . assert(_ == Permutation(Sequence(0, 2, 1)))
+
+      test(m"Fixed indices before the moved ones do change it"):
+        Permutation(Sequence(0, 2, 1)) == Permutation(Sequence(1, 0))
+      . assert(!_)
+
+      test(m"A permutation leaves the rest of a longer list in place"):
+        Permutation(Sequence(0, 2, 1))(List("a", "b", "c", "d", "e"))
+      . assert(_ == List("a", "c", "b", "d", "e"))
+
+      test(m"An index beyond the permutation's extent maps to itself"):
+        Permutation(Sequence(0, 2, 1))(7)
+      . assert(_ == 7)
+
+      test(m"A permutation is the one its number names"):
+        Permutation(Sequence(1, 4, 2, 3, 0))
+      . assert(_ == Permutation(Factoradic(104)))
+
+      test(m"The inversion table counts greater indices before each position"):
+        val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+        (shuffle.inversions, shuffle.expansion, shuffle.extent)
+      . assert(_ == (List(0, 1, 0, 2, 4), List(3, 1, 4, 2, 0), 5))
+
+      test(m"The extent is one more than the last index moved"):
+        Permutation(Sequence(0, 2, 1, 3, 4)).extent
+      . assert(_ == 3)
 
       val indices = Sequence(6, 2, 1, 0, 3, 5, 4)
       val permutation = Permutation(indices)
