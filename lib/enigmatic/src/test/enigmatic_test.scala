@@ -1967,6 +1967,198 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         (outcome, chainOk)
       . assert(_ == (t"", t""))
 
+    suite(m"COSE signatures and keys"):
+      val payload: Data = pangram.in[Data]
+
+      test(m"An ES256 COSE_Sign1 round-trips, tagged 18"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val wire = Cose(payload, key).in[Data]
+        (wire.at(Prim).let(_.toInt & 0xFF), wire.authenticate[Cose](key.public))
+      . assert(_ == (0xD2, true))
+
+      test(m"An ES256 signature is 64 bytes on the wire, not DER"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        Cose(payload, key).recipients.head.let(_.authentication.length)
+      . assert(_ == 64)
+
+      test(m"An ES384 COSE_Sign1 round-trips"):
+        val key = PrivateKey.generate[Ecdsa[384]]()
+        Cose(payload, key).in[Data].authenticate[Cose](key.public)
+      . assert(identity)
+
+      test(m"An EdDSA COSE_Sign1 round-trips"):
+        val key = PrivateKey.generate[Ed25519]()
+        Cose(payload, key).in[Data].authenticate[Cose](key.public)
+      . assert(identity)
+
+      test(m"An RS256 COSE_Sign1 round-trips"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        Cose(payload, key).in[Data].authenticate[Cose](key.public)
+      . assert(identity)
+
+      test(m"A PS256 COSE_Sign1 round-trips"):
+        val key = PrivateKey.generate[RsaPss[2048]]()
+        Cose(payload, key).in[Data].authenticate[Cose](key.public)
+      . assert(identity)
+
+      test(m"A COSE_Sign1 does not verify under another key"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val other = PrivateKey.generate[Ecdsa[256]]()
+        Cose(payload, key).in[Data].authenticate[Cose](other.public)
+      . assert(!_)
+
+      test(m"A key of another algorithm than the header's is refused"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val other = PrivateKey.generate[RsaPss[2048]]()
+        capture[Cose.Error](Cose(payload, key).in[Data].authenticate[Cose](other.public)).reason
+      . assert(_ == Cose.Error.Reason.AlgorithmMismatch(-37L, -257L))
+
+      test(m"A P-256 COSE_Key round-trips, and names ES256"):
+        val key = PrivateKey.generate[Ecdsa[256]]().public
+        val parsed = Cose.Key.parse(Cose.Key(key).encoded.or(panic(m"an EC key has a COSE form")))
+        (parsed.algorithm, parsed.key[Ecdsa[256]].bytes.serialize[Hex] == key.bytes.serialize[Hex])
+      . assert(_ == (-7L, true))
+
+      test(m"A P-256 COSE_Key is written in CTAP2's canonical order"):
+        val key = PrivateKey.generate[Ecdsa[256]]().public
+        Cose.Key(key).encoded.let(_.serialize[Hex].keep(20))
+      . assert(_ == t"A5010203262001215820")
+
+      test(m"An Ed25519 COSE_Key round-trips, and names EdDSA"):
+        val key = PrivateKey.generate[Ed25519]().public
+        val parsed = Cose.Key.parse(Cose.Key(key).encoded.or(panic(m"an OKP key has a COSE form")))
+        (parsed.algorithm, parsed.key[Ed25519].bytes.serialize[Hex] == key.bytes.serialize[Hex])
+      . assert(_ == (-8L, true))
+
+      test(m"An RSA COSE_Key round-trips, and names RS256"):
+        val key = PrivateKey.generate[Rsa[2048]]().public
+        val parsed = Cose.Key.parse(Cose.Key(key).encoded.or(panic(m"an RSA key has a COSE form")))
+        (parsed.algorithm, parsed.key[Rsa[2048]].bytes.serialize[Hex] == key.bytes.serialize[Hex])
+      . assert(_ == (-257L, true))
+
+      test(m"A COSE_Key is not read as a key of another cipher"):
+        val key = PrivateKey.generate[Ecdsa[256]]().public
+        val parsed = Cose.Key.parse(Cose.Key(key).encoded.or(panic(m"an EC key has a COSE form")))
+        capture[PublicKey.Error](parsed.key[Ecdsa[384]]).reason match
+          case PublicKey.Error.Reason.Mismatch(_, _) => true
+          case _                                     => false
+      . assert(identity)
+
+    suite(m"Certificate fields and chains"):
+      import chronometries.unixChronometry
+
+      val period = Instant(1_600_000_000_000L) ~ Instant(1_900_000_000_000L)
+      val during: Clock = Clock.fixed(Instant.of[Unix](1_700_000_000_000L))
+      val after: Clock = Clock.fixed(Instant.of[Unix](1_950_000_000_000L))
+      val globe = Distinguished(commonName = t"Globe Root", organization = t"Globe", country = t"GB")
+      val company = Distinguished(commonName = t"King's Men", organization = t"Globe")
+      val player = Distinguished(commonName = t"burbage.example.com", organizationalUnit = t"Players")
+
+      val rootKey = PrivateKey.generate[Ecdsa[384]]()
+      val companyKey = PrivateKey.generate[Ecdsa[256]]()
+      val playerKey = PrivateKey.generate[Ed25519]()
+
+      val root: Certificate =
+        import signatureDigests.sha384Signature
+        Certificate.selfSigned(globe, rootKey, period, BigInt(1), authority = true)
+
+      val intermediate: Certificate =
+        import signatureDigests.sha384Signature
+        Certificate.issued
+          ( company, companyKey.public, globe, rootKey, period, BigInt(2), authority = true )
+
+      val leaf: Certificate =
+        Certificate.issued(player, playerKey.public, company, companyKey, period, BigInt(3))
+
+      test(m"A certificate's subject and issuer are read back"):
+        (leaf.subject.let(_.commonName), leaf.issuer.let(_.commonName), leaf.serial)
+      . assert(_ == (t"burbage.example.com", t"King's Men", BigInt(3)))
+
+      test(m"A certificate's validity period is read back"):
+        (leaf.notBefore.let(_.long), leaf.notAfter.let(_.long))
+      . assert(_ == (1_600_000_000_000L, 1_900_000_000_000L))
+
+      test(m"A certificate's key is read as a key of its cipher"):
+        leaf.key[Ed25519].bytes.serialize[Hex] == playerKey.public.bytes.serialize[Hex]
+      . assert(identity)
+
+      test(m"A certificate's key is not read as a key of another cipher"):
+        capture[PublicKey.Error](leaf.key[Ecdsa[256]]).reason match
+          case PublicKey.Error.Reason.Mismatch(_, _) => true
+          case _                                     => false
+      . assert(identity)
+
+      test(m"Only a certificate authority's certificate says it is one"):
+        (root.authority, intermediate.authority, leaf.authority)
+      . assert(_ == (true, true, false))
+
+      test(m"An extension is found by its object identifier"):
+        (leaf.extension(List(2, 5, 29, 15)).present, leaf.extension(List(2, 5, 29, 99)).present)
+      . assert(_ == (true, false))
+
+      test(m"A certificate is signed by its issuer and by nobody else"):
+        (leaf.signedBy(intermediate), leaf.signedBy(root), intermediate.signedBy(root))
+      . assert(_ == (true, false, true))
+
+      test(m"A chain that leads to a trusted root is accepted"):
+        given Clock = during
+        Certificate.validate(List(leaf, intermediate), List(root))
+        true
+      . assert(identity)
+
+      test(m"A chain that includes its trusted root is accepted"):
+        given Clock = during
+        Certificate.validate(List(leaf, intermediate, root), List(root))
+        true
+      . assert(identity)
+
+      test(m"A chain with a certificate missing does not lead to the root"):
+        given Clock = during
+        capture[Certificate.Path.Error](Certificate.validate(List(leaf), List(root))).reason
+      . assert(_ == Certificate.Path.Error.Reason.Untrusted)
+
+      test(m"A chain is refused when no root is trusted"):
+        given Clock = during
+        capture[Certificate.Path.Error](Certificate.validate(List(leaf, intermediate), Nil)).reason
+      . assert(_ == Certificate.Path.Error.Reason.Untrusted)
+
+      test(m"A chain is refused outside its validity period"):
+        given Clock = after
+        capture[Certificate.Path.Error](Certificate.validate(List(leaf, intermediate), List(root)))
+        . reason
+      . assert(_ == Certificate.Path.Error.Reason.Expired)
+
+      test(m"A chain in the wrong order is refused"):
+        given Clock = during
+        capture[Certificate.Path.Error](Certificate.validate(List(intermediate, leaf), List(root)))
+        . reason
+      . assert(_ == Certificate.Path.Error.Reason.Unlinked)
+
+      test(m"A certificate issued by one that is not an authority is refused"):
+        given Clock = during
+        val pretender = Distinguished(commonName = t"falstaff.example.com")
+        val key = PrivateKey.generate[Ed25519]()
+        val forged = Certificate.issued(pretender, key.public, player, playerKey, period, BigInt(4))
+
+        capture[Certificate.Path.Error]:
+          Certificate.validate(List(forged, leaf, intermediate), List(root))
+        . reason
+      . assert(_ == Certificate.Path.Error.Reason.NotAuthority)
+
+      test(m"A certificate naming an issuer that did not sign it is refused"):
+        given Clock = during
+        val impostor = PrivateKey.generate[Ecdsa[256]]()
+        val forged = Certificate.issued(player, playerKey.public, company, impostor, period, BigInt(5))
+
+        capture[Certificate.Path.Error](Certificate.validate(List(forged, intermediate), List(root)))
+        . reason
+      . assert(_ == Certificate.Path.Error.Reason.BadSignature)
+
+      test(m"An empty chain is refused"):
+        given Clock = during
+        capture[Certificate.Path.Error](Certificate.validate(Nil, List(root))).reason
+      . assert(_ == Certificate.Path.Error.Reason.Empty)
+
     suite(m"ASN.1 and DER"):
       // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`
       // are case classes over `Array[Byte]`, whose synthesized `equals` compares arrays by

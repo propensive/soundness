@@ -33,6 +33,7 @@
 package enigmatic
 
 import scala.caps
+import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
 import aviation.*
@@ -41,6 +42,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gastronomy.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -252,6 +254,90 @@ object Certificate:
   case class Error(reason: Certificate.Error.Reason)(using Diagnostics)
   extends fulminate.Error(105, 5, reason.number)(m"could not build the certificate because $reason")
 
+  private val RsaSha256: List[Int] = List(1, 2, 840, 113549, 1, 1, 11)
+  private val RsaSha384: List[Int] = List(1, 2, 840, 113549, 1, 1, 12)
+  private val RsaSha512: List[Int] = List(1, 2, 840, 113549, 1, 1, 13)
+  private val EcdsaSha256: List[Int] = List(1, 2, 840, 10045, 4, 3, 2)
+  private val EcdsaSha384: List[Int] = List(1, 2, 840, 10045, 4, 3, 3)
+  private val EcdsaSha512: List[Int] = List(1, 2, 840, 10045, 4, 3, 4)
+  private val Ed25519Signature: List[Int] = List(1, 3, 101, 112)
+
+  // What a provider must offer for a certificate's signature to be checked by the algorithm
+  // the certificate itself names, rather than by a cipher known when the code was written.
+  type Verification =
+    Crypto
+      { def ecdsa(digest: Text): Crypto.SignatureScheme
+        def ed25519: Crypto.SignatureScheme }
+
+  private def same(left: Asn1, right: Asn1): Boolean =
+    Crypto.constantTimeEquals(left.in[Der].data, right.in[Der].data)
+
+  // Why a chain of certificates does not lead to a trusted one.
+  object Path:
+    object Error:
+      given communicable: Reason is Communicable =
+        case Reason.Empty        => m"it holds no certificate"
+        case Reason.Malformed    => m"a certificate in it is not well-formed"
+        case Reason.Expired      => m"a certificate in it is outside its validity period"
+        case Reason.BadSignature => m"a certificate in it was not signed by the next"
+        case Reason.Unlinked     => m"a certificate in it was not issued by the next"
+        case Reason.NotAuthority => m"a certificate in it was issued by one that is not an authority"
+        case Reason.Untrusted    => m"it does not lead to a trusted certificate"
+
+      enum Reason(val number: Int) extends Clarification:
+        case Empty        extends Reason(1)
+        case Malformed    extends Reason(2)
+        case Expired      extends Reason(3)
+        case BadSignature extends Reason(4)
+        case Unlinked     extends Reason(5)
+        case NotAuthority extends Reason(6)
+        case Untrusted    extends Reason(7)
+
+    case class Error(reason: Path.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(105, 9, reason.number)
+      ( m"the certificate chain was not accepted because $reason" )
+
+  // Checks that a chain of certificates — the one being relied on first, each followed by the
+  // certificate of the authority that issued it — leads to one of the trusted `anchors`. Every
+  // certificate must be within its validity period by the clock in scope; each must name the
+  // next as its issuer and carry a signature the next's key made; every issuer must be a
+  // certificate authority; and the last must be an anchor, or be issued by one.
+  //
+  // This is the core of RFC 5280 §6 and no more: revocation, name constraints, policies and
+  // path-length limits are not examined, so it suits a closed set of anchors chosen for one
+  // purpose — a vendor's attestation roots — rather than the public web's.
+  def validate(chain: List[Certificate], anchors: List[Certificate])
+    ( using clock: Clock, crypto: Verification )
+    ( using Tactic[Path.Error], Diagnostics )
+  :   Unit =
+
+    def fail(reason: Path.Error.Reason): Nothing = abort(Path.Error(reason))
+
+    def issued(certificate: Certificate, authority: Certificate): Boolean =
+      certificate.issuerName.lay(false): issuer =>
+        authority.subjectName.lay(false)(same(issuer, _))
+
+    def recur(certificate: Certificate, rest: List[Certificate]): Unit =
+      if certificate.fields.nil then fail(Path.Error.Reason.Malformed)
+      if !certificate.current then fail(Path.Error.Reason.Expired)
+
+      if !anchors.exists(anchor => same(anchor.asn1, certificate.asn1)) then rest match
+        case authority :: more =>
+          if !issued(certificate, authority) then fail(Path.Error.Reason.Unlinked)
+          if !authority.authority then fail(Path.Error.Reason.NotAuthority)
+          if !certificate.signedBy(authority) then fail(Path.Error.Reason.BadSignature)
+          recur(authority, more)
+
+        case _ =>
+          val trusted = anchors.exists: anchor =>
+            issued(certificate, anchor) && anchor.current && certificate.signedBy(anchor)
+
+          if !trusted then fail(Path.Error.Reason.Untrusted)
+
+    chain match
+      case certificate :: rest => recur(certificate, rest)
+      case _                   => fail(Path.Error.Reason.Empty)
+
 case class Certificate(asn1: Asn1):
   // The armored form, which is how certificates are almost always exchanged.
   def pem: Pem = Pem(Pem.Label.Certificate, asn1.in[Der])
@@ -270,3 +356,135 @@ case class Certificate(asn1: Asn1):
         issuer.verify(tbs.in[Der].data, Signature[cipher](bytes))
 
       case _ => false
+
+  // The fields of the `TBSCertificate`, without the optional leading version: the serial
+  // number, signature algorithm, issuer, validity, subject, public key and, in a version 3
+  // certificate, the extensions. Empty for a value that is not a certificate.
+  private[enigmatic] def fields: List[Asn1] = asn1 match
+    case Asn1.Sequence(List(Asn1.Sequence(fields), _, _)) => fields match
+      case Asn1.Tagged(0, true, _) :: rest => rest
+      case other                           => other
+
+    case _ =>
+      Nil
+
+  private[enigmatic] def issuerName: Optional[Asn1] = fields match
+    case _ :: _ :: name :: _ => name
+    case _                   => Unset
+
+  private[enigmatic] def subjectName: Optional[Asn1] = fields match
+    case _ :: _ :: _ :: _ :: name :: _ => name
+    case _                             => Unset
+
+  private def moment(time: Asn1): Optional[Instant over Unix] = time match
+    case Asn1.UtcTime(seconds)         => Instant.of[Unix](seconds*1000L)
+    case Asn1.GeneralizedTime(seconds) => Instant.of[Unix](seconds*1000L)
+    case _                             => Unset
+
+  def serial: Optional[BigInt] = fields match
+    case Asn1.Integer(serial) :: _ => serial
+    case _                         => Unset
+
+  // The certificate authority that issued the certificate, and whom it certifies.
+  def issuer: Optional[Distinguished] = issuerName.let(Distinguished.read(_))
+  def subject: Optional[Distinguished] = subjectName.let(Distinguished.read(_))
+
+  // The first and last instants at which the certificate is valid.
+  def notBefore: Optional[Instant over Unix] = fields match
+    case _ :: _ :: _ :: Asn1.Sequence(List(start, _)) :: _ => moment(start)
+    case _                                                 => Unset
+
+  def notAfter: Optional[Instant over Unix] = fields match
+    case _ :: _ :: _ :: Asn1.Sequence(List(_, finish)) :: _ => moment(finish)
+    case _                                                  => Unset
+
+  // Whether the clock in scope is within the validity period.
+  def current(using clock: Clock): Boolean =
+    val moment = clock().long
+
+    notBefore.lay(false)(_.long <= moment) && notAfter.lay(false)(_.long >= moment)
+
+  // The certified key, as the `SubjectPublicKeyInfo` document every provider takes.
+  def publicKey: Optional[Data] = fields match
+    case _ :: _ :: _ :: _ :: _ :: key :: _ => key.in[Der].data
+    case _                                 => Unset
+
+  // The certified key, as a key of a named cipher, which its algorithm and size must agree with.
+  def key[cipher <: Cipher: KeyAlgorithm](using Tactic[PublicKey.Error], Diagnostics)
+  :   PublicKey[cipher] =
+
+    val document = publicKey.or:
+      abort(PublicKey.Error(PublicKey.Error.Reason.Malformed(t"the certificate carries no key")))
+
+    PublicKey.adopt[cipher](document)
+
+  // The value of the extension with the given object identifier: the content of its
+  // `extnValue`, which is itself DER whose structure the extension defines.
+  def extension(identifier: List[Int]): Optional[Data] =
+    val extensions: List[Asn1] = fields match
+      case _ :: _ :: _ :: _ :: _ :: _ :: rest =>
+        val found = rest.sweep:
+          case Asn1.Tagged(3, true, Asn1.Sequence(extensions)) => extensions
+
+        found.head.or(Nil)
+
+      case _ =>
+        Nil
+
+    // A match rather than `sweep`: a lambda that returns the frozen bytes gives them a
+    // capture set the result cannot carry.
+    def find(entries: List[Asn1]): Optional[Data] = entries match
+      case Asn1.Sequence(List(Asn1.ObjectId(arcs), Asn1.OctetString(value))) :: _
+          if arcs == identifier =>
+        value
+
+      case Asn1.Sequence(List(Asn1.ObjectId(arcs), Asn1.Boolean(_), Asn1.OctetString(value))) :: _
+          if arcs == identifier =>
+        value
+
+      case _ :: rest =>
+        find(rest)
+
+      case _ =>
+        Unset
+
+    find(extensions)
+
+  // Whether the certificate is a certificate authority's: its basic constraints say so
+  // (RFC 5280 §4.2.1.9). A certificate without the extension is not one.
+  def authority: Boolean =
+    this.extension(Certificate.BasicConstraints).lay(false): value =>
+      safely(Der(value).as[Asn1]) match
+        case Asn1.Sequence(Asn1.Boolean(authority) :: _) => authority
+        case _                                           => false
+
+  // Whether the signature was made by the key `issuer` certifies, under the algorithm this
+  // certificate names — where `verify` takes a key whose cipher the caller already knows. An
+  // algorithm that is not RSA PKCS#1 v1.5 or ECDSA over SHA-2, or Ed25519, is not verified.
+  def signedBy(issuer: Certificate)(using crypto: Certificate.Verification): Boolean =
+    asn1 match
+      case Asn1.Sequence
+            ( List
+                ( tbs,
+                  Asn1.Sequence(Asn1.ObjectId(algorithm) :: _),
+                  Asn1.BitString(signature, 0) ) ) =>
+
+        val scheme: Optional[Crypto.SignatureScheme] =
+          if algorithm == Certificate.RsaSha256 then crypto.rsaSignature(t"SHA256")
+          else if algorithm == Certificate.RsaSha384 then crypto.rsaSignature(t"SHA384")
+          else if algorithm == Certificate.RsaSha512 then crypto.rsaSignature(t"SHA512")
+          else if algorithm == Certificate.EcdsaSha256 then crypto.ecdsa(t"SHA256")
+          else if algorithm == Certificate.EcdsaSha384 then crypto.ecdsa(t"SHA384")
+          else if algorithm == Certificate.EcdsaSha512 then crypto.ecdsa(t"SHA512")
+          else if algorithm == Certificate.Ed25519Signature then crypto.ed25519
+          else Unset
+
+        issuer.publicKey.lay(false): key =>
+          scheme.lay(false): scheme =>
+            // A key of another algorithm than the signature's is refused by the provider with
+            // an exception, which is one more way of not having signed it.
+            try scheme.verify(tbs.in[Der].data, signature, key)
+            catch case error: Exception => false
+
+      case _ =>
+        false

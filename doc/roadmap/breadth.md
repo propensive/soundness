@@ -59,7 +59,9 @@ Horizon: mid
 Needs: brd-1
 
 Passwordless authentication for the web stack, completing the story OAuth 2 and JOSE begin.
-The COSE support it depends on already exists.
+The COSE support it depends on — COSE keys and the asymmetric signature algorithms — arrived
+with `brd-1`, as did the reading and chain validation of the X.509 certificates an attestation
+carries.
 
 Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
 scripted registration-and-assertion ceremony passes against a reference authenticator.
