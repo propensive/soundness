@@ -523,7 +523,8 @@ item
   id brd-1
   track breadth
   horizon near
-  status open
+  status done
+  baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/en/modules/jose.md (2026-11-20)
   criterion  JOSE module ships with tests, SN pages and a topic; round-trips RFC 7515/7516 example vectors
 
 item

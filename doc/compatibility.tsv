@@ -135,6 +135,7 @@ scintillate	yes	no	no	no		HTTP server via `telekinesis`/`coaxial` sockets
 sedentary	yes	no	no	no		benchmarking via JVM-only `superlunary`/`anthology`
 serpentine	yes	yes	yes	js		
 sibylline	yes	no	no	no		transitively JVM-only (networking/crypto/fs/process)
+sigillate	yes	no	no	no		JOSE over `enigmatic.core`, which has no JS crypto provider; RSA and ECDSA are JVM-only, so Native is not enabled
 spectacular	yes	yes	yes	js		
 stenography	yes	yes	yes	js		
 stratiform	yes	yes	yes	js	JVM-only: binaryStaged, staged	
