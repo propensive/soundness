@@ -38,7 +38,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import soundness.*
 import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
-import galilei.Linux.pathOnLinux
+import galilei.Local.pathOnLocal
 
 import alphabets.hexLowerCase
 import logging.silentLogging
@@ -94,8 +94,8 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
     :   result =
 
       supervise:
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
 
           val process =
             if sjs then

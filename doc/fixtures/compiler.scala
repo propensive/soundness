@@ -4,7 +4,7 @@
 import soundness.*
 
 import filesystemBackends.javaBaseFilesystem
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import stdios.javaLangSystemStdio
 import termcapDefinitions.basicTermcap
 import strategies.throwUnsafely
@@ -13,8 +13,8 @@ import temporaryDirectories.javaBaseTemporaryDirectory
 
 val classpath: LocalClasspath = Bundler.applicationClasspath
 val source: Text = t"package com.example\n\nobject Main:\n  def main(args: Array[String]): Unit = ()"
-val outputPath: Path on Linux = temporaryDirectory[Path on Linux] / "compiler" / Uuid().show
-val destination: Path on Linux = temporaryDirectory[Path on Linux] / "compiler" / Uuid().show
+val outputPath: Path on Local = temporaryDirectory[Path on Local] / "compiler" / Uuid().show
+val destination: Path on Local = temporaryDirectory[Path on Local] / "compiler" / Uuid().show
 outputPath.create[Directory](CreateFlag.Parents)
 
 def report(importance: Importance, file: Text, message: Text): Unit =

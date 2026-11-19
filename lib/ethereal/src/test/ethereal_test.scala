@@ -64,7 +64,7 @@ object Readers:
     import filesystemBackends.javaBaseFilesystem
     import charsets.utf8Charset
     import textSanitizers.skipSanitizer
-    safely(path.as[Path on Linux].read[Text])
+    safely(path.as[Path on Local].read[Text])
 
   // The bytes of argument `index` as the client gave them, in hex, or `(text)` when the text
   // carried them exactly; compiled here for the same reason.
@@ -91,7 +91,7 @@ object Upgrades:
   // whose launcher handles it before the daemon hears of it.
   def stage(path: Text): Text =
     safely:
-      Upgrade.stage(path.as[Path on Linux])
+      Upgrade.stage(path.as[Path on Local])
       if Upgrade.pending then t"pending" else t"absent"
 
     . or(t"failed")
@@ -218,7 +218,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
 
                     // Created by the JDK, not galilei, so that only the process's mask applies.
                     val mode =
-                      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+                      temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
                         // `jnf` rather than serpentine's `/`, which the staging compiler of
                         // this daemon's body cannot resolve.
                         val path = jnf.Path.of(scratch.stem.encode.s, "file").nn
@@ -332,7 +332,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                     import errorDiagnostics.stackTracesDiagnostics
                     import strategies.throwUnsafely
 
-                    Installer.install(force = true, target = dir().as[Path on Linux])
+                    Installer.install(force = true, target = dir().as[Path on Local])
                     Out.print(t"installed")
                     Exit.Ok
 
@@ -448,7 +448,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
               sh"$tool echo after".exec[Text]()
             . check(_ == t"after")
 
-            val alias = temporaryDirectory[Path on Linux]/t"alias-$name"
+            val alias = temporaryDirectory[Path on Local]/t"alias-$name"
 
             test(m"the name the executable was invoked as is reported"):
               sh"ln -sf $tool $alias".exec[Unit]()
@@ -607,7 +607,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             test(m"daemon terminates when its launcher is rewritten in place"):
               supervise:
                 val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-                val backup = temporaryDirectory[Path on Linux]/t"backup-$name"
+                val backup = temporaryDirectory[Path on Local]/t"backup-$name"
                 sh"cp $tool $backup".exec[Unit]()
                 // Appending the launcher to itself changes its content in place, as a
                 // rebuild targeting the installed path would.
@@ -758,7 +758,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             . check(_ == true)
 
           suite(m"Installation"):
-            val installDir: Path on Linux = temporaryDirectory[Path on Linux]/t"install-$name"
+            val installDir: Path on Local = temporaryDirectory[Path on Local]/t"install-$name"
             sh"mkdir -p $installDir".exec[Unit]()
 
             test(m"installed launcher is byte-identical to the source"):
@@ -789,7 +789,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             . check(_ == t"exit=127")
 
           suite(m"Client descriptors"):
-            val file = temporaryDirectory[Path on Linux]/t"input-$name"
+            val file = temporaryDirectory[Path on Local]/t"input-$name"
 
             test(m"a process substitution is readable in the daemon"):
               sh"bash -c '$tool read <(printf substituted)'".exec[Text]()
@@ -814,7 +814,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             // An argument that is not UTF-8 arrives with U+FFFD in its text, and its bytes
             // beside it; one the text carries exactly has no bytes beside it.
             // The byte 0xff cannot be spelled in a command line of `Text`, so a script spells it.
-            val rawScript = temporaryDirectory[Path on Linux]/t"raw-$name.sh"
+            val rawScript = temporaryDirectory[Path on Local]/t"raw-$name.sh"
 
             test(m"a non-UTF-8 argument's bytes reach the daemon"):
               import codepages.utf8Codepage
@@ -1018,7 +1018,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       // cold-starts — or while the old daemon is being swapped out — under load, so
       // retry the `version` call until it serves the expected build (or a deadline
       // passes). This mirrors the deadline loops used elsewhere in this suite.
-      def serves(tool: Path on Linux, build: Text): Text =
+      def serves(tool: Path on Local, build: Text): Text =
         var output: Text = sh"$tool version".exec[Text]()
         val deadline = jl.System.currentTimeMillis + 10000
         while output != build && jl.System.currentTimeMillis < deadline do
@@ -1117,7 +1117,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       val selfuStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / selfuName
       val selfuDataDir: Path on Local = Xdg.dataHome[Path on Local] / selfuName
-      val selfuWork: Path on Linux = temporaryDirectory[Path on Linux]/t"selfu-$selfuName"
+      val selfuWork: Path on Local = temporaryDirectory[Path on Local]/t"selfu-$selfuName"
       sh"rm -rf $selfuStateDir $selfuDataDir $selfuWork".exec[Unit]()
       sh"mkdir -p $selfuWork".exec[Unit]()
       safely(sh"pkill $selfuName".exec[Exit]())
@@ -1223,18 +1223,18 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       val strangeV2 = selfuV2.sign(strangerSeed, selfuWork/t"v2.strange", foreign = true)
 
       // Signed, then lengthened by a byte, which the signature covers.
-      val tamperedV2: Path on Linux = selfuWork/t"v2.tampered"
+      val tamperedV2: Path on Local = selfuWork/t"v2.tampered"
       sh"cp $signedV2 $tamperedV2".exec[Unit]()
       sh"sh -c ${t"printf x >> '${tamperedV2.encode}'"}".exec[Unit]()
 
       // The swap replaces an executable in place, so every case installs its own copy, under
       // the one name, so that all share a state and a data directory; they therefore run one
       // after another, each from a clean slate.
-      def install(label: Text, executable: Path on Linux): Path on Linux =
+      def install(label: Text, executable: Path on Local): Path on Local =
         safely(sh"pkill $selfuName".exec[Exit]())
         snooze(0.2*Second)
         sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
-        val directory: Path on Linux = selfuWork/label
+        val directory: Path on Local = selfuWork/label
         sh"mkdir -p $directory".exec[Unit]()
         sh"cp $executable $directory/$selfuName".exec[Unit]()
         sh"chmod +x $directory/$selfuName".exec[Unit]()
@@ -1243,7 +1243,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       // Stages `candidate` from the installed executable's own daemon, then runs it once, which
       // is when its launcher handles the candidate; returns the version that run served and
       // the outcome it reported.
-      def upgrade(tool: Path on Linux, candidate: Path on Linux): (Text, Text) =
+      def upgrade(tool: Path on Local, candidate: Path on Local): (Text, Text) =
         val staged = sh"$tool stage $candidate".exec[Text]()
         if staged != t"pending" then (t"not staged: $staged", t"none") else
           val version = sh"$tool version".exec[Text]()
@@ -1503,7 +1503,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       val brokenStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"brokn"
 
-      val brokenExe: Path on Linux = Enclave("brokn").dispatch:
+      val brokenExe: Path on Local = Enclave("brokn").dispatch:
         ' {
             import executives.completionsExecutive
             import interpreters.posixInterpreter
@@ -1546,7 +1546,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       val stalledStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"stald"
 
-      val progressExe: Path on Linux = Enclave("prgrs").dispatch:
+      val progressExe: Path on Local = Enclave("prgrs").dispatch:
         ' {
             import executives.completionsExecutive
             import interpreters.posixInterpreter
@@ -1573,7 +1573,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
           }
       . path
 
-      val stalledExe: Path on Linux = Enclave("stald").dispatch:
+      val stalledExe: Path on Local = Enclave("stald").dispatch:
         ' {
             import executives.completionsExecutive
             import interpreters.posixInterpreter

@@ -38,4 +38,4 @@ import serpentine.*
 
 // The location of the Scala Native compiler plugin (`nscplugin`), whose presence in scope is the
 // evidence that permits compiling for `Backend.Native`.
-case class NirPlugin(jar: Path on Linux)
+case class NirPlugin(jar: Path on Local)

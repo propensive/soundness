@@ -560,17 +560,17 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-        val workDir: Path on Linux = scratch.stem
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+        val workDir: Path on Local = scratch.stem
 
-        def writeArchive(tar: Tarfile, name: Text): Path on Linux =
+        def writeArchive(tar: Tarfile, name: Text): Path on Local =
           val path = workDir / name
           if path.existent() then path.delete()
           path.create[File]()
           path.open[File](Write): handle ?=> handle.write(tar)
           path
 
-        def listing(path: Path on Linux): List[Text] =
+        def listing(path: Path on Local): List[Text] =
           Array.unsafeFrozen(sh"tar -tf $path".exec[Text]().s.split('\n').nn).to[List]
             .map(_.nn.tt)
             .filter(!_.s.isEmpty)
@@ -640,8 +640,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-        def freshDir(): Path on Linux =
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+        def freshDir(): Path on Local =
           val d = scratch.stem / Uuid().show
           d.create[Directory]()
           d
@@ -656,7 +656,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           val dest = freshDir()
           tar.extractTo(dest)
 
-          val readBackPath: Path on Linux = dest / "hello.txt"
+          val readBackPath: Path on Local = dest / "hello.txt"
           val readBack = readBackPath.read[Data]
           readBack.utf8.s
         . check(_ == "hi there")
@@ -674,8 +674,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           val dest = freshDir()
           tar.extractTo(dest)
 
-          val aPath: Path on Linux = dest / "sub" / "a.txt"
-          val bPath: Path on Linux = dest / "sub" / "b.txt"
+          val aPath: Path on Local = dest / "sub" / "a.txt"
+          val bPath: Path on Local = dest / "sub" / "b.txt"
           val a = aPath.read[Data]
           val b = bPath.read[Data]
           ( a.utf8.s,
@@ -702,8 +702,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           val dest = freshDir()
           tar.extractTo(dest)
 
-          val deep: Path on Linux = dest/"deep"
-          val paths: List[Path on Linux] =
+          val deep: Path on Local = dest/"deep"
+          val paths: List[Path on Local] =
             List(deep/"a.txt", deep/"b.txt", deep/"er"/"c.txt", deep/"d.txt")
           paths.map(_.read[Data].utf8)
         . check(_ == List(t"A", t"B", t"C", t"D"))
@@ -721,7 +721,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           jnf.Files.isSymbolicLink((dest / "link.txt").javaPath)
         . check(_ == true)
 
-        def tree(): Path on Linux =
+        def tree(): Path on Local =
           val source = freshDir()
           (source / "b.txt").create[File]()
           (source / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
@@ -832,8 +832,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"an archive file opens as Tar"):
-        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-          val path: Path on Linux = scratch.stem / "scoped.tar"
+        temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+          val path: Path on Local = scratch.stem / "scoped.tar"
           path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(tar) }
 
           path.open[Tar]():
@@ -854,11 +854,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-        val createDir: Path on Linux = scratch.stem
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+        val createDir: Path on Local = scratch.stem
 
         test(m"A created archive round-trips through open"):
-          val target: Path on Linux = createDir / "made.tar"
+          val target: Path on Local = createDir / "made.tar"
 
           // [by-name-receiver] create lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -870,7 +870,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         . check(_ == List(t"hello.txt"))
 
         test(m"A gzip-compressed creation round-trips with the Gzip flag"):
-          val target: Path on Linux = createDir / "made.tar.gz"
+          val target: Path on Local = createDir / "made.tar.gz"
 
           target.create[Tar](Tar.Flag.Gzip): builder ?=>
             builder.insert(t"data.txt".as[Relative on Tar], t"payload".in[Data])
@@ -880,7 +880,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         . check(_ == List(t"data.txt"))
 
         test(m"A scoped entry writer streams an unknown-length body"):
-          val target: Path on Linux = createDir / "streamed.tar"
+          val target: Path on Local = createDir / "streamed.tar"
 
           // [by-name-receiver] create lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -895,7 +895,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         . check(_ == 5000)
 
         test(m"scoped and whole entries interleave in order"):
-          val target: Path on Linux = createDir / "mixed.tar"
+          val target: Path on Local = createDir / "mixed.tar"
 
           // [by-name-receiver] create lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -910,7 +910,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         . check(_ == List(t"first.txt", t"second.bin", t"third.txt"))
 
         test(m"a scoped entry writer buffers under compression"):
-          val target: Path on Linux = createDir / "streamed.tar.gz"
+          val target: Path on Local = createDir / "streamed.tar.gz"
 
           target.create[Tar](Tar.Flag.Gzip): builder ?=>
             builder.file(t"z.bin".as[Relative on Tar]): entry ?=>
@@ -924,7 +924,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
         test(m"An exception escaping the creation scope leaves nothing behind"):
           import errorDiagnostics.emptyDiagnostics
-          val target: Path on Linux = createDir / "doomed.tar"
+          val target: Path on Local = createDir / "doomed.tar"
 
           capture[Tar.Error]:
             // [by-name-receiver] create lambda shares ambient tactic with receiver
@@ -1220,8 +1220,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"an archive file opens as Ar"):
-        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-          val path: Path on Linux = scratch.stem / "scoped.deb"
+        temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+          val path: Path on Local = scratch.stem / "scoped.deb"
           path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(deb) }
 
           path.open[Ar]():

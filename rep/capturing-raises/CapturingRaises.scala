@@ -24,7 +24,7 @@ import systems.javaBaseSystem
 // burdock, perihelion, surveillance, ziggurat, contingency.
 
 object CapturingRaises:
-  def writeZip(workDir: Path on Linux, name: Text, entries: List[Zip.Entry]): Path on Linux =
+  def writeZip(workDir: Path on Local, name: Text, entries: List[Zip.Entry]): Path on Local =
     val path = workDir/name
     Zipfile.write(path)(entries)
     path

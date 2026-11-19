@@ -43,4 +43,4 @@ import anthology.Toolchain.Universe
 // sjsir artifact (JavaScript, browser Wasm or a WASI component), a `Compilation[Universe.Nir]`
 // as a native binary for any target, and a `Compilation[Universe.Classfile]` bundled as an
 // executable JAR.
-case class Compilation[universe <: Universe](out: Path on Linux, classpath: LocalClasspath)
+case class Compilation[universe <: Universe](out: Path on Local, classpath: LocalClasspath)

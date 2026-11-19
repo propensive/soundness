@@ -212,7 +212,7 @@ extends StackTrace.Resolver:
   // A path recorded relative to `-sourceroot` resolves against the working directory, as the
   // compiler resolves it when unpickling. Not `Path#resolve`, whose result captures the tactic it
   // is applied to, which separation checking rejects.
-  private def file(path: Text): Optional[Path on Linux] =
-    safely(path.as[Path on Linux]).or:
-      val base: Path on Linux = workingDirectory[Path on Linux]
-      safely(base + path.as[Relative on Linux])
+  private def file(path: Text): Optional[Path on Local] =
+    safely(path.as[Path on Local]).or:
+      val base: Path on Local = workingDirectory[Path on Local]
+      safely(base + path.as[Relative on Local])

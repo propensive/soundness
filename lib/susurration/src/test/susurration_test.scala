@@ -249,12 +249,12 @@ object Tests extends Suite("ssh", m"Susurration tests"):
       suite(m"Transport against sshd"):
         import internetAccess.online
 
-        import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
+        import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
 
         // The keys and configuration are written to a scratch directory beneath `/tmp`, which
         // is deleted when the suite has run; so every test is a `check`, run where it stands,
         // not an `assert`, which a parallel runner may defer beyond the loan of the directory.
-        (% / "tmp").on[Linux].open[Scratch](Read & Write): scratch ?=>
+        (% / "tmp").on[Local].open[Scratch](Read & Write): scratch ?=>
           val directory: jnf.Path = jnf.Path.of(scratch.stem.encode.s).nn
 
           def file(name: Text): Text = directory.resolve(name.s).nn.toString.tt

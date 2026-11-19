@@ -94,7 +94,7 @@ object shrinkEdges:
       ( settings:    Shrink,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
@@ -131,7 +131,7 @@ object shrinkEdges:
       ( settings:    Text,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =

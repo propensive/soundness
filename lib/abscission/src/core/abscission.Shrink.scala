@@ -128,7 +128,7 @@ case class Shrink
     fine:     Boolean    = false ):
 
   // Writes the closed world of `classpath` which `entryPoints` reach to the directory `out`.
-  def apply(classpath: LocalClasspath, entryPoints: List[Fqcn], out: Path on Linux)
+  def apply(classpath: LocalClasspath, entryPoints: List[Fqcn], out: Path on Local)
   :   Shrink.Report raises Shrink.Error =
 
     val entries: List[Text] = classpath.entries.bind:

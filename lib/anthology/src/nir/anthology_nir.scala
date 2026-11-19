@@ -125,7 +125,7 @@ object nativeEdges:
       ( settings:    NativeConfig,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
@@ -158,12 +158,12 @@ object nativeEdges:
           . withCompilerConfig(settings)
 
         val artifact = Await.result(Build.build(config), 1800.seconds)
-        val path: Path on Linux =
+        val path: Path on Local =
           mitigate:
             case error: Path.Error =>
               Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
 
-          . protect(artifact.toString.tt.as[Path on Linux])
+          . protect(artifact.toString.tt.as[Path on Local])
 
         Deliverable.Product(path)
 

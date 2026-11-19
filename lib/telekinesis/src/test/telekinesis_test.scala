@@ -700,13 +700,13 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       import com.sun.net.httpserver as csnh
 
       // A throwaway self-signed certificate, generated with the JDK's keytool.
-      import galilei.Linux.pathOnLinux, systems.javaBaseSystem
+      import galilei.Local.pathOnLocal, systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
 
       val password = "changeit".toCharArray.nn
 
       // Read into memory before the scratch directory holding the keystore is deleted.
-      val keystore = temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+      val keystore = temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
         val path = (scratch.stem / "test.p12").encode.s
 
         val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",

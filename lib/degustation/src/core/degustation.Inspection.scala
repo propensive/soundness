@@ -60,7 +60,7 @@ import Inspection.Error.Reason
 object Inspection:
 
   def atomize(tastyFiles: List[Text], classpath: List[Text])
-    ( using backend: FilesystemBackend on Linux )
+    ( using backend: FilesystemBackend on Local )
   :   List[ScalaAtom] raises Inspection.Error =
 
     import errorDiagnostics.emptyDiagnostics
@@ -76,7 +76,7 @@ object Inspection:
       case Zip.Error(_)         => failed(t"a jar was malformed")
 
     . protect:
-        val entries: List[Path on Linux] = classpath.map(_.as[Path on Linux])
+        val entries: List[Path on Local] = classpath.map(_.as[Path on Local])
 
         val directories = entries.filter(backend.stat(_, true).entry == galilei.Directory)
 
@@ -87,7 +87,7 @@ object Inspection:
 
         try
           val files = tastyFiles.map: file =>
-            val path = file.as[Path on Linux]
+            val path = file.as[Path on Local]
             val data = read(path)
             (relativePath(path, data, directories), data)
 
@@ -112,21 +112,20 @@ object Inspection:
 
   // A file's classpath-relative path: relative to the classpath directory containing it when one
   // does, else its package's directory (read from the file itself) and its own name.
-  private def relativePath(file: Path on Linux, data: Data, directories: List[Path on Linux])
+  private def relativePath(file: Path on Local, data: Data, directories: List[Path on Local])
   :   Text =
 
-    val encoded = file.encode
+    // Compared and split by path element, never by separator: the result is a classpath name,
+    // which is `/`-separated whatever the host's own separator is.
+    val containing: Optional[Path on Local] = directories.seek(_.precedes(file))
 
-    val containing: Optional[Text] =
-      directories.map(_.encode.s + "/").seek(encoded.s.startsWith(_)).let(_.tt)
+    containing.let: directory =>
+      file.descent.dropRight(directory.descent.length).reverse.to(List).join(t"/")
 
-    containing match
-      case prefix: Text => encoded.s.drop(prefix.s.length).tt
-
-      case _ =>
+    . or:
         val scope = Universe.index(t"", Unpickler(data))
         val packages = scope.owners.values.sweep { case pkg: Text => pkg }
-        val name = encoded.s.drop(encoded.s.lastIndexOf('/') + 1).tt
+        val name = file.name
 
         packages.head match
           case pkg: Text if pkg != t"" && pkg != t"<empty>" =>
@@ -134,19 +133,19 @@ object Inspection:
 
           case _ => name
 
-  private def read(path: Path on Linux)(using backend: FilesystemBackend on Linux)
+  private def read(path: Path on Local)(using backend: FilesystemBackend on Local)
   :   Data raises Io.Error =
 
     backend.expanse(path): view => view.read(0L, view.size.toInt)
 
   // A classpath directory, read through the filesystem backend.
-  private class Directory(root: Path on Linux)
-    ( using backend: FilesystemBackend on Linux, ioTactic: Tactic[Io.Error],
+  private class Directory(root: Path on Local)
+    ( using backend: FilesystemBackend on Local, ioTactic: Tactic[Io.Error],
             nameTactic: Tactic[Name.Error] )
   extends Universe.Source:
-    private def resolve(relative: Text): Path on Linux =
+    private def resolve(relative: Text): Path on Local =
       val names: List[Text] = relative.cut(t"/").filter(_ != t"")
-      names.fold(root): (path: Path on Linux, name: Text) => path / name
+      names.fold(root): (path: Path on Local, name: Text) => path / name
 
     def read(path: Text): Optional[Data] =
       val file = resolve(path)
@@ -158,8 +157,8 @@ object Inspection:
 
   // A jar on the classpath, read through zeppelin: the central directory is parsed once, and each
   // entry's payload is read from the file when it is asked for.
-  private class Jar(path: Path on Linux)
-    ( using FilesystemBackend on Linux, Tactic[Io.Error], Tactic[Zip.Error],
+  private class Jar(path: Path on Local)
+    ( using FilesystemBackend on Local, Tactic[Io.Error], Tactic[Zip.Error],
             (Zip.Event is Loggable) )
   extends Universe.Source:
     private lazy val zipfile: Zipfile = Zipfile.read(path)

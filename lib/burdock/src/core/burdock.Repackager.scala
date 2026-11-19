@@ -173,7 +173,7 @@ object Repackager:
   // `bootstrapClass` is the `burdock.Bootstrap` class bytes (force-included since it can't
   // itself be downloaded).
   def repackage
-    ( inputJar: Path on Linux, outputJar: Path on Linux, resolve: Resolver, cached: CacheReader,
+    ( inputJar: Path on Local, outputJar: Path on Local, resolve: Resolver, cached: CacheReader,
       bootstrapClass: Data, progress: Progress = (_, _) => () )
   :   Summary raises RepackageError =
 

@@ -54,6 +54,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import anthology.Toolchain.{Tool, Universe}
+import systems.javaBaseSystem
 
 object linkerOptions:
   private def applicable(format: Artifact): Boolean =
@@ -115,7 +116,7 @@ object sjsEdges:
   private def edge
     ( node:     Artifact.Application,
       base:     StandardConfig => StandardConfig,
-      artifact: (Path on Linux) => (Path on Linux) )
+      artifact: (Path on Local) => (Path on Local) )
   :   Edge =
 
     Edge(Universe.Sjsir, node, SjsTool(node, base, artifact))
@@ -123,7 +124,7 @@ object sjsEdges:
   private case class SjsTool
     ( node:     Artifact.Application,
       base:     StandardConfig => StandardConfig,
-      artifact: (Path on Linux) => (Path on Linux) )
+      artifact: (Path on Local) => (Path on Local) )
   extends Tool:
     type Settings = StandardConfig
 
@@ -134,7 +135,7 @@ object sjsEdges:
       ( settings:    StandardConfig,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
@@ -146,12 +147,12 @@ object sjsEdges:
   // classpath, and returns the artifact's path within the output directory.
   private def link0
     ( form:        StandardConfig,
-      directory:   Path on Linux,
+      directory:   Path on Local,
       classpath:   LocalClasspath,
       entryPoints: List[EntryPoint],
-      out:         Path on Linux,
-      artifact:    (Path on Linux) => (Path on Linux) )
-  :   Path on Linux logs LinkEvent raises Link.Error =
+      out:         Path on Local,
+      artifact:    (Path on Local) => (Path on Local) )
+  :   Path on Local logs LinkEvent raises Link.Error =
 
     val entries: List[jnf.Path] =
       jnf.Paths.get(directory.encode.s).nn ::

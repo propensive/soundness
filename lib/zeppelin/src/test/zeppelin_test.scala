@@ -57,29 +57,29 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
   // Every test below ends in `check`, not `assert`: an `assert` may be deferred to run after
   // the loan has wiped the scratch directory, and `check` always runs inline, within it.
   def run(): Unit =
-    temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+    temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
       suites(handle.stem)
 
-  private def suites(workDir: Path on Linux): Unit =
+  private def suites(workDir: Path on Local): Unit =
     def zipRef(text: Text): Path on Zip = text.as[Path on Zip]
 
     def entry(path: Text, content: Text): Zip.Entry =
       Zip.Entry(zipRef(path), content.in[Data])
 
-    def writeZip(name: Text, entries: Zip.Entry*): Path on Linux =
+    def writeZip(name: Text, entries: Zip.Entry*): Path on Local =
       val path = workDir/name
       path.write(Zipfile(entries))
       path
 
-    def bytesOf(path: Path on Linux): Data = path.read[Data]
+    def bytesOf(path: Path on Local): Data = path.read[Data]
 
-    def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries
+    def readEntries(path: Path on Local): List[Zip.Entry] = Zipfile.read(path).entries
 
     def names(entries: List[Zip.Entry]): List[Text] = entries.map(_.ref.encode)
 
     // Build a ZIP with the raw JDK writer so entry names can bypass the type-safe
     // `Path on Zip` validation that Zeppelin's own writer would enforce.
-    def writeRawZip(name: Text, entryNames: Text*): Path on Linux =
+    def writeRawZip(name: Text, entryNames: Text*): Path on Local =
       val path = workDir/name
       val out = juz.ZipOutputStream(ji.FileOutputStream(ji.File(path.encode.s)))
 
@@ -93,7 +93,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
     // An independent oracle: the JDK's own ZIP reader, so round-trip tests are not merely
     // checking Zeppelin against itself.
-    def jdkNames(path: Path on Linux): List[Text] =
+    def jdkNames(path: Path on Local): List[Text] =
       val zip = juz.ZipFile(ji.File(path.encode.s))
 
       try
@@ -103,28 +103,28 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         List.from(builder.result())
       finally zip.close()
 
-    def jdkContent(path: Path on Linux, name: Text): Data =
+    def jdkContent(path: Path on Local, name: Text): Data =
       val zip = juz.ZipFile(ji.File(path.encode.s))
       try
         val entry = zip.getEntry(name.s).nn
         Array.unsafeFrozen(zip.getInputStream(entry).nn.readAllBytes().nn)
       finally zip.close()
 
-    def jdkComment(path: Path on Linux): Optional[Text] =
+    def jdkComment(path: Path on Local): Optional[Text] =
       val zip = juz.ZipFile(ji.File(path.encode.s))
       try zip.getComment() match
         case null            => Unset
         case text: String    => text.tt
       finally zip.close()
 
-    def writeBytes(name: Text, data: Data): Path on Linux =
+    def writeBytes(name: Text, data: Data): Path on Local =
       val path = workDir/name
       val out = ji.FileOutputStream(ji.File(path.encode.s))
       try out.write(Array.unsafeJvm(data)) finally out.close()
       path
 
     // The general-purpose bit flag of the first local file header.
-    def firstFlag(path: Path on Linux): Int =
+    def firstFlag(path: Path on Local): Int =
       val data = bytesOf(path)
       (data.readUnchecked(6) & 0xff) | ((data.readUnchecked(7) & 0xff) << 8)
 
@@ -353,7 +353,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . check(_ == Map())
 
     suite(m"Archiving directories"):
-      def tree(): Path on Linux =
+      def tree(): Path on Local =
         val source = workDir/Uuid().show
         source.create[Directory]()
         (source/t"sub").create[Directory]()
@@ -427,7 +427,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
     suite(m"ZIP64"):
       // More than 0xFFFF entries forces ZIP64 end-of-central-directory records.
-      lazy val path: Path on Linux =
+      lazy val path: Path on Local =
         val many = (0 until 66000).map { i => entry(t"e$i", t"") }
         val path = workDir/t"zip64.zip"
         path.write(Zipfile(List.from(many)))
@@ -455,7 +455,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       // `Zipfile.rebase`.
       val stub: Data = Array.tabulate(1024)(i => (i*11).toByte)
 
-      def concatenate(name: Text, prefix: Data, archive: Data): Path on Linux =
+      def concatenate(name: Text, prefix: Data, archive: Data): Path on Local =
         val path = workDir/name
         val out = ji.FileOutputStream(ji.File(path.encode.s))
 
@@ -547,7 +547,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       // header fields round-trip.
       val foreign = writeRawZip(t"fidelity.zip", t"one.txt", t"dir/two.txt")
 
-      def rebuild(path: Path on Linux): List[Byte] = Zipfile.read(path).read[Data].to[List]
+      def rebuild(path: Path on Local): List[Byte] = Zipfile.read(path).read[Data].to[List]
 
       test(m"a JDK-written archive rebuilds byte-identically"):
         rebuild(foreign) == bytesOf(foreign).to[List]

@@ -169,8 +169,8 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
       val own: LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
-        val directory: Path on Linux = handle.stem
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Local = handle.stem
         (directory / "notes.txt").write(t"not an archive")
 
         test(m"A directory is a Directory entry"):
@@ -186,7 +186,7 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
             own.entries.seek(_.path.let(_.ends(t".jar")).or(false)).let(_.path)
 
           jar.let: path =>
-            unsafely(Classpath.Entry.classify(path.as[Path on Linux])) == Classpath.Entry.Jar(path)
+            unsafely(Classpath.Entry.classify(path.as[Path on Local])) == Classpath.Entry.Jar(path)
         . check(_ == true)
 
         test(m"A file that is not an archive is an error"):

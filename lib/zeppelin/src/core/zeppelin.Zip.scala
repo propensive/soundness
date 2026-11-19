@@ -60,6 +60,8 @@ object Zip:
 
   inline given compliant: Linux is Compliant on Zip = !!
   inline given compliant2: MacOs is Compliant on Zip = !!
+  // `Local`'s rules for a name include those of every platform, so its names are valid here too.
+  inline given compliant3: Local is Compliant on Zip = !!
   inline given nominative: Zip is Nominative under Rules = !!
   given submissible: %.type is Submissible on Zip = _ => ()
 

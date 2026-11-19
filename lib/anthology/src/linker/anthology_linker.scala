@@ -80,7 +80,7 @@ object jarEdges:
       ( settings:    Text,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
@@ -131,7 +131,7 @@ object jarEdges:
       ( settings:    Text,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =

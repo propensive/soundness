@@ -52,7 +52,7 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 import errorDiagnostics.stackTracesDiagnostics
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
@@ -61,7 +61,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
 :   Bytecode =
 
   val uuid = Uuid()
-  val out: Path on Linux = temporaryDirectory/uuid
+  val out: Path on Local = temporaryDirectory/uuid
   val scalac: Scalac[3.6, Toolchain.Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
   // stdlib bridge: `staging.Compiler.Settings.make` is the Scala 3 staging API, and takes the
@@ -77,7 +77,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
     case Classfile.Error()        => Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)
 
   . protect:
-      val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
+      val file: Path on Local = out/"Generated$$Code$$From$$Quoted.class"
       val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
       staging.run(code)
       val classfile: Classfile = Classfile(file.read[Data])

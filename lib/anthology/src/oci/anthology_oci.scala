@@ -53,6 +53,7 @@ import vacuous.*
 import xenophile.*
 import zephyrine.*
 import anthology.Toolchain.Tool
+import systems.javaBaseSystem
 
 object ociOptions:
   private def oci(edit: OciConfiguration => OciConfiguration): Toolchain.Setting =
@@ -92,7 +93,7 @@ object ociEdges:
       ( settings:    OciConfiguration,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
@@ -104,9 +105,9 @@ object ociEdges:
   private def wrap
     ( form:      OciConfiguration,
       world:     Wasi.World,
-      component: Path on Linux,
-      out:       Path on Linux )
-  :   Path on Linux logs LinkEvent raises Link.Error =
+      component: Path on Local,
+      out:       Path on Local )
+  :   Path on Local logs LinkEvent raises Link.Error =
 
     val (imports, exports) = interfaces(world)
 

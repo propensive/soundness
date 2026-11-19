@@ -89,9 +89,9 @@ object Upgrade:
       case Truncation.Error(_)  => Upgrade.Error(Upgrade.Error.Reason.CannotReadSource)
 
     . protect:
-        val target: Path on Linux = directory()
+        val target: Path on Local = directory()
         if !target.existent() then target.create[Directory](CreateFlag.Parents)
-        val partial: Path on Linux = target/t".pending.tmp"
+        val partial: Path on Local = target/t".pending.tmp"
 
         partial.open[File](Write, OpenFlag.Create, OpenFlag.Truncate): file ?=>
           file.write(Chain(bytes))
@@ -108,7 +108,7 @@ object Upgrade:
   // unreadable file, and an outcome this version does not know, are all `Unset`.
   def outcome(using Environment, System): Optional[Upgrade.Outcome] =
     safely:
-      val result: Path on Linux = directory()/t".upgrade-result"
+      val result: Path on Local = directory()/t".upgrade-result"
 
       if !result.existent() then Unset else result.read[Text].trim.cut(t" ") match
         case List(word, candidate, previous, time) =>
@@ -135,12 +135,12 @@ object Upgrade:
   // `Directories.cacheHome` resolves to there (`Directories.dataHome` would be the roaming
   // `%APPDATA%`, which the launcher does not look at).
   private def directory()(using Environment, System)
-  :   Path on Linux raises Path.Error raises Property.Error raises Name.Error =
+  :   Path on Local raises Path.Error raises Property.Error raises Name.Error =
 
     val name: Text = System.properties.ethereal.name[Text]()
 
-    val root: Path on Linux =
-      if windows then Directories.cacheHome[Path on Linux] else Xdg.dataHome[Path on Linux]
+    val root: Path on Local =
+      if windows then Directories.cacheHome[Path on Local] else Xdg.dataHome[Path on Local]
 
     root/name
 

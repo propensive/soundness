@@ -103,9 +103,9 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
 
       val connection: jn.URLConnection = depsResource.openConnection().nn
 
-      val inputJar: Path on Linux = connection match
+      val inputJar: Path on Local = connection match
         case jar: jn.JarURLConnection =>
-          jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.as[Path on Linux]
+          jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.as[Path on Local]
 
         case _ =>
           abort(UserError(m"Burdock can only repackage a JAR file, not a directory"))
@@ -121,8 +121,8 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
       // deps.dev and are referenced by URL rather than inlined.
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
 
-      val cache: Cas in Sha2[256] on (Path on Linux) =
-        Cas[Sha2[256]](t"$home/.cache/soundness/jars".as[Path on Linux], t".jar")
+      val cache: Cas in Sha2[256] on (Path on Local) =
+        Cas[Sha2[256]](home.as[Path on Local] / ".cache" / "soundness" / "jars", t".jar")
 
       // Hashes arrive as text (from `burdock.deps` and the release index), so this is the one
       // place they become typed digests; text that is not a digest is simply not cached.
@@ -133,7 +133,7 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
 
           . to[List]
 
-      val tmpFile: Path on Linux =
+      val tmpFile: Path on Local =
         inputJar.parent.or(panic(m"a jar file always has a parent directory")) /
           t"${inputJar.name}.tmp"
 

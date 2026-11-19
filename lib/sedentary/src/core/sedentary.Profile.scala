@@ -83,7 +83,7 @@ case class Profile(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset)
 extends Rig:
   type Result[output] = output
   type Form = Text
-  type Target = Path on Linux
+  type Target = Path on Local
   type Transport = Json
 
 
@@ -229,11 +229,11 @@ extends Rig:
       inclusion.include(runner.report, testId, hotspots)
 
 
-  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux = stageOn(device, out)
+  def stage(out: Path on Local)(using Tactic[Rig.Error]): Path on Local = stageOn(device, out)
 
   protected val scalac: Scalac[3.7, Toolchain.Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
+  protected def invoke[output](stage: Stage[output, Text, Path on Local])(using Tactic[Rig.Error])
   :   output =
 
     stage.remote: input =>

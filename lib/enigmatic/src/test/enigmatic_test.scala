@@ -562,13 +562,13 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         finally out.close()
         path
 
-      import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
+      import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
       import systems.javaBaseSystem, temporaryDirectories.systemTemporaryDirectory
 
       // The keystore is written to a scratch directory, deleted when the suite has run; so each
       // test is a `check`, run where it stands, not an `assert`, which a parallel runner may
       // defer beyond the loan of the directory.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
         val guarded = createKeystore(scratch.stem.encode, scala.Array('s', 'e', 's', 'a', 'm', 'e'))
 
         test(m"An empty keystore opens with the right password"):

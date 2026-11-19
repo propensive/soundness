@@ -54,6 +54,7 @@ import symbolism.`+`
 import serpentine.*
 import vacuous.*
 import anthology.Toolchain.{Tool, Universe}
+import systems.javaBaseSystem
 
 // The dexing configuration `dexEdges`' tool folds settings into: the lowest Android API level
 // the output must run on (lower levels oblige D8 to desugar more), D8's compilation mode, and
@@ -62,7 +63,7 @@ import anthology.Toolchain.{Tool, Universe}
 private[anthology] case class DexConfiguration
   ( minApi:   Int,
     mode:     CompilationMode,
-    platform: Optional[Path on Linux] )
+    platform: Optional[Path on Local] )
 
 object dexOptions:
   private def dex(edit: DexConfiguration => DexConfiguration): Toolchain.Setting =
@@ -75,7 +76,7 @@ object dexOptions:
 
   // An Android SDK's platform stubs (`platforms/android-<n>/android.jar`), needed only below
   // API level 24 or when the program references platform types.
-  def platform(jar: Path on Linux): Toolchain.Setting = dex(_.copy(platform = jar))
+  def platform(jar: Path on Local): Toolchain.Setting = dex(_.copy(platform = jar))
 
   object mode:
     val debug: Toolchain.Setting = dex(_.copy(mode = CompilationMode.DEBUG))
@@ -103,7 +104,7 @@ object dexEdges:
       ( settings:    DexConfiguration,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
@@ -116,10 +117,10 @@ object dexEdges:
   // so entry points—like a library JAR's—do not apply.
   private def link0
     ( form:      DexConfiguration,
-      directory: Path on Linux,
+      directory: Path on Local,
       classpath: LocalClasspath,
-      out:       Path on Linux )
-  :   Path on Linux logs LinkEvent raises Link.Error =
+      out:       Path on Local )
+  :   Path on Local logs LinkEvent raises Link.Error =
 
     val classpathRoots: List[jnf.Path] = classpath.entries.bind:
       case Classpath.Entry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)

@@ -53,7 +53,7 @@ import workingDirectories.javaBaseWorkingDirectory
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error
+  def deploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error
 
   // `heap` overrides the measurement JVM's fixed heap size (both `-Xms` and `-Xmx`), in
   // `-Xmx` syntax, e.g. `t"256m"`; when unset, the default of `1g` applies. Constrained-heap
@@ -71,11 +71,11 @@ trait BenchmarkDevice extends Findable:
   // deterministic pauses suit microbenchmarks, but its stop-the-world pauses dominate tail
   // latency in saturated multi-threaded workloads, which should select `G1`.
   def invoke
-    ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
+    ( path: Path on Local, input: Text, heap: Optional[Text] = Unset,
       cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   :   Text raises Bench.Error
 
-  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error
+  def undeploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error
 
 object NetworkDevice:
   given sessional: (error: Tactic[Bench.Error]) => NetworkDeviceSessional =
@@ -84,7 +84,7 @@ object NetworkDevice:
   // The measurement JVM's invocation, shared by the per-call and session forms; see
   // `BenchmarkDevice.invoke` for the meaning of `heap`, `cpus` and `gc`.
   private[sedentary] def measurement
-    ( path: Path on Linux, input: Text, heap: Optional[Text], cpus: Optional[Int],
+    ( path: Path on Local, input: Text, heap: Optional[Text], cpus: Optional[Int],
       gc: Optional[Text] )
   :   Command =
 
@@ -114,7 +114,7 @@ object NetworkDevice:
   // SSH handshake the plain `NetworkDevice` pays.
   class Session private[sedentary] (device: NetworkDevice, socket: Text)
   extends BenchmarkDevice:
-    def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
+    def deploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error =
       val user = device.user
       val host = device.host
 
@@ -122,7 +122,7 @@ object NetworkDevice:
       . lest(Bench.Error())
 
     def invoke
-      ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
+      ( path: Path on Local, input: Text, heap: Optional[Text] = Unset,
         cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
     :   Text raises Bench.Error =
 
@@ -133,7 +133,7 @@ object NetworkDevice:
       safely(sh"""ssh -o ControlPath=$socket $user@$host ${command.escape}""".exec[Text]())
       . lest(Bench.Error())
 
-    def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
+    def undeploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error =
       val user = device.user
       val host = device.host
 
@@ -141,13 +141,13 @@ object NetworkDevice:
       . lest(Bench.Error())
 
 class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
+  def deploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error =
     val user = this.user
     val host = this.host
     safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(Bench.Error())
 
   def invoke
-    ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
+    ( path: Path on Local, input: Text, heap: Optional[Text] = Unset,
       cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   :   Text raises Bench.Error =
 
@@ -157,7 +157,7 @@ class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
 
     safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(Bench.Error())
 
-  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
+  def undeploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error =
     val user = this.user
     val host = this.host
     safely(sh"ssh $user@$host rm $uuid.jar".exec[Text]()).lest(Bench.Error())
@@ -183,10 +183,10 @@ class NetworkDeviceSessional(using error: Tactic[Bench.Error]) extends Sessional
     finally safely(sh"ssh -O exit -o ControlPath=$socket $user@$host".exec[Exit]()).let(_ => ())
 
 object LocalhostDevice extends BenchmarkDevice:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error = ()
+  def deploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error = ()
 
   def invoke
-    ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
+    ( path: Path on Local, input: Text, heap: Optional[Text] = Unset,
       cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   :   Text raises Bench.Error =
 
@@ -215,4 +215,4 @@ object LocalhostDevice extends BenchmarkDevice:
     val output = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
     if process.waitFor() != 0 then abort(Bench.Error()) else output
 
-  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error = ()
+  def undeploy(path: Path on Local, uuid: Uuid): Unit raises Bench.Error = ()

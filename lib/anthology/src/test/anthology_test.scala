@@ -39,7 +39,7 @@ import org.scalajs.linker.interface.{ModuleKind, StandardConfig}
 import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import galilei.Linux.pathOnLinux
+import galilei.Local.pathOnLocal
 import logging.silentLogging
 import probates.cancelProbate
 import strategies.throwUnsafely
@@ -73,7 +73,7 @@ def passTool(label: Text): Tool = new Tool:
     ( settings:    Unit,
       input:       Deliverable,
       entryPoints: List[EntryPoint],
-      out:         soundness.Path on Linux )
+      out:         soundness.Path on Local )
     ( using Monitor, System, WorkingDirectory )
     ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
   :   Deliverable =
@@ -226,8 +226,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
       // A test which touches the loaned directory is a `check`, which runs where it is written: an
       // `assert` may be deferred until the suite's block has returned, and the loan with it.
-      temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-        val scratch: soundness.Path on Linux = handle.stem
+      temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+        val scratch: soundness.Path on Local = handle.stem
 
         test(m"Producing a format runs each path edge's tool in order"):
           supervise:
@@ -418,8 +418,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
     sjsClasspath().let: classpath =>
       supervise:
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
 
           val process =
             Scalac[3.8](Nil).targeting[Universe.Sjsir]
@@ -434,8 +434,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
             . exists(_.getFileName.nn.toString.endsWith(".sjsir"))
           . check(_ == true)
 
-          temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-            val linked: soundness.Path on Linux = handle.stem
+          temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+            val linked: soundness.Path on Local = handle.stem
 
             test(m"Linking as JavaScript produces a nonempty main.js"):
               Toolchain(sjsEdges()).produce
@@ -465,8 +465,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       supervise:
         val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
         val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
 
           val process = Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), out)
 
@@ -491,8 +491,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
           // is a hash of the file's own sections, and virtual sources carry the names they were
           // given, so neither the run nor the output directory leaves a trace.
           test(m"Compiling the same sources twice yields byte-identical output"):
-            temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-              val again: soundness.Path on Linux = handle.stem
+            temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+              val again: soundness.Path on Local = handle.stem
               Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), again).complete()
 
               def emitted(root: JnfPath): scala.List[(String, String)] =
@@ -507,8 +507,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
               (first.length > 1, first == emitted(Paths.get(again.encode.s).nn))
           . check(_ == (true, true))
 
-          temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-            val linked: soundness.Path on Linux = handle.stem
+          temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+            val linked: soundness.Path on Local = handle.stem
 
             test(m"Linking a JAR produces a runnable artifact"):
               Toolchain(jarEdges()).produce
@@ -526,8 +526,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
             // the compiler and the bundler both selected by the path rather than named by the caller.
             test(m"One path compiles Scala source and runs the JAR it produces"):
               val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))), jarEdges())
-              temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-                val staged: soundness.Path on Linux = handle.stem
+              temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+                val staged: soundness.Path on Local = handle.stem
 
                 toolchain.produce
                   ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
@@ -543,8 +543,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
             test(m"A compile edge reports a failing compilation with its diagnostics"):
               val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
-              temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-                val staged: soundness.Path on Linux = handle.stem
+              temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+                val staged: soundness.Path on Local = handle.stem
                 val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
 
                 capture[Link.Error]
@@ -609,8 +609,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
                 progressed > 0
             . check(_ == true)
 
-            temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-              val saved: soundness.Path on Linux = handle.stem
+            temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+              val saved: soundness.Path on Local = handle.stem
 
               test(m"Saved session output appears on disk"):
                 Scalac[3.8](Nil).on(classpath).session:
@@ -627,8 +627,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     nativeSetup().let: (plugin, classpath) =>
       supervise:
         given NirPlugin = plugin
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
 
           val process =
             Scalac[3.8](Nil).targeting[Universe.Nir]
@@ -644,8 +644,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
           . check(_ == true)
 
           safely(nativeEdges()).let: edges =>
-            temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-              val linked: soundness.Path on Linux = handle.stem
+            temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+              val linked: soundness.Path on Local = handle.stem
 
               test(m"Linking natively produces a runnable binary"):
                 val host =
@@ -680,8 +680,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     kotlinToolchain().let: stdlib =>
       supervise:
         val classpath = LocalClasspath(List(Classpath.Entry.Jar(stdlib))*)
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
 
           val greeting: Text =
             t"""|package demo
@@ -706,8 +706,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
                 |fun broken(): Int = "not an integer"
                 |""".s.stripMargin.tt
 
-          temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-            val out2: soundness.Path on Linux = handle.stem
+          temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+            val out2: soundness.Path on Local = handle.stem
             val failing = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Broken.kt" -> broken), out2)
 
             test(m"A Kotlin compilation with a type error fails"):
@@ -804,7 +804,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       . let: base =>
           val jars = artifacts.stdlib.map { jar => base.resolve(jar.s).nn }
           val stdlib = scala.collection.immutable.List("scala-library.jar", "scala3-library.jar").map(proscala.resolve(_).nn)
-          val plugin = unsafely(jars.head.toString.tt.as[soundness.Path on Linux])
+          val plugin = unsafely(jars.head.toString.tt.as[soundness.Path on Local])
 
           val classpath =
             LocalClasspath

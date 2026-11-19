@@ -165,8 +165,8 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         sh"echo $pid"
       . assert(_ == Command(t"echo", t"↯42"))
 
-      test(m"substitute a Path on Linux"):
-        val path: Path on Linux = (% / "etc" / "hosts").on[Linux]
+      test(m"substitute a Path on Local"):
+        val path: Path on Local = (% / "etc" / "hosts").on[Local]
         sh"cat $path"
       . assert(_ == Command(t"cat", t"/etc/hosts"))
 
@@ -309,7 +309,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       . assert(_ == Command(t"kill", t"↯42"))
 
       test(m"Path substitutes encoded form"):
-        val path: Path on Linux = (% / "tmp" / "x").on[Linux]
+        val path: Path on Local = (% / "tmp" / "x").on[Local]
         sh"rm $path"
       . assert(_ == Command(t"rm", t"/tmp/x"))
 
@@ -612,8 +612,8 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       . assert(_ == true)
 
       test(m"A detached command's output is appended to its log, whose parents are made"):
-        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val log: Path on Linux = handle.stem / "nested" / "out.log"
+        temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+          val log: Path on Local = handle.stem / "nested" / "out.log"
           sh"echo detached".detach(log)
 
           def read(remaining: Int): Text =

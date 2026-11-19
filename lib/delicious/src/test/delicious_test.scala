@@ -40,7 +40,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import soundness.*
 import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
-import galilei.Linux.pathOnLinux
+import galilei.Local.pathOnLocal
 import logging.silentLogging
 import probates.cancelProbate
 import strategies.throwUnsafely
@@ -283,8 +283,8 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
       // without semdiag (releases up to p5) produces no markup, and only the
       // fallback invariants are asserted.
       supervise:
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
 
           val source: Text =
             t"""|object Bad:
@@ -326,8 +326,8 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
       // Under `-Zbolt-codes`, each notice carries the bolt code Proscala gives it: a type
       // mismatch is upstream's `E007`, `↯/p.1.7`. Without the option, none does.
       supervise:
-        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
-          val out: soundness.Path on Linux = handle.stem
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
           val source: Map[Text, Text] = Map(t"mismatch.scala" -> t"val count: Int = \"three\"\n")
 
           def codes(options: List[Scalac.Option[3.9]]): List[Text] =

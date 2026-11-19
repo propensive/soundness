@@ -54,7 +54,7 @@ object Wasi:
   // WitWorld → Wasi.World
   // The WIT definitions a WASI component link resolves its imports and exports against: a
   // directory of `.wit` packages and the name of the world to link.
-  case class World(directory: Path on Linux, world: Text)
+  case class World(directory: Path on Local, world: Text)
 
 // A standalone WebAssembly artifact bound to a version of the WASI system interface: one
 // application node per version.

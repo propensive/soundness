@@ -51,7 +51,7 @@ import prepositional.*
 import rudiments.{define, defines}
 import serpentine.*
 import spectacular.*
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import systems.javaBaseSystem
 
 object Rig:
@@ -94,7 +94,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   protected val classloader = classloader0
 
-  def classpath(out: Path on Linux): LocalClasspath =
+  def classpath(out: Path on Local): LocalClasspath =
     // The rig's own classloader, not the thread's context loader: under a test-running host
     // such as fume, the suite's classes live in an isolating `URLClassLoader`, and a pooled
     // thread's context loader may be the host's own.
@@ -108,7 +108,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
   // Builds and deploys the staged code under `path`; a failure to do so is a `Rig.Error`.
-  def stage(path: Path on Linux)(using Tactic[Rig.Error]): Target
+  def stage(path: Path on Local)(using Tactic[Rig.Error]): Target
 
 
   inline def dispatch[output]
@@ -167,7 +167,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
       else
         val uuid = Uuid()
 
-        val out = (temporaryDirectory / uuid).on[Linux]
+        val out = (temporaryDirectory / uuid).on[Local]
 
         deleteOnShutdown(jnf.Paths.get(out.encode.s).nn)
 

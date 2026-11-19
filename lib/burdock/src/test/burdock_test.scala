@@ -223,9 +223,9 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       .assert(_ == (jarUrl, mavenUrl.show))
 
     suite(m"Repackager (end-to-end)"):
-      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
-      val inputJar: Path on Linux = tmp/t"burdock-in-${Uuid().show}.jar"
-      val outputJar: Path on Linux = tmp/t"burdock-out-${Uuid().show}.jar"
+      val tmp: Path on Local = temporaryDirectory[Path on Local]
+      val inputJar: Path on Local = tmp/t"burdock-in-${Uuid().show}.jar"
+      val outputJar: Path on Local = tmp/t"burdock-out-${Uuid().show}.jar"
 
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
@@ -278,9 +278,9 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       // strips their trailing slash and flags them as directories; if copied through as plain
       // entries they would be re-emitted as zero-byte *files* (`com/example`), colliding with
       // the real directory on extraction ("exists but is not directory"). They must be dropped.
-      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
-      val inputJar: Path on Linux = tmp/t"burdock-dir-in-${Uuid().show}.jar"
-      val outputJar: Path on Linux = tmp/t"burdock-dir-out-${Uuid().show}.jar"
+      val tmp: Path on Local = temporaryDirectory[Path on Local]
+      val inputJar: Path on Local = tmp/t"burdock-dir-in-${Uuid().show}.jar"
+      val outputJar: Path on Local = tmp/t"burdock-dir-out-${Uuid().show}.jar"
 
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
@@ -323,9 +323,9 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       // locally-published) burdock dependency's cached JAR also carries `burdock/Bootstrap.class`.
       // None of these must produce a duplicate entry in the output (which fails as a
       // `Zip.Error`). See issue #1333.
-      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
-      val inputJar: Path on Linux = tmp/t"burdock-dup-in-${Uuid().show}.jar"
-      val outputJar: Path on Linux = tmp/t"burdock-dup-out-${Uuid().show}.jar"
+      val tmp: Path on Local = temporaryDirectory[Path on Local]
+      val inputJar: Path on Local = tmp/t"burdock-dup-in-${Uuid().show}.jar"
+      val outputJar: Path on Local = tmp/t"burdock-dup-out-${Uuid().show}.jar"
 
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
@@ -368,9 +368,9 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       // at runtime (a `Burdock-Require` reference), so its bundled classes must be stripped
       // from the repackaged JAR; the application's own classes (and an unpublished, cached
       // dependency's classes) are kept.
-      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
-      val inputJar: Path on Linux = tmp/t"burdock-slim-in-${Uuid().show}.jar"
-      val outputJar: Path on Linux = tmp/t"burdock-slim-out-${Uuid().show}.jar"
+      val tmp: Path on Local = temporaryDirectory[Path on Local]
+      val inputJar: Path on Local = tmp/t"burdock-slim-in-${Uuid().show}.jar"
+      val outputJar: Path on Local = tmp/t"burdock-slim-out-${Uuid().show}.jar"
 
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
@@ -424,9 +424,9 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       // compression method, CRC and payload — never inflated and re-deflated. A `Stored` input
       // entry is the tell: were it recompressed under the default `Deflate` policy, it would come
       // out as `Deflate`.
-      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
-      val inputJar: Path on Linux = tmp/t"burdock-verbatim-in-${Uuid().show}.jar"
-      val outputJar: Path on Linux = tmp/t"burdock-verbatim-out-${Uuid().show}.jar"
+      val tmp: Path on Local = temporaryDirectory[Path on Local]
+      val inputJar: Path on Local = tmp/t"burdock-verbatim-in-${Uuid().show}.jar"
+      val outputJar: Path on Local = tmp/t"burdock-verbatim-out-${Uuid().show}.jar"
 
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
@@ -449,7 +449,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
       Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".in[Data])
 
-      def entry(jar: Path on Linux, name: Text): Zip.Entry =
+      def entry(jar: Path on Local, name: Text): Zip.Entry =
         Zipfile.read(jar).entries.seek(_.ref.show == name).or(panic(m"the suite expects a match"))
 
       test(m"a Stored input entry stays Stored (no re-deflate)"):
@@ -489,7 +489,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       import com.sun.net.httpserver as csnh
 
       val javaBinary: Text = t"${_root_.java.lang.System.getProperty("java.home").nn}/bin/java"
-      val root: Path on Linux = temporaryDirectory[Path on Linux]/t"burdock-boot-${Uuid().show}"
+      val root: Path on Local = temporaryDirectory[Path on Local]/t"burdock-boot-${Uuid().show}"
       jnf.Files.createDirectories(jnf.Paths.get(root.show.s))
 
       def data(bytes: scala.Array[Byte]): Data = Data.fill(bytes.length)(bytes(_))
@@ -541,7 +541,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       val requirements: Text =
         t"$hashOne:http://127.0.0.1:$port/one.jar $hashTwo:http://127.0.0.1:$port/two.jar"
 
-      def appJar(name: Text, require: Text): Path on Linux =
+      def appJar(name: Text, require: Text): Path on Local =
         val manifest = juj.Manifest()
         val attributes = manifest.getMainAttributes.nn
         attributes.put(juj.Attributes.Name.MANIFEST_VERSION, "1.0")
@@ -551,7 +551,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
         attributes.putValue("Burdock-Require", require.s)
         val out = ji.ByteArrayOutputStream()
         manifest.write(out)
-        val jar: Path on Linux = root/name
+        val jar: Path on Local = root/name
 
         jar.write(Zipfile(
           ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], data(out.toByteArray.nn))
@@ -561,14 +561,14 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
         jar
 
-      val jar: Path on Linux = appJar(t"app.jar", requirements)
+      val jar: Path on Local = appJar(t"app.jar", requirements)
       val cache: Text = t"${root.show}/cache"
       val progress: Text = t"${root.show}/progress"
 
-      def launch(jar: Path on Linux, cache: Text): Text =
+      def launch(jar: Path on Local, cache: Text): Text =
         sh"env XDG_CACHE_HOME=$cache $javaBinary -Dburdock.progress=$progress -jar $jar".exec[Text]().trim
 
-      def status(jar: Path on Linux, cache: Text): Exit =
+      def status(jar: Path on Local, cache: Text): Exit =
         sh"env XDG_CACHE_HOME=$cache $javaBinary -Dburdock.progress=$progress -jar $jar".exec[Exit]()
 
       val coldOutput: Text = launch(jar, cache)

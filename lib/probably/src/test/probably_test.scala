@@ -205,13 +205,13 @@ object Tests extends Suite("testing", m"Probably Tests"):
       . assert(_ == true)
 
     suite(m"Coverage"):
-      import galilei.Linux.pathOnLinux, systems.javaBaseSystem, strategies.throwUnsafely
+      import galilei.Local.pathOnLocal, systems.javaBaseSystem, strategies.throwUnsafely
       import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
 
       // The recompiled class is loaded from the scratch directory, so every test which reads
       // it is a `check`, run where it stands, not an `assert`, which a parallel runner may
       // defer beyond the loan of the directory.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
         val probed: Probed = Probed(handle.stem.encode.s)
 
         test(m"a unit is recompiled from its TASTy without problems"):
