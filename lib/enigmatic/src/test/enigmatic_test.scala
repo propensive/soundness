@@ -1180,7 +1180,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"The Concat KDF derives RFC 7518 appendix C's key"):
         val secret = hex(t"9E56D91D817135D372834283BF84269CFB316EA3DA806A48F6DAA7798CFE90C4")
-        // The lengths-prefixed `A128GCM`, `Alice` and `Bob`, then the key length in bits.
+        // The length-prefixed algorithm name and the RFC's two party names, then the key length
+        // in bits.
         val info = hex(t"000000074131323847434D00000005416C69636500000003426F6200000080")
         KeyDerivation.concat[Sha2[256]](secret, info, 16).serialize[Hex]
       . assert(_ == t"56AA8DEAF8236D205C2228CD71A7101A")
@@ -1289,6 +1290,17 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       test(m"A fixed-width signature of the wrong length is refused"):
         Ecdsa.signature[256](counting(63))
       . assert(_ == Unset)
+
+      test(m"A symmetric key verifies the MAC it made"):
+        val key = SymmetricKey.generate[HmacCipher[Sha2[256]]]()
+        key.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A symmetric key does not verify another key's MAC"):
+        val key = SymmetricKey.generate[HmacCipher[Sha2[256]]]()
+        val other = SymmetricKey.generate[HmacCipher[Sha2[256]]]()
+        key.verify(pangram, other.sign(pangram))
+      . assert(!_)
 
       test(m"An HMAC key is as long as its hash"):
         List

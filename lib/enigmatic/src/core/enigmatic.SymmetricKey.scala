@@ -78,7 +78,11 @@ extends PrivateKey[cipher](handle):
     ( using signing: cipher & Signing, erased weakness: ProcessingPermit[Weakness[cipher]] )
   :   Boolean =
 
-    public.verify(value, signature)
+    // Not `public.verify`: a symmetric key's "public key" is the key itself, and `public` would
+    // hand back a view of the uncloaked bytes that the cloak has zeroed by the time it returns.
+    secret.uncloak: bytes =>
+      val encodable = summon[value is Encodable in Data]
+      signing.verify(encodable.encode(value), signature.bytes, Array.unsafeFrozen(bytes))
 
   // The immutable `Data` in the result outlives the cloak's zeroing, which is why obtaining
   // it demands the explicit `Divulgence` token. This replaces the former `Encodable` given,
