@@ -37,7 +37,7 @@ already provides, alongside its COSE support.
 Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
 round-trips the RFC 7515/7516 example vectors.
 
-Done: sigillate (2026-11-20). `Jws`, `Jwe`, `Jwk` and `Jwt`, with every algorithm of RFC 7518
+Done: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` and `Jwt`, with every algorithm of RFC 7518
 but `zip` compression, and EdDSA and X25519 from RFC 8037; a bearer-token handler for
 scintillate, and key sets fetched over HTTP. The examples of RFC 7515 appendix A and RFC 7516
 appendix A are its tests, read from the RFCs' text. enigmatic gained the primitives it lacked:
@@ -66,7 +66,7 @@ carries.
 Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
 scripted registration-and-assertion ceremony passes against a reference authenticator.
 
-Done: chatelaine (2026-11-20). The relying party's two ceremonies, with every check of
+Done: #2530 (2026-11-20). chatelaine: The relying party's two ceremonies, with every check of
 WebAuthn Level 2 §7.1 and §7.2, and the `none` and `packed` attestation formats. The
 reference authenticator is the specification's own: the registration and authentication
 outputs of its test vectors, for ES256, ES384, ES512, RS256 and Ed25519 credentials, are

@@ -524,6 +524,7 @@ item
   track breadth
   horizon near
   status done
+  done  #2530 (2026-11-20)
   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/en/modules/jose.md (2026-11-20)
   criterion  JOSE module ships with tests, SN pages and a topic; round-trips RFC 7515/7516 example vectors
 
@@ -539,6 +540,7 @@ item
   track breadth
   horizon mid
   status done
+  done  #2530 (2026-11-20)
   needs brd-1
   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/en/modules/webauthn.md (2026-11-20)
   criterion  WebAuthn module ships with tests, SN pages and a topic; scripted ceremony passes against a reference authenticator
