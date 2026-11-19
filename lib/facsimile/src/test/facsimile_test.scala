@@ -70,6 +70,15 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
 
   def run(): Unit =
+    import galilei.Linux.pathOnLinux, systems.javaBaseSystem
+    import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
+
+    temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+      suites(handle.stem)
+
+  // A test which reads or writes a file beneath `scratch` is a `check`, run where it stands,
+  // not an `assert`, which a parallel runner may defer beyond the loan of the directory.
+  private def suites(scratch: Path on Linux): Unit =
     def parse(text: Text): Cos = CosParser(CosLexer(Scan(text.in[Data]))).value()
 
     def textOf(cos: Cos): Text =
@@ -124,11 +133,15 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
     // A filename Text is its own abstract path, for opening temp files on disk.
     given (Text is Abstractable across Paths to Text) = identity(_)
 
-    // Write `bytes` to a fresh temp file and return its path as Text; and read a file back.
+    // Write `bytes` to a fresh file in the scratch directory and return its path as Text; and
+    // read a file back.
     def tempPdf(bytes: Data): Text =
-      val path = jnf.Files.createTempFile("facsimile", ".pdf").nn
+      val path = jnf.Path.of(freshPath.s).nn
       jnf.Files.write(path, Array.unsafeJvm(bytes))
       path.toString.tt
+
+    // The path of a file which does not yet exist, in the scratch directory.
+    def freshPath: Text = (scratch / t"${Uuid()}.pdf").encode
 
     def fileBytes(path: Text): Data =
       Array.unsafeFrozen(jnf.Files.readAllBytes(jnf.Paths.get(path.s)).nn)
@@ -497,7 +510,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.resolved(pdf(2, 0))(t"Value").let(_.text)
-      . assert(_ == t"edited")
+      . check(_ == t"edited")
 
       test(m"the original bytes are preserved (incremental append, not rewrite)"):
         val path = tempPdf(editable)
@@ -506,7 +519,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
 
         fileBytes(path).segment((0).z till (editable.length).z).to[List]
-      . assert(_ == editable.to[List])
+      . check(_ == editable.to[List])
 
       test(m"the incremental update chains /Prev to the original cross-reference"):
         val path = tempPdf(editable)
@@ -515,7 +528,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           doc.set(Cos.Ref(2, 0), Cos.Integral(7))
 
         String(Array.unsafeJvm(fileBytes(path)), "ISO-8859-1").nn.contains("/Prev")
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"an allocated object gets a fresh number and is readable after writing"):
         val path = tempPdf(editable)
@@ -527,14 +540,14 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf(allocated)(t"Kind")
-      . assert(_ == Cos.Name(t"New"))
+      . check(_ == Cos.Name(t"New"))
 
       test(m"a fresh object number is one past the original size"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
           doc.allocate(Cos.Nil).number
-      . assert(_ == 5)
+      . check(_ == 5)
 
       test(m"a deleted object reads back as null"):
         val path = tempPdf(editable)
@@ -544,7 +557,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf(2, 0)
-      . assert(_ == Cos.Nil)
+      . check(_ == Cos.Nil)
 
       test(m"edits are visible to read views within the same write scope"):
         val path = tempPdf(editable)
@@ -552,7 +565,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"live".in[Data]))))
           doc.resolved(doc(2, 0))(t"Value").let(_.text)
-      . assert(_ == t"live")
+      . check(_ == t"live")
 
       test(m"a scope that changes nothing appends nothing"):
         val path = tempPdf(editable)
@@ -561,7 +574,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           doc.version
 
         fileBytes(path).length
-      . assert(_ == editable.length)
+      . check(_ == editable.length)
 
       test(m"opening in-memory data for writing is refused"):
         capture[Pdf.Error](PdfFile(editable).open(Read & Write) { doc ?=> () }).reason
@@ -588,7 +601,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).text
-      . assert(_ == t"Written")
+      . check(_ == t"Written")
 
       test(m"setting a page's rotation round-trips"):
         val path = tempPdf(onePage)
@@ -599,7 +612,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).rotation
-      . assert(_ == Page.Rotation.Quarter)
+      . check(_ == Page.Rotation.Quarter)
 
       test(m"setting a page box round-trips"):
         val path = tempPdf(onePage)
@@ -613,7 +626,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).cropBox.width
-      . assert(_ == Quantity[Points[1]](200.0))
+      . check(_ == Quantity[Points[1]](200.0))
 
       test(m"an appended page increases the page count"):
         val path = tempPdf(onePage)
@@ -626,7 +639,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pageCount
-      . assert(_ == 2)
+      . check(_ == 2)
 
       test(m"an appended page's content extracts as text"):
         val path = tempPdf(onePage)
@@ -649,7 +662,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Sec).text
-      . assert(_ == t"Second")
+      . check(_ == t"Second")
 
       test(m"a removed page decreases the page count"):
         val twoPages = document
@@ -666,7 +679,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pageCount
-      . assert(_ == 1)
+      . check(_ == 1)
 
       test(m"setting document information round-trips text fields"):
         val path = tempPdf(editable)
@@ -676,7 +689,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           (pdf.info.title, pdf.info.author)
-      . assert(_ == (t"A Title", t"An Author"))
+      . check(_ == (t"A Title", t"An Author"))
 
       test(m"a set creation date round-trips through the D: format"):
         val path = tempPdf(editable)
@@ -693,7 +706,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.info.created.let(_.timestamp)
-      . assert: created =>
+      . check: created =>
           import calendars.gregorianCalendar
           created == Timestamp(Date(Year(2026), Month(7), Day(17)),
               Clockface(Base24(9), Base60(30), Base60(0)))
@@ -710,7 +723,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.size))
-      . assert(_ == List((t"Chapter 1", 1), (t"Chapter 2", 0)))
+      . check(_ == List((t"Chapter 1", 1), (t"Chapter 2", 0)))
 
       test(m"a bookmark destination targets a page"):
         val path = tempPdf(editable)
@@ -720,7 +733,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.bookmarks.head.let(_.destination)
-      . assert(_ == Pdf.Destination.Fit(Prim))
+      . check(_ == Pdf.Destination.Fit(Prim))
 
       test(m"adding a link annotation round-trips"):
         val onePage = document
@@ -741,7 +754,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           pdf.page(Prim).annotations.head match
             case Annotation.Link(_, _, uri, _) => uri
             case _                             => Unset
-      . assert(_ == t"https://soundness.dev/")
+      . check(_ == t"https://soundness.dev/")
 
       // A one-page document with no font, for embedding a font into.
       def blankPage: Data = document
@@ -764,7 +777,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1").let(_.embedded).let(_.data.to[List])
-      . assert(_ == fontProgram.to[List])
+      . check(_ == fontProgram.to[List])
 
       test(m"a standard font is declared by name rather than embedded"):
         val path = tempPdf(blankPage)
@@ -776,7 +789,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1").let(_.baseFont)
-      . assert(_ == t"Helvetica-Bold")
+      . check(_ == t"Helvetica-Bold")
 
       test(m"a font from an embedded provision is embedded"):
         given (Typeface of "Pretend") is Typesettable in Medium =
@@ -791,7 +804,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1").let(_.embedded).let(_.data.to[List])
-      . assert(_ == fontProgram.to[List])
+      . check(_ == fontProgram.to[List])
 
       test(m"a typeface without a provision for print is refused"):
         demilitarize:
@@ -817,7 +830,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).text
-      . assert(_ == t"Embedded text")
+      . check(_ == t"Embedded text")
 
       test(m"the embedded font is a simple WinAnsi TrueType font"):
         val path = tempPdf(blankPage)
@@ -831,7 +844,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           pdf.page(Prim).fonts(t"F1") match
             case _: Pdf.Font.TrueType => true
             case _                   => false
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"an unnamed embedded font takes its PostScript name"):
         val path = tempPdf(blankPage)
@@ -843,7 +856,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1").let(_.baseFont)
-      . assert(_ == t"TestSans")
+      . check(_ == t"TestSans")
 
       test(m"the font descriptor carries the font's real metrics"):
         val path = tempPdf(blankPage)
@@ -859,7 +872,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
             descriptor(t"ItalicAngle"),
             descriptor(t"CapHeight"),
             descriptor(t"Flags") )
-      . assert(_ == (Cos.Sequence(List(Cos.Integral(-50), Cos.Integral(-200), Cos.Integral(1000),
+      . check(_ == (Cos.Sequence(List(Cos.Integral(-50), Cos.Integral(-200), Cos.Integral(1000),
             Cos.Integral(800))), Cos.Real(-11.5), Cos.Integral(730), Cos.Integral(97)))
 
       test(m"widths come from the font's own character mapping"):
@@ -872,7 +885,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           dict(t"Widths") match
             case Cos.Sequence(widths) => widths.at(('A' - 32).z).let { a => widths.at(('z' - 32).z).let { z => (a, z) } }
             case _                    => Unset
-      . assert(_ == (Cos.Integral(500), Cos.Integral(0)))
+      . check(_ == (Cos.Integral(500), Cos.Integral(0)))
 
       test(m"a subset embed carries a six-letter tag prefix"):
         val path = tempPdf(blankPage)
@@ -884,7 +897,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1").let(_.baseFont)
-      . assert(_.lay(false)(_.s.matches("[A-Z]{6}\\+TestSans")))
+      . check(_.lay(false)(_.s.matches("[A-Z]{6}\\+TestSans")))
 
       test(m"a subset program keeps used outlines and drops the rest"):
         val path = tempPdf(blankPage)
@@ -899,7 +912,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           // assertions are about TrueType outlines, so narrow to `Truetype`.
           pdf.page(Prim).fonts(t"F1").let(_.embedded).let:
             case ttf: Truetype => (ttf.glyf(1).empty, ttf.glyf(2).empty)
-      . assert(_ == (false, true))
+      . check(_ == (false, true))
 
       test(m"a subset retains the components of composite glyphs"):
         val path = tempPdf(blankPage)
@@ -912,18 +925,13 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1").let(_.embedded).let:
             case ttf: Truetype => (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
-      . assert(_ == (false, false, true))
+      . check(_ == (false, false, true))
 
       test(m"winAnsi encodes accented characters to their code page byte"):
         (winAnsi(t"café").to[List]: List[Byte]).map(_.toInt & 0xff)
       . assert(_ == List('c'.toInt, 'a'.toInt, 'f'.toInt, 0xe9))
 
     suite(m"Creation from scratch"):
-      def freshPath: Text =
-        val path = jnf.Files.createTempFile("facsimile-new", ".pdf").nn
-        jnf.Files.delete(path)
-        path.toString.tt
-
       val a4 = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
           Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
 
@@ -934,7 +942,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pageCount
-      . assert(_ == 1)
+      . check(_ == 1)
 
       test(m"a created page carries its media box"):
         val path = freshPath
@@ -943,7 +951,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).mediaBox.width
-      . assert(_ == Quantity[Points[1]](595.0))
+      . check(_ == Quantity[Points[1]](595.0))
 
       test(m"a created page's content extracts as text"):
         val path = freshPath
@@ -963,7 +971,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).text
-      . assert(_ == t"From scratch")
+      . check(_ == t"From scratch")
 
       test(m"document information set at creation round-trips"):
         val path = freshPath
@@ -973,7 +981,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.info.title
-      . assert(_ == t"Made")
+      . check(_ == t"Made")
 
       test(m"creating over an existing file needs the Replace flag"):
         val path = freshPath
@@ -985,7 +993,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           // [by-name-receiver] doc block chained through create's own result
           scala.caps.unsafe.unsafeAssumeSeparate(path.create[Pdf]() { doc ?=> doc.appendPage(a4) })
         . reason
-      . assert(_ == Pdf.Error.Reason.Io(t"the file already exists"))
+      . check(_ == Pdf.Error.Reason.Io(t"the file already exists"))
 
     suite(m"Damaged-file recovery"):
       // A minimal well-formed document whose objects can be found by scanning, used as the
@@ -1115,12 +1123,12 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
       test(m"an update over a cross-reference stream is itself a cross-reference stream"):
         val tail = appended(xrefStreamDocument())
         (tail.contains(t"/Type /XRef"), tail.contains(t"trailer"))
-      . assert(_ == (true, false))
+      . check(_ == (true, false))
 
       test(m"an update over a classic table is still a classic table"):
         val tail = appended(document(t"<< /Type /Catalog >>".in[Data]))
         (tail.contains(t"trailer"), tail.contains(t"/Type /XRef"))
-      . assert(_ == (true, false))
+      . check(_ == (true, false))
 
       // The edited object must be found in the new section, and an object compressed into the
       // ORIGINAL file's object stream must still be found through the chain behind it — which is
@@ -1138,7 +1146,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         PdfFile(fileBytes(path)).open[Pdf]():
           ( pdf(1, 0)(t"Edited").or(Cos.Nil),
             pdf.resolved(pdf(1, 0)(t"Answer").or(Cos.Nil)) )
-      . assert(_ == (Cos.Name(t"yes"), Cos.Integral(42)))
+      . check(_ == (Cos.Name(t"yes"), Cos.Integral(42)))
 
     // A one-page document with Helvetica as `/F1` and the given content stream.
     def contentPage(content: Text): Data =
@@ -1676,7 +1684,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         // failure to encrypt on write would surface as garbage here.
         PdfFile(fileBytes(path)).open():
           pdf.resolved(pdf(1, 0))(t"Marker").let(_.text)
-      . assert(_ == t"added")
+      . check(_ == t"added")
 
       test(m"an edit to an AES-256 document round-trips"):
         val path = tempPdf(aes256Document(t"open sesame"))
@@ -1687,7 +1695,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open(Password(t"open sesame")):
           pdf.resolved(pdf(1, 0))(t"Marker").let(_.text)
-      . assert(_ == t"aes")
+      . check(_ == t"aes")
 
       test(m"a newly-written stream in an encrypted document decrypts on re-read"):
         val path = tempPdf(rc4Document(3))
@@ -1701,7 +1709,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           pdf.resolved(pdf(1, 0)(t"Extra").or(Cos.Nil)) match
             case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
-      . assert(_ == t"secret stream")
+      . check(_ == t"secret stream")
 
     // A two-page document: object 1 catalog, 2 page-tree root (A4 media box, inherited),
     // 3 a plain page, 4 a page with its own crop box and rotation.

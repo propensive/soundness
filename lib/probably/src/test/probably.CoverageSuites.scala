@@ -37,15 +37,18 @@ import java.util.concurrent as juc
 
 import soundness.*
 
-// `Casket`, recompiled with probes from the TASTy this test classpath holds for it, and loaded
-// beside the uninstrumented one: by a classloader which finds that one class itself, and leaves
-// every other — `Coverage` among them, so that there is only one — to the suite's.
 object Probed:
   private val name: String = "probably.Casket"
+
+// `Casket`, recompiled with probes from the TASTy this test classpath holds for it, beneath
+// `cache`, and loaded beside the uninstrumented one: by a classloader which finds that one class
+// itself, and leaves every other — `Coverage` among them, so that there is only one — to the
+// suite's. The class is loaded from `cache`, so a `Probed` is used only while `cache` exists.
+class Probed(cache: String):
+  import Probed.name
   private val parent: ClassLoader = getClass.getClassLoader.nn
 
   private val classpath: scala.List[String] = Instrumenter.classpath(parent)
-  private val cache: String = jnf.Files.createTempDirectory("probably-coverage").nn.toString
 
   // The plan for the class, named as a class and as the source file it was compiled from.
   val plan: Instrumenter.Plan = Instrumenter.plan(classpath, scala.List(name), scala.Nil, cache)

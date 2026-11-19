@@ -249,266 +249,272 @@ object Tests extends Suite("ssh", m"Susurration tests"):
       suite(m"Transport against sshd"):
         import internetAccess.online
 
-        val directory = jnf.Files.createTempDirectory(jnf.Path.of("/tmp").nn, "susurration-").nn
+        import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
 
-        def file(name: Text): Text = directory.resolve(name.s).nn.toString.tt
+        // The keys and configuration are written to a scratch directory beneath `/tmp`, which
+        // is deleted when the suite has run; so every test is a `check`, run where it stands,
+        // not an `assert`, which a parallel runner may defer beyond the loan of the directory.
+        (% / "tmp").on[Linux].open[Scratch](Read & Write): scratch ?=>
+          val directory: jnf.Path = jnf.Path.of(scratch.stem.encode.s).nn
 
-        def keygen(kind: Text, name: Text): Unit =
-          sh"ssh-keygen -q -t $kind -N ${t""} -f ${file(name)}".exec[Exit]()
+          def file(name: Text): Text = directory.resolve(name.s).nn.toString.tt
 
-        keygen(t"ed25519", t"host_ed25519")
-        keygen(t"ecdsa", t"host_ecdsa")
-        keygen(t"rsa", t"host_rsa")
-        keygen(t"ed25519", t"user_ed25519")
-        keygen(t"ecdsa", t"user_ecdsa")
-        keygen(t"rsa", t"user_rsa")
-        keygen(t"ed25519", t"stranger")
+          def keygen(kind: Text, name: Text): Unit =
+            sh"ssh-keygen -q -t $kind -N ${t""} -f ${file(name)}".exec[Exit]()
 
-        def contents(name: Text): Text = jnf.Files.readString(directory.resolve(name.s).nn).nn.tt
+          keygen(t"ed25519", t"host_ed25519")
+          keygen(t"ecdsa", t"host_ecdsa")
+          keygen(t"rsa", t"host_rsa")
+          keygen(t"ed25519", t"user_ed25519")
+          keygen(t"ecdsa", t"user_ecdsa")
+          keygen(t"rsa", t"user_rsa")
+          keygen(t"ed25519", t"stranger")
 
-        val authorized = List(t"user_ed25519.pub", t"user_ecdsa.pub", t"user_rsa.pub")
-        val authorizedKeys = authorized.map(contents).join(t"\n").s
-        jnf.Files.writeString(directory.resolve("authorized_keys").nn, authorizedKeys)
+          def contents(name: Text): Text = jnf.Files.readString(directory.resolve(name.s).nn).nn.tt
 
-        val user: Text = java.lang.System.getProperty("user.name").nn.tt
+          val authorized = List(t"user_ed25519.pub", t"user_ecdsa.pub", t"user_rsa.pub")
+          val authorizedKeys = authorized.map(contents).join(t"\n").s
+          jnf.Files.writeString(directory.resolve("authorized_keys").nn, authorizedKeys)
 
-        val configuration = t"""ListenAddress 127.0.0.1
-          |HostKey ${file(t"host_ed25519")}
-          |HostKey ${file(t"host_ecdsa")}
-          |HostKey ${file(t"host_rsa")}
-          |PidFile none
-          |AuthorizedKeysFile ${file(t"authorized_keys")}
-          |StrictModes no
-          |PasswordAuthentication no
-          |KbdInteractiveAuthentication no
-          |AcceptEnv SUSURRATION_*
-          |UsePAM no
-          |LogLevel DEBUG1
-          |""".s.stripMargin
+          val user: Text = java.lang.System.getProperty("user.name").nn.tt
 
-        jnf.Files.writeString(directory.resolve("sshd_config").nn, configuration)
-        val unrecorded: Text = t"ssh-ed25519 ${ed25519Blob.serialize[Base64]}"
+          val configuration = t"""ListenAddress 127.0.0.1
+            |HostKey ${file(t"host_ed25519")}
+            |HostKey ${file(t"host_ecdsa")}
+            |HostKey ${file(t"host_rsa")}
+            |PidFile none
+            |AuthorizedKeysFile ${file(t"authorized_keys")}
+            |StrictModes no
+            |PasswordAuthentication no
+            |KbdInteractiveAuthentication no
+            |AcceptEnv SUSURRATION_*
+            |UsePAM no
+            |LogLevel DEBUG1
+            |""".s.stripMargin
 
-        def hostKeyLine(name: Text): Text =
-          jnf.Files.readString(directory.resolve(name.s).nn).nn.tt.trim
+          jnf.Files.writeString(directory.resolve("sshd_config").nn, configuration)
+          val unrecorded: Text = t"ssh-ed25519 ${ed25519Blob.serialize[Base64]}"
 
-        // A server on a free port, for the duration of the block.
-        def server[result](block: Int => result): result =
-          val port = summon[Tcp is Allocatable].unused()
+          def hostKeyLine(name: Text): Text =
+            jnf.Files.readString(directory.resolve(name.s).nn).nn.tt.trim
 
-          val process =
-            ProcessBuilder
-              ( "/usr/sbin/sshd", "-D", "-p", port.toString, "-E", file(t"sshd.log").s, "-f",
-                file(t"sshd_config").s )
-            . start().nn
+          // A server on a free port, for the duration of the block.
+          def server[result](block: Int => result): result =
+            val port = summon[Tcp is Allocatable].unused()
 
-          // The server is ready when the port accepts a connection.
-          def ready(attempts: Int): Boolean =
-            attempts > 0 && (
-              safely { java.net.Socket("127.0.0.1", port).close(); true }.or(false) ||
-              { Thread.sleep(50); ready(attempts - 1) } )
+            val process =
+              ProcessBuilder
+                ( "/usr/sbin/sshd", "-D", "-p", port.toString, "-E", file(t"sshd.log").s, "-f",
+                  file(t"sshd_config").s )
+              . start().nn
 
-          try
-            if !ready(100) then abort(Ssh.Error(Ssh.Error.Reason.ClosedConnection))
-            block(port)
-          finally process.destroy()
-
-        def connected[result](algorithms: Ssh.Algorithms = Ssh.Algorithms())
-          ( block: Transport^ => result )
-          ( using Ssh.HostKeys )
-        :   result =
-
-          given Ssh.Algorithms = algorithms
-
-          server: port =>
-            val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
-
-            // Connected as perihelion connects: `.duplex` requires an empty capture set, which
-            // the `online`-capturing `Connectable` cannot satisfy from inside a method.
-            val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+            // The server is ready when the port accepts a connection.
+            def ready(attempts: Int): Boolean =
+              attempts > 0 && (
+                safely { java.net.Socket("127.0.0.1", port).close(); true }.or(false) ||
+                { Thread.sleep(50); ready(attempts - 1) } )
 
             try
+              if !ready(100) then abort(Ssh.Error(Ssh.Error.Reason.ClosedConnection))
+              block(port)
+            finally process.destroy()
+
+          def connected[result](algorithms: Ssh.Algorithms = Ssh.Algorithms())
+            ( block: Transport^ => result )
+            ( using Ssh.HostKeys )
+          :   result =
+
+            given Ssh.Algorithms = algorithms
+
+            server: port =>
+              val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
+
+              // Connected as perihelion connects: `.duplex` requires an empty capture set, which
+              // the `online`-capturing `Connectable` cannot satisfy from inside a method.
+              val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+
+              try
+                val transport = Transport(duplex, t"127.0.0.1", port)
+                transport.connect()
+                try block(transport) finally transport.disconnect()
+              finally duplex.close()
+
+          given Ssh.HostKeys = Ssh.HostKeys.insecurelyAcceptAll
+
+          test(m"The connection negotiates, verifies the host key and requests a service"):
+            connected(): transport =>
+              transport.service(t"ssh-userauth")
+              (transport.serverVersion.let(_.starts(t"SSH-2.0-OpenSSH")), transport.negotiated)
+          . check(_ == (true, Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519",
+              t"chacha20-poly1305@openssh.com")))
+
+          for cipher <- List(t"aes256-gcm@openssh.com", t"aes128-gcm@openssh.com") do
+            test(m"The connection works under $cipher"):
+              connected(Ssh.Algorithms(cipher = List(cipher))): transport =>
+                transport.service(t"ssh-userauth")
+                transport.negotiated.let(_.cipher)
+            . check(_ == cipher)
+
+          test(m"The connection works over ecdh-sha2-nistp256"):
+            connected(Ssh.Algorithms(kex = List(t"ecdh-sha2-nistp256"))): transport =>
+              transport.service(t"ssh-userauth")
+              transport.negotiated.let(_.kex)
+          . check(_ == t"ecdh-sha2-nistp256")
+
+          for hostKey <- List(t"ecdsa-sha2-nistp256", t"rsa-sha2-512", t"rsa-sha2-256") do
+            test(m"The server's $hostKey host key verifies"):
+              connected(Ssh.Algorithms(hostKey = List(hostKey))): transport =>
+                transport.service(t"ssh-userauth")
+                transport.negotiated.let(_.hostKey)
+            . check(_ == hostKey)
+
+          test(m"A known_hosts file accepts the server's recorded key"):
+            server: port =>
+              val known = KnownHosts(t"[127.0.0.1]:$port ${hostKeyLine(t"host_ed25519.pub")}")
+              given Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
+              val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
+              val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
               val transport = Transport(duplex, t"127.0.0.1", port)
-              transport.connect()
-              try block(transport) finally transport.disconnect()
-            finally duplex.close()
+              try
+                transport.connect()
+                transport.negotiated.let(_.hostKey)
+              finally duplex.close()
+          . check(_ == t"ssh-ed25519")
 
-        given Ssh.HostKeys = Ssh.HostKeys.insecurelyAcceptAll
+          test(m"A known_hosts file rejects an unrecorded key"):
+            server: port =>
+              val known = KnownHosts(t"[127.0.0.1]:$port $unrecorded")
+              given Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
+              val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
+              val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+              try capture[Ssh.Error](Transport(duplex, t"127.0.0.1", port).connect()).reason
+              finally duplex.close()
+          . check(_ == Ssh.Error.Reason.HostKeyRejected(t"ssh-ed25519"))
 
-        test(m"The connection negotiates, verifies the host key and requests a service"):
-          connected(): transport =>
-            transport.service(t"ssh-userauth")
-            (transport.serverVersion.let(_.starts(t"SSH-2.0-OpenSSH")), transport.negotiated)
-        . assert(_ == (true, Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519",
-            t"chacha20-poly1305@openssh.com")))
+          test(m"A server offering no common cipher is reported"):
+            capture[Ssh.Error](connected(Ssh.Algorithms(cipher = List(t"none")))(_ => ())).reason
+          . check(_ == Ssh.Error.Reason.NoCommonAlgorithm(t"cipher"))
 
-        for cipher <- List(t"aes256-gcm@openssh.com", t"aes128-gcm@openssh.com") do
-          test(m"The connection works under $cipher"):
-            connected(Ssh.Algorithms(cipher = List(cipher))): transport =>
-              transport.service(t"ssh-userauth")
-              transport.negotiated.let(_.cipher)
-          . assert(_ == cipher)
-
-        test(m"The connection works over ecdh-sha2-nistp256"):
-          connected(Ssh.Algorithms(kex = List(t"ecdh-sha2-nistp256"))): transport =>
-            transport.service(t"ssh-userauth")
-            transport.negotiated.let(_.kex)
-        . assert(_ == t"ecdh-sha2-nistp256")
-
-        for hostKey <- List(t"ecdsa-sha2-nistp256", t"rsa-sha2-512", t"rsa-sha2-256") do
-          test(m"The server's $hostKey host key verifies"):
-            connected(Ssh.Algorithms(hostKey = List(hostKey))): transport =>
-              transport.service(t"ssh-userauth")
-              transport.negotiated.let(_.hostKey)
-          . assert(_ == hostKey)
-
-        test(m"A known_hosts file accepts the server's recorded key"):
-          server: port =>
-            val known = KnownHosts(t"[127.0.0.1]:$port ${hostKeyLine(t"host_ed25519.pub")}")
-            given Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
-            val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
-            val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
-            val transport = Transport(duplex, t"127.0.0.1", port)
-            try
-              transport.connect()
-              transport.negotiated.let(_.hostKey)
-            finally duplex.close()
-        . assert(_ == t"ssh-ed25519")
-
-        test(m"A known_hosts file rejects an unrecorded key"):
-          server: port =>
-            val known = KnownHosts(t"[127.0.0.1]:$port $unrecorded")
-            given Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
-            val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
-            val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
-            try capture[Ssh.Error](Transport(duplex, t"127.0.0.1", port).connect()).reason
-            finally duplex.close()
-        . assert(_ == Ssh.Error.Reason.HostKeyRejected(t"ssh-ed25519"))
-
-        test(m"A server offering no common cipher is reported"):
-          capture[Ssh.Error](connected(Ssh.Algorithms(cipher = List(t"none")))(_ => ())).reason
-        . assert(_ == Ssh.Error.Reason.NoCommonAlgorithm(t"cipher"))
-
-        test(m"A loaded key's wire blob is the one in its .pub file"):
-          val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
-          Signer(key).blob.serialize[Base64]
-        . assert: blob =>
-            contents(t"user_ed25519.pub").cut(t" ") match
-              case _ :: expected :: _ => blob == expected
-              case _                  => false
-
-        test(m"An Ed25519 key authenticates"):
-          val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
-          connected()(_.authenticate(user, List(Signer(key))))
-        . assert()
-
-        test(m"An ECDSA key authenticates"):
-          val key = contents(t"user_ecdsa").read[PrivateKey[Ecdsa[256]] in Pem]
-          connected()(_.authenticate(user, List(Signer(key))))
-        . assert()
-
-        test(m"An RSA key authenticates under rsa-sha2-256"):
-          val key = contents(t"user_rsa").read[PrivateKey[Rsa[3072]] in Pem]
-          connected()(_.authenticate(user, List(Signer(key))))
-        . assert()
-
-        test(m"An unauthorized key is refused, naming the methods the server allows"):
-          val key = contents(t"stranger").read[PrivateKey[Ed25519] in Pem]
-          capture[Ssh.Error](connected()(_.authenticate(user, List(Signer(key))))).reason
-        . assert(_ == Ssh.Error.Reason.Unauthenticated(t"publickey"))
-
-        test(m"The first accepted signer of several authenticates"):
-          val stranger = contents(t"stranger").read[PrivateKey[Ed25519] in Pem]
-          val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
-          connected()(_.authenticate(user, List(Signer(stranger), Signer(key))))
-        . assert()
-
-        test(m"Keys held by an ssh-agent authenticate"):
-          val socket = file(t"agent.sock")
-          val agent = ProcessBuilder("/usr/bin/ssh-agent", "-D", "-a", socket.s).start().nn
-
-          def bound: Boolean = jnf.Files.exists(jnf.Path.of(socket.s).nn)
-
-          def ready(attempts: Int): Boolean =
-            attempts > 0 && (bound || { Thread.sleep(50); ready(attempts - 1) })
-
-          try
-            ready(100)
-            val add = ProcessBuilder("/usr/bin/ssh-add", "-q", file(t"user_ecdsa").s)
-            add.environment().nn.put("SSH_AUTH_SOCK", socket.s)
-            add.start().nn.waitFor()
-            val signers = Agent(socket).identities()
-            connected()(_.authenticate(user, signers))
-            signers.map(_.algorithm)
-          finally agent.destroy()
-        . assert(_ == List(t"ecdsa-sha2-nistp256"))
-
-        def sessioned[result](block: Session^ => result): result =
-          server: port =>
+          test(m"A loaded key's wire blob is the one in its .pub file"):
             val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
-            val endpoint = Ssh.Endpoint(t"127.0.0.1", port, user, List(Signer(key)))
-            endpoint.session: ssh ?=> block(ssh)
+            Signer(key).blob.serialize[Base64]
+          . check: blob =>
+              contents(t"user_ed25519.pub").cut(t" ") match
+                case _ :: expected :: _ => blob == expected
+                case _                  => false
 
-        test(m"A command runs and its output and status come back"):
-          val result = sessioned(_.exec(t"echo hello"))
-          (result.stdout.read[Text], result.stderr.length, result.status)
-        . assert(_ == (t"hello\n", 0, 0))
+          test(m"An Ed25519 key authenticates"):
+            val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+            connected()(_.authenticate(user, List(Signer(key))))
+          . check()
 
-        test(m"A command's exit status is reported"):
-          sessioned(_.exec(t"exit 3").status)
-        . assert(_ == 3)
+          test(m"An ECDSA key authenticates"):
+            val key = contents(t"user_ecdsa").read[PrivateKey[Ecdsa[256]] in Pem]
+            connected()(_.authenticate(user, List(Signer(key))))
+          . check()
 
-        test(m"Standard error is kept apart from standard output"):
-          val result = sessioned(_.exec(t"echo err 1>&2; echo out"))
-          (result.stdout.read[Text], result.stderr.read[Text])
-        . assert(_ == (t"out\n", t"err\n"))
+          test(m"An RSA key authenticates under rsa-sha2-256"):
+            val key = contents(t"user_rsa").read[PrivateKey[Rsa[3072]] in Pem]
+            connected()(_.authenticate(user, List(Signer(key))))
+          . check()
 
-        test(m"Standard input reaches the command"):
-          sessioned(_.exec(t"tr a-z A-Z", t"whisper".bytestream).stdout.read[Text])
-        . assert(_ == t"WHISPER")
+          test(m"An unauthorized key is refused, naming the methods the server allows"):
+            val key = contents(t"stranger").read[PrivateKey[Ed25519] in Pem]
+            capture[Ssh.Error](connected()(_.authenticate(user, List(Signer(key))))).reason
+          . check(_ == Ssh.Error.Reason.Unauthenticated(t"publickey"))
 
-        test(m"Megabytes pass through in both directions, across window adjustments"):
-          val input: Data = Array.tabulate[Byte](3 << 20)(index => (index % 251).toByte)
-          Array.same(sessioned(_.exec(t"cat", input).stdout), input)
-        . assert(identity)
+          test(m"The first accepted signer of several authenticates"):
+            val stranger = contents(t"stranger").read[PrivateKey[Ed25519] in Pem]
+            val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+            connected()(_.authenticate(user, List(Signer(stranger), Signer(key))))
+          . check()
 
-        test(m"An environment variable the server accepts reaches the command"):
-          val environment = List((t"SUSURRATION_WORD", t"susurrus"))
-          sessioned(_.exec(t"echo $$SUSURRATION_WORD", Data(), environment))
-        . assert(_.stdout.read[Text] == t"susurrus\n")
+          test(m"Keys held by an ssh-agent authenticate"):
+            val socket = file(t"agent.sock")
+            val agent = ProcessBuilder("/usr/bin/ssh-agent", "-D", "-a", socket.s).start().nn
 
-        test(m"A guillotine command keeps an argument with spaces and quotes intact"):
-          val argument = t"two words, a 'quote' and a $$sign"
-          sessioned(_.exec(sh"printf %s $argument").stdout.read[Text])
-        . assert(_ == t"two words, a 'quote' and a $$sign")
+            def bound: Boolean = jnf.Files.exists(jnf.Path.of(socket.s).nn)
 
-        test(m"A guillotine command's arguments are not re-split by the remote shell"):
-          // `$0` is `x`; the two positional parameters are `a b` and `c`.
-          sessioned(_.exec(sh"sh -c ${t"echo $$#"} x ${t"a b"} c").stdout.read[Text])
-        . assert(_ == t"2\n")
+            def ready(attempts: Int): Boolean =
+              attempts > 0 && (bound || { Thread.sleep(50); ready(attempts - 1) })
 
-        test(m"Several commands run over one connection"):
-          sessioned: ssh =>
-            (ssh.exec(t"echo one").stdout.read[Text], ssh.exec(t"echo two").stdout.read[Text])
-        . assert(_ == (t"one\n", t"two\n"))
+            try
+              ready(100)
+              val add = ProcessBuilder("/usr/bin/ssh-add", "-q", file(t"user_ecdsa").s)
+              add.environment().nn.put("SSH_AUTH_SOCK", socket.s)
+              add.start().nn.waitFor()
+              val signers = Agent(socket).identities()
+              connected()(_.authenticate(user, signers))
+              signers.map(_.algorithm)
+            finally agent.destroy()
+          . check(_ == List(t"ecdsa-sha2-nistp256"))
 
-        test(m"A channel streams its output chunk by chunk"):
-          sessioned: ssh =>
-            ssh.channel: channel =>
-              channel.exec(t"seq 1 200000")
-              channel.eof()
-              val chunks: List[Data] = channel.stdout().to[List]
-              (chunks.size > 1, chunks.map(_.length).fuse(0)(state + next), channel.exitStatus)
-        . assert(_ == (true, 1288895, 0))
+          def sessioned[result](block: Session^ => result): result =
+            server: port =>
+              val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+              val endpoint = Ssh.Endpoint(t"127.0.0.1", port, user, List(Signer(key)))
+              endpoint.session: ssh ?=> block(ssh)
 
-        test(m"A refused command is reported"):
-          sessioned(_.channel(_.request(t"nonsense", true)(_ => ())))
-        . assert(_ == false)
+          test(m"A command runs and its output and status come back"):
+            val result = sessioned(_.exec(t"echo hello"))
+            (result.stdout.read[Text], result.stderr.length, result.status)
+          . check(_ == (t"hello\n", 0, 0))
 
-        test(m"Many packets pass in both directions under each cipher"):
-          // `ssh-userauth` is requested repeatedly: each request is a packet each way.
-          List(t"chacha20-poly1305@openssh.com", t"aes256-gcm@openssh.com").map: cipher =>
-            connected(Ssh.Algorithms(cipher = List(cipher))): transport =>
-              (0 until 20).each(_ => transport.service(t"ssh-userauth"))
-              true
-        . assert(_ == List(true, true))
+          test(m"A command's exit status is reported"):
+            sessioned(_.exec(t"exit 3").status)
+          . check(_ == 3)
+
+          test(m"Standard error is kept apart from standard output"):
+            val result = sessioned(_.exec(t"echo err 1>&2; echo out"))
+            (result.stdout.read[Text], result.stderr.read[Text])
+          . check(_ == (t"out\n", t"err\n"))
+
+          test(m"Standard input reaches the command"):
+            sessioned(_.exec(t"tr a-z A-Z", t"whisper".bytestream).stdout.read[Text])
+          . check(_ == t"WHISPER")
+
+          test(m"Megabytes pass through in both directions, across window adjustments"):
+            val input: Data = Array.tabulate[Byte](3 << 20)(index => (index % 251).toByte)
+            Array.same(sessioned(_.exec(t"cat", input).stdout), input)
+          . check(identity)
+
+          test(m"An environment variable the server accepts reaches the command"):
+            val environment = List((t"SUSURRATION_WORD", t"susurrus"))
+            sessioned(_.exec(t"echo $$SUSURRATION_WORD", Data(), environment))
+          . check(_.stdout.read[Text] == t"susurrus\n")
+
+          test(m"A guillotine command keeps an argument with spaces and quotes intact"):
+            val argument = t"two words, a 'quote' and a $$sign"
+            sessioned(_.exec(sh"printf %s $argument").stdout.read[Text])
+          . check(_ == t"two words, a 'quote' and a $$sign")
+
+          test(m"A guillotine command's arguments are not re-split by the remote shell"):
+            // `$0` is `x`; the two positional parameters are `a b` and `c`.
+            sessioned(_.exec(sh"sh -c ${t"echo $$#"} x ${t"a b"} c").stdout.read[Text])
+          . check(_ == t"2\n")
+
+          test(m"Several commands run over one connection"):
+            sessioned: ssh =>
+              (ssh.exec(t"echo one").stdout.read[Text], ssh.exec(t"echo two").stdout.read[Text])
+          . check(_ == (t"one\n", t"two\n"))
+
+          test(m"A channel streams its output chunk by chunk"):
+            sessioned: ssh =>
+              ssh.channel: channel =>
+                channel.exec(t"seq 1 200000")
+                channel.eof()
+                val chunks: List[Data] = channel.stdout().to[List]
+                (chunks.size > 1, chunks.map(_.length).fuse(0)(state + next), channel.exitStatus)
+          . check(_ == (true, 1288895, 0))
+
+          test(m"A refused command is reported"):
+            sessioned(_.channel(_.request(t"nonsense", true)(_ => ())))
+          . check(_ == false)
+
+          test(m"Many packets pass in both directions under each cipher"):
+            // `ssh-userauth` is requested repeatedly: each request is a packet each way.
+            List(t"chacha20-poly1305@openssh.com", t"aes256-gcm@openssh.com").map: cipher =>
+              connected(Ssh.Algorithms(cipher = List(cipher))): transport =>
+                (0 until 20).each(_ => transport.service(t"ssh-userauth"))
+                true
+          . check(_ == List(true, true))

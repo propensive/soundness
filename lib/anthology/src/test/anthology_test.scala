@@ -224,6 +224,8 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       val chain =
         Toolchain(List(Edge(a, b, passTool(t"first")), Edge(b, c, passTool(t"second"))))
 
+      // A test which touches the loaned directory is a `check`, which runs where it is written: an
+      // `assert` may be deferred until the suite's block has returned, and the loan with it.
       temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
         val scratch: soundness.Path on Linux = handle.stem
 
@@ -232,14 +234,14 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
             executionLog.entries = Nil
             chain.produce(Deliverable.Product(scratch), a, c, scratch)
             executionLog.entries
-        . assert(_ == List(t"second", t"first"))
+        . check(_ == List(t"second", t"first"))
 
         test(m"A setting applying to no path format is rejected"):
           supervise:
             val inapplicable = Toolchain.Setting[Unit](_ => false)(settings => settings)
             val production = Deliverable.Product(scratch)
             capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
-        . assert(_ == Link.Error.Reason.InapplicableSetting)
+        . check(_ == Link.Error.Reason.InapplicableSetting)
 
         // Cross-family settings are rejected before any tool runs, so these paths are checkable
         // without invoking D8, the Scala.js linker or the bundler.
@@ -253,7 +255,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
             capture[Link.Error]
               ( toolchain.produce(emission, Universe.Classfile, Artifact.Jar, scratch, settings) )
             . reason
-        . assert(_ == Link.Error.Reason.InapplicableSetting)
+        . check(_ == Link.Error.Reason.InapplicableSetting)
 
         test(m"An sjs setting is not applicable on a dex path"):
           supervise:
@@ -262,7 +264,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
             capture[Link.Error](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
             . reason
-        . assert(_ == Link.Error.Reason.InapplicableSetting)
+        . check(_ == Link.Error.Reason.InapplicableSetting)
 
         test(m"A native setting is not applicable on a JavaScript path"):
           supervise:
@@ -272,7 +274,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
             capture[Link.Error](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
             . reason
-        . assert(_ == Link.Error.Reason.InapplicableSetting)
+        . check(_ == Link.Error.Reason.InapplicableSetting)
 
     test(m"JAR and library packaging edges need no evidence"):
       jarEdges().map(_.target.id)
@@ -639,7 +641,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
           test(m"A native compilation emits nir"):
             Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
             . exists(_.getFileName.nn.toString.endsWith(".nir"))
-          . assert(_ == true)
+          . check(_ == true)
 
           safely(nativeEdges()).let: edges =>
             temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
@@ -696,7 +698,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
           test(m"A Kotlin compilation emits classfiles"):
             Files.list(Paths.get(out.encode.s, "demo")).nn.iterator.nn.asScala
             . exists(_.getFileName.nn.toString == "GreetingKt.class")
-          . assert(_ == true)
+          . check(_ == true)
 
           val broken: Text =
             t"""|package demo

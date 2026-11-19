@@ -205,130 +205,140 @@ object Tests extends Suite("testing", m"Probably Tests"):
       . assert(_ == true)
 
     suite(m"Coverage"):
-      test(m"a unit is recompiled from its TASTy without problems"):
-        Probed.plan.problems.map(_.tt).to(List)
-      . assert(_ == Nil)
+      import galilei.Linux.pathOnLinux, systems.javaBaseSystem, strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
 
-      test(m"a probe goes at each kind of branch"):
-        Probed.kinds.map(_.tt).to(List)
-      . assert(_ == List(t"and", t"case", t"catch", t"class", t"else", t"loop", t"method", t"then"))
+      // The recompiled class is loaded from the scratch directory, so every test which reads
+      // it is a `check`, run where it stands, not an `assert`, which a parallel runner may
+      // defer beyond the loan of the directory.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+        val probed: Probed = Probed(handle.stem.encode.s)
 
-      test(m"a unit is found by the source file it was compiled from"):
-        Probed.sourced.units.map(_.name.tt).to(List)
-      . assert(_ == List(t"probably.Casket", t"probably.Lottery"))
+        test(m"a unit is recompiled from its TASTy without problems"):
+          probed.plan.problems.map(_.tt).to(List)
+        . check(_ == Nil)
 
-      test(m"a second plan for the same units finds the same probes"):
-        Probed.sourced.units.flatMap(_.probes) == Probed.probes
-      . assert(_ == true)
+        test(m"a probe goes at each kind of branch"):
+          probed.kinds.map(_.tt).to(List)
+        . check: kinds =>
+            kinds == List(t"and", t"case", t"catch", t"class", t"else", t"loop", t"method", t"then")
 
-      test(m"a term which names nothing is a problem"):
-        Probed.absent.problems.map(_.tt).to(List)
-      . assert(_ == List(t"no class or source file on the classpath matches probably.Nerissa"))
+        test(m"a unit is found by the source file it was compiled from"):
+          probed.sourced.units.map(_.name.tt).to(List)
+        . check(_ == List(t"probably.Casket", t"probably.Lottery"))
 
-      // Coverage is on from here: the tests below read what they themselves reached, so they
-      // open the collectors a host would leave to the runner, and drain first what anything
-      // before them left behind.
-      test(m"a test is credited with what it reaches and nothing else"):
-        Instrumenter.activate(getClass.getClassLoader.nn)
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
-        val portia = Coverage.enter("portia")
-        casket.choose(1)
-        Coverage.exit(portia)
-        val bassanio = Coverage.enter("bassanio")
-        casket.risky(0)
-        casket.sum(2)
-        Coverage.exit(bassanio)
-        val reached = Probed.drained()
-        (reached("portia").map(_.tt).to(List), reached("bassanio").map(_.tt).to(List))
-      . assert: reached =>
-          reached ==
-            ( List(t"case:choose", t"else:choose", t"method:choose"),
-              List(t"catch:risky", t"loop:sum", t"method:risky", t"method:sum") )
+        test(m"a second plan for the same units finds the same probes"):
+          probed.sourced.units.flatMap(_.probes) == probed.probes
+        . check(_ == true)
 
-      test(m"a thread started by a test is credited to the test"):
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
-        val nerissa = Coverage.enter("nerissa")
-        casket.delegate(3)
-        Coverage.exit(nerissa)
-        Probed.drained()("nerissa").map(_.tt).to(List)
-      . assert(_.has(t"case:choose"))
+        test(m"a term which names nothing is a problem"):
+          probed.absent.problems.map(_.tt).to(List)
+        . check(_ == List(t"no class or source file on the classpath matches probably.Nerissa"))
 
-      // Nothing a test does on its own thread is outside a test — this one's body is inside
-      // the bracket of the runner which is running it — so what is credited to no test is
-      // seen here, on a thread which has outlived the test which started it.
-      test(m"a thread which outlives its test is credited to none"):
-        val casket: Lottery = Probed.make(5)
-        val gate: juc.CountDownLatch = juc.CountDownLatch(1)
-        val done: juc.CountDownLatch = juc.CountDownLatch(1)
-        Probed.drained()
-        val gratiano = Coverage.enter("gratiano")
-        casket.defer(3, gate, done)
-        Coverage.exit(gratiano)
-        gate.countDown()
-        done.await()
-        val reached = Probed.drained()
+        // Coverage is on from here: the tests below read what they themselves reached, so they
+        // open the collectors a host would leave to the runner, and drain first what anything
+        // before them left behind.
+        test(m"a test is credited with what it reaches and nothing else"):
+          Instrumenter.activate(getClass.getClassLoader.nn)
+          val casket: Lottery = probed.make(5)
+          probed.drained()
+          val portia = Coverage.enter("portia")
+          casket.choose(1)
+          Coverage.exit(portia)
+          val bassanio = Coverage.enter("bassanio")
+          casket.risky(0)
+          casket.sum(2)
+          Coverage.exit(bassanio)
+          val reached = probed.drained()
+          (reached("portia").map(_.tt).to(List), reached("bassanio").map(_.tt).to(List))
+        . check: reached =>
+            reached ==
+              ( List(t"case:choose", t"else:choose", t"method:choose"),
+                List(t"catch:risky", t"loop:sum", t"method:risky", t"method:sum") )
 
-        ( reached("gratiano").map(_.tt).to(List).has(t"case:choose"),
-          reached("").map(_.tt).to(List).has(t"case:choose") )
-      . assert(_ == (false, true))
+        test(m"a thread started by a test is credited to the test"):
+          val casket: Lottery = probed.make(5)
+          probed.drained()
+          val nerissa = Coverage.enter("nerissa")
+          casket.delegate(3)
+          Coverage.exit(nerissa)
+          probed.drained()("nerissa").map(_.tt).to(List)
+        . check(_.has(t"case:choose"))
 
-      test(m"a test run twice is credited with the union"):
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
+        // Nothing a test does on its own thread is outside a test — this one's body is inside
+        // the bracket of the runner which is running it — so what is credited to no test is
+        // seen here, on a thread which has outlived the test which started it.
+        test(m"a thread which outlives its test is credited to none"):
+          val casket: Lottery = probed.make(5)
+          val gate: juc.CountDownLatch = juc.CountDownLatch(1)
+          val done: juc.CountDownLatch = juc.CountDownLatch(1)
+          probed.drained()
+          val gratiano = Coverage.enter("gratiano")
+          casket.defer(3, gate, done)
+          Coverage.exit(gratiano)
+          gate.countDown()
+          done.await()
+          val reached = probed.drained()
 
-        List(1, 6).each: value =>
-          val shylock = Coverage.enter("shylock")
-          casket.choose(value)
-          Coverage.exit(shylock)
+          ( reached("gratiano").map(_.tt).to(List).has(t"case:choose"),
+            reached("").map(_.tt).to(List).has(t"case:choose") )
+        . check(_ == (false, true))
 
-        Probed.drained()("shylock").map(_.tt).to(List)
-      . assert: reached =>
-          reached ==
-            List(t"and:choose", t"case:choose", t"else:choose", t"method:choose", t"then:choose")
+        test(m"a test run twice is credited with the union"):
+          val casket: Lottery = probed.make(5)
+          probed.drained()
 
-      test(m"a probe counts each time it is reached"):
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
-        val antonio = Coverage.enter("antonio")
-        casket.sum(4)
-        casket.sum(3)
-        Coverage.exit(antonio)
-        Probed.counted()("antonio").map { (probe, count) => (probe.tt, count) }.to(List)
-      . assert(_ == List((t"loop:sum", 7L), (t"method:sum", 2L)))
+          List(1, 6).each: value =>
+            val shylock = Coverage.enter("shylock")
+            casket.choose(value)
+            Coverage.exit(shylock)
 
-      test(m"what threads started by a test reach is counted for the test"):
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
-        val lorenzo = Coverage.enter("lorenzo")
-        casket.delegate(3)
-        casket.delegate(1)
-        casket.choose(3)
-        Coverage.exit(lorenzo)
-        Probed.counted()("lorenzo").filter(_(0) == "method:choose").map(_(1)).to(List)
-      . assert(_ == List(3L))
+          probed.drained()("shylock").map(_.tt).to(List)
+        . check: reached =>
+            reached ==
+              List(t"and:choose", t"case:choose", t"else:choose", t"method:choose", t"then:choose")
 
-      test(m"a test run twice is credited with the sum of its counts"):
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
+        test(m"a probe counts each time it is reached"):
+          val casket: Lottery = probed.make(5)
+          probed.drained()
+          val antonio = Coverage.enter("antonio")
+          casket.sum(4)
+          casket.sum(3)
+          Coverage.exit(antonio)
+          probed.counted()("antonio").map { (probe, count) => (probe.tt, count) }.to(List)
+        . check(_ == List((t"loop:sum", 7L), (t"method:sum", 2L)))
 
-        List(1, 3).each: value =>
-          val jessica = Coverage.enter("jessica")
-          casket.choose(value)
-          Coverage.exit(jessica)
+        test(m"what threads started by a test reach is counted for the test"):
+          val casket: Lottery = probed.make(5)
+          probed.drained()
+          val lorenzo = Coverage.enter("lorenzo")
+          casket.delegate(3)
+          casket.delegate(1)
+          casket.choose(3)
+          Coverage.exit(lorenzo)
+          probed.counted()("lorenzo").filter(_(0) == "method:choose").map(_(1)).to(List)
+        . check(_ == List(3L))
 
-        Probed.counted()("jessica").filter(_(0) == "method:choose").map(_(1)).to(List)
-      . assert(_ == List(2L))
+        test(m"a test run twice is credited with the sum of its counts"):
+          val casket: Lottery = probed.make(5)
+          probed.drained()
 
-      test(m"the runner credits a test's body to the test, by its key"):
-        val casket: Lottery = Probed.make(5)
-        Probed.drained()
-        Chooser(() => casket.choose(1)).invoke(t"", event => ())
+          List(1, 3).each: value =>
+            val jessica = Coverage.enter("jessica")
+            casket.choose(value)
+            Coverage.exit(jessica)
 
-        Probed.drained().toList.filter(_(0).startsWith("chooser/lead#"))
-        . map(_(1).map(_.tt).to(List)).to(List)
-      . assert(_ == List(List(t"case:choose", t"else:choose", t"method:choose")))
+          probed.counted()("jessica").filter(_(0) == "method:choose").map(_(1)).to(List)
+        . check(_ == List(2L))
+
+        test(m"the runner credits a test's body to the test, by its key"):
+          val casket: Lottery = probed.make(5)
+          probed.drained()
+          Chooser(() => casket.choose(1)).invoke(t"", event => ())
+
+          probed.drained().toList.filter(_(0).startsWith("chooser/lead#"))
+          . map(_(1).map(_.tt).to(List)).to(List)
+        . check(_ == List(List(t"case:choose", t"else:choose", t"method:choose")))
 
     suite(m"The plain runner"):
       // `Probe` fails two of its tests on purpose, so the status is 1.

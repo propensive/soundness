@@ -120,7 +120,7 @@ object rig:
     val variables: List[(Text, Text)] =
       val own = List(t"PATH" -> path, t"POWERSHELL_UPDATECHECK" -> t"Off")
       val term = if terminal then List(t"TERM" -> t"xterm-256color") else Nil
-      List.concat(List.concat(Enclave.scratch(home).to[List], own), term)
+      List.concat(List.concat(Enclave.scratch(home, tool.runtime).to[List], own), term)
 
     // Writes a configuration file into `directory`, a path of names under the scratch home.
     def write(directory: List[Text], name: Text, content: Text): Text =

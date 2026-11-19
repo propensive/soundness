@@ -558,75 +558,77 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
 
-      val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
-      workDir.create[Directory]()
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+        val workDir: Path on Linux = scratch.stem
 
-      def writeArchive(tar: Tarfile, name: Text): Path on Linux =
-        val path = workDir / name
-        if path.existent() then path.delete()
-        path.create[File]()
-        path.open[File](Write): handle ?=> handle.write(tar)
-        path
+        def writeArchive(tar: Tarfile, name: Text): Path on Linux =
+          val path = workDir / name
+          if path.existent() then path.delete()
+          path.create[File]()
+          path.open[File](Write): handle ?=> handle.write(tar)
+          path
 
-      def listing(path: Path on Linux): List[Text] =
-        Array.unsafeFrozen(sh"tar -tf $path".exec[Text]().s.split('\n').nn).to[List]
-          .map(_.nn.tt)
-          .filter(!_.s.isEmpty)
+        def listing(path: Path on Linux): List[Text] =
+          Array.unsafeFrozen(sh"tar -tf $path".exec[Text]().s.split('\n').nn).to[List]
+            .map(_.nn.tt)
+            .filter(!_.s.isEmpty)
 
-      test(m"single-file archive lists hello.txt"):
-        listing(writeArchive(Tarfile(List(helloFile)), t"hello.tar"))
-      . assert(_ == List(t"hello.txt"))
+        test(m"single-file archive lists hello.txt"):
+          listing(writeArchive(Tarfile(List(helloFile)), t"hello.tar"))
+        . check(_ == List(t"hello.txt"))
 
-      test(m"directory archive lists data/"):
-        listing(writeArchive(Tarfile(List(emptyDir)), t"dir.tar"))
-      . assert(_ == List(t"data/"))
+        test(m"directory archive lists data/"):
+          listing(writeArchive(Tarfile(List(emptyDir)), t"dir.tar"))
+        . check(_ == List(t"data/"))
 
-      test(m"file + directory archive lists both"):
-        listing(writeArchive(Tarfile(List(helloFile, emptyDir)), t"both.tar"))
-      . assert(_ == List(t"hello.txt", t"data/"))
+        test(m"file + directory archive lists both"):
+          listing(writeArchive(Tarfile(List(helloFile, emptyDir)), t"both.tar"))
+        . check(_ == List(t"hello.txt", t"data/"))
 
-      val longPathA: Text = "a".repeat(150).nn.tt
-      val longPathB: Text = "b".repeat(150).nn.tt
+        val longPathA: Text = "a".repeat(150).nn.tt
+        val longPathB: Text = "b".repeat(150).nn.tt
 
-      val longFileA = Tar.Entry.File
-                       ( path  = longPathA.as[Relative on Tar],
-                         mode  = UnixMode(),
-                         user  = UnixUser(0),
-                         group = UnixGroup(0),
-                         mtime = 0.bits.u32,
-                         data  = Archive.Body() )
+        val longFileA = Tar.Entry.File
+                         ( path  = longPathA.as[Relative on Tar],
+                           mode  = UnixMode(),
+                           user  = UnixUser(0),
+                           group = UnixGroup(0),
+                           mtime = 0.bits.u32,
+                           data  = Archive.Body() )
 
-      val longFileB = Tar.Entry.File
-                       ( path  = longPathB.as[Relative on Tar],
-                         mode  = UnixMode(),
-                         user  = UnixUser(0),
-                         group = UnixGroup(0),
-                         mtime = 0.bits.u32,
-                         data  = Archive.Body() )
+        val longFileB = Tar.Entry.File
+                         ( path  = longPathB.as[Relative on Tar],
+                           mode  = UnixMode(),
+                           user  = UnixUser(0),
+                           group = UnixGroup(0),
+                           mtime = 0.bits.u32,
+                           data  = Archive.Body() )
 
-      test(m"long PAX path is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longFileA)), t"longpax.tar"))
-      . assert(_ == List(longPathA))
+        test(m"long PAX path is readable by external tar"):
+          listing(writeArchive(Tarfile(List(longFileA)), t"longpax.tar"))
+        . check(_ == List(longPathA))
 
-      test(m"long GNU 'L' path is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longFileB), LongNameFormat.Gnu), t"longgnu.tar"))
-      . assert(_ == List(longPathB))
+        test(m"long GNU 'L' path is readable by external tar"):
+          listing(writeArchive(Tarfile(List(longFileB), LongNameFormat.Gnu), t"longgnu.tar"))
+        . check(_ == List(longPathB))
 
-      val longSymlink = Tar.Entry.Symlink
-                         ( path   = t"link".as[Relative on Tar],
-                           mode   = UnixMode(),
-                           user   = UnixUser(0),
-                           group  = UnixGroup(0),
-                           mtime  = 0.bits.u32,
-                           target = "t".repeat(150).nn.tt )
+        val longSymlink = Tar.Entry.Symlink
+                           ( path   = t"link".as[Relative on Tar],
+                             mode   = UnixMode(),
+                             user   = UnixUser(0),
+                             group  = UnixGroup(0),
+                             mtime  = 0.bits.u32,
+                             target = "t".repeat(150).nn.tt )
 
-      test(m"long PAX linkpath is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longSymlink)), t"linkpax.tar"))
-      . assert(_ == List(t"link"))
+        test(m"long PAX linkpath is readable by external tar"):
+          listing(writeArchive(Tarfile(List(longSymlink)), t"linkpax.tar"))
+        . check(_ == List(t"link"))
 
-      test(m"long GNU 'K' linkpath is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longSymlink), LongNameFormat.Gnu), t"linkgnu.tar"))
-      . assert(_ == List(t"link"))
+        test(m"long GNU 'K' linkpath is readable by external tar"):
+          listing(writeArchive(Tarfile(List(longSymlink), LongNameFormat.Gnu), t"linkgnu.tar"))
+        . check(_ == List(t"link"))
 
     suite(m"Filesystem integration: archive[Tar] / extractTo"):
       import systems.javaBaseSystem
@@ -636,156 +638,159 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       import filesystemOptions.createParents
       import filesystemOptions.deleteRecursively
 
-      def freshDir(): Path on Linux =
-        val d = temporaryDirectory[Path on Linux] / Uuid().show
-        d.create[Directory]()
-        d
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+        def freshDir(): Path on Linux =
+          val d = scratch.stem / Uuid().show
+          d.create[Directory]()
+          d
 
-      test(m"single file round-trips through archive[Tar] / extractTo"):
-        val source = freshDir()
-        val sourceFile = source / "hello.txt"
-        sourceFile.create[File]()
-        sourceFile.open[File](Write): handle ?=> handle.write(t"hi there".in[Data])
+        test(m"single file round-trips through archive[Tar] / extractTo"):
+          val source = freshDir()
+          val sourceFile = source / "hello.txt"
+          sourceFile.create[File]()
+          sourceFile.open[File](Write): handle ?=> handle.write(t"hi there".in[Data])
 
-        val tar = source.archive[Tar]()
-        val dest = freshDir()
-        tar.extractTo(dest)
+          val tar = source.archive[Tar]()
+          val dest = freshDir()
+          tar.extractTo(dest)
 
-        val readBackPath: Path on Linux = dest / "hello.txt"
-        val readBack = readBackPath.read[Data]
-        readBack.utf8.s
-      . assert(_ == "hi there")
+          val readBackPath: Path on Linux = dest / "hello.txt"
+          val readBack = readBackPath.read[Data]
+          readBack.utf8.s
+        . check(_ == "hi there")
 
-      test(m"directory hierarchy round-trips"):
-        val source = freshDir()
-        val sub = source / "sub"
-        sub.create[Directory]()
-        (sub / "a.txt").create[File]()
-        (sub / "a.txt").open[File](Write) { handle ?=> handle.write(t"A".in[Data]) }
-        (sub / "b.txt").create[File]()
-        (sub / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
+        test(m"directory hierarchy round-trips"):
+          val source = freshDir()
+          val sub = source / "sub"
+          sub.create[Directory]()
+          (sub / "a.txt").create[File]()
+          (sub / "a.txt").open[File](Write) { handle ?=> handle.write(t"A".in[Data]) }
+          (sub / "b.txt").create[File]()
+          (sub / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
 
-        val tar = source.archive[Tar]()
-        val dest = freshDir()
-        tar.extractTo(dest)
+          val tar = source.archive[Tar]()
+          val dest = freshDir()
+          tar.extractTo(dest)
 
-        val aPath: Path on Linux = dest / "sub" / "a.txt"
-        val bPath: Path on Linux = dest / "sub" / "b.txt"
-        val a = aPath.read[Data]
-        val b = bPath.read[Data]
-        ( a.utf8.s,
-          b.utf8.s )
-      . assert(_ == ("A", "B"))
+          val aPath: Path on Linux = dest / "sub" / "a.txt"
+          val bPath: Path on Linux = dest / "sub" / "b.txt"
+          val a = aPath.read[Data]
+          val b = bPath.read[Data]
+          ( a.utf8.s,
+            b.utf8.s )
+        . check(_ == ("A", "B"))
 
-      test(m"files sharing directories extract without directory entries"):
-        def file(path: Text, content: Text): Tar.Entry.File =
-          Tar.Entry.File
-            ( path  = path.as[Relative on Tar],
-              mode  = UnixMode(),
-              user  = UnixUser(0),
-              group = UnixGroup(0),
-              mtime = 0.bits.u32,
-              data  = Archive.Body(content.in[Data]) )
+        test(m"files sharing directories extract without directory entries"):
+          def file(path: Text, content: Text): Tar.Entry.File =
+            Tar.Entry.File
+              ( path  = path.as[Relative on Tar],
+                mode  = UnixMode(),
+                user  = UnixUser(0),
+                group = UnixGroup(0),
+                mtime = 0.bits.u32,
+                data  = Archive.Body(content.in[Data]) )
 
-        val tar = Tarfile
-                   ( List
-                      ( file(t"deep/a.txt", t"A"),
-                        file(t"deep/b.txt", t"B"),
-                        file(t"deep/er/c.txt", t"C"),
-                        file(t"deep/d.txt", t"D") ) )
+          val tar = Tarfile
+                     ( List
+                        ( file(t"deep/a.txt", t"A"),
+                          file(t"deep/b.txt", t"B"),
+                          file(t"deep/er/c.txt", t"C"),
+                          file(t"deep/d.txt", t"D") ) )
 
-        val dest = freshDir()
-        tar.extractTo(dest)
+          val dest = freshDir()
+          tar.extractTo(dest)
 
-        val deep: Path on Linux = dest/"deep"
-        val paths: List[Path on Linux] =
-          List(deep/"a.txt", deep/"b.txt", deep/"er"/"c.txt", deep/"d.txt")
-        paths.map(_.read[Data].utf8)
-      . assert(_ == List(t"A", t"B", t"C", t"D"))
+          val deep: Path on Linux = dest/"deep"
+          val paths: List[Path on Linux] =
+            List(deep/"a.txt", deep/"b.txt", deep/"er"/"c.txt", deep/"d.txt")
+          paths.map(_.read[Data].utf8)
+        . check(_ == List(t"A", t"B", t"C", t"D"))
 
-      test(m"symlink round-trips"):
-        val source = freshDir()
-        (source / "real.txt").create[File]()
-        (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
-        (source / "real.txt").symlinkTo(source / "link.txt")
+        test(m"symlink round-trips"):
+          val source = freshDir()
+          (source / "real.txt").create[File]()
+          (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
+          (source / "real.txt").symlinkTo(source / "link.txt")
 
-        val tar = source.archive[Tar]()
-        val dest = freshDir()
-        tar.extractTo(dest)
+          val tar = source.archive[Tar]()
+          val dest = freshDir()
+          tar.extractTo(dest)
 
-        jnf.Files.isSymbolicLink((dest / "link.txt").javaPath)
-      . assert(_ == true)
+          jnf.Files.isSymbolicLink((dest / "link.txt").javaPath)
+        . check(_ == true)
 
-      def tree(): Path on Linux =
-        val source = freshDir()
-        (source / "b.txt").create[File]()
-        (source / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
-        (source / "a.txt").create[File]()
-        (source / "a.txt").open[File](Write) { handle ?=> handle.write(t"A".in[Data]) }
-        (source / "sub").create[Directory]()
-        (source / "sub" / "c.txt").create[File]()
-        (source / "sub" / "c.txt").open[File](Write) { handle ?=> handle.write(t"C".in[Data]) }
-        source
+        def tree(): Path on Linux =
+          val source = freshDir()
+          (source / "b.txt").create[File]()
+          (source / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
+          (source / "a.txt").create[File]()
+          (source / "a.txt").open[File](Write) { handle ?=> handle.write(t"A".in[Data]) }
+          (source / "sub").create[Directory]()
+          (source / "sub" / "c.txt").create[File]()
+          (source / "sub" / "c.txt").open[File](Write) { handle ?=> handle.write(t"C".in[Data]) }
+          source
 
-      test(m"entries are archived in sorted pre-order"):
-        tree().archive[Tar]().entries.map(_.entryName)
-      . assert(_ == List(t"a.txt", t"b.txt", t"sub/", t"sub/c.txt"))
+        test(m"entries are archived in sorted pre-order"):
+          tree().archive[Tar]().entries.map(_.entryName)
+        . check(_ == List(t"a.txt", t"b.txt", t"sub/", t"sub/c.txt"))
 
-      test(m"a dereferenced symlink archives its target's contents"):
-        import filesystemOptions.dereferenceSymlinks
-        val source = freshDir()
-        (source / "real.txt").create[File]()
-        (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
-        (source / "real.txt").symlinkTo(source / "link.txt")
+        test(m"a dereferenced symlink archives its target's contents"):
+          import filesystemOptions.dereferenceSymlinks
+          val source = freshDir()
+          (source / "real.txt").create[File]()
+          (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
+          (source / "real.txt").symlinkTo(source / "link.txt")
 
-        source.archive[Tar]().entries.map:
-          case file: Tar.Entry.File => (file.entryName, file.data.memoize.utf8)
-          case other                => (other.entryName, t"")
-      . assert(_ == List((t"link.txt", t"realdata"), (t"real.txt", t"realdata")))
+          source.archive[Tar]().entries.map:
+            case file: Tar.Entry.File => (file.entryName, file.data.memoize.utf8)
+            case other                => (other.entryName, t"")
+        . check(_ == List((t"link.txt", t"realdata"), (t"real.txt", t"realdata")))
 
-      test(m"a preserved symlink archives as a Symlink entry with its target"):
-        val source = freshDir()
-        (source / "real.txt").create[File]()
-        (source / "real.txt").symlinkTo(source / "link.txt")
+        test(m"a preserved symlink archives as a Symlink entry with its target"):
+          val source = freshDir()
+          (source / "real.txt").create[File]()
+          (source / "real.txt").symlinkTo(source / "link.txt")
 
-        val target = (source / "real.txt").encode
+          val target = (source / "real.txt").encode
 
-        source.archive[Tar]().entries.map:
-          case link: Tar.Entry.Symlink => (link.entryName, link.target == target)
-          case other                   => (other.entryName, false)
-      . assert(_ == List((t"link.txt", true), (t"real.txt", false)))
+          source.archive[Tar]().entries.map:
+            case link: Tar.Entry.Symlink => (link.entryName, link.target == target)
+            case other                   => (other.entryName, false)
+        . check(_ == List((t"link.txt", true), (t"real.txt", false)))
 
-      test(m"the Owner flag replaces the recorded user and group"):
-        tree().archive[Tar](Archive.Flag.Owner(UnixUser(1000), UnixGroup(2000))).entries.map:
-          case file: Tar.Entry.File => (file.user.value, file.group.value)
-          case dir: Tar.Entry.Directory => (dir.user.value, dir.group.value)
-          case _ => (-1, -1)
-        . to[Set]
-      . assert(_ == Set((1000, 2000)))
+        test(m"the Owner flag replaces the recorded user and group"):
+          tree().archive[Tar](Archive.Flag.Owner(UnixUser(1000), UnixGroup(2000))).entries.map:
+            case file: Tar.Entry.File => (file.user.value, file.group.value)
+            case dir: Tar.Entry.Directory => (dir.user.value, dir.group.value)
+            case _ => (-1, -1)
+          . to[Set]
+        . check(_ == Set((1000, 2000)))
 
-      test(m"the Mtime flag replaces every recorded timestamp"):
-        tree().archive[Tar](Archive.Flag.Mtime(1234567L)).entries.map:
-          case file: Tar.Entry.File => file.mtime.long
-          case dir: Tar.Entry.Directory => dir.mtime.long
-          case _ => -1L
-        . to[Set]
-      . assert(_ == Set(1234567L))
+        test(m"the Mtime flag replaces every recorded timestamp"):
+          tree().archive[Tar](Archive.Flag.Mtime(1234567L)).entries.map:
+            case file: Tar.Entry.File => file.mtime.long
+            case dir: Tar.Entry.Directory => dir.mtime.long
+            case _ => -1L
+          . to[Set]
+        . check(_ == Set(1234567L))
 
-      test(m"a LongNameFormat flag selects the long-name convention"):
-        tree().archive[Tar](LongNameFormat.Gnu).longNameFormat
-      . assert(_ == LongNameFormat.Gnu)
+        test(m"a LongNameFormat flag selects the long-name convention"):
+          tree().archive[Tar](LongNameFormat.Gnu).longNameFormat
+        . check(_ == LongNameFormat.Gnu)
 
-      test(m"archive[Ar] flattens the tree to slash-joined member names"):
-        tree().archive[Ar]().entries.map(_.name)
-      . assert(_ == List(t"a.txt", t"b.txt", t"sub/c.txt"))
+        test(m"archive[Ar] flattens the tree to slash-joined member names"):
+          tree().archive[Ar]().entries.map(_.name)
+        . check(_ == List(t"a.txt", t"b.txt", t"sub/c.txt"))
 
-      test(m"archive[Ar] records the whole st_mode, type bits included"):
-        tree().archive[Ar]().entries.map(_.mode & 61440).to[Set]
-      . assert(_ == Set(32768))
+        test(m"archive[Ar] records the whole st_mode, type bits included"):
+          tree().archive[Ar]().entries.map(_.mode & 61440).to[Set]
+        . check(_ == Set(32768))
 
-      test(m"archive[Ar] member contents are the files' bytes"):
-        tree().archive[Ar]().entries.map(_.data.memoize.utf8)
-      . assert(_ == List(t"A", t"B", t"C"))
+        test(m"archive[Ar] member contents are the files' bytes"):
+          tree().archive[Ar]().entries.map(_.data.memoize.utf8)
+        . check(_ == List(t"A", t"B", t"C"))
 
     suite(m"Compression: tar.gzip round-trip"):
       val tar = Tarfile(List(helloFile, emptyDir))
@@ -811,7 +816,6 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
     suite(m"Scoped opening"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -828,13 +832,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"an archive file opens as Tar"):
-        val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
-        workDir.create[Directory]()
-        val path: Path on Linux = workDir / "scoped.tar"
-        path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(tar) }
+        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+          val path: Path on Linux = scratch.stem / "scoped.tar"
+          path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(tar) }
 
-        path.open[Tar]():
-          bitumen.tar.entries.to[List].map(_.entryName)
+          path.open[Tar]():
+            bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"opening for writing is refused"):
@@ -846,91 +849,92 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
     suite(m"Creating archives"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
-      val createDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
-      createDir.create[Directory]()
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+        val createDir: Path on Linux = scratch.stem
 
-      test(m"A created archive round-trips through open"):
-        val target: Path on Linux = createDir / "made.tar"
+        test(m"A created archive round-trips through open"):
+          val target: Path on Linux = createDir / "made.tar"
 
-        // [by-name-receiver] create lambda shares ambient tactic with receiver
-        scala.caps.unsafe.unsafeAssumeSeparate:
-         target.create[Tar](): builder ?=>
-          builder.insert(t"hello.txt".as[Relative on Tar], t"hello".in[Data])
-
-        target.open[Tar]():
-          bitumen.tar.entries.to[List].map(_.entryName)
-      . assert(_ == List(t"hello.txt"))
-
-      test(m"A gzip-compressed creation round-trips with the Gzip flag"):
-        val target: Path on Linux = createDir / "made.tar.gz"
-
-        target.create[Tar](Tar.Flag.Gzip): builder ?=>
-          builder.insert(t"data.txt".as[Relative on Tar], t"payload".in[Data])
-
-        target.open[Tar](Tar.Flag.Gzip):
-          bitumen.tar.entries.to[List].map(_.entryName)
-      . assert(_ == List(t"data.txt"))
-
-      test(m"A scoped entry writer streams an unknown-length body"):
-        val target: Path on Linux = createDir / "streamed.tar"
-
-        // [by-name-receiver] create lambda shares ambient tactic with receiver
-        scala.caps.unsafe.unsafeAssumeSeparate:
-         target.create[Tar](): builder ?=>
-          builder.file(t"chunks.bin".as[Relative on Tar]): entry ?=>
-            for i <- 1 to 5 do entry.put(Array.fill[Byte](1000)(i.toByte))
-
-        target.open[Tar]():
-          bitumen.tar.entries.to[List].head match
-            case f: Tar.Entry.File => f.data.size
-            case _                 => 0
-      . assert(_ == 5000)
-
-      test(m"scoped and whole entries interleave in order"):
-        val target: Path on Linux = createDir / "mixed.tar"
-
-        // [by-name-receiver] create lambda shares ambient tactic with receiver
-        scala.caps.unsafe.unsafeAssumeSeparate:
-         target.create[Tar](): builder ?=>
-          builder.insert(t"first.txt".as[Relative on Tar], t"one".in[Data])
-          builder.file(t"second.bin".as[Relative on Tar]): entry ?=>
-            entry.put(t"two".in[Data])
-          builder.insert(t"third.txt".as[Relative on Tar], t"three".in[Data])
-
-        target.open[Tar]():
-          bitumen.tar.entries.to[List].map(_.entryName)
-      . assert(_ == List(t"first.txt", t"second.bin", t"third.txt"))
-
-      test(m"a scoped entry writer buffers under compression"):
-        val target: Path on Linux = createDir / "streamed.tar.gz"
-
-        target.create[Tar](Tar.Flag.Gzip): builder ?=>
-          builder.file(t"z.bin".as[Relative on Tar]): entry ?=>
-            entry.put(t"zipped".in[Data])
-
-        target.open[Tar](Tar.Flag.Gzip):
-          bitumen.tar.entries.to[List].head match
-            case f: Tar.Entry.File => f.data.memoize.ascii.s
-            case _                 => ""
-      . assert(_ == "zipped")
-
-      test(m"An exception escaping the creation scope leaves nothing behind"):
-        import errorDiagnostics.emptyDiagnostics
-        val target: Path on Linux = createDir / "doomed.tar"
-
-        capture[Tar.Error]:
           // [by-name-receiver] create lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
            target.create[Tar](): builder ?=>
-            builder.insert(t"x".as[Relative on Tar], t"data".in[Data])
-            abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
+            builder.insert(t"hello.txt".as[Relative on Tar], t"hello".in[Data])
 
-        target.existent()
-      . assert(_ == false)
+          target.open[Tar]():
+            bitumen.tar.entries.to[List].map(_.entryName)
+        . check(_ == List(t"hello.txt"))
+
+        test(m"A gzip-compressed creation round-trips with the Gzip flag"):
+          val target: Path on Linux = createDir / "made.tar.gz"
+
+          target.create[Tar](Tar.Flag.Gzip): builder ?=>
+            builder.insert(t"data.txt".as[Relative on Tar], t"payload".in[Data])
+
+          target.open[Tar](Tar.Flag.Gzip):
+            bitumen.tar.entries.to[List].map(_.entryName)
+        . check(_ == List(t"data.txt"))
+
+        test(m"A scoped entry writer streams an unknown-length body"):
+          val target: Path on Linux = createDir / "streamed.tar"
+
+          // [by-name-receiver] create lambda shares ambient tactic with receiver
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           target.create[Tar](): builder ?=>
+            builder.file(t"chunks.bin".as[Relative on Tar]): entry ?=>
+              for i <- 1 to 5 do entry.put(Array.fill[Byte](1000)(i.toByte))
+
+          target.open[Tar]():
+            bitumen.tar.entries.to[List].head match
+              case f: Tar.Entry.File => f.data.size
+              case _                 => 0
+        . check(_ == 5000)
+
+        test(m"scoped and whole entries interleave in order"):
+          val target: Path on Linux = createDir / "mixed.tar"
+
+          // [by-name-receiver] create lambda shares ambient tactic with receiver
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           target.create[Tar](): builder ?=>
+            builder.insert(t"first.txt".as[Relative on Tar], t"one".in[Data])
+            builder.file(t"second.bin".as[Relative on Tar]): entry ?=>
+              entry.put(t"two".in[Data])
+            builder.insert(t"third.txt".as[Relative on Tar], t"three".in[Data])
+
+          target.open[Tar]():
+            bitumen.tar.entries.to[List].map(_.entryName)
+        . check(_ == List(t"first.txt", t"second.bin", t"third.txt"))
+
+        test(m"a scoped entry writer buffers under compression"):
+          val target: Path on Linux = createDir / "streamed.tar.gz"
+
+          target.create[Tar](Tar.Flag.Gzip): builder ?=>
+            builder.file(t"z.bin".as[Relative on Tar]): entry ?=>
+              entry.put(t"zipped".in[Data])
+
+          target.open[Tar](Tar.Flag.Gzip):
+            bitumen.tar.entries.to[List].head match
+              case f: Tar.Entry.File => f.data.memoize.ascii.s
+              case _                 => ""
+        . check(_ == "zipped")
+
+        test(m"An exception escaping the creation scope leaves nothing behind"):
+          import errorDiagnostics.emptyDiagnostics
+          val target: Path on Linux = createDir / "doomed.tar"
+
+          capture[Tar.Error]:
+            // [by-name-receiver] create lambda shares ambient tactic with receiver
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             target.create[Tar](): builder ?=>
+              builder.insert(t"x".as[Relative on Tar], t"data".in[Data])
+              abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
+
+          target.existent()
+        . check(_ == false)
 
     suite(m"GNU sparse: round-trip a simple sparse file"):
       val sparseEntry = Tar.Entry.Sparse
@@ -1205,7 +1209,6 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
     suite(m"AR: scoped opening"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
@@ -1217,13 +1220,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"an archive file opens as Ar"):
-        val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
-        workDir.create[Directory]()
-        val path: Path on Linux = workDir / "scoped.deb"
-        path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(deb) }
+        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+          val path: Path on Linux = scratch.stem / "scoped.deb"
+          path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(deb) }
 
-        path.open[Ar]():
-          bitumen.ar.entries.to[List].map(_.name)
+          path.open[Ar]():
+            bitumen.ar.entries.to[List].map(_.name)
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"opening for writing is refused"):

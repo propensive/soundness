@@ -38,9 +38,11 @@ import scala.util.control as suc
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import digression.*
+import galilei.*
 import gossamer.*
 import hellenism.*
 import org.jetbrains.kotlin.cli.common.ExitCode
@@ -53,6 +55,7 @@ import org.jetbrains.kotlin.config.Services
 import parasite.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 import symbolism.*
 import vacuous.*
 
@@ -64,18 +67,12 @@ object Kotlinc:
   // The version of the embedded compiler, as it reports itself: `2.4.10`.
   def version: Text = KotlinCompilerVersion.VERSION.nn.tt
 
-  // Deletes a scratch tree, depth-first; failing to do so is not a compilation failure.
-  private def remove(path: jnf.Path): Unit =
-    try jnf.Files.walk(path).nn.sorted(java.util.Comparator.reverseOrder()).nn.forEach: entry =>
-      jnf.Files.delete(entry.nn)
-
-    catch case suc.NonFatal(_) => ()
-
 // Drives the Kotlin compiler in-process, presenting the same interface as `Scalac` and `Javac`:
 // named sources compile against an explicit classpath into an output directory, and the
 // compiler's messages become `Compiler.Notice`s on the resulting `Compiler.Process`. Kotlin
-// reads its sources from disk, so they are written to a scratch directory for the duration of
-// the compilation, and diagnostics are mapped back onto the names they were given.
+// reads its sources from disk, so they are written to a scratch directory, beneath the temporary
+// directory of the `System`, for the duration of the compilation, and diagnostics are mapped back
+// onto the names they were given.
 case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[version]]):
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
   def version: Text = Kotlinc.version
@@ -87,7 +84,39 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
 
     Log.info(Compiler.Event.Start)
     val process: Compiler.Process = Compiler.Process(version)
-    val scratch: jnf.Path = jnf.Files.createTempDirectory("kotlinc").nn
+
+    // The scratch directory belongs to the task which compiles: it is made there, and deleted
+    // there when the compilation ends, however it ends. Failing to make it is a crash.
+    async:
+      import filesystemBackends.javaBaseFilesystem
+      import temporaryDirectories.systemTemporaryDirectory
+
+      def crash(error: Throwable): Unit =
+        Log.fail(Compiler.Event.CompilerCrash)
+        process.put(Compiler.Result.Crash(error.stackTrace))
+
+      try
+        recover:
+          case error: Io.Error => crash(error)
+
+        . protect:
+            temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+              val scratch: jnf.Path = jnf.Path.of(handle.stem.encode.s).nn
+              compile(classpath, sources, out.generic, scratch, process)
+
+      catch case suc.NonFatal(error) => crash(error)
+
+    process
+
+  // Writes `sources` beneath `scratch` and compiles them into `out`, reporting to `process`.
+  private def compile
+    ( classpath: LocalClasspath,
+      sources:   Map[Text, Text],
+      out:       Text,
+      scratch:   jnf.Path,
+      process:   Compiler.Process )
+    ( using Compiler.Event is Loggable, System )
+  :   Unit =
 
     // The name each source was given, keyed by the canonical path it was written to, so that a
     // diagnostic reads as if the compiler had seen the name rather than the scratch file.
@@ -141,31 +170,21 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
     // The Kotlin standard library is never implied: like every other classpath entry it is the
     // caller's to provide, which is what `-no-stdlib` makes so.
     val arguments: List[Text] =
-      List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out.generic) +
+      List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out) +
         commandLineArguments +
         names.keys.to[List]
 
     Log.info(Compiler.Event.Running(t"kotlinc" :: arguments))
 
-    async:
-      try
-        process.put(Compiler.Progress(0.1, t"kotlinc"))
-        jnf.Files.createDirectories(jnf.Paths.get(out.generic.s))
-        val compiler = K2JVMCompiler()
-        val parsed = compiler.createArguments().nn
-        // stdlib bridge: `parseArguments` takes a Java array of *nullable* `String`, and no
-        // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build it.
-        compiler.parseArguments(arguments.map(_.s).stdlib.toArray, parsed)
-        val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
-        val success = exit == ExitCode.OK
+    process.put(Compiler.Progress(0.1, t"kotlinc"))
+    jnf.Files.createDirectories(jnf.Paths.get(out.s))
+    val compiler = K2JVMCompiler()
+    val parsed = compiler.createArguments().nn
+    // stdlib bridge: `parseArguments` takes a Java array of *nullable* `String`, and no
+    // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build it.
+    compiler.parseArguments(arguments.map(_.s).stdlib.toArray, parsed)
+    val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
+    val success = exit == ExitCode.OK
 
-        if success then process.put(Compiler.Progress(1.0, t"kotlinc"))
-        process.put(if success then Compiler.Result.Success else Compiler.Result.Failure)
-
-      catch case suc.NonFatal(error) =>
-        Log.fail(Compiler.Event.CompilerCrash)
-        process.put(Compiler.Result.Crash(error.stackTrace))
-
-      finally Kotlinc.remove(scratch)
-
-    process
+    if success then process.put(Compiler.Progress(1.0, t"kotlinc"))
+    process.put(if success then Compiler.Result.Success else Compiler.Result.Failure)

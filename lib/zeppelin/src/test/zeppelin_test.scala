@@ -54,10 +54,13 @@ import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite("zip", m"Zeppelin tests"):
+  // Every test below ends in `check`, not `assert`: an `assert` may be deferred to run after
+  // the loan has wiped the scratch directory, and `check` always runs inline, within it.
   def run(): Unit =
-    val workDir: Path on Linux = temporaryDirectory[Path on Linux]/Uuid().show
-    workDir.create[Directory]()
+    temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+      suites(handle.stem)
 
+  private def suites(workDir: Path on Linux): Unit =
     def zipRef(text: Text): Path on Zip = text.as[Path on Zip]
 
     def entry(path: Text, content: Text): Zip.Entry =
@@ -133,52 +136,52 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
     suite(m"The umbrella's zip"):
       test(m"the collection zip pairs elements beside the zipfile accessor"):
         List(1, 2, 3).zip(List(t"a", t"b", t"c"))
-      . assert(_ == List((1, t"a"), (2, t"b"), (3, t"c")))
+      . check(_ == List((1, t"a"), (2, t"b"), (3, t"c")))
 
     suite(m"Zip.Entry construction and content"):
       test(m"entry built from a path and Text exposes its path"):
         Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).ref.encode
-      . assert(_ == t"hello.txt")
+      . check(_ == t"hello.txt")
 
       test(m"entry content reads back as Text"):
         Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).read[Text]
-      . assert(_ == t"Hello world")
+      . check(_ == t"Hello world")
 
       test(m"entry is Streamable by Data"):
         Zip.Entry(zipRef(t"a"), t"xyz".in[Data]).read[Text]
-      . assert(_ == t"xyz")
+      . check(_ == t"xyz")
 
       test(m"direct constructor accepts lazily-computed content"):
         val lazyEntry: Zip.Entry = Zip.Entry(zipRef(t"a.txt"), t"lazy".in[Data])
         lazyEntry.read[Text]
-      . assert(_ == t"lazy")
+      . check(_ == t"lazy")
 
       test(m"a compressible entry is stored with the Deflate method"):
         Zip.Entry(zipRef(t"a.txt"), (t"abcd"*64).in[Data]).method
-      . assert(_ == Zip.Method.Deflate)
+      . check(_ == Zip.Method.Deflate)
 
       test(m"the Stored compression policy disables deflation"):
         given Zip.Compression = Zip.Compression.Stored
         Zip.Entry(zipRef(t"a.txt"), (t"abcd"*64).in[Data]).method
-      . assert(_ == Zip.Method.Stored)
+      . check(_ == Zip.Method.Stored)
 
       test(m"a compression level of zero stores the entry"):
         given Zip.Compression = Zip.Compression.Deflate(0)
         Zip.Entry(zipRef(t"a.txt"), (t"abcd"*64).in[Data]).method
-      . assert(_ == Zip.Method.Stored)
+      . check(_ == Zip.Method.Stored)
 
       test(m"a modification time is recorded as its UTC date and time"):
         import abstractables.epochMillisecondsAbstractable
         // 13:45:30 on 29 February 2024, UTC.
         val stamped = Zip.Entry.at(zipRef(t"a.txt"), t"x".in[Data], 1709214330000L)
         (stamped.dosDate, stamped.dosTime)
-      . assert(_ == (((2024 - 1980) << 9) | (2 << 5) | 29, (13 << 11) | (45 << 5) | (30/2)))
+      . check(_ == (((2024 - 1980) << 9) | (2 << 5) | 29, (13 << 11) | (45 << 5) | (30/2)))
 
       test(m"a modification time before 1980 is recorded as 1980's first second"):
         import abstractables.epochMillisecondsAbstractable
         val stamped = Zip.Entry.at(zipRef(t"a.txt"), t"x".in[Data], 0L)
         (stamped.dosDate, stamped.dosTime)
-      . assert(_ == (0x0021, 0))
+      . check(_ == (0x0021, 0))
 
       test(m"an aligned entry's data begins on its byte boundary"):
         given Zip.Compression = Zip.Compression.Stored
@@ -191,113 +194,113 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
           (bytes.readUnchecked(offset).toInt & 0xff) | ((bytes.readUnchecked(offset + 1).toInt & 0xff) << 8)
 
         (30 + u16(26) + u16(28))%4
-      . assert(_ == 0)
+      . check(_ == 0)
 
       test(m"an aligned entry still reads back through the JDK"):
         given Zip.Compression = Zip.Compression.Stored
         val stored = Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).aligned(4)
         val path = writeZip(t"aligned2.zip", stored)
         jdkContent(path, t"hello.txt").to[List]
-      . assert(_ == t"Hello world".in[Data].to[List])
+      . check(_ == t"Hello world".in[Data].to[List])
 
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
           .segment((0).z till (4).z).to[List].map(_.toInt & 0xff)
-      . assert(_ == List(0x50, 0x4b, 0x03, 0x04))
+      . check(_ == List(0x50, 0x4b, 0x03, 0x04))
 
       test(m"single entry is visible to the JDK ZIP reader"):
         jdkNames(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
-      . assert(_ == List(t"hello.txt"))
+      . check(_ == List(t"hello.txt"))
 
       test(m"the JDK reader sees the original content"):
         val path = writeZip(t"content.zip", entry(t"hello.txt", t"Hello world"))
         jdkContent(path, t"hello.txt").to[List]
-      . assert(_ == t"Hello world".in[Data].to[List])
+      . check(_ == t"Hello world".in[Data].to[List])
 
       test(m"multiple entries preserve insertion order"):
         jdkNames(writeZip(t"many.zip", entry(t"a.txt", t"A"), entry(t"b.txt", t"B"),
           entry(t"c.txt", t"C")))
-      . assert(_ == List(t"a.txt", t"b.txt", t"c.txt"))
+      . check(_ == List(t"a.txt", t"b.txt", t"c.txt"))
 
       test(m"nested entry paths are preserved"):
         jdkNames(writeZip(t"nested.zip", entry(t"dir/sub/file.txt", t"x")))
-      . assert(_ == List(t"dir/sub/file.txt"))
+      . check(_ == List(t"dir/sub/file.txt"))
 
       test(m"an absolute Path on Zip is written without a leading slash"):
         val entry = Zip.Entry(%.on[Zip]/"META-INF"/"MANIFEST.MF", t"Manifest-Version: 1.0".in[Data])
         jdkNames(writeZip(t"abs.zip", entry))
-      . assert(_ == List(t"META-INF/MANIFEST.MF"))
+      . check(_ == List(t"META-INF/MANIFEST.MF"))
 
       test(m"an empty archive contains no entries"):
         jdkNames(writeZip(t"empty.zip"))
-      . assert(_ == Nil)
+      . check(_ == Nil)
 
       test(m"writing two entries with the same path raises DuplicateEntry"):
         import errorDiagnostics.emptyDiagnostics
         capture[Zip.Error]:
           (workDir/t"dup.zip").write(Zipfile(List(entry(t"x.txt", t"1"), entry(t"x.txt", t"2"))))
         . reason
-      . assert(_.isInstanceOf[Zip.Error.Reason.DuplicateEntry])
+      . check(_.isInstanceOf[Zip.Error.Reason.DuplicateEntry])
 
       test(m"a non-ASCII entry name sets the UTF-8 general-purpose flag"):
         (firstFlag(writeZip(t"utf8.zip", entry(t"café.txt", t"x"))) & 0x800) != 0
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"an ASCII entry name leaves the UTF-8 flag clear"):
         (firstFlag(writeZip(t"ascii.zip", entry(t"plain.txt", t"x"))) & 0x800) != 0
-      . assert(_ == false)
+      . check(_ == false)
 
       test(m"the JDK reader decodes a non-ASCII entry name"):
         jdkNames(writeZip(t"utf8b.zip", entry(t"café.txt", t"x")))
-      . assert(_ == List(t"café.txt"))
+      . check(_ == List(t"café.txt"))
 
       test(m"an archive comment round-trips through the JDK reader"):
         val zipfile = Zipfile(List(entry(t"a.txt", t"a")), t"hello comment")
         jdkComment(writeBytes(t"comment.zip", zipfile.read[Data]))
-      . assert(_ == t"hello comment")
+      . check(_ == t"hello comment")
 
     suite(m"Reading ZIP archives"):
       val archive = writeZip(t"rt.zip", entry(t"a.txt", t"alpha"), entry(t"b/c.txt", t"gamma"))
 
       test(m"round-trips all entry names"):
         names(readEntries(archive))
-      . assert(_ == List(t"a.txt", t"b/c.txt"))
+      . check(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"round-trips entry contents"):
         readEntries(archive).map(_.read[Text])
-      . assert(_ == List(t"alpha", t"gamma"))
+      . check(_ == List(t"alpha", t"gamma"))
 
       test(m"an empty archive yields no entries"):
         readEntries(writeZip(t"empty2.zip")).size
-      . assert(_ == 0)
+      . check(_ == 0)
 
       test(m"reads back binary (non-text) content unchanged"):
         val payload: Data = Array.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         path.write(Zipfile(List(Zip.Entry(zipRef(t"blob"), payload))))
         readEntries(path).head.let(_.read[Data].to[List])
-      . assert(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
+      . check(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
         readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.let(_.read[Text])
-      . assert(_ == t"")
+      . check(_ == t"")
 
       test(m"reads a large, highly-compressible payload"):
         val path = workDir/t"big.zip"
         path.write(Zipfile(List(Zip.Entry(zipRef(t"big.txt"), (t"soundness "*4096).in[Data]))))
         readEntries(path).head.let(_.read[Text])
-      . assert(_ == t"soundness "*4096)
+      . check(_ == t"soundness "*4096)
 
       test(m"looking up an absent entry raises NotFound"):
         import errorDiagnostics.emptyDiagnostics
         capture[Zip.Error](Zipfile.read(archive).entry(zipRef(t"absent.txt"))).reason
-      . assert(_.isInstanceOf[Zip.Error.Reason.NotFound])
+      . check(_.isInstanceOf[Zip.Error.Reason.NotFound])
 
       test(m"reading data that is not a ZIP archive raises MissingEocd"):
         import errorDiagnostics.emptyDiagnostics
         capture[Zip.Error](Zipfile.read(t"this is not a zip file".in[Data])).reason
-      . assert(_ == Zip.Error.Reason.MissingEocd)
+      . check(_ == Zip.Error.Reason.MissingEocd)
 
     suite(m"Scoped opening"):
       val archive = writeZip(t"scoped.zip", entry(t"a.txt", t"alpha"), entry(t"b/c.txt", t"gamma"))
@@ -305,22 +308,22 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       test(m"an archive opened as Zip lists its entries"):
         archive.open[Zip]():
           zipfile.entries.map(_.ref.encode)
-      . assert(_ == List(t"a.txt", t"b/c.txt"))
+      . check(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"entry content resolves within the scope"):
         archive.open[Zip]():
           zipfile.entry(zipRef(t"b/c.txt")).read[Text]
-      . assert(_ == t"gamma")
+      . check(_ == t"gamma")
 
       test(m"in-memory data opens as Zip"):
         bytesOf(archive).open[Zip]():
           zipfile.entries.map(_.ref.encode)
-      . assert(_ == List(t"a.txt", t"b/c.txt"))
+      . check(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"opening for writing is refused"):
         import errorDiagnostics.emptyDiagnostics
         capture[Zip.Error](archive.open[Zip](Write) { () }).reason
-      . assert(_ == Zip.Error.Reason.WriteUnsupported)
+      . check(_ == Zip.Error.Reason.WriteUnsupported)
 
     suite(m"JAR archives"):
       val manifestText =
@@ -334,7 +337,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       test(m"A JAR's manifest main attributes are parsed"):
         jarArchive.open[Jar]():
           zipfile.manifest
-      . assert(_ == Map
+      . check(_ == Map
           ( t"Manifest-Version" -> t"1.0",
             t"Main-Class"       -> t"com.example.Main",
             t"Built-By"         -> t"soundness" ))
@@ -342,12 +345,12 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       test(m"A JAR handle still lists entries like a Zip"):
         jarArchive.open[Jar]():
           zipfile.entries.map(_.ref.encode).to[Set]
-      . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
+      . check(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
 
       test(m"An archive without a manifest has no attributes"):
         writeZip(t"plain.jar", entry(t"a.txt", t"alpha")).open[Jar]():
           zipfile.manifest
-      . assert(_ == Map())
+      . check(_ == Map())
 
     suite(m"Archiving directories"):
       def tree(): Path on Linux =
@@ -361,17 +364,17 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"a directory tree archives in sorted pre-order, with directory entries"):
         tree().archive[Zip]().entries.map { entry => (entry.ref.encode, entry.directory) }
-      . assert(_ == List((t"a.txt", false), (t"b.txt", false), (t"sub", true), (t"sub/c.txt", false)))
+      . check(_ == List((t"a.txt", false), (t"b.txt", false), (t"sub", true), (t"sub/c.txt", false)))
 
       test(m"archived contents read back after a round trip through disk"):
         val target = workDir/t"tree.zip"
         target.write(tree().archive[Zip]())
         Zipfile.read(target).entries.filter(!_.directory).map(_.read[Text])
-      . assert(_ == List(t"A", t"B", t"C"))
+      . check(_ == List(t"A", t"B", t"C"))
 
       test(m"a Stored flag stores every entry uncompressed"):
         tree().archive[Zip](Zip.Compression.Stored).entries.map(_.method).to[Set]
-      . assert(_ == Set(Zip.Method.Stored))
+      . check(_ == Set(Zip.Method.Stored))
 
       test(m"a JAR manifest entry round-trips through open[Jar]"):
         val target = workDir/t"manifest.jar"
@@ -380,33 +383,33 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
         target.open[Jar]():
           zipfile.manifest
-      . assert(_ == Map(t"Manifest-Version" -> t"1.0", t"Main-Class" -> t"com.example.Main"))
+      . check(_ == Map(t"Manifest-Version" -> t"1.0", t"Main-Class" -> t"com.example.Main"))
 
       test(m"a long manifest value is wrapped and rejoined"):
         val target = workDir/t"long-manifest.jar"
         val value = t"x"*150
         target.write(Zipfile(List(Jar.manifest(t"Long" -> value))))
         target.open[Jar]()(zipfile.manifest)
-      . assert(_ == Map(t"Long" -> t"x"*150))
+      . check(_ == Map(t"Long" -> t"x"*150))
 
     suite(m"Interoperability with the JDK writer"):
       test(m"reads entry names from an externally (JDK) written archive"):
         names(readEntries(writeRawZip(t"foreign.zip", t"one.txt", t"two.txt")))
-      . assert(_ == List(t"one.txt", t"two.txt"))
+      . check(_ == List(t"one.txt", t"two.txt"))
 
       test(m"reads content from an externally (JDK) written archive"):
         readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).head.let(_.read[Text])
-      . assert(_ == t"data")
+      . check(_ == t"data")
 
       test(m"an entry name with a forbidden character raises InvalidName"):
         import errorDiagnostics.emptyDiagnostics
         capture[Zip.Error](readEntries(writeRawZip(t"badchar.zip", t"bad:name.txt"))).reason
-      . assert(_ == Zip.Error.Reason.InvalidName(t"bad:name.txt"))
+      . check(_ == Zip.Error.Reason.InvalidName(t"bad:name.txt"))
 
       test(m"a path-traversing entry name raises InvalidName"):
         import errorDiagnostics.emptyDiagnostics
         capture[Zip.Error](readEntries(writeRawZip(t"slip.zip", t"../escape.txt"))).reason
-      . assert(_ == Zip.Error.Reason.InvalidName(t"../escape.txt"))
+      . check(_ == Zip.Error.Reason.InvalidName(t"../escape.txt"))
 
     suite(m"Entry reuse between archives"):
       val source = writeZip(t"src.zip", entry(t"x.txt", (t"reuse me "*32)))
@@ -416,11 +419,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"a reused entry preserves its content"):
         Zipfile.read(target).entries.head.let(_.read[Text])
-      . assert(_ == t"reuse me "*32)
+      . check(_ == t"reuse me "*32)
 
       test(m"a reused entry is not recompressed (identical compressed size)"):
         Zipfile.read(target).entries.head.let(_.compressedSize)
-      . assert(_ == reused.compressedSize)
+      . check(_ == reused.compressedSize)
 
     suite(m"ZIP64"):
       // More than 0xFFFF entries forces ZIP64 end-of-central-directory records.
@@ -432,19 +435,19 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"a ZIP64 end-of-central-directory record is emitted"):
         contains(bytesOf(path), List(0x50, 0x4b, 0x06, 0x06))
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"a ZIP64 locator is emitted"):
         contains(bytesOf(path), List(0x50, 0x4b, 0x06, 0x07))
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"the JDK reader counts all entries in a ZIP64 archive"):
         jdkNames(path).size
-      . assert(_ == 66000)
+      . check(_ == 66000)
 
       test(m"the native reader counts all entries in a ZIP64 archive"):
         Zipfile.read(path).entries.size
-      . assert(_ == 66000)
+      . check(_ == 66000)
 
       // Concatenation, rather than a `Zipfile` with a `prefix`: an Ethereal launcher is built by
       // appending an already-linked JAR to a runner binary, which leaves the ZIP64 locator's
@@ -466,31 +469,31 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       test(m"a stale ZIP64 locator stops the JDK opening a concatenated archive"):
         val stale = concatenate(t"zip64-stale.zip", stub, bytesOf(path))
         try jdkNames(stale).size catch case exception: Exception => -1
-      . assert(_ == -1)
+      . check(_ == -1)
 
       test(m"the native reader tolerates a stale ZIP64 locator"):
         val stale = concatenate(t"zip64-stale2.zip", stub, bytesOf(path))
         Zipfile.read(stale).entries.size
-      . assert(_ == 66000)
+      . check(_ == 66000)
 
       test(m"rebasing a concatenated ZIP64 archive restores the JDK reader"):
         val rebased = concatenate(t"zip64-rebased.zip", stub, bytesOf(path))
         Zipfile.rebase(rebased, stub.length)
         jdkNames(rebased).size
-      . assert(_ == 66000)
+      . check(_ == 66000)
 
       test(m"a rebased archive still reads natively, prefix and all"):
         val rebased = concatenate(t"zip64-rebased2.zip", stub, bytesOf(path))
         Zipfile.rebase(rebased, stub.length)
         Zipfile.read(rebased).prefix.lay(0)(_.length)
-      . assert(_ == 1024)
+      . check(_ == 1024)
 
       test(m"rebasing an archive with no ZIP64 locator changes nothing"):
         val plain = writeZip(t"rebase-noop.zip", entry(t"a.txt", t"alpha"))
         val before = bytesOf(plain).to[List]
         Zipfile.rebase(plain, 1024)
         bytesOf(plain).to[List] == before
-      . assert(_ == true)
+      . check(_ == true)
 
     suite(m"Binary prefix"):
       val prefix: Data = Array.tabulate(64)(i => (i*7).toByte)
@@ -499,29 +502,29 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         val path = workDir/t"prefixed.zip"
         path.write(Zipfile(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")), prefix = prefix))
         Zipfile.read(path).prefix.lay(Nil)(_.to[List])
-      . assert(_ == prefix.to[List])
+      . check(_ == prefix.to[List])
 
       test(m"entries in a prefixed archive remain readable"):
         val path = workDir/t"prefixed2.zip"
         path.write(Zipfile(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")), prefix = prefix))
         Zipfile.read(path).entries.map(_.read[Text])
-      . assert(_ == List(t"alpha", t"beta"))
+      . check(_ == List(t"alpha", t"beta"))
 
       test(m"the prefix precedes the first local header"):
         val path = workDir/t"prefixed3.zip"
         path.write(Zipfile(List(entry(t"a.txt", t"alpha")), prefix = prefix))
         bytesOf(path).segment((0).z till (64).z).to[List]
-      . assert(_ == prefix.to[List])
+      . check(_ == prefix.to[List])
 
       test(m"the JDK reader reads a prefixed archive"):
         val path = workDir/t"prefixed4.zip"
         path.write(Zipfile(List(entry(t"a.txt", t"alpha")), prefix = prefix))
         jdkContent(path, t"a.txt").to[List]
-      . assert(_ == t"alpha".in[Data].to[List])
+      . check(_ == t"alpha".in[Data].to[List])
 
       test(m"an archive with no prefix reports no prefix"):
         Zipfile.read(writeZip(t"noprefix.zip", entry(t"a.txt", t"x"))).prefix
-      . assert(_ == Unset)
+      . check(_ == Unset)
 
       test(m"detects and reads a prefix prepended to a JDK-written archive"):
         // The JDK writes offsets relative to the archive start; prepending data makes a
@@ -535,7 +538,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         out.close()
         val zip = Zipfile.read(sfx)
         (zip.prefix.lay(List())(_.to[List]), zip.entries.map(_.read[Text]))
-      . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))
+      . check(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))
 
     suite(m"Header fidelity"):
       // The JDK writer sets the UTF-8 flag unconditionally, streams every entry behind a data
@@ -548,20 +551,20 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"a JDK-written archive rebuilds byte-identically"):
         rebuild(foreign) == bytesOf(foreign).to[List]
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"a parsed entry exposes the general-purpose flags"):
         readEntries(foreign).head.let(_.flags)
-      . assert(_ == 0x808)
+      . check(_ == 0x808)
 
       test(m"a parsed streamed entry records its zeroed local sizes"):
         readEntries(foreign).head.let(_.localSizes)
-      . assert(_ == false)
+      . check(_ == false)
 
       test(m"a parsed entry exposes both version fields"):
         readEntries(foreign).head.lay((0, 0, 0)): entry =>
           (entry.versionMadeBy, entry.localVersion, entry.centralVersion)
-      . assert(_ == (20, 20, 20))
+      . check(_ == (20, 20, 20))
 
       test(m"zeppelin's own archive rebuilds byte-identically"):
         val own = workDir/t"own.zip"
@@ -569,45 +572,45 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         val zipfile = Zipfile(List(entry(t"a.txt", t"alpha"), directory, entry(t"dir/b.txt", t"b"*100)), t"note")
         writeBytes(t"own.zip", zipfile.read[Data])
         rebuild(own) == bytesOf(own).to[List]
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"a streamed entry is followed by a data descriptor"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808)
         contains(bytesOf(writeZip(t"streamed.zip", streamed)), List(0x50, 0x4b, 0x07, 0x08))
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"the JDK reader reads a streamed entry"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808)
         jdkContent(writeZip(t"streamed2.zip", streamed), t"s.txt").to[List]
-      . assert(_ == (t"stream me "*16).in[Data].to[List])
+      . check(_ == (t"stream me "*16).in[Data].to[List])
 
       test(m"a streamed entry without local sizes zeroes the local header's crc and sizes"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808, localSizes = false)
         val bytes = bytesOf(writeZip(t"streamed3.zip", streamed))
         (14 until 26).forall(i => bytes.readUnchecked(i) == 0)
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"a streamed entry with local sizes keeps the local header's crc"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808)
         val bytes = bytesOf(writeZip(t"streamed4.zip", streamed))
         (14 until 26).exists(i => bytes.readUnchecked(i) != 0)
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"a streamed entry without local sizes reads back through zeppelin"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808, localSizes = false)
         readEntries(writeZip(t"streamed5.zip", streamed)).head.let(_.read[Text])
-      . assert(_ == t"stream me "*16)
+      . check(_ == t"stream me "*16)
 
       test(m"Unix attributes and the version made by round-trip"):
         val unix = entry(t"u.txt", t"unix").withHeaders(versionMadeBy = 0x314, externalAttributes = 0x81a40000L)
         readEntries(writeZip(t"unix.zip", unix)).head.lay((0, 0L, 0)): read =>
           (read.versionMadeBy, read.externalAttributes, read.internalAttributes)
-      . assert(_ == (0x314, 0x81a40000L, 0))
+      . check(_ == (0x314, 0x81a40000L, 0))
 
       test(m"the JDK reader lists an entry with Unix attributes"):
         val unix = entry(t"u.txt", t"unix").withHeaders(versionMadeBy = 0x314, externalAttributes = 0x81a40000L)
         jdkNames(writeZip(t"unix2.zip", unix))
-      . assert(_ == List(t"u.txt"))
+      . check(_ == List(t"u.txt"))
 
       // The executable-JAR marker some Ant-era tooling writes: header ID 0xCAFE, length 0.
       val marked =
@@ -624,11 +627,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       test(m"an extra field is read from both headers"):
         readEntries(marked).head.lay((List[Byte](), List[Byte]())): read =>
           (read.localExtra.lay(Nil)(_.to[List]), read.centralExtra.lay(Nil)(_.to[List]))
-      . assert(_ == (List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte), List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte)))
+      . check(_ == (List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte), List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte)))
 
       test(m"an archive with an extra field rebuilds byte-identically"):
         rebuild(marked) == bytesOf(marked).to[List]
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"an entry with an extra field still aligns its data"):
         given Zip.Compression = Zip.Compression.Stored
@@ -640,4 +643,4 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
           (bytes.readUnchecked(offset).toInt & 0xff) | ((bytes.readUnchecked(offset + 1).toInt & 0xff) << 8)
 
         ((30 + u16(26) + u16(28))%8, jdkContent(workDir/t"aligned3.zip", t"hello.txt").to[List])
-      . assert(_ == (0, t"Hello world".in[Data].to[List]))
+      . check(_ == (0, t"Hello world".in[Data].to[List]))

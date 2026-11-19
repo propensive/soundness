@@ -71,11 +71,13 @@ object Scratch:
       val child: Path on filesystem = value.unsafeChild(name)(using Unsafe)
       backend.createDirectory(child, Unset)
 
-      def wipe(path: Path on filesystem): Unit =
+      // An entry which has gone by the time it is reached — deleted by a process which was still
+      // finishing its work in the directory as the scope ended — is passed over, not an error.
+      def wipe(path: Path on filesystem): Unit = if backend.exists(path, false) then
         if backend.stat(path, false).entry == Directory
         then backend.children(path).each: name => wipe(path.unsafeChild(name)(using Unsafe))
 
-        backend.delete(path)
+        backend.deleteIfExists(path)
 
       try
         val handle =

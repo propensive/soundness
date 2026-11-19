@@ -163,32 +163,36 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
       import filesystemBackends.javaBaseFilesystem
       import filesystemOptions.dereferenceSymlinks
       import strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory
       import codepages.utf8Codepage
 
       val own: LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
-      val leaf: Text = Uuid().show
-      val directory: Path on Linux = unsafely((% / "tmp" / leaf).on[Linux])
-      unsafely(directory.create[Directory]())
-      unsafely((directory / "notes.txt").write(t"not an archive"))
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Linux = handle.stem
+        (directory / "notes.txt").write(t"not an archive")
 
-      test(m"A directory is a Directory entry"):
-        unsafely(Classpath.Entry.classify(directory))
-      . assert(_ == Classpath.Entry.Directory(directory.encode))
+        test(m"A directory is a Directory entry"):
+          unsafely(Classpath.Entry.classify(directory))
+        . check(_ == Classpath.Entry.Directory(directory.encode))
 
-      test(m"A path that does not exist is a Directory entry which may yet be made"):
-        unsafely(Classpath.Entry.classify(directory / "later"))
-      . assert(_ == Classpath.Entry.Directory((directory / "later").encode))
+        test(m"A path that does not exist is a Directory entry which may yet be made"):
+          unsafely(Classpath.Entry.classify(directory / "later"))
+        . check(_ == Classpath.Entry.Directory((directory / "later").encode))
 
-      test(m"A jar is a Jar entry, by its content"):
-        val jar: Optional[Text] = own.entries.seek(_.path.let(_.ends(t".jar")).or(false)).let(_.path)
-        jar.let: path =>
-          unsafely(Classpath.Entry.classify(path.as[Path on Linux])) == Classpath.Entry.Jar(path)
-      . assert(_ == true)
+        test(m"A jar is a Jar entry, by its content"):
+          val jar: Optional[Text] =
+            own.entries.seek(_.path.let(_.ends(t".jar")).or(false)).let(_.path)
 
-      test(m"A file that is not an archive is an error"):
-        import errorDiagnostics.emptyDiagnostics
-        unsafely(capture[Io.Error](Classpath.Entry.classify(directory / "notes.txt")).reason)
-      . assert(_ == Io.Error.Reason.InvalidData)
+          jar.let: path =>
+            unsafely(Classpath.Entry.classify(path.as[Path on Linux])) == Classpath.Entry.Jar(path)
+        . check(_ == true)
+
+        test(m"A file that is not an archive is an error"):
+          import errorDiagnostics.emptyDiagnostics
+          unsafely(capture[Io.Error](Classpath.Entry.classify(directory / "notes.txt")).reason)
+        . check(_ == Io.Error.Reason.InvalidData)
 
       test(m"An entry's path is its directory's or its jar's"):
         (Classpath.Entry.Jar(t"/x.jar").path, Classpath.Entry.Directory(t"/a/").path,

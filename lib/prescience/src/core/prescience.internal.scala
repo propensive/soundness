@@ -177,6 +177,27 @@ object internal:
   // which restricts this tier to non-generic class types. Lexically-scoped
   // givens at the use site are invisible to the inner search, and each call
   // costs a full (in-memory) compiler run.
+  // Loads, through `loader`, every class whose classfile is beneath `root`.
+  private def preload(loader: ClassLoader, root: java.nio.file.Path): Unit =
+    val walk = java.nio.file.Files.walk(root).nn
+
+    try walk.forEach: file =>
+      val relative = root.relativize(file).nn.toString
+
+      if relative.endsWith(".class") then
+        loader.loadClass(relative.dropRight(6).replace(java.io.File.separatorChar, '.'))
+    finally walk.close()
+
+  // Deletes `root` and everything beneath it, depth-first; failing to is not an error.
+  private def deleteTree(root: java.nio.file.Path): Unit =
+    try
+      val walk = java.nio.file.Files.walk(root).nn
+
+      try walk.sorted(java.util.Comparator.reverseOrder()).nn.forEach: file =>
+        java.nio.file.Files.deleteIfExists(file)
+      finally walk.close()
+    catch case _: java.io.IOException => ()
+
   private[prescience] def summonStaged[field: Type](using Quotes): Option[Inlinable] =
     import quotes.reflect.*
     import scala.quoted.staging
@@ -191,60 +212,71 @@ object internal:
           // same-run instance can never resolve against a stale classfile from
           // a previous incremental compile. `-experimental` because the repo
           // compiles under experimental language features, so its symbols are
-          // `@experimental`-tagged.
-          val outputDir: String =
-            java.nio.file.Files.createTempDirectory("prescience").nn.toString
+          // `@experimental`-tagged. The directory is deleted once the instance is
+          // reconstructed (galilei's scratch directories are not available to prescience).
+          val output: java.nio.file.Path = java.nio.file.Files.createTempDirectory("prescience").nn
+          val outputDir: String = output.toString
+          var keep: Boolean = false
 
-          given settings: staging.Compiler.Settings =
-            staging.Compiler.Settings.make
-              ( Some(outputDir), List("-experimental", "-classpath", innerClasspath) )
+          try
+            given settings: staging.Compiler.Settings =
+              staging.Compiler.Settings.make
+                ( Some(outputDir), List("-experimental", "-classpath", innerClasspath) )
 
-          given staging.Compiler = staging.Compiler.make(macroClassloader)
-          val started = System.nanoTime
+            given staging.Compiler = staging.Compiler.make(macroClassloader)
+            val started = System.nanoTime
 
-          val result: Any = staging.run:
-            val quotes2 = summon[Quotes]
-            import quotes2.reflect as r2
+            val result: Any = staging.run:
+              val quotes2 = summon[Quotes]
+              import quotes2.reflect as r2
 
-            val fieldType = r2.TypeRepr.typeConstructorOf(clazz)
+              val fieldType = r2.TypeRepr.typeConstructorOf(clazz)
 
-            val target =
-              r2.Refinement
-                ( r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType) )
+              val target =
+                r2.Refinement
+                  ( r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType) )
 
-            // The summon is embedded in the snippet rather than performed here
-            // eagerly: the run's expression builder executes post-typer (phase
-            // `quotedFrontend`), where a failing implicit search asserts, while
-            // an embedded `summonInline` resolves during the inner compiler's
-            // own inlining phase — an ordinary search context.
-            target.asType match
-              case '[target] => '{scala.compiletime.summonInline[target]}
+              // The summon is embedded in the snippet rather than performed here
+              // eagerly: the run's expression builder executes post-typer (phase
+              // `quotedFrontend`), where a failing implicit search asserts, while
+              // an embedded `summonInline` resolves during the inner compiler's
+              // own inlining phase — an ordinary search context.
+              target.asType match
+                case '[target] => '{scala.compiletime.summonInline[target]}
 
-          // The snippet's classes are now ordinary files in `outputDir`; a new
-          // classloader over that directory (parented by the macro classloader,
-          // which supplies the instance's own classes) can reconstruct the
-          // instance independently of `staging.run`'s internal loader — the
-          // basis for caching a compiled summon across expansions.
-          val reloaded: Any =
-            try
-              val url = java.io.File(outputDir).toURI.nn.toURL.nn
-              val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
-              val generated = loader.loadClass("Generated$Code$From$Quoted").nn
-              val instance = generated.getConstructor().nn.newInstance()
-              generated.getMethod("apply").nn.invoke(instance)
-            catch
-              case _: ReflectiveOperationException => result
-              case _: LinkageError                 => result
+            // The snippet's classes are now ordinary files in `outputDir`; a new
+            // classloader over that directory (parented by the macro classloader,
+            // which supplies the instance's own classes) can reconstruct the
+            // instance independently of `staging.run`'s internal loader — the
+            // basis for caching a compiled summon across expansions.
+            val reloaded: Any =
+              try
+                val url = java.io.File(outputDir).toURI.nn.toURL.nn
+                val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
+                val generated = loader.loadClass("Generated$Code$From$Quoted").nn
+                val instance = generated.getConstructor().nn.newInstance()
+                val value = generated.getMethod("apply").nn.invoke(instance)
 
-          val duration = (System.nanoTime - started)/1000000L
+                // Every class of the snippet is defined now, so that none is looked for in
+                // the directory after it has been deleted.
+                preload(loader, output)
+                value
+              catch
+                // The instance from `staging.run`'s own loader may still read classes from
+                // the directory, which is therefore left in place.
+                case _: ReflectiveOperationException | _: LinkageError =>
+                  keep = true
+                  result
 
-          report.info
-            ( s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
-              s"classes in $outputDir" )
+            val duration = (System.nanoTime - started)/1000000L
 
-          reloaded match
-            case instance: Inlinable => Some(instance)
-            case _                   => None
+            report.info
+              ( s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms" )
+
+            reloaded match
+              case instance: Inlinable => Some(instance)
+              case _                   => None
+          finally if !keep then deleteTree(output)
         catch
           case _: ReflectiveOperationException => None
           case _: LinkageError                 => None

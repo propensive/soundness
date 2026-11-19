@@ -34,8 +34,8 @@ package octogenarian
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
-import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -76,15 +76,27 @@ object SshKeygen:
     val output = job.await()
     (output, job.status())
 
-  private def temporary(content: Text)(using Tactic[Git.Error]): Path on Linux =
-    val file = java.nio.file.Files.createTempFile("octogenarian-", ".sig").nn
-    java.nio.file.Files.writeString(file, content.s)
+  // Writes `content` to a scratch file which only its owner may read, and lends its path to
+  // `block`, deleting the file when `block` ends, however it ends. It lives in the JVM's own
+  // temporary directory, `java.io.tmpdir`.
+  private def temporary[result](content: Text)(block: Path on Linux => result)
+    ( using tactic: Tactic[Git.Error] )
+  :   result =
 
-    // Absolute by construction on POSIX; reported, not thrown, should the JDK ever disagree.
-    mitigate:
-      case error: Path.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+    import hieroglyph.codepages.utf8Codepage
+    import temporaryDirectories.javaBaseTemporaryDirectory
 
-    . protect(file.toAbsolutePath.nn.toString.tt.as[Path on Linux])
+    given io: Tactic[Io.Error] = tactic.contramap: error =>
+      Git.Error(Reason.SigningFailed(error.message.text))(using Diagnostics.omit)
+
+    given truncation: Tactic[Truncation.Error] = tactic.contramap: error =>
+      Git.Error(Reason.SigningFailed(error.message.text))(using Diagnostics.omit)
+
+    given umask: Umask = Umask(0x3f) // 077: a file of mode 0600, which only its owner may read
+
+    temporaryDirectory[Path on Linux].open[Scratch.File](Read & Write): file ?=>
+      file.write(Chain(content.in[Data]))
+      block(file.path)
 
   // Signs with the private key in `key`.
   class Signer(key: Path on Linux)
@@ -106,9 +118,7 @@ object SshKeygen:
   extends Git.Verifier:
 
     def verify(payload: Data, signature: Text)(using Tactic[Git.Error]): Git.Verification =
-      val file = temporary(signature)
-
-      try
+      temporary(signature): file =>
         val (principals, found) =
           run
             ( List(t"-Y", t"find-principals", t"-s", file.encode, t"-f", allowedSigners.encode),
@@ -126,4 +136,3 @@ object SshKeygen:
 
           if status == 0 then Git.Verification.Good(principal)
           else Git.Verification.Bad(output.trim)
-      finally java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(file.encode.s))

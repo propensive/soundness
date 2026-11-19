@@ -50,6 +50,21 @@ check-escapes:
 check-iarray:
 	! grep -rnw --include='*.scala' --include='build.mill' IArray lib src tests build.mill
 
+# Temporary files and directories are galilei's `Scratch` loans, which delete what they made when
+# their scope ends, however it ends: never the JDK's `createTempFile`/`createTempDirectory`, whose
+# leftovers a long-lived JVM (a test run inside fume's daemon) keeps until it exits, and never
+# `deleteOnExit`, which waits for that exit too. Four files cannot use a loan, and delete what
+# they make in a `finally` instead: prescience's staging compiler and abscission's shrinking
+# engine, which galilei is above; sedentary's profiler, whose quoted body runs in a JVM of its
+# own, compiled where galilei's inline code does not resolve; and beneficence's compiler plugin,
+# whose file beside its target is moved into place rather than thrown away.
+check-scratch:
+	! grep -rnE --include='*.scala' 'createTemp(File|Directory)|deleteOnExit' lib src tests \
+	  | grep -v '^lib/prescience/src/core/prescience.internal.scala:' \
+	  | grep -v '^lib/abscission/src/scala-3.10/abscission.Shrinker.scala:' \
+	  | grep -v '^lib/sedentary/src/core/sedentary.Profile.scala:' \
+	  | grep -v '^lib/beneficence/src/plugin/beneficence.GivensWriter.scala:'
+
 # The unsafety census: the counts of every rule in .pyrocosm/flare/config.tel, over the sources,
 # as `flare metrics` records them in git notes commit by commit. Reports only: nothing here fails.
 unsafety:
@@ -65,6 +80,7 @@ plumbing:
 build:
 	./mill groupCheck.validate
 	$(MAKE) check-iarray
+	$(MAKE) check-scratch
 	python3 etc/check-given-uniqueness.py
 	python3 etc/check-doc-coverage.py
 	python3 etc/check-compatibility.py
@@ -171,4 +187,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-while check-escapes unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch
+.PHONY: publishLocal build dev ci check-givens check-while check-escapes check-scratch unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch
