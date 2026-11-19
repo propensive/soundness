@@ -105,14 +105,18 @@ object Doughnut:
 
         if countOf(nodes) == 0 then Doughnut.Fit(Nil) else
           val layering = data.layered
-          val depth = nodes.fold(0): (acc, node) => acc.max(layering.rank(node) + 1)
+
+          // Every node asked about below comes from the graph the layering was made of.
+          val ranks = layering.rank
+          val positions = layering.position
+          val depth = nodes.fold(0): (acc, node) => acc.max(Map.at(ranks, node) + 1)
           def sizeOf(node: node): Double = weighted.weight(node).max(0.0)
 
           var middles: Map[node, Double] = Map()
           var bands: List[Band[node]] = Nil
 
           List.range(0, depth).each: rank =>
-            val initial = nodes.filter(layering.rank(_) == rank).order(layering.position(_))
+            val initial = nodes.filter(Map.at(ranks, _) == rank).order(Map.at(positions, _))
             val count = countOf(initial)
 
             // A node's key is the circular mean of the midpoints of its dependencies in the
@@ -120,8 +124,8 @@ object Doughnut:
             // dependencies lie on opposite sides and have no mean, keeps the layering's place,
             // scaled into the same turn.
             val ordered = if rank == 0 then initial else initial.order: node =>
-              val dependencies = data.successors(node).to[List].filter(layering.rank(_) < rank)
-              val fallback = 2.0*π*layering.position(node)/count
+              val dependencies = data.successors(node).to[List].filter(Map.at(ranks, _) < rank)
+              val fallback = 2.0*π*Map.at(positions, node)/count
 
               if countOf(dependencies) == 0 then fallback else
                 val (sines, cosines) = dependencies.fold((0.0, 0.0)): (acc, dependency) =>

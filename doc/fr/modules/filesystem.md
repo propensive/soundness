@@ -623,14 +623,15 @@ Out.println(t"${first.show}, then ${last.show}")
 - was stored is in the file when the block ends. It is what a format which is altered in place
 - is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
 - `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
-- changing on the JVM; the other platforms report `Unsupported`.
+- changing on the JVM and on Scala Native; WASI, which can neither map nor lock a file, reports
+- `Unsupported`.
 + Une tenure ne donne aucune adresse dans sa mémoire, puisque `expand` peut la déplacer : chaque
 + chargement et chaque stockage se fait à un décalage, et une `slice` d'une tenure lit à travers
 + elle, si bien qu'elle reste valable ensuite. Ce qui a été stocké est dans le fichier lorsque le
 + bloc se termine. C'est par elle qu'un format modifié sur place est modifié, comme l'est une image
 + [RaTEL](tel.md#ratel) par le programme qui la possède. `Holding(size)` en est une sur le tas, pour
-+ une image qui n'est pas encore un fichier. Un fichier est projeté pour modification sur la JVM ;
-+ les autres plateformes signalent `Unsupported`.
++ une image qui n'est pas encore un fichier. Un fichier est projeté pour modification sur la JVM et
++ sur Scala Native ; WASI, qui ne peut ni projeter ni verrouiller un fichier, signale `Unsupported`.
 
 - ### Publishing versions
 + ### Publier des versions

@@ -172,7 +172,7 @@ extension [plane: Filesystem](path: Path on plane)
   // is already held. A file shorter than `reserve` bytes is extended to that, and the holding's
   // `expand` extends it further. What was stored is made durable when the scope ends, when
   // the file is unmapped; the holding is a capability which capture checking confines to the
-  // scope. Supported by the JVM backend; the others raise `Unsupported`.
+  // scope. Supported by the JVM and Scala Native backends; WASI's raises `Unsupported`.
   def hold[result](reserve: Long = 0L)(lambda: zephyrine.Holding^ => result)
     ( using backend: FilesystemBackend on plane, umask: Umask )
     ( using Tactic[Io.Error]^ )

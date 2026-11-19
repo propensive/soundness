@@ -1821,17 +1821,22 @@ entry .Layering
       val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
       val layering = dag.layered
 
-      layering.rank(2)          // 0: no dependencies, so the first layer
-      layering.rank(8)          // 2: two layers down, by the longest path
-      layering.layers(1)        // the vertices of the second layer, in drawn order
-      layering.links(0)         // the (upper, lower) positions joined between layers 0 and 1
+      layering.rank.at(2)         // 0: no dependencies, so the first layer
+      layering.rank.at(8)         // 2: two layers down, by the longest path
+      layering.layers.at(Sec)   // the vertices of the second layer, in drawn order
+      layering.links.at(Prim)   // the (upper, lower) positions joined between layers 0 and 1
       layering.crossings        // 0: no link crosses another
       ```
 
-      - `dendrology`'s `LayeredDagDiagram` assigns columns to a layering and renders it; a
-      - different drawing takes `layers` and `links` directly.
-      + Le `LayeredDagDiagram` de `dendrology` attribue des colonnes à un étagement et le rend ;
-      + un autre dessin prend directement `layers` et `links`.
+      - The layers and links are `Sequence`s, read by `Ordinal`, and `rank` and `position` are
+      - `Map`s, so each read answers an `Optional`: `Unset` for a layer which is not there, or a
+      - node which is not in the graph. `dendrology`'s `LayeredDagDiagram` assigns columns to a
+      - layering and renders it; a different drawing takes `layers` and `links` directly.
+      + Les couches et les liens sont des `Sequence`, lues par `Ordinal`, et `rank` et `position`
+      + sont des `Map`, si bien que chaque lecture répond par un `Optional` : `Unset` pour une
+      + couche qui n'existe pas, ou pour un nœud qui n'est pas dans le graphe. Le
+      + `LayeredDagDiagram` de `dendrology` attribue des colonnes à un étagement et le rend ; un
+      + autre dessin prend directement `layers` et `links`.
   refer acyclicity.Ranking
   refer acyclicity.rankings
   entry .Vertex
@@ -1848,16 +1853,18 @@ entry .Layering
         + celle-ci. Un dessin attribue une colonne à un sommet virtuel et y fait passer l'arête.
   entry #layers
     info
-        - the layers, top down, each a list of `Layering.Vertex` in drawn order
-        + les couches, de haut en bas, chacune étant une liste de `Layering.Vertex` dans l'ordre du
-        + dessin
+        - the layers, top down, each a `Sequence` of `Layering.Vertex` in drawn order
+        + les couches, de haut en bas, chacune étant une `Sequence` de `Layering.Vertex` dans
+        + l'ordre du dessin
   entry #links
     info
         - `links(i)` joins layer `i` to layer `i + 1`, as pairs of positions within each
         + `links(i)` relie la couche `i` à la couche `i + 1`, sous forme de paires de positions au
         + sein de chacune
     detail
-        - Every link joins adjacent layers: an edge spanning more is broken at its virtual vertices.
+        - A `Sequence` with one `List` of links for each layer but the last. Every link joins
+        - adjacent layers: an edge spanning more is broken at its virtual vertices.
+        + Une `Sequence` qui contient une `List` de liens pour chaque couche sauf la dernière.
         + Chaque lien relie des couches adjacentes : une arête qui en couvre davantage est coupée à
         + ses sommets virtuels.
   entry #rank

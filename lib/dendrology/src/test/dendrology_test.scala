@@ -250,7 +250,7 @@ object Tests extends Suite("tree", m"Dendrology tests"):
 
     test(m"Layered DAG: linear chain has one node per level"):
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"))
-      LayeredDagDiagram(dag).rows.count((_, nodesAt) => nodesAt.nonEmpty)
+      LayeredDagDiagram(dag).rows.count((_, nodesAt) => !nodesAt.nil)
 
     . assert(_ == 3)
 
@@ -260,15 +260,10 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"B" -> Set(t"A"),
           t"C" -> Set(t"A"),
           t"D" -> Set(t"B", t"C") )
-      val nodeRows = LayeredDagDiagram(dag).rows.collect:
-        case (_, nodesAt) if nodesAt.nonEmpty => nodesAt
       // Three node rows: [A], [B,C], [D]
-      ( nodeRows.length,
-        nodeRows.head.size,
-        nodeRows(1).size,
-        nodeRows.last.size )
+      LayeredDagDiagram(dag).nodesAt.filter(!_.nil).map(_.size)
 
-    . assert(_ == (3, 1, 2, 1))
+    . assert(_ == List(1, 2, 1))
 
     // Reached in order from `A`, `C` precedes `D`, so `A → D` would cross `B → C`; the layering
     // swaps them and the connector row needs no crossing tile.
@@ -278,7 +273,7 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"B" -> Set(),
           t"C" -> Set(t"A", t"B"),
           t"D" -> Set(t"A") )
-      LayeredDagDiagram(dag).tiles.flatten.contains(DagDiagram.Tile.Crossing)
+      LayeredDagDiagram(dag).tiles.flat.has(DagDiagram.Tile.Crossing)
 
     . assert(_ == false)
 
@@ -289,7 +284,7 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"B" -> Set(),
           t"C" -> Set(t"A"),
           t"D" -> Set(t"B", t"C") )
-      List.from(LayeredDagDiagram(dag).rows.collect { case (_, nodesAt) if nodesAt.nonEmpty => nodesAt.size })
+      LayeredDagDiagram(dag).nodesAt.filter(!_.nil).map(_.size)
 
     . assert(_ == List(1, 2, 1))
 
