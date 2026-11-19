@@ -1675,7 +1675,7 @@ object coaxial extends Library:
   object dns extends Component(core, urticose.dns):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, dns)
+  object test extends Tests(core, jvm, dns, galilei.jvm)
 
 object prophesy extends Library:
   object core extends Component(stenography.core, gossamer.core):
@@ -1914,7 +1914,7 @@ object enigmatic extends Library:
     override def nativeModuleDeps = super.nativeModuleDeps :+ xenophile.scalanative.native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cose, openssl, x509, gossamer.codec):
+  object test extends Tests(core, cose, openssl, x509, gossamer.codec, galilei.jvm):
     // Not `settings.cc`: the suite's `NoPadding` tests trip the tactic-capturing
     // padding given (pure `using cipher` params can't accept capturing evidence
     // yet); `CaptureTests` opts into capture checking per-file instead. `-Ycc-new`
@@ -2858,7 +2858,7 @@ object perihelion extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jacinta.core, scintillate.server, eucalyptus.core)
+  object test extends Tests(core, jacinta.core, scintillate.server, eucalyptus.core, galilei.jvm)
 
 object phoenicia extends Library:
   object core extends Component(quantitative.units, zephyrine.layout, turbulence.core):
@@ -3074,7 +3074,7 @@ object probably extends Library:
       os.write.over(Task.dest / "probably" / "probably.InstrumenterOptions.scala", source, createFolders = true)
       Seq(PathRef(Task.dest))
 
-  object test extends Tests(cli, instrument):
+  object test extends Tests(cli, instrument, galilei.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3189,7 +3189,7 @@ object scintillate extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
-  object test extends Tests(server, servlet, eucalyptus.core):
+  object test extends Tests(server, servlet, eucalyptus.core, galilei.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   // The real-socket comparison pulls its rival servers from Maven Central, exactly as
@@ -3389,7 +3389,7 @@ object susurration extends Library:
     override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, coaxial.jvm, guillotine.core, eucalyptus.core):
+  object test extends Tests(core, coaxial.jvm, guillotine.core, eucalyptus.core, galilei.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3515,7 +3515,7 @@ object telekinesis extends Library:
   object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, jvm, http2, sockets, eucalyptus.core):
+  object test extends Tests(core, jvm, http2, sockets, eucalyptus.core, galilei.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

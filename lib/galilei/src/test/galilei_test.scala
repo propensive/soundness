@@ -55,50 +55,68 @@ object Manifest:
     Document(Manifest(bytes.utf8), bytes.length)
 
 object Tests extends Suite("filesystem", m"Galilei tests"):
+  // Lends `block` a fresh directory beneath the system temporary directory, and deletes it, with
+  // everything in it, when `block` ends, however it ends. A suite whose tests share fixtures
+  // wraps them in one loan, so nothing they create outlives them. Within a loan the tests are
+  // `check`s, not `assert`s: a pure `assert` may be queued for a worker (`--workers`) and run
+  // after the loan has ended and its directory has gone, but a `check` always runs inline.
+  def scratchDirectory[result](block: (Path on Linux) => result): result =
+    import systems.javaBaseSystem
+    import temporaryDirectories.systemTemporaryDirectory
+
+    unsafely:
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+        block(handle.stem)
+
   def run(): Unit =
     import codepages.utf8Codepage
     import charsets.utf8Charset
     import textSanitizers.skipSanitizer
 
     suite(m"Direct read and write"):
-      val leafName: Text = Uuid().show
-      val dest: Path on Linux = unsafely((% / "tmp" / leafName).on[Linux])
+      scratchDirectory: scratch =>
+        val dest: Path on Linux = unsafely(scratch / "fixture")
 
-      test(m"Writing then reading a file round-trips its content"):
-        unsafely:
-          dest.write(t"Hello world")
-          dest.read[Text]
-      . assert(_ == t"Hello world")
+        test(m"Writing then reading a file round-trips its content"):
+          unsafely:
+            dest.write(t"Hello world")
+            dest.read[Text]
+        . check(_ == t"Hello world")
 
-      val unascribed = unsafely((% / "tmp" / leafName).on[Linux])
+        val unascribed = unsafely((scratch / "fixture").on[Linux])
 
-      test(m"A path bound with `on` reads and writes with no ascription"):
-        unsafely:
-          unascribed.write(t"unascribed")
-          unascribed.read[Text]
-      . assert(_ == t"unascribed")
+        test(m"A path bound with `on` reads and writes with no ascription"):
+          unsafely:
+            unascribed.write(t"unascribed")
+            unascribed.read[Text]
+        . check(_ == t"unascribed")
 
-      test(m"A path literal reads and writes with no ascription"):
-        unsafely:
-          val path = p"/tmp/galilei-literal.txt"
-          path.write(t"literal")
-          path.read[Text]
-      . assert(_ == t"literal")
+        test(m"A path literal reads and writes with no ascription"):
+          unsafely:
+            // A literal is absolute and fixed, so it cannot be placed in a scratch directory; the
+            // file it names is deleted however the test ends.
+            val path = p"/tmp/galilei-literal.txt"
 
-      test(m"A path literal's elements are its type"):
-        val path = p"/verona/capulet/juliet"
-        summon[path.Topic =:= ("juliet", "capulet", "verona")]
-        List.from(path.descent)
-      . assert(_ == List(t"juliet", t"capulet", t"verona"))
+            try
+              path.write(t"literal")
+              path.read[Text]
+            finally java.nio.file.Files.deleteIfExists(path.nioPath)
+        . check(_ == t"literal")
 
-      // A path is not streamable, so `load` reads it whole as bytes and hands them to the
-      // document type's byte-native `Loadable`.
-      test(m"Loading a file hands its bytes to the document's loader"):
-        unsafely:
-          dest.write(t"Hello world")
-          val document = dest.load[Manifest]
-          (document.root.text, document.metadata)
-      . assert(_ == (t"Hello world", 11))
+        test(m"A path literal's elements are its type"):
+          val path = p"/verona/capulet/juliet"
+          summon[path.Topic =:= ("juliet", "capulet", "verona")]
+          List.from(path.descent)
+        . check(_ == List(t"juliet", t"capulet", t"verona"))
+
+        // A path is not streamable, so `load` reads it whole as bytes and hands them to the
+        // document type's byte-native `Loadable`.
+        test(m"Loading a file hands its bytes to the document's loader"):
+          unsafely:
+            dest.write(t"Hello world")
+            val document = dest.load[Manifest]
+            (document.root.text, document.metadata)
+        . check(_ == (t"Hello world", 11))
 
     // A table governing one path, `/virtual/input`, backed by a buffer in memory: what a
     // daemon supplies for the client's descriptors, here in miniature.
@@ -158,1000 +176,992 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(!_.existent())
 
     suite(m"Opening files"):
-      val openLeaf: Text = Uuid().show
-      val dest: Path on Linux = unsafely((% / "tmp" / openLeaf).on[Linux])
+      scratchDirectory: scratch =>
+        val dest: Path on Linux = unsafely(scratch / "fixture")
 
-      test(m"A fresh path does not exist"):
-        dest
-      . assert(!_.existent())
+        test(m"A fresh path does not exist"):
+          dest
+        . check(!_.existent())
 
-      test(m"A file opened for writing can be written and read back"):
-        unsafely:
-          dest.open[File](Write, OpenFlag.Create): handle ?=>
-            handle.write(Chain(t"Hello world".in[Data]))
+        test(m"A file opened for writing can be written and read back"):
+          unsafely:
+            dest.open[File](Write, OpenFlag.Create): handle ?=>
+              handle.write(Chain(t"Hello world".in[Data]))
 
-          dest.read[Text]
-      . assert(_ == t"Hello world")
+            dest.read[Text]
+        . check(_ == t"Hello world")
 
-      test(m"The path exists after writing"):
-        dest
-      . assert(_.existent())
+        test(m"The path exists after writing"):
+          dest
+        . check(_.existent())
 
-      test(m"Opening an Eof appends to the file"):
-        unsafely:
-          Eof(dest).open(Write): handle ?=>
-            handle.write(Chain(t"!".in[Data]))
+        test(m"Opening an Eof appends to the file"):
+          unsafely:
+            Eof(dest).open(Write): handle ?=>
+              handle.write(Chain(t"!".in[Data]))
 
-          dest.read[Text]
-      . assert(_ == t"Hello world!")
+            dest.read[Text]
+        . check(_ == t"Hello world!")
 
-      test(m"The file accessor reaches the contextual handle"):
-        unsafely:
-          dest.open[File]()(file.stream.read[Data]).utf8
-      . assert(_ == t"Hello world!")
+        test(m"The file accessor reaches the contextual handle"):
+          unsafely:
+            dest.open[File]()(file.stream.read[Data]).utf8
+        . check(_ == t"Hello world!")
 
     suite(m"Opening directories"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
-      val dirLeaf: Text = Uuid().show
-      val root: Path on Linux = unsafely((% / "tmp" / dirLeaf).on[Linux])
-      unsafely(root.create[Directory]())
+      scratchDirectory: scratch =>
+        val root: Path on Linux = unsafely(scratch / "root")
+        unsafely(root.create[Directory]())
 
-      test(m"An opened directory can write and read back an entry"):
-        unsafely:
-          // [by-name-receiver] open lambda shares ambient tactic with receiver
-          scala.caps.unsafe.unsafeAssumeSeparate:
-           root.open[Directory](Read & Write): dir ?=>
-            val target = dir / "greeting.txt"
-            target.overwrite(t"Hello directory")
-            target.contents[Text]
-      . assert(_ == t"Hello directory")
+        test(m"An opened directory can write and read back an entry"):
+          unsafely:
+            // [by-name-receiver] open lambda shares ambient tactic with receiver
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             root.open[Directory](Read & Write): dir ?=>
+              val target = dir / "greeting.txt"
+              target.overwrite(t"Hello directory")
+              target.contents[Text]
+        . check(_ == t"Hello directory")
 
-      test(m"An entry is extant after writing, and a missing one is not"):
-        unsafely:
-          root.open[Directory](): dir ?=>
-            ((dir / "greeting.txt").extant(), (dir / "missing.txt").extant())
-      . assert(_ == (true, false))
+        test(m"An entry is extant after writing, and a missing one is not"):
+          unsafely:
+            root.open[Directory](): dir ?=>
+              ((dir / "greeting.txt").extant(), (dir / "missing.txt").extant())
+        . check(_ == (true, false))
 
-      test(m"The entries of the directory root are listed"):
-        unsafely:
-          // [by-name-receiver] open lambda shares ambient tactic with receiver
-          scala.caps.unsafe.unsafeAssumeSeparate:
-           root.open[Directory](): dir ?=>
-            dir.base.entries.to[List].map(_.name)
-      . assert(_ == List(t"greeting.txt"))
+        test(m"The entries of the directory root are listed"):
+          unsafely:
+            // [by-name-receiver] open lambda shares ambient tactic with receiver
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             root.open[Directory](): dir ?=>
+              dir.base.entries.to[List].map(_.name)
+        . check(_ == List(t"greeting.txt"))
 
-      test(m"A removed entry is no longer extant"):
-        unsafely:
-          // [by-name-receiver]
-          scala.caps.unsafe.unsafeAssumeSeparate:
-           root.open[Directory](Read & Write): dir ?=>
-            val doomed = dir / "doomed.txt"
-            doomed.overwrite(t"temporary")
-            doomed.remove()
-            doomed.extant()
-      . assert(_ == false)
+        test(m"A removed entry is no longer extant"):
+          unsafely:
+            // [by-name-receiver]
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             root.open[Directory](Read & Write): dir ?=>
+              val doomed = dir / "doomed.txt"
+              doomed.overwrite(t"temporary")
+              doomed.remove()
+              doomed.extant()
+        . check(_ == false)
 
-      test(m"Opening a non-directory raises Io.Error"):
-        import errorDiagnostics.emptyDiagnostics
-        unsafely:
-          val plainFile: Path on Linux = root / "plain.txt"
-          plainFile.write(t"not a directory")
-          capture[Io.Error](plainFile.open[Directory]() { () }).reason
-      . assert(_ == Io.Error.Reason.IsNotDirectory)
+        test(m"Opening a non-directory raises Io.Error"):
+          import errorDiagnostics.emptyDiagnostics
+          unsafely:
+            val plainFile: Path on Linux = root / "plain.txt"
+            plainFile.write(t"not a directory")
+            capture[Io.Error](plainFile.open[Directory]() { () }).reason
+        . check(_ == Io.Error.Reason.IsNotDirectory)
 
-      test(m"A write operation without the Write grant does not compile"):
-        demilitarize:
-          import strategies.throwUnsafely
-          root.open[Directory](): dir ?=>
-            (dir / "nope.txt").overwrite(t"nope")
-        . map(_.message)
-      . assert(!_.nil)
+        test(m"A write operation without the Write grant does not compile"):
+          demilitarize:
+            import strategies.throwUnsafely
+            root.open[Directory](): dir ?=>
+              (dir / "nope.txt").overwrite(t"nope")
+          . map(_.message)
+        . check(!_.nil)
 
-      test(m"A dot-dot path element does not compile"):
-        demilitarize:
-          import strategies.throwUnsafely
-          root.open[Directory](): dir ?=>
-            dir / ".."
-        . map(_.message)
-      . assert(!_.nil)
+        test(m"A dot-dot path element does not compile"):
+          demilitarize:
+            import strategies.throwUnsafely
+            root.open[Directory](): dir ?=>
+              dir / ".."
+          . map(_.message)
+        . check(!_.nil)
 
-      test(m"A path from one directory cannot be written under another"):
-        demilitarize:
-          import strategies.throwUnsafely
-          root.open[Directory](): first ?=>
-            root.open[Directory](Read & Write): second ?=>
-              (first / "stolen.txt").overwrite(t"nope")
-        . map(_.message)
-      . assert(!_.nil)
+        test(m"A path from one directory cannot be written under another"):
+          demilitarize:
+            import strategies.throwUnsafely
+            root.open[Directory](): first ?=>
+              root.open[Directory](Read & Write): second ?=>
+                (first / "stolen.txt").overwrite(t"nope")
+          . map(_.message)
+        . check(!_.nil)
 
     suite(m"Content-addressed storage"):
       import errorDiagnostics.emptyDiagnostics
-      val casLeaf: Text = Uuid().show
-      val casRoot: Path on Linux = unsafely((% / "tmp" / casLeaf).on[Linux])
-      unsafely(casRoot.create[Directory]())
-      val cas: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](casRoot, t".blob")
-      val content: Data = t"content".in[Data]
-      val expected: Digest in Sha2[256] = content.digest[Sha2[256]]
-      val other: Digest in Sha2[256] = t"other".in[Data].digest[Sha2[256]]
-      val unstored: Digest in Sha2[256] = t"unstored".in[Data].digest[Sha2[256]]
+      scratchDirectory: scratch =>
+        val casRoot: Path on Linux = unsafely(scratch / "cas")
+        unsafely(casRoot.create[Directory]())
+        val cas: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](casRoot, t".blob")
+        val content: Data = t"content".in[Data]
+        val expected: Digest in Sha2[256] = content.digest[Sha2[256]]
+        val other: Digest in Sha2[256] = t"other".in[Data].digest[Sha2[256]]
+        val unstored: Digest in Sha2[256] = t"unstored".in[Data].digest[Sha2[256]]
 
-      test(m"A blob is stored under its own digest"):
-        unsafely(cas() = content)
-      . assert(_ == expected)
+        test(m"A blob is stored under its own digest"):
+          unsafely(cas() = content)
+        . check(_ == expected)
 
-      test(m"A stored blob is present and reads back"):
-        unsafely(cas.has(expected) && cas(expected).let(_.utf8) == t"content")
-      . assert(_ == true)
+        test(m"A stored blob is present and reads back"):
+          unsafely(cas.has(expected) && cas(expected).let(_.utf8) == t"content")
+        . check(_ == true)
 
-      test(m"The blob's name is lowercase hex plus the suffix"):
-        cas.name(expected)
-      . assert(_ == t"ed7002b439e9ac845f22357d822bac1444730fbdb6016d3ec9432297b9ec9f73.blob")
+        test(m"The blob's name is lowercase hex plus the suffix"):
+          cas.name(expected)
+        . check(_ == t"ed7002b439e9ac845f22357d822bac1444730fbdb6016d3ec9432297b9ec9f73.blob")
 
-      test(m"Storing data under a digest it does not have is an error"):
-        unsafely(capture[Cas.Error](cas(other) = content))
-      . assert(_.expected == other.serialize[Hex])
+        test(m"Storing data under a digest it does not have is an error"):
+          unsafely(capture[Cas.Error](cas(other) = content))
+        . check(_.expected == other.serialize[Hex])
 
-      test(m"A mismatched store writes nothing"):
-        cas.has(other)
-      . assert(_ == false)
+        test(m"A mismatched store writes nothing"):
+          cas.has(other)
+        . check(_ == false)
 
-      test(m"Storing data under its true digest succeeds"):
-        val other: Data = t"other".in[Data]
-        unsafely(cas(other.digest[Sha2[256]]) = other)
-        cas.has(other.digest[Sha2[256]])
-      . assert(_ == true)
+        test(m"Storing data under its true digest succeeds"):
+          val other: Data = t"other".in[Data]
+          unsafely(cas(other.digest[Sha2[256]]) = other)
+          cas.has(other.digest[Sha2[256]])
+        . check(_ == true)
 
-      test(m"Only absent digests are missing"):
-        cas.missing(List(expected, unstored))
-      . assert(_ == List(unstored))
+        test(m"Only absent digests are missing"):
+          cas.missing(List(expected, unstored))
+        . check(_ == List(unstored))
 
-      test(m"The digests listed are those stored, ignoring other files"):
-        unsafely((casRoot / "stray.txt").write(t"stray"))
-        unsafely(cas.digests.to[Set])
-      . assert(_ == Set(expected, t"other".in[Data].digest[Sha2[256]]))
+        test(m"The digests listed are those stored, ignoring other files"):
+          unsafely((casRoot / "stray.txt").write(t"stray"))
+          unsafely(cas.digests.to[Set])
+        . check(_ == Set(expected, t"other".in[Data].digest[Sha2[256]]))
 
-      test(m"The store is a collection of its digests"):
-        (cas.size, cas.has(expected), cas.defines(expected), cas.at(expected).let(_.utf8))
-      . assert(_ == (2, true, true, t"content"))
+        test(m"The store is a collection of its digests"):
+          (cas.size, cas.has(expected), cas.defines(expected), cas.at(expected).let(_.utf8))
+        . check(_ == (2, true, true, t"content"))
 
-      test(m"Pruning deletes every blob not kept, and counts them"):
-        unsafely((cas.prune(Set(expected)), cas.digests))
-      . assert(_ == (1, List(expected)))
+        test(m"Pruning deletes every blob not kept, and counts them"):
+          unsafely((cas.prune(Set(expected)), cas.digests))
+        . check(_ == (1, List(expected)))
 
-      test(m"An absent digest reads as unset"):
-        unsafely(cas(unstored))
-      . assert(_ == Unset)
+        test(m"An absent digest reads as unset"):
+          unsafely(cas(unstored))
+        . check(_ == Unset)
 
     suite(m"Creating entries"):
       import errorDiagnostics.emptyDiagnostics
 
-      val createLeaf: Text = Uuid().show
-      val base: Path on Linux = unsafely((% / "tmp" / createLeaf).on[Linux])
-      unsafely(base.create[Directory]())
+      scratchDirectory: scratch =>
+        val base: Path on Linux = unsafely(scratch / "base")
+        unsafely(base.create[Directory]())
 
-      test(m"Creating a file without Replace fails if it already exists"):
-        unsafely:
-          val target: Path on Linux = base / "once.txt"
-          target.create[File]()
-          capture[Io.Error](target.create[File]()).reason
-      . assert(_ == Io.Error.Reason.AlreadyExists)
+        test(m"Creating a file without Replace fails if it already exists"):
+          unsafely:
+            val target: Path on Linux = base / "once.txt"
+            target.create[File]()
+            capture[Io.Error](target.create[File]()).reason
+        . check(_ == Io.Error.Reason.AlreadyExists)
 
-      test(m"Replace permits re-creation"):
-        unsafely:
-          val target: Path on Linux = base / "twice.txt"
-          target.create[File]()
-          target.create[File](CreateFlag.Replace)
-          target.existent()
-      . assert(_ == true)
+        test(m"Replace permits re-creation"):
+          unsafely:
+            val target: Path on Linux = base / "twice.txt"
+            target.create[File]()
+            target.create[File](CreateFlag.Replace)
+            target.existent()
+        . check(_ == true)
 
-      test(m"Creating beneath a missing parent fails without Parents"):
-        unsafely:
-          val target: Path on Linux = base / "no" / "such" / "deep"
-          capture[Io.Error](target.create[Directory]()).reason
-      . assert(_ == Io.Error.Reason.Nonexistent)
+        test(m"Creating beneath a missing parent fails without Parents"):
+          unsafely:
+            val target: Path on Linux = base / "no" / "such" / "deep"
+            capture[Io.Error](target.create[Directory]()).reason
+        . check(_ == Io.Error.Reason.Nonexistent)
 
-      test(m"Parents creates missing ancestors"):
-        unsafely:
-          val target: Path on Linux = base / "a" / "b" / "c"
-          target.create[Directory](CreateFlag.Parents)
-          target.existent()
-      . assert(_ == true)
+        test(m"Parents creates missing ancestors"):
+          unsafely:
+            val target: Path on Linux = base / "a" / "b" / "c"
+            target.create[Directory](CreateFlag.Parents)
+            target.existent()
+        . check(_ == true)
 
-      test(m"The createParents option creates missing ancestors"):
-        import filesystemOptions.createParents
+        test(m"The createParents option creates missing ancestors"):
+          import filesystemOptions.createParents
 
-        unsafely:
-          val target: Path on Linux = base / "d" / "e" / "f"
-          target.create[Directory]()
-          target.existent()
-      . assert(_ == true)
+          unsafely:
+            val target: Path on Linux = base / "d" / "e" / "f"
+            target.create[Directory]()
+            target.existent()
+        . check(_ == true)
 
-      test(m"The option creates a new file's missing ancestors too"):
-        import filesystemOptions.createParents
+        test(m"The option creates a new file's missing ancestors too"):
+          import filesystemOptions.createParents
 
-        unsafely:
-          val target: Path on Linux = base / "g" / "h" / "note.txt"
-          target.create[File]()
-          target.existent()
-      . assert(_ == true)
+          unsafely:
+            val target: Path on Linux = base / "g" / "h" / "note.txt"
+            target.create[File]()
+            target.existent()
+        . check(_ == true)
 
-      test(m"Creating beneath a missing parent fails under requireParents"):
-        import filesystemOptions.requireParents
+        test(m"Creating beneath a missing parent fails under requireParents"):
+          import filesystemOptions.requireParents
 
-        unsafely:
-          val target: Path on Linux = base / "no" / "such" / "place"
-          capture[Io.Error](target.create[Directory]()).reason
-      . assert(_ == Io.Error.Reason.Nonexistent)
+          unsafely:
+            val target: Path on Linux = base / "no" / "such" / "place"
+            capture[Io.Error](target.create[Directory]()).reason
+        . check(_ == Io.Error.Reason.Nonexistent)
 
-      test(m"Directory authoring provides a fresh-plane handle over the new directory"):
-        unsafely:
-          val target: Path on Linux = base / "authored"
+        test(m"Directory authoring provides a fresh-plane handle over the new directory"):
+          unsafely:
+            val target: Path on Linux = base / "authored"
 
-          // [by-name-receiver] create lambda shares ambient tactic with receiver
-          scala.caps.unsafe.unsafeAssumeSeparate:
-           target.create[Directory](): dir ?=>
-            (dir / "inner.txt").overwrite(t"hello")
-
-          val inner: Path on Linux = target / "inner.txt"
-          inner.read[Text]
-      . assert(_ == t"hello")
-
-      test(m"A failed directory authoring scope leaves nothing behind"):
-        unsafely:
-          val target: Path on Linux = base / "doomed-dir"
-
-          capture[Io.Error]:
             // [by-name-receiver] create lambda shares ambient tactic with receiver
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[Directory](): dir ?=>
-              (dir / "x.txt").overwrite(t"data")
-              abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+              (dir / "inner.txt").overwrite(t"hello")
 
-          target.existent()
-      . assert(_ == false)
+            val inner: Path on Linux = target / "inner.txt"
+            inner.read[Text]
+        . check(_ == t"hello")
 
-      test(m"File authoring commits the staged content on success"):
-        unsafely:
-          val target: Path on Linux = base / "staged.txt"
+        test(m"A failed directory authoring scope leaves nothing behind"):
+          unsafely:
+            val target: Path on Linux = base / "doomed-dir"
 
-          target.create[File](): handle ?=>
-            handle.write(Chain(t"payload".in[Data]))
+            capture[Io.Error]:
+              // [by-name-receiver] create lambda shares ambient tactic with receiver
+              scala.caps.unsafe.unsafeAssumeSeparate:
+               target.create[Directory](): dir ?=>
+                (dir / "x.txt").overwrite(t"data")
+                abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
 
-          target.read[Text]
-      . assert(_ == t"payload")
+            target.existent()
+        . check(_ == false)
 
-      test(m"A failed file authoring scope leaves nothing behind"):
-        unsafely:
-          val target: Path on Linux = base / "doomed.txt"
+        test(m"File authoring commits the staged content on success"):
+          unsafely:
+            val target: Path on Linux = base / "staged.txt"
 
-          capture[Io.Error]:
-            // [by-name-receiver] create lambda shares ambient tactic with receiver
-            scala.caps.unsafe.unsafeAssumeSeparate:
-             target.create[File](): handle ?=>
-              handle.write(Chain(t"data".in[Data]))
-              abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+            target.create[File](): handle ?=>
+              handle.write(Chain(t"payload".in[Data]))
 
-          target.existent()
-      . assert(_ == false)
+            target.read[Text]
+        . check(_ == t"payload")
+
+        test(m"A failed file authoring scope leaves nothing behind"):
+          unsafely:
+            val target: Path on Linux = base / "doomed.txt"
+
+            capture[Io.Error]:
+              // [by-name-receiver] create lambda shares ambient tactic with receiver
+              scala.caps.unsafe.unsafeAssumeSeparate:
+               target.create[File](): handle ?=>
+                handle.write(Chain(t"data".in[Data]))
+                abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+
+            target.existent()
+        . check(_ == false)
 
     suite(m"Creation masks"):
       import errorDiagnostics.emptyDiagnostics
 
-      val maskLeaf: Text = Uuid().show
-      val base: Path on Linux = unsafely((% / "tmp" / maskLeaf).on[Linux])
-      unsafely(base.create[Directory]())
+      scratchDirectory: scratch =>
+        val base: Path on Linux = unsafely(scratch / "base")
+        unsafely(base.create[Directory]())
 
-      def mode(path: Path on Linux): Text =
-        val permissions = java.nio.file.Files.getPosixFilePermissions(path.nioPath).nn
-        java.nio.file.attribute.PosixFilePermissions.toString(permissions).nn.tt
+        def mode(path: Path on Linux): Text =
+          val permissions = java.nio.file.Files.getPosixFilePermissions(path.nioPath).nn
+          java.nio.file.attribute.PosixFilePermissions.toString(permissions).nn.tt
 
-      test(m"a file created under a mask withholds the masked bits"):
-        unsafely:
-          given Umask = galilei.Umask(0x3f)
-          val target: Path on Linux = base / "private.txt"
-          target.create[File]()
-          mode(target)
-      . assert(_ == t"rw-------")
+        test(m"a file created under a mask withholds the masked bits"):
+          unsafely:
+            given Umask = galilei.Umask(0x3f)
+            val target: Path on Linux = base / "private.txt"
+            target.create[File]()
+            mode(target)
+        . check(_ == t"rw-------")
 
-      test(m"a directory created under a mask withholds the masked bits"):
-        unsafely:
-          given Umask = galilei.Umask(0x17)
-          val target: Path on Linux = base / "group"
-          target.create[Directory]()
-          mode(target)
-      . assert(_ == t"rwxr-x---")
+        test(m"a directory created under a mask withholds the masked bits"):
+          unsafely:
+            given Umask = galilei.Umask(0x17)
+            val target: Path on Linux = base / "group"
+            target.create[Directory]()
+            mode(target)
+        . check(_ == t"rwxr-x---")
 
-      test(m"a file authored in a creation scope keeps the mask"):
-        unsafely:
-          given Umask = galilei.Umask(0x3f)
-          val target: Path on Linux = base / "authored.txt"
-          target.create[File](): handle ?=> handle.write(Chain(t"content".in[Data]))
-          mode(target)
-      . assert(_ == t"rw-------")
+        test(m"a file authored in a creation scope keeps the mask"):
+          unsafely:
+            given Umask = galilei.Umask(0x3f)
+            val target: Path on Linux = base / "authored.txt"
+            target.create[File](): handle ?=> handle.write(Chain(t"content".in[Data]))
+            mode(target)
+        . check(_ == t"rw-------")
 
-      test(m"a mask renders in octal"):
-        galilei.Umask.parse(t"22").let(_.octal)
-      . assert(_ == t"022")
+        test(m"a mask renders in octal"):
+          galilei.Umask.parse(t"22").let(_.octal)
+        . check(_ == t"022")
 
-      test(m"the process mask requests no mode"):
-        galilei.Umask.process.mode(galilei.Umask.fileBits)
-      . assert(_ == Unset)
+        test(m"the process mask requests no mode"):
+          galilei.Umask.process.mode(galilei.Umask.fileBits)
+        . check(_ == Unset)
 
     suite(m"Scratch files"):
       import filesystemOptions.deleteRecursively
 
-      val scratchFileLeaf: Text = Uuid().show
-      val base: Path on Linux = unsafely((% / "tmp" / scratchFileLeaf).on[Linux])
-      unsafely(base.create[Directory]())
+      scratchDirectory: scratch =>
+        val base: Path on Linux = unsafely(scratch / "base")
+        unsafely(base.create[Directory]())
 
-      test(m"A scratch file exists and reads back within its scope, and vanishes afterwards"):
-        unsafely:
-          // [by-name-receiver] open lambda shares ambient tactic with receiver
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            val (content, path) = base.open[Scratch.File](Read & Write): file ?=>
-              file.write(Chain(t"payload".in[Data]))
-              (file.path.read[Text], file.path)
-
-            (content, path.existent())
-      . assert(_ == (t"payload", false))
-
-      test(m"A scratch file is removed even when the scope fails"):
-        import errorDiagnostics.emptyDiagnostics
-        unsafely:
-          var path: Optional[Path on Linux] = Unset
-          capture[Io.Error]:
-            // [by-name-receiver]
+        test(m"A scratch file exists and reads back within its scope, and vanishes afterwards"):
+          unsafely:
+            // [by-name-receiver] open lambda shares ambient tactic with receiver
             scala.caps.unsafe.unsafeAssumeSeparate:
-              base.open[Scratch.File](Read & Write): file ?=>
-                path = file.path
-                abort(Io.Error(base, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
-          path.let(_.existent()).or(true)
-      . assert(_ == false)
+              val (content, path) = base.open[Scratch.File](Read & Write): file ?=>
+                file.write(Chain(t"payload".in[Data]))
+                (file.path.read[Text], file.path)
+
+              (content, path.existent())
+        . check(_ == (t"payload", false))
+
+        test(m"A scratch file is removed even when the scope fails"):
+          import errorDiagnostics.emptyDiagnostics
+          unsafely:
+            var path: Optional[Path on Linux] = Unset
+            capture[Io.Error]:
+              // [by-name-receiver]
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                base.open[Scratch.File](Read & Write): file ?=>
+                  path = file.path
+                  abort(Io.Error(base, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+            path.let(_.existent()).or(true)
+        . check(_ == false)
 
     suite(m"Scratch directories"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
-      val scratchLeaf: Text = Uuid().show
-      val base: Path on Linux = unsafely((% / "tmp" / scratchLeaf).on[Linux])
-      unsafely(base.create[Directory]())
+      scratchDirectory: scratch =>
+        val base: Path on Linux = unsafely(scratch / "base")
+        unsafely(base.create[Directory]())
 
-      test(m"A scratch directory works within its scope and vanishes afterwards"):
-        unsafely:
-          // [by-name-receiver] open lambda shares ambient tactic with receiver
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
-              (scratch / "file.txt").overwrite(t"data")
-              ((scratch / "file.txt").extant(), scratch.stem)
-
-            (written, stem.existent())
-      . assert(_ == (true, false))
-
-      test(m"A scratch directory is removed even when the scope fails"):
-        import errorDiagnostics.emptyDiagnostics
-        unsafely:
-          var stem: Optional[Path on Linux] = Unset
-
-          capture[Io.Error]:
+        test(m"A scratch directory works within its scope and vanishes afterwards"):
+          unsafely:
             // [by-name-receiver] open lambda shares ambient tactic with receiver
             scala.caps.unsafe.unsafeAssumeSeparate:
-             base.open[Scratch](Read & Write): scratch ?=>
-              stem = scratch.stem
-              abort(Io.Error(base, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+              val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
+                (scratch / "file.txt").overwrite(t"data")
+                ((scratch / "file.txt").extant(), scratch.stem)
 
-          stem.let(_.existent()).or(true)
-      . assert(_ == false)
+              (written, stem.existent())
+        . check(_ == (true, false))
+
+        test(m"A scratch directory is removed even when the scope fails"):
+          import errorDiagnostics.emptyDiagnostics
+          unsafely:
+            var stem: Optional[Path on Linux] = Unset
+
+            capture[Io.Error]:
+              // [by-name-receiver] open lambda shares ambient tactic with receiver
+              scala.caps.unsafe.unsafeAssumeSeparate:
+               base.open[Scratch](Read & Write): scratch ?=>
+                stem = scratch.stem
+                abort(Io.Error(base, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+
+            stem.let(_.existent()).or(true)
+        . check(_ == false)
 
     suite(m"Memory-mapped access"):
-      val ramLeaf: Text = Uuid().show
-      val ramFile: Path on Linux = unsafely((% / "tmp" / ramLeaf).on[Linux])
-      unsafely(ramFile.write(t"0123456789"))
+      scratchDirectory: scratch =>
+        val ramFile: Path on Linux = unsafely(scratch / "ram")
+        unsafely(ramFile.write(t"0123456789"))
 
-      test(m"A mapped file serves positional reads"):
-        unsafely:
-          ramFile.open[Ram](): ram ?=>
-            ram(2, 3).utf8
-      . assert(_ == t"234")
+        test(m"A mapped file serves positional reads"):
+          unsafely:
+            ramFile.open[Ram](): ram ?=>
+              ram(2, 3).utf8
+        . check(_ == t"234")
 
-      test(m"A mapped file accepts positional writes and persists them"):
-        unsafely:
-          ramFile.open[Ram](Read & Write): ram ?=>
-            ram(3L) = t"XYZ".in[Data]
+        test(m"A mapped file accepts positional writes and persists them"):
+          unsafely:
+            ramFile.open[Ram](Read & Write): ram ?=>
+              ram(3L) = t"XYZ".in[Data]
 
-          ramFile.read[Text]
-      . assert(_ == t"012XYZ6789")
+            ramFile.read[Text]
+        . check(_ == t"012XYZ6789")
 
-      test(m"The expanse view reads consistently"):
-        unsafely:
-          ramFile.open[Ram](): ram ?=>
-            val source = ram.expanse
-            (source.size, source.read(0, 3).utf8)
-      . assert(_ == (10L, t"012"))
+        test(m"The expanse view reads consistently"):
+          unsafely:
+            ramFile.open[Ram](): ram ?=>
+              val source = ram.expanse
+              (source.size, source.read(0, 3).utf8)
+        . check(_ == (10L, t"012"))
 
-      test(m"A positional write without the Write grant does not compile"):
-        demilitarize:
-          import strategies.throwUnsafely
-          ramFile.open[Ram](): ram ?=>
-            ram(0L) = t"no".in[Data]
-        . map(_.message)
-      . assert(!_.nil)
+        test(m"A positional write without the Write grant does not compile"):
+          demilitarize:
+            import strategies.throwUnsafely
+            ramFile.open[Ram](): ram ?=>
+              ram(0L) = t"no".in[Data]
+          . map(_.message)
+        . check(!_.nil)
 
-      test(m"Growing a mapping extends the file for positional writes past the old end"):
-        val growLeaf: Text = Uuid().show
-        val growFile: Path on Linux = unsafely((% / "tmp" / growLeaf).on[Linux])
-        unsafely(growFile.write(t"0123456789"))
-        unsafely:
-          growFile.open[Ram](Read & Write): ram ?=>
-            ram.grow(13L)
-            ram(10L) = t"abc".in[Data]
+        test(m"Growing a mapping extends the file for positional writes past the old end"):
+          val growFile: Path on Linux = unsafely(scratch / "grow")
+          unsafely(growFile.write(t"0123456789"))
+          unsafely:
+            growFile.open[Ram](Read & Write): ram ?=>
+              ram.grow(13L)
+              ram(10L) = t"abc".in[Data]
 
-          growFile.read[Text]
-      . assert(_ == t"0123456789abc")
+            growFile.read[Text]
+        . check(_ == t"0123456789abc")
 
-      test(m"Growing does not shrink when passed a smaller size"):
-        unsafely:
-          ramFile.open[Ram](Read & Write): ram ?=>
-            ram.grow(4L)
-            ram.size
-      . assert(_ == 10L)
+        test(m"Growing does not shrink when passed a smaller size"):
+          unsafely:
+            ramFile.open[Ram](Read & Write): ram ?=>
+              ram.grow(4L)
+              ram.size
+        . check(_ == 10L)
 
-      test(m"Growing without the Write grant does not compile"):
-        demilitarize:
-          import strategies.throwUnsafely
-          ramFile.open[Ram](): ram ?=>
-            ram.grow(20L)
-        . map(_.message)
-      . assert(!_.nil)
+        test(m"Growing without the Write grant does not compile"):
+          demilitarize:
+            import strategies.throwUnsafely
+            ramFile.open[Ram](): ram ?=>
+              ram.grow(20L)
+          . map(_.message)
+        . check(!_.nil)
 
     suite(m"Zero-copy mapped views"):
       import errorDiagnostics.emptyDiagnostics
 
-      val viewFileLeaf: Text = Uuid().show
-      val viewFile: Path on Linux = unsafely((% / "tmp" / viewFileLeaf).on[Linux])
-      unsafely(viewFile.write(t"0123456789ABCDEF"))
+      scratchDirectory: scratch =>
+        val viewFile: Path on Linux = unsafely(scratch / "view")
+        unsafely(viewFile.write(t"0123456789ABCDEF"))
 
-      test(m"A mapped view reports the file's size"):
-        unsafely(viewFile.mapped(_.size))
-      . assert(_ == 16L)
+        test(m"A mapped view reports the file's size"):
+          unsafely(viewFile.mapped(_.size))
+        . check(_ == 16L)
 
-      test(m"A mapped view loads a byte"):
-        unsafely(viewFile.mapped(_.u8(10L)))
-      . assert(_ == 0x41)
+        test(m"A mapped view loads a byte"):
+          unsafely(viewFile.mapped(_.u8(10L)))
+        . check(_ == 0x41)
 
-      test(m"A mapped view loads a little-endian 16-bit integer"):
-        unsafely(viewFile.mapped(_.u16(1L)))
-      . assert(_ == 0x3231)
+        test(m"A mapped view loads a little-endian 16-bit integer"):
+          unsafely(viewFile.mapped(_.u16(1L)))
+        . check(_ == 0x3231)
 
-      test(m"A mapped view loads a little-endian 32-bit integer at an odd offset"):
-        unsafely(viewFile.mapped(_.u32(3L)))
-      . assert(_ == 0x36353433L)
+        test(m"A mapped view loads a little-endian 32-bit integer at an odd offset"):
+          unsafely(viewFile.mapped(_.u32(3L)))
+        . check(_ == 0x36353433L)
 
-      test(m"A signed 32-bit load is the same word as the unsigned one"):
-        unsafely(viewFile.mapped { view => view.i32(3L).toLong == view.u32(3L) })
-      . assert(_ == true)
+        test(m"A signed 32-bit load is the same word as the unsigned one"):
+          unsafely(viewFile.mapped { view => view.i32(3L).toLong == view.u32(3L) })
+        . check(_ == true)
 
-      test(m"A mapped view loads a little-endian 64-bit integer"):
-        unsafely(viewFile.mapped(_.u64(8L)))
-      . assert(_ == 0x4645444342413938L)
+        test(m"A mapped view loads a little-endian 64-bit integer"):
+          unsafely(viewFile.mapped(_.u64(8L)))
+        . check(_ == 0x4645444342413938L)
 
-      test(m"A slice is addressed from its own start"):
-        unsafely:
-          viewFile.mapped: view =>
-            val slice = view.slice(10L, 4L)
-            (slice.size, slice.u8(0L), slice.u16(2L))
-      . assert(_ == (4L, 0x41, 0x4443))
+        test(m"A slice is addressed from its own start"):
+          unsafely:
+            viewFile.mapped: view =>
+              val slice = view.slice(10L, 4L)
+              (slice.size, slice.u8(0L), slice.u16(2L))
+        . check(_ == (4L, 0x41, 0x4443))
 
-      test(m"A load beyond the end of a slice is refused"):
-        unsafely:
-          viewFile.mapped: view =>
-            try view.slice(10L, 4L).u32(2L) catch case _: IndexOutOfBoundsException => -1L
-      . assert(_ == -1L)
+        test(m"A load beyond the end of a slice is refused"):
+          unsafely:
+            viewFile.mapped: view =>
+              try view.slice(10L, 4L).u32(2L) catch case _: IndexOutOfBoundsException => -1L
+        . check(_ == -1L)
 
-      test(m"Copying from a mapped view yields the bytes as data"):
-        unsafely(viewFile.mapped(_.read(4L, 6).utf8))
-      . assert(_ == t"456789")
+        test(m"Copying from a mapped view yields the bytes as data"):
+          unsafely(viewFile.mapped(_.read(4L, 6).utf8))
+        . check(_ == t"456789")
 
-      test(m"A mapped view compares its bytes with data in place"):
-        unsafely:
-          viewFile.mapped: view =>
-            (view.same(10L, t"ABC".in[Data]), view.same(10L, t"ABD".in[Data]))
-      . assert(_ == (true, false))
+        test(m"A mapped view compares its bytes with data in place"):
+          unsafely:
+            viewFile.mapped: view =>
+              (view.same(10L, t"ABC".in[Data]), view.same(10L, t"ABD".in[Data]))
+        . check(_ == (true, false))
 
-      test(m"A comparison running past the end of the view is false"):
-        unsafely(viewFile.mapped(_.same(14L, t"EFG".in[Data])))
-      . assert(_ == false)
+        test(m"A comparison running past the end of the view is false"):
+          unsafely(viewFile.mapped(_.same(14L, t"EFG".in[Data])))
+        . check(_ == false)
 
-      test(m"A mapped view orders its bytes against data in place"):
-        unsafely:
-          viewFile.mapped: view =>
-            ( view.compare(10L, 3L, t"ABC".in[Data]),
-              view.compare(10L, 3L, t"ABD".in[Data]).sign,
-              view.compare(10L, 3L, t"ABB".in[Data]).sign )
-      . assert(_ == (0, -1, 1))
+        test(m"A mapped view orders its bytes against data in place"):
+          unsafely:
+            viewFile.mapped: view =>
+              ( view.compare(10L, 3L, t"ABC".in[Data]),
+                view.compare(10L, 3L, t"ABD".in[Data]).sign,
+                view.compare(10L, 3L, t"ABB".in[Data]).sign )
+        . check(_ == (0, -1, 1))
 
-      test(m"A proper prefix sorts before what it is a prefix of"):
-        unsafely:
-          viewFile.mapped: view =>
-            (view.compare(10L, 2L, t"ABC".in[Data]).sign, view.compare(10L, 4L, t"ABC".in[Data]).sign)
-      . assert(_ == (-1, 1))
+        test(m"A proper prefix sorts before what it is a prefix of"):
+          unsafely:
+            viewFile.mapped: view =>
+              ( view.compare(10L, 2L, t"ABC".in[Data]).sign,
+                view.compare(10L, 4L, t"ABC".in[Data]).sign )
+        . check(_ == (-1, 1))
 
-      test(m"Bytes are ordered as unsigned"):
-        val high: Data = Array[Byte](0x80.toByte)
-        unsafely(viewFile.mapped(_.compare(0L, 1L, high).sign))
-      . assert(_ == -1)
+        test(m"Bytes are ordered as unsigned"):
+          val high: Data = Array[Byte](0x80.toByte)
+          unsafely(viewFile.mapped(_.compare(0L, 1L, high).sign))
+        . check(_ == -1)
 
-      test(m"An empty file maps to an empty view"):
-        val emptyFileLeaf: Text = Uuid().show
-        val emptyFile: Path on Linux = unsafely((% / "tmp" / emptyFileLeaf).on[Linux])
+        test(m"An empty file maps to an empty view"):
+          val emptyFile: Path on Linux = unsafely(scratch / "empty")
 
-        unsafely:
-          emptyFile.write(t"")
-          emptyFile.mapped(_.size)
-      . assert(_ == 0L)
+          unsafely:
+            emptyFile.write(t"")
+            emptyFile.mapped(_.size)
+        . check(_ == 0L)
 
-      test(m"Mapping a file which does not exist is an error"):
-        val absentLeaf: Text = Uuid().show
-        val absent: Path on Linux = unsafely((% / "tmp" / absentLeaf).on[Linux])
+        test(m"Mapping a file which does not exist is an error"):
+          val absent: Path on Linux = unsafely(scratch / "absent")
 
-        unsafely:
-          capture[Io.Error](absent.mapped(_.size)).reason
-      . assert(_ == Io.Error.Reason.Nonexistent)
+          unsafely:
+            capture[Io.Error](absent.mapped(_.size)).reason
+        . check(_ == Io.Error.Reason.Nonexistent)
 
-      test(m"A mapped file can be replaced while it is being read"):
-        val oldLeaf: Text = Uuid().show
-        val newLeaf: Text = Uuid().show
-        val replaced: Path on Linux = unsafely((% / "tmp" / oldLeaf).on[Linux])
-        val successor: Path on Linux = unsafely((% / "tmp" / newLeaf).on[Linux])
+        test(m"A mapped file can be replaced while it is being read"):
+          val replaced: Path on Linux = unsafely(scratch / "old")
+          val successor: Path on Linux = unsafely(scratch / "new")
 
-        unsafely:
-          replaced.write(t"first")
-          successor.write(t"second")
+          unsafely:
+            replaced.write(t"first")
+            successor.write(t"second")
 
-          replaced.mapped: view =>
-            java.nio.file.Files.move
-              ( java.nio.file.Path.of("/tmp", newLeaf.s),
-                java.nio.file.Path.of("/tmp", oldLeaf.s),
-                java.nio.file.StandardCopyOption.ATOMIC_MOVE )
+            replaced.mapped: view =>
+              java.nio.file.Files.move
+                ( successor.nioPath,
+                  replaced.nioPath,
+                  java.nio.file.StandardCopyOption.ATOMIC_MOVE )
 
-            (view.read(0L, 5).utf8, replaced.read[Text])
-      . assert(_ == (t"first", t"second"))
+              (view.read(0L, 5).utf8, replaced.read[Text])
+        . check(_ == (t"first", t"second"))
 
-      test(m"A mapped view cannot escape its scope"):
-        demilitarize:
-          import strategies.throwUnsafely
-          val escaped: Terrain^ = viewFile.mapped(identity(_))
-        . map(_.message)
-      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+        test(m"A mapped view cannot escape its scope"):
+          demilitarize:
+            import strategies.throwUnsafely
+            val escaped: Terrain^ = viewFile.mapped(identity(_))
+          . map(_.message)
+        . check(_.exists(_.tt.contains(t"outlives its scope")))
 
-      test(m"A slice of a mapped view cannot escape its scope"):
-        demilitarize:
-          import strategies.throwUnsafely
-          val escaped = viewFile.mapped { view => view.slice(0L, 1L) }
-        . map(_.message)
-      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+        test(m"A slice of a mapped view cannot escape its scope"):
+          demilitarize:
+            import strategies.throwUnsafely
+            val escaped = viewFile.mapped { view => view.slice(0L, 1L) }
+          . map(_.message)
+        . check(_.exists(_.tt.contains(t"outlives its scope")))
 
-      test(m"A mapped file over a writable Ram mapping sees the same bytes"):
-        val sharedLeaf: Text = Uuid().show
-        val shared: Path on Linux = unsafely((% / "tmp" / sharedLeaf).on[Linux])
+        test(m"A mapped file over a writable Ram mapping sees the same bytes"):
+          val shared: Path on Linux = unsafely(scratch / "shared")
 
-        unsafely:
-          shared.write(t"0123456789")
-          shared.open[Ram](Read & Write) { ram ?=> ram(0L) = t"AB".in[Data] }
-          shared.mapped(_.u16(0L))
-      . assert(_ == 0x4241)
+          unsafely:
+            shared.write(t"0123456789")
+            shared.open[Ram](Read & Write) { ram ?=> ram(0L) = t"AB".in[Data] }
+            shared.mapped(_.u16(0L))
+        . check(_ == 0x4241)
 
     suite(m"Publishing versions under an owned name"):
       import errorDiagnostics.emptyDiagnostics
 
-      val publishDir: Text = Uuid().show
-      val publishRoot: Path on Linux = unsafely((% / "tmp" / publishDir).on[Linux])
-      unsafely(publishRoot.create[Directory]())
+      scratchDirectory: scratch =>
+        val publishRoot: Path on Linux = unsafely(scratch / "publish")
+        unsafely(publishRoot.create[Directory]())
 
-      val indexFile: Path on Linux = unsafely((% / "tmp" / publishDir / "index").on[Linux])
-      val lockFile: Path on Linux = unsafely((% / "tmp" / publishDir / "index.lock").on[Linux])
-      val partFile: Path on Linux = unsafely((% / "tmp" / publishDir / ".index.part").on[Linux])
-      val otherFile: Path on Linux = unsafely((% / "tmp" / publishDir / "other").on[Linux])
-      val absentFile: Path on Linux = unsafely((% / "tmp" / publishDir / "absent").on[Linux])
+        val indexFile: Path on Linux = unsafely(publishRoot / "index")
+        val lockFile: Path on Linux = unsafely(publishRoot / "index.lock")
+        val partFile: Path on Linux = unsafely(publishRoot / ".index.part")
+        val otherFile: Path on Linux = unsafely(publishRoot / "other")
+        val absentFile: Path on Linux = unsafely(publishRoot / "absent")
 
-      def text(view: Terrain^): Text = view.read(0L, view.size.toInt).utf8
+        def text(view: Terrain^): Text = view.read(0L, view.size.toInt).utf8
 
-      test(m"Publishing writes the encoded value under the name"):
-        unsafely:
-          indexFile.claim[Text](_.publish(t"first"))
-          indexFile.read[Text]
-      . assert(_ == t"first")
-
-      test(m"Publishing leaves no temporary file behind"):
-        partFile.existent()
-      . assert(_ == false)
-
-      test(m"The name's lock file sits beside it"):
-        lockFile.existent()
-      . assert(_ == true)
-
-      test(m"A name which is owned cannot be owned again"):
-        unsafely:
-          indexFile.claim[Text]: owner =>
-            capture[Io.Error](indexFile.claim[Text](_.publish(t"usurped"))).reason
-      . assert(_ == Io.Error.Reason.Busy)
-
-      test(m"A refused owner publishes nothing"):
-        unsafely(indexFile.read[Text])
-      . assert(_ == t"first")
-
-      test(m"Ownership is released when its scope ends"):
-        unsafely:
-          indexFile.claim[Text](_.publish(t"second"))
-          indexFile.read[Text]
-      . assert(_ == t"second")
-
-      test(m"Two names are owned independently"):
-        unsafely:
-          indexFile.claim[Text]: owner =>
-            otherFile.claim[Text](_.publish(t"other"))
-            otherFile.read[Text]
-      . assert(_ == t"other")
-
-      test(m"Each publication has an edition of its own"):
-        unsafely:
-          indexFile.claim[Text]: owner =>
-            owner.publish(t"third") == owner.publish(t"fourth")
-      . assert(_ == false)
-
-      test(m"A reader maps the published version"):
-        unsafely(indexFile.observe[Text](_.map(text)))
-      . assert(_ == t"fourth")
-
-      test(m"A reader's edition is the edition which was published"):
-        unsafely:
-          indexFile.claim[Text]: owner =>
-            val edition = owner.publish(t"fifth")
-            indexFile.observe[Text](_.edition == edition)
-      . assert(_ == true)
-
-      test(m"A reader keeps its version until it refreshes"):
-        unsafely:
-          indexFile.observe[Text]: reader =>
-            val before = reader.map(text)
-            indexFile.claim[Text](_.publish(t"sixth"))
-            val unrefreshed = reader.map(text)
-            val refreshed = reader.refresh()
-            (before, unrefreshed, refreshed, reader.map(text))
-      . assert(_ == (t"fifth", t"fifth", true, t"sixth"))
-
-      test(m"Refreshing with nothing new published does nothing"):
-        unsafely(indexFile.observe[Text](_.refresh()))
-      . assert(_ == false)
-
-      test(m"A view survives a refresh made while it is being read"):
-        unsafely:
-          indexFile.observe[Text]: reader =>
-            reader.map: view =>
-              indexFile.claim[Text](_.publish(t"seventh"))
-              reader.refresh()
-              (text(view), reader.map(text))
-      . assert(_ == (t"sixth", t"seventh"))
-
-      test(m"A reader does not prevent the owner publishing, nor take the lock"):
-        unsafely:
-          indexFile.observe[Text]: reader =>
-            indexFile.claim[Text](_.publish(t"eighth"))
+        test(m"Publishing writes the encoded value under the name"):
+          unsafely:
+            indexFile.claim[Text](_.publish(t"first"))
             indexFile.read[Text]
-      . assert(_ == t"eighth")
+        . check(_ == t"first")
 
-      test(m"A name with nothing published cannot be read"):
-        unsafely(capture[Io.Error](absentFile.observe[Text](_.edition)).reason)
-      . assert(_ == Io.Error.Reason.Nonexistent)
+        test(m"Publishing leaves no temporary file behind"):
+          partFile.existent()
+        . check(_ == false)
 
-      test(m"An owner cannot escape its scope"):
-        demilitarize:
-          import strategies.throwUnsafely
-          val escaped = indexFile.claim[Text](identity(_))
-        . map(_.message)
-      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+        test(m"The name's lock file sits beside it"):
+          lockFile.existent()
+        . check(_ == true)
 
-      test(m"A reader cannot escape its scope"):
-        demilitarize:
-          import strategies.throwUnsafely
-          val escaped = indexFile.observe[Text](identity(_))
-        . map(_.message)
-      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+        test(m"A name which is owned cannot be owned again"):
+          unsafely:
+            indexFile.claim[Text]: owner =>
+              capture[Io.Error](indexFile.claim[Text](_.publish(t"usurped"))).reason
+        . check(_ == Io.Error.Reason.Busy)
 
-      test(m"A published view cannot escape its scope"):
-        demilitarize:
-          import strategies.throwUnsafely
-          val escaped = indexFile.observe[Text](_.map(identity(_)))
-        . map(_.message)
-      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+        test(m"A refused owner publishes nothing"):
+          unsafely(indexFile.read[Text])
+        . check(_ == t"first")
 
-      test(m"An observer opens its version as the form it was given"):
-        // A form which is read in place: here, the first bytes of the view, as a number.
-        given surveyable: (Text is Surveyable by Nothing to Terrain) = new Surveyable:
-          type Self = Text
-          type Operand = Nothing
-          type Result = Terrain
+        test(m"Ownership is released when its scope ends"):
+          unsafely:
+            indexFile.claim[Text](_.publish(t"second"))
+            indexFile.read[Text]
+        . check(_ == t"second")
 
-          def survey[result](view: Terrain^, flags: List[Nothing])(block: (Terrain^) ?=> result)
-          :   result =
+        test(m"Two names are owned independently"):
+          unsafely:
+            indexFile.claim[Text]: owner =>
+              otherFile.claim[Text](_.publish(t"other"))
+              otherFile.read[Text]
+        . check(_ == t"other")
 
-            block(using view)
+        test(m"Each publication has an edition of its own"):
+          unsafely:
+            indexFile.claim[Text]: owner =>
+              owner.publish(t"third") == owner.publish(t"fourth")
+        . check(_ == false)
 
-        unsafely(indexFile.observe[Text](_.open() { (view: Terrain^) ?=> view.size }))
-      . assert(_ > 0L)
+        test(m"A reader maps the published version"):
+          unsafely(indexFile.observe[Text](_.map(text)))
+        . check(_ == t"fourth")
+
+        test(m"A reader's edition is the edition which was published"):
+          unsafely:
+            indexFile.claim[Text]: owner =>
+              val edition = owner.publish(t"fifth")
+              indexFile.observe[Text](_.edition == edition)
+        . check(_ == true)
+
+        test(m"A reader keeps its version until it refreshes"):
+          unsafely:
+            indexFile.observe[Text]: reader =>
+              val before = reader.map(text)
+              indexFile.claim[Text](_.publish(t"sixth"))
+              val unrefreshed = reader.map(text)
+              val refreshed = reader.refresh()
+              (before, unrefreshed, refreshed, reader.map(text))
+        . check(_ == (t"fifth", t"fifth", true, t"sixth"))
+
+        test(m"Refreshing with nothing new published does nothing"):
+          unsafely(indexFile.observe[Text](_.refresh()))
+        . check(_ == false)
+
+        test(m"A view survives a refresh made while it is being read"):
+          unsafely:
+            indexFile.observe[Text]: reader =>
+              reader.map: view =>
+                indexFile.claim[Text](_.publish(t"seventh"))
+                reader.refresh()
+                (text(view), reader.map(text))
+        . check(_ == (t"sixth", t"seventh"))
+
+        test(m"A reader does not prevent the owner publishing, nor take the lock"):
+          unsafely:
+            indexFile.observe[Text]: reader =>
+              indexFile.claim[Text](_.publish(t"eighth"))
+              indexFile.read[Text]
+        . check(_ == t"eighth")
+
+        test(m"A name with nothing published cannot be read"):
+          unsafely(capture[Io.Error](absentFile.observe[Text](_.edition)).reason)
+        . check(_ == Io.Error.Reason.Nonexistent)
+
+        test(m"An owner cannot escape its scope"):
+          demilitarize:
+            import strategies.throwUnsafely
+            val escaped = indexFile.claim[Text](identity(_))
+          . map(_.message)
+        . check(_.exists(_.tt.contains(t"outlives its scope")))
+
+        test(m"A reader cannot escape its scope"):
+          demilitarize:
+            import strategies.throwUnsafely
+            val escaped = indexFile.observe[Text](identity(_))
+          . map(_.message)
+        . check(_.exists(_.tt.contains(t"outlives its scope")))
+
+        test(m"A published view cannot escape its scope"):
+          demilitarize:
+            import strategies.throwUnsafely
+            val escaped = indexFile.observe[Text](_.map(identity(_)))
+          . map(_.message)
+        . check(_.exists(_.tt.contains(t"outlives its scope")))
+
+        test(m"An observer opens its version as the form it was given"):
+          // A form which is read in place: here, the first bytes of the view, as a number.
+          given surveyable: (Text is Surveyable by Nothing to Terrain) = new Surveyable:
+            type Self = Text
+            type Operand = Nothing
+            type Result = Terrain
+
+            def survey[result](view: Terrain^, flags: List[Nothing])(block: (Terrain^) ?=> result)
+            :   result =
+
+              block(using view)
+
+          unsafely(indexFile.observe[Text](_.open() { (view: Terrain^) ?=> view.size }))
+        . check(_ > 0L)
 
     suite(m"Changing a file in place"):
       import errorDiagnostics.emptyDiagnostics
 
-      val heldDir: Text = Uuid().show
-      val heldRoot: Path on Linux = unsafely((% / "tmp" / heldDir).on[Linux])
-      unsafely(heldRoot.create[Directory]())
-      val ledger: Path on Linux = unsafely((% / "tmp" / heldDir / "ledger").on[Linux])
+      scratchDirectory: scratch =>
+        val heldRoot: Path on Linux = unsafely(scratch / "held")
+        unsafely(heldRoot.create[Directory]())
+        val ledger: Path on Linux = unsafely(heldRoot / "ledger")
 
-      test(m"A file which is not there is created at the size reserved"):
-        unsafely(ledger.hold(64L)(_.size))
-      . assert(_ == 64L)
+        test(m"A file which is not there is created at the size reserved"):
+          unsafely(ledger.hold(64L)(_.size))
+        . check(_ == 64L)
 
-      test(m"What is stored is loaded back through the same holding"):
-        unsafely:
-          ledger.hold(): holding =>
-            holding.set32(8L, 0xdeadbeefL)
-            holding.set16(12L, 0x1603)
-            holding.set8(14L, 0x7f)
-            holding.set64(16L, 0x0102030405060708L)
-            (holding.u32(8L), holding.u16(12L), holding.u8(14L), holding.u64(16L))
-      . assert(_ == (0xdeadbeefL, 0x1603, 0x7f, 0x0102030405060708L))
+        test(m"What is stored is loaded back through the same holding"):
+          unsafely:
+            ledger.hold(): holding =>
+              holding.set32(8L, 0xdeadbeefL)
+              holding.set16(12L, 0x1603)
+              holding.set8(14L, 0x7f)
+              holding.set64(16L, 0x0102030405060708L)
+              (holding.u32(8L), holding.u16(12L), holding.u8(14L), holding.u64(16L))
+        . check(_ == (0xdeadbeefL, 0x1603, 0x7f, 0x0102030405060708L))
 
-      test(m"What was stored is in the file once the scope has ended"):
-        unsafely(ledger.mapped { view => (view.u32(8L), view.u16(12L), view.u64(16L)) })
-      . assert(_ == (0xdeadbeefL, 0x1603, 0x0102030405060708L))
+        test(m"What was stored is in the file once the scope has ended"):
+          unsafely(ledger.mapped { view => (view.u32(8L), view.u16(12L), view.u64(16L)) })
+        . check(_ == (0xdeadbeefL, 0x1603, 0x0102030405060708L))
 
-      test(m"Integers are stored least significant byte first"):
-        unsafely(ledger.mapped(_.read(8L, 4))).to[List].map(_ & 0xff)
-      . assert(_ == List(0xef, 0xbe, 0xad, 0xde))
+        test(m"Integers are stored least significant byte first"):
+          unsafely(ledger.mapped(_.read(8L, 4))).to[List].map(_ & 0xff)
+        . check(_ == List(0xef, 0xbe, 0xad, 0xde))
 
-      test(m"Bytes are written, moved over themselves and zeroed"):
-        unsafely:
-          ledger.hold(): holding =>
-            holding.write(32L, t"Hamlet".in[Data])
-            holding.move(32L, 34L, 6L)
-            holding.zero(32L, 2L)
-            (holding.read(32L, 2).to[List].map(_.toInt), holding.read(34L, 6).utf8)
-      . assert(_ == (List(0, 0), t"Hamlet"))
+        test(m"Bytes are written, moved over themselves and zeroed"):
+          unsafely:
+            ledger.hold(): holding =>
+              holding.write(32L, t"Hamlet".in[Data])
+              holding.move(32L, 34L, 6L)
+              holding.zero(32L, 2L)
+              (holding.read(32L, 2).to[List].map(_.toInt), holding.read(34L, 6).utf8)
+        . check(_ == (List(0, 0), t"Hamlet"))
 
-      test(m"A holding is expanded, and the file with it"):
-        unsafely:
-          ledger.hold(): holding =>
-            holding.expand(8192L)
-            holding.set32(8188L, 1599L)
-            (holding.size, holding.u32(8188L), holding.u32(8L))
-      . assert(_ == (8192L, 1599L, 0xdeadbeefL))
+        test(m"A holding is expanded, and the file with it"):
+          unsafely:
+            ledger.hold(): holding =>
+              holding.expand(8192L)
+              holding.set32(8188L, 1599L)
+              (holding.size, holding.u32(8188L), holding.u32(8L))
+        . check(_ == (8192L, 1599L, 0xdeadbeefL))
 
-      test(m"A view taken before an expansion reads what is stored after it"):
-        unsafely:
-          ledger.hold(): holding =>
-            val view = holding.slice(8L, 4L)
-            holding.expand(16384L)
-            holding.set32(8L, 1616L)
-            view.u32(0L)
-      . assert(_ == 1616L)
+        test(m"A view taken before an expansion reads what is stored after it"):
+          unsafely:
+            ledger.hold(): holding =>
+              val view = holding.slice(8L, 4L)
+              holding.expand(16384L)
+              holding.set32(8L, 1616L)
+              view.u32(0L)
+        . check(_ == 1616L)
 
-      test(m"The expanded file keeps its size, and what was stored in it"):
-        unsafely(ledger.mapped { view => (view.size, view.u32(8188L)) })
-      . assert(_ == (16384L, 1599L))
+        test(m"The expanded file keeps its size, and what was stored in it"):
+          unsafely(ledger.mapped { view => (view.size, view.u32(8188L)) })
+        . check(_ == (16384L, 1599L))
 
-      test(m"A file which is being changed cannot be changed by another"):
-        unsafely(ledger.hold()(holding => capture[Io.Error](ledger.hold()(_.size)).reason))
-      . assert(_ == Io.Error.Reason.Busy)
+        test(m"A file which is being changed cannot be changed by another"):
+          unsafely(ledger.hold()(holding => capture[Io.Error](ledger.hold()(_.size)).reason))
+        . check(_ == Io.Error.Reason.Busy)
 
-      test(m"The file is released when its scope ends"):
-        unsafely(ledger.hold()(_.size))
-      . assert(_ == 16384L)
+        test(m"The file is released when its scope ends"):
+          unsafely(ledger.hold()(_.size))
+        . check(_ == 16384L)
 
-      test(m"A store beyond the end of a holding is refused"):
-        unsafely(ledger.hold()(holding => safely(holding.set32(16384L, 1L)).absent))
-      . assert(_ == true)
+        test(m"A store beyond the end of a holding is refused"):
+          unsafely(ledger.hold()(holding => safely(holding.set32(16384L, 1L)).absent))
+        . check(_ == true)
 
-      test(m"A holding cannot escape its scope"):
-        demilitarize:
-          import strategies.throwUnsafely
-          val escaped = ledger.hold()(identity(_))
-        . map(_.message)
-      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+        test(m"A holding cannot escape its scope"):
+          demilitarize:
+            import strategies.throwUnsafely
+            val escaped = ledger.hold()(identity(_))
+          . map(_.message)
+        . check(_.exists(_.tt.contains(t"outlives its scope")))
 
-      test(m"A holding on the heap is stored to, loaded from and expanded"):
-        val holding = Holding(16L)
-        holding.set64(8L, 42L)
-        holding.expand(24L)
-        holding.write(16L, t"Yorick".in[Data])
-        holding.move(16L, 18L, 6L)
-        (holding.size, holding.u64(8L), holding.read(18L, 6).utf8, holding.compare(18L, 6L, t"Yorick".in[Data]))
-      . assert(_ == (24L, 42L, t"Yorick", 0))
+        test(m"A holding on the heap is stored to, loaded from and expanded"):
+          val holding = Holding(16L)
+          holding.set64(8L, 42L)
+          holding.expand(24L)
+          holding.write(16L, t"Yorick".in[Data])
+          holding.move(16L, 18L, 6L)
+          (holding.size, holding.u64(8L), holding.read(18L, 6).utf8, holding.compare(18L, 6L, t"Yorick".in[Data]))
+        . check(_ == (24L, 42L, t"Yorick", 0))
 
-      test(m"A holding on the heap begins as a copy of the bytes it is given"):
-        val holding = Holding(t"Ophelia".in[Data])
-        holding.set8(0L, 'o'.toInt)
-        (holding.read(0L, 7).utf8, holding.same(0L, t"ophelia".in[Data]))
-      . assert(_ == (t"ophelia", true))
+        test(m"A holding on the heap begins as a copy of the bytes it is given"):
+          val holding = Holding(t"Ophelia".in[Data])
+          holding.set8(0L, 'o'.toInt)
+          (holding.read(0L, 7).utf8, holding.same(0L, t"ophelia".in[Data]))
+        . check(_ == (t"ophelia", true))
 
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics
 
-      val ramCreateLeaf: Text = Uuid().show
-      val ramBase: Path on Linux = unsafely((% / "tmp" / ramCreateLeaf).on[Linux])
-      unsafely(ramBase.create[Directory]())
+      scratchDirectory: scratch =>
+        val ramBase: Path on Linux = unsafely(scratch / "ram")
+        unsafely(ramBase.create[Directory]())
 
-      test(m"A created mapping is sized, writable, and persists"):
-        unsafely:
-          val target: Path on Linux = ramBase / "fresh.bin"
+        test(m"A created mapping is sized, writable, and persists"):
+          unsafely:
+            val target: Path on Linux = ramBase / "fresh.bin"
 
-          target.create[Ram](RamFlag.Size(16L)): ram ?=>
-            ram(0L) = t"ABCD".in[Data]
+            target.create[Ram](RamFlag.Size(16L)): ram ?=>
+              ram(0L) = t"ABCD".in[Data]
 
-          (target.read[Data].length, target.read[Data].segment(0.z till 4.z).utf8)
-      . assert(_ == (16, t"ABCD"))
+            (target.read[Data].length, target.read[Data].segment(0.z till 4.z).utf8)
+        . check(_ == (16, t"ABCD"))
 
-      test(m"Creating a mapping without Size is refused"):
-        unsafely:
-          val target: Path on Linux = ramBase / "unsized.bin"
-          capture[Io.Error](target.create[Ram]() { () }).reason
-      . assert(_ == Io.Error.Reason.Unsupported)
+        test(m"Creating a mapping without Size is refused"):
+          unsafely:
+            val target: Path on Linux = ramBase / "unsized.bin"
+            capture[Io.Error](target.create[Ram]() { () }).reason
+        . check(_ == Io.Error.Reason.Unsupported)
 
     suite(m"The access register"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
-      val registerLeaf: Text = Uuid().show
-      val outer: Path on Linux = unsafely((% / "tmp" / registerLeaf).on[Linux])
-      val inner: Path on Linux = unsafely(outer / "nested")
-      val siblingLeaf: Text = t"$registerLeaf-sibling"
-      val sibling: Path on Linux = unsafely((% / "tmp" / siblingLeaf).on[Linux])
-      unsafely(inner.create[Directory](CreateFlag.Parents))
-      unsafely(sibling.create[Directory]())
+      scratchDirectory: scratch =>
+        val outer: Path on Linux = unsafely(scratch / "outer")
+        val inner: Path on Linux = unsafely(outer / "nested")
+        val sibling: Path on Linux = unsafely(scratch / "sibling")
+        unsafely(inner.create[Directory](CreateFlag.Parents))
+        unsafely(sibling.create[Directory]())
 
-      test(m"Overlapping Read opens coexist"):
-        unsafely:
-          // [test-harness] test nests overlapping opens to exercise locking
-          scala.caps.unsafe.unsafeAssumeSeparate:
-           outer.open[Directory](): a ?=>
-            inner.open[Directory](): b ?=>
-              true
-      . assert(_ == true)
-
-      test(m"An Exclusive open conflicts with an overlapping open"):
-        import errorDiagnostics.emptyDiagnostics
-        unsafely:
-          capture[Io.Error]:
+        test(m"Overlapping Read opens coexist"):
+          unsafely:
             // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
              outer.open[Directory](): a ?=>
-              inner.open[Directory](Read & Exclusive) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+              inner.open[Directory](): b ?=>
+                true
+        . check(_ == true)
 
-      test(m"An open under an Exclusive open conflicts"):
-        import errorDiagnostics.emptyDiagnostics
-        unsafely:
-          capture[Io.Error]:
-            // [test-harness] test nests overlapping opens to exercise locking
+        test(m"An Exclusive open conflicts with an overlapping open"):
+          import errorDiagnostics.emptyDiagnostics
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness] test nests overlapping opens to exercise locking
+              scala.caps.unsafe.unsafeAssumeSeparate:
+               outer.open[Directory](): a ?=>
+                inner.open[Directory](Read & Exclusive) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
+
+        test(m"An open under an Exclusive open conflicts"):
+          import errorDiagnostics.emptyDiagnostics
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness] test nests overlapping opens to exercise locking
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                outer.open[Directory](Read & Exclusive): a ?=>
+                  inner.open[Directory]() { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
+
+        test(m"An Exclusive open of a sibling does not conflict"):
+          unsafely:
+            // [test-harness]
             scala.caps.unsafe.unsafeAssumeSeparate:
               outer.open[Directory](Read & Exclusive): a ?=>
-                inner.open[Directory]() { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+                sibling.open[Directory](Read & Exclusive): b ?=>
+                  true
+        . check(_ == true)
 
-      test(m"An Exclusive open of a sibling does not conflict"):
-        unsafely:
-          // [test-harness]
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            outer.open[Directory](Read & Exclusive): a ?=>
-              sibling.open[Directory](Read & Exclusive): b ?=>
-                true
-      . assert(_ == true)
-
-      test(m"An Exclusive scope is released when it ends"):
-        unsafely:
-          outer.open[Directory](Read & Exclusive) { () }
-          outer.open[Directory](Read & Exclusive) { true }
-      . assert(_ == true)
+        test(m"An Exclusive scope is released when it ends"):
+          unsafely:
+            outer.open[Directory](Read & Exclusive) { () }
+            outer.open[Directory](Read & Exclusive) { true }
+        . check(_ == true)
 
     suite(m"Checksums"):
       import filesystemOptions.dereferenceSymlinks
 
-      val rootLeaf: Text = Uuid().show
-      val twinLeaf: Text = Uuid().show
-      val emptyLeaf: Text = Uuid().show
-      val root: Path on Linux = unsafely((% / "tmp" / rootLeaf).on[Linux])
-      val twin: Path on Linux = unsafely((% / "tmp" / twinLeaf).on[Linux])
-      val empty: Path on Linux = unsafely((% / "tmp" / emptyLeaf).on[Linux])
+      scratchDirectory: scratch =>
+        val root: Path on Linux = unsafely(scratch / "root")
+        val twin: Path on Linux = unsafely(scratch / "twin")
+        val empty: Path on Linux = unsafely(scratch / "empty")
 
-      unsafely:
-        root.create[Directory]()
-        (root / "a.txt").write(t"alpha")
-        (root / "sub").create[Directory]()
-        (root / "sub" / "b.txt").write(t"beta")
-        twin.create[Directory]()
-        (twin / "sub").create[Directory]()
-        (twin / "sub" / "b.txt").write(t"beta")
-        (twin / "a.txt").write(t"alpha")
-        empty.create[Directory]()
+        unsafely:
+          root.create[Directory]()
+          (root / "a.txt").write(t"alpha")
+          (root / "sub").create[Directory]()
+          (root / "sub" / "b.txt").write(t"beta")
+          twin.create[Directory]()
+          (twin / "sub").create[Directory]()
+          (twin / "sub" / "b.txt").write(t"beta")
+          (twin / "a.txt").write(t"alpha")
+          empty.create[Directory]()
 
-      test(m"A file's checksum is the digest of its bytes"):
-        unsafely((root / "a.txt").checksum[Sha2[256]])
-      . assert(_ == t"alpha".in[Data].digest[Sha2[256]])
+        test(m"A file's checksum is the digest of its bytes"):
+          unsafely((root / "a.txt").checksum[Sha2[256]])
+        . check(_ == t"alpha".in[Data].digest[Sha2[256]])
 
-      test(m"Directories with the same files checksum alike, wherever they are"):
-        unsafely(root.checksum[Sha2[256]] == twin.checksum[Sha2[256]])
-      . assert(_ == true)
+        test(m"Directories with the same files checksum alike, wherever they are"):
+          unsafely(root.checksum[Sha2[256]] == twin.checksum[Sha2[256]])
+        . check(_ == true)
 
-      test(m"An empty directory has a checksum"):
-        unsafely(empty.checksum[Sha2[256]].serialize[Hex].length)
-      . assert(_ == 64)
+        test(m"An empty directory has a checksum"):
+          unsafely(empty.checksum[Sha2[256]].serialize[Hex].length)
+        . check(_ == 64)
 
-      test(m"Adding a file changes a directory's checksum"):
-        val before: Digest in Sha2[256] = unsafely(twin.checksum[Sha2[256]])
-        unsafely((twin / "c.txt").write(t"gamma"))
-        unsafely(twin.checksum[Sha2[256]]) == before
-      . assert(_ == false)
+        test(m"Adding a file changes a directory's checksum"):
+          val before: Digest in Sha2[256] = unsafely(twin.checksum[Sha2[256]])
+          unsafely((twin / "c.txt").write(t"gamma"))
+          unsafely(twin.checksum[Sha2[256]]) == before
+        . check(_ == false)
 
-      test(m"Changing a file's content changes a directory's checksum"):
-        val before: Digest in Sha2[256] = unsafely(root.checksum[Sha2[256]])
-        unsafely((root / "a.txt").write(t"ALPHA"))
-        unsafely(root.checksum[Sha2[256]]) == before
-      . assert(_ == false)
+        test(m"Changing a file's content changes a directory's checksum"):
+          val before: Digest in Sha2[256] = unsafely(root.checksum[Sha2[256]])
+          unsafely((root / "a.txt").write(t"ALPHA"))
+          unsafely(root.checksum[Sha2[256]]) == before
+        . check(_ == false)
 
     suite(m"Glob expansion"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.dereferenceSymlinks
 
-      val globLeaf: Text = Uuid().show
-      val root: Path on Linux = unsafely((% / "tmp" / globLeaf).on[Linux])
+      scratchDirectory: scratch =>
+        val root: Path on Linux = unsafely(scratch / "root")
 
-      unsafely:
-        root.create[Directory]()
-        (root / "a.jar").write(t"a")
-        (root / "a.txt").write(t"a")
-        (root / "sub1").create[Directory]()
-        (root / "sub1" / "b.jar").write(t"b")
-        (root / "sub1" / "inner").create[Directory]()
-        (root / "sub1" / "inner" / "c.jar").write(t"c")
-        (root / "sub2").create[Directory]()
-        (root / "sub2" / "d.jar").write(t"d")
+        unsafely:
+          root.create[Directory]()
+          (root / "a.jar").write(t"a")
+          (root / "a.txt").write(t"a")
+          (root / "sub1").create[Directory]()
+          (root / "sub1" / "b.jar").write(t"b")
+          (root / "sub1" / "inner").create[Directory]()
+          (root / "sub1" / "inner" / "c.jar").write(t"c")
+          (root / "sub2").create[Directory]()
+          (root / "sub2" / "d.jar").write(t"d")
 
-      def names(paths: List[Path on Linux]): List[Text] = paths.map(_.name).sort
+        def names(paths: List[Path on Linux]): List[Text] = paths.map(_.name).sort
 
-      test(m"A star glob matches entries of the root only"):
-        unsafely(names(root.glob(Glob.parse(t"*.jar"))))
-      . assert(_ == List(t"a.jar"))
+        test(m"A star glob matches entries of the root only"):
+          unsafely(names(root.glob(Glob.parse(t"*.jar"))))
+        . check(_ == List(t"a.jar"))
 
-      test(m"A question mark matches a single character"):
-        unsafely(names(root.glob(Glob.parse(t"?.txt"))))
-      . assert(_ == List(t"a.txt"))
+        test(m"A question mark matches a single character"):
+          unsafely(names(root.glob(Glob.parse(t"?.txt"))))
+        . check(_ == List(t"a.txt"))
 
-      test(m"A character range filters a wildcard segment"):
-        unsafely(names(root.glob(Glob.parse(t"*/[bd].jar"))))
-      . assert(_ == List(t"b.jar", t"d.jar"))
+        test(m"A character range filters a wildcard segment"):
+          unsafely(names(root.glob(Glob.parse(t"*/[bd].jar"))))
+        . check(_ == List(t"b.jar", t"d.jar"))
 
-      test(m"A literal segment descends directly"):
-        unsafely(names(root.glob(Glob.parse(t"sub1/*.jar"))))
-      . assert(_ == List(t"b.jar"))
+        test(m"A literal segment descends directly"):
+          unsafely(names(root.glob(Glob.parse(t"sub1/*.jar"))))
+        . check(_ == List(t"b.jar"))
 
-      test(m"A globstar spans any number of directories"):
-        unsafely(names(root.glob(Glob.parse(t"**/*.jar"))))
-      . assert(_ == List(t"a.jar", t"b.jar", t"c.jar", t"d.jar"))
+        test(m"A globstar spans any number of directories"):
+          unsafely(names(root.glob(Glob.parse(t"**/*.jar"))))
+        . check(_ == List(t"a.jar", t"b.jar", t"c.jar", t"d.jar"))
 
-      test(m"A globstar below a literal segment spans its subtree only"):
-        unsafely(names(root.glob(Glob.parse(t"sub1/**/*.jar"))))
-      . assert(_ == List(t"b.jar", t"c.jar"))
+        test(m"A globstar below a literal segment spans its subtree only"):
+          unsafely(names(root.glob(Glob.parse(t"sub1/**/*.jar"))))
+        . check(_ == List(t"b.jar", t"c.jar"))
 
-      test(m"A pattern matching nothing yields an empty list"):
-        unsafely(root.glob(Glob.parse(t"nowhere/*.jar")))
-      . assert(_ == List())
+        test(m"A pattern matching nothing yields an empty list"):
+          unsafely(root.glob(Glob.parse(t"nowhere/*.jar")))
+        . check(_ == List())
 
     suite(m"File locking"):
       import errorDiagnostics.stackTracesDiagnostics
@@ -1159,79 +1169,79 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.deleteRecursively
 
-      val lockDirLeaf: Text = Uuid().show
-      val lockDir: Path on Linux = unsafely((% / "tmp" / lockDirLeaf).on[Linux])
+      scratchDirectory: scratch =>
+        val lockDir: Path on Linux = unsafely(scratch / "locks")
 
-      unsafely:
-        lockDir.create[Directory]()
-        (lockDir / "target.txt").write(t"content")
-
-      val target: Path on Linux = unsafely(lockDir / "target.txt")
-
-      test(m"An Exclusive file open succeeds and reads its content"):
         unsafely:
-          target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
-      . assert(_ == t"content")
+          lockDir.create[Directory]()
+          (lockDir / "target.txt").write(t"content")
 
-      test(m"A second Exclusive open of the same file is Busy"):
-        unsafely:
-          capture[Io.Error]:
-            // [test-harness] test nests overlapping opens to exercise locking
-            scala.caps.unsafe.unsafeAssumeSeparate:
-              target.open[File](Read & Exclusive): a ?=>
-                target.open[File](Read & Exclusive) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+        val target: Path on Linux = unsafely(lockDir / "target.txt")
 
-      test(m"Ordinary Read opens of one file coexist"):
-        unsafely:
-          // [test-harness]
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            target.open[File](Read): a ?=>
-              target.open[File](Read) { true }
-      . assert(_ == true)
+        test(m"An Exclusive file open succeeds and reads its content"):
+          unsafely:
+            target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
+        . check(_ == t"content")
 
-      test(m"An Exclusive file open conflicts with an enclosing Exclusive directory scope"):
-        unsafely:
-          capture[Io.Error]:
+        test(m"A second Exclusive open of the same file is Busy"):
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness] test nests overlapping opens to exercise locking
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                target.open[File](Read & Exclusive): a ?=>
+                  target.open[File](Read & Exclusive) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
+
+        test(m"Ordinary Read opens of one file coexist"):
+          unsafely:
             // [test-harness]
             scala.caps.unsafe.unsafeAssumeSeparate:
-              lockDir.open[Directory](Read & Exclusive): a ?=>
-                target.open[File](Read & Exclusive) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+              target.open[File](Read): a ?=>
+                target.open[File](Read) { true }
+        . check(_ == true)
 
-      test(m"The lock is released when the scope ends"):
-        unsafely:
-          target.open[File](Read & Exclusive) { () }
-          target.open[File](Read & Exclusive) { true }
-      . assert(_ == true)
+        test(m"An Exclusive file open conflicts with an enclosing Exclusive directory scope"):
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness]
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                lockDir.open[Directory](Read & Exclusive): a ?=>
+                  target.open[File](Read & Exclusive) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
+
+        test(m"The lock is released when the scope ends"):
+          unsafely:
+            target.open[File](Read & Exclusive) { () }
+            target.open[File](Read & Exclusive) { true }
+        . check(_ == true)
 
     suite(m"Positional reading"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
-      val expanseLeaf: Text = Uuid().show
-      val source: Path on Linux = unsafely((% / "tmp" / expanseLeaf).on[Linux])
-      unsafely(source.write(t"0123456789abcdef"))
+      scratchDirectory: scratch =>
+        val source: Path on Linux = unsafely(scratch / "source")
+        unsafely(source.write(t"0123456789abcdef"))
 
-      test(m"The expanse reports the file's size"):
-        unsafely(source.expanse(_.size))
-      . assert(_ == 16L)
+        test(m"The expanse reports the file's size"):
+          unsafely(source.expanse(_.size))
+        . check(_ == 16L)
 
-      test(m"A positional read returns the requested slice"):
-        unsafely(source.expanse(_.read(4L, 6)).utf8)
-      . assert(_ == t"456789")
+        test(m"A positional read returns the requested slice"):
+          unsafely(source.expanse(_.read(4L, 6)).utf8)
+        . check(_ == t"456789")
 
-      test(m"Reads at different offsets are independent"):
-        unsafely:
-          source.expanse: expanse =>
-            (expanse.read(10L, 3).utf8, expanse.read(0L, 3).utf8)
-      . assert(_ == (t"abc", t"012"))
+        test(m"Reads at different offsets are independent"):
+          unsafely:
+            source.expanse: expanse =>
+              (expanse.read(10L, 3).utf8, expanse.read(0L, 3).utf8)
+        . check(_ == (t"abc", t"012"))
 
-      test(m"A read overlapping the end returns the bytes which exist"):
-        unsafely(source.expanse(_.read(12L, 100)).utf8)
-      . assert(_ == t"cdef")
+        test(m"A read overlapping the end returns the bytes which exist"):
+          unsafely(source.expanse(_.read(12L, 100)).utf8)
+        . check(_ == t"cdef")
 
     suite(m"Storage filesystem axis"):
       import anticipation.instantiables.epochMillisecondsInstantiable
@@ -1273,27 +1283,25 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       import filesystemOptions.deleteRecursively
       import filesystemOptions.overwritePreexisting
 
-      val identifiedLeaf: Text = Uuid().show
-      val linkedLeaf: Text = Uuid().show
-      val separateLeaf: Text = Uuid().show
-      val identified: Path on Linux = unsafely((% / "tmp" / identifiedLeaf).on[Linux])
-      val linked: Path on Linux = unsafely((% / "tmp" / linkedLeaf).on[Linux])
-      val separate: Path on Linux = unsafely((% / "tmp" / separateLeaf).on[Linux])
-      unsafely(identified.write(t"content"))
-      unsafely(separate.write(t"content"))
-      unsafely(identified.hardLinkTo(linked))
+      scratchDirectory: scratch =>
+        val identified: Path on Linux = unsafely(scratch / "identified")
+        val linked: Path on Linux = unsafely(scratch / "linked")
+        val separate: Path on Linux = unsafely(scratch / "separate")
+        unsafely(identified.write(t"content"))
+        unsafely(separate.write(t"content"))
+        unsafely(identified.hardLinkTo(linked))
 
-      test(m"An entry has a device and inode number"):
-        identified.entryIdentity.let(_.inode).or(0L) > 0L
-      . assert(_ == true)
+        test(m"An entry has a device and inode number"):
+          identified.entryIdentity.let(_.inode).or(0L) > 0L
+        . check(_ == true)
 
-      test(m"A hard link has the same identity as its target"):
-        identified.entryIdentity == linked.entryIdentity
-      . assert(_ == true)
+        test(m"A hard link has the same identity as its target"):
+          identified.entryIdentity == linked.entryIdentity
+        . check(_ == true)
 
-      test(m"Two distinct files have distinct identities"):
-        identified.entryIdentity == separate.entryIdentity
-      . assert(_ == false)
+        test(m"Two distinct files have distinct identities"):
+          identified.entryIdentity == separate.entryIdentity
+        . check(_ == false)
 
     suite(m"Inode metadata"):
       import errorDiagnostics.emptyDiagnostics
@@ -1302,195 +1310,191 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       import filesystemOptions.overwritePreexisting
 
       val backend = summon[FilesystemBackend on Linux]
-      val fileLeaf: Text = Uuid().show
-      val linkLeaf: Text = Uuid().show
-      val file: Path on Linux = unsafely((% / "tmp" / fileLeaf).on[Linux])
-      val link: Path on Linux = unsafely((% / "tmp" / linkLeaf).on[Linux])
-      unsafely(file.write(t"content"))
-      unsafely(file.symlinkTo(link))
+      scratchDirectory: scratch =>
+        val file: Path on Linux = unsafely(scratch / "file")
+        val link: Path on Linux = unsafely(scratch / "link")
+        unsafely(file.write(t"content"))
+        unsafely(file.symlinkTo(link))
 
-      test(m"A symlink's canonical path is its target's"):
-        unsafely(link.canonical() == file.canonical())
-      . assert(_ == true)
+        test(m"A symlink's canonical path is its target's"):
+          unsafely(link.canonical() == file.canonical())
+        . check(_ == true)
 
-      test(m"A canonical path has no symlink left in it"):
-        val dirLeaf: Text = Uuid().show
-        val dirLinkLeaf: Text = Uuid().show
-        val dir: Path on Linux = unsafely((% / "tmp" / dirLeaf).on[Linux])
-        val dirLink: Path on Linux = unsafely((% / "tmp" / dirLinkLeaf).on[Linux])
-        unsafely:
-          dir.create[Directory]()
-          (dir / "inner.txt").write(t"inner")
-          dir.symlinkTo(dirLink)
-          (dirLink / "inner.txt").canonical() == (dir / "inner.txt").canonical()
-      . assert(_ == true)
+        test(m"A canonical path has no symlink left in it"):
+          val dir: Path on Linux = unsafely(scratch / "dir")
+          val dirLink: Path on Linux = unsafely(scratch / "dirlink")
+          unsafely:
+            dir.create[Directory]()
+            (dir / "inner.txt").write(t"inner")
+            dir.symlinkTo(dirLink)
+            (dirLink / "inner.txt").canonical() == (dir / "inner.txt").canonical()
+        . check(_ == true)
 
-      test(m"A canonical path reads back the same content"):
-        unsafely(link.canonical().read[Text])
-      . assert(_ == t"content")
+        test(m"A canonical path reads back the same content"):
+          unsafely(link.canonical().read[Text])
+        . check(_ == t"content")
 
-      test(m"An absent path has no canonical form"):
-        val absentLeaf: Text = Uuid().show
-        unsafely(capture[Io.Error](unsafely((% / "tmp" / absentLeaf).on[Linux]).canonical()).reason)
-      . assert(_ == Io.Error.Reason.Nonexistent)
+        test(m"An absent path has no canonical form"):
+          unsafely(capture[Io.Error](unsafely(scratch / "absent").canonical()).reason)
+        . check(_ == Io.Error.Reason.Nonexistent)
 
-      test(m"A regular file's stat carries the whole st_mode, type bits included"):
-        unsafely(backend.stat(file, true)).mode.let(_ & 61440)
-      . assert(_ == 32768)
+        test(m"A regular file's stat carries the whole st_mode, type bits included"):
+          unsafely(backend.stat(file, true)).mode.let(_ & 61440)
+        . check(_ == 32768)
 
-      test(m"A file's stat carries its owner and group"):
-        val stat = unsafely(backend.stat(file, true))
-        (stat.user.present, stat.group.present)
-      . assert(_ == (true, true))
+        test(m"A file's stat carries its owner and group"):
+          val stat = unsafely(backend.stat(file, true))
+          (stat.user.present, stat.group.present)
+        . check(_ == (true, true))
 
-      test(m"A symbolic link's stat, undereferenced, is a Symlink"):
-        unsafely(backend.stat(link, false)).entry
-      . assert(_ == Symlink)
+        test(m"A symbolic link's stat, undereferenced, is a Symlink"):
+          unsafely(backend.stat(link, false)).entry
+        . check(_ == Symlink)
 
-      test(m"linkTarget is the link's stored text"):
-        unsafely(backend.linkTarget(link))
-      . assert(_ == file.encode)
+        test(m"linkTarget is the link's stored text"):
+          unsafely(backend.linkTarget(link))
+        . check(_ == file.encode)
 
     suite(m"Shared locking"):
       import errorDiagnostics.stackTracesDiagnostics
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
-      val sharedLeaf: Text = Uuid().show
-      val shared: Path on Linux = unsafely((% / "tmp" / sharedLeaf).on[Linux])
-      unsafely(shared.write(t"content"))
+      scratchDirectory: scratch =>
+        val shared: Path on Linux = unsafely(scratch / "shared")
+        unsafely(shared.write(t"content"))
 
-      test(m"Shared opens of one file coexist"):
-        unsafely:
-          // [test-harness] test nests overlapping opens to exercise locking
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            shared.open[File](Read & Shared): a ?=>
-              shared.open[File](Read & Shared) { true }
-      . assert(_ == true)
-
-      test(m"An Exclusive open cannot join a Shared one"):
-        unsafely:
-          capture[Io.Error]:
-            // [test-harness]
-            scala.caps.unsafe.unsafeAssumeSeparate:
-              shared.open[File](Read & Shared): a ?=>
-                shared.open[File](Read & Exclusive) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
-
-      test(m"A Shared open cannot join an Exclusive one"):
-        unsafely:
-          capture[Io.Error]:
+        test(m"Shared opens of one file coexist"):
+          unsafely:
             // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
-              shared.open[File](Read & Exclusive): a ?=>
-                shared.open[File](Read & Shared) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+              shared.open[File](Read & Shared): a ?=>
+                shared.open[File](Read & Shared) { true }
+        . check(_ == true)
+
+        test(m"An Exclusive open cannot join a Shared one"):
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness]
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                shared.open[File](Read & Shared): a ?=>
+                  shared.open[File](Read & Exclusive) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
+
+        test(m"A Shared open cannot join an Exclusive one"):
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness] test nests overlapping opens to exercise locking
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                shared.open[File](Read & Exclusive): a ?=>
+                  shared.open[File](Read & Shared) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
 
     suite(m"Awaited locking"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import threads.platformThreads
 
-      val awaitLeaf: Text = Uuid().show
-      val awaited: Path on Linux = unsafely((% / "tmp" / awaitLeaf).on[Linux])
-      unsafely(awaited.write(t"content"))
+      scratchDirectory: scratch =>
+        val awaited: Path on Linux = unsafely(scratch / "awaited")
+        unsafely(awaited.write(t"content"))
 
-      test(m"An awaited open blocks until the holder's scope ends, then proceeds"):
-        unsafely:
-          val order = java.util.concurrent.ConcurrentLinkedQueue[String]()
+        test(m"An awaited open blocks until the holder's scope ends, then proceeds"):
+          unsafely:
+            val order = java.util.concurrent.ConcurrentLinkedQueue[String]()
 
-          val runnable: Runnable = () =>
-            unsafely:
-              awaited.open[File](Read & Exclusive, OpenFlag.Await):
-                order.add("acquired") yet ()
+            val runnable: Runnable = () =>
+              unsafely:
+                awaited.open[File](Read & Exclusive, OpenFlag.Await):
+                  order.add("acquired") yet ()
 
-          val waiter = java.lang.Thread(runnable)
+            val waiter = java.lang.Thread(runnable)
 
-          // [test-harness] test races thread against held exclusive open
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            awaited.open[File](Read & Exclusive): a ?=>
-              waiter.start()
-              java.lang.Thread.sleep(300)
-              order.add("releasing") yet ()
+            // [test-harness] test races thread against held exclusive open
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              awaited.open[File](Read & Exclusive): a ?=>
+                waiter.start()
+                java.lang.Thread.sleep(300)
+                order.add("releasing") yet ()
 
-          waiter.join(5000)
-          var seen = scala.List[String]()
-          while !order.isEmpty do seen = seen :+ order.poll().toString
-          seen
-      . assert(_ == scala.List("releasing", "acquired"))
+            waiter.join(5000)
+            var seen = scala.List[String]()
+            while !order.isEmpty do seen = seen :+ order.poll().toString
+            seen
+        . check(_ == scala.List("releasing", "acquired"))
 
     suite(m"Slice locking"):
       import errorDiagnostics.stackTracesDiagnostics
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
-      val sliceLeaf: Text = Uuid().show
-      val sliced: Path on Linux = unsafely((% / "tmp" / sliceLeaf).on[Linux])
-      unsafely(sliced.write(t"0123456789abcdef"))
+      scratchDirectory: scratch =>
+        val sliced: Path on Linux = unsafely(scratch / "sliced")
+        unsafely(sliced.write(t"0123456789abcdef"))
 
-      test(m"A slice view is windowed to its range"):
-        unsafely:
-          Slice(sliced, 4L, 6L).open[File](Read): view ?=>
-            (view.size, view.read(0L, 6).utf8, view.read(4L, 100).utf8)
-      . assert(_ == (6L, t"456789", t"89"))
+        test(m"A slice view is windowed to its range"):
+          unsafely:
+            Slice(sliced, 4L, 6L).open[File](Read): view ?=>
+              (view.size, view.read(0L, 6).utf8, view.read(4L, 100).utf8)
+        . check(_ == (6L, t"456789", t"89"))
 
-      test(m"Overlapping exclusive slices conflict"):
-        unsafely:
-          capture[Io.Error]:
-            // [test-harness] test nests overlapping opens to exercise locking
-            scala.caps.unsafe.unsafeAssumeSeparate:
-              Slice(sliced, 0L, 8L).open[File](Read & Exclusive): a ?=>
-                Slice(sliced, 4L, 8L).open[File](Read & Exclusive) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+        test(m"Overlapping exclusive slices conflict"):
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness] test nests overlapping opens to exercise locking
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Slice(sliced, 0L, 8L).open[File](Read & Exclusive): a ?=>
+                  Slice(sliced, 4L, 8L).open[File](Read & Exclusive) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
 
-      test(m"Disjoint exclusive slices coexist"):
-        unsafely:
-          // [test-harness]
-          scala.caps.unsafe.unsafeAssumeSeparate:
-            Slice(sliced, 0L, 4L).open[File](Read & Exclusive): a ?=>
-              Slice(sliced, 8L, 4L).open[File](Read & Exclusive) { true }
-      . assert(_ == true)
-
-      test(m"A whole-file Exclusive open conflicts with any slice"):
-        unsafely:
-          capture[Io.Error]:
+        test(m"Disjoint exclusive slices coexist"):
+          unsafely:
             // [test-harness]
             scala.caps.unsafe.unsafeAssumeSeparate:
-              sliced.open[File](Read & Exclusive): a ?=>
-                Slice(sliced, 0L, 4L).open[File](Read & Exclusive) { () }
-          . reason
-      . assert(_ == Io.Error.Reason.Busy)
+              Slice(sliced, 0L, 4L).open[File](Read & Exclusive): a ?=>
+                Slice(sliced, 8L, 4L).open[File](Read & Exclusive) { true }
+        . check(_ == true)
+
+        test(m"A whole-file Exclusive open conflicts with any slice"):
+          unsafely:
+            capture[Io.Error]:
+              // [test-harness]
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                sliced.open[File](Read & Exclusive): a ?=>
+                  Slice(sliced, 0L, 4L).open[File](Read & Exclusive) { () }
+            . reason
+        . check(_ == Io.Error.Reason.Busy)
 
     suite(m"Extended attributes"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
 
-      val xattrLeaf: Text = Uuid().show
-      val xattred: Path on Linux = unsafely((% / "tmp" / xattrLeaf).on[Linux])
-      unsafely(xattred.write(t"content"))
+      scratchDirectory: scratch =>
+        val xattred: Path on Linux = unsafely(scratch / "xattred")
+        unsafely(xattred.write(t"content"))
 
-      test(m"An attribute round-trips on a matched attributed filesystem"):
-        def roundtrip[transport <: Attributed](path: Path on Linux over transport)
-        :   (Optional[Text], Boolean) =
-          unsafely:
-            path.attribute(t"origin", t"soundness".in[Data])
-            (path.attribute[Data](t"origin").let(_.utf8), path.attributes().has(t"origin"))
+        test(m"An attribute round-trips on a matched attributed filesystem"):
+          def roundtrip[transport <: Attributed](path: Path on Linux over transport)
+          :   (Optional[Text], Boolean) =
+            unsafely:
+              path.attribute(t"origin", t"soundness".in[Data])
+              (path.attribute[Data](t"origin").let(_.utf8), path.attributes().has(t"origin"))
 
-        xattred match
-          case Apfs(path)  => roundtrip(path)
-          case Btrfs(path) => roundtrip(path)
-          case Ext4(path)  => roundtrip(path)
-          case _           => (t"soundness", true) // no attributed filesystem here; gate held
-      . assert(_ == (t"soundness", true))
+          xattred match
+            case Apfs(path)  => roundtrip(path)
+            case Btrfs(path) => roundtrip(path)
+            case Ext4(path)  => roundtrip(path)
+            case _           => (t"soundness", true) // no attributed filesystem here; gate held
+        . check(_ == (t"soundness", true))
 
-      test(m"An unset attribute is absent"):
-        xattred match
-          case Apfs(path) => unsafely(path.attribute[Data](t"missing")).absent
-          case _          => true
-      . assert(_ == true)
+        test(m"An unset attribute is absent"):
+          xattred match
+            case Apfs(path) => unsafely(path.attribute[Data](t"missing")).absent
+            case _          => true
+        . check(_ == true)
 
     suite(m"Slice windows write"):
       import filesystemOptions.createParents
@@ -1498,93 +1502,92 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       import charsets.utf8Charset
       import textSanitizers.skipSanitizer
 
-      val windowLeaf: Text = Uuid().show
-      val windowed: Path on Linux = unsafely((% / "tmp" / windowLeaf).on[Linux])
-      unsafely(windowed.write(t"0123456789abcdef"))
+      scratchDirectory: scratch =>
+        val windowed: Path on Linux = unsafely(scratch / "windowed")
+        unsafely(windowed.write(t"0123456789abcdef"))
 
-      test(m"A write lands at the window-adjusted offset and reads back"):
-        unsafely:
-          Slice(windowed, 4L, 6L).open[File](Read & Write & Exclusive): window ?=>
-            window.write(2L, t"XY".in[Data]) yet ()
+        test(m"A write lands at the window-adjusted offset and reads back"):
+          unsafely:
+            Slice(windowed, 4L, 6L).open[File](Read & Write & Exclusive): window ?=>
+              window.write(2L, t"XY".in[Data]) yet ()
 
-          windowed.read[Text]
-      . assert(_ == t"012345XY89abcdef")
+            windowed.read[Text]
+        . check(_ == t"012345XY89abcdef")
 
-      test(m"A write is clamped to the window and reports the count"):
-        unsafely:
-          Slice(windowed, 12L, 4L).open[File](Read & Write & Exclusive): window ?=>
-            window.write(2L, t"WXYZ".in[Data])
-      . assert(_ == 2)
+        test(m"A write is clamped to the window and reports the count"):
+          unsafely:
+            Slice(windowed, 12L, 4L).open[File](Read & Write & Exclusive): window ?=>
+              window.write(2L, t"WXYZ".in[Data])
+        . check(_ == 2)
 
-      test(m"A clamped write stores only the bytes which fit"):
-        unsafely(windowed.read[Text])
-      . assert(_ == t"012345XY89abcdWX")
+        test(m"A clamped write stores only the bytes which fit"):
+          unsafely(windowed.read[Text])
+        . check(_ == t"012345XY89abcdWX")
 
-      test(m"A write past the window's end stores nothing"):
-        unsafely:
-          Slice(windowed, 0L, 4L).open[File](Read & Write & Exclusive): window ?=>
-            window.write(4L, t"zz".in[Data])
-      . assert(_ == 0)
+        test(m"A write past the window's end stores nothing"):
+          unsafely:
+            Slice(windowed, 0L, 4L).open[File](Read & Write & Exclusive): window ?=>
+              window.write(4L, t"zz".in[Data])
+        . check(_ == 0)
 
     suite(m"Searchpaths"):
       import filesystemOptions.createParents
       import filesystemOptions.overwritePreexisting
       import pathInterfaces.pathOnLinux
 
-      val spLeafA: Text = t"sp-a-${Uuid().show}"
-      val spLeafB: Text = t"sp-b-${Uuid().show}"
-      val stemA: Path on Linux = unsafely((% / "tmp" / spLeafA).on[Linux])
-      val stemB: Path on Linux = unsafely((% / "tmp" / spLeafB).on[Linux])
+      scratchDirectory: scratch =>
+        val stemA: Path on Linux = unsafely(scratch / "a")
+        val stemB: Path on Linux = unsafely(scratch / "b")
 
-      unsafely:
-        stemA.create[Directory]()
-        stemB.create[Directory]()
-        (stemA / "icons").create[Directory]()
-        (stemB / "icons").create[Directory]()
-        (stemA / "icons" / "app.png").write(t"A")
-        (stemB / "icons" / "app.png").write(t"B")
-        (stemB / "icons" / "extra.png").write(t"B2")
-        (stemB / "themes").create[Directory]()
+        unsafely:
+          stemA.create[Directory]()
+          stemB.create[Directory]()
+          (stemA / "icons").create[Directory]()
+          (stemB / "icons").create[Directory]()
+          (stemA / "icons" / "app.png").write(t"A")
+          (stemB / "icons" / "app.png").write(t"B")
+          (stemB / "icons" / "extra.png").write(t"B2")
+          (stemB / "themes").create[Directory]()
 
-      given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
-        type Plane = Xdg.Data
-        type Target = Linux
-        val stems: List[Path on Linux] & Populated = List(stemA, stemB)
+        given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
+          type Plane = Xdg.Data
+          type Target = Linux
+          val stems: List[Path on Linux] & Populated = List(stemA, stemB)
 
-      test(m"locate finds the first stem's match"):
-        unsafely((% / "icons" / "app.png").on[Xdg.Data].discover())
-      . assert(_ == unsafely(stemA / "icons" / "app.png"))
+        test(m"locate finds the first stem's match"):
+          unsafely((% / "icons" / "app.png").on[Xdg.Data].discover())
+        . check(_ == unsafely(stemA / "icons" / "app.png"))
 
-      test(m"locate falls through to a later stem"):
-        unsafely((% / "icons" / "extra.png").on[Xdg.Data].discover())
-      . assert(_ == unsafely(stemB / "icons" / "extra.png"))
+        test(m"locate falls through to a later stem"):
+          unsafely((% / "icons" / "extra.png").on[Xdg.Data].discover())
+        . check(_ == unsafely(stemB / "icons" / "extra.png"))
 
-      test(m"a path present nowhere locates to Unset"):
-        unsafely((% / "icons" / "missing.png").on[Xdg.Data].discover())
-      . assert(_ == Unset)
+        test(m"a path present nowhere locates to Unset"):
+          unsafely((% / "icons" / "missing.png").on[Xdg.Data].discover())
+        . check(_ == Unset)
 
-      test(m"locations lists every extant match in precedence order"):
-        unsafely((% / "icons" / "app.png").on[Xdg.Data].locations())
-      . assert(_ == unsafely(List(stemA / "icons" / "app.png", stemB / "icons" / "app.png")))
+        test(m"locations lists every extant match in precedence order"):
+          unsafely((% / "icons" / "app.png").on[Xdg.Data].locations())
+        . check(_ == unsafely(List(stemA / "icons" / "app.png", stemB / "icons" / "app.png")))
 
-      test(m"entries merge across stems, earlier shadowing later"):
-        unsafely((% / "icons").on[Xdg.Data].listing().map(_.name).sort)
-      . assert(_ == List(t"app.png", t"extra.png"))
+        test(m"entries merge across stems, earlier shadowing later"):
+          unsafely((% / "icons").on[Xdg.Data].listing().map(_.name).sort)
+        . check(_ == List(t"app.png", t"extra.png"))
 
-      test(m"a later-stem-only directory is found"):
-        unsafely((% / "themes").on[Xdg.Data].discover().present)
-      . assert(_ == true)
+        test(m"a later-stem-only directory is found"):
+          unsafely((% / "themes").on[Xdg.Data].discover().present)
+        . check(_ == true)
 
-      test(m"destination is the head-stem realization"):
-        unsafely((% / "themes" / "new.css").on[Xdg.Data].destination())
-      . assert(_ == unsafely(stemA / "themes" / "new.css"))
+        test(m"destination is the head-stem realization"):
+          unsafely((% / "themes" / "new.css").on[Xdg.Data].destination())
+        . check(_ == unsafely(stemA / "themes" / "new.css"))
 
-      test(m"the Xdg constructor reads the variables in spec order"):
-        import systems.javaBaseSystem
-        given Environment = name =>
-          if name == t"XDG_DATA_HOME" then stemA.encode
-          else if name == t"XDG_DATA_DIRS" then stemB.encode
-          else Unset
+        test(m"the Xdg constructor reads the variables in spec order"):
+          import systems.javaBaseSystem
+          given Environment = name =>
+            if name == t"XDG_DATA_HOME" then stemA.encode
+            else if name == t"XDG_DATA_DIRS" then stemB.encode
+            else Unset
 
-        Xdg.dataSearch().stems
-      . assert(_ == List(stemA, stemB))
+          Xdg.dataSearch().stems
+        . check(_ == List(stemA, stemB))

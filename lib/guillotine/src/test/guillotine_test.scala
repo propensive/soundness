@@ -604,25 +604,27 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       import filesystemBackends.javaBaseFilesystem
       import filesystemOptions.dereferenceSymlinks
       import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.skipSanitizer
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
 
       test(m"A detached command answers a pid"):
         sh"true".detach().value > 0L
       . assert(_ == true)
 
       test(m"A detached command's output is appended to its log, whose parents are made"):
-        val leaf: Text = Uuid().show
-        val log: Path on Linux = unsafely((% / "tmp" / leaf / "nested" / "out.log").on[Linux])
-        sh"echo detached".detach(log)
+        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val log: Path on Linux = handle.stem / "nested" / "out.log"
+          sh"echo detached".detach(log)
 
-        def read(remaining: Int): Text =
-          // The log exists, empty, from the moment the process starts.
-          val content: Text = safely(log.read[Text]).or(t"")
-          if content != t"" || remaining == 0 then content
-          else
-            Thread.sleep(100)
-            read(remaining - 1)
+          def read(remaining: Int): Text =
+            // The log exists, empty, from the moment the process starts.
+            val content: Text = safely(log.read[Text]).or(t"")
+            if content != t"" || remaining == 0 then content
+            else
+              Thread.sleep(100)
+              read(remaining - 1)
 
-        read(30)
+          read(30)
       . assert(_ == t"detached\n")
 
     suite(m"Pid"):

@@ -553,8 +553,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       given (Text is Abstractable across Paths to Text) = identity(_)
 
-      def createKeystore(password: scala.Array[Char] | Null): Text =
-        val path = t"/tmp/enigmatic-keystore-${java.util.UUID.randomUUID.nn.toString}.p12"
+      def createKeystore(directory: Text, password: scala.Array[Char] | Null): Text =
+        val path = t"$directory/keystore.p12"
         val keystore = js.KeyStore.getInstance("PKCS12").nn
         keystore.load(null, null)
         val out = ji.FileOutputStream(path.s)
@@ -562,31 +562,38 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         finally out.close()
         path
 
-      val guarded = createKeystore(scala.Array('s', 'e', 's', 'a', 'm', 'e'))
+      import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
+      import systems.javaBaseSystem, temporaryDirectories.systemTemporaryDirectory
 
-      test(m"An empty keystore opens with the right password"):
-        guarded.open[Keystore](Password(t"sesame")):
-          keystore.aliases
-      . assert(_ == Nil)
+      // The keystore is written to a scratch directory, deleted when the suite has run; so each
+      // test is a `check`, run where it stands, not an `assert`, which a parallel runner may
+      // defer beyond the loan of the directory.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+        val guarded = createKeystore(scratch.stem.encode, scala.Array('s', 'e', 's', 'a', 'm', 'e'))
 
-      test(m"A wrong password is refused as Unreadable"):
-        capture[Keystore.Error](guarded.open[Keystore](Password(t"wrong")) { () }).reason
-      . assert(_ == Keystore.Error.Reason.Unreadable)
+        test(m"An empty keystore opens with the right password"):
+          guarded.open[Keystore](Password(t"sesame")):
+            keystore.aliases
+        . check(_ == Nil)
 
-      test(m"Opening a keystore for writing is refused"):
-        capture[Keystore.Error](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
-      . assert(_ == Keystore.Error.Reason.WriteUnsupported)
+        test(m"A wrong password is refused as Unreadable"):
+          capture[Keystore.Error](guarded.open[Keystore](Password(t"wrong")) { () }).reason
+        . check(_ == Keystore.Error.Reason.Unreadable)
 
-      test(m"A missing certificate alias is Unset"):
-        guarded.open[Keystore](Password(t"sesame")):
-          keystore.certificate(t"absent")
-      . assert(_ == Unset)
+        test(m"Opening a keystore for writing is refused"):
+          capture[Keystore.Error](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
+        . check(_ == Keystore.Error.Reason.WriteUnsupported)
 
-      test(m"A keystore opens with a password held by the veiled-heap cloak"):
-        import soundness.cloaks.veiledHeapCloak
-        guarded.open[Keystore](Password(t"sesame")):
-          keystore.aliases
-      . assert(_ == Nil)
+        test(m"A missing certificate alias is Unset"):
+          guarded.open[Keystore](Password(t"sesame")):
+            keystore.certificate(t"absent")
+        . check(_ == Unset)
+
+        test(m"A keystore opens with a password held by the veiled-heap cloak"):
+          import soundness.cloaks.veiledHeapCloak
+          guarded.open[Keystore](Password(t"sesame")):
+            keystore.aliases
+        . check(_ == Nil)
 
     suite(m"Cloak strategies"):
       def roundtrip()(using cloak: Cloak): Text =

@@ -2505,29 +2505,27 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"Opening file paths"):
       import galilei.*
       import serpentine.*
-      import inimitable.*
       import galilei.filesystemBackends.javaBaseFilesystem
-      import galilei.filesystemOptions.deleteRecursively
+      import ambience.temporaryDirectory
+      import ambience.systems.javaBaseSystem
+      import ambience.temporaryDirectories.systemTemporaryDirectory
 
       test(m"A file path opened Read & Write writes the mutation back"):
-        val name: Text = Uuid().show
-        val dest: Path on Linux = (% / "tmp" / name).on[Linux]
-        dest.write(t"name Percy\n")
+        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+          val dest: Path on Linux = scratch.stem / "percy.tel"
+          dest.write(t"name Percy\n")
 
-        dest.open[Tel](Read & Write): handle ?=>
-          handle.update(Tel.Pointer.of(t"name"), t"Hal")
+          dest.open[Tel](Read & Write): handle ?=>
+            handle.update(Tel.Pointer.of(t"name"), t"Hal")
 
-        // The decoder is scoped to the read alone: an ambient `Charset`
-        // alongside the file-level `Codepage` would make turbulence's
-        // codec adapters compete with galilei's direct `pathWritable` when
-        // the `open` above resolves its write-back instance.
-        val result = locally:
-          import charsets.utf8Charset
-          import textSanitizers.skipSanitizer
-          dest.read[Text]
-
-        dest.delete()
-        result
+          // The decoder is scoped to the read alone: an ambient `Charset`
+          // alongside the file-level `Codepage` would make turbulence's
+          // codec adapters compete with galilei's direct `pathWritable` when
+          // the `open` above resolves its write-back instance.
+          locally:
+            import charsets.utf8Charset
+            import textSanitizers.skipSanitizer
+            dest.read[Text]
       . assert(_ == t"name Hal\n")
 
     suite(m"Negative corpus (E1xx parsing)"):

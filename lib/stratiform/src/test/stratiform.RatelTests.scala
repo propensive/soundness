@@ -973,160 +973,168 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == Reason.BadRowHeader)
 
     suite(m"Sharing a published image between readers"):
-      val directory: Text = Uuid().show
-      val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
-      unsafely(root.create[Directory]())
-      val file: Path on Linux = unsafely((% / "tmp" / directory / "catalogue.ratel").on[Linux])
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
 
-      val revised: Tel =
-        t"tel 1.0\n\nentry\n  name alpha\n\nentry\n  name beta\n  info  Second letter\n".read[Tel]
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Linux = handle.stem
+        val file: Path on Linux = directory / "catalogue.ratel"
 
-      def info(view: Terrain, key: Text): Optional[Text] =
-        view.open[Ratel]() { (ratel.root / t"entry").find(key).let(_.text(t"info")) }
+        val revised: Tel =
+          t"tel 1.0\n\nentry\n  name alpha\n\nentry\n  name beta\n  info  Second letter\n".read[Tel]
 
-      test(m"an image published under a name is read in place from the file"):
-        unsafely:
-          file.claim[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
-          file.open[Ratel]() { (ratel.root / t"entry").find(t"alpha").let(_.text(t"info")) }
-      . assert(_ == t"First letter")
+        def info(view: Terrain, key: Text): Optional[Text] =
+          view.open[Ratel]() { (ratel.root / t"entry").find(key).let(_.text(t"info")) }
 
-      test(m"a file is verified as it is opened"):
-        unsafely(file.open[Ratel](Ratel.Flag.Verify)((ratel.root / t"entry").size))
-      . assert(_ == 2L)
+        test(m"an image published under a name is read in place from the file"):
+          unsafely:
+            file.claim[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+            file.open[Ratel]() { (ratel.root / t"entry").find(t"alpha").let(_.text(t"info")) }
+        . check(_ == t"First letter")
 
-      test(m"a view of a mapped file is opened as it is"):
-        unsafely(file.mapped(info(_, t"alpha")))
-      . assert(_ == t"First letter")
+        test(m"a file is verified as it is opened"):
+          unsafely(file.open[Ratel](Ratel.Flag.Verify)((ratel.root / t"entry").size))
+        . check(_ == 2L)
 
-      test(m"a file which is not an image is refused as it is opened"):
-        val other: Path on Linux = unsafely((% / "tmp" / directory / "prologue").on[Linux])
+        test(m"a view of a mapped file is opened as it is"):
+          unsafely(file.mapped(info(_, t"alpha")))
+        . check(_ == t"First letter")
 
-        unsafely:
-          other.write(t"Two households, both alike in dignity")
-          capture[Ratel.Error](other.open[Ratel]()(ratel.schema.name)).reason
-      . assert(_ == Ratel.Error.Reason.BadLength)
+        test(m"a file which is not an image is refused as it is opened"):
+          val other: Path on Linux = directory / "prologue"
 
-      test(m"a reader sees a new edition once it refreshes"):
-        unsafely:
-          file.observe[Ratel]: reader =>
-            val before = reader.map(info(_, t"beta"))
-            file.claim[Ratel](_.publish(revised.ratel(catalogueSchema)))
-            val stale = reader.map(info(_, t"beta"))
-            val moved = reader.refresh()
-            (before, stale, moved, reader.map(info(_, t"beta")))
-      . assert(_ == (Unset, Unset, true, t"Second letter"))
+          unsafely:
+            other.write(t"Two households, both alike in dignity")
+            capture[Ratel.Error](other.open[Ratel]()(ratel.schema.name)).reason
+        . check(_ == Ratel.Error.Reason.BadLength)
 
-      test(m"a view of an old edition outlives its replacement"):
-        unsafely:
-          file.observe[Ratel]: reader =>
-            reader.map: view =>
-              view.open[Ratel]():
-                val entries = ratel.root / t"entry"
-                file.claim[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
-                reader.refresh()
-                entries.find(t"beta").let(_.text(t"info"))
-      . assert(_ == t"Second letter")
+        test(m"a reader sees a new edition once it refreshes"):
+          unsafely:
+            file.observe[Ratel]: reader =>
+              val before = reader.map(info(_, t"beta"))
+              file.claim[Ratel](_.publish(revised.ratel(catalogueSchema)))
+              val stale = reader.map(info(_, t"beta"))
+              val moved = reader.refresh()
+              (before, stale, moved, reader.map(info(_, t"beta")))
+        . check(_ == (Unset, Unset, true, t"Second letter"))
+
+        test(m"a view of an old edition outlives its replacement"):
+          unsafely:
+            file.observe[Ratel]: reader =>
+              reader.map: view =>
+                view.open[Ratel]():
+                  val entries = ratel.root / t"entry"
+                  file.claim[Ratel](_.publish(catalogue.ratel(catalogueSchema)))
+                  reader.refresh()
+                  entries.find(t"beta").let(_.text(t"info"))
+        . check(_ == t"Second letter")
 
     suite(m"Sharing an image of a declared type"):
-      val directory: Text = Uuid().show
-      val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
-      unsafely(root.create[Directory]())
-      val file: Path on Linux = unsafely((% / "tmp" / directory / "playbill.ratel").on[Linux])
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
 
-      val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
-      val recast = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Feste", t"Twelfth Night")))
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Linux = handle.stem
+        val file: Path on Linux = directory / "playbill.ratel"
 
-      test(m"an image of a value is published under a name claimed for its type"):
-        unsafely:
-          file.claim[Ratel of Playbill](_.publish(playbill.ratel))
-          file.open[Ratel of Playbill]()(ratel.root.as[Playbill])
-      . assert(_ == playbill)
+        val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
+        val recast = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Feste", t"Twelfth Night")))
 
-      test(m"a name claimed for a type takes no image of another type"):
-        demilitarize:
-          unsafely(file.claim[Ratel of Playbill](_.publish(Troupe(List(t"Snug")).ratel)))
-        . map(_.message.tt)
-      . assert(!_.nil)
+        test(m"an image of a value is published under a name claimed for its type"):
+          unsafely:
+            file.claim[Ratel of Playbill](_.publish(playbill.ratel))
+            file.open[Ratel of Playbill]()(ratel.root.as[Playbill])
+        . check(_ == playbill)
 
-      test(m"a name claimed for a type takes no image of no declared type"):
-        demilitarize:
-          unsafely(file.claim[Ratel of Playbill](_.publish(catalogue.ratel(catalogueSchema))))
-        . map(_.message.tt)
-      . assert(!_.nil)
+        test(m"a name claimed for a type takes no image of another type"):
+          demilitarize:
+            unsafely(file.claim[Ratel of Playbill](_.publish(Troupe(List(t"Snug")).ratel)))
+          . map(_.message.tt)
+        . check(!_.nil)
 
-      test(m"an observer opens the image in one block, and finds a record by its key"):
-        unsafely:
-          file.observe[Ratel of Playbill]: observer =>
-            observer.open()((ratel.root / t"part").find(t"Viola").let(_.as[Part]))
-      . assert(_ == Part(t"Viola", t"Twelfth Night"))
+        test(m"a name claimed for a type takes no image of no declared type"):
+          demilitarize:
+            unsafely(file.claim[Ratel of Playbill](_.publish(catalogue.ratel(catalogueSchema))))
+          . map(_.message.tt)
+        . check(!_.nil)
 
-      test(m"an observer opens the image with flags, as a file is opened"):
-        unsafely(file.observe[Ratel of Playbill](_.open(Ratel.Flag.Verify)((ratel.root / t"part").size)))
-      . assert(_ == 2L)
-
-      test(m"an observer of any image opens it with no type declared"):
-        unsafely:
-          file.observe[Ratel]: observer =>
-            observer.open()((ratel.root / t"part").where(t"/play", t"Hamlet").size)
-      . assert(_ == 1)
-
-      test(m"a file which holds an image of another type is refused as it is opened"):
-        unsafely(capture[Ratel.Error](file.open[Ratel of Troupe]()(ratel.root.as[Troupe])).reason)
-      . assert(_ == Ratel.Error.Reason.Mismatched)
-
-      test(m"an observer refuses an image of another type"):
-        unsafely:
-          file.observe[Ratel of Troupe]: observer =>
-            capture[Ratel.Error](observer.open()(ratel.root.as[Troupe])).reason
-      . assert(_ == Ratel.Error.Reason.Mismatched)
-
-      test(m"an image of the declared type on the heap is opened as its type"):
-        playbill.ratel.open[Ratel of Playbill]()(ratel.root.as[Playbill])
-      . assert(_ == playbill)
-
-      test(m"an observer's block sees a new edition once the observer refreshes"):
-        unsafely:
-          file.observe[Ratel of Playbill]: observer =>
-            def feste: Boolean = observer.open()((ratel.root / t"part").find(t"Feste").present)
-            val before = feste
-            file.claim[Ratel of Playbill](_.publish(recast.ratel))
-            val stale = feste
-            val moved = observer.refresh()
-            (before, stale, moved, feste)
-      . assert(_ == (false, false, true, true))
-
-      test(m"a block which is open across a refresh keeps its edition"):
-        unsafely:
-          file.observe[Ratel of Playbill]: observer =>
-            observer.open():
-              val parts = ratel.root / t"part"
-              file.claim[Ratel of Playbill](_.publish(playbill.ratel))
-              observer.refresh()
-              parts.find(t"Feste").present
-      . assert(_ == true)
-
-      test(m"a publisher and an observer on another thread share the one declaration"):
-        val ready = java.util.concurrent.CountDownLatch(1)
-        val published = java.util.concurrent.CountDownLatch(1)
-        val seen = java.util.concurrent.atomic.AtomicReference[List[Text]](Nil)
-
-        val observing: Runnable = () =>
+        test(m"an observer opens the image in one block, and finds a record by its key"):
           unsafely:
             file.observe[Ratel of Playbill]: observer =>
-              ready.countDown()
-              published.await()
-              observer.refresh()
-              seen.set(observer.open()((ratel.root / t"part").sorted.map(_.text(t"name").or(t""))))
+              observer.open()((ratel.root / t"part").find(t"Viola").let(_.as[Part]))
+        . check(_ == Part(t"Viola", t"Twelfth Night"))
 
-        val reader = new Thread(observing)
+        test(m"an observer opens the image with flags, as a file is opened"):
+          unsafely(file.observe[Ratel of Playbill](_.open(Ratel.Flag.Verify)((ratel.root / t"part").size)))
+        . check(_ == 2L)
 
-        reader.start()
-        ready.await()
-        unsafely(file.claim[Ratel of Playbill](_.publish(recast.ratel)))
-        published.countDown()
-        reader.join()
-        seen.get
-      . assert(_ == List(t"Feste", t"Hamlet"))
+        test(m"an observer of any image opens it with no type declared"):
+          unsafely:
+            file.observe[Ratel]: observer =>
+              observer.open()((ratel.root / t"part").where(t"/play", t"Hamlet").size)
+        . check(_ == 1)
+
+        test(m"a file which holds an image of another type is refused as it is opened"):
+          unsafely(capture[Ratel.Error](file.open[Ratel of Troupe]()(ratel.root.as[Troupe])).reason)
+        . check(_ == Ratel.Error.Reason.Mismatched)
+
+        test(m"an observer refuses an image of another type"):
+          unsafely:
+            file.observe[Ratel of Troupe]: observer =>
+              capture[Ratel.Error](observer.open()(ratel.root.as[Troupe])).reason
+        . check(_ == Ratel.Error.Reason.Mismatched)
+
+        test(m"an image of the declared type on the heap is opened as its type"):
+          playbill.ratel.open[Ratel of Playbill]()(ratel.root.as[Playbill])
+        . check(_ == playbill)
+
+        test(m"an observer's block sees a new edition once the observer refreshes"):
+          unsafely:
+            file.observe[Ratel of Playbill]: observer =>
+              def feste: Boolean = observer.open()((ratel.root / t"part").find(t"Feste").present)
+              val before = feste
+              file.claim[Ratel of Playbill](_.publish(recast.ratel))
+              val stale = feste
+              val moved = observer.refresh()
+              (before, stale, moved, feste)
+        . check(_ == (false, false, true, true))
+
+        test(m"a block which is open across a refresh keeps its edition"):
+          unsafely:
+            file.observe[Ratel of Playbill]: observer =>
+              observer.open():
+                val parts = ratel.root / t"part"
+                file.claim[Ratel of Playbill](_.publish(playbill.ratel))
+                observer.refresh()
+                parts.find(t"Feste").present
+        . check(_ == true)
+
+        test(m"a publisher and an observer on another thread share the one declaration"):
+          val ready = java.util.concurrent.CountDownLatch(1)
+          val published = java.util.concurrent.CountDownLatch(1)
+          val seen = java.util.concurrent.atomic.AtomicReference[List[Text]](Nil)
+
+          val observing: Runnable = () =>
+            unsafely:
+              file.observe[Ratel of Playbill]: observer =>
+                ready.countDown()
+                published.await()
+                observer.refresh()
+                seen.set(observer.open()((ratel.root / t"part").sorted.map(_.text(t"name").or(t""))))
+
+          val reader = new Thread(observing)
+
+          reader.start()
+          ready.await()
+          unsafely(file.claim[Ratel of Playbill](_.publish(recast.ratel)))
+          published.countDown()
+          reader.join()
+          seen.get
+        . check(_ == List(t"Feste", t"Hamlet"))
 
     suite(m"Changing an image in place (§10)"):
       import Ratel.Error.Reason
@@ -1432,39 +1440,43 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
       . assert(_ == ())
 
     suite(m"Owning a file which is changed in place"):
-      val directory: Text = Uuid().show
-      val root: Path on Linux = unsafely((% / "tmp" / directory).on[Linux])
-      unsafely(root.create[Directory]())
-      val work: Path on Linux = unsafely((% / "tmp" / directory / "playbill.work").on[Linux])
-      val file: Path on Linux = unsafely((% / "tmp" / directory / "playbill.ratel").on[Linux])
-      val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
 
-      test(m"a working file is begun from an image, and changed where it lies"):
-        unsafely:
-          work.claim[Ratel of Playbill](_.publish(playbill.ratel))
+      // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+      // scratch directory, and `check` always runs inline, within it.
+      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Linux = handle.stem
+        val work: Path on Linux = directory / "playbill.work"
+        val file: Path on Linux = directory / "playbill.ratel"
+        val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
 
-          work.open[Ratel of Playbill](Read & Write):
-            (ratel.root / t"part").insert(Part(t"Feste", t"Twelfth Night"))
-            (ratel.root / t"part").find(t"Hamlet").let(_.delete())
+        test(m"a working file is begun from an image, and changed where it lies"):
+          unsafely:
+            work.claim[Ratel of Playbill](_.publish(playbill.ratel))
 
-          work.open[Ratel of Playbill](Ratel.Flag.Verify)(ratel.root.as[Playbill])
-      . assert(_ == Playbill(List(Part(t"Viola", t"Twelfth Night"), Part(t"Feste", t"Twelfth Night"))))
+            work.open[Ratel of Playbill](Read & Write):
+              (ratel.root / t"part").insert(Part(t"Feste", t"Twelfth Night"))
+              (ratel.root / t"part").find(t"Hamlet").let(_.delete())
 
-      test(m"what was changed is sealed, and published for observers of the name"):
-        unsafely:
-          work.open[Ratel of Playbill]()(file.claim[Ratel of Playbill](_.publish(ratel.sealAs[Playbill])))
+            work.open[Ratel of Playbill](Ratel.Flag.Verify)(ratel.root.as[Playbill])
+        . check(_ == Playbill(List(Part(t"Viola", t"Twelfth Night"), Part(t"Feste", t"Twelfth Night"))))
 
-          file.observe[Ratel of Playbill]: observer =>
-            observer.open(Ratel.Flag.Verify):
-              (ratel.state, (ratel.root / t"part").where(t"/play", t"Twelfth Night").size)
-      . assert(_ == (Ratel.State.Sealed, 2))
+        test(m"what was changed is sealed, and published for observers of the name"):
+          unsafely:
+            work.open[Ratel of Playbill]()(file.claim[Ratel of Playbill](_.publish(ratel.sealAs[Playbill])))
 
-      test(m"a file which is open for writing is not opened for writing again"):
-        unsafely:
-          work.open[Ratel](Read & Write):
-            capture[Io.Error](work.open[Ratel](Read & Write)(())).reason
-      . assert(_ == Io.Error.Reason.Busy)
+            file.observe[Ratel of Playbill]: observer =>
+              observer.open(Ratel.Flag.Verify):
+                (ratel.state, (ratel.root / t"part").where(t"/play", t"Twelfth Night").size)
+        . check(_ == (Ratel.State.Sealed, 2))
 
-      test(m"the working file is left clean when its scope ends"):
-        unsafely(work.open[Ratel]()(ratel.state))
-      . assert(_ == Ratel.State.Unsealed)
+        test(m"a file which is open for writing is not opened for writing again"):
+          unsafely:
+            work.open[Ratel](Read & Write):
+              capture[Io.Error](work.open[Ratel](Read & Write)(())).reason
+        . check(_ == Io.Error.Reason.Busy)
+
+        test(m"the working file is left clean when its scope ends"):
+          unsafely(work.open[Ratel]()(ratel.state))
+        . check(_ == Ratel.State.Unsealed)

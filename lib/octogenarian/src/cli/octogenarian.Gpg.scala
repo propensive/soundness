@@ -34,12 +34,15 @@ package octogenarian
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import guillotine.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
@@ -68,10 +71,28 @@ object Gpg:
     val output = job.await()
     (output, job.status())
 
-  private def temporary(content: Text): java.nio.file.Path =
-    val file = java.nio.file.Files.createTempFile("octogenarian-", ".asc").nn
-    java.nio.file.Files.writeString(file, content.s)
-    file
+  // Writes `content` to a scratch file which only its owner may read, and lends its path to
+  // `block`, deleting the file when `block` ends, however it ends. It lives in the JVM's own
+  // temporary directory, `java.io.tmpdir`.
+  private def temporary[result](content: Text)(block: Path on Linux => result)
+    ( using tactic: Tactic[Git.Error] )
+  :   result =
+
+    import filesystemBackends.javaBaseFilesystem
+    import hieroglyph.codepages.utf8Codepage
+    import temporaryDirectories.javaBaseTemporaryDirectory
+
+    given io: Tactic[Io.Error] = tactic.contramap: error =>
+      Git.Error(Reason.SigningFailed(error.message.text))(using Diagnostics.omit)
+
+    given truncation: Tactic[Truncation.Error] = tactic.contramap: error =>
+      Git.Error(Reason.SigningFailed(error.message.text))(using Diagnostics.omit)
+
+    given umask: Umask = Umask(0x3f) // 077: a file of mode 0600, which only its owner may read
+
+    temporaryDirectory[Path on Linux].open[Scratch.File](Read & Write): file ?=>
+      file.write(Chain(content.in[Data]))
+      block(file.path)
 
   // Signs with the default key, or with `key` (a key id, fingerprint or user id).
   class Signer(key: Optional[Text] = Unset)
@@ -95,11 +116,9 @@ object Gpg:
   extends Git.Verifier:
 
     def verify(payload: Data, signature: Text)(using Tactic[Git.Error]): Git.Verification =
-      val file = temporary(signature)
-
-      try
+      temporary(signature): file =>
         val (output, status) =
-          run(List(t"--batch", t"--status-fd=1", t"--verify", file.toString.tt, t"-"), payload)
+          run(List(t"--batch", t"--status-fd=1", t"--verify", file.encode, t"-"), payload)
 
         val lines = output.cut(t"\n").map(_.trim).filter(_.starts(t"[GNUPG:] ")).map(_.skip(9))
 
@@ -115,4 +134,3 @@ object Gpg:
             lines.filter(_.starts(t"BADSIG ")).head match
               case line: Text => Git.Verification.Bad(line)
               case _          => Git.Verification.Unknown(lines.head.or(output.trim))
-      finally java.nio.file.Files.deleteIfExists(file)

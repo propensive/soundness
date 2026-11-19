@@ -54,6 +54,14 @@ rule partial
   invokes head
   invokes apply
 
+# Temporary storage made through the JDK rather than as a galilei `Scratch` loan, which `make
+# check-scratch` forbids outside its two exceptions.
+rule scratch
+  invokes createTempFile
+  invokes createTempDirectory
+  invokes deleteOnExit
+  message  Make temporary files and directories as `Scratch` loans, which delete them when the scope ends
+
 # The model `flare assess` consults, and where its credential comes from: the Pyrocosm cascade
 # (`credential anthropic` in ~/.config/pyrocosm/credentials.tel, or ANTHROPIC_API_KEY).
 model haiku

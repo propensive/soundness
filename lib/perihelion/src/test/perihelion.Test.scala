@@ -59,20 +59,27 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
     // (used with `verify = false`, since the cert carries no SAN). Mirrors the scintillate
     // TLS test.
     def tlsContexts(): (javax.net.ssl.SSLContext, javax.net.ssl.SSLContext) =
-      val dir = java.nio.file.Files.createTempDirectory("perihelion-tls").nn
-      val path = dir.resolve("test.p12").nn.toString.nn
-
-      val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
-          "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
-          "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
-
-      keytool.redirectErrorStream(true)
-      keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
-      keytool.start().nn.waitFor()
+      import galilei.Linux.pathOnLinux, systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
 
       val password = "changeit".toCharArray.nn
-      val keystore = java.security.KeyStore.getInstance("PKCS12").nn
-      keystore.load(java.io.FileInputStream(path), password)
+
+      // Read into memory before the scratch directory holding the keystore is deleted.
+      val keystore = temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+        val path = (scratch.stem / "test.p12").encode.s
+
+        val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
+            "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
+            "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
+
+        keytool.redirectErrorStream(true)
+        keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
+        keytool.start().nn.waitFor()
+
+        val store = java.security.KeyStore.getInstance("PKCS12").nn
+        store.load(java.io.FileInputStream(path), password)
+        store
+
       val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
       keyManagers.init(keystore, password)
       val serverContext = javax.net.ssl.SSLContext.getInstance("TLS").nn

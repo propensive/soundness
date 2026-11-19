@@ -54,37 +54,35 @@ object Tests extends Suite("watch", m"Surveillance tests") uses surveillance.Wat
     . check(_ == Watch.Error.Reason.Nonexistent)
 
     test(m"Watching a path whose parent is a regular file raises a Watch.Error"):
-      val file = temporaryDirectory[Path on Local]/Uuid().show
-      file.create[File]()
-      capture[Watch.Error]((file/Uuid().show).open[Watch]() { () }).reason
+      temporaryDirectory[Path on Local].open[Scratch.File](Read & Write): file ?=>
+        capture[Watch.Error]((file.path/Uuid().show).open[Watch]() { () }).reason
 
     . check(_ == Watch.Error.Reason.NotDirectory)
 
     test(m"A scoped watch on an untouched directory yields a terminating, empty stream"):
-      val directory = temporaryDirectory[Path on Local]/Uuid().show
-      directory.create[Directory]()
-
-      // Before `unregister` stopped the spool this `to(List)` would block forever. The scoped
-      // form cannot express a post-scope read (the handle is confined), so this exercises the
-      // `Watch` layer directly.
-      val watchSet = Watch(List(directory))
-      watchSet.unregister()
-      watchSet.stream.to[List]
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+        // Before `unregister` stopped the spool this `to(List)` would block forever. The scoped
+        // form cannot express a post-scope read (the handle is confined), so this exercises the
+        // `Watch` layer directly.
+        val watchSet = Watch(List(handle.stem))
+        watchSet.unregister()
+        watchSet.stream.to[List]
 
     . check(_ == Nil)
 
     test(m"The polling watcher reports a newly-created file"):
       given Watcher = watchers.polling(0.05*Second)
-      val directory = temporaryDirectory[Path on Local]/Uuid().show
-      directory.create[Directory]()
       val leaf: Text = Uuid().show
 
-      directory.open[Watch](): watcher ?=>
-        (directory/leaf).create[File]()
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+        val directory = handle.stem
 
-        watcher.stream.head match
-          case NewFile(_, file) => file == leaf
-          case _                => false
+        directory.open[Watch](): watcher ?=>
+          (directory/leaf).create[File]()
+
+          watcher.stream.head match
+            case NewFile(_, file) => file == leaf
+            case _                => false
 
     . assert(_ == true)
 
@@ -94,17 +92,19 @@ object Tests extends Suite("watch", m"Surveillance tests") uses surveillance.Wat
 
     . assert(_ == List(t"/x/a".as[Path on Local], t"/x/b".as[Path on Local]))
 
-    val burstDirectory = temporaryDirectory[Path on Local]/Uuid().show
-    burstDirectory.create[Directory]()
+    // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
+    // scratch directory, and `check` always runs inline, within it.
+    temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+      val burstDirectory = handle.stem
 
-    val leaves: List[Path on Local] =
-      List(burstDirectory/Uuid().show, burstDirectory/Uuid().show, burstDirectory/Uuid().show)
+      val leaves: List[Path on Local] =
+        List(burstDirectory/Uuid().show, burstDirectory/Uuid().show, burstDirectory/Uuid().show)
 
-    test(m"A burst of creations coalesces into one batch"):
-      given Watcher = watchers.polling(0.05*Second)
+      test(m"A burst of creations coalesces into one batch"):
+        given Watcher = watchers.polling(0.05*Second)
 
-      burstDirectory.open[Watch](): watcher ?=>
-        leaves.each(_.create[File]())
-        watcher.batches(0.5*Second).head.let(_.paths[Path on Local].to[Set])
+        burstDirectory.open[Watch](): watcher ?=>
+          leaves.each(_.create[File]())
+          watcher.batches(0.5*Second).head.let(_.paths[Path on Local].to[Set])
 
-    . assert(_ == leaves.to[Set])
+      . check(_ == leaves.to[Set])

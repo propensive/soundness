@@ -244,48 +244,56 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
 
       suite(m"Unix domain socket server and client"):
         test(m"A server receives the bytes a client transmits"):
-          val path = t"/tmp/coaxial-request-response.sock"
-          java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
-          val socket = Uds(path)
-          val received: Promise[Text] = Promise()
+          import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
 
-          val handler = (connection: Duplex) =>
-            val request = connection.source.memoize
-            received.fulfill(request.utf8)
-            request
+          // The socket is made in a scratch directory beneath `/tmp`, deleted when the test ends:
+          // not beneath `java.io.tmpdir`, which on macOS is too long a path for a socket.
+          (% / "tmp").on[Linux].open[Scratch](Read & Write): scratch ?=>
+            val path = t"${scratch.stem.encode}/request-response.sock"
+            val socket = Uds(path)
+            val received: Promise[Text] = Promise()
 
-          socket.listen[Data](handler):
+            val handler = (connection: Duplex) =>
+              val request = connection.source.memoize
+              received.fulfill(request.utf8)
+              request
 
-            // The ascription selects the `Serviceable` overload of `transmit`; the
-            // client half-closes after sending, so the server reads to EOF.
-            val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(t"request")
-            received.await()
+            socket.listen[Data](handler):
+
+              // The ascription selects the `Serviceable` overload of `transmit`; the
+              // client half-closes after sending, so the server reads to EOF.
+              val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(t"request")
+              received.await()
         . assert(_ == t"request")
 
       suite(m"Duplex connections"):
         test(m"A Duplex sends and receives over a domain socket"):
-          val path = t"/tmp/coaxial-duplex.sock"
-          java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
-          val socket = Uds(path)
+          import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
 
-          // One refill window is the client's single message (no half-close on a duplex).
-          val handler = (connection: Duplex) =>
-            val source = connection.source
-            val count = source.refill(zephyrine.Credit(64)).or(0)
-            source.lend { region => range => region.materialize(range.capped(count)) }
+          // The socket is made in a scratch directory beneath `/tmp`, deleted when the test ends:
+          // not beneath `java.io.tmpdir`, which on macOS is too long a path for a socket.
+          (% / "tmp").on[Linux].open[Scratch](Read & Write): scratch ?=>
+            val path = t"${scratch.stem.encode}/duplex.sock"
+            val socket = Uds(path)
 
-          socket.listen[Data](handler):
-
-            socket.duplex: duplex =>
-              duplex.send(zephyrine.Stream(ascii(t"ping")))
-
-              // One refill window is the server's single reply.
-              val source = duplex.source
+            // One refill window is the client's single message (no half-close on a duplex).
+            val handler = (connection: Duplex) =>
+              val source = connection.source
               val count = source.refill(zephyrine.Credit(64)).or(0)
-              val data =
-                source.lend { region => range => region.materialize(range.capped(count)) }
+              source.lend { region => range => region.materialize(range.capped(count)) }
 
-              bytes(data)
+            socket.listen[Data](handler):
+
+              socket.duplex: duplex =>
+                duplex.send(zephyrine.Stream(ascii(t"ping")))
+
+                // One refill window is the server's single reply.
+                val source = duplex.source
+                val count = source.refill(zephyrine.Credit(64)).or(0)
+                val data =
+                  source.lend { region => range => region.materialize(range.capped(count)) }
+
+                bytes(data)
         . assert(_ == bytes(ascii(t"ping")))
 
     supervise:
@@ -297,29 +305,32 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         val password: Text = t"secret"
 
         def identity(name: Text): Data =
-          val file = java.nio.file.Files.createTempFile("coaxial-", ".p12").nn
-          java.nio.file.Files.delete(file)
-          val keytool = java.lang.System.getProperty("java.home").nn+"/bin/keytool"
+          import galilei.Linux.pathOnLinux, systems.javaBaseSystem, strategies.throwUnsafely
+          import temporaryDirectories.systemTemporaryDirectory
+          import filesystemBackends.javaBaseFilesystem
 
-          val process =
-            ProcessBuilder
-              ( keytool, "-genkeypair", "-alias", "peer", "-keyalg", "EC", "-groupname",
-                "secp256r1", "-dname", s"CN=${name.s}", "-validity", "1", "-storetype",
-                "PKCS12", "-keystore", file.toString, "-storepass", password.s, "-keypass",
-                password.s )
-            . directory(file.getParent.nn.toFile) // not the daemon's cwd, which may be gone
-            . nn.redirectErrorStream(true).nn.start().nn
+          // Read into memory before the scratch directory holding the keystore is deleted.
+          temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+            val file = java.nio.file.Path.of((scratch.stem / "identity.p12").encode.s).nn
+            val keytool = java.lang.System.getProperty("java.home").nn+"/bin/keytool"
 
-          val output = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8")
-          process.waitFor()
+            val process =
+              ProcessBuilder
+                ( keytool, "-genkeypair", "-alias", "peer", "-keyalg", "EC", "-groupname",
+                  "secp256r1", "-dname", s"CN=${name.s}", "-validity", "1", "-storetype",
+                  "PKCS12", "-keystore", file.toString, "-storepass", password.s, "-keypass",
+                  password.s )
+              . directory(file.getParent.nn.toFile) // not the daemon's cwd, which may be gone
+              . nn.redirectErrorStream(true).nn.start().nn
 
-          // Reported here rather than as a missing file: `keytool`'s complaint is the diagnosis.
-          if !java.nio.file.Files.exists(file)
-          then panic(m"keytool produced no keystore for $name: ${output.tt}")
+            val output = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8")
+            process.waitFor()
 
-          val bytes = Array.unsafeFrozen(java.nio.file.Files.readAllBytes(file).nn)
-          java.nio.file.Files.delete(file)
-          bytes
+            // Reported here rather than as a missing file: `keytool`'s complaint is the diagnosis.
+            if !java.nio.file.Files.exists(file)
+            then panic(m"keytool produced no keystore for $name: ${output.tt}")
+
+            Array.unsafeFrozen(java.nio.file.Files.readAllBytes(file).nn)
 
         val keystore: Data = identity(t"coaxial-test")
         val certificate: Data = Tls.certificate(keystore, password).or(Data())

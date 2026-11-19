@@ -143,16 +143,21 @@ extends Rig:
 
           recording.stop()
 
+          // The recording is read back from a file, deleted however the reading ends. This body
+          // runs in a JVM of its own, where galilei's `Scratch` loans are not available.
           val file = java.nio.file.Files.createTempFile("profile", ".jfr").nn
-          recording.dump(file)
-          recording.close()
+
+          val events =
+            try
+              recording.dump(file)
+              recording.close()
+              jdk.jfr.consumer.RecordingFile.readAllEvents(file).nn
+            finally java.nio.file.Files.deleteIfExists(file)
 
           // Aggregate each sample's top frame — the method the thread was actually
           // executing — keyed by class and method name; or, inclusively, every distinct
           // method on its stack.
           val counts = new java.util.HashMap[String, Long]()
-          val events = jdk.jfr.consumer.RecordingFile.readAllEvents(file).nn
-          java.nio.file.Files.deleteIfExists(file)
           var total = 0L
           var i = 0
 

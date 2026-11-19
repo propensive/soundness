@@ -214,11 +214,16 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
 
                 case Argument("daemon-umask") :: Nil =>
                   execute:
-                    val directory = jnf.Files.createTempDirectory("umask").nn
-                    val file = jnf.Files.createFile(directory.resolve("file")).nn
-                    val mode = jnf.Files.getPosixFilePermissions(file).nn
-                    jnf.Files.delete(file)
-                    jnf.Files.delete(directory)
+                    import filesystemBackends.javaBaseFilesystem
+
+                    // Created by the JDK, not galilei, so that only the process's mask applies.
+                    val mode =
+                      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+                        // `jnf` rather than serpentine's `/`, which the staging compiler of
+                        // this daemon's body cannot resolve.
+                        val path = jnf.Path.of(scratch.stem.encode.s, "file").nn
+                        jnf.Files.getPosixFilePermissions(jnf.Files.createFile(path)).nn
+
                     Out.print(jnf.attribute.PosixFilePermissions.toString(mode).nn.tt) yet Exit.Ok
 
                 case Argument("pwd") :: Nil =>
