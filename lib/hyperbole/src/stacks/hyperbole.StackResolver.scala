@@ -55,6 +55,7 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
+import systems.javaBaseSystem
 
 object StackResolver:
   // The compiled name cannot say which definition a frame came from, but it can say what kind of

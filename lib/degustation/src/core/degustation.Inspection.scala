@@ -49,6 +49,7 @@ import vacuous.*
 import zeppelin.*
 
 import Inspection.Error.Reason
+import ambience.systems.javaBaseSystem
 
 // The filesystem face of `Degustation.atomize`: atomizes a set of `.tasty` files on disk against
 // a dependency classpath of directories and jars. The classpath must carry everything the files

@@ -53,6 +53,7 @@ import turbulence.*
 import vacuous.*
 import errorDiagnostics.stackTracesDiagnostics
 import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
