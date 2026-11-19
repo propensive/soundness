@@ -903,7 +903,7 @@ object soundness extends Fork:
     perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core, orthodoxy.server,
+    orthodoxy.core, orthodoxy.server, sigillate.core,
     jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, stratiform.duplex, obligatory.core, obligatory.json,
     sibylline.core,
@@ -3264,6 +3264,17 @@ object sibylline extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
+object sigillate extends Library:
+  // JOSE (RFC 7515–7519): JWS, JWE, JWK and JWT over enigmatic's ciphers and keys, with jacinta
+  // for the JSON they are made of and aviation for a token's validity period.
+  object core extends Component(enigmatic.core, jacinta.core, aviation.core):
+    override def scalaJs = false // transitively JS-incapable, through `enigmatic` (no JS crypto provider)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, gossamer.codec):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object spectacular extends Library:
   // `hypotenuse.core` is a dependency so that the `Inspectable` instances for the sized numeric
   // types (`U8`…`U64`, `S8`…`S64`, `B8`…`B64`, `F32`/`F64`) can live in the `Inspectable`
@@ -3941,7 +3952,7 @@ val allLibraries: Seq[Library] = Seq(
   prescience,
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
-  scintillate, sedentary, serpentine, sibylline, spectacular, stenography, stratiform, superlunary,
+  scintillate, sedentary, serpentine, sibylline, sigillate, spectacular, stenography, stratiform, superlunary,
   surveillance, susurration, symbolism, syndesis, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
   typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,

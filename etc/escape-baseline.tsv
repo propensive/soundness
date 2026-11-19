@@ -171,7 +171,7 @@ lib/enigmatic/src/core/enigmatic.Poly1305.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	
 lib/enigmatic/src/core/enigmatic.PrivateKey.scala	0	0	0	0	3	0	0	0	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/core/enigmatic.Rijndael.scala	0	0	0	0	0	6	0	0	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/core/enigmatic.SoundnessBlockCipher.scala	0	0	0	0	0	6	0	0	0	0	0	0	0	0	0	0	0
-lib/enigmatic/src/core/enigmatic.SymmetricKey.scala	0	0	0	0	1	0	0	0	0	0	1	0	1	0	0	0	0
+lib/enigmatic/src/core/enigmatic.SymmetricKey.scala	0	0	0	0	2	0	0	0	0	0	1	0	1	0	0	0	0
 lib/enigmatic/src/core/enigmatic_uncloak.scala	0	0	0	0	9	1	0	0	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/cose/enigmatic.Cose.scala	0	0	0	0	3	0	0	0	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/test/enigmatic_test.scala	0	0	0	0	7	7	0	0	0	0	0	0	0	0	0	0	0
@@ -501,6 +501,7 @@ lib/sibylline/src/core/sibylline.Llm.scala	0	1	1	0	0	0	0	0	0	0	1	0	0	0	1	0	0
 lib/sibylline/src/core/sibylline.OpenAI.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/sibylline/src/test/sibylline.AnthropicTests.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/sibylline/src/test/sibylline_test.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0	0
+lib/sigillate/src/core/sigillate.Jwk.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0
 lib/spectacular/src/core/spectacular.Inspectable.scala	12	0	0	0	0	0	0	0	0	0	3	1	0	0	1	0	0
 lib/spectacular/src/test/spectacular_test.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/stenography/src/core/stenography.Bindings.scala	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0
