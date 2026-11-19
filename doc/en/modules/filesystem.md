@@ -49,7 +49,7 @@ import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
@@ -60,7 +60,7 @@ import textSanitizers.strictSanitizer
 column  Imports
 column  Decide
 row  `filesystemBackends.javaBaseFilesystem`  which implementation touches the disk: here, `java.nio`
-row  `pathInterfaces.pathOnLinux`  the type of path which the standard directories are given as
+row  `pathInterfaces.pathOnLocal`  the type of path which the standard directories are given as
 row  the five from `filesystemOptions`  the answers to the questions of policy, described under [Copying, moving and deleting](#copying-moving-and-deleting)
 row  `charsets`, `codepages`, `textSanitizers`  how bytes become text, and text becomes bytes; [Characters](characters.md) describes them
 row  `environments`, `systems`, `temporaryDirectories`  where the [environment](environment.md), system properties and temporary directory come from

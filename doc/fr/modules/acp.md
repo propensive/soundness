@@ -60,6 +60,7 @@
 feature experimental.captureChecking
 ##
 import soundness.*
+import systems.javaBaseSystem
 import environments.javaBaseEnvironment
 
 import errorDiagnostics.stackTracesDiagnostics

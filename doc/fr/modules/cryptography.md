@@ -620,7 +620,8 @@ Out.println(leaf.verify(privateKey.public).inspect)
 + `keystore` est le magasin ouvert :
 
 ```scala
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
 val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"

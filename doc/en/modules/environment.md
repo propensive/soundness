@@ -155,7 +155,7 @@ not. `Xdg` gives each of them, and the search paths for data and configuration:
 ```scala fuel
 typecheck
 ##
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 
 val config = Xdg.configHome[Path on Local]
 val cache = Xdg.cacheHome[Path on Local]

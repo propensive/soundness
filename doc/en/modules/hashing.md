@@ -171,7 +171,8 @@ typecheck
 ##
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
 val directory = temporaryDirectory[Path on Local] / "hashing"

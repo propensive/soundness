@@ -242,7 +242,7 @@ val separator: Char = System.properties.file.separator()
 ```scala fuel
 typecheck
 ##
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 
 val config = Xdg.configHome[Path on Local]
 val cache = Xdg.cacheHome[Path on Local]

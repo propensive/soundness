@@ -244,7 +244,8 @@ eventually blocks. A detached process cannot. Its environment is the
 ```scala fuel
 typecheck
 ##
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import filesystemBackends.javaBaseFilesystem
 
 val directory: Path on Local = (% / "var" / "log").on[Local]

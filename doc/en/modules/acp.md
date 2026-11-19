@@ -33,6 +33,7 @@ writer tasks, an error [strategy], a working directory for the agent, and somewh
 feature experimental.captureChecking
 ##
 import soundness.*
+import systems.javaBaseSystem
 import environments.javaBaseEnvironment
 
 import errorDiagnostics.stackTracesDiagnostics

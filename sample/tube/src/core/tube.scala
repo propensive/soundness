@@ -154,7 +154,7 @@ object Data:
           import filesystemOptions.dereferenceSymlinks
           import filesystemOptions.createNonexistent.enabled
           import filesystemOptions.createNonexistentParents
-          val file: Path on Local = Xdg.cacheHome[Path on Local]/"tube.csv"
+          val file: Path on Linux = Xdg.cacheHome[Path on Linux]/"tube.csv"
 
           val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
             ZipStream(sourceUrl.fetch()).extract(% / "Stations.csv").stream[Bytes].tap: stream =>

@@ -451,7 +451,8 @@ through the scoped `Cleartext` capability, and the character array which the pla
 is zeroed once the store is loaded. Inside the scope, `keystore` is the open store:
 
 ```scala
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
 val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"

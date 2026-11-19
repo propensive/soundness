@@ -72,7 +72,8 @@ stream into the file's intake:
 typecheck
 ##
 import filesystemBackends.javaBaseFilesystem
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
 val archive = temporaryDirectory[Path on Local] / "compression" / Uuid().show / "fox.txt.gz"

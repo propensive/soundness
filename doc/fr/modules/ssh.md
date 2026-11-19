@@ -34,6 +34,7 @@
 
 ```scala
 import soundness.*
+import systems.javaBaseSystem
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import providers.javaBaseProvider
@@ -250,7 +251,7 @@ endpoint.session: ssh ?=>
 typecheck
 ##
 import gitBackends.soundnessGit, gitTransports.soundnessSsh
-import pathInterfaces.pathOnLinux, temporaryDirectories.javaBaseTemporaryDirectory
+import pathInterfaces.pathOnLocal, temporaryDirectories.javaBaseTemporaryDirectory
 
 given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))

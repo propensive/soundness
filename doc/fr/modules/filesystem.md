@@ -80,7 +80,7 @@ import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
@@ -91,7 +91,7 @@ import textSanitizers.strictSanitizer
 - column  Imports
 - column  Decide
 - row  `filesystemBackends.javaBaseFilesystem`  which implementation touches the disk: here, `java.nio`
-- row  `pathInterfaces.pathOnLinux`  the type of path which the standard directories are given as
+- row  `pathInterfaces.pathOnLocal`  the type of path which the standard directories are given as
 - row  the five from `filesystemOptions`  the answers to the questions of policy, described under [Copying, moving and deleting](#copying-moving-and-deleting)
 - row  `charsets`, `codepages`, `textSanitizers`  how bytes become text, and text becomes bytes; [Characters](characters.md) describes them
 - row  `environments`, `systems`, `temporaryDirectories`  where the [environment](environment.md), system properties and temporary directory come from
@@ -100,7 +100,7 @@ import textSanitizers.strictSanitizer
 + column  Imports
 + column  Décident
 + row  `filesystemBackends.javaBaseFilesystem`  quelle implémentation touche le disque : ici, `java.nio`
-+ row  `pathInterfaces.pathOnLinux`  le type de chemin sous lequel sont donnés les répertoires standard
++ row  `pathInterfaces.pathOnLocal`  le type de chemin sous lequel sont donnés les répertoires standard
 + row  les cinq de `filesystemOptions`  les réponses aux questions de politique, décrites sous [Copier, déplacer et supprimer](#copying-moving-and-deleting)
 + row  `charsets`, `codepages`, `textSanitizers`  comment les octets deviennent du texte, et le texte des octets ; [Caractères](characters.md) les décrit
 + row  `environments`, `systems`, `temporaryDirectories`  d'où viennent l'[environnement](environment.md), les propriétés système et le répertoire temporaire

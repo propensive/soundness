@@ -731,7 +731,7 @@ import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
