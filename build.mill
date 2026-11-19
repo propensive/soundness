@@ -903,7 +903,8 @@ object soundness extends Fork:
     perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core, orthodoxy.server,
+    orthodoxy.core, orthodoxy.server, orthodoxy.oidc, chatelaine.core, chatelaine.server,
+    sigillate.core, sigillate.http, sigillate.server,
     jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, stratiform.duplex, obligatory.core, obligatory.json,
     sibylline.core,
@@ -1633,6 +1634,22 @@ object charisma extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
+object chatelaine extends Library:
+  // WebAuthn's relying party: the two ceremonies' options and the checking of their answers,
+  // over enigmatic's COSE keys and X.509 certificates and jacinta's JSON
+  object core extends Component(enigmatic.cose, enigmatic.x509, jacinta.core):
+    override def scalaJs = false // transitively JS-incapable, through `enigmatic` (no JS crypto provider)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The challenge each session's ceremony was sent, for a web application
+  object server extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JS-incapable, through `core`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, server, gossamer.codec):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2796,7 +2813,13 @@ object orthodoxy extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, telekinesis.jvm, eucalyptus.core):
+  // OpenID Connect over the OAuth 2 client: provider discovery, and the ID token verified
+  // with sigillate. Its own component, so that a plain OAuth client carries no JOSE.
+  object oidc extends Component(core, sigillate.core):
+    override def scalaJs = false // transitively JVM-only (crypto)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, oidc, telekinesis.jvm, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3261,6 +3284,27 @@ object sibylline extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, ambience.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
+object sigillate extends Library:
+  // JOSE (RFC 7515–7519): JWS, JWE, JWK and JWT over enigmatic's ciphers and keys, with jacinta
+  // for the JSON they are made of and aviation for a token's validity period.
+  object core extends Component(enigmatic.core, jacinta.core, aviation.core):
+    override def scalaJs = false // transitively JS-incapable, through `enigmatic` (no JS crypto provider)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // A key set fetched from where its owner publishes it
+  object http extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JS-incapable, through `core`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Bearer-token authentication as scintillate middleware
+  object server extends Component(core, scintillate.server):
+    override def scalaJs = false // transitively JVM-only (networking)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, http, server, gossamer.codec, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3925,7 +3969,7 @@ val allLibraries: Seq[Library] = Seq(
   breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cartouche, cataclysm, clavichord,
-  charisma, chiaroscuro, coaxial, concordance, contextual, contingency, corpuscular,
+  charisma, chatelaine, chiaroscuro, coaxial, concordance, contextual, contingency, corpuscular,
   cosmopolite,
   degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, espionage, ethereal, eucalyptus, exegesis,
@@ -3941,7 +3985,7 @@ val allLibraries: Seq[Library] = Seq(
   prescience,
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
-  scintillate, sedentary, serpentine, sibylline, spectacular, stenography, stratiform, superlunary,
+  scintillate, sedentary, serpentine, sibylline, sigillate, spectacular, stenography, stratiform, superlunary,
   surveillance, susurration, symbolism, syndesis, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
   typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,

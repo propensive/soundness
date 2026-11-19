@@ -188,6 +188,24 @@ extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
       algorithm.unseal(Array.unsafeFrozen(bytes), nonce, associated, ciphertext).or:
         abort(Crypto.Error(Crypto.Error.Reason.BadTag))
 
+// Key wrapping, like sealing, needs no `Permit`, and — having no nonce — nothing from the caller
+// but the material: `unwrap` fails with `BadWrap` when the integrity check built into the
+// transformation does not pass. The unwrapped material is a frozen `Data`, to be adopted as a
+// `SymmetricKey` (which copies it into a cloak).
+extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
+  def wrap(material: Data)(using algorithm: cipher & Wrapping): Data =
+    key.secret.uncloak: bytes => algorithm.wrap(Array.unsafeFrozen(bytes), material)
+
+  def unwrap(wrapped: Data)
+    ( using algorithm:   cipher & Wrapping,
+            diagnostics: Diagnostics,
+            tactic:      Tactic[Crypto.Error] )
+  :   Data =
+
+    key.secret.uncloak: bytes =>
+      algorithm.unwrap(Array.unsafeFrozen(bytes), wrapped).or:
+        abort(Crypto.Error(Crypto.Error.Reason.BadWrap))
+
 // A keystream is applied through `xor`, which encrypts and decrypts alike; the counter lets a
 // protocol start partway through the stream, as OpenSSH does to keep block zero for the Poly1305
 // key.

@@ -44,22 +44,13 @@ object Rsa:
     Rsa(crypto.rsa, crypto.rsaSignature(digest.token))
 
   given keyAlgorithm: [bits <: 1024 | 2048 | 3072 | 4096: ValueOf] => Rsa[bits] is KeyAlgorithm =
-    new KeyAlgorithm:
-      type Self = Rsa[bits]
-      def name: Text = t"RSA-${valueOf[bits]}"
-      def sshName: Optional[Text] = t"ssh-rsa"
-
-      def algorithm: Optional[Asn1] =
-        Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.Rsa), Asn1.Null))
-
-      def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
-        KeyAlgorithm.identifier(algorithm).lay(false): (arcs, _) =>
-          arcs == KeyAlgorithm.Rsa &&
-            KeyAlgorithm.rsaModulus(material).lay(false)(_.bitLength == valueOf[bits])
+    KeyAlgorithm.rsa[Rsa[bits]](valueOf[bits])
 
 // RSA both encrypts and signs. The two are distinct primitives sharing one key pair: `encrypt`
-// and `decrypt` use raw RSA, while `sign` and `verify` use RSASSA-PKCS1-v1_5 over the digest
-// named by the ambient `Signature.Digest` (SHA-256 unless overridden).
+// and `decrypt` use RSAES-PKCS1-v1_5 — the padding a provider's plain `RSA` transformation
+// means, for which `RsaOaep` is the modern replacement — while `sign` and `verify` use
+// RSASSA-PKCS1-v1_5 over the digest named by the ambient `Signature.Digest` (SHA-256 unless
+// overridden); `RsaPss` is the randomized alternative.
 class Rsa[bits <: 1024 | 2048 | 3072 | 4096: ValueOf]
   ( cipher: Crypto.PublicKeyCipher, scheme: Crypto.SignatureScheme )
 extends Cipher, Encryption, Signing:

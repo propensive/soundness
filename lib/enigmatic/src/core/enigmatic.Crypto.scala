@@ -108,6 +108,13 @@ object Crypto:
   trait Random:
     def bytes(size: Int): Data
 
+  // Whether two byte strings are equal, in time that depends on their length but not on where
+  // they differ: the comparison a MAC, a tag or any other secret-derived value must be checked
+  // with, since an early exit tells a forger how much of a guess was right.
+  def constantTimeEquals(left: Data, right: Data): Boolean =
+    left.length == right.length
+    && Gcm.constantTimeEquals(Array.unsafeJvm(left), 0, Array.unsafeJvm(right), 0, left.length)
+
   // The JDK provider supplies cryptography whenever it has been selected with
   // `import providers.javaBaseProvider`. The marker lives in gastronomy, so the
   // single provider import enables both hashing (in gastronomy) and cryptography.
@@ -128,6 +135,7 @@ object Crypto:
       case Reason.InvalidAlgorithm => m"the algorithm was not available"
       case Reason.IoFailure        => m"data could not be read or written"
       case Reason.BadTag           => m"the authentication tag did not verify"
+      case Reason.BadWrap          => m"the wrapped key did not pass its integrity check"
 
     enum Reason(val number: Int) extends Clarification:
       case BadPadding       extends Reason(1)
@@ -136,6 +144,7 @@ object Crypto:
       case InvalidAlgorithm extends Reason(4)
       case IoFailure        extends Reason(5)
       case BadTag           extends Reason(6)
+      case BadWrap          extends Reason(7)
 
   case class Error(reason: Crypto.Error.Reason, detail: Optional[Text] = Unset)
     ( using Diagnostics )

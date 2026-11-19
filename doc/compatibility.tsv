@@ -48,6 +48,7 @@ cardinality	yes	yes	yes	js
 cartouche	yes	yes	yes	js		
 cataclysm	yes	yes	yes	js		
 charisma	yes	yes	yes	js		
+chatelaine	yes	no	no	no		WebAuthn over `enigmatic.cose` and `enigmatic.x509`; ECDSA and RSA, which every credential uses, are JVM-only
 chiaroscuro	yes	yes	yes	js		
 clavichord	yes	yes	yes	js		
 coaxial	yes	core	yes	wasi	backends: native; JVM-only: jvm	no Scala.js socket backend (`jvm` is `java.net`; `native` is Scala Native's javalib sockets, multicast included); WASI sockets are TCP-only
@@ -135,6 +136,7 @@ scintillate	yes	no	no	no		HTTP server via `telekinesis`/`coaxial` sockets
 sedentary	yes	no	no	no		benchmarking via JVM-only `superlunary`/`anthology`
 serpentine	yes	yes	yes	js		
 sibylline	yes	no	no	no		transitively JVM-only (networking/crypto/fs/process)
+sigillate	yes	no	no	no		JOSE over `enigmatic.core`, which has no JS crypto provider; RSA and ECDSA are JVM-only, so Native is not enabled
 spectacular	yes	yes	yes	js		
 stenography	yes	yes	yes	js		
 stratiform	yes	yes	yes	js	JVM-only: binaryStaged, staged	

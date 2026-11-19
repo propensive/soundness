@@ -24,6 +24,7 @@ cardinality: refinement-types numeric-range bounded-numbers ranges
 cartouche: label-placement captions obstacles arranger collision-avoidance chart-labels
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
+chatelaine: webauthn passkey fido2 authentication passwordless security-key attestation
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
 clavichord: keyboard keypress keys modifiers input
 coaxial: socket tcp udp multicast dns networking domain-socket bindable connection
@@ -111,6 +112,7 @@ scintillate: http-server servlet web-framework http-routing
 sedentary: benchmarking performance-testing micro-benchmark
 serpentine: path filesystem-paths posix windows linux relative-path absolute-path
 sibylline: llm anthropic openai gemini chat-completions tool-use structured-output streaming
+sigillate: jose jwt jws jwe jwk token bearer authentication signing encryption
 spectacular: show pretty-printing display inspect
 stenography: typename qualified-names imports symbol-rendering scala-types
 stratiform: tel configuration-language records schema binary-tel

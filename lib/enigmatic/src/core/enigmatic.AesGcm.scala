@@ -44,12 +44,12 @@ import vacuous.*
 // associated data, and takes a nonce the caller must never repeat — so it is its own cipher
 // rather than a `BlockCipher.Mode`, and needs no `Permit[Concession.Unauthenticated]`.
 object AesGcm:
-  given value: [bits <: 128 | 256: ValueOf]
+  given value: [bits <: 128 | 192 | 256: ValueOf]
   =>  ( crypto: Crypto { def aesGcm: Crypto.Aead } )
   =>  AesGcm[bits] =
     AesGcm(crypto.aesGcm)
 
-class AesGcm[bits <: 128 | 256: ValueOf](aead: Crypto.Aead)
+class AesGcm[bits <: 128 | 192 | 256: ValueOf](aead: Crypto.Aead)
 extends Cipher, Symmetric, Authenticated:
   type Size = bits
 

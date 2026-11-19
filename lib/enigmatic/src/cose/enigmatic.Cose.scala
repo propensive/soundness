@@ -32,11 +32,15 @@
                                                                                                   */
 package enigmatic
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import breviloquence.*
 import contingency.*
+import distillate.*
 import enigmatic.*
 import fulminate.*
+import gossamer.*
 import gastronomy.*
 import prepositional.*
 import rudiments.*
@@ -87,6 +91,21 @@ object Cose:
       Cbor.Ast.array(Array[Any](context, bodyProtected, externalAad, payload))
 
     CanonicalCbor.encode(sigStruct)
+
+  // The value an integer label has in a CBOR map, as COSE's headers and keys use them.
+  private[enigmatic] def labelled(map: Cbor.Ast, label: Long): Optional[Cbor.Ast] =
+    def recur(index: Int): Optional[Cbor.Ast] =
+      if index >= map.entries then Unset
+      else if safely(map.key(index).long) == label then map.value(index)
+      else recur(index + 1)
+
+    if map.isMap then recur(0) else Unset
+
+  // The `alg` (label 1) of a serialized protected header, where it has one.
+  private[enigmatic] def algorithm(protectedHeader: Data): Optional[Long] =
+    if protectedHeader.length == 0 then Unset else
+      safely(Cbor.Ast.parse(protectedHeader)).let: header =>
+        labelled(header, 1L).let(value => safely(value.long))
 
   private[enigmatic] def readByteString(ast: Cbor.Ast)(using Tactic[Cose.Error]): Data =
     if ast.isByteString then ast.asInstanceOf[Data]
@@ -216,9 +235,71 @@ object Cose:
       type Self = HmacCipher[Sha2[512]]
       def algId: Long = 7L
 
+    private type EcdsaCrypto = Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme }
+
+    private def ecdsa[bits <: 256 | 384 | 521: ValueOf]
+      ( identifier: Long, digest: Text )
+      ( using crypto: EcdsaCrypto )
+    :   Ecdsa[bits] is Cose.Algorithm =
+
+      val cipher = Ecdsa.value[bits](using summon, Signature.Digest(digest), crypto)
+
+      new Cose.Algorithm:
+        type Self = Ecdsa[bits]
+        def algId: Long = identifier
+        override def scheme: Optional[Ecdsa[bits] & Signing] = cipher
+
+        override def wire(signature: Data): Optional[Data] =
+          Ecdsa.concatenation[bits](Signature[Ecdsa[bits]](signature))
+
+        override def native(wire: Data): Optional[Data] =
+          Ecdsa.signature[bits](wire).let(_.bytes)
+
+    // ES256 = -7, ES384 = -35, ES512 = -36: ECDSA with the SHA-2 hash of each name, over the
+    // curve conventionally paired with it.
+    given es256: (crypto: EcdsaCrypto) => Ecdsa[256] is Cose.Algorithm = ecdsa[256](-7L, t"SHA256")
+    given es384: (crypto: EcdsaCrypto) => Ecdsa[384] is Cose.Algorithm = ecdsa[384](-35L, t"SHA384")
+    given es512: (crypto: EcdsaCrypto) => Ecdsa[521] is Cose.Algorithm = ecdsa[521](-36L, t"SHA512")
+
+    // EdDSA = -8
+    given edDsa: Ed25519 is Cose.Algorithm = new Cose.Algorithm:
+      type Self = Ed25519
+      def algId: Long = -8L
+
+    // RS256 = -257: RSASSA-PKCS1-v1_5 with SHA-256, whatever `Signature.Digest` is in scope.
+    given rs256: [bits <: 2048 | 3072 | 4096: ValueOf] => (crypto: Crypto)
+    =>  Rsa[bits] is Cose.Algorithm =
+
+      val cipher = Rsa.value[bits](using summon, Signature.Digest(t"SHA256"), crypto)
+
+      new Cose.Algorithm:
+        type Self = Rsa[bits]
+        def algId: Long = -257L
+        override def scheme: Optional[Rsa[bits] & Signing] = cipher
+
+    // PS256 = -37: RSASSA-PSS with SHA-256.
+    given ps256: [bits <: 2048 | 3072 | 4096: ValueOf]
+    =>  ( crypto: Crypto { def rsaPss(digest: Text): Crypto.SignatureScheme } )
+    =>  RsaPss[bits] is Cose.Algorithm =
+
+      val cipher = RsaPss.value[bits](using summon, Signature.Digest(t"SHA256"), crypto)
+
+      new Cose.Algorithm:
+        type Self = RsaPss[bits]
+        def algId: Long = -37L
+        override def scheme: Optional[RsaPss[bits] & Signing] = cipher
+
+  // `scheme` is the cipher to sign and verify with, where the algorithm fixes more than the
+  // key's type does — ES256 is ECDSA *with SHA-256* — and `Unset` where the cipher in scope
+  // is already the algorithm's. `wire` and `native` convert a signature between the
+  // provider's form and COSE's, which differ only for ECDSA: COSE concatenates `r` and `s`
+  // at the curve's width (RFC 9053 §2.1) where a provider writes them as DER.
   trait Algorithm:
     type Self
     def algId: Long
+    def scheme: Optional[Self & Signing] = Unset
+    def wire(signature: Data): Optional[Data] = signature
+    def native(wire: Data): Optional[Data] = wire
 
   // CoseAuthenticator → Cose.Authenticator
   // Selects the COSE message variant from the key type:
@@ -239,7 +320,13 @@ object Cose:
         def cborTag:       Long   = Cose.Tag.Sign1
 
         def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
-          key.secret.uncloak: bytes => algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
+          val scheme: cipher & Signing = coseAlg.scheme.or(algorithm)
+
+          val signature = key.secret.uncloak: bytes =>
+            scheme.sign(toBeSigned, Array.unsafeFrozen(bytes))
+
+          coseAlg.wire(signature).or:
+            panic(m"the provider produced a signature that is not of its own algorithm's form")
 
     given symmetric: [cipher <: Cipher & Symmetric & Signing]
     =>  ( algorithm: cipher & Signing, coseAlg: cipher is Cose.Algorithm )
@@ -305,25 +392,30 @@ object Cose:
   // used to verify a COSE signature or MAC.
   object Verifier:
     given asymmetric: [cipher <: Cipher & Signing]
-    =>  ( algorithm: cipher & Signing )
+    =>  ( algorithm: cipher & Signing, coseAlg: cipher is Cose.Algorithm )
     =>  PublicKey[cipher] is Cose.Verifier in Sign1 by cipher =
       new Cose.Verifier:
         type Self    = PublicKey[cipher]
         type Form    = Sign1
         type Operand = cipher
+        def algId:         Long   = coseAlg.algId
         def contextString: String = Cose.Context.Signature1
         def cborTag:       Long   = Cose.Tag.Sign1
 
         def check(toBeSigned: Data, authentication: Data, key: PublicKey[cipher]): Boolean =
-          algorithm.verify(toBeSigned, authentication, key.bytes)
+          val scheme: cipher & Signing = coseAlg.scheme.or(algorithm)
+
+          coseAlg.native(authentication).lay(false): signature =>
+            scheme.verify(toBeSigned, signature, key.bytes)
 
     given symmetric: [cipher <: Cipher & Symmetric & Signing]
-    =>  ( algorithm: cipher & Signing )
+    =>  ( algorithm: cipher & Signing, coseAlg: cipher is Cose.Algorithm )
     =>  SymmetricKey[cipher] is Cose.Verifier in Mac0 by cipher =
       new Cose.Verifier:
         type Self    = SymmetricKey[cipher]
         type Form    = Mac0
         type Operand = cipher
+        def algId:         Long   = coseAlg.algId
         def contextString: String = Cose.Context.Mac0
         def cborTag:       Long   = Cose.Tag.Mac0
 
@@ -335,9 +427,168 @@ object Cose:
     type Self
     type Form    <: Cose.Structure
     type Operand <: Cipher
+    def algId:         Long
     def contextString: String
     def cborTag:       Long
     def check(toBeSigned: Data, authentication: Data, key: Self): Boolean
+
+  // A COSE_Key (RFC 9052 §7) holding a public key: what a WebAuthn authenticator returns for
+  // a new credential, and how CWT and other CBOR protocols carry keys. `algorithm` is the
+  // key's `alg` (label 3) — the COSE algorithm it is to be used with, such as -7 for ES256 —
+  // and `publicKey` the key itself, as the `SubjectPublicKeyInfo` every provider takes.
+  //
+  // The key types understood are EC2 on the three NIST prime curves, OKP for Ed25519 and
+  // X25519, and RSA. A COSE_Key is written in the deterministic encoding, as CTAP2 requires.
+  object Key:
+    private[Cose] val Type: Long = 1L
+    private[Cose] val Algorithm: Long = 3L
+    private[Cose] val Curve: Long = -1L
+    private[Cose] val X: Long = -2L
+    private[Cose] val Y: Long = -3L
+    private[Cose] val Okp: Long = 1L
+    private[Cose] val Ec2: Long = 2L
+    private[Cose] val RsaType: Long = 3L
+
+    private def malformed(using Tactic[Cose.Error], Diagnostics): Nothing =
+      abort(Cose.Error(Cose.Error.Reason.MalformedStructure))
+
+    private[Cose] def unsigned(value: BigInt): Data =
+      val bytes = Array.unsafeFrozen(value.toByteArray)
+      if bytes.length > 1 && value.bitLength%8 == 0 then bytes.skip(1) else bytes
+
+    // Reads a serialized COSE_Key.
+    def parse(bytes: Data)(using cborTactic: Tactic[Cbor.Error], coseTactic: Tactic[Cose.Error])
+      ( using Diagnostics )
+    :   Cose.Key =
+
+      val map = Cbor.Ast.parse(bytes)
+      if !map.isMap then malformed
+
+      def long(label: Long): Long = labelled(map, label).lay(malformed)(_.long)
+      def data(label: Long): Data = labelled(map, label).lay(malformed)(readByteString(_))
+
+      val algorithm = long(Algorithm)
+      val keyType = long(Type)
+
+      val publicKey: Data =
+        if keyType == Ec2 then
+          val curve = long(Curve)
+
+          val bits =
+            if curve == 1L then 256 else if curve == 2L then 384 else if curve == 3L then 521
+            else abort(Cose.Error(Cose.Error.Reason.UnsupportedAlgorithm(algorithm)))
+
+          val x = data(X)
+          val y = data(Y)
+          if x.length != (bits + 7)/8 || y.length != (bits + 7)/8 then malformed
+          val prefix: Data = Array.fill[Byte](1)(4)
+          Spki.ec(bits, Array.concat(prefix, x, y))
+
+        else if keyType == Okp then
+          val curve = long(Curve)
+
+          val identifier =
+            if curve == 6L then KeyAlgorithm.Ed25519 else if curve == 4L then KeyAlgorithm.X25519
+            else abort(Cose.Error(Cose.Error.Reason.UnsupportedAlgorithm(algorithm)))
+
+          Spki.wrap(Asn1.Sequence(List(Asn1.ObjectId(identifier))), data(X))
+
+        else if keyType == RsaType then
+          def number(label: Long): BigInt =
+            BigInt(new java.math.BigInteger(1, Array.unsafeJvm(data(label))))
+
+          Spki.rsa(number(-1L), number(-2L))
+
+        else abort(Cose.Error(Cose.Error.Reason.UnsupportedAlgorithm(algorithm)))
+
+      Cose.Key(algorithm, publicKey)
+
+    // What a provider must offer for a signature to be checked by the algorithm a COSE_Key
+    // names, rather than by a cipher known when the code was written.
+    type Verification =
+      Crypto
+        { def ecdsa(digest: Text): Crypto.SignatureScheme
+          def ed25519: Crypto.SignatureScheme
+          def rsaPss(digest: Text): Crypto.SignatureScheme }
+
+    // A public key as a COSE_Key, for the algorithm its cipher stands for.
+    def apply[cipher <: Cipher](key: PublicKey[cipher])(using algorithm: cipher is Cose.Algorithm)
+    :   Cose.Key =
+      Cose.Key(algorithm.algId, key.bytes)
+
+  case class Key(algorithm: Long, publicKey: Data):
+    // The key as a key of a named cipher, which its type and size must agree with.
+    def key[cipher <: Cipher: KeyAlgorithm](using Tactic[PublicKey.Error], Diagnostics)
+    :   PublicKey[cipher] =
+      PublicKey.adopt[cipher](publicKey)
+
+    // Whether `signature` is this key's signature of `message`, under the algorithm the key
+    // names: ES256, ES384, ES512, EdDSA, RS256 or PS256. The signature is in the provider's
+    // form — DER, for ECDSA — which is the form WebAuthn carries (a COSE_Sign1 carries the
+    // fixed-width one, and is verified with `verifyWith`). Any other algorithm, and a key that
+    // is not of its algorithm's type, does not verify.
+    def verify(message: Data, signature: Data)(using crypto: Key.Verification): Boolean =
+      val scheme: Optional[Crypto.SignatureScheme] =
+        if algorithm == -7L then crypto.ecdsa(t"SHA256")
+        else if algorithm == -35L then crypto.ecdsa(t"SHA384")
+        else if algorithm == -36L then crypto.ecdsa(t"SHA512")
+        else if algorithm == -8L then crypto.ed25519
+        else if algorithm == -257L then crypto.rsaSignature(t"SHA256")
+        else if algorithm == -37L then crypto.rsaPss(t"SHA256")
+        else Unset
+
+      scheme.lay(false): scheme =>
+        try scheme.verify(message, signature, publicKey) catch case error: Exception => false
+
+    // The serialized COSE_Key, or `Unset` for a key of a type COSE_Key has no form for here.
+    def encoded: Optional[Data] =
+      def map(labels: List[Long], values: List[Any]): Data =
+        val keys: Array[Any]^{} = labels.map[Any](identity).to[Array]
+        val entries: Array[Any]^{} = values.to[Array]
+        CanonicalCbor.encode(Cbor.Ast.map(keys, entries))
+
+      safely(Der(publicKey).as[Asn1]) match
+        case Asn1.Sequence(List(identifier, Asn1.BitString(bits, 0))) =>
+          KeyAlgorithm.identifier(identifier).let: (arcs, parameters) =>
+            if arcs == KeyAlgorithm.Ec then
+              val curve: Optional[(Long, Int)] =
+                if parameters == Asn1.ObjectId(KeyAlgorithm.P256) then (1L, 32)
+                else if parameters == Asn1.ObjectId(KeyAlgorithm.P384) then (2L, 48)
+                else if parameters == Asn1.ObjectId(KeyAlgorithm.P521) then (3L, 66)
+                else Unset
+
+              curve.let: (curve, size) =>
+                if bits.length != 2*size + 1 then Unset else
+                  val x: Data = bits.skip(1).keep(size)
+                  val y: Data = bits.skip(1 + size)
+
+                  map
+                    ( List(Key.Type, Key.Algorithm, Key.Curve, Key.X, Key.Y),
+                      List[Any](Key.Ec2, algorithm, curve, x, y) )
+
+            else if arcs == KeyAlgorithm.Ed25519 then
+              map
+                ( List(Key.Type, Key.Algorithm, Key.Curve, Key.X),
+                  List[Any](Key.Okp, algorithm, 6L, bits) )
+
+            else if arcs == KeyAlgorithm.X25519 then
+              map
+                ( List(Key.Type, Key.Algorithm, Key.Curve, Key.X),
+                  List[Any](Key.Okp, algorithm, 4L, bits) )
+
+            else if arcs == KeyAlgorithm.Rsa then
+              Spki.rsa(publicKey).let: (modulus, exponent) =>
+                val n: Data = Key.unsigned(modulus)
+                val e: Data = Key.unsigned(exponent)
+
+                map
+                  ( List(Key.Type, Key.Algorithm, -1L, -2L),
+                    List[Any](Key.RsaType, algorithm, n, e) )
+
+            else Unset
+
+        case _ =>
+          Unset
 
   // the COSE structure taxonomy, formerly nine top-level names
   trait Structure
@@ -379,6 +630,12 @@ class Cose
     if verifier.contextString != contextString then
       abort(Cose.Error(Cose.Error.Reason.VariantMismatch
        ( expected = verifier.contextString.tt, actual = contextString.tt )))
+
+    // The algorithm the message says it was made with must be the one the key's type stands
+    // for: the header is checked against the key, and never chooses what is done with it.
+    Cose.algorithm(protectedHeader).let: found =>
+      if found != verifier.algId
+      then abort(Cose.Error(Cose.Error.Reason.AlgorithmMismatch(verifier.algId, found)))
 
     val externalAad = Array.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)

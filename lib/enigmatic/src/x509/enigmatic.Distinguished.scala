@@ -70,6 +70,36 @@ object Distinguished:
 
     Asn1.Sequence(attributes.sweep { case attribute: Asn1 => attribute })
 
+  // The name an ASN.1 `Name` holds, reading the attributes this type models and passing over
+  // any others; `Unset` for a value that is not a `Name` at all.
+  def read(name: Asn1): Optional[Distinguished] = name match
+    case Asn1.Sequence(sets) =>
+      def text(value: Asn1): Optional[Text] = value match
+        case Asn1.Utf8String(text)      => text
+        case Asn1.PrintableString(text) => text
+        case Asn1.Ia5String(text)       => text
+        case _                          => Unset
+
+      def find(identifier: List[Int]): Optional[Text] =
+        val values = sets.sweep:
+          case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), value))))
+              if arcs == identifier && text(value).present =>
+            text(value)
+
+        values.head
+
+      Distinguished
+        ( find(CommonName),
+          find(Organization),
+          find(OrganizationalUnit),
+          find(Locality),
+          find(State),
+          find(Country),
+          find(Email) )
+
+    case _ =>
+      Unset
+
   // `countryName` is a `PrintableString` by definition, and `emailAddress` an `IA5String`;
   // everything else is a `UTF8String`, which is what every modern profile prefers.
   private def attribute

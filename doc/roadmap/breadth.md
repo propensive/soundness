@@ -34,8 +34,14 @@ Horizon: near
 Signed and encrypted tokens: JWS, JWE, JWK and JWT, building on the primitives enigmatic
 already provides, alongside its COSE support.
 
-Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
 round-trips the RFC 7515/7516 example vectors.
+
+Done: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` and `Jwt`, with every algorithm of RFC 7518
+but `zip` compression, and EdDSA and X25519 from RFC 8037; a bearer-token handler for
+scintillate, and key sets fetched over HTTP. The examples of RFC 7515 appendix A and RFC 7516
+appendix A are its tests, read from the RFCs' text. enigmatic gained the primitives it lacked:
+key derivation, AES key wrap, AES-CBC with HMAC, RSA-OAEP and RSA-PSS.
 
 ## brd-2: TOML
 
@@ -44,7 +50,7 @@ Horizon: near
 The configuration format the wider tooling world speaks. Soundness configures itself with TEL;
 it still reads what others write.
 
-Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
 passes the standard TOML compliance suite.
 
 ## brd-3: WebAuthn
@@ -53,10 +59,20 @@ Horizon: mid
 Needs: brd-1
 
 Passwordless authentication for the web stack, completing the story OAuth 2 and JOSE begin.
-The COSE support it depends on already exists.
+The COSE support it depends on — COSE keys and the asymmetric signature algorithms — arrived
+with `brd-1`, as did the reading and chain validation of the X.509 certificates an attestation
+carries.
 
-Done when: the module ships with tests, error pages and a `doc/modules/` topic, and a
+Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
 scripted registration-and-assertion ceremony passes against a reference authenticator.
+
+Done: #2530 (2026-11-20). chatelaine: The relying party's two ceremonies, with every check of
+WebAuthn Level 2 §7.1 and §7.2, and the `none` and `packed` attestation formats. The
+reference authenticator is the specification's own: the registration and authentication
+outputs of its test vectors, for ES256, ES384, ES512, RS256 and Ed25519 credentials, are
+accepted, with packed attestations validated to the vectors' trust root. A software
+authenticator in the test sources scripts whole ceremonies, and the ways they are refused.
+A browser's virtual authenticator has not been driven.
 
 ## brd-4: QUIC and HTTP/3
 
@@ -65,7 +81,7 @@ Horizon: long
 The transport successor. HTTP/2 and HPACK are already native; QUIC extends the same treatment
 below them.
 
-Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
 interoperates with a reference HTTP/3 server and client.
 
 ## brd-5: IMAP
@@ -74,5 +90,5 @@ Horizon: long
 
 Mail retrieval, completing what caduceus's SMTP support begins.
 
-Done when: the module ships with tests, error pages and a `doc/modules/` topic, and a
+Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
 scripted session passes against a reference IMAP server.
