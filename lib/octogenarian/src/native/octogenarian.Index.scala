@@ -57,6 +57,7 @@ import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import providers.javaBaseProvider
 import sortingAlgorithms.timsort
+import ambience.systems.javaBaseSystem
 
 // The index (`DIRC`), versions 2, 3 and 4: the staged tree with the stat data that lets a status
 // skip hashing unchanged files. Read whole and written whole, through `index.lock`, with the
@@ -103,7 +104,7 @@ private[octogenarian] object Index:
   val symlink: Int = 0xa000      // 120000
   val gitlink: Int = 0xe000      // 160000
 
-  def read(gitDir: Path on Linux)(using Tactic[Git.Error], Tactic[Io.Error]): Contents =
+  def read(gitDir: Path on Local)(using Tactic[Git.Error], Tactic[Io.Error]): Contents =
     val file = gitDir / "index"
     if !file.existent() then empty else parse(file.read[Data])
 
@@ -258,12 +259,12 @@ private[octogenarian] object Index:
     Store.concatenate(body, trailer.asInstanceOf[Data])
 
   // Written through `index.lock`, which another git process would also take.
-  def write(gitDir: Path on Linux, contents: Contents)
+  def write(gitDir: Path on Local, contents: Contents)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
-    val file: Path on Linux = gitDir / "index"
-    val lockFile: Path on Linux = gitDir / "index.lock"
+    val file: Path on Local = gitDir / "index"
+    val lockFile: Path on Local = gitDir / "index.lock"
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Git.Error.Reason.Locked(file.encode)))
@@ -274,19 +275,19 @@ private[octogenarian] object Index:
     finally if lockFile.existent() then lockFile.delete()
 
   // The modification time of the index file itself, in seconds, for the racy-git rule.
-  def modified(gitDir: Path on Linux)(using Tactic[Io.Error]): Long =
+  def modified(gitDir: Path on Local)(using Tactic[Io.Error]): Long =
     val file = gitDir / "index"
 
     if !file.existent() then 0L
-    else summon[FilesystemBackend on Linux].stat(file, true).modified / 1000L
+    else summon[FilesystemBackend on Local].stat(file, true).modified / 1000L
 
   // An entry describing a working file as it is now.
-  def entryFor(worktree: Path on Linux, path: Text, hash: Git.Hash, mode: Int)
+  def entryFor(worktree: Path on Local, path: Text, hash: Git.Hash, mode: Int)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Entry =
 
     val file = Refstore.descend(worktree, path.cut(t"/"))
-    val backend = summon[FilesystemBackend on Linux]
+    val backend = summon[FilesystemBackend on Local]
     val stat = backend.stat(file, false)
     val identity = backend.identity(file, false)
     val seconds = (stat.modified / 1000L).toInt
@@ -300,14 +301,14 @@ private[octogenarian] object Index:
   // Whether the stat data recorded for an entry still describes the file: if not, the content
   // must be hashed to know whether it changed. The racy-git rule treats an entry written in the
   // same second as the index as unverified.
-  def fresh(entry: Entry, worktree: Path on Linux, indexModified: Long)
+  def fresh(entry: Entry, worktree: Path on Local, indexModified: Long)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Boolean =
 
     val file = Refstore.descend(worktree, entry.path.cut(t"/"))
 
     if !file.existent() then false else
-      val stat = summon[FilesystemBackend on Linux].stat(file, false)
+      val stat = summon[FilesystemBackend on Local].stat(file, false)
       val seconds = (stat.modified / 1000L).toInt
       val nanos = ((stat.modified % 1000L) * 1000000L).toInt
 

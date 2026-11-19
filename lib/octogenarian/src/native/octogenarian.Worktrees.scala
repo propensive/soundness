@@ -49,6 +49,7 @@ import filesystemOptions.deleteRecursively
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.preserveSymlinks
+import ambience.systems.javaBaseSystem
 
 // Linked worktrees, in git's layout: each has a directory under `worktrees/` in the common git
 // directory holding its own HEAD, index and `gitdir` file (naming the `.git` file in the working
@@ -56,37 +57,37 @@ import filesystemOptions.preserveSymlinks
 private[octogenarian] object Worktrees:
   import Git.Error.Reason as Reason
 
-  private def registry(commonDir: Path on Linux): Path on Linux = commonDir / "worktrees"
+  private def registry(commonDir: Path on Local): Path on Local = commonDir / "worktrees"
 
-  private def readText(file: Path on Linux)(using Tactic[Io.Error]): Optional[Text] =
+  private def readText(file: Path on Local)(using Tactic[Io.Error]): Optional[Text] =
     if file.existent() then Objects.text(file.read[Data]).trim else Unset
 
-  private def writeText(file: Path on Linux, content: Text)(using Tactic[Io.Error]): Unit =
+  private def writeText(file: Path on Local, content: Text)(using Tactic[Io.Error]): Unit =
     if file.existent() then file.delete()
     file.write(Objects.bytes(content))
 
   // The working tree a registry entry names: the parent of the `.git` file in its `gitdir`.
-  def workingTree(entry: Path on Linux)(using Tactic[Io.Error]): Optional[Path on Linux] =
+  def workingTree(entry: Path on Local)(using Tactic[Io.Error]): Optional[Path on Local] =
     // A `gitdir` that is not an absolute path names no working tree.
-    readText(entry / "gitdir").let: text => safely(text.as[Path on Linux]).let(_.parent)
+    readText(entry / "gitdir").let: text => safely(text.as[Path on Local]).let(_.parent)
 
-  def entries(commonDir: Path on Linux)(using Tactic[Io.Error]): List[Path on Linux] =
+  def entries(commonDir: Path on Local)(using Tactic[Io.Error]): List[Path on Local] =
     val directory = registry(commonDir)
     if directory.existent() then directory.children.to[List] else Nil
 
   // The registry entry for the linked worktree at `path`.
   private def entry
-    ( commonDir: Path on Linux, path: Path on Linux )
+    ( commonDir: Path on Local, path: Path on Local )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
-  :   Path on Linux =
+  :   Path on Local =
 
-    def matches(candidate: Path on Linux): Boolean = workingTree(candidate) == Optional(path)
+    def matches(candidate: Path on Local): Boolean = workingTree(candidate) == Optional(path)
 
     entries(commonDir).filter(matches(_)).head
     . or(abort(Git.Error(Reason.NoSuchWorktree(path.encode))))
 
   // A registry name for a new worktree: its directory's name, suffixed with a number if taken.
-  private def freshName(commonDir: Path on Linux, base: Text)(using Tactic[Git.Error]): Text =
+  private def freshName(commonDir: Path on Local, base: Text)(using Tactic[Git.Error]): Text =
     def recur(suffix: Int): Text =
       val candidate = if suffix == 0 then base else t"$base$suffix"
 
@@ -96,10 +97,10 @@ private[octogenarian] object Worktrees:
     recur(0)
 
   def add
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      target: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      target: Path on Local,
       revision: Text,
       detach: Boolean,
       newBranch: Optional[Git.Branch],
@@ -155,13 +156,13 @@ private[octogenarian] object Worktrees:
     Index.write(worktreeGitDir, Index.Contents(2, entries, Nil))
 
   def lockReason
-    ( entry: Path on Linux )
+    ( entry: Path on Local )
     ( using Tactic[Io.Error] )
   :   Optional[Text] =
 
     readText(entry / "locked")
 
-  def remove(commonDir: Path on Linux, objects: Path on Linux, path: Path on Linux, force: Boolean)
+  def remove(commonDir: Path on Local, objects: Path on Local, path: Path on Local, force: Boolean)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -175,7 +176,7 @@ private[octogenarian] object Worktrees:
     if path.existent() then path.delete()
     registered.delete()
 
-  def lock(commonDir: Path on Linux, path: Path on Linux, reason: Optional[Text])
+  def lock(commonDir: Path on Local, path: Path on Local, reason: Optional[Text])
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -183,7 +184,7 @@ private[octogenarian] object Worktrees:
     if lockReason(registered).present then abort(Git.Error(Reason.Locked(path.encode)))
     writeText(registered / "locked", reason.or(t""))
 
-  def unlock(commonDir: Path on Linux, path: Path on Linux)
+  def unlock(commonDir: Path on Local, path: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -192,7 +193,7 @@ private[octogenarian] object Worktrees:
     if !file.existent() then abort(Git.Error(Reason.Unexpected, t"'${path.encode}' is not locked"))
     file.delete()
 
-  def move(commonDir: Path on Linux, path: Path on Linux, to: Path on Linux)
+  def move(commonDir: Path on Local, path: Path on Local, to: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -203,16 +204,16 @@ private[octogenarian] object Worktrees:
     writeText(registered / "gitdir", t"${to.encode}/.git\n")
 
   // Removes the registry entries whose working trees have gone, returning their paths.
-  def prune(commonDir: Path on Linux)
+  def prune(commonDir: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
-  :   List[Path on Linux] =
+  :   List[Path on Local] =
 
-    def prunable(registered: Path on Linux): Boolean =
+    def prunable(registered: Path on Local): Boolean =
       lockReason(registered).absent && workingTree(registered).lay(true)(!_.existent())
 
     def recur
-      ( remaining: List[Path on Linux], acc: List[Path on Linux] )
-    :   List[Path on Linux] =
+      ( remaining: List[Path on Local], acc: List[Path on Local] )
+    :   List[Path on Local] =
 
       remaining match
         case registered :: rest =>

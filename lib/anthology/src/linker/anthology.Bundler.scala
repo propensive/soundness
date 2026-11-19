@@ -67,9 +67,9 @@ object Bundler:
 
   // Writes a JAR of everything on `classpath` to `jarfile`, with `main` as its `Main-Class` if
   // there is one: what the `Jar` edge does, for a tool which packages a classpath of its own.
-  def assemble
-    ( classpath: LocalClasspath, jarfile: Path on Local, main: Optional[Fqcn] )
-  :   Path on Local raises Zip.Error raises Path.Error raises Io.Error raises Truncation.Error =
+  def assemble[plane <: Platform: Filesystem]
+    ( classpath: LocalClasspath, jarfile: Path on plane, main: Optional[Fqcn] )
+  :   Path on plane raises Zip.Error raises Path.Error raises Io.Error raises Truncation.Error =
 
     val manifest =
       main.let(MainClass(_)).let: main =>

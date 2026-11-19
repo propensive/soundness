@@ -65,17 +65,17 @@ import dissonance.Diff.Par
 object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
   def run(): Unit =
 
-    val scratch: Path on Linux =
-      java.nio.file.Path.of(temporaryDirectory[Path on Linux].encode.s).nn.toRealPath().nn.toString.tt
-      . as[Path on Linux]
+    val scratch: Path on Local =
+      java.nio.file.Path.of(temporaryDirectory[Path on Local].encode.s).nn.toRealPath().nn.toString.tt
+      . as[Path on Local]
 
-    def freshDir(): Path on Linux =
+    def freshDir(): Path on Local =
       val dir = scratch / Uuid().show
       dir.create[Directory]()
       dir
 
     // A repository made entirely by git, with a stable identity.
-    def gitRepo(): Path on Linux =
+    def gitRepo(): Path on Local =
       val dir = freshDir()
       sh"git -C $dir init -q -b main".exec[Exit]()
       sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
@@ -84,7 +84,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
       sh"git -C $dir config tag.gpgsign false".exec[Exit]()
       dir
 
-    def gitCommit(dir: Path on Linux, name: Text, content: Text, message: Text): Git.Hash =
+    def gitCommit(dir: Path on Local, name: Text, content: Text, message: Text): Git.Hash =
       val file = dir / name
       if !file.existent() then file.create[File]()
       file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
@@ -93,7 +93,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
       Git.Hash.unsafe(sh"git -C $dir rev-parse HEAD".exec[Text]().trim)
 
     // git's output without its trailing newline; leading spaces (as in porcelain status) are kept.
-    def gitOut(dir: Path on Linux, arguments: Text*): Text =
+    def gitOut(dir: Path on Local, arguments: Text*): Text =
       val output = Command((t"git" :: t"-C" :: dir.encode :: arguments)*).exec[Text]()
       if output.ends(t"\n") then output.skip(1, Rtl) else output
 
@@ -350,7 +350,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
     suite(m"Working tree"):
 
-      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+      def write(dir: Path on Local, name: Text, content: Text): Unit =
         val file = dir / name
         if !file.existent() then file.create[File]()
         file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
@@ -512,15 +512,15 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
     suite(m"Merging and replaying"):
 
-      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+      def write(dir: Path on Local, name: Text, content: Text): Unit =
         val file = dir / name
         if !file.existent() then file.create[File]()
         file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
 
-      def read(dir: Path on Linux, name: Text): Text = Command(t"cat", (dir / name).encode).exec[Text]()
+      def read(dir: Path on Local, name: Text): Text = Command(t"cat", (dir / name).encode).exec[Text]()
 
       // `main` and `feature` each with a commit beyond a common base; HEAD on `main`.
-      def diverged(dir: Path on Linux, base: Text, ours: Text, theirs: Text): Git.Hash =
+      def diverged(dir: Path on Local, base: Text, ours: Text, theirs: Text): Git.Hash =
         gitCommit(dir, t"a", base, t"base")
         sh"git -C $dir switch -q -c feature".exec[Exit]()
         val feature = gitCommit(dir, t"a", theirs, t"feature")
@@ -528,7 +528,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         gitCommit(dir, t"a", ours, t"main work")
         feature
 
-      def fsck(dir: Path on Linux): Text = gitOut(dir, t"fsck", t"--strict", t"--no-dangling")
+      def fsck(dir: Path on Local): Text = gitOut(dir, t"fsck", t"--strict", t"--no-dangling")
 
       test(m"merge fast-forwards to the branch tip and leaves a clean tree"):
         val dir = gitRepo()
@@ -667,12 +667,12 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
     suite(m"Stash"):
 
-      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+      def write(dir: Path on Local, name: Text, content: Text): Unit =
         val file = dir / name
         if !file.existent() then file.create[File]()
         file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
 
-      def read(dir: Path on Linux, name: Text): Text = Command(t"cat", (dir / name).encode).exec[Text]()
+      def read(dir: Path on Local, name: Text): Text = Command(t"cat", (dir / name).encode).exec[Text]()
 
       test(m"a native stash is one git lists and pops"):
         val dir = gitRepo()
@@ -737,12 +737,12 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
     suite(m"Local transport"):
 
-      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+      def write(dir: Path on Local, name: Text, content: Text): Unit =
         val file = dir / name
         if !file.existent() then file.create[File]()
         file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
 
-      def bare(): Path on Linux =
+      def bare(): Path on Local =
         val dir = freshDir()
         sh"git -C $dir init -q --bare -b main".exec[Exit]()
         dir
@@ -862,14 +862,14 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
     suite(m"Remote transports"):
 
-      def bare(): Path on Linux =
+      def bare(): Path on Local =
         val dir = freshDir()
         sh"git -C $dir init -q --bare -b main".exec[Exit]()
         sh"git -C $dir config http.receivepack true".exec[Exit]()
         dir
 
       // A repository with two commits, pushed into a fresh bare repository, which is returned.
-      def populated(): (Path on Linux, Path on Linux) =
+      def populated(): (Path on Local, Path on Local) =
         val dir = gitRepo()
         gitCommit(dir, t"a", t"a\n", t"first")
         gitCommit(dir, t"b", t"b\n", t"second")
@@ -880,7 +880,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
       // `git http-backend` as a CGI program behind the JDK's HTTP server, serving every repository
       // beneath `root`. (Python's CGI server would do, but it forwards only a fixed few request
       // headers, and `Git-Protocol`, which asks for protocol version 2, is not among them.)
-      def withHttpServer[result](root: Path on Linux)(block: Text => result): result =
+      def withHttpServer[result](root: Path on Local)(block: Text => result): result =
         import com.sun.net.httpserver as cs
 
         val handler: cs.HttpHandler = exchange0 =>
@@ -976,7 +976,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
       // An `ssh` which runs the remote command on this machine, so that the protocol is exercised
       // end to end against git's own `upload-pack` and `receive-pack`.
-      def stubBin(): Path on Linux =
+      def stubBin(): Path on Local =
         val bin = freshDir()
         val script = bin / "ssh"
         script.create[File]()
@@ -1096,7 +1096,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
     suite(m"Signatures"):
 
       // An ed25519 key pair and an allowed-signers file naming the test identity as its principal.
-      def keyPair(): (Path on Linux, Path on Linux) =
+      def keyPair(): (Path on Local, Path on Local) =
         val dir = freshDir()
         val key = dir / "key"
         sh"ssh-keygen -q -t ed25519 -N ${t""} -f $key".exec[Exit]()
@@ -1181,7 +1181,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         sh"rm -rf $moved".exec[Exit]()
 
         val (locked, afterMove) = dir.open[Git.Repo](Read & Write): repo ?=>
-          def entry(path: Path on Linux) = repo.worktrees().let(_.reap { case entry if entry.path == path => entry })
+          def entry(path: Path on Local) = repo.worktrees().let(_.reap { case entry if entry.path == path => entry })
           entry(other).value.let { e => repo.lockWorktree(Stale(e), reason = t"busy") }
           val locked = gitOut(dir, t"worktree", t"list", t"--porcelain").contains(t"locked busy")
           entry(other).value.let { e => repo.unlockWorktree(Stale(e)) }

@@ -55,6 +55,7 @@ import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import providers.javaBaseProvider
+import ambience.systems.javaBaseSystem
 
 // The object database of a repository: loose objects under `objects/xx/`, packfiles under
 // `objects/pack/`, and the stores named in `objects/info/alternates`. Objects are immutable and
@@ -63,19 +64,19 @@ import providers.javaBaseProvider
 private[octogenarian] object Store:
   import Git.Error.Reason as Reason
 
-  private def loosePath(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error])
-  :   Path on Linux =
+  private def loosePath(objects: Path on Local, hash: Git.Hash)(using Tactic[Git.Error])
+  :   Path on Local =
 
     Refstore.descend(objects, List(hash.text.keep(2), hash.text.skip(2)))
 
-  private def packs(objects: Path on Linux)
+  private def packs(objects: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Packfile] =
 
     val directory = objects / "pack"
 
     if !directory.existent() then Nil else
-      def recur(paths: List[Path on Linux], acc: List[Packfile]): List[Packfile] = paths match
+      def recur(paths: List[Path on Local], acc: List[Packfile]): List[Packfile] = paths match
         case path :: rest =>
           if path.name.ends(t".idx") then
             val pack = Refstore.descend(directory, List(t"${path.name.skip(4, Rtl)}.pack"))
@@ -87,24 +88,17 @@ private[octogenarian] object Store:
 
       recur(directory.children.to[List], Nil)
 
-  private def alternates(objects: Path on Linux)(using Tactic[Io.Error], Tactic[Git.Error])
-  :   List[Path on Linux] =
+  private def alternates(objects: Path on Local)(using Tactic[Io.Error], Tactic[Git.Error])
+  :   List[Path on Local] =
 
     val file = objects / "info" / "alternates"
 
     if !file.existent() then Nil else
-      def recur(lines: List[Text], acc: List[Path on Linux]): List[Path on Linux] = lines match
+      def recur(lines: List[Text], acc: List[Path on Local]): List[Path on Local] = lines match
         case line :: rest =>
           if line.length == 0 then recur(rest, acc) else
-            val target = if line.starts(t"/") then line else t"${objects.encode}/$line"
-
-            // An alternates line that does not make a path is the repository's fault.
-            val path: Path on Linux =
-              mitigate:
-                case error: Path.Error =>
-                  Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
-
-              . protect(target.as[Path on Linux])
+            // An alternates line is an absolute path, or one relative to the object directory.
+            val path: Path on Local = Refstore.resolve(objects, line)
 
             recur(rest, path :: acc)
 
@@ -112,14 +106,14 @@ private[octogenarian] object Store:
 
       recur(Objects.text(file.read[Data]).cut(t"\n"), Nil)
 
-  def exists(objects: Path on Linux, hash: Git.Hash)
+  def exists(objects: Path on Local, hash: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Boolean =
 
     read(objects, hash).present
 
   // An object which must exist.
-  def readOr(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
+  def readOr(objects: Path on Local, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
   :   (Git.Object.Kind, Data) =
 
     read(objects, hash) match
@@ -129,7 +123,7 @@ private[octogenarian] object Store:
         abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
   // Reads an object: its kind and its content, without the `type size\0` header.
-  def read(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
+  def read(objects: Path on Local, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
   :   Optional[(Git.Object.Kind, Data)] =
 
     val loose = loosePath(objects, hash)
@@ -142,7 +136,7 @@ private[octogenarian] object Store:
 
         case _ => Unset
 
-      def fromAlternates(remaining: List[Path on Linux]): Optional[(Git.Object.Kind, Data)] =
+      def fromAlternates(remaining: List[Path on Local]): Optional[(Git.Object.Kind, Data)] =
         remaining match
           case store :: rest => read(store, hash).or(fromAlternates(rest))
           case _             => Unset
@@ -152,7 +146,7 @@ private[octogenarian] object Store:
   // Writes a loose object, unless it is already present: written to a temporary name, then moved
   // into place, so a concurrent reader never sees a partial object.
   def write
-    ( objects: Path on Linux, kind: Git.Object.Kind, data: Data )
+    ( objects: Path on Local, kind: Git.Object.Kind, data: Data )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
@@ -172,10 +166,10 @@ private[octogenarian] object Store:
     hash
 
   // Every hash the store has an object for: loose and packed.
-  def all(objects: Path on Linux)(using Tactic[Git.Error], Tactic[Io.Error]): List[Git.Hash] =
-    def hashesIn(directory: Path on Linux): List[Git.Hash] =
+  def all(objects: Path on Local)(using Tactic[Git.Error], Tactic[Io.Error]): List[Git.Hash] =
+    def hashesIn(directory: Path on Local): List[Git.Hash] =
       if directory.name.length != 2 then Nil else
-        def recur(files: List[Path on Linux], acc: List[Git.Hash]): List[Git.Hash] = files match
+        def recur(files: List[Path on Local], acc: List[Git.Hash]): List[Git.Hash] = files match
           case file :: rest =>
             if file.name.length == 38
             then recur(rest, Git.Hash.unsafe(t"${directory.name}${file.name}") :: acc)

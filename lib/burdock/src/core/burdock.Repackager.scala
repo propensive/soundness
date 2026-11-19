@@ -172,8 +172,8 @@ object Repackager:
   // cache, and sets `Main-Class` to the runtime bootstrap. `resolve`/`cached` are injected;
   // `bootstrapClass` is the `burdock.Bootstrap` class bytes (force-included since it can't
   // itself be downloaded).
-  def repackage
-    ( inputJar: Path on Local, outputJar: Path on Local, resolve: Resolver, cached: CacheReader,
+  def repackage[plane <: Platform: Filesystem]
+    ( inputJar: Path on plane, outputJar: Path on plane, resolve: Resolver, cached: CacheReader,
       bootstrapClass: Data, progress: Progress = (_, _) => () )
   :   Summary raises RepackageError =
 

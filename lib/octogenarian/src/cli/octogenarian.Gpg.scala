@@ -48,6 +48,8 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
+import systems.javaBaseSystem
+
 // Signing and verifying with OpenPGP keys through `gpg`, as git does: a detached, armoured
 // signature over the payload, and verification read from the machine-readable status lines.
 object Gpg:
@@ -74,7 +76,7 @@ object Gpg:
   // Writes `content` to a scratch file which only its owner may read, and lends its path to
   // `block`, deleting the file when `block` ends, however it ends. It lives in the JVM's own
   // temporary directory, `java.io.tmpdir`.
-  private def temporary[result](content: Text)(block: Path on Linux => result)
+  private def temporary[result](content: Text)(block: Path on Local => result)
     ( using tactic: Tactic[Git.Error] )
   :   result =
 
@@ -87,10 +89,10 @@ object Gpg:
     given truncation: Tactic[Truncation.Error] = tactic.contramap: error =>
       Git.Error(Reason.SigningFailed(error.message.text))(using Diagnostics.omit)
 
-    given backend: (FilesystemBackend on Linux) = CliPlatform.filesystem[Linux]
+    given backend: (FilesystemBackend on Local) = CliPlatform.filesystem[Local]
     given umask: Umask = Umask(0x3f) // 077: a file of mode 0600, which only its owner may read
 
-    temporaryDirectory[Path on Linux].open[Scratch.File](Read & Write): file ?=>
+    temporaryDirectory[Path on Local].open[Scratch.File](Read & Write): file ?=>
       file.write(Chain(content.in[Data]))
       block(file.path)
 

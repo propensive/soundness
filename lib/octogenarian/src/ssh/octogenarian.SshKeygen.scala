@@ -48,6 +48,8 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
+import systems.javaBaseSystem
+
 // Signing and verifying with OpenSSH keys through `ssh-keygen -Y`, as `gpg.format = ssh` has git
 // do: a signature is made over the payload in the `git` namespace with a private key, and
 // verified against an allowed-signers file, which names the principals each public key speaks
@@ -79,7 +81,7 @@ object SshKeygen:
   // Writes `content` to a scratch file which only its owner may read, and lends its path to
   // `block`, deleting the file when `block` ends, however it ends. It lives in the JVM's own
   // temporary directory, `java.io.tmpdir`.
-  private def temporary[result](content: Text)(block: Path on Linux => result)
+  private def temporary[result](content: Text)(block: Path on Local => result)
     ( using tactic: Tactic[Git.Error] )
   :   result =
 
@@ -94,12 +96,12 @@ object SshKeygen:
 
     given umask: Umask = Umask(0x3f) // 077: a file of mode 0600, which only its owner may read
 
-    temporaryDirectory[Path on Linux].open[Scratch.File](Read & Write): file ?=>
+    temporaryDirectory[Path on Local].open[Scratch.File](Read & Write): file ?=>
       file.write(Chain(content.in[Data]))
       block(file.path)
 
   // Signs with the private key in `key`.
-  class Signer(key: Path on Linux)
+  class Signer(key: Path on Local)
     ( using working:     WorkingDirectory,
             environment: Environment,
             loggable:    (Exec.Event is Loggable)^ )
@@ -111,7 +113,7 @@ object SshKeygen:
       output
 
   // Verifies against the principals and keys in `allowedSigners`.
-  class Verifier(allowedSigners: Path on Linux)
+  class Verifier(allowedSigners: Path on Local)
     ( using working:     WorkingDirectory,
             environment: Environment,
             loggable:    (Exec.Event is Loggable)^ )

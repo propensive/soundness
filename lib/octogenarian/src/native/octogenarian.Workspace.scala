@@ -51,6 +51,7 @@ import filesystemOptions.overwritePreexisting
 import filesystemOptions.preserveSymlinks
 import sortingAlgorithms.timsort
 import dissonance.Diff.{Del, Edit, Ins, Par}
+import ambience.systems.javaBaseSystem
 
 // The working tree and the index together: what differs between HEAD, the index and the files,
 // and the operations that move content between them. Paths are worktree-relative, slash-separated.
@@ -73,12 +74,12 @@ private[octogenarian] object Workspace:
     else if (mode & 0x49) != 0 then Git.Object.Tree.Mode.Executable
     else Git.Object.Tree.Mode.Regular
 
-  def file(worktree: Path on Linux, path: Text)(using Tactic[Git.Error]): Path on Linux =
+  def file(worktree: Path on Local, path: Text)(using Tactic[Git.Error]): Path on Local =
     Refstore.descend(worktree, path.cut(t"/"))
 
   // Every blob in a tree, by path.
   def treeSnapshot
-    ( objects: Path on Linux, tree: Optional[Git.Hash] )
+    ( objects: Path on Local, tree: Optional[Git.Hash] )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Snapshot =
 
@@ -106,7 +107,7 @@ private[octogenarian] object Workspace:
 
       recur(tree, t"", Nil).to[Map]
 
-  def headTree(gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux)
+  def headTree(gitDir: Path on Local, commonDir: Path on Local, objects: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
@@ -118,7 +119,7 @@ private[octogenarian] object Workspace:
   // The working files as they are now, for every path the index knows: an entry whose stat data
   // still matches is trusted, any other is hashed, a conflicted path gets a null entry, and a
   // deleted file has none. A checkout from this snapshot rewrites exactly what differs.
-  def workingSnapshot(gitDir: Path on Linux, worktree: Path on Linux, contents: Index.Contents)
+  def workingSnapshot(gitDir: Path on Local, worktree: Path on Local, contents: Index.Contents)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Snapshot =
 
@@ -142,12 +143,12 @@ private[octogenarian] object Workspace:
     contents.entries.bind { entry => working(entry).let(List(_)).or(Nil) }.to[Map]
 
   // Every file and symbolic link beneath the worktree, except the git directory, with its mode.
-  def files(worktree: Path on Linux)(using Tactic[Io.Error]): List[(Text, Int)] =
-    val backend = summon[FilesystemBackend on Linux]
+  def files(worktree: Path on Local)(using Tactic[Io.Error]): List[(Text, Int)] =
+    val backend = summon[FilesystemBackend on Local]
 
-    def recur(directory: Path on Linux, prefix: Text, acc: List[(Text, Int)]): List[(Text, Int)] =
+    def recur(directory: Path on Local, prefix: Text, acc: List[(Text, Int)]): List[(Text, Int)] =
       def visit
-        ( children: List[Path on Linux], acc: List[(Text, Int)] )
+        ( children: List[Path on Local], acc: List[(Text, Int)] )
       :   List[(Text, Int)] =
 
         children match
@@ -173,17 +174,17 @@ private[octogenarian] object Workspace:
     recur(worktree, t"", Nil)
 
   // A working file's content as git would store it: a symbolic link is the text of its target.
-  def content(worktree: Path on Linux, path: Text, mode: Int)
+  def content(worktree: Path on Local, path: Text, mode: Int)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Data =
 
     val target = file(worktree, path)
 
     if mode == Index.symlink
-    then Objects.bytes(summon[FilesystemBackend on Linux].linkTarget(target))
+    then Objects.bytes(summon[FilesystemBackend on Local].linkTarget(target))
     else target.read[Data]
 
-  def hashFile(worktree: Path on Linux, path: Text, mode: Int)
+  def hashFile(worktree: Path on Local, path: Text, mode: Int)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Git.Hash =
 
@@ -217,10 +218,10 @@ private[octogenarian] object Workspace:
           case _                     => Unset
 
   def status
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       showIgnored: Boolean,
       showUntracked: Boolean )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
@@ -299,7 +300,7 @@ private[octogenarian] object Workspace:
     path == t"." || candidate == path || candidate.starts(t"$path/")
 
   // The working files under a worktree-relative path, which may name a file or a directory.
-  private def expand(worktree: Path on Linux, path: Text)
+  private def expand(worktree: Path on Local, path: Text)
     ( using Tactic[Io.Error] )
   :   List[(Text, Int)] =
 
@@ -310,9 +311,9 @@ private[octogenarian] object Workspace:
     else all.filter: entry => entry(0) == path || entry(0).starts(prefix)
 
   def add
-    ( gitDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       paths: List[Text],
       all: Boolean )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
@@ -351,8 +352,8 @@ private[octogenarian] object Workspace:
     Index.write(gitDir, kept.copy(entries = kept.entries + fresh))
 
   def remove
-    ( gitDir: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      worktree: Path on Local,
       paths: List[Text],
       cached: Boolean,
       force: Boolean )
@@ -386,15 +387,15 @@ private[octogenarian] object Workspace:
     if !cached then targets.each(unlink(_))
 
   // Removes a deleted file's parent directories while they are empty, as git does.
-  def pruneEmpty(worktree: Path on Linux, deleted: Path on Linux)(using Tactic[Io.Error]): Unit =
-    val parent: Optional[Path on Linux] = deleted.parent
+  def pruneEmpty(worktree: Path on Local, deleted: Path on Local)(using Tactic[Io.Error]): Unit =
+    val parent: Optional[Path on Local] = deleted.parent
 
     parent.lay(()): parent =>
       if parent != worktree && parent.existent() && parent.children.to[List] == Nil then
         parent.delete()
         pruneEmpty(worktree, parent)
 
-  def move(gitDir: Path on Linux, worktree: Path on Linux, from: Text, to: Text)
+  def move(gitDir: Path on Local, worktree: Path on Local, from: Text, to: Text)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -412,10 +413,10 @@ private[octogenarian] object Workspace:
       ( gitDir, contents.copy(entries = contents.entries.filter(_.path != from) + List(moved)) )
 
   def restore
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       paths: List[Text],
       source: Optional[Text],
       staged: Boolean,
@@ -467,7 +468,7 @@ private[octogenarian] object Workspace:
 
   // Writes a blob to a working file with the given mode, creating directories as needed.
   def writeFile
-    ( objects: Path on Linux, worktree: Path on Linux, path: Text, mode: Int, hash: Git.Hash )
+    ( objects: Path on Local, worktree: Path on Local, path: Text, mode: Int, hash: Git.Hash )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -484,8 +485,8 @@ private[octogenarian] object Workspace:
       target.executable() = mode == Index.executable
 
   def clean
-    ( gitDir: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      worktree: Path on Local,
       paths: List[Text],
       directories: Boolean,
       showIgnored: Boolean )
@@ -532,7 +533,7 @@ private[octogenarian] object Workspace:
   // ──────────────────────────────────────────── Trees ─────────────────────────────────────────
 
   // Writes the staged tree to the object store: directories become trees, bottom-up.
-  def writeTree(gitDir: Path on Linux, objects: Path on Linux)
+  def writeTree(gitDir: Path on Local, objects: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
@@ -541,7 +542,7 @@ private[octogenarian] object Workspace:
     if unmerged != Nil then abort(Git.Error(Reason.Conflict(unmerged)))
     writeSnapshot(objects, indexSnapshot(contents))
 
-  def writeSnapshot(objects: Path on Linux, snapshot: Snapshot)
+  def writeSnapshot(objects: Path on Local, snapshot: Snapshot)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
@@ -571,7 +572,7 @@ private[octogenarian] object Workspace:
 
   // Brings the working files from one snapshot to another: files absent from `to` are deleted,
   // files whose entry differs are rewritten. Returns the index entries for `to`.
-  def checkoutFiles(objects: Path on Linux, worktree: Path on Linux, from: Snapshot, to: Snapshot)
+  def checkoutFiles(objects: Path on Local, worktree: Path on Local, from: Snapshot, to: Snapshot)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Index.Entry] =
 
@@ -593,10 +594,10 @@ private[octogenarian] object Workspace:
     to.keys.to[List].map(entry(_))
 
   def readTree
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       mode: ResetMode )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
@@ -626,10 +627,10 @@ private[octogenarian] object Workspace:
 
   // Paths whose working or staged content differs from HEAD: a checkout must not overwrite them.
   def modifiedPaths
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux )
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Set[Text] =
 
@@ -639,10 +640,10 @@ private[octogenarian] object Workspace:
     . to[Set]
 
   def checkout
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       revision: Text,
       identity: Git.Identity,
       logging: Boolean )
@@ -677,7 +678,7 @@ private[octogenarian] object Workspace:
     if branch.present then Refstore.writeSymbolic(gitDir, commonDir, t"HEAD", branchRef)
     else Refstore.detach(gitDir, commonDir, commit, previous, identity, message, logging)
 
-  def describeHead(gitDir: Path on Linux, commonDir: Path on Linux)
+  def describeHead(gitDir: Path on Local, commonDir: Path on Local)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Text =
 
@@ -690,10 +691,10 @@ private[octogenarian] object Workspace:
       case _                                => t"HEAD"
 
   def switch
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       branch: Git.Branch,
       create: Boolean,
       identity: Git.Identity,
@@ -897,23 +898,23 @@ private[octogenarian] object Workspace:
 
     recur(paths, Nil)
 
-  def stored(objects: Path on Linux)
+  def stored(objects: Path on Local)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   (Text, Int, Git.Hash) => Data =
 
     (_, _, hash) => Store.readOr(objects, hash)(1)
 
-  def working(worktree: Path on Linux)
+  def working(worktree: Path on Local)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   (Text, Int, Git.Hash) => Data =
 
     (path, mode, _) => content(worktree, path, mode)
 
   def diffWorktree
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
+      worktree: Path on Local,
       staged: Boolean,
       against: Optional[Text] )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
@@ -946,7 +947,7 @@ private[octogenarian] object Workspace:
       fileDiffs(base, workingSnapshot)(stored(objects))(working(worktree))
 
   def diffTree
-    ( objects: Path on Linux, left: Git.Hash, right: Git.Hash )
+    ( objects: Path on Local, left: Git.Hash, right: Git.Hash )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Git.Delta] =
 
@@ -959,8 +960,8 @@ private[octogenarian] object Workspace:
     val rightTree = treeSnapshot(objects, treeOf(right))
     fileDiffs(leftTree, rightTree)(stored(objects))(stored(objects))
 
-  def tracked(gitDir: Path on Linux)(using Tactic[Git.Error], Tactic[Io.Error]): List[Text] =
+  def tracked(gitDir: Path on Local)(using Tactic[Git.Error], Tactic[Io.Error]): List[Text] =
     Index.read(gitDir).staged.map(_.path).order(_.s)
 
-  def conflicts(gitDir: Path on Linux)(using Tactic[Git.Error], Tactic[Io.Error]): List[Text] =
+  def conflicts(gitDir: Path on Local)(using Tactic[Git.Error], Tactic[Io.Error]): List[Text] =
     Index.read(gitDir).entries.filter(_.stage > 0).map(_.path).distinct.order(_.s)

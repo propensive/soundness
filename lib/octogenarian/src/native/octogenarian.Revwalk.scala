@@ -45,13 +45,14 @@ import turbulence.*
 import vacuous.*
 
 import sortingAlgorithms.timsort
+import ambience.systems.javaBaseSystem
 
 // Revisions and history: resolving `gitrevisions(7)` expressions, walking commits in date order,
 // and finding merge bases.
 private[octogenarian] object Revwalk:
   import Git.Error.Reason as Reason
 
-  def commit(objects: Path on Linux, hash: Git.Hash)
+  def commit(objects: Path on Local, hash: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Commit =
 
@@ -65,13 +66,13 @@ private[octogenarian] object Revwalk:
       case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
   // The commits listed in the repository's `shallow` file, whose parents are absent by design.
-  private def shallow(objects: Path on Linux)(using Tactic[Io.Error], Tactic[Git.Error])
+  private def shallow(objects: Path on Local)(using Tactic[Io.Error], Tactic[Git.Error])
   :   java.util.HashSet[Git.Hash] =
 
     val set = java.util.HashSet[Git.Hash]()
-    val file: Optional[Path on Linux] = objects.parent.let(Refstore.descend(_, List(t"shallow")))
+    val file: Optional[Path on Local] = objects.parent.let(Refstore.descend(_, List(t"shallow")))
 
-    def load(file: Path on Linux): Unit = if file.existent() then
+    def load(file: Path on Local): Unit = if file.existent() then
       Objects.text(file.read[Data]).cut(t"\n").filter(_.length == 40).each: line =>
         set.add(Git.Hash.unsafe(line))
 
@@ -80,7 +81,7 @@ private[octogenarian] object Revwalk:
     set
 
   // Follows tag objects to the object they ultimately name.
-  def peel(objects: Path on Linux, hash: Git.Hash)
+  def peel(objects: Path on Local, hash: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
@@ -108,7 +109,7 @@ private[octogenarian] object Revwalk:
         t"refs/remotes/$name/HEAD" )
 
   def resolve
-    ( gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, revision: Text )
+    ( gitDir: Path on Local, commonDir: Path on Local, objects: Path on Local, revision: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
@@ -175,7 +176,7 @@ private[octogenarian] object Revwalk:
 
   // Commits reachable from `from` and not from `until`, newest committer date first.
   def walk
-    ( objects: Path on Linux,
+    ( objects: Path on Local,
       from: Git.Hash,
       until: Optional[Git.Hash],
       limit: Optional[Int],
@@ -217,7 +218,7 @@ private[octogenarian] object Revwalk:
     recur(Nil, 0)
 
   // Every commit reachable from `from`, itself included, as a set to test membership of.
-  def ancestors(objects: Path on Linux, from: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
+  def ancestors(objects: Path on Local, from: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
   :   java.util.HashSet[Git.Hash] =
 
     val seen = java.util.HashSet[Git.Hash]()
@@ -234,14 +235,14 @@ private[octogenarian] object Revwalk:
     recur(List(peel(objects, from)))
     seen
 
-  def isAncestor(objects: Path on Linux, ancestor: Git.Hash, descendant: Git.Hash)
+  def isAncestor(objects: Path on Local, ancestor: Git.Hash, descendant: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Boolean =
 
     ancestors(objects, descendant).contains(peel(objects, ancestor))
 
   // The best common ancestor: a common ancestor which is not an ancestor of another.
-  def mergeBase(objects: Path on Linux, left: Git.Hash, right: Git.Hash)
+  def mergeBase(objects: Path on Local, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
@@ -272,7 +273,7 @@ private[octogenarian] object Revwalk:
 private[octogenarian] object Trees:
   import Git.Error.Reason as Reason
 
-  def entries(objects: Path on Linux, tree: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
+  def entries(objects: Path on Local, tree: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
   :   List[Git.Object.Tree.Entry] =
 
     Store.readOr(objects, tree) match
@@ -281,7 +282,7 @@ private[octogenarian] object Trees:
 
   // The hash at a slash-separated path within a tree, if any.
   def lookup
-    ( objects: Path on Linux, tree: Git.Hash, path: Text )
+    ( objects: Path on Local, tree: Git.Hash, path: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
@@ -295,7 +296,7 @@ private[octogenarian] object Trees:
     recur(tree, path.cut(t"/").filter(_.length > 0))
 
   // Every blob under a tree, as path → hash.
-  def flatten(objects: Path on Linux, tree: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
+  def flatten(objects: Path on Local, tree: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
   :   List[(Text, Git.Hash)] =
 
     def recur(tree: Git.Hash, prefix: Text): List[(Text, Git.Hash)] =
@@ -308,7 +309,7 @@ private[octogenarian] object Trees:
     recur(tree, t"")
 
   def write
-    ( objects: Path on Linux, entries: List[Git.Object.Tree.Entry] )
+    ( objects: Path on Local, entries: List[Git.Object.Tree.Entry] )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 

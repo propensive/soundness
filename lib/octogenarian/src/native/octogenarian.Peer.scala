@@ -50,7 +50,7 @@ object Peer:
 
   // A repository on this filesystem, reached by reading and writing its files directly.
   class Local(location: Git.Backend.Location, identity: Git.Identity) extends Peer:
-    private val objects: Path on Linux = location.commonDir / "objects"
+    private val objects: Path on galilei.Local = location.commonDir / "objects"
 
     private def io[result](block: Tactic[Io.Error] ?=> result)(using Tactic[Git.Error]): result =
       try throwErrors[Io.Error](block)

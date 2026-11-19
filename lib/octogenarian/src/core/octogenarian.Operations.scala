@@ -46,6 +46,8 @@ import serpentine.*
 import urticose.*
 import vacuous.*
 
+import ambience.systems.javaBaseSystem
+
 // The logic shared by both backends, written once over the backend's plumbing: compare-and-swap
 // commits, notes, remotes read from configuration, and the bookkeeping of the handles.
 private[octogenarian] object Operations:
@@ -53,12 +55,12 @@ private[octogenarian] object Operations:
 
   val emptyTree: Git.Hash = Git.Hash.unsafe(t"4b825dc642cb6eb9a060e54bf8d69288fbee4904")
 
-  def path(text: Text)(using Tactic[Git.Error]): Path on Linux =
-    safely(text.as[Path on Linux]).or(abort(Git.Error(Reason.NoRepository(text))))
+  def path(text: Text)(using Tactic[Git.Error]): Path on Local =
+    safely(text.as[Path on Local]).or(abort(Git.Error(Reason.NoRepository(text))))
 
   // Enrols the open in galilei's register when it is exclusive, keyed on the real path so that
   // two routes to one repository register as the same one.
-  def registered[result](path: Path on Linux, mode: Mode, flags: List[Git.OpenFlag])
+  def registered[result](path: Path on Local, mode: Mode, flags: List[Git.OpenFlag])
     ( block: => result )
     ( using Tactic[Git.Error] )
   :   result =
@@ -97,7 +99,7 @@ private[octogenarian] object Operations:
 
   def relative[plane](path: Path on plane): Text = path.descent.to(List).reverse.join(t"/")
 
-  def resolveRef(backend: Git.Backend^, gitDir: Path on Linux, name: Text)(using Tactic[Git.Error])
+  def resolveRef(backend: Git.Backend^, gitDir: Path on Local, name: Text)(using Tactic[Git.Error])
   :   Optional[Git.Hash] =
 
     def recur(name: Text, depth: Int): Optional[Git.Hash] =
@@ -108,7 +110,7 @@ private[octogenarian] object Operations:
 
     recur(name, 0)
 
-  def readObject(backend: Git.Backend^, gitDir: Path on Linux, hash: Git.Hash)
+  def readObject(backend: Git.Backend^, gitDir: Path on Local, hash: Git.Hash)
     ( using Tactic[Git.Error] )
   :   (Git.Object.Kind, Data) =
 
@@ -119,7 +121,7 @@ private[octogenarian] object Operations:
   def setting(config: List[(Git.Config.Key, Text)], key: Git.Config.Key): Optional[Text] =
     config.sweep { case (`key`, value) => value }.reverse.head
 
-  def identity(backend: Git.Backend^, gitDir: Path on Linux)
+  def identity(backend: Git.Backend^, gitDir: Path on Local)
     ( using Tactic[Git.Error] )
   :   Git.Identity =
 
@@ -144,7 +146,7 @@ private[octogenarian] object Operations:
 
     block(using ConfigHandle[grants](source, backend))
 
-  def expectHead(backend: Git.Backend^, gitDir: Path on Linux, head: Stale[Git.Head])
+  def expectHead(backend: Git.Backend^, gitDir: Path on Local, head: Stale[Git.Head])
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -153,7 +155,7 @@ private[octogenarian] object Operations:
     if actual != head.value then
       abort(Git.Error(Reason.Moved(t"HEAD", head.value.commit, actual.commit)))
 
-  def expectStash(backend: Git.Backend^, gitDir: Path on Linux, entry: Stale[Git.Stash.Entry])
+  def expectStash(backend: Git.Backend^, gitDir: Path on Local, entry: Stale[Git.Stash.Entry])
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -165,8 +167,8 @@ private[octogenarian] object Operations:
 
   def commit
     ( backend:    Git.Backend^,
-      gitDir:     Path on Linux,
-      root:       Path on Linux,
+      gitDir:     Path on Local,
+      root:       Path on Local,
       message:    Text,
       head:       Git.Head,
       parents:    List[Git.Hash],
@@ -197,14 +199,14 @@ private[octogenarian] object Operations:
     hash
 
   def clone
-    ( source: Text, target: Path on Linux, branch: Optional[Git.Branch], depth: Optional[Int],
+    ( source: Text, target: Path on Local, branch: Optional[Git.Branch], depth: Optional[Int],
       bare: Boolean, recursive: Boolean, activity: Git.Activity^ )
     ( using backend: Git.Backend^, internet: Internet, tactic: Tactic[Git.Error] )
   :   Unit =
 
     backend.clone(source, target, branch, depth, bare, recursive, activity)
 
-  def cloneCommit(source: Text, target: Path on Linux, commit: Git.Hash, activity: Git.Activity^)
+  def cloneCommit(source: Text, target: Path on Local, commit: Git.Hash, activity: Git.Activity^)
     ( using backend: Git.Backend^, internet: Internet, tactic: Tactic[Git.Error] )
   :   Unit =
 
@@ -224,19 +226,19 @@ private[octogenarian] object Operations:
 
   // Notes: a write is a new notes commit made by the backend on no ref, then a compare-and-swap
   // of the notes ref from the value the caller saw.
-  def readNote(backend: Git.Backend^, gitDir: Path on Linux, target: Git.Hash, ref: Git.Ref)
+  def readNote(backend: Git.Backend^, gitDir: Path on Local, target: Git.Hash, ref: Git.Ref)
     ( using Tactic[Git.Error] )
   :   Optional[Text] =
 
     backend.readNote(gitDir, ref.encode, target)
 
-  def listNotes(backend: Git.Backend^, gitDir: Path on Linux, ref: Git.Ref)(using Tactic[Git.Error])
+  def listNotes(backend: Git.Backend^, gitDir: Path on Local, ref: Git.Ref)(using Tactic[Git.Error])
   :   Map[Git.Hash, Git.Hash] =
 
     backend.listNotes(gitDir, ref.encode).map { (note, target) => target -> note }.to[Map]
 
   def writeNote
-    ( backend: Git.Backend^, gitDir: Path on Linux, ref: Git.Ref, from: Optional[Git.Hash],
+    ( backend: Git.Backend^, gitDir: Path on Local, ref: Git.Ref, from: Optional[Git.Hash],
       edit: Git.Backend.NoteEdit )
     ( using Tactic[Git.Error] )
   :   Git.Hash =
@@ -255,10 +257,10 @@ private[octogenarian] object Operations:
   private val fetchName: Text = t"fetch"
   private val branchSection: Text = t"branch"
 
-  private def localConfig(gitDir: Path on Linux): Git.Config.Source =
+  private def localConfig(gitDir: Path on Local): Git.Config.Source =
     Git.Config.Source.Repository(gitDir, Git.Config.Scope.Local)
 
-  def listRemotes(backend: Git.Backend^, gitDir: Path on Linux)
+  def listRemotes(backend: Git.Backend^, gitDir: Path on Local)
     ( using Tactic[Git.Error] )
   :   List[Git.Remote] =
 
@@ -276,7 +278,7 @@ private[octogenarian] object Operations:
       val push = setting(config, pushKey)
       Git.Remote(name, url, push)
 
-  def upstream(backend: Git.Backend^, gitDir: Path on Linux, branch: Git.Branch)
+  def upstream(backend: Git.Backend^, gitDir: Path on Local, branch: Git.Branch)
     ( using Tactic[Git.Error] )
   :   Optional[(Text, Git.Branch)] =
 
@@ -291,7 +293,7 @@ private[octogenarian] object Operations:
 
   def addRemote
     ( backend: Git.Backend^,
-      gitDir:  Path on Linux,
+      gitDir:  Path on Local,
       name:    Text,
       url:     Text,
       fetch:   Optional[Git.Refspec] )
@@ -307,7 +309,7 @@ private[octogenarian] object Operations:
     backend.configWrite(source, Git.Config.Key(remoteSection, name, fetchName), refspec.text, false)
     Git.Remote(name, url)
 
-  def removeRemote(backend: Git.Backend^, gitDir: Path on Linux, name: Text)
+  def removeRemote(backend: Git.Backend^, gitDir: Path on Local, name: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -331,7 +333,7 @@ private[octogenarian] object Operations:
   private def reprefix(text: Text, oldPrefix: Text, newPrefix: Text): Text =
     if text.starts(oldPrefix) then t"$newPrefix${text.skip(oldPrefix.length)}" else text
 
-  def renameRemote(backend: Git.Backend^, gitDir: Path on Linux, from: Text, to: Text)
+  def renameRemote(backend: Git.Backend^, gitDir: Path on Local, from: Text, to: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -371,7 +373,7 @@ private[octogenarian] object Operations:
 
   def setRemoteUrl
     ( backend: Git.Backend^,
-      gitDir:  Path on Linux,
+      gitDir:  Path on Local,
       name:    Text,
       url:     Text,
       push:    Boolean )
